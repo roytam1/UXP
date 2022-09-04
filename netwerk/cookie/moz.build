@@ -20,10 +20,13 @@ if CONFIG['NECKO_COOKIES']:
         'CookieServiceChild.h',
         'CookieServiceParent.h',
     ]
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'CookieServiceChild.cpp',
         'CookieServiceParent.cpp',
         'nsCookie.cpp',
+    ]
+    # nsCookieService.cpp can't be unified because of symbol conflicts
+    SOURCES += [
         'nsCookieService.cpp',
     ]
     LOCAL_INCLUDES += [

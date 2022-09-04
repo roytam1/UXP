@@ -33,7 +33,7 @@ EXPORTS.mozilla.dom += [
     'PushUtil.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'PushManager.cpp',
     'PushNotifier.cpp',
     'PushSubscription.cpp',

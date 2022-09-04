@@ -34,7 +34,7 @@ EXPORTS.mozilla.dom += [
     'TimeEvent.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'nsSMILAnimationController.cpp',
     'nsSMILAnimationFunction.cpp',
     'nsSMILCompositor.cpp',

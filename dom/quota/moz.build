@@ -30,7 +30,7 @@ EXPORTS.mozilla.dom.quota += [
     'UsageInfo.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'ActorsChild.cpp',
     'ActorsParent.cpp',
     'FileStreams.cpp',

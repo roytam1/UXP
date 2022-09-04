@@ -35,7 +35,7 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = 'xul'
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'nsXULControllers.cpp',
 ]
 

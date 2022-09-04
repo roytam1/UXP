@@ -8,7 +8,7 @@ EXPORTS += [
     'FFVPXRuntimeLinker.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     '../FFmpegAudioDecoder.cpp',
     '../FFmpegDataDecoder.cpp',
     '../FFmpegDecoderModule.cpp',

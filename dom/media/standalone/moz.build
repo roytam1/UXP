@@ -6,7 +6,7 @@
 if CONFIG['OS_TARGET'] != 'WINNT':
     Library('media_standalone')
 
-SOURCES += [
+UNIFIED_SOURCES += [
     '../AudioChannelFormat.cpp',
     '../AudioSegment.cpp',
     '../SimpleImageBuffer.cpp',

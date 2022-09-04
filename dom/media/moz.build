@@ -183,7 +183,7 @@ EXPORTS.mozilla.dom += [
     'VideoTrackList.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'AccurateSeekTask.cpp',
     'ADTSDecoder.cpp',
     'ADTSDemuxer.cpp',
@@ -200,7 +200,6 @@ SOURCES += [
     'CanvasCaptureMediaStream.cpp',
     'CubebUtils.cpp',
     'DecoderDoctorDiagnostics.cpp',
-    'DecoderTraits.cpp',
     'DOMMediaStream.cpp',
     'EncodedBufferCache.cpp',
     'FileBlockCache.cpp',
@@ -255,6 +254,11 @@ SOURCES += [
 
 if CONFIG['OS_TARGET'] == 'WINNT':
   SOURCES += [ 'ThreadPoolCOMListener.cpp' ]
+
+# DecoderTraits.cpp needs to be built separately because of Mac OS X headers.
+SOURCES += [
+    'DecoderTraits.cpp',
+]
 
 # Some codec-related code uses multi-character constants, which GCC and clang
 # warn about. Suppress turning this warning into an error.

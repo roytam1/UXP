@@ -15,7 +15,7 @@ EXPORTS.mozilla.dom += [
     'GridTracks.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'Grid.cpp',
     'GridArea.cpp',
     'GridDimension.cpp',

@@ -120,7 +120,7 @@ EXPORTS.mozilla.dom += [
     'ValidityState.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'HTMLAllCollection.cpp',
     'HTMLAnchorElement.cpp',
     'HTMLAreaElement.cpp',
@@ -203,12 +203,16 @@ SOURCES += [
     'nsIConstraintValidation.cpp',
     'nsRadioVisitor.cpp',
     'nsTextEditorState.cpp',
-    'PluginDocument.cpp',
     'RadioNodeList.cpp',
     'TextTrackManager.cpp',
     'TimeRanges.cpp',
     'ValidityState.cpp',
     'VideoDocument.cpp',
+]
+
+SOURCES += [
+    # Includes npapi.h.
+    'PluginDocument.cpp',
 ]
 
 EXTRA_COMPONENTS += [
