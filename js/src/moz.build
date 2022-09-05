@@ -114,7 +114,7 @@ EXPORTS.js += [
     '../public/WeakMapPtr.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'builtin/AtomicsObject.cpp',
     'builtin/Eval.cpp',
     'builtin/Intl.cpp',
