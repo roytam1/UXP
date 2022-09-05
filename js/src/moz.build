@@ -11,7 +11,6 @@ DIRS += [
     'builtin',
     'devtools',
     'ds',
-    'frontend',
 ]
 
 if CONFIG['JS_BUNDLED_EDITLINE']:
@@ -119,6 +118,12 @@ EXPORTS.js += [
 ]
 
 SOURCES += [
+    'frontend/BytecodeCompiler.cpp',
+    'frontend/BytecodeEmitter.cpp',
+    'frontend/FoldConstants.cpp',
+    'frontend/NameFunctions.cpp',
+    'frontend/ParseNode.cpp',
+    'frontend/TokenStream.cpp',
     'gc/Allocator.cpp',
     'gc/Barrier.cpp',
     'gc/GCTrace.cpp',
@@ -324,6 +329,8 @@ SOURCES += [
 
 # jsarray.cpp and jsatom.cpp cannot be built in unified mode because
 # xpcshell is broken during packaging when compiled with gcc-4.8.2
+# frontend/Parser.cpp cannot be built in unified mode because of explicit
+# template instantiations.
 # jsdtoa.cpp cannot be built in unified mode because we want to suppress
 # compiler warnings in third-party dtoa.c.
 # jsmath.cpp cannot be built in unified mode because it needs to pull rand_s
@@ -334,6 +341,7 @@ SOURCES += [
 # instantiations may or may not be needed depending on what it gets bundled
 # with.
 SOURCES += [
+    'frontend/Parser.cpp',
     'gc/StoreBuffer.cpp',
     'jsarray.cpp',
     'jsatom.cpp',
@@ -542,6 +550,13 @@ else:
     SOURCES += [
         'perf/pm_stub.cpp'
     ]
+
+GENERATED_FILES += ['frontend/ReservedWordsGenerated.h']
+ReservedWordsGenerated = GENERATED_FILES['frontend/ReservedWordsGenerated.h']
+ReservedWordsGenerated.script = 'frontend/GenerateReservedWords.py'
+ReservedWordsGenerated.inputs += [
+    'frontend/ReservedWords.h'
+]
 
 # JavaScript must be built shared, even for static builds, as it is used by
 # other modules which are always built shared. Failure to do so results in
