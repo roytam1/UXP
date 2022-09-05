@@ -128,19 +128,15 @@ if not CONFIG['JS_DISABLE_SHELL']:
 SOURCES += [
     'jsalloc.cpp',
     'jsapi.cpp',
-    'jsarray.cpp',
-    'jsatom.cpp',
     'jsbool.cpp',
     'jscntxt.cpp',
     'jscompartment.cpp',
     'jsdate.cpp',
-    'jsdtoa.cpp',
     'jsexn.cpp',
     'jsfriendapi.cpp',
     'jsfun.cpp',
     'jsgc.cpp',
     'jsiter.cpp',
-    'jsmath.cpp',
     'jsnativestack.cpp',
     'jsnum.cpp',
     'jsobj.cpp',
@@ -150,16 +146,7 @@ SOURCES += [
     'jspropertytree.cpp',
     'jsscript.cpp',
     'jsstr.cpp',
-    'jsutil.cpp',
     'jsweakmap.cpp',
-]
-
-# Suppress warnings in third-party code.
-# We are keeping this in the main moz.build because it is file specific
-if CONFIG['CLANG_CXX'] or CONFIG['GNU_CXX']:
-    SOURCES['jsdtoa.cpp'].flags += ['-Wno-implicit-fallthrough']
-
-SOURCES += [
     'vm/ArgumentsObject.cpp',
     'vm/ArrayBufferObject.cpp',
     'vm/AsyncFunction.cpp',
@@ -179,7 +166,6 @@ SOURCES += [
     'vm/GlobalObject.cpp',
     'vm/HelperThreads.cpp',
     'vm/Id.cpp',
-    'vm/Initialization.cpp',
     'vm/Interpreter.cpp',
     'vm/JSONParser.cpp',
     'vm/MemoryMetrics.cpp',
@@ -219,6 +205,26 @@ SOURCES += [
     'vm/Value.cpp',
     'vm/WeakMapPtr.cpp',
     'vm/Xdr.cpp',
+]
+
+# jsarray.cpp and jsatom.cpp cannot be built in unified mode because
+# xpcshell is broken during packaging when compiled with gcc-4.8.2
+# jsdtoa.cpp cannot be built in unified mode because we want to suppress
+# compiler warnings in third-party dtoa.c.
+# jsmath.cpp cannot be built in unified mode because it needs to pull rand_s
+# from <stdlib.h> on Windows through a preprocessor define.
+# jsutil.cpp cannot be built in unified mode because it is needed for
+# check-vanilla-allocations.
+# StoreBuffer.cpp cannot be built in unified because its template
+# instantiations may or may not be needed depending on what it gets bundled
+# with.
+SOURCES += [
+    'jsarray.cpp',
+    'jsatom.cpp',
+    'jsdtoa.cpp',
+    'jsmath.cpp',
+    'jsutil.cpp',
+    'vm/Initialization.cpp',
 ]
 
 if CONFIG['JS_POSIX_NSPR']:
@@ -311,5 +317,10 @@ OS_LIBS += CONFIG['REALTIME_LIBS']
 NO_EXPAND_LIBS = True
 
 DIST_INSTALL = True
+
+# Suppress warnings in third-party code.
+# We are keeping this in the main moz.build because it is file specific
+if CONFIG['CLANG_CXX'] or CONFIG['GNU_CXX']:
+    SOURCES['jsdtoa.cpp'].flags += ['-Wno-implicit-fallthrough']
 
 
