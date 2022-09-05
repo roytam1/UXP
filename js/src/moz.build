@@ -116,9 +116,6 @@ DIRS += [
     'wasm',
 ]
 
-if CONFIG['JS_HAS_CTYPES']:
-    DIRS += ['ctypes']
-
 if CONFIG['JS_BUNDLED_EDITLINE']:
     DIRS += ['editline']
 
@@ -128,8 +125,8 @@ if CONFIG['JS_NEW_REGEXP']:
 if not CONFIG['JS_DISABLE_SHELL']:
     DIRS += ['shell']
 
-if CONFIG['MOZ_VTUNE']:
-    DIRS += ['vtune']
+if CONFIG['JS_HAS_CTYPES']:
+    DIRS += ['ctypes']
 
 SOURCES += [
     'jsalloc.cpp',
@@ -237,6 +234,11 @@ if CONFIG['ENABLE_TRACE_LOGGING']:
         'vm/TraceLogging.cpp',
         'vm/TraceLoggingGraph.cpp',
         'vm/TraceLoggingTypes.cpp',
+    ]
+
+if CONFIG['MOZ_VTUNE']:
+    SOURCES += [
+        'vtune/jitprofiling.c'
     ]
 
 # JavaScript must be built shared, even for static builds, as it is used by
