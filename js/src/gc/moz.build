@@ -24,8 +24,6 @@ SOURCES += [
     'Statistics.cpp',
     'StoreBuffer.cpp',
     'Tracer.cpp',
+    'Verifier.cpp',
     'Zone.cpp',
 ]
-
-if CONFIG['MOZ_DEBUG']:
-    SOURCES += ['Verifier.cpp']
