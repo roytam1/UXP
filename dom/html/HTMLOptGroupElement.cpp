@@ -13,6 +13,10 @@
 #include "nsIFrame.h"
 #include "nsIFormControlFrame.h"
 
+#if defined(MOZ_X11)
+#include "X11UndefineNone.h"
+#endif
+
 NS_IMPL_NS_NEW_HTML_ELEMENT(OptGroup)
 
 namespace mozilla {
