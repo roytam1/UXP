@@ -7,6 +7,22 @@ include('js-config.mozbuild')
 include('js-cxxflags.mozbuild')
 include('js-testing.mozbuild')
 
+DIRS += [
+    'builtin',
+    'devtools',
+    'ds',
+    'frontend',
+]
+
+if CONFIG['JS_BUNDLED_EDITLINE']:
+    DIRS += ['editline']
+
+if CONFIG['JS_NEW_REGEXP']:
+    DIRS += ['new-regexp']
+
+if not CONFIG['JS_DISABLE_SHELL']:
+    DIRS += ['shell']
+
 CONFIGURE_SUBST_FILES += [
     'js-config',
     'js.pc',
@@ -101,22 +117,6 @@ EXPORTS.js += [
     '../public/Vector.h',
     '../public/WeakMapPtr.h',
 ]
-
-DIRS += [
-    'builtin',
-    'devtools',
-    'ds',
-    'frontend',
-]
-
-if CONFIG['JS_BUNDLED_EDITLINE']:
-    DIRS += ['editline']
-
-if CONFIG['JS_NEW_REGEXP']:
-    DIRS += ['new-regexp']
-
-if not CONFIG['JS_DISABLE_SHELL']:
-    DIRS += ['shell']
 
 SOURCES += [
     'gc/Allocator.cpp',
