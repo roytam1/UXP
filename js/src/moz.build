@@ -108,7 +108,6 @@ DIRS += [
     'ds',
     'frontend',
     'gc',
-    'irregexp',
 ]
 
 if CONFIG['JS_BUNDLED_EDITLINE']:
@@ -121,6 +120,14 @@ if not CONFIG['JS_DISABLE_SHELL']:
     DIRS += ['shell']
 
 SOURCES += [
+    'irregexp/NativeRegExpMacroAssembler.cpp',
+    'irregexp/RegExpAST.cpp',
+    'irregexp/RegExpCharacters.cpp',
+    'irregexp/RegExpEngine.cpp',
+    'irregexp/RegExpInterpreter.cpp',
+    'irregexp/RegExpMacroAssembler.cpp',
+    'irregexp/RegExpParser.cpp',
+    'irregexp/RegExpStack.cpp',
     'jit/AliasAnalysis.cpp',
     'jit/AliasAnalysisShared.cpp',
     'jit/AlignmentMaskAnalysis.cpp',
