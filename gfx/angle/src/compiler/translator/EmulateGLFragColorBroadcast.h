@@ -11,10 +11,12 @@
 #define COMPILER_TRANSLATOR_EMULATEGLFRAGCOLORBROADCAST_H_
 
 #include <vector>
+// For COMPILER_EXPORT
+#include "GLSLANG/ShaderLang.h"
 
 namespace sh
 {
-struct OutputVariable;
+struct COMPILER_EXPORT OutputVariable;
 }
 
 class TIntermNode;

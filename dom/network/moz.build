@@ -26,7 +26,7 @@ EXPORTS.mozilla.dom.network += [
     'UDPSocketParent.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'Connection.cpp',
     'TCPServerSocket.cpp',
     'TCPServerSocketChild.cpp',

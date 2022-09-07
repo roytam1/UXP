@@ -79,7 +79,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] in {
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     DEFINES['UNICODE'] = True
     DEFINES['_UNICODE'] = True
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'skia/src/fonts/SkFontMgr_indirect.cpp',
         'skia/src/fonts/SkRemotableFontMgr.cpp',
     ]
@@ -415,7 +415,7 @@ def write_sources(f, values, indent):
     else:
       sources['unified'].add(item)
 
-  write_list(f, "SOURCES", sources['unified'], indent)
+  write_list(f, "UNIFIED_SOURCES", sources['unified'], indent)
   write_list(f, "SOURCES", sources['nonunified'], indent)
   
 def write_list(f, name, values, indent):

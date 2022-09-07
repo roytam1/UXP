@@ -8,7 +8,7 @@ EXPORTS.mozilla.dom += [
     'WorkletGlobalScope.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'Worklet.cpp',
     'WorkletGlobalScope.cpp',
 ]

@@ -10,7 +10,7 @@ EXPORTS += [
     'WebMDemuxer.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'WebMBufferedParser.cpp',
     'WebMDecoder.cpp',
     'WebMDemuxer.cpp',

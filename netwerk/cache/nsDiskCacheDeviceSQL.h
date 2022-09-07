@@ -21,6 +21,10 @@
 #include "nsWeakReference.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/Mutex.h"
+#include "nsNetCID.h"
+#include "nsNetUtil.h"
+
+static NS_DEFINE_CID(kCacheServiceCID, NS_CACHESERVICE_CID);
 
 class nsIURI;
 class nsOfflineCacheDevice;

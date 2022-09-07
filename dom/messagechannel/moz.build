@@ -12,7 +12,7 @@ EXPORTS.mozilla.dom += [
     'MessagePortParent.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'MessageChannel.cpp',
     'MessagePort.cpp',
     'MessagePortChild.cpp',

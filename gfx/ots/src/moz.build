@@ -8,7 +8,7 @@ EXPORTS += [
     '../include/ots-memory-stream.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'avar.cc',
     'cff.cc',
     'cff_charstring.cc',

@@ -44,7 +44,7 @@ EXPORTS.mozilla.dom.indexedDB += [
     'SerializationHelpers.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'ActorsChild.cpp',
     'FileInfo.cpp',
     'FileSnapshot.cpp',

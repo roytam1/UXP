@@ -42,11 +42,18 @@ EXPORTS.mozilla.net += [
     'TimingStruct.h',
 ]
 
+# ASpdySession.cpp and nsHttpAuthCache cannot be built in unified mode because
+# they use plarena.h.
 SOURCES += [
-    'AltDataOutputStreamChild.cpp',
-    'AltDataOutputStreamParent.cpp',
     'AlternateServices.cpp',
     'ASpdySession.cpp',
+    'nsHttpAuthCache.cpp',
+    'nsHttpChannelAuthProvider.cpp', # redefines GetAuthType
+]
+
+UNIFIED_SOURCES += [
+    'AltDataOutputStreamChild.cpp',
+    'AltDataOutputStreamParent.cpp',
     'CacheControlParser.cpp',
     'ConnectionDiagnostics.cpp',
     'Http2Compression.cpp',
@@ -62,17 +69,14 @@ SOURCES += [
     'nsCORSListenerProxy.cpp',
     'nsHttp.cpp',
     'nsHttpActivityDistributor.cpp',
-    'nsHttpAuthCache.cpp',
     'nsHttpAuthManager.cpp',
     'nsHttpBasicAuth.cpp',
     'nsHttpChannel.cpp',
-    'nsHttpChannelAuthProvider.cpp',
     'nsHttpChunkedDecoder.cpp',
     'nsHttpConnection.cpp',
     'nsHttpConnectionInfo.cpp',
     'nsHttpConnectionMgr.cpp',
     'nsHttpDigestAuth.cpp',
-    'nsHttpHandler.cpp',
     'nsHttpHeaderArray.cpp',
     'nsHttpNTLMAuth.cpp',
     'nsHttpPipeline.cpp',
@@ -82,6 +86,11 @@ SOURCES += [
     'NullHttpChannel.cpp',
     'NullHttpTransaction.cpp',
     'TunnelUtils.cpp',
+]
+
+# These files cannot be built in unified mode because of OS X headers.
+SOURCES += [
+    'nsHttpHandler.cpp',
 ]
 
 IPDL_SOURCES += [

@@ -17,7 +17,7 @@ EXPORTS.mozilla.dom += [
     'PerformanceTiming.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'Performance.cpp',
     'PerformanceEntry.cpp',
     'PerformanceMainThread.cpp',

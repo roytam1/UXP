@@ -10,7 +10,7 @@ EXPORTS.mozilla.dom += [
     'TextEncoder.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'EncodingUtils.cpp',
     'FallbackEncoding.cpp',
     'TextDecoder.cpp',

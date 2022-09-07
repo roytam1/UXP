@@ -13,7 +13,7 @@ if CONFIG['MOZ_WEBRTC']:
         'VideoEngine.h',
         'VideoFrameUtils.h'
     ]
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'CamerasChild.cpp',
         'CamerasParent.cpp',
         'LoadManager.cpp',
@@ -77,8 +77,7 @@ EXPORTS.mozilla.media += ['CamerasTypes.h',
                           'MediaTaskUtils.h',
                           'MediaUtils.h',
 ]
-
-SOURCES += [
+UNIFIED_SOURCES += [
     'MediaChild.cpp',
     'MediaParent.cpp',
     'MediaSystemResourceClient.cpp',
