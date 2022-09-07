@@ -17,7 +17,7 @@ EXPORTS.mozilla.layout += [
 
 XPIDL_MODULE = 'layout_printing'
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'ipc/RemotePrintJobChild.cpp',
     'ipc/RemotePrintJobParent.cpp',
     'nsPagePrintTimer.cpp',

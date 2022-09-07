@@ -118,7 +118,7 @@ EXPORTS.mozilla += [
     'StaticPresData.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'AccessibleCaret.cpp',
     'AccessibleCaretEventHub.cpp',
     'AccessibleCaretManager.cpp',
@@ -150,11 +150,9 @@ SOURCES += [
     'nsLayoutDebugger.cpp',
     'nsLayoutHistoryState.cpp',
     'nsLayoutUtils.cpp',
-    'nsPresArena.cpp',
     'nsPresContext.cpp',
     'nsPresShell.cpp',
     'nsQuoteList.cpp',
-    'nsRefreshDriver.cpp',
     'nsStyleChangeList.cpp',
     'nsStyleSheetService.cpp',
     'PaintTracker.cpp',
@@ -168,6 +166,13 @@ SOURCES += [
     'StaticPresData.cpp',
     'TouchManager.cpp',
     'ZoomConstraintsClient.cpp',
+]
+
+# nsPresArena.cpp needs to be built separately because it uses plarena.h.
+# nsRefreshDriver.cpp needs to be built separately because of name clashes in the OS X headers
+SOURCES += [
+    'nsPresArena.cpp',
+    'nsRefreshDriver.cpp',
 ]
 
 if CONFIG['ENABLE_TESTS']:
