@@ -5,7 +5,7 @@
 
 Library('editline')
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'editline.c',
     'sysunix.c',
 ]

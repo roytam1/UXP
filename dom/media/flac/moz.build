@@ -9,7 +9,7 @@ EXPORTS += [
     'FlacFrameParser.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'FlacDecoder.cpp',
     'FlacDemuxer.cpp',
     'FlacFrameParser.cpp',

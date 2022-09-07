@@ -14,7 +14,7 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = 'necko_file'
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'nsFileChannel.cpp',
     'nsFileProtocolHandler.cpp',
 ]

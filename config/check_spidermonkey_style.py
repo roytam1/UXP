@@ -89,7 +89,7 @@ included_inclnames_to_ignore = set([
     'unicode/udisplaycontext.h',# ICU
     'unicode/uenum.h',          # ICU
     'unicode/uniset.h',         # ICU
-    'unicode/unorm.h',          # ICU
+    'unicode/unorm2.h',         # ICU
     'unicode/unum.h',           # ICU
     'unicode/unumsys.h',        # ICU
     'unicode/upluralrules.h',   # ICU

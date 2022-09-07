@@ -12,7 +12,7 @@ SOURCES += [
     'nsGeolocation.cpp',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'MLSFallback.cpp',
     'nsGeoPosition.cpp',
 ]

@@ -14,7 +14,7 @@ EXPORTS += [
     'nsLayoutDebugCIID.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'nsDebugFactory.cpp',
     'nsLayoutDebugCLH.cpp',
     'nsLayoutDebuggingTools.cpp',

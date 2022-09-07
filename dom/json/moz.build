@@ -5,7 +5,9 @@
 
 EXPORTS += ['nsJSON.h']
 
-SOURCES += ['nsJSON.cpp']
+UNIFIED_SOURCES += [
+    'nsJSON.cpp',
+]
 
 LOCAL_INCLUDES += ['/dom/base']
 

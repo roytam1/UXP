@@ -36,11 +36,6 @@ EXPORTS.mozilla += [
 ]
 
 UNIFIED_SOURCES += [
-    'KeyframeEffect.cpp',
-    'KeyframeEffectReadOnly.cpp',
-]
-
-SOURCES += [
     'Animation.cpp',
     'AnimationEffectReadOnly.cpp',
     'AnimationEffectTiming.cpp',
@@ -54,7 +49,9 @@ SOURCES += [
     'DocumentTimeline.cpp',
     'EffectCompositor.cpp',
     'EffectSet.cpp',
+    'KeyframeEffect.cpp',
     'KeyframeEffectParams.cpp',
+    'KeyframeEffectReadOnly.cpp',
     'KeyframeUtils.cpp',
     'PendingAnimationTracker.cpp',
     'TimingParams.cpp',
