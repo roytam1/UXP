@@ -5,7 +5,7 @@
 
 Program('plugin-hang-ui')
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'MiniShmChild.cpp',
     'PluginHangUIChild.cpp',
 ]

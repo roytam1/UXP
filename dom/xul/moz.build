@@ -18,7 +18,7 @@ if CONFIG['MOZ_XUL']:
         'nsIXULDocument.h',
     ]
 
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'nsXULCommandDispatcher.cpp',
         'nsXULContentSink.cpp',
         'nsXULElement.cpp',
