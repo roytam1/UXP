@@ -20,7 +20,7 @@ EXPORTS += [
     'nsDeleteDir.h'
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'nsApplicationCacheService.cpp',
     'nsCache.cpp',
     'nsCacheEntry.cpp',

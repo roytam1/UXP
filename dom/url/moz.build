@@ -8,7 +8,7 @@ EXPORTS.mozilla.dom += [
     'URLSearchParams.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'URL.cpp',
     'URLSearchParams.cpp',
 ]

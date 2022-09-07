@@ -31,29 +31,6 @@ GetCspParserLog()
 #define CSPPARSERLOG(args) MOZ_LOG(GetCspParserLog(), mozilla::LogLevel::Debug, args)
 #define CSPPARSERLOGENABLED() MOZ_LOG_TEST(GetCspParserLog(), mozilla::LogLevel::Debug)
 
-static const char16_t COLON        = ':';
-static const char16_t SEMICOLON    = ';';
-static const char16_t SLASH        = '/';
-static const char16_t PLUS         = '+';
-static const char16_t DASH         = '-';
-static const char16_t DOT          = '.';
-static const char16_t UNDERLINE    = '_';
-static const char16_t TILDE        = '~';
-static const char16_t WILDCARD     = '*';
-static const char16_t SINGLEQUOTE  = '\'';
-static const char16_t OPEN_CURL    = '{';
-static const char16_t CLOSE_CURL   = '}';
-static const char16_t NUMBER_SIGN  = '#';
-static const char16_t QUESTIONMARK = '?';
-static const char16_t PERCENT_SIGN = '%';
-static const char16_t EXCLAMATION  = '!';
-static const char16_t DOLLAR       = '$';
-static const char16_t AMPERSAND    = '&';
-static const char16_t OPENBRACE    = '(';
-static const char16_t CLOSINGBRACE = ')';
-static const char16_t EQUALS       = '=';
-static const char16_t ATSYMBOL     = '@';
-
 static const uint32_t kSubHostPathCharacterCutoff = 512;
 
 static const char *const kHashSourceValidFns [] = { "sha256", "sha384", "sha512" };
@@ -156,27 +133,6 @@ nsCSPParser::nsCSPParser(cspTokens& aTokens,
 nsCSPParser::~nsCSPParser()
 {
   CSPPARSERLOG(("nsCSPParser::~nsCSPParser"));
-}
-
-static bool
-isCharacterToken(char16_t aSymbol)
-{
-  return (aSymbol >= 'a' && aSymbol <= 'z') ||
-         (aSymbol >= 'A' && aSymbol <= 'Z');
-}
-
-static bool
-isNumberToken(char16_t aSymbol)
-{
-  return (aSymbol >= '0' && aSymbol <= '9');
-}
-
-static bool
-isValidHexDig(char16_t aHexDig)
-{
-  return (isNumberToken(aHexDig) ||
-          (aHexDig >= 'A' && aHexDig <= 'F') ||
-          (aHexDig >= 'a' && aHexDig <= 'f'));
 }
 
 void

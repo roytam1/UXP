@@ -7,7 +7,7 @@ EXPORTS.mozilla.net += [
     'DataChannelParent.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'DataChannelChild.cpp',
     'DataChannelParent.cpp',
     'nsDataChannel.cpp',

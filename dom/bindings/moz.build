@@ -84,7 +84,7 @@ LOCAL_INCLUDES += [
     '/media/webrtc/signaling/src/peerconnection',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'BindingUtils.cpp',
     'CallbackInterface.cpp',
     'CallbackObject.cpp',

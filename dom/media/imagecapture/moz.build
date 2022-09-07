@@ -7,7 +7,7 @@ EXPORTS.mozilla.dom += [
     'ImageCapture.h'
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'CaptureTask.cpp',
     'ImageCapture.cpp',
 ]
