@@ -109,7 +109,7 @@ SOURCES += [
     'cairo-surface-wrapper.c', #  redefinition of '_copy_transformed_pattern'
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'cairo-analysis-surface.c',
     'cairo-arc.c',
     'cairo-array.c',

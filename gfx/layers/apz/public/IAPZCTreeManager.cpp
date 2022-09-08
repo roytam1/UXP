@@ -9,20 +9,10 @@
 #include "InputData.h"                      // for InputData, etc
 #include "mozilla/EventStateManager.h"      // for WheelPrefs
 #include "mozilla/layers/APZThreadUtils.h"  // for AssertOnCompositorThread, etc
-#include "mozilla/MouseEvents.h"            // for WidgetMouseEvent
 #include "mozilla/TouchEvents.h"            // for WidgetTouchEvent
 
 namespace mozilla {
 namespace layers {
-
-static bool
-WillHandleMouseEvent(const WidgetMouseEventBase& aEvent)
-{
-  return aEvent.mMessage == eMouseMove ||
-         aEvent.mMessage == eMouseDown ||
-         aEvent.mMessage == eMouseUp ||
-         aEvent.mMessage == eDragEnd;
-}
 
 // Returns whether or not a wheel event action will be (or was) performed by
 // APZ. If this returns true, the event must not perform a synchronous
