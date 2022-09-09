@@ -5,7 +5,7 @@
 
 SharedLibrary('plugin_child_interpose')
 
-SOURCES += [ "%s.mm" % (LIBRARY_NAME) ]
+UNIFIED_SOURCES += [ "%s.mm" % (LIBRARY_NAME) ]
 
 OS_LIBS += ['-framework Carbon']
 

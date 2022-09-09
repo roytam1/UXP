@@ -117,7 +117,18 @@ if CONFIG['CLANG_CL'] or not CONFIG['_MSC_VER']:
             SOURCES[f].flags += ['-mavx']
         elif f.endswith('avx2.c'):
             SOURCES[f].flags += ['-mavx2']
-
+if CONFIG['_MSC_VER']:
+    for f in SOURCES:
+        # MSVC massively chokes on inlining these SIMD sources, so disable inlining for them.
+        if f.endswith('cdef_block_sse2.c'):
+            SOURCES[f].flags += ['-Ob0']
+        elif f.endswith('cdef_block_ssse3.c'):
+            SOURCES[f].flags += ['-Ob0']
+        elif f.endswith('cdef_block_sse4.c'):
+            SOURCES[f].flags += ['-Ob0']
+        elif f.endswith('cdef_block_avx2.c'):
+            SOURCES[f].flags += ['-Ob0']
+            
 # Suppress warnings in third-party code.
 if CONFIG['GNU_CC'] or CONFIG['CLANG_CL']:
     CFLAGS += [

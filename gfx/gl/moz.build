@@ -64,7 +64,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         'SharedSurfaceD3D11Interop.h',
         'WGLLibrary.h',
     ]
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'GLContextProviderWGL.cpp',
         'SharedSurfaceANGLE.cpp',
         'SharedSurfaceD3D11Interop.cpp',
@@ -114,7 +114,7 @@ elif gl_provider == 'GLX':
         'SharedSurfaceGLX.h'
     ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'DecomposeIntoNoRepeatTriangles.cpp',
     'EGLUtils.cpp',
     'GfxTexturesReporter.cpp',

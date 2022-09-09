@@ -6,9 +6,6 @@
 
 #include "ImageBitmapColorUtils.h"
 
-#include "js/LegacyIntTypes.h"
-#include <cmath>
-
 namespace mozilla {
 namespace dom {
 

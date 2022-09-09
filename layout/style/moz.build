@@ -139,7 +139,7 @@ EXPORTS.mozilla.css += [
     'StyleRule.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'AnimationCollection.cpp',
     'AnimationCommon.cpp',
     'CounterStyleManager.cpp',
@@ -170,7 +170,6 @@ SOURCES += [
     'nsCSSProps.cpp',
     'nsCSSPseudoClasses.cpp',
     'nsCSSPseudoElements.cpp',
-    'nsCSSRuleProcessor.cpp',
     'nsCSSRules.cpp',
     'nsCSSScanner.cpp',
     'nsCSSValue.cpp',
@@ -183,7 +182,6 @@ SOURCES += [
     'nsFontFaceUtils.cpp',
     'nsHTMLCSSStyleSheet.cpp',
     'nsHTMLStyleSheet.cpp',
-    'nsLayoutStylesheetCache.cpp',
     'nsMediaFeatures.cpp',
     'nsNthIndexCache.cpp',
     'nsROCSSPrimitiveValue.cpp',
@@ -207,6 +205,14 @@ SOURCES += [
     'StyleRule.cpp',
     'StyleSheet.cpp',
     'SVGAttrAnimationRuleProcessor.cpp',
+]
+
+# nsCSSRuleProcessor.cpp needs to be built separately because it uses plarena.h.
+# nsLayoutStylesheetCache.cpp needs to be built separately because it uses
+# nsExceptionHandler.h, which includes windows.h.
+SOURCES += [
+    'nsCSSRuleProcessor.cpp',
+    'nsLayoutStylesheetCache.cpp',
 ]
 
 EXTRA_COMPONENTS += [
