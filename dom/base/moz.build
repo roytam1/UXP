@@ -222,7 +222,7 @@ EXPORTS.mozilla.dom += [
     'WindowOrientationObserver.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'AnonymousContent.cpp',
     'Attr.cpp',
     'BarProps.cpp',
@@ -238,7 +238,6 @@ SOURCES += [
     'DirectionalityUtils.cpp',
     'DocGroup.cpp',
     'DocumentFragment.cpp',
-    'DocumentOrShadowRoot.cpp',
     'DocumentType.cpp',
     'DOMCursor.cpp',
     'DOMError.cpp',
@@ -373,12 +372,14 @@ SOURCES += [
 ]
 
 if CONFIG['MOZ_WEBRTC']:
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'nsDOMDataChannel.cpp',
     ]
 
 # these files couldn't be in UNIFIED_SOURCES for now for reasons given below:
 SOURCES += [
+    # DocumentOrShadowRoot conflicts with mozilla::dom::ShadowRoot
+    'DocumentOrShadowRoot.cpp',
     # Several conflicts with other bindings.
     'DOMIntersectionObserver.cpp',
     # Because of OS X headers.
