@@ -41,7 +41,7 @@ EXPORTS.mozilla.dom += [
 ]
 
 # Canvas 2D and common sources
-SOURCES += [
+UNIFIED_SOURCES += [
     'CanvasImageCache.cpp',
     'CanvasRenderingContext2D.cpp',
     'CanvasRenderingContextHelper.cpp',
@@ -59,7 +59,7 @@ SOURCES += [
 ]
 
 # WebGL Sources
-SOURCES += [
+UNIFIED_SOURCES += [
     'TexUnpackBlob.cpp',
     'WebGL1Context.cpp',
     'WebGL1ContextUniforms.cpp',

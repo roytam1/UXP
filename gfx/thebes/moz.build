@@ -121,9 +121,11 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         'PrintTargetPDF.h',
         'PrintTargetWindows.h',
     ]
+    UNIFIED_SOURCES += [
+        'gfxGDIFontList.cpp',
+    ]
     SOURCES += [
         'gfxGDIFont.cpp',
-        'gfxGDIFontList.cpp',
         'gfxWindowsNativeDrawing.cpp',
         'gfxWindowsPlatform.cpp',
         'gfxWindowsSurface.cpp',
@@ -131,9 +133,11 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         'PrintTargetWindows.cpp',
     ]
     if CONFIG['MOZ_ENABLE_DWRITE_FONT']:
+        UNIFIED_SOURCES += [
+            'gfxDWriteFontList.cpp',
+        ]
         SOURCES += [
             'gfxDWriteCommon.cpp',
-            'gfxDWriteFontList.cpp',
             'gfxDWriteFonts.cpp',
         ]
 
@@ -145,14 +149,27 @@ if CONFIG['INTEL_ARCHITECTURE']:
     SOURCES['gfxAlphaRecoverySSE2.cpp'].flags += CONFIG['SSE2_FLAGS']
 
 SOURCES += [
-    'CJKCompatSVS.cpp',
     'ContextStateTracker.cpp',
-    'gfxAlphaRecovery.cpp',
+    # Includes mac system header conflicting with point/size,
+    # and includes glxXlibSurface.h which drags in Xrender.h
     'gfxASurface.cpp',
+    # on X11, gfxDrawable.cpp includes X headers for an old workaround which
+    # we could consider removing soon (affects Ubuntus older than 10.04 LTS)
+    # which currently prevent it from joining UNIFIED_SOURCES.
+    'gfxDrawable.cpp',
+    # gfxPlatform.cpp includes mac system header conflicting with point/size
+    'gfxPlatform.cpp',
+    'gfxPrefs.cpp',
+    'PrintTarget.cpp',
+    'PrintTargetThebes.cpp',
+]
+
+UNIFIED_SOURCES += [
+    'CJKCompatSVS.cpp',
+    'gfxAlphaRecovery.cpp',
     'gfxBaseSharedMemorySurface.cpp',
     'gfxBlur.cpp',
     'gfxContext.cpp',
-    'gfxDrawable.cpp',
     'gfxFont.cpp',
     'gfxFontEntry.cpp',
     'gfxFontFeatures.cpp',
@@ -168,9 +185,7 @@ SOURCES += [
     'gfxMathTable.cpp',
     'gfxMatrix.cpp',
     'gfxPattern.cpp',
-    'gfxPlatform.cpp',
     'gfxPlatformFontList.cpp',
-    'gfxPrefs.cpp',
     'gfxRect.cpp',
     'gfxScriptItemizer.cpp',
     'gfxSkipChars.cpp',
@@ -179,18 +194,16 @@ SOURCES += [
     'gfxUserFontSet.cpp',
     'gfxUtils.cpp',
     'nsUnicodeRange.cpp',
-    'PrintTarget.cpp',
-    'PrintTargetThebes.cpp',
     'SoftwareVsyncSource.cpp',
     'VsyncSource.cpp',
 ]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'gfxMacPlatformFontList.mm',
     ]
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'D3D11Checks.cpp',
         'DeviceManagerDx.cpp',
     ]

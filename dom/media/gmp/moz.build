@@ -75,14 +75,14 @@ EXPORTS += [
 # We link GMPLoader into xul on B2G/Fennec as its code does not need to be
 # covered by a DRM vendor's voucher.
 if CONFIG['OS_TARGET'] == 'Android':
-    SOURCES += [
+    UNIFIED_SOURCES += [
       'GMPLoader.cpp',
     ]
     USE_LIBS += [
         'rlz',
     ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'GMPAudioDecoderChild.cpp',
     'GMPAudioDecoderParent.cpp',
     'GMPAudioHost.cpp',

@@ -43,7 +43,7 @@ EXPORTS.mozilla.dom += [
     'ScrollBoxObject.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'BoxObject.cpp',
     'nsBox.cpp',
     'nsBoxFrame.cpp',
@@ -63,7 +63,7 @@ SOURCES += [
 ]
 
 if CONFIG['MOZ_XUL']:
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'ContainerBoxObject.cpp',
         'ListBoxObject.cpp',
         'MenuBoxObject.cpp',
