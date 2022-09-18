@@ -665,7 +665,7 @@ js::regexp_multiline(JSContext* cx, unsigned argc, JS::Value* vp)
 
 // ES 2018 dotAll
 MOZ_ALWAYS_INLINE bool
-regexp_dotall_impl(JSContext* cx, const CallArgs& args)
+regexp_dotAll_impl(JSContext* cx, const CallArgs& args)
 {
     MOZ_ASSERT(IsRegExpInstanceOrPrototype(args.thisv()));
 
@@ -675,15 +675,15 @@ regexp_dotall_impl(JSContext* cx, const CallArgs& args)
     }
 
     Rooted<RegExpObject*> reObj(cx, &args.thisv().toObject().as<RegExpObject>());
-    args.rval().setBoolean(reObj->dotall());
+    args.rval().setBoolean(reObj->dotAll());
     return true;
 }
 
 bool
-js::regexp_dotall(JSContext* cx, unsigned argc, JS::Value* vp)
+js::regexp_dotAll(JSContext* cx, unsigned argc, JS::Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
-    return CallNonGenericMethod<IsRegExpInstanceOrPrototype, regexp_dotall_impl>(cx, args);
+    return CallNonGenericMethod<IsRegExpInstanceOrPrototype, regexp_dotAll_impl>(cx, args);
 }
 
 // ES 2017 draft rev32 21.2.5.10.
@@ -781,7 +781,7 @@ const JSPropertySpec js::regexp_properties[] = {
     JS_PSG("source", regexp_source, 0),
     JS_PSG("sticky", regexp_sticky, 0),
     JS_PSG("unicode", regexp_unicode, 0),
-    JS_PSG("dotall", regexp_dotall, 0),
+    JS_PSG("dotAll", regexp_dotAll, 0),
     JS_PS_END
 };
 
@@ -1667,10 +1667,10 @@ js::RegExpPrototypeOptimizableRaw(JSContext* cx, JSObject* proto)
         return false;
 
     JSNative dotAllGetter;
-    if (!GetOwnNativeGetterPure(cx, proto, NameToId(cx->names().dotall), &dotAllGetter))
+    if (!GetOwnNativeGetterPure(cx, proto, NameToId(cx->names().dotAll), &dotAllGetter))
         return false;
 
-    if (dotAllGetter != regexp_dotall)
+    if (dotAllGetter != regexp_dotAll)
         return false;
 
     // Check if @@match, @@search, and exec are own data properties,
