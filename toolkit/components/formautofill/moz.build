@@ -8,11 +8,10 @@ XPIDL_SOURCES += ['nsIFormAutofillContentService.idl']
 XPIDL_MODULE = 'toolkit_formautofill'
 
 EXTRA_COMPONENTS += [
+    'formautofill.manifest',
     'FormAutofillContentService.js',
     'FormAutofillStartup.js',
 ]
-
-EXTRA_PP_COMPONENTS += ['formautofill.manifest']
 
 EXTRA_JS_MODULES += [
     'content/RequestAutocompleteUI.jsm',

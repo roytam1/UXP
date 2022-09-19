@@ -134,6 +134,8 @@ struct BaseRect {
     result.y = std::max<T>(y, aRect.y);
     T right = std::min<T>(x + width, aRect.x + aRect.width);
     T bottom = std::min<T>(y + height, aRect.y + aRect.height);
+    // See bug 1457110, this function expects to -only- size to 0,0 if the
+    // width/height is explicitly negative.
     if (right < result.x || bottom < result.y) {
       result.width = 0;
       result.height = 0;
@@ -149,6 +151,9 @@ struct BaseRect {
   // of the x/y of *this and aRect.
   //
   // 'this' can be the same object as either aRect1 or aRect2
+  // Note: bug 1457110 changed this due to a regression from bug 1387399,
+  // but we never used that code, and it was subsequently backed out. We have
+  // SafeIntersect only so we can implement bug 1767365.
   bool IntersectRect(const Sub& aRect1, const Sub& aRect2)
   {
     *static_cast<Sub*>(this) = aRect1.Intersect(aRect2);
