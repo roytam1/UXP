@@ -24,6 +24,7 @@
 #include "nsITabChild.h"
 #include "private/pprio.h"
 #include "nsInputStreamPump.h"
+#include "nsStandardURL.h"
 
 using namespace mozilla;
 using namespace mozilla::net;
@@ -78,6 +79,24 @@ public:
 #endif
                 fullJarURI->GetAsciiSpec(mJarDirSpec);
             NS_ASSERTION(NS_SUCCEEDED(rv), "this shouldn't fail");
+        }
+        /* implement bug 1771774 without NS_MutateURI: use asciispec above */
+        if (ENTRY_IS_DIRECTORY(mJarEntry) && fullJarURI) {
+            RefPtr<nsStandardURL> cleanuri = new nsStandardURL();
+
+            if (NS_SUCCEEDED(cleanuri->Init(
+                             nsIStandardURL::URLTYPE_NO_AUTHORITY, -1,
+                             mJarDirSpec, nullptr, nullptr))) {
+                cleanuri->SetQuery(NS_LITERAL_CSTRING(""));
+                cleanuri->SetRef(NS_LITERAL_CSTRING(""));
+#ifdef DEBUG
+                nsresult rv =
+#endif
+                    cleanuri->GetAsciiSpec(mJarDirSpec);
+                NS_ASSERTION(NS_SUCCEEDED(rv), "this shouldn't fail either");
+            } else {
+                MOZ_CRASH("failed to clean jar URI");
+            }
         }
     }
 
@@ -577,48 +596,50 @@ nsJARChannel::GetSecurityInfo(nsISupports **aSecurityInfo)
     return NS_OK;
 }
 
+nsresult
+nsJARChannel::SetContentTypeGuess() {
+    //
+    // generate content type and set it
+    //
+    const char *ext = nullptr, *fileName = mJarEntry.get();
+    int32_t len = mJarEntry.Length();
+
+    // check if we're displaying a directory
+    // mJarEntry will be empty if we're trying to display
+    // the topmost directory in a zip, e.g. jar:foo.zip!/
+    if (ENTRY_IS_DIRECTORY(mJarEntry)) {
+        mContentType.AssignLiteral(APPLICATION_HTTP_INDEX_FORMAT);
+    } else {
+        // not a directory, take a guess by its extension
+        for (int32_t i = len-1; i >= 0; i--) {
+            if (fileName[i] == '.') {
+                ext = &fileName[i + 1];
+                break;
+            }
+        }
+        if (ext) {
+            nsIMIMEService *mimeServ = gJarHandler->MimeService();
+            if (mimeServ)
+                mimeServ->GetTypeFromExtension(nsDependentCString(ext), mContentType);
+        }
+        if (mContentType.IsEmpty())
+            mContentType.AssignLiteral(UNKNOWN_CONTENT_TYPE);
+    }
+
+    return NS_OK;
+}
+
 NS_IMETHODIMP
-nsJARChannel::GetContentType(nsACString &result)
+nsJARChannel::GetContentType(nsACString &aResult)
 {
     // If the Jar file has not been open yet,
     // We return application/x-unknown-content-type
-    if (!mOpened) {
-      result.Assign(UNKNOWN_CONTENT_TYPE);
+    if (!mOpened || mContentType.IsEmpty()) {
+      aResult.Assign(UNKNOWN_CONTENT_TYPE);
       return NS_OK;
     }
 
-    if (mContentType.IsEmpty()) {
-
-        //
-        // generate content type and set it
-        //
-        const char *ext = nullptr, *fileName = mJarEntry.get();
-        int32_t len = mJarEntry.Length();
-
-        // check if we're displaying a directory
-        // mJarEntry will be empty if we're trying to display
-        // the topmost directory in a zip, e.g. jar:foo.zip!/
-        if (ENTRY_IS_DIRECTORY(mJarEntry)) {
-            mContentType.AssignLiteral(APPLICATION_HTTP_INDEX_FORMAT);
-        }
-        else {
-            // not a directory, take a guess by its extension
-            for (int32_t i = len-1; i >= 0; i--) {
-                if (fileName[i] == '.') {
-                    ext = &fileName[i + 1];
-                    break;
-                }
-            }
-            if (ext) {
-                nsIMIMEService *mimeServ = gJarHandler->MimeService();
-                if (mimeServ)
-                    mimeServ->GetTypeFromExtension(nsDependentCString(ext), mContentType);
-            }
-            if (mContentType.IsEmpty())
-                mContentType.AssignLiteral(UNKNOWN_CONTENT_TYPE);
-        }
-    }
-    result = mContentType;
+    aResult = mContentType;
     return NS_OK;
 }
 
@@ -729,7 +750,7 @@ nsJARChannel::Open(nsIInputStream **stream)
         return rv;
 
     input.forget(stream);
-    mOpened = true;
+    SetOpened();
     // local files are always considered safe
     mIsUnsafe = false;
     return NS_OK;
@@ -742,6 +763,14 @@ nsJARChannel::Open2(nsIInputStream** aStream)
     nsresult rv = nsContentSecurityManager::doContentSecurityCheck(this, listener);
     NS_ENSURE_SUCCESS(rv, rv);
     return Open(aStream);
+}
+
+void
+nsJARChannel::SetOpened() {
+    MOZ_ASSERT(!mOpened, "Opening channel twice?");
+    mOpened = true;
+    // Compute the content type now.
+    NS_ASSERTION(NS_SUCCEEDED(SetContentTypeGuess()), "content type guess failure");
 }
 
 NS_IMETHODIMP
@@ -826,7 +855,7 @@ nsJARChannel::AsyncOpen(nsIStreamListener *listener, nsISupports *ctx)
     if (mLoadGroup)
         mLoadGroup->AddRequest(this, nullptr);
 
-    mOpened = true;
+    SetOpened();
 
     return NS_OK;
 }

@@ -194,7 +194,7 @@ class RegExpShared
     bool multiline() const              { return flags & MultilineFlag; }
     bool sticky() const                 { return flags & StickyFlag; }
     bool unicode() const                { return flags & UnicodeFlag; }
-    bool dotall() const                 { return flags & DotAllFlag; }
+    bool dotAll() const                 { return flags & DotAllFlag; }
 
     bool isCompiled(CompilationMode mode, bool latin1,
                     ForceByteCodeEnum force = DontForceByteCode) const {
@@ -482,7 +482,7 @@ class RegExpObject : public NativeObject
     bool multiline() const  { return getFlags() & MultilineFlag; }
     bool sticky() const     { return getFlags() & StickyFlag; }
     bool unicode() const    { return getFlags() & UnicodeFlag; }
-    bool dotall() const     { return getFlags() & DotAllFlag; }
+    bool dotAll() const     { return getFlags() & DotAllFlag; }
 
     static bool isOriginalFlagGetter(JSNative native, RegExpFlag* mask);
 
