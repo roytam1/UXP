@@ -34,7 +34,7 @@ function RegExpFlagsGetter() {
         result += "y";
         
     // ES2018
-    if (R.dotall)
+    if (R.dotAll)
         result += "s";
 
     // Step 19.
