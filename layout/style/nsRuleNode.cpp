@@ -8594,7 +8594,7 @@ nsRuleNode::ComputePositionData(void* aStartStruct,
     }
   }
 
-  // We allow the enumerated box size property values -moz-min-content, etc. to
+  // We allow the enumerated box size property values min-content, etc. to
   // be specified on both the {,min-,max-}width properties and the
   // {,min-,max-}height properties, regardless of the writing mode.  This is
   // because the writing mode is not determined until here, at computed value
