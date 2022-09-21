@@ -66,9 +66,6 @@ private:
                                     mozilla::net::MemoryDownloader::Data aData)
         override;
 
-    nsresult SetContentTypeGuess();
-    void SetOpened();
-
     nsCString                       mSpec;
 
     bool                            mOpened;
