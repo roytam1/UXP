@@ -1018,9 +1018,63 @@ nsHtml5TreeOpExecutor::SetSpeculationBase(const nsAString& aURL)
     return;
   }
   const nsCString& charset = mDocument->GetDocumentCharacterSet();
-  DebugOnly<nsresult> rv = NS_NewURI(getter_AddRefs(mSpeculationBaseURI), aURL,
+  nsCOMPtr<nsIURI> newBaseURI;
+  nsresult rv = NS_NewURI(getter_AddRefs(newBaseURI), aURL,
                                      charset.get(), mDocument->GetDocumentURI());
   NS_WARNING_ASSERTION(NS_SUCCEEDED(rv), "Failed to create a URI");
+  if (!newBaseURI) {
+    return;
+  }
+
+  if (!CSPService::sCSPEnabled) {
+    // If CSP is not enabled, just pass back the URI
+    mSpeculationBaseURI = newBaseURI;
+    return;
+  }
+
+  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
+
+  nsCOMPtr<nsIPrincipal> principal = mDocument->NodePrincipal();
+  nsCOMPtr<nsIDOMDocument> domDoc = do_QueryInterface(mDocument);
+
+  // Check the document's CSP usually delivered via the CSP header.
+  nsCOMPtr<nsIContentSecurityPolicy> documentCsp;
+  rv = principal->EnsureCSP(domDoc, getter_AddRefs(documentCsp));
+  NS_ENSURE_SUCCESS_VOID(rv);
+  if (documentCsp) {
+    // base-uri should not fallback to the default-src and preloads should not
+    // trigger violation reports.
+    bool cspPermitsBaseURI = true;
+    rv = documentCsp->Permits(
+        newBaseURI,
+        nsIContentSecurityPolicy::BASE_URI_DIRECTIVE,
+        true /* aSpecific */,
+        false /* aSendViolationReports */,
+        &cspPermitsBaseURI);
+    if (NS_FAILED(rv) || !cspPermitsBaseURI) {
+      return;
+    }
+  }
+
+  // Also check the CSP discovered from the <meta> tag during speculative
+  // parsing.
+  nsCOMPtr<nsIContentSecurityPolicy> preloadCsp;
+  rv = principal->EnsurePreloadCSP(domDoc, getter_AddRefs(preloadCsp));
+  NS_ENSURE_SUCCESS_VOID(rv);
+  if (preloadCsp) {
+    bool cspPermitsBaseURI = true;
+    rv = preloadCsp->Permits(
+        newBaseURI,
+        nsIContentSecurityPolicy::BASE_URI_DIRECTIVE,
+        true /* aSpecific */,
+        false /* aSendViolationReports */,
+        &cspPermitsBaseURI);
+    if (NS_FAILED(rv) || !cspPermitsBaseURI) {
+      return;
+    }
+  }
+
+  mSpeculationBaseURI = newBaseURI;
 }
 
 void

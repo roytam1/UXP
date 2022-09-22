@@ -191,7 +191,8 @@ SetBaseURIUsingFirstBaseWithHref(nsIDocument* aDocument, nsIContent* aMustMatch)
         // http://www.w3.org/TR/CSP2/#directive-default-src
         bool cspPermitsBaseURI = true;
         rv = csp->Permits(newBaseURI, nsIContentSecurityPolicy::BASE_URI_DIRECTIVE,
-                          true, &cspPermitsBaseURI);
+                          true /* aSpecific */, true /* aSendViolationReports */,
+                          &cspPermitsBaseURI);
         if (NS_FAILED(rv) || !cspPermitsBaseURI) {
           newBaseURI = nullptr;
         }

@@ -1309,6 +1309,7 @@ NS_IMETHODIMP
 nsCSPContext::Permits(nsIURI* aURI,
                       CSPDirective aDir,
                       bool aSpecific,
+                      bool aSendViolationReports,
                       bool* outPermits)
 {
   // Can't perform check without aURI
@@ -1323,13 +1324,13 @@ nsCSPContext::Permits(nsIURI* aURI,
                                 false,    // not redirected.
                                 false,    // not a preload.
                                 aSpecific,
-                                true,     // send violation reports
+                                aSendViolationReports,
                                 true,     // send blocked URI in violation reports
                                 false);   // not parser created
 
   if (CSPCONTEXTLOGENABLED()) {
-      CSPCONTEXTLOG(("nsCSPContext::Permits, aUri: %s, aDir: %d, isAllowed: %s",
-                     aURI->GetSpecOrDefault().get(), aDir,
+      CSPCONTEXTLOG(("nsCSPContext::Permits, aUri: %s, aDir: %s, isAllowed: %s",
+                     aURI->GetSpecOrDefault().get(), CSP_CSPDirectiveToString(aDir),
                      *outPermits ? "allow" : "deny"));
   }
 

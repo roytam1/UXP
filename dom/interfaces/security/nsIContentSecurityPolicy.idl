@@ -252,9 +252,6 @@ interface nsIContentSecurityPolicy : nsISerializable
   /**
    * Checks if a specific directive permits loading of a URI.
    *
-   * NOTE: Calls to this may trigger violation reports when queried, so the
-   * return value should not be cached.
-   *
    * @param aURI
    *    The URI about to be loaded or used.
    * @param aDir
@@ -266,11 +263,17 @@ interface nsIContentSecurityPolicy : nsISerializable
    *    "false" allows CSP to fall back to default-src.  This function
    *    behaves the same for both values of canUseDefault when querying
    *    directives that don't fall-back.
+   * @param aSendViolationReports
+   *    If `true` and the uri is not allowed then trigger violation reports.
+   *    This should be `false` for caching or preloads.
    * @return
    *    Whether or not the provided URI is allowed by CSP under the given
    *    directive. (block the pending operation if false).
    */
-  boolean permits(in nsIURI aURI, in CSPDirective aDir, in boolean aSpecific);
+  boolean permits(in nsIURI aURI,
+                  in CSPDirective aDir,
+                  in boolean aSpecific,
+                  in boolean aSendViolationReports);
 
   /**
    * Delegate method called by the service when sub-elements of the protected
