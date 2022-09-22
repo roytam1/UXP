@@ -3344,6 +3344,10 @@ nsCookieService::SetCookieInternal(nsIURI                        *aHostURI,
     COOKIE_LOGFAILURE(SET_COOKIE, aHostURI, savedCookieHeader, "failed the path tests");
     return newCookie;
   }
+  if (!CheckHiddenPrefix(cookieAttributes)) {
+    COOKIE_LOGFAILURE(SET_COOKIE, aHostURI, savedCookieHeader, "failed the CheckHiddenPrefix tests");
+    return newCookie;
+  }
   // magic prefix checks. MUST be run after CheckDomain() and CheckPath()
   if (!CheckPrefixes(cookieAttributes, isHTTPS)) {
     COOKIE_LOGFAILURE(SET_COOKIE, aHostURI, savedCookieHeader, "failed the prefix tests");
@@ -4042,7 +4046,7 @@ nsCookieService::CheckPrefs(nsIURI          *aHostURI,
 
 // processes domain attribute, and returns true if host has permission to set for this domain.
 bool
-nsCookieService::CheckDomain(nsCookieAttributes &aCookieAttributes,
+nsCookieService::CheckDomain(nsCookieAttributes &aCookie,
                              nsIURI             *aHostURI,
                              const nsCString    &aBaseDomain,
                              bool                aRequireHostMatch)
@@ -4057,15 +4061,15 @@ nsCookieService::CheckDomain(nsCookieAttributes &aCookieAttributes,
   aHostURI->GetAsciiHost(hostFromURI);
 
   // if a domain is given, check the host has permission
-  if (!aCookieAttributes.host.IsEmpty()) {
+  if (!aCookie.host.IsEmpty()) {
     // Tolerate leading '.' characters, but not if it's otherwise an empty host.
-    if (aCookieAttributes.host.Length() > 1 &&
-        aCookieAttributes.host.First() == '.') {
-      aCookieAttributes.host.Cut(0, 1);
+    if (aCookie.host.Length() > 1 &&
+        aCookie.host.First() == '.') {
+      aCookie.host.Cut(0, 1);
     }
 
     // switch to lowercase now, to avoid case-insensitive compares everywhere
-    ToLowerCase(aCookieAttributes.host);
+    ToLowerCase(aCookie.host);
 
     // check whether the host is either an IP address, an alias such as
     // 'localhost', an eTLD such as 'co.uk', or the empty string. in these
@@ -4073,14 +4077,14 @@ nsCookieService::CheckDomain(nsCookieAttributes &aCookieAttributes,
     // as a non-domain one. bug 105917 originally noted the requirement to deal
     // with IP addresses.
     if (aRequireHostMatch)
-      return hostFromURI.Equals(aCookieAttributes.host);
+      return hostFromURI.Equals(aCookie.host);
 
     // ensure the proposed domain is derived from the base domain; and also
     // that the host domain is derived from the proposed domain (per RFC2109).
-    if (IsSubdomainOf(aCookieAttributes.host, aBaseDomain) &&
-        IsSubdomainOf(hostFromURI, aCookieAttributes.host)) {
+    if (IsSubdomainOf(aCookie.host, aBaseDomain) &&
+        IsSubdomainOf(hostFromURI, aCookie.host)) {
       // prepend a dot to indicate a domain cookie
-      aCookieAttributes.host.Insert(NS_LITERAL_CSTRING("."), 0);
+      aCookie.host.Insert(NS_LITERAL_CSTRING("."), 0);
       return true;
     }
 
@@ -4095,7 +4099,7 @@ nsCookieService::CheckDomain(nsCookieAttributes &aCookieAttributes,
   }
 
   // no domain specified, use hostFromURI
-  aCookieAttributes.host = hostFromURI;
+  aCookie.host = hostFromURI;
   return true;
 }
 
@@ -4121,12 +4125,12 @@ GetPathFromURI(nsIURI* aHostURI)
 }
 
 bool
-nsCookieService::CheckPath(nsCookieAttributes &aCookieAttributes,
+nsCookieService::CheckPath(nsCookieAttributes &aCookie,
                            nsIURI             *aHostURI)
 {
   // if a path is given, check the host has permission
-  if (aCookieAttributes.path.IsEmpty() || aCookieAttributes.path.First() != '/') {
-    aCookieAttributes.path = GetPathFromURI(aHostURI);
+  if (aCookie.path.IsEmpty() || aCookie.path.First() != '/') {
+    aCookie.path = GetPathFromURI(aHostURI);
 
 #if 0
   } else {
@@ -4139,15 +4143,38 @@ nsCookieService::CheckPath(nsCookieAttributes &aCookieAttributes,
     // get path from aHostURI
     nsAutoCString pathFromURI;
     if (NS_FAILED(aHostURI->GetPath(pathFromURI)) ||
-        !StringBeginsWith(pathFromURI, aCookieAttributes.path)) {
+        !StringBeginsWith(pathFromURI, aCookie.path)) {
       return false;
     }
 #endif
   }
 
-  if (aCookieAttributes.path.Length() > kMaxBytesPerPath ||
-      aCookieAttributes.path.Contains('\t'))
+  if (aCookie.path.Length() > kMaxBytesPerPath ||
+      aCookie.path.Contains('\t'))
     return false;
+
+  return true;
+}
+
+bool
+nsCookieService::CheckHiddenPrefix(nsCookieAttributes &aCookie) {
+  // If a cookie is nameless, then its value must not start with
+  // `__Host-` or `__Secure-`
+  if (aCookie.name.Length() != 0) {
+    return true;
+  }
+
+  static const char kSecure[] = "__Secure-";
+  static const char kHost[]   = "__Host-";
+  static const int kSecureLen = sizeof( kSecure ) - 1;
+  static const int kHostLen   = sizeof( kHost ) - 1;
+
+  bool isSecure = strncmp( aCookie.value.get(), kSecure, kSecureLen ) == 0;
+  bool isHost   = strncmp( aCookie.value.get(), kHost, kHostLen ) == 0;
+  
+  if (isSecure || isHost) {
+    return false;
+  }
 
   return true;
 }
@@ -4161,7 +4188,7 @@ nsCookieService::CheckPath(nsCookieAttributes &aCookieAttributes,
 // Must not be called until after CheckDomain() and CheckPath() have
 // regularized and validated the nsCookieAttributes values!
 bool
-nsCookieService::CheckPrefixes(nsCookieAttributes &aCookieAttributes,
+nsCookieService::CheckPrefixes(nsCookieAttributes &aCookie,
                                bool aSecureRequest)
 {
   static const char kSecure[] = "__Secure-";
@@ -4169,15 +4196,15 @@ nsCookieService::CheckPrefixes(nsCookieAttributes &aCookieAttributes,
   static const int kSecureLen = sizeof( kSecure ) - 1;
   static const int kHostLen   = sizeof( kHost ) - 1;
 
-  bool isSecure = strncmp( aCookieAttributes.name.get(), kSecure, kSecureLen ) == 0;
-  bool isHost   = strncmp( aCookieAttributes.name.get(), kHost, kHostLen ) == 0;
+  bool isSecure = strncmp( aCookie.value.get(), kSecure, kSecureLen ) == 0;
+  bool isHost   = strncmp( aCookie.value.get(), kHost, kHostLen ) == 0;
 
   if ( !isSecure && !isHost ) {
     // not one of the magic prefixes: carry on
     return true;
   }
 
-  if ( !aSecureRequest || !aCookieAttributes.isSecure ) {
+  if ( !aSecureRequest || !aCookie.isSecure ) {
     // the magic prefixes may only be used from a secure request and
     // the secure attribute must be set on the cookie
     return false;
@@ -4190,8 +4217,8 @@ nsCookieService::CheckPrefixes(nsCookieAttributes &aCookieAttributes,
     // them. In particular all explicit domain attributes result in a host
     // that starts with a dot, and if the host doesn't start with a dot it
     // correctly matches the true host.
-    if ( aCookieAttributes.host[0] == '.' ||
-         !aCookieAttributes.path.EqualsLiteral( "/" )) {
+    if ( aCookie.host[0] == '.' ||
+         !aCookie.path.EqualsLiteral( "/" )) {
       return false;
     }
   }
@@ -4200,7 +4227,7 @@ nsCookieService::CheckPrefixes(nsCookieAttributes &aCookieAttributes,
 }
 
 bool
-nsCookieService::GetExpiry(nsCookieAttributes &aCookieAttributes,
+nsCookieService::GetExpiry(nsCookieAttributes &aCookie,
                            int64_t             aServerTime,
                            int64_t             aCurrentTime)
 {
@@ -4212,10 +4239,10 @@ nsCookieService::GetExpiry(nsCookieAttributes &aCookieAttributes,
    * Note: We need to consider accounting for network lag here, per RFC.
    */
   // check for max-age attribute first; this overrides expires attribute
-  if (!aCookieAttributes.maxage.IsEmpty()) {
+  if (!aCookie.maxage.IsEmpty()) {
     // obtain numeric value of maxageAttribute
     int64_t maxage;
-    int32_t numInts = PR_sscanf(aCookieAttributes.maxage.get(), "%lld", &maxage);
+    int32_t numInts = PR_sscanf(aCookie.maxage.get(), "%lld", &maxage);
 
     // default to session cookie if the conversion failed
     if (numInts != 1) {
@@ -4224,14 +4251,14 @@ nsCookieService::GetExpiry(nsCookieAttributes &aCookieAttributes,
 
     // if this addition overflows, expiryTime will be less than currentTime
     // and the cookie will be expired - that's okay.
-    aCookieAttributes.expiryTime = aCurrentTime + maxage;
+    aCookie.expiryTime = aCurrentTime + maxage;
 
   // check for expires attribute
-  } else if (!aCookieAttributes.expires.IsEmpty()) {
+  } else if (!aCookie.expires.IsEmpty()) {
     PRTime expires;
 
     // parse expiry time
-    if (PR_ParseTimeString(aCookieAttributes.expires.get(), true, &expires) != PR_SUCCESS) {
+    if (PR_ParseTimeString(aCookie.expires.get(), true, &expires) != PR_SUCCESS) {
       return true;
     }
 
@@ -4240,7 +4267,7 @@ nsCookieService::GetExpiry(nsCookieAttributes &aCookieAttributes,
     // Because if current time be set in the future, but the cookie expire
     // time be set less than current time and more than server time.
     // The cookie item have to be used to the expired cookie.
-    aCookieAttributes.expiryTime = expires / int64_t(PR_USEC_PER_SEC);
+    aCookie.expiryTime = expires / int64_t(PR_USEC_PER_SEC);
 
   // default to session cookie if no attributes found
   } else {

@@ -307,6 +307,7 @@ class nsCookieService final : public nsICookieService
     CookieStatus                  CheckPrefs(nsIURI *aHostURI, bool aIsForeign, const char *aCookieHeader);
     bool                          CheckDomain(nsCookieAttributes &aCookie, nsIURI *aHostURI, const nsCString &aBaseDomain, bool aRequireHostMatch);
     static bool                   CheckPath(nsCookieAttributes &aCookie, nsIURI *aHostURI);
+    static bool                   CheckHiddenPrefix(nsCookieAttributes &aCookie);
     static bool                   CheckPrefixes(nsCookieAttributes &aCookie, bool aSecureRequest);
     static bool                   GetExpiry(nsCookieAttributes &aCookie, int64_t aServerTime, int64_t aCurrentTime);
     void                          RemoveAllFromMemory();
