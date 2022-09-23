@@ -1032,7 +1032,7 @@ OutputPanel.prototype._resize = function () {
       break;
   }
 
-  this.document.body.style.width = "-moz-max-content";
+  this.document.body.style.width = "max-content";
   let style = this._frame.contentWindow.getComputedStyle(this.document.body);
   let frameWidth = parseInt(style.width, 10);
   let width = Math.min(maxWidth, frameWidth);
