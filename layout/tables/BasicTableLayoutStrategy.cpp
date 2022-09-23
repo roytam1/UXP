@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:cindent:ts=4:et:sw=4:
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -181,7 +180,7 @@ GetISizeInfo(nsRenderingContext *aRenderingContext,
             maxISize.SetNoneValue();
         } else if (maxISize.GetIntValue() == NS_STYLE_WIDTH_FIT_CONTENT) {
             // for 'max-inline-size', '-moz-fit-content' is like
-            // '-moz-max-content'
+            // 'max-content'
             maxISize.SetIntValue(NS_STYLE_WIDTH_MAX_CONTENT,
                                  eStyleUnit_Enumerated);
         }
@@ -208,7 +207,7 @@ GetISizeInfo(nsRenderingContext *aRenderingContext,
             minISize.SetCoordValue(0);
         } else if (minISize.GetIntValue() == NS_STYLE_WIDTH_FIT_CONTENT) {
             // for 'min-inline-size', '-moz-fit-content' is like
-            // '-moz-min-content'
+            // 'min-content'
             minISize.SetIntValue(NS_STYLE_WIDTH_MIN_CONTENT,
                                  eStyleUnit_Enumerated);
         }

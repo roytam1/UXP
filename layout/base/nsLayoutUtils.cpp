@@ -4676,7 +4676,7 @@ GetDefiniteSizeTakenByBoxSizing(StyleBoxSizing aBoxSizing,
   return sizeTakenByBoxSizing;
 }
 
-// Handles only -moz-max-content and -moz-min-content, and
+// Handles only max-content and min-content, and
 // -moz-fit-content for min-width and max-width, since the others
 // (-moz-fit-content for width, and -moz-available) have no effect on
 // intrinsic widths.
@@ -4704,10 +4704,10 @@ GetIntrinsicCoord(const nsStyleCoord& aStyle,
     if (aProperty == PROP_WIDTH)
       return false; // handle like 'width: auto'
     if (aProperty == PROP_MAX_WIDTH)
-      // constrain large 'width' values down to -moz-max-content
+      // constrain large 'width' values down to max-content
       val = NS_STYLE_WIDTH_MAX_CONTENT;
     else
-      // constrain small 'width' or 'max-width' values up to -moz-min-content
+      // constrain small 'width' or 'max-width' values up to min-content
       val = NS_STYLE_WIDTH_MIN_CONTENT;
   }
 
@@ -4991,7 +4991,7 @@ nsLayoutUtils::IntrinsicForAxis(PhysicalAxis              aAxis,
        styleISize.GetIntValue() == NS_STYLE_WIDTH_MIN_CONTENT)) {
     // -moz-fit-content and -moz-available enumerated widths compute intrinsic
     // widths just like auto.
-    // For -moz-max-content and -moz-min-content, we handle them like
+    // For max-content and min-content, we handle them like
     // specified widths, but ignore box-sizing.
     boxSizing = StyleBoxSizing::Content;
     if (aMarginBoxMinSizeClamp != NS_MAXSIZE &&
