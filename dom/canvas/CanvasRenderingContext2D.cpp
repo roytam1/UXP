@@ -6075,8 +6075,8 @@ CanvasRenderingContext2D::PutImageData_explicit(int32_t aX, int32_t aY, uint32_t
     return NS_ERROR_FAILURE;
   }
 
-  uint32_t copyX = dirtyRect.x;
-  uint32_t copyY = dirtyRect.y;
+  uint32_t copyX = dirtyRect.x - aX;
+  uint32_t copyY = dirtyRect.y - aY;
   //uint8_t *src = aArray->Data();
   uint8_t *dst = imgsurf->Data();
   uint8_t* srcLine = aArray->Data() + copyY * (aW * 4) + copyX * 4;
