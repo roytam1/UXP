@@ -225,7 +225,7 @@ ReflowInput::ReflowInput(
     CheckNextInFlowParenthood(aFrame, aParentReflowInput.mFrame);
   mFlags.mAssumingHScrollbar = mFlags.mAssumingVScrollbar = false;
   mFlags.mIsColumnBalancing = false;
-  mFlags.mIsFlexContainerMeasuringBSize = false;
+  mFlags.mIsFlexContainerMeasuringHeight = false;
   mFlags.mDummyParentReflowInput = false;
   mFlags.mShrinkWrap = !!(aFlags & COMPUTE_SIZE_SHRINK_WRAP);
   mFlags.mUseAutoBSize = !!(aFlags & COMPUTE_SIZE_USE_AUTO_BSIZE);
@@ -2407,15 +2407,15 @@ ReflowInput::InitConstraints(nsPresContext*     aPresContext,
             ComputeSizeFlags(computeSizeFlags | ComputeSizeFlags::eShrinkWrap);
 
           // If we're inside of a flex container that needs to measure our
-          // auto BSize, pass that information along to ComputeSize().
-          if (mFlags.mIsFlexContainerMeasuringBSize) {
+          // auto height, pass that information along to ComputeSize().
+          if (mFlags.mIsFlexContainerMeasuringHeight) {
             computeSizeFlags =
               ComputeSizeFlags(computeSizeFlags | ComputeSizeFlags::eUseAutoBSize);
           }
         } else {
-          MOZ_ASSERT(!mFlags.mIsFlexContainerMeasuringBSize,
+          MOZ_ASSERT(!mFlags.mIsFlexContainerMeasuringHeight,
                      "We're not in a flex container, so the flag "
-                     "'mIsFlexContainerMeasuringBSize' shouldn't be set");
+                     "'mIsFlexContainerMeasuringHeight' shouldn't be set");
         }
       }
 
@@ -2997,7 +2997,7 @@ ReflowInput::ComputeMinMaxValues(const LogicalSize&aCBSize)
        minBSize.HasPercent()) ||
       (mFrameType == NS_CSS_FRAME_TYPE_INTERNAL_TABLE &&
        minBSize.IsCalcUnit() && minBSize.CalcHasPercent()) ||
-      mFlags.mIsFlexContainerMeasuringBSize) {
+      mFlags.mIsFlexContainerMeasuringHeight) {
     ComputedMinBSize() = 0;
   } else {
     ComputedMinBSize() = ComputeBSizeValue(aCBSize.BSize(wm),
@@ -3019,7 +3019,7 @@ ReflowInput::ComputeMinMaxValues(const LogicalSize&aCBSize)
          maxBSize.HasPercent()) ||
         (mFrameType == NS_CSS_FRAME_TYPE_INTERNAL_TABLE &&
          maxBSize.IsCalcUnit() && maxBSize.CalcHasPercent()) ||
-        mFlags.mIsFlexContainerMeasuringBSize) {
+        mFlags.mIsFlexContainerMeasuringHeight) {
       ComputedMaxBSize() = NS_UNCONSTRAINEDSIZE;
     } else {
       ComputedMaxBSize() = ComputeBSizeValue(aCBSize.BSize(wm),
