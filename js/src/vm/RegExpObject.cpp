@@ -189,7 +189,7 @@ RegExpObject::isOriginalFlagGetter(JSNative native, RegExpFlags* mask)
       return true;
   }
   if (native == regexp_dotAll) {
-      *mask = DotAllFlag;
+      *mask = RegExpFlag::DotAll;
       return true;
   }
 
