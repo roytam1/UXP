@@ -914,7 +914,7 @@ class JSRegExp : public HeapObject {
 
   static JSRegExp cast(Object object) {
     JSRegExp regexp;
-    MOZ_ASSERT(JS::Value(object).toGCThing()->is<js::RegExpShared>());
+    //MOZ_ASSERT(JS::Value(object).toGCThing()->is<js::RegExpShared>());
     regexp.value_ = JS::PrivateGCThingValue(JS::Value(object).toGCThing());
     return regexp;
   }

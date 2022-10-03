@@ -1094,9 +1094,6 @@ RegExpRunStatus
 RegExpShared::execute(JSContext* cx, HandleLinearString input, size_t start,
                       MatchPairs* matches)
 {
-  MOZ_ASSERT_IF(matches, !endIndex);
-  MOZ_ASSERT_IF(!matches, endIndex);
-
   // TODO: Add tracelogger support
 
   /* Compile the code at point-of-use. */
