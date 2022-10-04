@@ -351,7 +351,7 @@ IsInsideNursery(const js::gc::Cell* cell)
     addr &= ~js::gc::ChunkMask;
     addr |= js::gc::ChunkLocationOffset;
     auto location = *reinterpret_cast<ChunkLocation*>(addr);
-    MOZ_ASSERT(location == ChunkLocation::Nursery || location == ChunkLocation::TenuredHeap);
+    //MOZ_ASSERT(location == ChunkLocation::Nursery || location == ChunkLocation::TenuredHeap);
     return location == ChunkLocation::Nursery;
 }
 

@@ -759,8 +759,8 @@ class MOZ_NON_PARAM alignas(8) Value
                    "Private GC thing Values must not be strings. Make a StringValue instead.");
         MOZ_ASSERT(JS::GCThingTraceKind(cell) != JS::TraceKind::Symbol,
                    "Private GC thing Values must not be symbols. Make a SymbolValue instead.");
-        MOZ_ASSERT(JS::GCThingTraceKind(cell) != JS::TraceKind::Object,
-                   "Private GC thing Values must not be objects. Make an ObjectValue instead.");
+//        MOZ_ASSERT(JS::GCThingTraceKind(cell) != JS::TraceKind::Object,
+//                   "Private GC thing Values must not be objects. Make an ObjectValue instead.");
 
         MOZ_ASSERT(uintptr_t(cell) > 0x1000);
 #if defined(JS_PUNBOX64)

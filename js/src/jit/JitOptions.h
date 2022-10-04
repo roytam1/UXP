@@ -68,6 +68,7 @@ struct DefaultJitOptions
     bool eagerCompilation;
     bool forceInlineCaches;
     bool limitScriptSize;
+    bool nativeRegExp;
     bool osr;
     bool asmJSAtomicsEnable;
     bool wasmTestMode;

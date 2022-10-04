@@ -62,6 +62,19 @@ RegExpAlloc(ExclusiveContext* cx, HandleObject proto = nullptr);
 extern JSObject*
 CloneRegExpObject(JSContext* cx, JSObject* regexp);
 
+#ifdef JS_NEW_REGEXP
+
+using JitCodeTable = js::irregexp::ByteArray;
+
+inline bool IsNativeRegExpEnabled() {
+#  ifdef JS_CODEGEN_NONE
+  return false;
+#  else
+  return jit::JitOptions.nativeRegExp;
+#  endif
+}
+
+#endif
 /*
  * A RegExpShared is the compiled representation of a regexp. A RegExpShared is
  * potentially pointed to by multiple RegExpObjects. Additionally, C++ code may
@@ -133,6 +146,7 @@ class RegExpShared
     RegExpShared::Kind kind_ = Kind::Unparsed;
     GCPtrAtom patternAtom_;
     uint32_t maxRegisters_ = 0;
+    uint32_t ticks_ = 0;
 #else
     bool canStringMatch = false;
 #endif
@@ -176,9 +190,15 @@ class RegExpShared
                             MatchPairs* matches);
 
     // Register a table with this RegExpShared, and take ownership.
+/* #ifdef JS_NEW_REGEXP
+    bool addTable(JitCodeTable table) {
+        return tables.append(std::move(table));
+    }
+// #else */
     bool addTable(uint8_t* table) {
         return tables.append(table);
     }
+// #endif
 
     /* Accessors */
 
@@ -200,11 +220,20 @@ class RegExpShared
     // Use the regular expression engine for this regexp.
     void useRegExpMatch(size_t parenCount);
 
+    void tierUpTick();
+    bool markedForTierUp();
+
     void setByteCode(ByteCode* code, bool latin1) {
       compilation(latin1).byteCode = code;
     }
     ByteCode* getByteCode(bool latin1) const {
       return compilation(latin1).byteCode;
+    }
+    void setJitCode(jit::JitCode* code, bool latin1) {
+      compilation(latin1).jitCode = code;
+    }
+    jit::JitCode* getJitCode(bool latin1) const {
+      return compilation(latin1).jitCode;
     }
     uint32_t getMaxRegisters() const { return maxRegisters_; }
     void updateMaxRegisters(uint32_t numRegisters) {

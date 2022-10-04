@@ -145,6 +145,9 @@ DefaultJitOptions::DefaultJitOptions()
     // Toggles whether large scripts are rejected.
     SET_DEFAULT(limitScriptSize, true);
 
+    // Toggles whether RegExps compile to native code after a threshold.
+    SET_DEFAULT(nativeRegExp, true);
+    
     // Toggles whether functions may be entered at loop headers.
     SET_DEFAULT(osr, true);
 

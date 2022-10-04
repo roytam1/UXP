@@ -1082,7 +1082,14 @@ RegExpShared::compileIfNecessary(JSContext* cx, HandleLinearString input,
     needsCompile = true;
   }
 
-  // TODO: tier-up from interpreter to generated code
+  if (kind() == RegExpShared::Kind::RegExp) {
+    if (codeKind == RegExpShared::CodeKind::Any && markedForTierUp()) {
+      codeKind = RegExpShared::CodeKind::Jitcode;
+    }
+    if (!isCompiled(input->hasLatin1Chars(), codeKind)) {
+      needsCompile = true;
+    }
+  }
 
   if (needsCompile) {
     return irregexp::CompilePattern(cx, this, input);
@@ -1178,6 +1185,25 @@ void RegExpShared::useRegExpMatch(size_t pairCount) {
   MOZ_ASSERT(kind() == RegExpShared::Kind::Unparsed);
   kind_ = RegExpShared::Kind::RegExp;
   pairCount_ = pairCount;
+  ticks_ = 10;  // TODO: add a jit option to control this threshold
+}
+
+
+void RegExpShared::tierUpTick() {
+  MOZ_ASSERT(kind() == RegExpShared::Kind::RegExp);
+  if (ticks_ > 0) {
+    ticks_--;
+  }
+}
+
+bool RegExpShared::markedForTierUp() {
+  if (!IsNativeRegExpEnabled()) {
+    return false;
+  }
+  if (kind() == RegExpShared::Kind::Atom) {
+    return false;
+  }
+  return ticks_ == 0;
 }
 
 #else
