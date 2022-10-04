@@ -91,6 +91,8 @@ GetHDDInfo(const char* aSpecialDirName, nsAutoCString& aModel,
   nsCOMPtr<nsIFile> profDir;
   nsresult rv = NS_GetSpecialDirectory(aSpecialDirName,
                                        getter_AddRefs(profDir));
+  if (NS_FAILED(rv))
+    return NS_ERROR_UNEXPECTED;
   NS_ENSURE_SUCCESS(rv, rv);
   nsAutoString profDirPath;
   rv = profDir->GetPath(profDirPath);
