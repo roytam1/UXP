@@ -2630,7 +2630,7 @@ nsHttpConnectionMgr::OnMsgCompleteUpgrade(int32_t, ARefBase *param)
 void
 nsHttpConnectionMgr::OnMsgUpdateParam(int32_t inParam, ARefBase *)
 {
-    MOZ_ASSERT(OnSocketThread(), "not on socket thread");
+    NS_ASSERTION(PR_GetCurrentThread() == gSocketThread, "not on socket thread");
     uint32_t param = static_cast<uint32_t>(inParam);
     uint16_t name  = ((param) & 0xFFFF0000) >> 16;
     uint16_t value =  param & 0x0000FFFF;

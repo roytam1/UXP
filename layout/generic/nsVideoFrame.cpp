@@ -337,7 +337,7 @@ nsVideoFrame::Reflow(nsPresContext* aPresContext,
       ReflowChild(imageFrame, aPresContext, kidDesiredSize, kidReflowInput,
                   posterRenderRect.x, posterRenderRect.y,
                   ReflowChildFlags::Default, childStatus);
-      MOZ_ASSERT(childStatus.IsFullyComplete(),
+      MOZ_ASSERT(NS_FRAME_IS_FULLY_COMPLETE(childStatus),
                  "We gave our child unconstrained available block-size, "
                  "so it should be complete!");
 
@@ -380,7 +380,7 @@ nsVideoFrame::Reflow(nsPresContext* aPresContext,
       ReflowChild(child, aPresContext, kidDesiredSize, kidReflowInput,
                   mBorderPadding.left, mBorderPadding.top,
                   ReflowChildFlags::Default, childStatus);
-      MOZ_ASSERT(childStatus.IsFullyComplete(),
+      MOZ_ASSERT(NS_FRAME_IS_FULLY_COMPLETE(childStatus),
                  "We gave our child unconstrained available block-size, "
                  "so it should be complete!");
 
