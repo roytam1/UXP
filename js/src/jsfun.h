@@ -361,7 +361,6 @@ class JSFunction : public js::NativeObject
         MOZ_ASSERT(!hasCompileTimeName());
         MOZ_ASSERT(!hasGuessedAtom());
         MOZ_ASSERT(!isBoundFunction());
-        MOZ_ASSERT(js::AtomIsMarked(zone(), atom));
         atom_ = atom;
         flags_ |= HAS_GUESSED_ATOM;
     }

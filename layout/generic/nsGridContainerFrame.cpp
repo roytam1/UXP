@@ -5887,7 +5887,6 @@ nsGridContainerFrame::ReflowChildren(GridReflowInput&     aState,
                                      nsReflowStatus&      aStatus)
 {
   MOZ_ASSERT(aState.mReflowInput);
-  MOZ_ASSERT(aStatus.IsEmpty(), "Caller should pass a fresh reflow status!");
 
   aStatus = NS_FRAME_COMPLETE;
   nsOverflowAreas ocBounds;
