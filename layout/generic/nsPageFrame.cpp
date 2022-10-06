@@ -148,7 +148,7 @@ nsPageFrame::Reflow(nsPresContext*           aPresContext,
     FinishReflowChild(frame, aPresContext, aDesiredSize, &kidReflowInput, xc,
                       yc, ReflowChildFlags::Default);
 
-    NS_ASSERTION(!aStatus.IsFullyComplete() || !frame->GetNextInFlow(),
+    NS_ASSERTION(!NS_FRAME_IS_FULLY_COMPLETE(aStatus) || !frame->GetNextInFlow(),
                  "bad child flow list");
   }
   PR_PL(("PageFrame::Reflow %p ", this));
