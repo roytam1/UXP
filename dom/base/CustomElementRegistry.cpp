@@ -799,7 +799,7 @@ TryUpgrade(nsINode& aNode)
     CustomElementData* ceData = element->GetCustomElementData();
     if (ceData) {
       NodeInfo* nodeInfo = element->NodeInfo();
-      nsAtom* typeAtom = ceData->GetCustomElementType();
+      nsIAtom* typeAtom = ceData->GetCustomElementType();
       CustomElementDefinition* definition =
         nsContentUtils::LookupCustomElementDefinition(nodeInfo->GetDocument(),
                                                       nodeInfo->NameAtom(),
