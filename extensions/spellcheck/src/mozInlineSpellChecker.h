@@ -197,7 +197,7 @@ public:
 
   nsresult Blur(nsIDOMEvent* aEvent);
   nsresult MouseClick(nsIDOMEvent* aMouseEvent);
-  nsresult KeyPress(nsIDOMEvent* aKeyEvent);
+  nsresult KeyDown(nsIDOMEvent* aKeyEvent);
 
   mozInlineSpellChecker();
 
