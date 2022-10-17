@@ -664,8 +664,7 @@ HTMLEditor::HandleKeyPressEvent(nsIDOMKeyEvent* aKeyEvent)
       return TypedText(NS_LITERAL_STRING("\t"), eTypedText);
     }
     case NS_VK_RETURN:
-      if (nativeKeyEvent->IsControl() || nativeKeyEvent->IsAlt() ||
-          nativeKeyEvent->IsMeta() || nativeKeyEvent->IsOS()) {
+      if (!nativeKeyEvent->IsInputtingLineBreak()) {
         return NS_OK;
       }
       aKeyEvent->AsEvent()->PreventDefault(); // consumed
@@ -677,11 +676,7 @@ HTMLEditor::HandleKeyPressEvent(nsIDOMKeyEvent* aKeyEvent)
       return TypedText(EmptyString(), eTypedBreak);
   }
 
-  // NOTE: On some keyboard layout, some characters are inputted with Control
-  // key or Alt key, but at that time, widget sets FALSE to these keys.
-  if (!nativeKeyEvent->mCharCode || nativeKeyEvent->IsControl() ||
-      nativeKeyEvent->IsAlt() || nativeKeyEvent->IsMeta() ||
-      nativeKeyEvent->IsOS()) {
+  if (!nativeKeyEvent->IsInputtingText()) {
     // we don't PreventDefault() here or keybindings like control-x won't work
     return NS_OK;
   }
