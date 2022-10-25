@@ -63,12 +63,12 @@ OSXVersionToOperatingSystem(uint32_t aOSXVersion) {
       }
       break;
     case 11:
-      switch (nsCocoaFeatures::ExtractMinorVersion(aOSXVersion)) {
-        case 0:
-          return OperatingSystem::OSX11_0;
-        default:
-          break;
-      }
+      return OperatingSystem::OSX11_0;
+    case 12:
+      return OperatingSystem::OSX12_0;
+    case 13:
+      return OperatingSystem::OSX13_0;
+    default:
       break;
   }
 
