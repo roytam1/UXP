@@ -212,9 +212,12 @@ SVGDocumentWrapper::TickRefreshDriver()
   nsCOMPtr<nsIPresShell> presShell;
   mViewer->GetPresShell(getter_AddRefs(presShell));
   if (presShell) {
-    nsPresContext* presContext = presShell->GetPresContext();
+    RefPtr<nsPresContext> presContext = presShell->GetPresContext();
     if (presContext) {
-      presContext->RefreshDriver()->DoTick();
+      RefPtr<nsRefreshDriver> driver = presContext->RefreshDriver();
+      if (driver) {
+        driver->DoTick();
+      }
     }
   }
 }
