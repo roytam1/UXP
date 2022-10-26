@@ -4280,6 +4280,7 @@ pref("webgl.lose-context-on-memory-pressure", false);
 pref("webgl.can-lose-context-in-foreground", true);
 pref("webgl.restore-context-when-visible", true);
 pref("webgl.max-warnings-per-context", 32);
+pref("webgl.max-size-per-texture-mb", 1024);
 pref("webgl.enable-draft-extensions", false);
 pref("webgl.enable-privileged-extensions", false);
 pref("webgl.bypass-shader-validation", false);
