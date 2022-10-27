@@ -26,16 +26,19 @@
          key="&closeCmd.key;"
          command="toolbox-cmd-close"
          modifiers="accel"/>
-    <key id="toolbox-key-toggle"
-         key="&toggleToolbox.key;"
-         command="toolbox-cmd-close"
-         modifiers="accel,shift"
-         disabled="true"/>
+#ifdef XP_MACOSX
     <key id="toolbox-key-toggle-osx"
          key="&toggleToolbox.key;"
          command="toolbox-cmd-close"
          modifiers="accel,alt"
          disabled="true"/>
+#else
+    <key id="toolbox-key-toggle"
+         key="&toggleToolbox.key;"
+         command="toolbox-cmd-close"
+         modifiers="accel,shift"
+         disabled="true"/>
+#endif
     <key id="toolbox-key-toggle-F12"
          keycode="&toggleToolboxF12.keycode;"
          keytext="&toggleToolboxF12.keytext;"

@@ -5,6 +5,7 @@
 
 #include "nsFormFillController.h"
 
+#include "mozilla/EventListenerManager.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/Event.h" // for nsIDOMEvent::InternalDOMEvent()
 #include "nsIFormAutoComplete.h"
@@ -40,6 +41,7 @@
 #include "nsIScriptSecurityManager.h"
 #include "nsFocusManager.h"
 
+using namespace mozilla;
 using namespace mozilla::dom;
 
 NS_IMPL_CYCLE_COLLECTION(nsFormFillController,
@@ -1188,23 +1190,29 @@ nsFormFillController::AddWindowListeners(nsPIDOMWindowOuter* aWindow)
   if (!target)
     return;
 
-  target->AddEventListener(NS_LITERAL_STRING("focus"), this,
-                           true, false);
-  target->AddEventListener(NS_LITERAL_STRING("blur"), this,
-                           true, false);
-  target->AddEventListener(NS_LITERAL_STRING("pagehide"), this,
-                           true, false);
-  target->AddEventListener(NS_LITERAL_STRING("mousedown"), this,
-                           true, false);
-  target->AddEventListener(NS_LITERAL_STRING("input"), this,
-                           true, false);
-  target->AddEventListener(NS_LITERAL_STRING("keypress"), this, true, false);
-  target->AddEventListener(NS_LITERAL_STRING("compositionstart"), this,
-                           true, false);
-  target->AddEventListener(NS_LITERAL_STRING("compositionend"), this,
-                           true, false);
-  target->AddEventListener(NS_LITERAL_STRING("contextmenu"), this,
-                           true, false);
+  EventListenerManager* elm = target->GetOrCreateListenerManager();
+  if (NS_WARN_IF(!elm)) {
+    return;
+  }
+
+  elm->AddEventListenerByType(this, NS_LITERAL_STRING("focus"),
+                              TrustedEventsAtCapture());
+  elm->AddEventListenerByType(this, NS_LITERAL_STRING("blur"),
+                              TrustedEventsAtCapture());
+  elm->AddEventListenerByType(this, NS_LITERAL_STRING("pagehide"),
+                              TrustedEventsAtCapture());
+  elm->AddEventListenerByType(this, NS_LITERAL_STRING("mousedown"),
+                              TrustedEventsAtCapture());
+  elm->AddEventListenerByType(this, NS_LITERAL_STRING("input"),
+                              TrustedEventsAtCapture());
+  elm->AddEventListenerByType(this, NS_LITERAL_STRING("keypress"),
+                              TrustedEventsAtSystemGroupCapture());
+  elm->AddEventListenerByType(this, NS_LITERAL_STRING("compositionstart"),
+                              TrustedEventsAtCapture());
+  elm->AddEventListenerByType(this, NS_LITERAL_STRING("compositionend"),
+                              TrustedEventsAtCapture());
+  elm->AddEventListenerByType(this, NS_LITERAL_STRING("contextmenu"),
+                              TrustedEventsAtCapture());
 
   // Note that any additional listeners added should ensure that they ignore
   // untrusted events, which might be sent by content that's up to no good.
@@ -1226,17 +1234,29 @@ nsFormFillController::RemoveWindowListeners(nsPIDOMWindowOuter* aWindow)
   if (!target)
     return;
 
-  target->RemoveEventListener(NS_LITERAL_STRING("focus"), this, true);
-  target->RemoveEventListener(NS_LITERAL_STRING("blur"), this, true);
-  target->RemoveEventListener(NS_LITERAL_STRING("pagehide"), this, true);
-  target->RemoveEventListener(NS_LITERAL_STRING("mousedown"), this, true);
-  target->RemoveEventListener(NS_LITERAL_STRING("input"), this, true);
-  target->RemoveEventListener(NS_LITERAL_STRING("keypress"), this, true);
-  target->RemoveEventListener(NS_LITERAL_STRING("compositionstart"), this,
-                              true);
-  target->RemoveEventListener(NS_LITERAL_STRING("compositionend"), this,
-                              true);
-  target->RemoveEventListener(NS_LITERAL_STRING("contextmenu"), this, true);
+  EventListenerManager* elm = target->GetOrCreateListenerManager();
+  if (NS_WARN_IF(!elm)) {
+    return;
+  }
+
+  elm->RemoveEventListenerByType(this, NS_LITERAL_STRING("focus"),
+                                 TrustedEventsAtCapture());
+  elm->RemoveEventListenerByType(this, NS_LITERAL_STRING("blur"),
+                                 TrustedEventsAtCapture());
+  elm->RemoveEventListenerByType(this, NS_LITERAL_STRING("pagehide"),
+                                 TrustedEventsAtCapture());
+  elm->RemoveEventListenerByType(this, NS_LITERAL_STRING("mousedown"),
+                                 TrustedEventsAtCapture());
+  elm->RemoveEventListenerByType(this, NS_LITERAL_STRING("input"),
+                                 TrustedEventsAtCapture());
+  elm->RemoveEventListenerByType(this, NS_LITERAL_STRING("keypress"),
+                                 TrustedEventsAtSystemGroupCapture());
+  elm->RemoveEventListenerByType(this, NS_LITERAL_STRING("compositionstart"),
+                                 TrustedEventsAtCapture());
+  elm->RemoveEventListenerByType(this, NS_LITERAL_STRING("compositionend"),
+                                 TrustedEventsAtCapture());
+  elm->RemoveEventListenerByType(this, NS_LITERAL_STRING("contextmenu"),
+                                 TrustedEventsAtCapture());
 }
 
 void

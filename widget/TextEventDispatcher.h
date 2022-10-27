@@ -399,6 +399,10 @@ private:
   // is a composition.
   static bool sDispatchKeyEventsDuringComposition;
 
+  // If this is true, keypress events for non-printable keys are dispatched to
+  // event listeners of the system event group in web content.
+  static bool sDispatchKeyPressEventNonPrintableInContent;
+
   nsresult BeginInputTransactionInternal(
              TextEventDispatcherListener* aListener,
              InputTransactionType aType);

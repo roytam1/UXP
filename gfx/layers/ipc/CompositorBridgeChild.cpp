@@ -803,24 +803,6 @@ CompositorBridgeChild::SendFlushRendering()
 }
 
 bool
-CompositorBridgeChild::SendStartFrameTimeRecording(const int32_t& bufferSize, uint32_t* startIndex)
-{
-  if (!mCanSend) {
-    return false;
-  }
-  return PCompositorBridgeChild::SendStartFrameTimeRecording(bufferSize, startIndex);
-}
-
-bool
-CompositorBridgeChild::SendStopFrameTimeRecording(const uint32_t& startIndex, nsTArray<float>* intervals)
-{
-  if (!mCanSend) {
-    return false;
-  }
-  return PCompositorBridgeChild::SendStopFrameTimeRecording(startIndex, intervals);
-}
-
-bool
 CompositorBridgeChild::SendNotifyRegionInvalidated(const nsIntRegion& region)
 {
   if (!mCanSend) {

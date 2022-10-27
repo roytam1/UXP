@@ -49,7 +49,7 @@ interface nsIJSRAIIHelper;
 interface nsIContentPermissionRequest;
 interface nsIObserver;
 
-[scriptable, uuid(7fcc7958-77d9-45ff-8c81-277bde5f0dc8)]
+[scriptable, uuid(58e97ce9-1d9e-4576-aabf-89480fdeb16d)]
 interface nsIDOMWindowUtils : nsISupports {
 
   /**
@@ -1424,38 +1424,6 @@ interface nsIDOMWindowUtils : nsISupports {
    * Returns the current audio backend as a free-form string.
    */
   readonly attribute AString currentAudioBackend;
-
-  /**
-   * Record (and return) frame-intervals for frames which were presented
-   *   between calling StartFrameTimeRecording and StopFrameTimeRecording.
-   *
-   * - Uses a cyclic buffer and serves concurrent consumers, so if Stop is called too late
-   *     (elements were overwritten since Start), result is considered invalid and hence empty.
-   * - Buffer is capable of holding 10 seconds @ 60fps (or more if frames were less frequent).
-   *     Can be changed (up to 1 hour) via pref: toolkit.framesRecording.bufferSize.
-   * - Note: the first frame-interval may be longer than expected because last frame
-   *     might have been presented some time before calling StartFrameTimeRecording.
-   */
-
-  /**
-   * Returns a handle which represents current recording start position.
-   */
-  void startFrameTimeRecording([retval] out unsigned long startIndex);
-
-  /**
-   * Returns number of recorded frames since startIndex was issued,
-   *   and allocates+populates 2 arraye with the recorded data.
-   * - Allocation is infallible. Should be released even if size is 0.
-   */
-  void stopFrameTimeRecording(in unsigned long startIndex,
-                             [optional] out unsigned long frameCount,
-                             [retval, array, size_is(frameCount)] out float frameIntervals);
-
-  /**
-   * Signals that we're begining to tab switch. This is used by painting code to
-   * determine total tab switch time.
-   */
-  void beginTabSwitch();
 
   /**
    * The DPI of the display
