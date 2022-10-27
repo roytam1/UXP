@@ -246,7 +246,7 @@ EncodeInputStream(nsIInputStream* aInputStream,
 
 static const char kBase64URLAlphabet[] =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-static_assert(mozilla::ArrayLength(kBase64URLAlphabet) == 0x41);
+static_assert(mozilla::ArrayLength(kBase64URLAlphabet) == 0x41, "mozilla::ArrayLength(kBase64URLAlphabet) != 0x41");
 
 // Maps an encoded character to a value in the Base64 URL alphabet, per
 // RFC 4648, Table 2. Invalid input characters map to UINT8_MAX.
@@ -270,7 +270,7 @@ static const uint8_t kBase64URLDecodeTable[] = {
   42, 43, 44, 45, 46, 47, 48, 49, 50, 51, /* a - z */
   255, 255, 255, 255, 255
 };
-static_assert(mozilla::ArrayLength(kBase64URLDecodeTable) == 0x80);
+static_assert(mozilla::ArrayLength(kBase64URLDecodeTable) == 0x80, "mozilla::ArrayLength(kBase64URLDecodeTable) != 0x80");
 
 bool
 Base64URLCharToValue(char aChar, uint8_t* aValue) {
