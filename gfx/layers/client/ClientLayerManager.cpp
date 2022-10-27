@@ -617,28 +617,6 @@ ClientLayerManager::SendInvalidRegion(const nsIntRegion& aRegion)
   }
 }
 
-uint32_t
-ClientLayerManager::StartFrameTimeRecording(int32_t aBufferSize)
-{
-  CompositorBridgeChild* renderer = GetRemoteRenderer();
-  if (renderer) {
-    uint32_t startIndex;
-    renderer->SendStartFrameTimeRecording(aBufferSize, &startIndex);
-    return startIndex;
-  }
-  return -1;
-}
-
-void
-ClientLayerManager::StopFrameTimeRecording(uint32_t         aStartIndex,
-                                           nsTArray<float>& aFrameIntervals)
-{
-  CompositorBridgeChild* renderer = GetRemoteRenderer();
-  if (renderer) {
-    renderer->SendStopFrameTimeRecording(aStartIndex, &aFrameIntervals);
-  }
-}
-
 void
 ClientLayerManager::ForwardTransaction(bool aScheduleComposite)
 {

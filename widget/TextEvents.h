@@ -183,6 +183,30 @@ public:
     return IsKeyEventOnPlugin(mMessage);
   }
 
+  bool IsInputtingText() const
+  {
+    // NOTE: On some keyboard layouts, some characters are put in with Control
+    //       or Alt keys, but at that time, widget unsets the modifier flag
+    //       from the eKeyPress event, so it does not count as a modifier in
+    //       this check.
+    return mMessage == eKeyPress &&
+           mCharCode &&
+           !(mModifiers & (MODIFIER_ALT |
+                           MODIFIER_CONTROL |
+                           MODIFIER_META |
+                           MODIFIER_OS));
+  }
+
+  bool IsInputtingLineBreak() const
+  {
+    return mMessage == eKeyPress &&
+           mKeyNameIndex == KEY_NAME_INDEX_Enter &&
+           !(mModifiers & (MODIFIER_ALT |
+                           MODIFIER_CONTROL |
+                           MODIFIER_META |
+                           MODIFIER_OS));
+  }
+
   virtual WidgetEvent* Duplicate() const override
   {
     MOZ_ASSERT(mClass == eKeyboardEventClass,

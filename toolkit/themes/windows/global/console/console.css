@@ -208,7 +208,7 @@ toolbar#ToolbarMode .toolbarbutton-text {
 }
 
 %ifdef XP_WIN
-@media not (-moz-os-version: windows-win10) {
+@media not all and (-moz-os-version: windows-win10) {
   #ToolbarMode {
     -moz-appearance: -moz-win-browsertabbar-toolbox;
   }

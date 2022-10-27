@@ -231,6 +231,10 @@ pref("dom.keyboardevent.code.enabled", true);
 // even if this is true).
 pref("dom.keyboardevent.dispatch_during_composition", false);
 
+// If this is true, TextEventDispatcher dispatches keypress events
+// for the input of non-printable characters (content only).
+pref("dom.keyboardevent.keypress.dispatch_non_printable_in_content", false);
+
 // Whether URL,Location,Link::GetHash should be percent encoded
 // in setter and percent decoded in getter (old behaviour = true)
 pref("dom.url.encode_decode_hash", true);
@@ -4284,6 +4288,7 @@ pref("webgl.lose-context-on-memory-pressure", false);
 pref("webgl.can-lose-context-in-foreground", true);
 pref("webgl.restore-context-when-visible", true);
 pref("webgl.max-warnings-per-context", 32);
+pref("webgl.max-size-per-texture-mb", 1024);
 pref("webgl.enable-draft-extensions", false);
 pref("webgl.enable-privileged-extensions", false);
 pref("webgl.bypass-shader-validation", false);
