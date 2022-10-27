@@ -27,6 +27,7 @@
 #define MACOS_VERSION_10_16_HEX 0x000A1000
 #define MACOS_VERSION_11_0_HEX 0x000B0000
 #define MACOS_VERSION_12_0_HEX 0x000C0000
+#define MACOS_VERSION_13_0_HEX 0x000D0000
 
 #include "nsCocoaFeatures.h"
 #include "nsCocoaUtils.h"
@@ -212,13 +213,20 @@ nsCocoaFeatures::OnBigSurOrLater()
           (macOSVersion() >= MACOS_VERSION_11_0_HEX));
 }
 
-/* static */ bool nsCocoaFeatures::OnMontereyOrLater()
+/* static */ bool
+nsCocoaFeatures::OnMontereyOrLater()
 {
   // Monterey pretends to be 10.16 and is indistinguishable from Big Sur.
   // In practice, this means that an Intel build can return false
   // from this function if it's launched from the command line, see bug 1727624.
   // This will not be an issue anymore once we link against the Big Sur SDK.
   return (macOSVersion() >= MACOS_VERSION_12_0_HEX);
+}
+
+/* static */ bool
+nsCocoaFeatures::OnVenturaOrLater() 
+{
+  return (macOSVersion() >= MACOS_VERSION_13_0_HEX);
 }
 
 /* static */ bool
@@ -234,7 +242,8 @@ nsCocoaFeatures::IsAtLeastVersion(int32_t aMajor, int32_t aMinor, int32_t aBugFi
  * for this purpose. Note: using this in a sandboxed process requires allowing
  * the sysctl in the sandbox policy.
  */
-/* static */ bool nsCocoaFeatures::ProcessIsRosettaTranslated()
+/* static */ bool 
+nsCocoaFeatures::ProcessIsRosettaTranslated()
 {
   int ret = 0;
   size_t size = sizeof(ret);

@@ -966,8 +966,6 @@ LayerManagerComposite::Render(const nsIntRegion& aInvalidRegion, const nsIntRegi
   }
 
   mCompositor->GetWidget()->PostRender(&widgetContext);
-
-  RecordFrame();
 }
 
 already_AddRefed<PaintedLayerComposite>

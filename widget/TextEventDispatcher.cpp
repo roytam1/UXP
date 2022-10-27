@@ -21,6 +21,7 @@ namespace widget {
  *****************************************************************************/
 
 bool TextEventDispatcher::sDispatchKeyEventsDuringComposition = false;
+bool TextEventDispatcher::sDispatchKeyPressEventNonPrintableInContent = false;
 
 TextEventDispatcher::TextEventDispatcher(nsIWidget* aWidget)
   : mWidget(aWidget)
@@ -35,6 +36,10 @@ TextEventDispatcher::TextEventDispatcher(nsIWidget* aWidget)
     Preferences::AddBoolVarCache(
       &sDispatchKeyEventsDuringComposition,
       "dom.keyboardevent.dispatch_during_composition",
+      false);
+    Preferences::AddBoolVarCache(
+      &sDispatchKeyPressEventNonPrintableInContent,
+      "dom.keyboardevent.keypress.dispatch_non_printable_in_content",
       false);
     sInitialized = true;
   }
@@ -529,6 +534,13 @@ TextEventDispatcher::DispatchKeyboardEventInternal(
       MOZ_ASSERT(keyEvent.mCodeValue ==
                    static_cast<WidgetKeyboardEvent&>(original).mCodeValue);
     }
+  }
+
+  if (!sDispatchKeyPressEventNonPrintableInContent &&
+      keyEvent.mMessage == eKeyPress &&
+      !keyEvent.IsInputtingText() &&
+      !keyEvent.IsInputtingLineBreak()) {
+    keyEvent.mFlags.mOnlySystemGroupDispatchInContent = true;
   }
 
   DispatchInputEvent(mWidget, keyEvent, aStatus);

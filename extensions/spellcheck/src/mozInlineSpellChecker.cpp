@@ -714,7 +714,7 @@ mozInlineSpellChecker::RegisterEventListeners()
                              true, false);
   piTarget->AddEventListener(NS_LITERAL_STRING("click"), this,
                              false, false);
-  piTarget->AddEventListener(NS_LITERAL_STRING("keypress"), this,
+  piTarget->AddEventListener(NS_LITERAL_STRING("keydown"), this,
                              false, false);
   return NS_OK;
 }
@@ -738,7 +738,7 @@ mozInlineSpellChecker::UnregisterEventListeners()
 
   piTarget->RemoveEventListener(NS_LITERAL_STRING("blur"), this, true);
   piTarget->RemoveEventListener(NS_LITERAL_STRING("click"), this, false);
-  piTarget->RemoveEventListener(NS_LITERAL_STRING("keypress"), this, false);
+  piTarget->RemoveEventListener(NS_LITERAL_STRING("keydown"), this, false);
   return NS_OK;
 }
 
@@ -1916,8 +1916,8 @@ NS_IMETHODIMP mozInlineSpellChecker::HandleEvent(nsIDOMEvent* aEvent)
   if (eventType.EqualsLiteral("click")) {
     return MouseClick(aEvent);
   }
-  if (eventType.EqualsLiteral("keypress")) {
-    return KeyPress(aEvent);
+  if (eventType.EqualsLiteral("keydown")) {
+    return KeyDown(aEvent);
   }
 
   return NS_OK;
@@ -1943,7 +1943,7 @@ nsresult mozInlineSpellChecker::MouseClick(nsIDOMEvent *aMouseEvent)
   return NS_OK;
 }
 
-nsresult mozInlineSpellChecker::KeyPress(nsIDOMEvent* aKeyEvent)
+nsresult mozInlineSpellChecker::KeyDown(nsIDOMEvent* aKeyEvent)
 {
   nsCOMPtr<nsIDOMKeyEvent>keyEvent = do_QueryInterface(aKeyEvent);
   NS_ENSURE_TRUE(keyEvent, NS_OK);

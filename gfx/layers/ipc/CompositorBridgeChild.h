@@ -159,8 +159,6 @@ public:
   bool SendMakeSnapshot(const SurfaceDescriptor& inSnapshot, const gfx::IntRect& dirtyRect);
   bool SendFlushRendering();
   bool SendGetTileSize(int32_t* tileWidth, int32_t* tileHeight);
-  bool SendStartFrameTimeRecording(const int32_t& bufferSize, uint32_t* startIndex);
-  bool SendStopFrameTimeRecording(const uint32_t& startIndex, nsTArray<float>* intervals);
   bool SendNotifyRegionInvalidated(const nsIntRegion& region);
   bool SendRequestNotifyAfterRemotePaint();
   bool SendClearApproximatelyVisibleRegions(uint64_t aLayersId, uint32_t aPresShellId);

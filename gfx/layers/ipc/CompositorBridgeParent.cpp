@@ -818,27 +818,6 @@ CompositorBridgeParent::Invalidate()
 }
 
 bool
-CompositorBridgeParent::RecvStartFrameTimeRecording(const int32_t& aBufferSize, uint32_t* aOutStartIndex)
-{
-  if (mLayerManager) {
-    *aOutStartIndex = mLayerManager->StartFrameTimeRecording(aBufferSize);
-  } else {
-    *aOutStartIndex = 0;
-  }
-  return true;
-}
-
-bool
-CompositorBridgeParent::RecvStopFrameTimeRecording(const uint32_t& aStartIndex,
-                                                   InfallibleTArray<float>* intervals)
-{
-  if (mLayerManager) {
-    mLayerManager->StopFrameTimeRecording(aStartIndex, *intervals);
-  }
-  return true;
-}
-
-bool
 CompositorBridgeParent::RecvClearApproximatelyVisibleRegions(const uint64_t& aLayersId,
                                                             const uint32_t& aPresShellId)
 {
