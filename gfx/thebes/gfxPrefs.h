@@ -448,7 +448,9 @@ private:
   DECL_GFX_PREF(Live, "image.mozsamplesize.enabled",           ImageMozSampleSizeEnabled, bool, false);
   DECL_GFX_PREF(Once, "image.multithreaded_decoding.limit",    ImageMTDecodingLimit, int32_t, -1);
   DECL_GFX_PREF(Live, "image.webp.enabled",                    ImageWebPEnabled, bool, true);
+#ifdef MOZ_JXL
   DECL_GFX_PREF(Live, "image.jxl.enabled",                     ImageJXLEnabled, bool, true);
+#endif
 
   DECL_GFX_PREF(Once, "layers.acceleration.enabled",           LayersAccelerationEnabledDoNotUseDirectly, bool, true);
   DECL_GFX_PREF(Live, "layers.acceleration.draw-fps",          LayersDrawFPS, bool, false);
