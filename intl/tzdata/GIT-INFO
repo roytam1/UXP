@@ -1,7 +1,5 @@
-commit 95120170afa0cf622a18da37d3af58abf8ecd40e
-Author: Yoshito Umaoka <yumaoka@users.noreply.github.com>
-Date:   Wed Jan 27 09:48:37 2021 -0500
+commit 51ebdd3f0f5a774050e3ebc745b5fbea2f87f26b
+Author: yumaoka <y.umaoka@gmail.com>
+Date:   Tue Nov 1 10:29:13 2022 -0400
 
-    ICU-21467 tzdata 2021a updates. Also updated build script. With this … (#17)
-    
-    change, we no longer release ICU time zone data updates for ICU 4.2 or older releases.
+    ICU-22196 TZ Database 2022f updates (icu-data)

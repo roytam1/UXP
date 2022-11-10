@@ -9,9 +9,10 @@
 #include "nsIInputStream.h"
 #include "nsISupportsImpl.h"
 
+#include "mozilla/dom/InternalHeaders.h"
+#include "mozilla/dom/RequestBinding.h"
 #include "mozilla/dom/ResponseBinding.h"
 #include "mozilla/dom/ChannelInfo.h"
-#include "mozilla/dom/InternalHeaders.h"
 #include "mozilla/UniquePtr.h"
 
 namespace mozilla {
@@ -32,7 +33,9 @@ class InternalResponse final
 public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(InternalResponse)
 
-  InternalResponse(uint16_t aStatus, const nsACString& aStatusText);
+  InternalResponse(uint16_t aStatus,
+                   const nsACString& aStatusText,
+                   RequestCredentials aCredentialsMode = RequestCredentials::Omit);
 
   static already_AddRefed<InternalResponse>
   FromIPC(const IPCInternalResponse& aIPCResponse);
@@ -294,8 +297,11 @@ private:
   RefPtr<InternalHeaders> mHeaders;
   nsCOMPtr<nsIInputStream> mBody;
   int64_t mBodySize;
+  RequestCredentials mCredentialsMode;
+
 public:
   static const int64_t UNKNOWN_BODY_SIZE = -1;
+
 private:
   ChannelInfo mChannelInfo;
   UniquePtr<mozilla::ipc::PrincipalInfo> mPrincipalInfo;
