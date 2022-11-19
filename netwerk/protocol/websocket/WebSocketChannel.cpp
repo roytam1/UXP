@@ -2313,6 +2313,16 @@ WebSocketChannel::CleanupConnection()
 {
   LOG(("WebSocketChannel::CleanupConnection() %p", this));
 
+  // This should run on the Socket Thread to prevent potential races.
+  bool onSocketThread;
+  nsresult rv = mSocketThread->IsOnCurrentThread(&onSocketThread);
+  if (NS_SUCCEEDED(rv) && !onSocketThread) {
+    mSocketThread->Dispatch(
+        NewRunnableMethod(this, &WebSocketChannel::CleanupConnection),
+        NS_DISPATCH_NORMAL);
+    return;
+  }
+
   if (mLingeringCloseTimer) {
     mLingeringCloseTimer->Cancel();
     mLingeringCloseTimer = nullptr;
