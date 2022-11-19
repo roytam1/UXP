@@ -1720,11 +1720,14 @@ nsLocalFile::GetNativeTarget(nsACString& aResult)
     return NS_ERROR_OUT_OF_MEMORY;
   }
 
-  if (readlink(mPath.get(), target, (size_t)size) < 0) {
+  ssize_t written = readlink(mPath.get(), target.BeginWriting(), size_t(size));
+  if (written < 0) {
     free(target);
     return NSRESULT_FOR_ERRNO();
   }
-  target[size] = '\0';
+  // Target might have changed since the lstat call, or lstat might lie, see bug
+  // 1791029.
+  target.Truncate(written);
 
   nsresult rv = NS_OK;
   nsCOMPtr<nsIFile> self(this);
@@ -1775,12 +1778,15 @@ nsLocalFile::GetNativeTarget(nsACString& aResult)
       size = newSize;
     }
 
-    int32_t linkLen = readlink(flatRetval.get(), target, size);
+    ssize_t linkLen = readlink(flatRetval.get(), target, size);
     if (linkLen == -1) {
       rv = NSRESULT_FOR_ERRNO();
       break;
     }
-    target[linkLen] = '\0';
+    // Target might have changed since the lstat call, or lstat might lie, see bug
+    // 1791029.
+    newTarget.Truncate(linkLen);
+    target = newTarget;
   }
 
   free(target);
