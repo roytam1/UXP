@@ -1715,14 +1715,13 @@ nsLocalFile::GetNativeTarget(nsACString& aResult)
   }
 
   int32_t size = (int32_t)symStat.st_size;
-  char* target = (char*)moz_xmalloc(size + 1);
-  if (!target) {
+  nsAutoCString target;
+  if (!target.SetLength(size, mozilla::fallible)) {
     return NS_ERROR_OUT_OF_MEMORY;
   }
 
   ssize_t written = readlink(mPath.get(), target.BeginWriting(), size_t(size));
   if (written < 0) {
-    free(target);
     return NSRESULT_FOR_ERRNO();
   }
   // Target might have changed since the lstat call, or lstat might lie, see bug
@@ -1743,7 +1742,7 @@ nsLocalFile::GetNativeTarget(nsACString& aResult)
       if (NS_FAILED(rv = self->GetParent(getter_AddRefs(parent)))) {
         break;
       }
-      if (NS_FAILED(rv = parent->AppendRelativeNativePath(nsDependentCString(target)))) {
+      if (NS_FAILED(rv = parent->AppendRelativeNativePath(target))) {
         break;
       }
       if (NS_FAILED(rv = parent->GetNativePath(aResult))) {
@@ -1768,17 +1767,14 @@ nsLocalFile::GetNativeTarget(nsACString& aResult)
     }
 
     int32_t newSize = (int32_t)symStat.st_size;
-    if (newSize > size) {
-      char* newTarget = (char*)moz_xrealloc(target, newSize + 1);
-      if (!newTarget) {
-        rv = NS_ERROR_OUT_OF_MEMORY;
-        break;
-      }
-      target = newTarget;
-      size = newSize;
+    size = newSize;
+    nsAutoCString newTarget;
+    if (!newTarget.SetLength(size, mozilla::fallible)) {
+      rv = NS_ERROR_OUT_OF_MEMORY;
+      break;
     }
 
-    ssize_t linkLen = readlink(flatRetval.get(), target, size);
+    ssize_t linkLen = readlink(flatRetval.get(), newTarget.BeginWriting(), size);
     if (linkLen == -1) {
       rv = NSRESULT_FOR_ERRNO();
       break;
@@ -1788,8 +1784,6 @@ nsLocalFile::GetNativeTarget(nsACString& aResult)
     newTarget.Truncate(linkLen);
     target = newTarget;
   }
-
-  free(target);
 
   if (NS_FAILED(rv)) {
     aResult.Truncate();
