@@ -141,6 +141,11 @@ nsJXLDecoder::ReadJXLData(const char* aData, size_t aLength)
             Nothing(), SurfacePipeFlags());
         for (uint8_t* rowPtr = mOutBuffer.begin(); rowPtr < mOutBuffer.end();
              rowPtr += mInfo.xsize * 4) {
+          // FIXME: Quick and dirty BGRA to RGBA conversion.
+          // We currently have a channel ordering mis-match here.
+          for (uint8_t* pixPtr = rowPtr; pixPtr < rowPtr + mInfo.xsize * 4; pixPtr+=4){
+            std::swap(pixPtr[0], pixPtr[2]);
+          }
           pipe->WriteBuffer(reinterpret_cast<uint32_t*>(rowPtr));
         }
 
