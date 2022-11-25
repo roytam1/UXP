@@ -3071,9 +3071,8 @@ XMLHttpRequestMainThread::SetRequestHeader(const nsACString& aName,
   }
 
   // Step 3
-  nsAutoCString value(aValue);
-  static const char kHTTPWhitespace[] = "\n\t\r ";
-  value.Trim(kHTTPWhitespace);
+  nsAutoCString value;
+  NS_TrimHTTPWhitespace(aValue, value);
 
   // Step 4
   if (!NS_IsValidHTTPToken(aName) || !NS_IsReasonableHTTPHeaderValue(value)) {
@@ -3082,7 +3081,7 @@ XMLHttpRequestMainThread::SetRequestHeader(const nsACString& aName,
 
   // Step 5
   bool isPrivilegedCaller = IsSystemXHR();
-  bool isForbiddenHeader = nsContentUtils::IsForbiddenRequestHeader(aName);
+  bool isForbiddenHeader = nsContentUtils::IsForbiddenRequestHeader(aName, aValue);
   if (!isPrivilegedCaller && isForbiddenHeader) {
     NS_ConvertUTF8toUTF16 name(aName);
     const char16_t* params[] = { name.get() };
