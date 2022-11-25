@@ -2425,7 +2425,8 @@ public:
    * Returns whether a given header is forbidden for an XHR or fetch
    * request.
    */
-  static bool IsForbiddenRequestHeader(const nsACString& aHeader);
+  static bool IsForbiddenRequestHeader(const nsACString& aHeader,
+                                       const nsACString& aValue);
 
   /**
    * Returns whether a given header is forbidden for a system XHR
@@ -2434,10 +2435,34 @@ public:
   static bool IsForbiddenSystemRequestHeader(const nsACString& aHeader);
 
   /**
+   * Returns whether a given header has characters that aren't permitted
+   */
+  static bool IsCorsUnsafeRequestHeaderValue(const nsACString& aHeaderValue);
+
+  /**
+   * Returns whether a given Accept header value is allowed
+   * for a non-CORS XHR or fetch request.
+   */
+  static bool IsAllowedNonCorsAccept(const nsACString& aHeaderValue);
+
+  /**
    * Returns whether a given Content-Type header value is allowed
    * for a non-CORS XHR or fetch request.
    */
   static bool IsAllowedNonCorsContentType(const nsACString& aHeaderValue);
+
+  /**
+   * Returns whether a given Content-Language or accept-language header value is
+   * allowed for a non-CORS XHR or fetch request.
+   */
+  static bool IsAllowedNonCorsLanguage(const nsACString& aHeaderValue);
+ 
+  /**
+   * Returns whether a given header and value is a CORS-safelisted request
+   * header per https://fetch.spec.whatwg.org/#cors-safelisted-request-header
+   */
+  static bool IsCORSSafelistedRequestHeader(const nsACString& aName,
+                                            const nsACString& aValue);
 
   /**
    * Returns whether a given header is forbidden for an XHR or fetch
@@ -2445,6 +2470,14 @@ public:
    */
   static bool IsForbiddenResponseHeader(const nsACString& aHeader);
 
+  /**
+   * Checks whether the header overrides any http methods
+   */
+  static bool IsOverrideMethodHeader(const nsACString& headerName);
+  /**
+   * Checks whether the  header value contains any forbidden method
+   */
+  static bool ContainsForbiddenMethod(const nsACString& headerValue);
   /**
    * Returns the inner window ID for the window associated with a request,
    */
