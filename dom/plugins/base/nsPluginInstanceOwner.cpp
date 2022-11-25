@@ -1480,6 +1480,16 @@ nsresult nsPluginInstanceOwner::DispatchFocusToPlugin(nsIDOMEvent* aFocusEvent)
 
 nsresult nsPluginInstanceOwner::ProcessKeyPress(nsIDOMEvent* aKeyEvent)
 {
+  // ProcessKeyPress() may be called twice with same eKeyPress event because we
+  // listen in both the default and system event groups (to capture keypresses
+  // potentially captured by plugins that are not printable keys).
+  // When this is called in the latter case and the event must be fired in the
+  // default event group too, we don't need to do anything else and can return.
+  if (!aKeyEvent->WidgetEventPtr()->mFlags.mOnlySystemGroupDispatchInContent &&
+      aKeyEvent->WidgetEventPtr()->mFlags.mInSystemGroup) {
+    return NS_OK;
+  }
+
 #ifdef XP_MACOSX
   return DispatchKeyToPlugin(aKeyEvent);
 #else
@@ -2547,6 +2557,7 @@ nsPluginInstanceOwner::Destroy()
   content->RemoveEventListener(NS_LITERAL_STRING("mouseover"), this, false);
   content->RemoveEventListener(NS_LITERAL_STRING("mouseout"), this, false);
   content->RemoveEventListener(NS_LITERAL_STRING("keypress"), this, true);
+  content->RemoveSystemEventListener(NS_LITERAL_STRING("keypress"), this, true);
   content->RemoveEventListener(NS_LITERAL_STRING("keydown"), this, true);
   content->RemoveEventListener(NS_LITERAL_STRING("keyup"), this, true);
   content->RemoveEventListener(NS_LITERAL_STRING("drop"), this, true);
@@ -2856,25 +2867,22 @@ nsresult nsPluginInstanceOwner::Init(nsIContent* aContent)
   // register context menu listener
   mCXMenuListener = new nsPluginDOMContextMenuListener(aContent);
 
-  aContent->AddEventListener(NS_LITERAL_STRING("focus"), this, false,
-                             false);
-  aContent->AddEventListener(NS_LITERAL_STRING("blur"), this, false,
-                             false);
-  aContent->AddEventListener(NS_LITERAL_STRING("mouseup"), this, false,
-                             false);
-  aContent->AddEventListener(NS_LITERAL_STRING("mousedown"), this, false,
-                             false);
-  aContent->AddEventListener(NS_LITERAL_STRING("mousemove"), this, false,
-                             false);
-  aContent->AddEventListener(NS_LITERAL_STRING("click"), this, false,
-                             false);
-  aContent->AddEventListener(NS_LITERAL_STRING("dblclick"), this, false,
-                             false);
-  aContent->AddEventListener(NS_LITERAL_STRING("mouseover"), this, false,
-                             false);
-  aContent->AddEventListener(NS_LITERAL_STRING("mouseout"), this, false,
-                             false);
+  aContent->AddEventListener(NS_LITERAL_STRING("focus"), this, false, false);
+  aContent->AddEventListener(NS_LITERAL_STRING("blur"), this, false, false);
+  aContent->AddEventListener(NS_LITERAL_STRING("mouseup"), this, false, false);
+  aContent->AddEventListener(NS_LITERAL_STRING("mousedown"), this, false, false);
+  aContent->AddEventListener(NS_LITERAL_STRING("mousemove"), this, false, false);
+  aContent->AddEventListener(NS_LITERAL_STRING("click"), this, false, false);
+  aContent->AddEventListener(NS_LITERAL_STRING("dblclick"), this, false, false);
+  aContent->AddEventListener(NS_LITERAL_STRING("mouseover"), this, false, false);
+  aContent->AddEventListener(NS_LITERAL_STRING("mouseout"), this, false, false);
+
+  // The "keypress" event should be handled when it's in the default event group
+  // if the event is fired in content.
+  // Otherwise, it should be handled when it's in the system event group.
   aContent->AddEventListener(NS_LITERAL_STRING("keypress"), this, true);
+  aContent->AddSystemEventListener(NS_LITERAL_STRING("keypress"), this, true);
+  
   aContent->AddEventListener(NS_LITERAL_STRING("keydown"), this, true);
   aContent->AddEventListener(NS_LITERAL_STRING("keyup"), this, true);
   aContent->AddEventListener(NS_LITERAL_STRING("drop"), this, true);

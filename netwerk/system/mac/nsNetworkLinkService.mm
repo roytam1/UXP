@@ -181,11 +181,13 @@ static bool scanArp(char *ip, char *mac, size_t maclen)
         if (st == 0 || errno != ENOMEM) {
             break;
         }
-        needed += needed / 8;
+        size_t increased = needed;
+        increased += increased / 8;
 
-        auto tmp = MakeUnique<char[]>(needed);
+        auto tmp = MakeUnique<char[]>(increased);
         memcpy(&tmp[0], &buf[0], needed);
         buf = Move(tmp);
+        needed = increased;
     }
     if (st == -1) {
         return false;

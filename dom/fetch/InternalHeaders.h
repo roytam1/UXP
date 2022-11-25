@@ -136,8 +136,11 @@ private:
 
   static bool IsInvalidName(const nsACString& aName, ErrorResult& aRv);
   static bool IsInvalidValue(const nsACString& aValue, ErrorResult& aRv);
+  bool IsValidHeaderValue(const nsCString& aLowerName,
+                          const nsCString& aNormalizedValue, ErrorResult& aRv);
   bool IsImmutable(ErrorResult& aRv) const;
-  bool IsForbiddenRequestHeader(const nsACString& aName) const;
+  bool IsForbiddenRequestHeader(const nsACString& aName,
+                                const nsACString& aValue) const;
   bool IsForbiddenRequestNoCorsHeader(const nsACString& aName) const;
   bool IsForbiddenRequestNoCorsHeader(const nsACString& aName,
                                       const nsACString& aValue) const;
@@ -156,10 +159,21 @@ private:
     return IsInvalidName(aName, aRv) ||
            IsInvalidValue(aValue, aRv) ||
            IsImmutable(aRv) ||
-           IsForbiddenRequestHeader(aName) ||
+           IsForbiddenRequestHeader(aName, aValue) ||
            IsForbiddenRequestNoCorsHeader(aName, aValue) ||
            IsForbiddenResponseHeader(aName);
   }
+
+  void RemovePrivilegedNoCorsRequestHeaders();
+
+  void GetInternal(const nsCString& aLowerName, nsACString& aValue,
+                   ErrorResult& aRv) const;
+
+  bool DeleteInternal(const nsCString& aLowerName, ErrorResult& aRv);
+
+  static bool IsNoCorsSafelistedRequestHeaderName(const nsCString& aName);
+
+  static bool IsPrivilegedNoCorsRequestHeaderName(const nsCString& aName);
 
   static bool IsSimpleHeader(const nsACString& aName,
                              const nsACString& aValue);
