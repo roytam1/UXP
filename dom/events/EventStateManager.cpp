@@ -434,11 +434,8 @@ NS_IMPL_CYCLE_COLLECTION(EventStateManager,
                          mGestureDownContent,
                          mGestureDownFrameOwner,
                          mLastLeftMouseDownContent,
-                         mLastLeftMouseDownContentParent,
                          mLastMiddleMouseDownContent,
-                         mLastMiddleMouseDownContentParent,
                          mLastRightMouseDownContent,
-                         mLastRightMouseDownContentParent,
                          mActiveContent,
                          mHoverContent,
                          mURLTargetContent,
@@ -4576,16 +4573,13 @@ EventStateManager::SetClickCount(WidgetMouseEvent* aEvent,
                                  nsEventStatus* aStatus)
 {
   nsCOMPtr<nsIContent> mouseContent;
-  nsIContent* mouseContentParent = nullptr;
   if (mCurrentTarget) {
     mCurrentTarget->GetContentForEvent(aEvent, getter_AddRefs(mouseContent));
   }
-  if (mouseContent) {
-    if (mouseContent->IsNodeOfType(nsINode::eTEXT)) {
-      mouseContent = mouseContent->GetParent();
-    }
-    if (mouseContent && mouseContent->IsRootOfNativeAnonymousSubtree()) {
-      mouseContentParent = mouseContent->GetParent();
+  if (mouseContent && mouseContent->IsNodeOfType(nsINode::eTEXT)) {
+    nsINode* parent = mouseContent->GetFlattenedTreeParentNode();
+    if (parent && parent->IsContent()) {
+      mouseContent = parent->AsContent();
     }
   }
 
@@ -4593,54 +4587,51 @@ EventStateManager::SetClickCount(WidgetMouseEvent* aEvent,
   case WidgetMouseEvent::eLeftButton:
     if (aEvent->mMessage == eMouseDown) {
       mLastLeftMouseDownContent = mouseContent;
-      mLastLeftMouseDownContentParent = mouseContentParent;
     } else if (aEvent->mMessage == eMouseUp) {
-      if (mLastLeftMouseDownContent == mouseContent ||
-          mLastLeftMouseDownContentParent == mouseContent ||
-          mLastLeftMouseDownContent == mouseContentParent) {
+      aEvent->mClickTarget =
+        nsContentUtils::GetCommonAncestorUnderInteractiveContent(
+          mouseContent, mLastLeftMouseDownContent);
+      if (aEvent->mClickTarget) {
         aEvent->mClickCount = mLClickCount;
         mLClickCount = 0;
       } else {
         aEvent->mClickCount = 0;
       }
       mLastLeftMouseDownContent = nullptr;
-      mLastLeftMouseDownContentParent = nullptr;
     }
     break;
 
   case WidgetMouseEvent::eMiddleButton:
     if (aEvent->mMessage == eMouseDown) {
       mLastMiddleMouseDownContent = mouseContent;
-      mLastMiddleMouseDownContentParent = mouseContentParent;
     } else if (aEvent->mMessage == eMouseUp) {
-      if (mLastMiddleMouseDownContent == mouseContent ||
-          mLastMiddleMouseDownContentParent == mouseContent ||
-          mLastMiddleMouseDownContent == mouseContentParent) {
+      aEvent->mClickTarget =
+        nsContentUtils::GetCommonAncestorUnderInteractiveContent(
+          mouseContent, mLastMiddleMouseDownContent);
+      if (aEvent->mClickTarget) {
         aEvent->mClickCount = mMClickCount;
         mMClickCount = 0;
       } else {
         aEvent->mClickCount = 0;
       }
       mLastMiddleMouseDownContent = nullptr;
-      mLastMiddleMouseDownContentParent = nullptr;
     }
     break;
 
   case WidgetMouseEvent::eRightButton:
     if (aEvent->mMessage == eMouseDown) {
       mLastRightMouseDownContent = mouseContent;
-      mLastRightMouseDownContentParent = mouseContentParent;
     } else if (aEvent->mMessage == eMouseUp) {
-      if (mLastRightMouseDownContent == mouseContent ||
-          mLastRightMouseDownContentParent == mouseContent ||
-          mLastRightMouseDownContent == mouseContentParent) {
+      aEvent->mClickTarget =
+        nsContentUtils::GetCommonAncestorUnderInteractiveContent(
+          mouseContent, mLastRightMouseDownContent);
+      if (aEvent->mClickTarget) {
         aEvent->mClickCount = mRClickCount;
         mRClickCount = 0;
       } else {
         aEvent->mClickCount = 0;
       }
       mLastRightMouseDownContent = nullptr;
-      mLastRightMouseDownContentParent = nullptr;
     }
     break;
   }
@@ -4662,7 +4653,7 @@ EventStateManager::EventCausesClickEvents(const WidgetMouseEvent& aMouseEvent)
   }
   // If mouse is still over same element, clickcount will be > 1.
   // If it has moved it will be zero, so no click.
-  if (!aMouseEvent.mClickCount) {
+  if (!aMouseEvent.mClickCount || !aMouseEvent.mClickTarget) {
     return false;
   }
   // Check that the window isn't disabled before firing a click
@@ -4681,7 +4672,7 @@ EventStateManager::InitAndDispatchClickEvent(WidgetMouseEvent* aMouseUpEvent,
 {
   MOZ_ASSERT(aMouseUpEvent);
   MOZ_ASSERT(EventCausesClickEvents(*aMouseUpEvent));
-  MOZ_ASSERT(aMouseUpContent || aCurrentTarget || aOverrideClickTarget);
+  MOZ_ASSERT(aMouseUpContent || aCurrentTarget);
 
   WidgetMouseEvent event(aMouseUpEvent->IsTrusted(), aMessage,
                          aMouseUpEvent->mWidget, WidgetMouseEvent::eReal);
@@ -4694,6 +4685,10 @@ EventStateManager::InitAndDispatchClickEvent(WidgetMouseEvent* aMouseUpEvent,
   event.mFlags.mNoContentDispatch = aNoContentDispatch;
   event.button = aMouseUpEvent->button;
   event.inputSource = aMouseUpEvent->inputSource;
+
+  if (!aMouseUpContent->IsInComposedDoc()) {
+    return NS_OK;
+  }
 
   // Use local event status for each click event dispatching since it'll be
   // cleared by EventStateManager::PreHandleEvent().  Therefore, dispatching
@@ -4730,22 +4725,12 @@ EventStateManager::PostHandleMouseUp(WidgetMouseEvent* aMouseUpEvent,
     return NS_OK;
   }
 
-  nsCOMPtr<nsIContent> mouseUpContent = GetEventTargetContent(aMouseUpEvent);
-  // Click events apply to *elements* not nodes. At this point the target
-  // content may have been reset to some non-element content, and so we need
-  // to walk up the closest ancestor element, just like we do in
-  // nsPresShell::HandlePositionedEvent.
-  while (mouseUpContent && !mouseUpContent->IsElement()) {
-    mouseUpContent = mouseUpContent->GetFlattenedTreeParent();
-  }
-
-  if (!mouseUpContent && !mCurrentTarget) {
-    return NS_OK;
-  }
+  nsCOMPtr<nsIContent> clickTarget = do_QueryInterface(aMouseUpEvent->mClickTarget);
+  NS_ENSURE_STATE(clickTarget);
 
   // Fire click events if the event target is still available.
   nsresult rv = DispatchClickEvents(presShell, aMouseUpEvent, aStatus,
-                                    mouseUpContent);
+                                    clickTarget);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
@@ -4756,13 +4741,13 @@ nsresult
 EventStateManager::DispatchClickEvents(nsIPresShell* aPresShell,
                                        WidgetMouseEvent* aMouseUpEvent,
                                        nsEventStatus* aStatus,
-                                       nsIContent* aMouseUpContent)
+                                       nsIContent* aClickTarget)
 {
   MOZ_ASSERT(aPresShell);
   MOZ_ASSERT(aMouseUpEvent);
   MOZ_ASSERT(EventCausesClickEvents(*aMouseUpEvent));
   MOZ_ASSERT(aStatus);
-  MOZ_ASSERT(aMouseUpContent || mCurrentTarget || aOverrideClickTarget);
+  MOZ_ASSERT(aClickTarget);
 
   bool notDispatchToContents =
    (aMouseUpEvent->button == WidgetMouseEvent::eMiddleButton ||
@@ -4770,12 +4755,10 @@ EventStateManager::DispatchClickEvents(nsIPresShell* aPresShell,
 
   bool fireAuxClick = notDispatchToContents;
 
-
-  // HandleEvent clears out mCurrentTarget which we might need again
-  nsWeakFrame currentTarget = mCurrentTarget;
+  nsWeakFrame currentTarget = aClickTarget->GetPrimaryFrame();
   nsresult ret =
     InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseClick,
-                              aPresShell, aMouseUpContent, currentTarget,
+                              aPresShell, aClickTarget, currentTarget,
                               notDispatchToContents);
   if (NS_WARN_IF(NS_FAILED(ret))) {
     return ret;
@@ -4783,21 +4766,20 @@ EventStateManager::DispatchClickEvents(nsIPresShell* aPresShell,
 
   // Fire double click event if click count is 2.
   if (aMouseUpEvent->mClickCount == 2 &&
-      aMouseUpContent && aMouseUpContent->IsInComposedDoc()) {
+      aClickTarget && aClickTarget->IsInComposedDoc()) {
     ret = InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseDoubleClick,
-                                    aPresShell, aMouseUpContent, currentTarget,
+                                    aPresShell, aClickTarget, currentTarget,
                                     notDispatchToContents);
     if (NS_WARN_IF(NS_FAILED(ret))) {
       return ret;
-
-     }
-   }
+    }
+  }
 
   // Fire auxclick even if necessary.
   if (fireAuxClick &&
-      aMouseUpContent && aMouseUpContent->IsInComposedDoc()) {
+      aClickTarget && aClickTarget->IsInComposedDoc()) {
     ret = InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseAuxClick,
-                                    aPresShell, aMouseUpContent, currentTarget,
+                                    aPresShell, aClickTarget, currentTarget,
                                     false);
     NS_WARNING_ASSERTION(NS_SUCCEEDED(ret), "Failed to dispatch eMouseAuxClick");
   }
