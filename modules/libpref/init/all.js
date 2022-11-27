@@ -1198,6 +1198,9 @@ pref("dom.forms.datetime.timepicker", false);
 // TODO: implement/fix these.
 pref("dom.forms.datetime.others", false);
 
+// <button> elements are opaque to pointer events.
+pref("dom.forms.button.standards_compliant", true);
+
 // Support for new @autocomplete values
 pref("dom.forms.autocomplete.experimental", false);
 
