@@ -145,6 +145,12 @@ nsJXLDecoder::ReadJXLData(const char* aData, size_t aLength)
           // We currently have a channel ordering mis-match here.
           for (uint8_t* pixPtr = rowPtr; pixPtr < rowPtr + mInfo.xsize * 4; pixPtr+=4){
             std::swap(pixPtr[0], pixPtr[2]);
+            // Pre-multiply, too
+            if (pixPtr[3] < 255) {
+              pixPtr[0]=((uint16_t)pixPtr[0]*(uint16_t)pixPtr[3]) >> 8;
+              pixPtr[1]=((uint16_t)pixPtr[1]*(uint16_t)pixPtr[3]) >> 8;
+              pixPtr[2]=((uint16_t)pixPtr[2]*(uint16_t)pixPtr[3]) >> 8;
+            }
           }
           pipe->WriteBuffer(reinterpret_cast<uint32_t*>(rowPtr));
         }
