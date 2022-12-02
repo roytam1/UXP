@@ -194,6 +194,11 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Event)
       default:
         break;
     }
+
+    if (WidgetMouseEvent* mouseEvent = tmp->mEvent->AsMouseEvent()) {
+      NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(cb, "mEvent->mClickTarget");
+      cb.NoteXPCOMChild(mouseEvent->mClickTarget);
+    }
   }
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPresContext)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mExplicitOriginalTarget)

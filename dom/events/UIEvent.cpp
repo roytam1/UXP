@@ -228,26 +228,20 @@ UIEvent::GetWhich(uint32_t* aWhich)
 already_AddRefed<nsINode>
 UIEvent::GetRangeParent()
 {
-  nsIFrame* targetFrame = nullptr;
-
-  if (mPresContext) {
-    targetFrame = mPresContext->EventStateManager()->GetEventTarget();
+  if (NS_WARN_IF(!mPresContext)) {
+    return nullptr;
   }
 
-  if (targetFrame) {
-    nsPoint pt = nsLayoutUtils::GetEventCoordinatesRelativeTo(mEvent,
-                                                              targetFrame);
-    nsCOMPtr<nsIContent> parent = targetFrame->GetContentOffsetsFromPoint(pt).content;
-    if (parent) {
-      if (parent->ChromeOnlyAccess() &&
-          !nsContentUtils::CanAccessNativeAnon()) {
-        return nullptr;
-      }
-      return parent.forget();
-    }
+  nsCOMPtr<nsIPresShell> presShell = mPresContext->GetPresShell();
+  if (NS_WARN_IF(!presShell)) {
+    return nullptr;
   }
 
-  return nullptr;
+  nsCOMPtr<nsIContent> container;
+  nsLayoutUtils::GetContainerAndOffsetAtEvent(presShell, mEvent,
+                                              getter_AddRefs(container),
+                                              nullptr);
+  return container.forget();
 }
 
 NS_IMETHODIMP
@@ -273,18 +267,19 @@ UIEvent::GetRangeOffset(int32_t* aRangeOffset)
 int32_t
 UIEvent::RangeOffset() const
 {
-  if (!mPresContext) {
+  if (NS_WARN_IF(!mPresContext)) {
     return 0;
   }
 
-  nsIFrame* targetFrame = mPresContext->EventStateManager()->GetEventTarget();
-  if (!targetFrame) {
+  nsCOMPtr<nsIPresShell> presShell = mPresContext->GetPresShell();
+  if (NS_WARN_IF(!presShell)) {
     return 0;
   }
 
-  nsPoint pt = nsLayoutUtils::GetEventCoordinatesRelativeTo(mEvent,
-                                                            targetFrame);
-  return targetFrame->GetContentOffsetsFromPoint(pt).offset;
+  int32_t offset = 0;
+  nsLayoutUtils::GetContainerAndOffsetAtEvent(presShell, mEvent,
+                                              nullptr, &offset);
+  return offset;
 }
 
 nsIntPoint

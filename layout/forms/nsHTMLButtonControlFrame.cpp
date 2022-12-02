@@ -118,8 +118,8 @@ nsHTMLButtonControlFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
 
   nsDisplayListCollection set(aBuilder);
 
-  // Do not allow the child subtree to receive events.
-  if (!isForEventDelivery) {
+  // HTMLInputElement buttons are opaque to hit tests, HTMLButtonElement buttons are not.
+  if (!(isForEventDelivery && this->IsInput())) {
     DisplayListClipState::AutoSaveRestore clipState(aBuilder);
 
     if (ShouldClipPaintingToBorderBox()) {
