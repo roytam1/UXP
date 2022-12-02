@@ -36,6 +36,21 @@ namespace image {
     }                                        \
   } while (0);
 
+// FIXME: Quick and dirty BGRA to RGBA conversion.
+// We currently have a channel ordering mis-match here.
+#define JXL_RGBA_FIX                                                          \
+for (uint8_t* pixPtr = rowPtr; pixPtr < rowPtr + mInfo.xsize * 4; pixPtr+=4){ \
+  std::swap(pixPtr[0], pixPtr[2]);
+
+// FIXME: Pre-multiply, too
+#define JXL_PREMULTIPLY_FIX                                   \
+  if (pixPtr[3] < 255) {                                      \
+    pixPtr[0]=((uint16_t)pixPtr[0]*(uint16_t)pixPtr[3]) >> 8; \
+    pixPtr[1]=((uint16_t)pixPtr[1]*(uint16_t)pixPtr[3]) >> 8; \
+    pixPtr[2]=((uint16_t)pixPtr[2]*(uint16_t)pixPtr[3]) >> 8; \
+  }                                                           \
+}
+
 static LazyLogModule sJXLLog("JXLDecoder");
 
 nsJXLDecoder::nsJXLDecoder(RasterImage* aImage)
@@ -118,6 +133,28 @@ nsJXLDecoder::ReadJXLData(const char* aData, size_t aLength)
         size_t remaining = JxlDecoderReleaseInput(mDecoder.get());
         mBuffer.clear();
         JXL_TRY_BOOL(mBuffer.append(aData + aLength - remaining, remaining));
+
+        if (mNumFrames == 0 && InFrame()) {
+          // If an image was flushed by JxlDecoderFlushImage, then we know that
+          // JXL_DEC_FRAME has already been run and there is a pipe.
+          if (JxlDecoderFlushImage(mDecoder.get()) == JXL_DEC_SUCCESS) {
+            // A full frame partial image is written to the buffer.
+            mPipe.ResetToFirstRow();
+            for (uint8_t* rowPtr = mOutBuffer.begin();
+                 rowPtr < mOutBuffer.end(); rowPtr += mInfo.xsize * 4) {
+              JXL_RGBA_FIX JXL_PREMULTIPLY_FIX;
+              uint8_t* rowToWrite = rowPtr;
+              mPipe.WriteBuffer(reinterpret_cast<uint32_t*>(rowToWrite));
+            }
+
+            if (Maybe<SurfaceInvalidRect> invalidRect =
+                    mPipe.TakeInvalidRect()) {
+              PostInvalidation(invalidRect->mInputSpaceRect,
+                               Some(invalidRect->mOutputSpaceRect));
+            }
+          }
+        }
+
         return Transition::ContinueUnbuffered(State::JXL_DATA);
       }
 
@@ -158,6 +195,33 @@ nsJXLDecoder::ReadJXLData(const char* aData, size_t aLength)
           return Transition::TerminateSuccess();
         }
 
+        Maybe<AnimationParams> animParams;
+        if (!IsFirstFrameDecode()) {
+          animParams.emplace(AnimationParams {
+            FullFrame().ToUnknownRect(), mTimeout, mNumFrames,
+            BlendMethod::SOURCE, DisposalMethod::CLEAR
+          });
+        }
+
+        SurfacePipeFlags pipeFlags = SurfacePipeFlags();
+
+        if (mNumFrames == 0) {
+          // The first frame may be displayed progressively.
+          pipeFlags |= SurfacePipeFlags::PROGRESSIVE_DISPLAY;
+        }
+
+        Maybe<SurfacePipe> pipe = SurfacePipeFactory::CreateSurfacePipe(
+            this, Size(), OutputSize(), FullFrame(), SurfaceFormat::B8G8R8A8,
+            animParams, pipeFlags);
+
+        if (!pipe) {
+          MOZ_LOG(sJXLLog, LogLevel::Debug,
+                  ("[this=%p] nsJXLDecoder::ReadJXLData - no pipe\n", this));
+          return Transition::TerminateFailure();
+        }
+
+        mPipe = std::move(*pipe);
+
         break;
       }
 
@@ -174,41 +238,14 @@ nsJXLDecoder::ReadJXLData(const char* aData, size_t aLength)
       }
 
       case JXL_DEC_FULL_IMAGE: {
-        Maybe<AnimationParams> animParams;
-        if (!IsFirstFrameDecode()) {
-          animParams.emplace(AnimationParams {
-            FullFrame().ToUnknownRect(), mTimeout, mNumFrames,
-            BlendMethod::SOURCE, DisposalMethod::CLEAR
-          });
-        }
-
-        Maybe<SurfacePipe> pipe = SurfacePipeFactory::CreateSurfacePipe(
-            this, Size(), OutputSize(), FullFrame(), SurfaceFormat::B8G8R8A8,
-            animParams, SurfacePipeFlags());
-
-        if (!pipe) {
-          MOZ_LOG(sJXLLog, LogLevel::Debug,
-                  ("[this=%p] nsJXLDecoder::ReadJXLData - no pipe\n", this));
-          return Transition::TerminateFailure();
-        }
-
+        mPipe.ResetToFirstRow();
         for (uint8_t* rowPtr = mOutBuffer.begin(); rowPtr < mOutBuffer.end();
              rowPtr += mInfo.xsize * 4) {
-          // FIXME: Quick and dirty BGRA to RGBA conversion.
-          // We currently have a channel ordering mis-match here.
-          for (uint8_t* pixPtr = rowPtr; pixPtr < rowPtr + mInfo.xsize * 4; pixPtr+=4){
-            std::swap(pixPtr[0], pixPtr[2]);
-            // Pre-multiply, too
-            if (pixPtr[3] < 255) {
-              pixPtr[0]=((uint16_t)pixPtr[0]*(uint16_t)pixPtr[3]) >> 8;
-              pixPtr[1]=((uint16_t)pixPtr[1]*(uint16_t)pixPtr[3]) >> 8;
-              pixPtr[2]=((uint16_t)pixPtr[2]*(uint16_t)pixPtr[3]) >> 8;
-            }
-          }
-          pipe->WriteBuffer(reinterpret_cast<uint32_t*>(rowPtr));
+          JXL_RGBA_FIX JXL_PREMULTIPLY_FIX;
+          mPipe.WriteBuffer(reinterpret_cast<uint32_t*>(rowPtr));
         }
 
-        if (Maybe<SurfaceInvalidRect> invalidRect = pipe->TakeInvalidRect()) {
+        if (Maybe<SurfaceInvalidRect> invalidRect = mPipe.TakeInvalidRect()) {
           PostInvalidation(invalidRect->mInputSpaceRect,
                            Some(invalidRect->mOutputSpaceRect));
         }
