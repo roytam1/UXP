@@ -325,6 +325,15 @@ public:
                                     nsINode* aNode2);
 
   /**
+   * Returns the common ancestor under interactive content, if any.
+   * If neither one has interactive content as ancestor, common ancestor will be
+   * returned. If only one has interactive content as ancestor, null will be
+   * returned. If the nodes are the same, that node is returned.
+   */
+  static nsINode* GetCommonAncestorUnderInteractiveContent(nsINode* aNode1,
+                                                           nsINode* aNode2);
+
+  /**
    * Returns true if aNode1 is before aNode2 in the same connected
    * tree.
    */
