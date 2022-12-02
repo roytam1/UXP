@@ -63,7 +63,6 @@ nsJXLDecoder::nsJXLDecoder(RasterImage* aImage)
           JxlThreadParallelRunnerMake(nullptr, PreferredThreadCount())),
       mNumFrames(0),
       mTimeout(FrameTimeout::Forever()),
-      mSurfaceFormat(SurfaceFormat::B8G8R8X8),
       mContinue(false) {
   JxlDecoderSubscribeEvents(mDecoder.get(),
                             JXL_DEC_BASIC_INFO | JXL_DEC_FRAME |
@@ -250,10 +249,7 @@ nsJXLDecoder::ReadJXLData(const char* aData, size_t aLength)
                            Some(invalidRect->mOutputSpaceRect));
         }
 
-        Opacity opacity = mSurfaceFormat == SurfaceFormat::B8G8R8A8
-                              ? Opacity::SOME_TRANSPARENCY
-                              : Opacity::FULLY_OPAQUE;
-        PostFrameStop(opacity);
+        PostFrameStop();
 
         if (!IsFirstFrameDecode() && mInfo.have_animation &&
             !mFrameHeader.is_last) {
