@@ -204,6 +204,11 @@ DecoderFactory::CreateAnimationDecoder(DecoderType aType,
 
   MOZ_ASSERT(aType == DecoderType::GIF || aType == DecoderType::PNG ||
              aType == DecoderType::WEBP,
+#ifdef MOZ_JXL
+          || aType == DecoderType::JXL,
+#else
+             ,
+#endif
              "Calling CreateAnimationDecoder for non-animating DecoderType");
 
   // Create an anonymous decoder. Interaction with the SurfaceCache and the
