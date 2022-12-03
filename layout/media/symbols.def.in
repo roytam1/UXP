@@ -90,6 +90,8 @@ JxlDecoderReleaseInput
 JxlDecoderGetBasicInfo
 JxlDecoderImageOutBufferSize
 JxlDecoderSetImageOutBuffer
+JxlDecoderGetFrameHeader
+JxlDecoderFlushImage
 JxlThreadParallelRunner
 JxlThreadParallelRunnerCreate
 JxlThreadParallelRunnerDestroy
