@@ -428,7 +428,7 @@ var PlacesCommandHook = {
    */
   updateBookmarkAllTabsCommand: function() {
     // There's nothing to do in non-browser windows.
-    if (window.location.href != getBrowserURL()) {
+    if (!window.location || window.location.href != getBrowserURL()) {
       return;
     }
 
