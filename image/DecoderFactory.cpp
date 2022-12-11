@@ -203,13 +203,11 @@ DecoderFactory::CreateAnimationDecoder(DecoderType aType,
   }
 
   MOZ_ASSERT(aType == DecoderType::GIF || aType == DecoderType::PNG ||
-             aType == DecoderType::WEBP,
+             aType == DecoderType::WEBP
 #ifdef MOZ_JXL
-          || aType == DecoderType::JXL,
-#else
-             ,
+          || aType == DecoderType::JXL
 #endif
-             "Calling CreateAnimationDecoder for non-animating DecoderType");
+             , "Calling CreateAnimationDecoder for non-animating DecoderType");
 
   // Create an anonymous decoder. Interaction with the SurfaceCache and the
   // owning RasterImage will be mediated by AnimationSurfaceProvider.
