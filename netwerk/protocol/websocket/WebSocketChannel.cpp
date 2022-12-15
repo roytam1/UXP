@@ -1243,8 +1243,6 @@ WebSocketChannel::~WebSocketChannel()
 
   mListenerMT = nullptr;
 
-  NS_ReleaseOnMainThread(mLoadGroup.forget());
-  NS_ReleaseOnMainThread(mLoadInfo.forget());
   NS_ReleaseOnMainThread(mService.forget());
 }
 
