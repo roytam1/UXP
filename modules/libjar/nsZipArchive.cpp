@@ -885,14 +885,21 @@ nsZipHandle* nsZipArchive::GetFD()
 uint32_t nsZipArchive::GetDataOffset(nsZipItem* aItem)
 {
   MOZ_ASSERT(aItem);
+  uint32_t offset;
 MOZ_WIN_MEM_TRY_BEGIN
   //-- read local header to get variable length values and calculate
   //-- the real data offset
   uint32_t len = mFd->mLen;
   const uint8_t* data = mFd->mFileData;
-  uint32_t offset = aItem->LocalOffset();
+  offset = aItem->LocalOffset();
   if (len < ZIPLOCAL_SIZE || offset > len - ZIPLOCAL_SIZE)
     return 0;
+
+  // Check there's enough space for the signature
+  if (offset > mFd->mLen) {
+    NS_WARNING("Corrupt local offset in JAR file");
+    return 0;
+  }
 
   // -- check signature before using the structure, in case the zip file is corrupt
   ZipLocal* Local = (ZipLocal*)(data + offset);
@@ -906,8 +913,14 @@ MOZ_WIN_MEM_TRY_BEGIN
             xtoint(Local->filename_len) +
             xtoint(Local->extrafield_len);
 
-  return offset;
+  // Check data points inside the file.
+  if (offset > mFd->mLen) {
+    NS_WARNING("Corrupt data offset in JAR file");
+    return 0;
+  }
 MOZ_WIN_MEM_TRY_CATCH(return 0)
+  // Can't be 0
+  return offset;
 }
 
 //---------------------------------------------
