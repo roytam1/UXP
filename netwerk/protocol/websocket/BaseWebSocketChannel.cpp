@@ -62,6 +62,11 @@ BaseWebSocketChannel::BaseWebSocketChannel()
   mSerial = (processBits << kWebSocketIDWebSocketBits) | webSocketBits;
 }
 
+BaseWebSocketChannel::~BaseWebSocketChannel() {
+  NS_ReleaseOnMainThread(mLoadGroup.forget());
+  NS_ReleaseOnMainThread(mLoadInfo.forget());
+}
+
 //-----------------------------------------------------------------------------
 // BaseWebSocketChannel::nsIWebSocketChannel
 //-----------------------------------------------------------------------------
