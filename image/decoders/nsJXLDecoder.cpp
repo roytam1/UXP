@@ -36,21 +36,6 @@ namespace image {
     }                                        \
   } while (0);
 
-// FIXME: Quick and dirty BGRA to RGBA conversion.
-// We currently have a channel ordering mis-match here.
-#define JXL_RGBA_FIX                                                          \
-for (uint8_t* pixPtr = rowPtr; pixPtr < rowPtr + mInfo.xsize * 4; pixPtr+=4){ \
-  std::swap(pixPtr[0], pixPtr[2]);
-
-// FIXME: Pre-multiply, too
-#define JXL_PREMULTIPLY_FIX                                   \
-  if (pixPtr[3] < 255) {                                      \
-    pixPtr[0]=((uint16_t)pixPtr[0]*(uint16_t)pixPtr[3]) >> 8; \
-    pixPtr[1]=((uint16_t)pixPtr[1]*(uint16_t)pixPtr[3]) >> 8; \
-    pixPtr[2]=((uint16_t)pixPtr[2]*(uint16_t)pixPtr[3]) >> 8; \
-  }                                                           \
-}
-
 static LazyLogModule sJXLLog("JXLDecoder");
 
 nsJXLDecoder::nsJXLDecoder(RasterImage* aImage)
@@ -104,6 +89,16 @@ nsJXLDecoder::DoDecode(SourceBufferIterator& aIterator, IResumable* aOnResume)
                     });
 };
 
+NextPixel<uint32_t>
+nsJXLDecoder::PackRGBAPixelAndAdvance(uint8_t*& aRawPixelInOut)
+{
+  const uint32_t pixel =
+    gfxPackedPixel(aRawPixelInOut[3], aRawPixelInOut[0],
+                   aRawPixelInOut[1], aRawPixelInOut[2]);
+  aRawPixelInOut += 4;
+  return AsVariant(pixel);
+}
+
 LexerTransition<nsJXLDecoder::State>
 nsJXLDecoder::ReadJXLData(const char* aData, size_t aLength)
 {
@@ -141,9 +136,9 @@ nsJXLDecoder::ReadJXLData(const char* aData, size_t aLength)
             mPipe.ResetToFirstRow();
             for (uint8_t* rowPtr = mOutBuffer.begin();
                  rowPtr < mOutBuffer.end(); rowPtr += mInfo.xsize * 4) {
-              JXL_RGBA_FIX JXL_PREMULTIPLY_FIX;
-              uint8_t* rowToWrite = rowPtr;
-              mPipe.WriteBuffer(reinterpret_cast<uint32_t*>(rowToWrite));
+              mPipe.WritePixels<uint32_t>([&]{
+                return PackRGBAPixelAndAdvance(rowPtr);
+              });
             }
 
             if (Maybe<SurfaceInvalidRect> invalidRect =
@@ -240,8 +235,9 @@ nsJXLDecoder::ReadJXLData(const char* aData, size_t aLength)
         mPipe.ResetToFirstRow();
         for (uint8_t* rowPtr = mOutBuffer.begin(); rowPtr < mOutBuffer.end();
              rowPtr += mInfo.xsize * 4) {
-          JXL_RGBA_FIX JXL_PREMULTIPLY_FIX;
-          mPipe.WriteBuffer(reinterpret_cast<uint32_t*>(rowPtr));
+          mPipe.WritePixels<uint32_t>([&]{
+            return PackRGBAPixelAndAdvance(rowPtr);
+          });
         }
 
         if (Maybe<SurfaceInvalidRect> invalidRect = mPipe.TakeInvalidRect()) {
