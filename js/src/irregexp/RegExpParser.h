@@ -201,6 +201,9 @@ class RegExpParser
     bool ParseRawSurrogatePair(char16_t* lead, char16_t* trail);
 
     widechar ParseOctalLiteral();
+
+    // Parse the "{name[=value]}" part of a property class escape.
+    bool ParsePropertyClassName(std::string& name, std::string& value);
    
     // Parses the name of a capture group (?<name>pattern). The name must adhere
     // to IdentifierName in the ECMAScript standard.

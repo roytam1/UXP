@@ -973,6 +973,21 @@ RegExpParser<CharT>::ParseClassEscape(char16_t* char_class, widechar *value,
           }
           case kEndMarker:
             return ReportError(JSMSG_ESCAPE_AT_END_OF_REGEXP);
+          case 'p':
+          case 'P':
+            if (unicode_) {
+              *char_class = Next();
+              Advance(2);
+              bool negate = *char_class == 'P';
+              std::string name, value;
+              if (!ParsePropertyClassName(name, value) ||
+                  !CharacterRange::AddPropertyClassRange(alloc, name, value, negate, ignore_case_,
+                                                         ranges, lead_ranges, trail_ranges, wide_ranges)) {
+                return ReportError(JSMSG_INVALID_CLASS_PROPERTY_NAME);
+              }
+              return true;
+            }
+            MOZ_FALLTHROUGH
           default:
             if (!ParseClassCharacterEscape(value))
                 return false;
@@ -1118,6 +1133,55 @@ static void push_code_unit(CharacterVector* v, uint32_t code_unit)
       v->append(unicode::LeadSurrogate(code_unit));
       v->append(unicode::TrailSurrogate(code_unit));
   }
+}
+
+bool IsUnicodePropertyValueCharacter(char c) {
+  // https://tc39.github.io/proposal-regexp-unicode-property-escapes/
+  //
+  // Note that using this to validate each parsed char is quite conservative.
+  // A possible alternative solution would be to only ensure the parsed
+  // property name/value candidate string does not contain '\0' characters and
+  // let ICU lookups trigger the final failure.
+  if ('a' <= c && c <= 'z') return true;
+  if ('A' <= c && c <= 'Z') return true;
+  if ('0' <= c && c <= '9') return true;
+  return (c == '_');
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::ParsePropertyClassName(std::string& name, std::string& value)
+{
+  MOZ_ASSERT(name.empty());
+  MOZ_ASSERT(value.empty());
+  // Parse the property class as follows:
+  // - In \p{name}, 'name' is interpreted
+  //   - either as a general category property value name.
+  //   - or as a binary property name.
+  // - In \p{name=value}, 'name' is interpreted as an enumerated property name,
+  //   and 'value' is interpreted as one of the available property value names.
+  // - Aliases in PropertyAlias.txt and PropertyValueAlias.txt can be used.
+  // - Loose matching is not applied.
+  if (current() == '{') {
+    // Parse \p{[PropertyName=]PropertyNameValue}
+    for (Advance(); current() != '}' && current() != '='; Advance()) {
+      if (!IsUnicodePropertyValueCharacter(current())) return false;
+      if (!has_next()) return false;
+      name += static_cast<char>(current());
+    }
+    if (current() == '=') {
+      for (Advance(); current() != '}'; Advance()) {
+        if (!IsUnicodePropertyValueCharacter(current())) return false;
+        if (!has_next()) return false;
+        value += static_cast<char>(current());
+      }
+    }
+  } else {
+    return false;
+  }
+  Advance();
+
+  return true;
 }
 
 template <typename CharT>
@@ -1536,6 +1600,96 @@ UnicodeCharacterClassEscapeAtom(LifoAlloc* alloc, char16_t char_class, bool igno
     return UnicodeRangesAtom(alloc, ranges, lead_ranges, trail_ranges, wide_ranges, false, false);
 }
 
+
+
+static inline RegExpTree* UnicodePropertyClassAtom(LifoAlloc* alloc, const std::string& name,
+                                                   const std::string& value, bool negate, bool ignore_case);
+
+static inline RegExpTree*
+UnicodePropertySequenceAtom(LifoAlloc* alloc, const std::string name)
+{
+  // If |name| is a special sequence name, return a subexpression that matches it.
+  // All possible sequences are hardcoded here.
+  const widechar* sequence_list = nullptr;
+  if (name == "Emoji_Flag_Sequence" ||
+      name == "RGI_Emoji_Flag_Sequence") {
+    sequence_list = kEmojiFlagSequences;
+  } else
+  if (name == "Emoji_Tag_Sequence" ||
+      name == "RGI_Emoji_Tag_Sequence") {
+    sequence_list = kEmojiTagSequences;
+  } else
+  if (name == "Emoji_ZWJ_Sequence" || 
+      name == "RGI_Emoji_ZWJ_Sequence") {
+    sequence_list = kEmojiZWJSequences;
+  }
+  if (sequence_list != nullptr) {
+    // TODO(yangguo): this creates huge regexp code. Alternative to this is
+    // to create a new operator that checks for these sequences at runtime.
+    RegExpBuilder* builder = alloc->newInfallible<RegExpBuilder>(alloc);
+    while (true) {                   // Iterate through list of sequences.
+      while (*sequence_list != 0) {  // Iterate through sequence.
+        builder->AddUnicodeCharacter(*sequence_list, false);
+        sequence_list++;
+      }
+      sequence_list++;
+      if (*sequence_list == 0) break;
+      builder->NewAlternative();
+    }
+    return builder->ToRegExp();
+  }
+
+  if (name == "Emoji_Keycap_Sequence") {
+    // https://unicode.org/reports/tr51/#def_emoji_keycap_sequence
+    // emoji_keycap_sequence := [0-9#*] \x{FE0F 20E3}
+    RegExpBuilder* builder = alloc->newInfallible<RegExpBuilder>(alloc);
+    CharacterRangeVector* prefix_ranges = alloc->newInfallible<CharacterRangeVector>(*alloc);
+    prefix_ranges->append(CharacterRange::Range('0', '9'));
+    prefix_ranges->append(CharacterRange::Singleton('#'));
+    prefix_ranges->append(CharacterRange::Singleton('*'));
+    builder->AddAtom(alloc->newInfallible<RegExpCharacterClass>(prefix_ranges, false));
+    builder->AddCharacter(0xFE0F);
+    builder->AddCharacter(0x20E3);
+    return builder->ToRegExp();
+  } else
+  if (name == "Emoji_Modifier_Sequence" ||
+      name == "RGI_Emoji_Modifier_Sequence") {
+    // https://unicode.org/reports/tr51/#def_emoji_modifier_sequence
+    // emoji_modifier_sequence := emoji_modifier_base emoji_modifier
+
+    RegExpBuilder* builder = alloc->newInfallible<RegExpBuilder>(alloc);
+    builder->AddAtom(UnicodePropertyClassAtom(alloc, "Emoji_Modifier_Base", "", false, false));
+    builder->AddAtom(UnicodePropertyClassAtom(alloc, "Emoji_Modifier", "", false, false));
+    return builder->ToRegExp();
+  }
+
+  return nullptr;
+}
+
+static inline RegExpTree*
+UnicodePropertyClassAtom(LifoAlloc* alloc, const std::string& name, const std::string& value,
+                         bool negate, bool ignore_case)
+{
+    CharacterRangeVector* ranges = alloc->newInfallible<CharacterRangeVector>(*alloc);
+    CharacterRangeVector* lead_ranges = alloc->newInfallible<CharacterRangeVector>(*alloc);
+    CharacterRangeVector* trail_ranges = alloc->newInfallible<CharacterRangeVector>(*alloc);
+    WideCharRangeVector* wide_ranges = alloc->newInfallible<WideCharRangeVector>(*alloc);
+
+    if (CharacterRange::AddPropertyClassRange(alloc, name, value, negate, ignore_case,
+                                              ranges, lead_ranges, trail_ranges, wide_ranges)) {
+        return UnicodeRangesAtom(alloc, ranges, lead_ranges, trail_ranges, wide_ranges, false, false);
+    }
+
+    if (value.empty() && !negate) {
+        // We allow Property Sequences in any unicode mode
+        // They used to be allowed in /u (before /v was introduced) and there is active
+        // discussion to change it back again.
+        // The benefits allow outweigh the noncompliance.
+        return UnicodePropertySequenceAtom(alloc, name);
+    }
+    return nullptr;
+}
+
 static inline RegExpTree*
 UnicodeBackReferenceAtom(LifoAlloc* alloc, RegExpTree* atom)
 {
@@ -1777,6 +1931,26 @@ RegExpParser<CharT>::ParseDisjunction()
                         CharacterRange::AddClassEscape(alloc, c, ranges);
                     RegExpTree* atom = alloc->newInfallible<RegExpCharacterClass>(ranges, false);
                     builder->AddAtom(atom);
+                }
+                break;
+              }
+              case 'p': case 'P': {
+                widechar p = Next();
+                Advance(2);
+                if (unicode_) {
+                    bool negate = p == 'P';
+                    std::string name, nvalue;
+                    if (ParsePropertyClassName(name, nvalue)) {
+                        RegExpTree* atom = UnicodePropertyClassAtom(alloc, name, nvalue,
+                                                                    negate, ignore_case_);
+                        if (atom != nullptr) {
+                            builder->AddAtom(atom);
+                            break;
+                        }
+                    }
+                    return ReportError(JSMSG_INVALID_PROPERTY_NAME);
+                } else {
+                    builder->AddCharacter(p);
                 }
                 break;
               }

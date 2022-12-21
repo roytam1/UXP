@@ -30,6 +30,8 @@
 #ifndef V8_JSREGEXPCHARRANGES_H_
 #define V8_JSREGEXPCHARRANGES_H_
 
+#include <string>
+
 #include "irregexp/RegExpCharacters.h"
 #include "irregexp/InfallibleVector.h"
 
@@ -44,6 +46,10 @@ static const int kMaxOneByteCharCode = 0xff;
 static const int kMaxUtf16CodeUnit = 0xffff;
 static const size_t kEcma262UnCanonicalizeMaxWidth = 4;
 static const char16_t kNoCharClass = 0;
+
+extern const widechar kEmojiFlagSequences[];
+extern const widechar kEmojiTagSequences[];
+extern const widechar kEmojiZWJSequences[];
 
 static inline char16_t
 MaximumCharacter(bool ascii)
@@ -123,6 +129,15 @@ class CharacterRange
     template <typename RangeType>
     static void NegateUnicodeRanges(LifoAlloc* alloc, InfallibleVector<RangeType, 1>** ranges,
                                     RangeType full_range);
+
+    // static methods for Unicode Property Escapes
+    static bool AddPropertyClassRange(LifoAlloc* alloc, 
+                                      const std::string& name, const std::string& value,
+                                      bool negate, bool ignore_case,
+                                      CharacterRangeVector* ranges,
+                                      CharacterRangeVector* lead_ranges,
+                                      CharacterRangeVector* trail_ranges,
+                                      WideCharRangeVector* wide_ranges);
 
     // static methods for dealing with canonical CharacterRangeVectors
 
