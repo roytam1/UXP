@@ -1318,10 +1318,10 @@ GetParen(JSLinearString* matched, const JS::Value& capture, JSSubString* out)
 template <typename CharT>
 static bool
 InterpretDollar(JSLinearString* matched, JSLinearString* string, size_t position, size_t tailPos,
-                MutableHandle<CapturesVector> captures, JSLinearString* replacement,
+                Handle<CapturesVector> captures, Handle<CapturesVector> namedCaptures, JSLinearString* replacement,
                 const CharT* replacementBegin, const CharT* currentDollar,
                 const CharT* replacementEnd,
-                JSSubString* out, size_t* skip)
+                JSSubString* out, size_t* skip, uint32_t* currentNamedCapture)
 {
     MOZ_ASSERT(*currentDollar == '$');
 
@@ -1363,6 +1363,35 @@ InterpretDollar(JSLinearString* matched, JSLinearString* string, size_t position
         return true;
     }
 
+    // '$<': Named Captures
+    if (c == '<') {
+      // Step 1.
+      if (namedCaptures.length() == 0) {
+        return false;
+      }
+
+      // Step 2.b
+      const CharT* nameStart = currentDollar + 2;
+      const CharT* nameEnd = js_strchr_limit(nameStart, '>', replacementEnd);
+
+      // Step 2.c
+      if (!nameEnd) {
+        return false;
+      }
+
+      // Step 2.d
+      // We precompute named capture replacements in InitNamedCaptures.
+      // They are stored in the order in which we will need them, so here
+      // we can just take the next one in the list.
+      size_t nameLength = nameEnd - nameStart;
+      *skip = nameLength + 3;  // $<...>
+
+      // Steps 2.d.iii-iv
+      GetParen(matched, namedCaptures[*currentNamedCapture], out);
+      *currentNamedCapture += 1;
+      return true;
+    }
+
     *skip = 2;
     switch (c) {
       default:
@@ -1393,8 +1422,9 @@ InterpretDollar(JSLinearString* matched, JSLinearString* string, size_t position
 template <typename CharT>
 static bool
 FindReplaceLengthString(JSContext* cx, HandleLinearString matched, HandleLinearString string,
-                        size_t position, size_t tailPos, MutableHandle<CapturesVector> captures,
-                        HandleLinearString replacement, size_t firstDollarIndex, size_t* sizep)
+                        size_t position, size_t tailPos, Handle<CapturesVector> captures,
+                        Handle<CapturesVector> namedCaptures, HandleLinearString replacement,
+                        size_t firstDollarIndex, size_t* sizep)
 {
     CheckedInt<uint32_t> replen = replacement->length();
 
@@ -1403,11 +1433,13 @@ FindReplaceLengthString(JSContext* cx, HandleLinearString matched, HandleLinearS
     const CharT* replacementBegin = replacement->chars<CharT>(nogc);
     const CharT* currentDollar = replacementBegin + firstDollarIndex;
     const CharT* replacementEnd = replacementBegin + replacement->length();
+    uint32_t currentNamedCapture = 0;
     do {
         JSSubString sub;
         size_t skip;
-        if (InterpretDollar(matched, string, position, tailPos, captures, replacement,
-                            replacementBegin, currentDollar, replacementEnd, &sub, &skip))
+        if (InterpretDollar(matched, string, position, tailPos, captures, namedCaptures,
+                            replacement, replacementBegin, currentDollar, replacementEnd,
+                            &sub, &skip, &currentNamedCapture))
         {
             if (sub.length > skip)
                 replen += sub.length - skip;
@@ -1432,14 +1464,14 @@ FindReplaceLengthString(JSContext* cx, HandleLinearString matched, HandleLinearS
 
 static bool
 FindReplaceLength(JSContext* cx, HandleLinearString matched, HandleLinearString string,
-                  size_t position, size_t tailPos, MutableHandle<CapturesVector> captures,
+                  size_t position, size_t tailPos, Handle<CapturesVector> captures, Handle<CapturesVector> namedCaptures,
                   HandleLinearString replacement, size_t firstDollarIndex, size_t* sizep)
 {
     return replacement->hasLatin1Chars()
            ? FindReplaceLengthString<Latin1Char>(cx, matched, string, position, tailPos, captures,
-                                                 replacement, firstDollarIndex, sizep)
+                                                 namedCaptures, replacement, firstDollarIndex, sizep)
            : FindReplaceLengthString<char16_t>(cx, matched, string, position, tailPos, captures,
-                                               replacement, firstDollarIndex, sizep);
+                                               namedCaptures, replacement, firstDollarIndex, sizep);
 }
 
 /*
@@ -1450,7 +1482,7 @@ FindReplaceLength(JSContext* cx, HandleLinearString matched, HandleLinearString 
 template <typename CharT>
 static void
 DoReplace(HandleLinearString matched, HandleLinearString string,
-          size_t position, size_t tailPos, MutableHandle<CapturesVector> captures,
+          size_t position, size_t tailPos, Handle<CapturesVector> captures, Handle<CapturesVector> namedCaptures,
           HandleLinearString replacement, size_t firstDollarIndex, StringBuffer &sb)
 {
     JS::AutoCheckCannotGC nogc;
@@ -1460,6 +1492,7 @@ DoReplace(HandleLinearString matched, HandleLinearString string,
     MOZ_ASSERT(firstDollarIndex < replacement->length());
     const CharT* currentDollar = replacementBegin + firstDollarIndex;
     const CharT* replacementEnd = replacementBegin + replacement->length();
+    uint32_t currentNamedCapture = 0;
     do {
         /* Move one of the constant portions of the replacement value. */
         size_t len = currentDollar - currentChar;
@@ -1468,8 +1501,8 @@ DoReplace(HandleLinearString matched, HandleLinearString string,
 
         JSSubString sub;
         size_t skip;
-        if (InterpretDollar(matched, string, position, tailPos, captures, replacement,
-                            replacementBegin, currentDollar, replacementEnd, &sub, &skip))
+        if (InterpretDollar(matched, string, position, tailPos, captures, namedCaptures, replacement,
+                            replacementBegin, currentDollar, replacementEnd, &sub, &skip, &currentNamedCapture))
         {
             sb.infallibleAppendSubstring(sub.base, sub.offset, sub.length);
             currentChar += skip;
@@ -1483,9 +1516,117 @@ DoReplace(HandleLinearString matched, HandleLinearString string,
     sb.infallibleAppend(currentChar, replacement->length() - (currentChar - replacementBegin));
 }
 
+/*
+ * This function finds the list of named captures of the form
+ * "$<name>" in a replacement string and converts them into jsids, for
+ * use in InitNamedReplacements.
+ */
+template <typename CharT>
+static bool CollectNames(JSContext* cx, HandleLinearString replacement,
+                         size_t firstDollarIndex,
+                         MutableHandle<GCVector<jsid>> names) {
+  JS::AutoCheckCannotGC nogc;
+  MOZ_ASSERT(firstDollarIndex < replacement->length());
+
+  const CharT* replacementBegin = replacement->chars<CharT>(nogc);
+  const CharT* currentDollar = replacementBegin + firstDollarIndex;
+  const CharT* replacementEnd = replacementBegin + replacement->length();
+
+  // https://tc39.es/ecma262/#table-45, "$<" section
+  while (currentDollar && currentDollar + 1 < replacementEnd) {
+    if (currentDollar[1] == '<') {
+      // Step 2.b
+      const CharT* nameStart = currentDollar + 2;
+      const CharT* nameEnd = js_strchr_limit(nameStart, '>', replacementEnd);
+
+      // Step 2.c
+      if (!nameEnd) {
+        return true;
+      }
+
+      // Step 2.d.i
+      size_t nameLength = nameEnd - nameStart;
+      JSAtom* atom = AtomizeChars(cx, nameStart, nameLength);
+      if (!atom || !names.append(AtomToId(atom))) {
+        return false;
+      }
+      currentDollar = nameEnd + 1;
+    } else {
+      currentDollar += 2;
+    }
+    currentDollar = js_strchr_limit(currentDollar, '$', replacementEnd);
+  }
+  return true;
+}
+
+/*
+ * When replacing named captures, the spec requires us to perform
+ * `Get(match.groups, name)` for each "$<name>". These `Get`s can be
+ * script-visible; for example, RegExp can be extended with an `exec`
+ * method that wraps `groups` in a proxy. To make sure that we do the
+ * right thing, if a regexp has named captures, we find the named
+ * capture replacements before beginning the actual replacement.
+ * This guarantees that we will call GetProperty once and only once for
+ * each "$<name>" in the replacement string, in the correct order.
+ *
+ * This function precomputes the results of step 2 of the '$<' case
+ * here: https://tc39.es/proposal-regexp-named-groups/#table-45, so
+ * that when we need to access the nth named capture in InterpretDollar,
+ * we can just use the nth value stored in namedCaptures.
+ */
+static bool InitNamedCaptures(JSContext* cx, HandleLinearString replacement,
+                              HandleObject groups, size_t firstDollarIndex,
+                              MutableHandle<CapturesVector> namedCaptures) {
+  Rooted<GCVector<jsid>> names(cx, GCVector<jsid>(cx));
+  if (replacement->hasLatin1Chars()) {
+    if (!CollectNames<Latin1Char>(cx, replacement, firstDollarIndex, &names)) {
+      return false;
+    }
+  } else {
+    if (!CollectNames<char16_t>(cx, replacement, firstDollarIndex, &names)) {
+      return false;
+    }
+  }
+
+  // https://tc39.es/ecma262/#table-45, "$<" section
+  RootedId id(cx);
+  RootedValue capture(cx);
+  for (uint32_t i = 0; i < names.length(); i++) {
+    // Step 2.d.i
+    id = names[i];
+
+    // Step 2.d.ii
+    if (!GetProperty(cx, groups, groups, id, &capture)) {
+      return false;
+    }
+
+    // Step 2.d.iii
+    if (capture.isUndefined()) {
+      if (!namedCaptures.append(capture)) {
+        return false;
+      }
+    } else {
+      // Step 2.d.iv
+      JSString* str = ToString<CanGC>(cx, capture);
+      if (!str) {
+        return false;
+      }
+      JSLinearString* linear = str->ensureLinear(cx);
+      if (!linear) {
+        return false;
+      }
+      if (!namedCaptures.append(StringValue(linear))) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 static bool
-NeedTwoBytes(HandleLinearString string, HandleLinearString replacement,
-             HandleLinearString matched, Handle<CapturesVector> captures)
+NeedTwoBytes(HandleLinearString string, HandleLinearString replacement, HandleLinearString matched,
+             Handle<CapturesVector> captures, Handle<CapturesVector> namedCaptures)
 {
     if (string->hasTwoByteChars())
         return true;
@@ -1502,19 +1643,38 @@ NeedTwoBytes(HandleLinearString string, HandleLinearString replacement,
             return true;
     }
 
+    for (size_t i = 0, len = namedCaptures.length(); i < len; i++) {
+        Value capture = namedCaptures[i];
+        if (capture.isUndefined())
+            continue;
+        if (capture.toString()->hasTwoByteChars())
+            return true;
+    }
+
     return false;
 }
 
 /* ES 2016 draft Mar 25, 2016 21.1.3.14.1. */
 bool
-js::RegExpGetSubstitution(JSContext* cx, HandleLinearString matched, HandleLinearString string,
-                          size_t position, HandleObject capturesObj, HandleLinearString replacement,
-                          size_t firstDollarIndex, MutableHandleValue rval)
+js::RegExpGetSubstitution(JSContext* cx, HandleArrayObject matchResult, HandleLinearString string,
+                          size_t position, HandleLinearString replacement, size_t firstDollarIndex,
+                          HandleValue groups, MutableHandleValue rval)
 {
     MOZ_ASSERT(firstDollarIndex < replacement->length());
 
     // Step 1 (skipped).
 
+    // Step 10 (reordered).
+    uint32_t matchResultLength = matchResult->length();
+    MOZ_ASSERT(matchResultLength > 0);
+    MOZ_ASSERT(matchResultLength == matchResult->getDenseInitializedLength());
+
+    const Value& matchedValue = matchResult->getDenseElement(0);
+    RootedLinearString matched(cx, matchedValue.toString()->ensureLinear(cx));
+    if (!matched)
+        return false;
+    
+    
     // Step 2.
     size_t matchLength = matched->length();
 
@@ -1523,31 +1683,34 @@ js::RegExpGetSubstitution(JSContext* cx, HandleLinearString matched, HandleLinea
     // Step 6.
     MOZ_ASSERT(position <= string->length());
 
-    // Step 10 (reordered).
-    uint32_t nCaptures;
-    if (!GetLengthProperty(cx, capturesObj, &nCaptures))
-        return false;
-
+    uint32_t nCaptures = matchResultLength - 1;
     Rooted<CapturesVector> captures(cx, CapturesVector(cx));
     if (!captures.reserve(nCaptures))
         return false;
 
     // Step 7.
-    RootedValue capture(cx);
-    for (uint32_t i = 0; i < nCaptures; i++) {
-        if (!GetElement(cx, capturesObj, capturesObj, i, &capture))
-            return false;
+    for (uint32_t i = 1; i <= nCaptures; i++) {
+        const Value& capture = matchResult->getDenseElement(i);
 
         if (capture.isUndefined()) {
             captures.infallibleAppend(capture);
             continue;
         }
 
-        MOZ_ASSERT(capture.isString());
-        RootedLinearString captureLinear(cx, capture.toString()->ensureLinear(cx));
+        JSLinearString* captureLinear = capture.toString()->ensureLinear(cx);
         if (!captureLinear)
             return false;
         captures.infallibleAppend(StringValue(captureLinear));
+    }
+
+    Rooted<CapturesVector> namedCaptures(cx, CapturesVector(cx));
+    if (groups.isObject()) {
+        RootedObject groupsObj(cx, &groups.toObject());
+        if (!InitNamedCaptures(cx, replacement, groupsObj, firstDollarIndex, &namedCaptures)) {
+            return false;
+        }
+    } else {
+        MOZ_ASSERT(groups.isUndefined());
     }
 
     // Step 8 (skipped).
@@ -1564,14 +1727,14 @@ js::RegExpGetSubstitution(JSContext* cx, HandleLinearString matched, HandleLinea
 
     // Step 11.
     size_t reserveLength;
-    if (!FindReplaceLength(cx, matched, string, position, tailPos, &captures, replacement,
-                           firstDollarIndex, &reserveLength))
+    if (!FindReplaceLength(cx, matched, string, position, tailPos, captures, namedCaptures,
+                           replacement, firstDollarIndex, &reserveLength))
     {
         return false;
     }
 
     StringBuffer result(cx);
-    if (NeedTwoBytes(string, replacement, matched, captures)) {
+    if (NeedTwoBytes(string, replacement, matched, captures, namedCaptures)) {
         if (!result.ensureTwoByteChars())
             return false;
     }
@@ -1580,10 +1743,10 @@ js::RegExpGetSubstitution(JSContext* cx, HandleLinearString matched, HandleLinea
         return false;
 
     if (replacement->hasLatin1Chars()) {
-        DoReplace<Latin1Char>(matched, string, position, tailPos, &captures,
+        DoReplace<Latin1Char>(matched, string, position, tailPos, captures, namedCaptures,
                               replacement, firstDollarIndex, result);
     } else {
-        DoReplace<char16_t>(matched, string, position, tailPos, &captures,
+        DoReplace<char16_t>(matched, string, position, tailPos, captures, namedCaptures,
                             replacement, firstDollarIndex, result);
     }
 

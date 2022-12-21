@@ -1697,39 +1697,29 @@ static bool
 intrinsic_RegExpGetSubstitution(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
-
     MOZ_ASSERT(args.length() == 6);
 
-    RootedString matched(cx, args[0].toString());
-    RootedString string(cx, args[1].toString());
+    RootedArrayObject matchResult(cx, &args[0].toObject().as<ArrayObject>());
+
+    RootedLinearString string(cx, args[1].toString()->ensureLinear(cx));
+    if (!string)
+        return false;
 
     int32_t position = int32_t(args[2].toNumber());
     MOZ_ASSERT(position >= 0);
 
-    RootedObject captures(cx, &args[3].toObject());
-#ifdef DEBUG
-    bool isArray = false;
-    MOZ_ALWAYS_TRUE(IsArray(cx, captures, &isArray));
-    MOZ_ASSERT(isArray);
-#endif
+    RootedLinearString replacement(cx, args[3].toString()->ensureLinear(cx));
+    if (!replacement)
+        return false;
 
-    RootedString replacement(cx, args[4].toString());
-
-    int32_t firstDollarIndex = int32_t(args[5].toNumber());
+    int32_t firstDollarIndex = int32_t(args[4].toNumber());
     MOZ_ASSERT(firstDollarIndex >= 0);
 
-    RootedLinearString matchedLinear(cx, matched->ensureLinear(cx));
-    if (!matchedLinear)
-        return false;
-    RootedLinearString stringLinear(cx, string->ensureLinear(cx));
-    if (!stringLinear)
-        return false;
-    RootedLinearString replacementLinear(cx, replacement->ensureLinear(cx));
-    if (!replacementLinear)
-        return false;
+    RootedValue namedCaptures(cx, args[5]);
+    MOZ_ASSERT(namedCaptures.isUndefined() || namedCaptures.isObject());
 
-    return RegExpGetSubstitution(cx, matchedLinear, stringLinear, size_t(position), captures,
-                                 replacementLinear, size_t(firstDollarIndex), args.rval());
+    return RegExpGetSubstitution(cx, matchResult, string, size_t(position), replacement,
+                                 size_t(firstDollarIndex), namedCaptures, args.rval());
 }
 
 static bool
