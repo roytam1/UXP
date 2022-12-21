@@ -204,6 +204,10 @@ class RegExpParser
     bool ParseRawSurrogatePair(char16_t* lead, char16_t* trail);
 
     widechar ParseOctalLiteral();
+   
+    // Parses the name of a capture group (?<name>pattern). The name must adhere
+    // to IdentifierName in the ECMAScript standard.
+    const CharacterVector* ParseCaptureGroupName();
 
     // Tries to parse the input as a back reference.  If successful it
     // stores the result in the output parameter and returns true.  If
@@ -218,6 +222,11 @@ class RegExpParser
         next_pos_ += dist - 1;
         Advance();
     }
+    
+    bool StoreNamedCaptureMap(CharacterVectorVector** names, IntegerVector** indices);
+    // Returns true iff the pattern contains named captures. May call
+    // ScanForCaptures to look ahead at the remaining pattern.
+    bool HasNamedCaptures();
 
     void Reset(const CharT* pos) {
         next_pos_ = pos;
@@ -251,12 +260,14 @@ class RegExpParser
                           RegExpParserState* previous_state,
                           SubexpressionType group_type,
                           RegExpLookaround::Type lookaround_type,
-                          int disjunction_capture_index)
+                          int disjunction_capture_index,
+                          const CharacterVector* capture_name)
             : previous_state_(previous_state),
               builder_(alloc->newInfallible<RegExpBuilder>(alloc)),
               group_type_(group_type),
               lookaround_type_(lookaround_type),
-              disjunction_capture_index_(disjunction_capture_index)
+              disjunction_capture_index_(disjunction_capture_index),
+              capture_name_(capture_name)
         {}
         // Parser state of containing expression, if any.
         RegExpParserState* previous_state() { return previous_state_; }
@@ -271,9 +282,15 @@ class RegExpParser
         // Also the capture index of this sub-expression itself, if group_type
         // is CAPTURE.
         int capture_index() { return disjunction_capture_index_; }
+        // The name of the current sub-expression, if group_type is CAPTURE. Only
+        // used for named captures.
+        const CharacterVector* capture_name() const { return capture_name_; }
+        bool IsNamedCapture() const { return capture_name_ != nullptr; }
 
         // Check whether the parser is inside a capture group with the given index.
         bool IsInsideCaptureGroup(int index);
+        // Check whether the parser is inside a capture group with the given name.
+        bool IsInsideCaptureGroup(const CharacterVector* name);
 
       private:
         // Linked list implementation of stack of states.
@@ -286,10 +303,28 @@ class RegExpParser
         RegExpLookaround::Type lookaround_type_;
         // Stored disjunction's capture index (if any).
         int disjunction_capture_index_;
+        // Stored capture name (if any).
+        const CharacterVector* const capture_name_;
     };
 
     // Return the 1-indexed RegExpCapture object, allocate if necessary.
     RegExpCapture* GetCapture(int index);
+
+    // Creates a new named capture at the specified index. Must be called exactly
+    // once for each named capture. Fails if a capture with the same name is
+    // encountered.
+    bool CreateNamedCaptureAtIndex(const CharacterVector* name, int index);
+
+    // Find a named capture group by name, or return null if not found
+    RegExpCapture* FindNamedCapture(const CharacterVector* name);
+    
+    bool ParseNamedBackReference(RegExpBuilder* builder,
+                                 RegExpParserState* state);
+
+    // After the initial parsing pass, patch corresponding RegExpCapture objects
+    // into all RegExpBackReferences. This is done after initial parsing in order
+    // to avoid complicating cases in which references comes before the capture.
+    void PatchNamedBackReferences();
 
     widechar current() { return current_; }
     bool has_more() { return has_more_; }
@@ -304,6 +339,9 @@ class RegExpParser
     frontend::TokenStream& ts;
     LifoAlloc* alloc;
     RegExpCaptureVector* captures_;
+    // contains the subset of captures_ that have names (for duplicate checking)
+    RegExpCaptureVector* named_captures_;
+    RegExpBackReferenceVector* named_back_references_;
     const CharT* next_pos_;
     const CharT* end_;
     widechar current_;
@@ -318,6 +356,7 @@ class RegExpParser
     bool simple_;
     bool contains_anchor_;
     bool is_scanned_for_captures_;
+    bool has_named_captures_;  // Only valid after we have scanned for captures.
 };
 
 } } // namespace js::irregexp

@@ -245,6 +245,8 @@ RegExpParser<CharT>::RegExpParser(frontend::TokenStream& ts, LifoAlloc* alloc,
   : ts(ts),
     alloc(alloc),
     captures_(nullptr),
+    named_captures_(nullptr),
+    named_back_references_(nullptr),
     next_pos_(chars),
     captures_started_(0),
     end_(end),
@@ -257,7 +259,8 @@ RegExpParser<CharT>::RegExpParser(frontend::TokenStream& ts, LifoAlloc* alloc,
     dotall_(dotall),
     simple_(false),
     contains_anchor_(false),
-    is_scanned_for_captures_(false)
+    is_scanned_for_captures_(false),
+    has_named_captures_(false)
 {
     Advance();
 }
@@ -269,6 +272,30 @@ RegExpParser<CharT>::ReportError(unsigned errorNumber, const char* param /* = nu
     gc::AutoSuppressGC suppressGC(ts.context());
     ts.reportError(errorNumber, param);
     return nullptr;
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::StoreNamedCaptureMap(CharacterVectorVector** names, IntegerVector** indices)
+{
+  // Any named captures defined at all?
+  if (!named_captures_ || !named_captures_->length()) {
+    return true;
+  }
+
+  CharacterVectorVector* nv = alloc->newInfallible<CharacterVectorVector>(*alloc);
+  IntegerVector* iv = alloc->newInfallible<IntegerVector>(*alloc);
+
+  for (size_t i=0; i<named_captures_->length(); i++) {
+    RegExpCapture* capture = (*named_captures_)[i];
+    const CharacterVector* cn = capture->name();
+    nv->append(const_cast<CharacterVector*>(cn));
+    iv->append(capture->index());
+  }
+
+  *names = nv;
+  *indices = iv;
+  return true;
 }
 
 template <typename CharT>
@@ -1165,6 +1192,7 @@ template <typename CharT>
 void
 RegExpParser<CharT>::ScanForCaptures()
 {
+    const CharT* saved_position = position();
     // Start with captures started previous to current position
     int capture_count = captures_started();
     // Add count of captures after this position.
@@ -1188,12 +1216,32 @@ RegExpParser<CharT>::ScanForCaptures()
             break;
           }
           case '(':
-            if (current() != '?') capture_count++;
+            if (current() == '?') {
+              // At this point we could be in
+              // * a non-capturing group '(:',
+              // * a lookbehind assertion '(?<=' '(?<!'
+              // * or a named capture '(?<'.
+              //
+              // Of these, only named captures are capturing groups.
+
+              Advance();
+              if (current() != '<') break;
+
+              Advance();
+              if (current() == '=' || current() == '!') break;
+
+              // Found a possible named capture. It could turn out to be a syntax
+              // error (e.g. an unterminated or invalid name), but that distinction
+              // does not matter for our purposes.
+              has_named_captures_ = true;
+            }
+            capture_count++;
             break;
         }
     }
     capture_count_ = capture_count;
     is_scanned_for_captures_ = true;
+    Reset(saved_position);
 }
 
 inline bool
@@ -1251,9 +1299,168 @@ RegExpParser<CharT>::ParseBackReferenceIndex(int* index_out)
     return true;
 }
 
+static void push_code_unit(CharacterVector* v, uint32_t code_unit)
+{
+  // based off of unicode::UTF16Encode
+  if (!unicode::IsSupplementary(code_unit)) {
+      v->append(char16_t(code_unit));
+  } else {
+      v->append(unicode::LeadSurrogate(code_unit));
+      v->append(unicode::TrailSurrogate(code_unit));
+  }
+}
+
+template <typename CharT>
+const CharacterVector*
+RegExpParser<CharT>::ParseCaptureGroupName()
+{
+  CharacterVector* name = alloc->newInfallible<CharacterVector>(*alloc);
+
+  bool at_start = true;
+  while (true) {
+    widechar c = current();
+    Advance();
+
+    // Convert unicode escapes.
+    if (c == '\\' && current() == 'u') {
+      Advance();
+      if (!ParseUnicodeEscape(&c)) {
+        ReportError(JSMSG_INVALID_UNICODE_ESCAPE);
+        return nullptr;
+      }
+    }
+
+    // The backslash char is misclassified as both ID_Start and ID_Continue.
+    if (c == '\\') {
+      ReportError(JSMSG_INVALID_CAPTURE_NAME);
+      return nullptr;
+    }
+
+    if (at_start) {
+      if (!unicode::IsIdentifierStart(c)) {
+        ReportError(JSMSG_INVALID_CAPTURE_NAME);
+        return nullptr;
+      }
+      push_code_unit(name, c);
+      at_start = false;
+    } else {
+      if (c == '>') {
+        break;
+      } else if (unicode::IsIdentifierPart(c)) {
+        push_code_unit(name, c);
+      } else {
+        ReportError(JSMSG_INVALID_CAPTURE_NAME);
+        return nullptr;
+      }
+    }
+  }
+
+  return name;
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::CreateNamedCaptureAtIndex(const CharacterVector* name,
+                                             int index)
+{
+  MOZ_ASSERT(0 < index && index <= captures_started_);
+  MOZ_ASSERT(name !== nullptr);
+
+  RegExpCapture* capture = GetCapture(index);
+  MOZ_ASSERT(capture->name() == nullptr);
+
+  capture->set_name(name);
+
+  if (named_captures_ == nullptr) {
+    named_captures_ = alloc->newInfallible<RegExpCaptureVector>(*alloc);
+  } else {
+    // Check for duplicates and bail if we find any.
+    if (FindNamedCapture(name) != nullptr) {
+      ReportError(JSMSG_DUPLICATE_CAPTURE_NAME);
+      return false;
+    }
+  }
+  named_captures_->append(capture);
+  return true;
+}
+
 template <typename CharT>
 RegExpCapture*
-RegExpParser<CharT>::GetCapture(int index) {
+RegExpParser<CharT>::FindNamedCapture(const CharacterVector* name)
+{
+  // Linear search is fine since there are usually very few named groups
+  for (auto it=named_captures_->begin(); it<named_captures_->end(); it++) {
+    if (*(*it)->name() == *name) {
+      return *it;
+    }
+  }
+  return nullptr;
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::ParseNamedBackReference(RegExpBuilder* builder,
+                                           RegExpParserState* state)
+{
+  // The parser is assumed to be on the '<' in \k<name>.
+  if (current() != '<') {
+    ReportError(JSMSG_INVALID_NAMED_REF);
+    return false;
+  }
+
+  Advance();
+  const CharacterVector* name = ParseCaptureGroupName();
+  if (name == nullptr) {
+    return false;
+  }
+
+  if (state->IsInsideCaptureGroup(name)) {
+    builder->AddEmpty();
+  } else {
+    RegExpBackReference* atom = alloc->newInfallible<RegExpBackReference>(nullptr);
+    atom->set_name(name);
+
+    builder->AddAtom(atom);
+
+    if (named_back_references_ == nullptr) {
+      named_back_references_ = alloc->newInfallible<RegExpBackReferenceVector>(*alloc);
+    }
+    named_back_references_->append(atom);
+  }
+
+  return true;
+}
+
+template <typename CharT>
+void
+RegExpParser<CharT>::PatchNamedBackReferences()
+{
+  if (named_back_references_ == nullptr) return;
+
+  if (named_captures_ == nullptr) {
+    // Named backrefs but no named groups
+    ReportError(JSMSG_INVALID_NAMED_CAPTURE_REF);
+    return;
+  }
+
+  // Look up and patch the actual capture for each named back reference.
+  for (size_t i = 0; i < named_back_references_->length(); i++) {
+    RegExpBackReference* ref = (*named_back_references_)[i];
+
+    RegExpCapture* capture = FindNamedCapture(ref->name());
+    if (capture == nullptr) {
+      ReportError(JSMSG_INVALID_NAMED_CAPTURE_REF);
+      return;
+    }
+
+    ref->set_capture(capture);
+  }
+}
+
+template <typename CharT>
+RegExpCapture*
+RegExpParser<CharT>::GetCapture(int index)
+{
   // The index for the capture groups are one-based. Its index in the list is
   // zero-based.
   int known_captures =
@@ -1269,16 +1476,39 @@ RegExpParser<CharT>::GetCapture(int index) {
   return (*captures_)[index - 1];
 }
 
+template <typename CharT>
+bool
+RegExpParser<CharT>::HasNamedCaptures() {
+  if (has_named_captures_ || is_scanned_for_captures_) {
+    return has_named_captures_;
+  }
+
+  ScanForCaptures();
+  return has_named_captures_;
+}
 
 template <typename CharT>
 bool
-RegExpParser<CharT>::RegExpParserState::IsInsideCaptureGroup(int index) {
+RegExpParser<CharT>::RegExpParserState::IsInsideCaptureGroup(int index)
+{
   for (RegExpParserState* s = this; s != NULL; s = s->previous_state()) {
     if (s->group_type() != CAPTURE) continue;
     // Return true if we found the matching capture index.
     if (index == s->capture_index()) return true;
     // Abort if index is larger than what has been parsed up till this state.
     if (index > s->capture_index()) return false;
+  }
+  return false;
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::RegExpParserState::IsInsideCaptureGroup(const CharacterVector* name)
+{
+  for (RegExpParserState* s = this; s != NULL; s = s->previous_state()) {
+    if (s->group_type() != CAPTURE) continue;
+    if (!s->IsNamedCapture()) continue;
+    if (*s->capture_name() == *name) return true;
   }
   return false;
 }
@@ -1359,6 +1589,7 @@ RegExpTree*
 RegExpParser<CharT>::ParsePattern()
 {
     RegExpTree* result = ParseDisjunction();
+    PatchNamedBackReferences();
     MOZ_ASSERT_IF(result, !has_more());
     return result;
 }
@@ -1525,7 +1756,7 @@ RegExpTree*
 RegExpParser<CharT>::ParseDisjunction()
 {
     // Used to store current state while parsing subexpressions.
-    RegExpParserState initial_state(alloc, nullptr, INITIAL, RegExpLookaround::LOOKAHEAD, 0);
+    RegExpParserState initial_state(alloc, nullptr, INITIAL, RegExpLookaround::LOOKAHEAD, 0, nullptr);
     RegExpParserState* state = &initial_state;
     // Cache the builder in a local variable for quick access.
     RegExpBuilder* builder = initial_state.builder();
@@ -1556,6 +1787,11 @@ RegExpParser<CharT>::ParseDisjunction()
 
             // Build result of subexpression.
             if (group_type == CAPTURE) {
+                if (state->IsNamedCapture()) {
+                  if (!CreateNamedCaptureAtIndex(state->capture_name(), capture_index)) {
+                    return nullptr;
+                  }
+                }
                 RegExpCapture* capture = GetCapture(capture_index);
                 capture->set_body(body);
                 body = capture;
@@ -1635,6 +1871,8 @@ RegExpParser<CharT>::ParseDisjunction()
           case '(': {
             SubexpressionType subexpr_type = CAPTURE;
             RegExpLookaround::Type lookaround_type = state->lookaround_type();
+            bool is_named_capture = false;
+            const CharacterVector* capture_name = nullptr;
             Advance();
             if (current() == '?') {
                 switch (Next()) {
@@ -1659,21 +1897,30 @@ RegExpParser<CharT>::ParseDisjunction()
                       subexpr_type = NEGATIVE_LOOKAROUND;
                       break;
                     }
-                    // We didn't get a positive or negative after '<'.
-                    // That's an error.
-                    return ReportError(JSMSG_INVALID_GROUP);
+                    // Not a lookbehind, continue parsing as named group
+                    is_named_capture = true;
+                    has_named_captures_ = true;
+                    break;
                   default:
                     return ReportError(JSMSG_INVALID_GROUP);
                 }
-                Advance(2);
-            } else {
-                if (captures_started() >= kMaxCaptures)
-                    return ReportError(JSMSG_TOO_MANY_PARENS);
-                captures_started_++;
+                Advance(is_named_capture ? 1 : 2);
+            }
+            if (subexpr_type == CAPTURE) {
+              if (captures_started() >= kMaxCaptures)
+                  return ReportError(JSMSG_TOO_MANY_PARENS);
+              captures_started_++;
+              
+              if (is_named_capture) {
+                capture_name = ParseCaptureGroupName();
+                if (!capture_name)
+                  return nullptr;
+              }
             }
             // Store current state and begin new disjunction parsing.
             state = alloc->newInfallible<RegExpParserState>(alloc, state, subexpr_type,
-                                                            lookaround_type, captures_started_);
+                                                            lookaround_type, captures_started_,
+                                                            capture_name);
             builder = state->builder();
             continue;
           }
@@ -1834,6 +2081,22 @@ RegExpParser<CharT>::ParseDisjunction()
                 }
                 break;
               }
+              case 'k': {
+                // Either an identity escape or a named back-reference.  The two
+                // interpretations are mutually exclusive: '\k' is interpreted as
+                // an identity escape for non-Unicode patterns without named
+                // capture groups, and as the beginning of a named back-reference
+                // in all other cases.
+                if (unicode_ || HasNamedCaptures()) {
+                  Advance(2);
+                  if (!ParseNamedBackReference(builder, state)) {
+                    return ReportError(JSMSG_INVALID_IDENTITY_ESCAPE);
+                  }
+                } else {
+                  builder->AddCharacter('k');
+                }
+                break;
+              }
               default:
                 // Identity escape.
                 if (unicode_ && !IsSyntaxCharacter(Next()))
@@ -1962,6 +2225,7 @@ ParsePattern(frontend::TokenStream& ts, LifoAlloc& alloc, const CharT* chars, si
     data->simple = parser.simple();
     data->contains_anchor = parser.contains_anchor();
     data->capture_count = parser.captures_started();
+    parser.StoreNamedCaptureMap(&data->capture_name_list, &data->capture_index_list);
     return true;
 }
 

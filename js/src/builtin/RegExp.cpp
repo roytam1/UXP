@@ -21,6 +21,7 @@
 
 #include "vm/NativeObject-inl.h"
 
+
 using namespace js;
 using namespace js::unicode;
 
@@ -31,11 +32,12 @@ using mozilla::Maybe;
 using CapturesVector = GCVector<Value, 4>;
 
 /*
- * ES 2017 draft rev 6a13789aa9e7c6de4e96b7d3e24d9e6eba6584ad 21.2.5.2.2
- * steps 3, 16-25.
+ * ES 2021 draft 21.2.5.2.2: Steps 16-28
+ * https://tc39.es/ecma262/#sec-regexpbuiltinexec
  */
 bool
-js::CreateRegExpMatchResult(JSContext* cx, HandleString input, const MatchPairs& matches,
+js::CreateRegExpMatchResult(JSContext* cx, RegExpShared& re,
+                            HandleString input, const MatchPairs& matches,
                             MutableHandleValue rval)
 {
     MOZ_ASSERT(input);
@@ -48,6 +50,7 @@ js::CreateRegExpMatchResult(JSContext* cx, HandleString input, const MatchPairs&
      *  1..pairCount-1: paren matches
      *  input:          input string
      *  index:          start index for the match
+     *  groups:         named capture groups for the match
      */
 
     /* Get the templateObject that defines the shape and type of the output object */
@@ -55,15 +58,16 @@ js::CreateRegExpMatchResult(JSContext* cx, HandleString input, const MatchPairs&
     if (!templateObject)
         return false;
 
+    // Step 16
     size_t numPairs = matches.length();
     MOZ_ASSERT(numPairs > 0);
 
-    /* Step 17. */
+    /* Step 18-19. */
     RootedArrayObject arr(cx, NewDenseFullyAllocatedArrayWithTemplate(cx, numPairs, templateObject));
     if (!arr)
         return false;
 
-    /* Steps 22-24.
+    /* Steps 22-23 and 27 a-e
      * Store a Value for each pair. */
     for (size_t i = 0; i < numPairs; i++) {
         const MatchPair& pair = matches[i];
@@ -81,6 +85,40 @@ js::CreateRegExpMatchResult(JSContext* cx, HandleString input, const MatchPairs&
         }
     }
 
+    // Step 24 (reordered)
+    RootedPlainObject groups(cx);
+    if (re.numNamedCaptures() > 0) {
+        // construct a new object from the template saved on RegExpShared
+        RootedPlainObject groupsTemplate(cx, re.getGroupsTemplate());
+        groups = NewObjectWithGivenProto<PlainObject>(cx, nullptr);
+        groups->setGroup(groupsTemplate->group());
+
+        // Step 27 f.
+        // The groups template object stores the names of the named captures in the
+        // the order in which they are defined.
+        // Grab the index into the match vector from the template object and define the
+        // corresponding property on the result
+        AutoIdVector keys(cx);
+        if (!GetPropertyKeys(cx, groupsTemplate, 0, &keys)) {
+            return false;
+        }
+        MOZ_ASSERT(keys.length() == re.numNamedCaptures());
+        RootedId key(cx);
+        RootedValue ival(cx);
+        RootedValue val(cx);
+        for (size_t i = 0; i < keys.length(); i++) {
+            key = keys[i];
+            // fetch the group's match index...
+            if (!NativeGetProperty(cx, groupsTemplate, key, &ival))
+              return false;
+            // ... and set it on groups
+            val = arr->getDenseElement(ival.toInt32());
+            if (!NativeDefineProperty(cx, groups, key, val, nullptr, nullptr, JSPROP_ENUMERATE)) {
+                return false;
+            }
+        }
+    }
+
     /* Step 20 (reordered).
      * Set the |index| property. (TemplateObject positions it in slot 0) */
     arr->setSlot(0, Int32Value(matches[0].start));
@@ -89,6 +127,10 @@ js::CreateRegExpMatchResult(JSContext* cx, HandleString input, const MatchPairs&
      * Set the |input| property. (TemplateObject positions it in slot 1) */
     arr->setSlot(1, StringValue(input));
 
+    // Steps 25-26 (reordered)
+    // Set the |groups| property.
+    arr->setSlot(2, groups ? ObjectValue(*groups) : UndefinedValue());
+    
 #ifdef DEBUG
     RootedValue test(cx);
     RootedId id(cx, NameToId(cx->names().index));
@@ -170,7 +212,7 @@ js::ExecuteRegExpLegacy(JSContext* cx, RegExpStatics* res, Handle<RegExpObject*>
         return true;
     }
 
-    return CreateRegExpMatchResult(cx, input, matches, rval);
+    return CreateRegExpMatchResult(cx, *shared, input, matches, rval);
 }
 
 static bool
@@ -1027,7 +1069,11 @@ RegExpMatcherImpl(JSContext* cx, HandleObject regexp, HandleString string,
     }
 
     /* Steps 16-25 */
-    return CreateRegExpMatchResult(cx, string, matches, rval);
+    Rooted<RegExpObject*> reobj(cx, &regexp->as<RegExpObject>());
+    RegExpGuard shared(cx);
+    if (!RegExpObject::getShared(cx, reobj, &shared))
+        return false;
+    return CreateRegExpMatchResult(cx, *shared, string, matches, rval);
 }
 
 /*
@@ -1069,8 +1115,13 @@ js::RegExpMatcherRaw(JSContext* cx, HandleObject regexp, HandleString input,
 
     // The MatchPairs will always be passed in, but RegExp execution was
     // successful only if the pairs have actually been filled in.
-    if (maybeMatches && maybeMatches->pairsRaw()[0] >= 0)
-        return CreateRegExpMatchResult(cx, input, *maybeMatches, output);
+    if (maybeMatches && maybeMatches->pairsRaw()[0] >= 0) {
+      Rooted<RegExpObject*> reobj(cx, &regexp->as<RegExpObject>());
+      RegExpGuard shared(cx);
+      if (!RegExpObject::getShared(cx, reobj, &shared))
+          return false;
+      return CreateRegExpMatchResult(cx, *shared, input, *maybeMatches, output);
+    }
     return RegExpMatcherImpl(cx, regexp, input, lastIndex,
                              UpdateRegExpStatics, output);
 }

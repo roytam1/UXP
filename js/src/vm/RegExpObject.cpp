@@ -951,7 +951,8 @@ js::StringHasRegExpMetaChars(JSLinearString* str)
 /* RegExpShared */
 
 RegExpShared::RegExpShared(JSAtom* source, RegExpFlag flags)
-  : source(source), flags(flags), parenCount(0), canStringMatch(false), marked_(false)
+  : source(source), flags(flags), parenCount(0), canStringMatch(false), marked_(false),
+    numNamedCaptures_(0), groupsTemplate_(nullptr)
 {}
 
 RegExpShared::~RegExpShared()
@@ -1006,6 +1007,56 @@ RegExpShared::compile(JSContext* cx, HandleLinearString input,
 }
 
 bool
+RegExpShared::initializeNamedCaptures(JSContext* cx, irregexp::CharacterVectorVector* names, irregexp::IntegerVector* indices)
+{
+    MOZ_ASSERT(!groupsTemplate_);
+    MOZ_ASSERT(names);
+    MOZ_ASSERT(indices);
+    MOZ_ASSERT(names->length() == indices->length());
+
+    // The irregexp parser returns named capture information in the form
+    // of two arrays. We create a template object with a property for each
+    // capture name, and store the capture index as Integer in the corresponding value.
+    uint32_t numNamedCaptures = names->length();
+
+    // Create a plain template object.
+    RootedPlainObject templateObject(cx, NewObjectWithGivenProto<PlainObject>(cx, nullptr, TenuredObject));
+    if (!templateObject) {
+        return false;
+    }
+
+    // Create a new group for the template.
+    Rooted<TaggedProto> proto(cx, templateObject->taggedProto());
+    ObjectGroup* group = ObjectGroupCompartment::makeGroup(cx, templateObject->getClass(), proto);
+    if (!group) {
+        return false;
+    }
+    templateObject->setGroup(group);
+
+    // Initialize the properties of the template.
+    RootedId id(cx);
+    for (uint32_t i = 0; i < numNamedCaptures; i++) {
+        irregexp::CharacterVector* cv = (*names)[i];
+        // Need to explicitly create an Atom (not a String) or it won't get added to the atom table
+        JSAtom* atom = AtomizeChars(cx, cv->begin(), cv->length());
+        if (!atom) {
+          return false;
+        }
+        id = NameToId(atom->asPropertyName());
+        RootedValue idx(cx, Int32Value((*indices)[i]));
+        if (!NativeDefineProperty(cx, templateObject, id, idx,
+                                  nullptr, nullptr, JSPROP_ENUMERATE)) {
+            return false;
+        }
+        AddTypePropertyId(cx, templateObject, id, TypeSet::Int32Type());
+    }
+
+    groupsTemplate_ = templateObject;
+    numNamedCaptures_ = numNamedCaptures;
+    return true;
+}
+
+bool
 RegExpShared::compile(JSContext* cx, HandleAtom pattern, HandleLinearString input,
                       CompilationMode mode, ForceByteCodeEnum force)
 {
@@ -1027,6 +1078,12 @@ RegExpShared::compile(JSContext* cx, HandleAtom pattern, HandleLinearString inpu
     }
 
     this->parenCount = data.capture_count;
+    if (data.capture_name_list) {
+      // convert LifoAlloc'd named capture info to NativeObject
+      if (!initializeNamedCaptures(cx, data.capture_name_list, data.capture_index_list)) {
+        return false;
+      }
+    }
 
     irregexp::RegExpCode code = irregexp::CompilePattern(cx, this, &data, input,
                                                          false /* global() */,
@@ -1260,17 +1317,27 @@ RegExpCompartment::createMatchResultTemplateObject(JSContext* cx)
         return matchResultTemplateObject_; // = nullptr
     }
 
+    /* Set dummy groups property */
+    RootedValue groupsVal(cx, UndefinedValue());
+    if (!NativeDefineProperty(
+          cx, templateObject, cx->names().groups, groupsVal, nullptr, nullptr, JSPROP_ENUMERATE)) {
+        return nullptr;
+    }
+
     // Make sure that the properties are in the right slots.
     DebugOnly<Shape*> shape = templateObject->lastProperty();
-    MOZ_ASSERT(shape->previous()->slot() == 0 &&
-               shape->previous()->propidRef() == NameToId(cx->names().index));
-    MOZ_ASSERT(shape->slot() == 1 &&
-               shape->propidRef() == NameToId(cx->names().input));
+    MOZ_ASSERT(shape->slot() == 2 &&
+               shape->propidRef() == NameToId(cx->names().groups));
+    MOZ_ASSERT(shape->previous()->slot() == 1 &&
+               shape->previous()->propidRef() == NameToId(cx->names().input));
+    MOZ_ASSERT(shape->previous()->previous()->slot() == 0 &&
+               shape->previous()->previous()->propidRef() == NameToId(cx->names().index));
 
     // Make sure type information reflects the indexed properties which might
     // be added.
     AddTypePropertyId(cx, templateObject, JSID_VOID, TypeSet::StringType());
     AddTypePropertyId(cx, templateObject, JSID_VOID, TypeSet::UndefinedType());
+    AddTypePropertyId(cx, templateObject, NameToId(cx->names().groups), TypeSet::AnyObjectType());
 
     matchResultTemplateObject_.set(templateObject);
 

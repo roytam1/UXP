@@ -339,7 +339,7 @@ class RegExpCapture : public RegExpTree
 {
   public:
     explicit RegExpCapture(RegExpTree* body, int index)
-      : body_(body), index_(index)
+      : body_(body), index_(index), name_(nullptr)
     {}
 
     virtual void* Accept(RegExpVisitor* visitor, void* data);
@@ -359,12 +359,15 @@ class RegExpCapture : public RegExpTree
     RegExpTree* body() { return body_; }
     void set_body(RegExpTree* body) { body_ = body; }
     int index() { return index_; }
+    const CharacterVector* name() const { return name_; }
+    void set_name(const CharacterVector* name) { name_ = name; }
     static int StartRegister(int index) { return index * 2; }
     static int EndRegister(int index) { return index * 2 + 1; }
 
   private:
     RegExpTree* body_;
     int index_;
+    const CharacterVector* name_;
 };
 
 class RegExpLookaround : public RegExpTree
@@ -413,7 +416,7 @@ class RegExpBackReference : public RegExpTree
 {
   public:
     explicit RegExpBackReference(RegExpCapture* capture)
-      : capture_(capture)
+      : capture_(capture), name_(nullptr)
     {}
 
     virtual void* Accept(RegExpVisitor* visitor, void* data);
@@ -427,9 +430,15 @@ class RegExpBackReference : public RegExpTree
     int max_match() override { return kInfinity; }
     int index() { return capture_->index(); }
     RegExpCapture* capture() { return capture_; }
+    void set_capture(RegExpCapture* capture) { capture_ = capture; }
+    const CharacterVector* name() const { return name_; }
+    void set_name(const CharacterVector* name) { name_ = name; }
   private:
     RegExpCapture* capture_;
+    const CharacterVector* name_;
 };
+
+typedef InfallibleVector<RegExpBackReference*, 1> RegExpBackReferenceVector;
 
 class RegExpEmpty : public RegExpTree
 {

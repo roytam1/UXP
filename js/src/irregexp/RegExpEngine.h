@@ -57,13 +57,28 @@ struct RegExpCompileData
       : tree(nullptr),
         simple(true),
         contains_anchor(false),
-        capture_count(0)
+        capture_count(0),
+        capture_name_list(nullptr),
+        capture_index_list(nullptr)
     {}
 
+    // The parsed AST as produced by the RegExpParser.
     RegExpTree* tree;
+    // True, iff the pattern is a 'simple' atom with zero captures. In other
+    // words, the pattern consists of a string with no metacharacters and special
+    // regexp features, and can be implemented as a standard string search.
     bool simple;
+
+    // True, iff the pattern is anchored at the start of the string with '^'.
     bool contains_anchor;
+
+    // The number of capture groups, without the global capture \0.
     int capture_count;
+
+    // Only use if the pattern contains named captures. If so, this contains a
+    // mapping of capture names to capture indices, as Values.
+    CharacterVectorVector* capture_name_list;
+    IntegerVector* capture_index_list;
 };
 
 struct RegExpCode
