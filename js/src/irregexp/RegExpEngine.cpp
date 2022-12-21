@@ -4860,6 +4860,9 @@ TextNode::GetQuickCheckDetails(QuickCheckDetails* details,
                                int characters_filled_in,
                                bool not_at_start)
 {
+    // Do not collect any quick check details if the text node reads backward,
+    // since it reads in the opposite direction than we use for quick checks.
+    if (read_backward()) return;
     MOZ_ASSERT(characters_filled_in < details->characters());
     int characters = details->characters();
     int char_mask = MaximumCharacter(compiler->ascii());
@@ -5016,7 +5019,7 @@ QuickCheckDetails::Clear()
 void
 QuickCheckDetails::Advance(int by, bool ascii)
 {
-    if (by >= characters_) {
+    if (by >= characters_ || by < 0) {
         Clear();
         return;
     }
