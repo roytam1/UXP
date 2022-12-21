@@ -30,18 +30,14 @@
 #include "irregexp/RegExpEngine.h"
 
 #include "irregexp/NativeRegExpMacroAssembler.h"
-#include "irregexp/RegExpCharacters.h" 
+#include "irregexp/RegExpCharacters.h"
 #include "irregexp/RegExpMacroAssembler.h"
 #include "jit/ExecutableAllocator.h"
 #include "jit/JitCommon.h"
 
-// Generated table
-#include "irregexp/RegExpCharacters-inl.h"
-
 using namespace js;
 using namespace js::irregexp;
 
-using mozilla::ArrayLength;
 using mozilla::DebugOnly;
 using mozilla::Maybe;
 
@@ -64,317 +60,6 @@ RegExpNode::RegExpNode(LifoAlloc* alloc)
     bm_info_[0] = bm_info_[1] = nullptr;
 }
 
-static const int kMaxOneByteCharCode = 0xff;
-static const int kMaxUtf16CodeUnit = 0xffff;
-
-static char16_t
-MaximumCharacter(bool ascii)
-{
-    return ascii ? kMaxOneByteCharCode : kMaxUtf16CodeUnit;
-}
-
-static void
-AddClass(const int* elmv, int elmc,
-         CharacterRangeVector* ranges)
-{
-    elmc--;
-    MOZ_ASSERT(elmv[elmc] == 0x10000);
-    for (int i = 0; i < elmc; i += 2) {
-        MOZ_ASSERT(elmv[i] < elmv[i + 1]);
-        ranges->append(CharacterRange(elmv[i], elmv[i + 1] - 1));
-    }
-}
-
-static void
-AddClassNegated(const int* elmv,
-                int elmc,
-                CharacterRangeVector* ranges)
-{
-    elmc--;
-    MOZ_ASSERT(elmv[elmc] == 0x10000);
-    MOZ_ASSERT(elmv[0] != 0x0000);
-    MOZ_ASSERT(elmv[elmc-1] != kMaxUtf16CodeUnit);
-    char16_t last = 0x0000;
-    for (int i = 0; i < elmc; i += 2) {
-        MOZ_ASSERT(last <= elmv[i] - 1);
-        MOZ_ASSERT(elmv[i] < elmv[i + 1]);
-        ranges->append(CharacterRange(last, elmv[i] - 1));
-        last = elmv[i + 1];
-    }
-    ranges->append(CharacterRange(last, kMaxUtf16CodeUnit));
-}
-
-void
-CharacterRange::AddClassEscape(LifoAlloc* alloc, char16_t type,
-			       CharacterRangeVector* ranges)
-{
-    switch (type) {
-      case 's':
-        AddClass(kSpaceRanges, kSpaceRangeCount, ranges);
-        break;
-      case 'S':
-        AddClassNegated(kSpaceRanges, kSpaceRangeCount, ranges);
-        break;
-      case 'w':
-        AddClass(kWordRanges, kWordRangeCount, ranges);
-        break;
-      case 'W':
-        AddClassNegated(kWordRanges, kWordRangeCount, ranges);
-        break;
-      case 'd':
-        AddClass(kDigitRanges, kDigitRangeCount, ranges);
-        break;
-      case 'D':
-        AddClassNegated(kDigitRanges, kDigitRangeCount, ranges);
-        break;
-      case '.':
-        AddClassNegated(kLineTerminatorRanges, kLineTerminatorRangeCount, ranges);
-        break;
-        // This is not a character range as defined by the spec but a
-        // convenient shorthand for a character class that matches any
-        // character.
-      case '*':
-        ranges->append(CharacterRange::Everything());
-        break;
-        // This is the set of characters matched by the $ and ^ symbols
-        // in multiline mode.
-      case 'n':
-        AddClass(kLineTerminatorRanges, kLineTerminatorRangeCount, ranges);
-        break;
-      default:
-        MOZ_CRASH("Bad character class escape");
-    }
-}
-
-// Add class escape, excluding surrogate pair range.
-void
-CharacterRange::AddClassEscapeUnicode(LifoAlloc* alloc, char16_t type,
-                                      CharacterRangeVector* ranges, bool ignore_case)
-{
-    switch (type) {
-      case 's':
-      case 'd':
-        return AddClassEscape(alloc, type, ranges);
-        break;
-      case 'S':
-        AddClassNegated(kSpaceAndSurrogateRanges, kSpaceAndSurrogateRangeCount, ranges);
-        break;
-      case 'w':
-        if (ignore_case)
-            AddClass(kIgnoreCaseWordRanges, kIgnoreCaseWordRangeCount, ranges);
-        else
-            AddClassEscape(alloc, type, ranges);
-        break;
-      case 'W':
-        if (ignore_case) {
-            AddClass(kNegatedIgnoreCaseWordAndSurrogateRanges,
-                     kNegatedIgnoreCaseWordAndSurrogateRangeCount, ranges);
-        } else {
-            AddClassNegated(kWordAndSurrogateRanges, kWordAndSurrogateRangeCount, ranges);
-        }
-        break;
-      case 'D':
-        AddClassNegated(kDigitAndSurrogateRanges, kDigitAndSurrogateRangeCount, ranges);
-        break;
-      default:
-        MOZ_CRASH("Bad type!");
-    }
-}
-
-static bool
-RangesContainLatin1Equivalents(const CharacterRangeVector& ranges, bool unicode)
-{
-    for (size_t i = 0; i < ranges.length(); i++) {
-        // TODO(dcarney): this could be a lot more efficient.
-        if (RangeContainsLatin1Equivalents(ranges[i], unicode))
-            return true;
-    }
-    return false;
-}
-
-static const size_t kEcma262UnCanonicalizeMaxWidth = 4;
-
-// Returns the number of characters in the equivalence class, omitting those
-// that cannot occur in the source string if it is a one byte string.
-static int
-GetCaseIndependentLetters(char16_t character,
-                          bool ascii_subject,
-                          bool unicode,
-                          const char16_t* choices,
-                          size_t choices_length,
-                          char16_t* letters)
-{
-    size_t count = 0;
-    for (size_t i = 0; i < choices_length; i++) {
-        char16_t c = choices[i];
-
-        // Skip characters that can't appear in one byte strings.
-        if (!unicode && ascii_subject && c > kMaxOneByteCharCode)
-            continue;
-
-        // Watch for duplicates.
-        bool found = false;
-        for (size_t j = 0; j < count; j++) {
-            if (letters[j] == c) {
-                found = true;
-                break;
-            }
-        }
-        if (found)
-            continue;
-
-        letters[count++] = c;
-    }
-
-    return count;
-}
-
-static int
-GetCaseIndependentLetters(char16_t character,
-                          bool ascii_subject,
-                          bool unicode,
-                          char16_t* letters)
-{
-    if (unicode) {
-        const char16_t choices[] = {
-            character,
-            unicode::FoldCase(character),
-            unicode::ReverseFoldCase1(character),
-            unicode::ReverseFoldCase2(character),
-            unicode::ReverseFoldCase3(character),
-        };
-        return GetCaseIndependentLetters(character, ascii_subject, unicode,
-                                         choices, ArrayLength(choices), letters);
-    }
-
-    char16_t upper = unicode::ToUpperCase(character);
-    unicode::CodepointsWithSameUpperCase others(character);
-    char16_t other1 = others.other1();
-    char16_t other2 = others.other2();
-    char16_t other3 = others.other3();
-
-    // ES 2017 draft 996af87b7072b3c3dd2b1def856c66f456102215 21.2.4.2
-    // step 3.g.
-    // The standard requires that non-ASCII characters cannot have ASCII
-    // character codes in their equivalence class, even though this
-    // situation occurs multiple times in the Unicode tables.
-    static const unsigned kMaxAsciiCharCode = 127;
-    if (upper <= kMaxAsciiCharCode) {
-        if (character > kMaxAsciiCharCode) {
-            // If Canonicalize(character) == character, all other characters
-            // should be ignored.
-            return GetCaseIndependentLetters(character, ascii_subject, unicode,
-                                             &character, 1, letters);
-        }
-
-        if (other1 > kMaxAsciiCharCode)
-            other1 = character;
-        if (other2 > kMaxAsciiCharCode)
-            other2 = character;
-        if (other3 > kMaxAsciiCharCode)
-            other3 = character;
-    }
-
-    const char16_t choices[] = {
-        character,
-        upper,
-        other1,
-        other2,
-        other3
-    };
-    return GetCaseIndependentLetters(character, ascii_subject, unicode,
-                                     choices, ArrayLength(choices), letters);
-}
-
-void
-CharacterRange::AddCaseEquivalents(bool is_ascii, bool unicode, CharacterRangeVector* ranges)
-{
-    char16_t bottom = from();
-    char16_t top = to();
-
-    if (is_ascii && !RangeContainsLatin1Equivalents(*this, unicode)) {
-        if (bottom > kMaxOneByteCharCode)
-            return;
-        if (top > kMaxOneByteCharCode)
-            top = kMaxOneByteCharCode;
-    }
-
-    for (char16_t c = bottom;; c++) {
-        char16_t chars[kEcma262UnCanonicalizeMaxWidth];
-        size_t length = GetCaseIndependentLetters(c, is_ascii, unicode, chars);
-
-        for (size_t i = 0; i < length; i++) {
-            char16_t other = chars[i];
-            if (other == c)
-                continue;
-
-            // Try to combine with an existing range.
-            bool found = false;
-            for (size_t i = 0; i < ranges->length(); i++) {
-                CharacterRange& range = (*ranges)[i];
-                if (range.Contains(other)) {
-                    found = true;
-                    break;
-                } else if (other == range.from() - 1) {
-                    range.set_from(other);
-                    found = true;
-                    break;
-                } else if (other == range.to() + 1) {
-                    range.set_to(other);
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
-                ranges->append(CharacterRange::Singleton(other));
-        }
-
-        if (c == top)
-            break;
-    }
-}
-
-static bool
-CompareInverseRanges(const CharacterRangeVector& ranges, const int* special_class, size_t length)
-{
-    length--;  // Remove final 0x10000.
-    MOZ_ASSERT(special_class[length] == 0x10000);
-    MOZ_ASSERT(ranges.length() != 0);
-    MOZ_ASSERT(length != 0);
-    MOZ_ASSERT(special_class[0] != 0);
-    if (ranges.length() != (length >> 1) + 1)
-        return false;
-    CharacterRange range = ranges[0];
-    if (range.from() != 0)
-        return false;
-    for (size_t i = 0; i < length; i += 2) {
-        if (special_class[i] != (range.to() + 1))
-            return false;
-        range = ranges[(i >> 1) + 1];
-        if (special_class[i+1] != range.from())
-            return false;
-    }
-    if (range.to() != 0xffff)
-        return false;
-    return true;
-}
-
-static bool
-CompareRanges(const CharacterRangeVector& ranges, const int* special_class, size_t length)
-{
-    length--;  // Remove final 0x10000.
-    MOZ_ASSERT(special_class[length] == 0x10000);
-    if (ranges.length() * 2 != length)
-        return false;
-    for (size_t i = 0; i < length; i += 2) {
-        CharacterRange range = ranges[i >> 1];
-        if (range.from() != special_class[i] || range.to() != special_class[i + 1] - 1)
-            return false;
-    }
-    return true;
-}
-
 bool
 RegExpCharacterClass::is_standard(LifoAlloc* alloc)
 {
@@ -384,166 +69,35 @@ RegExpCharacterClass::is_standard(LifoAlloc* alloc)
         return false;
     if (set_.is_standard())
         return true;
-    if (CompareRanges(set_.ranges(alloc), kSpaceRanges, kSpaceRangeCount)) {
+    if (CharacterRange::CompareRanges(set_.ranges(alloc), kSpaceRanges, kSpaceRangeCount)) {
         set_.set_standard_set_type('s');
         return true;
     }
-    if (CompareInverseRanges(set_.ranges(alloc), kSpaceRanges, kSpaceRangeCount)) {
+    if (CharacterRange::CompareInverseRanges(set_.ranges(alloc), kSpaceRanges, kSpaceRangeCount)) {
         set_.set_standard_set_type('S');
         return true;
     }
-    if (CompareInverseRanges(set_.ranges(alloc),
+    if (CharacterRange::CompareInverseRanges(set_.ranges(alloc),
                              kLineTerminatorRanges,
                              kLineTerminatorRangeCount)) {
         set_.set_standard_set_type('.');
         return true;
     }
-    if (CompareRanges(set_.ranges(alloc),
+    if (CharacterRange::CompareRanges(set_.ranges(alloc),
                       kLineTerminatorRanges,
                       kLineTerminatorRangeCount)) {
         set_.set_standard_set_type('n');
         return true;
     }
-    if (CompareRanges(set_.ranges(alloc), kWordRanges, kWordRangeCount)) {
+    if (CharacterRange::CompareRanges(set_.ranges(alloc), kWordRanges, kWordRangeCount)) {
         set_.set_standard_set_type('w');
         return true;
     }
-    if (CompareInverseRanges(set_.ranges(alloc), kWordRanges, kWordRangeCount)) {
+    if (CharacterRange::CompareInverseRanges(set_.ranges(alloc), kWordRanges, kWordRangeCount)) {
         set_.set_standard_set_type('W');
         return true;
     }
     return false;
-}
-
-bool
-CharacterRange::IsCanonical(const CharacterRangeVector& ranges)
-{
-    int n = ranges.length();
-    if (n <= 1)
-        return true;
-
-    int max = ranges[0].to();
-    for (int i = 1; i < n; i++) {
-        CharacterRange next_range = ranges[i];
-        if (next_range.from() <= max + 1)
-            return false;
-        max = next_range.to();
-    }
-    return true;
-}
-
-// Move a number of elements in a zonelist to another position
-// in the same list. Handles overlapping source and target areas.
-static
-void MoveRanges(CharacterRangeVector& list, int from, int to, int count)
-{
-    // Ranges are potentially overlapping.
-    if (from < to) {
-        for (int i = count - 1; i >= 0; i--)
-            list[to + i] = list[from + i];
-    } else {
-        for (int i = 0; i < count; i++)
-            list[to + i] = list[from + i];
-    }
-}
-
-static int
-InsertRangeInCanonicalList(CharacterRangeVector& list,
-                           int count,
-                           CharacterRange insert)
-{
-    // Inserts a range into list[0..count[, which must be sorted
-    // by from value and non-overlapping and non-adjacent, using at most
-    // list[0..count] for the result. Returns the number of resulting
-    // canonicalized ranges. Inserting a range may collapse existing ranges into
-    // fewer ranges, so the return value can be anything in the range 1..count+1.
-    char16_t from = insert.from();
-    char16_t to = insert.to();
-    int start_pos = 0;
-    int end_pos = count;
-    for (int i = count - 1; i >= 0; i--) {
-        CharacterRange current = list[i];
-        if (current.from() > to + 1) {
-            end_pos = i;
-        } else if (current.to() + 1 < from) {
-            start_pos = i + 1;
-            break;
-        }
-    }
-
-    // Inserted range overlaps, or is adjacent to, ranges at positions
-    // [start_pos..end_pos[. Ranges before start_pos or at or after end_pos are
-    // not affected by the insertion.
-    // If start_pos == end_pos, the range must be inserted before start_pos.
-    // if start_pos < end_pos, the entire range from start_pos to end_pos
-    // must be merged with the insert range.
-
-    if (start_pos == end_pos) {
-        // Insert between existing ranges at position start_pos.
-        if (start_pos < count) {
-            MoveRanges(list, start_pos, start_pos + 1, count - start_pos);
-        }
-        list[start_pos] = insert;
-        return count + 1;
-    }
-    if (start_pos + 1 == end_pos) {
-        // Replace single existing range at position start_pos.
-        CharacterRange to_replace = list[start_pos];
-        int new_from = Min(to_replace.from(), from);
-        int new_to = Max(to_replace.to(), to);
-        list[start_pos] = CharacterRange(new_from, new_to);
-        return count;
-    }
-    // Replace a number of existing ranges from start_pos to end_pos - 1.
-    // Move the remaining ranges down.
-
-    int new_from = Min(list[start_pos].from(), from);
-    int new_to = Max(list[end_pos - 1].to(), to);
-    if (end_pos < count) {
-        MoveRanges(list, end_pos, start_pos + 1, count - end_pos);
-    }
-    list[start_pos] = CharacterRange(new_from, new_to);
-    return count - (end_pos - start_pos) + 1;
-}
-
-void
-CharacterRange::Canonicalize(CharacterRangeVector& character_ranges)
-{
-    if (character_ranges.length() <= 1) return;
-    // Check whether ranges are already canonical (increasing, non-overlapping,
-    // non-adjacent).
-    int n = character_ranges.length();
-    int max = character_ranges[0].to();
-    int i = 1;
-    while (i < n) {
-        CharacterRange current = character_ranges[i];
-        if (current.from() <= max + 1) {
-            break;
-        }
-        max = current.to();
-        i++;
-    }
-    // Canonical until the i'th range. If that's all of them, we are done.
-    if (i == n) return;
-
-    // The ranges at index i and forward are not canonicalized. Make them so by
-    // doing the equivalent of insertion sort (inserting each into the previous
-    // list, in order).
-    // Notice that inserting a range can reduce the number of ranges in the
-    // result due to combining of adjacent and overlapping ranges.
-    int read = i;  // Range to insert.
-    size_t num_canonical = i;  // Length of canonicalized part of list.
-    do {
-        num_canonical = InsertRangeInCanonicalList(character_ranges,
-                                                   num_canonical,
-                                                   character_ranges[read]);
-        read++;
-    } while (read < n);
-
-    while (character_ranges.length() > num_canonical)
-        character_ranges.popBack();
-
-    MOZ_ASSERT(CharacterRange::IsCanonical(character_ranges));
 }
 
 // -------------------------------------------------------------------
@@ -790,7 +344,7 @@ TextNode::FilterASCII(int depth, bool ignore_case, bool unicode)
                     ranges[0].to() >= kMaxOneByteCharCode)
                 {
                     // This will be handled in a later filter.
-                    if (ignore_case && RangesContainLatin1Equivalents(ranges, unicode))
+                    if (ignore_case && CharacterRange::RangesContainLatin1Equivalents(ranges, unicode))
                         continue;
                     return set_replacement(nullptr);
                 }
@@ -799,7 +353,7 @@ TextNode::FilterASCII(int depth, bool ignore_case, bool unicode)
                     ranges[0].from() > kMaxOneByteCharCode)
                 {
                     // This will be handled in a later filter.
-                    if (ignore_case && RangesContainLatin1Equivalents(ranges, unicode))
+                    if (ignore_case && CharacterRange::RangesContainLatin1Equivalents(ranges, unicode))
                         continue;
                     return set_replacement(nullptr);
                 }

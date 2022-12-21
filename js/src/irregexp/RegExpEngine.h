@@ -34,6 +34,9 @@
 
 #include "ds/SplayTree.h"
 #include "jit/Label.h"
+
+#include "irregexp/InfallibleVector.h"
+#include "irregexp/RegExpCharRanges.h"
 #include "vm/RegExpObject.h"
 
 namespace js {
@@ -141,75 +144,6 @@ InterpretCode(JSContext* cx, const uint8_t* byteCode, const CharT* chars, size_t
 #define FORWARD_DECLARE(Name) class RegExp##Name;
 FOR_EACH_REG_EXP_TREE_TYPE(FORWARD_DECLARE)
 #undef FORWARD_DECLARE
-
-class CharacterRange;
-typedef InfallibleVector<CharacterRange, 1> CharacterRangeVector;
-
-// Represents code units in the range from from_ to to_, both ends are
-// inclusive.
-class CharacterRange
-{
-  public:
-    CharacterRange()
-      : from_(0), to_(0)
-    {}
-
-    CharacterRange(char16_t from, char16_t to)
-      : from_(from), to_(to)
-    {}
-
-    static void AddClassEscape(LifoAlloc* alloc, char16_t type, CharacterRangeVector* ranges);
-    static void AddClassEscapeUnicode(LifoAlloc* alloc, char16_t type,
-                                      CharacterRangeVector* ranges, bool ignoreCase);
-
-    static inline CharacterRange Singleton(char16_t value) {
-        return CharacterRange(value, value);
-    }
-    static inline CharacterRange Range(char16_t from, char16_t to) {
-        MOZ_ASSERT(from <= to);
-        return CharacterRange(from, to);
-    }
-    static inline CharacterRange Everything() {
-        return CharacterRange(0, 0xFFFF);
-    }
-    bool Contains(char16_t i) { return from_ <= i && i <= to_; }
-    char16_t from() const { return from_; }
-    void set_from(char16_t value) { from_ = value; }
-    char16_t to() const { return to_; }
-    void set_to(char16_t value) { to_ = value; }
-    bool is_valid() { return from_ <= to_; }
-    bool IsEverything(char16_t max) { return from_ == 0 && to_ >= max; }
-    bool IsSingleton() { return (from_ == to_); }
-    void AddCaseEquivalents(bool is_ascii, bool unicode, CharacterRangeVector* ranges);
-
-    static void Split(const LifoAlloc* alloc,
-                      CharacterRangeVector base,
-                      const Vector<int>& overlay,
-                      CharacterRangeVector* included,
-                      CharacterRangeVector* excluded);
-
-    // Whether a range list is in canonical form: Ranges ordered by from value,
-    // and ranges non-overlapping and non-adjacent.
-    static bool IsCanonical(const CharacterRangeVector& ranges);
-
-    // Convert range list to canonical form. The characters covered by the ranges
-    // will still be the same, but no character is in more than one range, and
-    // adjacent ranges are merged. The resulting list may be shorter than the
-    // original, but cannot be longer.
-    static void Canonicalize(CharacterRangeVector& ranges);
-
-    // Negate the contents of a character range in canonical form.
-    static void Negate(const LifoAlloc* alloc,
-                       CharacterRangeVector src,
-                       CharacterRangeVector* dst);
-
-    static const int kStartMarker = (1 << 24);
-    static const int kPayloadMask = (1 << 24) - 1;
-
-  private:
-    char16_t from_;
-    char16_t to_;
-};
 
 // A set of unsigned integers that behaves especially well on small
 // integers (< 32).

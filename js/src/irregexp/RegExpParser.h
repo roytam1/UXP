@@ -133,9 +133,6 @@ class BufferedVector
 };
 
 
-// Characters parsed by RegExpParser can be either char16_t or kEndMarker.
-typedef uint32_t widechar;
-
 // Accumulates RegExp atoms and assertions into lists of terms and alternatives.
 class RegExpBuilder
 {
@@ -215,7 +212,14 @@ class RegExpParser
     // can be reparsed.
     bool ParseBackReferenceIndex(int* index_out);
 
-    bool ParseClassAtom(char16_t* char_class, widechar *value);
+    // Parse a thing inside a character class. Either add escaped class to the range and return
+    // the matched range as |char_class|, or return a single character as |value|
+    // Unicode ranges can be null if not in Unicode mode
+    bool ParseClassEscape(char16_t* char_class, widechar *value,
+                          CharacterRangeVector* ranges,
+                          CharacterRangeVector* lead_ranges,
+                          CharacterRangeVector* trail_ranges,
+                          WideCharRangeVector* wide_ranges);
     RegExpTree* ReportError(unsigned errorNumber, const char* param = nullptr);
     void Advance();
     void Advance(int dist) {
