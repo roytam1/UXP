@@ -90,6 +90,26 @@ RegExpBuilder::AddCharacter(char16_t c)
 #endif
 }
 
+// forward declare atom helpers from below
+static inline RegExpTree* SurrogatePairAtom(LifoAlloc* alloc, char16_t lead, char16_t trail, bool ignore_case);
+static inline RegExpTree* LeadSurrogateAtom(LifoAlloc* alloc, char16_t value);
+static inline RegExpTree* TrailSurrogateAtom(LifoAlloc* alloc, char16_t value);
+
+void
+RegExpBuilder::AddUnicodeCharacter(widechar c, bool ignore_case) {
+  if (c > unicode::UTF16Max) {
+    char16_t lead, trail;
+    unicode::UTF16Encode(c, &lead, &trail);
+    AddAtom(SurrogatePairAtom(alloc, lead, trail, ignore_case));
+  } else if (unicode::IsLeadSurrogate(c)) {
+    AddAtom(LeadSurrogateAtom(alloc, c));
+  } else if (unicode::IsTrailSurrogate(c)) {
+    AddAtom(TrailSurrogateAtom(alloc, c));
+  } else {
+    AddCharacter(static_cast<char16_t>(c));
+  }
+}
+
 void
 RegExpBuilder::AddEmpty()
 {
@@ -364,6 +384,39 @@ RegExpParser<CharT>::ParseBracedHexEscape(widechar* value)
 
 template <typename CharT>
 bool
+RegExpParser<CharT>::ParseUnicodeEscape(widechar* value)
+{
+  // Parse a RegExpUnicodeEscapeSequence
+  // Both \uxxxx and \u{xxxxx} are allowed. \u has already been consumed.
+  const CharT* start = position();
+  if (current() == '{' && unicode_) {
+    bool result = ParseBracedHexEscape(value);
+    if (!result) {
+      Reset(start);
+    }
+    return result;
+  }
+  // \u but no {, or \u{...} escapes not allowed.
+  bool result = ParseHexEscape(4, value);
+  if (result && unicode_ && unicode::IsLeadSurrogate(static_cast<char16_t>(*value)) && current() == '\\') {
+    // Attempt to read trail surrogate.
+    const CharT* start = position();
+    if (Next() == 'u') {
+      Advance(2);
+      widechar trail;
+      if (ParseHexEscape(4, &trail) &&
+          unicode::IsTrailSurrogate(static_cast<char16_t>(trail))) {
+        *value = unicode::UTF16Decode(static_cast<char16_t>(*value), static_cast<char16_t>(trail));
+        return true;
+      }
+    }
+    Reset(start);
+  }
+  return result;
+}
+
+template <typename CharT>
+bool
 RegExpParser<CharT>::ParseTrailSurrogate(widechar* value)
 {
     if (current() != '\\')
@@ -560,30 +613,13 @@ RegExpParser<CharT>::ParseClassCharacterEscape(widechar* code)
       case 'u': {
         Advance();
         widechar value;
-        if (unicode_) {
-            if (current() == '{') {
-                if (!ParseBracedHexEscape(&value))
-                    return false;
-                *code = value;
-                return true;
-            }
-            if (ParseHexEscape(4, &value)) {
-                if (unicode::IsLeadSurrogate(value)) {
-                    widechar trail;
-                    if (ParseTrailSurrogate(&trail)) {
-                        *code = unicode::UTF16Decode(value, trail);
-                        return true;
-                    }
-                }
-                *code = value;
-                return true;
-            }
-            ReportError(JSMSG_INVALID_UNICODE_ESCAPE);
-            return false;
+        if (ParseUnicodeEscape(&value)) {
+          *code = value;
+          return true;
         }
-        if (ParseHexEscape(4, &value)) {
-            *code = value;
-            return true;
+        if (unicode_) {
+          ReportError(JSMSG_INVALID_UNICODE_ESCAPE);
+          return false;
         }
         // If \u is not followed by a four-digit or braced hexadecimal, treat it
         // as an identity escape.
@@ -1789,45 +1825,12 @@ RegExpParser<CharT>::ParseDisjunction()
               case 'u': {
                 Advance(2);
                 widechar value;
-                if (unicode_) {
-                    if (current() == '{') {
-                        if (!ParseBracedHexEscape(&value))
-                            return nullptr;
-                        if (unicode::IsLeadSurrogate(value)) {
-                            builder->AddAtom(LeadSurrogateAtom(alloc, value));
-                        } else if (unicode::IsTrailSurrogate(value)) {
-                            builder->AddAtom(TrailSurrogateAtom(alloc, value));
-                        } else if (value >= unicode::NonBMPMin) {
-                            char16_t lead, trail;
-                            unicode::UTF16Encode(value, &lead, &trail);
-                            builder->AddAtom(SurrogatePairAtom(alloc, lead, trail,
-                                                               ignore_case_));
-                        } else {
-                            builder->AddCharacter(value);
-                        }
-                    } else if (ParseHexEscape(4, &value)) {
-                        if (unicode::IsLeadSurrogate(value)) {
-                            widechar trail;
-                            if (ParseTrailSurrogate(&trail)) {
-                                builder->AddAtom(SurrogatePairAtom(alloc, value, trail,
-                                                                   ignore_case_));
-                            } else {
-                                builder->AddAtom(LeadSurrogateAtom(alloc, value));
-                            }
-                        } else if (unicode::IsTrailSurrogate(value)) {
-                            builder->AddAtom(TrailSurrogateAtom(alloc, value));
-                        } else {
-                            builder->AddCharacter(value);
-                        }
-                    } else {
-                        return ReportError(JSMSG_INVALID_UNICODE_ESCAPE);
-                    }
-                    break;
-                }
-                if (ParseHexEscape(4, &value)) {
-                    builder->AddCharacter(value);
+                if (ParseUnicodeEscape(&value)) {
+                  builder->AddUnicodeCharacter(value, ignore_case_);
+                } else if (!unicode_) {
+                  builder->AddCharacter('u');
                 } else {
-                    builder->AddCharacter('u');
+                  return ReportError(JSMSG_INVALID_UNICODE_ESCAPE);
                 }
                 break;
               }

@@ -133,12 +133,16 @@ class BufferedVector
 };
 
 
+// Characters parsed by RegExpParser can be either char16_t or kEndMarker.
+typedef uint32_t widechar;
+
 // Accumulates RegExp atoms and assertions into lists of terms and alternatives.
 class RegExpBuilder
 {
   public:
     explicit RegExpBuilder(LifoAlloc* alloc);
     void AddCharacter(char16_t character);
+    void AddUnicodeCharacter(widechar c, bool ignore_case);
     // "Adds" an empty expression. Does nothing except consume a
     // following quantifier
     void AddEmpty();
@@ -168,9 +172,6 @@ class RegExpBuilder
 #endif
 };
 
-// Characters parsed by RegExpParser can be either char16_t or kEndMarker.
-typedef uint32_t widechar;
-
 template <typename CharT>
 class RegExpParser
 {
@@ -198,6 +199,7 @@ class RegExpParser
     bool ParseHexEscape(int length, widechar* value);
 
     bool ParseBracedHexEscape(widechar* value);
+    bool ParseUnicodeEscape(widechar* value);
     bool ParseTrailSurrogate(widechar* value);
     bool ParseRawSurrogatePair(char16_t* lead, char16_t* trail);
 
