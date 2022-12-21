@@ -15,6 +15,7 @@
 
 #include "builtin/RegExp.h"
 #include "frontend/TokenStream.h"
+#include "irregexp/FeatureFlags.h"
 #ifdef DEBUG
 #include "irregexp/RegExpBytecode.h"
 #endif
@@ -1484,6 +1485,13 @@ ParseRegExpFlags(const CharT* chars, size_t length, RegExpFlag* flagsOut, char16
             if (!HandleRegExpFlag(UnicodeFlag, flagsOut))
                 return false;
             break;
+          case 'v':
+            if (irregexp::kParseFlagUnicodeSetsAsUnicode) {
+                if (!HandleRegExpFlag(UnicodeFlag, flagsOut))
+                    return false;
+                break;
+            }
+            MOZ_FALLTHROUGH
           default:
             return false;
         }
