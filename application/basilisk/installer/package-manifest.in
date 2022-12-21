@@ -50,7 +50,7 @@
 @RESPATH@/chrome/@AB_CD@@JAREXT@
 @RESPATH@/chrome/@AB_CD@.manifest
 @RESPATH@/dictionaries/*
-#if defined(XP_WIN) || defined(XP_LINUX)
+#if defined(XP_WIN) || defined(MOZ_WIDGET_GTK)
 @RESPATH@/fonts/*
 #endif
 @RESPATH@/hyphenation/*
