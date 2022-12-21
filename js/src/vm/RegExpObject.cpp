@@ -110,7 +110,7 @@ ScopedMatchPairs::allocOrExpandArray(size_t pairCount)
 bool
 VectorMatchPairs::allocOrExpandArray(size_t pairCount)
 {
-    if (!vec_.resizeUninitialized(sizeof(MatchPair) * pairCount))
+    if (!vec_.resizeUninitialized(pairCount))
         return false;
 
     pairs_ = &vec_[0];
