@@ -71,13 +71,13 @@ NativeRegExpMacroAssembler::NativeRegExpMacroAssembler(LifoAlloc* alloc, RegExpS
     // Find physical registers for each compiler register.
     AllocatableGeneralRegisterSet regs(GeneralRegisterSet::All());
 
+    temp0 = regs.takeAny();
+    temp1 = regs.takeAny();
+    temp2 = regs.takeAny();
     input_end_pointer = regs.takeAny();
     current_character = regs.takeAny();
     current_position = regs.takeAny();
     backtrack_stack_pointer = regs.takeAny();
-    temp0 = regs.takeAny();
-    temp1 = regs.takeAny();
-    temp2 = regs.takeAny();
 
     JitSpew(JitSpew_Codegen,
             "Starting RegExp (input_end_pointer %s) (current_character %s)"
@@ -548,23 +548,20 @@ NativeRegExpMacroAssembler::Bind(Label* label)
 }
 
 void
-NativeRegExpMacroAssembler::CheckAtStart(Label* on_at_start)
+NativeRegExpMacroAssembler::CheckAtStartImpl(int cp_offset, Label* on_cond,
+                                              Assembler::Condition cond) {
+    masm.computeEffectiveAddress(BaseIndex(input_end_pointer, current_position, TimesOne, cp_offset * char_size()), temp0);
+
+    Address inputStart(masm.getStackPointer(), offsetof(FrameData, inputStart));
+    masm.branchPtr(cond, inputStart, temp0, BranchOrBacktrack(on_cond));
+}
+                                              
+void
+NativeRegExpMacroAssembler::CheckAtStart(int cp_offset, Label* on_at_start)
 {
     JitSpew(SPEW_PREFIX "CheckAtStart");
 
-    Label not_at_start;
-
-    // Did we start the match at the start of the string at all?
-    Address startIndex(masm.getStackPointer(), offsetof(FrameData, startIndex));
-    masm.branchPtr(Assembler::NotEqual, startIndex, ImmWord(0), &not_at_start);
-
-    // If we did, are we still at the start of the input?
-    masm.computeEffectiveAddress(BaseIndex(input_end_pointer, current_position, TimesOne), temp0);
-
-    Address inputStart(masm.getStackPointer(), offsetof(FrameData, inputStart));
-    masm.branchPtr(Assembler::Equal, inputStart, temp0, BranchOrBacktrack(on_at_start));
-
-    masm.bind(&not_at_start);
+    CheckAtStartImpl(cp_offset, on_at_start, Assembler::Equal);
 }
 
 void
@@ -572,15 +569,7 @@ NativeRegExpMacroAssembler::CheckNotAtStart(int cp_offset, Label* on_not_at_star
 {
     JitSpew(SPEW_PREFIX "CheckNotAtStart");
 
-    // Did we start the match at the start of the string at all?
-    Address startIndex(masm.getStackPointer(), offsetof(FrameData, startIndex));
-    masm.branchPtr(Assembler::NotEqual, startIndex, ImmWord(0), BranchOrBacktrack(on_not_at_start));
-
-    // If we did, are we still at the start of the input?
-    masm.computeEffectiveAddress(BaseIndex(input_end_pointer, current_position, TimesOne), temp0);
-
-    Address inputStart(masm.getStackPointer(), offsetof(FrameData, inputStart));
-    masm.branchPtr(Assembler::NotEqual, inputStart, temp0, BranchOrBacktrack(on_not_at_start));
+    CheckAtStartImpl(cp_offset, on_not_at_start, Assembler::NotEqual);
 }
 
 void
@@ -659,174 +648,58 @@ NativeRegExpMacroAssembler::CheckGreedyLoop(Label* on_tos_equals_current_positio
 }
 
 void
-NativeRegExpMacroAssembler::CheckNotBackReference(int start_reg, bool read_backward, Label* on_no_match)
+NativeRegExpMacroAssembler::CheckNotBackReferenceImpl(int start_reg, bool read_backward,
+                                                      Label* on_no_match,
+                                                      bool unicode, bool ignore_case)
 {
-    JitSpew(SPEW_PREFIX "CheckNotBackReference(%d)", start_reg);
-
-    Label fallthrough;
-    Label success;
-    Label fail;
-
-    // Find length of back-referenced capture.
-    masm.loadPtr(register_location(start_reg), current_character);
-    masm.loadPtr(register_location(start_reg + 1), temp0);
-    masm.subPtr(current_character, temp0);  // Length to check.
-
-    // Fail on partial or illegal capture (start of capture after end of capture).
-    masm.branchPtr(Assembler::LessThan, temp0, ImmWord(0), BranchOrBacktrack(on_no_match));
-
-    // Succeed on empty capture (including no capture).
-    masm.branchPtr(Assembler::Equal, temp0, ImmWord(0), &fallthrough);
-
-    // Check that there are sufficient characters left in the input.
-    masm.movePtr(current_position, temp1);
-    masm.addPtr(temp0, temp1);
-    masm.branchPtr(Assembler::GreaterThan, temp1, ImmWord(0), BranchOrBacktrack(on_no_match));
-
-    // Save register to make it available below.
-    masm.push(backtrack_stack_pointer);
-
-    // Compute pointers to match string and capture string
-    masm.computeEffectiveAddress(BaseIndex(input_end_pointer, current_position, TimesOne), temp1); // Start of match.
-    masm.addPtr(input_end_pointer, current_character); // Start of capture.
-    masm.computeEffectiveAddress(BaseIndex(temp0, temp1, TimesOne), backtrack_stack_pointer); // End of match.
-
-    Label loop;
-    masm.bind(&loop);
-    if (mode_ == ASCII) {
-        masm.load8ZeroExtend(Address(current_character, 0), temp0);
-        masm.load8ZeroExtend(Address(temp1, 0), temp2);
-    } else {
-        MOZ_ASSERT(mode_ == CHAR16);
-        masm.load16ZeroExtend(Address(current_character, 0), temp0);
-        masm.load16ZeroExtend(Address(temp1, 0), temp2);
-    }
-    masm.branch32(Assembler::NotEqual, temp0, temp2, &fail);
-
-    // Increment pointers into capture and match string.
-    masm.addPtr(Imm32(char_size()), current_character);
-    masm.addPtr(Imm32(char_size()), temp1);
-
-    // Check if we have reached end of match area.
-    masm.branchPtr(Assembler::Below, temp1, backtrack_stack_pointer, &loop);
-    masm.jump(&success);
-
-    masm.bind(&fail);
-
-    // Restore backtrack stack pointer.
-    masm.pop(backtrack_stack_pointer);
-    JumpOrBacktrack(on_no_match);
-
-    masm.bind(&success);
-
-    // Move current character position to position after match.
-    masm.movePtr(backtrack_stack_pointer, current_position);
-    masm.subPtr(input_end_pointer, current_position);
-
-    // Restore backtrack stack pointer.
-    masm.pop(backtrack_stack_pointer);
-
-    masm.bind(&fallthrough);
-}
-
-void
-NativeRegExpMacroAssembler::CheckNotBackReferenceIgnoreCase(int start_reg, bool read_backward,
-                                                            Label* on_no_match, bool unicode)
-{
-    JitSpew(SPEW_PREFIX "CheckNotBackReferenceIgnoreCase(%d, %d)", start_reg, unicode);
-
     Label fallthrough;
 
+  // Captures are stored as a sequential pair of registers.
+  // Find the length of the back-referenced capture and load the
+  // capture's start index into current_character_
     masm.loadPtr(register_location(start_reg), current_character);  // Index of start of capture
-    masm.loadPtr(register_location(start_reg + 1), temp1);  // Index of end of capture
-    masm.subPtr(current_character, temp1);  // Length of capture.
-
-    // The length of a capture should not be negative. This can only happen
-    // if the end of the capture is unrecorded, or at a point earlier than
-    // the start of the capture.
-    masm.branchPtr(Assembler::LessThan, temp1, ImmWord(0), BranchOrBacktrack(on_no_match));
+    masm.loadPtr(register_location(start_reg + 1), temp0);          // Index of end of capture
+    masm.subPtr(current_character, temp0);                          // Length of capture.
 
     // If length is zero, either the capture is empty or it is completely
     // uncaptured. In either case succeed immediately.
-    masm.branchPtr(Assembler::Equal, temp1, ImmWord(0), &fallthrough);
+    masm.branchPtr(Assembler::Equal, temp0, ImmWord(0), &fallthrough);
 
     // Check that there are sufficient characters left in the input.
-    masm.movePtr(current_position, temp0);
-    masm.addPtr(temp1, temp0);
-    masm.branchPtr(Assembler::GreaterThan, temp0, ImmWord(0), BranchOrBacktrack(on_no_match));
-
-    if (mode_ == ASCII) {
-        Label success, fail;
-
-        // Save register contents to make the registers available below. After
-        // this, the temp0, temp2, and current_position registers are available.
-        masm.push(current_position);
-
-        masm.addPtr(input_end_pointer, current_character); // Start of capture.
-        masm.addPtr(input_end_pointer, current_position); // Start of text to match against capture.
-        masm.addPtr(current_position, temp1); // End of text to match against capture.
-
-        Label loop, loop_increment;
-        masm.bind(&loop);
-        masm.load8ZeroExtend(Address(current_position, 0), temp0);
-        masm.load8ZeroExtend(Address(current_character, 0), temp2);
-        masm.branch32(Assembler::Equal, temp0, temp2, &loop_increment);
-
-        // Mismatch, try case-insensitive match (converting letters to lower-case).
-        masm.or32(Imm32(0x20), temp0); // Convert match character to lower-case.
-
-        // Is temp0 a lowercase letter?
-        Label convert_capture;
-        masm.computeEffectiveAddress(Address(temp0, -'a'), temp2);
-        masm.branch32(Assembler::BelowOrEqual, temp2, Imm32(static_cast<int32_t>('z' - 'a')),
-                      &convert_capture);
-
-        // Latin-1: Check for values in range [224,254] but not 247.
-        masm.sub32(Imm32(224 - 'a'), temp2);
-        masm.branch32(Assembler::Above, temp2, Imm32(254 - 224), &fail);
-
-        // Check for 247.
-        masm.branch32(Assembler::Equal, temp2, Imm32(247 - 224), &fail);
-
-        masm.bind(&convert_capture);
-
-        // Also convert capture character.
-        masm.load8ZeroExtend(Address(current_character, 0), temp2);
-        masm.or32(Imm32(0x20), temp2);
-
-        masm.branch32(Assembler::NotEqual, temp0, temp2, &fail);
-
-        masm.bind(&loop_increment);
-
-        // Increment pointers into match and capture strings.
-        masm.addPtr(Imm32(1), current_character);
-        masm.addPtr(Imm32(1), current_position);
-
-        // Compare to end of match, and loop if not done.
-        masm.branchPtr(Assembler::Below, current_position, temp1, &loop);
-        masm.jump(&success);
-
-        masm.bind(&fail);
-
-        // Restore original values before failing.
-        masm.pop(current_position);
-        JumpOrBacktrack(on_no_match);
-
-        masm.bind(&success);
-
-        // Drop original character position value.
-        masm.addToStackPtr(Imm32(sizeof(uintptr_t)));
-
-        // Compute new value of character position after the matched part.
-        masm.subPtr(input_end_pointer, current_position);
+    if (read_backward) {
+        // If start + len > current, there isn't enough room for a
+        // lookbehind backreference.
+        Address inputStart(masm.getStackPointer(), offsetof(FrameData, inputStart));
+        masm.loadPtr(inputStart, temp1);
+        masm.subPtr(input_end_pointer, temp1);
+        masm.addPtr(temp0, temp1);
+        masm.branchPtr(Assembler::GreaterThan, temp1, current_position,
+                       BranchOrBacktrack(on_no_match));
     } else {
-        MOZ_ASSERT(mode_ == CHAR16);
+        // current_position is the negative offset from the end.
+        // If current + len > 0, there isn't enough room for a backreference.
+        masm.movePtr(current_position, temp1);
+        masm.addPtr(temp0, temp1);
+        masm.branchPtr(Assembler::GreaterThan, temp1, ImmWord(0),
+                       BranchOrBacktrack(on_no_match));
+    }
 
-        // Note: temp1 needs to be saved/restored if it is volatile, as it is used after the call.
+    if (mode_ == CHAR16 && ignore_case) {
+        // We call a helper function for case-insensitive non-latin1 strings.
+        // Save volatile regs. temp1, temp2, and current_character
+        // don't need to be saved.  current_position needs to be saved
+        // even if it's non-volatile, because we modify it to use as an argument.
         LiveGeneralRegisterSet volatileRegs(GeneralRegisterSet::Volatile());
-        volatileRegs.takeUnchecked(temp0);
+        volatileRegs.addUnchecked(current_position);
+        volatileRegs.takeUnchecked(temp1);
         volatileRegs.takeUnchecked(temp2);
+        volatileRegs.takeUnchecked(current_character);
         masm.PushRegsInMask(volatileRegs);
+
+        // Parameters are
+        //   Address byte_offset1 - Address captured substring's start.
+        //   Address byte_offset2 - Address of current character position.
+        //   size_t byte_length - length of capture in bytes(!)
 
         // Set byte_offset1.
         // Start of capture, where current_character already holds string-end negative offset.
@@ -836,34 +709,143 @@ NativeRegExpMacroAssembler::CheckNotBackReferenceIgnoreCase(int start_reg, bool 
         // Found by adding negative string-end offset of current position
         // to end of string.
         masm.addPtr(input_end_pointer, current_position);
+        if (read_backward) {
+          // Offset by length when matching backwards.
+          masm.subPtr(temp1, current_position);
+        }
 
-        // Parameters are
-        //   Address byte_offset1 - Address captured substring's start.
-        //   Address byte_offset2 - Address of current character position.
-        //   size_t byte_length - length of capture in bytes(!)
-        masm.setupUnalignedABICall(temp0);
+        masm.setupUnalignedABICall(temp1);
         masm.passABIArg(current_character);
         masm.passABIArg(current_position);
-        masm.passABIArg(temp1);
-        if (!unicode) {
-            int (*fun)(const char16_t*, const char16_t*, size_t) = CaseInsensitiveCompareStrings;
-            masm.callWithABI(JS_FUNC_TO_DATA_PTR(void*, fun));
-        } else {
+        masm.passABIArg(temp0);
+        if (unicode) {
             int (*fun)(const char16_t*, const char16_t*, size_t) = CaseInsensitiveCompareUCStrings;
             masm.callWithABI(JS_FUNC_TO_DATA_PTR(void*, fun));
+        } else {
+            int (*fun)(const char16_t*, const char16_t*, size_t) = CaseInsensitiveCompareStrings;
+            masm.callWithABI(JS_FUNC_TO_DATA_PTR(void*, fun));
         }
-        masm.storeCallInt32Result(temp0);
-
+        masm.storeCallInt32Result(temp1);
         masm.PopRegsInMask(volatileRegs);
-
         // Check if function returned non-zero for success or zero for failure.
-        masm.branchTest32(Assembler::Zero, temp0, temp0, BranchOrBacktrack(on_no_match));
+        masm.branchTest32(Assembler::Zero, temp1, temp1, BranchOrBacktrack(on_no_match));
 
-        // On success, increment position by length of capture.
-        masm.addPtr(temp1, current_position);
+        // On success, advance position by length of capture
+        if (read_backward) {
+            masm.subPtr(temp0, current_position);
+        } else {
+            masm.addPtr(temp0, current_position);
+        }
+    } else {
+        MOZ_ASSERT(mode_ == ASCII || !ignore_case);
+
+        // Save register contents to make the registers available below. After
+        // this, the temp1, temp2, and current_position registers are available.
+        masm.push(current_position);
+
+        // Make offset values into pointers
+        masm.addPtr(input_end_pointer, current_character); // Start of capture.
+        masm.addPtr(input_end_pointer, current_position); // Start of text to match against capture.
+
+        if (read_backward) {
+          // Offset by length when matching backwards.
+          masm.subPtr(temp0, current_position);
+        }
+
+        // End of text to match against capture (temp0 is pointer now)
+        masm.addPtr(current_position, temp0);
+
+        Label success, fail, loop;
+        masm.bind(&loop);
+
+        // Load next character from each string.
+        if (mode_ == ASCII) {
+            masm.load8ZeroExtend(Address(current_character, 0), temp1);
+            masm.load8ZeroExtend(Address(current_position, 0), temp2);
+        } else {
+            masm.load16ZeroExtend(Address(current_character, 0), temp1);
+            masm.load16ZeroExtend(Address(current_position, 0), temp2);
+        }
+
+        if (ignore_case) {
+            MOZ_ASSERT(mode_ == ASCII);
+            Label loop_increment, convert_match;
+
+            // Try exact match.
+            masm.branch32(Assembler::Equal, temp1, temp2, &loop_increment);
+
+            // Mismatch, try case-insensitive match (converting letters to lower-case).
+            masm.or32(Imm32(0x20), temp1); // Convert match character to lower-case.
+
+            // Is temp1 a lowercase letter [a,z]?
+            masm.computeEffectiveAddress(Address(temp1, -'a'), temp2);
+            masm.branch32(Assembler::BelowOrEqual, temp2, Imm32(static_cast<int32_t>('z' - 'a')),
+                          &convert_match);
+            // Latin-1: Check for values in range [224,254] but not 247 (U+00F7 DIVISION SIGN).
+            masm.sub32(Imm32(224 - 'a'), temp2);
+            masm.branch32(Assembler::Above, temp2, Imm32(254 - 224), &fail);
+            // Check for 247.
+            masm.branch32(Assembler::Equal, temp2, Imm32(247 - 224), &fail);
+
+            // Capture character is lower case. Convert match character to lower case and compare
+            masm.bind(&convert_match);
+            // Reload latin1 character since temp2 was clobbered above
+            masm.load8ZeroExtend(Address(current_position, 0), temp2);
+            masm.or32(Imm32(0x20), temp2);
+            masm.branch32(Assembler::NotEqual, temp1, temp2, &fail);
+
+            masm.bind(&loop_increment);
+        } else {
+            // Fail if characters do not match.
+            masm.branch32(Assembler::NotEqual, temp1, temp2, &fail);
+        }
+
+        // Increment pointers into match and capture strings.
+        masm.addPtr(Imm32(char_size()), current_character);
+        masm.addPtr(Imm32(char_size()), current_position);
+
+        // Loop if we have not reached the end of the match string.
+        masm.branchPtr(Assembler::Below, current_position, temp0, &loop);
+        masm.jump(&success);
+
+        // Restore original values before failing.
+        masm.bind(&fail);
+        masm.pop(current_position);
+        JumpOrBacktrack(on_no_match);
+
+        masm.bind(&success);
+        // Drop original character position value.
+        masm.pop(temp0);
+
+        // current_position is a pointer (now at the end of the consumed characters). Convert it back to an offset.
+        masm.subPtr(input_end_pointer, current_position);
+
+        if (read_backward) {
+          // Subtract match length if we matched backward
+          masm.addPtr(register_location(start_reg), current_position);
+          masm.subPtr(register_location(start_reg + 1), current_position);
+        }
     }
 
+    // Fallthrough if capture length was zero
     masm.bind(&fallthrough);
+}
+
+void
+NativeRegExpMacroAssembler::CheckNotBackReference(int start_reg, bool read_backward, Label* on_no_match)
+{
+    JitSpew(SPEW_PREFIX "CheckNotBackReference(%d)", start_reg);
+
+    CheckNotBackReferenceImpl(start_reg, read_backward, on_no_match, /*unicode = */ false, /*ignore_case = */ false);
+}
+
+void
+NativeRegExpMacroAssembler::CheckNotBackReferenceIgnoreCase(int start_reg, bool read_backward,
+                                                            Label* on_no_match, bool unicode)
+{
+    JitSpew(SPEW_PREFIX "CheckNotBackReferenceIgnoreCase(%d, %d)", start_reg, unicode);
+
+    CheckNotBackReferenceImpl(start_reg, read_backward, on_no_match, unicode, /*ignore_case = */ true);
 }
 
 void
@@ -961,10 +943,13 @@ NativeRegExpMacroAssembler::LoadCurrentCharacter(int cp_offset, Label* on_end_of
 {
     JitSpew(SPEW_PREFIX "LoadCurrentCharacter(%d, %d)", cp_offset, characters);
 
-    MOZ_ASSERT(cp_offset >= -1);      // ^ and \b can look behind one character.
     MOZ_ASSERT(cp_offset < (1<<30));  // Be sane! (And ensure negation works)
     if (check_bounds)
-        CheckPosition(cp_offset + characters - 1, on_end_of_input);
+        if (cp_offset >= 0) {
+            CheckPosition(cp_offset + characters - 1, on_end_of_input);
+        } else {
+            CheckPosition(cp_offset, on_end_of_input);
+        }
     LoadCurrentCharacterUnchecked(cp_offset, characters);
 }
 
@@ -972,9 +957,8 @@ void
 NativeRegExpMacroAssembler::LoadCurrentCharacterUnchecked(int cp_offset, int characters)
 {
     JitSpew(SPEW_PREFIX "LoadCurrentCharacterUnchecked(%d, %d)", cp_offset, characters);
-
+    BaseIndex address(input_end_pointer, current_position, TimesOne, cp_offset * char_size());
     if (mode_ == ASCII) {
-        BaseIndex address(input_end_pointer, current_position, TimesOne, cp_offset);
         if (characters == 4) {
             masm.load32(address, current_character);
         } else if (characters == 2) {
@@ -986,7 +970,6 @@ NativeRegExpMacroAssembler::LoadCurrentCharacterUnchecked(int cp_offset, int cha
     } else {
         MOZ_ASSERT(mode_ == CHAR16);
         MOZ_ASSERT(characters <= 2);
-        BaseIndex address(input_end_pointer, current_position, TimesOne, cp_offset * sizeof(char16_t));
         if (characters == 2)
             masm.load32(address, current_character);
         else
@@ -1096,10 +1079,11 @@ NativeRegExpMacroAssembler::CheckBacktrackStackLimit()
     masm.moveStackPtrTo(temp2);
 
     masm.call(&stack_overflow_label_);
-    masm.bind(&no_stack_overflow);
 
     // Exit with an exception if the call failed.
     masm.branchTest32(Assembler::Zero, temp0, temp0, &exit_with_exception_label_);
+
+    masm.bind(&no_stack_overflow);
 }
 
 void
@@ -1213,8 +1197,21 @@ void
 NativeRegExpMacroAssembler::CheckPosition(int cp_offset, Label* on_outside_input)
 {
     JitSpew(SPEW_PREFIX "CheckPosition(%d)", cp_offset);
-    masm.branchPtr(Assembler::GreaterThanOrEqual, current_position,
-                   ImmWord(-cp_offset * char_size()), BranchOrBacktrack(on_outside_input));
+    if (cp_offset >= 0) {
+        //      end + current + offset >= end
+        // <=>        current + offset >= 0
+        // <=>        current          >= -offset
+        masm.branchPtr(Assembler::GreaterThanOrEqual, current_position,
+                       ImmWord(-cp_offset * char_size()), BranchOrBacktrack(on_outside_input));
+    } else {
+        // negative cp_offset means we're reading backwards, check against start of string
+        // Compute offset address
+        masm.computeEffectiveAddress(BaseIndex(input_end_pointer, current_position, TimesOne, cp_offset * char_size()), temp0);
+
+        // Compare to start of input.
+        Address inputStart(masm.getStackPointer(), offsetof(FrameData, inputStart));
+        masm.branchPtr(Assembler::GreaterThan, inputStart, temp0, BranchOrBacktrack(on_outside_input));
+    }
 }
 
 Label*

@@ -2010,8 +2010,9 @@ RegExpQuantifier::ToNode(int min,
                         alternation->AddAlternative(GuardedAlternative(body->ToNode(compiler, answer)));
                     }
                     answer = alternation;
-                    if (not_at_start && !compiler->read_backward())
+                    if (not_at_start && !compiler->read_backward()) {
                         alternation->set_not_at_start();
+                    }
                 }
                 return answer;
             }
@@ -2218,9 +2219,7 @@ RegExpCapture::ToNode(RegExpTree* body,
     int start_reg = RegExpCapture::StartRegister(index);
     int end_reg = RegExpCapture::EndRegister(index);
     if (compiler->read_backward()) {
-        // std::swap(start_reg, end_reg);
-        start_reg = RegExpCapture::EndRegister(index);
-        end_reg = RegExpCapture::StartRegister(index);
+        std::swap(start_reg, end_reg);
     }
     RegExpNode* store_end = ActionNode::StorePosition(end_reg, true, on_success);
     RegExpNode* body_node = body->ToNode(compiler, store_end);
@@ -2604,6 +2603,7 @@ Trace::PerformDeferredActions(LifoAlloc* alloc,
 {
     // The "+1" is to avoid a push_limit of zero if stack_limit_slack() is 1.
     const int push_limit = (assembler->stack_limit_slack() + 1) / 2;
+    static const int kNoStore = INT32_MIN;
 
     // Count pushes performed to force a stack limit check occasionally.
     int pushes = 0;
@@ -2620,7 +2620,7 @@ Trace::PerformDeferredActions(LifoAlloc* alloc,
         int value = 0;
         bool absolute = false;
         bool clear = false;
-        int store_position = -1;
+        int store_position = kNoStore;
         // This is a little tricky because we are scanning the actions in reverse
         // historical order (newest first).
         for (DeferredAction* action = actions_;
@@ -2641,7 +2641,7 @@ Trace::PerformDeferredActions(LifoAlloc* alloc,
                     // we can set undo_action to IGNORE if we know there is no value to
                     // restore.
                     undo_action = DEFER_RESTORE;
-                    MOZ_ASSERT(store_position == -1);
+                    MOZ_ASSERT(store_position == kNoStore);
                     MOZ_ASSERT(!clear);
                     break;
                   }
@@ -2649,14 +2649,14 @@ Trace::PerformDeferredActions(LifoAlloc* alloc,
                     if (!absolute) {
                         value++;
                     }
-                    MOZ_ASSERT(store_position == -1);
+                    MOZ_ASSERT(store_position == kNoStore);
                     MOZ_ASSERT(!clear);
                     undo_action = DEFER_RESTORE;
                     break;
                   case ActionNode::STORE_POSITION: {
                     Trace::DeferredCapture* pc =
                         static_cast<Trace::DeferredCapture*>(action);
-                    if (!clear && store_position == -1) {
+                    if (!clear && store_position == kNoStore) {
                         store_position = pc->cp_offset();
                     }
 
@@ -2680,7 +2680,7 @@ Trace::PerformDeferredActions(LifoAlloc* alloc,
                     // Since we're scanning in reverse order, if we've already
                     // set the position we have to ignore historically earlier
                     // clearing operations.
-                    if (store_position == -1) {
+                    if (store_position == kNoStore) {
                         clear = true;
                     }
                     undo_action = DEFER_RESTORE;
@@ -2710,7 +2710,7 @@ Trace::PerformDeferredActions(LifoAlloc* alloc,
         }
         // Perform the chronologically last action (or accumulated increment)
         // for the register.
-        if (store_position != -1) {
+        if (store_position != kNoStore) {
             assembler->WriteCurrentPositionToRegister(reg, store_position);
         } else if (clear) {
             assembler->ClearRegisters(reg, reg);
@@ -2910,16 +2910,23 @@ EmitHat(RegExpCompiler* compiler, RegExpNode* on_success, Trace* trace)
     Trace new_trace(*trace);
     new_trace.InvalidateCurrentCharacter();
 
+    // A positive (> 0) cp_offset means we've already successfully matched a
+    // non-empty-width part of the pattern, and thus cannot be at or before the
+    // start of the subject string. We can thus skip both at-start and
+    // bounds-checks when loading the one-character lookbehind.
+    const bool may_be_at_or_before_subject_string_start = new_trace.cp_offset() <= 0;
+
     jit::Label ok;
-    if (new_trace.cp_offset() == 0) {
-        // The start of input counts as a newline in this context, so skip to
-        // ok if we are at the start.
-        assembler->CheckAtStart(&ok);
+    if (may_be_at_or_before_subject_string_start) {
+        // The start of input counts as a newline in this context, so skip to ok if
+        // we are at the start.
+        assembler->CheckAtStart(new_trace.cp_offset(), &ok);
     }
 
-    // We already checked that we are not at the start of input so it must be
-    // OK to load the previous character.
-    assembler->LoadCurrentCharacter(new_trace.cp_offset() -1, new_trace.backtrack(), false);
+    // If we've already checked that we are not at the start of input, it's okay
+    // to load the previous character without bounds checks.
+    const bool can_skip_bounds_check = !may_be_at_or_before_subject_string_start;
+    assembler->LoadCurrentCharacter(new_trace.cp_offset() -1, new_trace.backtrack(), can_skip_bounds_check);
 
     if (!assembler->CheckSpecialCharacterClass('n', new_trace.backtrack())) {
         // Newline means \n, \r, 0x2028 or 0x2029.
@@ -2944,11 +2951,10 @@ EmitNotAfterLeadSurrogate(RegExpCompiler* compiler, RegExpNode* on_success, Trac
     new_trace.InvalidateCurrentCharacter();
 
     jit::Label ok;
-    if (new_trace.cp_offset() == 0)
-        assembler->CheckAtStart(&ok);
+    if (new_trace.cp_offset() <= 0) {
+        assembler->CheckAtStart(new_trace.cp_offset(), &ok);
+    }
 
-    // We already checked that we are not at the start of input so it must be
-    // OK to load the previous character.
     assembler->LoadCurrentCharacter(new_trace.cp_offset() - 1, new_trace.backtrack(), false);
     assembler->CheckCharacterInRange(unicode::LeadSurrogateMin, unicode::LeadSurrogateMax,
                                      new_trace.backtrack());
@@ -2972,8 +2978,9 @@ EmitNotInSurrogatePair(RegExpCompiler* compiler, RegExpNode* on_success, Trace* 
     Trace new_trace(*trace);
     new_trace.InvalidateCurrentCharacter();
 
-    if (new_trace.cp_offset() == 0)
-        assembler->CheckAtStart(&ok);
+    if (new_trace.cp_offset() <= 0) {
+        assembler->CheckAtStart(new_trace.cp_offset(), &ok);
+    }
 
     // First check if next character is a trail surrogate.
     assembler->LoadCurrentCharacter(new_trace.cp_offset(), new_trace.backtrack(), false);
@@ -3091,10 +3098,10 @@ AssertionNode::BacktrackIfPrevious(RegExpCompiler* compiler,
     jit::Label* non_word = backtrack_if_previous == kIsNonWord ? new_trace.backtrack() : &fall_through;
     jit::Label* word     = backtrack_if_previous == kIsNonWord ? &fall_through : new_trace.backtrack();
 
-    if (new_trace.cp_offset() == 0) {
+    if (new_trace.cp_offset() <= 0) {
         // The start of input counts as a non-word character, so the question is
         // decided if we are at the start.
-        assembler->CheckAtStart(non_word);
+        assembler->CheckAtStart(new_trace.cp_offset(), non_word);
     }
     // We already checked that we are not at the start of input so it must be
     // OK to load the previous character.
@@ -4152,7 +4159,7 @@ ChoiceNode::CalculatePreloadCharacters(RegExpCompiler* compiler, int eats_at_lea
 RegExpNode*
 TextNode::GetSuccessorOfOmnivorousTextNode(RegExpCompiler* compiler)
 {
-    if (read_backward()) return NULL;
+    if (read_backward()) return nullptr;
 
     if (elements().length() != 1)
         return nullptr;
@@ -4362,6 +4369,8 @@ ChoiceNode::Emit(RegExpCompiler* compiler, Trace* trace)
     // For now we just call all choices one after the other.  The idea ultimately
     // is to use the Dispatch table to try only the relevant ones.
     for (size_t i = first_normal_choice; i < choice_count; i++) {
+        bool is_last = i == choice_count - 1;
+        bool fall_through_on_failure = !is_last;
         GuardedAlternative alternative = alternatives()[i];
         AlternativeGeneration* alt_gen = alt_gens.at(i);
         alt_gen->quick_check_details.set_characters(preload_characters);
@@ -4377,20 +4386,20 @@ ChoiceNode::Emit(RegExpCompiler* compiler, Trace* trace)
         if (not_at_start_) new_trace.set_at_start(Trace::FALSE_VALUE);
         alt_gen->expects_preload = preload_is_current;
         bool generate_full_check_inline = false;
-        if (try_to_emit_quick_check_for_alternative(i) &&
+        if (try_to_emit_quick_check_for_alternative(i == 0) &&
             alternative.node()->EmitQuickCheck(compiler,
                                                &new_trace,
                                                preload_has_checked_bounds,
                                                &alt_gen->possible_success,
                                                &alt_gen->quick_check_details,
-                                               i < choice_count - 1)) {
+                                               fall_through_on_failure)) {
             // Quick check was generated for this choice.
             preload_is_current = true;
             preload_has_checked_bounds = true;
             // On the last choice in the ChoiceNode we generated the quick
             // check to fall through on possible success.  So now we need to
             // generate the full check inline.
-            if (i == choice_count - 1) {
+            if (!fall_through_on_failure) {
                 macro_assembler->Bind(&alt_gen->possible_success);
                 new_trace.set_quick_check_performed(&alt_gen->quick_check_details);
                 new_trace.set_characters_preloaded(preload_characters);
@@ -4398,7 +4407,7 @@ ChoiceNode::Emit(RegExpCompiler* compiler, Trace* trace)
                 generate_full_check_inline = true;
             }
         } else if (alt_gen->quick_check_details.cannot_match()) {
-            if (i == choice_count - 1 && !greedy_loop) {
+            if (!fall_through_on_failure && !greedy_loop) {
                 macro_assembler->JumpOrBacktrack(trace->backtrack());
             }
             continue;
@@ -4412,7 +4421,7 @@ ChoiceNode::Emit(RegExpCompiler* compiler, Trace* trace)
                 alt_gen->expects_preload = false;
                 new_trace.InvalidateCurrentCharacter();
             }
-            if (i < choice_count - 1) {
+            if (!is_last) {
                 new_trace.set_backtrack(&alt_gen->after);
             }
             generate_full_check_inline = true;
@@ -4450,12 +4459,14 @@ ChoiceNode::Emit(RegExpCompiler* compiler, Trace* trace)
         if (new_trace.actions() != nullptr) {
             new_trace.set_flush_budget(new_flush_budget);
         }
+        bool next_expects_preload =
+            i == choice_count - 1 ? false : alt_gens.at(i + 1)->expects_preload;
         EmitOutOfLineContinuation(compiler,
                                   &new_trace,
                                   alternatives()[i],
                                   alt_gen,
                                   preload_characters,
-                                  alt_gens.at(i + 1)->expects_preload);
+                                  next_expects_preload);
     }
 }
 

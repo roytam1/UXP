@@ -424,13 +424,9 @@ class RegExpBackReference : public RegExpTree
     virtual RegExpBackReference* AsBackReference();
     virtual bool IsBackReference();
     virtual int min_match() override { return 0; }
-    // The capture may not be completely parsed yet, if the reference occurs
-    // before the capture. In the ordinary case, nothing has been captured yet,
-    // so the back reference must have the length 0. If the back reference is
-    // inside a lookbehind, effectively making it a forward reference, we return
-    virtual int max_match() override {
-      return capture_->body() ? capture_->max_match() : 0;
-    }
+    // The back reference may be recursive, e.g. /(\2)(\1)/. To avoid infinite
+    // recursion, we give up. Ignorance is bliss.
+    int max_match() override { return kInfinity; }
     int index() { return capture_->index(); }
     RegExpCapture* capture() { return capture_; }
   private:

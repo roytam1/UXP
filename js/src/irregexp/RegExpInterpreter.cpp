@@ -529,7 +529,7 @@ irregexp::InterpretCode(JSContext* cx, const uint8_t* byteCode, const CharT* cha
 
           }
           BYTECODE(CHECK_AT_START)
-            if (current == 0)
+            if (current + (insn >> BYTECODE_SHIFT) == 0)
                 pc = byteCode + Load32Aligned(pc + 4);
             else
                 pc += BC_CHECK_AT_START_LENGTH;

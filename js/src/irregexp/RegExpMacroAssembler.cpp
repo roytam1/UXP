@@ -172,9 +172,9 @@ InterpretedRegExpMacroAssembler::Bind(jit::Label* label)
 }
 
 void
-InterpretedRegExpMacroAssembler::CheckAtStart(jit::Label* on_at_start)
+InterpretedRegExpMacroAssembler::CheckAtStart(int cp_offset, jit::Label* on_at_start)
 {
-    Emit(BC_CHECK_AT_START, 0);
+    Emit(BC_CHECK_AT_START, cp_offset);
     EmitOrLink(on_at_start);
 }
 

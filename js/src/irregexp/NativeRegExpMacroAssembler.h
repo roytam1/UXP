@@ -98,7 +98,7 @@ class MOZ_STACK_CLASS NativeRegExpMacroAssembler final : public RegExpMacroAssem
     void AdvanceRegister(int reg, int by);
     void Backtrack();
     void Bind(jit::Label* label);
-    void CheckAtStart(jit::Label* on_at_start);
+    void CheckAtStart(int cp_offset, jit::Label* on_at_start);
     void CheckCharacter(unsigned c, jit::Label* on_equal);
     void CheckCharacterAfterAnd(unsigned c, unsigned and_with, jit::Label* on_equal);
     void CheckCharacterGT(char16_t limit, jit::Label* on_greater);
@@ -203,12 +203,16 @@ class MOZ_STACK_CLASS NativeRegExpMacroAssembler final : public RegExpMacroAssem
 
     Vector<LabelPatch, 4, SystemAllocPolicy> labelPatches;
 
-    // See RegExpMacroAssembler.cpp for the meaning of these registers.
+    // See NativeRegExpMacroAssembler.cpp for the meaning of these registers.
     jit::Register input_end_pointer;
     jit::Register current_character;
     jit::Register current_position;
     jit::Register backtrack_stack_pointer;
     jit::Register temp0, temp1, temp2;
+
+    void CheckAtStartImpl(int cp_offset, jit::Label* on_cond, jit::Assembler::Condition cond);
+    void CheckNotBackReferenceImpl(int start_reg, bool read_backward, jit::Label* on_no_match,
+                                   bool unicode, bool ignore_case);
 
     // The frame_pointer-relative location of a regexp register.
     jit::Address register_location(int register_index) {

@@ -524,7 +524,7 @@ class RegExpNode
                                       int characters_filled_in,
                                       bool not_at_start) = 0;
 
-    static const int kNodeIsTooComplexForGreedyLoops = -1;
+    static const int kNodeIsTooComplexForGreedyLoops = INT32_MIN;
 
     virtual int GreedyLoopTextLength() { return kNodeIsTooComplexForGreedyLoops; }
 
@@ -1060,7 +1060,9 @@ class ChoiceNode : public RegExpNode
     bool not_at_start() { return not_at_start_; }
     void set_not_at_start() { not_at_start_ = true; }
     void set_being_calculated(bool b) { being_calculated_ = b; }
-    virtual bool try_to_emit_quick_check_for_alternative(int i) { return true; }
+    virtual bool try_to_emit_quick_check_for_alternative(bool is_first) {
+        return true;
+    }
     virtual RegExpNode* FilterASCII(int depth, bool ignore_case, bool unicode);
     virtual bool read_backward() { return false; }
 
@@ -1114,7 +1116,9 @@ class NegativeLookaheadChoiceNode : public ChoiceNode
     // starts by loading enough characters for the alternative that takes fewest
     // characters, but on a negative lookahead the negative branch did not take
     // part in that calculation (EatsAtLeast) so the assumptions don't hold.
-    virtual bool try_to_emit_quick_check_for_alternative(int i) { return i != 0; }
+    bool try_to_emit_quick_check_for_alternative(bool is_first) override {
+        return !is_first;
+    }
     virtual RegExpNode* FilterASCII(int depth, bool ignore_case, bool unicode);
 };
 

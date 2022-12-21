@@ -96,7 +96,7 @@ class MOZ_STACK_CLASS RegExpMacroAssembler
     virtual void Backtrack() = 0;
 
     virtual void Bind(jit::Label* label) = 0;
-    virtual void CheckAtStart(jit::Label* on_at_start) = 0;
+    virtual void CheckAtStart(int cp_offset, jit::Label* on_at_start) = 0;
 
     // Dispatch after looking the current character up in a 2-bits-per-entry
     // map.  The destinations vector has up to 4 labels.
@@ -238,7 +238,7 @@ class MOZ_STACK_CLASS InterpretedRegExpMacroAssembler final : public RegExpMacro
     void AdvanceRegister(int reg, int by);
     void Backtrack();
     void Bind(jit::Label* label);
-    void CheckAtStart(jit::Label* on_at_start);
+    void CheckAtStart(int cp_offset, jit::Label* on_at_start);
     void CheckCharacter(unsigned c, jit::Label* on_equal);
     void CheckCharacterAfterAnd(unsigned c, unsigned and_with, jit::Label* on_equal);
     void CheckCharacterGT(char16_t limit, jit::Label* on_greater);
