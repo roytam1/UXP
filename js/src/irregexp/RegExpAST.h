@@ -234,8 +234,6 @@ class RegExpCharacterClass : public RegExpTree
     bool is_negated_;
 };
 
-typedef InfallibleVector<char16_t, 10> CharacterVector;
-
 class RegExpAtom : public RegExpTree
 {
   public:

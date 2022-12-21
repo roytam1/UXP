@@ -127,39 +127,6 @@ InterpretCode(JSContext* cx, const uint8_t* byteCode, const CharT* chars, size_t
 FOR_EACH_REG_EXP_TREE_TYPE(FORWARD_DECLARE)
 #undef FORWARD_DECLARE
 
-// InfallibleVector is like Vector, but all its methods are infallible (they
-// crash on OOM). We use this class instead of Vector to avoid a ton of
-// MOZ_MUST_USE warnings in irregexp code (imported from V8).
-template<typename T, size_t N>
-class InfallibleVector
-{
-    Vector<T, N, LifoAllocPolicy<Infallible>> vector_;
-
-    InfallibleVector(const InfallibleVector&) = delete;
-    void operator=(const InfallibleVector&) = delete;
-
-  public:
-    explicit InfallibleVector(const LifoAllocPolicy<Infallible>& alloc) : vector_(alloc) {}
-
-    void append(const T& t) { MOZ_ALWAYS_TRUE(vector_.append(t)); }
-    void append(const T* begin, size_t length) { MOZ_ALWAYS_TRUE(vector_.append(begin, length)); }
-
-    void clear() { vector_.clear(); }
-    void popBack() { vector_.popBack(); }
-    void reserve(size_t n) { MOZ_ALWAYS_TRUE(vector_.reserve(n)); }
-
-    size_t length() const { return vector_.length(); }
-    T popCopy() { return vector_.popCopy(); }
-
-    T* begin() { return vector_.begin(); }
-    const T* begin() const { return vector_.begin(); }
-
-    T& operator[](size_t index) { return vector_[index]; }
-    const T& operator[](size_t index) const { return vector_[index]; }
-
-    InfallibleVector& operator=(InfallibleVector&& rhs) { vector_ = Move(rhs.vector_); return *this; }
-};
-
 class CharacterRange;
 typedef InfallibleVector<CharacterRange, 1> CharacterRangeVector;
 
