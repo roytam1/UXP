@@ -234,8 +234,6 @@ class RegExpCharacterClass : public RegExpTree
     bool is_negated_;
 };
 
-typedef InfallibleVector<char16_t, 10> CharacterVector;
-
 class RegExpAtom : public RegExpTree
 {
   public:
@@ -341,7 +339,7 @@ class RegExpCapture : public RegExpTree
 {
   public:
     explicit RegExpCapture(RegExpTree* body, int index)
-      : body_(body), index_(index)
+      : body_(body), index_(index), name_(nullptr)
     {}
 
     virtual void* Accept(RegExpVisitor* visitor, void* data);
@@ -359,34 +357,42 @@ class RegExpCapture : public RegExpTree
     virtual int min_match() { return body_->min_match(); }
     virtual int max_match() { return body_->max_match(); }
     RegExpTree* body() { return body_; }
+    void set_body(RegExpTree* body) { body_ = body; }
     int index() { return index_; }
+    const CharacterVector* name() const { return name_; }
+    void set_name(const CharacterVector* name) { name_ = name; }
     static int StartRegister(int index) { return index * 2; }
     static int EndRegister(int index) { return index * 2 + 1; }
 
   private:
     RegExpTree* body_;
     int index_;
+    const CharacterVector* name_;
 };
 
-class RegExpLookahead : public RegExpTree
+class RegExpLookaround : public RegExpTree
 {
   public:
-    RegExpLookahead(RegExpTree* body,
-                    bool is_positive,
-                    int capture_count,
-                    int capture_from)
+    enum Type { LOOKAHEAD, LOOKBEHIND };
+
+    RegExpLookaround(RegExpTree* body,
+                     bool is_positive,
+                     int capture_count,
+                     int capture_from,
+                     Type type)
       : body_(body),
         is_positive_(is_positive),
         capture_count_(capture_count),
-        capture_from_(capture_from)
+        capture_from_(capture_from),
+        type_(type)
     {}
 
     virtual void* Accept(RegExpVisitor* visitor, void* data);
     virtual RegExpNode* ToNode(RegExpCompiler* compiler,
                                RegExpNode* on_success);
-    virtual RegExpLookahead* AsLookahead();
+    virtual RegExpLookaround* AsLookaround();
     virtual Interval CaptureRegisters();
-    virtual bool IsLookahead();
+    virtual bool IsLookaround();
     virtual bool IsAnchoredAtStart();
     virtual int min_match() { return 0; }
     virtual int max_match() { return 0; }
@@ -394,12 +400,14 @@ class RegExpLookahead : public RegExpTree
     bool is_positive() { return is_positive_; }
     int capture_count() { return capture_count_; }
     int capture_from() { return capture_from_; }
+    Type type() { return type_; }
 
   private:
     RegExpTree* body_;
     bool is_positive_;
     int capture_count_;
     int capture_from_;
+    Type type_;
 };
 
 typedef InfallibleVector<RegExpCapture*, 1> RegExpCaptureVector;
@@ -408,7 +416,7 @@ class RegExpBackReference : public RegExpTree
 {
   public:
     explicit RegExpBackReference(RegExpCapture* capture)
-      : capture_(capture)
+      : capture_(capture), name_(nullptr)
     {}
 
     virtual void* Accept(RegExpVisitor* visitor, void* data);
@@ -416,13 +424,21 @@ class RegExpBackReference : public RegExpTree
                                RegExpNode* on_success);
     virtual RegExpBackReference* AsBackReference();
     virtual bool IsBackReference();
-    virtual int min_match() { return 0; }
-    virtual int max_match() { return capture_->max_match(); }
+    virtual int min_match() override { return 0; }
+    // The back reference may be recursive, e.g. /(\2)(\1)/. To avoid infinite
+    // recursion, we give up. Ignorance is bliss.
+    int max_match() override { return kInfinity; }
     int index() { return capture_->index(); }
     RegExpCapture* capture() { return capture_; }
+    void set_capture(RegExpCapture* capture) { capture_ = capture; }
+    const CharacterVector* name() const { return name_; }
+    void set_name(const CharacterVector* name) { name_ = name; }
   private:
     RegExpCapture* capture_;
+    const CharacterVector* name_;
 };
+
+typedef InfallibleVector<RegExpBackReference*, 1> RegExpBackReferenceVector;
 
 class RegExpEmpty : public RegExpTree
 {

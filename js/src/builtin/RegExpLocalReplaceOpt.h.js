@@ -60,9 +60,9 @@ function FUNC_NAME(rx, S, lengthS, replaceValue
         return S;
     }
 
-    // Steps 11.c, 12-13, 14.a-b (skipped).
+    // Steps 11.c, 12-13 (skipped).
 
-#if defined(FUNCTIONAL) || defined(SUBSTITUTION)
+#if defined(FUNCTIONAL)
     // Steps 14.a-b.
     var nCaptures = std_Math_max(result.length - 1, 0);
 #endif
@@ -88,19 +88,21 @@ function FUNC_NAME(rx, S, lengthS, replaceValue
     // Steps g-j.
 #if defined(FUNCTIONAL)
     replacement = RegExpGetComplexReplacement(result, matched, S, position,
-
                                               nCaptures, replaceValue,
                                               true, -1);
 #elif defined(SUBSTITUTION)
-    replacement = RegExpGetComplexReplacement(result, matched, S, position,
-
-                                              nCaptures, replaceValue,
-                                              false, firstDollarIndex);
+    // Step l.i
+    var namedCaptures = result.groups;
+    if (namedCaptures !== undefined) {
+        namedCaptures = ToObject(namedCaptures);
+    }
+    // Step l.ii
+    replacement = RegExpGetSubstitution(result, S, position, replaceValue, firstDollarIndex, namedCaptures);
 #else
     replacement = replaceValue;
 #endif
 
-    // Step 14.l.ii.
+    // Step 14.m.ii.
     var accumulatedResult = Substring(S, 0, position) + replacement;
 
     // Step 15.
