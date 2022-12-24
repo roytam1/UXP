@@ -36,7 +36,8 @@ ExecuteRegExpLegacy(JSContext* cx, RegExpStatics* res, Handle<RegExpObject*> reo
 
 /* Translation from MatchPairs to a JS array in regexp_exec()'s output format. */
 MOZ_MUST_USE bool
-CreateRegExpMatchResult(JSContext* cx, HandleString input, const MatchPairs& matches,
+CreateRegExpMatchResult(JSContext* cx, RegExpShared& re,
+                        HandleString input, const MatchPairs& matches,
                         MutableHandleValue rval);
 
 extern MOZ_MUST_USE bool
@@ -121,9 +122,9 @@ extern MOZ_MUST_USE bool
 RegExpInstanceOptimizableRaw(JSContext* cx, JSObject* obj, JSObject* proto);
 
 extern MOZ_MUST_USE bool
-RegExpGetSubstitution(JSContext* cx, HandleLinearString matched, HandleLinearString string,
-                      size_t position, HandleObject capturesObj, HandleLinearString replacement,
-                      size_t firstDollarIndex, MutableHandleValue rval);
+RegExpGetSubstitution(JSContext* cx, HandleArrayObject matchResult, HandleLinearString string,
+                      size_t position, HandleLinearString replacement, size_t firstDollarIndex,
+                      HandleValue namedCaptures, MutableHandleValue rval);
 
 extern MOZ_MUST_USE bool
 GetFirstDollarIndex(JSContext* cx, unsigned argc, Value* vp);

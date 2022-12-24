@@ -162,6 +162,7 @@
     macro(global, global, "global") \
     macro(globalThis, globalThis, "globalThis") \
     macro(group, group, "group") \
+    macro(groups, groups, "groups") \
     macro(Handle, Handle, "Handle") \
     macro(has, has, "has") \
     macro(hasOwn, hasOwn, "hasOwn") \

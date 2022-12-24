@@ -24,6 +24,7 @@
 
 #include "frontend/BytecodeCompiler.h"
 #include "frontend/ReservedWords.h"
+#include "irregexp/FeatureFlags.h"
 #include "js/CharacterEncoding.h"
 #include "js/UniquePtr.h"
 #include "vm/HelperThreads.h"
@@ -1942,6 +1943,8 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
                     reflags = RegExpFlag(reflags | UnicodeFlag);
                 else if (c == 's' && !(reflags & DotAllFlag))
                     reflags = RegExpFlag(reflags | DotAllFlag);
+                else if (c == 'v' && irregexp::kParseFlagUnicodeSetsAsUnicode && !(reflags & UnicodeFlag))
+                    reflags = RegExpFlag(reflags | UnicodeFlag);
                 else
                     break;
                 getChar();

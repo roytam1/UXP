@@ -34,6 +34,9 @@
 
 #include "ds/SplayTree.h"
 #include "jit/Label.h"
+
+#include "irregexp/InfallibleVector.h"
+#include "irregexp/RegExpCharRanges.h"
 #include "vm/RegExpObject.h"
 
 namespace js {
@@ -57,13 +60,28 @@ struct RegExpCompileData
       : tree(nullptr),
         simple(true),
         contains_anchor(false),
-        capture_count(0)
+        capture_count(0),
+        capture_name_list(nullptr),
+        capture_index_list(nullptr)
     {}
 
+    // The parsed AST as produced by the RegExpParser.
     RegExpTree* tree;
+    // True, iff the pattern is a 'simple' atom with zero captures. In other
+    // words, the pattern consists of a string with no metacharacters and special
+    // regexp features, and can be implemented as a standard string search.
     bool simple;
+
+    // True, iff the pattern is anchored at the start of the string with '^'.
     bool contains_anchor;
+
+    // The number of capture groups, without the global capture \0.
     int capture_count;
+
+    // Only use if the pattern contains named captures. If so, this contains a
+    // mapping of capture names to capture indices, as Values.
+    CharacterVectorVector* capture_name_list;
+    IntegerVector* capture_index_list;
 };
 
 struct RegExpCode
@@ -118,7 +136,7 @@ InterpretCode(JSContext* cx, const uint8_t* byteCode, const CharT* chars, size_t
   VISIT(Atom)                                                        \
   VISIT(Quantifier)                                                  \
   VISIT(Capture)                                                     \
-  VISIT(Lookahead)                                                   \
+  VISIT(Lookaround)                                                  \
   VISIT(BackReference)                                               \
   VISIT(Empty)                                                       \
   VISIT(Text)
@@ -126,108 +144,6 @@ InterpretCode(JSContext* cx, const uint8_t* byteCode, const CharT* chars, size_t
 #define FORWARD_DECLARE(Name) class RegExp##Name;
 FOR_EACH_REG_EXP_TREE_TYPE(FORWARD_DECLARE)
 #undef FORWARD_DECLARE
-
-// InfallibleVector is like Vector, but all its methods are infallible (they
-// crash on OOM). We use this class instead of Vector to avoid a ton of
-// MOZ_MUST_USE warnings in irregexp code (imported from V8).
-template<typename T, size_t N>
-class InfallibleVector
-{
-    Vector<T, N, LifoAllocPolicy<Infallible>> vector_;
-
-    InfallibleVector(const InfallibleVector&) = delete;
-    void operator=(const InfallibleVector&) = delete;
-
-  public:
-    explicit InfallibleVector(const LifoAllocPolicy<Infallible>& alloc) : vector_(alloc) {}
-
-    void append(const T& t) { MOZ_ALWAYS_TRUE(vector_.append(t)); }
-    void append(const T* begin, size_t length) { MOZ_ALWAYS_TRUE(vector_.append(begin, length)); }
-
-    void clear() { vector_.clear(); }
-    void popBack() { vector_.popBack(); }
-    void reserve(size_t n) { MOZ_ALWAYS_TRUE(vector_.reserve(n)); }
-
-    size_t length() const { return vector_.length(); }
-    T popCopy() { return vector_.popCopy(); }
-
-    T* begin() { return vector_.begin(); }
-    const T* begin() const { return vector_.begin(); }
-
-    T& operator[](size_t index) { return vector_[index]; }
-    const T& operator[](size_t index) const { return vector_[index]; }
-
-    InfallibleVector& operator=(InfallibleVector&& rhs) { vector_ = Move(rhs.vector_); return *this; }
-};
-
-class CharacterRange;
-typedef InfallibleVector<CharacterRange, 1> CharacterRangeVector;
-
-// Represents code units in the range from from_ to to_, both ends are
-// inclusive.
-class CharacterRange
-{
-  public:
-    CharacterRange()
-      : from_(0), to_(0)
-    {}
-
-    CharacterRange(char16_t from, char16_t to)
-      : from_(from), to_(to)
-    {}
-
-    static void AddClassEscape(LifoAlloc* alloc, char16_t type, CharacterRangeVector* ranges);
-    static void AddClassEscapeUnicode(LifoAlloc* alloc, char16_t type,
-                                      CharacterRangeVector* ranges, bool ignoreCase);
-
-    static inline CharacterRange Singleton(char16_t value) {
-        return CharacterRange(value, value);
-    }
-    static inline CharacterRange Range(char16_t from, char16_t to) {
-        MOZ_ASSERT(from <= to);
-        return CharacterRange(from, to);
-    }
-    static inline CharacterRange Everything() {
-        return CharacterRange(0, 0xFFFF);
-    }
-    bool Contains(char16_t i) { return from_ <= i && i <= to_; }
-    char16_t from() const { return from_; }
-    void set_from(char16_t value) { from_ = value; }
-    char16_t to() const { return to_; }
-    void set_to(char16_t value) { to_ = value; }
-    bool is_valid() { return from_ <= to_; }
-    bool IsEverything(char16_t max) { return from_ == 0 && to_ >= max; }
-    bool IsSingleton() { return (from_ == to_); }
-    void AddCaseEquivalents(bool is_ascii, bool unicode, CharacterRangeVector* ranges);
-
-    static void Split(const LifoAlloc* alloc,
-                      CharacterRangeVector base,
-                      const Vector<int>& overlay,
-                      CharacterRangeVector* included,
-                      CharacterRangeVector* excluded);
-
-    // Whether a range list is in canonical form: Ranges ordered by from value,
-    // and ranges non-overlapping and non-adjacent.
-    static bool IsCanonical(const CharacterRangeVector& ranges);
-
-    // Convert range list to canonical form. The characters covered by the ranges
-    // will still be the same, but no character is in more than one range, and
-    // adjacent ranges are merged. The resulting list may be shorter than the
-    // original, but cannot be longer.
-    static void Canonicalize(CharacterRangeVector& ranges);
-
-    // Negate the contents of a character range in canonical form.
-    static void Negate(const LifoAlloc* alloc,
-                       CharacterRangeVector src,
-                       CharacterRangeVector* dst);
-
-    static const int kStartMarker = (1 << 24);
-    static const int kPayloadMask = (1 << 24) - 1;
-
-  private:
-    char16_t from_;
-    char16_t to_;
-};
 
 // A set of unsigned integers that behaves especially well on small
 // integers (< 32).
@@ -524,7 +440,7 @@ class RegExpNode
                                       int characters_filled_in,
                                       bool not_at_start) = 0;
 
-    static const int kNodeIsTooComplexForGreedyLoops = -1;
+    static const int kNodeIsTooComplexForGreedyLoops = INT32_MIN;
 
     virtual int GreedyLoopTextLength() { return kNodeIsTooComplexForGreedyLoops; }
 
@@ -762,15 +678,19 @@ class TextNode : public SeqRegExpNode
 {
   public:
     TextNode(TextElementVector* elements,
+             bool read_backward,
              RegExpNode* on_success)
       : SeqRegExpNode(on_success),
-        elements_(elements)
+        elements_(elements),
+        read_backward_(read_backward)
     {}
 
     TextNode(RegExpCharacterClass* that,
+             bool read_backward,
              RegExpNode* on_success)
       : SeqRegExpNode(on_success),
-        elements_(alloc()->newInfallible<TextElementVector>(*alloc()))
+        elements_(alloc()->newInfallible<TextElementVector>(*alloc())),
+        read_backward_(read_backward)
     {
         elements_->append(TextElement::CharClass(that));
     }
@@ -783,6 +703,7 @@ class TextNode : public SeqRegExpNode
                                       int characters_filled_in,
                                       bool not_at_start);
     TextElementVector& elements() { return *elements_; }
+    bool read_backward() { return read_backward_; }
     void MakeCaseIndependent(bool is_ascii, bool unicode);
     virtual int GreedyLoopTextLength();
     virtual RegExpNode* GetSuccessorOfOmnivorousTextNode(
@@ -813,6 +734,7 @@ class TextNode : public SeqRegExpNode
                       int* checked_up_to);
     int Length();
     TextElementVector* elements_;
+    bool read_backward_;
 };
 
 class AssertionNode : public SeqRegExpNode
@@ -881,15 +803,18 @@ class BackReferenceNode : public SeqRegExpNode
   public:
     BackReferenceNode(int start_reg,
                       int end_reg,
+                      bool read_backward,
                       RegExpNode* on_success)
       : SeqRegExpNode(on_success),
         start_reg_(start_reg),
-        end_reg_(end_reg)
+        end_reg_(end_reg),
+        read_backward_(read_backward)
     {}
 
     virtual void Accept(NodeVisitor* visitor);
     int start_register() { return start_reg_; }
     int end_register() { return end_reg_; }
+    bool read_backward() { return read_backward_; }
     virtual void Emit(RegExpCompiler* compiler, Trace* trace);
     virtual int EatsAtLeast(int still_to_find,
                             int recursion_depth,
@@ -908,6 +833,7 @@ class BackReferenceNode : public SeqRegExpNode
   private:
     int start_reg_;
     int end_reg_;
+    bool read_backward_;
 };
 
 class EndNode : public RegExpNode
@@ -1050,8 +976,11 @@ class ChoiceNode : public RegExpNode
     bool not_at_start() { return not_at_start_; }
     void set_not_at_start() { not_at_start_ = true; }
     void set_being_calculated(bool b) { being_calculated_ = b; }
-    virtual bool try_to_emit_quick_check_for_alternative(int i) { return true; }
+    virtual bool try_to_emit_quick_check_for_alternative(bool is_first) {
+        return true;
+    }
     virtual RegExpNode* FilterASCII(int depth, bool ignore_case, bool unicode);
+    virtual bool read_backward() { return false; }
 
   protected:
     int GreedyLoopTextLengthForAlternative(GuardedAlternative* alternative);
@@ -1103,18 +1032,22 @@ class NegativeLookaheadChoiceNode : public ChoiceNode
     // starts by loading enough characters for the alternative that takes fewest
     // characters, but on a negative lookahead the negative branch did not take
     // part in that calculation (EatsAtLeast) so the assumptions don't hold.
-    virtual bool try_to_emit_quick_check_for_alternative(int i) { return i != 0; }
+    bool try_to_emit_quick_check_for_alternative(bool is_first) override {
+        return !is_first;
+    }
     virtual RegExpNode* FilterASCII(int depth, bool ignore_case, bool unicode);
 };
 
 class LoopChoiceNode : public ChoiceNode
 {
   public:
-    explicit LoopChoiceNode(LifoAlloc* alloc, bool body_can_be_zero_length)
+    explicit LoopChoiceNode(LifoAlloc* alloc, bool body_can_be_zero_length,
+                            bool read_backward)
       : ChoiceNode(alloc, 2),
         loop_node_(nullptr),
         continue_node_(nullptr),
-        body_can_be_zero_length_(body_can_be_zero_length)
+        body_can_be_zero_length_(body_can_be_zero_length),
+        read_backward_(read_backward)
     {}
 
     void AddLoopAlternative(GuardedAlternative alt);
@@ -1132,6 +1065,7 @@ class LoopChoiceNode : public ChoiceNode
     RegExpNode* loop_node() { return loop_node_; }
     RegExpNode* continue_node() { return continue_node_; }
     bool body_can_be_zero_length() { return body_can_be_zero_length_; }
+    virtual bool read_backward() { return read_backward_; }
     virtual void Accept(NodeVisitor* visitor);
     virtual RegExpNode* FilterASCII(int depth, bool ignore_case, bool unicode);
 
@@ -1146,6 +1080,7 @@ class LoopChoiceNode : public ChoiceNode
     RegExpNode* loop_node_;
     RegExpNode* continue_node_;
     bool body_can_be_zero_length_;
+    bool read_backward_;
 };
 
 // Improve the speed that we scan for an initial point where a non-anchored
@@ -1421,8 +1356,8 @@ class Trace
     }
 
     TriBool at_start() { return at_start_; }
-    void set_at_start(bool at_start) {
-        at_start_ = at_start ? TRUE_VALUE : FALSE_VALUE;
+    void set_at_start(TriBool at_start) {
+        at_start_ = at_start;
     }
     jit::Label* backtrack() { return backtrack_; }
     jit::Label* loop_label() { return loop_label_; }

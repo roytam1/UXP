@@ -90,6 +90,26 @@ RegExpBuilder::AddCharacter(char16_t c)
 #endif
 }
 
+// forward declare atom helpers from below
+static inline RegExpTree* SurrogatePairAtom(LifoAlloc* alloc, char16_t lead, char16_t trail, bool ignore_case);
+static inline RegExpTree* LeadSurrogateAtom(LifoAlloc* alloc, char16_t value);
+static inline RegExpTree* TrailSurrogateAtom(LifoAlloc* alloc, char16_t value);
+
+void
+RegExpBuilder::AddUnicodeCharacter(widechar c, bool ignore_case) {
+  if (c > unicode::UTF16Max) {
+    char16_t lead, trail;
+    unicode::UTF16Encode(c, &lead, &trail);
+    AddAtom(SurrogatePairAtom(alloc, lead, trail, ignore_case));
+  } else if (unicode::IsLeadSurrogate(c)) {
+    AddAtom(LeadSurrogateAtom(alloc, c));
+  } else if (unicode::IsTrailSurrogate(c)) {
+    AddAtom(TrailSurrogateAtom(alloc, c));
+  } else {
+    AddCharacter(static_cast<char16_t>(c));
+  }
+}
+
 void
 RegExpBuilder::AddEmpty()
 {
@@ -225,7 +245,10 @@ RegExpParser<CharT>::RegExpParser(frontend::TokenStream& ts, LifoAlloc* alloc,
   : ts(ts),
     alloc(alloc),
     captures_(nullptr),
+    named_captures_(nullptr),
+    named_back_references_(nullptr),
     next_pos_(chars),
+    captures_started_(0),
     end_(end),
     current_(kEndMarker),
     capture_count_(0),
@@ -236,7 +259,8 @@ RegExpParser<CharT>::RegExpParser(frontend::TokenStream& ts, LifoAlloc* alloc,
     dotall_(dotall),
     simple_(false),
     contains_anchor_(false),
-    is_scanned_for_captures_(false)
+    is_scanned_for_captures_(false),
+    has_named_captures_(false)
 {
     Advance();
 }
@@ -248,6 +272,30 @@ RegExpParser<CharT>::ReportError(unsigned errorNumber, const char* param /* = nu
     gc::AutoSuppressGC suppressGC(ts.context());
     ts.reportError(errorNumber, param);
     return nullptr;
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::StoreNamedCaptureMap(CharacterVectorVector** names, IntegerVector** indices)
+{
+  // Any named captures defined at all?
+  if (!named_captures_ || !named_captures_->length()) {
+    return true;
+  }
+
+  CharacterVectorVector* nv = alloc->newInfallible<CharacterVectorVector>(*alloc);
+  IntegerVector* iv = alloc->newInfallible<IntegerVector>(*alloc);
+
+  for (size_t i=0; i<named_captures_->length(); i++) {
+    RegExpCapture* capture = (*named_captures_)[i];
+    const CharacterVector* cn = capture->name();
+    nv->append(const_cast<CharacterVector*>(cn));
+    iv->append(capture->index());
+  }
+
+  *names = nv;
+  *indices = iv;
+  return true;
 }
 
 template <typename CharT>
@@ -363,6 +411,39 @@ RegExpParser<CharT>::ParseBracedHexEscape(widechar* value)
 
 template <typename CharT>
 bool
+RegExpParser<CharT>::ParseUnicodeEscape(widechar* value)
+{
+  // Parse a RegExpUnicodeEscapeSequence
+  // Both \uxxxx and \u{xxxxx} are allowed. \u has already been consumed.
+  const CharT* start = position();
+  if (current() == '{' && unicode_) {
+    bool result = ParseBracedHexEscape(value);
+    if (!result) {
+      Reset(start);
+    }
+    return result;
+  }
+  // \u but no {, or \u{...} escapes not allowed.
+  bool result = ParseHexEscape(4, value);
+  if (result && unicode_ && unicode::IsLeadSurrogate(static_cast<char16_t>(*value)) && current() == '\\') {
+    // Attempt to read trail surrogate.
+    const CharT* start = position();
+    if (Next() == 'u') {
+      Advance(2);
+      widechar trail;
+      if (ParseHexEscape(4, &trail) &&
+          unicode::IsTrailSurrogate(static_cast<char16_t>(trail))) {
+        *value = unicode::UTF16Decode(static_cast<char16_t>(*value), static_cast<char16_t>(trail));
+        return true;
+      }
+    }
+    Reset(start);
+  }
+  return result;
+}
+
+template <typename CharT>
+bool
 RegExpParser<CharT>::ParseTrailSurrogate(widechar* value)
 {
     if (current() != '\\')
@@ -418,7 +499,8 @@ RangeAtom(LifoAlloc* alloc, char16_t from, char16_t to)
 static inline RegExpTree*
 NegativeLookahead(LifoAlloc* alloc, char16_t from, char16_t to)
 {
-    return alloc->newInfallible<RegExpLookahead>(RangeAtom(alloc, from, to), false, 0, 0);
+    return alloc->newInfallible<RegExpLookaround>(RangeAtom(alloc, from, to), false,
+                                                  0, 0, RegExpLookaround::LOOKAHEAD);
 }
 
 static bool
@@ -558,30 +640,13 @@ RegExpParser<CharT>::ParseClassCharacterEscape(widechar* code)
       case 'u': {
         Advance();
         widechar value;
-        if (unicode_) {
-            if (current() == '{') {
-                if (!ParseBracedHexEscape(&value))
-                    return false;
-                *code = value;
-                return true;
-            }
-            if (ParseHexEscape(4, &value)) {
-                if (unicode::IsLeadSurrogate(value)) {
-                    widechar trail;
-                    if (ParseTrailSurrogate(&trail)) {
-                        *code = unicode::UTF16Decode(value, trail);
-                        return true;
-                    }
-                }
-                *code = value;
-                return true;
-            }
-            ReportError(JSMSG_INVALID_UNICODE_ESCAPE);
-            return false;
+        if (ParseUnicodeEscape(&value)) {
+          *code = value;
+          return true;
         }
-        if (ParseHexEscape(4, &value)) {
-            *code = value;
-            return true;
+        if (unicode_) {
+          ReportError(JSMSG_INVALID_UNICODE_ESCAPE);
+          return false;
         }
         // If \u is not followed by a four-digit or braced hexadecimal, treat it
         // as an identity escape.
@@ -603,215 +668,6 @@ RegExpParser<CharT>::ParseClassCharacterEscape(widechar* code)
       }
     }
     return true;
-}
-
-class WideCharRange
-{
-  public:
-    WideCharRange()
-      : from_(0), to_(0)
-    {}
-
-    WideCharRange(widechar from, widechar to)
-      : from_(from), to_(to)
-    {}
-
-    static inline WideCharRange Singleton(widechar value) {
-        return WideCharRange(value, value);
-    }
-    static inline WideCharRange Range(widechar from, widechar to) {
-        MOZ_ASSERT(from <= to);
-        return WideCharRange(from, to);
-    }
-
-    bool Contains(widechar i) const { return from_ <= i && i <= to_; }
-    widechar from() const { return from_; }
-    widechar to() const { return to_; }
-
-  private:
-    widechar from_;
-    widechar to_;
-};
-
-typedef InfallibleVector<WideCharRange, 1> WideCharRangeVector;
-
-static inline CharacterRange
-LeadSurrogateRange()
-{
-    return CharacterRange::Range(unicode::LeadSurrogateMin, unicode::LeadSurrogateMax);
-}
-
-static inline CharacterRange
-TrailSurrogateRange()
-{
-    return CharacterRange::Range(unicode::TrailSurrogateMin, unicode::TrailSurrogateMax);
-}
-
-static inline WideCharRange
-NonBMPRange()
-{
-    return WideCharRange::Range(unicode::NonBMPMin, unicode::NonBMPMax);
-}
-
-static const char16_t kNoCharClass = 0;
-
-// Adds a character or pre-defined character class to character ranges.
-// If char_class is not kInvalidClass, it's interpreted as a class
-// escape (i.e., 's' means whitespace, from '\s').
-static inline void
-AddCharOrEscape(LifoAlloc* alloc,
-                CharacterRangeVector* ranges,
-                char16_t char_class,
-                widechar c)
-{
-    if (char_class != kNoCharClass)
-        CharacterRange::AddClassEscape(alloc, char_class, ranges);
-    else
-        ranges->append(CharacterRange::Singleton(c));
-}
-
-static inline void
-AddCharOrEscapeUnicode(LifoAlloc* alloc,
-                       CharacterRangeVector* ranges,
-                       CharacterRangeVector* lead_ranges,
-                       CharacterRangeVector* trail_ranges,
-                       WideCharRangeVector* wide_ranges,
-                       char16_t char_class,
-                       widechar c,
-                       bool ignore_case)
-{
-    if (char_class != kNoCharClass) {
-        CharacterRange::AddClassEscapeUnicode(alloc, char_class, ranges, ignore_case);
-        switch (char_class) {
-          case 'S':
-          case 'W':
-          case 'D':
-            lead_ranges->append(LeadSurrogateRange());
-            trail_ranges->append(TrailSurrogateRange());
-            wide_ranges->append(NonBMPRange());
-            break;
-          case '.':
-            MOZ_CRASH("Bad char_class!");
-        }
-        return;
-    }
-
-    if (unicode::IsLeadSurrogate(c))
-        lead_ranges->append(CharacterRange::Singleton(c));
-    else if (unicode::IsTrailSurrogate(c))
-        trail_ranges->append(CharacterRange::Singleton(c));
-    else if (c >= unicode::NonBMPMin)
-        wide_ranges->append(WideCharRange::Singleton(c));
-    else
-        ranges->append(CharacterRange::Singleton(c));
-}
-
-static inline void
-AddUnicodeRange(LifoAlloc* alloc,
-                CharacterRangeVector* ranges,
-                CharacterRangeVector* lead_ranges,
-                CharacterRangeVector* trail_ranges,
-                WideCharRangeVector* wide_ranges,
-                widechar first,
-                widechar next)
-{
-    MOZ_ASSERT(first <= next);
-    if (first < unicode::LeadSurrogateMin) {
-        if (next < unicode::LeadSurrogateMin) {
-            ranges->append(CharacterRange::Range(first, next));
-            return;
-        }
-        ranges->append(CharacterRange::Range(first, unicode::LeadSurrogateMin - 1));
-        first = unicode::LeadSurrogateMin;
-    }
-    if (first <= unicode::LeadSurrogateMax) {
-        if (next <= unicode::LeadSurrogateMax) {
-            lead_ranges->append(CharacterRange::Range(first, next));
-            return;
-        }
-        lead_ranges->append(CharacterRange::Range(first, unicode::LeadSurrogateMax));
-        first = unicode::LeadSurrogateMax + 1;
-    }
-    MOZ_ASSERT(unicode::LeadSurrogateMax + 1 == unicode::TrailSurrogateMin);
-    if (first <= unicode::TrailSurrogateMax) {
-        if (next <= unicode::TrailSurrogateMax) {
-            trail_ranges->append(CharacterRange::Range(first, next));
-            return;
-        }
-        trail_ranges->append(CharacterRange::Range(first, unicode::TrailSurrogateMax));
-        first = unicode::TrailSurrogateMax + 1;
-    }
-    if (first <= unicode::UTF16Max) {
-        if (next <= unicode::UTF16Max) {
-            ranges->append(CharacterRange::Range(first, next));
-            return;
-        }
-        ranges->append(CharacterRange::Range(first, unicode::UTF16Max));
-        first = unicode::NonBMPMin;
-    }
-    MOZ_ASSERT(unicode::UTF16Max + 1 == unicode::NonBMPMin);
-    wide_ranges->append(WideCharRange::Range(first, next));
-}
-
-// Negate a vector of ranges by subtracting its ranges from a range
-// encompassing the full range of possible values.
-template <typename RangeType>
-static inline void
-NegateUnicodeRanges(LifoAlloc* alloc, InfallibleVector<RangeType, 1>** ranges,
-                    RangeType full_range)
-{
-    typedef InfallibleVector<RangeType, 1> RangeVector;
-    RangeVector* tmp_ranges = alloc->newInfallible<RangeVector>(*alloc);
-    tmp_ranges->append(full_range);
-    RangeVector* result_ranges = alloc->newInfallible<RangeVector>(*alloc);
-
-    // Perform the following calculation:
-    //   result_ranges = tmp_ranges - ranges
-    // with the following steps:
-    //   result_ranges = tmp_ranges - ranges[0]
-    //   SWAP(result_ranges, tmp_ranges)
-    //   result_ranges = tmp_ranges - ranges[1]
-    //   SWAP(result_ranges, tmp_ranges)
-    //   ...
-    //   result_ranges = tmp_ranges - ranges[N-1]
-    //   SWAP(result_ranges, tmp_ranges)
-    // The last SWAP is just for simplicity of the loop.
-    for (size_t i = 0; i < (*ranges)->length(); i++) {
-        result_ranges->clear();
-
-        const RangeType& range = (**ranges)[i];
-        for (size_t j = 0; j < tmp_ranges->length(); j++) {
-            const RangeType& tmpRange = (*tmp_ranges)[j];
-            auto from1 = tmpRange.from();
-            auto to1 = tmpRange.to();
-            auto from2 = range.from();
-            auto to2 = range.to();
-
-            if (from1 < from2) {
-                if (to1 < from2) {
-                    result_ranges->append(tmpRange);
-                } else if (to1 <= to2) {
-                    result_ranges->append(RangeType::Range(from1, from2 - 1));
-                } else {
-                    result_ranges->append(RangeType::Range(from1, from2 - 1));
-                    result_ranges->append(RangeType::Range(to2 + 1, to1));
-                }
-            } else if (from1 <= to2) {
-                if (to1 > to2)
-                    result_ranges->append(RangeType::Range(to2 + 1, to1));
-            } else {
-                result_ranges->append(tmpRange);
-            }
-        }
-
-        auto tmp = tmp_ranges;
-        tmp_ranges = result_ranges;
-        result_ranges = tmp;
-    }
-
-    // After the loop, result is pointed at by tmp_ranges, instead of
-    // result_ranges.
-    *ranges = tmp_ranges;
 }
 
 static bool
@@ -883,9 +739,9 @@ UnicodeRangesAtom(LifoAlloc* alloc,
     }
 
     if (is_negated) {
-        NegateUnicodeRanges(alloc, &lead_ranges, LeadSurrogateRange());
-        NegateUnicodeRanges(alloc, &trail_ranges, TrailSurrogateRange());
-        NegateUnicodeRanges(alloc, &wide_ranges, NonBMPRange());
+        CharacterRange::NegateUnicodeRanges(alloc, &lead_ranges, CharacterRange::LeadSurrogate());
+        CharacterRange::NegateUnicodeRanges(alloc, &trail_ranges, CharacterRange::TrailSurrogate());
+        CharacterRange::NegateUnicodeRanges(alloc, &wide_ranges, WideCharRange::NonBMP());
     }
 
     RegExpBuilder* builder = alloc->newInfallible<RegExpBuilder>(alloc);
@@ -893,8 +749,8 @@ UnicodeRangesAtom(LifoAlloc* alloc,
     bool added = false;
 
     if (is_negated) {
-        ranges->append(LeadSurrogateRange());
-        ranges->append(TrailSurrogateRange());
+        ranges->append(CharacterRange::LeadSurrogate());
+        ranges->append(CharacterRange::TrailSurrogate());
     }
     if (ranges->length() > 0) {
         builder->AddAtom(alloc->newInfallible<RegExpCharacterClass>(ranges, is_negated));
@@ -1012,9 +868,9 @@ RegExpParser<CharT>::ParseCharacterClass()
     }
 
     while (has_more() && current() != ']') {
-        char16_t char_class = kNoCharClass;
-        widechar first = 0;
-        if (!ParseClassAtom(&char_class, &first))
+        char16_t char_class_1 = kNoCharClass;
+        widechar char_1 = 0;
+        if (!ParseClassEscape(&char_class_1, &char_1, ranges, lead_ranges, trail_ranges, wide_ranges))
             return nullptr;
         if (current() == '-') {
             Advance();
@@ -1023,41 +879,49 @@ RegExpParser<CharT>::ParseCharacterClass()
                 // following code report an error.
                 break;
             } else if (current() == ']') {
-                if (unicode_) {
-                    AddCharOrEscapeUnicode(alloc, ranges, lead_ranges, trail_ranges, wide_ranges,
-                                           char_class, first, ignore_case_);
-                } else {
-                    AddCharOrEscape(alloc, ranges, char_class, first);
+                // if the last item was not a class, add it verbatim.
+                if (char_class_1 == kNoCharClass) {
+                    if (unicode_) {
+                        CharacterRange::AddCharUnicode(alloc, ranges, lead_ranges, trail_ranges, wide_ranges, char_1);
+                    } else {
+                        ranges->append(CharacterRange::Singleton(char_1));
+                    }
                 }
+                // Hyphen at the end of a class. Treat the '-' verbatim.
                 ranges->append(CharacterRange::Singleton('-'));
                 break;
             }
             char16_t char_class_2 = kNoCharClass;
-            widechar next = 0;
-            if (!ParseClassAtom(&char_class_2, &next))
+            widechar char_2 = 0;
+            if (!ParseClassEscape(&char_class_2, &char_2, ranges, lead_ranges, trail_ranges, wide_ranges))
                 return nullptr;
-            if (char_class != kNoCharClass || char_class_2 != kNoCharClass) {
+            if (char_class_1 != kNoCharClass || char_class_2 != kNoCharClass) {
                 if (unicode_)
                     return ReportError(JSMSG_RANGE_WITH_CLASS_ESCAPE);
 
-                // Either end is an escaped character class. Treat the '-' verbatim.
-                AddCharOrEscape(alloc, ranges, char_class, first);
+                // Either end is an escaped character class. Treat the '-' verbatim and add the
+                // character that isn't a class
+                if (char_class_1 == kNoCharClass)
+                    ranges->append(CharacterRange::Singleton(char_1));
                 ranges->append(CharacterRange::Singleton('-'));
-                AddCharOrEscape(alloc, ranges, char_class_2, next);
+                if (char_class_1 == kNoCharClass)
+                    ranges->append(CharacterRange::Singleton(char_2));
                 continue;
             }
-            if (first > next)
+            if (char_1 > char_2)
                 return ReportError(JSMSG_BAD_CLASS_RANGE);
             if (unicode_)
-                AddUnicodeRange(alloc, ranges, lead_ranges, trail_ranges,wide_ranges, first, next);
+                CharacterRange::AddUnicodeRange(alloc, ranges, lead_ranges, trail_ranges, wide_ranges, char_1, char_2);
             else
-                ranges->append(CharacterRange::Range(first, next));
+                ranges->append(CharacterRange::Range(char_1, char_2));
         } else {
-            if (unicode_) {
-                AddCharOrEscapeUnicode(alloc, ranges, lead_ranges, trail_ranges, wide_ranges,
-                                       char_class, first, ignore_case_);
-            } else {
-                AddCharOrEscape(alloc, ranges, char_class, first);
+            // if the last item was not a class, add it verbatim.
+            if (char_class_1 == kNoCharClass) {
+                if (unicode_) {
+                    CharacterRange::AddCharUnicode(alloc, ranges, lead_ranges, trail_ranges, wide_ranges, char_1);
+                } else {
+                    ranges->append(CharacterRange::Singleton(char_1));
+                }
             }
         }
     }
@@ -1070,22 +934,26 @@ RegExpParser<CharT>::ParseCharacterClass()
             is_negated = !is_negated;
         }
         return alloc->newInfallible<RegExpCharacterClass>(ranges, is_negated);
-    }
+    } else {
+        if (!is_negated && ranges->length() == 0 && lead_ranges->length() == 0 &&
+            trail_ranges->length() == 0 && wide_ranges->length() == 0)
+        {
+            ranges->append(CharacterRange::Everything());
+            return alloc->newInfallible<RegExpCharacterClass>(ranges, true);
+        }
 
-    if (!is_negated && ranges->length() == 0 && lead_ranges->length() == 0 &&
-        trail_ranges->length() == 0 && wide_ranges->length() == 0)
-    {
-        ranges->append(CharacterRange::Everything());
-        return alloc->newInfallible<RegExpCharacterClass>(ranges, true);
+        return UnicodeRangesAtom(alloc, ranges, lead_ranges, trail_ranges, wide_ranges, is_negated,
+                                 ignore_case_);
     }
-
-    return UnicodeRangesAtom(alloc, ranges, lead_ranges, trail_ranges, wide_ranges, is_negated,
-                             ignore_case_);
 }
 
 template <typename CharT>
 bool
-RegExpParser<CharT>::ParseClassAtom(char16_t* char_class, widechar* value)
+RegExpParser<CharT>::ParseClassEscape(char16_t* char_class, widechar *value,
+                                      CharacterRangeVector* ranges,
+                                      CharacterRangeVector* lead_ranges,
+                                      CharacterRangeVector* trail_ranges,
+                                      WideCharRangeVector* wide_ranges)
 {
     MOZ_ASSERT(*char_class == kNoCharClass);
     widechar first = current();
@@ -1094,10 +962,32 @@ RegExpParser<CharT>::ParseClassAtom(char16_t* char_class, widechar* value)
           case 'w': case 'W': case 'd': case 'D': case 's': case 'S': {
             *char_class = Next();
             Advance(2);
+            // add character range to ranges immediately
+            if (unicode_) {
+                CharacterRange::AddCharOrEscapeUnicode(alloc, ranges, lead_ranges, trail_ranges, wide_ranges,
+                                                       *char_class, 0, ignore_case_);
+            } else {
+                CharacterRange::AddCharOrEscape(alloc, ranges, *char_class, 0);
+            }
             return true;
           }
           case kEndMarker:
             return ReportError(JSMSG_ESCAPE_AT_END_OF_REGEXP);
+          case 'p':
+          case 'P':
+            if (unicode_) {
+              *char_class = Next();
+              Advance(2);
+              bool negate = *char_class == 'P';
+              std::string name, value;
+              if (!ParsePropertyClassName(name, value) ||
+                  !CharacterRange::AddPropertyClassRange(alloc, name, value, negate, ignore_case_,
+                                                         ranges, lead_ranges, trail_ranges, wide_ranges)) {
+                return ReportError(JSMSG_INVALID_CLASS_PROPERTY_NAME);
+              }
+              return true;
+            }
+            MOZ_FALLTHROUGH
           default:
             if (!ParseClassCharacterEscape(value))
                 return false;
@@ -1127,6 +1017,7 @@ template <typename CharT>
 void
 RegExpParser<CharT>::ScanForCaptures()
 {
+    const CharT* saved_position = position();
     // Start with captures started previous to current position
     int capture_count = captures_started();
     // Add count of captures after this position.
@@ -1150,12 +1041,32 @@ RegExpParser<CharT>::ScanForCaptures()
             break;
           }
           case '(':
-            if (current() != '?') capture_count++;
+            if (current() == '?') {
+              // At this point we could be in
+              // * a non-capturing group '(:',
+              // * a lookbehind assertion '(?<=' '(?<!'
+              // * or a named capture '(?<'.
+              //
+              // Of these, only named captures are capturing groups.
+
+              Advance();
+              if (current() != '<') break;
+
+              Advance();
+              if (current() == '=' || current() == '!') break;
+
+              // Found a possible named capture. It could turn out to be a syntax
+              // error (e.g. an unterminated or invalid name), but that distinction
+              // does not matter for our purposes.
+              has_named_captures_ = true;
+            }
+            capture_count++;
             break;
         }
     }
     capture_count_ = capture_count;
     is_scanned_for_captures_ = true;
+    Reset(saved_position);
 }
 
 inline bool
@@ -1211,6 +1122,269 @@ RegExpParser<CharT>::ParseBackReferenceIndex(int* index_out)
     }
     *index_out = value;
     return true;
+}
+
+static void push_code_unit(CharacterVector* v, uint32_t code_unit)
+{
+  // based off of unicode::UTF16Encode
+  if (!unicode::IsSupplementary(code_unit)) {
+      v->append(char16_t(code_unit));
+  } else {
+      v->append(unicode::LeadSurrogate(code_unit));
+      v->append(unicode::TrailSurrogate(code_unit));
+  }
+}
+
+bool IsUnicodePropertyValueCharacter(char c) {
+  // https://tc39.github.io/proposal-regexp-unicode-property-escapes/
+  //
+  // Note that using this to validate each parsed char is quite conservative.
+  // A possible alternative solution would be to only ensure the parsed
+  // property name/value candidate string does not contain '\0' characters and
+  // let ICU lookups trigger the final failure.
+  if ('a' <= c && c <= 'z') return true;
+  if ('A' <= c && c <= 'Z') return true;
+  if ('0' <= c && c <= '9') return true;
+  return (c == '_');
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::ParsePropertyClassName(std::string& name, std::string& value)
+{
+  MOZ_ASSERT(name.empty());
+  MOZ_ASSERT(value.empty());
+  // Parse the property class as follows:
+  // - In \p{name}, 'name' is interpreted
+  //   - either as a general category property value name.
+  //   - or as a binary property name.
+  // - In \p{name=value}, 'name' is interpreted as an enumerated property name,
+  //   and 'value' is interpreted as one of the available property value names.
+  // - Aliases in PropertyAlias.txt and PropertyValueAlias.txt can be used.
+  // - Loose matching is not applied.
+  if (current() == '{') {
+    // Parse \p{[PropertyName=]PropertyNameValue}
+    for (Advance(); current() != '}' && current() != '='; Advance()) {
+      if (!IsUnicodePropertyValueCharacter(current())) return false;
+      if (!has_next()) return false;
+      name += static_cast<char>(current());
+    }
+    if (current() == '=') {
+      for (Advance(); current() != '}'; Advance()) {
+        if (!IsUnicodePropertyValueCharacter(current())) return false;
+        if (!has_next()) return false;
+        value += static_cast<char>(current());
+      }
+    }
+  } else {
+    return false;
+  }
+  Advance();
+
+  return true;
+}
+
+template <typename CharT>
+const CharacterVector*
+RegExpParser<CharT>::ParseCaptureGroupName()
+{
+  CharacterVector* name = alloc->newInfallible<CharacterVector>(*alloc);
+
+  bool at_start = true;
+  while (true) {
+    widechar c = current();
+    Advance();
+
+    // Convert unicode escapes.
+    if (c == '\\' && current() == 'u') {
+      Advance();
+      if (!ParseUnicodeEscape(&c)) {
+        ReportError(JSMSG_INVALID_UNICODE_ESCAPE);
+        return nullptr;
+      }
+    }
+
+    // The backslash char is misclassified as both ID_Start and ID_Continue.
+    if (c == '\\') {
+      ReportError(JSMSG_INVALID_CAPTURE_NAME);
+      return nullptr;
+    }
+
+    if (at_start) {
+      if (!unicode::IsIdentifierStart(c)) {
+        ReportError(JSMSG_INVALID_CAPTURE_NAME);
+        return nullptr;
+      }
+      push_code_unit(name, c);
+      at_start = false;
+    } else {
+      if (c == '>') {
+        break;
+      } else if (unicode::IsIdentifierPart(c)) {
+        push_code_unit(name, c);
+      } else {
+        ReportError(JSMSG_INVALID_CAPTURE_NAME);
+        return nullptr;
+      }
+    }
+  }
+
+  return name;
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::CreateNamedCaptureAtIndex(const CharacterVector* name,
+                                             int index)
+{
+  MOZ_ASSERT(0 < index && index <= captures_started_);
+  MOZ_ASSERT(name !== nullptr);
+
+  RegExpCapture* capture = GetCapture(index);
+  MOZ_ASSERT(capture->name() == nullptr);
+
+  capture->set_name(name);
+
+  if (named_captures_ == nullptr) {
+    named_captures_ = alloc->newInfallible<RegExpCaptureVector>(*alloc);
+  } else {
+    // Check for duplicates and bail if we find any.
+    if (FindNamedCapture(name) != nullptr) {
+      ReportError(JSMSG_DUPLICATE_CAPTURE_NAME);
+      return false;
+    }
+  }
+  named_captures_->append(capture);
+  return true;
+}
+
+template <typename CharT>
+RegExpCapture*
+RegExpParser<CharT>::FindNamedCapture(const CharacterVector* name)
+{
+  // Linear search is fine since there are usually very few named groups
+  for (auto it=named_captures_->begin(); it<named_captures_->end(); it++) {
+    if (*(*it)->name() == *name) {
+      return *it;
+    }
+  }
+  return nullptr;
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::ParseNamedBackReference(RegExpBuilder* builder,
+                                           RegExpParserState* state)
+{
+  // The parser is assumed to be on the '<' in \k<name>.
+  if (current() != '<') {
+    ReportError(JSMSG_INVALID_NAMED_REF);
+    return false;
+  }
+
+  Advance();
+  const CharacterVector* name = ParseCaptureGroupName();
+  if (name == nullptr) {
+    return false;
+  }
+
+  if (state->IsInsideCaptureGroup(name)) {
+    builder->AddEmpty();
+  } else {
+    RegExpBackReference* atom = alloc->newInfallible<RegExpBackReference>(nullptr);
+    atom->set_name(name);
+
+    builder->AddAtom(atom);
+
+    if (named_back_references_ == nullptr) {
+      named_back_references_ = alloc->newInfallible<RegExpBackReferenceVector>(*alloc);
+    }
+    named_back_references_->append(atom);
+  }
+
+  return true;
+}
+
+template <typename CharT>
+void
+RegExpParser<CharT>::PatchNamedBackReferences()
+{
+  if (named_back_references_ == nullptr) return;
+
+  if (named_captures_ == nullptr) {
+    // Named backrefs but no named groups
+    ReportError(JSMSG_INVALID_NAMED_CAPTURE_REF);
+    return;
+  }
+
+  // Look up and patch the actual capture for each named back reference.
+  for (size_t i = 0; i < named_back_references_->length(); i++) {
+    RegExpBackReference* ref = (*named_back_references_)[i];
+
+    RegExpCapture* capture = FindNamedCapture(ref->name());
+    if (capture == nullptr) {
+      ReportError(JSMSG_INVALID_NAMED_CAPTURE_REF);
+      return;
+    }
+
+    ref->set_capture(capture);
+  }
+}
+
+template <typename CharT>
+RegExpCapture*
+RegExpParser<CharT>::GetCapture(int index)
+{
+  // The index for the capture groups are one-based. Its index in the list is
+  // zero-based.
+  int known_captures =
+      is_scanned_for_captures_ ? capture_count_ : captures_started_;
+  MOZ_ASSERT(index <= known_captures);
+  if (captures_ == NULL) {
+    captures_ = alloc->newInfallible<RegExpCaptureVector>(*alloc);
+  }
+  while ((int)captures_->length() < known_captures) {
+    RegExpCapture* capture = alloc->newInfallible<RegExpCapture>(nullptr, captures_->length() + 1);
+    captures_->append(capture);
+  }
+  return (*captures_)[index - 1];
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::HasNamedCaptures() {
+  if (has_named_captures_ || is_scanned_for_captures_) {
+    return has_named_captures_;
+  }
+
+  ScanForCaptures();
+  return has_named_captures_;
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::RegExpParserState::IsInsideCaptureGroup(int index)
+{
+  for (RegExpParserState* s = this; s != NULL; s = s->previous_state()) {
+    if (s->group_type() != CAPTURE) continue;
+    // Return true if we found the matching capture index.
+    if (index == s->capture_index()) return true;
+    // Abort if index is larger than what has been parsed up till this state.
+    if (index > s->capture_index()) return false;
+  }
+  return false;
+}
+
+template <typename CharT>
+bool
+RegExpParser<CharT>::RegExpParserState::IsInsideCaptureGroup(const CharacterVector* name)
+{
+  for (RegExpParserState* s = this; s != NULL; s = s->previous_state()) {
+    if (s->group_type() != CAPTURE) continue;
+    if (!s->IsNamedCapture()) continue;
+    if (*s->capture_name() == *name) return true;
+  }
+  return false;
 }
 
 // QuantifierPrefix ::
@@ -1289,6 +1463,7 @@ RegExpTree*
 RegExpParser<CharT>::ParsePattern()
 {
     RegExpTree* result = ParseDisjunction();
+    PatchNamedBackReferences();
     MOZ_ASSERT_IF(result, !has_more());
     return result;
 }
@@ -1419,10 +1594,100 @@ UnicodeCharacterClassEscapeAtom(LifoAlloc* alloc, char16_t char_class, bool igno
     CharacterRangeVector* lead_ranges = alloc->newInfallible<CharacterRangeVector>(*alloc);
     CharacterRangeVector* trail_ranges = alloc->newInfallible<CharacterRangeVector>(*alloc);
     WideCharRangeVector* wide_ranges = alloc->newInfallible<WideCharRangeVector>(*alloc);
-    AddCharOrEscapeUnicode(alloc, ranges, lead_ranges, trail_ranges, wide_ranges, char_class, 0,
-                           ignore_case);
+    CharacterRange::AddCharOrEscapeUnicode(alloc, ranges, lead_ranges, trail_ranges, wide_ranges,
+                                           char_class, 0, ignore_case);
 
     return UnicodeRangesAtom(alloc, ranges, lead_ranges, trail_ranges, wide_ranges, false, false);
+}
+
+
+
+static inline RegExpTree* UnicodePropertyClassAtom(LifoAlloc* alloc, const std::string& name,
+                                                   const std::string& value, bool negate, bool ignore_case);
+
+static inline RegExpTree*
+UnicodePropertySequenceAtom(LifoAlloc* alloc, const std::string name)
+{
+  // If |name| is a special sequence name, return a subexpression that matches it.
+  // All possible sequences are hardcoded here.
+  const widechar* sequence_list = nullptr;
+  if (name == "Emoji_Flag_Sequence" ||
+      name == "RGI_Emoji_Flag_Sequence") {
+    sequence_list = kEmojiFlagSequences;
+  } else
+  if (name == "Emoji_Tag_Sequence" ||
+      name == "RGI_Emoji_Tag_Sequence") {
+    sequence_list = kEmojiTagSequences;
+  } else
+  if (name == "Emoji_ZWJ_Sequence" || 
+      name == "RGI_Emoji_ZWJ_Sequence") {
+    sequence_list = kEmojiZWJSequences;
+  }
+  if (sequence_list != nullptr) {
+    // TODO(yangguo): this creates huge regexp code. Alternative to this is
+    // to create a new operator that checks for these sequences at runtime.
+    RegExpBuilder* builder = alloc->newInfallible<RegExpBuilder>(alloc);
+    while (true) {                   // Iterate through list of sequences.
+      while (*sequence_list != 0) {  // Iterate through sequence.
+        builder->AddUnicodeCharacter(*sequence_list, false);
+        sequence_list++;
+      }
+      sequence_list++;
+      if (*sequence_list == 0) break;
+      builder->NewAlternative();
+    }
+    return builder->ToRegExp();
+  }
+
+  if (name == "Emoji_Keycap_Sequence") {
+    // https://unicode.org/reports/tr51/#def_emoji_keycap_sequence
+    // emoji_keycap_sequence := [0-9#*] \x{FE0F 20E3}
+    RegExpBuilder* builder = alloc->newInfallible<RegExpBuilder>(alloc);
+    CharacterRangeVector* prefix_ranges = alloc->newInfallible<CharacterRangeVector>(*alloc);
+    prefix_ranges->append(CharacterRange::Range('0', '9'));
+    prefix_ranges->append(CharacterRange::Singleton('#'));
+    prefix_ranges->append(CharacterRange::Singleton('*'));
+    builder->AddAtom(alloc->newInfallible<RegExpCharacterClass>(prefix_ranges, false));
+    builder->AddCharacter(0xFE0F);
+    builder->AddCharacter(0x20E3);
+    return builder->ToRegExp();
+  } else
+  if (name == "Emoji_Modifier_Sequence" ||
+      name == "RGI_Emoji_Modifier_Sequence") {
+    // https://unicode.org/reports/tr51/#def_emoji_modifier_sequence
+    // emoji_modifier_sequence := emoji_modifier_base emoji_modifier
+
+    RegExpBuilder* builder = alloc->newInfallible<RegExpBuilder>(alloc);
+    builder->AddAtom(UnicodePropertyClassAtom(alloc, "Emoji_Modifier_Base", "", false, false));
+    builder->AddAtom(UnicodePropertyClassAtom(alloc, "Emoji_Modifier", "", false, false));
+    return builder->ToRegExp();
+  }
+
+  return nullptr;
+}
+
+static inline RegExpTree*
+UnicodePropertyClassAtom(LifoAlloc* alloc, const std::string& name, const std::string& value,
+                         bool negate, bool ignore_case)
+{
+    CharacterRangeVector* ranges = alloc->newInfallible<CharacterRangeVector>(*alloc);
+    CharacterRangeVector* lead_ranges = alloc->newInfallible<CharacterRangeVector>(*alloc);
+    CharacterRangeVector* trail_ranges = alloc->newInfallible<CharacterRangeVector>(*alloc);
+    WideCharRangeVector* wide_ranges = alloc->newInfallible<WideCharRangeVector>(*alloc);
+
+    if (CharacterRange::AddPropertyClassRange(alloc, name, value, negate, ignore_case,
+                                              ranges, lead_ranges, trail_ranges, wide_ranges)) {
+        return UnicodeRangesAtom(alloc, ranges, lead_ranges, trail_ranges, wide_ranges, false, false);
+    }
+
+    if (value.empty() && !negate) {
+        // We allow Property Sequences in any unicode mode
+        // They used to be allowed in /u (before /v was introduced) and there is active
+        // discussion to change it back again.
+        // The benefits allow outweigh the noncompliance.
+        return UnicodePropertySequenceAtom(alloc, name);
+    }
+    return nullptr;
 }
 
 static inline RegExpTree*
@@ -1455,24 +1720,24 @@ RegExpTree*
 RegExpParser<CharT>::ParseDisjunction()
 {
     // Used to store current state while parsing subexpressions.
-    RegExpParserState initial_state(alloc, nullptr, INITIAL, 0);
-    RegExpParserState* stored_state = &initial_state;
+    RegExpParserState initial_state(alloc, nullptr, INITIAL, RegExpLookaround::LOOKAHEAD, 0, nullptr);
+    RegExpParserState* state = &initial_state;
     // Cache the builder in a local variable for quick access.
     RegExpBuilder* builder = initial_state.builder();
     while (true) {
         switch (current()) {
           case kEndMarker:
-            if (stored_state->IsSubexpression()) {
+            if (state->IsSubexpression()) {
                 // Inside a parenthesized group when hitting end of input.
                 return ReportError(JSMSG_MISSING_PAREN);
             }
-            MOZ_ASSERT(INITIAL == stored_state->group_type());
+            MOZ_ASSERT(INITIAL == state->group_type());
             // Parsing completed successfully.
             return builder->ToRegExp();
           case ')': {
-            if (!stored_state->IsSubexpression())
+            if (!state->IsSubexpression())
                 return ReportError(JSMSG_UNMATCHED_RIGHT_PAREN);
-            MOZ_ASSERT(INITIAL != stored_state->group_type());
+            MOZ_ASSERT(INITIAL != state->group_type());
 
             Advance();
             // End disjunction parsing and convert builder content to new single
@@ -1481,29 +1746,35 @@ RegExpParser<CharT>::ParseDisjunction()
 
             int end_capture_index = captures_started();
 
-            int capture_index = stored_state->capture_index();
-            SubexpressionType group_type = stored_state->group_type();
-
-            // Restore previous state.
-            stored_state = stored_state->previous_state();
-            builder = stored_state->builder();
+            int capture_index = state->capture_index();
+            SubexpressionType group_type = state->group_type();
 
             // Build result of subexpression.
             if (group_type == CAPTURE) {
-                RegExpCapture* capture = alloc->newInfallible<RegExpCapture>(body, capture_index);
-                (*captures_)[capture_index - 1] = capture;
+                if (state->IsNamedCapture()) {
+                  if (!CreateNamedCaptureAtIndex(state->capture_name(), capture_index)) {
+                    return nullptr;
+                  }
+                }
+                RegExpCapture* capture = GetCapture(capture_index);
+                capture->set_body(body);
                 body = capture;
             } else if (group_type != GROUPING) {
-                MOZ_ASSERT(group_type == POSITIVE_LOOKAHEAD ||
-                           group_type == NEGATIVE_LOOKAHEAD);
-                bool is_positive = (group_type == POSITIVE_LOOKAHEAD);
-                body = alloc->newInfallible<RegExpLookahead>(body,
+                MOZ_ASSERT(group_type == POSITIVE_LOOKAROUND ||
+                           group_type == NEGATIVE_LOOKAROUND);
+                bool is_positive = (group_type == POSITIVE_LOOKAROUND);
+                body = alloc->newInfallible<RegExpLookaround>(body,
                                                    is_positive,
                                                    end_capture_index - capture_index,
-                                                   capture_index);
+                                                   capture_index,
+                                                   state->lookaround_type());
             }
+
+            // Restore previous state.
+            state = state->previous_state();
+            builder = state->builder();
             builder->AddAtom(body);
-            if (unicode_ && (group_type == POSITIVE_LOOKAHEAD || group_type == NEGATIVE_LOOKAHEAD))
+            if (unicode_ && (group_type == POSITIVE_LOOKAROUND || group_type == NEGATIVE_LOOKAROUND))
                 continue;
             // For compatability with JSC and ES3, we allow quantifiers after
             // lookaheads, and break in all cases.
@@ -1563,6 +1834,9 @@ RegExpParser<CharT>::ParseDisjunction()
           }
           case '(': {
             SubexpressionType subexpr_type = CAPTURE;
+            RegExpLookaround::Type lookaround_type = state->lookaround_type();
+            bool is_named_capture = false;
+            const CharacterVector* capture_name = nullptr;
             Advance();
             if (current() == '?') {
                 switch (Next()) {
@@ -1570,26 +1844,48 @@ RegExpParser<CharT>::ParseDisjunction()
                     subexpr_type = GROUPING;
                     break;
                   case '=':
-                    subexpr_type = POSITIVE_LOOKAHEAD;
+                    lookaround_type = RegExpLookaround::LOOKAHEAD;
+                    subexpr_type = POSITIVE_LOOKAROUND;
                     break;
                   case '!':
-                    subexpr_type = NEGATIVE_LOOKAHEAD;
+                    lookaround_type = RegExpLookaround::LOOKAHEAD;
+                    subexpr_type = NEGATIVE_LOOKAROUND;
+                    break;
+                  case '<':
+                    Advance();
+                    lookaround_type = RegExpLookaround::LOOKBEHIND;
+                    if (Next() == '=') {
+                      subexpr_type = POSITIVE_LOOKAROUND;
+                      break;
+                    } else if (Next() == '!') {
+                      subexpr_type = NEGATIVE_LOOKAROUND;
+                      break;
+                    }
+                    // Not a lookbehind, continue parsing as named group
+                    is_named_capture = true;
+                    has_named_captures_ = true;
                     break;
                   default:
                     return ReportError(JSMSG_INVALID_GROUP);
                 }
-                Advance(2);
-            } else {
-                if (captures_ == nullptr)
-                    captures_ = alloc->newInfallible<RegExpCaptureVector>(*alloc);
-                if (captures_started() >= kMaxCaptures)
-                    return ReportError(JSMSG_TOO_MANY_PARENS);
-                captures_->append((RegExpCapture*) nullptr);
+                Advance(is_named_capture ? 1 : 2);
+            }
+            if (subexpr_type == CAPTURE) {
+              if (captures_started() >= kMaxCaptures)
+                  return ReportError(JSMSG_TOO_MANY_PARENS);
+              captures_started_++;
+              
+              if (is_named_capture) {
+                capture_name = ParseCaptureGroupName();
+                if (!capture_name)
+                  return nullptr;
+              }
             }
             // Store current state and begin new disjunction parsing.
-            stored_state = alloc->newInfallible<RegExpParserState>(alloc, stored_state, subexpr_type,
-                                                                   captures_started());
-            builder = stored_state->builder();
+            state = alloc->newInfallible<RegExpParserState>(alloc, state, subexpr_type,
+                                                            lookaround_type, captures_started_,
+                                                            capture_name);
+            builder = state->builder();
             continue;
           }
           case '[': {
@@ -1619,44 +1915,61 @@ RegExpParser<CharT>::ParseDisjunction()
                 // CharacterClassEscape :: one of
                 //   d D s S w W
               case 'D': case 'S': case 'W':
-                if (unicode_) {
-                    Advance();
-                    builder->AddAtom(UnicodeCharacterClassEscapeAtom(alloc, current(),
-                                                                     ignore_case_));
-                    Advance();
-                    break;
-                }
-                MOZ_FALLTHROUGH;
               case 'd': case 's': case 'w': {
                 widechar c = Next();
+                bool negated = c <= 'Z';
                 Advance(2);
-                CharacterRangeVector* ranges =
-                    alloc->newInfallible<CharacterRangeVector>(*alloc);
-                if (unicode_)
-                    CharacterRange::AddClassEscapeUnicode(alloc, c, ranges, ignore_case_);
-                else
-                    CharacterRange::AddClassEscape(alloc, c, ranges);
-                RegExpTree* atom = alloc->newInfallible<RegExpCharacterClass>(ranges, false);
-                builder->AddAtom(atom);
+                if (unicode_ && negated) {
+                    // must generate negative lookarounds for lone surrogates, done by AddCharOrEscapeUnicode
+                    builder->AddAtom(UnicodeCharacterClassEscapeAtom(alloc, c, ignore_case_));
+                } else {
+                    // only match positive ranges
+                    CharacterRangeVector* ranges = alloc->newInfallible<CharacterRangeVector>(*alloc);
+                    if (unicode_)
+                        CharacterRange::AddClassEscapeUnicode(alloc, c, ranges, ignore_case_);
+                    else
+                        CharacterRange::AddClassEscape(alloc, c, ranges);
+                    RegExpTree* atom = alloc->newInfallible<RegExpCharacterClass>(ranges, false);
+                    builder->AddAtom(atom);
+                }
+                break;
+              }
+              case 'p': case 'P': {
+                widechar p = Next();
+                Advance(2);
+                if (unicode_) {
+                    bool negate = p == 'P';
+                    std::string name, nvalue;
+                    if (ParsePropertyClassName(name, nvalue)) {
+                        RegExpTree* atom = UnicodePropertyClassAtom(alloc, name, nvalue,
+                                                                    negate, ignore_case_);
+                        if (atom != nullptr) {
+                            builder->AddAtom(atom);
+                            break;
+                        }
+                    }
+                    return ReportError(JSMSG_INVALID_PROPERTY_NAME);
+                } else {
+                    builder->AddCharacter(p);
+                }
                 break;
               }
               case '1': case '2': case '3': case '4': case '5': case '6':
               case '7': case '8': case '9': {
                 int index = 0;
                 if (ParseBackReferenceIndex(&index)) {
-                    RegExpCapture* capture = nullptr;
-                    if (captures_ != nullptr && index <= (int) captures_->length()) {
-                        capture = (*captures_)[index - 1];
+                    if (state->IsInsideCaptureGroup(index)) {
+                      // The backreference is inside the capture group it refers to.
+                      // Nothing can possibly have been captured yet.
+                      builder->AddEmpty();
+                    } else {
+                      RegExpCapture* capture = GetCapture(index);
+                      RegExpTree* atom = alloc->newInfallible<RegExpBackReference>(capture);
+                      if (unicode_)
+                          builder->AddAtom(UnicodeBackReferenceAtom(alloc, atom));
+                      else
+                          builder->AddAtom(atom);
                     }
-                    if (capture == nullptr) {
-                        builder->AddEmpty();
-                        break;
-                    }
-                    RegExpTree* atom = alloc->newInfallible<RegExpBackReference>(capture);
-                    if (unicode_)
-                        builder->AddAtom(UnicodeBackReferenceAtom(alloc, atom));
-                    else
-                        builder->AddAtom(atom);
                     break;
                 }
                 if (unicode_)
@@ -1741,45 +2054,28 @@ RegExpParser<CharT>::ParseDisjunction()
               case 'u': {
                 Advance(2);
                 widechar value;
-                if (unicode_) {
-                    if (current() == '{') {
-                        if (!ParseBracedHexEscape(&value))
-                            return nullptr;
-                        if (unicode::IsLeadSurrogate(value)) {
-                            builder->AddAtom(LeadSurrogateAtom(alloc, value));
-                        } else if (unicode::IsTrailSurrogate(value)) {
-                            builder->AddAtom(TrailSurrogateAtom(alloc, value));
-                        } else if (value >= unicode::NonBMPMin) {
-                            char16_t lead, trail;
-                            unicode::UTF16Encode(value, &lead, &trail);
-                            builder->AddAtom(SurrogatePairAtom(alloc, lead, trail,
-                                                               ignore_case_));
-                        } else {
-                            builder->AddCharacter(value);
-                        }
-                    } else if (ParseHexEscape(4, &value)) {
-                        if (unicode::IsLeadSurrogate(value)) {
-                            widechar trail;
-                            if (ParseTrailSurrogate(&trail)) {
-                                builder->AddAtom(SurrogatePairAtom(alloc, value, trail,
-                                                                   ignore_case_));
-                            } else {
-                                builder->AddAtom(LeadSurrogateAtom(alloc, value));
-                            }
-                        } else if (unicode::IsTrailSurrogate(value)) {
-                            builder->AddAtom(TrailSurrogateAtom(alloc, value));
-                        } else {
-                            builder->AddCharacter(value);
-                        }
-                    } else {
-                        return ReportError(JSMSG_INVALID_UNICODE_ESCAPE);
-                    }
-                    break;
-                }
-                if (ParseHexEscape(4, &value)) {
-                    builder->AddCharacter(value);
+                if (ParseUnicodeEscape(&value)) {
+                  builder->AddUnicodeCharacter(value, ignore_case_);
+                } else if (!unicode_) {
+                  builder->AddCharacter('u');
                 } else {
-                    builder->AddCharacter('u');
+                  return ReportError(JSMSG_INVALID_UNICODE_ESCAPE);
+                }
+                break;
+              }
+              case 'k': {
+                // Either an identity escape or a named back-reference.  The two
+                // interpretations are mutually exclusive: '\k' is interpreted as
+                // an identity escape for non-Unicode patterns without named
+                // capture groups, and as the beginning of a named back-reference
+                // in all other cases.
+                if (unicode_ || HasNamedCaptures()) {
+                  Advance(2);
+                  if (!ParseNamedBackReference(builder, state)) {
+                    return ReportError(JSMSG_INVALID_IDENTITY_ESCAPE);
+                  }
+                } else {
+                  builder->AddCharacter('k');
                 }
                 break;
               }
@@ -1911,6 +2207,7 @@ ParsePattern(frontend::TokenStream& ts, LifoAlloc& alloc, const CharT* chars, si
     data->simple = parser.simple();
     data->contains_anchor = parser.contains_anchor();
     data->capture_count = parser.captures_started();
+    parser.StoreNamedCaptureMap(&data->capture_name_list, &data->capture_index_list);
     return true;
 }
 

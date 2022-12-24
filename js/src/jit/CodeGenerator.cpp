@@ -1513,6 +1513,16 @@ JitCompartment::generateRegExpMatcherStub(JSContext* cx)
         return nullptr;
     }
 
+    // If a regexp has named captures, fall back to the OOL stub, which
+    // will end up calling CreateRegExpMatchResults.
+    Register shared = temp2;
+    masm.loadPtr(Address(regexp, NativeObject::getFixedSlotOffset(RegExpObject::PRIVATE_SLOT)),
+                 shared);
+    masm.branchPtr(Assembler::NotEqual,
+                   Address(shared, RegExpShared::offsetOfGroupsTemplate()),
+                   ImmWord(0),
+                   &oolEntry);
+
     // Construct the result.
     Register object = temp1;
     Label matchResultFallback, matchResultJoin;
@@ -1523,6 +1533,7 @@ JitCompartment::generateRegExpMatcherStub(JSContext* cx)
     masm.loadPtr(Address(object, NativeObject::offsetOfSlots()), temp2);
     masm.storeValue(templateObject->getSlot(0), Address(temp2, 0));
     masm.storeValue(templateObject->getSlot(1), Address(temp2, sizeof(Value)));
+    masm.storeValue(templateObject->getSlot(2), Address(temp2, 2 * sizeof(Value)));
 
     size_t elementsOffset = NativeObject::offsetOfFixedElements();
 
@@ -1636,6 +1647,7 @@ JitCompartment::generateRegExpMatcherStub(JSContext* cx)
     MOZ_ASSERT(templateObject->numFixedSlots() == 0);
     MOZ_ASSERT(templateObject->lookupPure(cx->names().index)->slot() == 0);
     MOZ_ASSERT(templateObject->lookupPure(cx->names().input)->slot() == 1);
+    MOZ_ASSERT(templateObject->lookupPure(cx->names().groups)->slot() == 2);
 
     masm.load32(pairsVectorAddress, temp3);
     masm.storeValue(JSVAL_TYPE_INT32, temp3, Address(temp2, 0));
