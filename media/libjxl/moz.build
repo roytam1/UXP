@@ -106,13 +106,10 @@ SOURCES += [
     "/media/libjxl/src/lib/threads/thread_parallel_runner_internal.cc",
 ]
 
-DEFINES["JPEGXL_MAJOR_VERSION"] = "0"
-DEFINES["JPEGXL_MINOR_VERSION"] = "7"
-DEFINES["JPEGXL_PATCH_VERSION"] = "0"
-
 EXPORTS.jxl += [
     "./include/jxl/jxl_export.h",
     "./include/jxl/jxl_threads_export.h",
+    "./include/jxl/version.h",
     "/media/libjxl/src/lib/include/jxl/butteraugli.h",
     "/media/libjxl/src/lib/include/jxl/butteraugli_cxx.h",
     "/media/libjxl/src/lib/include/jxl/cms_interface.h",
