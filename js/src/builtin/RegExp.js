@@ -395,9 +395,8 @@ function RegExpReplaceSlowPath(rx, S, lengthS, replaceValue,
 
         var n, capN, replacement;
         if (functionalReplace || firstDollarIndex !== -1) {
-            // Steps 14.g-j.
+            // Steps 14.g-k.
             replacement = RegExpGetComplexReplacement(result, matched, S, position,
-
                                                       nCaptures, replaceValue,
                                                       functionalReplace, firstDollarIndex);
         } else {
@@ -411,16 +410,21 @@ function RegExpReplaceSlowPath(rx, S, lengthS, replaceValue,
                 if (capN !== undefined)
                     ToString(capN);
             }
+            // Step 14.j, 14.l., GetSubstitution Step 11.
+            // We don't need namedCaptures, but ToObject is visible to script.
+            var namedCaptures = result.groups;
+            if (namedCaptures !== undefined)
+                ToObject(namedCaptures);
             replacement = replaceValue;
         }
 
-        // Step 14.l.
+        // Step 14.m.
         if (position >= nextSourcePosition) {
-            // Step 14.l.ii.
+            // Step 14.m.ii.
           accumulatedResult += Substring(S, nextSourcePosition,
                                          position - nextSourcePosition) + replacement;
 
-            // Step 14.l.iii.
+            // Step 14.m.iii.
             nextSourcePosition = position + matchLength;
         }
     }
@@ -433,15 +437,14 @@ function RegExpReplaceSlowPath(rx, S, lengthS, replaceValue,
     return accumulatedResult + Substring(S, nextSourcePosition, lengthS - nextSourcePosition);
 }
 
-// ES 2017 draft rev 03bfda119d060aca4099d2b77cf43f6d4f11cfa2 21.2.5.8
-// steps 14.g-k.
+// ES 2021 draft 21.2.5.10
+// https://tc39.es/ecma262/#sec-regexp.prototype-@@replace
+// steps 14.g-l.
 // Calculates functional/substitution replaceement from match result.
 // Used in the following functions:
 //   * RegExpGlobalReplaceOptFunc
 //   * RegExpGlobalReplaceOptElemBase
-//   * RegExpGlobalReplaceOptSubst
 //   * RegExpLocalReplaceOptFunc
-//   * RegExpLocalReplaceOptSubst
 //   * RegExpReplaceSlowPath
 function RegExpGetComplexReplacement(result, matched, S, position,
                                      nCaptures, replaceValue,
@@ -451,13 +454,8 @@ function RegExpGetComplexReplacement(result, matched, S, position,
     var captures = [];
     var capturesLength = 0;
 
-    // Step 14.j.i (reordered).
-    // For `nCaptures` <= 4 case, call `replaceValue` directly, otherwise
-    // use `std_Function_apply` with all arguments stored in `captures`.
-    // In latter case, store `matched` as the first element here, to
-    // avoid unshift later.
-    if (functionalReplace && nCaptures > 4)
-        _DefineDataProperty(captures, capturesLength++, matched);
+    // Step 14.k.i (reordered).
+    _DefineDataProperty(captures, capturesLength++, matched);
 
     // Step 14.g, 14.i, 14.i.iv.
     for (var n = 1; n <= nCaptures; n++) {
@@ -473,29 +471,41 @@ function RegExpGetComplexReplacement(result, matched, S, position,
     }
 
     // Step 14.j.
+    var namedCaptures = result.groups;
+
+    // Step 14.k.
     if (functionalReplace) {
-        switch (nCaptures) {
-          case 0:
-            return ToString(replaceValue(matched, position, S));
-         case 1:
-            return ToString(replaceValue(matched, SPREAD(captures, 1), position, S));
-          case 2:
-            return ToString(replaceValue(matched, SPREAD(captures, 2), position, S));
-          case 3:
-            return ToString(replaceValue(matched, SPREAD(captures, 3), position, S));
-          case 4:
-            return ToString(replaceValue(matched, SPREAD(captures, 4), position, S));
-          default:
-            // Steps 14.j.ii-v.
-            _DefineDataProperty(captures, capturesLength++, position);
-            _DefineDataProperty(captures, capturesLength++, S);
-            return ToString(callFunction(std_Function_apply, replaceValue, null, captures));
+        // For `nCaptures` <= 4 case, call `replaceValue` directly, otherwise
+        // use `std_Function_apply` with all arguments stored in `captures`.
+        if (namedCaptures === undefined) {
+            switch (nCaptures) {
+              case 0:
+                return ToString(replaceValue(SPREAD(captures, 1), position, S));
+              case 1:
+                return ToString(replaceValue(SPREAD(captures, 2), position, S));
+              case 2:
+                return ToString(replaceValue(SPREAD(captures, 3), position, S));
+              case 3:
+                return ToString(replaceValue(SPREAD(captures, 4), position, S));
+              case 4:
+                return ToString(replaceValue(SPREAD(captures, 5), position, S));
+            }
         }
+        // Steps 14.k.ii-v.
+        _DefineDataProperty(captures, capturesLength++, position);
+        _DefineDataProperty(captures, capturesLength++, S);
+        if (namedCaptures !== undefined) {
+            _DefineDataProperty(captures, capturesLength++, namedCaptures);
+        }
+        return ToString(callFunction(std_Function_apply, replaceValue, undefined, captures));
     }
 
-    // Steps 14.k.i.
-    return RegExpGetSubstitution(matched, S, position, captures, replaceValue,
-                                 firstDollarIndex);
+    // Step 14.l.
+    if (namedCaptures !== undefined) {
+        namedCaptures = ToObject(namedCaptures);
+    }
+    return RegExpGetSubstitution(captures, S, position, replaceValue, firstDollarIndex,
+                                 namedCaptures);
 }
 
 // ES 2017 draft rev 03bfda119d060aca4099d2b77cf43f6d4f11cfa2 21.2.5.8
