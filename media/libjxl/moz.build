@@ -11,9 +11,6 @@ LOCAL_INCLUDES += [
 ]
 
 SOURCES += [
-    "/media/libjxl/src/lib/extras/dec/jxl.cc",
-    "/media/libjxl/src/lib/extras/exif.cc",
-    "/media/libjxl/src/lib/extras/render_hdr.cc",
     "/media/libjxl/src/lib/jxl/ac_strategy.cc",
     "/media/libjxl/src/lib/jxl/alpha.cc",
     "/media/libjxl/src/lib/jxl/ans_common.cc",
@@ -48,7 +45,6 @@ SOURCES += [
     "/media/libjxl/src/lib/jxl/dec_patch_dictionary.cc",
     "/media/libjxl/src/lib/jxl/dec_xyb.cc",
     "/media/libjxl/src/lib/jxl/decode.cc",
-    "/media/libjxl/src/lib/jxl/decode_to_jpeg.cc",
     "/media/libjxl/src/lib/jxl/enc_bit_writer.cc",
     "/media/libjxl/src/lib/jxl/entropy_coder.cc",
     "/media/libjxl/src/lib/jxl/epf.cc",
@@ -125,6 +121,9 @@ EXPORTS.jxl += [
     "/media/libjxl/src/lib/include/jxl/thread_parallel_runner_cxx.h",
     "/media/libjxl/src/lib/include/jxl/types.h",
 ]
+
+# DEFINES["JPEGXL_ENABLE_BOXES"] = "0"
+DEFINES["JPEGXL_ENABLE_TRANSCODE_JPEG"] = "0"
 
 FINAL_LIBRARY = "gkmedias"
 
