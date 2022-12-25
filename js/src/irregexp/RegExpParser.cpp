@@ -2069,8 +2069,8 @@ RegExpParser<CharT>::ParseDisjunction()
                 // an identity escape for non-Unicode patterns without named
                 // capture groups, and as the beginning of a named back-reference
                 // in all other cases.
+                Advance(2);
                 if (unicode_ || HasNamedCaptures()) {
-                  Advance(2);
                   if (!ParseNamedBackReference(builder, state)) {
                     return ReportError(JSMSG_INVALID_IDENTITY_ESCAPE);
                   }
