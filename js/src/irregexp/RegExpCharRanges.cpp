@@ -29,7 +29,10 @@
 
 #include "irregexp/RegExpCharRanges.h"
 
+#include "ds/LifoAlloc.h"
+#include "mozilla/Unused.h"
 #include "unicode/uniset.h"
+#include "vm/Unicode.h"
 
 // Generated table
 #include "irregexp/RegExpCharacters-inl.h"
@@ -447,7 +450,7 @@ bool IsExactPropertyValueAlias(const std::string& property_value_name, UProperty
     return false;
 }
 
-bool LookupPropertyValueName(LifoAlloc* alloc, 
+bool LookupPropertyValueName(js::LifoAlloc* alloc,
                              UProperty property,
                              const std::string& property_value_name, bool negate,
                              CharacterRangeVector* ranges,
@@ -485,7 +488,7 @@ bool LookupPropertyValueName(LifoAlloc* alloc,
     return success;
 }
 
-bool LookupSpecialPropertyValueName(LifoAlloc* alloc, 
+bool LookupSpecialPropertyValueName(js::LifoAlloc* alloc,
                                     const std::string& name, bool negate,
                                     CharacterRangeVector* ranges,
                                     CharacterRangeVector* lead_ranges,
@@ -497,14 +500,14 @@ bool LookupSpecialPropertyValueName(LifoAlloc* alloc,
             // is the empty set.
         } else {
             CharacterRange::AddUnicodeRange(alloc, ranges, lead_ranges, trail_ranges, wide_ranges,
-                                            0, unicode::NonBMPMax);
+                                            0, js::unicode::NonBMPMax);
         }
     } else
     if (name == "ASCII") {
         if (negate) {
             // negative ASCII contains all planes
             CharacterRange::AddUnicodeRange(alloc, ranges, lead_ranges, trail_ranges, wide_ranges,
-                                            0x80, unicode::NonBMPMax);
+                                            0x80, js::unicode::NonBMPMax);
         } else {
             // positve ASCII is just low codepoints
             ranges->append(CharacterRange::Range(0x00, 0x7F));
@@ -748,12 +751,12 @@ CharacterRange::InsertRangeInCanonicalList(CharacterRangeVector& list,
 }
 
 int
-irregexp::GetCaseIndependentLetters(char16_t character,
-                                    bool ascii_subject,
-                                    bool unicode,
-                                    const char16_t* choices,
-                                    size_t choices_length,
-                                    char16_t* letters)
+js::irregexp::GetCaseIndependentLetters(char16_t character,
+                                        bool ascii_subject,
+                                        bool unicode,
+                                        const char16_t* choices,
+                                        size_t choices_length,
+                                        char16_t* letters)
 {
     size_t count = 0;
     for (size_t i = 0; i < choices_length; i++) {
@@ -781,10 +784,10 @@ irregexp::GetCaseIndependentLetters(char16_t character,
 }
 
 int
-irregexp::GetCaseIndependentLetters(char16_t character,
-                                    bool ascii_subject,
-                                    bool unicode,
-                                    char16_t* letters)
+js::irregexp::GetCaseIndependentLetters(char16_t character,
+                                        bool ascii_subject,
+                                        bool unicode,
+                                        char16_t* letters)
 {
     if (unicode) {
         const char16_t choices[] = {
