@@ -30,6 +30,9 @@
 #ifndef V8_INFALLIBLEVECTOR_H_
 #define V8_INFALLIBLEVECTOR_H_
 
+#include "ds/LifoAlloc.h"
+#include "mozilla/Vector.h"
+
 namespace js {
 namespace irregexp {
 
@@ -39,7 +42,7 @@ namespace irregexp {
 template<typename T, size_t N>
 class InfallibleVector
 {
-    Vector<T, N, LifoAllocPolicy<Infallible>> vector_;
+    mozilla::Vector<T, N, LifoAllocPolicy<Infallible>> vector_;
 
     InfallibleVector(const InfallibleVector&) = delete;
     void operator=(const InfallibleVector&) = delete;

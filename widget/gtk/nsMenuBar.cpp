@@ -35,7 +35,7 @@ using namespace mozilla;
 static bool
 ShouldHandleKeyEvent(nsIDOMEvent* aEvent) {
     bool handled, trusted = false;
-    aEvent->GetPreventDefault(&handled);
+    aEvent->GetDefaultPrevented(&handled);
     aEvent->GetIsTrusted(&trusted);
 
     if (handled || !trusted) {

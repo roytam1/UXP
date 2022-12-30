@@ -677,7 +677,8 @@ protected:
                        bool aCanRollBackBeforeFrame,
                        ReflowOutput& aMetrics,
                        nsReflowStatus& aStatus,
-                       bool* aOptionalBreakAfterFits);
+                       bool* aOptionalBreakAfterFits,
+                       bool aAlreadyOverflowed);
 
   void PlaceFrame(PerFrameData* pfd,
                   ReflowOutput& aMetrics);

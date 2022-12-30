@@ -32,8 +32,10 @@
 
 #include <string>
 
+#include "ds/LifoAlloc.h"
 #include "irregexp/RegExpCharacters.h"
 #include "irregexp/InfallibleVector.h"
+#include "vm/Unicode.h"
 
 namespace js {
 

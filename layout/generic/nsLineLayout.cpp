@@ -1101,7 +1101,8 @@ nsLineLayout::ReflowFrame(nsIFrame* aFrame,
                  "The frame ctor should've dealt with this.");
     if (CanPlaceFrame(pfd, notSafeToBreak, continuingTextRun,
                       savedOptionalBreakFrame != nullptr, reflowOutput,
-                      aReflowStatus, &optionalBreakAfterFits)) {
+                      aReflowStatus, &optionalBreakAfterFits,
+                      isText && availableSpaceOnLine < 0)) {
       if (!isEmpty) {
         psd->mHasNonemptyContent = true;
         mLineIsEmpty = false;
@@ -1259,6 +1260,10 @@ nsLineLayout::SyncAnnotationBounds(PerFrameData* aRubyFrame)
  * ReflowFrame above would have returned false, preventing this method
  * from being called. The logic in this method assumes that.
  *
+ * We can always place an empty frame *unless* aAlreadyOverflowed is true,
+ * in which case the line has already overflowed and we'd rather back up
+ * to an earlier break (if available).
+ *
  * Note that there is no check against the Y coordinate because we
  * assume that the caller will take care of that.
  */
@@ -1269,7 +1274,8 @@ nsLineLayout::CanPlaceFrame(PerFrameData* pfd,
                             bool aCanRollBackBeforeFrame,
                             ReflowOutput& aMetrics,
                             nsReflowStatus& aStatus,
-                            bool* aOptionalBreakAfterFits)
+                            bool* aOptionalBreakAfterFits,
+                            bool aAlreadyOverflowed)
 {
   NS_PRECONDITION(pfd && pfd->mFrame, "bad args, null pointers for frame data");
 
@@ -1340,8 +1346,11 @@ nsLineLayout::CanPlaceFrame(PerFrameData* pfd,
 
   // When it doesn't fit, check for a few special conditions where we
   // allow it to fit anyway.
-  if (0 == startMargin + pfd->mBounds.ISize(lineWM) + endMargin) {
-    // Empty frames always fit right where they are
+  if (0 == startMargin + pfd->mBounds.ISize(lineWM) + endMargin &&
+      !aAlreadyOverflowed) {
+    // Empty frames always fit right where they are, unless we have text that
+    // has already overflowed the line width, in which case we should try to
+    // back up to an earlier break.
 #ifdef NOISY_CAN_PLACE_FRAME
     printf("   ==> empty frame fits\n");
 #endif
