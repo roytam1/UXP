@@ -2979,9 +2979,9 @@ CSS_PROP_POSITION(
     offsetof(nsStylePosition, mObjectPosition),
     eStyleAnimType_Custom)
 CSS_PROP_LOGICAL(
-    offset-block-end,
-    offset_block_end,
-    OffsetBlockEnd,
+    inset-block-end,
+    inset_block_end,
+    InsetBlockEnd,
     CSS_PROPERTY_PARSE_VALUE |
         CSS_PROPERTY_STORES_CALC |
         CSS_PROPERTY_GETCS_NEEDS_LAYOUT_FLUSH |
@@ -2996,9 +2996,9 @@ CSS_PROP_LOGICAL(
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_None)
 CSS_PROP_LOGICAL(
-    offset-block-start,
-    offset_block_start,
-    OffsetBlockStart,
+    inset-block-start,
+    inset_block_start,
+    InsetBlockStart,
     CSS_PROPERTY_PARSE_VALUE |
         CSS_PROPERTY_STORES_CALC |
         CSS_PROPERTY_GETCS_NEEDS_LAYOUT_FLUSH |
@@ -3012,9 +3012,9 @@ CSS_PROP_LOGICAL(
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_None)
 CSS_PROP_LOGICAL(
-    offset-inline-end,
-    offset_inline_end,
-    OffsetInlineEnd,
+    inset-inline-end,
+    inset_inline_end,
+    InsetInlineEnd,
     CSS_PROPERTY_PARSE_VALUE |
         CSS_PROPERTY_STORES_CALC |
         CSS_PROPERTY_GETCS_NEEDS_LAYOUT_FLUSH |
@@ -3028,9 +3028,9 @@ CSS_PROP_LOGICAL(
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_None)
 CSS_PROP_LOGICAL(
-    offset-inline-start,
-    offset_inline_start,
-    OffsetInlineStart,
+    inset-inline-start,
+    inset_inline_start,
+    InsetInlineStart,
     CSS_PROPERTY_PARSE_VALUE |
         CSS_PROPERTY_STORES_CALC |
         CSS_PROPERTY_GETCS_NEEDS_LAYOUT_FLUSH |
