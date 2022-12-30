@@ -228,7 +228,7 @@ class InstallManifest(object):
         """
         return json.loads(data)
 
-    def write(self, path=None, fileobj=None):
+    def write(self, path=None, fileobj=None, expand_pattern=False):
         """Serialize this manifest to a file or file object.
 
         If path is specified, that file will be written to. If fileobj is specified,
@@ -242,10 +242,21 @@ class InstallManifest(object):
             for dest in sorted(self._dests):
                 entry = self._dests[dest]
 
-                parts = ['%d' % entry[0], dest]
-                parts.extend(entry[1:])
-                fh.write('%s\n' % self.FIELD_SEPARATOR.join(
-                    p.encode('utf-8') for p in parts))
+                if expand_pattern and entry[0] in (self.PATTERN_SYMLINK, self.PATTERN_COPY):
+                    type, base, pattern, dest = entry
+                    type = self.SYMLINK if type == self.PATTERN_SYMLINK else self.COPY
+                    finder = FileFinder(base)
+                    paths = [f[0] for f in finder.find(pattern)]
+                    for path in paths:
+                        source = mozpath.join(base, path)
+                        parts = ['%d' % type, mozpath.join(dest, path), source]
+                        fh.write('%s\n' % self.FIELD_SEPARATOR.join(
+                            p.encode('utf-8') for p in parts))
+                else:
+                    parts = ['%d' % entry[0], dest]
+                    parts.extend(entry[1:])
+                    fh.write('%s\n' % self.FIELD_SEPARATOR.join(
+                        p.encode('utf-8') for p in parts))
 
     def add_symlink(self, source, dest):
         """Add a symlink to this manifest.
@@ -289,7 +300,7 @@ class InstallManifest(object):
 
            <base>/foo/bar.h -> <dest>/foo/bar.h
         """
-        self._add_entry(mozpath.join(base, pattern, dest),
+        self._add_entry(mozpath.join(dest, pattern),
             (self.PATTERN_SYMLINK, base, pattern, dest))
 
     def add_pattern_copy(self, base, pattern, dest):
@@ -297,7 +308,7 @@ class InstallManifest(object):
 
         See ``add_pattern_symlink()`` for usage.
         """
-        self._add_entry(mozpath.join(base, pattern, dest),
+        self._add_entry(mozpath.join(dest, pattern),
             (self.PATTERN_COPY, base, pattern, dest))
 
     def add_preprocess(self, source, dest, deps, marker='#', defines={},
