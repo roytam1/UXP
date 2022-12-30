@@ -503,7 +503,7 @@ public:
 
     // If the surface was not a placeholder, tell its image that we discarded it.
     if (!aSurface->IsPlaceholder()) {
-      static_cast<Image*>(imageKey)->OnSurfaceDiscarded();
+      static_cast<Image*>(imageKey)->OnSurfaceDiscarded(aSurface->GetSurfaceKey());
     }
 
     StopTracking(aSurface, aAutoLock);

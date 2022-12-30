@@ -4223,6 +4223,10 @@ pref("image.layerize.always", false);
 // compressed data.
 pref("image.mem.discardable", true);
 
+// Discards inactive image frames of _animated_ images and re-decodes them on
+// demand from compressed data. Has no effect if image.mem.discardable is false.
+pref("image.mem.animated.discardable", true);
+
 // Allows image locking of decoded image data in content processes.
 pref("image.mem.allow_locking_in_content_processes", true);
 

@@ -11,6 +11,7 @@
 #include "LookupResult.h"
 #include "MainThreadUtils.h"
 #include "RasterImage.h"
+#include "gfxPrefs.h"
 
 #include "pixman.h"
 
@@ -25,9 +26,80 @@ namespace image {
 ///////////////////////////////////////////////////////////////////////////////
 
 void
-AnimationState::SetDoneDecoding(bool aDone)
+AnimationState::UpdateState(bool aAnimationFinished,
+                            RasterImage *aImage,
+                            const gfx::IntSize& aSize)
 {
-  mDoneDecoding = aDone;
+  LookupResult result =
+    SurfaceCache::Lookup(ImageKey(aImage),
+                         RasterSurfaceKey(aSize,
+                                          DefaultSurfaceFlags(),
+                                          PlaybackType::eAnimated));
+
+  UpdateStateInternal(result, aAnimationFinished);
+}
+
+void
+AnimationState::UpdateStateInternal(LookupResult& aResult,
+                                    bool aAnimationFinished)
+{
+  // Update mDiscarded and mIsCurrentlyDecoded.
+  if (aResult.Type() == MatchType::NOT_FOUND) {
+    // no frames, we've either been discarded, or never been decoded before.
+    mDiscarded = mHasBeenDecoded;
+    mIsCurrentlyDecoded = false;
+  } else if (aResult.Type() == MatchType::PENDING) {
+    // no frames yet, but a decoder is or will be working on it.
+    mDiscarded = false;
+    mIsCurrentlyDecoded = false;
+  } else {
+    MOZ_ASSERT(aResult.Type() == MatchType::EXACT);
+    mDiscarded = false;
+
+    // If mHasBeenDecoded is true then we know the true total frame count and
+    // we can use it to determine if we have all the frames now so we know if
+    // we are currently fully decoded.
+    // If mHasBeenDecoded is false then we'll get another UpdateState call
+    // when the decode finishes.
+    if (mHasBeenDecoded) {
+      Maybe<uint32_t> frameCount = FrameCount();
+      MOZ_ASSERT(frameCount.isSome());
+      aResult.Surface().Seek(*frameCount - 1);
+      if (aResult.Surface() && aResult.Surface()->IsFinished()) {
+        mIsCurrentlyDecoded = true;
+      } else {
+        mIsCurrentlyDecoded = false;
+      }
+    }
+  }
+
+  // Update the value of mCompositedFrameInvalid.
+  if (mIsCurrentlyDecoded || aAnimationFinished) {
+    // Animated images that have finished their animation (ie because it is a
+    // finite length animation) don't have RequestRefresh called on them, and so
+    // mCompositedFrameInvalid would never get cleared. We clear it here (and
+    // also in RasterImage::Decode when we create a decoder for an image that
+    // has finished animated so it can display sooner than waiting until the
+    // decode completes). We also do it if we are fully decoded. This is safe
+    // to do for images that aren't finished animating because before we paint
+    // the refresh driver will call into us to advance to the correct frame,
+    // and that will succeed because we have all the frames.
+    mCompositedFrameInvalid = false;
+  } else if (aResult.Type() == MatchType::NOT_FOUND ||
+             aResult.Type() == MatchType::PENDING) {
+    if (mHasBeenDecoded) {
+      MOZ_ASSERT(gfxPrefs::ImageMemAnimatedDiscardable());
+      mCompositedFrameInvalid = true;
+    }
+  }
+  // Otherwise don't change the value of mCompositedFrameInvalid, it will be
+  // updated by RequestRefresh.
+}
+
+void
+AnimationState::NotifyDecodeComplete()
+{
+  mHasBeenDecoded = true;
 }
 
 void
@@ -52,7 +124,7 @@ AnimationState::UpdateKnownFrameCount(uint32_t aFrameCount)
     return;
   }
 
-  MOZ_ASSERT(!mDoneDecoding, "Adding new frames after decoding is finished?");
+  MOZ_ASSERT(!mHasBeenDecoded, "Adding new frames after decoding is finished?");
   MOZ_ASSERT(aFrameCount <= mFrameCount + 1, "Skipped a frame?");
 
   mFrameCount = aFrameCount;
@@ -61,7 +133,7 @@ AnimationState::UpdateKnownFrameCount(uint32_t aFrameCount)
 Maybe<uint32_t>
 AnimationState::FrameCount() const
 {
-  return mDoneDecoding ? Some(mFrameCount) : Nothing();
+  return mHasBeenDecoded ? Some(mFrameCount) : Nothing();
 }
 
 void
@@ -98,7 +170,7 @@ AnimationState::LoopLength() const
     return FrameTimeout::Forever();
   }
 
-  MOZ_ASSERT(mDoneDecoding, "We know the loop length but decoding isn't done?");
+  MOZ_ASSERT(mHasBeenDecoded, "We know the loop length but decoding isn't done?");
 
   // If we're not looping, a single loop time has no meaning.
   if (mAnimationMode != imgIContainer::kNormalAnimMode) {
@@ -113,32 +185,41 @@ AnimationState::LoopLength() const
 // FrameAnimator implementation.
 ///////////////////////////////////////////////////////////////////////////////
 
-TimeStamp
-FrameAnimator::GetCurrentImgFrameEndTime(AnimationState& aState) const
+Maybe<TimeStamp>
+FrameAnimator::GetCurrentImgFrameEndTime(AnimationState& aState,
+                                         DrawableSurface& aFrames) const
 {
   TimeStamp currentFrameTime = aState.mCurrentAnimationFrameTime;
-  FrameTimeout timeout = GetTimeoutForFrame(aState.mCurrentAnimationFrameIndex);
+  Maybe<FrameTimeout> timeout =
+    GetTimeoutForFrame(aState, aFrames, aState.mCurrentAnimationFrameIndex);
 
-  if (timeout == FrameTimeout::Forever()) {
+  if (timeout.isNothing()) {
+    MOZ_ASSERT(aState.GetHasBeenDecoded() && !aState.GetIsCurrentlyDecoded());
+    return Nothing();
+  }
+
+  if (*timeout == FrameTimeout::Forever()) {
     // We need to return a sentinel value in this case, because our logic
     // doesn't work correctly if we have an infinitely long timeout. We use one
     // year in the future as the sentinel because it works with the loop in
     // RequestRefresh() below.
     // XXX(seth): It'd be preferable to make our logic work correctly with
     // infinitely long timeouts.
-    return TimeStamp::NowLoRes() +
-           TimeDuration::FromMilliseconds(31536000.0);
+    return Some(TimeStamp::NowLoRes() +
+                TimeDuration::FromMilliseconds(31536000.0));
   }
 
   TimeDuration durationOfTimeout =
-    TimeDuration::FromMilliseconds(double(timeout.AsMilliseconds()));
+    TimeDuration::FromMilliseconds(double(timeout->AsMilliseconds()));
   TimeStamp currentFrameEndTime = currentFrameTime + durationOfTimeout;
 
-  return currentFrameEndTime;
+  return Some(currentFrameEndTime);
 }
 
 RefreshResult
-FrameAnimator::AdvanceFrame(AnimationState& aState, TimeStamp aTime)
+FrameAnimator::AdvanceFrame(AnimationState& aState,
+                            DrawableSurface& aFrames,
+                            TimeStamp aTime)
 {
   NS_ASSERTION(aTime <= TimeStamp::Now(),
                "Given time appears to be in the future");
@@ -198,7 +279,7 @@ FrameAnimator::AdvanceFrame(AnimationState& aState, TimeStamp aTime)
   // the appropriate notification on the main thread. Make sure we stay in sync
   // with AnimationState.
   MOZ_ASSERT(nextFrameIndex < aState.KnownFrameCount());
-  RawAccessFrameRef nextFrame = GetRawFrame(nextFrameIndex);
+  RawAccessFrameRef nextFrame = GetRawFrame(aFrames, nextFrameIndex);
 
   // We should always check to see if we have the next frame even if we have
   // previously finished decoding. If we needed to redecode (e.g. due to a draw
@@ -210,7 +291,11 @@ FrameAnimator::AdvanceFrame(AnimationState& aState, TimeStamp aTime)
     return ret;
   }
 
-  if (GetTimeoutForFrame(nextFrameIndex) == FrameTimeout::Forever()) {
+  Maybe<FrameTimeout> nextFrameTimeout = GetTimeoutForFrame(aState, aFrames, nextFrameIndex);
+  // GetTimeoutForFrame can only return none if frame doesn't exist,
+  // but we just got it above.
+  MOZ_ASSERT(nextFrameTimeout.isSome());
+  if (*nextFrameTimeout == FrameTimeout::Forever()) {
     ret.mAnimationFinished = true;
   }
 
@@ -220,11 +305,13 @@ FrameAnimator::AdvanceFrame(AnimationState& aState, TimeStamp aTime)
     MOZ_ASSERT(nextFrameIndex == currentFrameIndex + 1);
 
     // Change frame
-    if (!DoBlend(&ret.mDirtyRect, currentFrameIndex, nextFrameIndex)) {
+    if (!DoBlend(aFrames, &ret.mDirtyRect, currentFrameIndex, nextFrameIndex)) {
       // something went wrong, move on to next
       NS_WARNING("FrameAnimator::AdvanceFrame(): Compositing of frame failed");
       nextFrame->SetCompositingFailed(true);
-      aState.mCurrentAnimationFrameTime = GetCurrentImgFrameEndTime(aState);
+      Maybe<TimeStamp> currentFrameEndTime = GetCurrentImgFrameEndTime(aState, aFrames);
+      MOZ_ASSERT(currentFrameEndTime.isSome());
+      aState.mCurrentAnimationFrameTime = *currentFrameEndTime;
       aState.mCurrentAnimationFrameIndex = nextFrameIndex;
 
       return ret;
@@ -233,7 +320,9 @@ FrameAnimator::AdvanceFrame(AnimationState& aState, TimeStamp aTime)
     nextFrame->SetCompositingFailed(false);
   }
 
-  aState.mCurrentAnimationFrameTime = GetCurrentImgFrameEndTime(aState);
+  Maybe<TimeStamp> currentFrameEndTime = GetCurrentImgFrameEndTime(aState, aFrames);
+  MOZ_ASSERT(currentFrameEndTime.isSome());
+  aState.mCurrentAnimationFrameTime = *currentFrameEndTime;
 
   // If we can get closer to the current time by a multiple of the image's loop
   // time, we should. We can only do this if we're done decoding; otherwise, we
@@ -262,41 +351,88 @@ FrameAnimator::AdvanceFrame(AnimationState& aState, TimeStamp aTime)
 }
 
 RefreshResult
-FrameAnimator::RequestRefresh(AnimationState& aState, const TimeStamp& aTime)
+FrameAnimator::RequestRefresh(AnimationState& aState,
+                              const TimeStamp& aTime,
+                              bool aAnimationFinished)
 {
-  // only advance the frame if the current time is greater than or
-  // equal to the current frame's end time.
-  TimeStamp currentFrameEndTime = GetCurrentImgFrameEndTime(aState);
-
   // By default, an empty RefreshResult.
   RefreshResult ret;
 
-  while (currentFrameEndTime <= aTime) {
-    TimeStamp oldFrameEndTime = currentFrameEndTime;
+  if (aState.IsDiscarded()) {
+    return ret;
+  }
 
-    RefreshResult frameRes = AdvanceFrame(aState, aTime);
+  // Get the animation frames once now, and pass them down to callees because
+  // the surface could be discarded at anytime on a different thread. This is
+  // must easier to reason about then trying to write code that is safe to
+  // having the surface disappear at anytime.
+  LookupResult result =
+    SurfaceCache::Lookup(ImageKey(mImage),
+                         RasterSurfaceKey(mSize,
+                                          DefaultSurfaceFlags(),
+                                          PlaybackType::eAnimated));
+
+  aState.UpdateStateInternal(result, aAnimationFinished);
+  if (aState.IsDiscarded() || !result) {
+    return ret;
+  }
+
+  // only advance the frame if the current time is greater than or
+  // equal to the current frame's end time.
+  Maybe<TimeStamp> currentFrameEndTime =
+    GetCurrentImgFrameEndTime(aState, result.Surface());
+  if (currentFrameEndTime.isNothing()) {
+    MOZ_ASSERT(gfxPrefs::ImageMemAnimatedDiscardable());
+    MOZ_ASSERT(aState.GetHasBeenDecoded() && !aState.GetIsCurrentlyDecoded());
+    MOZ_ASSERT(aState.mCompositedFrameInvalid);
+    // Nothing we can do but wait for our previous current frame to be decoded
+    // again so we can determine what to do next.
+    return ret;
+  }
+
+  while (*currentFrameEndTime <= aTime) {
+    TimeStamp oldFrameEndTime = *currentFrameEndTime;
+
+    RefreshResult frameRes = AdvanceFrame(aState, result.Surface(), aTime);
 
     // Accumulate our result for returning to callers.
     ret.Accumulate(frameRes);
 
-    currentFrameEndTime = GetCurrentImgFrameEndTime(aState);
+    currentFrameEndTime = GetCurrentImgFrameEndTime(aState, result.Surface());
+    // AdvanceFrame can't advance to a frame that doesn't exist yet.
+    MOZ_ASSERT(currentFrameEndTime.isSome());
 
     // If we didn't advance a frame, and our frame end time didn't change,
     // then we need to break out of this loop & wait for the frame(s)
     // to finish downloading.
-    if (!frameRes.mFrameAdvanced && (currentFrameEndTime == oldFrameEndTime)) {
+    if (!frameRes.mFrameAdvanced && (*currentFrameEndTime == oldFrameEndTime)) {
       break;
     }
   }
+
+  // Advanced to the correct frame, the composited frame is now valid to be drawn.
+  if (*currentFrameEndTime > aTime) {
+    aState.mCompositedFrameInvalid = false;
+  }
+
+  MOZ_ASSERT(!aState.mIsCurrentlyDecoded || !aState.mCompositedFrameInvalid);
 
   return ret;
 }
 
 LookupResult
-FrameAnimator::GetCompositedFrame(uint32_t aFrameNum)
+FrameAnimator::GetCompositedFrame(AnimationState& aState)
 {
+  if (aState.mCompositedFrameInvalid) {
+    MOZ_ASSERT(gfxPrefs::ImageMemAnimatedDiscardable());
+    MOZ_ASSERT(aState.GetHasBeenDecoded());
+    MOZ_ASSERT(!aState.GetIsCurrentlyDecoded());
+    return LookupResult(MatchType::NOT_FOUND);
+  }
+
   // If we have a composited version of this frame, return that.
-  if (mLastCompositedFrameIndex == int32_t(aFrameNum)) {
+  if (mLastCompositedFrameIndex >= 0 &&
+      (uint32_t(mLastCompositedFrameIndex) == aState.mCurrentAnimationFrameIndex)) {
     return LookupResult(DrawableSurface(mCompositingFrame->DrawableRef()),
                         MatchType::EXACT);
   }
@@ -314,7 +450,7 @@ FrameAnimator::GetCompositedFrame(uint32_t aFrameNum)
 
   // Seek to the appropriate frame. If seeking fails, it means that we couldn't
   // get the frame we're looking for; treat this as if the lookup failed.
-  if (NS_FAILED(result.Surface().Seek(aFrameNum))) {
+  if (NS_FAILED(result.Surface().Seek(aState.mCurrentAnimationFrameIndex))) {
     return LookupResult(MatchType::NOT_FOUND);
   }
 
@@ -324,17 +460,19 @@ FrameAnimator::GetCompositedFrame(uint32_t aFrameNum)
   return result;
 }
 
-FrameTimeout
-FrameAnimator::GetTimeoutForFrame(uint32_t aFrameNum) const
+Maybe<FrameTimeout>
+FrameAnimator::GetTimeoutForFrame(AnimationState& aState,
+                                  DrawableSurface& aFrames,
+                                  uint32_t aFrameNum) const
 {
-  RawAccessFrameRef frame = GetRawFrame(aFrameNum);
+  RawAccessFrameRef frame = GetRawFrame(aFrames, aFrameNum);
   if (frame) {
     AnimationData data = frame->GetAnimationData();
-    return data.mTimeout;
+    return Some(data.mTimeout);
   }
 
-  NS_WARNING("No frame; called GetTimeoutForFrame too early?");
-  return FrameTimeout::FromRawMilliseconds(100);
+  MOZ_ASSERT(aState.mHasBeenDecoded && !aState.mIsCurrentlyDecoded);
+  return Nothing();
 }
 
 static void
@@ -382,37 +520,29 @@ FrameAnimator::CollectSizeOfCompositingSurfaces(
 }
 
 RawAccessFrameRef
-FrameAnimator::GetRawFrame(uint32_t aFrameNum) const
+FrameAnimator::GetRawFrame(DrawableSurface& aFrames, uint32_t aFrameNum) const
 {
-  LookupResult result =
-    SurfaceCache::Lookup(ImageKey(mImage),
-                         RasterSurfaceKey(mSize,
-                                          DefaultSurfaceFlags(),
-                                          PlaybackType::eAnimated));
-  if (!result) {
-    return RawAccessFrameRef();
-  }
-
   // Seek to the frame we want. If seeking fails, it means we couldn't get the
   // frame we're looking for, so we bail here to avoid returning the wrong frame
   // to the caller.
-  if (NS_FAILED(result.Surface().Seek(aFrameNum))) {
+  if (NS_FAILED(aFrames.Seek(aFrameNum))) {
     return RawAccessFrameRef();  // Not available yet.
   }
 
-  return result.Surface()->RawAccessRef();
+  return aFrames->RawAccessRef();
 }
 
 //******************************************************************************
 // DoBlend gets called when the timer for animation get fired and we have to
 // update the composited frame of the animation.
 bool
-FrameAnimator::DoBlend(IntRect* aDirtyRect,
+FrameAnimator::DoBlend(DrawableSurface& aFrames,
+                       IntRect* aDirtyRect,
                        uint32_t aPrevFrameIndex,
                        uint32_t aNextFrameIndex)
 {
-  RawAccessFrameRef prevFrame = GetRawFrame(aPrevFrameIndex);
-  RawAccessFrameRef nextFrame = GetRawFrame(aNextFrameIndex);
+  RawAccessFrameRef prevFrame = GetRawFrame(aFrames, aPrevFrameIndex);
+  RawAccessFrameRef nextFrame = GetRawFrame(aFrames, aNextFrameIndex);
 
   MOZ_ASSERT(prevFrame && nextFrame, "Should have frames here");
 
