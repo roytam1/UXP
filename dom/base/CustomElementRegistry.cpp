@@ -15,6 +15,7 @@
 #include "nsContentUtils.h"
 #include "nsHTMLTags.h"
 #include "jsapi.h"
+#include "ShadowRoot.h"
 
 namespace mozilla {
 namespace dom {

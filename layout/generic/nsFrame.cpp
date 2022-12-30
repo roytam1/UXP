@@ -9033,6 +9033,13 @@ nsFrame::CorrectStyleParentFrame(nsIFrame* aProspectiveParent,
         parent = sibling;
       }
     }
+
+    // Ensure ::first-letter inherits from ::first-line even when floated, see
+    // Issue #2063 / Mozilla bug 13610.
+    if (parent->GetType() == nsGkAtoms::lineFrame &&
+        parent == parent->FirstInFlow()) {
+      return parent;
+    }
       
     nsIAtom* parentPseudo = parent->StyleContext()->GetPseudo();
     if (!parentPseudo ||

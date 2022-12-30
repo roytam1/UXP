@@ -580,9 +580,10 @@ nsInlineFrame::ReflowFrames(nsPresContext* aPresContext,
   nscoord availableISize = aReflowInput.AvailableISize();
   NS_ASSERTION(availableISize != NS_UNCONSTRAINEDSIZE,
                "should no longer use available widths");
-  // Subtract off inline axis border+padding from availableISize
+  // Subtract off inline axis border+padding from availableISize;
+  // we don't subtract the end border+padding as we don't yet know whether
+  // the end of the element will occur on the same line.
   availableISize -= startEdge;
-  availableISize -= framePadding.IEnd(frameWM);
   lineLayout->BeginSpan(this, &aReflowInput, startEdge,
                         startEdge + availableISize, &mBaseline);
 
