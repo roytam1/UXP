@@ -3144,10 +3144,10 @@ exports.CSS_PROPERTIES = {
       "mix-blend-mode",
       "object-fit",
       "object-position",
-      "offset-block-end",
-      "offset-block-start",
-      "offset-inline-end",
-      "offset-inline-start",
+      "inset-block-end",
+      "inset-block-start",
+      "inset-inline-end",
+      "inset-inline-start",
       "opacity",
       "order",
       "-moz-orient",
@@ -6913,6 +6913,78 @@ exports.CSS_PROPERTIES = {
       "unset"
     ]
   },
+  "inset-block-end": {
+    "isInherited": false,
+    "subproperties": [
+      "inset-block-end"
+    ],
+    "supports": [
+      6,
+      8
+    ],
+    "values": [
+      "-moz-calc",
+      "auto",
+      "calc",
+      "inherit",
+      "initial",
+      "unset"
+    ]
+  },
+  "inset-block-start": {
+    "isInherited": false,
+    "subproperties": [
+      "inset-block-start"
+    ],
+    "supports": [
+      6,
+      8
+    ],
+    "values": [
+      "-moz-calc",
+      "auto",
+      "calc",
+      "inherit",
+      "initial",
+      "unset"
+    ]
+  },
+  "inset-inline-end": {
+    "isInherited": false,
+    "subproperties": [
+      "inset-inline-end"
+    ],
+    "supports": [
+      6,
+      8
+    ],
+    "values": [
+      "-moz-calc",
+      "auto",
+      "calc",
+      "inherit",
+      "initial",
+      "unset"
+    ]
+  },
+  "inset-inline-start": {
+    "isInherited": false,
+    "subproperties": [
+      "inset-inline-start"
+    ],
+    "supports": [
+      6,
+      8
+    ],
+    "values": [
+      "-moz-calc",
+      "auto",
+      "calc",
+      "inherit",
+      "initial",
+      "unset"
+    ]
+  },
   "isolation": {
     "isInherited": false,
     "subproperties": [
@@ -7852,7 +7924,7 @@ exports.CSS_PROPERTIES = {
   "offset-block-end": {
     "isInherited": false,
     "subproperties": [
-      "offset-block-end"
+      "inset-block-end"
     ],
     "supports": [
       6,
@@ -7870,7 +7942,7 @@ exports.CSS_PROPERTIES = {
   "offset-block-start": {
     "isInherited": false,
     "subproperties": [
-      "offset-block-start"
+      "inset-block-start"
     ],
     "supports": [
       6,
@@ -7888,7 +7960,7 @@ exports.CSS_PROPERTIES = {
   "offset-inline-end": {
     "isInherited": false,
     "subproperties": [
-      "offset-inline-end"
+      "inset-inline-end"
     ],
     "supports": [
       6,
@@ -7906,7 +7978,7 @@ exports.CSS_PROPERTIES = {
   "offset-inline-start": {
     "isInherited": false,
     "subproperties": [
-      "offset-inline-start"
+      "inset-inline-start"
     ],
     "supports": [
       6,
