@@ -187,6 +187,12 @@ public:
   /// @return a count of the bytes in all chunks we've advanced through.
   size_t ByteCount() const { return mByteCount; }
 
+  /// @return the source buffer which owns the iterator.
+  SourceBuffer* Owner() const {
+    MOZ_ASSERT(mOwner);
+    return mOwner;
+  }
+
 private:
   friend class SourceBuffer;
 

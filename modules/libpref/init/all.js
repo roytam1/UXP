@@ -4187,6 +4187,15 @@ pref("toolkit.zoomManager.zoomValues", ".3,.5,.67,.8,.9,1,1.1,1.2,1.33,1.5,1.7,2
 // Image-related prefs
 //
 
+// The maximum size (in kB) that the aggregate frames of an animation can use
+// before it starts to discard already displayed frames and redecode them as
+// necessary.
+pref("image.animated.decode-on-demand.threshold-kb", 262144);
+
+// The minimum number of frames we want to have buffered ahead of an
+// animation's currently displayed frame.
+pref("image.animated.decode-on-demand.batch-size", 6);
+
 // The maximum size, in bytes, of the decoded images we cache
 pref("image.cache.size", 5242880);
 
