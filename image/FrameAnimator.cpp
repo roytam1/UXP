@@ -151,6 +151,21 @@ AnimationState::SetAnimationFrameTime(const TimeStamp& aTime)
   mCurrentAnimationFrameTime = aTime;
 }
 
+bool
+AnimationState::MaybeAdvanceAnimationFrameTime(const TimeStamp& aTime)
+{
+  if (!gfxPrefs::ImageAnimatedResumeFromLastDisplayed() ||
+      mCurrentAnimationFrameTime >= aTime) {
+    return false;
+  }
+
+  // We are configured to stop an animation when it is out of view, and restart
+  // it from the same point when it comes back into view. The same applies if it
+  // was discarded while out of view.
+  mCurrentAnimationFrameTime = aTime;
+  return true;
+}
+
 uint32_t
 AnimationState::GetCurrentAnimationFrameIndex() const
 {
@@ -312,6 +327,7 @@ FrameAnimator::AdvanceFrame(AnimationState& aState,
       MOZ_ASSERT(currentFrameEndTime.isSome());
       aState.mCurrentAnimationFrameTime = *currentFrameEndTime;
       aState.mCurrentAnimationFrameIndex = nextFrameIndex;
+      aState.mCompositedFrameRequested = false;
       aFrames.Advance(nextFrameIndex);
 
       return ret;
@@ -343,6 +359,7 @@ FrameAnimator::AdvanceFrame(AnimationState& aState,
 
   // Set currentAnimationFrameIndex at the last possible moment
   aState.mCurrentAnimationFrameIndex = nextFrameIndex;
+  aState.mCompositedFrameRequested = false;
   aFrames.Advance(nextFrameIndex);
 
   // If we're here, we successfully advanced the frame.
@@ -379,6 +396,7 @@ FrameAnimator::RequestRefresh(AnimationState& aState,
   RefreshResult ret;
 
   if (aState.IsDiscarded()) {
+    aState.MaybeAdvanceAnimationFrameTime(aTime);
     return ret;
   }
 
@@ -394,6 +412,10 @@ FrameAnimator::RequestRefresh(AnimationState& aState,
 
   aState.UpdateStateInternal(result, aAnimationFinished);
   if (aState.IsDiscarded() || !result) {
+    aState.MaybeAdvanceAnimationFrameTime(aTime);
+    if (!ret.mDirtyRect.IsEmpty()) {
+      ret.mFrameAdvanced = true;
+    }
     return ret;
   }
 
@@ -407,6 +429,15 @@ FrameAnimator::RequestRefresh(AnimationState& aState,
     MOZ_ASSERT(aState.mCompositedFrameInvalid);
     // Nothing we can do but wait for our previous current frame to be decoded
     // again so we can determine what to do next.
+    aState.MaybeAdvanceAnimationFrameTime(aTime);
+    return ret;
+  }
+
+  // If nothing has accessed the composited frame since the last time we
+  // advanced, then there is no point in continuing to advance the animation.
+  // This has the effect of freezing the animation while not in view.
+  if (!aState.mCompositedFrameRequested &&
+      aState.MaybeAdvanceAnimationFrameTime(aTime)) {
     return ret;
   }
 
@@ -443,6 +474,8 @@ FrameAnimator::RequestRefresh(AnimationState& aState,
 LookupResult
 FrameAnimator::GetCompositedFrame(AnimationState& aState)
 {
+  aState.mCompositedFrameRequested = true;
+
   if (aState.mCompositedFrameInvalid) {
     MOZ_ASSERT(gfxPrefs::ImageMemAnimatedDiscardable());
     MOZ_ASSERT(aState.GetHasBeenDecoded());
