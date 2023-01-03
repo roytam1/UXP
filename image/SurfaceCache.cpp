@@ -835,6 +835,32 @@ public:
     }
   }
 
+  void ReleaseImageOnMainThread(already_AddRefed<image::Image>&& aImage,
+                                const StaticMutexAutoLock& aAutoLock) {
+    RefPtr<image::Image> image = aImage;
+    if (!image) {
+      return;
+    }
+
+    bool needsDispatch = mReleasingImagesOnMainThread.IsEmpty();
+    mReleasingImagesOnMainThread.AppendElement(image);
+
+    if (!needsDispatch) {
+      // There is already a ongoing task for ClearReleasingImages().
+      return;
+    }
+
+    NS_DispatchToMainThread(NS_NewRunnableFunction([]() -> void {
+      SurfaceCache::ClearReleasingImages();
+    }));
+  }
+
+  void TakeReleasingImages(nsTArray<RefPtr<image::Image>>& aImage,
+                           const StaticMutexAutoLock& aAutoLock) {
+    MOZ_ASSERT(NS_IsMainThread());
+    aImage.SwapElements(mReleasingImagesOnMainThread);
+  }
+
 private:
   already_AddRefed<ImageSurfaceCache> GetImageCache(const ImageKey aImageKey)
   {
@@ -942,7 +968,8 @@ private:
   nsRefPtrHashtable<nsPtrHashKey<Image>,
     ImageSurfaceCache> mImageCaches;
   SurfaceTracker                          mExpirationTracker;
-  RefPtr<MemoryPressureObserver>        mMemoryPressureObserver;
+  RefPtr<MemoryPressureObserver>          mMemoryPressureObserver;
+  nsTArray<RefPtr<image::Image>>          mReleasingImagesOnMainThread;
   const uint32_t                          mDiscardFactor;
   const Cost                              mMaxCost;
   Cost                                    mAvailableCost;
@@ -1158,6 +1185,35 @@ SurfaceCache::MaximumCapacity()
   }
 
   return sInstance->MaximumCapacity();
+}
+
+/* static */
+void SurfaceCache::ReleaseImageOnMainThread(
+    already_AddRefed<image::Image> aImage, bool aAlwaysProxy) {
+  if (NS_IsMainThread() && !aAlwaysProxy) {
+    RefPtr<image::Image> image = std::move(aImage);
+    return;
+  }
+
+  StaticMutexAutoLock lock(sInstanceMutex);
+  if (sInstance) {
+    sInstance->ReleaseImageOnMainThread(std::move(aImage), lock);
+  } else {
+    NS_ReleaseOnMainThread(std::move(aImage), /* aAlwaysProxy */ true);
+  }
+}
+
+/* static */
+void SurfaceCache::ClearReleasingImages() {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  nsTArray<RefPtr<image::Image>> images;
+  {
+    StaticMutexAutoLock lock(sInstanceMutex);
+    if (sInstance) {
+      sInstance->TakeReleasingImages(images, lock);
+    }
+  }
 }
 
 } // namespace image

@@ -434,8 +434,7 @@ RasterImage::OnSurfaceDiscarded(const SurfaceKey& aSurfaceKey)
     mAnimationState && aSurfaceKey.Playback() == PlaybackType::eAnimated;
 
   RefPtr<RasterImage> image = this;
-  NS_DispatchToMainThread(NS_NewRunnableFunction(
-                            [=]() -> void {
+  NS_DispatchToMainThread(NS_NewRunnableFunction([=]() -> void {
     image->OnSurfaceDiscardedInternal(animatedFramesDiscarded);
   }));
 }
