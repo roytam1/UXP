@@ -58,10 +58,17 @@ public:
   static Type GetPseudoType(nsIAtom* aAtom, EnabledState aEnabledState);
   static bool HasStringArg(Type aType);
   static bool HasNthPairArg(Type aType);
+  static bool HasForgivingSelectorListArg(Type aType) {
+    return aType == Type::is ||
+     aType == Type::matches ||
+     aType == Type::any ||
+     aType == Type::where;
+  }
   static bool HasSelectorListArg(Type aType) {
-    return aType == Type::any ||
-	   aType == Type::host ||
-	   aType == Type::hostContext;
+    return HasForgivingSelectorListArg(aType) ||
+     aType == Type::mozAny ||
+     aType == Type::host ||
+     aType == Type::hostContext;
   }
   static bool HasOptionalSelectorListArg(Type aType) {
     return aType == Type::host;

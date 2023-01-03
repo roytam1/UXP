@@ -1643,7 +1643,8 @@ StateSelectorMatches(Element* aElement,
 static bool AnySelectorInArgListMatches(Element* aElement,
                                      nsPseudoClassList* aList,
                                      NodeMatchContext& aNodeMatchContext,
-                                     TreeMatchContext& aTreeMatchContext);
+                                     TreeMatchContext& aTreeMatchContext,
+                                     bool aIsForgiving = false);
 
 static bool
 StateSelectorMatches(Element* aElement,
@@ -1907,7 +1908,21 @@ static bool SelectorMatches(Element* aElement,
         }
         break;
 
+      case CSSPseudoClassType::is:
+      case CSSPseudoClassType::matches:
       case CSSPseudoClassType::any:
+      case CSSPseudoClassType::where:
+        {
+          if (!AnySelectorInArgListMatches(aElement, pseudoClass,
+                                           aNodeMatchContext,
+                                           aTreeMatchContext,
+                                           true)) {
+            return false;
+          }
+        }
+        break;
+
+      case CSSPseudoClassType::mozAny:
         {
           if (!AnySelectorInArgListMatches(aElement, pseudoClass,
                                            aNodeMatchContext,
@@ -2376,11 +2391,17 @@ static bool SelectorMatches(Element* aElement,
 static bool AnySelectorInArgListMatches(Element* aElement,
                                      nsPseudoClassList* aList,
                                      NodeMatchContext& aNodeMatchContext,
-                                     TreeMatchContext& aTreeMatchContext)
+                                     TreeMatchContext& aTreeMatchContext,
+                                     bool aIsForgiving)
 {
   nsCSSSelectorList *l;
   for (l = aList->u.mSelectors; l; l = l->mNext) {
     nsCSSSelector *s = l->mSelectors;
+    if (s == nullptr) {
+      MOZ_ASSERT(aIsForgiving,
+                 "unexpected empty selector in unforgiving selector list");
+      return false;
+    }
     MOZ_ASSERT(!s->mNext && !s->IsPseudoElement(),
            "parser failed");
     if (SelectorMatches(
@@ -3517,12 +3538,10 @@ AddSelector(RuleCascadeData* aCascade,
       }
     }
 
-    // Recur through any :-moz-any or :host-context selectors
+    // Recur through any pseudo-class that has a selector list argument.
     for (nsPseudoClassList* pseudoClass = negation->mPseudoClassList;
          pseudoClass; pseudoClass = pseudoClass->mNext) {
-      if (pseudoClass->mType == CSSPseudoClassType::any ||
-          pseudoClass->mType == CSSPseudoClassType::host ||
-          pseudoClass->mType == CSSPseudoClassType::hostContext) {
+      if (nsCSSPseudoClasses::HasSelectorListArg(pseudoClass->mType)) {
         for (nsCSSSelectorList *l = pseudoClass->u.mSelectors; l; l = l->mNext) {
           nsCSSSelector *s = l->mSelectors;
           if (!AddSelector(aCascade, aSelectorInTopLevel, s,

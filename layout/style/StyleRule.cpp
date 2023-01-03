@@ -149,7 +149,7 @@ nsPseudoClassList::nsPseudoClassList(CSSPseudoClassType aType,
     mNext(nullptr)
 {
   NS_ASSERTION(nsCSSPseudoClasses::HasSelectorListArg(aType) ||
-	       nsCSSPseudoClasses::HasOptionalSelectorListArg(aType),
+               nsCSSPseudoClasses::HasOptionalSelectorListArg(aType),
                "unexpected pseudo-class");
   NS_ASSERTION(aSelectorList, "selector list expected");
   MOZ_COUNT_CTOR(nsPseudoClassList);
