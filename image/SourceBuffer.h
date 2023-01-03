@@ -358,7 +358,7 @@ private:
   // Chunk type and chunk-related methods.
   //////////////////////////////////////////////////////////////////////////////
 
-  class Chunk
+  class Chunk final
   {
   public:
     explicit Chunk(size_t aCapacity)
@@ -366,13 +366,18 @@ private:
       , mLength(0)
     {
       MOZ_ASSERT(aCapacity > 0, "Creating zero-capacity chunk");
-      mData.reset(new (fallible) char[mCapacity]);
+      mData = static_cast<char*>(malloc(mCapacity));
+    }
+
+    ~Chunk()
+    {
+      free(mData);
     }
 
     Chunk(Chunk&& aOther)
       : mCapacity(aOther.mCapacity)
       , mLength(aOther.mLength)
-      , mData(Move(aOther.mData))
+      , mData(aOther.mData)
     {
       aOther.mCapacity = aOther.mLength = 0;
       aOther.mData = nullptr;
@@ -380,9 +385,10 @@ private:
 
     Chunk& operator=(Chunk&& aOther)
     {
+      free(mData);
       mCapacity = aOther.mCapacity;
       mLength = aOther.mLength;
-      mData = Move(aOther.mData);
+      mData = aOther.mData;
       aOther.mCapacity = aOther.mLength = 0;
       aOther.mData = nullptr;
       return *this;
@@ -395,7 +401,7 @@ private:
     char* Data() const
     {
       MOZ_ASSERT(mData, "Allocation failed but nobody checked for it");
-      return mData.get();
+      return mData;
     }
 
     void AddLength(size_t aAdditionalLength)
@@ -404,13 +410,26 @@ private:
       mLength += aAdditionalLength;
     }
 
+    bool SetCapacity(size_t aCapacity)
+    {
+      MOZ_ASSERT(mData, "Allocation failed but nobody checked for it");
+      char* data = static_cast<char*>(realloc(mData, aCapacity));
+      if (!data) {
+        return false;
+      }
+
+      mData = data;
+      mCapacity = aCapacity;
+      return true;
+    }
+
   private:
     Chunk(const Chunk&) = delete;
     Chunk& operator=(const Chunk&) = delete;
 
     size_t mCapacity;
     size_t mLength;
-    UniquePtr<char[]> mData;
+    char* mData;
   };
 
   nsresult AppendChunk(Maybe<Chunk>&& aChunk);
@@ -454,7 +473,7 @@ private:
   mutable Mutex mMutex;
 
   /// The data in this SourceBuffer, stored as a series of Chunks.
-  FallibleTArray<Chunk> mChunks;
+  AutoTArray<Chunk, 1> mChunks;
 
   /// Consumers which are waiting to be notified when new data is available.
   nsTArray<RefPtr<IResumable>> mWaitingConsumers;
