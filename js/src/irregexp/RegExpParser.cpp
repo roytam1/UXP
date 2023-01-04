@@ -1238,7 +1238,7 @@ RegExpParser<CharT>::CreateNamedCaptureAtIndex(const CharacterVector* name,
                                              int index)
 {
   MOZ_ASSERT(0 < index && index <= captures_started_);
-  MOZ_ASSERT(name !== nullptr);
+  MOZ_ASSERT(name != nullptr);
 
   RegExpCapture* capture = GetCapture(index);
   MOZ_ASSERT(capture->name() == nullptr);
