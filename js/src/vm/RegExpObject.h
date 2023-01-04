@@ -134,8 +134,8 @@ class RegExpShared
     bool               canStringMatch;
     bool               marked_;
 
-    uint32_t            numNamedCaptures_;
-    GCPtr<PlainObject*> groupsTemplate_;
+    uint32_t              numNamedCaptures_;
+    HeapPtr<PlainObject*> groupsTemplate_;
 
     RegExpCompilation  compilationArray[4];
 
