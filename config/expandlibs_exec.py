@@ -45,6 +45,7 @@ SECTION_INSERT_BEFORE = [
   ('.text', '.fini'),
   ('.rodata', '.rodata1'),
   ('.data.rel.ro', '.dynamic'),
+  ('.kPStaticModules', '.data.rel.ro'),
   ('.data', '.data1'),
 ]
 
