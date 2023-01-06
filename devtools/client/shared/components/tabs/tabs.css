@@ -46,7 +46,7 @@
 .tabs .all-tabs-menu  {
   position: absolute;
   top: 0;
-  offset-inline-end: 0;
+  inset-inline-end: 0;
   width: 15px;
   height: 100%;
   border-inline-start: 1px solid var(--theme-splitter-color);

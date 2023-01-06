@@ -39,21 +39,6 @@ ifeq ($(OS_ARCH),SunOS)
 OS_LDFLAGS += -Wl,-z,defs
 endif
 
-# BFD ld doesn't create multiple PT_LOADs as usual when an unknown section
-# exists. Using an implicit linker script to make it fold that section in
-# .data.rel.ro makes it create multiple PT_LOADs. That implicit linker
-# script however makes gold misbehave, first because it doesn't like that
-# the linker script is given after crtbegin.o, and even past that, replaces
-# the default section rules with those from the script instead of
-# supplementing them. Which leads to a lib with a huge load of sections.
-ifneq (OpenBSD,$(OS_TARGET))
-ifneq (WINNT,$(OS_TARGET))
-ifdef LD_IS_BFD
-OS_LDFLAGS += $(topsrcdir)/toolkit/library/StaticXULComponents.ld
-endif
-endif
-endif
-
 ifdef _MSC_VER
 get_first_and_last = dumpbin -exports $1 | grep _NSModule@@ | sort -k 3 | sed -n 's/^.*?\([^@]*\)@@.*$$/\1/;1p;$$p'
 else
