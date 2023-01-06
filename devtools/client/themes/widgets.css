@@ -216,7 +216,7 @@
   content: "";
   position: absolute;
   top: 1px;
-  offset-inline-start: 0;
+  inset-inline-start: 0;
   width: 12px;
   height: 22px;
   background-repeat: no-repeat;

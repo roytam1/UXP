@@ -809,8 +809,8 @@ input[type="date"] > xul|datetimebox {
 
 dialog {
   position: absolute;
-  offset-inline-start: 0;
-  offset-inline-end: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   color: black;
   margin: auto;
   border-width: initial;
