@@ -25,7 +25,6 @@ public:
   NS_IMETHOD GetDomain(nsIURI** aDomain) override;
   NS_IMETHOD SetDomain(nsIURI* aDomain) override;
   NS_IMETHOD GetBaseDomain(nsACString& aBaseDomain) override;
-  virtual bool IsOnCSSUnprefixingWhitelist() override;
   bool IsCodebasePrincipal() const override { return true; }
   nsresult GetOriginInternal(nsACString& aOrigin) override;
 
@@ -55,7 +54,6 @@ public:
   bool mCodebaseImmutable;
   bool mDomainImmutable;
   bool mInitialized;
-  mozilla::Maybe<bool> mIsOnCSSUnprefixingWhitelist; // Lazily-computed
 
 protected:
   virtual ~nsPrincipal();
@@ -81,7 +79,6 @@ public:
   NS_IMETHOD SetDomain(nsIURI* aDomain) override;
   NS_IMETHOD GetBaseDomain(nsACString& aBaseDomain) override;
   virtual bool AddonHasPermission(const nsAString& aPerm) override;
-  virtual bool IsOnCSSUnprefixingWhitelist() override;
   virtual nsresult GetScriptLocation(nsACString &aStr) override;
   nsresult GetOriginInternal(nsACString& aOrigin) override;
 
