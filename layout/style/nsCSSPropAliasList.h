@@ -50,6 +50,22 @@ CSS_PROP_ALIAS(word-wrap,
                overflow_wrap,
                WordWrap,
                "")
+CSS_PROP_ALIAS(offset-block-start,
+               inset_block_start,
+               OffsetBlockStart,
+               "layout.css.offset-logical-properties.enabled")              
+CSS_PROP_ALIAS(offset-block-end,
+               inset_block_end,
+               OffsetBlockEnd,
+               "layout.css.offset-logical-properties.enabled")              
+CSS_PROP_ALIAS(offset-inline-start,
+               inset_inline_start,
+               OffsetInlineStart,
+               "layout.css.offset-logical-properties.enabled")              
+CSS_PROP_ALIAS(offset-inline-end,
+               inset_inline_end,
+               OffsetInlineEnd,
+               "layout.css.offset-logical-properties.enabled")              
 CSS_PROP_ALIAS(-moz-transform-origin,
                transform_origin,
                MozTransformOrigin,
