@@ -72,7 +72,7 @@ public:
   {
     // Threads have to be shut down from another thread, so we'll ask the
     // main thread to do it for us.
-    NS_DispatchToMainThread(NewRunnableMethod(aThisThread, &nsIThread::Shutdown));
+    NS_DispatchToMainThread(NewRunnableMethod(aThisThread, &nsIThread::AsyncShutdown));
   }
 
   /**
@@ -85,6 +85,12 @@ public:
     MonitorAutoLock lock(mMonitor);
     mShuttingDown = true;
     mMonitor.NotifyAll();
+  }
+
+  bool IsShuttingDown() const
+  {
+    MonitorAutoLock lock(mMonitor);
+    return mShuttingDown;
   }
 
   /// Pushes a new decode work item.
@@ -150,7 +156,7 @@ private:
   nsThreadPoolNaming mThreadNaming;
 
   // mMonitor guards the queues and mShuttingDown.
-  Monitor mMonitor;
+  mutable Monitor mMonitor;
   nsTArray<RefPtr<IDecodingTask>> mHighPriorityQueue;
   nsTArray<RefPtr<IDecodingTask>> mLowPriorityQueue;
   bool mShuttingDown;
@@ -297,6 +303,12 @@ DecodePool::Observe(nsISupports*, const char* aTopic, const char16_t*)
   }
 
   return NS_OK;
+}
+
+bool
+DecodePool::IsShuttingDown() const
+{
+  return mImpl->IsShuttingDown();
 }
 
 void

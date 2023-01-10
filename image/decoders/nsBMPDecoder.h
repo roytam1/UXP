@@ -124,6 +124,8 @@ class nsBMPDecoder : public Decoder
 public:
   ~nsBMPDecoder();
 
+  DecoderType GetType() const override { return DecoderType::BMP; }
+
   /// Obtains the internal output image buffer.
   uint32_t* GetImageData() { return reinterpret_cast<uint32_t*>(mImageData); }
 

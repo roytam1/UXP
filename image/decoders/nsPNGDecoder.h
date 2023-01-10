@@ -25,6 +25,8 @@ public:
   /// @return true if this PNG is a valid ICO resource.
   bool IsValidICO() const;
 
+  DecoderType GetType() const override { return DecoderType::PNG; }
+
 protected:
   nsresult InitInternal() override;
   LexerResult DoDecode(SourceBufferIterator& aIterator,

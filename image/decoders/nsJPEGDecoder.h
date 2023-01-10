@@ -52,6 +52,8 @@ class nsJPEGDecoder : public Decoder
 public:
   virtual ~nsJPEGDecoder();
 
+  DecoderType GetType() const override { return DecoderType::JPEG; }
+
   virtual void SetSampleSize(int aSampleSize) override
   {
     mSampleSize = aSampleSize;

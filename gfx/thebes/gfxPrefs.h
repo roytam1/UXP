@@ -429,6 +429,9 @@ private:
 #endif
   DECL_GFX_PREF(Live, "gl.require-hardware",                   RequireHardwareGL, bool, false);
 
+  DECL_GFX_PREF(Live, "image.animated.decode-on-demand.threshold-kb", ImageAnimatedDecodeOnDemandThresholdKB, uint32_t, 256*1024);
+  DECL_GFX_PREF(Live, "image.animated.decode-on-demand.batch-size", ImageAnimatedDecodeOnDemandBatchSize, uint32_t, 6);
+  DECL_GFX_PREF(Live, "image.animated.resume-from-last-displayed", ImageAnimatedResumeFromLastDisplayed, bool, false);
   DECL_GFX_PREF(Once, "image.cache.size",                      ImageCacheSize, int32_t, 5*1024*1024);
   DECL_GFX_PREF(Once, "image.cache.timeweight",                ImageCacheTimeWeight, int32_t, 500);
   DECL_GFX_PREF(Live, "image.decode-immediately.enabled",      ImageDecodeImmediatelyEnabled, bool, false);
@@ -437,6 +440,7 @@ private:
   DECL_GFX_PREF(Once, "image.layerize.always",                 ImageLayerizeAlways, bool, false);
   DECL_GFX_PREF(Once, "image.mem.decode_bytes_at_a_time",      ImageMemDecodeBytesAtATime, uint32_t, 200000);
   DECL_GFX_PREF(Live, "image.mem.discardable",                 ImageMemDiscardable, bool, false);
+  DECL_GFX_PREF(Once, "image.mem.animated.discardable",        ImageMemAnimatedDiscardable, bool, false);
   DECL_GFX_PREF(Once, "image.mem.surfacecache.discard_factor", ImageMemSurfaceCacheDiscardFactor, uint32_t, 1);
   DECL_GFX_PREF(Once, "image.mem.surfacecache.max_size_kb",    ImageMemSurfaceCacheMaxSizeKB, uint32_t, 100 * 1024);
   DECL_GFX_PREF(Once, "image.mem.surfacecache.min_expiration_ms", ImageMemSurfaceCacheMinExpirationMS, uint32_t, 60*1000);

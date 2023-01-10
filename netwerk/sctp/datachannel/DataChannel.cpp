@@ -238,7 +238,7 @@ DataChannelConnection::~DataChannelConnection()
       // Avoid spinning the event thread from here (which if we're mainthread
       // is in the event loop already)
       NS_DispatchToMainThread(WrapRunnable(nsCOMPtr<nsIThread>(mInternalIOThread),
-                                           &nsIThread::Shutdown),
+                                           &nsIThread::AsyncShutdown),
                               NS_DISPATCH_NORMAL);
     }
   } else {
