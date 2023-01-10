@@ -92,6 +92,7 @@ public:
    * @param aDecoderFlags Flags specifying the behavior of this decoder.
    * @param aSurfaceFlags Flags specifying the type of output this decoder
    *                      should produce.
+   * @param aCurrentFrame The current frame the decoder should auto advance to.
    */
   static already_AddRefed<IDecodingTask>
   CreateAnimationDecoder(DecoderType aType,
@@ -99,7 +100,17 @@ public:
                          NotNull<SourceBuffer*> aSourceBuffer,
                          const gfx::IntSize& aIntrinsicSize,
                          DecoderFlags aDecoderFlags,
-                         SurfaceFlags aSurfaceFlags);
+                         SurfaceFlags aSurfaceFlags,
+                         size_t aCurrentFrame);
+
+  /**
+   * Creates and initializes a decoder for animated images, cloned from the
+   * given decoder.
+   *
+   * @param aDecoder Decoder to clone.
+   */
+  static already_AddRefed<Decoder>
+  CloneAnimationDecoder(Decoder* aDecoder);
 
   /**
    * Creates and initializes a metadata decoder of type @aType. This decoder

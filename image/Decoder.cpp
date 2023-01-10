@@ -36,6 +36,7 @@ Decoder::Decoder(RasterImage* aImage)
   , mHaveExplicitOutputSize(false)
   , mInFrame(false)
   , mFinishedNewFrame(false)
+  , mHasFrameToTake(false)
   , mReachedTerminalState(false)
   , mDecodeDone(false)
   , mError(false)
@@ -53,7 +54,7 @@ Decoder::~Decoder()
   if (mImage && !NS_IsMainThread()) {
     // Dispatch mImage to main thread to prevent it from being destructed by the
     // decode thread.
-    NS_ReleaseOnMainThread(mImage.forget());
+    SurfaceCache::ReleaseImageOnMainThread(mImage.forget());
   }
 }
 
@@ -254,6 +255,8 @@ Decoder::AllocateFrame(const gfx::IntSize& aOutputSize,
                                         mCurrentFrame.get());
 
   if (mCurrentFrame) {
+    mHasFrameToTake = true;
+
     // Gather the raw pointers the decoders will use.
     mCurrentFrame->GetImageData(&mImageData, &mImageDataLength);
     mCurrentFrame->GetPaletteData(&mColormap, &mColormapSize);
@@ -474,6 +477,7 @@ Decoder::PostError()
     mCurrentFrame->Abort();
     mInFrame = false;
     --mFrameCount;
+    mHasFrameToTake = false;
   }
 }
 

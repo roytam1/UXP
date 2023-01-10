@@ -92,6 +92,7 @@ PageIconProtocolHandler.prototype = {
 
         try {
           channel.contentType = mime;
+          channel.contentLength = len;
           // Pass the icon data to the output stream.
           let stream = Cc["@mozilla.org/binaryoutputstream;1"]
                          .createInstance(Ci.nsIBinaryOutputStream);
