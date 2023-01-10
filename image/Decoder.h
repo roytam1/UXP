@@ -200,6 +200,11 @@ public:
     mIterator.emplace(Move(aIterator));
   }
 
+  SourceBuffer* GetSourceBuffer() const
+  {
+    return mIterator->Owner();
+  }
+
   /**
    * Should this decoder send partial invalidations?
    */
@@ -243,6 +248,12 @@ public:
 
   /// Are we in the middle of a frame right now? Used for assertions only.
   bool InFrame() const { return mInFrame; }
+
+  /// Type of decoder.
+  virtual DecoderType GetType() const
+  {
+    return DecoderType::UNKNOWN;
+  }
 
   enum DecodeStyle {
       PROGRESSIVE, // produce intermediate frames representing the partial
@@ -339,6 +350,11 @@ public:
                          : RawAccessFrameRef();
   }
 
+  bool HasFrameToTake() const { return mHasFrameToTake; }
+  void ClearHasFrameToTake() {
+    MOZ_ASSERT(mHasFrameToTake);
+    mHasFrameToTake = false;
+  }
 
 protected:
   friend class nsICODecoder;
@@ -493,6 +509,10 @@ private:
   bool mInFrame : 1;
   bool mFinishedNewFrame : 1;  // True if PostFrameStop() has been called since
                                // the last call to TakeCompleteFrameCount().
+  // Has a new frame that AnimationSurfaceProvider can take. Unfortunately this
+  // has to be separate from mFinishedNewFrame because the png decoder yields a
+  // new frame before calling PostFrameStop().
+  bool mHasFrameToTake : 1;
   bool mReachedTerminalState : 1;
   bool mDecodeDone : 1;
   bool mError : 1;

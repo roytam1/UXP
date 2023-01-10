@@ -181,7 +181,8 @@ DecoderFactory::CreateAnimationDecoder(DecoderType aType,
                                        NotNull<SourceBuffer*> aSourceBuffer,
                                        const IntSize& aIntrinsicSize,
                                        DecoderFlags aDecoderFlags,
-                                       SurfaceFlags aSurfaceFlags)
+                                       SurfaceFlags aSurfaceFlags,
+                                       size_t aCurrentFrame)
 {
   if (aType == DecoderType::UNKNOWN) {
     return nullptr;
@@ -213,7 +214,8 @@ DecoderFactory::CreateAnimationDecoder(DecoderType aType,
   NotNull<RefPtr<AnimationSurfaceProvider>> provider =
     WrapNotNull(new AnimationSurfaceProvider(aImage,
                                              surfaceKey,
-                                             WrapNotNull(decoder)));
+                                             WrapNotNull(decoder),
+                                             aCurrentFrame));
 
   // Attempt to insert the surface provider into the surface cache right away so
   // we won't trigger any more decoders with the same parameters.
@@ -224,6 +226,29 @@ DecoderFactory::CreateAnimationDecoder(DecoderType aType,
   // Return the surface provider in its IDecodingTask guise.
   RefPtr<IDecodingTask> task = provider.get();
   return task.forget();
+}
+
+/* static */ already_AddRefed<Decoder>
+DecoderFactory::CloneAnimationDecoder(Decoder* aDecoder)
+{
+  MOZ_ASSERT(aDecoder);
+  MOZ_ASSERT(aDecoder->HasAnimation());
+
+  RefPtr<Decoder> decoder = GetDecoder(aDecoder->GetType(), nullptr,
+                                       /* aIsRedecode = */ true);
+  MOZ_ASSERT(decoder, "Should have a decoder now");
+
+  // Initialize the decoder.
+  decoder->SetMetadataDecode(false);
+  decoder->SetIterator(aDecoder->GetSourceBuffer()->Iterator());
+  decoder->SetDecoderFlags(aDecoder->GetDecoderFlags());
+  decoder->SetSurfaceFlags(aDecoder->GetSurfaceFlags());
+
+  if (NS_FAILED(decoder->Init())) {
+    return nullptr;
+  }
+
+  return decoder.forget();
 }
 
 /* static */ already_AddRefed<IDecodingTask>

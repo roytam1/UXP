@@ -3758,7 +3758,11 @@ CanvasRenderingContext2D::SetFontInternal(const nsAString& aFont,
 
   nsCOMPtr<nsIPresShell> presShell = GetPresShell();
   if (!presShell) {
-    aError.Throw(NS_ERROR_FAILURE);
+    // Do not throw here. We may be in a situation where we're loading in an iframe
+    // that is sandboxed, and/or initially hidden with display:none, in which case
+    // we don't want to throw an error but silently fail.
+    // If we don't do this, JS trying to set context.font to something will abort,
+    // breaking e.g. third party serviced graphs.
     return false;
   }
 
