@@ -369,7 +369,7 @@ SOURCES += [
 ]
 
 if CONFIG['JS_POSIX_NSPR']:
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'vm/PosixNSPR.cpp',
     ]
 
@@ -386,11 +386,11 @@ if CONFIG['ENABLE_TRACE_LOGGING']:
     ]
 
 if not CONFIG['ENABLE_ION']:
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'jit/none/Trampoline-none.cpp'
     ]
 elif CONFIG['JS_CODEGEN_X86'] or CONFIG['JS_CODEGEN_X64']:
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'jit/x86-shared/Architecture-x86-shared.cpp',
         'jit/x86-shared/Assembler-x86-shared.cpp',
         'jit/x86-shared/AssemblerBuffer-x86-shared.cpp',
@@ -401,11 +401,11 @@ elif CONFIG['JS_CODEGEN_X86'] or CONFIG['JS_CODEGEN_X64']:
         'jit/x86-shared/MacroAssembler-x86-shared.cpp',
         'jit/x86-shared/MoveEmitter-x86-shared.cpp',
     ]
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'jit/x86-shared/Disassembler-x86-shared.cpp',  # using namespace js::jit::X86Encoding;
     ]
     if CONFIG['JS_CODEGEN_X64']:
-        SOURCES += [
+        UNIFIED_SOURCES += [
             'jit/x64/Assembler-x64.cpp',
             'jit/x64/Bailouts-x64.cpp',
             'jit/x64/BaselineCompiler-x64.cpp',
@@ -417,7 +417,7 @@ elif CONFIG['JS_CODEGEN_X86'] or CONFIG['JS_CODEGEN_X64']:
             'jit/x64/Trampoline-x64.cpp',
         ]
     else:
-        SOURCES += [
+        UNIFIED_SOURCES += [
             'jit/x86/Assembler-x86.cpp',
             'jit/x86/Bailouts-x86.cpp',
             'jit/x86/BaselineCompiler-x86.cpp',
@@ -429,7 +429,7 @@ elif CONFIG['JS_CODEGEN_X86'] or CONFIG['JS_CODEGEN_X64']:
             'jit/x86/Trampoline-x86.cpp',
         ]
 elif CONFIG['JS_CODEGEN_ARM']:
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'jit/arm/Architecture-arm.cpp',
         'jit/arm/Assembler-arm.cpp',
         'jit/arm/Bailouts-arm.cpp',
@@ -445,16 +445,16 @@ elif CONFIG['JS_CODEGEN_ARM']:
         'jit/arm/Trampoline-arm.cpp',
     ]
     if CONFIG['JS_SIMULATOR_ARM']:
-        SOURCES += [
+        UNIFIED_SOURCES += [
             'jit/arm/Simulator-arm.cpp'
         ]
     elif CONFIG['OS_ARCH'] == 'Darwin':
-        SOURCES += [
+        UNIFIED_SOURCES += [
             'jit/arm/llvm-compiler-rt/arm/aeabi_idivmod.S',
             'jit/arm/llvm-compiler-rt/arm/aeabi_uidivmod.S',
         ]
 elif CONFIG['JS_CODEGEN_ARM64']:
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'jit/arm64/Architecture-arm64.cpp',
         'jit/arm64/Assembler-arm64.cpp',
         'jit/arm64/Bailouts-arm64.cpp',
@@ -477,14 +477,14 @@ elif CONFIG['JS_CODEGEN_ARM64']:
         'jit/arm64/vixl/Utils-vixl.cpp'
     ]
     if CONFIG['JS_SIMULATOR_ARM64']:
-        SOURCES += [
+        UNIFIED_SOURCES += [
             'jit/arm64/vixl/Debugger-vixl.cpp',
             'jit/arm64/vixl/Logic-vixl.cpp',
             'jit/arm64/vixl/MozSimulator-vixl.cpp',
             'jit/arm64/vixl/Simulator-vixl.cpp'
         ]
 elif CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
-    SOURCES += [
+    UNIFIED_SOURCES += [
         'jit/mips-shared/Architecture-mips-shared.cpp',
         'jit/mips-shared/Assembler-mips-shared.cpp',
         'jit/mips-shared/Bailouts-mips-shared.cpp',
@@ -496,7 +496,7 @@ elif CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
         'jit/mips-shared/MoveEmitter-mips-shared.cpp',
     ]
     if CONFIG['JS_CODEGEN_MIPS32']:
-        SOURCES += [
+        UNIFIED_SOURCES += [
             'jit/mips32/Architecture-mips32.cpp',
             'jit/mips32/Assembler-mips32.cpp',
             'jit/mips32/Bailouts-mips32.cpp',
@@ -510,11 +510,11 @@ elif CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
             'jit/mips32/Trampoline-mips32.cpp',
         ]
         if CONFIG['JS_SIMULATOR_MIPS32']:
-            SOURCES += [
+            UNIFIED_SOURCES += [
                 'jit/mips32/Simulator-mips32.cpp'
             ]
     elif CONFIG['JS_CODEGEN_MIPS64']:
-        SOURCES += [
+        UNIFIED_SOURCES += [
             'jit/mips64/Architecture-mips64.cpp',
             'jit/mips64/Assembler-mips64.cpp',
             'jit/mips64/Bailouts-mips64.cpp',
@@ -528,7 +528,7 @@ elif CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
             'jit/mips64/Trampoline-mips64.cpp',
         ]
         if CONFIG['JS_SIMULATOR_MIPS64']:
-            SOURCES += [
+            UNIFIED_SOURCES += [
                 'jit/mips64/Simulator-mips64.cpp'
             ]
 
