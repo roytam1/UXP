@@ -8,7 +8,7 @@
  * Copyright (C) 2008, 2009 Anthony Ricaud <rik@webkit.org>
  * Copyright (C) 2011 Google Inc. All rights reserved.
  * Copyright (C) 2009 Mozilla Foundation. All rights reserved.
- * Copyright (C) 2022 Moonchild Productions. All rights reserved.
+ * Copyright (C) 2022, 2023 Moonchild Productions. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -138,7 +138,8 @@ const Curl = {
     for (let i = 0; i < headers.length; i++) {
       let header = headers[i];
       if (header.name.toLowerCase() === "accept-encoding") {
-        addParam("--compressed");
+        // Ignore transfer encoding (compression) as not all commonly installed
+        // versions of curl support this.
         continue;
       }
       if (ignoredHeaders.has(header.name.toLowerCase())) {
@@ -397,41 +398,55 @@ const CurlUtils = {
 
   /**
    * Escape util function for Windows systems.
-   * Credit: Google DevTools
    */
   escapeStringWin: function (str) {
     /* 
-       Replace the backtick character ` with `` in order to escape it.
-       The backtick character is an escape character in PowerShell and
-       can, among other things, be used to disable the effect of some
-       of the other escapes created below.
+       Because the cmd.exe parser and the MS Crt arguments parsers use some
+       of the same escape characters, they can interact with each other in
+       terrible ways, meaning the order of operations is critical here.
 
-       Replace dollar sign because of commands in powershell when using
-       double quotes. e.g $(calc.exe).
+       1. Replace \ with \\ first, because it is an escape character for
+       certain conditions in both parsers.
+
+       2. Replace double quote chars with two double quotes (not by escaping
+       with \") because it is recognized by both the cmd.exe and MS Crt
+       arguments parsers.
        
-       Also see http://www.rlmueller.net/PowerShellEscape.htm for details.
+       3. Escape ` and $ so commands do not get executed, e.g $(calc.exe) or
+       `\$(calc.exe)
+       
+       4. Escape all characters we are not sure about with ^, to ensure it
+       gets to the MS Crt arguments parser safely.
 
-       Replace quote by double quote (but not by \") because it is
-       recognized by both cmd.exe and MS Crt arguments parser.
+       5. The % character is special because the MS Crt arguments parser will
+       try and look for environment variables and fill them in, in-place. We
+       cannot escape them with % and cannot escape them with ^ (because it's
+       cmd.exe's escape, not the MS Crt arguments parser). So, we can get the
+       cmd.exe parser to escape the character after it, if it is followed by
+       a valid starting character of an environment variable.
+       This ensures we do not try and double-escape another ^ if it was placed
+       by the previous replace.
 
-       Replace % by "%" because it could be expanded to an environment
-       variable value. So %% becomes "%""%". Even if an env variable ""
-       (2 doublequotes) is declared, the cmd.exe will not
-       substitute it with its value.
+       6. We replace \r and \r\n with \n; this allows us to consistently
+       escape all new lines in the next replace.
 
-       Replace each backslash with double backslash to make sure
-       MS Crt arguments parser won't collapse them.
-
-       Replace new line outside of quotes since cmd.exe doesn't let
-       us do it inside.
+       7. Lastly, we replace new lines with ^ and TWO new lines, because the
+       first new line is there to enact the escape command, and the second is
+       the character to escape (in this case new line).
+       The extra " enables escaping new lines with ^ within quotes in cmd.exe.
     */
-    return "\"" + 
-      str.replaceAll("`", "``")
-         .replaceAll("$", "`$")
-         .replaceAll('"', '""')
-         .replaceAll("%", '"%"')
-         .replace(/\\/g, "\\\\")
-         .replace(/[\r\n]+/g, "\"^$&\"") + "\"";
+    const encapsChars = '"';
+    return (
+      encapsChars +
+      str
+        .replace(/\\/g, "\\\\")
+        .replace(/"/g, '""')
+        .replace(/[`$]/g, "\\$&")
+        .replace(/[^a-zA-Z0-9\s_\-:=+~\/.',?;()*\$&\\{}\"`]/g, "^$&")
+        .replace(/%(?=[a-zA-Z0-9_])/g, "%^")
+        .replace(/\r\n?/g, "\n")
+        .replace(/\n/g, '"^\r\n\r\n"')
+      + encapsChars);
   }
 };
 
