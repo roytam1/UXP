@@ -270,7 +270,7 @@ private:
   void        GenerateGoAway(uint32_t);
   void        CleanupStream(Http2Stream *, nsresult, errorType);
   void        CleanupStream(uint32_t, nsresult, errorType);
-  void        CloseStream(Http2Stream *, nsresult);
+  void        CloseStream(Http2Stream *, nsresult, bool aRemoveFromQueue = true);
   void        SendHello();
   void        RemoveStreamFromQueues(Http2Stream *);
   nsresult    ParsePadding(uint8_t &, uint16_t &);
