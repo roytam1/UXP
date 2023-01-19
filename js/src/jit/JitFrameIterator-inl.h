@@ -35,6 +35,12 @@ JitFrameIterator::baselineFrame() const
     return (BaselineFrame*)(fp() - BaselineFrame::FramePointerOffset - BaselineFrame::Size());
 }
 
+inline uint32_t
+JitFrameIterator::baselineFrameNumValueSlots() const {
+    MOZ_ASSERT(isBaselineJS());
+    return baselineFrame()->numValueSlots();
+}
+
 template <typename T>
 bool
 JitFrameIterator::isExitFrameLayout() const

@@ -256,6 +256,10 @@ class JitFrameIterator
 
     inline BaselineFrame* baselineFrame() const;
 
+    // Returns the number of local and expression stack Values for the current
+    // Baseline frame.
+    inline uint32_t baselineFrameNumValueSlots() const;
+
     // This function isn't used, but we keep it here (debug-only) because it is
     // helpful when chasing issues with the jitcode map.
 #ifdef DEBUG

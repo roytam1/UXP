@@ -1331,6 +1331,21 @@ NonBuiltinScriptFrameIter::settle()
     }
 }
 
+bool
+ FrameIter::inPrologue() const {
+  if (pc() < script()->main()) {
+    return true;
+  }
+  // If we do a VM call before pushing locals in baseline, the stack frame will
+  // not include space for those locals.
+  if (pc() == script()->code() && isBaseline() &&
+      data_.jitFrames_.baselineFrameNumValueSlots() < script()->nfixed()) {
+    return true;
+  }
+
+  return false;
+}
+
 ActivationEntryMonitor::ActivationEntryMonitor(JSContext* cx)
   : cx_(cx), entryMonitor_(cx->runtime()->entryMonitor)
 {
