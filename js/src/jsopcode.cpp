@@ -1568,17 +1568,17 @@ DecompileExpressionFromStack(JSContext* cx, int spindex, int skipStackHits, Hand
 
     FrameIter frameIter(cx);
 
-    if (frameIter.done() || !frameIter.hasScript() || frameIter.compartment() != cx->compartment())
-        return true;
+    if (frameIter.done() ||
+        !frameIter.hasScript() ||
+        frameIter.compartment() != cx->compartment() ||
+        frameIter.inPrologue()) {
+      return true;
+    }
 
     RootedScript script(cx, frameIter.script());
     jsbytecode* valuepc = frameIter.pc();
 
     MOZ_ASSERT(script->containsPC(valuepc));
-
-    // Give up if in prologue.
-    if (valuepc < script->main())
-        return true;
 
     if (!FindStartPC(cx, frameIter, spindex, skipStackHits, v, &valuepc))
         return false;
