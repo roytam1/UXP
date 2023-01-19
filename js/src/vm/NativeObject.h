@@ -1399,6 +1399,18 @@ NativeDefineProperty(ExclusiveContext* cx, HandleNativeObject obj, PropertyName*
                      HandleValue value, JSGetterOp getter, JSSetterOp setter,
                      unsigned attrs);
 
+bool
+NativeDefineDataProperty(JSContext* cx, Handle<NativeObject*> obj, HandleId id, HandleValue value,
+                             unsigned attrs, ObjectOpResult& result);
+
+extern bool
+NativeDefineDataProperty(JSContext* cx, Handle<NativeObject*> obj, HandleId id,
+                         HandleValue value, unsigned attrs);
+
+extern bool
+NativeDefineDataProperty(JSContext* cx, Handle<NativeObject*> obj, PropertyName* name,
+                         HandleValue value, unsigned attrs);
+
 extern bool
 NativeHasProperty(JSContext* cx, HandleNativeObject obj, HandleId id, bool* foundp);
 
