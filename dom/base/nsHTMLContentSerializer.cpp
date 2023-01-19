@@ -284,7 +284,7 @@ nsHTMLContentSerializer::AppendElementStart(Element* aElement,
   if (ns == kNameSpaceID_XHTML &&
       (name == nsGkAtoms::script ||
        name == nsGkAtoms::style ||
-       name == nsGkAtoms::noscript ||
+       (name == nsGkAtoms::noscript && aElement->OwnerDoc()->IsScriptEnabled()) ||
        name == nsGkAtoms::noframes)) {
     ++mDisableEntityEncoding;
   }
@@ -314,7 +314,7 @@ nsHTMLContentSerializer::AppendElementEnd(Element* aElement,
   if (ns == kNameSpaceID_XHTML &&
       (name == nsGkAtoms::script ||
        name == nsGkAtoms::style ||
-       name == nsGkAtoms::noscript ||
+       (name == nsGkAtoms::noscript && aElement->OwnerDoc()->IsScriptEnabled()) ||
        name == nsGkAtoms::noframes)) {
     --mDisableEntityEncoding;
   }

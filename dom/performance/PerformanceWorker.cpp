@@ -19,7 +19,9 @@ PerformanceWorker::PerformanceWorker(WorkerPrivate* aWorkerPrivate)
 
 PerformanceWorker::~PerformanceWorker()
 {
-  mWorkerPrivate->AssertIsOnWorkerThread();
+  if (mWorkerPrivate) {
+    mWorkerPrivate->AssertIsOnWorkerThread();
+  }
 }
 
 void
@@ -40,13 +42,19 @@ PerformanceWorker::InsertUserEntry(PerformanceEntry* aEntry)
 TimeStamp
 PerformanceWorker::CreationTimeStamp() const
 {
-  return mWorkerPrivate->CreationTimeStamp();
+  if (mWorkerPrivate) {
+    return mWorkerPrivate->CreationTimeStamp();
+  }
+  return TimeStamp();
 }
 
 DOMHighResTimeStamp
 PerformanceWorker::CreationTime() const
 {
-  return mWorkerPrivate->CreationTime();
+  if (mWorkerPrivate) {
+    return mWorkerPrivate->CreationTime();
+  }
+  return DOMHighResTimeStamp();
 }
 
 } // dom namespace
