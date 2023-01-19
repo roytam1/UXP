@@ -93,21 +93,20 @@ js::GlobalObject::getTypedObjectModule() const {
 /* static */ bool
 GlobalObject::skipDeselectedConstructor(JSContext* cx, JSProtoKey key)
 {
-    if (key == JSProto_WebAssembly)
+    // Return true if the given constructor has been disabled at run-time.
+    switch (key) {
+      case JSProto_WebAssembly:
         return !wasm::HasSupport(cx);
 
 #ifdef ENABLE_SHARED_ARRAY_BUFFER
-    // Return true if the given constructor has been disabled at run-time.
-    switch (key) {
       case JSProto_Atomics:
       case JSProto_SharedArrayBuffer:
         return !cx->compartment()->creationOptions().getSharedMemoryAndAtomicsEnabled();
+#endif
+
       default:
         return false;
     }
-#else
-    return false;
-#endif
 }
 
 /* static */ bool
