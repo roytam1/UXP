@@ -485,6 +485,9 @@ class NativeObject : public ShapedObject
         return cells && cells->hasCell(cell);
     }
 
+    static inline NativeObject*
+    createWithTemplate(JSContext* cx, js::gc::InitialHeap heap, HandleObject templateObject);
+
   protected:
 #ifdef DEBUG
     void checkShapeConsistency();

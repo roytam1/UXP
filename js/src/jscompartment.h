@@ -861,6 +861,7 @@ struct JSCompartment
 
     js::ReadBarriered<js::ArgumentsObject*> mappedArgumentsTemplate_;
     js::ReadBarriered<js::ArgumentsObject*> unmappedArgumentsTemplate_;
+    js::ReadBarriered<js::NativeObject*> iterResultTemplate_;
 
   public:
     bool ensureJitCompartmentExists(JSContext* cx);
@@ -871,6 +872,10 @@ struct JSCompartment
     js::ArgumentsObject* getOrCreateArgumentsTemplateObject(JSContext* cx, bool mapped);
 
     js::ArgumentsObject* maybeArgumentsTemplateObject(bool mapped) const;
+
+    static const size_t IterResultObjectValueSlot = 0;
+    static const size_t IterResultObjectDoneSlot = 1;
+    js::NativeObject* getOrCreateIterResultTemplateObject(JSContext* cx);
 
   public:
     // Aggregated output used to collect JSScript hit counts when code coverage
