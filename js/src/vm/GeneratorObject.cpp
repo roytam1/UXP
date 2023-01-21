@@ -131,7 +131,7 @@ js::GeneratorThrowOrClose(JSContext* cx, AbstractFramePtr frame, Handle<Generato
                           HandleValue arg, uint32_t resumeKind)
 {
     if (resumeKind == GeneratorObject::THROW) {
-        cx->setPendingException(arg);
+        cx->setPendingExceptionAndCaptureStack(arg);
         genObj->setRunning();
     } else {
         MOZ_ASSERT(resumeKind == GeneratorObject::CLOSE);
@@ -143,7 +143,8 @@ js::GeneratorThrowOrClose(JSContext* cx, AbstractFramePtr frame, Handle<Generato
             MOZ_ASSERT(arg.isUndefined());
         }
 
-        cx->setPendingException(MagicValue(JS_GENERATOR_CLOSING));
+        RootedValue closing(cx, MagicValue(JS_GENERATOR_CLOSING));
+        cx->setPendingException(closing, nullptr);
         genObj->setClosing();
     }
     return false;

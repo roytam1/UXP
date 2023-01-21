@@ -2310,7 +2310,7 @@ nsXPCComponents_Utils::ReportError(HandleValue error, JSContext* cx)
 
     if (errorObj) {
         JS::RootedObject stackVal(cx,
-          FindExceptionStackForConsoleReport(win, error));
+          FindExceptionStackForConsoleReport(win, error, nullptr));
         if (stackVal) {
             scripterr = new nsScriptErrorWithStack(stackVal);
         }

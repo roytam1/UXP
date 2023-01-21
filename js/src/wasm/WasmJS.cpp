@@ -1729,7 +1729,8 @@ RejectWithPendingException(JSContext* cx, Handle<PromiseObject*> promise)
         return false;
 
     RootedValue rejectionValue(cx);
-    if (!GetAndClearException(cx, &rejectionValue))
+    RootedSavedFrame stack(cx);
+    if (!GetAndClearExceptionAndStack(cx, &rejectionValue, &stack))
         return false;
 
     return PromiseObject::reject(cx, promise, rejectionValue);

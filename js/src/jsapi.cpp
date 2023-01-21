@@ -6219,12 +6219,16 @@ JS_GetPendingException(JSContext* cx, MutableHandleValue vp)
 }
 
 JS_PUBLIC_API(void)
-JS_SetPendingException(JSContext* cx, HandleValue value)
+JS_SetPendingException(JSContext* cx, HandleValue value, JS::ExceptionStackBehavior behavior)
 {
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);
     releaseAssertSameCompartment(cx, value);
-    cx->setPendingException(value);
+    if (behavior == JS::ExceptionStackBehavior::Capture) {
+        cx->setPendingExceptionAndCaptureStack(value);
+    } else {
+        cx->setPendingException(value, nullptr);
+    }
 }
 
 JS_PUBLIC_API(void)
@@ -6234,12 +6238,20 @@ JS_ClearPendingException(JSContext* cx)
     cx->clearPendingException();
 }
 
+JS_PUBLIC_API(JSObject*)
+JS::GetPendingExceptionStack(JSContext* cx)
+{
+  AssertHeapIsIdle(cx);
+  return cx->getPendingExceptionStack();
+}
+
 JS::AutoSaveExceptionState::AutoSaveExceptionState(JSContext* cx)
   : context(cx),
     wasPropagatingForcedReturn(cx->propagatingForcedReturn_),
     wasOverRecursed(cx->overRecursed_),
     wasThrowing(cx->throwing),
-    exceptionValue(cx)
+    exceptionValue(cx),
+    exceptionStack(cx)
 {
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);
@@ -6249,8 +6261,19 @@ JS::AutoSaveExceptionState::AutoSaveExceptionState(JSContext* cx)
         cx->overRecursed_ = false;
     if (wasThrowing) {
         exceptionValue = cx->unwrappedException_;
+        exceptionStack = cx->unwrappedExceptionStack_;
         cx->clearPendingException();
     }
+}
+
+void
+JS::AutoSaveExceptionState::drop()
+{
+  wasPropagatingForcedReturn = false;
+  wasOverRecursed = false;
+  wasThrowing = false;
+  exceptionValue.setUndefined();
+  exceptionStack = nullptr;
 }
 
 void
@@ -6260,6 +6283,9 @@ JS::AutoSaveExceptionState::restore()
     context->overRecursed_ = wasOverRecursed;
     context->throwing = wasThrowing;
     context->unwrappedException_ = exceptionValue;
+    if (exceptionStack) {
+      context->unwrappedExceptionStack_ = &exceptionStack->as<SavedFrame>();
+    }
     drop();
 }
 
@@ -6272,6 +6298,9 @@ JS::AutoSaveExceptionState::~AutoSaveExceptionState()
             context->overRecursed_ = wasOverRecursed;
             context->throwing = true;
             context->unwrappedException_ = exceptionValue;
+            if (exceptionStack) {
+                context->unwrappedExceptionStack_ = &exceptionStack->as<SavedFrame>();
+            }
         }
     }
 }
