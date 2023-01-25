@@ -952,12 +952,6 @@ RegExpShared::RegExpShared(JSAtom* source, RegExpFlag flags)
     numNamedCaptures_(0), groupsTemplate_(nullptr)
 {}
 
-RegExpShared::~RegExpShared()
-{
-    for (size_t i = 0; i < tables.length(); i++)
-        js_delete(tables[i]);
-}
-
 void
 RegExpShared::traceChildren(JSTracer* trc)
 {
@@ -976,6 +970,14 @@ RegExpShared::discardJitCode()
 {
     for (auto& comp : compilationArray)
         comp.jitCode = nullptr;
+}
+
+void
+RegExpShared::finalize(FreeOp* fop)
+{
+    for (size_t i = 0; i < tables.length(); i++)
+        js_free(tables[i]);
+    tables.~JitCodeTables();
 }
 
 /* static */ bool
