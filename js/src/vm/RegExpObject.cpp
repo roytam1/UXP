@@ -970,6 +970,7 @@ RegExpShared::trace(JSTracer* trc)
     TraceNullableEdge(trc, &source, "RegExpShared source");
     for (auto& comp : compilationArray)
         TraceNullableEdge(trc, &comp.jitCode, "RegExpShared code");
+    TraceNullableEdge(trc, &groupsTemplate_, "RegExpShared groupsTemplate");
 }
 
 bool
