@@ -85,6 +85,11 @@ enum PromiseAllResolveElementFunctionSlots {
     PromiseAllResolveElementFunctionSlot_ElementIndex,
 };
 
+enum PromiseAllSettledElementFunctionSlots {
+  PromiseAllSettledElementFunctionSlot_Data = 0,
+  PromiseAllSettledElementFunctionSlot_ElementIndex,
+};
+
 enum ReactionJobSlots {
     ReactionJobSlot_ReactionRecord = 0,
 };
@@ -1729,10 +1734,6 @@ static MOZ_MUST_USE bool
 AddPromiseReaction(JSContext* cx, Handle<PromiseObject*> promise,
                    Handle<PromiseReactionRecord*> reaction);
 
-static MOZ_MUST_USE bool
-BlockOnPromise(JSContext* cx, HandleValue promise, HandleObject blockedPromise,
-               HandleValue onFulfilled, HandleValue onRejected, bool onFulfilledReturnsUndefined);
-
 static JSFunction*
 GetResolveFunctionFromReject(JSFunction* reject)
 {
@@ -2030,18 +2031,47 @@ static MOZ_MUST_USE bool
 PerformPromiseAll(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
                   Handle<PromiseCapability> resultCapability, bool* done);
 
-// ES2016, 25.4.4.1.
-static bool
-Promise_static_all(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
+static MOZ_MUST_USE bool
+PerformPromiseAllSettled(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
+                         Handle<PromiseCapability> resultCapability, bool* done);
+
+static MOZ_MUST_USE bool PerformPromiseRace(
+    JSContext* cx, JS::ForOfIterator& iterator, HandleObject C,
+    Handle<PromiseCapability> resultCapability, bool* done);
+
+enum class IterationMode { All, AllSettled, Race };
+
+// ES2020 draft rev a09fc232c137800dbf51b6204f37fdede4ba1646
+//
+// Unified implementation of
+// 25.6.4.1 Promise.all ( iterable )
+// 25.6.4.3 Promise.race ( iterable )
+//
+// Promise.allSettled (Stage 3 proposal)
+// https://tc39.github.io/proposal-promise-allSettled/
+//
+// Promise.allSettled ( iterable )
+static MOZ_MUST_USE bool CommonStaticAllRace(JSContext* cx, CallArgs& args,
+                                             IterationMode mode) {
     HandleValue iterable = args.get(0);
 
     // Step 2 (reordered).
     HandleValue CVal = args.thisv();
     if (!CVal.isObject()) {
+        const char* message;
+        switch (mode) {
+          case IterationMode::All:
+            message = "Receiver of Promise.all call";
+            break;
+          case IterationMode::AllSettled:
+            message = "Receiver of Promise.allSettled call";
+            break;
+          case IterationMode::Race:
+            message = "Receiver of Promise.race call";
+            break;
+        }
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_NOT_NONNULL_OBJECT,
-                                  "Receiver of Promise.all call");
+                                  message);
         return false;
     }
 
@@ -2059,16 +2089,38 @@ Promise_static_all(JSContext* cx, unsigned argc, Value* vp)
         return AbruptRejectPromise(cx, args, promiseCapability);
 
     if (!iter.valueIsIterable()) {
+        const char* message;
+        switch (mode) {
+          case IterationMode::All:
+            message = "Argument of Promise.all";
+            break;
+          case IterationMode::AllSettled:
+            message = "Argument of Promise.allSettled";
+            break;
+          case IterationMode::Race:
+            message = "Argument of Promise.race";
+            break;
+        }
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_NOT_ITERABLE,
-                                  "Argument of Promise.all");
+                                  message);
         return AbruptRejectPromise(cx, args, promiseCapability);
     }
 
     // Step 6 (implicit).
 
     // Step 7.
-    bool done;
-    bool result = PerformPromiseAll(cx, iter, C, promiseCapability, &done);
+    bool done, result;
+    switch (mode) {
+      case IterationMode::All:
+        result = PerformPromiseAll(cx, iter, C, promiseCapability, &done);
+        break;
+      case IterationMode::AllSettled:
+        result = PerformPromiseAllSettled(cx, iter, C, promiseCapability, &done);
+        break;
+      case IterationMode::Race:
+        result = PerformPromiseRace(cx, iter, C, promiseCapability, &done);
+        break;
+    }
 
     // Step 8.
     if (!result) {
@@ -2085,50 +2137,11 @@ Promise_static_all(JSContext* cx, unsigned argc, Value* vp)
     return true;
 }
 
-static MOZ_MUST_USE bool
-PerformPromiseAllSettled(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
-                         Handle<PromiseCapability> resultCapability, bool* done);
-
-// ES2020
-static bool
-Promise_static_allSettled(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-    RootedValue iterable(cx, args.get(0));
-    RootedValue CVal(cx, args.thisv());
-    if (!CVal.isObject()) {
-        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_NOT_NONNULL_OBJECT,
-                                  "Receiver of Promise.allSettled call");
-        return false;
-    }
-
-    RootedObject C(cx, &CVal.toObject());
-    Rooted<PromiseCapability> promiseCapability(cx);
-    if (!NewPromiseCapability(cx, C, &promiseCapability, false))
-        return false;
-
-    JS::ForOfIterator iter(cx);
-    if (!iter.init(iterable, JS::ForOfIterator::AllowNonIterable))
-        return AbruptRejectPromise(cx, args, promiseCapability);
-
-    if (!iter.valueIsIterable()) {
-        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_NOT_ITERABLE,
-                                  "Argument of Promise.allSettled");
-        return AbruptRejectPromise(cx, args, promiseCapability);
-    }
-
-    bool done;
-    bool result = PerformPromiseAllSettled(cx, iter, C, promiseCapability, &done);
-
-    if (!result) {
-        if (!done)
-            iter.closeThrow();
-
-        return AbruptRejectPromise(cx, args, promiseCapability);
-    }
-
-    args.rval().setObject(*promiseCapability.promise());
-    return true;
+// ES2020 draft rev a09fc232c137800dbf51b6204f37fdede4ba1646
+// 25.6.4.1 Promise.all ( iterable )
+static bool Promise_static_all(JSContext* cx, unsigned argc, Value* vp) {
+  CallArgs args = CallArgsFromVp(argc, vp);
+  return CommonStaticAllRace(cx, args, IterationMode::All);
 }
 
 static MOZ_MUST_USE bool
@@ -2141,8 +2154,6 @@ PerformPromiseThenWithoutSettleHandlers(JSContext* cx, Handle<PromiseObject*> pr
                                         Handle<PromiseCapability> resultCapability);
 
 static bool PromiseAllResolveElementFunction(JSContext* cx, unsigned argc, Value* vp);
-static bool PromiseAllSettledResolveElementFunction(JSContext* cx, unsigned argc, Value* vp);
-static bool PromiseAllSettledRejectElementFunction(JSContext* cx, unsigned argc, Value* vp);
 
 // Unforgeable version of ES2016, 25.4.4.1.
 MOZ_MUST_USE JSObject*
@@ -2303,18 +2314,206 @@ RunResolutionFunction(JSContext *cx, HandleObject resolutionFun, HandleValue res
     return RejectPromiseInternal(cx, promise, result);
 }
 
-// ES2016, 25.4.4.1.1.
+
+static bool
+IsPromiseSpecies(JSContext* cx, JSFunction* species);
+
+// ES2019 draft rev dd269df67d37409a6f2099a842b8f5c75ee6fc24
+// 25.6.4.1.1 Runtime Semantics: PerformPromiseAll, step 6.
+// 25.6.4.3.1 Runtime Semantics: PerformPromiseRace, step 3.
+//
+// Promise.allSettled (Stage 3 proposal)
+// https://tc39.github.io/proposal-promise-allSettled/
+// Runtime Semantics: PerformPromiseAllSettled, step 6.
+template <typename T>
+static MOZ_MUST_USE bool
+CommonPerformPromiseAllRace(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
+                            HandleObject resultPromise, bool* done, bool resolveReturnsUndefined,
+                            T getResolveAndReject)
+{
+    RootedObject promiseCtor(cx, GlobalObject::getOrCreatePromiseConstructor(cx, cx->global()));
+    if (!promiseCtor)
+        return false;
+
+    RootedValue CVal(cx, ObjectValue(*C));
+    RootedValue resolveFunVal(cx);
+    RootedValue rejectFunVal(cx);
+
+    // We're reusing rooted variables in the loop below, so we don't need to
+    // declare a gazillion different rooted variables here. Rooted variables
+    // which are reused include "Or" in their name.
+    RootedValue nextValueOrNextPromise(cx);
+    RootedObject nextPromiseObj(cx);
+    RootedValue resolveOrThen(cx);
+    RootedObject thenSpeciesOrBlockedPromise(cx);
+    Rooted<PromiseCapability> thenCapability(cx);
+
+    while (true) {
+        // Steps a-c, e-g.
+        RootedValue& nextValue = nextValueOrNextPromise;
+        if (!iterator.next(&nextValue, done)) {
+            // Steps b, f.
+            *done = true;
+
+            // Steps c, g.
+            return false;
+        }
+
+        // Step d.
+        if (*done)
+            return true;
+
+        // 25.6.4.1.1, step 6.i.
+        // 25.6.4.3.1, step 3.h.
+        // Sadly, because someone could have overridden
+        // "resolve" on the canonical Promise constructor.
+        RootedValue& staticResolve = resolveOrThen;
+        if (!GetProperty(cx, C, CVal, cx->names().resolve, &staticResolve))
+            return false;
+
+        RootedValue& nextPromise = nextValueOrNextPromise;
+        if (!Call(cx, staticResolve, CVal, nextValue, &nextPromise))
+            return false;
+
+        // Get the resolving functions for this iteration.
+        // 25.6.4.1.1, steps 6.j-q.
+        if (!getResolveAndReject(&resolveFunVal, &rejectFunVal))
+            return false;
+
+        // Call |nextPromise.then| with the provided hooks and add
+        // |resultPromise| to the list of dependent promises.
+        //
+        // If |nextPromise.then| is the original |Promise.prototype.then|
+        // function and the call to |nextPromise.then| would use the original
+        // |Promise| constructor to create the resulting promise, we skip the
+        // call to |nextPromise.then| and thus creating a new promise that
+        // would not be observable by content.
+
+        // 25.6.4.1.1, step 6.r.
+        // 25.6.4.3.1, step 3.i.
+        nextPromiseObj = ToObject(cx, nextPromise);
+        if (!nextPromiseObj)
+            return false;
+
+        RootedValue& thenVal = resolveOrThen;
+        if (!GetProperty(cx, nextPromiseObj, nextPromise, cx->names().then, &thenVal))
+            return false;
+
+        // By default, the blocked promise is added as an extra entry to the
+        // rejected promises list.
+        bool addToDependent = true;
+
+        if (nextPromiseObj->is<PromiseObject>() && IsNativeFunction(thenVal, Promise_then)) {
+            // |nextPromise| is an unwrapped Promise, and |then| is the
+            // original |Promise.prototype.then|, inline it here.
+
+            // 25.6.5.4, step 3.
+            RootedObject& thenSpecies = thenSpeciesOrBlockedPromise;
+            thenSpecies = SpeciesConstructor(cx, nextPromiseObj, JSProto_Promise,
+                                             IsPromiseSpecies);
+            if (!thenSpecies)
+                return false;
+
+            // The fast path here and in NewPromiseCapability may not set
+            // the resolve and reject handlers, so we need to clear the fields
+            // in case they were set in the previous iteration.
+            thenCapability.resolve().set(nullptr);
+            thenCapability.reject().set(nullptr);
+
+            // Skip the creation of a built-in Promise object if:
+            // 1. `thenSpecies` is the built-in Promise constructor.
+            // 2. `resolveFun` doesn't return an object, which ensures no
+            //    side-effects take place in ResolvePromiseInternal.
+            // 3. The result promise is a built-in Promise object.
+            // 4. The result promise doesn't use the default resolving
+            //    functions, which in turn means RunResolutionFunction when
+            //    called from PromiseRectionJob won't try to resolve the
+            //    promise.
+            if (thenSpecies == promiseCtor &&
+                resolveReturnsUndefined &&
+                resultPromise->is<PromiseObject>() &&
+                !PromiseHasAnyFlag(resultPromise->as<PromiseObject>(),
+                                   PROMISE_FLAG_DEFAULT_RESOLVING_FUNCTIONS))
+            {
+                thenCapability.promise().set(resultPromise);
+                addToDependent = false;
+            } else {
+                // 25.6.5.4, step 4.
+                if (!NewPromiseCapability(cx, thenSpecies, &thenCapability, true))
+                    return false;
+            }
+
+            // 25.6.5.4, step 5.
+            Handle<PromiseObject*> promise = nextPromiseObj.as<PromiseObject>();
+            if (!PerformPromiseThen(cx, promise, resolveFunVal, rejectFunVal, thenCapability))
+                return false;
+        } else {
+            // Optimization failed, do the normal call.
+            RootedValue& ignored = thenVal;
+            if (!Call(cx, thenVal, nextPromise, resolveFunVal, rejectFunVal, &ignored))
+                return false;
+
+            // In case the value to depend on isn't an object at all, there's
+            // nothing more to do here: we can only add reactions to Promise
+            // objects (potentially after unwrapping them), and non-object
+            // values can't be Promise objects. This can happen if Promise.all
+            // is called on an object with a `resolve` method that returns
+            // primitives.
+            if (!nextPromise.isObject())
+                addToDependent = false;
+        }
+
+        // Adds |resultPromise| to the list of dependent promises.
+        if (addToDependent) {
+            // The object created by the |promise.then| call or the inlined
+            // version of it above is visible to content (either because
+            // |promise.then| was overridden by content and could leak it,
+            // or because a constructor other than the original value of
+            // |Promise| was used to create it). To have both that object and
+            // |resultPromise| show up as dependent promises in the debugger,
+            // add a dummy reaction to the list of reject reactions that
+            // contains |resultPromise|, but otherwise does nothing.
+            RootedObject& blockedPromise = thenSpeciesOrBlockedPromise;
+            blockedPromise = resultPromise;
+
+            mozilla::Maybe<AutoCompartment> ac;
+            if (IsProxy(nextPromiseObj)) {
+                nextPromiseObj = CheckedUnwrap(nextPromiseObj);
+                if (!nextPromiseObj) {
+                    return false;
+                }
+                if (JS_IsDeadWrapper(nextPromiseObj)) {
+                    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DEAD_OBJECT);
+                    return false;
+                }
+                ac.emplace(cx, nextPromiseObj);
+                if (!cx->compartment()->wrap(cx, &blockedPromise))
+                    return false;
+            }
+
+            // If either the object to depend on or the object that gets
+            // blocked isn't a, maybe-wrapped, Promise instance, we ignore it.
+            // All this does is lose some small amount of debug information in
+            // scenarios that are highly unlikely to occur in useful code.
+            if (nextPromiseObj->is<PromiseObject>() && resultPromise->is<PromiseObject>()) {
+                Handle<PromiseObject*> promise = nextPromiseObj.as<PromiseObject>();
+                if (!AddDummyPromiseReactionForDebugger(cx, promise, blockedPromise))
+                    return false;
+            }
+        }
+    }
+}
+
+// ES2020 draft rev a09fc232c137800dbf51b6204f37fdede4ba1646
+// 25.6.4.1.1 PerformPromiseAll (iteratorRecord, constructor, resultCapability)
 static MOZ_MUST_USE bool
 PerformPromiseAll(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
                   Handle<PromiseCapability> resultCapability, bool* done)
 {
     *done = false;
 
-    HandleObject promiseObj = resultCapability.promise();
-
     // Step 1.
     MOZ_ASSERT(C->isConstructor());
-    RootedValue CVal(cx, ObjectValue(*C));
 
     // Step 2 (omitted).
 
@@ -2340,8 +2539,8 @@ PerformPromiseAll(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
     // PromiseAllResolveElement.
     RootedArrayObject valuesArray(cx);
     RootedValue valuesArrayVal(cx);
-    if (IsWrapper(promiseObj)) {
-        JSObject* unwrappedPromiseObj = CheckedUnwrap(promiseObj);
+    if (IsWrapper(resultCapability.promise())) {
+        JSObject* unwrappedPromiseObj = CheckedUnwrap(resultCapability.promise());
         MOZ_ASSERT(unwrappedPromiseObj);
 
         {
@@ -2368,7 +2567,7 @@ PerformPromiseAll(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
     // remainingElementsCount (as an integer reserved slot), the array of
     // values, and the resolve function from our PromiseCapability.
     Rooted<PromiseAllDataHolder*> dataHolder(cx);
-    dataHolder = NewPromiseAllDataHolder(cx, promiseObj, valuesArrayVal,
+    dataHolder = NewPromiseAllDataHolder(cx, resultCapability.promise(), valuesArrayVal,
                                          resultCapability.resolve());
     if (!dataHolder)
         return false;
@@ -2376,41 +2575,10 @@ PerformPromiseAll(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
     // Step 5.
     uint32_t index = 0;
 
-    // Step 6.
-    RootedValue nextValue(cx);
-    RootedValue nextPromise(cx);
-    RootedValue rejectFunVal(cx, ObjectValue(*resultCapability.reject()));
-    RootedValue resolveFunVal(cx);
-    RootedValue staticResolve(cx);
-
-    while (true) {
-        // Steps a-c, e-g.
-        if (!iterator.next(&nextValue, done)) {
-            // Steps b, f.
-            *done = true;
-
-            // Steps c, g.
-            return false;
-        }
-
-        // Step d.
-        if (*done) {
-            // Step d.i (implicit).
-
-            // Step d.ii.
-            int32_t remainingCount = dataHolder->decreaseRemainingCount();
-
-            // Steps d.iii-iv.
-            if (remainingCount == 0) {
-                return RunResolutionFunction(cx, resultCapability.resolve(), valuesArrayVal,
-                                             ResolveMode, promiseObj);
-            }
-
-            // We're all set for now!
-            return true;
-        }
-
-        // Step h.
+    auto getResolveAndReject = [cx, &resultCapability, &valuesArray, &dataHolder,
+                                &index](MutableHandleValue resolveFunVal,
+                                        MutableHandleValue rejectFunVal) {
+        // Step 6.h.
         { // Scope for the AutoCompartment we need to work with valuesArray.  We
             // mostly do this for performance; we could go ahead and do the define via
             // a cross-compartment proxy instead...
@@ -2420,163 +2588,48 @@ PerformPromiseAll(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
                 return false;
         }
 
-        // Step i.
-        // Sadly, because someone could have overridden
-        // "resolve" on the canonical Promise constructor.
-        if (!GetProperty(cx, CVal, cx->names().resolve, &staticResolve))
-            return false;
-
-        FixedInvokeArgs<1> resolveArgs(cx);
-        resolveArgs[0].set(nextValue);
-        if (!Call(cx, staticResolve, CVal, resolveArgs, &nextPromise))
-            return false;
-
-        // Step j.
+        // Steps 6.j-k.
         JSFunction* resolveFunc = NewNativeFunction(cx, PromiseAllResolveElementFunction, 1,
                                                     nullptr,gc::AllocKind::FUNCTION_EXTENDED,
                                                     GenericObject);
         if (!resolveFunc)
             return false;
 
-        // Steps k,m,n.
+        // Steps 6.l, 6.n-p.
         resolveFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_Data,
                                      ObjectValue(*dataHolder));
 
-        // Step l.
+        // Step 6.m.
         resolveFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_ElementIndex,
                                      Int32Value(index));
 
-        // Steps o-p.
+        // Step 6.q.
         dataHolder->increaseRemainingCount();
 
-        // Step q.
+        // Step 6.s.
+        index++;
+        MOZ_ASSERT(index > 0);
+
         resolveFunVal.setObject(*resolveFunc);
-        if (!BlockOnPromise(cx, nextPromise, promiseObj, resolveFunVal, rejectFunVal, true))
-            return false;
+        rejectFunVal.setObject(*resultCapability.reject());
+        return true;
+    };
 
-        // Step r.
-        index++;
-        MOZ_ASSERT(index > 0);
-    }
-}
-
-static MOZ_MUST_USE bool
-PerformPromiseAllSettled(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
-                         Handle<PromiseCapability> resultCapability, bool* done)
-{
-    *done = false;
-
-    HandleObject promiseObj = resultCapability.promise();
-
-    RootedValue CVal(cx, ObjectValue(*C));
-
-    RootedArrayObject valuesArray(cx);
-    RootedValue valuesArrayVal(cx);
-    if (IsWrapper(promiseObj)) {
-        JSObject* unwrappedPromiseObj = CheckedUnwrap(promiseObj);
-        MOZ_ASSERT(unwrappedPromiseObj);
-
-        {
-            AutoCompartment ac(cx, unwrappedPromiseObj);
-            valuesArray = NewDenseEmptyArray(cx);
-            if (!valuesArray)
-                return false;
-        }
-
-        valuesArrayVal.setObject(*valuesArray);
-        if (!cx->compartment()->wrap(cx, &valuesArrayVal))
-            return false;
-    } else {
-        valuesArray = NewDenseEmptyArray(cx);
-        if (!valuesArray)
-            return false;
-
-        valuesArrayVal.setObject(*valuesArray);
-    }
-
-    Rooted<PromiseAllDataHolder*> dataHolder(cx);
-    dataHolder = NewPromiseAllDataHolder(cx, promiseObj, valuesArrayVal,
-                                         resultCapability.resolve());
-    if (!dataHolder)
+    // Step 6.
+    if (!CommonPerformPromiseAllRace(cx, iterator, C, resultCapability.promise(),
+                                     done, true, getResolveAndReject))
         return false;
-    RootedValue dataHolderVal(cx, ObjectValue(*dataHolder));
 
-    uint32_t index = 0;
+    // Step 6.d.ii.
+    int32_t remainingCount = dataHolder->decreaseRemainingCount();
 
-    RootedValue nextValue(cx);
-
-    while (true) {
-        if (!iterator.next(&nextValue, done)) {
-            *done = true;
-            return false;
-        }
-
-        if (*done) {
-            int32_t remainingCount = dataHolder->decreaseRemainingCount();
-            if (remainingCount == 0) {
-                return RunResolutionFunction(cx, resultCapability.resolve(), valuesArrayVal,
-                                             ResolveMode, promiseObj);
-            }
-            return true;
-        }
-
-        { // Scoped for AutoCompartment
-            JSAutoCompartment ac(cx, valuesArray);
-
-            if (!NewbornArrayPush(cx, valuesArray, UndefinedValue()))
-                return false;
-        }
-
-        RootedValue nextPromise(cx);
-        RootedValue staticResolve(cx);
-	RootedValue staticReject(cx);
-
-	// Because Promise.allSettled can continue whether the promise is fulfilled or rejected, we 
-	// should only return false if neither condition is true.
-
-        if (!GetProperty(cx, CVal, cx->names().resolve, &staticResolve) && 
-	    !GetProperty(cx, CVal, cx->names().reject, &staticReject))
-            return false;
-
-        FixedInvokeArgs<1> resolveArgs(cx);
-        resolveArgs[0].set(nextValue);
-        FixedInvokeArgs<1> rejectArgs(cx);
-        rejectArgs[0].set(nextValue);
-        if (!Call(cx, staticResolve, CVal, resolveArgs, &nextPromise) && 
-	    !Call(cx, staticReject, CVal, rejectArgs, &nextPromise))
-            return false;
-
-		
-	RootedFunction resolveFunc(cx, NewNativeFunction(cx, PromiseAllSettledResolveElementFunction,
-			           1, nullptr,
-			           gc::AllocKind::FUNCTION_EXTENDED,
-			           GenericObject));
-		
-	RootedFunction rejectFunc(cx, NewNativeFunction(cx, PromiseAllSettledRejectElementFunction,
-				  1, nullptr,
-				  gc::AllocKind::FUNCTION_EXTENDED,
-				  GenericObject));
-	if (!resolveFunc && !rejectFunc) {
-	     return false;
-	}
-		
-	resolveFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_Data, dataHolderVal);
-	resolveFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_ElementIndex,
-				Int32Value(index));
-	rejectFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_Data, dataHolderVal);
-	rejectFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_ElementIndex,
-				Int32Value(index));
-
-        dataHolder->increaseRemainingCount();
-
-        RootedValue resolveFunVal(cx, ObjectValue(*resolveFunc));
-        RootedValue rejectFunVal(cx, ObjectValue(*rejectFunc));
-        if (!BlockOnPromise(cx, nextPromise, promiseObj, resolveFunVal, rejectFunVal, true))
-            return false;
-
-        index++;
-        MOZ_ASSERT(index > 0);
+    // Steps 6.d.iii-iv.
+    if (remainingCount == 0) {
+        return RunResolutionFunction(cx, resultCapability.resolve(), valuesArrayVal, ResolveMode,
+                                     resultCapability.promise());
     }
+
+    return true;
 }
 
 // ES2016, 25.4.4.1.2.
@@ -2655,232 +2708,27 @@ PromiseAllResolveElementFunction(JSContext* cx, unsigned argc, Value* vp)
     return true;
 }
 
-// ES2020.
-static bool
-PromiseAllSettledResolveElementFunction(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-
-    RootedFunction resolve(cx, &args.callee().as<JSFunction>());
-    RootedValue xVal(cx, args.get(0));
-    RootedValue dataVal(cx, resolve->getExtendedSlot(PromiseAllResolveElementFunctionSlot_Data));
-
-    if (dataVal.isUndefined()) {
-        args.rval().setUndefined();
-        return true;
-    }
-
-    Rooted<PromiseAllDataHolder*> data(cx, &dataVal.toObject().as<PromiseAllDataHolder>());
-
-    resolve->setExtendedSlot(PromiseAllResolveElementFunctionSlot_Data, UndefinedValue());
-
-    int32_t index = resolve->getExtendedSlot(PromiseAllResolveElementFunctionSlot_ElementIndex)
-                    .toInt32();
-
-    RootedValue valuesVal(cx, data->valuesArray());
-    RootedObject valuesObj(cx, &valuesVal.toObject());
-    if (IsProxy(valuesObj)) {
-        // See comment for PerformPromiseAll, step 3 for why we unwrap here.
-        valuesObj = UncheckedUnwrap(valuesObj);
-
-        if (JS_IsDeadWrapper(valuesObj)) {
-            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DEAD_OBJECT);
-            return false;
-        }
-
-        AutoCompartment ac(cx, valuesObj);
-        if (!cx->compartment()->wrap(cx, &xVal))
-            return false;
-    }
-    NativeObject* values = &valuesObj->as<NativeObject>();
-
-    // The index is guaranteed to be initialized to `undefined`.
-    MOZ_ASSERT(values->getDenseElement(index).isUndefined());
-    
-    RootedPlainObject obj(cx, NewBuiltinClassInstance<PlainObject>(cx));
-    if (!obj) {
-        return false;
-    }
-    RootedId id(cx, NameToId(cx->names().status));
-    RootedValue statusValue(cx);
-    statusValue.setString(cx->names().fulfilled);
-    if (!::JS_DefinePropertyById(cx, obj, id, statusValue, JSPROP_ENUMERATE)) {
-      return false;
-    }
-    id = NameToId(cx->names().value);
-    if (!::JS_DefinePropertyById(cx, obj, id, xVal, JSPROP_ENUMERATE)) {
-      return false;
-    }
-
-    RootedValue objVal(cx, ObjectValue(*obj));
-/*  if (needsWrapping) {
-    AutoRealm ar(cx, valuesObj);
-    if (!cx->compartment()->wrap(cx, &objVal)) {
-      return false;
-    }
-  }    */
-    values->setDenseElement(index, objVal);
-
-    uint32_t remainingCount = data->decreaseRemainingCount();
-
-    if (remainingCount == 0) {
-        RootedObject resolveAllFun(cx, data->resolveObj());
-        RootedObject promiseObj(cx, data->promiseObj());
-        if (!RunResolutionFunction(cx, resolveAllFun, valuesVal, ResolveMode, promiseObj))
-            return false;
-    }
-
-    args.rval().setUndefined();
-    return true;
-}
-
-static bool
-PromiseAllSettledRejectElementFunction(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-
-    RootedFunction resolve(cx, &args.callee().as<JSFunction>());
-    RootedValue xVal(cx, args.get(0));
-    RootedValue dataVal(cx, resolve->getExtendedSlot(PromiseAllResolveElementFunctionSlot_Data));
-
-    if (dataVal.isUndefined()) {
-        args.rval().setUndefined();
-        return true;
-    }
-
-    Rooted<PromiseAllDataHolder*> data(cx, &dataVal.toObject().as<PromiseAllDataHolder>());
-
-    resolve->setExtendedSlot(PromiseAllResolveElementFunctionSlot_Data, UndefinedValue());
-
-    int32_t index = resolve->getExtendedSlot(PromiseAllResolveElementFunctionSlot_ElementIndex)
-                    .toInt32();
-
-    RootedValue valuesVal(cx, data->valuesArray());
-    RootedObject valuesObj(cx, &valuesVal.toObject());
-    if (IsProxy(valuesObj)) {
-        // See comment for PerformPromiseAll, step 3 for why we unwrap here.
-        valuesObj = UncheckedUnwrap(valuesObj);
-
-        if (JS_IsDeadWrapper(valuesObj)) {
-            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DEAD_OBJECT);
-            return false;
-        }
-
-        AutoCompartment ac(cx, valuesObj);
-        if (!cx->compartment()->wrap(cx, &xVal))
-            return false;
-    }
-    NativeObject* values = &valuesObj->as<NativeObject>();
-
-    // The index is guaranteed to be initialized to `undefined`.
-    MOZ_ASSERT(values->getDenseElement(index).isUndefined());
-    
-    RootedPlainObject obj(cx, NewBuiltinClassInstance<PlainObject>(cx));
-    if (!obj) {
-        return false;
-    }
-    RootedId id(cx, NameToId(cx->names().status));
-    RootedValue statusValue(cx);
-    statusValue.setString(cx->names().rejected);
-    if (!::JS_DefinePropertyById(cx, obj, id, statusValue, JSPROP_ENUMERATE)) {
-      return false;
-    }
-    RootedValue resultValue(cx);
-    id = NameToId(cx->names().reason);
-    if (!::JS_DefinePropertyById(cx, obj, id, xVal, JSPROP_ENUMERATE)) {
-      return false;
-    }
-
-    RootedValue objVal(cx, ObjectValue(*obj));
-/*  if (needsWrapping) {
-    AutoRealm ar(cx, valuesObj);
-    if (!cx->compartment()->wrap(cx, &objVal)) {
-      return false;
-    }
-  }    */
-    values->setDenseElement(index, objVal);    
-
-
-    uint32_t remainingCount = data->decreaseRemainingCount();
-
-    if (remainingCount == 0) {
-        RootedObject resolveAllFun(cx, data->resolveObj());
-        RootedObject promiseObj(cx, data->promiseObj());
-        if (!RunResolutionFunction(cx, resolveAllFun, valuesVal, ResolveMode, promiseObj))
-            return false;
-    }
-
-    args.rval().setUndefined();
-    return true;
-}
-
-static MOZ_MUST_USE bool
-PerformPromiseRace(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
-                   Handle<PromiseCapability> resultCapability, bool* done);
-
-// ES2016, 25.4.4.3.
+// ES2020 draft rev a09fc232c137800dbf51b6204f37fdede4ba1646
+// 25.6.4.3 Promise.race ( iterable )
 static bool
 Promise_static_race(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
-    HandleValue iterable = args.get(0);
-
-    // Step 2 (reordered).
-    HandleValue CVal = args.thisv();
-    if (!CVal.isObject()) {
-        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_NOT_NONNULL_OBJECT,
-                                  "Receiver of Promise.race call");
-        return false;
-    }
-
-    // Step 1.
-    RootedObject C(cx, &CVal.toObject());
-
-    // Step 3.
-    Rooted<PromiseCapability> promiseCapability(cx);
-    if (!NewPromiseCapability(cx, C, &promiseCapability, false))
-        return false;
-
-    // Steps 4-5.
-    JS::ForOfIterator iter(cx);
-    if (!iter.init(iterable, JS::ForOfIterator::AllowNonIterable))
-        return AbruptRejectPromise(cx, args, promiseCapability);
-
-    if (!iter.valueIsIterable()) {
-        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_NOT_ITERABLE,
-                                  "Argument of Promise.race");
-        return AbruptRejectPromise(cx, args, promiseCapability);
-    }
-
-    // Step 6 (implicit).
-
-    // Step 7.
-    bool done;
-    bool result = PerformPromiseRace(cx, iter, C, promiseCapability, &done);
-
-    // Step 8.
-    if (!result) {
-        // Step 8.a.
-        if (!done)
-            iter.closeThrow();
-
-        // Step 8.b.
-        return AbruptRejectPromise(cx, args, promiseCapability);
-    }
-
-    // Step 9.
-    args.rval().setObject(*promiseCapability.promise());
-    return true;
+    return CommonStaticAllRace(cx, args, IterationMode::Race);
 }
 
-// ES2016, 25.4.4.3.1.
+// ES2020 draft rev a09fc232c137800dbf51b6204f37fdede4ba1646
+// 25.6.4.3.1 PerformPromiseRace (iteratorRecord, constructor, resultCapability)
 static MOZ_MUST_USE bool
 PerformPromiseRace(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
                    Handle<PromiseCapability> resultCapability, bool* done)
 {
     *done = false;
+
+    // Step 1.
     MOZ_ASSERT(C->isConstructor());
-    RootedValue CVal(cx, ObjectValue(*C));
+
+    // Step 2 (omitted).
 
     // BlockOnPromise fast path requires the passed onFulfilled function
     // doesn't return an object value, because otherwise the skipped promise
@@ -2888,55 +2736,302 @@ PerformPromiseRace(JSContext *cx, JS::ForOfIterator& iterator, HandleObject C,
     bool isDefaultResolveFn = IsNativeFunction(resultCapability.resolve(),
                                                ResolvePromiseFunction);
 
-    HandleObject promiseObj = resultCapability.promise();
-    RootedValue resolveFunVal(cx, ObjectValue(*resultCapability.resolve()));
-    RootedValue rejectFunVal(cx, ObjectValue(*resultCapability.reject()));
+    auto getResolveAndReject = [&resultCapability](
+                                   MutableHandleValue resolveFunVal,
+                                   MutableHandleValue rejectFunVal) {
+        resolveFunVal.setObject(*resultCapability.resolve());
+        rejectFunVal.setObject(*resultCapability.reject());
+        return true;
+    };
 
-    RootedValue nextValue(cx);
-    RootedValue nextPromise(cx);
-    RootedValue staticResolve(cx);
-
-    while (true) {
-        // Steps a-c, e-g.
-        if (!iterator.next(&nextValue, done)) {
-            // Steps b, f.
-            *done = true;
-
-            // Steps c, g.
-            return false;
-        }
-
-        // Step d.
-        if (*done) {
-            // Step d.i (implicit).
-
-            // Step d.ii.
-            return true;
-        }
-
-        // Step h.
-        // Sadly, because someone could have overridden
-        // "resolve" on the canonical Promise constructor.
-        if (!GetProperty(cx, C, CVal, cx->names().resolve, &staticResolve))
-            return false;
-
-        FixedInvokeArgs<1> resolveArgs(cx);
-        resolveArgs[0].set(nextValue);
-        if (!Call(cx, staticResolve, CVal, resolveArgs, &nextPromise))
-            return false;
-
-        // Step i.
-        if (!BlockOnPromise(cx, nextPromise, promiseObj, resolveFunVal, rejectFunVal,
-                            isDefaultResolveFn))
-        {
-            return false;
-        }
-    }
-
-    MOZ_ASSERT_UNREACHABLE("Shouldn't reach the end of PerformPromiseRace");
+    // Step 3.
+    return CommonPerformPromiseAllRace(cx, iterator, C,
+                                       resultCapability.promise(), done,
+                                       isDefaultResolveFn, getResolveAndReject);
 }
 
-// ES2016, Sub-steps of 25.4.4.4 and 25.4.4.5.
+enum class PromiseAllSettledElementFunctionKind { Resolve, Reject };
+
+// Promise.allSettled (Stage 3 proposal)
+// https://tc39.github.io/proposal-promise-allSettled/
+//
+// Promise.allSettled Resolve Element Functions
+// Promise.allSettled Reject Element Functions
+template <PromiseAllSettledElementFunctionKind Kind>
+static bool PromiseAllSettledElementFunction(JSContext* cx, unsigned argc,
+                                             Value* vp);
+
+// Promise.allSettled (Stage 3 proposal)
+// https://tc39.github.io/proposal-promise-allSettled/
+//
+// Promise.allSettled ( iterable )
+static bool Promise_static_allSettled(JSContext* cx, unsigned argc, Value* vp) {
+  CallArgs args = CallArgsFromVp(argc, vp);
+  return CommonStaticAllRace(cx, args, IterationMode::AllSettled);
+}
+
+// Promise.allSettled (Stage 3 proposal)
+// https://tc39.github.io/proposal-promise-allSettled/
+//
+// PerformPromiseAllSettled ( iteratorRecord, constructor, resultCapability )
+static MOZ_MUST_USE bool PerformPromiseAllSettled(
+    JSContext* cx, JS::ForOfIterator& iterator, HandleObject C,
+    Handle<PromiseCapability> resultCapability, bool* done) {
+  *done = false;
+
+  // Step 1.
+  MOZ_ASSERT(C->isConstructor());
+
+  // Step 2 (omitted).
+
+  // Step 3.
+  // See the big comment in PerformPromiseAll about which objects should be
+  // created in which compartments.
+  RootedArrayObject valuesArray(cx);
+  RootedValue valuesArrayVal(cx);
+  if (IsWrapper(resultCapability.promise())) {
+    JSObject* unwrappedPromiseObj = CheckedUnwrap(resultCapability.promise());
+    MOZ_ASSERT(unwrappedPromiseObj);
+
+    {
+      AutoCompartment ac(cx, unwrappedPromiseObj);
+      valuesArray = NewDenseEmptyArray(cx);
+      if (!valuesArray)
+        return false;
+    }
+
+    valuesArrayVal.setObject(*valuesArray);
+    if (!cx->compartment()->wrap(cx, &valuesArrayVal)) {
+      return false;
+    }
+  } else {
+    valuesArray = NewDenseEmptyArray(cx);
+    if (!valuesArray)
+      return false;
+
+    valuesArrayVal.setObject(*valuesArray);
+  }
+
+  // Step 4.
+  // Create our data holder that holds all the things shared across every step
+  // of the iterator. In particular, this holds the remainingElementsCount
+  // (as an integer reserved slot), the array of values, and the resolve
+  // function from our PromiseCapability.
+  Rooted<PromiseAllDataHolder*> dataHolder(cx);
+  dataHolder =
+      NewPromiseAllDataHolder(cx, resultCapability.promise(), valuesArrayVal,
+                              resultCapability.resolve());
+  if (!dataHolder) {
+    return false;
+  }
+
+  // Step 5.
+  uint32_t index = 0;
+
+  auto getResolveAndReject = [cx, &valuesArray, &dataHolder, &index](
+                                 MutableHandleValue resolveFunVal,
+                                 MutableHandleValue rejectFunVal) {
+    // Step 6.h.
+    {  // Scope for the AutoCompartment we need to work with valuesArray.  We
+      // mostly do this for performance; we could go ahead and do the define via
+      // a cross-compartment proxy instead...
+      AutoCompartment ac(cx, valuesArray);
+
+      if (!NewbornArrayPush(cx, valuesArray, UndefinedValue())) {
+        return false;
+      }
+    }
+
+    auto PromiseAllSettledResolveElementFunction =
+        PromiseAllSettledElementFunction<
+            PromiseAllSettledElementFunctionKind::Resolve>;
+    auto PromiseAllSettledRejectElementFunction =
+        PromiseAllSettledElementFunction<
+            PromiseAllSettledElementFunctionKind::Reject>;
+
+    // Steps 6.j-m.
+    JSFunction* resolveFunc = NewNativeFunction(
+        cx, PromiseAllSettledResolveElementFunction, 1, nullptr,
+        gc::AllocKind::FUNCTION_EXTENDED, GenericObject);
+    if (!resolveFunc) {
+      return false;
+    }
+    resolveFunVal.setObject(*resolveFunc);
+
+    // Steps 6.o-q.
+    resolveFunc->setExtendedSlot(PromiseAllSettledElementFunctionSlot_Data,
+                                 ObjectValue(*dataHolder));
+
+    // Step 6.n.
+    resolveFunc->setExtendedSlot(
+        PromiseAllSettledElementFunctionSlot_ElementIndex, Int32Value(index));
+
+    // Steps 6.r-t.
+    JSFunction* rejectFunc = NewNativeFunction(
+        cx, PromiseAllSettledRejectElementFunction, 1, nullptr,
+        gc::AllocKind::FUNCTION_EXTENDED, GenericObject);
+    if (!rejectFunc) {
+      return false;
+    }
+    rejectFunVal.setObject(*rejectFunc);
+
+    // Steps 6.v-x.
+    rejectFunc->setExtendedSlot(PromiseAllSettledElementFunctionSlot_Data,
+                                ObjectValue(*dataHolder));
+
+    // Step 6.u.
+    rejectFunc->setExtendedSlot(
+        PromiseAllSettledElementFunctionSlot_ElementIndex, Int32Value(index));
+
+    // Step 6.y.
+    dataHolder->increaseRemainingCount();
+
+    // Step 6.aa.
+    index++;
+    MOZ_ASSERT(index > 0);
+
+    return true;
+  };
+
+  // Step 6.
+  if (!CommonPerformPromiseAllRace(cx, iterator, C, resultCapability.promise(),
+                                   done, true, getResolveAndReject)) {
+    return false;
+  }
+
+  // Step 6.d.ii.
+  int32_t remainingCount = dataHolder->decreaseRemainingCount();
+
+  // Steps 6.d.iii-iv.
+  if (remainingCount == 0) {
+    return RunResolutionFunction(cx, resultCapability.resolve(), valuesArrayVal,
+                                 ResolveMode, resultCapability.promise());
+  }
+
+  return true;
+}
+
+// Promise.allSettled (Stage 3 proposal)
+// https://tc39.github.io/proposal-promise-allSettled/
+//
+// Promise.allSettled Resolve Element Functions
+// Promise.allSettled Reject Element Functions
+template <PromiseAllSettledElementFunctionKind Kind>
+static bool PromiseAllSettledElementFunction(JSContext* cx, unsigned argc,
+                                             Value* vp) {
+  CallArgs args = CallArgsFromVp(argc, vp);
+  HandleValue valueOrReason = args.get(0);
+
+  // Step 1.
+  JSFunction* resolve = &args.callee().as<JSFunction>();
+  Rooted<PromiseAllDataHolder*> data(
+      cx, &resolve->getExtendedSlot(PromiseAllSettledElementFunctionSlot_Data)
+               .toObject()
+               .as<PromiseAllDataHolder>());
+
+  // Steps 2-4 (moved below).
+
+  // Step 5.
+  int32_t index =
+      resolve
+          ->getExtendedSlot(PromiseAllSettledElementFunctionSlot_ElementIndex)
+          .toInt32();
+
+  // Step 6.
+  RootedValue valuesVal(cx, data->valuesArray());
+  RootedObject valuesObj(cx, &valuesVal.toObject());
+  bool needsWrapping = false;
+  if (IsProxy(valuesObj)) {
+    // See comment for PerformPromiseAllSettled, step 3 for why we unwrap here.
+    valuesObj = UncheckedUnwrap(valuesObj);
+
+    if (JS_IsDeadWrapper(valuesObj)) {
+      JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                                JSMSG_DEAD_OBJECT);
+      return false;
+    }
+
+    needsWrapping = true;
+  }
+  HandleNativeObject values = valuesObj.as<NativeObject>();
+
+  // Steps 2-3.
+  // We use the element value as a signal for whether the Promise was already
+  // fulfilled. Upon resolution, it's set to the result object created below.
+  if (!values->getDenseElement(index).isUndefined()) {
+    args.rval().setUndefined();
+    return true;
+  }
+
+  // Steps 7-8 (moved below).
+
+  // Step 9.
+  RootedPlainObject obj(cx, NewBuiltinClassInstance<PlainObject>(cx));
+  if (!obj) {
+    return false;
+  }
+
+  // Step 10.
+  RootedId id(cx, NameToId(cx->names().status));
+  RootedValue statusValue(cx);
+  if (Kind == PromiseAllSettledElementFunctionKind::Resolve) {
+    statusValue.setString(cx->names().fulfilled);
+  } else {
+    statusValue.setString(cx->names().rejected);
+  }
+  if (!::JS_DefinePropertyById(cx, obj, id, statusValue, JSPROP_ENUMERATE)) {
+    return false;
+  }
+
+  // Step 11.
+  if (Kind == PromiseAllSettledElementFunctionKind::Resolve) {
+    id = NameToId(cx->names().value);
+  } else {
+    id = NameToId(cx->names().reason);
+  }
+  if (!::JS_DefinePropertyById(cx, obj, id, valueOrReason, JSPROP_ENUMERATE)) {
+    return false;
+  }
+
+  RootedValue objVal(cx, ObjectValue(*obj));
+  if (needsWrapping) {
+    AutoCompartment ac(cx, valuesObj);
+    if (!cx->compartment()->wrap(cx, &objVal)) {
+      return false;
+    }
+  }
+
+  // Steps 4, 12.
+  values->setDenseElement(index, objVal);
+
+  // Steps 8, 13.
+  uint32_t remainingCount = data->decreaseRemainingCount();
+
+  // Step 14.
+  if (remainingCount == 0) {
+    // Step 14.a. (Omitted, happened in PerformPromiseAllSettled.)
+    // Step 14.b.
+
+    // Step 7 (Adapted to work with PromiseAllDataHolder's layout).
+    RootedObject resolveAllFun(cx, data->resolveObj());
+    RootedObject promiseObj(cx, data->promiseObj());
+    if (!RunResolutionFunction(cx, resolveAllFun, valuesVal, ResolveMode,
+                               promiseObj)) {
+      return false;
+    }
+  }
+
+  // Step 15.
+  args.rval().setUndefined();
+  return true;
+}
+
+// https://tc39.github.io/ecma262/#sec-promise.reject
+//
+// Unified implementation of
+// 25.6.4.4 Promise.reject ( r )
+// 25.6.4.5 Promise.resolve ( x )
+// 25.6.4.5.1 PromiseResolve ( C, x )
 static MOZ_MUST_USE JSObject*
 CommonStaticResolveRejectImpl(JSContext* cx, HandleValue thisVal, HandleValue argVal,
                               ResolutionMode mode)
@@ -3964,128 +4059,6 @@ PerformPromiseThenWithReaction(JSContext* cx, Handle<PromiseObject*> promise,
 
     // Step 11.
     return true;
-}
-
-/**
- * Calls |promise.then| with the provided hooks and adds |blockedPromise| to
- * its list of dependent promises. Used by |Promise.all| and |Promise.race|.
- *
- * If |promise.then| is the original |Promise.prototype.then| function and
- * the call to |promise.then| would use the original |Promise| constructor to
- * create the resulting promise, this function skips the call to |promise.then|
- * and thus creating a new promise that would not be observable by content.
- */
-static MOZ_MUST_USE bool
-BlockOnPromise(JSContext* cx, HandleValue promiseVal, HandleObject blockedPromise_,
-               HandleValue onFulfilled, HandleValue onRejected, bool onFulfilledReturnsUndefined)
-{
-    RootedObject promiseObj(cx, ToObject(cx, promiseVal));
-    if (!promiseObj)
-        return false;
-
-    RootedValue thenVal(cx);
-    if (!GetProperty(cx, promiseObj, promiseVal, cx->names().then, &thenVal))
-        return false;
-
-    if (promiseObj->is<PromiseObject>() && IsNativeFunction(thenVal, Promise_then)) {
-        // |promise| is an unwrapped Promise, and |then| is the original
-        // |Promise.prototype.then|, inline it here.
-        // 25.4.5.3., step 3.
-        RootedObject PromiseCtor(cx);
-        if (!GetBuiltinConstructor(cx, JSProto_Promise, &PromiseCtor))
-            return false;
-
-        RootedObject C(cx, SpeciesConstructor(cx, PromiseCtor, JSProto_Promise, IsPromiseSpecies));
-        if (!C)
-            return false;
-
-        Rooted<PromiseCapability> resultCapability(cx);
-
-        // By default, the blocked promise is added as an extra entry to the
-        // rejected promises list.
-        bool addToDependent = true;
-
-        // Skip the creation of a built-in Promise object if:
-        // 1. `C` is the built-in Promise constructor.
-        // 2. The `onFulfilled` handler doesn't return an object, which
-        //    ensures no side-effects take place in ResolvePromiseInternal.
-        // 3. The blocked promise is a built-in Promise object.
-        // 4. The blocked promise doesn't use the default resolving functions,
-        //    which in turn means RunResolutionFunction when called from
-        //    PromiseRectionJob won't try to resolve the promise.
-        if (C == PromiseCtor &&
-            onFulfilledReturnsUndefined &&
-            blockedPromise_->is<PromiseObject>() &&
-            !PromiseHasAnyFlag(blockedPromise_->as<PromiseObject>(),
-                               PROMISE_FLAG_DEFAULT_RESOLVING_FUNCTIONS))
-        {
-            resultCapability.promise().set(blockedPromise_);
-            addToDependent = false;
-        } else {
-            // 25.4.5.3., step 4.
-            if (!NewPromiseCapability(cx, C, &resultCapability, true))
-                return false;
-        }
-
-        // 25.4.5.3., step 5.
-        Handle<PromiseObject*> promise = promiseObj.as<PromiseObject>();
-        if (!PerformPromiseThen(cx, promise, onFulfilled, onRejected, resultCapability))
-            return false;
-
-        if (!addToDependent)
-            return true;
-    } else {
-        // Optimization failed, do the normal call.
-        RootedValue rval(cx);
-        if (!Call(cx, thenVal, promiseVal, onFulfilled, onRejected, &rval))
-            return false;
-    }
-
-    // In case the value to depend on isn't an object at all, there's nothing
-    // more to do here: we can only add reactions to Promise objects
-    // (potentially after unwrapping them), and non-object values can't be
-    // Promise objects. This can happen if Promise.all is called on an object
-    // with a `resolve` method that returns primitives.
-    if (!promiseVal.isObject())
-        return true;
-
-    // The object created by the |promise.then| call or the inlined version
-    // of it above is visible to content (either because |promise.then| was
-    // overridden by content and could leak it, or because a constructor
-    // other than the original value of |Promise| was used to create it).
-    // To have both that object and |blockedPromise| show up as dependent
-    // promises in the debugger, add a dummy reaction to the list of reject
-    // reactions that contains |blockedPromise|, but otherwise does nothing.
-    RootedObject unwrappedPromiseObj(cx, promiseObj);
-    RootedObject blockedPromise(cx, blockedPromise_);
-
-    mozilla::Maybe<AutoCompartment> ac;
-    if (IsProxy(promiseObj)) {
-        unwrappedPromiseObj = CheckedUnwrap(promiseObj);
-        if (!unwrappedPromiseObj) {
-            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_OBJECT_ACCESS_DENIED);
-            return false;
-        }
-        if (JS_IsDeadWrapper(unwrappedPromiseObj)) {
-            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DEAD_OBJECT);
-            return false;
-        }
-        ac.emplace(cx, unwrappedPromiseObj);
-        if (!cx->compartment()->wrap(cx, &blockedPromise))
-            return false;
-    }
-
-    // If either the object to depend on or the object that gets blocked isn't
-    // a, maybe-wrapped, Promise instance, we ignore it. All this does is lose
-    // some small amount of debug information in scenarios that are highly
-    // unlikely to occur in useful code.
-    if (!unwrappedPromiseObj->is<PromiseObject>())
-        return true;
-    if (!blockedPromise_->is<PromiseObject>())
-        return true;
-
-    Handle<PromiseObject*> promise = unwrappedPromiseObj.as<PromiseObject>();
-    return AddDummyPromiseReactionForDebugger(cx, promise, blockedPromise);
 }
 
 static MOZ_MUST_USE bool
