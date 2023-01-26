@@ -8,6 +8,7 @@
 #include "jsiter.h"
 
 #include "mozilla/ArrayUtils.h"
+#include "mozilla/DebugOnly.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/PodOperations.h"
@@ -45,6 +46,7 @@ using namespace js::gc;
 using JS::ForOfIterator;
 
 using mozilla::ArrayLength;
+using mozilla::DebugOnly;
 using mozilla::Maybe;
 using mozilla::PodCopy;
 using mozilla::PodZero;
@@ -944,23 +946,76 @@ js::CreateIterResultObject(JSContext* cx, HandleValue value, bool done)
     // Step 1 (implicit).
 
     // Step 2.
-    RootedObject resultObj(cx, NewBuiltinClassInstance<PlainObject>(cx));
-    if (!resultObj)
+    RootedObject templateObject(cx, cx->compartment()->getOrCreateIterResultTemplateObject(cx));
+    if (!templateObject)
         return nullptr;
+
+    NativeObject* resultObj = NativeObject::createWithTemplate(cx, gc::DefaultHeap, templateObject);
+    if (!resultObj)
+       return nullptr;
 
     // Step 3.
-    if (!DefineProperty(cx, resultObj, cx->names().value, value))
-        return nullptr;
+    resultObj->setSlot(JSCompartment::IterResultObjectValueSlot, value);
 
     // Step 4.
-    if (!DefineProperty(cx, resultObj, cx->names().done,
-                        done ? TrueHandleValue : FalseHandleValue))
-    {
-        return nullptr;
-    }
+    resultObj->setSlot(JSCompartment::IterResultObjectDoneSlot,
+                       done ? TrueHandleValue : FalseHandleValue);
 
     // Step 5.
     return resultObj;
+}
+
+NativeObject*
+JSCompartment::getOrCreateIterResultTemplateObject(JSContext* cx)
+{
+    if (iterResultTemplate_)
+        return iterResultTemplate_;
+
+    // Create template plain object
+    RootedNativeObject templateObject(cx, NewBuiltinClassInstance<PlainObject>(cx, TenuredObject));
+    if (!templateObject)
+        return iterResultTemplate_; // = nullptr
+
+    // Create a new group for the template.
+    Rooted<TaggedProto> proto(cx, templateObject->taggedProto());
+    RootedObjectGroup group(cx, ObjectGroupCompartment::makeGroup(cx, templateObject->getClass(),
+                                                                  proto));
+    if (!group)
+        return iterResultTemplate_; // = nullptr
+    templateObject->setGroup(group);
+
+    // Set dummy `value` property
+    if (!NativeDefineDataProperty(cx, templateObject, cx->names().value, UndefinedHandleValue,
+                                  JSPROP_ENUMERATE))
+    {
+        return iterResultTemplate_; // = nullptr
+    }
+
+    // Set dummy `done` property
+    if (!NativeDefineDataProperty(cx, templateObject, cx->names().done, TrueHandleValue,
+                                  JSPROP_ENUMERATE))
+    {
+        return iterResultTemplate_; // = nullptr
+    }
+
+    // Update `value` property typeset, since it can be any value.
+    HeapTypeSet* types = group->maybeGetProperty(NameToId(cx->names().value));
+    MOZ_ASSERT(types);
+    {
+        AutoEnterAnalysis enter(cx);
+        types->makeUnknown(cx);
+    }
+
+    // Make sure that the properties are in the right slots.
+    DebugOnly<Shape*> shape = templateObject->lastProperty();
+    MOZ_ASSERT(shape->previous()->slot() == JSCompartment::IterResultObjectValueSlot &&
+               shape->previous()->propidRef() == NameToId(cx->names().value));
+    MOZ_ASSERT(shape->slot() == JSCompartment::IterResultObjectDoneSlot &&
+               shape->propidRef() == NameToId(cx->names().done));
+
+    iterResultTemplate_.set(templateObject);
+
+    return iterResultTemplate_;
 }
 
 bool
@@ -971,8 +1026,10 @@ js::ThrowStopIteration(JSContext* cx)
     // StopIteration isn't a constructor, but it's stored in GlobalObject
     // as one, out of laziness. Hence the GetBuiltinConstructor call here.
     RootedObject ctor(cx);
-    if (GetBuiltinConstructor(cx, JSProto_StopIteration, &ctor))
-        cx->setPendingException(ObjectValue(*ctor));
+    if (GetBuiltinConstructor(cx, JSProto_StopIteration, &ctor)) {
+        RootedValue ctorval(cx, ObjectValue(*ctor));
+        cx->setPendingExceptionAndCaptureStack(ctorval);
+    }
     return false;
 }
 
@@ -1261,12 +1318,13 @@ js::UnwindIteratorForException(JSContext* cx, HandleObject obj)
 {
     RootedValue v(cx);
     bool getOk = cx->getPendingException(&v);
+    RootedSavedFrame stack(cx, cx->getPendingExceptionStack());
     cx->clearPendingException();
     if (!CloseIterator(cx, obj))
         return false;
     if (!getOk)
         return false;
-    cx->setPendingException(v);
+    cx->setPendingException(v, stack);
     return true;
 }
 

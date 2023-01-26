@@ -941,7 +941,7 @@ HandleDebugTrap(JSContext* cx, BaselineFrame* frame, uint8_t* retAddr, bool* mus
         return jit::DebugEpilogue(cx, frame, pc, true);
 
       case JSTRAP_THROW:
-        cx->setPendingException(rval);
+        cx->setPendingExceptionAndCaptureStack(rval);
         return false;
 
       default:

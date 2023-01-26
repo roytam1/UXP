@@ -51,7 +51,7 @@ struct ProtoTableEntry {
 
 namespace js {
 
-#define DECLARE_PROTOTYPE_CLASS_INIT(name,code,init,clasp) \
+#define DECLARE_PROTOTYPE_CLASS_INIT(name,init,clasp) \
     extern JSObject* init(JSContext* cx, Handle<JSObject*> obj);
 JS_FOR_EACH_PROTOTYPE(DECLARE_PROTOTYPE_CLASS_INIT)
 #undef DECLARE_PROTOTYPE_CLASS_INIT
@@ -65,8 +65,8 @@ js::InitViaClassSpec(JSContext* cx, Handle<JSObject*> obj)
 }
 
 static const ProtoTableEntry protoTable[JSProto_LIMIT] = {
-#define INIT_FUNC(name,code,init,clasp) { clasp, init },
-#define INIT_FUNC_DUMMY(name,code,init,clasp) { nullptr, nullptr },
+#define INIT_FUNC(name,init,clasp) { clasp, init },
+#define INIT_FUNC_DUMMY(name,init,clasp) { nullptr, nullptr },
     JS_FOR_PROTOTYPES(INIT_FUNC, INIT_FUNC_DUMMY)
 #undef INIT_FUNC_DUMMY
 #undef INIT_FUNC
@@ -93,21 +93,20 @@ js::GlobalObject::getTypedObjectModule() const {
 /* static */ bool
 GlobalObject::skipDeselectedConstructor(JSContext* cx, JSProtoKey key)
 {
-    if (key == JSProto_WebAssembly)
+    // Return true if the given constructor has been disabled at run-time.
+    switch (key) {
+      case JSProto_WebAssembly:
         return !wasm::HasSupport(cx);
 
 #ifdef ENABLE_SHARED_ARRAY_BUFFER
-    // Return true if the given constructor has been disabled at run-time.
-    switch (key) {
       case JSProto_Atomics:
       case JSProto_SharedArrayBuffer:
         return !cx->compartment()->creationOptions().getSharedMemoryAndAtomicsEnabled();
+#endif
+
       default:
         return false;
     }
-#else
-    return false;
-#endif
 }
 
 /* static */ bool

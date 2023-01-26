@@ -158,9 +158,12 @@ ForOfIterator::closeThrow()
     MOZ_ASSERT(iterator);
 
     RootedValue completionException(cx_);
+    RootedSavedFrame completionExceptionStack(cx_);
     if (cx_->isExceptionPending()) {
-        if (!GetAndClearException(cx_, &completionException))
+        if (!GetAndClearExceptionAndStack(cx_, &completionException, &completionExceptionStack)) {
             completionException.setUndefined();
+            completionExceptionStack = nullptr;
+        }
     }
 
     // Steps 1-2 (implicit)
@@ -172,7 +175,7 @@ ForOfIterator::closeThrow()
 
     // Step 4.
     if (returnVal.isUndefined()) {
-        cx_->setPendingException(completionException);
+        cx_->setPendingException(completionException, completionExceptionStack);
         return;
     }
 
@@ -195,7 +198,7 @@ ForOfIterator::closeThrow()
     }
 
     // Step 6.
-    cx_->setPendingException(completionException);
+    cx_->setPendingException(completionException, completionExceptionStack);
 
     // Steps 7-9 (skipped).
     return;

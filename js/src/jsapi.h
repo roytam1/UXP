@@ -1545,6 +1545,22 @@ JS_DefineProfilingFunctions(JSContext* cx, JS::HandleObject obj);
 extern JS_PUBLIC_API(bool)
 JS_DefineDebuggerObject(JSContext* cx, JS::HandleObject obj);
 
+namespace JS {
+
+/**
+ * Tell JS engine whether Profile Timeline Recording is enabled or not.
+ * If Profile Timeline Recording is enabled, data shown there like stack won't
+ * be optimized out.
+ * This is global state and not associated with specific runtime or context.
+ */
+extern JS_PUBLIC_API(void)
+SetProfileTimelineRecordingEnabled(bool enabled);
+
+extern JS_PUBLIC_API(bool)
+IsProfileTimelineRecordingEnabled();
+
+} // namespace JS
+
 #ifdef JS_HAS_CTYPES
 /**
  * Initialize the 'ctypes' object on a global variable 'obj'. The 'ctypes'
@@ -2054,6 +2070,9 @@ inline int CheckIsSetterOp(JSSetterOp op);
 #define JS_PSGS(name, getter, setter, flags) \
     JS_PS_ACCESSOR_SPEC(name, JSNATIVE_WRAPPER(getter), JSNATIVE_WRAPPER(setter), flags, \
                          JSPROP_SHARED)
+#define JS_SYM_GET(symbol, getter, flags) \
+    JS_PS_ACCESSOR_SPEC(reinterpret_cast<const char*>(uint32_t(::JS::SymbolCode::symbol) + 1), \
+                        JSNATIVE_WRAPPER(getter), JSNATIVE_WRAPPER(nullptr), flags, JSPROP_SHARED)
 #define JS_SELF_HOSTED_GET(name, getterName, flags) \
     JS_PS_ACCESSOR_SPEC(name, SELFHOSTED_WRAPPER(getterName), JSNATIVE_WRAPPER(nullptr), flags, \
                          JSPROP_SHARED | JSPROP_GETTER)
@@ -5746,8 +5765,22 @@ JS_IsExceptionPending(JSContext* cx);
 extern JS_PUBLIC_API(bool)
 JS_GetPendingException(JSContext* cx, JS::MutableHandleValue vp);
 
+namespace JS {
+
+enum class ExceptionStackBehavior: bool {
+  // Do not capture any stack.
+  DoNotCapture,
+
+  // Capture the current JS stack when setting the exception. It may be
+  // retrieved by JS::GetPendingExceptionStack.
+  Capture
+};
+
+} // namespace JS
+
 extern JS_PUBLIC_API(void)
-JS_SetPendingException(JSContext* cx, JS::HandleValue v);
+JS_SetPendingException(JSContext* cx, JS::HandleValue v,
+                       JS::ExceptionStackBehavior behavior = JS::ExceptionStackBehavior::Capture);
 
 extern JS_PUBLIC_API(void)
 JS_ClearPendingException(JSContext* cx);
@@ -5774,6 +5807,7 @@ class JS_PUBLIC_API(AutoSaveExceptionState)
     bool wasOverRecursed;
     bool wasThrowing;
     RootedValue exceptionValue;
+    RootedObject exceptionStack;
 
   public:
     /*
@@ -5792,12 +5826,7 @@ class JS_PUBLIC_API(AutoSaveExceptionState)
      * Discard any stored exception state.
      * If this is called, the destructor is a no-op.
      */
-    void drop() {
-        wasPropagatingForcedReturn = false;
-        wasOverRecursed = false;
-        wasThrowing = false;
-        exceptionValue.setUndefined();
-    }
+    void drop();
 
     /*
      * Replace cx's exception state with the stored exception state. Then
@@ -5806,6 +5835,18 @@ class JS_PUBLIC_API(AutoSaveExceptionState)
      */
     void restore();
 };
+
+/**
+ * Get the SavedFrame stack object captured when the pending exception was set
+ * on the JSContext. This fuzzily correlates with a `throw` statement in JS,
+ * although arbitrary JSAPI consumers or VM code may also set pending exceptions
+ * via `JS_SetPendingException`.
+ *
+ * This is not the same stack as `e.stack` when `e` is an `Error` object. (That
+ * would be JS::ExceptionStackOrNull).
+ */
+MOZ_MUST_USE JS_PUBLIC_API(JSObject*)
+GetPendingExceptionStack(JSContext* cx);
 
 } /* namespace JS */
 
