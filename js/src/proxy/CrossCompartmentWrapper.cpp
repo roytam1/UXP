@@ -439,15 +439,14 @@ CrossCompartmentWrapper::fun_toString(JSContext* cx, HandleObject wrapper, bool 
 bool
 CrossCompartmentWrapper::regexp_toShared(JSContext* cx, HandleObject wrapper, RegExpGuard* g) const
 {
-    RegExpGuard wrapperGuard(cx);
+    RegExpGuard re(cx);
     {
         AutoCompartment call(cx, wrappedObject(wrapper));
-        if (!Wrapper::regexp_toShared(cx, wrapper, &wrapperGuard))
+        if (!Wrapper::regexp_toShared(cx, wrapper, &re))
             return false;
     }
 
     // Get an equivalent RegExpShared associated with the current compartment.
-    RegExpShared* re = wrapperGuard.re();
     return cx->compartment()->regExps.get(cx, re->getSource(), re->getFlags(), g);
 }
 

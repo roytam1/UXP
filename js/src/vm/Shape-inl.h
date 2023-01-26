@@ -18,6 +18,7 @@
 
 #include "jsatominlines.h"
 #include "jscntxtinlines.h"
+#include "jsgcinlines.h"
 
 namespace js {
 

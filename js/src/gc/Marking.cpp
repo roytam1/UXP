@@ -437,6 +437,14 @@ js::TraceNullableEdge(JSTracer* trc, WriteBarrieredBase<T>* thingp, const char* 
 }
 
 template <typename T>
+void
+js::TraceNullableEdge(JSTracer* trc, ReadBarriered<T>* thingp, const char* name)
+{
+    if (InternalBarrierMethods<T>::isMarkable(thingp->unbarrieredGet()))
+        DispatchToTracer(trc, ConvertToBase(thingp->unsafeGet()), name);
+}
+
+template <typename T>
 JS_PUBLIC_API(void)
 JS::TraceEdge(JSTracer* trc, JS::Heap<T>* thingp, const char* name)
 {
@@ -550,6 +558,7 @@ js::TraceRootRange(JSTracer* trc, size_t len, T* vec, const char* name)
     template void js::TraceEdge<type>(JSTracer*, WriteBarrieredBase<type>*, const char*); \
     template void js::TraceEdge<type>(JSTracer*, ReadBarriered<type>*, const char*); \
     template void js::TraceNullableEdge<type>(JSTracer*, WriteBarrieredBase<type>*, const char*); \
+    template void js::TraceNullableEdge<type>(JSTracer*, ReadBarriered<type>*, const char*); \
     template void js::TraceManuallyBarrieredEdge<type>(JSTracer*, type*, const char*); \
     template void js::TraceWeakEdge<type>(JSTracer*, WeakRef<type>*, const char*); \
     template void js::TraceRoot<type>(JSTracer*, type*, const char*); \
@@ -866,6 +875,7 @@ js::GCMarker::markAndTraceChildren(T* thing)
 namespace js {
 template <> void GCMarker::traverse(BaseShape* thing) { markAndTraceChildren(thing); }
 template <> void GCMarker::traverse(JS::Symbol* thing) { markAndTraceChildren(thing); }
+template <> void GCMarker::traverse(RegExpShared* thing) { markAndTraceChildren(thing); }
 } // namespace js
 
 // Strings, LazyScripts, Shapes, and Scopes are extremely common, but have
