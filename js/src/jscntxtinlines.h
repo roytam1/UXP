@@ -368,12 +368,13 @@ ExclusiveContext::typeLifoAlloc()
 }  /* namespace js */
 
 inline void
-JSContext::setPendingException(const js::Value& v)
+JSContext::setPendingException(JS::HandleValue v, js::HandleSavedFrame stack)
 {
     // overRecursed_ is set after the fact by ReportOverRecursed.
     this->overRecursed_ = false;
     this->throwing = true;
     this->unwrappedException_ = v;
+    this->unwrappedExceptionStack_ = stack;
     // We don't use assertSameCompartment here to allow
     // js::SetPendingExceptionCrossContext to work.
     MOZ_ASSERT_IF(v.isObject(), v.toObject().compartment() == compartment());

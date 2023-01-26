@@ -590,11 +590,13 @@ class ErrorReport : public ErrorBase {
 
 void
 DispatchScriptErrorEvent(nsPIDOMWindowInner* win, JS::RootingContext* rootingCx,
-                         xpc::ErrorReport* xpcReport, JS::Handle<JS::Value> exception);
+                         xpc::ErrorReport* xpcReport, JS::Handle<JS::Value> exception,
+                         JS::Handle<JSObject*> exceptionStack);
 
 // Get a stack of the sort that can be passed to
 // xpc::ErrorReport::LogToConsoleWithStack from the given exception value.  Can
-// return null if the exception value doesn't have an associated stack.  The
+// be nullptr if the exception value doesn't have an associated stack, and if
+// there is no stack supplied by the JS engine in exceptionStack.  The
 // returned stack, if any, may also not be in the same compartment as
 // exceptionValue.
 //
@@ -605,7 +607,8 @@ DispatchScriptErrorEvent(nsPIDOMWindowInner* win, JS::RootingContext* rootingCx,
 // the stack in the console message keeping the window alive.
 JSObject*
 FindExceptionStackForConsoleReport(nsPIDOMWindowInner* win,
-                                   JS::HandleValue exceptionValue);
+                                   JS::HandleValue exceptionValue,
+                                   JS::HandleObject exceptionStack);
 
 // Return a name for the compartment.
 // This function makes reasonable efforts to make this name both mostly human-readable

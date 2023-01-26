@@ -224,16 +224,23 @@ ProcessNameForCollectorLog()
 
 namespace xpc {
 
-// This handles JS Exceptions (via ExceptionStackOrNull), as well as DOM and XPC
-// Exceptions.
+// This handles JS Exceptions (via ExceptionStackOrNull), DOM and XPC
+// Exceptions, and arbitrary values that were associated with a stack by the
+// JS engine when they were thrown, as specified by exceptionStack.
 //
 // Note that the returned object is _not_ wrapped into the compartment of
 // exceptionValue.
 JSObject*
 FindExceptionStackForConsoleReport(nsPIDOMWindowInner* win,
-                                   JS::HandleValue exceptionValue)
+                                   JS::HandleValue exceptionValue,
+                                   JS::HandleObject exceptionStack)
 {
   if (!exceptionValue.isObject()) {
+    // Use the stack provided by the JS engine, if available. This will not be
+    // a wrapper.
+    if (exceptionStack) {
+      return exceptionStack;
+    }
     return nullptr;
   }
 
@@ -257,6 +264,10 @@ FindExceptionStackForConsoleReport(nsPIDOMWindowInner* win,
     // Not a DOM Exception, try XPC Exception.
     UNWRAP_OBJECT(Exception, exceptionObject, exception);
     if (!exception) {
+      // As above, use the stack provided by the JS engine, if available.
+      if (exceptionStack) {
+        return exceptionStack;
+      }
       return nullptr;
     }
   }
@@ -421,10 +432,12 @@ public:
   ScriptErrorEvent(nsPIDOMWindowInner* aWindow,
                    JS::RootingContext* aRootingCx,
                    xpc::ErrorReport* aReport,
-                   JS::Handle<JS::Value> aError)
+                   JS::Handle<JS::Value> aError,
+                   JS::Handle<JSObject*> aErrorStack)
     : mWindow(aWindow)
     , mReport(aReport)
     , mError(aRootingCx, aError)
+    , mErrorStack(aRootingCx, aErrorStack)
   {}
 
   NS_IMETHOD Run() override
@@ -471,7 +484,7 @@ public:
 
     if (status != nsEventStatus_eConsumeNoDefault) {
       JS::Rooted<JSObject*> stack(rootingCx,
-        xpc::FindExceptionStackForConsoleReport(win, mError));
+        xpc::FindExceptionStackForConsoleReport(win, mError, mErrorStack));
       mReport->LogToConsoleWithStack(stack);
     }
 
@@ -481,7 +494,8 @@ public:
 private:
   nsCOMPtr<nsPIDOMWindowInner>  mWindow;
   RefPtr<xpc::ErrorReport>      mReport;
-  JS::PersistentRootedValue       mError;
+  JS::PersistentRootedValue     mError;
+  JS::PersistentRootedObject    mErrorStack;
 
   static bool sHandlingScriptError;
 };
@@ -494,9 +508,10 @@ namespace xpc {
 
 void
 DispatchScriptErrorEvent(nsPIDOMWindowInner *win, JS::RootingContext* rootingCx,
-                         xpc::ErrorReport *xpcReport, JS::Handle<JS::Value> exception)
+                         xpc::ErrorReport *xpcReport, JS::Handle<JS::Value> exception,
+                         JS::Handle<JSObject*> exceptionStack)
 {
-  nsContentUtils::AddScriptRunner(new ScriptErrorEvent(win, rootingCx, xpcReport, exception));
+  nsContentUtils::AddScriptRunner(new ScriptErrorEvent(win, rootingCx, xpcReport, exception, exceptionStack));
 }
 
 } /* namespace xpc */

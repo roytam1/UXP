@@ -369,6 +369,7 @@ struct JSContext : public js::ExclusiveContext,
     /* Exception state -- the exception member is a GC root by definition. */
     bool                throwing;            /* is there a pending exception? */
     JS::PersistentRooted<JS::Value> unwrappedException_; /* most-recently-thrown exception */
+    JS::PersistentRooted<js::SavedFrame*> unwrappedExceptionStack_; /* stack when the exception was thrown */
 
     // True if the exception currently being thrown is by result of
     // ReportOverRecursed. See Debugger::slowPathOnExceptionUnwind.
@@ -495,17 +496,21 @@ struct JSContext : public js::ExclusiveContext,
 
     MOZ_MUST_USE
     bool getPendingException(JS::MutableHandleValue rval);
+    
+    js::SavedFrame* getPendingExceptionStack();
 
     bool isThrowingOutOfMemory();
     bool isThrowingDebuggeeWouldRun();
     bool isClosingGenerator();
 
-    void setPendingException(const js::Value& v);
+    void setPendingException(JS::HandleValue v, js::HandleSavedFrame stack);
+    void setPendingExceptionAndCaptureStack(JS::HandleValue v);
 
     void clearPendingException() {
         throwing = false;
         overRecursed_ = false;
         unwrappedException_.setUndefined();
+        unwrappedExceptionStack_ = nullptr;
     }
 
     bool isThrowingOverRecursed() const { return throwing && overRecursed_; }

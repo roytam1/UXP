@@ -2479,7 +2479,18 @@ PromiseObject::unforgeableResolve(JSContext* cx, HandleValue value)
     return CommonStaticResolveRejectImpl(cx, cVal, value, ResolveMode);
 }
 
-// ES2016, 25.4.4.6, implemented in Promise.js.
+/**
+ * ES2016, 25.4.4.6 get Promise [ @@species ]
+ */
+static bool
+Promise_static_species(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+
+    // Step 1: Return the this value.
+    args.rval().set(args.thisv());
+    return true;
+}
 
 // ES2016, 25.4.5.1, implemented in Promise.js.
 
@@ -2520,6 +2531,12 @@ NewReactionRecord(JSContext* cx, HandleObject resultPromise, HandleValue onFulfi
     return reaction;
 }
 
+static bool
+IsPromiseSpecies(JSContext* cx, JSFunction* species)
+{
+    return species->maybeNative() == Promise_static_species;
+}
+
 // ES2016, 25.4.5.3., steps 3-5.
 MOZ_MUST_USE bool
 js::OriginalPromiseThen(JSContext* cx, Handle<PromiseObject*> promise,
@@ -2538,10 +2555,9 @@ js::OriginalPromiseThen(JSContext* cx, Handle<PromiseObject*> promise,
 
     if (createDependent) {
         // Step 3.
-        RootedValue ctorVal(cx);
-        if (!SpeciesConstructor(cx, promiseObj, JSProto_Promise, &ctorVal))
+        RootedObject C(cx, SpeciesConstructor(cx, promiseObj, JSProto_Promise, IsPromiseSpecies));
+        if (!C)
             return false;
-        RootedObject C(cx, &ctorVal.toObject());
 
         // Step 4.
         if (!NewPromiseCapability(cx, C, &resultPromise, &resolve, &reject, true))
@@ -2575,6 +2591,13 @@ js::CreatePromiseObjectForAsync(JSContext* cx, HandleValue generatorVal)
     AddPromiseFlags(*promise, PROMISE_FLAG_ASYNC);
     promise->setFixedSlot(PromiseSlot_AwaitGenerator, generatorVal);
     return promise;
+}
+
+bool
+js::IsPromiseForAsync(JSObject* promise)
+{
+    return promise->is<PromiseObject>() &&
+           PromiseHasAnyFlag(promise->as<PromiseObject>(), PROMISE_FLAG_ASYNC);
 }
 
 // ES 2018 draft 25.5.5.2 steps 3.f, 3.g.
@@ -2838,6 +2861,8 @@ js::AsyncGeneratorResolve(JSContext* cx, Handle<AsyncGeneratorObject*> asyncGenO
     // Step 5.
     RootedObject resultPromise(cx, request->promise());
 
+    asyncGenObj->cacheRequest(request);
+
     // Step 6.
     RootedObject resultObj(cx, CreateIterResultObject(cx, value, done));
     if (!resultObj)
@@ -2875,6 +2900,8 @@ js::AsyncGeneratorReject(JSContext* cx, Handle<AsyncGeneratorObject*> asyncGenOb
 
     // Step 5.
     RootedObject resultPromise(cx, request->promise());
+
+    asyncGenObj->cacheRequest(request);
 
     // Step 6.
     if (!RejectMaybeWrappedPromise(cx, resultPromise, exception))
@@ -3013,7 +3040,8 @@ js::AsyncGeneratorEnqueue(JSContext* cx, HandleValue asyncGenVal,
 
     // Step 5 (reordered).
     Rooted<AsyncGeneratorRequest*> request(
-        cx, AsyncGeneratorRequest::create(cx, completionKind, completionValue, resultPromise));
+        cx, AsyncGeneratorObject::createRequest(cx, asyncGenObj, completionKind, completionValue,
+                                                resultPromise));
     if (!request)
         return false;
 
@@ -3186,11 +3214,10 @@ BlockOnPromise(JSContext* cx, HandleValue promiseVal, HandleObject blockedPromis
         RootedObject PromiseCtor(cx);
         if (!GetBuiltinConstructor(cx, JSProto_Promise, &PromiseCtor))
             return false;
-        RootedValue PromiseCtorVal(cx, ObjectValue(*PromiseCtor));
-        RootedValue CVal(cx);
-        if (!SpeciesConstructor(cx, promiseObj, PromiseCtorVal, &CVal))
+
+        RootedObject C(cx, SpeciesConstructor(cx, PromiseCtor, JSProto_Promise, IsPromiseSpecies));
+        if (!C)
             return false;
-        RootedObject C(cx, &CVal.toObject());
 
         RootedObject resultPromise(cx, blockedPromise_);
         RootedObject resolveFun(cx);
@@ -3572,7 +3599,7 @@ static const JSFunctionSpec promise_static_methods[] = {
 };
 
 static const JSPropertySpec promise_static_properties[] = {
-    JS_SELF_HOSTED_SYM_GET(species, "Promise_static_get_species", 0),
+    JS_SYM_GET(species, Promise_static_species, 0),
     JS_PS_END
 };
 
