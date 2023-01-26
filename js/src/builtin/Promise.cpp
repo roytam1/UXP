@@ -471,8 +471,14 @@ enum ReactionRecordSlots {
     // the |PromiseHandler| enum, or null. If the value is null, either the
     // REACTION_FLAG_DEBUGGER_DUMMY or the
     // REACTION_FLAG_DEFAULT_RESOLVING_HANDLER flag must be set.
+    //
+    // After setting the target state for a PromiseReaction, the slot of the
+    // no longer used handler gets reused to store the argument of the active
+    // handler.
     ReactionRecordSlot_OnFulfilled,
+    ReactionRecordSlot_OnRejectedArg = ReactionRecordSlot_OnFulfilled,
     ReactionRecordSlot_OnRejected,
+    ReactionRecordSlot_OnFulfilledArg = ReactionRecordSlot_OnRejected,
 
     // The functions to resolve or reject the promise. Matches the
     // [[Capability]].[[Resolve]] and [[Capability]].[[Reject]] fields from
@@ -489,9 +495,6 @@ enum ReactionRecordSlots {
 
     // Bitmask of the REACTION_FLAG values.
     ReactionRecordSlot_Flags,
-
-    // Argument when calling the function stored in OnFulfilled or OnRejected.
-    ReactionRecordSlot_HandlerArg,
 
     // Additional slot to store extra data for specific reaction record types.
     //
@@ -522,6 +525,20 @@ class PromiseReactionRecord : public NativeObject
         setFixedSlot(ReactionRecordSlot_Flags, Int32Value(flags));
     }
 
+    uint32_t handlerSlot() {
+        MOZ_ASSERT(targetState() != JS::PromiseState::Pending);
+        return targetState() == JS::PromiseState::Fulfilled
+               ? ReactionRecordSlot_OnFulfilled
+               : ReactionRecordSlot_OnRejected;
+    }
+
+    uint32_t handlerArgSlot() {
+        MOZ_ASSERT(targetState() != JS::PromiseState::Pending);
+        return targetState() == JS::PromiseState::Fulfilled
+               ? ReactionRecordSlot_OnFulfilledArg
+               : ReactionRecordSlot_OnRejectedArg;
+    }
+
   public:
     static const Class class_;
 
@@ -535,14 +552,17 @@ class PromiseReactionRecord : public NativeObject
                ? JS::PromiseState::Fulfilled
                : JS::PromiseState::Rejected;
     }
-    void setTargetState(JS::PromiseState state) {
-        int32_t flags = this->flags();
-        MOZ_ASSERT(!(flags & REACTION_FLAG_RESOLVED));
+    void setTargetStateAndHandlerArg(JS::PromiseState state, const Value& arg) {
+        MOZ_ASSERT(targetState() == JS::PromiseState::Pending);
         MOZ_ASSERT(state != JS::PromiseState::Pending, "Can't revert a reaction to pending.");
+
+        int32_t flags = this->flags();
         flags |= REACTION_FLAG_RESOLVED;
         if (state == JS::PromiseState::Fulfilled)
             flags |= REACTION_FLAG_FULFILLED;
+
         setFixedSlot(ReactionRecordSlot_Flags, Int32Value(flags));
+        setFixedSlot(handlerArgSlot(), arg);
     }
     void setIsDefaultResolvingHandler(PromiseObject* promiseToResolve) {
         setFlagOnInitialState(REACTION_FLAG_DEFAULT_RESOLVING_HANDLER);
@@ -586,21 +606,16 @@ class PromiseReactionRecord : public NativeObject
     }
     Value handler() {
         MOZ_ASSERT(targetState() != JS::PromiseState::Pending);
-        uint32_t slot = targetState() == JS::PromiseState::Fulfilled
-                        ? ReactionRecordSlot_OnFulfilled
-                        : ReactionRecordSlot_OnRejected;
-        return getFixedSlot(slot);
+        return getFixedSlot(handlerSlot());
     }
     Value handlerArg() {
         MOZ_ASSERT(targetState() != JS::PromiseState::Pending);
-        return getFixedSlot(ReactionRecordSlot_HandlerArg);
+        return getFixedSlot(handlerArgSlot());
     }
-    void setHandlerArg(Value& arg) {
-        MOZ_ASSERT(targetState() == JS::PromiseState::Pending);
-        setFixedSlot(ReactionRecordSlot_HandlerArg, arg);
-    }
-    JSObject* incumbentGlobalObject() {
-        return getFixedSlot(ReactionRecordSlot_IncumbentGlobalObject).toObjectOrNull();
+    JSObject* getAndClearIncumbentGlobalObject() {
+        JSObject* obj = getFixedSlot(ReactionRecordSlot_IncumbentGlobalObject).toObjectOrNull();
+        setFixedSlot(ReactionRecordSlot_IncumbentGlobalObject, UndefinedValue());
+        return obj;
     }
 };
 
@@ -908,11 +923,9 @@ EnqueuePromiseReactionJob(JSContext* cx, HandleObject reactionObj,
     MOZ_ASSERT(reaction->targetState() == JS::PromiseState::Pending);
 
     assertSameCompartment(cx, handlerArg);
-    reaction->setHandlerArg(handlerArg.get());
+    reaction->setTargetStateAndHandlerArg(targetState, handlerArg);
 
     RootedValue reactionVal(cx, ObjectValue(*reaction));
-
-    reaction->setTargetState(targetState);
     RootedValue handler(cx, reaction->handler());
 
     // If we have a handler callback, we enter that handler's compartment so
@@ -968,7 +981,7 @@ EnqueuePromiseReactionJob(JSContext* cx, HandleObject reactionObj,
     // much better than having to store the original global as a private value
     // because we couldn't wrap it to store it as a normal JS value.
     RootedObject global(cx);
-    if (JSObject* objectFromIncumbentGlobal = reaction->incumbentGlobalObject()) {
+    if (JSObject* objectFromIncumbentGlobal = reaction->getAndClearIncumbentGlobalObject()) {
         objectFromIncumbentGlobal = CheckedUnwrap(objectFromIncumbentGlobal);
         MOZ_ASSERT(objectFromIncumbentGlobal);
         global = &objectFromIncumbentGlobal->global();
@@ -1502,9 +1515,7 @@ PromiseReactionJob(JSContext* cx, unsigned argc, Value* vp)
         MOZ_ASSERT(IsCallable(handlerVal));
 
         // Step 6.
-        FixedInvokeArgs<1> args2(cx);
-        args2[0].set(argument);
-        if (!Call(cx, handlerVal, UndefinedHandleValue, args2, &handlerResult)) {
+        if (!Call(cx, handlerVal, UndefinedHandleValue, argument, &handlerResult)) {
             resolutionMode = RejectMode;
             if (!MaybeGetAndClearException(cx, &handlerResult))
                 return false;
@@ -1573,11 +1584,8 @@ PromiseResolveThenableJob(JSContext* cx, unsigned argc, Value* vp)
     if (!MaybeGetAndClearException(cx, &rval))
         return false;
 
-    FixedInvokeArgs<1> rejectArgs(cx);
-    rejectArgs[0].set(rval);
-
     RootedValue rejectVal(cx, ObjectValue(*rejectFn));
-    return Call(cx, rejectVal, UndefinedHandleValue, rejectArgs, &rval);
+    return Call(cx, rejectVal, UndefinedHandleValue, rval, &rval);
 }
 
 static MOZ_MUST_USE bool
@@ -1989,7 +1997,6 @@ PromiseObject::create(JSContext* cx, HandleObject executor, HandleObject proto /
     bool success;
     {
         FixedInvokeArgs<2> args(cx);
-
         args[0].setObject(*resolveFn);
         args[1].setObject(*rejectFn);
 
@@ -2003,12 +2010,8 @@ PromiseObject::create(JSContext* cx, HandleObject executor, HandleObject proto /
         if (!MaybeGetAndClearException(cx, &exceptionVal))
             return nullptr;
 
-        FixedInvokeArgs<1> args(cx);
-
-        args[0].set(exceptionVal);
-
         RootedValue calleeOrRval(cx, ObjectValue(*rejectFn));
-        if (!Call(cx, calleeOrRval, UndefinedHandleValue, args, &calleeOrRval))
+        if (!Call(cx, calleeOrRval, UndefinedHandleValue, exceptionVal, &calleeOrRval))
             return nullptr;
     }
 
@@ -2293,9 +2296,7 @@ RunResolutionFunction(JSContext *cx, HandleObject resolutionFun, HandleValue res
     assertSameCompartment(cx, promiseObj);
     if (resolutionFun) {
         RootedValue calleeOrRval(cx, ObjectValue(*resolutionFun));
-        FixedInvokeArgs<1> resolveArgs(cx);
-        resolveArgs[0].set(result);
-        return Call(cx, calleeOrRval, UndefinedHandleValue, resolveArgs, &calleeOrRval);
+        return Call(cx, calleeOrRval, UndefinedHandleValue, result, &calleeOrRval);
     }
 
     if (!promiseObj)
@@ -3516,11 +3517,8 @@ js::AsyncFromSyncIteratorMethod(JSContext* cx, CallArgs& args, CompletionKind co
     // 11.1.3.2.1 steps 5-6 (partially).
     // 11.1.3.2.2, 11.1.3.2.3 steps 8-9.
     RootedValue iterVal(cx, ObjectValue(*iter));
-    FixedInvokeArgs<1> args2(cx);
-    args2[0].set(args.get(0));
-
     RootedValue resultVal(cx);
-    if (!js::Call(cx, func, iterVal, args2, &resultVal))
+    if (!Call(cx, func, iterVal, args.get(0), &resultVal))
         return AbruptRejectPromise(cx, args, resultPromise, nullptr);
 
     // 11.1.3.2.1 steps 5-6 (partially).
@@ -4245,11 +4243,8 @@ PromiseObject::resolve(JSContext* cx, Handle<PromiseObject*> promise, HandleValu
     if (!cx->compartment()->wrap(cx, &funVal))
         return false;
 
-    FixedInvokeArgs<1> args(cx);
-    args[0].set(resolutionValue);
-
     RootedValue dummy(cx);
-    return Call(cx, funVal, UndefinedHandleValue, args, &dummy);
+    return Call(cx, funVal, UndefinedHandleValue, resolutionValue, &dummy);
 }
 
 /* static */ bool
@@ -4265,11 +4260,8 @@ PromiseObject::reject(JSContext* cx, Handle<PromiseObject*> promise, HandleValue
     RootedValue funVal(cx, promise->getFixedSlot(PromiseSlot_RejectFunction));
     MOZ_ASSERT(IsCallable(funVal));
 
-    FixedInvokeArgs<1> args(cx);
-    args[0].set(rejectionValue);
-
     RootedValue dummy(cx);
-    return Call(cx, funVal, UndefinedHandleValue, args, &dummy);
+    return Call(cx, funVal, UndefinedHandleValue, rejectionValue, &dummy);
 }
 
 /* static */ void
