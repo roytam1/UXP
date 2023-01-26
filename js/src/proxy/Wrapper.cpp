@@ -408,12 +408,15 @@ ErrorCopier::~ErrorCopier()
     {
         RootedValue exc(cx);
         if (cx->getPendingException(&exc) && exc.isObject() && exc.toObject().is<ErrorObject>()) {
+            RootedSavedFrame stack(cx, cx->getPendingExceptionStack());
             cx->clearPendingException();
             ac.reset();
             Rooted<ErrorObject*> errObj(cx, &exc.toObject().as<ErrorObject>());
             JSObject* copyobj = CopyErrorObject(cx, errObj);
-            if (copyobj)
-                cx->setPendingException(ObjectValue(*copyobj));
+            if (copyobj) {
+                RootedValue rootedCopy(cx, ObjectValue(*copyobj));
+                cx->setPendingException(rootedCopy, stack);
+            }
         }
     }
 }

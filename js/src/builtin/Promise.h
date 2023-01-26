@@ -142,6 +142,9 @@ MOZ_MUST_USE PromiseObject*
 CreatePromiseObjectForAsync(JSContext* cx, HandleValue generatorVal);
 
 MOZ_MUST_USE bool
+IsPromiseForAsync(JSObject* promise);
+
+MOZ_MUST_USE bool
 AsyncFunctionReturned(JSContext* cx, Handle<PromiseObject*> resultPromise, HandleValue value);
 
 MOZ_MUST_USE bool

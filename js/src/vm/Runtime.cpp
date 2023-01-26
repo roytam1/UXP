@@ -548,7 +548,7 @@ InvokeInterruptCallback(JSContext* cx)
                     Debugger::propagateForcedReturn(cx, iter.abstractFramePtr(), rval);
                     return false;
                   case JSTRAP_THROW:
-                    cx->setPendingException(rval);
+                    cx->setPendingExceptionAndCaptureStack(rval);
                     return false;
                   default:;
                 }

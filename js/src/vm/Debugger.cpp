@@ -848,7 +848,7 @@ Debugger::slowPathOnEnterFrame(JSContext* cx, AbstractFramePtr frame)
         break;
 
       case JSTRAP_THROW:
-        cx->setPendingException(rval);
+        cx->setPendingExceptionAndCaptureStack(rval);
         break;
 
       case JSTRAP_ERROR:
@@ -960,7 +960,7 @@ Debugger::slowPathOnLeaveFrame(JSContext* cx, AbstractFramePtr frame, jsbytecode
         return true;
 
       case JSTRAP_THROW:
-        cx->setPendingException(value);
+        cx->setPendingExceptionAndCaptureStack(value);
         return false;
 
       case JSTRAP_ERROR:
@@ -993,7 +993,7 @@ Debugger::slowPathOnDebuggerStatement(JSContext* cx, AbstractFramePtr frame)
         break;
 
       case JSTRAP_THROW:
-        cx->setPendingException(rval);
+        cx->setPendingExceptionAndCaptureStack(rval);
         break;
 
       default:
@@ -1028,7 +1028,7 @@ Debugger::slowPathOnExceptionUnwind(JSContext* cx, AbstractFramePtr frame)
         break;
 
       case JSTRAP_THROW:
-        cx->setPendingException(rval);
+        cx->setPendingExceptionAndCaptureStack(rval);
         break;
 
       case JSTRAP_ERROR:
@@ -1321,7 +1321,7 @@ public:
 
     bool operator()(JSContext* cx) override
     {
-        cx->setPendingException(exn_);
+        cx->setPendingExceptionAndCaptureStack(exn_);
         return false;
     }
 
@@ -1753,6 +1753,7 @@ Debugger::fireExceptionUnwind(JSContext* cx, MutableHandleValue vp)
     MOZ_ASSERT(hook->isCallable());
 
     RootedValue exc(cx);
+    RootedSavedFrame stack(cx, cx->getPendingExceptionStack());
     if (!cx->getPendingException(&exc))
         return JSTRAP_ERROR;
     cx->clearPendingException();
@@ -1772,7 +1773,7 @@ Debugger::fireExceptionUnwind(JSContext* cx, MutableHandleValue vp)
     bool ok = js::Call(cx, fval, object, scriptFrame, wrappedExc, &rv);
     JSTrapStatus st = processHandlerResult(ac, ok, rv, iter.abstractFramePtr(), iter.pc(), vp);
     if (st == JSTRAP_CONTINUE)
-        cx->setPendingException(exc);
+        cx->setPendingException(exc, stack);
     return st;
 }
 
@@ -2005,13 +2006,7 @@ Debugger::onSingleStep(JSContext* cx, MutableHandleValue vp)
      * onStep handlers mess with that (other than by returning a resumption
      * value).
      */
-    RootedValue exception(cx, UndefinedValue());
-    bool exceptionPending = cx->isExceptionPending();
-    if (exceptionPending) {
-        if (!cx->getPendingException(&exception))
-            return JSTRAP_ERROR;
-        cx->clearPendingException();
-    }
+    JS::AutoSaveExceptionState savedExc(cx);
 
     /*
      * Build list of Debugger.Frame instances referring to this frame with
@@ -2070,13 +2065,13 @@ Debugger::onSingleStep(JSContext* cx, MutableHandleValue vp)
         bool ok = js::Call(cx, fval, frame, &rval);
         JSTrapStatus st = dbg->processHandlerResult(ac, ok, rval, iter.abstractFramePtr(),
                                                     iter.pc(), vp);
-        if (st != JSTRAP_CONTINUE)
+        if (st != JSTRAP_CONTINUE) {
+            savedExc.drop();
             return st;
+        }
     }
 
     vp.setUndefined();
-    if (exceptionPending)
-        cx->setPendingException(exception);
     return JSTRAP_CONTINUE;
 }
 

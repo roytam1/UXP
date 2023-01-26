@@ -620,6 +620,11 @@ class ConstraintTypeSet : public TypeSet
      */
     void addType(ExclusiveContext* cx, Type type);
 
+    /* Generalize to any type. */
+    void makeUnknown(ExclusiveContext* cx) {
+        addType(cx, UnknownType());
+    }
+
     // Trigger a post barrier when writing to this set, if necessary.
     // addType(cx, type) takes care of this automatically.
     void postWriteBarrier(ExclusiveContext* cx, Type type);

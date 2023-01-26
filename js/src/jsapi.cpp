@@ -984,8 +984,8 @@ LookupStdName(const JSAtomState& names, JSAtom* name, const JSStdName* table)
  * JSProtoKey does not correspond to a class with a meaningful constructor, we
  * insert a null entry into the table.
  */
-#define STD_NAME_ENTRY(name, code, init, clasp) { EAGER_ATOM(name), static_cast<JSProtoKey>(code) },
-#define STD_DUMMY_ENTRY(name, code, init, dummy) { 0, JSProto_Null },
+#define STD_NAME_ENTRY(name, init, clasp) { EAGER_ATOM(name), JSProto_##name },
+#define STD_DUMMY_ENTRY(name, init, dummy) { 0, JSProto_Null },
 static const JSStdName standard_class_names[] = {
   JS_FOR_PROTOTYPES(STD_NAME_ENTRY, STD_DUMMY_ENTRY)
   { 0, JSProto_LIMIT }
@@ -1274,6 +1274,20 @@ JS::detail::ComputeThis(JSContext* cx, Value* vp)
         return NullValue();
 
     return thisv;
+}
+
+static bool gProfileTimelineRecordingEnabled = false;
+
+JS_PUBLIC_API(void)
+JS::SetProfileTimelineRecordingEnabled(bool enabled)
+{
+    gProfileTimelineRecordingEnabled = enabled;
+}
+
+JS_PUBLIC_API(bool)
+JS::IsProfileTimelineRecordingEnabled()
+{
+    return gProfileTimelineRecordingEnabled;
 }
 
 JS_PUBLIC_API(void*)
@@ -6205,12 +6219,16 @@ JS_GetPendingException(JSContext* cx, MutableHandleValue vp)
 }
 
 JS_PUBLIC_API(void)
-JS_SetPendingException(JSContext* cx, HandleValue value)
+JS_SetPendingException(JSContext* cx, HandleValue value, JS::ExceptionStackBehavior behavior)
 {
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);
     releaseAssertSameCompartment(cx, value);
-    cx->setPendingException(value);
+    if (behavior == JS::ExceptionStackBehavior::Capture) {
+        cx->setPendingExceptionAndCaptureStack(value);
+    } else {
+        cx->setPendingException(value, nullptr);
+    }
 }
 
 JS_PUBLIC_API(void)
@@ -6220,12 +6238,20 @@ JS_ClearPendingException(JSContext* cx)
     cx->clearPendingException();
 }
 
+JS_PUBLIC_API(JSObject*)
+JS::GetPendingExceptionStack(JSContext* cx)
+{
+  AssertHeapIsIdle(cx);
+  return cx->getPendingExceptionStack();
+}
+
 JS::AutoSaveExceptionState::AutoSaveExceptionState(JSContext* cx)
   : context(cx),
     wasPropagatingForcedReturn(cx->propagatingForcedReturn_),
     wasOverRecursed(cx->overRecursed_),
     wasThrowing(cx->throwing),
-    exceptionValue(cx)
+    exceptionValue(cx),
+    exceptionStack(cx)
 {
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);
@@ -6235,8 +6261,19 @@ JS::AutoSaveExceptionState::AutoSaveExceptionState(JSContext* cx)
         cx->overRecursed_ = false;
     if (wasThrowing) {
         exceptionValue = cx->unwrappedException_;
+        exceptionStack = cx->unwrappedExceptionStack_;
         cx->clearPendingException();
     }
+}
+
+void
+JS::AutoSaveExceptionState::drop()
+{
+  wasPropagatingForcedReturn = false;
+  wasOverRecursed = false;
+  wasThrowing = false;
+  exceptionValue.setUndefined();
+  exceptionStack = nullptr;
 }
 
 void
@@ -6246,6 +6283,9 @@ JS::AutoSaveExceptionState::restore()
     context->overRecursed_ = wasOverRecursed;
     context->throwing = wasThrowing;
     context->unwrappedException_ = exceptionValue;
+    if (exceptionStack) {
+      context->unwrappedExceptionStack_ = &exceptionStack->as<SavedFrame>();
+    }
     drop();
 }
 
@@ -6258,6 +6298,9 @@ JS::AutoSaveExceptionState::~AutoSaveExceptionState()
             context->overRecursed_ = wasOverRecursed;
             context->throwing = true;
             context->unwrappedException_ = exceptionValue;
+            if (exceptionStack) {
+                context->unwrappedExceptionStack_ = &exceptionStack->as<SavedFrame>();
+            }
         }
     }
 }

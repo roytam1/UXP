@@ -1675,6 +1675,41 @@ js::NativeDefineProperty(ExclusiveContext* cx, HandleNativeObject obj, PropertyN
     return NativeDefineProperty(cx, obj, id, value, getter, setter, attrs);
 }
 
+bool
+js::NativeDefineDataProperty(JSContext* cx, Handle<NativeObject*> obj, HandleId id, HandleValue value,
+                             unsigned attrs, ObjectOpResult& result)
+{
+    Rooted<PropertyDescriptor> desc(cx);
+    desc.initFields(nullptr, value, attrs, nullptr, nullptr);
+    return NativeDefineProperty(cx, obj, id, desc, result);
+}
+
+bool
+js::NativeDefineDataProperty(JSContext* cx, Handle<NativeObject*> obj, HandleId id, HandleValue value,
+                             unsigned attrs)
+{
+    ObjectOpResult result;
+    if (!NativeDefineDataProperty(cx, obj, id, value, attrs, result)) {
+        return false;
+    }
+    if (!result) {
+        // Off-thread callers should not get here: they must call this
+        // function only with known-valid arguments. Populating a new
+        // PlainObject with configurable properties is fine.
+        MOZ_ASSERT(!cx->isHelperThreadContext());
+        result.reportError(cx, obj, id);
+        return false;
+    }
+    return true;
+}
+
+bool
+js::NativeDefineDataProperty(JSContext* cx, Handle<NativeObject*> obj, PropertyName* name, HandleValue value,
+                             unsigned attrs)
+{
+    RootedId id(cx, NameToId(name));
+    return NativeDefineDataProperty(cx, obj, id, value, attrs);
+}
 
 /*** [[HasProperty]] *****************************************************************************/
 

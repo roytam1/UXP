@@ -1883,7 +1883,7 @@ CASE(EnableInterruptsPseudoOpcode)
                     goto error;
                 goto successful_return_continuation;
               case JSTRAP_THROW:
-                cx->setPendingException(rval);
+                cx->setPendingExceptionAndCaptureStack(rval);
                 goto error;
               default:;
             }
@@ -1905,7 +1905,7 @@ CASE(EnableInterruptsPseudoOpcode)
                     goto error;
                 goto successful_return_continuation;
               case JSTRAP_THROW:
-                cx->setPendingException(rval);
+                cx->setPendingExceptionAndCaptureStack(rval);
                 goto error;
               default:
                 break;
@@ -3825,7 +3825,8 @@ CASE(JSOP_RETSUB)
          * be necessary, but it seems clearer.  And it points out a FIXME:
          * 350509, due to Igor Bukanov.
          */
-        cx->setPendingException(rval);
+        ReservedRooted<Value> v(&rootValue0, rval);
+        cx->setPendingExceptionAndCaptureStack(v);
         goto error;
     }
     MOZ_ASSERT(rval.isInt32());
@@ -4331,7 +4332,7 @@ bool
 js::Throw(JSContext* cx, HandleValue v)
 {
     MOZ_ASSERT(!cx->isExceptionPending());
-    cx->setPendingException(v);
+    cx->setPendingExceptionAndCaptureStack(v);
     return false;
 }
 
@@ -4342,7 +4343,7 @@ js::ThrowingOperation(JSContext* cx, HandleValue v)
     // execution instead of calling the (JIT) exception handler.
 
     MOZ_ASSERT(!cx->isExceptionPending());
-    cx->setPendingException(v);
+    cx->setPendingExceptionAndCaptureStack(v);
     return true;
 }
 
@@ -4548,14 +4549,23 @@ js::ThrowMsgOperation(JSContext* cx, const unsigned errorNum)
 }
 
 bool
-js::GetAndClearException(JSContext* cx, MutableHandleValue res)
+js::GetAndClearExceptionAndStack(JSContext* cx, MutableHandleValue res,
+                                 MutableHandleSavedFrame stack)
 {
     if (!cx->getPendingException(res))
         return false;
+    stack.set(cx->getPendingExceptionStack());
     cx->clearPendingException();
 
     // Allow interrupting deeply nested exception handling.
     return CheckForInterrupt(cx);
+}
+
+bool
+js::GetAndClearException(JSContext* cx, MutableHandleValue res)
+{
+    RootedSavedFrame stack(cx);
+    return GetAndClearExceptionAndStack(cx, res, &stack);
 }
 
 template <bool strict>

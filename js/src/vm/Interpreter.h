@@ -490,6 +490,9 @@ bool
 GetAndClearException(JSContext* cx, MutableHandleValue res);
 
 bool
+GetAndClearExceptionAndStack(JSContext* cx, MutableHandleValue res, MutableHandleSavedFrame stack);
+
+bool
 DeleteNameOperation(JSContext* cx, HandlePropertyName name, HandleObject scopeObj,
                     MutableHandleValue res);
 

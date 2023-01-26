@@ -361,13 +361,13 @@ struct SuppressErrorsGuard
     }
 };
 
-// Cut off the stack if it gets too deep (most commonly for infinite recursion
-// errors).
-static const size_t MAX_REPORTED_STACK_DEPTH = 1u << 7;
-
 static bool
 CaptureStack(JSContext* cx, MutableHandleObject stack)
 {
+    // Cut off the stack if it gets too deep (most commonly for infinite recursion
+    // errors).
+    static const size_t MAX_REPORTED_STACK_DEPTH = 1u << 7;
+
     return CaptureCurrentStack(cx, stack,
                                JS::StackCapture(JS::MaxFrames(MAX_REPORTED_STACK_DEPTH)));
 }
@@ -699,7 +699,12 @@ js::ErrorToException(JSContext* cx, JSErrorReport* reportp,
         return;
 
     // Throw it.
-    cx->setPendingException(ObjectValue(*errObject));
+    RootedValue errValue(cx, ObjectValue(*errObject));
+    RootedSavedFrame nstack(cx);
+    if (stack) {
+      nstack = &stack->as<SavedFrame>();
+    }
+    cx->setPendingException(errValue, nstack);
 
     // Flag the error report passed in to indicate an exception was raised.
     reportp->flags |= JSREPORT_EXCEPTION;
