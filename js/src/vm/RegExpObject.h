@@ -134,8 +134,8 @@ class RegExpShared : public gc::TenuredCell
     bool               canStringMatch;
     size_t             parenCount;
 
-    uint32_t              numNamedCaptures_;
-    HeapPtr<PlainObject*> groupsTemplate_;
+    uint32_t            numNamedCaptures_;
+    GCPtr<PlainObject*> groupsTemplate_;
 
     RegExpCompilation  compilationArray[4];
 
