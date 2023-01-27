@@ -16,11 +16,14 @@
 
 #include "gc/Heap.h"
 #include "js/Debug.h"
+#include "vm/ArrayObject.h"
 #include "vm/AsyncFunction.h"
 #include "vm/AsyncIteration.h"
+#include "vm/ErrorObject.h"
 
 #include "jsobjinlines.h"
 
+#include "vm/ErrorObject-inl.h"
 #include "vm/NativeObject-inl.h"
 
 using namespace js;
@@ -2170,28 +2173,33 @@ class MOZ_STACK_CLASS PromiseForOfIterator : public JS::ForOfIterator {
 
 static MOZ_MUST_USE bool
 PerformPromiseAll(JSContext *cx, PromiseForOfIterator& iterator, HandleObject C,
-                  Handle<PromiseCapability> resultCapability, bool* done);
+                  Handle<PromiseCapability> resultCapability, HandleValue promiseResolve, bool* done);
 
 static MOZ_MUST_USE bool
 PerformPromiseAllSettled(JSContext *cx, PromiseForOfIterator& iterator, HandleObject C,
-                         Handle<PromiseCapability> resultCapability, bool* done);
+                         Handle<PromiseCapability> resultCapability, HandleValue promiseResolve, bool* done);
 
-static MOZ_MUST_USE bool PerformPromiseRace(
-    JSContext* cx, PromiseForOfIterator& iterator, HandleObject C,
-    Handle<PromiseCapability> resultCapability, bool* done);
+static MOZ_MUST_USE bool
+PerformPromiseAny(JSContext *cx, PromiseForOfIterator& iterator, HandleObject C,
+                  Handle<PromiseCapability> resultCapability, HandleValue promiseResolve, bool* done);
 
-enum class CombinatorKind { All, AllSettled, Race };
+static MOZ_MUST_USE bool
+PerformPromiseRace(JSContext* cx, PromiseForOfIterator& iterator, HandleObject C,
+                   Handle<PromiseCapability> resultCapability, HandleValue promiseResolve, bool* done);
 
-// ES2020 draft rev a09fc232c137800dbf51b6204f37fdede4ba1646
+enum class CombinatorKind { All, AllSettled, Any, Race };
+
+// ES2020 draft rev e97c95d064750fb949b6778584702dd658cf5624
 //
 // Unified implementation of
 // 25.6.4.1 Promise.all ( iterable )
-// 25.6.4.3 Promise.race ( iterable )
+// 25.6.4.2 Promise.allSettled ( iterable )
+// 25.6.4.4 Promise.race ( iterable )
 //
-// Promise.allSettled (Stage 3 proposal)
-// https://tc39.github.io/proposal-promise-allSettled/
+// Promise.any (Stage 3 proposal)
+// https://tc39.es/proposal-promise-any/
 //
-// Promise.allSettled ( iterable )
+// Promise.any ( iterable )
 static MOZ_MUST_USE bool
 CommonPromiseCombinator(JSContext* cx, CallArgs& args, CombinatorKind mode)
 {
@@ -2207,6 +2215,9 @@ CommonPromiseCombinator(JSContext* cx, CallArgs& args, CombinatorKind mode)
             break;
           case CombinatorKind::AllSettled:
             message = "Receiver of Promise.allSettled call";
+            break;
+          case CombinatorKind::Any:
+            message = "Receiver of Promise.any call";
             break;
           case CombinatorKind::Race:
             message = "Receiver of Promise.race call";
@@ -2225,7 +2236,40 @@ CommonPromiseCombinator(JSContext* cx, CallArgs& args, CombinatorKind mode)
     if (!NewPromiseCapability(cx, C, &promiseCapability, false))
         return false;
 
-    // Steps 4-5.
+    // Regardless of whether we got a fast-path promise from NewPromiseCapability,
+    // the spec requires us to throw TypeError if |Promise.reject| is not callable,
+    // ie. overwritten in this context. Check the prototype here.
+    RootedValue promiseResolve(cx, UndefinedValue());
+    {
+        JSObject* promiseCtor = GlobalObject::getOrCreatePromiseConstructor(cx, cx->global());
+        if (!promiseCtor) {
+            return false;
+        }
+
+        PromiseLookup& promiseLookup = cx->compartment()->promiseLookup;
+        if (C != promiseCtor || !promiseLookup.isDefaultPromiseState(cx)) {
+            // Step 3. Let promiseResolve be GetPromiseResolve(C).
+
+            // GetPromiseResolve
+            // Step 1. Let promiseResolve be ? Get(promiseConstructor, "resolve").
+            if (!GetProperty(cx, C, C, cx->names().resolve, &promiseResolve)) {
+                // Step 4. IfAbruptRejectPromise(promiseResolve, promiseCapability).
+                return AbruptRejectPromise(cx, args, promiseCapability);
+            }
+
+            // GetPromiseResolve
+            // Step 2. If IsCallable(promiseResolve) is false,
+            //         throw a TypeError exception.
+            if (!IsCallable(promiseResolve)) {
+                ReportIsNotFunction(cx, promiseResolve);
+
+                // Step 4. IfAbruptRejectPromise(promiseResolve, promiseCapability).
+                return AbruptRejectPromise(cx, args, promiseCapability);
+            }
+        }
+    }
+
+    // Steps 5.
     PromiseForOfIterator iter(cx);
     if (!iter.init(iterable, JS::ForOfIterator::AllowNonIterable))
         return AbruptRejectPromise(cx, args, promiseCapability);
@@ -2238,6 +2282,9 @@ CommonPromiseCombinator(JSContext* cx, CallArgs& args, CombinatorKind mode)
             break;
           case CombinatorKind::AllSettled:
             message = "Argument of Promise.allSettled";
+            break;
+          case CombinatorKind::Any:
+            message = "Argument of Promise.any";
             break;
           case CombinatorKind::Race:
             message = "Argument of Promise.race";
@@ -2254,13 +2301,16 @@ CommonPromiseCombinator(JSContext* cx, CallArgs& args, CombinatorKind mode)
     bool done, result;
     switch (mode) {
       case CombinatorKind::All:
-        result = PerformPromiseAll(cx, iter, C, promiseCapability, &done);
+        result = PerformPromiseAll(cx, iter, C, promiseCapability, promiseResolve, &done);
         break;
       case CombinatorKind::AllSettled:
-        result = PerformPromiseAllSettled(cx, iter, C, promiseCapability, &done);
+        result = PerformPromiseAllSettled(cx, iter, C, promiseCapability, promiseResolve, &done);
+        break;
+      case CombinatorKind::Any:
+        result = PerformPromiseAny(cx, iter, C, promiseCapability, promiseResolve, &done);
         break;
       case CombinatorKind::Race:
-        result = PerformPromiseRace(cx, iter, C, promiseCapability, &done);
+        result = PerformPromiseRace(cx, iter, C, promiseCapability, promiseResolve, &done);
         break;
     }
 
@@ -2478,18 +2528,19 @@ CommonStaticResolveRejectImpl(JSContext* cx, HandleValue thisVal, HandleValue ar
 static bool
 IsPromiseSpecies(JSContext* cx, JSFunction* species);
 
-// ES2019 draft rev dd269df67d37409a6f2099a842b8f5c75ee6fc24
-// 25.6.4.1.1 Runtime Semantics: PerformPromiseAll, step 6.
-// 25.6.4.3.1 Runtime Semantics: PerformPromiseRace, step 3.
+// ES2020 draft rev e97c95d064750fb949b6778584702dd658cf5624
+// 25.6.4.1.1 Runtime Semantics: PerformPromiseAll, steps 5-6 and step 8.
+// 25.6.4.2.1 Runtime Semantics: PerformPromiseAllSettled, steps 5-6 and step 8.
+// 25.6.4.4.1 Runtime Semantics: PerformPromiseRace, steps 3-5.
 //
-// Promise.allSettled (Stage 3 proposal)
-// https://tc39.github.io/proposal-promise-allSettled/
-// Runtime Semantics: PerformPromiseAllSettled, step 6.
+// Promise.any (Stage 3 proposal)
+// https://tc39.es/proposal-promise-any/
+// Runtime Semantics: PerformPromiseAny, steps 6-8.
 template <typename T>
 static MOZ_MUST_USE bool
 CommonPerformPromiseCombinator(JSContext *cx, PromiseForOfIterator& iterator, HandleObject C,
-                               HandleObject resultPromise, bool* done, bool resolveReturnsUndefined,
-                               T getResolveAndReject)
+                               HandleObject resultPromise, HandleValue promiseResolve, bool* done,
+                               bool resolveReturnsUndefined, T getResolveAndReject)
 {
     RootedObject promiseCtor(cx, GlobalObject::getOrCreatePromiseConstructor(cx, cx->global()));
     if (!promiseCtor)
@@ -2499,13 +2550,13 @@ CommonPerformPromiseCombinator(JSContext *cx, PromiseForOfIterator& iterator, Ha
     // during the iteration.
     bool iterationMayHaveSideEffects = !iterator.isOptimizedDenseArrayIteration();
 
+    PromiseLookup& promiseLookup = cx->compartment()->promiseLookup;
+
     // Try to optimize when the Promise object is in its default state, seeded
     // with |C == promiseCtor| because we can only perform this optimization
     // for the builtin Promise constructor.
-    bool isDefaultPromiseState = C == promiseCtor;
-    bool validatePromiseState = true;
-
-    PromiseLookup& promiseLookup = cx->compartment()->promiseLookup;
+    bool isDefaultPromiseState = C == promiseCtor && promiseLookup.isDefaultPromiseState(cx);
+    bool validatePromiseState = iterationMayHaveSideEffects;
 
     RootedValue CVal(cx, ObjectValue(*C));
     RootedValue resolveFunVal(cx);
@@ -2579,16 +2630,29 @@ CommonPerformPromiseCombinator(JSContext *cx, PromiseForOfIterator& iterator, Ha
                 nextPromise.setObject(*res);
             }
         } else {
-            // 25.6.4.1.1, step 6.i.
-            // 25.6.4.3.1, step 3.h.
-            // Sadly, because someone could have overridden
-            // "resolve" on the canonical Promise constructor.
-            RootedValue& staticResolve = resolveOrThen;
-            if (!GetProperty(cx, C, CVal, cx->names().resolve, &staticResolve))
-                return false;
+            // |promiseResolve| gets passed in from |CommonPromiseCombinator| via |PerformPromise*|.
+            // It is undefined when the Promise constructor was initially in its default state.
+            // Otherwise it is the value of |Promise.resolve|.
+            if (promiseResolve.isUndefined()) {
+                // 25.6.4.1.1, step 6.i.
+                // 25.6.4.3.1, step 3.h.
+                // Inline the call to Promise.resolve.
+                JSObject* res = CommonStaticResolveRejectImpl(cx, CVal, nextValue, ResolveMode);
+                if (!res)
+                    return false;
 
-            if (!Call(cx, staticResolve, CVal, nextValue, &nextPromise))
-                return false;
+                nextPromise.setObject(*res);
+            } else {
+                // 25.6.4.1.1, step 6.i.
+                // 25.6.4.3.1, step 3.h.
+                // Sadly, because someone could have overridden
+                // "resolve" on the canonical Promise constructor.
+                
+                // Step {i, h}. Let nextPromise be
+                //              ? Call(promiseResolve, constructor, « nextValue »).
+                if (!Call(cx, promiseResolve, CVal, nextValue, &nextPromise))
+                    return false;
+            }
         }
 
         // Get the resolving functions for this iteration.
@@ -2878,7 +2942,7 @@ PromiseCombinatorElementFunctionAlreadyCalled(const CallArgs& args,
 // 25.6.4.1.1 PerformPromiseAll (iteratorRecord, constructor, resultCapability)
 static MOZ_MUST_USE bool
 PerformPromiseAll(JSContext *cx, PromiseForOfIterator& iterator, HandleObject C,
-                  Handle<PromiseCapability> resultCapability, bool* done)
+                  Handle<PromiseCapability> resultCapability, HandleValue promiseResolve, bool* done)
 {
     *done = false;
 
@@ -2935,7 +2999,7 @@ PerformPromiseAll(JSContext *cx, PromiseForOfIterator& iterator, HandleObject C,
 
     // Step 8.
     if (!CommonPerformPromiseCombinator(cx, iterator, C, resultCapability.promise(),
-                                        done, true, getResolveAndReject))
+                                        promiseResolve, done, true, getResolveAndReject))
         return false;
 
     // Step 8.d.ii.
@@ -3014,7 +3078,7 @@ Promise_static_race(JSContext* cx, unsigned argc, Value* vp)
 // 25.6.4.3.1 PerformPromiseRace (iteratorRecord, constructor, resultCapability)
 static MOZ_MUST_USE bool
 PerformPromiseRace(JSContext *cx, PromiseForOfIterator& iterator, HandleObject C,
-                   Handle<PromiseCapability> resultCapability, bool* done)
+                   Handle<PromiseCapability> resultCapability, HandleValue promiseResolve, bool* done)
 {
     *done = false;
 
@@ -3038,15 +3102,15 @@ PerformPromiseRace(JSContext *cx, PromiseForOfIterator& iterator, HandleObject C
     };
 
     // Step 3-5.
-    return CommonPerformPromiseCombinator(cx, iterator, C,
-                                       resultCapability.promise(), done,
-                                       isDefaultResolveFn, getResolveAndReject);
+    return CommonPerformPromiseCombinator(cx, iterator, C, resultCapability.promise(),
+                                          promiseResolve, done,
+                                          isDefaultResolveFn, getResolveAndReject);
 }
 
 enum class PromiseAllSettledElementFunctionKind { Resolve, Reject };
 
-// Promise.allSettled (Stage 3 proposal)
-// https://tc39.github.io/proposal-promise-allSettled/
+// ES2020 draft rev e97c95d064750fb949b6778584702dd658cf5624
+// 25.6.4.2 Promise.allSettled ( iterable )
 //
 // Promise.allSettled Resolve Element Functions
 // Promise.allSettled Reject Element Functions
@@ -3054,8 +3118,8 @@ template <PromiseAllSettledElementFunctionKind Kind>
 static bool PromiseAllSettledElementFunction(JSContext* cx, unsigned argc,
                                              Value* vp);
 
-// Promise.allSettled (Stage 3 proposal)
-// https://tc39.github.io/proposal-promise-allSettled/
+// ES2020 draft rev e97c95d064750fb949b6778584702dd658cf5624
+// 25.6.4.2 Promise.allSettled ( iterable )
 //
 // Promise.allSettled ( iterable )
 static bool Promise_static_allSettled(JSContext* cx, unsigned argc, Value* vp) {
@@ -3063,13 +3127,13 @@ static bool Promise_static_allSettled(JSContext* cx, unsigned argc, Value* vp) {
   return CommonPromiseCombinator(cx, args, CombinatorKind::AllSettled);
 }
 
-// Promise.allSettled (Stage 3 proposal)
-// https://tc39.github.io/proposal-promise-allSettled/
+// ES2020 draft rev e97c95d064750fb949b6778584702dd658cf5624
+// 25.6.4.2 Promise.allSettled ( iterable )
 //
 // PerformPromiseAllSettled ( iteratorRecord, constructor, resultCapability )
 static MOZ_MUST_USE bool PerformPromiseAllSettled(
     JSContext* cx, PromiseForOfIterator& iterator, HandleObject C,
-    Handle<PromiseCapability> resultCapability, bool* done) {
+    Handle<PromiseCapability> resultCapability, HandleValue promiseResolve, bool* done) {
   *done = false;
 
   // Step 1.
@@ -3142,7 +3206,7 @@ static MOZ_MUST_USE bool PerformPromiseAllSettled(
 
   // Step 5-6 and 8.
   if (!CommonPerformPromiseCombinator(cx, iterator, C, resultCapability.promise(),
-                                      done, true, getResolveAndReject)) {
+                                      promiseResolve, done, true, getResolveAndReject)) {
     return false;
   }
 
@@ -3248,6 +3312,232 @@ static bool PromiseAllSettledElementFunction(JSContext* cx, unsigned argc,
   // Step 15.
   args.rval().setUndefined();
   return true;
+}
+
+// Promise.any (Stage 3 proposal)
+// https://tc39.es/proposal-promise-any/
+//
+// Promise.any ( iterable )
+static bool Promise_static_any(JSContext* cx, unsigned argc, Value* vp) {
+  CallArgs args = CallArgsFromVp(argc, vp);
+  return CommonPromiseCombinator(cx, args, CombinatorKind::Any);
+}
+
+// Promise.any (Stage 3 proposal)
+// https://tc39.es/proposal-promise-any/
+//
+// Promise.any Reject Element Functions
+static bool PromiseAnyRejectElementFunction(JSContext* cx, unsigned argc,
+                                            Value* vp);
+
+// Promise.any (Stage 3 proposal)
+// https://tc39.es/proposal-promise-any/
+//
+// ThrowAggregateError ( errors )
+static void ThrowAggregateError(JSContext* cx,
+                                Handle<PromiseCombinatorElements> errors,
+                                HandleObject promise);
+
+// Promise.any (Stage 3 proposal)
+// https://tc39.es/proposal-promise-any/
+//
+// PerformPromiseAny ( iteratorRecord, constructor, resultCapability )
+static MOZ_MUST_USE bool
+PerformPromiseAny(JSContext* cx, PromiseForOfIterator& iterator, HandleObject C,
+                  Handle<PromiseCapability> resultCapability, HandleValue promiseResolve, bool* done)
+{
+  *done = false;
+
+  // Step 1.
+  MOZ_ASSERT(C->isConstructor());
+
+  // Step 2 (omitted).
+
+  // Step 3.
+  Rooted<PromiseCombinatorElements> errors(cx);
+  if (!NewPromiseCombinatorElements(cx, resultCapability, &errors)) {
+    return false;
+  }
+
+  // Step 4.
+  // Create our data holder that holds all the things shared across every step
+  // of the iterator. In particular, this holds the remainingElementsCount (as
+  // an integer reserved slot), the array of errors, and the reject function
+  // from our PromiseCapability.
+  Rooted<PromiseCombinatorDataHolder*> dataHolder(cx);
+  dataHolder = PromiseCombinatorDataHolder::New(
+      cx, resultCapability.promise(), errors, resultCapability.reject());
+  if (!dataHolder) {
+    return false;
+  }
+
+  // Step 5.
+  uint32_t index = 0;
+
+  auto getResolveAndReject = [cx, &resultCapability, &errors, &dataHolder,
+                              &index](MutableHandleValue resolveFunVal,
+                                      MutableHandleValue rejectFunVal) {
+    // Step 8.h.
+    if (!errors.pushUndefined(cx)) {
+      return false;
+    }
+
+    // Steps 8.j-p.
+    JSFunction* rejectFunc = NewPromiseCombinatorElementFunction(
+        cx, PromiseAnyRejectElementFunction, dataHolder, index);
+    if (!rejectFunc) {
+      return false;
+    }
+
+    // Step 8.q.
+    dataHolder->increaseRemainingCount();
+
+    // Step 8.s.
+    index++;
+    MOZ_ASSERT(index > 0);
+
+    resolveFunVal.setObject(*resultCapability.resolve());
+    rejectFunVal.setObject(*rejectFunc);
+    return true;
+  };
+
+  // BlockOnPromise fast path requires the passed onFulfilled function doesn't
+  // return an object value, because otherwise the skipped promise creation is
+  // detectable due to missing property lookups.
+  bool isDefaultResolveFn =
+      IsNativeFunction(resultCapability.resolve(), ResolvePromiseFunction);
+
+  // Steps 6-8.
+  if (!CommonPerformPromiseCombinator(
+          cx, iterator, C, resultCapability.promise(), promiseResolve, done, isDefaultResolveFn,
+          getResolveAndReject)) {
+    return false;
+  }
+
+  // Step 8.d.ii.
+  int32_t remainingCount = dataHolder->decreaseRemainingCount();
+
+  // Step 8.d.iii.
+  if (remainingCount == 0) {
+    ThrowAggregateError(cx, errors, resultCapability.promise());
+    return false;
+  }
+
+  // Step 8.d.iv.
+  return true;
+}
+
+// Promise.any (Stage 3 proposal)
+// https://tc39.es/proposal-promise-any/
+//
+// Promise.any Reject Element Functions
+static bool
+PromiseAnyRejectElementFunction(JSContext* cx, unsigned argc, Value* vp)
+{
+  CallArgs args = CallArgsFromVp(argc, vp);
+  HandleValue xVal = args.get(0);
+
+  // Steps 1-5.
+  Rooted<PromiseCombinatorDataHolder*> data(cx);
+  uint32_t index;
+  if (PromiseCombinatorElementFunctionAlreadyCalled(args, &data, &index)) {
+    args.rval().setUndefined();
+    return true;
+  }
+
+  // Step 6.
+  Rooted<PromiseCombinatorElements> errors(cx);
+  if (!GetPromiseCombinatorElements(cx, data, &errors)) {
+    return false;
+  }
+
+  // Step 9.
+  if (!errors.setElement(cx, index, xVal)) {
+    return false;
+  }
+
+  // Steps 8, 10.
+  uint32_t remainingCount = data->decreaseRemainingCount();
+
+  // Step 11.
+  if (remainingCount == 0) {
+    // Step 7 (Adapted to work with PromiseCombinatorDataHolder's layout).
+    RootedObject rejectFun(cx, data->resolveOrRejectObj());
+    RootedObject promiseObj(cx, data->promiseObj());
+
+    ThrowAggregateError(cx, errors, promiseObj);
+
+    RootedValue reason(cx);
+    if (!MaybeGetAndClearException(cx, &reason)) {
+      return false;
+    }
+
+    if (!RunResolutionFunction(cx, rejectFun, reason, RejectMode, promiseObj)) {
+      return false;
+    }
+  }
+
+  // Step 12.
+  args.rval().setUndefined();
+  return true;
+}
+
+// Promise.any (Stage 3 proposal)
+// https://tc39.es/proposal-promise-any/
+//
+// ThrowAggregateError ( errors )
+static void
+ThrowAggregateError(JSContext* cx, Handle<PromiseCombinatorElements> errors, HandleObject promise)
+{
+  MOZ_ASSERT(!cx->isExceptionPending());
+
+  // Create the AggregateError in the same compartment as the array object.
+  AutoCompartment ac(cx, errors.unwrappedArray());
+
+  RootedObject allocationSite(cx);
+  mozilla::Maybe<JS::AutoSetAsyncStackForNewCalls> asyncStack;
+
+  // Provide a more useful error stack if possible: This function is typically
+  // called from Promise job queue, which doesn't have any JS frames on the
+  // stack. So when we create the AggregateError below, its stack property will
+  // be set to the empty string, which makes it harder to debug the error cause.
+  // To avoid this situation set-up an async stack based on the Promise
+  // allocation site, which should point to calling site of |Promise.any|.
+  if (promise->is<PromiseObject>()) {
+    allocationSite = promise->as<PromiseObject>().allocationSite();
+    if (allocationSite) {
+      asyncStack.emplace(
+          cx, allocationSite, "Promise.any",
+          JS::AutoSetAsyncStackForNewCalls::AsyncCallKind::IMPLICIT);
+    }
+  }
+
+  // AutoSetAsyncStackForNewCalls requires a new activation before it takes
+  // effect, so call into the self-hosting helper to set-up new call frames.
+  RootedValue error(cx);
+  if (!GetAggregateError(cx, JSMSG_PROMISE_ANY_REJECTION, &error)) {
+    return;
+  }
+
+  // |error| isn't guaranteed to be an ErrorObject in case of OOM.
+  RootedSavedFrame stack(cx);
+  if (error.isObject() && error.toObject().is<ErrorObject>()) {
+    Rooted<ErrorObject*> errorObj(cx, &error.toObject().as<ErrorObject>());
+    MOZ_ASSERT(errorObj->type() == JSEXN_AGGREGATEERR);
+
+    RootedValue errorsVal(cx, JS::ObjectValue(*errors.unwrappedArray()));
+    if (!NativeDefineDataProperty(cx, errorObj, cx->names().errors, errorsVal,
+                                  0)) {
+      return;
+    }
+
+    // Adopt the existing saved frames when present.
+    if (JSObject* errorStack = errorObj->stack()) {
+      stack = &errorStack->as<SavedFrame>();
+    }
+  }
+
+  cx->setPendingException(error, stack);
 }
 
 // https://tc39.github.io/ecma262/#sec-promise.reject
@@ -4858,6 +5148,7 @@ static const JSPropertySpec promise_properties[] = {
 static const JSFunctionSpec promise_static_methods[] = {
     JS_FN("all", Promise_static_all, 1, 0),
     JS_FN("allSettled", Promise_static_allSettled, 1, 0),
+    JS_FN("any", Promise_static_any, 1, 0),
     JS_FN("race", Promise_static_race, 1, 0),
     JS_FN("reject", Promise_reject, 1, 0),
     JS_FN("resolve", Promise_static_resolve, 1, 0),
