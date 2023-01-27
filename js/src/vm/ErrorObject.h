@@ -13,6 +13,7 @@
 #include "vm/Shape.h"
 
 namespace js {
+class ArrayObject;
 
 class ErrorObject : public NativeObject
 {
