@@ -881,6 +881,10 @@ struct JSCompartment
     // Aggregated output used to collect JSScript hit counts when code coverage
     // is enabled.
     js::coverage::LCovCompartment lcovOutput;
+
+  public:
+    // Property lookup table for promises
+    js::PromiseLookup promiseLookup;
 };
 
 inline bool
