@@ -1696,7 +1696,6 @@ js::NativeDefineDataProperty(JSContext* cx, Handle<NativeObject*> obj, HandleId 
         // Off-thread callers should not get here: they must call this
         // function only with known-valid arguments. Populating a new
         // PlainObject with configurable properties is fine.
-        MOZ_ASSERT(!cx->isHelperThreadContext());
         result.reportError(cx, obj, id);
         return false;
     }
