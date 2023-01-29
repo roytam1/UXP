@@ -623,13 +623,11 @@ TimerThread::AddTimerInternal(nsTimerImpl* aTimer)
   return insertSlot - mTimers.Elements();
 }
 
-// This function must be called from within a lock.
-// Also: we hold the mutex for the nsTimerImpl.
+// Note: this function must be called from within a lock.
 bool
 TimerThread::RemoveTimerInternal(nsTimerImpl* aTimer)
 {
   mMonitor.AssertCurrentThreadOwns();
-  aTimer->mMutex.AssertCurrentThreadOwns();
   if (!mTimers.RemoveElement(aTimer)) {
     return false;
   }
