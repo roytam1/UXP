@@ -306,8 +306,7 @@
       <menuitem id="appmenu_permissions"
                 class="menuitem-iconic"
                 label="&permissions.label;"
-                command="Tools:Permissions"
-                key="key_openPermissions"/>
+                command="Tools:Permissions"/>
 #ifdef MOZ_SERVICES_SYNC
       <!-- only one of sync-setup or sync-syncnow will be showing at once -->
       <menuitem id="sync-setup-appmenu"
