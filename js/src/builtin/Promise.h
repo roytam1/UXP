@@ -16,11 +16,7 @@ enum PromiseSlots {
     PromiseSlot_ReactionsOrResult,
     PromiseSlot_RejectFunction,
     PromiseSlot_AwaitGenerator = PromiseSlot_RejectFunction,
-    PromiseSlot_AllocationSite,
-    PromiseSlot_ResolutionSite,
-    PromiseSlot_AllocationTime,
-    PromiseSlot_ResolutionTime,
-    PromiseSlot_Id,
+    PromiseSlot_DebugInfo,
     PromiseSlots,
 };
 
@@ -28,9 +24,8 @@ enum PromiseSlots {
 #define PROMISE_FLAG_FULFILLED 0x2
 #define PROMISE_FLAG_HANDLED   0x4
 #define PROMISE_FLAG_REPORTED  0x8
-#define PROMISE_FLAG_DEFAULT_RESOLVE_FUNCTION 0x10
-#define PROMISE_FLAG_DEFAULT_REJECT_FUNCTION  0x20
-#define PROMISE_FLAG_ASYNC    0x40
+#define PROMISE_FLAG_DEFAULT_RESOLVING_FUNCTIONS 0x10
+#define PROMISE_FLAG_ASYNC    0x20
 
 class AutoSetNewObjectMetadata;
 
@@ -48,8 +43,11 @@ class PromiseObject : public NativeObject
     static JSObject* unforgeableResolve(JSContext* cx, HandleValue value);
     static JSObject* unforgeableReject(JSContext* cx, HandleValue value);
 
+    int32_t flags() {
+        return getFixedSlot(PromiseSlot_Flags).toInt32();
+    }
     JS::PromiseState state() {
-        int32_t flags = getFixedSlot(PromiseSlot_Flags).toInt32();
+        int32_t flags = this->flags();
         if (!(flags & PROMISE_FLAG_RESOLVED)) {
             MOZ_ASSERT(!(flags & PROMISE_FLAG_FULFILLED));
             return JS::PromiseState::Pending;
@@ -58,12 +56,20 @@ class PromiseObject : public NativeObject
             return JS::PromiseState::Fulfilled;
         return JS::PromiseState::Rejected;
     }
+    Value reactions() {
+        MOZ_ASSERT(state() == JS::PromiseState::Pending);
+        return getFixedSlot(PromiseSlot_ReactionsOrResult);
+    }
     Value value()  {
         MOZ_ASSERT(state() == JS::PromiseState::Fulfilled);
         return getFixedSlot(PromiseSlot_ReactionsOrResult);
     }
     Value reason() {
         MOZ_ASSERT(state() == JS::PromiseState::Rejected);
+        return getFixedSlot(PromiseSlot_ReactionsOrResult);
+    }
+    Value valueOrReason()  {
+        MOZ_ASSERT(state() != JS::PromiseState::Pending);
         return getFixedSlot(PromiseSlot_ReactionsOrResult);
     }
 
@@ -74,14 +80,10 @@ class PromiseObject : public NativeObject
 
     static void onSettled(JSContext* cx, Handle<PromiseObject*> promise);
 
-    double allocationTime() { return getFixedSlot(PromiseSlot_AllocationTime).toNumber(); }
-    double resolutionTime() { return getFixedSlot(PromiseSlot_ResolutionTime).toNumber(); }
-    JSObject* allocationSite() {
-        return getFixedSlot(PromiseSlot_AllocationSite).toObjectOrNull();
-    }
-    JSObject* resolutionSite() {
-        return getFixedSlot(PromiseSlot_ResolutionSite).toObjectOrNull();
-    }
+    double allocationTime();
+    double resolutionTime();
+    JSObject* allocationSite();
+    JSObject* resolutionSite();
     double lifetime();
     double timeToResolution() {
         MOZ_ASSERT(state() != JS::PromiseState::Pending);
@@ -91,7 +93,7 @@ class PromiseObject : public NativeObject
     uint64_t getID();
     bool isUnhandled() {
         MOZ_ASSERT(state() == JS::PromiseState::Rejected);
-        return !(getFixedSlot(PromiseSlot_Flags).toInt32() & PROMISE_FLAG_HANDLED);
+        return !(flags() & PROMISE_FLAG_HANDLED);
     }
     void markAsReported() {
         MOZ_ASSERT(isUnhandled());
@@ -114,6 +116,12 @@ class PromiseObject : public NativeObject
 MOZ_MUST_USE JSObject*
 GetWaitForAllPromise(JSContext* cx, const JS::AutoObjectVector& promises);
 
+enum class CreateDependentPromise {
+    Always,
+    SkipIfCtorUnobservable,
+    Never
+};
+
 /**
  * Enqueues resolve/reject reactions in the given Promise's reactions lists
  * as though calling the original value of Promise.prototype.then.
@@ -127,7 +135,7 @@ GetWaitForAllPromise(JSContext* cx, const JS::AutoObjectVector& promises);
 MOZ_MUST_USE bool
 OriginalPromiseThen(JSContext* cx, Handle<PromiseObject*> promise,
                     HandleValue onFulfilled, HandleValue onRejected,
-                    MutableHandleObject dependent, bool createDependent);
+                    MutableHandleObject dependent, CreateDependentPromise createDependent);
 
 /**
  * PromiseResolve ( C, x )
@@ -212,13 +220,6 @@ class PromiseTask : public JS::AsyncTask
     // and finish a PromiseTask.
     bool executeAndFinish(JSContext* cx);
 };
-
-bool
-Promise_static_resolve(JSContext* cx, unsigned argc, Value* vp);
-bool
-Promise_reject(JSContext* cx, unsigned argc, Value* vp);
-bool
-Promise_then(JSContext* cx, unsigned argc, Value* vp);
 
 } // namespace js
 

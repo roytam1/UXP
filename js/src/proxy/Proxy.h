@@ -12,8 +12,6 @@
 
 namespace js {
 
-class RegExpGuard;
-
 /*
  * Dispatch point for handlers that executes the appropriate C++ or scripted traps.
  *
@@ -61,7 +59,8 @@ class Proxy
     static bool isArray(JSContext* cx, HandleObject proxy, JS::IsArrayAnswer* answer);
     static const char* className(JSContext* cx, HandleObject proxy);
     static JSString* fun_toString(JSContext* cx, HandleObject proxy, bool isToSource);
-    static bool regexp_toShared(JSContext* cx, HandleObject proxy, RegExpGuard* g);
+    static bool regexp_toShared(JSContext* cx, HandleObject proxy,
+                                MutableHandle<RegExpShared*> shared);
     static bool boxedValue_unbox(JSContext* cx, HandleObject proxy, MutableHandleValue vp);
 
     static bool getElements(JSContext* cx, HandleObject obj, uint32_t begin, uint32_t end,

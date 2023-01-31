@@ -566,6 +566,12 @@ IsNativeFunction(const js::Value& v, JSNative native)
     return IsFunctionObject(v, &fun) && fun->maybeNative() == native;
 }
 
+static MOZ_ALWAYS_INLINE bool
+IsNativeFunction(const JSObject* obj, JSNative native)
+{
+    return obj->is<JSFunction>() && obj->as<JSFunction>().maybeNative() == native;
+}
+
 // Return whether looking up a method on 'obj' definitely resolves to the
 // original specified native function. The method may conservatively return
 // 'false' in the case of proxies or other non-native objects.
