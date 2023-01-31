@@ -488,10 +488,10 @@ Proxy::fun_toString(JSContext* cx, HandleObject proxy, bool isToSource)
 }
 
 bool
-Proxy::regexp_toShared(JSContext* cx, HandleObject proxy, RegExpGuard* g)
+Proxy::regexp_toShared(JSContext* cx, HandleObject proxy, MutableHandleRegExpShared shared)
 {
     JS_CHECK_RECURSION(cx, return false);
-    return proxy->as<ProxyObject>().handler()->regexp_toShared(cx, proxy, g);
+    return proxy->as<ProxyObject>().handler()->regexp_toShared(cx, proxy, shared);
 }
 
 bool

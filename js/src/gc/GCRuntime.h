@@ -735,6 +735,8 @@ class GCRuntime
     void enableCompactingGC();
     bool isCompactingGCEnabled() const;
 
+    bool isShrinkingGC() const { return invocationKind == GC_SHRINK; }
+
     void setGrayRootsTracer(JSTraceDataOp traceOp, void* data);
     MOZ_MUST_USE bool addBlackRootsTracer(JSTraceDataOp traceOp, void* data);
     void removeBlackRootsTracer(JSTraceDataOp traceOp, void* data);
