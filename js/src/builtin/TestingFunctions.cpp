@@ -1334,8 +1334,8 @@ SettlePromiseNow(JSContext* cx, unsigned argc, Value* vp)
         return false;
     }
 
-    RootedNativeObject promise(cx, &args[0].toObject().as<NativeObject>());
-    int32_t flags = promise->getFixedSlot(PromiseSlot_Flags).toInt32();
+    Rooted<PromiseObject*> promise(cx, &args[0].toObject().as<PromiseObject>());
+    int32_t flags = promise->flags();
     promise->setFixedSlot(PromiseSlot_Flags,
                           Int32Value(flags | PROMISE_FLAG_RESOLVED | PROMISE_FLAG_FULFILLED));
     promise->setFixedSlot(PromiseSlot_ReactionsOrResult, UndefinedValue());

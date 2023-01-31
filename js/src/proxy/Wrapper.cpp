@@ -267,10 +267,10 @@ Wrapper::fun_toString(JSContext* cx, HandleObject proxy, bool isToSource) const
 }
 
 bool
-Wrapper::regexp_toShared(JSContext* cx, HandleObject proxy, RegExpGuard* g) const
+Wrapper::regexp_toShared(JSContext* cx, HandleObject proxy, MutableHandleRegExpShared shared) const
 {
     RootedObject target(cx, proxy->as<ProxyObject>().target());
-    return RegExpToShared(cx, target, g);
+    return RegExpToShared(cx, target, shared);
 }
 
 bool

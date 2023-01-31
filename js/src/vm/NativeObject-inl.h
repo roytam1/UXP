@@ -64,13 +64,19 @@ NativeObject::clearShouldConvertDoubleElements()
 }
 
 inline void
-NativeObject::setDenseElementWithType(ExclusiveContext* cx, uint32_t index, const Value& val)
+NativeObject::addDenseElementType(ExclusiveContext* cx, uint32_t index, const Value& val)
 {
     // Avoid a slow AddTypePropertyId call if the type is the same as the type
     // of the previous element.
     TypeSet::Type thisType = TypeSet::GetValueType(val);
     if (index == 0 || TypeSet::GetValueType(elements_[index - 1]) != thisType)
         AddTypePropertyId(cx, this, JSID_VOID, thisType);
+}
+
+inline void
+NativeObject::setDenseElementWithType(ExclusiveContext* cx, uint32_t index, const Value& val)
+{
+    addDenseElementType(cx, index, val);
     setDenseElementMaybeConvertDouble(index, val);
 }
 
@@ -78,10 +84,9 @@ inline void
 NativeObject::initDenseElementWithType(ExclusiveContext* cx, uint32_t index, const Value& val)
 {
     MOZ_ASSERT(!shouldConvertDoubleElements());
-    if (val.isMagic(JS_ELEMENTS_HOLE))
-        markDenseElementsNotPacked(cx);
-    else
-        AddTypePropertyId(cx, this, JSID_VOID, val);
+    MOZ_ASSERT(!val.isMagic(JS_ELEMENTS_HOLE));
+
+    addDenseElementType(cx, index, val);
     initDenseElement(index, val);
 }
 

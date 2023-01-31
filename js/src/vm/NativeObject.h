@@ -1076,6 +1076,10 @@ class NativeObject : public ShapedObject
             setDenseElement(index, val);
     }
 
+  private:
+    inline void addDenseElementType(ExclusiveContext* cx, uint32_t index, const Value& val);
+
+  public:
     inline void setDenseElementWithType(ExclusiveContext* cx, uint32_t index,
                                         const Value& val);
     inline void initDenseElementWithType(ExclusiveContext* cx, uint32_t index,
