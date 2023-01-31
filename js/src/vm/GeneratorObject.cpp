@@ -86,8 +86,8 @@ GeneratorObject::suspend(JSContext* cx, HandleObject obj, AbstractFramePtr frame
             if (genObj->hasExpressionStack()) {
                 MOZ_ASSERT(genObj->expressionStack().getDenseInitializedLength() == 0);
                 auto result = SetOrExtendAnyBoxedOrUnboxedDenseElements(cx,
-                                  &genObj->expressionStack().as<JSObject>(),
-                                  0, vp, nvalues, ShouldUpdateTypes::DontUpdate);
+                                  &genObj->expressionStack(), 0, vp, nvalues,
+                                  ShouldUpdateTypes::DontUpdate);
                 if (result == DenseElementResult::Success) {
                     MOZ_ASSERT(genObj->expressionStack().getDenseInitializedLength() == nvalues);
                     break;
