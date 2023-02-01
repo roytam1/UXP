@@ -128,14 +128,14 @@ class RegExpShared : public gc::TenuredCell
     };
 
     /* Source to the RegExp, for lazy compilation. */
-    GCPtr<JSAtom*>     source;
+    HeapPtr<JSAtom*>   source;
 
     RegExpFlag         flags;
     bool               canStringMatch;
     size_t             parenCount;
 
-    uint32_t            numNamedCaptures_;
-    GCPtr<PlainObject*> groupsTemplate_;
+    uint32_t              numNamedCaptures_;
+    HeapPtr<PlainObject*> groupsTemplate_;
 
     RegExpCompilation  compilationArray[4];
 
