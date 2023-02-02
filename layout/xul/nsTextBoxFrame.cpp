@@ -230,7 +230,8 @@ nsTextBoxFrame::UpdateAttributes(nsIAtom*         aAttribute,
     if (aAttribute == nullptr || aAttribute == nsGkAtoms::crop) {
         static nsIContent::AttrValuesArray strings[] =
           {&nsGkAtoms::left, &nsGkAtoms::start, &nsGkAtoms::center,
-           &nsGkAtoms::right, &nsGkAtoms::end, &nsGkAtoms::none, nullptr};
+           &nsGkAtoms::right, &nsGkAtoms::end, &nsGkAtoms::none,
+           &nsGkAtoms::clip, nullptr};
         CroppingStyle cropType;
         switch (mContent->FindAttrValueIn(kNameSpaceID_None, nsGkAtoms::crop,
                                           strings, eCaseMatters)) {
@@ -247,6 +248,9 @@ nsTextBoxFrame::UpdateAttributes(nsIAtom*         aAttribute,
             break;
           case 5:
             cropType = CropNone;
+            break;
+          case 6:
+            cropType = CropClip;
             break;
           default:
             cropType = CropAuto;
@@ -647,7 +651,9 @@ nsTextBoxFrame::CalculateTitleForWidth(nsRenderingContext& aRenderingContext,
     }
 
     const nsDependentString& kEllipsis = nsContentUtils::GetLocalizedEllipsis();
-    if (mCropType != CropNone) {
+    if (mCropType == CropClip) {
+      mCroppedTitle.Truncate();
+    } else if (mCropType != CropNone) {
       // start with an ellipsis
       mCroppedTitle.Assign(kEllipsis);
 
@@ -681,6 +687,7 @@ nsTextBoxFrame::CalculateTitleForWidth(nsRenderingContext& aRenderingContext,
         case CropAuto:
         case CropNone:
         case CropRight:
+        case CropClip:
         {
             ClusterIterator iter(mTitle.Data(), mTitle.Length());
             const char16_t* dataBegin = iter;
