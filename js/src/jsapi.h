@@ -642,6 +642,7 @@ typedef enum JSExnType {
     JSEXN_ERR,
     JSEXN_FIRST = JSEXN_ERR,
         JSEXN_INTERNALERR,
+        JSEXN_AGGREGATEERR,
         JSEXN_EVALERR,
         JSEXN_RANGEERR,
         JSEXN_REFERENCEERR,

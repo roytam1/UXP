@@ -947,6 +947,7 @@ void
 JSCompartment::purge()
 {
     dtoaCache.purge();
+    promiseLookup.purge();
     lastCachedNativeIterator = nullptr;
 }
 
