@@ -41,11 +41,11 @@ using namespace XrayUtils;
 
 #define Between(x, a, b) (a <= x && x <= b)
 
-static_assert(JSProto_URIError - JSProto_Error == 7, "New prototype added in error object range");
+static_assert(JSProto_URIError - JSProto_Error == 8, "New prototype added in error object range");
 #define AssertErrorObjectKeyInBounds(key) \
     static_assert(Between(key, JSProto_Error, JSProto_URIError), "We depend on jsprototypes.h ordering here");
 MOZ_FOR_EACH(AssertErrorObjectKeyInBounds, (),
-             (JSProto_Error, JSProto_InternalError, JSProto_EvalError, JSProto_RangeError,
+             (JSProto_Error, JSProto_InternalError, JSProto_AggregateError, JSProto_EvalError, JSProto_RangeError,
               JSProto_ReferenceError, JSProto_SyntaxError, JSProto_TypeError, JSProto_URIError));
 
 static_assert(JSProto_Uint8ClampedArray - JSProto_Int8Array == 8, "New prototype added in typed array range");
@@ -607,6 +607,11 @@ JSXrayTraits::resolveOwnProperty(JSContext* cx, const Wrapper& jsWrapper,
                 if (desc.hasGetterOrSetter() || !valueMatchesType)
                     FillPropertyDescriptor(desc, nullptr, 0, UndefinedValue());
                 return true;
+            }
+
+            if (key == JSProto_AggregateError &&
+                id == GetJSIDByIndex(cx, XPCJSContext::IDX_ERRORS)) {
+                return getOwnPropertyFromWrapperIfSafe(cx, wrapper, id, desc);
             }
         } else if (key == JSProto_RegExp) {
             if (id == GetJSIDByIndex(cx, XPCJSContext::IDX_LASTINDEX))

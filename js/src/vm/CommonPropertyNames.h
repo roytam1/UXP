@@ -116,6 +116,7 @@
     macro(enumerate, enumerate, "enumerate") \
     macro(era, era, "era") \
     macro(ErrorToStringWithTrailingNewline, ErrorToStringWithTrailingNewline, "ErrorToStringWithTrailingNewline") \
+    macro(errors, errors, "errors") \
     macro(escape, escape, "escape") \
     macro(eval, eval, "eval") \
     macro(exec, exec, "exec") \
