@@ -23,6 +23,9 @@ CopyErrorNote(JSContext* cx, JSErrorNotes::Note* note);
 JSErrorReport*
 CopyErrorReport(JSContext* cx, JSErrorReport* report);
 
+bool
+CaptureStack(JSContext* cx, MutableHandleObject stack);
+
 JSString*
 ComputeStackString(JSContext* cx);
 
@@ -59,6 +62,7 @@ CopyErrorObject(JSContext* cx, JS::Handle<ErrorObject*> errobj);
 
 static_assert(JSEXN_ERR == 0 &&
               JSProto_Error + JSEXN_INTERNALERR == JSProto_InternalError &&
+              JSProto_Error + JSEXN_AGGREGATEERR == JSProto_AggregateError &&
               JSProto_Error + JSEXN_EVALERR == JSProto_EvalError &&
               JSProto_Error + JSEXN_RANGEERR == JSProto_RangeError &&
               JSProto_Error + JSEXN_REFERENCEERR == JSProto_ReferenceError &&
@@ -134,6 +138,8 @@ bool
 GetInternalError(JSContext* cx, unsigned errorNumber, MutableHandleValue error);
 bool
 GetTypeError(JSContext* cx, unsigned errorNumber, MutableHandleValue error);
+bool
+GetAggregateError(JSContext* cx, unsigned errorNumber, MutableHandleValue error);
 
 } // namespace js
 
