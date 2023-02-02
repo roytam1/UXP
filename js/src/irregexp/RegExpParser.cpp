@@ -904,7 +904,7 @@ RegExpParser<CharT>::ParseCharacterClass()
                 if (char_class_1 == kNoCharClass)
                     ranges->append(CharacterRange::Singleton(char_1));
                 ranges->append(CharacterRange::Singleton('-'));
-                if (char_class_1 == kNoCharClass)
+                if (char_class_2 == kNoCharClass)
                     ranges->append(CharacterRange::Singleton(char_2));
                 continue;
             }
