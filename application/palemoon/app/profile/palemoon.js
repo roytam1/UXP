@@ -473,6 +473,10 @@ pref("browser.tabs.delayHidingAudioPlayingIconMS", 3000);
 // window is enabled.
 pref("browser.tabs.allowTabDetach", true);
 
+// Whether to fade tab labels instead of using ellipses when cutting off
+// long page titles.
+pref("browser.tabs.fadeLabels", true);
+
 pref("browser.allTabs.previews", true);
 pref("browser.allTabs.hidePinnedTabs", false);
 pref("browser.ctrlTab.previews", true);
