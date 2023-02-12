@@ -22,6 +22,7 @@
 #include "jscntxt.h"
 #include "jsobj.h"
 
+#include "builtin/intl/ScopedICUObject.h"
 #include "builtin/IntlTimeZoneData.h"
 #include "ds/Sort.h"
 #include "unicode/plurrule.h"
@@ -183,32 +184,6 @@ icuLocale(const char* locale)
     return locale;
 }
 
-// Simple RAII for ICU objects.  Unfortunately, ICU's C++ API is uniformly
-// unstable, so we can't use its smart pointers for this.
-template <typename T, void (Delete)(T*)>
-class ScopedICUObject
-{
-    T* ptr_;
-
-  public:
-    explicit ScopedICUObject(T* ptr)
-      : ptr_(ptr)
-    {}
-
-    ~ScopedICUObject() {
-        if (ptr_)
-            Delete(ptr_);
-    }
-
-    // In cases where an object should be deleted on abnormal exits,
-    // but returned to the caller if everything goes well, call forget()
-    // to transfer the object just before returning.
-    T* forget() {
-        T* tmp = ptr_;
-        ptr_ = nullptr;
-        return tmp;
-    }
-};
 
 // The inline capacity we use for the char16_t Vectors.
 static const size_t INITIAL_CHAR_BUFFER_SIZE = 32;
