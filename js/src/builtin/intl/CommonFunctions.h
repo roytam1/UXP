@@ -79,6 +79,46 @@ static_assert(mozilla::IsSame<UChar, char16_t>::value,
 // buffer's entire inline capacity before growing it and heap-allocating.
 static const size_t INITIAL_CHAR_BUFFER_SIZE = 32;
 
+template <typename ICUStringFunction, size_t InlineCapacity>
+static int32_t
+CallICU(JSContext* cx, Vector<char16_t, InlineCapacity>& chars, const ICUStringFunction& strFn)
+{
+    MOZ_ASSERT(chars.length() == 0);
+    MOZ_ALWAYS_TRUE(chars.resize(InlineCapacity));
+
+    UErrorCode status = U_ZERO_ERROR;
+    int32_t size = strFn(chars.begin(), InlineCapacity, &status);
+    if (status == U_BUFFER_OVERFLOW_ERROR) {
+        MOZ_ASSERT(size >= 0);
+        if (!chars.resize(size_t(size)))
+            return -1;
+        status = U_ZERO_ERROR;
+        strFn(chars.begin(), size, &status);
+    }
+    if (U_FAILURE(status)) {
+        ReportInternalError(cx);
+        return -1;
+    }
+
+    MOZ_ASSERT(size >= 0);
+    if (!chars.resize(size_t(size)))
+        return -1;
+    return size;
+}
+
+template <typename ICUStringFunction>
+static JSString*
+CallICU(JSContext* cx, const ICUStringFunction& strFn)
+{
+    Vector<char16_t, INITIAL_CHAR_BUFFER_SIZE> chars(cx);
+
+    int32_t size = CallICU(cx, chars, strFn);
+    if (size < 0)
+        return nullptr;
+
+    return NewStringCopyN<CanGC>(cx, chars.begin(), size_t(size));
+}
+
 // CountAvailable and GetAvailable describe the signatures used for ICU API
 // to determine available locales for various functionality.
 using CountAvailable = int32_t (*)();
