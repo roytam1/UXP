@@ -115,6 +115,7 @@ UNIFIED_SOURCES += [
     'builtin/AtomicsObject.cpp',
     'builtin/Eval.cpp',
     'builtin/Intl.cpp',
+    'builtin/intl/CommonFunctions.cpp',
     'builtin/MapObject.cpp',
     'builtin/ModuleObject.cpp',
     'builtin/Object.cpp',

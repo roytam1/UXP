@@ -1,0 +1,105 @@
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ * vim: set ts=8 sts=4 et sw=4 tw=99:
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef builtin_intl_CommonFunctions_h
+#define builtin_intl_CommonFunctions_h
+
+#include "mozilla/Assertions.h"
+#include "mozilla/TypeTraits.h"
+
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+
+#include "js/RootingAPI.h"
+#include "js/Vector.h"
+#include "vm/String.h"
+
+namespace JS { class Value; }
+
+class JSObject;
+
+namespace js {
+
+namespace intl {
+
+/**
+ * Setup the |options| argument of |IntlInitialize|
+ */
+extern bool
+CreateDefaultOptions(JSContext* cx, MutableHandleValue defaultOptions);
+
+/**
+ * Initialize a new Intl.* object using the named self-hosted function.
+ */
+extern bool
+InitializeObject(JSContext* cx, HandleObject obj, Handle<PropertyName*> initializer,
+                 HandleValue locales, HandleValue options);
+
+/**
+ * Returns the object holding the internal properties for obj.
+ */
+extern JSObject*
+GetInternalsObject(JSContext* cx, JS::Handle<JSObject*> obj);
+
+/** Report an Intl internal error not directly tied to a spec step. */
+extern void
+ReportInternalError(JSContext* cx);
+
+static inline bool
+StringsAreEqual(const char* s1, const char* s2)
+{
+    return !strcmp(s1, s2);
+}
+
+static inline bool
+StringsAreEqual(JSAutoByteString& s1, const char* s2)
+{
+    return !strcmp(s1.ptr(), s2);
+}
+
+static inline const char*
+IcuLocale(const char* locale)
+{
+    if (StringsAreEqual(locale, "und"))
+        return ""; // ICU root locale
+
+    return locale;
+}
+
+// Starting with ICU 59, UChar defaults to char16_t.
+static_assert(mozilla::IsSame<UChar, char16_t>::value,
+              "SpiderMonkey doesn't support redefining UChar to a different type");
+
+// The inline capacity we use for a Vector<char16_t>.  Use this to ensure that
+// our uses of ICU string functions, below and elsewhere, will try to fill the
+// buffer's entire inline capacity before growing it and heap-allocating.
+static const size_t INITIAL_CHAR_BUFFER_SIZE = 32;
+
+// CountAvailable and GetAvailable describe the signatures used for ICU API
+// to determine available locales for various functionality.
+using CountAvailable = int32_t (*)();
+using GetAvailable = const char* (*)(int32_t localeIndex);
+
+/**
+ * Return an object whose own property names are the locales indicated as
+ * available by |countAvailable| that provides an overall count, and by
+ * |getAvailable| that when called passing a number less than that count,
+ * returns the corresponding locale as a borrowed string.  For example:
+ *
+ *   RootedValue v(cx);
+ *   if (!GetAvailableLocales(cx, unum_countAvailable, unum_getAvailable, &v))
+ *       return false;
+ */
+extern bool
+GetAvailableLocales(JSContext* cx, CountAvailable countAvailable, GetAvailable getAvailable,
+                    JS::MutableHandle<JS::Value> result);
+
+} // namespace intl
+
+} // namespace js
+
+#endif /* builtin_intl_CommonFunctions_h */
