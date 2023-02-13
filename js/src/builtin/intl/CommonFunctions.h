@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "builtin/intl/ICUHeader.h"
 #include "js/RootingAPI.h"
 #include "js/Vector.h"
 #include "vm/String.h"

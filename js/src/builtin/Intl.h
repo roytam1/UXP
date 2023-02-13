@@ -218,51 +218,6 @@ extern MOZ_MUST_USE bool
 intl_CompareStrings(JSContext* cx, unsigned argc, Value* vp);
 
 
-/******************** NumberFormat ********************/
-
-/**
- * Returns a new instance of the standard built-in NumberFormat constructor.
- * Self-hosted code cannot cache this constructor (as it does for others in
- * Utilities.js) because it is initialized after self-hosted code is compiled.
- *
- * Usage: numberFormat = intl_NumberFormat(locales, options)
- */
-extern MOZ_MUST_USE bool
-intl_NumberFormat(JSContext* cx, unsigned argc, Value* vp);
-
-/**
- * Returns an object indicating the supported locales for number formatting
- * by having a true-valued property for each such locale with the
- * canonicalized language tag as the property name. The object has no
- * prototype.
- *
- * Usage: availableLocales = intl_NumberFormat_availableLocales()
- */
-extern MOZ_MUST_USE bool
-intl_NumberFormat_availableLocales(JSContext* cx, unsigned argc, Value* vp);
-
-/**
- * Returns the numbering system type identifier per Unicode
- * Technical Standard 35, Unicode Locale Data Markup Language, for the
- * default numbering system for the given locale.
- *
- * Usage: defaultNumberingSystem = intl_numberingSystem(locale)
- */
-extern MOZ_MUST_USE bool
-intl_numberingSystem(JSContext* cx, unsigned argc, Value* vp);
-
-/**
- * Returns a string representing the number x according to the effective
- * locale and the formatting options of the given NumberFormat.
- *
- * Spec: ECMAScript Internationalization API Specification, 11.3.2.
- *
- * Usage: formatted = intl_FormatNumber(numberFormat, x)
- */
-extern MOZ_MUST_USE bool
-intl_FormatNumber(JSContext* cx, unsigned argc, Value* vp);
-
-
 /******************** DateTimeFormat ********************/
 
 /**
