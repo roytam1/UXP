@@ -170,54 +170,6 @@ class SharedIntlData
  */
 
 
-/******************** Collator ********************/
-
-/**
- * Returns a new instance of the standard built-in Collator constructor.
- * Self-hosted code cannot cache this constructor (as it does for others in
- * Utilities.js) because it is initialized after self-hosted code is compiled.
- *
- * Usage: collator = intl_Collator(locales, options)
- */
-extern MOZ_MUST_USE bool
-intl_Collator(JSContext* cx, unsigned argc, Value* vp);
-
-/**
- * Returns an object indicating the supported locales for collation
- * by having a true-valued property for each such locale with the
- * canonicalized language tag as the property name. The object has no
- * prototype.
- *
- * Usage: availableLocales = intl_Collator_availableLocales()
- */
-extern MOZ_MUST_USE bool
-intl_Collator_availableLocales(JSContext* cx, unsigned argc, Value* vp);
-
-/**
- * Returns an array with the collation type identifiers per Unicode
- * Technical Standard 35, Unicode Locale Data Markup Language, for the
- * collations supported for the given locale. "standard" and "search" are
- * excluded.
- *
- * Usage: collations = intl_availableCollations(locale)
- */
-extern MOZ_MUST_USE bool
-intl_availableCollations(JSContext* cx, unsigned argc, Value* vp);
-
-/**
- * Compares x and y (which must be String values), and returns a number less
- * than 0 if x < y, 0 if x = y, or a number greater than 0 if x > y according
- * to the sort order for the locale and collation options of the given
- * Collator.
- *
- * Spec: ECMAScript Internationalization API Specification, 10.3.2.
- *
- * Usage: result = intl_CompareStrings(collator, x, y)
- */
-extern MOZ_MUST_USE bool
-intl_CompareStrings(JSContext* cx, unsigned argc, Value* vp);
-
-
 /******************** DateTimeFormat ********************/
 
 /**
