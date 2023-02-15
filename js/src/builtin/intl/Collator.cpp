@@ -16,6 +16,7 @@
 #include "builtin/intl/CommonFunctions.h"
 #include "builtin/intl/ICUHeader.h"
 #include "builtin/intl/ScopedICUObject.h"
+#include "builtin/intl/SharedIntlData.h"
 #include "js/TypeDecls.h"
 #include "vm/GlobalObject.h"
 #include "vm/Runtime.h"
@@ -27,6 +28,7 @@ using namespace js;
 using js::intl::GetAvailableLocales;
 using js::intl::IcuLocale;
 using js::intl::ReportInternalError;
+using js::intl::SharedIntlData;
 using js::intl::StringsAreEqual;
 
 /******************** Collator ********************/

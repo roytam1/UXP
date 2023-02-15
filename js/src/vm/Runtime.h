@@ -26,6 +26,7 @@
 #endif
 #include "builtin/AtomicsObject.h"
 #include "builtin/Intl.h"
+#include "builtin/intl/SharedIntlData.h"
 #include "builtin/Promise.h"
 #include "ds/FixedSizeHash.h"
 #include "frontend/NameCollections.h"
@@ -810,7 +811,7 @@ struct JSRuntime : public JS::shadow::Runtime,
     const char* getDefaultLocale();
 
     /* Shared Intl data for this runtime. */
-    js::SharedIntlData sharedIntlData;
+    js::intl::SharedIntlData sharedIntlData;
 
     void traceSharedIntlData(JSTracer* trc);
 
