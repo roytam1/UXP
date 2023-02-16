@@ -20,4 +20,31 @@
 #include "unicode/ureldatefmt.h"
 #include "unicode/ustring.h"
 
+/**
+ * Cast char16_t* strings to UChar* strings used by ICU.
+ */
+inline const UChar*
+Char16ToUChar(const char16_t* chars)
+{
+  return reinterpret_cast<const UChar*>(chars);
+}
+
+inline UChar*
+Char16ToUChar(char16_t* chars)
+{
+  return reinterpret_cast<UChar*>(chars);
+}
+
+inline char16_t*
+UCharToChar16(UChar* chars)
+{
+  return reinterpret_cast<char16_t*>(chars);
+}
+
+inline const char16_t*
+UCharToChar16(const UChar* chars)
+{
+  return reinterpret_cast<const char16_t*>(chars);
+}
+
 #endif /* builtin_intl_ICUHeader_h */

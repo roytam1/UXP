@@ -6,21 +6,13 @@
 #ifndef builtin_Intl_h
 #define builtin_Intl_h
 
-#include "mozilla/HashFunctions.h"
-#include "mozilla/MemoryReporting.h"
+#include "mozilla/Attributes.h"
 
-#include "jsalloc.h"
-#include "NamespaceImports.h"
+#include "js/RootingAPI.h"
 
-#include "js/GCAPI.h"
-#include "js/GCHashTable.h"
-
-#include "unicode/utypes.h"
-
-/*
- * The Intl module specified by standard ECMA-402,
- * ECMAScript Internationalization API Specification.
- */
+struct JSContext;
+class JSObject;
+namespace JS { class Value; }
 
 namespace js {
 
@@ -29,7 +21,7 @@ namespace js {
  * Spec: ECMAScript Internationalization API Specification, 8.0, 8.1
  */
 extern JSObject*
-InitIntlClass(JSContext* cx, HandleObject obj);
+InitIntlClass(JSContext* cx, JS::Handle<JSObject*> obj);
 
 /*
  * The following functions are for use by self-hosted code.
@@ -59,7 +51,7 @@ InitIntlClass(JSContext* cx, HandleObject obj);
  * NOTE: "calendar" and "locale" properties are *not* added to the object.
  */
 extern MOZ_MUST_USE bool
-intl_GetCalendarInfo(JSContext* cx, unsigned argc, Value* vp);
+intl_GetCalendarInfo(JSContext* cx, unsigned argc, JS::Value* vp);
 
 /**
  * Returns an Array with CLDR-based fields display names.
@@ -101,34 +93,7 @@ intl_GetCalendarInfo(JSContext* cx, unsigned argc, Value* vp);
  * ]
  */
 extern MOZ_MUST_USE bool
-intl_ComputeDisplayNames(JSContext* cx, unsigned argc, Value* vp);
-
-/**
- * Cast char16_t* strings to UChar* strings used by ICU.
- */
-inline const UChar*
-Char16ToUChar(const char16_t* chars)
-{
-  return reinterpret_cast<const UChar*>(chars);
-}
-
-inline UChar*
-Char16ToUChar(char16_t* chars)
-{
-  return reinterpret_cast<UChar*>(chars);
-}
-
-inline char16_t*
-UCharToChar16(UChar* chars)
-{
-  return reinterpret_cast<char16_t*>(chars);
-}
-
-inline const char16_t*
-UCharToChar16(const UChar* chars)
-{
-  return reinterpret_cast<const char16_t*>(chars);
-}
+intl_ComputeDisplayNames(JSContext* cx, unsigned argc, JS::Value* vp);
 
 } // namespace js
 
