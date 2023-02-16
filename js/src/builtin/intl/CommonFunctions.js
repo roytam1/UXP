@@ -4,35 +4,6 @@
 
 /* Portions Copyright Norbert Lindenberg 2011-2012. */
 
-/*global JSMSG_INTL_OBJECT_NOT_INITED: false, JSMSG_INVALID_LOCALES_ELEMENT: false,
-         JSMSG_INVALID_LANGUAGE_TAG: false, JSMSG_INVALID_LOCALE_MATCHER: false,
-         JSMSG_INVALID_OPTION_VALUE: false, JSMSG_INVALID_DIGITS_VALUE: false,
-         JSMSG_INTL_OBJECT_REINITED: false, JSMSG_INVALID_CURRENCY_CODE: false,
-         JSMSG_UNDEFINED_CURRENCY: false, JSMSG_INVALID_TIME_ZONE: false,
-         JSMSG_DATE_NOT_FINITE: false, JSMSG_INVALID_KEYS_TYPE: false,
-         JSMSG_INVALID_KEY: false,
-         intl_Collator_availableLocales: false,
-         intl_availableCollations: false,
-         intl_CompareStrings: false,
-         intl_NumberFormat_availableLocales: false,
-         intl_numberingSystem: false,
-         intl_FormatNumber: false,
-         intl_DateTimeFormat_availableLocales: false,
-         intl_availableCalendars: false,
-         intl_patternForSkeleton: false,
-         intl_FormatDateTime: false,
-         intl_SelectPluralRule: false,
-         intl_GetPluralCategories: false,
-         intl_FormatRelativeTime: false,
-         intl_GetCalendarInfo: false,
-*/
-
-/*
- * The Intl module specified by standard ECMA-402,
- * ECMAScript Internationalization API Specification.
- */
-
-
 /********** Locales, Time Zones, and Currencies **********/
 
 
