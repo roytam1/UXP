@@ -18,7 +18,7 @@
 #include "builtin/intl/ICUHeader.h"
 #include "builtin/intl/ScopedICUObject.h"
 #include "builtin/intl/SharedIntlData.h"
-#include "builtin/IntlTimeZoneData.h"
+#include "builtin/intl/TimeZoneDataGenerated.h"
 #include "vm/GlobalObject.h"
 #include "vm/Runtime.h"
 
