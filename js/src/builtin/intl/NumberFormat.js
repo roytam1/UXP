@@ -1,0 +1,473 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/********** Intl.NumberFormat **********/
+
+
+/**
+ * NumberFormat internal properties.
+ *
+ * Spec: ECMAScript Internationalization API Specification, 9.1 and 11.2.3.
+ */
+var numberFormatInternalProperties = {
+    localeData: numberFormatLocaleData,
+    _availableLocales: null,
+    availableLocales: function()
+    {
+        var locales = this._availableLocales;
+        if (locales)
+            return locales;
+
+        locales = intl_NumberFormat_availableLocales();
+        addSpecialMissingLanguageTags(locales);
+        return (this._availableLocales = locales);
+    },
+    relevantExtensionKeys: ["nu"]
+};
+
+
+/**
+ * Compute an internal properties object from |lazyNumberFormatData|.
+ */
+function resolveNumberFormatInternals(lazyNumberFormatData) {
+    assert(IsObject(lazyNumberFormatData), "lazy data not an object?");
+
+    var internalProps = std_Object_create(null);
+
+    // Step 3.
+    var requestedLocales = lazyNumberFormatData.requestedLocales;
+
+    // Compute options that impact interpretation of locale.
+    // Step 6.
+    var opt = lazyNumberFormatData.opt;
+
+    var NumberFormat = numberFormatInternalProperties;
+
+    // Step 9.
+    var localeData = NumberFormat.localeData;
+
+    // Step 10.
+    var r = ResolveLocale(callFunction(NumberFormat.availableLocales, NumberFormat),
+                          lazyNumberFormatData.requestedLocales,
+                          lazyNumberFormatData.opt,
+                          NumberFormat.relevantExtensionKeys,
+                          localeData);
+
+    // Steps 11-12.  (Step 13 is not relevant to our implementation.)
+    internalProps.locale = r.locale;
+    internalProps.numberingSystem = r.nu;
+
+    // Compute formatting options.
+    // Step 15.
+    var s = lazyNumberFormatData.style;
+    internalProps.style = s;
+
+    // Steps 19, 21.
+    if (s === "currency") {
+        internalProps.currency = lazyNumberFormatData.currency;
+        internalProps.currencyDisplay = lazyNumberFormatData.currencyDisplay;
+    }
+
+    internalProps.minimumIntegerDigits = lazyNumberFormatData.minimumIntegerDigits;
+
+    internalProps.minimumFractionDigits = lazyNumberFormatData.minimumFractionDigits;
+
+    internalProps.maximumFractionDigits = lazyNumberFormatData.maximumFractionDigits;
+
+    if ("minimumSignificantDigits" in lazyNumberFormatData) {
+        // Note: Intl.NumberFormat.prototype.resolvedOptions() exposes the
+        // actual presence (versus undefined-ness) of these properties.
+        assert("maximumSignificantDigits" in lazyNumberFormatData, "min/max sig digits mismatch");
+        internalProps.minimumSignificantDigits = lazyNumberFormatData.minimumSignificantDigits;
+        internalProps.maximumSignificantDigits = lazyNumberFormatData.maximumSignificantDigits;
+    }
+
+    // Step 27.
+    internalProps.useGrouping = lazyNumberFormatData.useGrouping;
+
+    // Step 34.
+    internalProps.boundFormat = undefined;
+
+    // The caller is responsible for associating |internalProps| with the right
+    // object using |setInternalProperties|.
+    return internalProps;
+}
+
+
+/**
+ * Returns an object containing the NumberFormat internal properties of |obj|,
+ * or throws a TypeError if |obj| isn't NumberFormat-initialized.
+ */
+function getNumberFormatInternals(obj, methodName) {
+    var internals = getIntlObjectInternals(obj, "NumberFormat", methodName);
+    assert(internals.type === "NumberFormat", "bad type escaped getIntlObjectInternals");
+
+    // If internal properties have already been computed, use them.
+    var internalProps = maybeInternalProperties(internals);
+    if (internalProps)
+        return internalProps;
+
+    // Otherwise it's time to fully create them.
+    internalProps = resolveNumberFormatInternals(internals.lazyData);
+    setInternalProperties(internals, internalProps);
+    return internalProps;
+}
+
+/**
+ * Applies digit options used for number formatting onto the intl object.
+ *
+ * Spec: ECMAScript Internationalization API Specification, 11.1.1.
+ */
+function SetNumberFormatDigitOptions(lazyData, options, mnfdDefault) {
+    // We skip Step 1 because we set the properties on a lazyData object.
+
+    // Step 2-3.
+    assert(IsObject(options), "SetNumberFormatDigitOptions");
+    assert(typeof mnfdDefault === "number", "SetNumberFormatDigitOptions");
+
+    // Steps 4-6.
+    const mnid = GetNumberOption(options, "minimumIntegerDigits", 1, 21, 1);
+    const mnfd = GetNumberOption(options, "minimumFractionDigits", 0, 20, mnfdDefault);
+    const mxfd = GetNumberOption(options, "maximumFractionDigits", mnfd, 20);
+
+    // Steps 7-8.
+    let mnsd = options.minimumSignificantDigits;
+    let mxsd = options.maximumSignificantDigits;
+
+    // Steps 9-11.
+    lazyData.minimumIntegerDigits = mnid;
+    lazyData.minimumFractionDigits = mnfd;
+    lazyData.maximumFractionDigits = mxfd;
+
+    // Step 12.
+    if (mnsd !== undefined || mxsd !== undefined) {
+        mnsd = GetNumberOption(options, "minimumSignificantDigits", 1, 21, 1);
+        mxsd = GetNumberOption(options, "maximumSignificantDigits", mnsd, 21, 21);
+        lazyData.minimumSignificantDigits = mnsd;
+        lazyData.maximumSignificantDigits = mxsd;
+    }
+}
+
+
+/**
+ * Initializes an object as a NumberFormat.
+ *
+ * This method is complicated a moderate bit by its implementing initialization
+ * as a *lazy* concept.  Everything that must happen now, does -- but we defer
+ * all the work we can until the object is actually used as a NumberFormat.
+ * This later work occurs in |resolveNumberFormatInternals|; steps not noted
+ * here occur there.
+ *
+ * Spec: ECMAScript Internationalization API Specification, 11.1.1.
+ */
+function InitializeNumberFormat(numberFormat, locales, options) {
+    assert(IsObject(numberFormat), "InitializeNumberFormat");
+
+    // Step 1.
+    if (isInitializedIntlObject(numberFormat))
+        ThrowTypeError(JSMSG_INTL_OBJECT_REINITED);
+
+    // Step 2.
+    var internals = initializeIntlObject(numberFormat);
+
+    // Lazy NumberFormat data has the following structure:
+    //
+    //   {
+    //     requestedLocales: List of locales,
+    //     style: "decimal" / "percent" / "currency",
+    //
+    //     // fields present only if style === "currency":
+    //     currency: a well-formed currency code (IsWellFormedCurrencyCode),
+    //     currencyDisplay: "code" / "symbol" / "name",
+    //
+    //     opt: // opt object computed in InitializeNumberFormat
+    //       {
+    //         localeMatcher: "lookup" / "best fit",
+    //       }
+    //
+    //     minimumIntegerDigits: integer ∈ [1, 21],
+    //     minimumFractionDigits: integer ∈ [0, 20],
+    //     maximumFractionDigits: integer ∈ [0, 20],
+    //
+    //     // optional
+    //     minimumSignificantDigits: integer ∈ [1, 21],
+    //     maximumSignificantDigits: integer ∈ [1, 21],
+    //
+    //     useGrouping: true / false,
+    //   }
+    //
+    // Note that lazy data is only installed as a final step of initialization,
+    // so every NumberFormat lazy data object has *all* these properties, never a
+    // subset of them.
+    var lazyNumberFormatData = std_Object_create(null);
+
+    // Step 3.
+    var requestedLocales = CanonicalizeLocaleList(locales);
+    lazyNumberFormatData.requestedLocales = requestedLocales;
+
+    // Steps 4-5.
+    //
+    // If we ever need more speed here at startup, we should try to detect the
+    // case where |options === undefined| and Object.prototype hasn't been
+    // mucked with.  (|options| is fully consumed in this method, so it's not a
+    // concern that Object.prototype might be touched between now and when
+    // |resolveNumberFormatInternals| is called.)  For now just keep it simple.
+    if (options === undefined)
+        options = {};
+    else
+        options = ToObject(options);
+
+    // Compute options that impact interpretation of locale.
+    // Step 6.
+    var opt = new Record();
+    lazyNumberFormatData.opt = opt;
+
+    // Steps 7-8.
+    var matcher = GetOption(options, "localeMatcher", "string", ["lookup", "best fit"], "best fit");
+    opt.localeMatcher = matcher;
+
+    // Compute formatting options.
+    // Step 14.
+    var s = GetOption(options, "style", "string", ["decimal", "percent", "currency"], "decimal");
+    lazyNumberFormatData.style = s;
+
+    // Steps 16-19.
+    var c = GetOption(options, "currency", "string", undefined, undefined);
+    if (c !== undefined && !IsWellFormedCurrencyCode(c))
+        ThrowRangeError(JSMSG_INVALID_CURRENCY_CODE, c);
+    var cDigits;
+    if (s === "currency") {
+        if (c === undefined)
+            ThrowTypeError(JSMSG_UNDEFINED_CURRENCY);
+
+        // Steps 19.a-c.
+        c = toASCIIUpperCase(c);
+        lazyNumberFormatData.currency = c;
+        cDigits = CurrencyDigits(c);
+    }
+
+    // Step 20.
+    var cd = GetOption(options, "currencyDisplay", "string", ["code", "symbol", "name"], "symbol");
+    if (s === "currency")
+        lazyNumberFormatData.currencyDisplay = cd;
+
+    // Steps 22-24.
+    SetNumberFormatDigitOptions(lazyNumberFormatData, options, s === "currency" ? cDigits: 0);
+
+    // Step 25.
+    if (lazyNumberFormatData.maximumFractionDigits === undefined) {
+        let mxfdDefault = s === "currency"
+                          ? cDigits
+                          : s === "percent"
+                          ? 0
+                          : 3;
+        lazyNumberFormatData.maximumFractionDigits =
+            std_Math_max(lazyNumberFormatData.minimumFractionDigits, mxfdDefault);
+    }
+
+    // Step 26.
+    var g = GetOption(options, "useGrouping", "boolean", undefined, true);
+    lazyNumberFormatData.useGrouping = g;
+
+    // Steps 35-36.
+    //
+    // We've done everything that must be done now: mark the lazy data as fully
+    // computed and install it.
+    setLazyData(internals, "NumberFormat", lazyNumberFormatData);
+}
+
+
+/**
+ * Mapping from currency codes to the number of decimal digits used for them.
+ * Default is 2 digits.
+ *
+ * Spec: ISO 4217 Currency and Funds Code List.
+ * http://www.currency-iso.org/en/home/tables/table-a1.html
+ */
+var currencyDigits = {
+    BHD: 3,
+    BIF: 0,
+    BYR: 0,
+    CLF: 4,
+    CLP: 0,
+    DJF: 0,
+    GNF: 0,
+    IQD: 3,
+    ISK: 0,
+    JOD: 3,
+    JPY: 0,
+    KMF: 0,
+    KRW: 0,
+    KWD: 3,
+    LYD: 3,
+    OMR: 3,
+    PYG: 0,
+    RWF: 0,
+    TND: 3,
+    UGX: 0,
+    UYI: 0,
+    VND: 0,
+    VUV: 0,
+    XAF: 0,
+    XOF: 0,
+    XPF: 0
+};
+
+
+/**
+ * Returns the number of decimal digits to be used for the given currency.
+ *
+ * Spec: ECMAScript Internationalization API Specification, 11.1.1.
+ */
+function getCurrencyDigitsRE() {
+    return internalIntlRegExps.currencyDigitsRE ||
+           (internalIntlRegExps.currencyDigitsRE = RegExpCreate("^[A-Z]{3}$"));
+}
+function CurrencyDigits(currency) {
+    assert(typeof currency === "string", "CurrencyDigits");
+    assert(regexp_test_no_statics(getCurrencyDigitsRE(), currency), "CurrencyDigits");
+
+    if (callFunction(std_Object_hasOwnProperty, currencyDigits, currency))
+        return currencyDigits[currency];
+    return 2;
+}
+
+
+/**
+ * Returns the subset of the given locale list for which this locale list has a
+ * matching (possibly fallback) locale. Locales appear in the same order in the
+ * returned list as in the input list.
+ *
+ * Spec: ECMAScript Internationalization API Specification, 11.2.2.
+ */
+function Intl_NumberFormat_supportedLocalesOf(locales /*, options*/) {
+    var options = arguments.length > 1 ? arguments[1] : undefined;
+
+    var availableLocales = callFunction(numberFormatInternalProperties.availableLocales,
+                                        numberFormatInternalProperties);
+    var requestedLocales = CanonicalizeLocaleList(locales);
+    return SupportedLocales(availableLocales, requestedLocales, options);
+}
+
+
+function getNumberingSystems(locale) {
+    // ICU doesn't have an API to determine the set of numbering systems
+    // supported for a locale; it generally pretends that any numbering system
+    // can be used with any locale. Supporting a decimal numbering system
+    // (where only the digits are replaced) is easy, so we offer them all here.
+    // Algorithmic numbering systems are typically tied to one locale, so for
+    // lack of information we don't offer them. To increase chances that
+    // other software will process output correctly, we further restrict to
+    // those decimal numbering systems explicitly listed in table 2 of
+    // the ECMAScript Internationalization API Specification, 11.3.2, which
+    // in turn are those with full specifications in version 21 of Unicode
+    // Technical Standard #35 using digits that were defined in Unicode 5.0,
+    // the Unicode version supported in Windows Vista.
+    // The one thing we can find out from ICU is the default numbering system
+    // for a locale.
+    var defaultNumberingSystem = intl_numberingSystem(locale);
+    return [
+        defaultNumberingSystem,
+        "arab", "arabext", "bali", "beng", "deva",
+        "fullwide", "gujr", "guru", "hanidec", "khmr",
+        "knda", "laoo", "latn", "limb", "mlym",
+        "mong", "mymr", "orya", "tamldec", "telu",
+        "thai", "tibt"
+    ];
+}
+
+
+function numberFormatLocaleData(locale) {
+    return {
+        nu: getNumberingSystems(locale)
+    };
+}
+
+
+/**
+ * Function to be bound and returned by Intl.NumberFormat.prototype.format.
+ *
+ * Spec: ECMAScript Internationalization API Specification, 11.3.2.
+ */
+function numberFormatFormatToBind(value) {
+    // Steps 1.a.i implemented by ECMAScript declaration binding instantiation,
+    // ES5.1 10.5, step 4.d.ii.
+
+    // Step 1.a.ii-iii.
+    var x = ToNumber(value);
+    return intl_FormatNumber(this, x, /* formatToParts = */ false);
+}
+
+
+/**
+ * Returns a function bound to this NumberFormat that returns a String value
+ * representing the result of calling ToNumber(value) according to the
+ * effective locale and the formatting options of this NumberFormat.
+ *
+ * Spec: ECMAScript Internationalization API Specification, 11.3.2.
+ */
+function Intl_NumberFormat_format_get() {
+    // Check "this NumberFormat object" per introduction of section 11.3.
+    var internals = getNumberFormatInternals(this, "format");
+
+    // Step 1.
+    if (internals.boundFormat === undefined) {
+        // Step 1.a.
+        var F = numberFormatFormatToBind;
+
+        // Step 1.b-d.
+        var bf = callFunction(FunctionBind, F, this);
+        internals.boundFormat = bf;
+    }
+    // Step 2.
+    return internals.boundFormat;
+}
+
+function Intl_NumberFormat_formatToParts(value) {
+    // Step 1.
+    var nf = this;
+
+    // Steps 2-3.
+    getNumberFormatInternals(nf, "formatToParts");
+
+    // Step 4.
+    var x = ToNumber(value);
+
+    // Step 5.
+    return intl_FormatNumber(nf, x, /* formatToParts = */ true);
+}
+
+/**
+ * Returns the resolved options for a NumberFormat object.
+ *
+ * Spec: ECMAScript Internationalization API Specification, 11.3.3 and 11.4.
+ */
+function Intl_NumberFormat_resolvedOptions() {
+    // Check "this NumberFormat object" per introduction of section 11.3.
+    var internals = getNumberFormatInternals(this, "resolvedOptions");
+
+    var result = {
+        locale: internals.locale,
+        numberingSystem: internals.numberingSystem,
+        style: internals.style,
+        minimumIntegerDigits: internals.minimumIntegerDigits,
+        minimumFractionDigits: internals.minimumFractionDigits,
+        maximumFractionDigits: internals.maximumFractionDigits,
+        useGrouping: internals.useGrouping
+    };
+    var optionalProperties = [
+        "currency",
+        "currencyDisplay",
+        "minimumSignificantDigits",
+        "maximumSignificantDigits"
+    ];
+    for (var i = 0; i < optionalProperties.length; i++) {
+        var p = optionalProperties[i];
+        if (callFunction(std_Object_hasOwnProperty, internals, p))
+            _DefineDataProperty(result, p, internals[p]);
+    }
+    return result;
+}
+
+
