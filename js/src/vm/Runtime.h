@@ -25,7 +25,6 @@
 # include "wasm/WasmSignalHandlers.h"
 #endif
 #include "builtin/AtomicsObject.h"
-#include "builtin/Intl.h"
 #include "builtin/intl/SharedIntlData.h"
 #include "builtin/Promise.h"
 #include "ds/FixedSizeHash.h"
