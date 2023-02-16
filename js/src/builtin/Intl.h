@@ -35,31 +35,6 @@ InitIntlClass(JSContext* cx, HandleObject obj);
  * The following functions are for use by self-hosted code.
  */
 
-/******************** RelativeTimeFormat ********************/
-
-/**
- * Returns an object indicating the supported locales for relative time format
- * by having a true-valued property for each such locale with the
- * canonicalized language tag as the property name. The object has no
- * prototype.
- *
- * Usage: availableLocales = intl_RelativeTimeFormat_availableLocales()
- */
-extern MOZ_MUST_USE bool
-intl_RelativeTimeFormat_availableLocales(JSContext* cx, unsigned argc, Value* vp);
-
-/**
- * Returns a relative time as a string formatted according to the effective
- * locale and the formatting options of the given RelativeTimeFormat.
- *
- * t should be a number representing a number to be formatted.
- * unit should be "second", "minute", "hour", "day", "week", "month", "quarter", or "year".
- *
- * Usage: formatted = intl_FormatRelativeTime(relativeTimeFormat, t, unit)
- */
-extern MOZ_MUST_USE bool
-intl_FormatRelativeTime(JSContext* cx, unsigned argc, Value* vp);
-
 /**
  * Returns a plain object with calendar information for a single valid locale
  * (callers must perform this validation).  The object will have these
