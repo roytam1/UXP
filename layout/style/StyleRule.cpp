@@ -537,14 +537,29 @@ int32_t nsCSSSelector::CalcWeightWithoutNegations() const
     weight += 0x000100;
     list = list->mNext;
   }
-  // FIXME (bug 561154):  This is incorrect for :-moz-any(), which isn't
-  // really a pseudo-class.  In order to handle :-moz-any() correctly,
-  // we need to compute specificity after we match, based on which
-  // option we matched with (and thus also need to try the
-  // highest-specificity options first).
   nsPseudoClassList *plist = mPseudoClassList;
   while (nullptr != plist) {
-    weight += 0x000100;
+    int pseudoClassWeight = 0x000100;
+    // XXX(franklindm): Check for correctness.
+    // The specificity of the :where() pseudo-class is always zero.
+    if (plist->mType == CSSPseudoClassType::where) {
+      pseudoClassWeight = 0;
+    } else if (nsCSSPseudoClasses::HasForgivingSelectorListArg(plist->mType)) {
+      // The specificity of the :is() pseudo-class is replaced by the
+      // specificity of its most specific argument.
+      pseudoClassWeight = 0;
+      nsCSSSelectorList* slist = plist->u.mSelectorList;
+      while (slist) {
+        int currentWeight = slist->mSelectors ?
+                            slist->mWeight :
+                            0;
+        if (currentWeight > pseudoClassWeight) {
+          pseudoClassWeight = currentWeight;
+        }
+        slist = slist->mNext;
+      }
+    }
+    weight += pseudoClassWeight;
     plist = plist->mNext;
   }
   nsAttrSelector* attr = mAttrList;
