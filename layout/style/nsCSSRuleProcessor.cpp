@@ -1337,8 +1337,8 @@ struct NodeMatchContext {
   // node being matched that is itself or an ancestor.)
   //
   // Always false when TreeMatchContext::mForStyling is false.  (We
-  // could figure it out for SelectorListMatches, but we're starting
-  // from the middle of the selector list when doing
+  // could figure it out for RestrictedSelectorListMatches, but we're
+  // starting from the middle of the selector list when doing
   // Has{Attribute,State}DependentStyle, so we can't tell.  So when
   // mForStyling is false, we have to assume we don't know.)
   const bool mIsRelevantLink;
@@ -4094,9 +4094,9 @@ nsCSSRuleProcessor::RefreshRuleCascade(nsPresContext* aPresContext)
 }
 
 /* static */ bool
-nsCSSRuleProcessor::SelectorListMatches(Element* aElement,
-                                        TreeMatchContext& aTreeMatchContext,
-                                        nsCSSSelectorList* aSelectorList)
+nsCSSRuleProcessor::RestrictedSelectorListMatches(Element* aElement,
+                                                  TreeMatchContext& aTreeMatchContext,
+                                                  nsCSSSelectorList* aSelectorList)
 {
   MOZ_ASSERT(!aTreeMatchContext.mForScopedStyle,
              "mCurrentStyleScope will need to be saved and restored after the "
