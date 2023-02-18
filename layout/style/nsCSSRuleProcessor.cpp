@@ -1640,11 +1640,20 @@ StateSelectorMatches(Element* aElement,
   return true;
 }
 
-static bool AnySelectorInArgListMatches(Element* aElement,
-                                     nsPseudoClassList* aList,
-                                     NodeMatchContext& aNodeMatchContext,
-                                     TreeMatchContext& aTreeMatchContext,
-                                     bool aIsForgiving = false);
+static bool SelectorListMatches(Element* aElement,
+                                nsCSSSelectorList* aList,
+                                NodeMatchContext& aNodeMatchContext,
+                                TreeMatchContext& aTreeMatchContext,
+                                SelectorMatchesFlags aSelectorFlags,
+                                bool aIsForgiving = false,
+                                bool aPreventComplexSelectors = false);
+
+static bool SelectorListMatches(Element* aElement,
+                                nsPseudoClassList* aList,
+                                NodeMatchContext& aNodeMatchContext,
+                                TreeMatchContext& aTreeMatchContext,
+                                bool aIsForgiving = false,
+                                bool aPreventComplexSelectors = false);
 
 static bool
 StateSelectorMatches(Element* aElement,
@@ -1913,10 +1922,11 @@ static bool SelectorMatches(Element* aElement,
       case CSSPseudoClassType::any:
       case CSSPseudoClassType::where:
         {
-          if (!AnySelectorInArgListMatches(aElement, pseudoClass,
-                                           aNodeMatchContext,
-                                           aTreeMatchContext,
-                                           true)) {
+          if (!SelectorListMatches(aElement,
+                                   pseudoClass,
+                                   aNodeMatchContext,
+                                   aTreeMatchContext,
+                                   true)) {
             return false;
           }
         }
@@ -1924,9 +1934,15 @@ static bool SelectorMatches(Element* aElement,
 
       case CSSPseudoClassType::mozAny:
         {
-          if (!AnySelectorInArgListMatches(aElement, pseudoClass,
-                                           aNodeMatchContext,
-                                           aTreeMatchContext)) {
+          // XXX: For compatibility, we retain :-moz-any()'s original behavior,
+          // which is to be unforgiving and reject complex selectors in
+          // its selector list argument.
+          if (!SelectorListMatches(aElement,
+                                   pseudoClass,
+                                   aNodeMatchContext,
+                                   aTreeMatchContext,
+                                   false,
+                                   true)) {
             return false;
           }
         }
@@ -1955,9 +1971,10 @@ static bool SelectorMatches(Element* aElement,
 
           NodeMatchContext nodeContext(EventStates(),
                                nsCSSRuleProcessor::IsLink(aElement));
-          if (AnySelectorInArgListMatches(aElement, pseudoClass,
-                                            nodeContext,
-                                            aTreeMatchContext)) {
+          if (SelectorListMatches(aElement,
+                                  pseudoClass,
+                                  nodeContext,
+                                  aTreeMatchContext)) {
             break;
           }
 
@@ -1996,9 +2013,10 @@ static bool SelectorMatches(Element* aElement,
           while (currentElement) {
             NodeMatchContext nodeContext(EventStates(),
                                nsCSSRuleProcessor::IsLink(currentElement));
-            if (AnySelectorInArgListMatches(currentElement, pseudoClass,
-                                            nodeContext,
-                                            aTreeMatchContext)) {
+            if (SelectorListMatches(currentElement,
+                                    pseudoClass,
+                                    nodeContext,
+                                    aTreeMatchContext)) {
               break;
             }
 
@@ -2388,32 +2406,6 @@ static bool SelectorMatches(Element* aElement,
   return result;
 }
 
-static bool AnySelectorInArgListMatches(Element* aElement,
-                                     nsPseudoClassList* aList,
-                                     NodeMatchContext& aNodeMatchContext,
-                                     TreeMatchContext& aTreeMatchContext,
-                                     bool aIsForgiving)
-{
-  nsCSSSelectorList *l;
-  for (l = aList->u.mSelectorList; l; l = l->mNext) {
-    nsCSSSelector *s = l->mSelectors;
-    if (s == nullptr) {
-      MOZ_ASSERT(aIsForgiving,
-                 "unexpected empty selector in unforgiving selector list");
-      return false;
-    }
-    MOZ_ASSERT(!s->mNext && !s->IsPseudoElement(),
-           "parser failed");
-    if (SelectorMatches(
-          aElement, s, aNodeMatchContext, aTreeMatchContext,
-          SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT)) {
-      break;
-    }
-  }
-
-  return !!l;
-}
-
 #undef STATE_CHECK
 
 #ifdef DEBUG
@@ -2656,6 +2648,70 @@ SelectorMatchesTree(Element* aPrevElement,
     prevElement = element;
   }
   return true; // all the selectors matched.
+}
+
+static bool SelectorListMatches(Element* aElement,
+                                nsCSSSelectorList* aList,
+                                NodeMatchContext& aNodeMatchContext,
+                                TreeMatchContext& aTreeMatchContext,
+                                SelectorMatchesFlags aSelectorFlags,
+                                bool aIsForgiving,
+                                bool aPreventComplexSelectors)
+{
+  while (aList) {
+    nsCSSSelector *selector = aList->mSelectors;
+    // Forgiving selector lists are allowed to be empty, but they
+    // don't match anything.
+    if (!selector && aIsForgiving) {
+      return false;
+    }
+    NS_ASSERTION(selector, "Should have *some* selectors");
+    NS_ASSERTION(!selector->IsPseudoElement(), "Shouldn't have been called");
+    if (aPreventComplexSelectors) {
+      NS_ASSERTION(!selector->mNext, "Shouldn't have complex selectors");
+    }
+    if (SelectorMatches(aElement,
+                        selector,
+                        aNodeMatchContext,
+                        aTreeMatchContext,
+                        aSelectorFlags)) {
+      nsCSSSelector* next = selector->mNext;
+      SelectorMatchesTreeFlags selectorTreeFlags = SelectorMatchesTreeFlags(0);
+      // Try to look for the closest ancestor link element if we're processing
+      // the selector list argument of a pseudo-class.
+      if (!aNodeMatchContext.mIsRelevantLink &&
+          (aSelectorFlags & SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT)) {
+        selectorTreeFlags = eLookForRelevantLink;
+      }
+
+      if (!next ||
+          SelectorMatchesTree(aElement,
+                              next,
+                              aTreeMatchContext,
+                              selectorTreeFlags)) {
+        return true;
+      }
+    }
+
+    aList = aList->mNext;
+  }
+
+  return false;
+}
+
+static bool SelectorListMatches(Element* aElement,
+                                nsPseudoClassList* aList,
+                                NodeMatchContext& aNodeMatchContext,
+                                TreeMatchContext& aTreeMatchContext,
+                                bool aIsForgiving,
+                                bool aPreventComplexSelectors)
+{
+  return SelectorListMatches(aElement,
+                             aList->u.mSelectorList,
+                             aNodeMatchContext,
+                             aTreeMatchContext,
+                             SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT,
+                             aIsForgiving);
 }
 
 static inline
@@ -4102,25 +4158,12 @@ nsCSSRuleProcessor::RestrictedSelectorListMatches(Element* aElement,
              "mCurrentStyleScope will need to be saved and restored after the "
              "SelectorMatchesTree call");
 
-  while (aSelectorList) {
-    nsCSSSelector* sel = aSelectorList->mSelectors;
-    NS_ASSERTION(sel, "Should have *some* selectors");
-    NS_ASSERTION(!sel->IsPseudoElement(), "Shouldn't have been called");
-    NodeMatchContext nodeContext(EventStates(), false);
-    if (SelectorMatches(aElement, sel, nodeContext, aTreeMatchContext,
-                        SelectorMatchesFlags::NONE)) {
-      nsCSSSelector* next = sel->mNext;
-      if (!next ||
-          SelectorMatchesTree(aElement, next, aTreeMatchContext,
-                              SelectorMatchesTreeFlags(0))) {
-        return true;
-      }
-    }
-
-    aSelectorList = aSelectorList->mNext;
-  }
-
-  return false;
+  NodeMatchContext nodeContext(EventStates(), false);
+  return SelectorListMatches(aElement,
+                             aSelectorList,
+                             nodeContext,
+                             aTreeMatchContext,
+                             SelectorMatchesFlags::NONE);
 }
 
 void
