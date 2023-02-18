@@ -153,7 +153,7 @@ nsPseudoClassList::nsPseudoClassList(CSSPseudoClassType aType,
                "unexpected pseudo-class");
   NS_ASSERTION(aSelectorList, "selector list expected");
   MOZ_COUNT_CTOR(nsPseudoClassList);
-  u.mSelectors = aSelectorList;
+  u.mSelectorList = aSelectorList;
 }
 
 nsPseudoClassList*
@@ -170,7 +170,7 @@ nsPseudoClassList::Clone(bool aDeep) const
     NS_ASSERTION(nsCSSPseudoClasses::HasSelectorListArg(mType),
                  "unexpected pseudo-class");
     // This constructor adopts its selector list argument.
-    result = new nsPseudoClassList(mType, u.mSelectors->Clone());
+    result = new nsPseudoClassList(mType, u.mSelectorList->Clone());
   }
 
   if (aDeep)
@@ -199,7 +199,7 @@ nsPseudoClassList::SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) cons
     } else {
       NS_ASSERTION(nsCSSPseudoClasses::HasSelectorListArg(p->mType),
                    "unexpected pseudo-class");
-      n += p->u.mSelectors->SizeOfIncludingThis(aMallocSizeOf);
+      n += p->u.mSelectorList->SizeOfIncludingThis(aMallocSizeOf);
     }
     p = p->mNext;
   }
@@ -210,7 +210,7 @@ nsPseudoClassList::~nsPseudoClassList(void)
 {
   MOZ_COUNT_DTOR(nsPseudoClassList);
   if (nsCSSPseudoClasses::HasSelectorListArg(mType)) {
-    delete u.mSelectors;
+    delete u.mSelectorList;
   } else if (u.mMemory) {
     free(u.mMemory);
   }
@@ -927,7 +927,7 @@ nsCSSSelector::AppendToStringWithoutCombinatorsOrNegations
         NS_ASSERTION(nsCSSPseudoClasses::HasSelectorListArg(list->mType),
                      "unexpected pseudo-class");
         nsString tmp;
-        list->u.mSelectors->ToString(tmp, aSheet);
+        list->u.mSelectorList->ToString(tmp, aSheet);
         aString.Append(tmp);
       }
       aString.Append(char16_t(')'));

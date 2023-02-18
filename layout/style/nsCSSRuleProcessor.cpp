@@ -2395,7 +2395,7 @@ static bool AnySelectorInArgListMatches(Element* aElement,
                                      bool aIsForgiving)
 {
   nsCSSSelectorList *l;
-  for (l = aList->u.mSelectors; l; l = l->mNext) {
+  for (l = aList->u.mSelectorList; l; l = l->mNext) {
     nsCSSSelector *s = l->mSelectors;
     if (s == nullptr) {
       MOZ_ASSERT(aIsForgiving,
@@ -2422,7 +2422,7 @@ HasPseudoClassSelectorArgsWithCombinators(nsCSSSelector* aSelector)
 {
   for (nsPseudoClassList* p = aSelector->mPseudoClassList; p; p = p->mNext) {
     if (nsCSSPseudoClasses::HasSelectorListArg(p->mType)) {
-      for (nsCSSSelectorList* l = p->u.mSelectors; l; l = l->mNext) {
+      for (nsCSSSelectorList* l = p->u.mSelectorList; l; l = l->mNext) {
         if (l->mSelectors->mNext) {
           return true;
         }
@@ -3542,7 +3542,7 @@ AddSelector(RuleCascadeData* aCascade,
     for (nsPseudoClassList* pseudoClass = negation->mPseudoClassList;
          pseudoClass; pseudoClass = pseudoClass->mNext) {
       if (nsCSSPseudoClasses::HasSelectorListArg(pseudoClass->mType)) {
-        for (nsCSSSelectorList *l = pseudoClass->u.mSelectors; l; l = l->mNext) {
+        for (nsCSSSelectorList *l = pseudoClass->u.mSelectorList; l; l = l->mNext) {
           nsCSSSelector *s = l->mSelectors;
           if (!AddSelector(aCascade, aSelectorInTopLevel, s,
                            aRightmostSelector)) {
