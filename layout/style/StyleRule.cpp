@@ -541,22 +541,28 @@ int32_t nsCSSSelector::CalcWeightWithoutNegations() const
   while (nullptr != plist) {
     int pseudoClassWeight = 0x000100;
     // XXX(franklindm): Check for correctness.
-    // The specificity of the :where() pseudo-class is always zero.
-    if (plist->mType == CSSPseudoClassType::where) {
-      pseudoClassWeight = 0;
-    } else if (nsCSSPseudoClasses::HasForgivingSelectorListArg(plist->mType)) {
-      // The specificity of the :is() pseudo-class is replaced by the
-      // specificity of its most specific argument.
-      pseudoClassWeight = 0;
-      nsCSSSelectorList* slist = plist->u.mSelectorList;
-      while (slist) {
-        int currentWeight = slist->mSelectors ?
-                            slist->mWeight :
-                            0;
-        if (currentWeight > pseudoClassWeight) {
-          pseudoClassWeight = currentWeight;
+    if (nsCSSPseudoClasses::HasSelectorListArg(plist->mType) &&
+        plist->mType != CSSPseudoClassType::mozAny) {
+      // The specificity of :host() and :host-context is that of a
+      // pseudo-class, plus the specificity of its argument.
+      if (plist->mType != CSSPseudoClassType::host &&
+          plist->mType != CSSPseudoClassType::hostContext) {
+        pseudoClassWeight = 0;
+      }
+      // The specificity of the :where() pseudo-class is always zero.
+      if (plist->mType != CSSPseudoClassType::where) {
+        // The specificity of the :is() pseudo-class is replaced by the
+        // specificity of its most specific argument.
+        nsCSSSelectorList* slist = plist->u.mSelectorList;
+        while (slist) {
+          int currentWeight = slist->mSelectors ?
+                              slist->mWeight :
+                              0;
+          if (currentWeight > pseudoClassWeight) {
+            pseudoClassWeight = currentWeight;
+          }
+          slist = slist->mNext;
         }
-        slist = slist->mNext;
       }
     }
     weight += pseudoClassWeight;
