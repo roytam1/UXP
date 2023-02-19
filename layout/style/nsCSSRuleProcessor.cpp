@@ -1969,8 +1969,10 @@ static bool SelectorMatches(Element* aElement,
           }
 
           // Match if any selector in the argument list matches.
+          // FIXME: What this effectively does is bypass the "featureless"
+          // selector check under SelectorMatches.
           NodeMatchContext nodeContext(EventStates(),
-                               nsCSSRuleProcessor::IsLink(aElement));
+                                       aNodeMatchContext.mIsRelevantLink);
           if (SelectorListMatches(aElement,
                                   pseudoClass,
                                   nodeContext,
