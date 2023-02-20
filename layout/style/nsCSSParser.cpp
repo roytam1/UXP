@@ -5486,8 +5486,15 @@ CSSParserImpl::ParseSelectorList(nsCSSSelectorList*& aListHead,
           }
           break;
         }
-        // add new list to the end of the selector list
-        list->mNext = newList;
+        // Replace the list head if: it's empty and we're a forgiving selector
+        // list. Otherwise, add the new list to the end of the selector list.
+        if (aIsForgiving && !aListHead->mSelectors) {
+          MOZ_ASSERT(newList->mSelectors,
+                     "replacing empty list head with an empty selector list?");
+          aListHead = newList;
+        } else {
+          list->mNext = newList;
+        }
         list = newList;
         continue;
       } else if (aStopChar == tk->mSymbol && aStopChar != char16_t(0)) {
