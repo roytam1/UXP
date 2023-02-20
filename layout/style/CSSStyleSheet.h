@@ -217,6 +217,7 @@ public:
 
   void WillDirty();
   void DidDirty();
+  void AssertHasUniqueInner();
 
 private:
   CSSStyleSheet(const CSSStyleSheet& aCopy,

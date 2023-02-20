@@ -1571,9 +1571,43 @@ StyleRule::GetSelectorText(nsAString& aSelectorText)
 void
 StyleRule::SetSelectorText(const nsAString& aSelectorText)
 {
-  // XXX TBI - get a parser and re-parse the selectors,
-  // XXX then need to re-compute the cascade
-  // XXX and dirty sheet
+  CSSStyleSheet* sheet = GetStyleSheet();
+
+  nsIDocument* doc = GetDocument();
+  RefPtr<css::Loader> loader;
+
+  if (doc) {
+    loader = doc->CSSLoader();
+  }
+
+  // NOTE: Passing a null loader means that the parser is always in
+  // standards mode and never in quirks mode.
+  nsCSSParser css(loader, sheet);
+
+  // StyleRule lives inside of the Inner, it is unsafe to call WillDirty
+  // if sheet does not already have a unique Inner.
+  sheet->AssertHasUniqueInner();
+  sheet->WillDirty();
+
+  nsCSSSelectorList* selectorList = nullptr;
+
+  nsresult result = css.ParseSelectorString(
+    aSelectorText, sheet->GetSheetURI(), 0, &selectorList);
+  if (NS_FAILED(result)) {
+    // Ignore parsing errors and continue to use the previous value.
+    return;
+  }
+
+  // Replace selector.
+  delete mSelector;
+  mSelector = selectorList;
+
+  sheet->DidDirty();
+
+  if (doc) {
+    mozAutoDocUpdate updateBatch(doc, UPDATE_STYLE, true);
+    doc->StyleRuleChanged(sheet, this);
+  }
 }
 
 /* virtual */ size_t
