@@ -355,32 +355,38 @@ TaskbarPreviewCallback::Done(nsISupports *aCanvas, bool aDrawBorder) {
   }
   RefPtr<gfxWindowsSurface> target = new gfxWindowsSurface(source->GetSize(),
                                                            gfx::SurfaceFormat::A8R8G8B8_UINT32);
-  if (!target) {
+  if (target->CairoStatus() != CAIRO_STATUS_SUCCESS) {
     return NS_ERROR_FAILURE;
   }
 
-  RefPtr<gfx::DataSourceSurface> srcSurface = source->GetDataSurface();
+  using DataSrcSurf = gfx::DataSourceSurface;
+  RefPtr<DataSrcSurf> srcSurface = source->GetDataSurface();
   RefPtr<gfxImageSurface> imageSurface = target->GetAsImageSurface();
   if (!srcSurface || !imageSurface) {
     return NS_ERROR_FAILURE;
   }
 
-  gfx::DataSourceSurface::MappedSurface sourceMap;
-  srcSurface->Map(gfx::DataSourceSurface::READ, &sourceMap);
-  mozilla::gfx::CopySurfaceDataToPackedArray(sourceMap.mData,
-                                             imageSurface->Data(),
-                                             srcSurface->GetSize(),
-                                             sourceMap.mStride,
-                                             BytesPerPixel(srcSurface->GetFormat()));
-  srcSurface->Unmap();
+  DataSrcSurf::ScopedMap const sourceMap(srcSurface, DataSrcSurf::READ);
+  if (sourceMap.IsMapped()) {
+    mozilla::gfx::CopySurfaceDataToPackedArray(sourceMap.GetData(),
+                                               imageSurface->Data(),
+                                               srcSurface->GetSize(),
+                                               sourceMap.GetStride(),
+                                               BytesPerPixel(srcSurface->GetFormat()));
+  } else if (source->GetSize().IsEmpty()) {
+    // A zero-size source-surface probably shouldn't happen, but is harmless
+    // here. Fall through.
+  } else {
+    return NS_ERROR_FAILURE;
+  }
 
   HDC hDC = target->GetDC();
   HBITMAP hBitmap = (HBITMAP)GetCurrentObject(hDC, OBJ_BITMAP);
 
   DWORD flags = aDrawBorder ? DWM_SIT_DISPLAYFRAME : 0;
-  POINT pptClient = { 0, 0 };
   HRESULT hr;
   if (!mIsThumbnail) {
+    POINT pptClient = { 0, 0 };
     hr = WinUtils::dwmSetIconicLivePreviewBitmapPtr(mPreview->PreviewWindow(),
                                                     hBitmap, &pptClient, flags);
   } else {
@@ -388,6 +394,7 @@ TaskbarPreviewCallback::Done(nsISupports *aCanvas, bool aDrawBorder) {
                                             hBitmap, flags);
   }
   MOZ_ASSERT(SUCCEEDED(hr));
+  mozilla::Unused << hr;
   return NS_OK;
 }
 
