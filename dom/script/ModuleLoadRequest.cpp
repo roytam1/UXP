@@ -148,6 +148,11 @@ ModuleLoadRequest::LoadFailed()
   // We failed to load the source text or an error occurred unrelated to the
   // content of the module (e.g. OOM).
 
+  if (IsCanceled()) {
+    return;
+  }
+
+  MOZ_ASSERT(!IsReadyToRun());
   MOZ_ASSERT(!mModuleScript);
 
   Cancel();
