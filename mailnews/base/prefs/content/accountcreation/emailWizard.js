@@ -1007,6 +1007,50 @@ EmailConfigWizard.prototype =
   },
 
   /**
+   * Checks whether OAuth2 is supported by current incoming hostname.
+   */
+   checkIncomingSupportsOAuth2 : function() {
+#ifdef MOZ_MAILNEWS_OAUTH2
+     var config = this.getUserConfig();
+
+     // If the hostname supports OAuth2 and imap is enabled, enable OAuth2.
+     let iDetails = OAuth2Providers.getHostnameDetails(config.incoming.hostname);
+     gEmailWizardLogger.info("OAuth2 details for incoming hostname " +
+                             config.incoming.hostname + " is " + iDetails);
+     e("in-authMethod-oauth2").hidden = !(iDetails && e("incoming_protocol").value == 1);
+     if (!e("in-authMethod-oauth2").hidden) {
+       config.oauthSettings = {};
+       [config.oauthSettings.issuer, config.oauthSettings.scope] = iDetails;
+       // oauthsettings are not stored nor changable in the user interface, so just
+       // store them in the base configuration.
+       this._currentConfig.oauthSettings = config.oauthSettings;
+     }
+#endif
+   },
+
+  /**
+   * Checks whether OAuth2 is supported by current outgoing hostname.
+   */
+   checkOutgoingSupportsOAuth2 : function() {
+#ifdef MOZ_MAILNEWS_OAUTH2
+     var config = this.getUserConfig();
+
+     // If the hostname supports OAuth2 and imap is enabled, enable OAuth2.
+     let oDetails = OAuth2Providers.getHostnameDetails(config.outgoing.hostname);
+     gEmailWizardLogger.info("OAuth2 details for outgoing hostname " +
+                             config.outgoing.hostname + " is " + oDetails);
+     e("out-authMethod-oauth2").hidden = !oDetails;
+     if (!e("out-authMethod-oauth2").hidden) {
+       config.oauthSettings = {};
+       [config.oauthSettings.issuer, config.oauthSettings.scope] = oDetails;
+       // oauthsettings are not stored nor changable in the user interface, so just
+       // store them in the base configuration.
+       this._currentConfig.oauthSettings = config.oauthSettings;
+     }
+#endif
+   },
+
+  /**
    * Fills the manual edit textfields with the provided config.
    * @param config {AccountConfig} The config to present to user
    */
@@ -1034,20 +1078,7 @@ EmailConfigWizard.prototype =
     }
     this.fillPortDropdown(config.incoming.type);
 
-#ifdef MOZ_MAILNEWS_OAUTH2
-    // If the hostname supports OAuth2 and imap is enabled, enable OAuth2.
-    let iDetails = OAuth2Providers.getHostnameDetails(config.incoming.hostname);
-    gEmailWizardLogger.info("OAuth2 details for incoming hostname " +
-                            config.incoming.hostname + " is " + iDetails);
-    e("in-authMethod-oauth2").hidden = !(iDetails && e("incoming_protocol").value == 1);
-    if (!e("in-authMethod-oauth2").hidden) {
-      config.oauthSettings = {};
-      [config.oauthSettings.issuer, config.oauthSettings.scope] = iDetails;
-      // oauthsettings are not stored nor changable in the user interface, so just
-      // store them in the base configuration.
-      this._currentConfig.oauthSettings = config.oauthSettings;
-    }
-#endif
+    this.checkIncomingSupportsOAuth2();
 
     // outgoing server
     e("outgoing_hostname").value = config.outgoing.hostname;
@@ -1065,20 +1096,7 @@ EmailConfigWizard.prototype =
       this.adjustOutgoingPortToSSLAndProtocol(config);
     }
 
-#ifdef MOZ_MAILNEWS_OAUTH2
-    // If the hostname supports OAuth2 and imap is enabled, enable OAuth2.
-    let oDetails = OAuth2Providers.getHostnameDetails(config.outgoing.hostname);
-    gEmailWizardLogger.info("OAuth2 details for outgoing hostname " +
-                            config.outgoing.hostname + " is " + oDetails);
-    e("out-authMethod-oauth2").hidden = !oDetails;
-    if (!e("out-authMethod-oauth2").hidden) {
-      config.oauthSettings = {};
-      [config.oauthSettings.issuer, config.oauthSettings.scope] = oDetails;
-      // oauthsettings are not stored nor changable in the user interface, so just
-      // store them in the base configuration.
-      this._currentConfig.oauthSettings = config.oauthSettings;
-    }
-#endif
+    this.checkOutgoingSupportsOAuth2();
 
     // populate fields even if existingServerKey, in case user changes back
     if (config.outgoing.existingServerKey) {

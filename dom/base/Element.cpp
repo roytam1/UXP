@@ -3438,9 +3438,9 @@ Element::Closest(const nsAString& aSelector, ErrorResult& aResult)
   matchingContext.AddScopeElement(this);
   for (nsINode* node = this; node; node = node->GetParentNode()) {
     if (node->IsElement() &&
-        nsCSSRuleProcessor::SelectorListMatches(node->AsElement(),
-                                                matchingContext,
-                                                selectorList)) {
+        nsCSSRuleProcessor::RestrictedSelectorListMatches(node->AsElement(),
+                                                          matchingContext,
+                                                          selectorList)) {
       return node->AsElement();
     }
   }
@@ -3464,8 +3464,9 @@ Element::Matches(const nsAString& aSelector, ErrorResult& aError)
                                    TreeMatchContext::eNeverMatchVisited);
   matchingContext.SetHasSpecifiedScope();
   matchingContext.AddScopeElement(this);
-  return nsCSSRuleProcessor::SelectorListMatches(this, matchingContext,
-                                                 selectorList);
+  return nsCSSRuleProcessor::RestrictedSelectorListMatches(this,
+                                                           matchingContext,
+                                                           selectorList);
 }
 
 static const nsAttrValue::EnumTable kCORSAttributeTable[] = {

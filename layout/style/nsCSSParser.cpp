@@ -780,7 +780,8 @@ protected:
                                                          CSSPseudoClassType aType);
 
   nsSelectorParsingStatus ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
-                                                              CSSPseudoClassType aType);
+                                                              CSSPseudoClassType aType,
+                                                              bool aIsForgiving);
 
   nsSelectorParsingStatus ParseNegatedSimpleSelector(int32_t&       aDataMask,
                                                      nsCSSSelector& aSelector);
@@ -788,9 +789,13 @@ protected:
   // If aStopChar is non-zero, the selector list is done when we hit
   // aStopChar.  Otherwise, it's done when we hit EOF.
   bool ParseSelectorList(nsCSSSelectorList*& aListHead,
-                           char16_t aStopChar);
-  bool ParseSelectorGroup(nsCSSSelectorList*& aListHead);
-  bool ParseSelector(nsCSSSelectorList* aList, char16_t aPrevCombinator);
+                         char16_t aStopChar,
+                         bool aIsForgiving);
+  bool ParseSelectorGroup(nsCSSSelectorList*& aListHead,
+                          bool aIsForgiving);
+  bool ParseSelector(nsCSSSelectorList* aList,
+                     char16_t aPrevCombinator,
+                     bool aIsForgiving);
 
   enum {
     eParseDeclaration_InBraces           = 1 << 0,
@@ -2329,7 +2334,7 @@ CSSParserImpl::ParseSelectorString(const nsSubstring& aSelectorString,
   css::ErrorReporter reporter(scanner, mSheet, mChildLoader, aURI);
   InitScanner(scanner, reporter, aURI, aURI, nullptr);
 
-  bool success = ParseSelectorList(*aSelectorList, char16_t(0));
+  bool success = ParseSelectorList(*aSelectorList, char16_t(0), false);
 
   // We deliberately do not call OUTPUT_ERROR here, because all our
   // callers map a failure return to a JS exception, and if that JS
@@ -5411,7 +5416,7 @@ CSSParserImpl::ParseRuleSet(RuleAppendFunc aAppendFunc, void* aData,
   nsCSSSelectorList* slist = nullptr;
   uint32_t linenum, colnum;
   if (!GetNextTokenLocation(true, &linenum, &colnum) ||
-      !ParseSelectorList(slist, char16_t('{'))) {
+      !ParseSelectorList(slist, char16_t('{'), false)) {
     REPORT_UNEXPECTED(PEBadSelectorRSIgnored);
     OUTPUT_ERROR();
     SkipRuleSet(aInsideBraces);
@@ -5447,13 +5452,20 @@ CSSParserImpl::ParseRuleSet(RuleAppendFunc aAppendFunc, void* aData,
 
 bool
 CSSParserImpl::ParseSelectorList(nsCSSSelectorList*& aListHead,
-                                 char16_t aStopChar)
+                                 char16_t aStopChar,
+                                 bool aIsForgiving)
 {
   nsCSSSelectorList* list = nullptr;
-  if (! ParseSelectorGroup(list)) {
-    // must have at least one selector group
-    aListHead = nullptr;
-    return false;
+  if (! ParseSelectorGroup(list, aIsForgiving)) {
+    if (aIsForgiving) {
+      // Initialize to an empty list if the first selector group was invalid
+      // and we're a forgiving selector list.
+      list = new nsCSSSelectorList();
+    } else {
+      // must have at least one selector group
+      aListHead = nullptr;
+      return false;
+    }
   }
   NS_ASSERTION(nullptr != list, "no selector list");
   aListHead = list;
@@ -5475,11 +5487,22 @@ CSSParserImpl::ParseSelectorList(nsCSSSelectorList*& aListHead,
       if (',' == tk->mSymbol) {
         nsCSSSelectorList* newList = nullptr;
         // Another selector group must follow
-        if (! ParseSelectorGroup(newList)) {
+        if (! ParseSelectorGroup(newList, aIsForgiving)) {
+          // Ignore invalid selectors if we're a forgiving selector list.
+          if (aIsForgiving) {
+            continue;
+          }
           break;
         }
-        // add new list to the end of the selector list
-        list->mNext = newList;
+        // Replace the list head if: it's empty and we're a forgiving selector
+        // list. Otherwise, add the new list to the end of the selector list.
+        if (aIsForgiving && !aListHead->mSelectors) {
+          MOZ_ASSERT(newList->mSelectors,
+                     "replacing empty list head with an empty selector list?");
+          aListHead = newList;
+        } else {
+          list->mNext = newList;
+        }
         list = newList;
         continue;
       } else if (aStopChar == tk->mSymbol && aStopChar != char16_t(0)) {
@@ -5487,9 +5510,12 @@ CSSParserImpl::ParseSelectorList(nsCSSSelectorList*& aListHead,
         return true;
       }
     }
-    REPORT_UNEXPECTED_TOKEN(PESelectorListExtra);
-    UngetToken();
-    break;
+    
+    if (!aIsForgiving) {
+      REPORT_UNEXPECTED_TOKEN(PESelectorListExtra);
+      UngetToken();
+      break;
+    }
   }
 
   delete aListHead;
@@ -5509,13 +5535,13 @@ static bool IsUniversalSelector(const nsCSSSelector& aSelector)
 }
 
 bool
-CSSParserImpl::ParseSelectorGroup(nsCSSSelectorList*& aList)
+CSSParserImpl::ParseSelectorGroup(nsCSSSelectorList*& aList, bool aIsForgiving)
 {
   char16_t combinator = 0;
   nsAutoPtr<nsCSSSelectorList> list(new nsCSSSelectorList());
 
   for (;;) {
-    if (!ParseSelector(list, combinator)) {
+    if (!ParseSelector(list, combinator, aIsForgiving)) {
       return false;
     }
 
@@ -6148,8 +6174,11 @@ CSSParserImpl::ParsePseudoSelector(int32_t&       aDataMask,
       else {
         MOZ_ASSERT(nsCSSPseudoClasses::HasSelectorListArg(pseudoClassType),
                    "unexpected pseudo with function token");
+        bool isForgiving =
+          nsCSSPseudoClasses::HasForgivingSelectorListArg(pseudoClassType);
         parsingStatus = ParsePseudoClassWithSelectorListArg(aSelector,
-                                                            pseudoClassType);
+                                                            pseudoClassType,
+                                                            isForgiving);
       }
       if (eSelectorParsingStatus_Continue != parsingStatus) {
         if (eSelectorParsingStatus_Error == parsingStatus) {
@@ -6523,18 +6552,29 @@ CSSParserImpl::ParsePseudoClassWithNthPairArg(nsCSSSelector& aSelector,
 //
 CSSParserImpl::nsSelectorParsingStatus
 CSSParserImpl::ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
-                                                   CSSPseudoClassType aType)
+                                                   CSSPseudoClassType aType,
+                                                   bool aIsForgiving)
 {
   nsAutoPtr<nsCSSSelectorList> slist;
-  if (! ParseSelectorList(*getter_Transfers(slist), char16_t(')'))) {
+  if (! ParseSelectorList(*getter_Transfers(slist), char16_t(')'), aIsForgiving)) {
     return eSelectorParsingStatus_Error; // our caller calls SkipUntil(')')
   }
 
-  // Check that none of the selectors in the list have combinators or
-  // pseudo-elements.
+  if (nsCSSPseudoClasses::HasSingleSelectorArg(aType) &&
+      slist->mNext) {
+    return eSelectorParsingStatus_Error; // our caller calls SkipUntil(')')
+  }
+
   for (nsCSSSelectorList *l = slist; l; l = l->mNext) {
     nsCSSSelector *s = l->mSelectors;
-    if (s->mNext || s->IsPseudoElement()) {
+    if (s == nullptr) {
+      MOZ_ASSERT(aIsForgiving,
+                 "unexpected empty selector in unforgiving selector list");
+      break;
+    }
+    // Check that none of the selectors in the list have combinators or
+    // pseudo-elements.
+    if ((!aIsForgiving && s->mNext) || s->IsPseudoElement()) {
       return eSelectorParsingStatus_Error; // our caller calls SkipUntil(')')
     }
   }
@@ -6558,7 +6598,8 @@ CSSParserImpl::ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
  */
 bool
 CSSParserImpl::ParseSelector(nsCSSSelectorList* aList,
-                             char16_t aPrevCombinator)
+                             char16_t aPrevCombinator,
+                             bool aIsForgiving)
 {
   if (! GetToken(true)) {
     REPORT_UNEXPECTED_EOF(PESelectorEOF);
@@ -6632,6 +6673,12 @@ CSSParserImpl::ParseSelector(nsCSSSelectorList* aList,
   }
 
   if (!dataMask) {
+    // XXX(franklindm): We're effectively ignoring stray combinators
+    // and empty selector groups here for forgiving selector lists.
+    // It doesn't seem right, but this is how tainted browsers do it.
+    if (aIsForgiving) {
+      return false;
+    }
     if (selector->mNext) {
       REPORT_UNEXPECTED(PESelectorGroupExtraCombinator);
     } else {

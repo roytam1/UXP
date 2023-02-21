@@ -77,7 +77,7 @@ public:
     void*           mMemory; // mString and mNumbers use moz_xmalloc/free
     char16_t*       mString;
     int32_t*        mNumbers;
-    nsCSSSelectorList* mSelectors;
+    nsCSSSelectorList* mSelectorList;
   } u;
   CSSPseudoClassType mType;
   nsPseudoClassList* mNext;

@@ -465,7 +465,7 @@ inDOMUtils::SelectorMatchesElement(nsIDOMElement* aElement,
     }
 
     // We have a matching pseudo element, now remove it so we can compare
-    // directly against |element| when proceeding into SelectorListMatches.
+    // directly against |element| when proceeding into RestrictedSelectorListMatches.
     // It's OK to do this - we just cloned sel and nothing else is using it.
     sel->RemoveRightmostSelector();
   }
@@ -476,8 +476,9 @@ inDOMUtils::SelectorMatchesElement(nsIDOMElement* aElement,
                                    nsRuleWalker::eRelevantLinkUnvisited,
                                    element->OwnerDoc(),
                                    TreeMatchContext::eNeverMatchVisited);
-  *aMatches = nsCSSRuleProcessor::SelectorListMatches(element, matchingContext,
-                                                      sel);
+  *aMatches = nsCSSRuleProcessor::RestrictedSelectorListMatches(element,
+                                                                matchingContext,
+                                                                sel);
   return NS_OK;
 }
 
