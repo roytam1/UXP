@@ -109,6 +109,30 @@ nsCSSPseudoClasses::HasSingleSelectorArg(Type aType)
          aType == Type::hostContext;
 }
 
+bool
+nsCSSPseudoClasses::HasForgivingSelectorListArg(Type aType)
+{
+  return aType == Type::is ||
+         aType == Type::matches ||
+         aType == Type::any ||
+         aType == Type::where;
+}
+
+bool
+nsCSSPseudoClasses::HasSelectorListArg(Type aType)
+{
+  return HasForgivingSelectorListArg(aType) ||
+         aType == Type::mozAny ||
+         aType == Type::host ||
+         aType == Type::hostContext;
+}
+
+bool
+nsCSSPseudoClasses::HasOptionalSelectorListArg(Type aType)
+{
+  return aType == Type::host;
+}
+
 void
 nsCSSPseudoClasses::PseudoTypeToString(Type aType, nsAString& aString)
 {
