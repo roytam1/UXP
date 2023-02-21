@@ -102,6 +102,13 @@ nsCSSPseudoClasses::HasNthPairArg(Type aType)
          aType == Type::nthLastOfType;
 }
 
+bool
+nsCSSPseudoClasses::HasSingleSelectorArg(Type aType)
+{
+  return aType == Type::host ||
+         aType == Type::hostContext;
+}
+
 void
 nsCSSPseudoClasses::PseudoTypeToString(Type aType, nsAString& aString)
 {

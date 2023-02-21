@@ -58,6 +58,7 @@ public:
   static Type GetPseudoType(nsIAtom* aAtom, EnabledState aEnabledState);
   static bool HasStringArg(Type aType);
   static bool HasNthPairArg(Type aType);
+  static bool HasSingleSelectorArg(Type aType);
   static bool HasForgivingSelectorListArg(Type aType) {
     return aType == Type::is ||
      aType == Type::matches ||

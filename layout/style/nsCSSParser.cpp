@@ -6552,6 +6552,11 @@ CSSParserImpl::ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
     return eSelectorParsingStatus_Error; // our caller calls SkipUntil(')')
   }
 
+  if (nsCSSPseudoClasses::HasSingleSelectorArg(aType) &&
+      slist->mNext) {
+    return eSelectorParsingStatus_Error; // our caller calls SkipUntil(')')
+  }
+
   for (nsCSSSelectorList *l = slist; l; l = l->mNext) {
     nsCSSSelector *s = l->mSelectors;
     if (s == nullptr) {
