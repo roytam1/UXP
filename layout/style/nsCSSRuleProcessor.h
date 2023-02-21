@@ -92,9 +92,9 @@ public:
    * include any pseudo-element selectors.  aSelectorList is allowed
    * to be null; in this case false will be returned.
    */
-  static bool SelectorListMatches(mozilla::dom::Element* aElement,
-                                    TreeMatchContext& aTreeMatchContext,
-                                    nsCSSSelectorList* aSelectorList);
+  static bool RestrictedSelectorListMatches(mozilla::dom::Element* aElement,
+                                            TreeMatchContext& aTreeMatchContext,
+                                            nsCSSSelectorList* aSelectorList);
 
   /*
    * Helper to get the content state for a content node.  This may be

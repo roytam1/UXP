@@ -74,7 +74,11 @@ CSS_PSEUDO_CLASS(mozEmptyExceptChildrenWithLocalname, ":-moz-empty-except-childr
 CSS_PSEUDO_CLASS(lang, ":lang", 0, "")
 CSS_PSEUDO_CLASS(mozBoundElement, ":-moz-bound-element", 0, "")
 CSS_PSEUDO_CLASS(root, ":root", 0, "")
-CSS_PSEUDO_CLASS(any, ":-moz-any", 0, "")
+CSS_PSEUDO_CLASS(mozAny, ":-moz-any", 0, "")
+CSS_PSEUDO_CLASS(is, ":is", 0, "layout.css.is-where-pseudo.enabled")
+CSS_PSEUDO_CLASS(matches, ":matches", 0, "layout.css.is-where-pseudo.enabled")
+CSS_PSEUDO_CLASS(any, ":any", 0, "layout.css.is-where-pseudo.enabled")
+CSS_PSEUDO_CLASS(where, ":where", 0, "layout.css.is-where-pseudo.enabled")
 
 CSS_PSEUDO_CLASS(firstChild, ":first-child", 0, "")
 CSS_PSEUDO_CLASS(firstNode, ":-moz-first-node", 0, "")

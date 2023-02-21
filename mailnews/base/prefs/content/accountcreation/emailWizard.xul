@@ -276,6 +276,7 @@
             </menulist>
             <textbox id="incoming_hostname"
                      oninput="gEmailConfigWizard.onInputHostname();"
+                     onblur="gEmailConfigWizard.checkIncomingSupportsOAuth2();"
                      class="host uri-element"/>
             <menulist id="incoming_port"
                       editable="true"
@@ -325,6 +326,7 @@
                 editable="true"
                 sizetopopup="none"
                 oninput="gEmailConfigWizard.onInputHostname();"
+                onblur="gEmailConfigWizard.checkOutgoingSupportsOAuth2();"
                 oncommand="gEmailConfigWizard.onChangedOutgoingDropdown();"
                 onpopupshowing="gEmailConfigWizard.onOpenOutgoingDropdown();"
                 class="host uri-element">
