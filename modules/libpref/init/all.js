@@ -2558,6 +2558,9 @@ pref("layout.css.prefixes.webkit", true);
 // pref is set to false.)
 pref("layout.css.prefixes.device-pixel-ratio-webkit", false);
 
+// Is support for the :is() and :where() selectors enabled?
+pref("layout.css.is-where-pseudo.enabled", true);
+
 // Is support for the :scope selector enabled?
 pref("layout.css.scope-pseudo.enabled", true);
 
