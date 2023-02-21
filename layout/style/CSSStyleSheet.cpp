@@ -1618,6 +1618,12 @@ CSSStyleSheet::DidDirty()
   ClearRuleCascades();
 }
 
+void
+CSSStyleSheet::AssertHasUniqueInner()
+{
+  MOZ_ASSERT(mInner->mSheets.Length() == 1, "expected unique inner");
+}
+
 nsresult
 CSSStyleSheet::RegisterNamespaceRule(css::Rule* aRule)
 {
