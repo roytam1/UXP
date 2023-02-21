@@ -710,14 +710,35 @@ class Clobber(MachCommandBase):
                 raise
 
         if 'python' in what:
+            # TODO: Once we move to Python 3, we should probably use
+            # shutil.which to get the fully qualified path for these commands.
+            cmd = ''
             if os.path.isdir(mozpath.join(self.topsrcdir, '.hg')):
                 cmd = ['hg', 'purge', '--all', '-I', 'glob:**.py[co]']
             elif os.path.isdir(mozpath.join(self.topsrcdir, '.git')):
                 cmd = ['git', 'clean', '-f', '-x', '*.py[co]']
+
+            if not cmd:
+                ret = self.clobber_python_fallback()
             else:
-                cmd = ['find', '.', '-type', 'f', '-name', '*.py[co]', '-delete']
-            ret = subprocess.call(cmd, cwd=self.topsrcdir)
+                # It is possible that git or hg is either not installed or
+                # excluded from PATH despite the existence of their data
+                # directories, so use a fallback instead of failing early.
+                try:
+                    ret = subprocess.call(cmd, cwd=self.topsrcdir)
+                except OSError as e:
+                    ret = self.clobber_python_fallback()
+
         return ret
+
+    def clobber_python_fallback(self):
+        cmd = ['find', '.', '-type', 'f', '-name', '*.py[co]', '-delete']
+        # Execute the command through the shell if we're on Windows to ensure
+        # that our copy of `find` is run rather than the OS default.
+        # This is because on Windows, Popen (and by extension, subprocess.call)
+        # ignores PATH and looks only at the current working directory.
+        use_shell = sys.platform.startswith('win')
+        return subprocess.call(cmd, cwd=self.topsrcdir, shell=use_shell)
 
 @CommandProvider
 class Logs(MachCommandBase):

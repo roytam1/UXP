@@ -30,7 +30,7 @@
 #include "jstypes.h"
 #include "jsutil.h"
 
-#include "builtin/Intl.h"
+#include "builtin/intl/ICUHeader.h"
 #include "builtin/RegExp.h"
 #include "jit/InlinableNatives.h"
 #include "js/Conversions.h"
