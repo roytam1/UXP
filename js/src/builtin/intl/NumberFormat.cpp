@@ -839,7 +839,7 @@ intl_FormatNumberToParts(JSContext* cx, UNumberFormat* nf, double x, MutableHand
         partIndex++;
     } while (true);
 
-    MOZ_ASSERT(lastEndIndex == chars.length(),
+    MOZ_ASSERT(lastEndIndex == overallResult->length(),
                "result array must partition the entire string");
 
     result.setObject(*partsArray);
