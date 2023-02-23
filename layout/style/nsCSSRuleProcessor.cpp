@@ -2713,7 +2713,8 @@ static bool SelectorListMatches(Element* aElement,
                              aNodeMatchContext,
                              aTreeMatchContext,
                              SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT,
-                             aIsForgiving);
+                             aIsForgiving,
+                             aPreventComplexSelectors);
 }
 
 static inline
