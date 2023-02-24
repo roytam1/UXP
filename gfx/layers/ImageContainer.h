@@ -672,6 +672,7 @@ struct PlanarYCbCrData {
   gfx::IntSize mPicSize;
   StereoMode mStereoMode;
   YUVColorSpace mYUVColorSpace;
+  ColorRange mColorRange;
 
   gfx::IntRect GetPictureRect() const {
     return gfx::IntRect(mPicX, mPicY,
@@ -684,7 +685,7 @@ struct PlanarYCbCrData {
     , mCbChannel(nullptr), mCrChannel(nullptr)
     , mCbCrStride(0), mCbCrSize(0, 0) , mCbSkip(0), mCrSkip(0)
     , mPicX(0), mPicY(0), mPicSize(0, 0), mStereoMode(StereoMode::MONO)
-    , mYUVColorSpace(YUVColorSpace::BT601)
+    , mYUVColorSpace(YUVColorSpace::BT601), mColorRange(ColorRange::LIMITED)
   {}
 };
 

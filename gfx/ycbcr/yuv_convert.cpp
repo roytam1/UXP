@@ -94,7 +94,8 @@ void ConvertYCbCrToRGB32(const uint8_t* y_buf,
                          int uv_pitch,
                          int rgb_pitch,
                          YUVType yuv_type,
-                         YUVColorSpace yuv_color_space) {
+                         YUVColorSpace yuv_color_space,
+                         ColorRange color_range) {
 
 
   // Deprecated function's conversion is accurate.
@@ -107,7 +108,8 @@ void ConvertYCbCrToRGB32(const uint8_t* y_buf,
   // See Bug 1256475.
   bool use_deprecated = gfxPrefs::YCbCrAccurateConversion() ||
                         (supports_mmx() && supports_sse() && !supports_sse3() &&
-                         yuv_color_space == YUVColorSpace::BT601);
+                         yuv_color_space == YUVColorSpace::BT601 &&
+                         color_range == ColorRange::LIMITED);
   // The deprecated function only support BT601.
   // See Bug 1210357.
   if (yuv_color_space != YUVColorSpace::BT601) {
@@ -120,55 +122,53 @@ void ConvertYCbCrToRGB32(const uint8_t* y_buf,
     return;
   }
 
-  if (yuv_type == YV24) {
-    const uint8_t* src_y = y_buf + y_pitch * pic_y + pic_x;
-    const uint8_t* src_u = u_buf + uv_pitch * pic_y + pic_x;
-    const uint8_t* src_v = v_buf + uv_pitch * pic_y + pic_x;
-    if (yuv_color_space == YUVColorSpace::IDENTITY) {
-      // Special case for RGB image
-      GBRPlanarToARGB(src_y, y_pitch, src_u, uv_pitch, src_v, uv_pitch,
-                      rgb_buf, rgb_pitch, pic_width, pic_height);
-      return;
-    } else {
-      DebugOnly<int> err = libyuv::I444ToARGB(src_y, y_pitch,
-                                              src_u, uv_pitch,
-                                              src_v, uv_pitch,
-                                              rgb_buf, rgb_pitch,
-                                              pic_width, pic_height);
-      MOZ_ASSERT(!err);
+  decltype(libyuv::I420ToARGBMatrix)* fConvertYUVToARGB = nullptr;
+  const uint8_t* src_y = nullptr;
+  const uint8_t* src_u = nullptr;
+  const uint8_t* src_v = nullptr;
+
+  switch (yuv_type) {
+    case YV24: {
+      src_y = y_buf + y_pitch * pic_y + pic_x;
+      src_u = u_buf + uv_pitch * pic_y + pic_x;
+      src_v = v_buf + uv_pitch * pic_y + pic_x;
+
+      if (yuv_color_space == YUVColorSpace::IDENTITY) {
+        // Special case for RGB image.
+        GBRPlanarToARGB(src_y, y_pitch, src_u, uv_pitch, src_v, uv_pitch,
+                            rgb_buf, rgb_pitch, pic_width, pic_height);
+        return;
+      }
+
+      fConvertYUVToARGB = libyuv::I444ToARGBMatrix;
+      break;
     }
-  } else if (yuv_type == YV16) {
-    const uint8_t* src_y = y_buf + y_pitch * pic_y + pic_x;
-    const uint8_t* src_u = u_buf + uv_pitch * pic_y + pic_x / 2;
-    const uint8_t* src_v = v_buf + uv_pitch * pic_y + pic_x / 2;
-    DebugOnly<int> err = libyuv::I422ToARGB(src_y, y_pitch,
-                                            src_u, uv_pitch,
-                                            src_v, uv_pitch,
-                                            rgb_buf, rgb_pitch,
-                                            pic_width, pic_height);
-    MOZ_ASSERT(!err);
-  } else {
-    MOZ_ASSERT(yuv_type == YV12);
-    const uint8_t* src_y = y_buf + y_pitch * pic_y + pic_x;
-    const uint8_t* src_u = u_buf + (uv_pitch * pic_y + pic_x) / 2;
-    const uint8_t* src_v = v_buf + (uv_pitch * pic_y + pic_x) / 2;
-    if (yuv_color_space == YUVColorSpace::BT709) {
-      DebugOnly<int> err = libyuv::H420ToARGB(src_y, y_pitch,
-                                              src_u, uv_pitch,
-                                              src_v, uv_pitch,
-                                              rgb_buf, rgb_pitch,
-                                              pic_width, pic_height);
-      MOZ_ASSERT(!err);
-    } else {
-      MOZ_ASSERT(yuv_color_space == YUVColorSpace::BT601);
-      DebugOnly<int> err = libyuv::I420ToARGB(src_y, y_pitch,
-                                              src_u, uv_pitch,
-                                              src_v, uv_pitch,
-                                              rgb_buf, rgb_pitch,
-                                              pic_width, pic_height);
-      MOZ_ASSERT(!err);
+    case YV16: {
+      src_y = y_buf + y_pitch * pic_y + pic_x;
+      src_u = u_buf + uv_pitch * pic_y + pic_x / 2;
+      src_v = v_buf + uv_pitch * pic_y + pic_x / 2;
+
+      fConvertYUVToARGB = libyuv::I422ToARGBMatrix;
+      break;
     }
+    case YV12: {
+      src_y = y_buf + y_pitch * pic_y + pic_x;
+      src_u = u_buf + (uv_pitch * pic_y + pic_x) / 2;
+      src_v = v_buf + (uv_pitch * pic_y + pic_x) / 2;
+
+      fConvertYUVToARGB = libyuv::I420ToARGBMatrix;
+      break;
+    }
+    default:
+      MOZ_ASSERT_UNREACHABLE("Unsupported YUV type");
   }
+
+  auto yuv_constant = libyuv::GetYUVConstants(yuv_color_space, color_range);
+
+  DebugOnly<int> err =
+    fConvertYUVToARGB(src_y, y_pitch, src_u, uv_pitch, src_v, uv_pitch,
+                      rgb_buf, rgb_pitch, yuv_constant, pic_width, pic_height);
+  MOZ_ASSERT(!err);
 }
 
 // Convert a frame of YUV to 32 bit ARGB.
@@ -300,6 +300,7 @@ void ScaleYCbCrToRGB32(const uint8_t* y_buf,
                        int rgb_pitch,
                        YUVType yuv_type,
                        YUVColorSpace yuv_color_space,
+                       ColorRange color_range,
                        ScaleFilter filter) {
 
   bool use_deprecated = gfxPrefs::YCbCrAccurateConversion() ||
@@ -307,7 +308,8 @@ void ScaleYCbCrToRGB32(const uint8_t* y_buf,
                         // libyuv does not support SIMD scaling on win 64bit. See Bug 1295927.
                         supports_sse3() ||
 #endif
-                        (supports_mmx() && supports_sse() && !supports_sse3());
+                        (supports_mmx() && supports_sse() && !supports_sse3() &&
+                         color_range == ColorRange::LIMITED);
   // The deprecated function only support BT601.
   // See Bug 1210357.
   if (yuv_color_space != YUVColorSpace::BT601) {
@@ -327,6 +329,8 @@ void ScaleYCbCrToRGB32(const uint8_t* y_buf,
   }
 
   if (yuv_type == YV24 && yuv_color_space == YUVColorSpace::IDENTITY) {
+    MOZ_ASSERT(color_range == ColorRange::LIMITED,
+               "Identity (aka RGB) with limited color range is unsupporeted");
     auto buffer = MakeUnique<uint8_t[]>(source_width * source_height * 4);
     auto buffer_pitch = source_width * 4;
     GBRPlanarToARGB(y_buf, y_pitch, u_buf, uv_pitch, v_buf, uv_pitch,
@@ -347,6 +351,7 @@ void ScaleYCbCrToRGB32(const uint8_t* y_buf,
                            v_buf, uv_pitch,
                            FourCCFromYUVType(yuv_type),
                            yuv_color_space,
+                           color_range,
                            source_width, source_height,
                            rgb_buf, rgb_pitch,
                            width, height,

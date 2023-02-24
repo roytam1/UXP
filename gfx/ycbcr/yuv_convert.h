@@ -57,7 +57,8 @@ void ConvertYCbCrToRGB32(const uint8_t* yplane,
                          int uvstride,
                          int rgbstride,
                          YUVType yuv_type,
-                         YUVColorSpace yuv_color_space);
+                         YUVColorSpace yuv_color_space,
+                         ColorRange color_range);
 
 void ConvertYCbCrToRGB32_deprecated(const uint8_t* yplane,
                                     const uint8_t* uplane,
@@ -87,6 +88,7 @@ void ScaleYCbCrToRGB32(const uint8_t* yplane,
                        int rgbstride,
                        YUVType yuv_type,
                        YUVColorSpace yuv_color_space,
+                       ColorRange color_range,
                        ScaleFilter filter);
 
 void ScaleYCbCrToRGB32_deprecated(const uint8_t* yplane,

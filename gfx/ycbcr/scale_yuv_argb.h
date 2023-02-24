@@ -12,6 +12,7 @@
 #define INCLUDE_LIBYUV_SCALE_YUV_ARGB_H_
 
 #include "libyuv/basic_types.h"
+#include "libyuv/row.h" // For YuvConstants
 #include "libyuv/scale.h"  // For FilterMode
 
 #include "ImageTypes.h" // For YUVColorSpace
@@ -21,11 +22,16 @@ namespace libyuv {
 extern "C" {
 #endif
 
+const YuvConstants* GetYUVConstants(mozilla::YUVColorSpace yuv_color_space,
+                                    mozilla::ColorRange color_range);
+
+
 int YUVToARGBScale(const uint8_t* src_y, int src_stride_y,
                    const uint8_t* src_u, int src_stride_u,
                    const uint8_t* src_v, int src_stride_v,
                    uint32_t src_fourcc,
                    mozilla::YUVColorSpace yuv_color_space,
+                   mozilla::ColorRange color_range,
                    int src_width, int src_height,
                    uint8_t* dst_argb, int dst_stride_argb,
                    int dst_width, int dst_height,

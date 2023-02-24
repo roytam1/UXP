@@ -21,11 +21,31 @@
 #include "libyuv/row.h"
 #include "libyuv/scale_row.h"
 #include "libyuv/video_common.h"
+#include "mozilla/Assertions.h"
 
 #ifdef __cplusplus
 namespace libyuv {
 extern "C" {
 #endif
+
+const YuvConstants* GetYUVConstants(mozilla::YUVColorSpace yuv_color_space,
+                                    mozilla::ColorRange color_range)
+{
+  switch (yuv_color_space) {
+    case mozilla::YUVColorSpace::BT709:
+      return color_range == mozilla::ColorRange::LIMITED
+        ? &libyuv::kYuvH709Constants
+        : &libyuv::kYuvF709Constants;
+
+    default:
+      MOZ_FALLTHROUGH_ASSERT("Unsupported YUVColorSpace");
+    case mozilla::YUVColorSpace::BT601:
+      return color_range == mozilla::ColorRange::LIMITED
+        ? &libyuv::kYuvI601Constants
+        : &libyuv::kYuvJPEGConstants;
+  }
+}
+
 
 // YUV to RGB conversion and scaling functions were implemented by referencing
 // scale_argb.cc
@@ -207,17 +227,16 @@ static __inline void YUVBuferIter_ConvertToARGBRow(YUVBuferIter& iter, uint8_t* 
   iter.YUVToARGBRow(iter.src_row_y, iter.src_row_u, iter.src_row_v, argb_row, iter.yuvconstants, iter.src_width);
 }
 
-void YUVBuferIter_Init(YUVBuferIter& iter, uint32_t src_fourcc, mozilla::YUVColorSpace yuv_color_space) {
+void YUVBuferIter_Init(YUVBuferIter& iter,
+                       uint32_t src_fourcc,
+                       mozilla::YUVColorSpace yuv_color_space,
+                       mozilla::ColorRange color_range) {
   iter.src_fourcc = src_fourcc;
   iter.y_index = 0;
   iter.src_row_y = iter.src_y;
   iter.src_row_u = iter.src_u;
   iter.src_row_v = iter.src_v;
-  if (yuv_color_space == mozilla::YUVColorSpace::BT709) {
-    iter.yuvconstants = &kYuvH709Constants;
-  } else {
-    iter.yuvconstants = &kYuvI601Constants;
-  }
+  iter.yuvconstants = GetYUVConstants(yuv_color_space, color_range);
 
   if (src_fourcc == FOURCC_I444) {
     YUVBuferIter_InitI444(iter);
@@ -251,7 +270,8 @@ static void ScaleYUVToARGBDown2(int src_width, int src_height,
                                 int x, int dx, int y, int dy,
                                 enum FilterMode filtering,
                                 uint32_t src_fourcc,
-                                mozilla::YUVColorSpace yuv_color_space) {
+                                mozilla::YUVColorSpace yuv_color_space,
+                                mozilla::ColorRange color_range) {
   int j;
 
   // Allocate 2 rows of ARGB for source conversion.
@@ -269,7 +289,7 @@ static void ScaleYUVToARGBDown2(int src_width, int src_height,
   iter.src_y = src_y;
   iter.src_u = src_u;
   iter.src_v = src_v;
-  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space);
+  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space, color_range);
 
   void (*ScaleARGBRowDown2)(const uint8_t* src_argb, ptrdiff_t src_stride,
                             uint8_t* dst_argb, int dst_width) =
@@ -388,7 +408,8 @@ static void ScaleYUVToARGBDownEven(int src_width, int src_height,
                                    int x, int dx, int y, int dy,
                                    enum FilterMode filtering,
                                    uint32_t src_fourcc,
-                                   mozilla::YUVColorSpace yuv_color_space) {
+                                   mozilla::YUVColorSpace yuv_color_space,
+                                   mozilla::ColorRange color_range) {
   int j;
   // Allocate 2 rows of ARGB for source conversion.
   const int kRowSize = (src_width * 4 + 15) & ~15;
@@ -435,7 +456,7 @@ static void ScaleYUVToARGBDownEven(int src_width, int src_height,
   iter.src_y = src_y;
   iter.src_u = src_u;
   iter.src_v = src_v;
-  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space);
+  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space, color_range);
 
   const int dyi = dy >> 16;
   int lastyi = yi;
@@ -509,7 +530,8 @@ static void ScaleYUVToARGBBilinearDown(int src_width, int src_height,
                                        int x, int dx, int y, int dy,
                                        enum FilterMode filtering,
                                        uint32_t src_fourcc,
-                                       mozilla::YUVColorSpace yuv_color_space) {
+                                       mozilla::YUVColorSpace yuv_color_space,
+                                       mozilla::ColorRange color_range) {
   int j;
   void (*InterpolateRow)(uint8_t* dst_argb, const uint8_t* src_argb,
       ptrdiff_t src_stride, int dst_width, int source_y_fraction) =
@@ -595,7 +617,7 @@ static void ScaleYUVToARGBBilinearDown(int src_width, int src_height,
   iter.src_y = src_y;
   iter.src_u = src_u;
   iter.src_v = src_v;
-  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space);
+  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space, color_range);
   iter.MoveTo(iter, yi);
 
   // TODO(fbarchard): Consider not allocating row buffer for kFilterLinear.
@@ -678,7 +700,8 @@ static void ScaleYUVToARGBBilinearUp(int src_width, int src_height,
                                      int x, int dx, int y, int dy,
                                      enum FilterMode filtering,
                                      uint32_t src_fourcc,
-                                     mozilla::YUVColorSpace yuv_color_space) {
+                                     mozilla::YUVColorSpace yuv_color_space,
+                                     mozilla::ColorRange color_range) {
   int j;
   void (*InterpolateRow)(uint8_t* dst_argb, const uint8_t* src_argb,
       ptrdiff_t src_stride, int dst_width, int source_y_fraction) =
@@ -775,7 +798,7 @@ static void ScaleYUVToARGBBilinearUp(int src_width, int src_height,
   iter.src_y = src_y;
   iter.src_u = src_u;
   iter.src_v = src_v;
-  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space);
+  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space, color_range);
   iter.MoveTo(iter, yi);
 
   // Allocate 2 rows of ARGB.
@@ -862,7 +885,8 @@ static void ScaleYUVToARGBSimple(int src_width, int src_height,
                                  uint8_t* dst_argb,
                                  int x, int dx, int y, int dy,
                                  uint32_t src_fourcc,
-                                 mozilla::YUVColorSpace yuv_color_space) {
+                                 mozilla::YUVColorSpace yuv_color_space,
+                                 mozilla::ColorRange color_range) {
   int j;
   void (*ScaleARGBCols)(uint8_t* dst_argb, const uint8_t* src_argb,
       int dst_width, int x, int dx) =
@@ -904,7 +928,7 @@ static void ScaleYUVToARGBSimple(int src_width, int src_height,
   iter.src_y = src_y;
   iter.src_u = src_u;
   iter.src_v = src_v;
-  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space);
+  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space, color_range);
   iter.MoveTo(iter, yi);
 
   int lasty = yi;
@@ -931,7 +955,8 @@ static void YUVToARGBCopy(const uint8_t* src_y, int src_stride_y,
                           uint8_t* dst_argb, int dst_stride_argb,
                           int dst_width, int dst_height,
                           uint32_t src_fourcc,
-                          mozilla::YUVColorSpace yuv_color_space)
+                          mozilla::YUVColorSpace yuv_color_space,
+                          mozilla::ColorRange color_range)
 {
   YUVBuferIter iter;
   iter.src_width = src_width;
@@ -942,7 +967,7 @@ static void YUVToARGBCopy(const uint8_t* src_y, int src_stride_y,
   iter.src_y = src_y;
   iter.src_u = src_u;
   iter.src_v = src_v;
-  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space);
+  YUVBuferIter_Init(iter, src_fourcc, yuv_color_space, color_range);
 
   for (int j = 0; j < dst_height; ++j) {
     YUVBuferIter_ConvertToARGBRow(iter, dst_argb);
@@ -959,7 +984,8 @@ static void ScaleYUVToARGB(const uint8_t* src_y, int src_stride_y,
                            int dst_width, int dst_height,
                            enum FilterMode filtering,
                            uint32_t src_fourcc,
-                           mozilla::YUVColorSpace yuv_color_space)
+                           mozilla::YUVColorSpace yuv_color_space,
+                           mozilla::ColorRange color_range)
 {
   // Initial source x/y coordinate and step values as 16.16 fixed point.
   int x = 0;
@@ -996,7 +1022,8 @@ static void ScaleYUVToARGB(const uint8_t* src_y, int src_stride_y,
                               x, dx, y, dy,
                               filtering,
                               src_fourcc,
-                              yuv_color_space);
+                              yuv_color_space,
+                              color_range);
           return;
         }
         ScaleYUVToARGBDownEven(src_width, src_height,
@@ -1012,7 +1039,8 @@ static void ScaleYUVToARGB(const uint8_t* src_y, int src_stride_y,
                                x, dx, y, dy,
                                filtering,
                                src_fourcc,
-                               yuv_color_space);
+                               yuv_color_space,
+                               color_range);
         return;
       }
       // Optimized odd scale down. ie 3, 5, 7, 9x.
@@ -1027,7 +1055,8 @@ static void ScaleYUVToARGB(const uint8_t* src_y, int src_stride_y,
                         dst_argb, dst_stride_argb,
                         dst_width, dst_height,
                         src_fourcc,
-                        yuv_color_space);
+                        yuv_color_space,
+                        color_range);
           return;
         }
       }
@@ -1047,7 +1076,8 @@ static void ScaleYUVToARGB(const uint8_t* src_y, int src_stride_y,
                              x, dx, y, dy,
                              filtering,
                              src_fourcc,
-                             yuv_color_space);
+                             yuv_color_space,
+                             color_range);
     return;
   }
   if (filtering) {
@@ -1064,7 +1094,8 @@ static void ScaleYUVToARGB(const uint8_t* src_y, int src_stride_y,
                                x, dx, y, dy,
                                filtering,
                                src_fourcc,
-                               yuv_color_space);
+                               yuv_color_space,
+                               color_range);
     return;
   }
   ScaleYUVToARGBSimple(src_width, src_height,
@@ -1079,7 +1110,8 @@ static void ScaleYUVToARGB(const uint8_t* src_y, int src_stride_y,
                        dst_argb,
                        x, dx, y, dy,
                        src_fourcc,
-                       yuv_color_space);
+                       yuv_color_space,
+                       color_range);
 }
 
 bool IsConvertSupported(uint32_t src_fourcc)
@@ -1098,6 +1130,7 @@ int YUVToARGBScale(const uint8_t* src_y, int src_stride_y,
                    const uint8_t* src_v, int src_stride_v,
                    uint32_t src_fourcc,
                    mozilla::YUVColorSpace yuv_color_space,
+                   mozilla::ColorRange color_range,
                    int src_width, int src_height,
                    uint8_t* dst_argb, int dst_stride_argb,
                    int dst_width, int dst_height,
@@ -1119,7 +1152,8 @@ int YUVToARGBScale(const uint8_t* src_y, int src_stride_y,
                  dst_width, dst_height,
                  filtering,
                  src_fourcc,
-                 yuv_color_space);
+                 yuv_color_space,
+                 color_range);
   return 0;
 }
 
