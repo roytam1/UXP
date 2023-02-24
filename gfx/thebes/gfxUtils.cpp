@@ -1091,6 +1091,10 @@ const float kBT709NarrowYCbCrToRGB_RowMajor[16] = {
     1.16438f,  0.00000f, 1.79274f, -0.97295f, 1.16438f, -0.21325f,
     -0.53291f, 0.30148f, 1.16438f, 2.11240f,  0.00000f, -1.13340f,
     0.00000f,  0.00000f, 0.00000f, 1.00000f};
+const float kIdentityNarrowYCbCrToRGB_RowMajor[16] = {
+    0.00000f, 0.00000f, 1.00000f, 0.00000f, 1.00000f, 0.00000f,
+    0.00000f, 0.00000f, 0.00000f, 1.00000f, 0.00000f, 0.00000f,
+    0.00000f, 0.00000f, 0.00000f, 1.00000f};
 
 /* static */ const float*
 gfxUtils::Get4x3YuvColorMatrix(YUVColorSpace aYUVColorSpace)
@@ -1100,6 +1104,7 @@ gfxUtils::Get4x3YuvColorMatrix(YUVColorSpace aYUVColorSpace)
 
   static const float rec601[12] = X(kBT601NarrowYCbCrToRGB_RowMajor);
   static const float rec709[12] = X(kBT709NarrowYCbCrToRGB_RowMajor);
+  static const float identity[12] = X(kIdentityNarrowYCbCrToRGB_RowMajor);
 
 #undef X
 
@@ -1108,6 +1113,8 @@ gfxUtils::Get4x3YuvColorMatrix(YUVColorSpace aYUVColorSpace)
       return rec601;
     case YUVColorSpace::BT709:
       return rec709;
+    case YUVColorSpace::IDENTITY:
+      return identity;
     default:
       MOZ_CRASH("Bad YUVColorSpace");
   }
@@ -1121,6 +1128,7 @@ gfxUtils::Get3x3YuvColorMatrix(YUVColorSpace aYUVColorSpace)
 
   static const float rec601[9] = X(kBT601NarrowYCbCrToRGB_RowMajor);
   static const float rec709[9] = X(kBT709NarrowYCbCrToRGB_RowMajor);
+  static const float identity[9] = X(kIdentityNarrowYCbCrToRGB_RowMajor);
 
 #undef X
 
@@ -1129,6 +1137,8 @@ gfxUtils::Get3x3YuvColorMatrix(YUVColorSpace aYUVColorSpace)
       return rec601;
     case YUVColorSpace::BT709:
       return rec709;
+    case YUVColorSpace::IDENTITY:
+      return identity;
     default:
       MOZ_CRASH("Bad YUVColorSpace");
   }

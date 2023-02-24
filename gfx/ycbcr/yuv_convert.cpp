@@ -24,6 +24,7 @@
 // Header for low level row functions.
 #include "yuv_row.h"
 #include "mozilla/SSE.h"
+#include "mozilla/IntegerRange.h"
 
 namespace mozilla {
 
@@ -60,6 +61,23 @@ libyuv::FourCC FourCCFromYUVType(YUVType aYUVType)
     return libyuv::FOURCC_I420;
   } else {
     return libyuv::FOURCC_ANY;
+  }
+}
+
+void GBRPlanarToARGB(const uint8_t* src_y, int y_pitch,
+                     const uint8_t* src_u, int u_pitch,
+                     const uint8_t* src_v, int v_pitch,
+                     uint8_t* rgb_buf, int rgb_pitch,
+                     int pic_width, int pic_height) {
+  // libyuv has no native conversion function for this
+  // fixme: replace with something less awful
+  for (const auto row : MakeRange(pic_height)) {
+    for (const auto col : MakeRange(pic_width)) {
+      rgb_buf[rgb_pitch * row + col * 4 + 0] = src_u[u_pitch * row + col];
+      rgb_buf[rgb_pitch * row + col * 4 + 1] = src_y[y_pitch * row + col];
+      rgb_buf[rgb_pitch * row + col * 4 + 2] = src_v[v_pitch * row + col];
+      rgb_buf[rgb_pitch * row + col * 4 + 3] = 255;
+    }
   }
 }
 
@@ -106,12 +124,19 @@ void ConvertYCbCrToRGB32(const uint8* y_buf,
     const uint8* src_y = y_buf + y_pitch * pic_y + pic_x;
     const uint8* src_u = u_buf + uv_pitch * pic_y + pic_x;
     const uint8* src_v = v_buf + uv_pitch * pic_y + pic_x;
-    DebugOnly<int> err = libyuv::I444ToARGB(src_y, y_pitch,
-                                            src_u, uv_pitch,
-                                            src_v, uv_pitch,
-                                            rgb_buf, rgb_pitch,
-                                            pic_width, pic_height);
-    MOZ_ASSERT(!err);
+    if (yuv_color_space == YUVColorSpace::IDENTITY) {
+      // Special case for RGB image
+      GBRPlanarToARGB(src_y, y_pitch, src_u, uv_pitch, src_v, uv_pitch,
+                      rgb_buf, rgb_pitch, pic_width, pic_height);
+      return;
+    } else {
+      DebugOnly<int> err = libyuv::I444ToARGB(src_y, y_pitch,
+                                              src_u, uv_pitch,
+                                              src_v, uv_pitch,
+                                              rgb_buf, rgb_pitch,
+                                              pic_width, pic_height);
+      MOZ_ASSERT(!err);
+    }
   } else if (yuv_type == YV16) {
     const uint8* src_y = y_buf + y_pitch * pic_y + pic_x;
     const uint8* src_u = u_buf + uv_pitch * pic_y + pic_x / 2;
@@ -298,6 +323,21 @@ void ScaleYCbCrToRGB32(const uint8* y_buf,
                                  yuv_type,
                                  ROTATE_0,
                                  filter);
+    return;
+  }
+
+  if (yuv_type == YV24 && yuv_color_space == YUVColorSpace::IDENTITY) {
+    auto buffer = MakeUnique<uint8[]>(source_width * source_height * 4);
+    auto buffer_pitch = source_width * 4;
+    GBRPlanarToARGB(y_buf, y_pitch, u_buf, uv_pitch, v_buf, uv_pitch,
+                    buffer.get(), buffer_pitch, source_width, source_height);
+    DebugOnly<int> err =
+      libyuv::ARGBScale(buffer.get(), buffer_pitch,
+                        source_width, source_height,
+                        rgb_buf, rgb_pitch,
+                        width, height,
+                        libyuv::kFilterBilinear);
+    MOZ_ASSERT(!err);
     return;
   }
 
