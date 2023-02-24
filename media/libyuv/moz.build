@@ -9,12 +9,16 @@ GYP_DIRS += ['.']
 
 libyuv_non_unified_sources = [
     'source/convert.cc',
+    'source/convert_argb.cc',
     'source/convert_from.cc',
+    'source/convert_from_argb.cc',
     'source/mjpeg_decoder.cc',
     'source/rotate_argb.cc',
     'source/row_common.cc',
     'source/scale.cc',
+    'source/scale_argb.cc',
     'source/scale_common.cc',
+    'source/scale_uv.cc',
 ]
 GYP_DIRS['.'].input = 'libyuv.gyp'
 GYP_DIRS['.'].variables = gyp_vars

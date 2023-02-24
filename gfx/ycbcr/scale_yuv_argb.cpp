@@ -11,6 +11,7 @@
 
 #include "scale_yuv_argb.h"
 
+#include "libyuv/convert_argb.h"
 #include "libyuv/scale.h"
 
 #include <assert.h>
