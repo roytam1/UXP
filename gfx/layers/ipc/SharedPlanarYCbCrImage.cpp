@@ -120,6 +120,7 @@ SharedPlanarYCbCrImage::AllocateAndGetNewBuffer(uint32_t aSize)
   mTextureClient = TextureClient::CreateForYCbCrWithBufferSize(mCompositable->GetForwarder(),
                                                                size,
                                                                YUVColorSpace::BT601,
+                                                               ColorRange::LIMITED,
                                                                mCompositable->GetTextureFlags());
 
   // get new buffer _without_ setting mBuffer.
@@ -165,7 +166,8 @@ SharedPlanarYCbCrImage::AdoptData(const Data &aData)
 
   static_cast<BufferTextureData*>(mTextureClient->GetInternalData())->SetDesciptor(
     YCbCrDescriptor(aData.mYSize, aData.mCbCrSize, yOffset, cbOffset, crOffset,
-                    aData.mStereoMode, aData.mYUVColorSpace, hasIntermediateBuffer)
+                    aData.mStereoMode, aData.mYUVColorSpace, aData.mColorRange,
+                    hasIntermediateBuffer)
   );
 
   return true;
@@ -222,6 +224,7 @@ SharedPlanarYCbCrImage::Allocate(PlanarYCbCrData& aData)
   mData.mPicSize = aData.mPicSize;
   mData.mStereoMode = aData.mStereoMode;
   mData.mYUVColorSpace = aData.mYUVColorSpace;
+  mData.mColorRange = aData.mColorRange;
   // those members are not always equal to aData's, due to potentially different
   // packing.
   mData.mYSkip = 0;

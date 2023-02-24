@@ -104,7 +104,7 @@ ImageClient::CreateTextureClientForImage(Image* aImage, KnowsCompositor* aForwar
     }
     texture = TextureClient::CreateForYCbCr(aForwarder,
                                             data->mYSize, data->mCbCrSize, data->mStereoMode,
-                                            data->mYUVColorSpace,
+                                            data->mYUVColorSpace, data->mColorRange,
                                             TextureFlags::DEFAULT);
     if (!texture) {
       return nullptr;

@@ -292,6 +292,7 @@ TEST(Layers, TextureYCbCrSerialization) {
 
   RefPtr<TextureClient> client = TextureClient::CreateForYCbCr(imageBridge, clientData.mYSize, clientData.mCbCrSize,
                                                                StereoMode::MONO, YUVColorSpace::BT601,
+                                                               ColorRange::LIMITED,
                                                                TextureFlags::DEALLOCATE_CLIENT);
 
   TestTextureClientYCbCr(client, clientData);

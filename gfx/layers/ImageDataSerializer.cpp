@@ -172,7 +172,6 @@ Maybe<gfx::IntSize> CbCrSizeFromBufferDescriptor(const BufferDescriptor& aDescri
 
 Maybe<YUVColorSpace> YUVColorSpaceFromBufferDescriptor(const BufferDescriptor& aDescriptor)
 {
-{
   switch (aDescriptor.type()) {
     case BufferDescriptor::TRGBDescriptor:
       return Nothing();
@@ -182,6 +181,17 @@ Maybe<YUVColorSpace> YUVColorSpaceFromBufferDescriptor(const BufferDescriptor& a
       MOZ_CRASH("GFX:  CbCrSizeFromBufferDescriptor");
   }
 }
+
+Maybe<ColorRange> ColorRangeFromBufferDescriptor(const BufferDescriptor& aDescriptor)
+{
+  switch (aDescriptor.type()) {
+    case BufferDescriptor::TRGBDescriptor:
+      return Nothing();
+    case BufferDescriptor::TYCbCrDescriptor:
+      return Some(aDescriptor.get_YCbCrDescriptor().colorRange());
+    default:
+      MOZ_CRASH("GFX:  CbCrSizeFromBufferDescriptor");
+  }
 }
 
 Maybe<StereoMode> StereoModeFromBufferDescriptor(const BufferDescriptor& aDescriptor)
@@ -252,6 +262,7 @@ DataSourceSurfaceFromYCbCrDescriptor(uint8_t* aBuffer, const YCbCrDescriptor& aD
   ycbcrData.mCbCrSize     = cbCrSize;
   ycbcrData.mPicSize      = ySize;
   ycbcrData.mYUVColorSpace = aDescriptor.yUVColorSpace();
+  ycbcrData.mColorRange   = aDescriptor.colorRange();
 
   gfx::ConvertYCbCrToRGB(ycbcrData,
                          gfx::SurfaceFormat::B8G8R8X8,
