@@ -381,6 +381,11 @@ FFmpegVideoDecoder<LIBAV_VER>::CreateImage(int64_t aOffset, int64_t aPts,
         break;
     }
   }
+ if (mLib->av_frame_get_color_range) {
+   auto range = mLib->av_frame_get_color_range(mFrame);
+   b.mColorRange = range == AVCOL_RANGE_JPEG ? ColorRange::FULL : ColorRange::LIMITED;
+ }
+
   RefPtr<VideoData> v =
     VideoData::CreateAndCopyData(mInfo,
                                   mImageContainer,

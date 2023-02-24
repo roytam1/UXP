@@ -246,6 +246,8 @@ AOMDecoder::DoDecode(MediaRawData* aSample)
         LOG("Unhandled colorspace %d", img->mc);
         break;
     }
+    b.mColorRange = img->range == AOM_CR_FULL_RANGE ? ColorRange::FULL
+                                                    : ColorRange::LIMITED;
 
     RefPtr<VideoData> v =
       VideoData::CreateAndCopyData(mInfo,
