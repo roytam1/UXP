@@ -413,7 +413,8 @@ CompositorD3D9::DrawQuad(const gfx::Rect &aRect,
       }
 
 
-      const float* yuvToRgb = gfxUtils::Get4x3YuvColorMatrix(ycbcrEffect->mYUVColorSpace);
+      const float* yuvToRgb = gfxUtils::YuvToRgbMatrix4x4XRowMajor(
+        ycbcrEffect->mYUVColorSpace, ycbcrEffect->mColorRange);
       d3d9Device->SetPixelShaderConstantF(CBmYuvColorMatrix, yuvToRgb, 3);
 
       TextureSourceD3D9* sourceY  = source->GetSubSource(Y)->AsSourceD3D9();

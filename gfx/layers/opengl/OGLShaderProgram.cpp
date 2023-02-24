@@ -377,7 +377,7 @@ ProgramProfileOGL::GetProfileFor(ShaderConfigOGL aConfig)
     fs << "uniform sampler2D uYTexture;" << endl;
     fs << "uniform sampler2D uCbTexture;" << endl;
     fs << "uniform sampler2D uCrTexture;" << endl;
-    fs << "uniform mat3 uYuvColorMatrix;" << endl;
+    fs << "uniform mat4 uYuvColorMatrix;" << endl;
   } else if (aConfig.mFeatures & ENABLE_TEXTURE_NV12) {
     fs << "uniform " << sampler2D << " uYTexture;" << endl;
     fs << "uniform " << sampler2D << " uCbTexture;" << endl;
@@ -436,12 +436,8 @@ ProgramProfileOGL::GetProfileFor(ShaderConfigOGL aConfig)
         }
       }
 
-      fs << "  y = y - 0.06275;" << endl;
-      fs << "  cb = cb - 0.50196;" << endl;
-      fs << "  cr = cr - 0.50196;" << endl;
-      fs << "  vec3 yuv = vec3(y, cb, cr);" << endl;
-      fs << "  color.rgb = uYuvColorMatrix * yuv;" << endl;
-      fs << "  color.a = 1.0;" << endl;
+      fs << "  vec4 yuv = vec4(y, cb, cr, 1.0);" << endl;
+      fs << "  color = uYuvColorMatrix * yuv;" << endl;
     } else if (aConfig.mFeatures & ENABLE_TEXTURE_COMPONENT_ALPHA) {
       if (aConfig.mFeatures & ENABLE_TEXTURE_RECT) {
         fs << "  COLOR_PRECISION vec3 onBlack = " << texture2D << "(uBlackTexture, coord * uTexCoordMultiplier).rgb;" << endl;
@@ -964,10 +960,10 @@ ShaderProgramOGL::SetBlurRadius(float aRX, float aRY)
 }
 
 void
-ShaderProgramOGL::SetYUVColorSpace(YUVColorSpace aYUVColorSpace)
+ShaderProgramOGL::SetYUVColorSpace(YUVColorSpace aYUVColorSpace, ColorRange aColorRange)
 {
-  const float* yuvToRgb = gfxUtils::Get3x3YuvColorMatrix(aYUVColorSpace);
-  SetMatrix3fvUniform(KnownUniform::YuvColorMatrix, yuvToRgb);
+  const float* yuvToRgb = gfxUtils::YuvToRgbMatrix4x4ColumnMajor(aYUVColorSpace, aColorRange);
+  SetMatrixUniform(KnownUniform::YuvColorMatrix, yuvToRgb);
 }
 
 } // namespace layers

@@ -36,6 +36,7 @@ public:
   }
 
   virtual YUVColorSpace GetYUVColorSpace() const override;
+  virtual ColorRange GetColorRange() const override;
 
   virtual gfx::IntSize GetSize() const override;
 
