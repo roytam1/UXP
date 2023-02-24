@@ -139,9 +139,9 @@ public:
     /**
      * Get array of yuv to rgb conversion matrix.
      */
-    static float* Get4x3YuvColorMatrix(YUVColorSpace aYUVColorSpace);
+    static const float* Get4x3YuvColorMatrix(YUVColorSpace aYUVColorSpace);
 
-    static float* Get3x3YuvColorMatrix(YUVColorSpace aYUVColorSpace);
+    static const float* Get3x3YuvColorMatrix(YUVColorSpace aYUVColorSpace);
 
     /**
      * Creates a copy of aSurface, but having the SurfaceFormat aFormat.
