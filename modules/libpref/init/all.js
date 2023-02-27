@@ -1245,7 +1245,8 @@ pref("privacy.trackingprotection.pbmode.enabled",  false);
 pref("dom.event.contextmenu.enabled",       true);
 pref("dom.event.clipboardevents.enabled",   true);
 
-pref("dom.webcomponents.enabled",           false);
+// Enable Google WebComponents?
+pref("dom.webcomponents.enabled",           true);
 
 pref("javascript.enabled",                  true);
 // Enable Array.prototype.values
