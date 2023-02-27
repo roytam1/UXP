@@ -1084,59 +1084,71 @@ gfxUtils::EncodeSourceSurface(SourceSurface* aSurface,
 
 // https://jdashg.github.io/misc/colors/from-coeffs.html
 const float kBT601NarrowYCbCrToRGB_RowMajor[16] = {
-    1.16438f,  0.00000f, 1.59603f, -0.87420f, 1.16438f, -0.39176f,
-    -0.81297f, 0.53167f, 1.16438f, 2.01723f,  0.00000f, -1.08563f,
-    0.00000f,  0.00000f, 0.00000f, 1.00000f};
+    1.16438f,  0.00000f,  1.59603f, -0.87420f,
+    1.16438f, -0.39176f, -0.81297f,  0.53167f,
+    1.16438f,  2.01723f,  0.00000f, -1.08563f,
+    0.00000f,  0.00000f,  0.00000f,  1.00000f};
+const float kBT601FullYCbCrToRGB_RowMajor[16] = {
+    1.00000f,  0.00000f,  1.40752f, -0.70652f,
+    1.00000f, -0.34549f, -0.71695f,  0.53330f,
+    1.00000f,  1.77898f, -0.00000f, -0.89298f,
+    0.00000f,  0.00000f,  0.00000f,  1.00000f};
+
 const float kBT709NarrowYCbCrToRGB_RowMajor[16] = {
-    1.16438f,  0.00000f, 1.79274f, -0.97295f, 1.16438f, -0.21325f,
-    -0.53291f, 0.30148f, 1.16438f, 2.11240f,  0.00000f, -1.13340f,
-    0.00000f,  0.00000f, 0.00000f, 1.00000f};
+    1.16438f,  0.00000f,  1.79274f, -0.97295f,
+    1.16438f, -0.21325f, -0.53291f,  0.30148f,
+    1.16438f,  2.11240f,  0.00000f, -1.13340f,
+    0.00000f,  0.00000f,  0.00000f,  1.00000f};
+const float kBT709FullYCbCrToRGB_RowMajor[16] = {
+    1.00000f,  0.00000f,  1.58100f, -0.79360f,
+    1.00000f, -0.18806f, -0.46997f,  0.33030f,
+    1.00000f,  1.86291f,  0.00000f, -0.93511f,
+    0.00000f,  0.00000f,  0.00000f,  1.00000f};
+
 const float kIdentityNarrowYCbCrToRGB_RowMajor[16] = {
     0.00000f, 0.00000f, 1.00000f, 0.00000f, 1.00000f, 0.00000f,
     0.00000f, 0.00000f, 0.00000f, 1.00000f, 0.00000f, 0.00000f,
     0.00000f, 0.00000f, 0.00000f, 1.00000f};
 
 /* static */ const float*
-gfxUtils::Get4x3YuvColorMatrix(YUVColorSpace aYUVColorSpace)
+gfxUtils::YuvToRgbMatrix4x4XRowMajor(YUVColorSpace aYUVColorSpace, ColorRange aColorRange)
 {
-#define X(x) \
-  { x[0], x[1], x[2], 0.0f, x[4], x[5], x[6], 0.0f, x[8], x[9], x[10], 0.0f }
-
-  static const float rec601[12] = X(kBT601NarrowYCbCrToRGB_RowMajor);
-  static const float rec709[12] = X(kBT709NarrowYCbCrToRGB_RowMajor);
-  static const float identity[12] = X(kIdentityNarrowYCbCrToRGB_RowMajor);
-
-#undef X
-
   switch (aYUVColorSpace) {
     case YUVColorSpace::BT601:
-      return rec601;
+        return aColorRange == ColorRange::LIMITED ? kBT601NarrowYCbCrToRGB_RowMajor
+                                                  : kBT601FullYCbCrToRGB_RowMajor;
     case YUVColorSpace::BT709:
-      return rec709;
+        return aColorRange == ColorRange::LIMITED ? kBT709NarrowYCbCrToRGB_RowMajor
+                                                  : kBT709FullYCbCrToRGB_RowMajor;
     case YUVColorSpace::IDENTITY:
-      return identity;
+      return kIdentityNarrowYCbCrToRGB_RowMajor;
     default:
       MOZ_CRASH("Bad YUVColorSpace");
   }
 }
 
 /* static */ const float*
-gfxUtils::Get3x3YuvColorMatrix(YUVColorSpace aYUVColorSpace)
+gfxUtils::YuvToRgbMatrix4x4ColumnMajor(YUVColorSpace aYUVColorSpace, ColorRange aColorRange)
 {
 #define X(x) \
-  { x[0], x[4], x[8], x[1], x[5], x[9], x[2], x[6], x[10] }
+  { x[0], x[4], x[8], 0.0f, \
+    x[1], x[5], x[9], 0.0f, \
+    x[2], x[6], x[10], 0.0f, \
+    x[3], x[7], x[11], 1.0f }
 
-  static const float rec601[9] = X(kBT601NarrowYCbCrToRGB_RowMajor);
-  static const float rec709[9] = X(kBT709NarrowYCbCrToRGB_RowMajor);
-  static const float identity[9] = X(kIdentityNarrowYCbCrToRGB_RowMajor);
+  static const float rec601Narrow[16] = X(kBT601NarrowYCbCrToRGB_RowMajor);
+  static const float rec601Full[16] = X(kBT601FullYCbCrToRGB_RowMajor);
+  static const float rec709Narrow[16] = X(kBT709NarrowYCbCrToRGB_RowMajor);
+  static const float rec709Full[16] = X(kBT709FullYCbCrToRGB_RowMajor);
+  static const float identity[16] = X(kIdentityNarrowYCbCrToRGB_RowMajor);
 
 #undef X
 
   switch (aYUVColorSpace) {
     case YUVColorSpace::BT601:
-      return rec601;
+      return aColorRange == ColorRange::LIMITED ? rec601Narrow : rec601Full;
     case YUVColorSpace::BT709:
-      return rec709;
+      return aColorRange == ColorRange::LIMITED ? rec709Narrow : rec709Full;
     case YUVColorSpace::IDENTITY:
       return identity;
     default:

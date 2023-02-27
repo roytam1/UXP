@@ -360,6 +360,7 @@ public:
                  gfx::IntSize aCbCrSize,
                  StereoMode aStereoMode,
                  YUVColorSpace aYUVColorSpace,
+                 ColorRange aColorRange,
                  TextureFlags aTextureFlags);
 
   // Creates and allocates a TextureClient (can be accessed through raw
@@ -379,6 +380,7 @@ public:
   CreateForYCbCrWithBufferSize(KnowsCompositor* aAllocator,
                                size_t aSize,
                                YUVColorSpace aYUVColorSpace,
+                               ColorRange aColorRange,
                                TextureFlags aTextureFlags);
 
   // Creates and allocates a TextureClient of the same type.

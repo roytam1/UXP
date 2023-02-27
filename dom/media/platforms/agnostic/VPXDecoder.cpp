@@ -173,6 +173,7 @@ VPXDecoder::DoDecode(MediaRawData* aSample)
           return YUVColorSpace::BT601;
       }
     }();
+    // TODO: need a newer libvpx to support full color range
 
     RefPtr<VideoData> v =
       VideoData::CreateAndCopyData(mInfo,

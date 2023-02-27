@@ -43,6 +43,7 @@ public:
     typedef mozilla::gfx::SurfaceFormat SurfaceFormat;
     typedef mozilla::image::ImageRegion ImageRegion;
     typedef mozilla::YUVColorSpace YUVColorSpace;
+    typedef mozilla::ColorRange ColorRange;
 
     /*
      * Premultiply or Unpremultiply aSourceSurface, writing the result
@@ -139,9 +140,11 @@ public:
     /**
      * Get array of yuv to rgb conversion matrix.
      */
-    static const float* Get4x3YuvColorMatrix(YUVColorSpace aYUVColorSpace);
+    static const float* YuvToRgbMatrix4x4XRowMajor(YUVColorSpace aYUVColorSpace,
+                                                   ColorRange aColorRange);
 
-    static const float* Get3x3YuvColorMatrix(YUVColorSpace aYUVColorSpace);
+    static const float* YuvToRgbMatrix4x4ColumnMajor(YUVColorSpace aYUVColorSpace,
+                                                     ColorRange aColorRange);
 
     /**
      * Creates a copy of aSurface, but having the SurfaceFormat aFormat.

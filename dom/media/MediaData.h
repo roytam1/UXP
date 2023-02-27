@@ -449,6 +449,7 @@ public:
 
     Plane mPlanes[3];
     YUVColorSpace mYUVColorSpace = YUVColorSpace::BT601;
+    ColorRange mColorRange = ColorRange::LIMITED;
   };
 
   // Constructs a VideoData object. If aImage is nullptr, creates a new Image

@@ -159,6 +159,7 @@ BufferTextureData*
 BufferTextureData::CreateForYCbCrWithBufferSize(KnowsCompositor* aAllocator,
                                                 int32_t aBufferSize,
                                                 YUVColorSpace aYUVColorSpace,
+                                                ColorRange aColorRange,
                                                 TextureFlags aTextureFlags)
 {
   if (aBufferSize == 0 || !gfx::Factory::CheckBufferSize(aBufferSize)) {
@@ -173,7 +174,7 @@ BufferTextureData::CreateForYCbCrWithBufferSize(KnowsCompositor* aAllocator,
   // afterwards since we don't know the dimensions of the texture at this point.
   BufferDescriptor desc = YCbCrDescriptor(gfx::IntSize(), gfx::IntSize(),
                                           0, 0, 0, StereoMode::MONO,
-                                          aYUVColorSpace,
+                                          aYUVColorSpace, aColorRange,
                                           hasIntermediateBuffer);
 
   return CreateInternal(aAllocator ? aAllocator->GetTextureForwarder() : nullptr,
@@ -186,6 +187,7 @@ BufferTextureData::CreateForYCbCr(KnowsCompositor* aAllocator,
                                   gfx::IntSize aCbCrSize,
                                   StereoMode aStereoMode,
                                   YUVColorSpace aYUVColorSpace,
+                                  ColorRange aColorRange,
                                   TextureFlags aTextureFlags)
 {
   uint32_t bufSize = ImageDataSerializer::ComputeYCbCrBufferSize(aYSize, aCbCrSize);
@@ -206,7 +208,7 @@ BufferTextureData::CreateForYCbCr(KnowsCompositor* aAllocator,
 
   YCbCrDescriptor descriptor = YCbCrDescriptor(aYSize, aCbCrSize, yOffset, cbOffset,
                                                crOffset, aStereoMode, aYUVColorSpace,
-                                               hasIntermediateBuffer);
+                                               aColorRange, hasIntermediateBuffer);
 
  return CreateInternal(aAllocator ? aAllocator->GetTextureForwarder() : nullptr, descriptor,
                        gfx::BackendType::NONE, bufSize, aTextureFlags);
@@ -252,6 +254,12 @@ Maybe<YUVColorSpace>
 BufferTextureData::GetYUVColorSpace() const
 {
   return ImageDataSerializer::YUVColorSpaceFromBufferDescriptor(mDescriptor);
+}
+
+Maybe<ColorRange>
+BufferTextureData::GetColorRange() const
+{
+  return ImageDataSerializer::ColorRangeFromBufferDescriptor(mDescriptor);
 }
 
 Maybe<StereoMode>

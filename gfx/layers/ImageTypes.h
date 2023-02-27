@@ -123,6 +123,12 @@ enum class YUVColorSpace {
   UNKNOWN,
 };
 
+enum class ColorRange {
+  LIMITED,
+  FULL,
+  UNKNOWN,
+};
+
 } // namespace mozilla
 
 #endif
