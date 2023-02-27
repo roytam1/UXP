@@ -10,7 +10,7 @@
 
 // Get SSIM for video sequence. Assuming RAW 4:2:0 Y:Cb:Cr format
 
-#ifndef UTIL_SSIM_H_  // NOLINT
+#ifndef UTIL_SSIM_H_
 #define UTIL_SSIM_H_
 
 #include <math.h>  // For log10()
@@ -20,12 +20,14 @@ extern "C" {
 #endif
 
 #if !defined(INT_TYPES_DEFINED) && !defined(UINT8_TYPE_DEFINED)
-typedef unsigned char uint8;
+typedef unsigned char uint8_t;
 #define UINT8_TYPE_DEFINED
 #endif
 
-double CalcSSIM(const uint8* org, const uint8* rec,
-                const int image_width, const int image_height);
+double CalcSSIM(const uint8_t* org,
+                const uint8_t* rec,
+                const int image_width,
+                const int image_height);
 
 double CalcLSSIM(double ssim);
 
@@ -33,4 +35,4 @@ double CalcLSSIM(double ssim);
 }  // extern "C"
 #endif
 
-#endif  // UTIL_SSIM_H_  // NOLINT
+#endif  // UTIL_SSIM_H_

@@ -1784,7 +1784,6 @@ public class Tokenizer implements Locator {
                                  * name.
                                  */
                                 appendStrBuf(c);
-                                containsHyphen = false;
                                 /*
                                  * Stay in the tag name state.
                                  */

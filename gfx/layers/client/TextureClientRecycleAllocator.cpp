@@ -108,6 +108,8 @@ YCbCrTextureClientAllocationHelper::IsCompatible(TextureClient* aTextureClient)
       bufferData->GetCbCrSize().ref() != mData.mCbCrSize ||
       bufferData->GetYUVColorSpace().isNothing() ||
       bufferData->GetYUVColorSpace().ref() != mData.mYUVColorSpace ||
+      bufferData->GetColorRange().isNothing() ||
+      bufferData->GetColorRange().ref() != mData.mColorRange ||
       bufferData->GetStereoMode().isNothing() ||
       bufferData->GetStereoMode().ref() != mData.mStereoMode) {
     return false;
@@ -122,6 +124,7 @@ YCbCrTextureClientAllocationHelper::Allocate(KnowsCompositor* aAllocator)
                                        mData.mYSize, mData.mCbCrSize,
                                        mData.mStereoMode,
                                        mData.mYUVColorSpace,
+                                       mData.mColorRange,
                                        mTextureFlags);
 }
 

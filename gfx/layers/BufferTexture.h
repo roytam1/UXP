@@ -33,6 +33,7 @@ public:
                                            gfx::IntSize aCbCrSize,
                                            StereoMode aStereoMode,
                                            YUVColorSpace aYUVColorSpace,
+                                           ColorRange aColorRange,
                                            TextureFlags aTextureFlags);
 
   // It is generally better to use CreateForYCbCr instead.
@@ -41,6 +42,7 @@ public:
   static BufferTextureData* CreateForYCbCrWithBufferSize(KnowsCompositor* aAllocator,
                                                          int32_t aSize,
                                                          YUVColorSpace aYUVColorSpace,
+                                                         ColorRange aColorRange,
                                                          TextureFlags aTextureFlags);
 
   virtual bool Lock(OpenMode aMode) override { return true; }
@@ -66,6 +68,7 @@ public:
   Maybe<gfx::IntSize> GetCbCrSize() const;
 
   Maybe<YUVColorSpace> GetYUVColorSpace() const;
+  Maybe<ColorRange> GetColorRange() const;
 
   Maybe<StereoMode> GetStereoMode() const;
 

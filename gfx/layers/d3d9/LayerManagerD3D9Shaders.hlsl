@@ -18,7 +18,7 @@ sampler s2DMask;
 
 float fLayerOpacity;
 float4 fLayerColor;
-row_major float3x3 mYuvColorMatrix : register(ps, c1);
+row_major float4x4 mYuvColorMatrix : register(ps, c1);
 
 struct VS_INPUT {
   float4 vPosition : POSITION;
@@ -162,17 +162,14 @@ For [0,1] instead of [0,255], and to 5 places:
 */
 float4 YCbCrShader(const VS_OUTPUT aVertex) : COLOR
 {
-  float3 yuv;
-  float4 color;
+  float4 yuv;
 
-  yuv.x = tex2D(s2DY, aVertex.vTexCoords).a  - 0.06275;
-  yuv.y = tex2D(s2DCb, aVertex.vTexCoords).a - 0.50196;
-  yuv.z = tex2D(s2DCr, aVertex.vTexCoords).a - 0.50196;
+  yuv.x = tY.Sample(sSampler, aTexCoords).r;
+  yuv.y = tCb.Sample(sSampler, aTexCoords).r;
+  yuv.z = tCr.Sample(sSampler, aTexCoords).r;
+  yuv.w = 1.0;
 
-  color.rgb = mul(mYuvColorMatrix, yuv);
-  color.a = 1.0f;
-
-  return color * fLayerOpacity;
+  return mul(mYuvColorMatrix, yuv);
 }
 
 float4 SolidColorShader(const VS_OUTPUT aVertex) : COLOR

@@ -398,11 +398,11 @@ protected:
     int half_height = (size.height + 1) >> 1;
     int c_size = half_width * half_height;
     int buffer_size = YSIZE(size.width, size.height) + 2 * c_size;
-    auto yuv_scoped = MakeUniqueFallible<uint8[]>(buffer_size);
+    auto yuv_scoped = MakeUniqueFallible<uint8_t[]>(buffer_size);
     if (!yuv_scoped) {
       return;
     }
-    uint8* yuv = yuv_scoped.get();
+    uint8_t* yuv = yuv_scoped.get();
 
     DataSourceSurface::ScopedMap map(data, DataSourceSurface::READ);
     if (!map.IsMapped()) {
@@ -418,7 +418,7 @@ protected:
     switch (surf->GetFormat()) {
       case SurfaceFormat::B8G8R8A8:
       case SurfaceFormat::B8G8R8X8:
-        rv = libyuv::ARGBToI420(static_cast<uint8*>(map.GetData()),
+        rv = libyuv::ARGBToI420(static_cast<uint8_t*>(map.GetData()),
                                 map.GetStride(),
                                 yuv, size.width,
                                 yuv + cb_offset, half_width,
@@ -426,7 +426,7 @@ protected:
                                 size.width, size.height);
         break;
       case SurfaceFormat::R5G6B5_UINT16:
-        rv = libyuv::RGB565ToI420(static_cast<uint8*>(map.GetData()),
+        rv = libyuv::RGB565ToI420(static_cast<uint8_t*>(map.GetData()),
                                   map.GetStride(),
                                   yuv, size.width,
                                   yuv + cb_offset, half_width,
