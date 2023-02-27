@@ -15,6 +15,7 @@ ifeq (,$(filter SunOS Linux WINNT,$(OS_ARCH)))
 else
 	$(MAKE) stage-package make-buildinfo-file
 	@echo 'Compressing...'
+	cd $(DIST)/$(MOZ_PKG_DIR); $(CREATE_PRECOMPLETE_CMD)
 ifeq (WINNT,$(OS_ARCH))
 	cd $(DIST); $(CYGWIN_WRAPPER) 7z a -t7z -m0=lzma2 -mx=9 -aoa -bb3 $(PKG_BASENAME).7z $(MOZ_PKG_DIR)
 else

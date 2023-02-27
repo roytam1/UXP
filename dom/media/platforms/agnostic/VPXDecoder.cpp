@@ -158,6 +158,22 @@ VPXDecoder::DoDecode(MediaRawData* aSample)
                          RESULT_DETAIL("VPX Unknown image format"));
     }
 
+    b.mYUVColorSpace = [&]() {
+      switch (img->cs) {
+        case VPX_CS_BT_601:
+        case VPX_CS_SMPTE_170:
+        case VPX_CS_SMPTE_240:
+          return YUVColorSpace::BT601;
+        case VPX_CS_BT_709:
+          return YUVColorSpace::BT709;
+        case VPX_CS_SRGB:
+          return YUVColorSpace::IDENTITY;
+        default:
+          LOG("Unhandled colorspace %d", img->cs);
+          return YUVColorSpace::BT601;
+      }
+    }();
+
     RefPtr<VideoData> v =
       VideoData::CreateAndCopyData(mInfo,
                                    mImageContainer,

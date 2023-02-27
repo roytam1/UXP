@@ -1378,7 +1378,10 @@ enum class SelectorMatchesFlags : uint8_t {
 
   // The selector is part of an argument to a functional pseudo-class or
   // pseudo-element.
-  IS_PSEUDO_CLASS_ARGUMENT = 1 << 2
+  IS_PSEUDO_CLASS_ARGUMENT = 1 << 2,
+  
+  // The selector should be blocked from matching the :host pseudo-class.
+  IS_HOST_INACCESSIBLE = 1 << 3
 };
 MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(SelectorMatchesFlags)
 
@@ -1395,7 +1398,8 @@ static inline bool ActiveHoverQuirkMatches(nsCSSSelector* aSelector,
       // flags are unknown).
       aSelectorFlags & (SelectorMatchesFlags::UNKNOWN |
                         SelectorMatchesFlags::HAS_PSEUDO_ELEMENT |
-                        SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT)) {
+                        SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT |
+                        SelectorMatchesFlags::IS_HOST_INACCESSIBLE)) {
     return false;
   }
 
@@ -1954,17 +1958,17 @@ static bool SelectorMatches(Element* aElement,
           // we must be matching only against host pseudo selectors, and the 
           // selector's context must be the shadow root (the selector must be 
           // featureless, the left-most selector, and be in a shadow root 
-          // style). The :host selector may also be be functional, with a 
-          // compound selector. If this is the case, then also ensure that the 
-          // host element matches against the compound
-          // selector.
-           
-          // We match automatically if GetParent() and GetShadowRoot() have 
-          // the same result iff our selector list is empty. Without special
-          // casing this ahead of all other selector matching, it fails.
-          // Have not determined the cause.
-          if (!pseudoClass->u.mSelectorList &&
-              aElement->GetParent() == aElement->GetShadowRoot()) {
+          // style). 
+          if (!aElement->GetShadowRoot() ||
+              aSelector->HasFeatureSelectors() ||
+              aSelectorFlags & SelectorMatchesFlags::IS_HOST_INACCESSIBLE) {
+            return false;
+          }
+
+          // The :host selector may also be be functional, with a compound
+          // selector. If this is the case, then also ensure that the host
+          // element matches against the compound selector.
+          if (!pseudoClass->u.mSelectorList) {
             break;
           }
 
@@ -1973,24 +1977,14 @@ static bool SelectorMatches(Element* aElement,
           // selector check under SelectorMatches.
           NodeMatchContext nodeContext(EventStates(),
                                        aNodeMatchContext.mIsRelevantLink);
-          if (SelectorListMatches(aElement,
-                                  pseudoClass,
-                                  nodeContext,
-                                  aTreeMatchContext)) {
-            break;
-          }
-
-          // Finally, with the exception of the two above cases, make sure we 
-          // don't match if GetContainingShadow() returns null. For whatever 
-          // reason, we can't test for this case first. 
-
-          if (aElement->GetContainingShadow() == nullptr) {
+          if (!SelectorListMatches(aElement,
+                                   pseudoClass,
+                                   nodeContext,
+                                   aTreeMatchContext)) {
             return false;
           }
-          
         }
         break;
-
 
       case CSSPseudoClassType::hostContext:
         {
@@ -4162,11 +4156,14 @@ nsCSSRuleProcessor::RestrictedSelectorListMatches(Element* aElement,
              "SelectorMatchesTree call");
 
   NodeMatchContext nodeContext(EventStates(), false);
+  SelectorMatchesFlags flags = aElement->IsInShadowTree() ?
+                               SelectorMatchesFlags::NONE :
+                               SelectorMatchesFlags::IS_HOST_INACCESSIBLE;
   return SelectorListMatches(aElement,
                              aSelectorList,
                              nodeContext,
                              aTreeMatchContext,
-                             SelectorMatchesFlags::NONE);
+                             flags);
 }
 
 void
