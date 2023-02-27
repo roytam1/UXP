@@ -25,6 +25,7 @@
 #define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
 #define AV_PIX_FMT_YUVJ420P PIX_FMT_YUVJ420P
 #define AV_PIX_FMT_YUV444P PIX_FMT_YUV444P
+#define AV_PIX_FMT_GBRP PIX_FMT_GBRP
 #define AV_PIX_FMT_NONE PIX_FMT_NONE
 #endif
 
@@ -55,6 +56,9 @@ ChoosePixelFormat(AVCodecContext* aCodecContext, const AVPixelFormat* aFormats)
       case AV_PIX_FMT_YUVJ420P:
         FFMPEG_LOG("Requesting pixel format YUVJ420P.");
         return AV_PIX_FMT_YUVJ420P;
+      case AV_PIX_FMT_GBRP:
+        FFMPEG_LOG("Requesting pixel format GBRP.");
+        return AV_PIX_FMT_GBRP;
       default:
         break;
     }
@@ -360,7 +364,8 @@ FFmpegVideoDecoder<LIBAV_VER>::CreateImage(int64_t aOffset, int64_t aPts,
 
   b.mPlanes[0].mWidth = mFrame->width;
   b.mPlanes[0].mHeight = mFrame->height;
-  if (mCodecContext->pix_fmt == AV_PIX_FMT_YUV444P) {
+  if (mCodecContext->pix_fmt == AV_PIX_FMT_YUV444P ||
+      mCodecContext->pix_fmt == AV_PIX_FMT_GBRP) {
     b.mPlanes[1].mWidth = b.mPlanes[2].mWidth = mFrame->width;
     b.mPlanes[1].mHeight = b.mPlanes[2].mHeight = mFrame->height;
   } else {
@@ -376,10 +381,18 @@ FFmpegVideoDecoder<LIBAV_VER>::CreateImage(int64_t aOffset, int64_t aPts,
       case AVCOL_SPC_BT470BG:
         b.mYUVColorSpace = YUVColorSpace::BT601;
         break;
+      case AVCOL_SPC_RGB:
+        b.mYUVColorSpace = YUVColorSpace::IDENTITY;
+        break;
       default:
         break;
     }
   }
+ if (mLib->av_frame_get_color_range) {
+   auto range = mLib->av_frame_get_color_range(mFrame);
+   b.mColorRange = range == AVCOL_RANGE_JPEG ? ColorRange::FULL : ColorRange::LIMITED;
+ }
+
   RefPtr<VideoData> v =
     VideoData::CreateAndCopyData(mInfo,
                                   mImageContainer,

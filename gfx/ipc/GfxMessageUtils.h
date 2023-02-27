@@ -962,6 +962,14 @@ struct ParamTraits<mozilla::YUVColorSpace>
 {};
 
 template <>
+struct ParamTraits<mozilla::ColorRange>
+  : public ContiguousEnumSerializer<
+             mozilla::ColorRange,
+             mozilla::ColorRange::LIMITED,
+             mozilla::ColorRange::UNKNOWN>
+{};
+
+template <>
 struct ParamTraits<mozilla::layers::ScrollableLayerGuid>
 {
   typedef mozilla::layers::ScrollableLayerGuid paramType;

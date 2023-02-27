@@ -18,22 +18,27 @@
   },
   'variables': {
     'use_system_libjpeg%': 0,
-    'libyuv_disable_jpeg%': 0,
+    # Can be enabled if your jpeg has GYP support.
+    'libyuv_disable_jpeg%': 1,
     # 'chromium_code' treats libyuv as internal and increases warning level.
     'chromium_code': 1,
     # clang compiler default variable usable by other apps that include libyuv.
     'clang%': 0,
     # Link-Time Optimizations.
     'use_lto%': 0,
-    'yuv_disable_asm%': 0,
-    'yuv_disable_avx2%': 0,
+    'mips_msa%': 0,  # Default to msa off.
     'build_neon': 0,
+    'build_msa': 0,
     'conditions': [
        ['(target_arch == "armv7" or target_arch == "armv7s" or \
        (target_arch == "arm" and arm_version >= 7) or target_arch == "arm64")\
-       and (arm_neon == 1 or arm_neon_optional == 1)',
-       {
+       and (arm_neon == 1 or arm_neon_optional == 1)', {
          'build_neon': 1,
+       }],
+       ['(target_arch == "mipsel" or target_arch == "mips64el")\
+       and (mips_msa == 1)',
+       {
+         'build_msa': 1,
        }],
     ],
   },
@@ -47,7 +52,7 @@
         'optimize': 'max',  # enable O2 and ltcg.
       },
       # Allows libyuv.a redistributable library without external dependencies.
-      # 'standalone_static_library': 1,
+      'standalone_static_library': 1,
       'conditions': [
        # Disable -Wunused-parameter
         ['clang == 1', {
@@ -65,11 +70,6 @@
             '-mfpu=vfpv3-d16',
             # '-mthumb',  # arm32 not thumb
           ],
-          'cflags_mozilla!': [
-            '-mfpu=vfp',
-            '-mfpu=vfpv3',
-            '-mfpu=vfpv3-d16',
-          ],
           'conditions': [
             # Disable LTO in libyuv_neon target due to gcc 4.9 compiler bug.
             ['clang == 0 and use_lto == 1', {
@@ -84,34 +84,15 @@
                 '-mfpu=neon',
                 # '-marm',  # arm32 not thumb
               ],
-              'cflags_mozilla': [
-                '-mfpu=neon',
-              ],
             }],
           ],
         }],
-        [ 'yuv_disable_asm != 0', {
+        ['build_msa != 0', {
           'defines': [
-            # Enable the following 3 macros to turn off assembly for specified CPU.
-            'LIBYUV_DISABLE_X86',
-            'LIBYUV_DISABLE_NEON',
-            'LIBYUV_DISABLE_MIPS',
+            'LIBYUV_MSA',
           ],
         }],
-        [ 'yuv_disable_avx2 == 1', {
-          'defines': [
-            'LIBYUV_DISABLE_AVX2',
-          ]
-        }],
-        ['build_with_mozilla == 1', {
-          'defines': [
-            'HAVE_JPEG'
-          ],
-          'cflags_mozilla': [
-            '$(MOZ_JPEG_CFLAGS)',
-          ],
-        }],
-        ['OS != "ios" and libyuv_disable_jpeg != 1 and build_with_mozilla != 1', {
+        ['OS != "ios" and libyuv_disable_jpeg != 1', {
           'defines': [
             'HAVE_JPEG'
           ],
@@ -140,9 +121,7 @@
         # Enable the following 3 macros to turn off assembly for specified CPU.
         # 'LIBYUV_DISABLE_X86',
         # 'LIBYUV_DISABLE_NEON',
-        # 'LIBYUV_DISABLE_MIPS',
-        # This disables AVX2 (Haswell) support, overriding compiler checks
-        # 'LIBYUV_DISABLE_AVX2',
+        # 'LIBYUV_DISABLE_DSPR2',
         # Enable the following macro to build libyuv as a shared library (dll).
         # 'LIBYUV_USING_SHARED_LIBRARY',
         # TODO(fbarchard): Make these into gyp defines.
@@ -180,3 +159,4 @@
 # tab-width:2
 # indent-tabs-mode:nil
 # End:
+# vim: set expandtab tabstop=2 shiftwidth=2:

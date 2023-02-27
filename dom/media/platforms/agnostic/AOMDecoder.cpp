@@ -232,6 +232,23 @@ AOMDecoder::DoDecode(MediaRawData* aSample)
                          RESULT_DETAIL("AOM Unknown image format"));
     }
 
+    switch (img->mc) {
+      case AOM_CICP_MC_BT_601:
+        b.mYUVColorSpace = YUVColorSpace::BT601;
+        break;
+      case AOM_CICP_MC_BT_709:
+        b.mYUVColorSpace = YUVColorSpace::BT709;
+        break;
+      case AOM_CICP_MC_IDENTITY:
+        b.mYUVColorSpace = YUVColorSpace::IDENTITY;
+        break;
+      default:
+        LOG("Unhandled colorspace %d", img->mc);
+        break;
+    }
+    b.mColorRange = img->range == AOM_CR_FULL_RANGE ? ColorRange::FULL
+                                                    : ColorRange::LIMITED;
+
     RefPtr<VideoData> v =
       VideoData::CreateAndCopyData(mInfo,
                                    mImageContainer,

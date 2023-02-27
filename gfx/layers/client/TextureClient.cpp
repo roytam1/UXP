@@ -1217,6 +1217,7 @@ TextureClient::CreateForYCbCr(KnowsCompositor* aAllocator,
                               gfx::IntSize aCbCrSize,
                               StereoMode aStereoMode,
                               YUVColorSpace aYUVColorSpace,
+                              ColorRange aColorRange,
                               TextureFlags aTextureFlags)
 {
   if (!aAllocator || !aAllocator->GetLayersIPCActor()->IPCOpen()) {
@@ -1229,7 +1230,7 @@ TextureClient::CreateForYCbCr(KnowsCompositor* aAllocator,
 
   TextureData* data = BufferTextureData::CreateForYCbCr(aAllocator, aYSize, aCbCrSize,
                                                         aStereoMode, aYUVColorSpace,
-                                                        aTextureFlags);
+                                                        aColorRange, aTextureFlags);
   if (!data) {
     return nullptr;
   }
@@ -1243,6 +1244,7 @@ already_AddRefed<TextureClient>
 TextureClient::CreateForYCbCrWithBufferSize(KnowsCompositor* aAllocator,
                                             size_t aSize,
                                             YUVColorSpace aYUVColorSpace,
+                                            ColorRange aColorRange,
                                             TextureFlags aTextureFlags)
 {
   if (!aAllocator || !aAllocator->GetLayersIPCActor()->IPCOpen()) {
@@ -1251,7 +1253,7 @@ TextureClient::CreateForYCbCrWithBufferSize(KnowsCompositor* aAllocator,
 
   TextureData* data =
     BufferTextureData::CreateForYCbCrWithBufferSize(aAllocator, aSize, aYUVColorSpace,
-                                                    aTextureFlags);
+                                                    aColorRange, aTextureFlags);
   if (!data) {
     return nullptr;
   }

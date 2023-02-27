@@ -1082,61 +1082,77 @@ gfxUtils::EncodeSourceSurface(SourceSurface* aSurface,
                                      aBinaryOrData, aFile, nullptr);
 }
 
-/* From Rec601:
-[R]   [1.1643835616438356,  0.0,                 1.5960267857142858]      [ Y -  16]
-[G] = [1.1643835616438358, -0.3917622900949137, -0.8129676472377708]    x [Cb - 128]
-[B]   [1.1643835616438356,  2.017232142857143,   8.862867620416422e-17]   [Cr - 128]
+// https://jdashg.github.io/misc/colors/from-coeffs.html
+const float kBT601NarrowYCbCrToRGB_RowMajor[16] = {
+    1.16438f,  0.00000f,  1.59603f, -0.87420f,
+    1.16438f, -0.39176f, -0.81297f,  0.53167f,
+    1.16438f,  2.01723f,  0.00000f, -1.08563f,
+    0.00000f,  0.00000f,  0.00000f,  1.00000f};
+const float kBT601FullYCbCrToRGB_RowMajor[16] = {
+    1.00000f,  0.00000f,  1.40752f, -0.70652f,
+    1.00000f, -0.34549f, -0.71695f,  0.53330f,
+    1.00000f,  1.77898f, -0.00000f, -0.89298f,
+    0.00000f,  0.00000f,  0.00000f,  1.00000f};
 
-For [0,1] instead of [0,255], and to 5 places:
-[R]   [1.16438,  0.00000,  1.59603]   [ Y - 0.06275]
-[G] = [1.16438, -0.39176, -0.81297] x [Cb - 0.50196]
-[B]   [1.16438,  2.01723,  0.00000]   [Cr - 0.50196]
+const float kBT709NarrowYCbCrToRGB_RowMajor[16] = {
+    1.16438f,  0.00000f,  1.79274f, -0.97295f,
+    1.16438f, -0.21325f, -0.53291f,  0.30148f,
+    1.16438f,  2.11240f,  0.00000f, -1.13340f,
+    0.00000f,  0.00000f,  0.00000f,  1.00000f};
+const float kBT709FullYCbCrToRGB_RowMajor[16] = {
+    1.00000f,  0.00000f,  1.58100f, -0.79360f,
+    1.00000f, -0.18806f, -0.46997f,  0.33030f,
+    1.00000f,  1.86291f,  0.00000f, -0.93511f,
+    0.00000f,  0.00000f,  0.00000f,  1.00000f};
 
-From Rec709:
-[R]   [1.1643835616438356,  4.2781193979771426e-17, 1.7927410714285714]     [ Y -  16]
-[G] = [1.1643835616438358, -0.21324861427372963,   -0.532909328559444]    x [Cb - 128]
-[B]   [1.1643835616438356,  2.1124017857142854,     0.0]                    [Cr - 128]
+const float kIdentityNarrowYCbCrToRGB_RowMajor[16] = {
+    0.00000f, 0.00000f, 1.00000f, 0.00000f, 1.00000f, 0.00000f,
+    0.00000f, 0.00000f, 0.00000f, 1.00000f, 0.00000f, 0.00000f,
+    0.00000f, 0.00000f, 0.00000f, 1.00000f};
 
-For [0,1] instead of [0,255], and to 5 places:
-[R]   [1.16438,  0.00000,  1.79274]   [ Y - 0.06275]
-[G] = [1.16438, -0.21325, -0.53291] x [Cb - 0.50196]
-[B]   [1.16438,  2.11240,  0.00000]   [Cr - 0.50196]
-*/
-
-/* static */ float*
-gfxUtils::Get4x3YuvColorMatrix(YUVColorSpace aYUVColorSpace)
+/* static */ const float*
+gfxUtils::YuvToRgbMatrix4x4XRowMajor(YUVColorSpace aYUVColorSpace, ColorRange aColorRange)
 {
-  static const float yuv_to_rgb_rec601[12] = { 1.16438f,  0.0f,      1.59603f, 0.0f,
-                                               1.16438f, -0.39176f, -0.81297f, 0.0f,
-                                               1.16438f,  2.01723f,  0.0f,     0.0f,
-                                             };
-
-  static const float yuv_to_rgb_rec709[12] = { 1.16438f,  0.0f,      1.79274f, 0.0f,
-                                               1.16438f, -0.21325f, -0.53291f, 0.0f,
-                                               1.16438f,  2.11240f,  0.0f,     0.0f,
-                                             };
-
-  if (aYUVColorSpace == YUVColorSpace::BT709) {
-    return const_cast<float*>(yuv_to_rgb_rec709);
-  } else {
-    return const_cast<float*>(yuv_to_rgb_rec601);
+  switch (aYUVColorSpace) {
+    case YUVColorSpace::BT601:
+        return aColorRange == ColorRange::LIMITED ? kBT601NarrowYCbCrToRGB_RowMajor
+                                                  : kBT601FullYCbCrToRGB_RowMajor;
+    case YUVColorSpace::BT709:
+        return aColorRange == ColorRange::LIMITED ? kBT709NarrowYCbCrToRGB_RowMajor
+                                                  : kBT709FullYCbCrToRGB_RowMajor;
+    case YUVColorSpace::IDENTITY:
+      return kIdentityNarrowYCbCrToRGB_RowMajor;
+    default:
+      MOZ_CRASH("Bad YUVColorSpace");
   }
 }
 
-/* static */ float*
-gfxUtils::Get3x3YuvColorMatrix(YUVColorSpace aYUVColorSpace)
+/* static */ const float*
+gfxUtils::YuvToRgbMatrix4x4ColumnMajor(YUVColorSpace aYUVColorSpace, ColorRange aColorRange)
 {
-  static const float yuv_to_rgb_rec601[9] = {
-    1.16438f, 1.16438f, 1.16438f, 0.0f, -0.39176f, 2.01723f, 1.59603f, -0.81297f, 0.0f,
-  };
-  static const float yuv_to_rgb_rec709[9] = {
-    1.16438f, 1.16438f, 1.16438f, 0.0f, -0.21325f, 2.11240f, 1.79274f, -0.53291f, 0.0f,
-  };
+#define X(x) \
+  { x[0], x[4], x[8], 0.0f, \
+    x[1], x[5], x[9], 0.0f, \
+    x[2], x[6], x[10], 0.0f, \
+    x[3], x[7], x[11], 1.0f }
 
-  if (aYUVColorSpace == YUVColorSpace::BT709) {
-    return const_cast<float*>(yuv_to_rgb_rec709);
-  } else {
-    return const_cast<float*>(yuv_to_rgb_rec601);
+  static const float rec601Narrow[16] = X(kBT601NarrowYCbCrToRGB_RowMajor);
+  static const float rec601Full[16] = X(kBT601FullYCbCrToRGB_RowMajor);
+  static const float rec709Narrow[16] = X(kBT709NarrowYCbCrToRGB_RowMajor);
+  static const float rec709Full[16] = X(kBT709FullYCbCrToRGB_RowMajor);
+  static const float identity[16] = X(kIdentityNarrowYCbCrToRGB_RowMajor);
+
+#undef X
+
+  switch (aYUVColorSpace) {
+    case YUVColorSpace::BT601:
+      return aColorRange == ColorRange::LIMITED ? rec601Narrow : rec601Full;
+    case YUVColorSpace::BT709:
+      return aColorRange == ColorRange::LIMITED ? rec709Narrow : rec709Full;
+    case YUVColorSpace::IDENTITY:
+      return identity;
+    default:
+      MOZ_CRASH("Bad YUVColorSpace");
   }
 }
 

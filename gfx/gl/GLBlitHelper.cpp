@@ -171,18 +171,14 @@ GLBlitHelper::InitTexQuadProgram(BlitType target)
         uniform sampler2D uCrTexture;                                       \n\
         uniform vec2 uYTexScale;                                            \n\
         uniform vec2 uCbCrTexScale;                                         \n\
-        uniform mat3 uYuvColorMatrix;                                       \n\
+        uniform mat4 uYuvColorMatrix;                                       \n\
         void main()                                                         \n\
         {                                                                   \n\
             float y = texture2D(uYTexture, vTexCoord * uYTexScale).r;       \n\
             float cb = texture2D(uCbTexture, vTexCoord * uCbCrTexScale).r;  \n\
             float cr = texture2D(uCrTexture, vTexCoord * uCbCrTexScale).r;  \n\
-            y = y - 0.06275;                                                \n\
-            cb = cb - 0.50196;                                              \n\
-            cr = cr - 0.50196;                                              \n\
-            vec3 yuv = vec3(y, cb, cr);                                     \n\
-            gl_FragColor.rgb = uYuvColorMatrix * yuv;                       \n\
-            gl_FragColor.a = 1.0;                                           \n\
+            vec4 yuv = vec4(y, cb, cr, 1.0);                                \n\
+            gl_FragColor = uYuvColorMatrix * yuv;                           \n\
         }                                                                   \n\
     ";
 
@@ -667,8 +663,8 @@ GLBlitHelper::BlitPlanarYCbCrImage(layers::PlanarYCbCrImage* yuvImage)
         mGL->fUniform2f(mCbCrTexScaleLoc, (float)yuvData->mCbCrSize.width/yuvData->mCbCrStride, 1.0f);
     }
 
-    float* yuvToRgb = gfxUtils::Get3x3YuvColorMatrix(yuvData->mYUVColorSpace);
-    mGL->fUniformMatrix3fv(mYuvColorMatrixLoc, 1, 0, yuvToRgb);
+    const float* yuvToRgb = gfxUtils::YuvToRgbMatrix4x4ColumnMajor(yuvData->mYUVColorSpace, yuvData->mColorRange);
+    mGL->fUniformMatrix4fv(mYuvColorMatrixLoc, 1, 0, yuvToRgb);
 
     mGL->fDrawArrays(LOCAL_GL_TRIANGLE_STRIP, 0, 4);
     for (int i = 0; i < 3; i++) {

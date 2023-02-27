@@ -87,6 +87,7 @@ struct FFmpegLibWrapper
 
   // libavutil optional
   int (*av_frame_get_colorspace)(const AVFrame *frame);
+  int (*av_frame_get_color_range)(const AVFrame *frame);
 
   PRLibrary* mAVCodecLib;
   PRLibrary* mAVUtilLib;

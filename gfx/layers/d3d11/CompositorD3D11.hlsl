@@ -25,7 +25,7 @@ float fLayerOpacity : register(ps, c1);
 // w = is premultiplied
 uint4 iBlendConfig : register(ps, c2);
 
-row_major float3x3 mYuvColorMatrix : register(ps, c3);
+row_major float4x4 mYuvColorMatrix : register(ps, c3);
 
 sampler sSampler : register(ps, s0);
 
@@ -205,17 +205,14 @@ For [0,1] instead of [0,255], and to 5 places:
 */
 float4 CalculateYCbCrColor(const float2 aTexCoords)
 {
-  float3 yuv;
-  float4 color;
+  float4 yuv;
 
-  yuv.x = tY.Sample(sSampler, aTexCoords).r  - 0.06275;
-  yuv.y = tCb.Sample(sSampler, aTexCoords).r - 0.50196;
-  yuv.z = tCr.Sample(sSampler, aTexCoords).r - 0.50196;
+  yuv.x = tY.Sample(sSampler, aTexCoords).r;
+  yuv.y = tCb.Sample(sSampler, aTexCoords).r;
+  yuv.z = tCr.Sample(sSampler, aTexCoords).r;
+  yuv.w = 1.0;
 
-  color.rgb = mul(mYuvColorMatrix, yuv);
-  color.a = 1.0f;
-
-  return color;
+  return mul(mYuvColorMatrix, yuv);
 }
 
 float4 YCbCrShaderMask(const VS_MASK_OUTPUT aVertex) : SV_Target

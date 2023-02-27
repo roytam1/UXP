@@ -118,7 +118,14 @@ enum class StereoMode {
 enum class YUVColorSpace {
   BT601,
   BT709,
+  IDENTITY,
   // This represents the unknown format.
+  UNKNOWN,
+};
+
+enum class ColorRange {
+  LIMITED,
+  FULL,
   UNKNOWN,
 };
 
