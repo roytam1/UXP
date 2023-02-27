@@ -7255,21 +7255,6 @@ nsCSSFrameConstructor::ContentAppended(nsIContent*     aContainer,
   }
 #endif // MOZ_XUL
 
-  if (aContainer && aContainer->HasFlag(NODE_IS_IN_SHADOW_TREE) &&
-      !aContainer->IsInNativeAnonymousSubtree() &&
-      !aFirstNewContent->IsInNativeAnonymousSubtree()) {
-    // Recreate frames if content is appended into a ShadowRoot
-    // because children of ShadowRoot are rendered in place of children
-    // of the host.
-    //XXXsmaug This is super unefficient!
-    nsIContent* bindingParent = aContainer->GetBindingParent();
-    LAYOUT_PHASE_TEMP_EXIT();
-    RecreateFramesForContent(bindingParent, InsertionKind::Sync,
-                             REMOVE_FOR_RECONSTRUCTION);
-    LAYOUT_PHASE_TEMP_REENTER();
-    return;
-  }
-
   // See comment in ContentRangeInserted for why this is necessary.
   if (!GetContentInsertionFrameFor(aContainer) &&
       !aContainer->IsActiveChildrenElement()) {
@@ -7732,22 +7717,6 @@ nsCSSFrameConstructor::ContentRangeInserted(nsIContent*            aContainer,
     }
 #endif
 
-    return;
-  }
-
-  if (aContainer->HasFlag(NODE_IS_IN_SHADOW_TREE) &&
-      !aContainer->IsInNativeAnonymousSubtree() &&
-      (!aStartChild || !aStartChild->IsInNativeAnonymousSubtree()) &&
-      (!aEndChild || !aEndChild->IsInNativeAnonymousSubtree())) {
-    // Recreate frames if content is inserted into a ShadowRoot
-    // because children of ShadowRoot are rendered in place of
-    // the children of the host.
-    //XXXsmaug This is super unefficient!
-    nsIContent* bindingParent = aContainer->GetBindingParent();
-    LAYOUT_PHASE_TEMP_EXIT();
-    RecreateFramesForContent(bindingParent, InsertionKind::Sync,
-                             REMOVE_FOR_RECONSTRUCTION);
-    LAYOUT_PHASE_TEMP_REENTER();
     return;
   }
 
@@ -8236,21 +8205,6 @@ nsCSSFrameConstructor::ContentRemoved(nsIContent* aContainer,
         NS_ASSERTION(!childFrame->GetNextSibling(), "How did that happen?");
       }
     }
-  }
-
-  if (aContainer && aContainer->HasFlag(NODE_IS_IN_SHADOW_TREE) &&
-      !aContainer->IsInNativeAnonymousSubtree() &&
-      !aChild->IsInNativeAnonymousSubtree()) {
-    // Recreate frames if content is removed from a ShadowRoot
-    // because it may contain an insertion point which can change
-    // how the host is rendered.
-    //XXXsmaug This is super unefficient!
-    nsIContent* bindingParent = aContainer->GetBindingParent();
-    *aDidReconstruct = true;
-    LAYOUT_PHASE_TEMP_EXIT();
-    RecreateFramesForContent(bindingParent, insertionKind, aFlags);
-    LAYOUT_PHASE_TEMP_REENTER();
-    return;
   }
 
   if (aFlags == REMOVE_DESTROY_FRAMES) {
