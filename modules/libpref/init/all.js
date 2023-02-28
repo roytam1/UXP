@@ -582,14 +582,8 @@ pref("media.track.enabled", false);
 
 // Whether to enable MediaSource support.
 pref("media.mediasource.enabled", true);
-
 pref("media.mediasource.mp4.enabled", true);
-
-#if defined(XP_WIN) || defined(XP_MACOSX)
-pref("media.mediasource.webm.enabled", false);
-#else
 pref("media.mediasource.webm.enabled", true);
-#endif
 pref("media.mediasource.webm.audio.enabled", true);
 
 #ifdef MOZ_AV1
@@ -605,8 +599,8 @@ pref("media.benchmark.frames", 300);
 pref("media.benchmark.timeout", 1000);
 
 #ifdef MOZ_WEBSPEECH
-pref("media.webspeech.recognition.enable", false);
-pref("media.webspeech.synth.enabled", false);
+// Web text-to-speech API enabled?
+pref("media.webspeech.synth.enabled", true);
 #endif
 #ifdef MOZ_WEBM_ENCODER
 pref("media.encoder.webm.enabled", true);
@@ -1245,7 +1239,8 @@ pref("privacy.trackingprotection.pbmode.enabled",  false);
 pref("dom.event.contextmenu.enabled",       true);
 pref("dom.event.clipboardevents.enabled",   true);
 
-pref("dom.webcomponents.enabled",           false);
+// Enable Google WebComponents?
+pref("dom.webcomponents.enabled",           true);
 
 pref("javascript.enabled",                  true);
 // Enable Array.prototype.values
