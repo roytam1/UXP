@@ -10,8 +10,9 @@ MOZ_AUSTRALIS=1
 MC_BASILISK=1
 MOZ_UPDATER=
 
-if test "$OS_ARCH" = "WINNT" -o \
-        "$OS_ARCH" = "Linux"; then
+if test "$MOZ_WIDGET_TOOLKIT" = "windows" -o \
+        "$MOZ_WIDGET_TOOLKIT" = "gtk2" -o \
+        "$MOZ_WIDGET_TOOLKIT" = "gtk3"; then
   MOZ_BUNDLED_FONTS=1
 fi
 
