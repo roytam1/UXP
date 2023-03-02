@@ -1239,8 +1239,11 @@ pref("privacy.trackingprotection.pbmode.enabled",  false);
 pref("dom.event.contextmenu.enabled",       true);
 pref("dom.event.clipboardevents.enabled",   true);
 
+// TODO: merge these two prefs!
 // Enable Google WebComponents?
 pref("dom.webcomponents.enabled",           true);
+// Whether WC getRootNode is available
+pref("dom.getRootNode.enabled",             true);
 
 pref("javascript.enabled",                  true);
 // Enable Array.prototype.values
@@ -4613,9 +4616,6 @@ pref("dom.push.requestTimeout", 10000);
 pref("dom.push.http2.reset_retry_count_after_ms", 60000);
 pref("dom.push.http2.maxRetries", 2);
 pref("dom.push.http2.retryInterval", 5000);
-
-// Whether WC getRootNode is available
-pref("dom.getRootNode.enabled", false);
 
 // WebNetworkStats
 pref("dom.mozNetworkStats.enabled", false);
