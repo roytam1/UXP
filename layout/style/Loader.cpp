@@ -2024,9 +2024,7 @@ Loader::LoadInlineStyle(nsIContent* aElement,
   PrepareSheet(sheet, aTitle, aMedia, nullptr, aScopeElement, *aIsAlternate, *aIsExplicitlyEnabled);
 
   if (aElement->HasFlag(NODE_IS_IN_SHADOW_TREE)) {
-    ShadowRoot* containingShadow = aElement->GetContainingShadow();
-    MOZ_ASSERT(containingShadow);
-    containingShadow->InsertSheet(sheet, aElement);
+    aElement->GetContainingShadow()->InsertSheet(sheet, aElement);
   } else {
     rv = InsertSheetInDoc(sheet, aElement, mDocument);
     NS_ENSURE_SUCCESS(rv, rv);
@@ -2120,8 +2118,12 @@ Loader::LoadStyleLink(nsIContent* aElement,
 
   PrepareSheet(sheet, aTitle, aMedia, nullptr, nullptr, *aIsAlternate, *aIsExplicitlyEnabled);
 
-  rv = InsertSheetInDoc(sheet, aElement, mDocument);
-  NS_ENSURE_SUCCESS(rv, rv);
+  if (aElement->HasFlag(NODE_IS_IN_SHADOW_TREE)) {
+    aElement->GetContainingShadow()->InsertSheet(sheet, aElement);
+  } else {
+    rv = InsertSheetInDoc(sheet, aElement, mDocument);
+    NS_ENSURE_SUCCESS(rv, rv);
+  }
 
   nsCOMPtr<nsIStyleSheetLinkingElement> owningElement(do_QueryInterface(aElement));
 
