@@ -128,6 +128,7 @@ public:
     , mParentIsSlotInClosedTree(false)
     , mParentIsChromeHandler(false)
     , mRelatedTargetRetargetedInCurrentScope(false)
+    , mIgnoreBecauseOfShadowDOM(false)
     , mParentTarget(nullptr)
     , mEventTargetAtParent(nullptr)
     , mRetargetedRelatedTarget(nullptr)
@@ -151,6 +152,7 @@ public:
     // Note, we don't clear mRelatedTargetRetargetedInCurrentScope explicitly,
     // since it is used during event path creation to indicate whether
     // relatedTarget may need to be retargeted.
+    mIgnoreBecauseOfShadowDOM = false;
     mParentTarget = nullptr;
     mEventTargetAtParent = nullptr;
     mRetargetedRelatedTarget = nullptr;
@@ -169,9 +171,10 @@ public:
     }
   }
 
-  void IgnoreCurrentTarget()
+  void IgnoreCurrentTargetBecauseOfShadowDOMRetargeting()
   {
     mCanHandle = false;
+    mIgnoreBecauseOfShadowDOM = true;
     SetParentTarget(nullptr, false);
     mEventTargetAtParent = nullptr;
   }
@@ -250,6 +253,12 @@ public:
    * event path creation crosses shadow boundary.
    */
   bool mRelatedTargetRetargetedInCurrentScope;
+
+  /**
+   * True if Shadow DOM relatedTarget retargeting causes the current item
+   * to not show up in the event path.
+   */
+  bool mIgnoreBecauseOfShadowDOM;
 
 private:
   /**
