@@ -2643,7 +2643,6 @@ public:
     return !!GetFullscreenElement();
   }
   void ExitFullscreen();
-  Element* GetPointerLockElement();
   void ExitPointerLock()
   {
     UnlockPointer(this);

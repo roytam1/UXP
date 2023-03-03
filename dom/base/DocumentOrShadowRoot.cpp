@@ -4,6 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "DocumentOrShadowRoot.h"
+#include "mozilla/EventStateManager.h"
 #include "mozilla/dom/StyleSheetList.h"
 #include "nsDocument.h"
 #include "nsFocusManager.h"
@@ -142,6 +143,21 @@ DocumentOrShadowRoot::GetRetargetedFocusedElement()
   }
 
   return nullptr;
+}
+
+Element*
+DocumentOrShadowRoot::GetPointerLockElement()
+{
+  nsCOMPtr<Element> pointerLockedElement =
+    do_QueryReferent(EventStateManager::sPointerLockedElement);
+  if (!pointerLockedElement) {
+    return nullptr;
+  }
+
+  nsIContent* retargetedPointerLockedElement = Retarget(pointerLockedElement);
+  return
+    retargetedPointerLockedElement && retargetedPointerLockedElement->IsElement() ?
+      retargetedPointerLockedElement->AsElement() : nullptr;
 }
 
 }

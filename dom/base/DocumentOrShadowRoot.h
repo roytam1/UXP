@@ -114,6 +114,8 @@ public:
 
   ~DocumentOrShadowRoot() = default;
 
+  Element* GetPointerLockElement();
+
 protected:
   nsIContent* Retarget(nsIContent* aContent) const;
 
