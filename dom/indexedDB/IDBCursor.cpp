@@ -685,7 +685,7 @@ IDBCursor::Update(JSContext* aCx, JS::Handle<JS::Value> aValue,
     return nullptr;
   }
 
-  if (mTransaction->GetMode() == IDBTransaction::CLEANUP ||
+  if (mTransaction->GetMode() == IDBTransaction::Mode::Cleanup ||
       IsSourceDeleted() ||
       !mHaveValue ||
       mType == Type_ObjectStoreKey ||

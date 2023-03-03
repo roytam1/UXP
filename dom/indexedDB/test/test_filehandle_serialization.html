@@ -12,7 +12,7 @@
   <script type="text/javascript;version=1.7">
   function testSteps()
   {
-    const READ_WRITE = "readwrite";
+    const Mode::ReadWrite = "readwrite";
 
     const databaseInfo = [
       { name: window.location.pathname + "1" },
@@ -56,7 +56,7 @@
     is(mutableFile.name, "random.bin", "Correct name");
     is(mutableFile.type, "binary/random", "Correct type");
 
-    let trans = db1.transaction([objectStoreName], READ_WRITE);
+    let trans = db1.transaction([objectStoreName], Mode::ReadWrite);
     let objectStore = trans.objectStore(objectStoreName);
 
     request = objectStore.add(mutableFile, 42);
@@ -74,7 +74,7 @@
 
     let db2 = databases[1];
 
-    trans = db2.transaction([objectStoreName], READ_WRITE);
+    trans = db2.transaction([objectStoreName], Mode::ReadWrite);
     objectStore = trans.objectStore(objectStoreName);
 
     try {

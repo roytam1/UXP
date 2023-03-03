@@ -53,25 +53,18 @@ class IDBTransaction final
   friend class WorkerHolder;
 
 public:
-  enum Mode
-  {
-    READ_ONLY = 0,
-    READ_WRITE,
-    READ_WRITE_FLUSH,
-    CLEANUP,
-    VERSION_CHANGE,
+  enum struct Mode {
+    ReadOnly = 0,
+    ReadWrite,
+    ReadWriteFlush,
+    Cleanup,
+    VersionChange,
 
     // Only needed for IPC serialization helper, should never be used in code.
-    MODE_INVALID
+    Invalid
   };
 
-  enum ReadyState
-  {
-    INITIAL = 0,
-    LOADING,
-    COMMITTING,
-    DONE
-  };
+  enum struct ReadyState { Initial = 0, Loading, Inactive, Committing, Done };
 
 private:
   RefPtr<IDBDatabase> mDatabase;
@@ -81,7 +74,7 @@ private:
   nsTArray<RefPtr<IDBObjectStore>> mDeletedObjectStores;
   nsAutoPtr<WorkerHolder> mWorkerHolder;
 
-  // Tagged with mMode. If mMode is VERSION_CHANGE then mBackgroundActor will be
+  // Tagged with mMode. If mMode is Mode::VersionChange then mBackgroundActor will be
   // a BackgroundVersionChangeTransactionChild. Otherwise it will be a
   // BackgroundTransactionChild.
   union {
@@ -91,7 +84,7 @@ private:
 
   const int64_t mLoggingSerialNumber;
 
-  // Only used for VERSION_CHANGE transactions.
+  // Only used for Mode::VersionChange transactions.
   int64_t mNextObjectStoreId;
   int64_t mNextIndexId;
 
@@ -146,7 +139,7 @@ public:
   {
     AssertIsOnOwningThread();
 
-    if (mMode == VERSION_CHANGE) {
+    if (mMode == Mode::VersionChange) {
       mBackgroundActor.mVersionChangeBackgroundActor = nullptr;
     } else {
       mBackgroundActor.mNormalBackgroundActor = nullptr;
@@ -171,7 +164,7 @@ public:
   {
     AssertIsOnOwningThread();
 
-    return mReadyState == COMMITTING || mReadyState == DONE;
+    return mReadyState == ReadyState::Committing || mReadyState == ReadyState::Done;
   }
 
   bool
@@ -179,17 +172,17 @@ public:
   {
     AssertIsOnOwningThread();
 
-    return mReadyState == DONE;
+    return mReadyState == ReadyState::Done;
   }
 
   bool
   IsWriteAllowed() const
   {
     AssertIsOnOwningThread();
-    return mMode == READ_WRITE ||
-           mMode == READ_WRITE_FLUSH ||
-           mMode == CLEANUP ||
-           mMode == VERSION_CHANGE;
+    return mMode == Mode::ReadWrite ||
+           mMode == Mode::ReadWriteFlush ||
+           mMode == Mode::Cleanup ||
+           mMode == Mode::VersionChange;
   }
 
   bool
@@ -295,11 +288,11 @@ public:
   void
   FireCompleteOrAbortEvents(nsresult aResult);
 
-  // Only for VERSION_CHANGE transactions.
+  // Only for Mode::VersionChange transactions.
   int64_t
   NextObjectStoreId();
 
-  // Only for VERSION_CHANGE transactions.
+  // Only for Mode::VersionChange transactions.
   int64_t
   NextIndexId();
 

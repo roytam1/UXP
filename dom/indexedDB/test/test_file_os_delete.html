@@ -12,7 +12,7 @@
   <script type="text/javascript;version=1.7">
   function testSteps()
   {
-    const READ_WRITE = "readwrite";
+    const Mode::ReadWrite = "readwrite";
 
     const name = window.location.pathname;
 
@@ -67,7 +67,7 @@
       is(usage, startUsage + fileData1.obj.file.size + fileData2.obj.file.size,
          "Correct file usage");
 
-      let trans = db.transaction([objectStoreName], READ_WRITE);
+      let trans = db.transaction([objectStoreName], Mode::ReadWrite);
       trans.objectStore(objectStoreName).delete(fileData1.key);
       trans.oncomplete = grabEventAndContinueHandler;
       event = yield undefined;

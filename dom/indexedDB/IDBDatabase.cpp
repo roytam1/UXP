@@ -425,7 +425,7 @@ IDBDatabase::CreateObjectStore(
   IDBTransaction* transaction = IDBTransaction::GetCurrent();
   if (!transaction ||
       transaction->Database() != this ||
-      transaction->GetMode() != IDBTransaction::VERSION_CHANGE) {
+      transaction->GetMode() != IDBTransaction::Mode::VersionChange) {
     aRv.Throw(NS_ERROR_DOM_INDEXEDDB_NOT_ALLOWED_ERR);
     return nullptr;
   }
@@ -503,7 +503,7 @@ IDBDatabase::DeleteObjectStore(const nsAString& aName, ErrorResult& aRv)
   IDBTransaction* transaction = IDBTransaction::GetCurrent();
   if (!transaction ||
       transaction->Database() != this ||
-      transaction->GetMode() != IDBTransaction::VERSION_CHANGE) {
+      transaction->GetMode() != IDBTransaction::Mode::VersionChange) {
     aRv.Throw(NS_ERROR_DOM_INDEXEDDB_NOT_ALLOWED_ERR);
     return;
   }
@@ -666,21 +666,21 @@ IDBDatabase::Transaction(JSContext* aCx,
   IDBTransaction::Mode mode;
   switch (aMode) {
     case IDBTransactionMode::Readonly:
-      mode = IDBTransaction::READ_ONLY;
+      mode = IDBTransaction::Mode::ReadOnly;
       break;
     case IDBTransactionMode::Readwrite:
       if (mQuotaExceeded) {
-        mode = IDBTransaction::CLEANUP;
+        mode = IDBTransaction::Mode::Cleanup;
         mQuotaExceeded = false;
       } else {
-        mode = IDBTransaction::READ_WRITE;
+        mode = IDBTransaction::Mode::ReadWrite;
       }
       break;
     case IDBTransactionMode::Readwriteflush:
-      mode = IDBTransaction::READ_WRITE_FLUSH;
+      mode = IDBTransaction::Mode::ReadWriteFlush;
       break;
     case IDBTransactionMode::Cleanup:
-      mode = IDBTransaction::CLEANUP;
+      mode = IDBTransaction::Mode::Cleanup;
       mQuotaExceeded = false;
       break;
     case IDBTransactionMode::Versionchange:
@@ -715,7 +715,7 @@ IDBDatabase::Transaction(JSContext* aCx,
 
   transaction->SetBackgroundActor(actor);
 
-  if (mode == IDBTransaction::CLEANUP) {
+  if (mode == IDBTransaction::Mode::Cleanup) {
     ExpireFileActors(/* aExpireAll */ true);
   }
 
@@ -859,14 +859,14 @@ IDBDatabase::AbortTransactions(bool aShouldWarn)
         if (aShouldWarn) {
           switch (transaction->GetMode()) {
             // We ignore transactions that could not have written any data.
-            case IDBTransaction::READ_ONLY:
+            case IDBTransaction::Mode::ReadOnly:
               break;
 
             // We warn for any transactions that could have written data.
-            case IDBTransaction::READ_WRITE:
-            case IDBTransaction::READ_WRITE_FLUSH:
-            case IDBTransaction::CLEANUP:
-            case IDBTransaction::VERSION_CHANGE:
+            case IDBTransaction::Mode::ReadWrite:
+            case IDBTransaction::Mode::ReadWriteFlush:
+            case IDBTransaction::Mode::Cleanup:
+            case IDBTransaction::Mode::VersionChange:
               transactionsThatNeedWarning.AppendElement(transaction);
               break;
 
