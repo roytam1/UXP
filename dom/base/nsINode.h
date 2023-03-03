@@ -943,6 +943,12 @@ public:
   }
 
   /**
+   * This is similar to above, but in case 'this' is ShadowRoot, we return its
+   * host element.
+   */
+  nsINode* GetParentOrHostNode();
+
+  /**
    * Returns the node that is the parent of this node in the flattened
    * tree. This differs from the normal parent if the node is filtered
    * into an insertion point, or if the node is a direct child of a
