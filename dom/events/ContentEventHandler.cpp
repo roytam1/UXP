@@ -2883,31 +2883,6 @@ ContentEventHandler::AdjustCollapsedRangeMaybeIntoTextNode(nsRange* aRange)
 }
 
 nsresult
-ContentEventHandler::GetStartFrameAndOffset(const nsRange* aRange,
-                                            nsIFrame*& aFrame,
-                                            int32_t& aOffsetInFrame)
-{
-  MOZ_ASSERT(aRange);
-
-  aFrame = nullptr;
-  aOffsetInFrame = -1;
-
-  nsINode* node = aRange->GetStartParent();
-  if (NS_WARN_IF(!node) ||
-      NS_WARN_IF(!node->IsNodeOfType(nsINode::eCONTENT))) {
-    return NS_ERROR_FAILURE;
-  }
-  nsIContent* content = static_cast<nsIContent*>(node);
-  RefPtr<nsFrameSelection> fs = mPresShell->FrameSelection();
-  aFrame = fs->GetFrameForNodeOffset(content, aRange->StartOffset(),
-                                     fs->GetHint(), &aOffsetInFrame);
-  if (NS_WARN_IF(!aFrame)) {
-    return NS_ERROR_FAILURE;
-  }
-  return NS_OK;
-}
-
-nsresult
 ContentEventHandler::ConvertToRootRelativeOffset(nsIFrame* aFrame,
                                                  nsRect& aRect)
 {

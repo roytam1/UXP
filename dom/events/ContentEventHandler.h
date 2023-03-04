@@ -287,10 +287,6 @@ protected:
   // If the aRange isn't in text node but next to a text node, this method
   // modifies it in the text node.  Otherwise, not modified.
   nsresult AdjustCollapsedRangeMaybeIntoTextNode(nsRange* aCollapsedRange);
-  // Find the first frame for the range and get the start offset in it.
-  nsresult GetStartFrameAndOffset(const nsRange* aRange,
-                                  nsIFrame*& aFrame,
-                                  int32_t& aOffsetInFrame);
   // Convert the frame relative offset to be relative to the root frame of the
   // root presContext (but still measured in appUnits of aFrame's presContext).
   nsresult ConvertToRootRelativeOffset(nsIFrame* aFrame,
