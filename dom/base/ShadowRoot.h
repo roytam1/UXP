@@ -65,6 +65,11 @@ public:
   }
 
   /**
+   * Clones internal state, for example stylesheets, of aOther to 'this'.
+   */
+  void CloneInternalDataFrom(ShadowRoot* aOther);
+
+  /**
    * Distributes all the explicit children of the pool host to the content
    * insertion points in this ShadowRoot.
    */

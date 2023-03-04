@@ -101,6 +101,23 @@ ShadowRoot::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
   return mozilla::dom::ShadowRootBinding::Wrap(aCx, this, aGivenProto);
 }
 
+void
+ShadowRoot::CloneInternalDataFrom(ShadowRoot* aOther)
+{
+  size_t sheetCount = aOther->SheetCount();
+  for (size_t i = 0; i < sheetCount; ++i) {
+    StyleSheet* sheet = aOther->SheetAt(i);
+    if (sheet && sheet->IsApplicable()) {
+      // TODO: Remove AsGecko() call once Stylo is removed.
+      RefPtr<CSSStyleSheet> clonedSheet =
+        sheet->AsGecko()->Clone(nullptr, nullptr, nullptr, nullptr);
+      if (clonedSheet) {
+        AppendStyleSheet(*clonedSheet);
+      }
+    }
+  }
+}
+
 ShadowRoot*
 ShadowRoot::FromNode(nsINode* aNode)
 {
