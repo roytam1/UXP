@@ -265,7 +265,7 @@ SVGUseElement::CreateAnonymousContent()
       nullptr : OwnerDoc()->NodeInfoManager();
   IgnoredErrorResult rv;
   nsCOMPtr<nsINode> newnode =
-    nsNodeUtils::Clone(targetContent, true, nodeInfoManager, unused, rv);
+    nsNodeUtils::Clone(targetContent, true, nodeInfoManager, &unused, rv);
   nsCOMPtr<nsIContent> newcontent = do_QueryInterface(newnode);
 
   if (!newcontent)
