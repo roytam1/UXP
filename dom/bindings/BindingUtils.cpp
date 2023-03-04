@@ -2106,16 +2106,19 @@ DictionaryBase::AppendJSONToString(const char16_t* aJSONData,
   return true;
 }
 
-nsresult
-ReparentWrapper(JSContext* aCx, JS::Handle<JSObject*> aObjArg)
+void
+ReparentWrapper(JSContext* aCx, JS::Handle<JSObject*> aObjArg, ErrorResult& aError)
 {
   js::AssertSameCompartment(aCx, aObjArg);
+
+  aError.MightThrowJSException();
 
   // Check if we're anywhere near the stack limit before we reach the
   // transplanting code, since it has no good way to handle errors. This uses
   // the untrusted script limit, which is not strictly necessary since no
   // actual script should run.
-  JS_CHECK_RECURSION_CONSERVATIVE(aCx, return NS_ERROR_FAILURE);
+  // TODO: Make sure to retain 'onerror' if bug 1342439 lands.
+  JS_CHECK_RECURSION_CONSERVATIVE(aCx, aError.StealExceptionFromJSContext(aCx); return);
 
   JS::Rooted<JSObject*> aObj(aCx, aObjArg);
   const DOMJSClass* domClass = GetDOMClass(aObj);
@@ -2135,12 +2138,12 @@ ReparentWrapper(JSContext* aCx, JS::Handle<JSObject*> aObjArg)
   JSCompartment* newCompartment = js::GetObjectCompartment(newParent);
   if (oldCompartment == newCompartment) {
     MOZ_ASSERT(oldParent == newParent);
-    return NS_OK;
+    return;
   }
 
   nsISupports* native = UnwrapDOMObjectToISupports(aObj);
   if (!native) {
-    return NS_OK;
+    return;
   }
 
   bool isProxy = js::IsProxy(aObj);
@@ -2156,12 +2159,14 @@ ReparentWrapper(JSContext* aCx, JS::Handle<JSObject*> aObjArg)
 
   JS::Handle<JSObject*> proto = (domClass->mGetProto)(aCx);
   if (!proto) {
-    return NS_ERROR_FAILURE;
+    aError.StealExceptionFromJSContext(aCx);
+    return;
   }
 
   JS::Rooted<JSObject*> newobj(aCx, JS_CloneObject(aCx, aObj, proto));
   if (!newobj) {
-    return NS_ERROR_FAILURE;
+    aError.StealExceptionFromJSContext(aCx);
+    return;
   }
 
   JS::Rooted<JSObject*> propertyHolder(aCx);
@@ -2169,11 +2174,13 @@ ReparentWrapper(JSContext* aCx, JS::Handle<JSObject*> aObjArg)
   if (copyFrom) {
     propertyHolder = JS_NewObjectWithGivenProto(aCx, nullptr, nullptr);
     if (!propertyHolder) {
-      return NS_ERROR_OUT_OF_MEMORY;
+      aError.StealExceptionFromJSContext(aCx);
+      return;
     }
 
     if (!JS_CopyPropertiesFrom(aCx, propertyHolder, copyFrom)) {
-      return NS_ERROR_FAILURE;
+      aError.StealExceptionFromJSContext(aCx);
+      return;
     }
   } else {
     propertyHolder = nullptr;
@@ -2189,7 +2196,8 @@ ReparentWrapper(JSContext* aCx, JS::Handle<JSObject*> aObjArg)
   // if expandos are present then the wrapper will already have been preserved
   // for this native.
   if (!xpc::XrayUtils::CloneExpandoChain(aCx, newobj, aObj)) {
-    return NS_ERROR_FAILURE;
+    aError.StealExceptionFromJSContext(aCx);
+    return;
   }
 
   // We've set up |newobj|, so we make it own the native by setting its reserved
@@ -2244,9 +2252,6 @@ ReparentWrapper(JSContext* aCx, JS::Handle<JSObject*> aObjArg)
   if (htmlobject) {
     htmlobject->SetupProtoChain(aCx, aObj);
   }
-
-  // Now we can just return the wrapper
-  return NS_OK;
 }
 
 GlobalObject::GlobalObject(JSContext* aCx, JSObject* aObject)

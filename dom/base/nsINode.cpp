@@ -1555,28 +1555,25 @@ nsINode::SetExplicitBaseURI(nsIURI* aURI)
   return rv;
 }
 
-static nsresult
-AdoptNodeIntoOwnerDoc(nsINode *aParent, nsINode *aNode)
+static void
+AdoptNodeIntoOwnerDoc(nsINode *aParent, nsINode *aNode, ErrorResult& aError)
 {
   NS_ASSERTION(!aNode->GetParentNode(),
                "Should have removed from parent already");
 
   nsIDocument *doc = aParent->OwnerDoc();
 
-  ErrorResult rv;
-  nsINode* adoptedNode = doc->AdoptNode(*aNode, rv);
-  rv.WouldReportJSException();
-  if (NS_WARN_IF(rv.Failed())) {
-    return rv.StealNSResult();
-  }
+  DebugOnly<nsINode*> adoptedNode = doc->AdoptNode(*aNode, aError);
 
-  NS_ASSERTION(aParent->OwnerDoc() == doc,
-               "ownerDoc chainged while adopting");
-  NS_ASSERTION(adoptedNode == aNode, "Uh, adopt node changed nodes?");
-  NS_ASSERTION(aParent->OwnerDoc() == aNode->OwnerDoc(),
+#ifdef DEBUG
+  if (!aError.Failed()) {
+    MOZ_ASSERT(aParent->OwnerDoc() == doc,
+               "ownerDoc changed while adopting");
+    MOZ_ASSERT(adoptedNode == aNode, "Uh, adopt node changed nodes?");
+    MOZ_ASSERT(aParent->OwnerDoc() == aNode->OwnerDoc(),
                "ownerDocument changed again after adopting!");
-
-  return NS_OK;
+  }
+#endif // DEBUG
 }
 
 static nsresult
@@ -1601,19 +1598,20 @@ ReparentWrappersInSubtree(nsIContent* aRoot)
 
   rootedGlobal = xpc::GetXBLScope(cx, rootedGlobal);
 
-  nsresult rv;
+  ErrorResult rv;
   JS::Rooted<JSObject*> reflector(cx);
   for (nsIContent* cur = aRoot; cur; cur = cur->GetNextNode(aRoot)) {
     if ((reflector = cur->GetWrapper())) {
       JSAutoCompartment ac(cx, reflector);
-      rv = ReparentWrapper(cx, reflector);
-      if NS_FAILED(rv) {
+      ReparentWrapper(cx, reflector, rv);
+      rv.WouldReportJSException();
+      if (rv.Failed()) {
         // We _could_ consider BlastSubtreeToPieces here, but it's not really
         // needed.  Having some nodes in here accessible to content while others
         // are not is probably OK.  We just need to fail out of the actual
         // insertion, so they're not in the DOM.  Returning a failure here will
         // do that.
-        return rv;
+        return rv.StealNSResult();
       }
     }
   }
@@ -1627,7 +1625,6 @@ nsINode::doInsertChildAt(nsIContent* aKid, uint32_t aIndex,
 {
   NS_PRECONDITION(!aKid->GetParentNode(),
                   "Inserting node that already has parent");
-  nsresult rv;
 
   // The id-handling code, and in the future possibly other code, need to
   // react to unexpected attribute changes.
@@ -1638,15 +1635,23 @@ nsINode::doInsertChildAt(nsIContent* aKid, uint32_t aIndex,
   mozAutoDocUpdate updateBatch(GetComposedDoc(), UPDATE_CONTENT_MODEL, aNotify);
 
   if (OwnerDoc() != aKid->OwnerDoc()) {
-    rv = AdoptNodeIntoOwnerDoc(this, aKid);
-    NS_ENSURE_SUCCESS(rv, rv);
+    ErrorResult error;
+    AdoptNodeIntoOwnerDoc(this, aKid, error);
+
+    // Need to WouldReportJSException() if our callee can throw a JS
+    // exception (which it can) and we're neither propagating the
+    // error out nor unconditionally suppressing it.
+    error.WouldReportJSException();
+    if (NS_WARN_IF(error.Failed())) {
+      return error.StealNSResult();
+    }
   }
 
   uint32_t childCount = aChildArray.ChildCount();
   NS_ENSURE_TRUE(aIndex <= childCount, NS_ERROR_ILLEGAL_VALUE);
   bool isAppend = (aIndex == childCount);
 
-  rv = aChildArray.InsertChildAt(aKid, aIndex);
+  nsresult rv = aChildArray.InsertChildAt(aKid, aIndex);
   NS_ENSURE_SUCCESS(rv, rv);
   if (aIndex == 0) {
     mFirstChild = aKid;
@@ -2483,7 +2488,7 @@ nsINode::ReplaceOrInsertBefore(bool aReplace, nsINode* aNewChild,
   // inserting them w/o calling AdoptNode().
   nsIDocument* doc = OwnerDoc();
   if (doc != newContent->OwnerDoc()) {
-    aError = AdoptNodeIntoOwnerDoc(this, aNewChild);
+    AdoptNodeIntoOwnerDoc(this, aNewChild, aError);
     if (aError.Failed()) {
       return nullptr;
     }
