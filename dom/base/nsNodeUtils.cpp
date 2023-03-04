@@ -650,6 +650,17 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
     }
   }
 
+  // TODO: update this if we choose to land bug 1393806.
+  if (aDeep && !aClone && aNode->IsElement()) {
+    if (ShadowRoot* shadowRoot = aNode->AsElement()->GetShadowRoot()) {
+      nsCOMPtr<nsINode> child;
+      rv = CloneAndAdopt(shadowRoot, aClone, aDeep, nodeInfoManager,
+                         aReparentScope, aNodesWithProperties, clone,
+                         getter_AddRefs(child));
+      NS_ENSURE_SUCCESS(rv, rv);
+    }
+  }
+
   // Cloning template element.
   if (aDeep && aClone && IsTemplateElement(aNode)) {
     DocumentFragment* origContent =
