@@ -277,7 +277,9 @@ DocumentOrShadowRoot::ElementsFromPointHelper(float aX, float aY,
       node = node->GetParent();
       if (node) {
         ShadowRoot* shadow = ShadowRoot::FromNode(node);
-        node = shadow->Host();
+        if (shadow) {
+          node = shadow->Host();
+        }
       }
     }
 
