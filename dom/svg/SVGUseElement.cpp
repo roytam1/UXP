@@ -259,12 +259,13 @@ SVGUseElement::CreateAnonymousContent()
     }
   }
 
+  nsCOMArray<nsINode> unused;
   nsNodeInfoManager* nodeInfoManager =
     targetContent->OwnerDoc() == OwnerDoc() ?
       nullptr : OwnerDoc()->NodeInfoManager();
   IgnoredErrorResult rv;
   nsCOMPtr<nsINode> newnode =
-    nsNodeUtils::Clone(targetContent, true, nodeInfoManager, nullptr, rv);
+    nsNodeUtils::Clone(targetContent, true, nodeInfoManager, unused, rv);
   nsCOMPtr<nsIContent> newcontent = do_QueryInterface(newnode);
 
   if (!newcontent)
