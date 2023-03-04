@@ -5823,14 +5823,9 @@ nsIDocument::ImportNode(nsINode& aNode, bool aDeep, ErrorResult& rv) const
     case nsIDOMNode::COMMENT_NODE:
     case nsIDOMNode::DOCUMENT_TYPE_NODE:
     {
-      nsCOMPtr<nsINode> newNode;
       nsCOMArray<nsINode> nodesWithProperties;
-      rv = nsNodeUtils::Clone(imported, aDeep, mNodeInfoManager,
-                              nodesWithProperties, getter_AddRefs(newNode));
-      if (rv.Failed()) {
-        return nullptr;
-      }
-      return newNode.forget();
+      return nsNodeUtils::Clone(imported, aDeep, mNodeInfoManager,
+                                &nodesWithProperties, rv);
     }
     default:
     {
@@ -6996,8 +6991,8 @@ nsIDocument::AdoptNode(nsINode& aAdoptedNode, ErrorResult& rv)
   }
 
   nsCOMArray<nsINode> nodesWithProperties;
-  rv = nsNodeUtils::Adopt(adoptedNode, sameDocument ? nullptr : mNodeInfoManager,
-                          newScope, nodesWithProperties);
+  nsNodeUtils::Adopt(adoptedNode, sameDocument ? nullptr : mNodeInfoManager,
+                     newScope, nodesWithProperties, rv);
   if (rv.Failed()) {
     // Disconnect all nodes from their parents, since some have the old document
     // as their ownerDocument and some have this as their ownerDocument.

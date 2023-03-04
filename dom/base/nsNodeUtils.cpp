@@ -404,28 +404,20 @@ nsNodeUtils::TraverseUserData(nsINode* aNode,
 }
 
 /* static */
-nsresult
-nsNodeUtils::CloneNodeImpl(nsINode *aNode, bool aDeep, nsINode **aResult)
+already_AddRefed<nsINode>
+nsNodeUtils::CloneNodeImpl(nsINode *aNode, bool aDeep, ErrorResult& aError)
 {
-  *aResult = nullptr;
-
-  nsCOMPtr<nsINode> newNode;
   nsCOMArray<nsINode> nodesWithProperties;
-  nsresult rv = Clone(aNode, aDeep, nullptr, nodesWithProperties,
-                      getter_AddRefs(newNode));
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  newNode.forget(aResult);
-  return NS_OK;
+  return Clone(aNode, aDeep, nullptr, &nodesWithProperties, aError);
 }
 
 /* static */
-nsresult
+already_AddRefed<nsINode>
 nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
                            nsNodeInfoManager *aNewNodeInfoManager,
                            JS::Handle<JSObject*> aReparentScope,
-                           nsCOMArray<nsINode> &aNodesWithProperties,
-                           nsINode *aParent, nsINode **aResult)
+                           nsCOMArray<nsINode> *aNodesWithProperties,
+                           nsINode *aParent, ErrorResult& aError)
 {
   NS_PRECONDITION((!aClone && aNewNodeInfoManager) || !aReparentScope,
                   "If cloning or not getting a new nodeinfo we shouldn't "
@@ -433,14 +425,11 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
   NS_PRECONDITION(!aParent || aNode->IsNodeOfType(nsINode::eCONTENT),
                   "Can't insert document or attribute nodes into a parent");
 
-  *aResult = nullptr;
-
   // First deal with aNode and walk its attributes (and their children). Then,
   // if aDeep is true, deal with aNode's children (and recurse into their
   // attributes and children).
 
   nsAutoScriptBlocker scriptBlocker;
-  nsresult rv;
 
   nsNodeInfoManager *nodeInfoManager = aNewNodeInfoManager;
 
@@ -452,14 +441,20 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
     // Don't allow importing/adopting nodes from non-privileged "scriptable"
     // documents to "non-scriptable" documents.
     nsIDocument* newDoc = nodeInfoManager->GetDocument();
-    NS_ENSURE_STATE(newDoc);
+    if (NS_WARN_IF(!newDoc)) {
+      aError.Throw(NS_ERROR_UNEXPECTED);
+      return nullptr;
+    }
     bool hasHadScriptHandlingObject = false;
     if (!newDoc->GetScriptHandlingObject(hasHadScriptHandlingObject) &&
         !hasHadScriptHandlingObject) {
       nsIDocument* currentDoc = aNode->OwnerDoc();
-      NS_ENSURE_STATE((nsContentUtils::IsChromeDoc(currentDoc) ||
-                       (!currentDoc->GetScriptHandlingObject(hasHadScriptHandlingObject) &&
-                        !hasHadScriptHandlingObject)));
+      if (NS_WARN_IF(!nsContentUtils::IsChromeDoc(currentDoc) &&
+                     (currentDoc->GetScriptHandlingObject(hasHadScriptHandlingObject) ||
+                      hasHadScriptHandlingObject))) {
+        aError.Throw(NS_ERROR_UNEXPECTED);
+        return nullptr;
+      }
     }
 
     newNodeInfo = nodeInfoManager->GetNodeInfo(nodeInfo->NameAtom(),
@@ -475,8 +470,11 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
 
   nsCOMPtr<nsINode> clone;
   if (aClone) {
-    rv = aNode->Clone(nodeInfo, getter_AddRefs(clone));
-    NS_ENSURE_SUCCESS(rv, rv);
+    nsresult rv = aNode->Clone(nodeInfo, getter_AddRefs(clone));
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      aError.Throw(rv);
+      return nullptr;
+    }
 
     if (CustomElementRegistry::IsCustomElementEnabled() &&
         clone->IsHTMLElement()) {
@@ -514,7 +512,10 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
       // parent.
       rv = aParent->AppendChildTo(static_cast<nsIContent*>(clone.get()),
                                   false);
-      NS_ENSURE_SUCCESS(rv, rv);
+      if (NS_WARN_IF(NS_FAILED(rv))) {
+        aError.Throw(rv);
+        return nullptr;
+      }
     }
     else if (aDeep && clone->IsNodeOfType(nsINode::eDOCUMENT)) {
       // After cloning the document itself, we want to clone the children into
@@ -613,7 +614,7 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
       if ((wrapper = aNode->GetWrapper())) {
         MOZ_ASSERT(IsDOMObject(wrapper));
         JSAutoCompartment ac(cx, wrapper);
-        rv = ReparentWrapper(cx, wrapper);
+        nsresult rv = ReparentWrapper(cx, wrapper);
         if (NS_FAILED(rv)) {
           if (wasRegistered) {
             aNode->OwnerDoc()->UnregisterActivityObserver(aNode->AsElement());
@@ -622,17 +623,18 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
           if (wasRegistered) {
             aNode->OwnerDoc()->RegisterActivityObserver(aNode->AsElement());
           }
-          return rv;
+          aError.Throw(rv);
+          return nullptr;
         }
       }
     }
   }
 
   if (aNode->HasProperties()) {
-    bool ok = aNodesWithProperties.AppendObject(aNode);
+    bool ok = aNodesWithProperties->AppendObject(aNode);
     MOZ_RELEASE_ASSERT(ok, "Out of memory");
     if (aClone) {
-      ok = aNodesWithProperties.AppendObject(clone);
+      ok = aNodesWithProperties->AppendObject(clone);
       MOZ_RELEASE_ASSERT(ok, "Out of memory");
     }
   }
@@ -642,22 +644,24 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
     for (nsIContent* cloneChild = aNode->GetFirstChild();
          cloneChild;
          cloneChild = cloneChild->GetNextSibling()) {
-      nsCOMPtr<nsINode> child;
-      rv = CloneAndAdopt(cloneChild, aClone, true, nodeInfoManager,
-                         aReparentScope, aNodesWithProperties, clone,
-                         getter_AddRefs(child));
-      NS_ENSURE_SUCCESS(rv, rv);
+      nsCOMPtr<nsINode> child =
+        CloneAndAdopt(cloneChild, aClone, true, nodeInfoManager,
+                      aReparentScope, aNodesWithProperties, clone,
+                      aError);
+      if (NS_WARN_IF(aError.Failed())) {
+        return nullptr;
+      }
     }
   }
 
-  // TODO: update this if we choose to land bug 1393806.
   if (aDeep && !aClone && aNode->IsElement()) {
     if (ShadowRoot* shadowRoot = aNode->AsElement()->GetShadowRoot()) {
-      nsCOMPtr<nsINode> child;
-      rv = CloneAndAdopt(shadowRoot, aClone, aDeep, nodeInfoManager,
-                         aReparentScope, aNodesWithProperties, clone,
-                         getter_AddRefs(child));
-      NS_ENSURE_SUCCESS(rv, rv);
+      nsCOMPtr<nsINode> child = CloneAndAdopt(shadowRoot, aClone, aDeep, nodeInfoManager,
+                                              aReparentScope, aNodesWithProperties, clone,
+                                              aError);
+      if (NS_WARN_IF(aError.Failed())) {
+        return nullptr;
+      }
     }
   }
 
@@ -676,11 +680,13 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
     for (nsIContent* cloneChild = origContent->GetFirstChild();
          cloneChild;
          cloneChild = cloneChild->GetNextSibling()) {
-      nsCOMPtr<nsINode> child;
-      rv = CloneAndAdopt(cloneChild, aClone, aDeep, ownerNodeInfoManager,
-                         aReparentScope, aNodesWithProperties, cloneContent,
-                         getter_AddRefs(child));
-      NS_ENSURE_SUCCESS(rv, rv);
+      nsCOMPtr<nsINode> child =
+        CloneAndAdopt(cloneChild, aClone, aDeep, ownerNodeInfoManager,
+                      aReparentScope, aNodesWithProperties, cloneContent,
+                      aError);
+      if (NS_WARN_IF(aError.Failed())) {
+        return nullptr;
+      }
     }
   }
 
@@ -703,9 +709,7 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
   }
 #endif
 
-  clone.forget(aResult);
-
-  return NS_OK;
+  return clone.forget();
 }
 
 

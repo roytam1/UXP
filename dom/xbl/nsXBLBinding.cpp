@@ -321,10 +321,11 @@ nsXBLBinding::GenerateAnonymousContent()
   if (hasContent) {
     nsIDocument* doc = mBoundElement->OwnerDoc();
 
-    nsCOMPtr<nsINode> clonedNode;
-    nsCOMArray<nsINode> nodesWithProperties;
-    nsNodeUtils::Clone(content, true, doc->NodeInfoManager(),
-                       nodesWithProperties, getter_AddRefs(clonedNode));
+    IgnoredErrorResult rv;
+    nsCOMPtr<nsINode> clonedNode =
+      nsNodeUtils::Clone(content, true, doc->NodeInfoManager(), nullptr, rv);
+    // FIXME: Bug 1399558, Why is this code OK assuming that nsNodeUtils::Clone
+    // never fails?
     mContent = clonedNode->AsElement();
 
     // Search for <xbl:children> elements in the XBL content. In the presence
