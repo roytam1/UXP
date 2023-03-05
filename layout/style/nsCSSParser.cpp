@@ -2632,6 +2632,25 @@ StopRecordingAndAppendTokens(nsString& aResult,
   }
 }
 
+static bool
+ResolveEnvironmentVariable(const nsAString& aName,
+                           nsString& aValue,
+                           nsCSSTokenSerializationType& aFirstToken,
+                           nsCSSTokenSerializationType& aLastToken)
+{
+  // hard-code the few values of the Environment Variables spec
+  if (aName.EqualsLiteral("safe-area-inset-top") ||
+      aName.EqualsLiteral("safe-area-inset-bottom") ||
+      aName.EqualsLiteral("safe-area-inset-left") ||
+      aName.EqualsLiteral("safe-area-inset-right")) {
+    aValue.AppendLiteral(" 0px");
+    aFirstToken = eCSSTokenSerialization_Whitespace;
+    aLastToken = eCSSTokenSerialization_Dimension;
+    return true;
+  }
+  return false;
+}
+
 bool
 CSSParserImpl::ResolveValueWithVariableReferencesRec(
                                      nsString& aResult,
@@ -2749,8 +2768,10 @@ CSSParserImpl::ResolveValueWithVariableReferencesRec(
       }
 
       case eCSSToken_Function:
-        if (mToken.mIdent.LowerCaseEqualsLiteral("var")) {
-          // Save the tokens before the "var(" to our resolved value.
+        if (mToken.mIdent.LowerCaseEqualsLiteral("env") ||
+            mToken.mIdent.LowerCaseEqualsLiteral("var")) {
+          bool functionIsVariable = mToken.mIdent.LowerCaseEqualsLiteral("var");
+          // Save the tokens before the "env(" to our resolved value.
           nsString recording;
           mScanner->StopRecording(recording);
           recording.Truncate(lengthBeforeVar);
@@ -2760,30 +2781,43 @@ CSSParserImpl::ResolveValueWithVariableReferencesRec(
           recLastToken = eCSSTokenSerialization_Nothing;
 
           if (!GetToken(true) ||
-              mToken.mType != eCSSToken_Ident ||
-              !nsCSSProps::IsCustomPropertyName(mToken.mIdent)) {
-            // "var(" must be followed by an identifier, and it must be a
-            // custom property name.
+              mToken.mType != eCSSToken_Ident) {
+            // function must be followed by an identifier
             return false;
           }
 
-          // Turn the custom property name into a variable name by removing the
-          // '--' prefix.
-          MOZ_ASSERT(Substring(mToken.mIdent, 0,
-                               CSS_CUSTOM_NAME_PREFIX_LENGTH).
-                       EqualsLiteral("--"));
-          nsDependentString variableName(mToken.mIdent,
-                                         CSS_CUSTOM_NAME_PREFIX_LENGTH);
-
-          // Get the value of the identified variable.  Note that we
-          // check if the variable value is the empty string, as that means
-          // that the variable was invalid at computed value time due to
-          // unresolveable variable references or cycles.
+          // Expand the function call into variableValue
           nsString variableValue;
-          nsCSSTokenSerializationType varFirstToken, varLastToken;
-          bool valid = aVariables->Get(variableName, variableValue,
-                                       varFirstToken, varLastToken) &&
-                       !variableValue.IsEmpty();
+          nsCSSTokenSerializationType varFirstToken = eCSSTokenSerialization_Nothing;
+          nsCSSTokenSerializationType varLastToken = eCSSTokenSerialization_Nothing;
+          bool valid = false;
+
+          if (functionIsVariable) {
+            if (!nsCSSProps::IsCustomPropertyName(mToken.mIdent)) {
+              // "var(" identifier must be a custom property name.
+              return false;
+            }
+
+            // Turn the custom property name into a variable name by removing the
+            // '--' prefix.
+            MOZ_ASSERT(Substring(mToken.mIdent, 0,
+                                 CSS_CUSTOM_NAME_PREFIX_LENGTH).
+                         EqualsLiteral("--"));
+            nsDependentString variableName(mToken.mIdent,
+                                           CSS_CUSTOM_NAME_PREFIX_LENGTH);
+
+            // Get the value of the identified variable.  Note that we
+            // check if the variable value is the empty string, as that means
+            // that the variable was invalid at computed value time due to
+            // unresolveable variable references or cycles.
+            valid = aVariables->Get(variableName, variableValue,
+                                    varFirstToken, varLastToken) &&
+                    !variableValue.IsEmpty();
+          } else {
+            valid = ResolveEnvironmentVariable(mToken.mIdent, variableValue,
+                                               varFirstToken,varLastToken) &&
+                    !variableValue.IsEmpty();
+          }
 
           if (!GetToken(true) ||
               mToken.IsSymbol(')')) {
