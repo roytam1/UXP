@@ -1407,7 +1407,7 @@ IDBObjectStore::AddOrPut(JSContext* aCx,
   MOZ_ASSERT(aCx);
   MOZ_ASSERT_IF(aFromCursor, aOverwrite);
 
-  if (mTransaction->GetMode() == IDBTransaction::CLEANUP ||
+  if (mTransaction->GetMode() == IDBTransaction::Mode::Cleanup ||
       mDeletedSpec) {
     aRv.Throw(NS_ERROR_DOM_INDEXEDDB_NOT_ALLOWED_ERR);
     return nullptr;
@@ -1991,7 +1991,7 @@ IDBObjectStore::CreateIndex(const nsAString& aName,
 {
   AssertIsOnOwningThread();
 
-  if (mTransaction->GetMode() != IDBTransaction::VERSION_CHANGE ||
+  if (mTransaction->GetMode() != IDBTransaction::Mode::VersionChange ||
       mDeletedSpec) {
     aRv.Throw(NS_ERROR_DOM_INDEXEDDB_NOT_ALLOWED_ERR);
     return nullptr;
@@ -2101,7 +2101,7 @@ IDBObjectStore::DeleteIndex(const nsAString& aName, ErrorResult& aRv)
 {
   AssertIsOnOwningThread();
 
-  if (mTransaction->GetMode() != IDBTransaction::VERSION_CHANGE ||
+  if (mTransaction->GetMode() != IDBTransaction::Mode::VersionChange ||
       mDeletedSpec) {
     aRv.Throw(NS_ERROR_DOM_INDEXEDDB_NOT_ALLOWED_ERR);
     return;
@@ -2424,7 +2424,7 @@ IDBObjectStore::SetName(const nsAString& aName, ErrorResult& aRv)
 {
   AssertIsOnOwningThread();
 
-  if (mTransaction->GetMode() != IDBTransaction::VERSION_CHANGE ||
+  if (mTransaction->GetMode() != IDBTransaction::Mode::VersionChange ||
       mDeletedSpec) {
     aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
     return;

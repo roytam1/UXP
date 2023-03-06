@@ -3120,106 +3120,6 @@ nsDocument::ElementFromPoint(float aX, float aY, nsIDOMElement** aReturn)
   return NS_OK;
 }
 
-Element*
-nsIDocument::ElementFromPoint(float aX, float aY)
-{
-  return ElementFromPointHelper(aX, aY, false, true);
-}
-
-void
-nsIDocument::ElementsFromPoint(float aX, float aY,
-                               nsTArray<RefPtr<Element>>& aElements)
-{
-  ElementsFromPointHelper(aX, aY, nsIDocument::FLUSH_LAYOUT, aElements);
-}
-
-Element*
-nsDocument::ElementFromPointHelper(float aX, float aY,
-                                   bool aIgnoreRootScrollFrame,
-                                   bool aFlushLayout)
-{
-  AutoTArray<RefPtr<Element>, 1> elementArray;
-  ElementsFromPointHelper(aX, aY,
-                          ((aIgnoreRootScrollFrame ? nsIDocument::IGNORE_ROOT_SCROLL_FRAME : 0) |
-                           (aFlushLayout ? nsIDocument::FLUSH_LAYOUT : 0) |
-                           nsIDocument::IS_ELEMENT_FROM_POINT),
-                          elementArray);
-  if (elementArray.IsEmpty()) {
-    return nullptr;
-  }
-  return elementArray[0];
-}
-
-void
-nsDocument::ElementsFromPointHelper(float aX, float aY,
-                                    uint32_t aFlags,
-                                    nsTArray<RefPtr<mozilla::dom::Element>>& aElements)
-{
-  // As per the the spec, we return null if either coord is negative
-  if (!(aFlags & nsIDocument::IGNORE_ROOT_SCROLL_FRAME) && (aX < 0 || aY < 0)) {
-    return;
-  }
-
-  nscoord x = nsPresContext::CSSPixelsToAppUnits(aX);
-  nscoord y = nsPresContext::CSSPixelsToAppUnits(aY);
-  nsPoint pt(x, y);
-
-  // Make sure the layout information we get is up-to-date, and
-  // ensure we get a root frame (for everything but XUL)
-  if (aFlags & nsIDocument::FLUSH_LAYOUT) {
-    FlushPendingNotifications(Flush_Layout);
-  }
-
-  nsIPresShell *ps = GetShell();
-  if (!ps) {
-    return;
-  }
-  nsIFrame *rootFrame = ps->GetRootFrame();
-
-  // XUL docs, unlike HTML, have no frame tree until everything's done loading
-  if (!rootFrame) {
-    return; // return null to premature XUL callers as a reminder to wait
-  }
-
-  nsTArray<nsIFrame*> outFrames;
-  // Emulate what GetFrameAtPoint does, since we want all the frames under our
-  // point.
-  nsLayoutUtils::GetFramesForArea(rootFrame, nsRect(pt, nsSize(1, 1)), outFrames,
-    nsLayoutUtils::IGNORE_PAINT_SUPPRESSION | nsLayoutUtils::IGNORE_CROSS_DOC |
-    ((aFlags & nsIDocument::IGNORE_ROOT_SCROLL_FRAME) ? nsLayoutUtils::IGNORE_ROOT_SCROLL_FRAME : 0));
-
-  // Dunno when this would ever happen, as we should at least have a root frame under us?
-  if (outFrames.IsEmpty()) {
-    return;
-  }
-
-  // Used to filter out repeated elements in sequence.
-  nsIContent* lastAdded = nullptr;
-
-  for (uint32_t i = 0; i < outFrames.Length(); i++) {
-    nsIContent* node = GetContentInThisDocument(outFrames[i]);
-
-    if (!node || !node->IsElement()) {
-      // If this helper is called via ElementsFromPoint, we need to make sure
-      // our frame is an element. Otherwise return whatever the top frame is
-      // even if it isn't the top-painted element.
-      if (!(aFlags & nsIDocument::IS_ELEMENT_FROM_POINT)) {
-        continue;
-      }
-      node = node->GetParent();
-    }
-    if (node && node != lastAdded) {
-      aElements.AppendElement(node->AsElement());
-      lastAdded = node;
-      // If this helper is called via ElementFromPoint, just return the first
-      // element we find.
-      if (aFlags & nsIDocument::IS_ELEMENT_FROM_POINT) {
-        return;
-      }
-    }
-  }
-}
-
 nsresult
 nsDocument::NodesFromRectHelper(float aX, float aY,
                                 float aTopSize, float aRightSize,
@@ -5923,14 +5823,9 @@ nsIDocument::ImportNode(nsINode& aNode, bool aDeep, ErrorResult& rv) const
     case nsIDOMNode::COMMENT_NODE:
     case nsIDOMNode::DOCUMENT_TYPE_NODE:
     {
-      nsCOMPtr<nsINode> newNode;
       nsCOMArray<nsINode> nodesWithProperties;
-      rv = nsNodeUtils::Clone(imported, aDeep, mNodeInfoManager,
-                              nodesWithProperties, getter_AddRefs(newNode));
-      if (rv.Failed()) {
-        return nullptr;
-      }
-      return newNode.forget();
+      return nsNodeUtils::Clone(imported, aDeep, mNodeInfoManager,
+                                &nodesWithProperties, rv);
     }
     default:
     {
@@ -7096,8 +6991,8 @@ nsIDocument::AdoptNode(nsINode& aAdoptedNode, ErrorResult& rv)
   }
 
   nsCOMArray<nsINode> nodesWithProperties;
-  rv = nsNodeUtils::Adopt(adoptedNode, sameDocument ? nullptr : mNodeInfoManager,
-                          newScope, nodesWithProperties);
+  nsNodeUtils::Adopt(adoptedNode, sameDocument ? nullptr : mNodeInfoManager,
+                     newScope, nodesWithProperties, rv);
   if (rv.Failed()) {
     // Disconnect all nodes from their parents, since some have the old document
     // as their ownerDocument and some have this as their ownerDocument.
@@ -8392,7 +8287,7 @@ nsDocument::DoUnblockOnload()
 }
 
 nsIContent*
-nsDocument::GetContentInThisDocument(nsIFrame* aFrame) const
+nsIDocument::GetContentInThisDocument(nsIFrame* aFrame) const
 {
   for (nsIFrame* f = aFrame; f;
        f = nsLayoutUtils::GetParentOrPlaceholderForCrossDoc(f)) {
@@ -8603,7 +8498,7 @@ nsDocument::OnPageHide(bool aPersisted,
   EnumerateActivityObservers(NotifyActivityChanged, nullptr);
 
   ClearPendingFullscreenRequests(this);
-  if (GetFullscreenElement()) {
+  if (FullScreenStackTop()) {
     // If this document was fullscreen, we should exit fullscreen in this
     // doctree branch. This ensures that if the user navigates while in
     // fullscreen mode we don't leave its still visible ancestor documents
@@ -10307,7 +10202,7 @@ nsIDocument::AsyncExitFullscreen(nsIDocument* aDoc)
 static bool
 CountFullscreenSubDocuments(nsIDocument* aDoc, void* aData)
 {
-  if (aDoc->GetFullscreenElement()) {
+  if (aDoc->FullScreenStackTop()) {
     uint32_t* count = static_cast<uint32_t*>(aData);
     (*count)++;
   }
@@ -10327,7 +10222,7 @@ nsDocument::IsFullscreenLeaf()
 {
   // A fullscreen leaf document is fullscreen, and has no fullscreen
   // subdocuments.
-  if (!GetFullscreenElement()) {
+  if (!FullScreenStackTop()) {
     return false;
   }
   return CountFullscreenSubDocuments(this) == 0;
@@ -10336,11 +10231,11 @@ nsDocument::IsFullscreenLeaf()
 static bool
 ResetFullScreen(nsIDocument* aDocument, void* aData)
 {
-  if (aDocument->GetFullscreenElement()) {
+  if (aDocument->FullScreenStackTop()) {
     NS_ASSERTION(CountFullscreenSubDocuments(aDocument) <= 1,
         "Should have at most 1 fullscreen subdocument.");
     static_cast<nsDocument*>(aDocument)->CleanupFullscreenState();
-    NS_ASSERTION(!aDocument->GetFullscreenElement(),
+    NS_ASSERTION(!aDocument->FullScreenStackTop(),
                  "Should reset full-screen");
     auto changed = reinterpret_cast<nsCOMArray<nsIDocument>*>(aData);
     changed->AppendElement(aDocument);
@@ -10388,7 +10283,7 @@ nsIDocument::ExitFullscreenInDocTree(nsIDocument* aMaybeNotARootDoc)
   UnlockPointer();
 
   nsCOMPtr<nsIDocument> root = aMaybeNotARootDoc->GetFullscreenRoot();
-  if (!root || !root->GetFullscreenElement()) {
+  if (!root || !root->FullScreenStackTop()) {
     // If a document was detached before exiting from fullscreen, it is
     // possible that the root had left fullscreen state. In this case,
     // we would not get anything from the ResetFullScreen() call. Root's
@@ -10417,7 +10312,7 @@ nsIDocument::ExitFullscreenInDocTree(nsIDocument* aMaybeNotARootDoc)
     DispatchFullScreenChange(changed[changed.Length() - i - 1]);
   }
 
-  NS_ASSERTION(!root->GetFullscreenElement(),
+  NS_ASSERTION(!root->FullScreenStackTop(),
     "Fullscreen root should no longer be a fullscreen doc...");
 
   // Move the top-level window out of fullscreen mode.
@@ -10434,7 +10329,7 @@ GetFullscreenLeaf(nsIDocument* aDoc, void* aData)
     nsIDocument** result = static_cast<nsIDocument**>(aData);
     *result = aDoc;
     return false;
-  } else if (aDoc->GetFullscreenElement()) {
+  } else if (aDoc->FullScreenStackTop()) {
     aDoc->EnumerateSubDocuments(GetFullscreenLeaf, aData);
   }
   return true;
@@ -10453,7 +10348,7 @@ GetFullscreenLeaf(nsIDocument* aDoc)
   nsIDocument* root = nsContentUtils::GetRootDocument(aDoc);
   // Check that the root is actually fullscreen so we don't waste time walking
   // around its descendants.
-  if (!root->GetFullscreenElement()) {
+  if (!root->FullScreenStackTop()) {
     return nullptr;
   }
   GetFullscreenLeaf(root, &leaf);
@@ -10463,10 +10358,10 @@ GetFullscreenLeaf(nsIDocument* aDoc)
 void
 nsDocument::RestorePreviousFullScreenState()
 {
-  NS_ASSERTION(!GetFullscreenElement() || !FullscreenRoots::IsEmpty(),
+  NS_ASSERTION(!FullScreenStackTop() || !FullscreenRoots::IsEmpty(),
     "Should have at least 1 fullscreen root when fullscreen!");
 
-  if (!GetFullscreenElement() || !GetWindow() || FullscreenRoots::IsEmpty()) {
+  if (!FullScreenStackTop() || !GetWindow() || FullscreenRoots::IsEmpty()) {
     return;
   }
 
@@ -10641,7 +10536,7 @@ nsDocument::FullScreenStackPush(Element* aElement)
   }
   EventStateManager::SetFullScreenState(aElement, true);
   mFullScreenStack.AppendElement(do_GetWeakReference(aElement));
-  NS_ASSERTION(GetFullscreenElement() == aElement, "Should match");
+  NS_ASSERTION(FullScreenStackTop() == aElement, "Should match");
   UpdateViewportScrollbarOverrideForFullscreen(this);
   return true;
 }
@@ -10689,7 +10584,7 @@ nsDocument::FullScreenStackTop()
   uint32_t last = mFullScreenStack.Length() - 1;
   nsCOMPtr<Element> element(do_QueryReferent(mFullScreenStack[last]));
   NS_ASSERTION(element, "Should have full-screen element!");
-  NS_ASSERTION(element->IsInUncomposedDoc(), "Full-screen element should be in doc");
+  NS_ASSERTION(element->IsInComposedDoc(), "Full-screen element should be in doc");
   NS_ASSERTION(element->OwnerDoc() == this, "Full-screen element should be in this doc");
   return element;
 }
@@ -10767,7 +10662,7 @@ nsresult nsDocument::RemoteFrameFullscreenReverted()
 }
 
 /* static */ bool
-nsDocument::IsUnprefixedFullscreenEnabled(JSContext* aCx, JSObject* aObject)
+nsIDocument::IsUnprefixedFullscreenEnabled(JSContext* aCx, JSObject* aObject)
 {
   MOZ_ASSERT(NS_IsMainThread());
   return nsContentUtils::IsCallerChrome() ||
@@ -10815,10 +10710,10 @@ nsDocument::FullscreenElementReadyCheck(Element* aElement,
 {
   NS_ASSERTION(aElement,
     "Must pass non-null element to nsDocument::RequestFullScreen");
-  if (!aElement || aElement == GetFullscreenElement()) {
+  if (!aElement || aElement == FullScreenStackTop()) {
     return false;
   }
-  if (!aElement->IsInUncomposedDoc()) {
+  if (!aElement->IsInComposedDoc()) {
     DispatchFullscreenError("FullscreenDeniedNotInDocument");
     return false;
   }
@@ -10842,8 +10737,11 @@ nsDocument::FullscreenElementReadyCheck(Element* aElement,
     DispatchFullscreenError("FullscreenDeniedSubDocFullScreen");
     return false;
   }
-  if (GetFullscreenElement() &&
-      !nsContentUtils::ContentIsDescendantOf(aElement, GetFullscreenElement())) {
+  //XXXsmaug Note, we don't follow the latest fullscreen spec here.
+  //         This whole check could be probably removed.
+  if (FullScreenStackTop() &&
+      !nsContentUtils::ContentIsHostIncludingDescendantOf(aElement,
+                                                          FullScreenStackTop())) {
     // If this document is full-screen, only grant full-screen requests from
     // a descendant of the current full-screen element.
     DispatchFullscreenError("FullscreenDeniedNotDescendant");
@@ -11203,16 +11101,6 @@ nsDocument::GetMozFullScreenElement(nsIDOMElement **aFullScreenElement)
   return NS_OK;
 }
 
-Element*
-nsDocument::GetFullscreenElement()
-{
-  Element* element = FullScreenStackTop();
-  NS_ASSERTION(!element ||
-               element->State().HasState(NS_EVENT_STATE_FULL_SCREEN),
-    "Fullscreen element should have fullscreen styles applied");
-  return element;
-}
-
 NS_IMETHODIMP
 nsDocument::GetMozFullScreen(bool *aFullScreen)
 {
@@ -11331,7 +11219,7 @@ GetPointerLockError(Element* aElement, Element* aCurrentLock,
     return "PointerLockDeniedInUse";
   }
 
-  if (!aElement->IsInUncomposedDoc()) {
+  if (!aElement->IsInComposedDoc()) {
     return "PointerLockDeniedNotInDocument";
   }
 
@@ -11382,11 +11270,11 @@ ChangePointerLockedElement(Element* aElement, nsIDocument* aDocument,
   MOZ_ASSERT(aDocument);
   MOZ_ASSERT(aElement != aPointerLockedElement);
   if (aPointerLockedElement) {
-    MOZ_ASSERT(aPointerLockedElement->GetUncomposedDoc() == aDocument);
+    MOZ_ASSERT(aPointerLockedElement->GetComposedDoc() == aDocument);
     aPointerLockedElement->ClearPointerLock();
   }
   if (aElement) {
-    MOZ_ASSERT(aElement->GetUncomposedDoc() == aDocument);
+    MOZ_ASSERT(aElement->GetComposedDoc() == aDocument);
     aElement->SetPointerLock();
     EventStateManager::sPointerLockedElement = do_GetWeakReference(aElement);
     EventStateManager::sPointerLockedDoc = do_GetWeakReference(aDocument);
@@ -11410,9 +11298,9 @@ PointerLockRequest::Run()
   nsCOMPtr<nsIDocument> doc = do_QueryReferent(mDocument);
   nsDocument* d = static_cast<nsDocument*>(doc.get());
   const char* error = nullptr;
-  if (!e || !d || !e->GetUncomposedDoc()) {
+  if (!e || !d || !e->GetComposedDoc()) {
     error = "PointerLockDeniedNotInDocument";
-  } else if (e->GetUncomposedDoc() != d) {
+  } else if (e->GetComposedDoc() != d) {
     error = "PointerLockDeniedMovedDocument";
   }
   if (!error) {
@@ -11576,25 +11464,6 @@ nsDocument::GetMozPointerLockElement(nsIDOMElement** aPointerLockedElement)
   nsCOMPtr<nsIDOMElement> retval = do_QueryInterface(el);
   retval.forget(aPointerLockedElement);
   return NS_OK;
-}
-
-Element*
-nsIDocument::GetPointerLockElement()
-{
-  nsCOMPtr<Element> pointerLockedElement =
-    do_QueryReferent(EventStateManager::sPointerLockedElement);
-  if (!pointerLockedElement) {
-    return nullptr;
-  }
-
-  // Make sure pointer locked element is in the same document.
-  nsCOMPtr<nsIDocument> pointerLockedDoc =
-    do_QueryReferent(EventStateManager::sPointerLockedDoc);
-  if (pointerLockedDoc != this) {
-    return nullptr;
-  }
-
-  return pointerLockedElement;
 }
 
 nsresult

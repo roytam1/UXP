@@ -238,10 +238,6 @@ partial interface Document {
   readonly attribute boolean fullscreenEnabled;
   [BinaryName="fullscreenEnabled"]
   readonly attribute boolean mozFullScreenEnabled;
-  [LenientSetter, Func="nsDocument::IsUnprefixedFullscreenEnabled"]
-  readonly attribute Element? fullscreenElement;
-  [BinaryName="fullscreenElement"]
-  readonly attribute Element? mozFullScreenElement;
 
   [Func="nsDocument::IsUnprefixedFullscreenEnabled"]
   void exitFullscreen();
@@ -258,7 +254,6 @@ partial interface Document {
 // https://w3c.github.io/pointerlock/#extensions-to-the-document-interface
 // https://w3c.github.io/pointerlock/#extensions-to-the-documentorshadowroot-mixin
 partial interface Document {
-  readonly attribute Element? pointerLockElement;
   [BinaryName="pointerLockElement", Pref="pointer-lock-api.prefixed.enabled"]
   readonly attribute Element? mozPointerLockElement;
   void exitPointerLock();
@@ -292,8 +287,6 @@ partial interface Document {
 
 // http://dev.w3.org/csswg/cssom-view/#extensions-to-the-document-interface
 partial interface Document {
-    Element? elementFromPoint (float x, float y);
-    sequence<Element> elementsFromPoint (float x, float y);
     CaretPosition? caretPositionFromPoint (float x, float y);
 
     readonly attribute Element? scrollingElement;

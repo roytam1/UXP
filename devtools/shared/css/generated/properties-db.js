@@ -6913,6 +6913,27 @@ exports.CSS_PROPERTIES = {
       "unset"
     ]
   },
+  "inset": {
+    "isInherited": false,
+    "subproperties": [
+      "top",
+      "right",
+      "bottom",
+      "left"
+    ],
+    "supports": [
+      6,
+      8
+    ],
+    "values": [
+      "-moz-calc",
+      "auto",
+      "calc",
+      "inherit",
+      "initial",
+      "unset"
+    ]
+  },
   "inset-block-end": {
     "isInherited": false,
     "subproperties": [

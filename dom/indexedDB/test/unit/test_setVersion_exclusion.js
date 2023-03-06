@@ -28,7 +28,7 @@ function testSteps()
   is(db.version, 1, "Database has correct version");
 
   db.onupgradeneeded = function() {
-    ok(false, "our ongoing VERSION_CHANGE transaction should exclude any others!");
+    ok(false, "our ongoing Mode::VersionChange transaction should exclude any others!");
   }
 
   db.createObjectStore("foo");
