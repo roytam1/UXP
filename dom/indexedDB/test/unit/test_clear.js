@@ -55,10 +55,10 @@ function testSteps()
 
   try {
     db.transaction("foo").objectStore("foo").clear();
-    ok(false, "clear should throw on READ_ONLY transactions");
+    ok(false, "clear should throw on Mode::ReadOnly transactions");
   }
   catch (e) {
-    ok(true, "clear should throw on READ_ONLY transactions");
+    ok(true, "clear should throw on Mode::ReadOnly transactions");
   }
 
   request = db.transaction("foo", "readwriteflush")

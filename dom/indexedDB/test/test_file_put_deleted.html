@@ -21,7 +21,7 @@
    */
   function testSteps()
   {
-    const READ_WRITE = "readwrite";
+    const Mode::ReadWrite = "readwrite";
 
     const databaseInfo = [
       { name: window.location.pathname + "1", source: true },
@@ -106,7 +106,7 @@
     for (let i = 1; i < databases.length; i++) {
       let db = databases[i];
 
-      let trans = db.transaction([objectStoreName], READ_WRITE);
+      let trans = db.transaction([objectStoreName], Mode::ReadWrite);
       let objectStore = trans.objectStore(objectStoreName);
 
       request = objectStore.add(fileBackedFile, 2);

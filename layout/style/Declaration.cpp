@@ -643,6 +643,7 @@ Declaration::GetPropertyValueInternal(
 
   nsCSSCompressedDataBlock *data = importantCount ? mImportantData : mData;
   switch (aProperty) {
+    case eCSSProperty_inset:
     case eCSSProperty_margin:
     case eCSSProperty_padding:
     case eCSSProperty_border_color:
@@ -650,14 +651,18 @@ Declaration::GetPropertyValueInternal(
     case eCSSProperty_border_width: {
       const nsCSSPropertyID* subprops =
         nsCSSProps::SubpropertyEntryFor(aProperty);
-      MOZ_ASSERT(nsCSSProps::GetStringValue(subprops[0]).Find("-top") !=
-                 kNotFound, "first subprop must be top");
-      MOZ_ASSERT(nsCSSProps::GetStringValue(subprops[1]).Find("-right") !=
-                 kNotFound, "second subprop must be right");
-      MOZ_ASSERT(nsCSSProps::GetStringValue(subprops[2]).Find("-bottom") !=
-                 kNotFound, "third subprop must be bottom");
-      MOZ_ASSERT(nsCSSProps::GetStringValue(subprops[3]).Find("-left") !=
-                 kNotFound, "fourth subprop must be left");
+      // These assertions don't apply to the inset shorthand because
+      // they don't start with a dash and are simply just the sides.
+      if (aProperty != eCSSProperty_inset) {
+        MOZ_ASSERT(nsCSSProps::GetStringValue(subprops[0]).Find("-top") !=
+                   kNotFound, "first subprop must be top");
+        MOZ_ASSERT(nsCSSProps::GetStringValue(subprops[1]).Find("-right") !=
+                   kNotFound, "second subprop must be right");
+        MOZ_ASSERT(nsCSSProps::GetStringValue(subprops[2]).Find("-bottom") !=
+                   kNotFound, "third subprop must be bottom");
+        MOZ_ASSERT(nsCSSProps::GetStringValue(subprops[3]).Find("-left") !=
+                   kNotFound, "fourth subprop must be left");
+      }
       const nsCSSValue* vals[4] = {
         data->ValueFor(subprops[0]),
         data->ValueFor(subprops[1]),

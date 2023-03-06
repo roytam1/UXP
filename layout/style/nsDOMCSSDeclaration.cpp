@@ -64,6 +64,7 @@ nsDOMCSSDeclaration::SetPropertyValue(const nsCSSPropertyID aPropID,
     case eCSSProperty_background_position_x:
     case eCSSProperty_background_position_y:
     case eCSSProperty_transform:
+    case eCSSProperty_inset:
     case eCSSProperty_top:
     case eCSSProperty_left:
     case eCSSProperty_bottom:

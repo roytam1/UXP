@@ -2334,6 +2334,13 @@ CSS_PROP_LOGICAL(
     Position,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_None)
+CSS_PROP_SHORTHAND(
+    inset,
+    inset,
+    Inset,
+    CSS_PROPERTY_PARSE_FUNCTION |
+        CSS_PROPERTY_UNITLESS_LENGTH_QUIRK,
+    "")
 CSS_PROP_DISPLAY(
     isolation,
     isolation,

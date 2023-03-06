@@ -244,10 +244,6 @@ partial interface Element {
   readonly attribute HTMLSlotElement? assignedSlot;
   [CEReactions, Unscopable, SetterThrows, Func="nsDocument::IsWebComponentsEnabled"]
            attribute DOMString slot;
-
-  // [deprecated] Shadow DOM v0
-  [Throws, Func="nsDocument::IsWebComponentsEnabled"]
-  ShadowRoot createShadowRoot();
 };
 
 Element implements ChildNode;

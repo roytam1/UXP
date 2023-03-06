@@ -385,6 +385,91 @@ protected:
                                        nsIContent** aNextContent);
 
   /**
+   * Returns scope owner of aContent.
+   * A scope owner is either a document root, shadow host, or slot.
+   */
+  nsIContent* FindOwner(nsIContent* aContent);
+
+  /**
+   * Retrieve the next tabbable element in scope owned by aOwner, using
+   * focusability and tabindex to determine the tab order.
+   *
+   * aOwner is the owner of scope to search in.
+   *
+   * aStartContent is the starting point for this call of this method.
+   *
+   * aOriginalStartContent is the initial starting point for sequential
+   * navigation.
+   *
+   * aForward should be true for forward navigation or false for backward
+   * navigation.
+   *
+   * aCurrentTabIndex is the current tabindex.
+   *
+   * aIgnoreTabIndex to ignore the current tabindex and find the element
+   * irrespective or the tab index.
+   *
+   * aForDocumentNavigation informs whether we're navigating only through
+   * documents.
+   *
+   * aSkipOwner to skip owner while searching. The flag is set when caller is
+   * |GetNextTabbableContent| in order to let caller handle owner.
+   *
+   * NOTE:
+   *   Consider the method searches downwards in flattened subtree
+   *   rooted at aOwner.
+   */
+  nsIContent* GetNextTabbableContentInScope(nsIContent* aOwner,
+                                            nsIContent* aStartContent,
+                                            nsIContent* aOriginalStartContent,
+                                            bool aForward,
+                                            int32_t aCurrentTabIndex,
+                                            bool aIgnoreTabIndex,
+                                            bool aForDocumentNavigation,
+                                            bool aSkipOwner);
+
+  /**
+   * Retrieve the next tabbable element in scope including aStartContent
+   * and the scope's ancestor scopes, using focusability and tabindex to
+   * determine the tab order.
+   *
+   * aStartOwner is the scope owner of the aStartContent.
+   *
+   * aStartContent an in/out paremeter. It as input is the starting point
+   * for this call of this method; as output it is the shadow host in
+   * light DOM if the next tabbable element is not found in shadow DOM,
+   * in order to continue searching in light DOM.
+   *
+   * aOriginalStartContent is the initial starting point for sequential
+   * navigation.
+   *
+   * aForward should be true for forward navigation or false for backward
+   * navigation.
+   *
+   * aCurrentTabIndex returns tab index of shadow host in light DOM if the
+   * next tabbable element is not found in shadow DOM, in order to continue
+   * searching in light DOM.
+   *
+   * aIgnoreTabIndex to ignore the current tabindex and find the element
+   * irrespective or the tab index.
+   *
+   * aForDocumentNavigation informs whether we're navigating only through
+   * documents.
+   *
+   * NOTE:
+   *   Consider the method searches upwards in all shadow host- or slot-rooted
+   *   flattened subtrees that contains aStartContent as non-root, except
+   *   the flattened subtree rooted at shadow host in light DOM.
+   */
+  nsIContent* GetNextTabbableContentInAncestorScopes(nsIContent* aStartOwner,
+                                                     nsIContent** aStartContent,
+                                                     nsIContent* aOriginalStartContent,
+                                                     bool aForward,
+                                                     int32_t* aCurrentTabIndex,
+                                                     bool aIgnoreTabIndex,
+                                                     bool aForDocumentNavigation);
+
+  /**
    * Retrieve the next tabbable element within a document, using focusability
    * and tabindex to determine the tab order. The element is returned in
    * aResultContent.
@@ -502,6 +587,16 @@ private:
                                      bool aGettingFocus);
 
   void SetFocusedWindowInternal(nsPIDOMWindowOuter* aWindow);
+
+  bool TryDocumentNavigation(nsIContent* aCurrentContent,
+                             bool* aCheckSubDocument,
+                             nsIContent** aResultContent);
+
+  bool TryToMoveFocusToSubDocument(nsIContent* aCurrentContent,
+                                   nsIContent* aOriginalStartContent,
+                                   bool aForward,
+                                   bool aForDocumentNavigation,
+                                   nsIContent** aResultContent);
 
   // the currently active and front-most top-most window
   nsCOMPtr<nsPIDOMWindowOuter> mActiveWindow;

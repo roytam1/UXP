@@ -199,6 +199,7 @@ nsDOMCSSAttributeDeclaration::SetPropertyValue(const nsCSSPropertyID aPropID,
   // FIXME: This is missing the margin shorthand and the logical versions of
   // the margin properties, see bug 1266287.
   if (aPropID == eCSSProperty_opacity || aPropID == eCSSProperty_transform ||
+      aPropID == eCSSProperty_inset ||
       aPropID == eCSSProperty_left || aPropID == eCSSProperty_top ||
       aPropID == eCSSProperty_right || aPropID == eCSSProperty_bottom ||
       aPropID == eCSSProperty_margin_left || aPropID == eCSSProperty_margin_top ||

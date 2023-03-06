@@ -304,14 +304,6 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
     return NS_OK;
   }
 
-  // Check for a ShadowRoot because link elements are inert in a
-  // ShadowRoot.
-  ShadowRoot* containingShadow = thisContent->GetContainingShadow();
-  if (thisContent->IsHTMLElement(nsGkAtoms::link) &&
-      (aOldShadowRoot || containingShadow)) {
-    return NS_OK;
-  }
-
   // XXXheycam ServoStyleSheets do not support <style scoped>.
   Element* oldScopeElement = nullptr;
   if (mStyleSheet) {
@@ -346,15 +338,16 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
     }
   }
 
-  // When static documents are created, stylesheets are cloned manually.
-  if (mDontLoadStyle || !mUpdatesEnabled ||
-      thisContent->OwnerDoc()->IsStaticDocument()) {
+  nsCOMPtr<nsIDocument> doc = thisContent->IsInShadowTree() ?
+    thisContent->OwnerDoc() : thisContent->GetUncomposedDoc();
+
+  // Loader could be null during unlink, see bug 1425866.
+  if (!doc || !doc->CSSLoader() || !doc->CSSLoader()->GetEnabled()) {
     return NS_OK;
   }
 
-  nsCOMPtr<nsIDocument> doc = thisContent->IsInShadowTree() ?
-    thisContent->OwnerDoc() : thisContent->GetUncomposedDoc();
-  if (!doc || !doc->CSSLoader()->GetEnabled()) {
+  // When static documents are created, stylesheets are cloned manually.
+  if (mDontLoadStyle || !mUpdatesEnabled || doc->IsStaticDocument()) {
     return NS_OK;
   }
 
@@ -426,8 +419,7 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
     rv = doc->CSSLoader()->
       LoadInlineStyle(thisContent, text, mLineNumber, title, media,
                       scopeElement, aObserver, &doneLoading, &isAlternate, &isExplicitlyEnabled);
-  }
-  else {
+  } else {
     nsAutoString integrity;
     thisContent->GetAttr(kNameSpaceID_None, nsGkAtoms::integrity, integrity);
     if (!integrity.IsEmpty()) {

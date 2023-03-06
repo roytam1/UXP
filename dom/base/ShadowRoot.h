@@ -59,12 +59,15 @@ public:
   // [deprecated] Shadow DOM v0
   void InsertSheet(StyleSheet* aSheet, nsIContent* aLinkingContent);
   void RemoveSheet(StyleSheet* aSheet);
-  bool ApplyAuthorStyles();
-  void SetApplyAuthorStyles(bool aApplyAuthorStyles);
   StyleSheetList* StyleSheets()
   {
     return &DocumentOrShadowRoot::EnsureDOMStyleSheets();
   }
+
+  /**
+   * Clones internal state, for example stylesheets, of aOther to 'this'.
+   */
+  void CloneInternalDataFrom(ShadowRoot* aOther);
 
   /**
    * Distributes all the explicit children of the pool host to the content

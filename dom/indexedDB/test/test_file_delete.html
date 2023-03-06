@@ -12,7 +12,7 @@
   <script type="text/javascript;version=1.7">
   function testSteps()
   {
-    const READ_WRITE = "readwrite";
+    const Mode::ReadWrite = "readwrite";
 
     const name = window.location.pathname;
 
@@ -48,7 +48,7 @@
 
       is(event.type, "success", "Got correct event type");
 
-      let trans = db.transaction([objectStoreName], READ_WRITE);
+      let trans = db.transaction([objectStoreName], Mode::ReadWrite);
       trans.objectStore(objectStoreName).delete(fileData1.key);
       trans.oncomplete = grabEventAndContinueHandler;
       event = yield undefined;
@@ -80,7 +80,7 @@
       let db = event.target.result;
       db.onerror = errorHandler;
 
-      trans = db.transaction([objectStoreName], READ_WRITE);
+      trans = db.transaction([objectStoreName], Mode::ReadWrite);
       objectStore = trans.objectStore(objectStoreName);
 
       request = objectStore.get(fileData2.key);
@@ -100,7 +100,7 @@
       is(getFileDBRefCount(name, 2), 0, "Correct db ref count");
 
 
-      trans = db.transaction([objectStoreName], READ_WRITE);
+      trans = db.transaction([objectStoreName], Mode::ReadWrite);
       objectStore = trans.objectStore(objectStoreName);
 
       objectStore.delete(fileData3.key);

@@ -82,7 +82,7 @@ IDBTransaction::IDBTransaction(IDBDatabase* aDatabase,
   , mPendingRequestCount(0)
   , mLineNo(0)
   , mColumn(0)
-  , mReadyState(IDBTransaction::INITIAL)
+  , mReadyState(IDBTransaction::ReadyState::Initial)
   , mMode(aMode)
   , mCreating(false)
   , mRegistered(false)
@@ -134,10 +134,10 @@ IDBTransaction::~IDBTransaction()
   MOZ_ASSERT(!mPendingRequestCount);
   MOZ_ASSERT(!mCreating);
   MOZ_ASSERT(mSentCommitOrAbort);
-  MOZ_ASSERT_IF(mMode == VERSION_CHANGE &&
+  MOZ_ASSERT_IF(mMode == Mode::VersionChange &&
                   mBackgroundActor.mVersionChangeBackgroundActor,
                 mFiredCompleteOrAbort);
-  MOZ_ASSERT_IF(mMode != VERSION_CHANGE &&
+  MOZ_ASSERT_IF(mMode != Mode::VersionChange &&
                   mBackgroundActor.mNormalBackgroundActor,
                 mFiredCompleteOrAbort);
 
@@ -148,7 +148,7 @@ IDBTransaction::~IDBTransaction()
 #endif
   }
 
-  if (mMode == VERSION_CHANGE) {
+  if (mMode == Mode::VersionChange) {
     if (auto* actor = mBackgroundActor.mVersionChangeBackgroundActor) {
       actor->SendDeleteMeInternal(/* aFailedConstructor */ false);
 
@@ -184,7 +184,7 @@ IDBTransaction::CreateVersionChange(
   RefPtr<IDBTransaction> transaction =
     new IDBTransaction(aDatabase,
                        emptyObjectStoreNames,
-                       VERSION_CHANGE);
+                       Mode::VersionChange);
   aOpenRequest->GetCallerLocation(transaction->mFilename,
                                   &transaction->mLineNo, &transaction->mColumn);
 
@@ -213,10 +213,10 @@ IDBTransaction::Create(JSContext* aCx, IDBDatabase* aDatabase,
   MOZ_ASSERT(aDatabase);
   aDatabase->AssertIsOnOwningThread();
   MOZ_ASSERT(!aObjectStoreNames.IsEmpty());
-  MOZ_ASSERT(aMode == READ_ONLY ||
-             aMode == READ_WRITE ||
-             aMode == READ_WRITE_FLUSH ||
-             aMode == CLEANUP);
+  MOZ_ASSERT(aMode == Mode::ReadOnly ||
+             aMode == Mode::ReadWrite ||
+             aMode == Mode::ReadWriteFlush ||
+             aMode == Mode::Cleanup);
 
   RefPtr<IDBTransaction> transaction =
     new IDBTransaction(aDatabase, aObjectStoreNames, aMode);
@@ -281,7 +281,7 @@ IDBTransaction::SetBackgroundActor(indexedDB::BackgroundTransactionChild* aBackg
   AssertIsOnOwningThread();
   MOZ_ASSERT(aBackgroundActor);
   MOZ_ASSERT(!mBackgroundActor.mNormalBackgroundActor);
-  MOZ_ASSERT(mMode != VERSION_CHANGE);
+  MOZ_ASSERT(mMode != Mode::VersionChange);
 
   mBackgroundActor.mNormalBackgroundActor = aBackgroundActor;
 }
@@ -295,7 +295,7 @@ IDBTransaction::StartRequest(IDBRequest* aRequest, const RequestParams& aParams)
 
   BackgroundRequestChild* actor = new BackgroundRequestChild(aRequest);
 
-  if (mMode == VERSION_CHANGE) {
+  if (mMode == Mode::VersionChange) {
     MOZ_ASSERT(mBackgroundActor.mVersionChangeBackgroundActor);
 
     mBackgroundActor.mVersionChangeBackgroundActor->
@@ -321,7 +321,7 @@ IDBTransaction::OpenCursor(BackgroundCursorChild* aBackgroundActor,
   MOZ_ASSERT(aBackgroundActor);
   MOZ_ASSERT(aParams.type() != OpenCursorParams::T__None);
 
-  if (mMode == VERSION_CHANGE) {
+  if (mMode == Mode::VersionChange) {
     MOZ_ASSERT(mBackgroundActor.mVersionChangeBackgroundActor);
 
     mBackgroundActor.mVersionChangeBackgroundActor->
@@ -361,8 +361,8 @@ IDBTransaction::OnNewRequest()
   AssertIsOnOwningThread();
 
   if (!mPendingRequestCount) {
-    MOZ_ASSERT(INITIAL == mReadyState);
-    mReadyState = LOADING;
+    MOZ_ASSERT(ReadyState::Initial == mReadyState);
+    mReadyState = ReadyState::Loading;
   }
 
   ++mPendingRequestCount;
@@ -377,7 +377,7 @@ IDBTransaction::OnRequestFinished(bool aActorDestroyedNormally)
   --mPendingRequestCount;
 
   if (!mPendingRequestCount) {
-    mReadyState = COMMITTING;
+    mReadyState = ReadyState::Committing;
 
     if (aActorDestroyedNormally) {
       if (NS_SUCCEEDED(mAbortCode)) {
@@ -421,7 +421,7 @@ IDBTransaction::SendCommit()
                LoggingSerialNumber(),
                requestSerialNumber);
 
-  if (mMode == VERSION_CHANGE) {
+  if (mMode == Mode::VersionChange) {
     MOZ_ASSERT(mBackgroundActor.mVersionChangeBackgroundActor);
     mBackgroundActor.mVersionChangeBackgroundActor->SendCommit();
   } else {
@@ -454,7 +454,7 @@ IDBTransaction::SendAbort(nsresult aResultCode)
                requestSerialNumber,
                aResultCode);
 
-  if (mMode == VERSION_CHANGE) {
+  if (mMode == Mode::VersionChange) {
     MOZ_ASSERT(mBackgroundActor.mVersionChangeBackgroundActor);
     mBackgroundActor.mVersionChangeBackgroundActor->SendAbort(aResultCode);
   } else {
@@ -473,7 +473,7 @@ IDBTransaction::IsOpen() const
   AssertIsOnOwningThread();
 
   // If we haven't started anything then we're open.
-  if (mReadyState == IDBTransaction::INITIAL) {
+  if (mReadyState == IDBTransaction::ReadyState::Initial) {
     return true;
   }
 
@@ -482,7 +482,7 @@ IDBTransaction::IsOpen() const
   // from the time we were created) then we are open. Otherwise check the
   // currently running transaction to see if it's the same. We only allow other
   // requests to be made if this transaction is currently running.
-  if (mReadyState == IDBTransaction::LOADING &&
+  if (mReadyState == IDBTransaction::ReadyState::Loading &&
       (mCreating || GetCurrent() == this)) {
     return true;
   }
@@ -508,7 +508,7 @@ IDBTransaction::CreateObjectStore(const ObjectStoreSpec& aSpec)
 {
   AssertIsOnOwningThread();
   MOZ_ASSERT(aSpec.metadata().id());
-  MOZ_ASSERT(VERSION_CHANGE == mMode);
+  MOZ_ASSERT(Mode::VersionChange == mMode);
   MOZ_ASSERT(mBackgroundActor.mVersionChangeBackgroundActor);
   MOZ_ASSERT(IsOpen());
 
@@ -540,7 +540,7 @@ IDBTransaction::DeleteObjectStore(int64_t aObjectStoreId)
 {
   AssertIsOnOwningThread();
   MOZ_ASSERT(aObjectStoreId);
-  MOZ_ASSERT(VERSION_CHANGE == mMode);
+  MOZ_ASSERT(Mode::VersionChange == mMode);
   MOZ_ASSERT(mBackgroundActor.mVersionChangeBackgroundActor);
   MOZ_ASSERT(IsOpen());
 
@@ -571,7 +571,7 @@ IDBTransaction::RenameObjectStore(int64_t aObjectStoreId,
 {
   AssertIsOnOwningThread();
   MOZ_ASSERT(aObjectStoreId);
-  MOZ_ASSERT(VERSION_CHANGE == mMode);
+  MOZ_ASSERT(Mode::VersionChange == mMode);
   MOZ_ASSERT(mBackgroundActor.mVersionChangeBackgroundActor);
   MOZ_ASSERT(IsOpen());
 
@@ -586,7 +586,7 @@ IDBTransaction::CreateIndex(IDBObjectStore* aObjectStore,
   AssertIsOnOwningThread();
   MOZ_ASSERT(aObjectStore);
   MOZ_ASSERT(aMetadata.id());
-  MOZ_ASSERT(VERSION_CHANGE == mMode);
+  MOZ_ASSERT(Mode::VersionChange == mMode);
   MOZ_ASSERT(mBackgroundActor.mVersionChangeBackgroundActor);
   MOZ_ASSERT(IsOpen());
 
@@ -601,7 +601,7 @@ IDBTransaction::DeleteIndex(IDBObjectStore* aObjectStore,
   AssertIsOnOwningThread();
   MOZ_ASSERT(aObjectStore);
   MOZ_ASSERT(aIndexId);
-  MOZ_ASSERT(VERSION_CHANGE == mMode);
+  MOZ_ASSERT(Mode::VersionChange == mMode);
   MOZ_ASSERT(mBackgroundActor.mVersionChangeBackgroundActor);
   MOZ_ASSERT(IsOpen());
 
@@ -617,7 +617,7 @@ IDBTransaction::RenameIndex(IDBObjectStore* aObjectStore,
   AssertIsOnOwningThread();
   MOZ_ASSERT(aObjectStore);
   MOZ_ASSERT(aIndexId);
-  MOZ_ASSERT(VERSION_CHANGE == mMode);
+  MOZ_ASSERT(Mode::VersionChange == mMode);
   MOZ_ASSERT(mBackgroundActor.mVersionChangeBackgroundActor);
   MOZ_ASSERT(IsOpen());
 
@@ -637,12 +637,12 @@ IDBTransaction::AbortInternal(nsresult aAbortCode,
 
   RefPtr<DOMError> error = aError;
 
-  const bool isVersionChange = mMode == VERSION_CHANGE;
+  const bool isVersionChange = mMode == Mode::VersionChange;
   const bool isInvalidated = mDatabase->IsInvalidated();
-  bool needToSendAbort = mReadyState == INITIAL;
+  bool needToSendAbort = mReadyState == ReadyState::Initial;
 
   mAbortCode = aAbortCode;
-  mReadyState = DONE;
+  mReadyState = ReadyState::Done;
   mError = error.forget();
 
   if (isVersionChange) {
@@ -775,7 +775,7 @@ IDBTransaction::FireCompleteOrAbortEvents(nsresult aResult)
   AssertIsOnOwningThread();
   MOZ_ASSERT(!mFiredCompleteOrAbort);
 
-  mReadyState = DONE;
+  mReadyState = ReadyState::Done;
 
 #ifdef DEBUG
   mFiredCompleteOrAbort = true;
@@ -834,7 +834,7 @@ int64_t
 IDBTransaction::NextObjectStoreId()
 {
   AssertIsOnOwningThread();
-  MOZ_ASSERT(VERSION_CHANGE == mMode);
+  MOZ_ASSERT(Mode::VersionChange == mMode);
 
   return mNextObjectStoreId++;
 }
@@ -843,7 +843,7 @@ int64_t
 IDBTransaction::NextIndexId()
 {
   AssertIsOnOwningThread();
-  MOZ_ASSERT(VERSION_CHANGE == mMode);
+  MOZ_ASSERT(Mode::VersionChange == mMode);
 
   return mNextIndexId++;
 }
@@ -862,22 +862,22 @@ IDBTransaction::GetMode(ErrorResult& aRv) const
   AssertIsOnOwningThread();
 
   switch (mMode) {
-    case READ_ONLY:
+    case Mode::ReadOnly:
       return IDBTransactionMode::Readonly;
 
-    case READ_WRITE:
+    case Mode::ReadWrite:
       return IDBTransactionMode::Readwrite;
 
-    case READ_WRITE_FLUSH:
+    case Mode::ReadWriteFlush:
       return IDBTransactionMode::Readwriteflush;
 
-    case CLEANUP:
+    case Mode::Cleanup:
       return IDBTransactionMode::Cleanup;
 
-    case VERSION_CHANGE:
+    case Mode::VersionChange:
       return IDBTransactionMode::Versionchange;
 
-    case MODE_INVALID:
+    case Mode::Invalid:
     default:
       MOZ_CRASH("Bad mode!");
   }
@@ -896,7 +896,7 @@ IDBTransaction::ObjectStoreNames() const
 {
   AssertIsOnOwningThread();
 
-  if (mMode == IDBTransaction::VERSION_CHANGE) {
+  if (mMode == IDBTransaction::Mode::VersionChange) {
     return mDatabase->ObjectStoreNames();
   }
 
@@ -917,7 +917,7 @@ IDBTransaction::ObjectStore(const nsAString& aName, ErrorResult& aRv)
 
   const ObjectStoreSpec* spec = nullptr;
 
-  if (IDBTransaction::VERSION_CHANGE == mMode ||
+  if (IDBTransaction::Mode::VersionChange == mMode ||
       mObjectStoreNames.Contains(aName)) {
     const nsTArray<ObjectStoreSpec>& objectStores =
       mDatabase->Spec()->objectStores();
@@ -1014,8 +1014,8 @@ IDBTransaction::Run()
   mCreating = false;
 
   // Maybe commit if there were no requests generated.
-  if (mReadyState == IDBTransaction::INITIAL) {
-    mReadyState = DONE;
+  if (mReadyState == IDBTransaction::ReadyState::Initial) {
+    mReadyState = ReadyState::Done;
 
     SendCommit();
   }

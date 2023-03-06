@@ -536,23 +536,5 @@ StyleChildrenIterator::IsNeeded(const Element* aElement)
   return false;
 }
 
-
-nsIContent*
-StyleChildrenIterator::GetNextChild()
-{
-  while (nsIContent* child = AllChildrenIterator::GetNextChild()) {
-    if (IsNativeAnonymousImplementationOfPseudoElement(child)) {
-      // Skip any native-anonymous children that are used to implement pseudo-
-      // elements. These match pseudo-element selectors instead of being
-      // considered a child of their host, and thus the style system needs to
-      // handle them separately.
-    } else {
-      return child;
-    }
-  }
-
-  return nullptr;
-}
-
 } // namespace dom
 } // namespace mozilla

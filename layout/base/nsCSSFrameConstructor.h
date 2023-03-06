@@ -87,7 +87,8 @@ public:
   void CreateNeededFrames();
 
 private:
-  void CreateNeededFrames(nsIContent* aContent);
+  void CreateNeededFrames(nsIContent* aContent,
+                          TreeMatchContext& aTreeMatchContext);
 
   enum Operation {
     CONTENTAPPEND,
@@ -202,9 +203,15 @@ public:
 
   // If aAllowLazyConstruction is true then frame construction of the new
   // children can be done lazily.
+  //
+  // When constructing frames lazily, we can keep the tree match context in a
+  // much easier way than nsFrameConstructorState, and thus, we're allowed to
+  // provide a TreeMatchContext to avoid calling InitAncestors repeatedly deep
+  // in the DOM.
   void ContentAppended(nsIContent* aContainer,
                        nsIContent* aFirstNewContent,
-                       bool aAllowLazyConstruction);
+                       bool aAllowLazyConstruction,
+                       TreeMatchContext* aProvidedTreeMatchContext = nullptr);
 
   // If aAllowLazyConstruction is true then frame construction of the new child
   // can be done lazily.
@@ -219,11 +226,15 @@ public:
   // aStartChild.  If aAllowLazyConstruction is true then frame construction of
   // the new children can be done lazily. It is only allowed to be true when
   // inserting a single node.
+  //
+  // See ContentAppended to see why we allow passing an already initialized
+  // TreeMatchContext.
   void ContentRangeInserted(nsIContent* aContainer,
                             nsIContent* aStartChild,
                             nsIContent* aEndChild,
                             nsILayoutHistoryState* aFrameState,
-                            bool aAllowLazyConstruction);
+                            bool aAllowLazyConstruction,
+                            TreeMatchContext* aProvidedTreeMatchContext = nullptr);
 
 public:
   // FIXME(emilio): How important is it to keep the frame tree state around for
