@@ -158,7 +158,7 @@ IDBIndex::SetName(const nsAString& aName, ErrorResult& aRv)
 
   IDBTransaction* transaction = mObjectStore->Transaction();
 
-  if (transaction->GetMode() != IDBTransaction::VERSION_CHANGE ||
+  if (transaction->GetMode() != IDBTransaction::Mode::VersionChange ||
       mDeletedMetadata) {
     aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
     return;

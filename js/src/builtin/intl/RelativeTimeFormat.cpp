@@ -214,7 +214,7 @@ bool
 js::intl_FormatRelativeTime(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
-    MOZ_ASSERT(args.length() == 3);
+    MOZ_ASSERT(args.length() == 4);
 
     RootedObject relativeTimeFormat(cx, &args[0].toObject());
 

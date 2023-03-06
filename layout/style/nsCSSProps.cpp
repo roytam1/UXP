@@ -2902,6 +2902,15 @@ static const nsCSSPropertyID gFontVariantSubpropTable[] = {
   eCSSProperty_UNKNOWN
 };
 
+static const nsCSSPropertyID gInsetSubpropTable[] = {
+  // Code relies on these being in top-right-bottom-left order.
+  eCSSProperty_top,
+  eCSSProperty_right,
+  eCSSProperty_bottom,
+  eCSSProperty_left,
+  eCSSProperty_UNKNOWN
+};
+
 static const nsCSSPropertyID gListStyleSubpropTable[] = {
   eCSSProperty_list_style_type,
   eCSSProperty_list_style_image,

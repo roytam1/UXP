@@ -7986,16 +7986,20 @@ HTMLEditRules::ConfirmSelectionInBody()
 {
   // get the body
   NS_ENSURE_STATE(mHTMLEditor);
-  nsCOMPtr<nsIDOMElement> rootElement = do_QueryInterface(mHTMLEditor->GetRoot());
-  NS_ENSURE_TRUE(rootElement, NS_ERROR_UNEXPECTED);
+  RefPtr<Element> rootElement = mHTMLEditor->GetRoot();
+  if (NS_WARN_IF(!rootElement)) {
+    return NS_ERROR_UNEXPECTED;
+  }
 
   // get the selection
   NS_ENSURE_STATE(mHTMLEditor);
   RefPtr<Selection> selection = mHTMLEditor->GetSelection();
-  NS_ENSURE_STATE(selection);
+  if (NS_WARN_IF(!selection)) {
+    return NS_ERROR_UNEXPECTED;
+  }
 
   // get the selection start location
-  nsCOMPtr<nsIDOMNode> selNode, temp, parent;
+  nsCOMPtr<nsINode> selNode;
   int32_t selOffset;
   NS_ENSURE_STATE(mHTMLEditor);
   nsresult rv =
@@ -8005,12 +8009,11 @@ HTMLEditRules::ConfirmSelectionInBody()
     return rv;
   }
 
-  temp = selNode;
+  nsINode* temp = selNode;
 
   // check that selNode is inside body
-  while (temp && !TextEditUtils::IsBody(temp)) {
-    temp->GetParentNode(getter_AddRefs(parent));
-    temp = parent;
+  while (temp && !temp->IsHTMLElement(nsGkAtoms::body)) {
+    temp = temp->GetParentOrHostNode();
   }
 
   // if we aren't in the body, force the issue
@@ -8018,6 +8021,7 @@ HTMLEditRules::ConfirmSelectionInBody()
 //    uncomment this to see when we get bad selections
 //    NS_NOTREACHED("selection not in body");
     selection->Collapse(rootElement, 0);
+    return NS_OK;
   }
 
   // get the selection end location
@@ -8028,9 +8032,8 @@ HTMLEditRules::ConfirmSelectionInBody()
   temp = selNode;
 
   // check that selNode is inside body
-  while (temp && !TextEditUtils::IsBody(temp)) {
-    rv = temp->GetParentNode(getter_AddRefs(parent));
-    temp = parent;
+  while (temp && !temp->IsHTMLElement(nsGkAtoms::body)) {
+    temp = temp->GetParentOrHostNode();
   }
 
   // if we aren't in the body, force the issue
@@ -8040,9 +8043,7 @@ HTMLEditRules::ConfirmSelectionInBody()
     selection->Collapse(rootElement, 0);
   }
 
-  // XXX This is the result of the last call of GetParentNode(), it doesn't
-  //     make sense...
-  return rv;
+  return NS_OK;
 }
 
 nsresult

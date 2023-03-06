@@ -116,10 +116,9 @@ ContentEventHandler::InitBasic()
 
   // If text frame which has overflowing selection underline is dirty,
   // we need to flush the pending reflow here.
-  mPresShell->FlushPendingNotifications(Flush_Layout);
-
-  // Flushing notifications can cause mPresShell to be destroyed (bug 577963).
-  NS_ENSURE_TRUE(!mPresShell->IsDestroying(), NS_ERROR_FAILURE);
+  if (nsIDocument* doc = mPresShell->GetDocument()) {
+    doc->FlushPendingNotifications(Flush_Layout);
+  }
 
   return NS_OK;
 }
@@ -170,11 +169,11 @@ ContentEventHandler::InitRootContent(Selection* aNormalSelection)
   }
 
   // See bug 537041 comment 5, the range could have removed node.
-  if (NS_WARN_IF(startNode->GetUncomposedDoc() != mPresShell->GetDocument())) {
+  if (NS_WARN_IF(startNode->GetComposedDoc() != mPresShell->GetDocument())) {
     return NS_ERROR_FAILURE;
   }
 
-  NS_ASSERTION(startNode->GetUncomposedDoc() == endNode->GetUncomposedDoc(),
+  NS_ASSERTION(startNode->GetComposedDoc() == endNode->GetComposedDoc(),
                "firstNormalSelectionRange crosses the document boundary");
 
   mRootContent = startNode->GetSelectionRootContent(mPresShell);
@@ -2878,31 +2877,6 @@ ContentEventHandler::AdjustCollapsedRangeMaybeIntoTextNode(nsRange* aRange)
   nsresult rv = aRange->CollapseTo(childNode, offsetInChildNode);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
-  }
-  return NS_OK;
-}
-
-nsresult
-ContentEventHandler::GetStartFrameAndOffset(const nsRange* aRange,
-                                            nsIFrame*& aFrame,
-                                            int32_t& aOffsetInFrame)
-{
-  MOZ_ASSERT(aRange);
-
-  aFrame = nullptr;
-  aOffsetInFrame = -1;
-
-  nsINode* node = aRange->GetStartParent();
-  if (NS_WARN_IF(!node) ||
-      NS_WARN_IF(!node->IsNodeOfType(nsINode::eCONTENT))) {
-    return NS_ERROR_FAILURE;
-  }
-  nsIContent* content = static_cast<nsIContent*>(node);
-  RefPtr<nsFrameSelection> fs = mPresShell->FrameSelection();
-  aFrame = fs->GetFrameForNodeOffset(content, aRange->StartOffset(),
-                                     fs->GetHint(), &aOffsetInFrame);
-  if (NS_WARN_IF(!aFrame)) {
-    return NS_ERROR_FAILURE;
   }
   return NS_OK;
 }

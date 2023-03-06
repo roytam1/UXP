@@ -258,7 +258,7 @@ function testSteps()
   abortEventCount = 0;
   let expectedAbortEventCount = 0;
 
-  // During INITIAL
+  // During ReadyState::Initial
   transaction = db.transaction("foo");
   transaction.abort();
   try {
@@ -269,7 +269,7 @@ function testSteps()
     ok(true, "second abort should throw an error");
   }
 
-  // During LOADING
+  // During ReadyState::Loading
   transaction = db.transaction("foo");
   transaction.objectStore("foo").get(1).onerror = abortErrorHandler;
   expectedAbortEventCount++;
@@ -282,7 +282,7 @@ function testSteps()
     ok(true, "second abort should throw an error");
   }
 
-  // During LOADING from callback
+  // During ReadyState::Loading from callback
   transaction = db.transaction("foo");
   transaction.objectStore("foo").get(1).onsuccess = grabEventAndContinueHandler;
   event = yield undefined;
@@ -297,7 +297,7 @@ function testSteps()
     ok(true, "second abort should throw an error");
   }
 
-  // During LOADING from error callback
+  // During ReadyState::Loading from error callback
   transaction = db.transaction("foo", "readwrite");
   transaction.objectStore("foo").add({}, 1).onerror = function(event) {
     event.preventDefault();
@@ -327,7 +327,7 @@ function testSteps()
   };
   yield undefined;
 
-  // During COMMITTING
+  // During ReadyState::Committing
   transaction = db.transaction("foo", "readwrite");
   transaction.objectStore("foo").put({hello: "world"}, 1).onsuccess = function(event) {
     continueToNextStep();

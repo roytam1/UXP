@@ -155,6 +155,8 @@ NS_NewDOMDocument(nsIDOMDocument** aInstancePtrResult,
   if (aDoctype) {
     nsCOMPtr<nsIDOMNode> tmpNode;
     rv = doc->AppendChild(aDoctype, getter_AddRefs(tmpNode));
+    // TODO: if we choose to land bug 1318479, make sure to call
+    // result.WouldReportJSException() before stealing the NSResult.
     NS_ENSURE_SUCCESS(rv, rv);
   }
 
@@ -167,6 +169,8 @@ NS_NewDOMDocument(nsIDOMDocument** aInstancePtrResult,
     nsCOMPtr<nsIDOMNode> tmpNode;
 
     rv = doc->AppendChild(root, getter_AddRefs(tmpNode));
+    // TODO: if we choose to land bug 1318479, make sure to call
+    // result.WouldReportJSException() before stealing the NSResult.
     NS_ENSURE_SUCCESS(rv, rv);
   }
 
