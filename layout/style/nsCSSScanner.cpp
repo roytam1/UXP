@@ -752,7 +752,11 @@ nsCSSScanner::ScanIdent(nsCSSToken& aToken)
   aToken.mType = eCSSToken_Function;
   if (aToken.mIdent.LowerCaseEqualsLiteral("url")) {
     NextURL(aToken);
-  } else if (aToken.mIdent.LowerCaseEqualsLiteral("var")) {
+  } else if (aToken.mIdent.LowerCaseEqualsLiteral("var") ||
+             aToken.mIdent.LowerCaseEqualsLiteral("env")) {
+    // env() queries are technically not variables, but share all the
+    // same handling. For the purposes of resolving the token stream later,
+    // pretend they are.
     mSeenVariableReference = true;
   }
   return true;
