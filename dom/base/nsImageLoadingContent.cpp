@@ -1431,13 +1431,15 @@ nsImageLoadingContent::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
                                   bool aCompileEventHandlers)
 {
   // We may be getting connected and our image should be tracked.
-  if (GetOurCurrentDoc()) {
-    TrackImage(mCurrentRequest);
-    TrackImage(mPendingRequest);
-  }
+  nsCOMPtr<nsIDocument> doc = GetOurCurrentDoc();
+  if (!doc)
+    return;
+
+  TrackImage(mCurrentRequest);
+  TrackImage(mPendingRequest);
 
   if (mCurrentRequestFlags & REQUEST_BLOCKS_ONLOAD)
-    aDocument->BlockOnload();
+    doc->BlockOnload();
 }
 
 void
