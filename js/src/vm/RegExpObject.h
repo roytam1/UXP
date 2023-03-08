@@ -109,6 +109,9 @@ class RegExpShared : public gc::TenuredCell
         ForceByteCode
     };
 
+    using JitCodeTable = UniquePtr<uint8_t[], JS::FreePolicy>;
+    using JitCodeTables = Vector<JitCodeTable, 0, SystemAllocPolicy>;
+
   private:
     friend class RegExpCompartment;
     friend class RegExpStatics;
@@ -148,7 +151,6 @@ class RegExpShared : public gc::TenuredCell
     }
 
     // Tables referenced by JIT code.
-    using JitCodeTables = Vector<uint8_t*, 0, SystemAllocPolicy>;
     JitCodeTables tables;
 
     /* Internal functions. */
@@ -181,8 +183,8 @@ class RegExpShared : public gc::TenuredCell
                                    MatchPairs* matches, size_t* endIndex);
 
     // Register a table with this RegExpShared, and take ownership.
-    bool addTable(uint8_t* table) {
-        return tables.append(table);
+    bool addTable(JitCodeTable table) {
+        return tables.append(Move(table));
     }
 
     /* Accessors */
