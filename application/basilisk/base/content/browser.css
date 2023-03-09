@@ -187,6 +187,16 @@ tabbrowser {
   transition: transform 200ms ease-out;
 }
 
+@supports -moz-bool-pref("browser.tabs.fadeLabels") {
+  .tabbrowser-tab .tab-text[_is_cropped] {
+    mask-image: linear-gradient(to left, transparent, black 2em);
+  }
+
+  .tabbrowser-tab .tab-text[_is_cropped]:-moz-locale-dir(rtl) {
+    mask-image: linear-gradient(to right, transparent, black 2em);
+  }
+}
+
 .new-tab-popup,
 #alltabs-popup {
   -moz-binding: url("chrome://browser/content/tabbrowser.xml#tabbrowser-alltabs-popup");
