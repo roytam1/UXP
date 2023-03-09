@@ -67,6 +67,7 @@ static bool sWebkitPrefixedAliasesEnabled;
 static bool sWebkitDevicePixelRatioEnabled;
 static bool sMozGradientsEnabled;
 static bool sControlCharVisibility;
+static bool sLegacyNegationPseudoClassEnabled;
 
 const uint32_t
 nsCSSProps::kParserVariantTable[eCSSProperty_COUNT_no_shorthands] = {
@@ -6144,7 +6145,6 @@ CSSParserImpl::ParsePseudoSelector(int32_t&       aDataMask,
 #ifdef MOZ_XUL
        isTree ||
 #endif
-       CSSPseudoClassType::negation == pseudoClassType ||
        nsCSSPseudoClasses::HasStringArg(pseudoClassType) ||
        nsCSSPseudoClasses::HasNthPairArg(pseudoClassType) ||
        nsCSSPseudoClasses::HasSelectorListArg(pseudoClassType)) &&
@@ -6182,25 +6182,26 @@ CSSParserImpl::ParsePseudoSelector(int32_t&       aDataMask,
     }
   }
 
-  if (!parsingPseudoElement &&
-      CSSPseudoClassType::negation == pseudoClassType) {
-    if (aIsNegated) { // :not() can't be itself negated
-      REPORT_UNEXPECTED_TOKEN(PEPseudoSelDoubleNot);
-      UngetToken();
-      return eSelectorParsingStatus_Error;
-    }
-    // CSS 3 Negation pseudo-class takes one simple selector as argument
-    nsSelectorParsingStatus parsingStatus =
-      ParseNegatedSimpleSelector(aDataMask, aSelector);
-    if (eSelectorParsingStatus_Continue != parsingStatus) {
-      return parsingStatus;
-    }
-  }
-  else if (!parsingPseudoElement && isPseudoClass) {
+  if (!parsingPseudoElement && isPseudoClass) {
     aDataMask |= SEL_MASK_PCLASS;
     if (eCSSToken_Function == mToken.mType) {
       nsSelectorParsingStatus parsingStatus;
-      if (nsCSSPseudoClasses::HasStringArg(pseudoClassType)) {
+      if (sLegacyNegationPseudoClassEnabled &&
+          CSSPseudoClassType::negation == pseudoClassType) {
+        // :not() can't be itself negated
+        if (aIsNegated) {
+          REPORT_UNEXPECTED_TOKEN(PEPseudoSelDoubleNot);
+          UngetToken();
+          return eSelectorParsingStatus_Error;
+        }
+        // CSS 3 Negation pseudo-class takes one simple selector as argument
+        parsingStatus =
+          ParseNegatedSimpleSelector(aDataMask, aSelector);
+        if (eSelectorParsingStatus_Continue != parsingStatus) {
+          return parsingStatus;
+        }
+      }
+      else if (nsCSSPseudoClasses::HasStringArg(pseudoClassType)) {
         parsingStatus =
           ParsePseudoClassWithIdentArg(aSelector, pseudoClassType);
       }
@@ -6583,8 +6584,6 @@ CSSParserImpl::ParsePseudoClassWithNthPairArg(nsCSSSelector& aSelector,
 
 //
 // Parse the argument of a pseudo-class that has a selector list argument.
-// Such selector lists cannot contain combinators, but can contain
-// anything that goes between a pair of combinators.
 //
 CSSParserImpl::nsSelectorParsingStatus
 CSSParserImpl::ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
@@ -6612,22 +6611,35 @@ CSSParserImpl::ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
     return eSelectorParsingStatus_Error; // our caller calls SkipUntil(')')
   }
 
-  for (nsCSSSelectorList *l = slist; l; l = l->mNext) {
-    nsCSSSelector *s = l->mSelectors;
-    if (s == nullptr) {
-      MOZ_ASSERT(isForgiving,
-                 "unexpected empty selector in unforgiving selector list");
-      break;
+  // Special handling for the :not() pseudo-class.
+  if (aType == CSSPseudoClassType::negation) {
+    nsCSSSelector* negations = &aSelector;
+    while (negations->mNegations) {
+      negations = negations->mNegations;
     }
-    // Check that none of the selectors in the list have combinators or
-    // pseudo-elements.
-    if ((!isForgiving && s->mNext) || s->IsPseudoElement()) {
-      return eSelectorParsingStatus_Error; // our caller calls SkipUntil(')')
+    // XXX: Use a special internal-only pseudo-class to handle selector lists.
+    // TODO: This should only happen if we don't have a simple selector.
+    nsCSSSelector* newSel = new nsCSSSelector();
+    newSel->AddPseudoClass(CSSPseudoClassType::mozAnyPrivate, slist.forget());
+    negations->mNegations = newSel;
+  } else {
+    for (nsCSSSelectorList *l = slist; l; l = l->mNext) {
+      nsCSSSelector *s = l->mSelectors;
+      if (s == nullptr) {
+        MOZ_ASSERT(isForgiving,
+                   "unexpected empty selector in unforgiving selector list");
+        break;
+      }
+      // Check that none of the selectors in the list have combinators or
+      // pseudo-elements.
+      if ((!isForgiving && s->mNext) || s->IsPseudoElement()) {
+        return eSelectorParsingStatus_Error; // our caller calls SkipUntil(')')
+      }
     }
-  }
 
-  // Add the pseudo with the selector list parameter
-  aSelector.AddPseudoClass(aType, slist.forget());
+    // Add the pseudo with the selector list parameter
+    aSelector.AddPseudoClass(aType, slist.forget());
+  }
 
   // close the parenthesis
   if (!ExpectSymbol(')', true)) {
@@ -17891,6 +17903,8 @@ nsCSSParser::Startup()
                                "layout.css.prefixes.gradients");
   Preferences::AddBoolVarCache(&sControlCharVisibility,
                                "layout.css.control-characters.visible");
+  Preferences::AddBoolVarCache(&sLegacyNegationPseudoClassEnabled,
+                               "layout.css.legacy-negation-pseudo.enabled");
 }
 
 nsCSSParser::nsCSSParser(mozilla::css::Loader* aLoader,
