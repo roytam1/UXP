@@ -1400,7 +1400,11 @@
         <body>
           <![CDATA[
             aTab.label = this.mStringBundle.getString("tabs.connecting");
-            aTab.crop = "end";
+            if (Services.prefs.getBoolPref("browser.tabs.fadeLabels")) {
+              aTab.crop = "clip";
+            } else {
+              aTab.crop = "end";
+            }
             this._tabAttrModified(aTab, ["label", "crop"]);
           ]]>
         </body>
@@ -1443,6 +1447,10 @@
                                                             [ brandShortName ]);
               } else // Still no title?  Fall back to our untitled string.
                 title = this.mStringBundle.getString("tabs.emptyTabTitle");
+            }
+
+            if (Services.prefs.getBoolPref("browser.tabs.fadeLabels")) {
+              crop = "clip";
             }
 
             if (aTab.label == title &&
@@ -2151,7 +2159,11 @@
               ContextualIdentityService.setTabStyle(t);
             }
 
-            t.setAttribute("crop", "end");
+            if (Services.prefs.getBoolPref("browser.tabs.fadeLabels")) {
+              t.setAttribute("crop", "clip");
+            } else {
+              t.setAttribute("crop", "end");
+            }
             t.setAttribute("onerror", "this.removeAttribute('image');");
 
             if (aSkipBackgroundNotify) {
@@ -5243,7 +5255,11 @@
 
           var tab = this.firstChild;
           tab.label = this.tabbrowser.mStringBundle.getString("tabs.emptyTabTitle");
-          tab.setAttribute("crop", "end");
+          if (Services.prefs.getBoolPref("browser.tabs.fadeLabels")) {
+            tab.setAttribute("crop", "clip");
+          } else {
+            tab.setAttribute("crop", "end");
+          }
           tab.setAttribute("onerror", "this.removeAttribute('image');");
 
           window.addEventListener("resize", this, false);
