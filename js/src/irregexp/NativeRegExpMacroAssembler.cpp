@@ -63,10 +63,10 @@ using namespace js::jit;
  * The tempN registers are free to use for computations.
  */
 
-NativeRegExpMacroAssembler::NativeRegExpMacroAssembler(LifoAlloc* alloc, RegExpShared* shared,
+NativeRegExpMacroAssembler::NativeRegExpMacroAssembler(JSContext* cx, LifoAlloc* alloc, RegExpShared* shared,
                                                        JSRuntime* rt, Mode mode, int registers_to_save)
-  : RegExpMacroAssembler(*alloc, shared, registers_to_save),
-    runtime(rt), mode_(mode)
+  : RegExpMacroAssembler(cx, *alloc, shared, registers_to_save),
+    cx(cx), runtime(rt), mode_(mode)
 {
     // Find physical registers for each compiler register.
     AllocatableGeneralRegisterSet regs(GeneralRegisterSet::All());
