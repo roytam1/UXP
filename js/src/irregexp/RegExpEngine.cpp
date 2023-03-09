@@ -1350,10 +1350,10 @@ irregexp::CompilePattern(JSContext* cx, HandleRegExpShared shared, RegExpCompile
                      : NativeRegExpMacroAssembler::CHAR16;
 
         ctx.emplace(cx, (jit::TempAllocator*) nullptr);
-        native_assembler.emplace(&alloc, shared, cx->runtime(), mode, (data->capture_count + 1) * 2);
+        native_assembler.emplace(cx, &alloc, shared, cx->runtime(), mode, (data->capture_count + 1) * 2);
         assembler = native_assembler.ptr();
     } else {
-        interpreted_assembler.emplace(&alloc, shared, (data->capture_count + 1) * 2);
+        interpreted_assembler.emplace(cx, &alloc, shared, (data->capture_count + 1) * 2);
         assembler = interpreted_assembler.ptr();
     }
 

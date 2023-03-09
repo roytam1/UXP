@@ -87,7 +87,7 @@ class MOZ_STACK_CLASS NativeRegExpMacroAssembler final : public RegExpMacroAssem
     // Type of input string to generate code for.
     enum Mode { ASCII = 1, CHAR16 = 2 };
 
-    NativeRegExpMacroAssembler(LifoAlloc* alloc, RegExpShared* shared,
+    NativeRegExpMacroAssembler(JSContext* cx, LifoAlloc* alloc, RegExpShared* shared,
                                JSRuntime* rt, Mode mode, int registers_to_save);
 
     // Inherited virtual methods.
@@ -174,6 +174,7 @@ class MOZ_STACK_CLASS NativeRegExpMacroAssembler final : public RegExpMacroAssem
   private:
     jit::MacroAssembler masm;
 
+    JSContext* cx;
     JSRuntime* runtime;
     Mode mode_;
     jit::Label entry_label_;
