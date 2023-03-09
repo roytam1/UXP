@@ -2823,6 +2823,16 @@ toolbarbutton.bookmark-item[dragover="true"][open="true"] {
   padding-bottom: 10px;
 }
 
+@supports -moz-bool-pref("browser.tabs.fadeLabels") {
+  .ctrlTab-preview-inner label[_is_cropped] {
+    mask-image: linear-gradient(to left, transparent, black 2em);
+  }
+
+  .ctrlTab-preview-inner label[_is_cropped]:-moz-locale-dir(rtl) {
+    mask-image: linear-gradient(to right, transparent, black 2em);
+  }
+}
+
 #ctrlTab-showAll:not(:focus) > * > .ctrlTab-preview-inner {
   padding: 10px;
   background-color: rgba(255,255,255,.2);
