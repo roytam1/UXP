@@ -6642,11 +6642,21 @@ CSSParserImpl::ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
     while (negations->mNegations) {
       negations = negations->mNegations;
     }
-    // XXX: Use a special internal-only pseudo-class to handle selector lists.
-    // TODO: This should only happen if we don't have a simple selector.
-    nsCSSSelector* newSel = new nsCSSSelector();
-    newSel->AddPseudoClass(CSSPseudoClassType::mozAnyPrivate, slist.forget());
-    negations->mNegations = newSel;
+    // XXX: Use a special internal-only pseudo-class to handle selector lists
+    // if we have: (a) a complex selector, (b) nested negation pseudo-class,
+    // or (c) more than one selector argument in the list.
+    if (slist->mNext ||
+        slist->mSelectors->mNext ||
+        slist->mSelectors->mNegations) {
+      nsCSSSelector* newSel = new nsCSSSelector();
+      newSel->AddPseudoClass(CSSPseudoClassType::mozAnyPrivate,
+                             slist.forget());
+      negations->mNegations = newSel;
+    } else {
+      // Otherwise, steal the first selector and add it directly to the
+      // end of aSelector.mNegations.
+      negations->mNegations = (slist.forget())->mSelectors;
+    }
   } else {
     // Add the pseudo with the selector list parameter
     aSelector.AddPseudoClass(aType, slist.forget());
