@@ -110,6 +110,18 @@ enum class GridTrackListFlags {
 };
 MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(GridTrackListFlags)
 
+/**
+ * Additional information about a selector being parsed.
+ */
+enum class SelectorParsingFlags {
+  eNone                   = 0,
+  eIsNegated              = 1 << 0,
+  eIsForgiving            = 1 << 1,
+  eDisallowCombinators    = 1 << 2,
+  eDisallowPseudoElements = 1 << 3
+};
+MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(SelectorParsingFlags)
+
 namespace {
 
 // Rule processing function
@@ -759,21 +771,21 @@ protected:
   // aPseudoElement and aPseudoElementArgs are the location where
   // pseudo-elements (as opposed to pseudo-classes) are stored;
   // pseudo-classes are stored on aSelector.  aPseudoElement and
-  // aPseudoElementArgs must be non-null iff !aIsNegated.
-  nsSelectorParsingStatus ParsePseudoSelector(int32_t&       aDataMask,
-                                              nsCSSSelector& aSelector,
-                                              bool           aIsNegated,
-                                              nsIAtom**      aPseudoElement,
-                                              nsAtomList**   aPseudoElementArgs,
-                                              CSSPseudoElementType* aPseudoElementType,
-                                              bool           aDisallowCombinators);
+  // aPseudoElementArgs must be non-null iff the eIsNegated flag of
+  // aFlags is not set.
+  nsSelectorParsingStatus ParsePseudoSelector(int32_t&              aDataMask,
+                                              nsCSSSelector&        aSelector,
+                                              SelectorParsingFlags  aFlags,
+                                              nsIAtom**             aPseudoElement,
+                                              nsAtomList**          aPseudoElementArgs,
+                                              CSSPseudoElementType* aPseudoElementType);
 
   nsSelectorParsingStatus ParseAttributeSelector(int32_t&       aDataMask,
                                                  nsCSSSelector& aSelector);
 
-  nsSelectorParsingStatus ParseTypeOrUniversalSelector(int32_t&       aDataMask,
-                                                       nsCSSSelector& aSelector,
-                                                       bool           aIsNegated);
+  nsSelectorParsingStatus ParseTypeOrUniversalSelector(int32_t&             aDataMask,
+                                                       nsCSSSelector&       aSelector,
+                                                       SelectorParsingFlags aFlags);
 
   nsSelectorParsingStatus ParsePseudoClassWithIdentArg(nsCSSSelector& aSelector,
                                                        CSSPseudoClassType aType);
@@ -783,24 +795,22 @@ protected:
 
   nsSelectorParsingStatus ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
                                                               CSSPseudoClassType aType,
-                                                              bool aDisallowCombinators);
+                                                              SelectorParsingFlags aFlags);
 
-  nsSelectorParsingStatus ParseNegatedSimpleSelector(int32_t&       aDataMask,
-                                                     nsCSSSelector& aSelector);
+  nsSelectorParsingStatus ParseNegatedSimpleSelector(int32_t&             aDataMask,
+                                                     nsCSSSelector&       aSelector,
+                                                     SelectorParsingFlags aFlags);
 
   // If aStopChar is non-zero, the selector list is done when we hit
   // aStopChar.  Otherwise, it's done when we hit EOF.
   bool ParseSelectorList(nsCSSSelectorList*& aListHead,
                          char16_t aStopChar,
-                         bool aIsForgiving,
-                         bool aDisallowCombinators);
+                         SelectorParsingFlags aFlags = SelectorParsingFlags::eNone);
   bool ParseSelectorGroup(nsCSSSelectorList*& aListHead,
-                          bool aIsForgiving,
-                          bool aDisallowCombinators);
+                          SelectorParsingFlags aFlags);
   bool ParseSelector(nsCSSSelectorList* aList,
                      char16_t aPrevCombinator,
-                     bool aIsForgiving,
-                     bool aDisallowCombinators);
+                     SelectorParsingFlags aFlags);
 
   enum {
     eParseDeclaration_InBraces           = 1 << 0,
@@ -2332,7 +2342,7 @@ CSSParserImpl::ParseSelectorString(const nsSubstring& aSelectorString,
   css::ErrorReporter reporter(scanner, mSheet, mChildLoader, aURI);
   InitScanner(scanner, reporter, aURI, aURI, nullptr);
 
-  bool success = ParseSelectorList(*aSelectorList, char16_t(0), false, false);
+  bool success = ParseSelectorList(*aSelectorList, char16_t(0));
 
   // We deliberately do not call OUTPUT_ERROR here, because all our
   // callers map a failure return to a JS exception, and if that JS
@@ -5448,7 +5458,7 @@ CSSParserImpl::ParseRuleSet(RuleAppendFunc aAppendFunc, void* aData,
   nsCSSSelectorList* slist = nullptr;
   uint32_t linenum, colnum;
   if (!GetNextTokenLocation(true, &linenum, &colnum) ||
-      !ParseSelectorList(slist, char16_t('{'), false, false)) {
+      !ParseSelectorList(slist, char16_t('{'))) {
     REPORT_UNEXPECTED(PEBadSelectorRSIgnored);
     OUTPUT_ERROR();
     SkipRuleSet(aInsideBraces);
@@ -5485,12 +5495,11 @@ CSSParserImpl::ParseRuleSet(RuleAppendFunc aAppendFunc, void* aData,
 bool
 CSSParserImpl::ParseSelectorList(nsCSSSelectorList*& aListHead,
                                  char16_t aStopChar,
-                                 bool aIsForgiving,
-                                 bool aDisallowCombinators)
+                                 SelectorParsingFlags aFlags)
 {
   nsCSSSelectorList* list = nullptr;
-  if (! ParseSelectorGroup(list, aIsForgiving, aDisallowCombinators)) {
-    if (aIsForgiving) {
+  if (! ParseSelectorGroup(list, aFlags)) {
+    if (aFlags & SelectorParsingFlags::eIsForgiving) {
       // Initialize to an empty list if the first selector group was invalid
       // and we're a forgiving selector list.
       list = new nsCSSSelectorList();
@@ -5520,16 +5529,17 @@ CSSParserImpl::ParseSelectorList(nsCSSSelectorList*& aListHead,
       if (',' == tk->mSymbol) {
         nsCSSSelectorList* newList = nullptr;
         // Another selector group must follow
-        if (! ParseSelectorGroup(newList, aIsForgiving, aDisallowCombinators)) {
+        if (! ParseSelectorGroup(newList, aFlags)) {
           // Ignore invalid selectors if we're a forgiving selector list.
-          if (aIsForgiving) {
+          if (aFlags & SelectorParsingFlags::eIsForgiving) {
             continue;
           }
           break;
         }
         // Replace the list head if: it's empty and we're a forgiving selector
         // list. Otherwise, add the new list to the end of the selector list.
-        if (aIsForgiving && !aListHead->mSelectors) {
+        if ((aFlags & SelectorParsingFlags::eIsForgiving) &&
+            !aListHead->mSelectors) {
           MOZ_ASSERT(newList->mSelectors,
                      "replacing empty list head with an empty selector list?");
           aListHead = newList;
@@ -5544,7 +5554,7 @@ CSSParserImpl::ParseSelectorList(nsCSSSelectorList*& aListHead,
       }
     }
     
-    if (!aIsForgiving) {
+    if (!(aFlags & SelectorParsingFlags::eIsForgiving)) {
       REPORT_UNEXPECTED_TOKEN(PESelectorListExtra);
       UngetToken();
       break;
@@ -5568,13 +5578,14 @@ static bool IsUniversalSelector(const nsCSSSelector& aSelector)
 }
 
 bool
-CSSParserImpl::ParseSelectorGroup(nsCSSSelectorList*& aList, bool aIsForgiving, bool aDisallowCombinators)
+CSSParserImpl::ParseSelectorGroup(nsCSSSelectorList*& aList,
+                                  SelectorParsingFlags aFlags)
 {
   char16_t combinator = 0;
   nsAutoPtr<nsCSSSelectorList> list(new nsCSSSelectorList());
 
   for (;;) {
-    if (!ParseSelector(list, combinator, aIsForgiving, aDisallowCombinators)) {
+    if (!ParseSelector(list, combinator, aFlags)) {
       return false;
     }
 
@@ -5610,7 +5621,7 @@ CSSParserImpl::ParseSelectorGroup(nsCSSSelectorList*& aList, bool aIsForgiving, 
       return false;
     }
     
-    if (aIsForgiving && aDisallowCombinators) {
+    if (aFlags & SelectorParsingFlags::eDisallowCombinators) {
       return false;
     }
   }
@@ -5669,9 +5680,9 @@ CSSParserImpl::ParseClassSelector(int32_t&       aDataMask,
 // namespace|type or namespace|* or *|* or *
 //
 CSSParserImpl::nsSelectorParsingStatus
-CSSParserImpl::ParseTypeOrUniversalSelector(int32_t&       aDataMask,
-                                            nsCSSSelector& aSelector,
-                                            bool           aIsNegated)
+CSSParserImpl::ParseTypeOrUniversalSelector(int32_t&             aDataMask,
+                                            nsCSSSelector&       aSelector,
+                                            SelectorParsingFlags aFlags)
 {
   nsAutoString buffer;
   if (mToken.IsSymbol('*')) {  // universal element selector, or universal namespace
@@ -5778,7 +5789,7 @@ CSSParserImpl::ParseTypeOrUniversalSelector(int32_t&       aDataMask,
     SetDefaultNamespaceOnSelector(aSelector);
   }
 
-  if (aIsNegated) {
+  if (aFlags & SelectorParsingFlags::eIsNegated) {
     // restore last token read in case of a negated type selector
     UngetToken();
   }
@@ -6032,17 +6043,17 @@ CSSParserImpl::ParseAttributeSelector(int32_t&       aDataMask,
 // Parse pseudo-classes and pseudo-elements
 //
 CSSParserImpl::nsSelectorParsingStatus
-CSSParserImpl::ParsePseudoSelector(int32_t&       aDataMask,
-                                   nsCSSSelector& aSelector,
-                                   bool           aIsNegated,
-                                   nsIAtom**      aPseudoElement,
-                                   nsAtomList**   aPseudoElementArgs,
-                                   CSSPseudoElementType* aPseudoElementType,
-                                   bool           aDisallowCombinators)
+CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
+                                   nsCSSSelector&        aSelector,
+                                   SelectorParsingFlags  aFlags,
+                                   nsIAtom**             aPseudoElement,
+                                   nsAtomList**          aPseudoElementArgs,
+                                   CSSPseudoElementType* aPseudoElementType)
 {
-  NS_ASSERTION(aIsNegated || (aPseudoElement && aPseudoElementArgs),
+  bool isNegated = !!(aFlags & SelectorParsingFlags::eIsNegated);
+  NS_ASSERTION(isNegated || (aPseudoElement && aPseudoElementArgs),
                "expected location to store pseudo element");
-  NS_ASSERTION(!aIsNegated || (!aPseudoElement && !aPseudoElementArgs),
+  NS_ASSERTION(!isNegated || (!aPseudoElement && !aPseudoElementArgs),
                "negated selectors shouldn't have a place to store "
                "pseudo elements");
   if (! GetToken(false)) { // premature eof
@@ -6186,17 +6197,22 @@ CSSParserImpl::ParsePseudoSelector(int32_t&       aDataMask,
     aDataMask |= SEL_MASK_PCLASS;
     if (eCSSToken_Function == mToken.mType) {
       nsSelectorParsingStatus parsingStatus;
+      // Only the combinators restriction should be passed down the chain.
+      SelectorParsingFlags flags =
+        (aFlags & SelectorParsingFlags::eDisallowCombinators) ?
+        SelectorParsingFlags::eDisallowCombinators :
+        SelectorParsingFlags::eNone;
       if (sLegacyNegationPseudoClassEnabled &&
           CSSPseudoClassType::negation == pseudoClassType) {
         // :not() can't be itself negated
-        if (aIsNegated) {
+        if (isNegated) {
           REPORT_UNEXPECTED_TOKEN(PEPseudoSelDoubleNot);
           UngetToken();
           return eSelectorParsingStatus_Error;
         }
         // CSS 3 Negation pseudo-class takes one simple selector as argument
         parsingStatus =
-          ParseNegatedSimpleSelector(aDataMask, aSelector);
+          ParseNegatedSimpleSelector(aDataMask, aSelector, flags);
         if (eSelectorParsingStatus_Continue != parsingStatus) {
           return parsingStatus;
         }
@@ -6214,7 +6230,7 @@ CSSParserImpl::ParsePseudoSelector(int32_t&       aDataMask,
                    "unexpected pseudo with function token");
         parsingStatus = ParsePseudoClassWithSelectorListArg(aSelector,
                                                             pseudoClassType,
-                                                            aDisallowCombinators);
+                                                            flags);
       }
       if (eSelectorParsingStatus_Continue != parsingStatus) {
         if (eSelectorParsingStatus_Error == parsingStatus) {
@@ -6230,8 +6246,15 @@ CSSParserImpl::ParsePseudoSelector(int32_t&       aDataMask,
   else if (isPseudoElement || isAnonBox) {
     // Pseudo-element.  Make some more sanity checks.
 
-    if (aIsNegated) { // pseudo-elements can't be negated
+    // Pseudo-elements can't be negated.
+    if (isNegated) {
       REPORT_UNEXPECTED_TOKEN(PEPseudoSelPEInNot);
+      UngetToken();
+      return eSelectorParsingStatus_Error;
+    }
+    // Pseudo-elements might not be allowed from appearing
+    // (e.g. as an argument to the functional part of a pseudo-class).
+    if (aFlags & SelectorParsingFlags::eDisallowPseudoElements) {
       UngetToken();
       return eSelectorParsingStatus_Error;
     }
@@ -6310,9 +6333,12 @@ CSSParserImpl::ParsePseudoSelector(int32_t&       aDataMask,
 // Parse the argument of a negation pseudo-class :not()
 //
 CSSParserImpl::nsSelectorParsingStatus
-CSSParserImpl::ParseNegatedSimpleSelector(int32_t&       aDataMask,
-                                          nsCSSSelector& aSelector)
+CSSParserImpl::ParseNegatedSimpleSelector(int32_t&             aDataMask,
+                                          nsCSSSelector&       aSelector,
+                                          SelectorParsingFlags aFlags)
 {
+  aFlags |= SelectorParsingFlags::eIsNegated;
+
   if (! GetToken(true)) { // premature eof
     REPORT_UNEXPECTED_EOF(PENegationEOF);
     return eSelectorParsingStatus_Error;
@@ -6345,9 +6371,8 @@ CSSParserImpl::ParseNegatedSimpleSelector(int32_t&       aDataMask,
     parsingStatus = ParseClassSelector(aDataMask, *newSel);
   }
   else if (mToken.IsSymbol(':')) {    // :pseudo
-    parsingStatus = ParsePseudoSelector(aDataMask, *newSel, true,
-                                        nullptr, nullptr, nullptr,
-                                        false);
+    parsingStatus = ParsePseudoSelector(aDataMask, *newSel, aFlags,
+                                        nullptr, nullptr, nullptr);
   }
   else if (mToken.IsSymbol('[')) {    // [attribute
     parsingStatus = ParseAttributeSelector(aDataMask, *newSel);
@@ -6358,7 +6383,7 @@ CSSParserImpl::ParseNegatedSimpleSelector(int32_t&       aDataMask,
   }
   else {
     // then it should be a type element or universal selector
-    parsingStatus = ParseTypeOrUniversalSelector(aDataMask, *newSel, true);
+    parsingStatus = ParseTypeOrUniversalSelector(aDataMask, *newSel, aFlags);
   }
   if (eSelectorParsingStatus_Error == parsingStatus) {
     REPORT_UNEXPECTED_TOKEN(PENegationBadInner);
@@ -6588,22 +6613,22 @@ CSSParserImpl::ParsePseudoClassWithNthPairArg(nsCSSSelector& aSelector,
 CSSParserImpl::nsSelectorParsingStatus
 CSSParserImpl::ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
                                                    CSSPseudoClassType aType,
-                                                   bool aDisallowCombinators)
+                                                   SelectorParsingFlags aFlags)
 {
-  bool isForgiving =
-    nsCSSPseudoClasses::HasForgivingSelectorListArg(aType);
   bool isSingleSelector =
     nsCSSPseudoClasses::HasSingleSelectorArg(aType);
 
-  if (isSingleSelector && !aDisallowCombinators) {
-    aDisallowCombinators = true;
+  if (nsCSSPseudoClasses::HasForgivingSelectorListArg(aType)) {
+    aFlags |= SelectorParsingFlags::eIsForgiving;
+  } else if (isSingleSelector || aType == CSSPseudoClassType::mozAny) {
+    aFlags |= SelectorParsingFlags::eDisallowCombinators;
   }
+  aFlags |= SelectorParsingFlags::eDisallowPseudoElements;
 
   nsAutoPtr<nsCSSSelectorList> slist;
   if (! ParseSelectorList(*getter_Transfers(slist),
                           char16_t(')'),
-                          isForgiving,
-                          aDisallowCombinators)) {
+                          aFlags)) {
     return eSelectorParsingStatus_Error; // our caller calls SkipUntil(')')
   }
 
@@ -6623,20 +6648,6 @@ CSSParserImpl::ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
     newSel->AddPseudoClass(CSSPseudoClassType::mozAnyPrivate, slist.forget());
     negations->mNegations = newSel;
   } else {
-    for (nsCSSSelectorList *l = slist; l; l = l->mNext) {
-      nsCSSSelector *s = l->mSelectors;
-      if (s == nullptr) {
-        MOZ_ASSERT(isForgiving,
-                   "unexpected empty selector in unforgiving selector list");
-        break;
-      }
-      // Check that none of the selectors in the list have combinators or
-      // pseudo-elements.
-      if ((!isForgiving && s->mNext) || s->IsPseudoElement()) {
-        return eSelectorParsingStatus_Error; // our caller calls SkipUntil(')')
-      }
-    }
-
     // Add the pseudo with the selector list parameter
     aSelector.AddPseudoClass(aType, slist.forget());
   }
@@ -6658,8 +6669,7 @@ CSSParserImpl::ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
 bool
 CSSParserImpl::ParseSelector(nsCSSSelectorList* aList,
                              char16_t aPrevCombinator,
-                             bool aIsForgiving,
-                             bool aDisallowCombinators)
+                             SelectorParsingFlags aFlags)
 {
   if (! GetToken(true)) {
     REPORT_UNEXPECTED_EOF(PESelectorEOF);
@@ -6673,15 +6683,14 @@ CSSParserImpl::ParseSelector(nsCSSSelectorList* aList,
 
   int32_t dataMask = 0;
   nsSelectorParsingStatus parsingStatus =
-    ParseTypeOrUniversalSelector(dataMask, *selector, false);
+    ParseTypeOrUniversalSelector(dataMask, *selector, aFlags);
 
   while (parsingStatus == eSelectorParsingStatus_Continue) {
     if (mToken.IsSymbol(':')) {    // :pseudo
-      parsingStatus = ParsePseudoSelector(dataMask, *selector, false,
+      parsingStatus = ParsePseudoSelector(dataMask, *selector, aFlags,
                                           getter_AddRefs(pseudoElement),
                                           getter_Transfers(pseudoElementArgs),
-                                          &pseudoElementType,
-                                          aDisallowCombinators);
+                                          &pseudoElementType);
       if (pseudoElement &&
           pseudoElementType != CSSPseudoElementType::AnonBox) {
         // Pseudo-elements other than anonymous boxes are represented with
@@ -6737,7 +6746,7 @@ CSSParserImpl::ParseSelector(nsCSSSelectorList* aList,
     // XXX(franklindm): We're effectively ignoring stray combinators
     // and empty selector groups here for forgiving selector lists.
     // It doesn't seem right, but this is how tainted browsers do it.
-    if (aIsForgiving) {
+    if (aFlags & SelectorParsingFlags::eIsForgiving) {
       return false;
     }
     if (selector->mNext) {
