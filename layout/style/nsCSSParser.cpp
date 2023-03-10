@@ -114,11 +114,12 @@ MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(GridTrackListFlags)
  * Additional information about a selector being parsed.
  */
 enum class SelectorParsingFlags {
-  eNone                   = 0,
-  eIsNegated              = 1 << 0,
-  eIsForgiving            = 1 << 1,
-  eDisallowCombinators    = 1 << 2,
-  eDisallowPseudoElements = 1 << 3
+  eNone                    = 0,
+  eIsNegated               = 1 << 0,
+  eIsForgiving             = 1 << 1,
+  eDisallowCombinators     = 1 << 2,
+  eDisallowPseudoElements  = 1 << 3,
+  eInheritNamespace        = 1 << 4
 };
 MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(SelectorParsingFlags)
 
@@ -5786,7 +5787,9 @@ CSSParserImpl::ParseTypeOrUniversalSelector(int32_t&             aDataMask,
     }
   }
   else {
-    SetDefaultNamespaceOnSelector(aSelector);
+    if (!(aFlags & SelectorParsingFlags::eInheritNamespace)) {
+      SetDefaultNamespaceOnSelector(aSelector);
+    }
   }
 
   if (aFlags & SelectorParsingFlags::eIsNegated) {
@@ -6622,6 +6625,8 @@ CSSParserImpl::ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
     aFlags |= SelectorParsingFlags::eIsForgiving;
   } else if (isSingleSelector || aType == CSSPseudoClassType::mozAny) {
     aFlags |= SelectorParsingFlags::eDisallowCombinators;
+  } else if (aType == CSSPseudoClassType::negation) {
+    aFlags |= SelectorParsingFlags::eInheritNamespace;
   }
   aFlags |= SelectorParsingFlags::eDisallowPseudoElements;
 
