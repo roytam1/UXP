@@ -578,6 +578,13 @@ ShadowRoot::ContentInserted(nsIDocument* aDocument,
   if (slot && slot->GetContainingShadow() == this &&
       slot->AssignedNodes().IsEmpty()) {
     slot->EnqueueSlotChangeEvent();
+    return;
+  }
+  
+  // XXX: The following makes the host destroy its frames and force a
+  // restyle for cases where the content isn't slotted.
+  if (aContainer == this) {
+    DistributionChanged();
   }
 }
 
@@ -614,6 +621,13 @@ ShadowRoot::ContentRemoved(nsIDocument* aDocument,
   if (slot && slot->GetContainingShadow() == this &&
       slot->AssignedNodes().IsEmpty()) {
     slot->EnqueueSlotChangeEvent();
+    return;
+  }
+
+  // XXX: The following makes the host destroy its frames and force a
+  // restyle for cases where the content isn't slotted.
+  if (aContainer == this) {
+    DistributionChanged();
   }
 }
 

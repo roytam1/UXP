@@ -122,7 +122,9 @@ bool
 nsCSSPseudoClasses::HasSelectorListArg(Type aType)
 {
   return HasForgivingSelectorListArg(aType) ||
+         aType == Type::negation ||
          aType == Type::mozAny ||
+         aType == Type::mozAnyPrivate ||
          aType == Type::host ||
          aType == Type::hostContext;
 }
@@ -131,6 +133,12 @@ bool
 nsCSSPseudoClasses::HasOptionalSelectorListArg(Type aType)
 {
   return aType == Type::host;
+}
+
+bool
+nsCSSPseudoClasses::IsHiddenFromSerialization(Type aType)
+{
+  return aType == Type::mozAnyPrivate;
 }
 
 void
