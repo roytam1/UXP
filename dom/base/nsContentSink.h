@@ -153,7 +153,8 @@ protected:
   nsresult ProcessLink(const nsSubstring& aAnchor,
                        const nsSubstring& aHref, const nsSubstring& aRel,
                        const nsSubstring& aTitle, const nsSubstring& aType,
-                       const nsSubstring& aMedia, const nsSubstring& aCrossOrigin);
+                       const nsSubstring& aMedia, const nsSubstring& aCrossOrigin,
+                       const nsSubstring& aDestination);
 
   virtual nsresult ProcessStyleLink(nsIContent* aElement,
                                     const nsSubstring& aHref,

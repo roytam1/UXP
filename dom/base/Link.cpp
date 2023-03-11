@@ -26,6 +26,47 @@
 namespace mozilla {
 namespace dom {
 
+enum Destination : uint8_t
+{
+  DESTINATION_INVALID,
+  DESTINATION_AUDIO,
+  DESTINATION_AUDIOWORKLET,
+  DESTINATION_DOCUMENT,
+  DESTINATION_EMBED,
+  DESTINATION_FONT,
+  DESTINATION_FRAME,
+  DESTINATION_IFRAME,
+  DESTINATION_IMAGE,
+  DESTINATION_JSON,
+  DESTINATION_MANIFEST,
+  DESTINATION_OBJECT,
+  DESTINATION_REPORT,
+  DESTINATION_SCRIPT,
+  DESTINATION_SERVICEWORKER,
+  DESTINATION_SHAREDWORKER,
+  DESTINATION_STYLE,
+  DESTINATION_TRACK,
+  DESTINATION_VIDEO,
+  DESTINATION_WEBIDENTITY,
+  DESTINATION_WORKER,
+  DESTINATION_XSLT,
+  DESTINATION_FETCH
+};
+
+static const nsAttrValue::EnumTable kDestinationAttributeTable[] = {
+  { "",              DESTINATION_INVALID       },
+  { "audio",         DESTINATION_AUDIO         },
+  { "font",          DESTINATION_FONT          },
+  { "image",         DESTINATION_IMAGE         },
+  { "script",        DESTINATION_SCRIPT        },
+  { "style",         DESTINATION_STYLE         },
+  { "track",         DESTINATION_TRACK         },
+  { "video",         DESTINATION_VIDEO         },
+  { "fetch",         DESTINATION_FETCH         },
+  { "json",          DESTINATION_JSON          },
+  { nullptr,         0 }
+};
+
 Link::Link(Element *aElement)
   : mElement(aElement)
   , mHistory(services::GetHistoryService())
@@ -633,6 +674,17 @@ Link::SetHrefAttribute(nsIURI *aURI)
   (void)aURI->GetSpec(href);
   (void)mElement->SetAttr(kNameSpaceID_None, nsGkAtoms::href,
                           NS_ConvertUTF8toUTF16(href), true);
+}
+
+/* static */ void
+Link::ParseDestinationValue(const nsAString& aValue,
+                            nsAttrValue& aResult)
+{
+  // Invalid values are treated as an empty string.
+  aResult.ParseEnumValue(aValue,
+                         kDestinationAttributeTable,
+                         false,
+                         &kDestinationAttributeTable[0]);
 }
 
 size_t
