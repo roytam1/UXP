@@ -1048,6 +1048,10 @@ nsCSSSelectorList::ToString(nsAString& aResult, CSSStyleSheet* aSheet)
 {
   aResult.Truncate();
   nsCSSSelectorList *p = this;
+  // Don't append anything if we're an empty selector list.
+  if (!mSelectors) {
+    return;
+  }
   for (;;) {
     p->mSelectors->ToString(aResult, aSheet, true);
     p = p->mNext;
