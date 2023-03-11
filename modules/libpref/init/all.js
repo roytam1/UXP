@@ -2556,6 +2556,9 @@ pref("layout.css.prefixes.webkit", true);
 // pref is set to false.)
 pref("layout.css.prefixes.device-pixel-ratio-webkit", false);
 
+// Is the legacy negation pseudo-class behavior enabled?
+pref("layout.css.legacy-negation-pseudo.enabled", false);
+
 // Is support for the :is() and :where() selectors enabled?
 pref("layout.css.is-where-pseudo.enabled", true);
 

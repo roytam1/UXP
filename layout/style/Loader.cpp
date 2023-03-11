@@ -2118,7 +2118,7 @@ Loader::LoadStyleLink(nsIContent* aElement,
 
   PrepareSheet(sheet, aTitle, aMedia, nullptr, nullptr, *aIsAlternate, *aIsExplicitlyEnabled);
 
-  if (aElement->HasFlag(NODE_IS_IN_SHADOW_TREE)) {
+  if (aElement && aElement->HasFlag(NODE_IS_IN_SHADOW_TREE)) {
     aElement->GetContainingShadow()->InsertSheet(sheet, aElement);
   } else {
     rv = InsertSheetInDoc(sheet, aElement, mDocument);

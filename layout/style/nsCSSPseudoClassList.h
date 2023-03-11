@@ -133,6 +133,11 @@ CSS_PSEUDO_CLASS(mozBrowserFrame, ":-moz-browser-frame",
 // matching operation.
 CSS_PSEUDO_CLASS(scope, ":scope", 0, "layout.css.scope-pseudo.enabled")
 
+// Matches selectors inside the selector list argument. Unlike :is(),
+// this is unforgiving and hidden from serialization.
+CSS_PSEUDO_CLASS(mozAnyPrivate, ":-moz-any-private",
+                 CSS_PSEUDO_CLASS_ENABLED_IN_UA_SHEETS_AND_CHROME, "")
+
 // :not needs to come at the end of the non-bit pseudo-class list, since
 // it doesn't actually get directly matched on in SelectorMatches.
 CSS_PSEUDO_CLASS(negation, ":not", 0, "")

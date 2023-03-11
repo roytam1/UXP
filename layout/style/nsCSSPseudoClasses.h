@@ -62,6 +62,7 @@ public:
   static bool HasForgivingSelectorListArg(Type aType);
   static bool HasSelectorListArg(Type aType);
   static bool HasOptionalSelectorListArg(Type aType);
+  static bool IsHiddenFromSerialization(Type aType);
   static bool IsUserActionPseudoClass(Type aType);
 
   // Should only be used on types other than Count and NotPseudoClass
