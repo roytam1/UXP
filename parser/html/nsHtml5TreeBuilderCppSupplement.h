@@ -230,6 +230,54 @@ nsHtml5TreeBuilder::createElement(int32_t aNamespace,
                 mSpeculativeLoadQueue.AppendElement()->InitPreconnect(
                   url, crossOrigin);
               }
+            } else if (rel.LowerCaseEqualsASCII("preload")) {
+              nsHtml5String url =
+                aAttributes->getValue(nsHtml5AttributeName::ATTR_HREF);
+              if (url) {
+                nsHtml5String preloadAs =
+                  aAttributes->getValue(nsHtml5AttributeName::ATTR_AS);
+                if (preloadAs.LowerCaseEqualsASCII("script")) {
+                  nsHtml5String charset =
+                    aAttributes->getValue(nsHtml5AttributeName::ATTR_CHARSET);
+                  nsHtml5String type =
+                    aAttributes->getValue(nsHtml5AttributeName::ATTR_TYPE);
+                  nsHtml5String crossOrigin =
+                    aAttributes->getValue(nsHtml5AttributeName::ATTR_CROSSORIGIN);
+                  nsHtml5String integrity =
+                    aAttributes->getValue(nsHtml5AttributeName::ATTR_INTEGRITY);
+                  mSpeculativeLoadQueue.AppendElement()->InitScript(
+                    url,
+                    charset,
+                    type,
+                    crossOrigin,
+                    integrity,
+                    mode == nsHtml5TreeBuilder::IN_HEAD,
+                    false,
+                    false,
+                    false);
+                  mCurrentHtmlScriptIsAsyncOrDefer = false;
+                } else if (preloadAs.LowerCaseEqualsASCII("style")) {
+                  nsHtml5String charset =
+                    aAttributes->getValue(nsHtml5AttributeName::ATTR_CHARSET);
+                  nsHtml5String crossOrigin =
+                    aAttributes->getValue(nsHtml5AttributeName::ATTR_CROSSORIGIN);
+                  nsHtml5String integrity =
+                    aAttributes->getValue(nsHtml5AttributeName::ATTR_INTEGRITY);
+                  mSpeculativeLoadQueue.AppendElement()->InitStyle(
+                    url, charset, crossOrigin, integrity);
+                } else if (preloadAs.LowerCaseEqualsASCII("image")) {
+                  nsHtml5String srcset =
+                    aAttributes->getValue(nsHtml5AttributeName::ATTR_SRCSET);
+                  nsHtml5String crossOrigin =
+                    aAttributes->getValue(nsHtml5AttributeName::ATTR_CROSSORIGIN);
+                  nsHtml5String referrerPolicy =
+                    aAttributes->getValue(nsHtml5AttributeName::ATTR_REFERRERPOLICY);
+                  nsHtml5String sizes =
+                    aAttributes->getValue(nsHtml5AttributeName::ATTR_SIZES);
+                  mSpeculativeLoadQueue.AppendElement()->InitImage(
+                    url, crossOrigin, referrerPolicy, srcset, sizes);
+                }
+              }
             }
           }
         } else if (nsHtml5Atoms::video == aName) {
