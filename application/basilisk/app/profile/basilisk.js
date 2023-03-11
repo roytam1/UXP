@@ -418,6 +418,10 @@ pref("browser.tabs.dontfocusfordialogs", true);
 // window is enabled.
 pref("browser.tabs.allowTabDetach", true);
 
+// Whether to fade tab labels instead of using ellipses when cutting off
+// long page titles.
+pref("browser.tabs.fadeLabels", true);
+
 pref("browser.ctrlTab.previews", false);
 
 // By default, do not export HTML at shutdown.
