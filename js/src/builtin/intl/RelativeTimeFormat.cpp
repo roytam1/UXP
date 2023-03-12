@@ -29,6 +29,7 @@ using mozilla::RangedPtr;
 using js::intl::CallICU;
 using js::intl::GetAvailableLocales;
 using js::intl::IcuLocale;
+using js::intl::INITIAL_CHAR_BUFFER_SIZE;
 using js::intl::StringsAreEqual;
 
 /**************** RelativeTimeFormat *****************/
