@@ -73,6 +73,20 @@ ParseNodeRequiresSpecialLineNumberNotes(ParseNode* pn)
     return pn->getKind() == PNK_WHILE || pn->getKind() == PNK_FOR;
 }
 
+uint32_t
+GetCallArgsAndCount(ParseNode* callNode, ParseNode** argumentNode)
+{
+    // XXX This helper function exists to make ports less error-prone.
+    //     The current parse tree splits the information between callNode and callee.
+    //     A later refactor has a ListNode instead, with slightly different storage.
+    //     (See also the "what is stored where" table in ParseNode.h)
+    ParseNode* calleeNode = callNode->pn_head;
+    if (argumentNode && calleeNode) {
+        *argumentNode = calleeNode->pn_next;
+    }
+    return callNode->pn_count - 1;
+}
+
 class BytecodeEmitter::NestableControl : public Nestable<BytecodeEmitter::NestableControl>
 {
     StatementKind kind_;
@@ -9361,13 +9375,13 @@ BytecodeEmitter::emitOptionalCall(
     ParseNode* calleeNode = callNode->pn_head;
     bool isCall = true;
     bool isSpread = IsSpreadOp(callNode->getOp());
-    ListNode* argsList = &callNode->pn_right->as<ListNode>();
+    ParseNode* firstArg = nullptr;
+    uint32_t argc = GetCallArgsAndCount(callNode, &firstArg);
     JSOp op = callNode->getOp();
-    uint32_t argc = argsList->pn_count;
 
     CallOrNewEmitter cone(this, op,
                           isSpread && (argc == 1) &&
-                          isRestParameter(argsList->pn_head->as<UnaryNode>().pn_kid)
+                          isRestParameter(firstArg->pn_kid)
                           ? CallOrNewEmitter::ArgumentsKind::SingleSpreadRest
                           : CallOrNewEmitter::ArgumentsKind::Other,
                           valueUsage);
@@ -9384,12 +9398,12 @@ BytecodeEmitter::emitOptionalCall(
         }
     }
 
-    if (!emitArguments(argsList, /* isCall = */ true, isSpread, cone)) {
+    if (!emitArguments(firstArg, argc, /* isCall = */ true, isSpread, cone)) {
         //              [stack] CALLEE THIS ARGS...
         return false;
     }
 
-    ParseNode* coordNode = getCoordNode(callNode, calleeNode, argsList);
+    ParseNode* coordNode = getCoordNode(callNode, calleeNode, firstArg);
     if (!cone.emitEnd(argc, Some(coordNode->pn_pos.begin))) {
         //              [stack] RVAL
         return false;
@@ -9400,14 +9414,17 @@ BytecodeEmitter::emitOptionalCall(
 
 ParseNode* BytecodeEmitter::getCoordNode(ParseNode* pn,
                                          ParseNode* calleeNode,
-                                         ParseNode* argsList) {
+                                         ParseNode* firstArg) {
     ParseNode* coordNode = pn;
     if (pn->isOp(JSOP_CALL) || pn->isOp(JSOP_SPREADCALL) || pn->isOp(JSOP_FUNCALL) ||
         pn->isOp(JSOP_FUNAPPLY)) {
         // Default to using the location of the `(` itself.
         // obj[expr]() // expression
         //          ^  // column coord
-        coordNode = argsList;
+        if (firstArg) {
+            // XXX In our version, firstArg points to the first argument and may be null if there are none
+            coordNode = firstArg;
+        }
 
         switch (calleeNode->getKind()) {
           case PNK_DOT:
@@ -9435,34 +9452,34 @@ ParseNode* BytecodeEmitter::getCoordNode(ParseNode* pn,
 }
 
 bool
-BytecodeEmitter::emitArguments(ListNode* argsList, bool isCall, bool isSpread,
+BytecodeEmitter::emitArguments(ParseNode* firstArgNode, uint32_t argc, bool isCall, bool isSpread,
                                CallOrNewEmitter& cone)
 {
-    uint32_t argc = argsList->pn_count;
     if (argc >= ARGC_LIMIT) {
-        reportError(argsList, isCall ? JSMSG_TOO_MANY_FUN_ARGS : JSMSG_TOO_MANY_CON_ARGS);
+        parser->tokenStream.reportError(isCall
+                                        ? JSMSG_TOO_MANY_FUN_ARGS
+                                        : JSMSG_TOO_MANY_CON_ARGS);
         return false;
     }
     if (!isSpread) {
         if (!cone.prepareForNonSpreadArguments()) {        // CALLEE THIS
             return false;
         }
-        for (ParseNode* arg = argsList->pn_head; arg; arg = arg->pn_next) {
+        for (ParseNode* arg = firstArgNode; arg; arg = arg->pn_next) {
             if (!emitTree(arg)) {
                 return false;
             }
         }
     } else {
         if (cone.wantSpreadOperand()) {
-            UnaryNode* spreadNode = &argsList->pn_head->as<UnaryNode>();
-            if (!emitTree(spreadNode->pn_kid)) {            // CALLEE THIS ARG0
+            if (!emitTree(firstArgNode->pn_kid)) {         // CALLEE THIS ARG0
                 return false;
             }
         }
         if (!cone.emitSpreadArgumentsTest()) {             // CALLEE THIS
             return false;
         }
-        if (!emitArray(argsList->pn_head, argc, JSOP_NEWARRAY)) {                   // CALLEE THIS ARR
+        if (!emitArray(firstArgNode, argc, JSOP_SPREADCALLARRAY)) {                 // CALLEE THIS ARR
             return false;
         }
     }
@@ -9493,7 +9510,8 @@ BytecodeEmitter::emitCallOrNew(
     ParseNode* calleeNode = callNode->pn_head;
     bool isCall = callNode->isKind(PNK_CALL) || callNode->isKind(PNK_TAGGED_TEMPLATE);
     bool isSpread = IsSpreadOp(callNode->getOp());
-    ListNode* argsList = &callNode->pn_right->as<ListNode>();
+    ParseNode* firstArg = nullptr;
+    uint32_t argc = GetCallArgsAndCount(callNode, &firstArg);
 
     if (calleeNode->isKind(PNK_NAME) &&
         emitterMode == BytecodeEmitter::SelfHosting &&
@@ -9518,21 +9536,20 @@ BytecodeEmitter::emitCallOrNew(
     }
 
     JSOp op = callNode->getOp();
-    uint32_t argc = argsList->pn_count;
     CallOrNewEmitter cone(this, op,
                           isSpread && (argc == 1) &&
-                          isRestParameter(argsList->pn_head->as<UnaryNode>().pn_kid)
+                          isRestParameter(firstArg->pn_kid)
                           ? CallOrNewEmitter::ArgumentsKind::SingleSpreadRest
                           : CallOrNewEmitter::ArgumentsKind::Other,
                           valueUsage);
     if (!emitCalleeAndThis(callNode, calleeNode, cone)) {  // CALLEE THIS
         return false;
     }
-    if (!emitArguments(argsList, isCall, isSpread, cone)) {
+    if (!emitArguments(firstArg, argc, isCall, isSpread, cone)) {
         return false;                                      // CALLEE THIS ARGS...
     }
 
-    ParseNode* coordNode = getCoordNode(callNode, calleeNode, argsList);
+    ParseNode* coordNode = getCoordNode(callNode, calleeNode, firstArg);
 
     if (!cone.emitEnd(argc, Some(coordNode->pn_pos.begin))) {
         return false;                                      // RVAL
