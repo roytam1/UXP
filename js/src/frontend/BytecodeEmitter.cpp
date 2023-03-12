@@ -9407,28 +9407,23 @@ BytecodeEmitter::emitSelfHostedAllowContentIter(ParseNode* pn)
 }
 
 bool
-BytecodeEmitter::isRestParameter(ParseNode* pn, bool* result)
+BytecodeEmitter::isRestParameter(ParseNode* pn)
 {
-    if (!sc->isFunctionBox()) {
-        *result = false;
-        return true;
-    }
+    if (!sc->isFunctionBox())
+        return false;
 
     FunctionBox* funbox = sc->asFunctionBox();
     RootedFunction fun(cx, funbox->function());
-    if (!funbox->hasRest()) {
-        *result = false;
-        return true;
-    }
+    if (!funbox->hasRest()) 
+        return false;
 
     if (!pn->isKind(PNK_NAME)) {
         if (emitterMode == BytecodeEmitter::SelfHosting && pn->isKind(PNK_CALL)) {
             ParseNode* pn2 = pn->pn_head;
             if (pn2->getKind() == PNK_NAME && pn2->name() == cx->names().allowContentIter)
-                return isRestParameter(pn2->pn_next, result);
+                return isRestParameter(pn2->pn_next);
         }
-        *result = false;
-        return true;
+        return false;
     }
 
     JSAtom* name = pn->name();
@@ -9440,12 +9435,11 @@ BytecodeEmitter::isRestParameter(ParseNode* pn, bool* result)
             // used: `function f(...[]) {}`.
             JSAtom* paramName =
                 bindings->trailingNames[bindings->nonPositionalFormalStart - 1].name();
-            *result = paramName && name == paramName;
-            return true;
+            return paramName && name == paramName;
         }
     }
 
-    return true;
+    return false;
 }
 
 bool
@@ -9462,11 +9456,7 @@ BytecodeEmitter::emitOptimizeSpread(ParseNode* arg0, JumpList* jmp, bool* emitte
     // skip spread operation and pass it directly to spread call operation.
     // See the comment in OptimizeSpreadCall in Interpreter.cpp for the
     // optimizable conditons.
-    bool result = false;
-    if (!isRestParameter(arg0, &result))
-        return false;
-
-    if (!result) {
+    if (!isRestParameter(arg0)) {
         *emitted = false;
         return true;
     }

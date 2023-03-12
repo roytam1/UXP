@@ -775,7 +775,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitConditionalExpression(ConditionalExpression& conditional,
                                                 ValueUsage valueUsage = ValueUsage::WantValue);
 
-    MOZ_MUST_USE bool isRestParameter(ParseNode* pn, bool* result);
+    MOZ_MUST_USE bool isRestParameter(ParseNode* pn);
     MOZ_MUST_USE bool emitOptimizeSpread(ParseNode* arg0, JumpList* jmp, bool* emitted);
 
     MOZ_MUST_USE bool emitCallOrNew(ParseNode* pn,
