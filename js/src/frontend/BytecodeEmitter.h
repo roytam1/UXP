@@ -467,6 +467,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     MOZ_MUST_USE bool emitThisLiteral(ParseNode* pn);
     MOZ_MUST_USE bool emitGetFunctionThis(ParseNode* pn);
+    MOZ_MUST_USE bool emitGetFunctionThis(const mozilla::Maybe<uint32_t>& offset);
     MOZ_MUST_USE bool emitGetThisForSuperBase(ParseNode* pn);
     MOZ_MUST_USE bool emitSetThis(ParseNode* pn);
     MOZ_MUST_USE bool emitCheckDerivedClassConstructorReturn();
@@ -493,7 +494,6 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitIndexOp(JSOp op, uint32_t index);
 
     MOZ_MUST_USE bool emitAtomOp(JSAtom* atom, JSOp op);
-    MOZ_MUST_USE bool emitAtomOp(ParseNode* pn, JSOp op);
 
     MOZ_MUST_USE bool emitArrayLiteral(ParseNode* pn);
     MOZ_MUST_USE bool emitArray(ParseNode* pn, uint32_t count, JSOp op);
@@ -525,12 +525,11 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitArgOp(JSOp op, uint16_t slot);
     MOZ_MUST_USE bool emitEnvCoordOp(JSOp op, EnvironmentCoordinate ec);
 
-    MOZ_MUST_USE bool emitGetNameAtLocation(JSAtom* name, const NameLocation& loc,
-                                            bool callContext = false);
-    MOZ_MUST_USE bool emitGetName(JSAtom* name, bool callContext = false) {
-        return emitGetNameAtLocation(name, lookupName(name), callContext);
+    MOZ_MUST_USE bool emitGetNameAtLocation(JSAtom* name, const NameLocation& loc);
+    MOZ_MUST_USE bool emitGetName(JSAtom* name) {
+        return emitGetNameAtLocation(name, lookupName(name));
     }
-    MOZ_MUST_USE bool emitGetName(ParseNode* pn, bool callContext = false);
+    MOZ_MUST_USE bool emitGetName(ParseNode* pn);
 
     template <typename RHSEmitter>
     MOZ_MUST_USE bool emitSetOrInitializeNameAtLocation(HandleAtom name, const NameLocation& loc,
@@ -723,7 +722,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     MOZ_MUST_USE bool emitCallSiteObject(ParseNode* pn);
     MOZ_MUST_USE bool emitTemplateString(ParseNode* pn);
-    MOZ_MUST_USE bool emitAssignment(ParseNode* lhs, JSOp op, ParseNode* rhs);
+    MOZ_MUST_USE bool emitAssignment(ParseNode* lhs, JSOp compoundOp, ParseNode* rhs);
 
     MOZ_MUST_USE bool emitReturn(ParseNode* pn);
     MOZ_MUST_USE bool emitStatement(ParseNode* pn);
