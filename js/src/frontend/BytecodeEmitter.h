@@ -766,12 +766,6 @@ struct MOZ_STACK_CLASS BytecodeEmitter
                                                 ParseNode* calleeNode,
                                                 CallOrNewEmitter& cone,
                                                 OptionalEmitter& oe);
-    MOZ_MUST_USE bool emitCallOrNewThis(ParseNode* callNode,
-                                        bool isCall);
-    MOZ_MUST_USE bool emitCallOrNewArgumentsAndEnd(ParseNode* callNode,
-                                                   ParseNode* calleeNode,
-                                                   bool isCall,
-                                                   ValueUsage valueUsage);
 
     MOZ_MUST_USE bool emitSelfHostedCallFunction(ParseNode* pn);
     MOZ_MUST_USE bool emitSelfHostedResumeGenerator(ParseNode* pn);
