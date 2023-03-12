@@ -54,8 +54,12 @@ using namespace mozilla;
 using namespace JS;
 using namespace xpc;
 
+using mozilla::dom::ConvertExceptionToPromise;
 using mozilla::dom::DestroyProtoAndIfaceCache;
 using mozilla::dom::IndexedDatabaseManager;
+using mozilla::dom::RequestOrUSVString;
+using mozilla::dom::RequestOrUSVStringArgument;
+using mozilla::dom::RootedDictionary;
 
 NS_IMPL_CYCLE_COLLECTION_CLASS(SandboxPrivate)
 

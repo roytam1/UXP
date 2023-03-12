@@ -4,6 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "mozilla/Assertions.h"
+#include "mozilla/Preferences.h"
 
 #include "jsapi.h"
 
@@ -23,6 +24,7 @@
 
 using namespace JS;
 using mozilla::dom::EncodingUtils;
+using mozilla::Preferences;
 
 /**
  * JS locale callbacks implemented by XPCOM modules.  These are theoretically
