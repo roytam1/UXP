@@ -18,6 +18,7 @@
 #include "frontend/Parser.h"
 #include "frontend/SharedContext.h"
 #include "frontend/SourceNotes.h"
+#include "frontend/ValueUsage.h"
 #include "vm/Interpreter.h"
 
 class OptionalEmitter;
@@ -119,11 +120,9 @@ static size_t MaxSrcNotesLength = INT32_MAX;
 typedef Vector<jsbytecode, 256> BytecodeVector;
 typedef Vector<jssrcnote, 64> SrcNotesVector;
 
-enum class ValueUsage {
-    WantValue,
-    IgnoreValue
-};
-
+class CallOrNewEmitter;
+class ElemOpEmitter;
+class PropOpEmitter;
 class TDZCheckCache;
 
 struct MOZ_STACK_CLASS BytecodeEmitter
@@ -447,6 +446,9 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     // JS stack, as measured from the top.
     MOZ_MUST_USE bool emitDupAt(unsigned slotFromTop);
 
+    // Helper to emit JSOP_POP or JSOP_POPN.
+    MOZ_MUST_USE bool emitPopN(unsigned n);
+
     // Helper to emit JSOP_CHECKISOBJ.
     MOZ_MUST_USE bool emitCheckIsObj(CheckIsObjectKind kind);
 
@@ -481,6 +483,8 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     void patchJumpsToTarget(JumpList jump, JumpTarget target);
     MOZ_MUST_USE bool emitJumpTargetAndPatch(JumpList jump);
 
+    MOZ_MUST_USE bool emitCall(JSOp op, uint16_t argc,
+                               const mozilla::Maybe<uint32_t>& sourceCoordOffset);
     MOZ_MUST_USE bool emitCall(JSOp op, uint16_t argc, ParseNode* pn = nullptr);
     MOZ_MUST_USE bool emitCallIncDec(ParseNode* incDec);
 
@@ -494,6 +498,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitIndexOp(JSOp op, uint32_t index);
 
     MOZ_MUST_USE bool emitAtomOp(JSAtom* atom, JSOp op);
+    MOZ_MUST_USE bool emitAtomOp(uint32_t atomIndex, JSOp op);
 
     MOZ_MUST_USE bool emitArrayLiteral(ParseNode* pn);
     MOZ_MUST_USE bool emitArray(ParseNode* pn, uint32_t count, JSOp op);
@@ -531,37 +536,9 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     }
     MOZ_MUST_USE bool emitGetName(ParseNode* pn);
 
-    template <typename RHSEmitter>
-    MOZ_MUST_USE bool emitSetOrInitializeNameAtLocation(HandleAtom name, const NameLocation& loc,
-                                                        RHSEmitter emitRhs, bool initialize);
-    template <typename RHSEmitter>
-    MOZ_MUST_USE bool emitSetOrInitializeName(HandleAtom name, RHSEmitter emitRhs,
-                                              bool initialize)
-    {
-        return emitSetOrInitializeNameAtLocation(name, lookupName(name), emitRhs, initialize);
-    }
-    template <typename RHSEmitter>
-    MOZ_MUST_USE bool emitSetName(ParseNode* pn, RHSEmitter emitRhs) {
-        RootedAtom name(cx, pn->name());
-        return emitSetName(name, emitRhs);
-    }
-    template <typename RHSEmitter>
-    MOZ_MUST_USE bool emitSetName(HandleAtom name, RHSEmitter emitRhs) {
-        return emitSetOrInitializeName(name, emitRhs, false);
-    }
-    template <typename RHSEmitter>
-    MOZ_MUST_USE bool emitInitializeName(ParseNode* pn, RHSEmitter emitRhs) {
-        RootedAtom name(cx, pn->name());
-        return emitInitializeName(name, emitRhs);
-    }
-    template <typename RHSEmitter>
-    MOZ_MUST_USE bool emitInitializeName(HandleAtom name, RHSEmitter emitRhs) {
-        return emitSetOrInitializeName(name, emitRhs, true);
-    }
-
     MOZ_MUST_USE bool emitTDZCheckIfNeeded(JSAtom* name, const NameLocation& loc);
 
-    MOZ_MUST_USE bool emitNameIncDec(ParseNode* pn);
+    MOZ_MUST_USE bool emitNameIncDec(ParseNode* incDec);
 
     MOZ_MUST_USE bool emitDeclarationList(ParseNode* decls);
     MOZ_MUST_USE bool emitSingleDeclaration(ParseNode* decls, ParseNode* decl,
@@ -590,7 +567,6 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitAwaitInInnermostScope(ParseNode* pn);
     MOZ_MUST_USE bool emitAwaitInScope(EmitterScope& currentScope);
     MOZ_MUST_USE bool emitPropLHS(ParseNode* pn);
-    MOZ_MUST_USE bool emitPropOp(ParseNode* pn, JSOp op);
     MOZ_MUST_USE bool emitPropIncDec(ParseNode* pn);
 
     MOZ_MUST_USE bool emitAsyncWrapperLambda(unsigned index, bool isArrow);
@@ -605,6 +581,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     enum class EmitElemOption { Get, Set, Call, IncDec, CompoundAssign, Ref };
     MOZ_MUST_USE bool emitElemOperands(ParseNode* pn, EmitElemOption opts);
 
+    MOZ_MUST_USE bool emitElemObjAndKey(PropertyByValue* elem, bool isSuper, ElemOpEmitter& eoe);
     MOZ_MUST_USE bool emitElemOpBase(JSOp op);
     MOZ_MUST_USE bool emitElemOp(ParseNode* pn, JSOp op);
     MOZ_MUST_USE bool emitElemIncDec(ParseNode* pn);
@@ -715,7 +692,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitDefault(ParseNode* defaultExpr, ParseNode* pattern);
 
     MOZ_MUST_USE bool setOrEmitSetFunName(ParseNode* maybeFun, HandleAtom name,
-                                          FunctionPrefixKind prefixKind);
+                                          FunctionPrefixKind prefixKind = FunctionPrefixKind::None);
 
     MOZ_MUST_USE bool emitInitializer(ParseNode* initializer, ParseNode* pattern);
     MOZ_MUST_USE bool emitInitializerInBranch(ParseNode* initializer, ParseNode* pattern);
@@ -738,19 +715,17 @@ struct MOZ_STACK_CLASS BytecodeEmitter
                                         ValueUsage valueUsage);
     MOZ_MUST_USE bool emitCalleeAndThisForOptionalChain(ParseNode* optionalChain,
                                                         ParseNode* callNode,
-                                                        bool isCall);
+                                                        CallOrNewEmitter& cone);
     MOZ_MUST_USE bool emitDeleteOptionalChain(ParseNode* deleteNode);
 
     // Optional methods which emit a shortCircuit jump. They need to be called by
     // a method which emits an Optional Jump Target, see below.
     MOZ_MUST_USE bool emitOptionalDotExpression(PropertyAccessBase* prop,
-                                                OptionalEmitter& oe,
-                                                ParseNode* calleeNode,
-                                                bool isCall);
+                                                PropOpEmitter& poe, bool isSuper,
+                                                OptionalEmitter& oe);
     MOZ_MUST_USE bool emitOptionalElemExpression(PropertyByValueBase* elem,
-                                                 OptionalEmitter& oe,
-                                                 ParseNode* calleeNode,
-                                                 bool isCall);
+                                                 ElemOpEmitter& eoe, bool isSuper,
+                                                 OptionalEmitter& oe);
     MOZ_MUST_USE bool emitOptionalCall(ParseNode* callNode,
                                        OptionalEmitter& oe,
                                        ValueUsage valueUsage);
@@ -777,14 +752,18 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool isRestParameter(ParseNode* pn);
     MOZ_MUST_USE bool emitOptimizeSpread(ParseNode* arg0, JumpList* jmp, bool* emitted);
 
+    MOZ_MUST_USE ParseNode* getCoordNode(ParseNode* callNode, ParseNode* calleeNode,
+                                         ParseNode* argsList);
+    MOZ_MUST_USE bool emitArguments(ListNode* argsList, bool isCall, bool isSpread,
+                                    CallOrNewEmitter& cone);
     MOZ_MUST_USE bool emitCallOrNew(ParseNode* pn,
                                     ValueUsage valueUsage = ValueUsage::WantValue);
     MOZ_MUST_USE bool emitCalleeAndThis(ParseNode* callNode,
                                         ParseNode* calleeNode,
-                                        bool isCall);
+                                        CallOrNewEmitter& cone);
     MOZ_MUST_USE bool emitOptionalCalleeAndThis(ParseNode* callNode,
                                                 ParseNode* calleeNode,
-                                                bool isCall,
+                                                CallOrNewEmitter& cone,
                                                 OptionalEmitter& oe);
     MOZ_MUST_USE bool emitCallOrNewThis(ParseNode* callNode,
                                         bool isCall);
@@ -833,8 +812,6 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitSpread(bool allowSelfHosted = false);
 
     MOZ_MUST_USE bool emitClass(ParseNode* pn);
-    MOZ_MUST_USE bool emitSuperPropLHS(ParseNode* superBase, bool isCall = false);
-    MOZ_MUST_USE bool emitSuperPropOp(ParseNode* pn, JSOp op, bool isCall = false);
     MOZ_MUST_USE bool emitSuperElemOperands(ParseNode* pn,
                                             EmitElemOption opts = EmitElemOption::Get);
     MOZ_MUST_USE bool emitSuperElemOp(ParseNode* pn, JSOp op, bool isCall = false);

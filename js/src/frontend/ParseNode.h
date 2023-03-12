@@ -1248,6 +1248,10 @@ class PropertyAccessBase : public ParseNode
     PropertyName& name() const {
         return *pn_u.name.atom->asPropertyName();
     }
+
+    JSAtom* nameAtom() const {
+        return pn_u.name.atom;
+    }
 };
 
 class PropertyAccess : public PropertyAccessBase
@@ -1300,6 +1304,14 @@ class PropertyByValueBase : public ParseNode
     {
         pn_u.binary.left = lhs;
         pn_u.binary.right = propExpr;
+    }
+
+    ParseNode& expression() const {
+        return *pn_u.binary.left;
+    }
+
+    ParseNode& key() const {
+        return *pn_u.binary.right;
     }
 
     static bool test(const ParseNode& node) {
