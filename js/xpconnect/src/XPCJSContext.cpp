@@ -22,6 +22,7 @@
 #include "nsIObserverService.h"
 #include "nsIDebug2.h"
 #include "nsIDocShell.h"
+#include "nsIInputStream.h"
 #include "nsIRunnable.h"
 #include "amIAddonManager.h"
 #include "nsPIDOMWindow.h"
@@ -40,6 +41,7 @@
 #include "mozilla/dom/GeneratedAtomList.h"
 #include "mozilla/dom/BindingUtils.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/Promise.h"
 #include "mozilla/dom/ScriptLoader.h"
 #include "mozilla/dom/WindowBinding.h"
 #include "mozilla/jsipc/CrossProcessObjectWrappers.h"
@@ -71,6 +73,7 @@
 #endif
 
 using namespace mozilla;
+using namespace mozilla::dom;
 using namespace xpc;
 using namespace JS;
 using mozilla::dom::PerThreadAtomCache;

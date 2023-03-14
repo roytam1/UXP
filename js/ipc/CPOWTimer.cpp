@@ -10,16 +10,6 @@
 
 #include "jsapi.h"
 
-CPOWTimer::CPOWTimer(JSContext* cx MOZ_GUARD_OBJECT_NOTIFIER_PARAM_IN_IMPL)
-    : cx_(nullptr)
-    , startInterval_(0)
-{
-    MOZ_GUARD_OBJECT_NOTIFIER_INIT;
-    if (!js::GetStopwatchIsMonitoringCPOW(cx))
-        return;
-    cx_ = cx;
-    startInterval_ = JS_Now();
-}
 CPOWTimer::~CPOWTimer()
 {
     if (!cx_) {
