@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 #include "jsatom.h"
+#include "jscntxt.h"
 #include "jsstr.h"
 
 #include "builtin/intl/CommonFunctions.h"
