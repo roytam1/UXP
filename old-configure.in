@@ -4984,6 +4984,16 @@ AC_DEFINE_UNQUOTED(MOZ_MACBUNDLE_ID,$MOZ_MACBUNDLE_ID)
 AC_SUBST(MOZ_MACBUNDLE_ID)
 
 dnl ========================================================
+dnl = Mac bundle codesign identity
+dnl ========================================================
+MOZ_ARG_WITH_STRING(macbundle-identity,
+[  --with-macbundle-identity=identity
+                          Identity to codesign the Mac application bundle],
+[ MOZ_MACBUNDLE_IDENTITY="$withval"])
+
+AC_SUBST(MOZ_MACBUNDLE_IDENTITY)
+
+dnl ========================================================
 dnl = Child Process Name for IPC
 dnl ========================================================
 if test "$MOZ_WIDGET_TOOLKIT" != "android"; then
