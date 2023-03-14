@@ -886,6 +886,10 @@ struct UnaryNode : public ParseNode
         pn_kid = kid;
     }
 
+    static bool test(const ParseNode& node) {
+        return node.isArity(PN_UNARY);
+    }
+
 #ifdef DEBUG
     void dump(int indent);
 #endif
@@ -994,6 +998,10 @@ struct NameNode : public ParseNode
     {
         pn_atom = atom;
         pn_expr = nullptr;
+    }
+
+    static bool test(const ParseNode& node) {
+        return node.isArity(PN_NAME);
     }
 
 #ifdef DEBUG

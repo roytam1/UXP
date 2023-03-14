@@ -3813,7 +3813,7 @@ BytecodeEmitter::emitElemObjAndKey(PropertyByValue* elem, bool isSuper, ElemOpEm
         if (!eoe.prepareForObj()) {                       //
             return false;
         }
-        UnaryNode* base = &elem->expression().as<UnaryNode>();
+        ParseNode* base = &elem->expression();
         if (!emitGetThisForSuperBase(base)) {             // THIS
             return false;
         }
@@ -4590,7 +4590,7 @@ BytecodeEmitter::emitDestructuringLHSRef(ParseNode* target, size_t* emitted)
             return false;
         }
         if (isSuper) {
-            UnaryNode* base = &prop->expression().as<UnaryNode>();
+            ParseNode* base = &prop->expression();
             if (!emitGetThisForSuperBase(base)) {         // THIS SUPERBASE
                 return false;
             }
@@ -5776,7 +5776,7 @@ BytecodeEmitter::emitSingleDeclaration(ParseNode* declList, ParseNode* decl,
     if (!initializer) {
         // Lexical declarations are initialized to undefined without an
         // initializer.
-        MOZ_ASSERT(declList->isKind(ParseNodeKind::Let),
+        MOZ_ASSERT(declList->isKind(PNK_LET),
                    "var declarations without initializers handled above, "
                    "and const declarations must have initializers");
         if (!emit1(JSOP_UNDEFINED)) {                      // ENV? UNDEF
@@ -5881,7 +5881,7 @@ BytecodeEmitter::emitAssignment(ParseNode* lhs, JSOp compoundOp, ParseNode* rhs)
             return false;
         }
         if (isSuper) {
-            UnaryNode* base = &prop->expression().as<UnaryNode>();
+            ParseNode* base = &prop->expression();
             if (!emitGetThisForSuperBase(base)) {         // THIS SUPERBASE
                 return false;
             }
@@ -8840,7 +8840,7 @@ BytecodeEmitter::emitDeleteProperty(ParseNode* node)
         // which could throw if |this| hasn't yet been set by a |super(...)|
         // call or the super-base is not an object, before throwing a
         // ReferenceError for attempting to delete a super-reference.
-        UnaryNode* base = &propExpr->expression().as<UnaryNode>();
+        ParseNode* base = &propExpr->expression();
         if (!emitGetThisForSuperBase(base)) {              // THIS
             return false;
         }
@@ -8888,7 +8888,7 @@ BytecodeEmitter::emitDeleteElement(ParseNode* node)
             return false;
         }
 
-        UnaryNode* base = &elemExpr->expression().as<UnaryNode>();
+        ParseNode* base = &elemExpr->expression();
         if (!emitGetThisForSuperBase(base)) {              // THIS
             return false;
         }
@@ -9580,7 +9580,7 @@ BytecodeEmitter::emitCalleeAndThis(
             return false;
         }
         if (isSuper) {
-            UnaryNode* base = &prop->expression().as<UnaryNode>();
+            ParseNode* base = &prop->expression();
             if (!emitGetThisForSuperBase(base)) {          // THIS
                 return false;
             }
@@ -10985,7 +10985,7 @@ BytecodeEmitter::emitTree(ParseNode* pn, ValueUsage valueUsage /* = ValueUsage::
             return false;
         }
         if (isSuper) {
-            UnaryNode* base = &prop->expression().as<UnaryNode>();
+            ParseNode* base = &prop->expression();
             if (!emitGetThisForSuperBase(base)) {          // THIS
                 return false;
             }
