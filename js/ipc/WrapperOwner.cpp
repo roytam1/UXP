@@ -8,6 +8,7 @@
 #include "JavaScriptLogging.h"
 #include "mozilla/Unused.h"
 #include "mozilla/dom/BindingUtils.h"
+#include "GeckoProfiler.h"
 #include "jsfriendapi.h"
 #include "js/CharacterEncoding.h"
 #include "xpcprivate.h"
@@ -20,6 +21,7 @@
 using namespace js;
 using namespace JS;
 using namespace mozilla;
+using namespace mozilla::dom;
 using namespace mozilla::jsipc;
 
 struct AuxCPOWData

@@ -5,6 +5,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "JavaScriptShared.h"
+#include "JavaScriptChild.h"
+#include "JavaScriptParent.h"
 #include "mozilla/dom/BindingUtils.h"
 #include "mozilla/dom/CPOWManagerGetter.h"
 #include "mozilla/dom/TabChild.h"
@@ -16,6 +18,7 @@
 using namespace js;
 using namespace JS;
 using namespace mozilla;
+using namespace mozilla::dom;
 using namespace mozilla::jsipc;
 
 IdToObjectMap::IdToObjectMap()

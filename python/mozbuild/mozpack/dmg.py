@@ -102,6 +102,7 @@ def create_dmg(source_directory, output_dmg, volume_name, extra_files):
     if is_linux:
         check_tools('DMG_TOOL', 'GENISOIMAGE')
     with mozfile.TemporaryDirectory() as tmpdir:
+        import buildconfig
         stagedir = os.path.join(tmpdir, 'stage')
         os.mkdir(stagedir)
         # Copy the app bundle over using rsync
@@ -118,4 +119,9 @@ def create_dmg(source_directory, output_dmg, volume_name, extra_files):
         # Set the folder attributes to use a custom icon
         set_folder_icon(stagedir)
         chmod(stagedir)
+        if not is_linux:
+            identity = buildconfig.substs['MOZ_MACBUNDLE_IDENTITY']
+            if identity != '':
+                appbundle = os.path.join(stagedir, buildconfig.substs['MOZ_MACBUNDLE_NAME'])
+                subprocess.check_call(['codesign', '--deep', '-s', identity, appbundle])
         create_dmg_from_staged(stagedir, output_dmg, tmpdir, volume_name)

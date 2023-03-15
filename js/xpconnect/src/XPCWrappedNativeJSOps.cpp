@@ -10,6 +10,7 @@
 #include "jsprf.h"
 #include "mozilla/dom/BindingUtils.h"
 #include "mozilla/Preferences.h"
+#include "nsContentUtils.h"
 #include "nsIAddonInterposition.h"
 #include "AddonWrapper.h"
 #include "js/Class.h"

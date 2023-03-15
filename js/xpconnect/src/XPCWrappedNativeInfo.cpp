@@ -10,7 +10,9 @@
 
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/XPTInterfaceInfoManager.h"
+#include "nsAppRunner.h"
 #include "nsIScriptError.h"
+#include "nsJSUtils.h"
 #include "nsPrintfCString.h"
 
 using namespace JS;
