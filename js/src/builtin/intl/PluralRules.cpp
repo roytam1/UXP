@@ -6,6 +6,7 @@
 
 /* Implementation of the Intl.PluralRules proposal. */
 
+#include "builtin/intl/NumberFormat.h"
 #include "builtin/intl/PluralRules.h"
 
 #include "mozilla/Assertions.h"

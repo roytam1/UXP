@@ -109,6 +109,9 @@ class RegExpShared : public gc::TenuredCell
         ForceByteCode
     };
 
+    using JitCodeTable = UniquePtr<uint8_t[], JS::FreePolicy>;
+    using JitCodeTables = Vector<JitCodeTable, 0, SystemAllocPolicy>;
+
   private:
     friend class RegExpCompartment;
     friend class RegExpStatics;
@@ -121,7 +124,6 @@ class RegExpShared : public gc::TenuredCell
         uint8_t* byteCode;
 
         RegExpCompilation() : byteCode(nullptr) {}
-        ~RegExpCompilation() { js_free(byteCode); }
 
         bool compiled(ForceByteCodeEnum force = DontForceByteCode) const {
             return byteCode || (force == DontForceByteCode && jitCode);
@@ -149,7 +151,7 @@ class RegExpShared : public gc::TenuredCell
     }
 
     // Tables referenced by JIT code.
-    Vector<uint8_t*, 0, SystemAllocPolicy> tables;
+    JitCodeTables tables;
 
     /* Internal functions. */
     RegExpShared(JSAtom* source, RegExpFlag flags);
@@ -172,7 +174,7 @@ class RegExpShared : public gc::TenuredCell
     }
 
   public:
-    ~RegExpShared();
+    ~RegExpShared() = delete;
 
     // Execute this RegExp on input starting from searchIndex, filling in
     // matches if specified and otherwise only determining if there is a match.
@@ -181,8 +183,8 @@ class RegExpShared : public gc::TenuredCell
                                    MatchPairs* matches, size_t* endIndex);
 
     // Register a table with this RegExpShared, and take ownership.
-    bool addTable(uint8_t* table) {
-        return tables.append(table);
+    bool addTable(JitCodeTable table) {
+        return tables.append(Move(table));
     }
 
     /* Accessors */
@@ -222,6 +224,7 @@ class RegExpShared : public gc::TenuredCell
 
     void traceChildren(JSTracer* trc);
     void discardJitCode();
+    void finalize(FreeOp* fop);
 
     static size_t offsetOfSource() {
         return offsetof(RegExpShared, source);
@@ -463,7 +466,7 @@ class RegExpObject : public NativeObject
 
     void setShared(RegExpShared& shared) {
         MOZ_ASSERT(!hasShared());
-        sharedRef() = &shared;
+        sharedRef().init(&shared);
     }
 
     static void trace(JSTracer* trc, JSObject* obj);
@@ -489,9 +492,9 @@ class RegExpObject : public NativeObject
     static MOZ_MUST_USE bool createShared(JSContext* cx, Handle<RegExpObject*> regexp,
                                           MutableHandleRegExpShared shared);
 
-    ReadBarriered<RegExpShared*>& sharedRef() {
+    PreBarriered<RegExpShared*>& sharedRef() {
         auto& ref = NativeObject::privateRef(PRIVATE_SLOT);
-        return reinterpret_cast<ReadBarriered<RegExpShared*>&>(ref);
+        return reinterpret_cast<PreBarriered<RegExpShared*>&>(ref);
     }
 
     /* Call setShared in preference to setPrivate. */
