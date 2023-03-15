@@ -96,10 +96,9 @@ irregexp::CaseInsensitiveCompareUCStrings(const char16_t* substring1,
                                           const char16_t* substring2,
                                           size_t byteLength);
 
-InterpretedRegExpMacroAssembler::InterpretedRegExpMacroAssembler(JSContext* cx, LifoAlloc* alloc,
-                                                                 RegExpShared* shared,
+InterpretedRegExpMacroAssembler::InterpretedRegExpMacroAssembler(LifoAlloc* alloc,
                                                                  size_t numSavedRegisters)
-  : RegExpMacroAssembler(cx, *alloc, shared, numSavedRegisters),
+  : RegExpMacroAssembler(*alloc, numSavedRegisters),
     pc_(0),
     advance_current_start_(0),
     advance_current_offset_(0),
@@ -317,7 +316,8 @@ InterpretedRegExpMacroAssembler::CheckCharacterNotInRange(char16_t from, char16_
 }
 
 void
-InterpretedRegExpMacroAssembler::CheckBitInTable(uint8_t* table, jit::Label* on_bit_set)
+InterpretedRegExpMacroAssembler::CheckBitInTable(RegExpShared::JitCodeTable table,
+                                                 jit::Label* on_bit_set)
 {
     static const int kBitsPerByte = 8;
 

@@ -278,6 +278,7 @@ def old_configure_options(*options):
     '--with-ios-sdk',
     '--with-jitreport-granularity',
     '--with-macbundlename-prefix',
+    '--with-macbundle-identity',
     '--with-macos-private-frameworks',
     '--with-macos-sdk',
     '--with-nspr-cflags',
