@@ -3784,7 +3784,7 @@ BytecodeEmitter::emitNameIncDec(ParseNode* incDec)
 
     ParseNodeKind kind = incDec->getKind();
     NameNode* name = &incDec->pn_kid->as<NameNode>();
-    NameOpEmitter noe(this, name->atom(),
+    NameOpEmitter noe(this, name->pn_atom,
                       kind == PNK_POSTINCREMENT ? NameOpEmitter::Kind::PostIncrement
                       : kind == PNK_PREINCREMENT ? NameOpEmitter::Kind::PreIncrement
                       : kind == PNK_POSTDECREMENT ? NameOpEmitter::Kind::PostDecrement
@@ -5838,8 +5838,8 @@ BytecodeEmitter::emitAssignment(ParseNode* lhs, JSOp compoundOp, ParseNode* rhs)
         if (!EmitAssignmentRhs(this, rhs, offset)) {      // ENV? VAL? RHS
             return false;
         }
-        if (rhs && rhs->isDirectRHSAnonFunction()) {
-            MOZ_ASSERT(!lhs->isInParens());
+        // Assign inferred function name, unless the lhs is parenthesized
+        if (rhs && rhs->isDirectRHSAnonFunction() && !lhs->isInParens()) {
             MOZ_ASSERT(!isCompound);
             RootedAtom name(cx, lhs->name());
             if (!setOrEmitSetFunName(rhs, name)) {         // ENV? VAL? RHS
