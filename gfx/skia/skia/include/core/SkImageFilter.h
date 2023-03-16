@@ -266,7 +266,7 @@ protected:
          *  If this returns true, then inputCount() is the number of found input filters, each
          *  of which may be NULL or a valid imagefilter.
          */
-        bool unflatten(SkReadBuffer&, int expectedInputs);
+        SK_API bool unflatten(SkReadBuffer&, int expectedInputs);
 
         const CropRect& cropRect() const { return fCropRect; }
         int             inputCount() const { return fInputs.count(); }
