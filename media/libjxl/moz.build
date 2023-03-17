@@ -128,7 +128,9 @@ DEFINES["JPEGXL_ENABLE_TRANSCODE_JPEG"] = "0"
 FINAL_LIBRARY = "gkmedias"
 
 # We allow warnings for third-party code that can be updated from upstream.
-ALLOW_COMPILER_WARNINGS = True
+# XXX: libjxl produces way too many compiler warnings.
+#      Silence them in the meantime.
+ALLOW_COMPILER_WARNINGS = False
 
 # Clang 5.0 has a compiler bug that prevents build in c++17
 # See https://gitlab.com/wg1/jpeg-xl/-/issues/227
