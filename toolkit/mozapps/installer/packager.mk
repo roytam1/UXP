@@ -55,6 +55,10 @@ stage-package: $(MOZ_PKG_MANIFEST) $(MOZ_PKG_MANIFEST_DEPS)
 		$(MOZ_PKG_MANIFEST) '$(DIST)' '$(DIST)'/$(STAGEPATH)$(MOZ_PKG_DIR)$(if $(MOZ_PKG_MANIFEST),,$(_BINPATH)) \
 		$(if $(filter omni,$(MOZ_PACKAGER_FORMAT)),$(if $(NON_OMNIJAR_FILES),--non-resource $(NON_OMNIJAR_FILES)))
 	$(PYTHON) $(MOZILLA_DIR)/toolkit/mozapps/installer/find-dupes.py $(DIST)/$(STAGEPATH)$(MOZ_PKG_DIR)
+ifneq (Darwin, $(OS_ARCH))
+	# We don't want to do this on Mac as it will end up in the package root which is not how Mac packages things
+	cd $(DIST)/$(MOZ_PKG_DIR) && $(CREATE_PRECOMPLETE_CMD)
+endif
 ifdef MOZ_PACKAGE_JSSHELL
 	# Package JavaScript Shell
 	@echo 'Packaging JavaScript Shell...'
