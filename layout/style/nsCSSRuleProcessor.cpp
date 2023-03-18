@@ -2566,6 +2566,11 @@ SelectorMatchesTree(Element* aPrevElement,
       // The relevant link must be an ancestor of the node being matched.
       aFlags = SelectorMatchesTreeFlags(aFlags & ~eLookForRelevantLink);
       nsIContent* parent = prevElement->GetParent();
+      // Operate on the flattened element tree when matching the
+      // ::slotted() pseudo-element.
+      if (aTreeMatchContext.mRestrictToSlottedPseudo) {
+        parent = prevElement->GetFlattenedTreeParent();
+      }
       if (parent) {
         if (aTreeMatchContext.mForStyling)
           parent->SetFlags(NODE_HAS_SLOW_SELECTOR_LATER_SIBLINGS);
@@ -2576,7 +2581,12 @@ SelectorMatchesTree(Element* aPrevElement,
     // for descendant combinators and child combinators, the element
     // to test against is the parent
     else {
-      nsIContent *content = prevElement->GetParent();
+      nsIContent* content = prevElement->GetParent();
+      // Operate on the flattened element tree when matching the
+      // ::slotted() pseudo-element.
+      if (aTreeMatchContext.mRestrictToSlottedPseudo) {
+        content = prevElement->GetFlattenedTreeParent();
+      }
 
       // In the shadow tree, the shadow host behaves as if it
       // is a featureless parent of top-level elements of the shadow
@@ -2584,11 +2594,12 @@ SelectorMatchesTree(Element* aPrevElement,
       // left most selector because ancestors of the host are not in
       // the selector match list.
       ShadowRoot* shadowRoot = content ?
-        ShadowRoot::FromNode(content) : nullptr;
+                               ShadowRoot::FromNode(content) :
+                               nullptr;
       if (shadowRoot && !selector->mNext && !crossedShadowRootBoundary) {
-      content = shadowRoot->GetHost();
-      crossedShadowRootBoundary = true;
-      contentIsFeatureless = true;
+        content = shadowRoot->GetHost();
+        crossedShadowRootBoundary = true;
+        contentIsFeatureless = true;
       }
 
       // GetParent could return a document fragment; we only want
