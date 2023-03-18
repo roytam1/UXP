@@ -2686,6 +2686,12 @@ SelectorMatchesTree(Element* aPrevElement,
         aTreeMatchContext.mCurrentStyleScope = styleScope;
       }
       selector = selector->mNext;
+      if (!selector &&
+          !aTreeMatchContext.mIsTopmostScope &&
+          aTreeMatchContext.mRestrictToSlottedPseudo &&
+          aTreeMatchContext.mScopedRoot != element) {
+        return false;
+      }
     }
     else {
       // for adjacent sibling and child combinators, if we didn't find
@@ -2764,6 +2770,52 @@ static bool SelectorListMatches(Element* aElement,
                              aPreventComplexSelectors);
 }
 
+static
+inline bool LookForTargetPseudo(nsCSSSelector* aSelector,
+                                TreeMatchContext* aMatchContext,
+                                nsRestyleHint* possibleChange) {
+  if (aMatchContext->mOnlyMatchHostPseudo) {
+    while (aSelector && aSelector->mNext != nullptr) {
+      aSelector = aSelector->mNext;
+    }
+
+    for (nsPseudoClassList* pseudoClass = aSelector->mPseudoClassList;
+         pseudoClass;
+         pseudoClass = pseudoClass->mNext) {
+      if (pseudoClass->mType == CSSPseudoClassType::host ||
+          pseudoClass->mType == CSSPseudoClassType::hostContext) {
+        if (possibleChange) {
+          // :host-context will walk ancestors looking for a match of a
+          // compound selector, thus any changes to ancestors may require
+          // restyling the subtree.
+          *possibleChange |= eRestyle_Subtree;
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+  else if (aMatchContext->mRestrictToSlottedPseudo) {
+    for (nsCSSSelector* selector = aSelector;
+         selector;
+         selector = selector->mNext) {
+      if (!selector->mPseudoClassList) {
+        continue;
+      }
+      for (nsPseudoClassList* pseudoClass = selector->mPseudoClassList;
+         pseudoClass;
+         pseudoClass = pseudoClass->mNext) {
+        if (pseudoClass->mType == CSSPseudoClassType::slotted) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  // We're not restricted to a specific pseudo-class.
+  return true;
+}
+
 static inline
 void ContentEnumFunc(const RuleValue& value, nsCSSSelector* aSelector,
                      ElementDependentRuleProcessorData* data, NodeMatchContext& nodeContext,
@@ -2778,29 +2830,11 @@ void ContentEnumFunc(const RuleValue& value, nsCSSSelector* aSelector,
     // We won't match; nothing else to do here
     return;
   }
-  // If mOnlyMatchHostPseudo is set, then we only want to match against
-  // selectors that contain a :host-context pseudo class.
-  if (data->mTreeMatchContext.mOnlyMatchHostPseudo) {
-    nsCSSSelector* selector = aSelector;
-    while (selector && selector->mNext != nullptr) {
-      selector = selector->mNext;
-    }
 
-    bool seenHostPseudo = false;
-    for (nsPseudoClassList* pseudoClass = selector->mPseudoClassList;
-         pseudoClass;
-         pseudoClass = pseudoClass->mNext) {
-      if (pseudoClass->mType == CSSPseudoClassType::host ||
-	        pseudoClass->mType == CSSPseudoClassType::hostContext) {
-        seenHostPseudo = true;
-        break;
-      }
-    }
-
-    if (!seenHostPseudo) {
-      return;
-    }
+  if (!LookForTargetPseudo(aSelector, &data->mTreeMatchContext, nullptr)) {
+    return;
   }
+
   if (!data->mTreeMatchContext.SetStyleScopeForSelectorMatching(data->mElement,
                                                                 data->mScope)) {
     // The selector is for a rule in a scoped style sheet, and the subject
@@ -3145,34 +3179,10 @@ AttributeEnumFunc(nsCSSSelector* aSelector,
   nsRestyleHint possibleChange =
     RestyleHintForSelectorWithAttributeChange(aData->change,
                                               aSelector, aRightmostSelector);
-  // If mOnlyMatchHostPseudo is set, then we only want to match against
-  // selectors that contain a :host-context pseudo class.
-  if (data->mTreeMatchContext.mOnlyMatchHostPseudo) {
-    nsCSSSelector* selector = aSelector;
-    while (selector && selector->mNext != nullptr) {
-      selector = selector->mNext;
-    }
 
-    bool seenHostPseudo = false;
-    for (nsPseudoClassList* pseudoClass = selector->mPseudoClassList;
-         pseudoClass;
-         pseudoClass = pseudoClass->mNext) {
-      if (pseudoClass->mType == CSSPseudoClassType::host ||
-	        pseudoClass->mType == CSSPseudoClassType::hostContext) {
-        // :host-context will walk ancestors looking for a match of a compound 
-        // selector, thus any changes to ancestors may require restyling the 
-        // subtree.
-        possibleChange |= eRestyle_Subtree;
-        seenHostPseudo = true;
-        break;
-      }
-    }
-
-    if (!seenHostPseudo) {
-      return;
-    }
+  if (!LookForTargetPseudo(aSelector, &data->mTreeMatchContext, &possibleChange)) {
+    return;
   }
-
 
   // If, ignoring eRestyle_SomeDescendants, enumData->change already includes
   // all the bits of possibleChange, don't bother calling SelectorMatches, since

@@ -681,6 +681,45 @@ nsBindingManager::WalkRules(nsIStyleRuleProcessor::EnumFunc aFunc,
   aData->mElementIsFeatureless = false;
   aData->mTreeMatchContext.mOnlyMatchHostPseudo = false;
 
+  // Walk the rules in shadow root for ::slotted() pseudo-element rules
+  // if we have an assigned slot.
+  if (aData->mElement->GetAssignedSlot()) {
+    aData->mTreeMatchContext.mRestrictToSlottedPseudo = true;
+
+    AutoTArray<nsXBLBinding*, 2> stack;
+    bool foundTopmostScope = false;
+    for (nsIContent* parent = aData->mElement->GetFlattenedTreeParent();
+         parent;
+         parent = parent->GetFlattenedTreeParent()) {
+      ShadowRoot* currentShadow = parent->GetShadowRoot();
+      if (!currentShadow) {
+        continue;
+      }
+
+      nsXBLBinding* binding = currentShadow->GetAssociatedBinding();
+      if (!binding) {
+        continue;
+      }
+      stack.AppendElement(binding);
+
+      if (!foundTopmostScope) {
+        aData->mTreeMatchContext.mScopedRoot = parent;
+        foundTopmostScope = true;
+      }
+    }
+
+    while (!stack.IsEmpty()) {
+      uint32_t index = stack.Length() - 1;
+      nsXBLBinding* binding = stack.ElementAt(index);
+      stack.RemoveElementAt(index);
+
+      aData->mTreeMatchContext.mIsTopmostScope = (index == 0);
+      binding->WalkRules(aFunc, aData);
+    }
+
+    aData->mTreeMatchContext.mRestrictToSlottedPseudo = false;
+  }
+
   // Walk the binding scope chain, starting with the binding attached to our
   // content, up till we run out of scopes or we get cut off.
   nsIContent *content = aData->mElement;
