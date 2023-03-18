@@ -106,7 +106,8 @@ bool
 nsCSSPseudoClasses::HasSingleSelectorArg(Type aType)
 {
   return aType == Type::host ||
-         aType == Type::hostContext;
+         aType == Type::hostContext ||
+         aType == Type::slotted;
 }
 
 bool
@@ -126,7 +127,8 @@ nsCSSPseudoClasses::HasSelectorListArg(Type aType)
          aType == Type::mozAny ||
          aType == Type::mozAnyPrivate ||
          aType == Type::host ||
-         aType == Type::hostContext;
+         aType == Type::hostContext ||
+         aType == Type::slotted;
 }
 
 bool
@@ -168,4 +170,10 @@ nsCSSPseudoClasses::IsUserActionPseudoClass(Type aType)
   return aType == Type::hover ||
          aType == Type::active ||
          aType == Type::focus;
+}
+
+/* static */ bool
+nsCSSPseudoClasses::IsHybridPseudoElement(Type aType)
+{
+  return aType == Type::slotted;
 }

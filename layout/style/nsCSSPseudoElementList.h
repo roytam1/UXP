@@ -28,6 +28,10 @@
 CSS_PSEUDO_ELEMENT(after, ":after", CSS_PSEUDO_ELEMENT_IS_CSS2)
 CSS_PSEUDO_ELEMENT(before, ":before", CSS_PSEUDO_ELEMENT_IS_CSS2)
 
+// XXX: ::slotted() is treated as if it were a pseudo-class, and
+// is never parsed as a pseudo-element.
+CSS_PSEUDO_ELEMENT(slotted, ":slotted", 0)
+
 CSS_PSEUDO_ELEMENT(backdrop, ":backdrop", 0)
 
 CSS_PSEUDO_ELEMENT(firstLetter, ":first-letter",

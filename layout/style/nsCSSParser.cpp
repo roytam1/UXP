@@ -6121,6 +6121,21 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
     }
   }
 
+  // We handle the ::slotted() pseudo-element as if it it were a pseudo-class.
+  // This is because the spec allows it to be followed by ::after/::before,
+  // but our platform does not have a mechanism to handle multiple
+  // pseudo-elements. It would be tedious to refactor pseudo-element
+  // handling to accommodate for an edge case like this.
+  bool isSlotPseudo = false;
+  if (parsingPseudoElement &&
+      pseudoElementType == CSSPseudoElementType::slotted) {
+    parsingPseudoElement = false;
+    pseudoElementType = CSSPseudoElementType::NotPseudo;
+    pseudoClassType = CSSPseudoClassType::slotted;
+    isSlotPseudo = true;
+    aFlags |= SelectorParsingFlags::eDisallowCombinators;
+  }
+
 #ifdef MOZ_XUL
   isTreePseudo = (pseudoElementType == CSSPseudoElementType::XULTree);
   // If a tree pseudo-element is using the function syntax, it will
@@ -6198,6 +6213,8 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
     }
   }
 
+  bool disallowPseudoElements =
+    !!(aFlags & SelectorParsingFlags::eDisallowPseudoElements);
   if (!parsingPseudoElement && isPseudoClass) {
     aDataMask |= SEL_MASK_PCLASS;
     if (eCSSToken_Function == mToken.mType) {
@@ -6222,6 +6239,13 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
           return parsingStatus;
         }
       }
+      else if (CSSPseudoClassType::slotted == pseudoClassType &&
+               !isSlotPseudo) {
+        // Reject the :slotted() pseudo-class form.
+        REPORT_UNEXPECTED_TOKEN(PEPseudoSelNewStyleOnly);
+        UngetToken();
+        return eSelectorParsingStatus_Error;
+      }
       else if (nsCSSPseudoClasses::HasStringArg(pseudoClassType)) {
         parsingStatus =
           ParsePseudoClassWithIdentArg(aSelector, pseudoClassType);
@@ -6233,6 +6257,13 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
       else {
         MOZ_ASSERT(nsCSSPseudoClasses::HasSelectorListArg(pseudoClassType),
                    "unexpected pseudo with function token");
+        // Ensure that the ::slotted() pseudo-element is rejected if
+        // pseudo-elements are disallowed.
+        if (CSSPseudoClassType::slotted == pseudoClassType &&
+            disallowPseudoElements) {
+          UngetToken();
+          return eSelectorParsingStatus_Error;
+        }
         parsingStatus = ParsePseudoClassWithSelectorListArg(aSelector,
                                                             pseudoClassType,
                                                             flags);
@@ -6259,7 +6290,7 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
     }
     // Pseudo-elements might not be allowed from appearing
     // (e.g. as an argument to the functional part of a pseudo-class).
-    if (aFlags & SelectorParsingFlags::eDisallowPseudoElements) {
+    if (disallowPseudoElements) {
       UngetToken();
       return eSelectorParsingStatus_Error;
     }
