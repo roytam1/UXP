@@ -5144,12 +5144,13 @@ AC_SUBST(WIN32_REDIST_DIR)
 AC_SUBST(WIN_UCRT_REDIST_DIR)
 
 dnl ========================================================
-dnl ICU Support
+dnl ICU Shared Library Support
 dnl ========================================================
 
-if test "$MOZ_WIDGET_TOOLKIT" = "cocoa"; then
-    USE_ICU=1
-fi
+MOZ_ARG_ENABLE_BOOL(shared-icu,
+[  --enable-shared-icu           Build ICU as a shared library],
+    MOZ_SHARED_ICU=1,
+    MOZ_SHARED_ICU=)
 
 MOZ_CONFIG_ICU()
 
