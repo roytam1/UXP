@@ -1022,7 +1022,7 @@ nsIContent::GetEventTargetParent(EventChainPreVisitor& aVisitor)
             nsContentUtils::Retarget(relatedTargetAsNode, this);
           nsCOMPtr<nsINode> targetInKnownToBeHandledScope =
             FindChromeAccessOnlySubtreeOwner(aVisitor.mTargetInKnownToBeHandledScope);
-          if (nsContentUtils::ContentIsShadowIncludingDescendantOf(
+          if (targetInKnownToBeHandledScope && nsContentUtils::ContentIsShadowIncludingDescendantOf(
                 this, targetInKnownToBeHandledScope->SubtreeRoot())) {
             // Part of step 11.4.
             // "If target's root is a shadow-including inclusive ancestor of
