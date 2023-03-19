@@ -119,7 +119,8 @@ enum class SelectorParsingFlags {
   eIsForgiving             = 1 << 1,
   eDisallowCombinators     = 1 << 2,
   eDisallowPseudoElements  = 1 << 3,
-  eInheritNamespace        = 1 << 4
+  eInheritNamespace        = 1 << 4,
+  eForceEmptyList          = 1 << 5
 };
 MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(SelectorParsingFlags)
 
@@ -6103,6 +6104,8 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
     nsCSSPseudoClasses::GetPseudoType(pseudo, enabledState);
   bool pseudoClassIsUserAction =
     nsCSSPseudoClasses::IsUserActionPseudoClass(pseudoClassType);
+  bool pseudoClassHasForgivingSelectorListArg =
+    nsCSSPseudoClasses::HasForgivingSelectorListArg(pseudoClassType);
 
   if (nsCSSAnonBoxes::IsNonElement(pseudo)) {
     // Non-element anonymous boxes should not match any rule.
@@ -6199,6 +6202,7 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
     return eSelectorParsingStatus_Error;
   }
 
+  bool forceEmptyList = false;
   if (aSelector.IsPseudoElement() || aSelector.IsHybridPseudoElement()) {
     CSSPseudoElementType type = aSelector.IsPseudoElement() ?
                                 aSelector.PseudoType() :
@@ -6216,13 +6220,20 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
       return eSelectorParsingStatus_Error;
     }
 
-    if (isPseudoClass &&
-        (!supportsUserAction || !pseudoClassIsUserAction)) {
-      // CSS 4 Selectors says that pseudo-elements can only be followed by
-      // a user action pseudo-class.
-      REPORT_UNEXPECTED_TOKEN(PEPseudoClassNotUserAction);
-      UngetToken();
-      return eSelectorParsingStatus_Error;
+    if (isPseudoClass) {
+      if (pseudoClassHasForgivingSelectorListArg) {
+        // XXX: Pseudo-classes with a forgiving selector list argument are
+        // allowed to follow a pseudo-element, but must treat any selector
+        // that is not of the same type as invalid. It doesn't make any
+        // sense, but that's the behavior of other tainted browsers.
+        forceEmptyList = true;
+      } else if (!supportsUserAction || !pseudoClassIsUserAction) {
+        // CSS 4 Selectors says that pseudo-elements can only be followed by
+        // a user action pseudo-class.
+        REPORT_UNEXPECTED_TOKEN(PEPseudoClassNotUserAction);
+        UngetToken();
+        return eSelectorParsingStatus_Error;
+      }
     } else if (isPseudoElement &&
                (!supportsTreeAbiding || !pseudoElementIsTreeAbiding)) {
       REPORT_UNEXPECTED_TOKEN(PEPseudoClassNotUserAction);
@@ -6235,13 +6246,30 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
     !!(aFlags & SelectorParsingFlags::eDisallowPseudoElements);
   if (!parsingPseudoElement && isPseudoClass) {
     aDataMask |= SEL_MASK_PCLASS;
+
+    // Only pseudo-classes with a forgiving selector list argument
+    // are allowed if we're forced to be empty.
+    if ((aFlags & SelectorParsingFlags::eForceEmptyList) &&
+        !pseudoClassHasForgivingSelectorListArg) {
+      if (eCSSToken_Function == mToken.mType) {
+        SkipUntil(')');
+      }
+      return eSelectorParsingStatus_Continue;
+    }
+
     if (eCSSToken_Function == mToken.mType) {
       nsSelectorParsingStatus parsingStatus;
-      // Only the combinators restriction should be passed down the chain.
-      SelectorParsingFlags flags =
-        (aFlags & SelectorParsingFlags::eDisallowCombinators) ?
-        SelectorParsingFlags::eDisallowCombinators :
-        SelectorParsingFlags::eNone;
+
+      // Pass only a few parsing flags down the chain.
+      SelectorParsingFlags flags = SelectorParsingFlags::eNone;
+      if (aFlags & SelectorParsingFlags::eDisallowCombinators) {
+        flags |= SelectorParsingFlags::eDisallowCombinators;
+      }
+      if (aFlags & SelectorParsingFlags::eForceEmptyList ||
+          forceEmptyList) {
+        flags |= SelectorParsingFlags::eForceEmptyList;
+      }
+
       if (sLegacyNegationPseudoClassEnabled &&
           CSSPseudoClassType::negation == pseudoClassType) {
         // :not() can't be itself negated
@@ -6804,6 +6832,14 @@ CSSParserImpl::ParseSelector(nsCSSSelectorList* aList,
       parsingStatus = eSelectorParsingStatus_Done;
       break;
     }
+  }
+
+  // Treat every other selector as invalid.
+  if ((aFlags & SelectorParsingFlags::eForceEmptyList) &&
+      (selector->mIDList || selector->mClassList ||
+       selector->mAttrList || selector->mNegations ||
+       !selector->mPseudoClassList)) {
+    return false;
   }
 
   if (parsingStatus == eSelectorParsingStatus_Error) {
