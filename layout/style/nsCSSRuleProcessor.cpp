@@ -1393,6 +1393,7 @@ static inline bool ActiveHoverQuirkMatches(nsCSSSelector* aSelector,
   if (aSelector->HasTagSelector() || aSelector->mAttrList ||
       aSelector->mIDList || aSelector->mClassList ||
       aSelector->IsPseudoElement() ||
+      aSelector->IsHybridPseudoElement() ||
       // Having this quirk means that some selectors will no longer match,
       // so it's better to return false when we aren't sure (i.e., the
       // flags are unknown).

@@ -6097,6 +6097,8 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
   CSSEnabledState enabledState = EnabledState();
   CSSPseudoElementType pseudoElementType =
     nsCSSPseudoElements::GetPseudoType(pseudo, enabledState);
+  bool pseudoElementIsTreeAbiding =
+    nsCSSPseudoElements::IsTreeAbidingPseudoElement(pseudoElementType);
   CSSPseudoClassType pseudoClassType =
     nsCSSPseudoClasses::GetPseudoType(pseudo, enabledState);
   bool pseudoClassIsUserAction =
@@ -6121,19 +6123,21 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
     }
   }
 
-  // We handle the ::slotted() pseudo-element as if it it were a pseudo-class.
-  // This is because the spec allows it to be followed by ::after/::before,
-  // but our platform does not have a mechanism to handle multiple
-  // pseudo-elements. It would be tedious to refactor pseudo-element
-  // handling to accommodate for an edge case like this.
-  bool isSlotPseudo = false;
+  // We handle certain pseudo-elements as if they were a pseudo-class.
+  // Our platform does not have the mechanism to handle multiple
+  // pseudo-elements and proper storage if they have an argument.
+  CSSPseudoElementType hybridPseudoElementType =
+    CSSPseudoElementType::NotPseudo;
   if (parsingPseudoElement &&
-      pseudoElementType == CSSPseudoElementType::slotted) {
-    parsingPseudoElement = false;
+      nsCSSPseudoElements::IsHybridPseudoElement(pseudoElementType)) {
+    hybridPseudoElementType = pseudoElementType;
     pseudoElementType = CSSPseudoElementType::NotPseudo;
-    pseudoClassType = CSSPseudoClassType::slotted;
-    isSlotPseudo = true;
-    aFlags |= SelectorParsingFlags::eDisallowCombinators;
+    parsingPseudoElement = false;
+
+    if (hybridPseudoElementType == CSSPseudoElementType::slotted) {
+      pseudoClassType = CSSPseudoClassType::slotted;
+      aFlags |= SelectorParsingFlags::eDisallowCombinators;
+    }
   }
 
 #ifdef MOZ_XUL
@@ -6195,18 +6199,32 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
     return eSelectorParsingStatus_Error;
   }
 
-  if (aSelector.IsPseudoElement()) {
-    CSSPseudoElementType type = aSelector.PseudoType();
+  if (aSelector.IsPseudoElement() || aSelector.IsHybridPseudoElement()) {
+    CSSPseudoElementType type = aSelector.IsPseudoElement() ?
+                                aSelector.PseudoType() :
+                                aSelector.HybridPseudoType();
+    bool supportsTreeAbiding =
+      nsCSSPseudoElements::PseudoElementSupportsTreeAbiding(type);
+    bool supportsUserAction =
+      nsCSSPseudoElements::PseudoElementSupportsUserActionState(type);
     if (type >= CSSPseudoElementType::Count ||
-        !nsCSSPseudoElements::PseudoElementSupportsUserActionState(type)) {
-      // We only allow user action pseudo-classes on certain pseudo-elements.
+        (!supportsTreeAbiding && !supportsUserAction)) {
+      // We only allow user action pseudo-classes and/or tree-abiding
+      // pseudo-elements on certain pseudo-elements.
       REPORT_UNEXPECTED_TOKEN(PEPseudoSelNoUserActionPC);
       UngetToken();
       return eSelectorParsingStatus_Error;
     }
-    if (!isPseudoClass || !pseudoClassIsUserAction) {
+
+    if (isPseudoClass &&
+        (!supportsUserAction || !pseudoClassIsUserAction)) {
       // CSS 4 Selectors says that pseudo-elements can only be followed by
       // a user action pseudo-class.
+      REPORT_UNEXPECTED_TOKEN(PEPseudoClassNotUserAction);
+      UngetToken();
+      return eSelectorParsingStatus_Error;
+    } else if (isPseudoElement &&
+               (!supportsTreeAbiding || !pseudoElementIsTreeAbiding)) {
       REPORT_UNEXPECTED_TOKEN(PEPseudoClassNotUserAction);
       UngetToken();
       return eSelectorParsingStatus_Error;
@@ -6239,9 +6257,9 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
           return parsingStatus;
         }
       }
-      else if (CSSPseudoClassType::slotted == pseudoClassType &&
-               !isSlotPseudo) {
-        // Reject the :slotted() pseudo-class form.
+      else if (nsCSSPseudoClasses::IsHybridPseudoElement(pseudoClassType) &&
+               hybridPseudoElementType == CSSPseudoElementType::NotPseudo) {
+        // Reject the single colon syntax for hybrid pseudo-elements.
         REPORT_UNEXPECTED_TOKEN(PEPseudoSelNewStyleOnly);
         UngetToken();
         return eSelectorParsingStatus_Error;
@@ -6257,12 +6275,13 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
       else {
         MOZ_ASSERT(nsCSSPseudoClasses::HasSelectorListArg(pseudoClassType),
                    "unexpected pseudo with function token");
-        // Ensure that the ::slotted() pseudo-element is rejected if
-        // pseudo-elements are disallowed.
-        if (CSSPseudoClassType::slotted == pseudoClassType &&
-            disallowPseudoElements) {
-          UngetToken();
-          return eSelectorParsingStatus_Error;
+        if (hybridPseudoElementType != CSSPseudoElementType::NotPseudo) {
+          aSelector.SetHybridPseudoType(hybridPseudoElementType);
+          // Ensure hybrid pseudo-elements are rejected if they're not allowed.
+          if (disallowPseudoElements) {
+            UngetToken();
+            return eSelectorParsingStatus_Error;
+          }
         }
         parsingStatus = ParsePseudoClassWithSelectorListArg(aSelector,
                                                             pseudoClassType,
@@ -6752,7 +6771,8 @@ CSSParserImpl::ParseSelector(nsCSSSelectorList* aList,
         selector->mClassList = pseudoElementArgs.forget();
         selector->SetPseudoType(pseudoElementType);
       }
-    } else if (selector->IsPseudoElement()) {
+    } else if (selector->IsPseudoElement() ||
+               selector->IsHybridPseudoElement()) {
       // Once we parsed a pseudo-element, we can only parse
       // pseudo-classes (and only a limited set, which
       // ParsePseudoSelector knows how to handle).

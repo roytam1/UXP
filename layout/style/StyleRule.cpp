@@ -318,7 +318,8 @@ nsCSSSelector::nsCSSSelector(void)
     mNext(nullptr),
     mNameSpace(kNameSpaceID_Unknown),
     mOperator(0),
-    mPseudoType(CSSPseudoElementType::NotPseudo)
+    mPseudoType(CSSPseudoElementType::NotPseudo),
+    mHybridPseudoType(CSSPseudoElementType::NotPseudo)
 {
   MOZ_COUNT_CTOR(nsCSSSelector);
 }
