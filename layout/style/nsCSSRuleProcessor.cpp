@@ -48,6 +48,7 @@
 #include "nsCSSRules.h"
 #include "nsStyleSet.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/HTMLSlotElement.h"
 #include "mozilla/dom/ShadowRoot.h"
 #include "nsNthIndexCache.h"
 #include "mozilla/ArrayUtils.h"
@@ -684,6 +685,7 @@ void RuleHash::EnumerateAllRules(Element* aElement, ElementDependentRuleProcesso
       filter->AssertHasAllAncestors(aElement);
     }
 #endif
+    bool isForAssignedSlot = aData->mTreeMatchContext.mForAssignedSlot;
     // Merge the lists while there are still multiple lists to merge.
     while (valueCount > 1) {
       int32_t valueIndex = 0;
@@ -696,6 +698,7 @@ void RuleHash::EnumerateAllRules(Element* aElement, ElementDependentRuleProcesso
         }
       }
       const RuleValue *cur = mEnumList[valueIndex].mCurValue;
+      aData->mTreeMatchContext.mForAssignedSlot = isForAssignedSlot;
       ContentEnumFunc(*cur, cur->mSelector, aData, aNodeContext, filter);
       cur++;
       if (cur == mEnumList[valueIndex].mEnd) {
@@ -709,6 +712,7 @@ void RuleHash::EnumerateAllRules(Element* aElement, ElementDependentRuleProcesso
     for (const RuleValue *value = mEnumList[0].mCurValue,
                          *end = mEnumList[0].mEnd;
          value != end; ++value) {
+      aData->mTreeMatchContext.mForAssignedSlot = isForAssignedSlot;
       ContentEnumFunc(*value, value->mSelector, aData, aNodeContext, filter);
     }
   }
@@ -1727,24 +1731,29 @@ static bool SelectorMatches(Element* aElement,
     return false;
   }
 
+  Element* targetElement = aElement;
+  if (aTreeMatchContext.mForAssignedSlot) {
+    targetElement = aElement->GetAssignedSlot()->AsElement();
+  }
+
   // namespace/tag match
   // optimization : bail out early if we can
   if ((kNameSpaceID_Unknown != aSelector->mNameSpace &&
-       aElement->GetNameSpaceID() != aSelector->mNameSpace))
+       targetElement->GetNameSpaceID() != aSelector->mNameSpace))
     return false;
 
   if (aSelector->mLowercaseTag) {
     nsIAtom* selectorTag =
-      (aTreeMatchContext.mIsHTMLDocument && aElement->IsHTMLElement()) ?
+      (aTreeMatchContext.mIsHTMLDocument && targetElement->IsHTMLElement()) ?
         aSelector->mLowercaseTag : aSelector->mCasedTag;
-    if (selectorTag != aElement->NodeInfo()->NameAtom()) {
+    if (selectorTag != targetElement->NodeInfo()->NameAtom()) {
       return false;
     }
   }
 
   nsAtomList* IDList = aSelector->mIDList;
   if (IDList) {
-    nsIAtom* id = aElement->GetID();
+    nsIAtom* id = targetElement->GetID();
     if (id) {
       // case sensitivity: bug 93371
       const bool isCaseSensitive =
@@ -1779,7 +1788,7 @@ static bool SelectorMatches(Element* aElement,
   nsAtomList* classList = aSelector->mClassList;
   if (classList) {
     // test for class match
-    const nsAttrValue *elementClasses = aElement->GetClasses();
+    const nsAttrValue *elementClasses = targetElement->GetClasses();
     if (!elementClasses) {
       // Element has no classes but we have a class selector
       return false;
@@ -1969,6 +1978,10 @@ static bool SelectorMatches(Element* aElement,
 
       case CSSPseudoClassType::slotted:
         {
+          if (aTreeMatchContext.mForAssignedSlot) {
+            aTreeMatchContext.mForAssignedSlot = false;
+          }
+
           // Slottables cannot be matched from the outer tree.
           if (isOutsideShadowTree) {
             return false;
@@ -2370,7 +2383,7 @@ static bool SelectorMatches(Element* aElement,
   bool result = true;
   if (aSelector->mAttrList) {
     // test for attribute match
-    if (!aElement->HasAttrs()) {
+    if (!targetElement->HasAttrs()) {
       // if no attributes on the content, no match
       return false;
     } else {
@@ -2380,7 +2393,7 @@ static bool SelectorMatches(Element* aElement,
 
       do {
         bool isHTML =
-          (aTreeMatchContext.mIsHTMLDocument && aElement->IsHTMLElement());
+          (aTreeMatchContext.mIsHTMLDocument && targetElement->IsHTMLElement());
         matchAttribute = isHTML ? attr->mLowercaseAttr : attr->mCasedAttr;
         if (attr->mNameSpace == kNameSpaceID_Unknown) {
           // Attr selector with a wildcard namespace.  We have to examine all
@@ -2392,7 +2405,7 @@ static bool SelectorMatches(Element* aElement,
           // actually has attributes in), short-circuiting if we ever match.
           result = false;
           const nsAttrName* attrName;
-          for (uint32_t i = 0; (attrName = aElement->GetAttrNameAt(i)); ++i) {
+          for (uint32_t i = 0; (attrName = targetElement->GetAttrNameAt(i)); ++i) {
             if (attrName->LocalName() != matchAttribute) {
               continue;
             }
@@ -2403,7 +2416,7 @@ static bool SelectorMatches(Element* aElement,
 #ifdef DEBUG
               bool hasAttr =
 #endif
-                aElement->GetAttr(attrName->NamespaceID(),
+                targetElement->GetAttr(attrName->NamespaceID(),
                                   attrName->LocalName(), value);
               NS_ASSERTION(hasAttr, "GetAttrNameAt lied");
               result = AttrMatchesValue(attr, value, isHTML);
@@ -2421,12 +2434,12 @@ static bool SelectorMatches(Element* aElement,
         }
         else if (attr->mFunction == NS_ATTR_FUNC_EQUALS) {
           result =
-            aElement->
+            targetElement->
               AttrValueIs(attr->mNameSpace, matchAttribute, attr->mValue,
                           attr->IsValueCaseSensitive(isHTML) ? eCaseMatters
                                                              : eIgnoreCase);
         }
-        else if (!aElement->HasAttr(attr->mNameSpace, matchAttribute)) {
+        else if (!targetElement->HasAttr(attr->mNameSpace, matchAttribute)) {
           result = false;
         }
         else if (attr->mFunction != NS_ATTR_FUNC_SET) {
@@ -2434,7 +2447,7 @@ static bool SelectorMatches(Element* aElement,
 #ifdef DEBUG
           bool hasAttr =
 #endif
-              aElement->GetAttr(attr->mNameSpace, matchAttribute, value);
+              targetElement->GetAttr(attr->mNameSpace, matchAttribute, value);
           NS_ASSERTION(hasAttr, "HasAttr lied");
           result = AttrMatchesValue(attr, value, isHTML);
         }
@@ -2449,7 +2462,7 @@ static bool SelectorMatches(Element* aElement,
     for (nsCSSSelector *negation = aSelector->mNegations;
          result && negation; negation = negation->mNegations) {
       bool dependence = false;
-      result = !SelectorMatches(aElement, negation, aNodeMatchContext,
+      result = !SelectorMatches(targetElement, negation, aNodeMatchContext,
                                 aTreeMatchContext,
                                 SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT,
                                 &dependence);
@@ -2843,7 +2856,9 @@ void ContentEnumFunc(const RuleValue& value, nsCSSSelector* aSelector,
   if (nodeContext.mIsRelevantLink) {
     data->mTreeMatchContext.SetHaveRelevantLink();
   }
-  if (ancestorFilter &&
+  // XXX: Ignore the ancestor filter if we're testing the assigned slot.
+  bool useAncestorFilter = !(data->mTreeMatchContext.mForAssignedSlot);
+  if (useAncestorFilter && ancestorFilter &&
       !ancestorFilter->MightHaveMatchingAncestor<RuleValue::eMaxAncestorHashes>(
           value.mAncestorSelectorHashes)) {
     // We won't match; nothing else to do here
@@ -2915,7 +2930,13 @@ nsCSSRuleProcessor::RulesMatching(ElementRuleProcessorData *aData)
     NodeMatchContext nodeContext(EventStates(),
                                  nsCSSRuleProcessor::IsLink(aData->mElement),
 				 aData->mElementIsFeatureless);
-    cascade->mRuleHash.EnumerateAllRules(aData->mElement, aData, nodeContext);
+    // Test against the assigned slot rather than the slottable if we're
+    // matching the ::slotted() pseudo.
+    Element* targetElement = aData->mElement;
+    if (aData->mTreeMatchContext.mForAssignedSlot) {
+      targetElement = aData->mElement->GetAssignedSlot()->AsElement();
+    }
+    cascade->mRuleHash.EnumerateAllRules(targetElement, aData, nodeContext);
   }
 }
 

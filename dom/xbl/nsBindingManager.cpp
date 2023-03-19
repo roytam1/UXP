@@ -713,9 +713,11 @@ nsBindingManager::WalkRules(nsIStyleRuleProcessor::EnumFunc aFunc,
       nsXBLBinding* binding = stack.ElementAt(index);
       stack.RemoveElementAt(index);
 
+      aData->mTreeMatchContext.mForAssignedSlot = true;
       aData->mTreeMatchContext.mIsTopmostScope = (index == 0);
       binding->WalkRules(aFunc, aData);
     }
+    aData->mTreeMatchContext.mForAssignedSlot = false;
 
     aData->mTreeMatchContext.mRestrictToSlottedPseudo = false;
   }

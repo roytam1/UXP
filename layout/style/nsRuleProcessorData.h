@@ -409,6 +409,10 @@ struct MOZ_STACK_CLASS TreeMatchContext {
   // Whether we're currently in the topmost scope for shadow DOM.
   bool mIsTopmostScope;
 
+  // Whether we're testing for the assigned slot instead of the slottable
+  // when matching type/class/ID/attribute.
+  bool mForAssignedSlot;
+
   enum MatchVisited {
     eNeverMatchVisited,
     eMatchVisitedDefault
@@ -444,6 +448,7 @@ struct MOZ_STACK_CLASS TreeMatchContext {
     , mForScopedStyle(false)
     , mCurrentStyleScope(nullptr)
     , mIsTopmostScope(false)
+    , mForAssignedSlot(false)
   {
     if (aMatchVisited != eNeverMatchVisited) {
       nsILoadContext* loadContext = mDocument->GetLoadContext();
