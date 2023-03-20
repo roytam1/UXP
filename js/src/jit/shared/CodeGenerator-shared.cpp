@@ -1112,7 +1112,6 @@ CodeGeneratorShared::ensureOsiSpace()
     }
     MOZ_ASSERT_IF(!masm.oom(),
                   masm.currentOffset() - lastOsiPointOffset_ >= Assembler::PatchWrite_NearCallSize());
-    lastOsiPointOffset_ = masm.currentOffset();
 }
 
 uint32_t
@@ -1124,6 +1123,7 @@ CodeGeneratorShared::markOsiPoint(LOsiPoint* ins)
     uint32_t offset = masm.currentOffset();
     SnapshotOffset so = ins->snapshot()->snapshotOffset();
     masm.propagateOOM(osiIndices_.append(OsiIndex(offset, so)));
+    lastOsiPointOffset_ = offset;
 
     return offset;
 }

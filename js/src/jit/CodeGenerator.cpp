@@ -3757,6 +3757,7 @@ CodeGenerator::visitCallNative(LCallNative* call)
         if (jitInfo && jitInfo->type() == JSJitInfo::IgnoresReturnValueNative)
             native = jitInfo->ignoresReturnValueMethod;
     }
+    ensureOsiSpace();
     masm.callWithABI(JS_FUNC_TO_DATA_PTR(void*, native));
 
     emitTracelogStopEvent(TraceLogger_Call);
@@ -3881,6 +3882,7 @@ CodeGenerator::visitCallDOMNative(LCallDOMNative* call)
     masm.passABIArg(argObj);
     masm.passABIArg(argPrivate);
     masm.passABIArg(argArgs);
+    ensureOsiSpace();
     masm.callWithABI(JS_FUNC_TO_DATA_PTR(void*, target->jitInfo()->method));
 
     if (target->jitInfo()->isInfallible) {
@@ -4006,6 +4008,7 @@ CodeGenerator::visitCallGeneric(LCallGeneric* call)
 
     // Finally call the function in objreg.
     masm.bind(&makeCall);
+    ensureOsiSpace();
     uint32_t callOffset = masm.callJit(objreg);
     markSafepointAt(callOffset, call);
 
@@ -4104,6 +4107,7 @@ CodeGenerator::visitCallKnown(LCallKnown* call)
     masm.Push(Imm32(descriptor));
 
     // Finally call the function in objreg.
+    ensureOsiSpace();
     uint32_t callOffset = masm.callJit(objreg);
     markSafepointAt(callOffset, call);
 
@@ -4436,6 +4440,7 @@ CodeGenerator::emitApplyGeneric(T* apply)
         masm.bind(&rejoin);
 
         // Finally call the function in objreg, as assigned by one of the paths above.
+        ensureOsiSpace();
         uint32_t callOffset = masm.callJit(objreg);
         markSafepointAt(callOffset, apply);
 
@@ -11244,6 +11249,7 @@ CodeGenerator::visitGetDOMProperty(LGetDOMProperty* ins)
     masm.passABIArg(ObjectReg);
     masm.passABIArg(PrivateReg);
     masm.passABIArg(ValueReg);
+    ensureOsiSpace();
     masm.callWithABI(JS_FUNC_TO_DATA_PTR(void*, ins->mir()->fun()));
 
     if (ins->mir()->isInfallible()) {
