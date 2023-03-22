@@ -67,31 +67,43 @@ using UsedNamePtr = UsedNameTracker::UsedNameMap::Ptr;
 
 // Read a token. Report an error and return null() if that token doesn't match
 // to the condition.  Do not use MUST_MATCH_TOKEN_INTERNAL directly.
-#define MUST_MATCH_TOKEN_INTERNAL(cond, modifier, errorReport)                              \
+#define MUST_MATCH_TOKEN_INTERNAL(cond, modifier, errorReport, failureValue)                \
     JS_BEGIN_MACRO                                                                          \
         TokenKind token;                                                                    \
         if (!tokenStream.getToken(&token, modifier))                                        \
-            return null();                                                                  \
+            return failureValue;                                                            \
         if (!(cond)) {                                                                      \
             errorReport;                                                                    \
-            return null();                                                                  \
+            return failureValue;                                                            \
         }                                                                                   \
     JS_END_MACRO
 
+#define MUST_MATCH_TOKEN_MOD_OR(tt, modifier, errorNumber, failureValue) \
+    MUST_MATCH_TOKEN_INTERNAL(token == tt, modifier, error(errorNumber), failureValue)
+
 #define MUST_MATCH_TOKEN_MOD(tt, modifier, errorNumber) \
-    MUST_MATCH_TOKEN_INTERNAL(token == tt, modifier, error(errorNumber))
+    MUST_MATCH_TOKEN_MOD_OR(tt, modifier, errorNumber, null())
+
+#define MUST_MATCH_TOKEN_OR(tt, errorNumber, failureValue) \
+    MUST_MATCH_TOKEN_MOD_OR(tt, TokenStream::None, errorNumber, failureValue)
 
 #define MUST_MATCH_TOKEN(tt, errorNumber) \
-    MUST_MATCH_TOKEN_MOD(tt, TokenStream::None, errorNumber)
+    MUST_MATCH_TOKEN_OR(tt, errorNumber, null())
 
-#define MUST_MATCH_TOKEN_FUNC_MOD(func, modifier, errorNumber) \
-    MUST_MATCH_TOKEN_INTERNAL((func)(token), modifier, error(errorNumber))
+#define MUST_MATCH_TOKEN_FUNC_MOD_OR(func, modifier, errorNumber, failureValue) \
+    MUST_MATCH_TOKEN_INTERNAL((func)(token), modifier, error(errorNumber), failureValue)
+
+#define MUST_MATCH_TOKEN_FUNC_OR(func, errorNumber, failureValue) \
+    MUST_MATCH_TOKEN_FUNC_MOD_OR(func, TokenStream::None, errorNumber, failureValue)
 
 #define MUST_MATCH_TOKEN_FUNC(func, errorNumber) \
-    MUST_MATCH_TOKEN_FUNC_MOD(func, TokenStream::None, errorNumber)
+    MUST_MATCH_TOKEN_FUNC_OR(func, errorNumber, null())
+
+#define MUST_MATCH_TOKEN_MOD_WITH_REPORT_OR(tt, modifier, errorReport, failureValue) \
+    MUST_MATCH_TOKEN_INTERNAL(token == tt, modifier, errorReport, failureValue)
 
 #define MUST_MATCH_TOKEN_MOD_WITH_REPORT(tt, modifier, errorReport) \
-    MUST_MATCH_TOKEN_INTERNAL(token == tt, modifier, errorReport)
+    MUST_MATCH_TOKEN_MOD_WITH_REPORT_OR(tt, modifier, errorReport, null())
 
 template <class T, class U>
 static inline void
@@ -3152,7 +3164,7 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
 
             if (!hasRest) {
                 if (!tokenStream.peekToken(&tt, TokenStream::Operand))
-                    return null();
+                    return false;
                 if (tt == TOK_RP) {
                     tokenStream.addModifierException(TokenStream::NoneIsOperand);
                     break;
@@ -3726,9 +3738,10 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
     }
 
     if (bodyType == StatementListBody) {
-        MUST_MATCH_TOKEN_MOD_WITH_REPORT(TOK_RC, TokenStream::Operand,
-                                         reportMissingClosing(JSMSG_CURLY_AFTER_BODY,
-                                                              JSMSG_CURLY_OPENED, openedPos));
+        MUST_MATCH_TOKEN_MOD_WITH_REPORT_OR(TOK_RC, TokenStream::Operand,
+                                            reportMissingClosing(JSMSG_CURLY_AFTER_BODY,
+                                                                 JSMSG_CURLY_OPENED, openedPos),
+                                            false);
         funbox->setEnd(pos().end);
     } else {
 #if !JS_HAS_EXPR_CLOSURES
@@ -4971,7 +4984,7 @@ Parser<FullParseHandler>::namedImportsOrNamespaceImport(TokenKind tt, Node impor
 
             bool matched;
             if (!tokenStream.matchToken(&matched, TOK_AS))
-                return null();
+                return false;
 
             if (matched) {
                 TokenKind afterAs;
@@ -5028,9 +5041,9 @@ Parser<FullParseHandler>::namedImportsOrNamespaceImport(TokenKind tt, Node impor
     } else {
         MOZ_ASSERT(tt == TOK_MUL);
 
-        MUST_MATCH_TOKEN(TOK_AS, JSMSG_AS_AFTER_IMPORT_STAR);
+        MUST_MATCH_TOKEN_OR(TOK_AS, JSMSG_AS_AFTER_IMPORT_STAR, false);
 
-        MUST_MATCH_TOKEN_FUNC(TokenKindIsPossibleIdentifierName, JSMSG_NO_BINDING_NAME);
+        MUST_MATCH_TOKEN_FUNC_OR(TokenKindIsPossibleIdentifierName, JSMSG_NO_BINDING_NAME, false);
 
         Node importName = newName(context->names().star);
         if (!importName)
@@ -6075,7 +6088,7 @@ Parser<ParseHandler>::forHeadStart(YieldHandling yieldHandling,
 
     TokenKind tt;
     if (!tokenStream.peekToken(&tt, TokenStream::Operand))
-        return null();
+        return false;
 
     // Super-duper easy case: |for (;| is a C-style for-loop with no init
     // component.
@@ -6128,7 +6141,7 @@ Parser<ParseHandler>::forHeadStart(YieldHandling yieldHandling,
     if (parsingLexicalDeclaration) {
         forLoopLexicalScope.emplace(this);
         if (!forLoopLexicalScope->init(pc))
-            return null();
+            return false;
 
         // Push a temporary ForLoopLexicalHead Statement that allows for
         // lexical declarations, as they are usually allowed only in braced
