@@ -1383,7 +1383,10 @@ class Parser final : public ParserBase, private JS::AutoGCRooter
 
     bool namedImportsOrNamespaceImport(TokenKind tt, Node importSpecSet);
     bool checkExportedName(JSAtom* exportName);
+    bool checkExportedNamesForArrayBinding(Node node);
+    bool checkExportedNamesForObjectBinding(Node node);
     bool checkExportedNamesForDeclaration(Node node);
+    bool checkExportedNamesForDeclarationList(Node node);
 
     bool checkExportedNameForClause(Node node);
     bool checkExportedNameForFunction(Node node);

@@ -5191,14 +5191,92 @@ Parser<SyntaxParseHandler>::checkExportedName(JSAtom* exportName)
 
 template<>
 bool
+Parser<FullParseHandler>::checkExportedNamesForArrayBinding(ParseNode* pn)
+{
+    MOZ_ASSERT(pn->isKind(PNK_ARRAY));
+    MOZ_ASSERT(pn->isArity(PN_LIST));
+
+    for (ParseNode* node = pn->pn_head; node; node = node->pn_next) {
+        if (node->isKind(PNK_ELISION))
+            continue;
+
+        ParseNode* binding;
+        if (node->isKind(PNK_SPREAD))
+            binding = node->pn_kid;
+        else if (node->isKind(PNK_ASSIGN))
+            binding = node->pn_left;
+        else
+            binding = node;
+
+        if (!checkExportedNamesForDeclaration(binding))
+            return false;
+    }
+
+    return true;
+}
+
+template<>
+inline bool
+Parser<SyntaxParseHandler>::checkExportedNamesForArrayBinding(Node node)
+{
+    MOZ_ALWAYS_FALSE(abortIfSyntaxParser());
+    return false;
+}
+
+template<>
+bool
+Parser<FullParseHandler>::checkExportedNamesForObjectBinding(ParseNode* pn)
+{
+    MOZ_ASSERT(pn->isKind(PNK_OBJECT));
+    MOZ_ASSERT(pn->isArity(PN_LIST));
+
+    for (ParseNode* node = pn->pn_head; node; node = node->pn_next) {
+        MOZ_ASSERT(node->isKind(PNK_MUTATEPROTO) ||
+                   node->isKind(PNK_COLON) ||
+                   node->isKind(PNK_SHORTHAND) ||
+                   node->isKind(PNK_SPREAD));
+
+        ParseNode* target;
+        if (node->isKind(PNK_SPREAD)) {
+            target = node->pn_kid;
+        } else {
+            if (node->isKind(PNK_MUTATEPROTO))
+                target = node->pn_kid;
+            else
+                target = node->pn_right;
+
+            if (target->isKind(PNK_ASSIGN))
+                target = target->pn_left;
+        }
+
+        if (!checkExportedNamesForDeclaration(target))
+            return false;
+    }
+
+    return true;
+}
+
+template<>
+inline bool
+Parser<SyntaxParseHandler>::checkExportedNamesForObjectBinding(Node node)
+{
+    MOZ_ALWAYS_FALSE(abortIfSyntaxParser());
+    return false;
+}
+
+template<>
+bool
 Parser<FullParseHandler>::checkExportedNamesForDeclaration(ParseNode* node)
 {
-    MOZ_ASSERT(node->isArity(PN_LIST));
-    for (ParseNode* binding = node->pn_head; binding; binding = binding->pn_next) {
-        if (binding->isKind(PNK_ASSIGN))
-            binding = binding->pn_left;
-        MOZ_ASSERT(binding->isKind(PNK_NAME));
-        if (!checkExportedName(binding->pn_atom))
+    if (node->isKind(PNK_NAME)) {
+        if (!checkExportedName(node->pn_atom))
+            return false;
+    } else if (node->isKind(PNK_ARRAY)) {
+        if (!checkExportedNamesForArrayBinding(node))
+            return false;
+    } else {
+        MOZ_ASSERT(node->isKind(PNK_OBJECT));
+        if (!checkExportedNamesForObjectBinding(node))
             return false;
     }
 
@@ -5208,6 +5286,32 @@ Parser<FullParseHandler>::checkExportedNamesForDeclaration(ParseNode* node)
 template<>
 bool
 Parser<SyntaxParseHandler>::checkExportedNamesForDeclaration(Node node)
+{
+    MOZ_ALWAYS_FALSE(abortIfSyntaxParser());
+    return false;
+}
+
+template<>
+bool
+Parser<FullParseHandler>::checkExportedNamesForDeclarationList(ParseNode* node)
+{
+    MOZ_ASSERT(node->isArity(PN_LIST));
+    for (ParseNode* binding = node->pn_head; binding; binding = binding->pn_next) {
+        if (binding->isKind(PNK_ASSIGN))
+            binding = binding->pn_left;
+        else
+            MOZ_ASSERT(binding->isKind(PNK_NAME));
+
+        if (!checkExportedNamesForDeclaration(binding))
+            return false;
+    }
+
+    return true;
+}
+
+template<>
+bool
+Parser<SyntaxParseHandler>::checkExportedNamesForDeclarationList(Node node)
 {
     MOZ_ALWAYS_FALSE(abortIfSyntaxParser());
     return false;
@@ -5486,7 +5590,7 @@ Parser<ParseHandler>::exportVariableStatement(uint32_t begin)
         return null();
     if (!matchOrInsertSemicolonAfterExpression())
         return null();
-    if (!checkExportedNamesForDeclaration(kid))
+    if (!checkExportedNamesForDeclarationList(kid))
         return null();
 
     Node node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
@@ -5565,7 +5669,7 @@ Parser<ParseHandler>::exportLexicalDeclaration(uint32_t begin, DeclarationKind k
     Node kid = lexicalDeclaration(YieldIsName, kind);
     if (!kid)
         return null();
-    if (!checkExportedNamesForDeclaration(kid))
+    if (!checkExportedNamesForDeclarationList(kid))
         return null();
 
     Node node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
