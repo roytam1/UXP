@@ -122,13 +122,13 @@ typedef Vector<jssrcnote, 64> SrcNotesVector;
 
 class CallOrNewEmitter;
 class ElemOpEmitter;
+class EmitterScope;
 class PropOpEmitter;
 class TDZCheckCache;
 
 struct MOZ_STACK_CLASS BytecodeEmitter
 {
     class NestableControl;
-    class EmitterScope;
 
     SharedContext* const sc;      /* context shared between parsing and bytecode generation */
 

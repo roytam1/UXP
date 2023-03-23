@@ -142,6 +142,7 @@ UNIFIED_SOURCES += [
     'frontend/BytecodeEmitter.cpp',
     'frontend/CallOrNewEmitter.cpp',
     'frontend/ElemOpEmitter.cpp',
+    'frontend/EmitterScope.cpp',
     'frontend/FoldConstants.cpp',
     'frontend/IfEmitter.cpp',
     'frontend/JumpList.cpp',
