@@ -886,6 +886,10 @@ struct UnaryNode : public ParseNode
         pn_kid = kid;
     }
 
+    static bool test(const ParseNode& node) {
+        return node.isArity(PN_UNARY);
+    }
+
 #ifdef DEBUG
     void dump(int indent);
 #endif
@@ -994,6 +998,10 @@ struct NameNode : public ParseNode
     {
         pn_atom = atom;
         pn_expr = nullptr;
+    }
+
+    static bool test(const ParseNode& node) {
+        return node.isArity(PN_NAME);
     }
 
 #ifdef DEBUG
@@ -1248,6 +1256,10 @@ class PropertyAccessBase : public ParseNode
     PropertyName& name() const {
         return *pn_u.name.atom->asPropertyName();
     }
+
+    JSAtom* nameAtom() const {
+        return pn_u.name.atom;
+    }
 };
 
 class PropertyAccess : public PropertyAccessBase
@@ -1300,6 +1312,14 @@ class PropertyByValueBase : public ParseNode
     {
         pn_u.binary.left = lhs;
         pn_u.binary.right = propExpr;
+    }
+
+    ParseNode& expression() const {
+        return *pn_u.binary.left;
+    }
+
+    ParseNode& key() const {
+        return *pn_u.binary.right;
     }
 
     static bool test(const ParseNode& node) {
