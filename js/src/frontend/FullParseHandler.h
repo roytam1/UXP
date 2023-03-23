@@ -707,16 +707,20 @@ class FullParseHandler
         return new_<DebuggerStatement>(pos);
     }
 
-    ParseNode* newPropertyAccess(ParseNode* pn, PropertyName* name, uint32_t end) {
-        return new_<PropertyAccess>(pn, name, pn->pn_pos.begin, end);
+    ParseNode* newPropertyName(PropertyName* name, const TokenPos& pos) {
+        return new_<NameNode>(PNK_PROPERTYNAME, JSOP_NOP, name, pos);
+    }
+
+    ParseNode* newPropertyAccess(ParseNode* expr, ParseNode* key) {
+        return new_<PropertyAccess>(expr, key, expr->pn_pos.begin, key->pn_pos.end);
     }
 
     ParseNode* newPropertyByValue(ParseNode* lhs, ParseNode* index, uint32_t end) {
         return new_<PropertyByValue>(lhs, index, lhs->pn_pos.begin, end);
     }
 
-    ParseNode* newOptionalPropertyAccess(ParseNode* pn, PropertyName* name, uint32_t end) {
-        return new_<OptionalPropertyAccess>(pn, name, pn->pn_pos.begin, end);
+    ParseNode* newOptionalPropertyAccess(ParseNode* expr, ParseNode* key) {
+        return new_<OptionalPropertyAccess>(expr, key, expr->pn_pos.begin, key->pn_pos.end);
     }
 
     ParseNode* newOptionalPropertyByValue(ParseNode* lhs, ParseNode* index, uint32_t end) {

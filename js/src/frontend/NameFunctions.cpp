@@ -74,11 +74,11 @@ class NameResolver
     bool nameExpression(ParseNode* n, bool* foundName) {
         switch (n->getKind()) {
           case PNK_DOT:
-            if (!nameExpression(n->expr(), foundName))
+            if (!nameExpression(n->pn_left, foundName))
                 return false;
             if (!*foundName)
                 return true;
-            return appendPropertyReference(n->pn_atom);
+            return appendPropertyReference(n->pn_right->pn_atom);
 
           case PNK_NAME:
             *foundName = true;
@@ -800,12 +800,12 @@ class NameResolver
           }
 
           case PNK_DOT:
-            MOZ_ASSERT(cur->isArity(PN_NAME));
+            MOZ_ASSERT(cur->isArity(PN_BINARY));
 
             // Super prop nodes do not have a meaningful LHS
             if (cur->as<PropertyAccess>().isSuper())
                 break;
-            if (!resolve(cur->expr(), prefix))
+            if (!resolve(cur->pn_left, prefix))
                 return false;
             break;
 
@@ -840,6 +840,7 @@ class NameResolver
           case PNK_EXPORT_SPEC: // by PNK_EXPORT_SPEC_LIST
           case PNK_CALLSITEOBJ: // by PNK_TAGGED_TEMPLATE
           case PNK_CLASSNAMES:  // by PNK_CLASS
+          case PNK_PROPERTYNAME: // by PNK_DOT
             MOZ_CRASH("should have been handled by a parent node");
 
           case PNK_LIMIT: // invalid sentinel value

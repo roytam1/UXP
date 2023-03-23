@@ -32,6 +32,7 @@ class ObjectBox;
     F(POSTINCREMENT) \
     F(PREDECREMENT) \
     F(POSTDECREMENT) \
+    F(PROPERTYNAME) \
     F(DOT) \
     F(ELEM) \
     F(OPTDOT) \
@@ -396,9 +397,9 @@ IsTypeofKind(ParseNodeKind kind)
  *                          contains are nullish. An optional chain can also
  *                          contain nodes such as PNK_DOT, PNK_ELEM, PNK_NAME,
  *                          PNK_CALL, etc. These are evaluated normally.
- * PNK_OPTDOT   name        pn_expr: MEMBER expr to left of .
+ * PNK_OPTDOT   binary      pn_left: MEMBER expr to left of .
  *                          short circuits back to PNK_OPTCHAIN if nullish.
- *                          pn_atom: name to right of .
+ *                          pn_right: PropertyName to right of .
  * PNK_OPTELEM  binary      pn_left: MEMBER expr to left of [
  *                          short circuits back to PNK_OPTCHAIN if nullish.
  *                          pn_right: expr between [ and ]
@@ -406,8 +407,10 @@ IsTypeofKind(ParseNodeKind kind)
  *                          pn_count: 1 + N (where N is number of args)
  *                          call is a MEMBER expr naming a callable object,
  *                          short circuits back to PNK_OPTCHAIN if nullish.
- * PNK_DOT      name        pn_expr: MEMBER expr to left of .
- *                          pn_atom: name to right of .
+ * PNK_PROPERTYNAME         pn_atom: property being accessed
+ *              name        
+ * PNK_DOT      binary      pn_left: MEMBER expr to left of .
+ *                          pn_right: PropertyName to right of .
  * PNK_ELEM     binary      pn_left: MEMBER expr to left of [
  *                          pn_right: expr between [ and ]
  * PNK_CALL     binary      pn_left: callee expression on the left of the (
@@ -600,8 +603,7 @@ class ParseNode
                 FunctionBox* funbox;    /* function object */
             };
             ParseNode*  expr;           /* module or function body, var
-                                           initializer, argument default, or
-                                           base object of PNK_DOT */
+                                           initializer, or argument default */
         } name;
         struct {
             LexicalScope::Data* bindings;
@@ -1223,44 +1225,45 @@ class RegExpLiteral : public NullaryNode
     }
 };
 
-class PropertyAccessBase : public ParseNode
+class PropertyAccessBase : public BinaryNode
 {
   public:
-    PropertyAccessBase(ParseNodeKind kind, ParseNode* lhs, PropertyName* name,
-                       uint32_t begin, uint32_t end)
-      : ParseNode(kind, JSOP_NOP, PN_NAME, TokenPos(begin, end))
+    /*
+     * PropertyAccess nodes can have any expression/'super' as left-hand
+     * side, but the name must be a ParseNodeKind::PropertyName node.
+     */
+    PropertyAccessBase(ParseNodeKind kind, ParseNode* lhs, ParseNode* name, uint32_t begin, uint32_t end)
+      : BinaryNode(kind, JSOP_NOP, TokenPos(begin, end), lhs, name)
     {
         MOZ_ASSERT(lhs != nullptr);
         MOZ_ASSERT(name != nullptr);
-        pn_u.name.expr = lhs;
-        pn_u.name.atom = name;
     }
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_DOT) ||
                      node.isKind(PNK_OPTDOT);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NAME));
+        MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
+        MOZ_ASSERT_IF(match, node.pn_right->isKind(PNK_PROPERTYNAME));
         return match;
     }
 
     ParseNode& expression() const {
-        return *pn_u.name.expr;
+        return *pn_u.binary.left;
     }
 
     PropertyName& name() const {
-        return *pn_u.name.atom->asPropertyName();
+        return *pn_u.binary.right->pn_atom->asPropertyName();
     }
 
     JSAtom* nameAtom() const {
-        return pn_u.name.atom;
+        return pn_u.binary.right->pn_atom;
     }
 };
 
 class PropertyAccess : public PropertyAccessBase
 {
   public:
-    PropertyAccess(ParseNode* lhs, PropertyName* name, uint32_t begin,
-                   uint32_t end)
+    PropertyAccess(ParseNode* lhs, ParseNode* name, uint32_t begin, uint32_t end)
       : PropertyAccessBase(PNK_DOT, lhs, name, begin, end)
     {
         MOZ_ASSERT(lhs != nullptr);
@@ -1269,7 +1272,8 @@ class PropertyAccess : public PropertyAccessBase
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_DOT);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NAME));
+        MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
+        MOZ_ASSERT_IF(match, node.pn_right->isKind(PNK_PROPERTYNAME));
         return match;
     }
 
@@ -1282,8 +1286,7 @@ class PropertyAccess : public PropertyAccessBase
 class OptionalPropertyAccess : public PropertyAccessBase
 {
   public:
-    OptionalPropertyAccess(ParseNode* lhs, PropertyName* name, uint32_t begin,
-                           uint32_t end)
+    OptionalPropertyAccess(ParseNode* lhs, ParseNode* name, uint32_t begin, uint32_t end)
       : PropertyAccessBase(PNK_OPTDOT, lhs, name, begin, end)
     {
         MOZ_ASSERT(lhs != nullptr);
@@ -1292,7 +1295,8 @@ class OptionalPropertyAccess : public PropertyAccessBase
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_OPTDOT);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NAME));
+        MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
+        MOZ_ASSERT_IF(match, node.pn_right->isKind(PNK_PROPERTYNAME));
         return match;
     }
 };

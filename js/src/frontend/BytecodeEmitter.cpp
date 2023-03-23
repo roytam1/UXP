@@ -1090,7 +1090,7 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
       // Watch out for getters!
       case PNK_DOT:
       case PNK_OPTDOT:
-        MOZ_ASSERT(pn->isArity(PN_NAME));
+        MOZ_ASSERT(pn->isArity(PN_BINARY));
         *answer = true;
         return true;
 
@@ -1497,6 +1497,7 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
       case PNK_CALLSITEOBJ:      // by PNK_TAGGED_TEMPLATE
       case PNK_POSHOLDER:        // by PNK_NEWTARGET
       case PNK_SUPERBASE:        // by PNK_ELEM and others
+      case PNK_PROPERTYNAME:     // by PNK_DOT
         MOZ_CRASH("handled by parent nodes");
 
       case PNK_LIMIT: // invalid sentinel value
@@ -1813,11 +1814,11 @@ BytecodeEmitter::emitPropLHS(ParseNode* pn)
     MOZ_ASSERT(pn->isKind(PNK_DOT));
     MOZ_ASSERT(!pn->as<PropertyAccess>().isSuper());
 
-    ParseNode* pn2 = pn->pn_expr;
+    ParseNode* pn2 = pn->pn_left;
 
     /*
      * If the object operand is also a dotted property reference, reverse the
-     * list linked via pn_expr temporarily so we can iterate over it from the
+     * list linked via pn_left temporarily so we can iterate over it from the
      * bottom up (reversing again as we go), to avoid excessive recursion.
      */
     if (pn2->isKind(PNK_DOT) && !pn2->as<PropertyAccess>().isSuper()) {
@@ -1825,9 +1826,9 @@ BytecodeEmitter::emitPropLHS(ParseNode* pn)
         ParseNode* pnup = nullptr;
         ParseNode* pndown;
         for (;;) {
-            /* Reverse pndot->pn_expr to point up, not down. */
-            pndown = pndot->pn_expr;
-            pndot->pn_expr = pnup;
+            /* Reverse pndot->pn_left to point up, not down. */
+            pndown = pndot->pn_left;
+            pndot->pn_left = pnup;
             if (!pndown->isKind(PNK_DOT) || pndown->as<PropertyAccess>().isSuper())
                 break;
             pnup = pndot;
@@ -1840,12 +1841,12 @@ BytecodeEmitter::emitPropLHS(ParseNode* pn)
 
         do {
             /* Walk back up the list, emitting annotated name ops. */
-            if (!emitAtomOp(pndot->pn_atom, JSOP_GETPROP))
+            if (!emitAtomOp(pndot->pn_right->pn_atom, JSOP_GETPROP))
                 return false;
 
-            /* Reverse the pn_expr link again. */
-            pnup = pndot->pn_expr;
-            pndot->pn_expr = pndown;
+            /* Reverse the pn_left link again. */
+            pnup = pndot->pn_left;
+            pndot->pn_left = pndown;
             pndown = pndot;
         } while ((pndot = pnup) != nullptr);
         return true;
@@ -2505,7 +2506,7 @@ BytecodeEmitter::emitDestructuringLHSRef(ParseNode* target, size_t* emitted)
             // SUPERBASE is pushed onto THIS in poe.prepareForRhs below.
             *emitted = 2;
         } else {
-            if (!emitTree(target->pn_expr))                // OBJ
+            if (!emitTree(target->pn_left))               // OBJ
                 return false;
             *emitted = 1;
         }
@@ -9080,8 +9081,9 @@ BytecodeEmitter::emitTree(ParseNode* pn, ValueUsage valueUsage /* = ValueUsage::
             return false;
         break;
 
+      case PNK_PROPERTYNAME:
       case PNK_POSHOLDER:
-        MOZ_FALLTHROUGH_ASSERT("Should never try to emit PNK_POSHOLDER");
+        MOZ_FALLTHROUGH_ASSERT("Should never try to emit PNK_POSHOLDER or PNK_PROPERTYNAME");
 
       default:
         MOZ_ASSERT(0);

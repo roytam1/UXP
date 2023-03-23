@@ -367,6 +367,7 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_COMMA:
       case PNK_ARRAY:
       case PNK_OBJECT:
+      case PNK_PROPERTYNAME:
       case PNK_DOT:
       case PNK_ELEM:
       case PNK_ARGUMENTS:
@@ -1367,11 +1368,14 @@ FoldElement(ExclusiveContext* cx, ParseNode** nodePtr, Parser<FullParseHandler>&
 
     // Optimization 3: We have expr["foo"] where foo is not an index.  Convert
     // to a property access (like expr.foo) that optimizes better downstream.
+    ParseNode* nameNode = parser.handler.newPropertyName(name, key->pn_pos);
+    if (!nameNode)
+        return false;
     ParseNode* dottedAccess;
     if (node->isKind(PNK_OPTELEM)) {
-        dottedAccess = parser.handler.newOptionalPropertyAccess(expr, name, node->pn_pos.end);
+        dottedAccess = parser.handler.newOptionalPropertyAccess(expr, nameNode);
     } else {
-        dottedAccess = parser.handler.newPropertyAccess(expr, name, node->pn_pos.end);
+        dottedAccess = parser.handler.newPropertyAccess(expr, nameNode);
     }
     if (!dottedAccess) {
         return false;
@@ -1646,14 +1650,14 @@ FoldDottedProperty(ExclusiveContext* cx, ParseNode* node, Parser<FullParseHandle
                    bool inGenexpLambda)
 {
     MOZ_ASSERT(node->isKind(PNK_DOT) || node->isKind(PNK_OPTDOT));
-    MOZ_ASSERT(node->isArity(PN_NAME));
+    MOZ_ASSERT(node->isArity(PN_BINARY));
 
     // Iterate through a long chain of dotted property accesses to find the
     // most-nested non-dotted property node, then fold that.
-    ParseNode** nested = &node->pn_expr;
+    ParseNode** nested = &node->pn_left;
     while ((*nested)->isKind(PNK_DOT) || (*nested)->isKind(PNK_OPTDOT)) {
-        MOZ_ASSERT((*nested)->isArity(PN_NAME));
-        nested = &(*nested)->pn_expr;
+        MOZ_ASSERT((*nested)->isArity(PN_BINARY));
+        nested = &(*nested)->pn_left;
     }
 
     return Fold(cx, nested, parser, inGenexpLambda);
@@ -1952,6 +1956,9 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
       case PNK_LABEL:
         MOZ_ASSERT(pn->isArity(PN_NAME));
         return Fold(cx, &pn->pn_expr, parser, inGenexpLambda);
+
+      case PNK_PROPERTYNAME:
+        MOZ_CRASH("unreachable, handled by ::Dot");
 
       case PNK_OPTDOT:
       case PNK_DOT:

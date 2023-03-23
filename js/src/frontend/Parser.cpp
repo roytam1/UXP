@@ -9333,11 +9333,14 @@ Parser<ParseHandler>::memberPropertyAccess(
         error(JSMSG_BAD_SUPERPROP, "property");
         return null();
     }
+    Node name = handler.newPropertyName(field, pos());
+    if (!name)
+        return null();    
     if (optionalKind == OptionalKind::Optional) {
         MOZ_ASSERT(!handler.isSuperBase(lhs));
-        return handler.newOptionalPropertyAccess(lhs, field, pos().end);
+        return handler.newOptionalPropertyAccess(lhs, name);
     }
-    return handler.newPropertyAccess(lhs, field, pos().end);
+    return handler.newPropertyAccess(lhs, name);
 }
 
 template <class ParseHandler>
