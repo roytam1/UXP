@@ -1965,14 +1965,32 @@ static bool SelectorMatches(Element* aElement,
 
       case CSSPseudoClassType::host:
         {
+          ShadowRoot* shadow = aElement->GetShadowRoot();
           // In order to match :host, the element must be a shadow root host,
           // we must be matching only against host pseudo selectors, and the 
           // selector's context must be the shadow root (the selector must be 
           // featureless, the left-most selector, and be in a shadow root 
           // style). 
-          if (!aElement->GetShadowRoot() ||
+          if (!shadow ||
               aSelector->HasFeatureSelectors() ||
               aSelectorFlags & SelectorMatchesFlags::IS_HOST_INACCESSIBLE) {
+            return false;
+          }
+
+          // We're matching :host from inside the shadow root.
+          if (!aTreeMatchContext.mOnlyMatchHostPseudo) {
+            // Check if the element has the same shadow root.
+            if (aTreeMatchContext.mScopedRoot) {
+              if (shadow !=
+                  aTreeMatchContext.mScopedRoot->GetShadowRoot()) {
+                return false;
+              }
+            }
+            // We were called elsewhere.
+          }
+
+          // Reject if the next selector is an explicit universal selector.
+          if (aSelector->mNext && aSelector->mNext->mExplicitUniversal) {
             return false;
           }
 

@@ -279,6 +279,13 @@ ShadowRoot::InsertSheet(StyleSheet* aSheet,
     }
 
     nsINode* sheetOwningNode = SheetAt(i)->GetOwnerNode();
+    
+    if (!sheetOwningNode) {
+      // Keep moving; all sheets with a sheetOwner come after all
+      // sheets without an owning Node
+      continue;
+    }
+    
     if (nsContentUtils::PositionIsBefore(aLinkingContent, sheetOwningNode)) {
       InsertSheetAt(i, *aSheet);
       mProtoBinding->InsertStyleSheetAt(i, aSheet);
