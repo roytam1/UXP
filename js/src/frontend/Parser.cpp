@@ -3268,12 +3268,12 @@ Parser<ParseHandler>::addExprAndGetNextTemplStrToken(YieldHandling yieldHandling
 
 template <typename ParseHandler>
 bool
-Parser<ParseHandler>::taggedTemplate(YieldHandling yieldHandling, Node nodeList, TokenKind tt)
+Parser<ParseHandler>::taggedTemplate(YieldHandling yieldHandling, Node tagArgsList, TokenKind tt)
 {
     Node callSiteObjNode = handler.newCallSiteObject(pos().begin);
     if (!callSiteObjNode)
         return false;
-    handler.addList(nodeList, callSiteObjNode);
+    handler.addList(tagArgsList, callSiteObjNode);
 
     while (true) {
         if (!appendToCallSiteObj(callSiteObjNode))
@@ -3281,10 +3281,10 @@ Parser<ParseHandler>::taggedTemplate(YieldHandling yieldHandling, Node nodeList,
         if (tt != TOK_TEMPLATE_HEAD)
             break;
 
-        if (!addExprAndGetNextTemplStrToken(yieldHandling, nodeList, &tt))
+        if (!addExprAndGetNextTemplStrToken(yieldHandling, tagArgsList, &tt))
             return false;
     }
-    handler.setEndPosition(nodeList, callSiteObjNode);
+    handler.setEndPosition(tagArgsList, callSiteObjNode);
     return true;
 }
 
@@ -9037,7 +9037,13 @@ Parser<ParseHandler>::generatorComprehension(uint32_t begin)
     if (!genfn)
         return null();
 
-    Node result = handler.newList(PNK_GENEXP, genfn, JSOP_CALL);
+    // Create a dummy argsList so that PNK_GENEXP can be handled as a full PN_BINARY call node
+    Node argsList = handler.newArguments(pos());
+    if (!argsList)
+        return null();
+    handler.setBeginPosition(argsList, pos().end);
+
+    Node result = handler.newGenExp(genfn, argsList);
     if (!result)
         return null();
     handler.setBeginPosition(result, begin);
@@ -9067,23 +9073,27 @@ Parser<ParseHandler>::assignExprWithoutYieldOrAwait(YieldHandling yieldHandling)
 }
 
 template <typename ParseHandler>
-bool
-Parser<ParseHandler>::argumentList(YieldHandling yieldHandling, Node listNode, bool* isSpread,
+typename ParseHandler::Node
+Parser<ParseHandler>::argumentList(YieldHandling yieldHandling, bool* isSpread,
                                    PossibleError* possibleError /* = nullptr */)
 {
+    Node argsList = handler.newArguments(pos());
+    if (!argsList)
+        return null();
+
     bool matched;
     if (!tokenStream.matchToken(&matched, TOK_RP, TokenStream::Operand))
-        return false;
+        return null();
     if (matched) {
-        handler.setEndPosition(listNode, pos().end);
-        return true;
+        handler.setEndPosition(argsList, pos().end);
+        return argsList;
     }
 
     while (true) {
         bool spread = false;
         uint32_t begin = 0;
         if (!tokenStream.matchToken(&matched, TOK_TRIPLEDOT, TokenStream::Operand))
-            return false;
+            return null();
         if (matched) {
             spread = true;
             begin = pos().begin;
@@ -9092,18 +9102,18 @@ Parser<ParseHandler>::argumentList(YieldHandling yieldHandling, Node listNode, b
 
         Node argNode = assignExpr(InAllowed, yieldHandling, TripledotProhibited, possibleError);
         if (!argNode)
-            return false;
+            return null();
         if (spread) {
             argNode = handler.newSpread(begin, argNode);
             if (!argNode)
-                return false;
+                return null();
         }
 
-        handler.addList(listNode, argNode);
+        handler.addList(argsList, argNode);
 
         bool matched;
         if (!tokenStream.matchToken(&matched, TOK_COMMA))
-            return false;
+            return null();
         if (!matched)
             break;
 
@@ -9118,8 +9128,8 @@ Parser<ParseHandler>::argumentList(YieldHandling yieldHandling, Node listNode, b
 
     MUST_MATCH_TOKEN(TOK_RP, JSMSG_PAREN_AFTER_ARGS);
 
-    handler.setEndPosition(listNode, pos().end);
-    return true;
+    handler.setEndPosition(argsList, pos().end);
+    return argsList;
 }
 
 template <typename ParseHandler>
@@ -9155,10 +9165,6 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
         if (newTarget) {
             lhs = newTarget;
         } else {
-            lhs = handler.newList(PNK_NEW, newBegin, JSOP_NEW);
-            if (!lhs)
-                return null();
-
             // Gotten by tryNewTarget
             tt = tokenStream.currentToken().type;
             Node ctorExpr = memberExpr(yieldHandling, TripledotProhibited, tt,
@@ -9166,8 +9172,6 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
                                        /* possibleError = */ nullptr, PredictInvoked);
             if (!ctorExpr)
                 return null();
-
-            handler.addList(lhs, ctorExpr);
 
             // If we have encountered an optional chain, in the form of `new
             // ClassName?.()` then we need to throw, as this is disallowed
@@ -9184,13 +9188,24 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
             bool matched;
             if (!tokenStream.matchToken(&matched, TOK_LP))
                 return null();
+
+            bool isSpread = false;
+            Node args;
             if (matched) {
-                bool isSpread = false;
-                if (!argumentList(yieldHandling, lhs, &isSpread))
-                    return null();
-                if (isSpread)
-                    handler.setOp(lhs, JSOP_SPREADNEW);
+                args = argumentList(yieldHandling, &isSpread);
+            } else {
+                args = handler.newArguments(pos());
             }
+            
+            if (!args)
+                return null();
+
+            lhs = handler.newNewExpression(newBegin, ctorExpr, args);
+            if (!lhs)
+                return null();
+
+            if (isSpread)
+                handler.setOp(lhs, JSOP_SPREADNEW);
         }
     } else if (tt == TOK_SUPER) {
         Node thisName = newThisName();
@@ -9244,15 +9259,16 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
                     return null();
                 }
 
-                nextMember = handler.newList(PNK_SUPERCALL, lhs, JSOP_SUPERCALL);
-                if (!nextMember)
-                    return null();
-
                 // Despite the fact that it's impossible to have |super()| in a
                 // generator, we still inherit the yieldHandling of the
                 // memberExpression, per spec. Curious.
                 bool isSpread = false;
-                if (!argumentList(yieldHandling, nextMember, &isSpread))
+                Node args = argumentList(yieldHandling, &isSpread);
+                if (!args)
+                    return null();
+
+                nextMember = handler.newSuperCall(lhs, args);
+                if (!nextMember)
                     return null();
 
                 if (isSpread)
@@ -9368,17 +9384,6 @@ Parser<ParseHandler>::memberCall(
                tt == TOK_NO_SUBS_TEMPLATE,
                "Unexpected token kind for member call");
 
-    Node nextMember;
-    if (tt == TOK_LP) {
-        if (optionalKind == OptionalKind::Optional) {
-            nextMember = handler.newOptionalCall();
-        } else {
-            nextMember = handler.newCall();
-        }
-    } else {
-        nextMember = handler.newTaggedTemplate();
-    }
-
     JSOp op = JSOP_CALL;
     bool maybeAsyncArrow = false;
     if (PropertyName* prop = handler.maybeDottedProperty(lhs)) {
@@ -9422,16 +9427,15 @@ Parser<ParseHandler>::memberCall(
         }
     }
 
-    handler.setBeginPosition(nextMember, lhs);
-    handler.addList(nextMember, lhs);
-
+    Node nextMember;
     if (tt == TOK_LP) {
         bool isSpread = false;
         PossibleError* asyncPossibleError = maybeAsyncArrow ?
                                             possibleError :
                                             nullptr;
 
-        if (!argumentList(yieldHandling, nextMember, &isSpread, asyncPossibleError)) {
+        Node args = argumentList(yieldHandling, &isSpread, asyncPossibleError);
+        if (!args) {
             return null();
         }
 
@@ -9444,14 +9448,30 @@ Parser<ParseHandler>::memberCall(
                 op = JSOP_SPREADCALL;
             }
         }
+
+        if (optionalKind == OptionalKind::Optional) {
+            nextMember = handler.newOptionalCall(lhs, args);
+        } else {
+            nextMember = handler.newCall(lhs, args);
+        }
+        if (!nextMember)
+            return null();
     } else {
-        if (!taggedTemplate(yieldHandling, nextMember, tt)) {
+        Node args = handler.newArguments(pos());
+        if (!args)
+            return null();
+
+        if (!taggedTemplate(yieldHandling, args, tt)) {
             return null();
         }
         if (optionalKind == OptionalKind::Optional) {
             error(JSMSG_BAD_OPTIONAL_TEMPLATE);
             return null();
         }
+
+        nextMember = handler.newTaggedTemplate(lhs, args);
+        if (!nextMember)
+            return null();
     }
     handler.setOp(nextMember, op);
 

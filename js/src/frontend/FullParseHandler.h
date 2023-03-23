@@ -331,16 +331,28 @@ class FullParseHandler
         literal->append(element);
     }
 
-    ParseNode* newCall() {
-        return newList(PNK_CALL, JSOP_CALL);
+    ParseNode* newCall(ParseNode* callee, ParseNode* args) {
+        return new_<BinaryNode>(PNK_CALL, JSOP_CALL, callee, args);
     }
 
-    ParseNode* newOptionalCall() {
-        return newList(PNK_OPTCALL, JSOP_CALL);
+    ParseNode* newOptionalCall(ParseNode* callee, ParseNode* args) {
+        return new_<BinaryNode>(PNK_OPTCALL, JSOP_CALL, callee, args);
     }
 
-    ParseNode* newTaggedTemplate() {
-        return newList(PNK_TAGGED_TEMPLATE, JSOP_CALL);
+    ParseNode* newArguments(const TokenPos& pos) {
+        return new_<ListNode>(PNK_ARGUMENTS, JSOP_NOP, pos);
+    }
+
+    ParseNode* newSuperCall(ParseNode* callee, ParseNode* args) {
+        return new_<BinaryNode>(PNK_SUPERCALL, JSOP_SUPERCALL, callee, args);
+    }
+
+    ParseNode* newTaggedTemplate(ParseNode* tag, ParseNode* args) {
+        return new_<BinaryNode>(PNK_TAGGED_TEMPLATE, JSOP_CALL, tag, args);
+    }
+
+    ParseNode* newGenExp(ParseNode* callee, ParseNode* args) {
+        return new_<BinaryNode>(PNK_GENEXP, JSOP_CALL, callee, args);
     }
 
     ParseNode* newObjectLiteral(uint32_t begin) {
@@ -763,6 +775,10 @@ class FullParseHandler
 
     ParseNode* newModule() {
         return new_<CodeNode>(PNK_MODULE, JSOP_NOP, pos());
+    }
+
+    Node newNewExpression(uint32_t begin, ParseNode* ctor, ParseNode* args) {
+        return new_<BinaryNode>(PNK_NEW, JSOP_NEW, TokenPos(begin, args->pn_pos.end), ctor, args);
     }
 
     ParseNode* newLexicalScope(LexicalScope::Data* bindings, ParseNode* body) {

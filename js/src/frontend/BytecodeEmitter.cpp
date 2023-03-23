@@ -74,20 +74,6 @@ ParseNodeRequiresSpecialLineNumberNotes(ParseNode* pn)
     return pn->getKind() == PNK_WHILE || pn->getKind() == PNK_FOR;
 }
 
-uint32_t
-GetCallArgsAndCount(ParseNode* callNode, ParseNode** argumentNode)
-{
-    // XXX This helper function exists to make ports less error-prone.
-    //     The current parse tree splits the information between callNode and callee.
-    //     A later refactor has a ListNode instead, with slightly different storage.
-    //     (See also the "what is stored where" table in ParseNode.h)
-    ParseNode* calleeNode = callNode->pn_head;
-    if (argumentNode && calleeNode) {
-        *argumentNode = calleeNode->pn_next;
-    }
-    return callNode->pn_count - 1;
-}
-
 // Class for emitting bytecode for optional expressions.
 class MOZ_RAII OptionalEmitter
 {
@@ -1353,13 +1339,18 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
       case PNK_OPTCALL:
       case PNK_TAGGED_TEMPLATE:
       case PNK_SUPERCALL:
-        MOZ_ASSERT(pn->isArity(PN_LIST));
+        MOZ_ASSERT(pn->isArity(PN_BINARY));
         *answer = true;
         return true;
 
       // Function arg lists can contain arbitrary expressions. Technically
       // this only causes side-effects if one of the arguments does, but since
-      // the call being made will always trigger side-effects, it isn't needed.        
+      // the call being made will always trigger side-effects, it isn't needed.
+      case PNK_ARGUMENTS:
+        MOZ_ASSERT(pn->isArity(PN_LIST));
+        *answer = true;
+        return true;
+    
       case PNK_OPTCHAIN:
         MOZ_ASSERT(pn->isArity(PN_UNARY));
         *answer = true;
@@ -1417,7 +1408,7 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
 
       // Generator expressions have no side effects on their own.
       case PNK_GENEXP:
-        MOZ_ASSERT(pn->isArity(PN_LIST));
+        MOZ_ASSERT(pn->isArity(PN_BINARY));
         *answer = false;
         return true;
 
@@ -4809,7 +4800,7 @@ BytecodeEmitter::emitForOf(ParseNode* forOfLoop, EmitterScope* headLexicalEmitte
     bool allowSelfHostedIter = false;
     if (emitterMode == BytecodeEmitter::SelfHosting &&
         forHeadExpr->isKind(PNK_CALL) &&
-        forHeadExpr->pn_head->name() == cx->names().allowContentIter)
+        forHeadExpr->pn_left->name() == cx->names().allowContentIter)
     {
         allowSelfHostedIter = true;
     }
@@ -6989,10 +6980,12 @@ BytecodeEmitter::emitSelfHostedCallFunction(ParseNode* pn)
     //
     // argc is set to the amount of actually emitted args and the
     // emitting of args below is disabled by setting emitArgs to false.
-    ParseNode* pn2 = pn->pn_head;
-    const char* errorName = SelfHostedCallFunctionName(pn2->name(), cx);
+    ParseNode* pn_callee = pn->pn_left;
+    ParseNode* pn_args = pn->pn_right;
 
-    if (pn->pn_count < 3) {
+    const char* errorName = SelfHostedCallFunctionName(pn_callee->name(), cx);
+
+    if (pn_args->pn_count < 2) {
         reportError(pn, JSMSG_MORE_ARGS_NEEDED, errorName, "2", "s");
         return false;
     }
@@ -7003,8 +6996,8 @@ BytecodeEmitter::emitSelfHostedCallFunction(ParseNode* pn)
         return false;
     }
 
-    bool constructing = pn2->name() == cx->names().constructContentFunction;
-    ParseNode* funNode = pn2->pn_next;
+    bool constructing = pn_callee->name() == cx->names().constructContentFunction;
+    ParseNode* funNode = pn_args->pn_head;
     if (constructing)
         callOp = JSOP_NEW;
     else if (funNode->getKind() == PNK_NAME && funNode->name() == cx->names().std_Function_apply)
@@ -7015,7 +7008,7 @@ BytecodeEmitter::emitSelfHostedCallFunction(ParseNode* pn)
 
 #ifdef DEBUG
     if (emitterMode == BytecodeEmitter::SelfHosting &&
-        pn2->name() == cx->names().callFunction)
+        pn_callee->name() == cx->names().callFunction)
     {
         if (!emit1(JSOP_DEBUGCHECKSELFHOSTED))
             return false;
@@ -7044,7 +7037,7 @@ BytecodeEmitter::emitSelfHostedCallFunction(ParseNode* pn)
             return false;
     }
 
-    uint32_t argc = pn->pn_count - 3;
+    uint32_t argc = pn_args->pn_count - 2;
     if (!emitCall(callOp, argc))
         return false;
 
@@ -7055,15 +7048,15 @@ BytecodeEmitter::emitSelfHostedCallFunction(ParseNode* pn)
 bool
 BytecodeEmitter::emitSelfHostedResumeGenerator(ParseNode* pn)
 {
+    ParseNode* pn_args = pn->pn_right;
+
     // Syntax: resumeGenerator(gen, value, 'next'|'throw'|'close')
-    if (pn->pn_count != 4) {
+    if (pn_args->pn_count != 3) {
         reportError(pn, JSMSG_MORE_ARGS_NEEDED, "resumeGenerator", "1", "s");
         return false;
     }
 
-    ParseNode* funNode = pn->pn_head;  // The resumeGenerator node.
-
-    ParseNode* genNode = funNode->pn_next;
+    ParseNode* genNode = pn_args->pn_head;
     if (!emitTree(genNode))
         return false;
 
@@ -7095,13 +7088,15 @@ BytecodeEmitter::emitSelfHostedForceInterpreter(ParseNode* pn)
 bool
 BytecodeEmitter::emitSelfHostedAllowContentIter(ParseNode* pn)
 {
-    if (pn->pn_count != 2) {
+    ParseNode* pn_args = pn->pn_right;
+
+    if (pn_args->pn_count != 1) {
         reportError(pn, JSMSG_MORE_ARGS_NEEDED, "allowContentIter", "1", "");
         return false;
     }
 
     // We're just here as a sentinel. Pass the value through directly.
-    return emitTree(pn->pn_head->pn_next);
+    return emitTree(pn_args->pn_head);
 }
 
 bool
@@ -7117,9 +7112,10 @@ BytecodeEmitter::isRestParameter(ParseNode* pn)
 
     if (!pn->isKind(PNK_NAME)) {
         if (emitterMode == BytecodeEmitter::SelfHosting && pn->isKind(PNK_CALL)) {
-            ParseNode* pn2 = pn->pn_head;
-            if (pn2->getKind() == PNK_NAME && pn2->name() == cx->names().allowContentIter)
-                return isRestParameter(pn2->pn_next);
+            ParseNode* pn_callee = pn->pn_left;
+            if (pn_callee->getKind() == PNK_NAME &&
+                pn_callee->name() == cx->names().allowContentIter)
+                return isRestParameter(pn->pn_right->pn_head);
         }
         return false;
     }
@@ -7289,16 +7285,16 @@ BytecodeEmitter::emitOptionalCall(
     OptionalEmitter& oe,
     ValueUsage valueUsage)
 {
-    ParseNode* calleeNode = callNode->pn_head;
+    ParseNode* calleeNode = callNode->pn_left;
+    ParseNode* argsList = callNode->pn_right;
     bool isCall = true;
     bool isSpread = IsSpreadOp(callNode->getOp());
-    ParseNode* firstArg = nullptr;
-    uint32_t argc = GetCallArgsAndCount(callNode, &firstArg);
+    uint32_t argc = argsList->pn_count;
     JSOp op = callNode->getOp();
 
     CallOrNewEmitter cone(this, op,
                           isSpread && (argc == 1) &&
-                          isRestParameter(firstArg->pn_kid)
+                          isRestParameter(argsList->pn_head->pn_kid)
                           ? CallOrNewEmitter::ArgumentsKind::SingleSpreadRest
                           : CallOrNewEmitter::ArgumentsKind::Other,
                           valueUsage);
@@ -7315,12 +7311,12 @@ BytecodeEmitter::emitOptionalCall(
         }
     }
 
-    if (!emitArguments(firstArg, argc, /* isCall = */ true, isSpread, cone)) {
+    if (!emitArguments(argsList, /* isCall = */ true, isSpread, cone)) {
         //              [stack] CALLEE THIS ARGS...
         return false;
     }
 
-    ParseNode* coordNode = getCoordNode(callNode, calleeNode, firstArg);
+    ParseNode* coordNode = getCoordNode(callNode, calleeNode, argsList);
     if (!cone.emitEnd(argc, Some(coordNode->pn_pos.begin))) {
         //              [stack] RVAL
         return false;
@@ -7331,17 +7327,14 @@ BytecodeEmitter::emitOptionalCall(
 
 ParseNode* BytecodeEmitter::getCoordNode(ParseNode* pn,
                                          ParseNode* calleeNode,
-                                         ParseNode* firstArg) {
+                                         ParseNode* argsList) {
     ParseNode* coordNode = pn;
     if (pn->isOp(JSOP_CALL) || pn->isOp(JSOP_SPREADCALL) || pn->isOp(JSOP_FUNCALL) ||
         pn->isOp(JSOP_FUNAPPLY)) {
         // Default to using the location of the `(` itself.
         // obj[expr]() // expression
         //          ^  // column coord
-        if (firstArg) {
-            // XXX In our version, firstArg points to the first argument and may be null if there are none
-            coordNode = firstArg;
-        }
+        coordNode = argsList;
 
         switch (calleeNode->getKind()) {
           case PNK_DOT:
@@ -7369,9 +7362,11 @@ ParseNode* BytecodeEmitter::getCoordNode(ParseNode* pn,
 }
 
 bool
-BytecodeEmitter::emitArguments(ParseNode* firstArgNode, uint32_t argc, bool isCall, bool isSpread,
+BytecodeEmitter::emitArguments(ParseNode* pn, bool isCall, bool isSpread,
                                CallOrNewEmitter& cone)
 {
+    uint32_t argc = pn->pn_count;
+
     if (argc >= ARGC_LIMIT) {
         parser->tokenStream.reportError(isCall
                                         ? JSMSG_TOO_MANY_FUN_ARGS
@@ -7382,21 +7377,21 @@ BytecodeEmitter::emitArguments(ParseNode* firstArgNode, uint32_t argc, bool isCa
         if (!cone.prepareForNonSpreadArguments()) {        // CALLEE THIS
             return false;
         }
-        for (ParseNode* arg = firstArgNode; arg; arg = arg->pn_next) {
+        for (ParseNode* arg = pn->pn_head; arg; arg = arg->pn_next) {
             if (!emitTree(arg)) {
                 return false;
             }
         }
     } else {
         if (cone.wantSpreadOperand()) {
-            if (!emitTree(firstArgNode->pn_kid)) {         // CALLEE THIS ARG0
+            if (!emitTree(pn->pn_head->pn_kid)) {         // CALLEE THIS ARG0
                 return false;
             }
         }
         if (!cone.emitSpreadArgumentsTest()) {             // CALLEE THIS
             return false;
         }
-        if (!emitArray(firstArgNode, argc, JSOP_SPREADCALLARRAY)) {                 // CALLEE THIS ARR
+        if (!emitArray(pn->pn_head, argc, JSOP_SPREADCALLARRAY)) {                 // CALLEE THIS ARR
             return false;
         }
     }
@@ -7424,11 +7419,11 @@ BytecodeEmitter::emitCallOrNew(
      * value required for calls (which non-strict mode functions
      * will box into the global object).
      */
-    ParseNode* calleeNode = callNode->pn_head;
     bool isCall = callNode->isKind(PNK_CALL) || callNode->isKind(PNK_TAGGED_TEMPLATE);
+    ParseNode* calleeNode = callNode->pn_left;
+    ParseNode* argsList = callNode->pn_right;
+
     bool isSpread = IsSpreadOp(callNode->getOp());
-    ParseNode* firstArg = nullptr;
-    uint32_t argc = GetCallArgsAndCount(callNode, &firstArg);
 
     if (calleeNode->isKind(PNK_NAME) &&
         emitterMode == BytecodeEmitter::SelfHosting &&
@@ -7452,21 +7447,22 @@ BytecodeEmitter::emitCallOrNew(
         // Fall through.
     }
 
+    uint32_t argc = argsList->pn_count;
     JSOp op = callNode->getOp();
     CallOrNewEmitter cone(this, op,
                           isSpread && (argc == 1) &&
-                          isRestParameter(firstArg->pn_kid)
+                          isRestParameter(argsList->pn_head->pn_kid)
                           ? CallOrNewEmitter::ArgumentsKind::SingleSpreadRest
                           : CallOrNewEmitter::ArgumentsKind::Other,
                           valueUsage);
     if (!emitCalleeAndThis(callNode, calleeNode, cone)) {  // CALLEE THIS
         return false;
     }
-    if (!emitArguments(firstArg, argc, isCall, isSpread, cone)) {
+    if (!emitArguments(argsList, isCall, isSpread, cone)) {
         return false;                                      // CALLEE THIS ARGS...
     }
 
-    ParseNode* coordNode = getCoordNode(callNode, calleeNode, firstArg);
+    ParseNode* coordNode = getCoordNode(callNode, calleeNode, argsList);
 
     if (!cone.emitEnd(argc, Some(coordNode->pn_pos.begin))) {
         return false;                                      // RVAL
@@ -8091,7 +8087,7 @@ BytecodeEmitter::emitArray(ParseNode* pn, uint32_t count, JSOp op)
 
                 if (emitterMode == BytecodeEmitter::SelfHosting &&
                     expr->isKind(PNK_CALL) &&
-                    expr->pn_head->name() == cx->names().allowContentIter)
+                    expr->pn_left->name() == cx->names().allowContentIter)
                 {
                     allowSelfHostedIter = true;
                 }

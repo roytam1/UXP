@@ -751,8 +751,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     MOZ_MUST_USE ParseNode* getCoordNode(ParseNode* callNode, ParseNode* calleeNode,
                                          ParseNode* firstArgNode);
-    MOZ_MUST_USE bool emitArguments(ParseNode* firstArgNode, uint32_t argc,
-                                    bool isCall, bool isSpread,
+    MOZ_MUST_USE bool emitArguments(ParseNode* argsList, bool isCall, bool isSpread,
                                     CallOrNewEmitter& cone);
     MOZ_MUST_USE bool emitCallOrNew(ParseNode* pn,
                                     ValueUsage valueUsage = ValueUsage::WantValue);

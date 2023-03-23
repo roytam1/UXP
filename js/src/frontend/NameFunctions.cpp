@@ -307,17 +307,17 @@ class NameResolver
     bool resolveTaggedTemplate(ParseNode* node, HandleAtom prefix) {
         MOZ_ASSERT(node->isKind(PNK_TAGGED_TEMPLATE));
 
-        ParseNode* element = node->pn_head;
+        ParseNode* tag = node->pn_left;
 
-        // The list head is a leading expression, e.g. |tag| in |tag`foo`|,
+        // The leading expression, e.g. |tag| in |tag`foo`|,
         // that might contain functions.
-        if (!resolve(element, prefix))
+        if (!resolve(tag, prefix))
             return false;
 
-        // Next is the callsite object node.  This node only contains
+        // The callsite object node is first.  This node only contains
         // internal strings or undefined and an array -- no user-controlled
         // expressions.
-        element = element->pn_next;
+        ParseNode* element = node->pn_right->pn_head;
 #ifdef DEBUG
         {
             MOZ_ASSERT(element->isKind(PNK_CALLSITEOBJ));
@@ -689,10 +689,6 @@ class NameResolver
           case PNK_MOD:
           case PNK_POW:
           case PNK_COMMA:
-          case PNK_NEW:
-          case PNK_CALL:
-          case PNK_SUPERCALL:
-          case PNK_GENEXP:
           case PNK_ARRAY:
           case PNK_STATEMENTLIST:
           case PNK_PARAMSBODY:
@@ -739,9 +735,31 @@ class NameResolver
             break;
 
           case PNK_TAGGED_TEMPLATE:
-            MOZ_ASSERT(cur->isArity(PN_LIST));
+            MOZ_ASSERT(cur->isArity(PN_BINARY));
             if (!resolveTaggedTemplate(cur, prefix))
                 return false;
+            break;
+
+          case PNK_NEW:
+          case PNK_CALL:
+          case PNK_GENEXP:
+          case PNK_SUPERCALL:
+            MOZ_ASSERT(cur->isArity(PN_BINARY));
+            if (!resolve(cur->pn_left, prefix))
+                return false;
+            if (!resolve(cur->pn_right, prefix))
+                return false;
+            break;
+
+          // Handles the arguments for new/call/supercall, but does _not_ handle
+          // the Arguments node used by tagged template literals, since that is
+          // special-cased inside of resolveTaggedTemplate.
+          case PNK_ARGUMENTS:
+            MOZ_ASSERT(cur->isArity(PN_LIST));
+            for (ParseNode* element = cur->pn_head; element; element = element->pn_next) {
+                if (!resolve(element, prefix))
+                    return false;
+            }
             break;
 
           // Import/export spec lists contain import/export specs containing

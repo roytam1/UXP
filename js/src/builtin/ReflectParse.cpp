@@ -3025,24 +3025,25 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
       case PNK_OPTCALL:
       case PNK_SUPERCALL:
       {
-        ParseNode* next = pn->pn_head;
-        MOZ_ASSERT(pn->pn_pos.encloses(next->pn_pos));
+        ParseNode* pn_callee = pn->pn_left;
+        ParseNode* pn_args = pn->pn_right;
+        MOZ_ASSERT(pn->pn_pos.encloses(pn_callee->pn_pos));
 
         RootedValue callee(cx);
         if (pn->isKind(PNK_SUPERCALL)) {
-            MOZ_ASSERT(next->isKind(PNK_SUPERBASE));
-            if (!builder.super(&next->pn_pos, &callee))
+            MOZ_ASSERT(pn_callee->isKind(PNK_SUPERBASE));
+            if (!builder.super(&pn_callee->pn_pos, &callee))
                 return false;
         } else {
-            if (!expression(next, &callee))
+            if (!expression(pn_callee, &callee))
                 return false;
         }
 
         NodeVector args(cx);
-        if (!args.reserve(pn->pn_count - 1))
+        if (!args.reserve(pn_args->pn_count))
             return false;
 
-        for (next = next->pn_next; next; next = next->pn_next) {
+        for (ParseNode* next = pn_args->pn_head; next; next = next->pn_next) {
             MOZ_ASSERT(pn->pn_pos.encloses(next->pn_pos));
 
             RootedValue arg(cx);

@@ -369,6 +369,7 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_OBJECT:
       case PNK_DOT:
       case PNK_ELEM:
+      case PNK_ARGUMENTS:
       case PNK_CALL:
       case PNK_OPTCHAIN:
       case PNK_OPTDOT:
@@ -1549,8 +1550,9 @@ FoldCall(ExclusiveContext* cx, ParseNode* node, Parser<FullParseHandler>& parser
     MOZ_ASSERT(node->isKind(PNK_CALL) ||
                node->isKind(PNK_OPTCALL) ||
                node->isKind(PNK_SUPERCALL) ||
+               node->isKind(PNK_NEW) ||
                node->isKind(PNK_TAGGED_TEMPLATE));
-    MOZ_ASSERT(node->isArity(PN_LIST));
+    MOZ_ASSERT(node->isArity(PN_BINARY));
 
     // Don't fold a parenthesized callable component in an invocation, as this
     // might cause a different |this| value to be used, changing semantics:
@@ -1563,9 +1565,27 @@ FoldCall(ExclusiveContext* cx, ParseNode* node, Parser<FullParseHandler>& parser
     //   assertEq(obj.f``, "obj");
     //
     // See bug 537673 and bug 1182373.
+    ParseNode** pn_callee = &node->pn_left;
+    if (node->isKind(PNK_NEW) || !(*pn_callee)->isInParens()) {
+        if (!Fold(cx, pn_callee, parser, inGenexpLambda))
+            return false;
+    }
+
+    ParseNode** pn_args = &node->pn_right;
+    if (!Fold(cx, pn_args, parser, inGenexpLambda))
+        return false;
+
+    return true;
+}
+
+static bool
+FoldArguments(ExclusiveContext* cx, ParseNode* node, Parser<FullParseHandler>& parser,
+              bool inGenexpLambda)
+{
+    MOZ_ASSERT(node->isKind(PNK_ARGUMENTS));
+    MOZ_ASSERT(node->isArity(PN_LIST));
+
     ParseNode** listp = &node->pn_head;
-    if ((*listp)->isInParens())
-        listp = &(*listp)->pn_next;
 
     for (; *listp; listp = &(*listp)->pn_next) {
         if (!Fold(cx, listp, parser, inGenexpLambda))
@@ -1739,6 +1759,7 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
         return Fold(cx, &pn->pn_kid, parser, inGenexpLambda);
 
       case PNK_EXPORT_DEFAULT:
+      case PNK_GENEXP:
         MOZ_ASSERT(pn->isArity(PN_BINARY));
         return Fold(cx, &pn->pn_left, parser, inGenexpLambda);
 
@@ -1790,7 +1811,6 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
       case PNK_INSTANCEOF:
       case PNK_IN:
       case PNK_COMMA:
-      case PNK_NEW:
       case PNK_ARRAY:
       case PNK_OBJECT:
       case PNK_ARRAYCOMP:
@@ -1805,7 +1825,6 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
       case PNK_CALLSITEOBJ:
       case PNK_EXPORT_SPEC_LIST:
       case PNK_IMPORT_SPEC_LIST:
-      case PNK_GENEXP:
         return FoldList(cx, pn, parser, inGenexpLambda);
 
       case PNK_INITIALYIELD:
@@ -1847,9 +1866,13 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
 
       case PNK_CALL:
       case PNK_OPTCALL:
+      case PNK_NEW:
       case PNK_SUPERCALL:
       case PNK_TAGGED_TEMPLATE:
         return FoldCall(cx, pn, parser, inGenexpLambda);
+
+      case PNK_ARGUMENTS:
+        return FoldArguments(cx, pn, parser, inGenexpLambda);
 
       case PNK_SWITCH:
       case PNK_COLON:

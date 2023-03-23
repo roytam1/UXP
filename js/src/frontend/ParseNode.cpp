@@ -264,6 +264,12 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       case PNK_DOWHILE:
       case PNK_WHILE:
       case PNK_SWITCH:
+      case PNK_NEW:
+      case PNK_OPTCALL:
+      case PNK_CALL:
+      case PNK_SUPERCALL:
+      case PNK_TAGGED_TEMPLATE:
+      case PNK_GENEXP:
       case PNK_CLASSMETHOD:
       case PNK_NEWTARGET:
       case PNK_SETTHIS:
@@ -452,19 +458,14 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       case PNK_MOD:
       case PNK_POW:
       case PNK_COMMA:
-      case PNK_NEW:
-      case PNK_OPTCALL:
-      case PNK_CALL:
-      case PNK_SUPERCALL:
-      case PNK_GENEXP:
       case PNK_ARRAY:
       case PNK_OBJECT:
       case PNK_TEMPLATE_STRING_LIST:
-      case PNK_TAGGED_TEMPLATE:
       case PNK_CALLSITEOBJ:
       case PNK_VAR:
       case PNK_CONST:
       case PNK_LET:
+      case PNK_ARGUMENTS:
       case PNK_CATCHLIST:
       case PNK_STATEMENTLIST:
       case PNK_IMPORT_SPEC_LIST:

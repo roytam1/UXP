@@ -44,6 +44,7 @@ class ObjectBox;
     F(LABEL) \
     F(OBJECT) \
     F(CALL) \
+    F(ARGUMENTS) \
     F(NAME) \
     F(OBJECT_PROPERTY_NAME) \
     F(COMPUTED_NAME) \
@@ -372,9 +373,8 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_POSTINCREMENT,
  * PNK_PREDECREMENT,
  * PNK_POSTDECREMENT
- * PNK_NEW      list        pn_head: list of ctor, arg1, arg2, ... argN
- *                          pn_count: 1 + N (where N is number of args)
- *                          ctor is a MEMBER expr
+ * PNK_NEW      binary      pn_left: ctor expression on the left of the (
+ *                          pn_right: Arguments
  * PNK_DELETENAME unary     pn_kid: PNK_NAME expr
  * PNK_DELETEPROP unary     pn_kid: PNK_DOT expr
  * PNK_DELETEELEM unary     pn_kid: PNK_ELEM expr
@@ -410,10 +410,11 @@ IsTypeofKind(ParseNodeKind kind)
  *                          pn_atom: name to right of .
  * PNK_ELEM     binary      pn_left: MEMBER expr to left of [
  *                          pn_right: expr between [ and ]
- * PNK_CALL     list        pn_head: list of call, arg1, arg2, ... argN
- *                          pn_count: 1 + N (where N is number of args)
- *                          call is a MEMBER expr naming a callable object
- * PNK_GENEXP   list        Exactly like PNK_CALL, used for the implicit call
+ * PNK_CALL     binary      pn_left: callee expression on the left of the (
+ *                          pn_right: Arguments
+ * PNK_ARGUMENTS list       pn_head: list of arg1, arg2, ... argN
+ *                          pn_count: N (where N is number of args)
+ * PNK_GENEXP   binary      Exactly like PNK_CALL, used for the implicit call
  *                          in the desugaring of a generator-expression.
  * PNK_ARRAY    list        pn_head: list of pn_count array element exprs
  *                          [,,] holes are represented by PNK_ELISION nodes
@@ -434,8 +435,8 @@ IsTypeofKind(ParseNodeKind kind)
  *              list
  * PNK_TEMPLATE_STRING      pn_atom: template string atom
                 nullary     pn_op: JSOP_NOP
- * PNK_TAGGED_TEMPLATE      pn_head: list of call, call site object, arg1, arg2, ... argN
- *              list        pn_count: 2 + N (N is the number of substitutions)
+ * PNK_TAGGED_TEMPLATE      pn_left: tag expression
+ *              binary      pn_right: Arguments, with the first being the call site object, then arg1, arg2, ... argN
  * PNK_CALLSITEOBJ list     pn_head: a PNK_ARRAY node followed by
  *                          list of pn_count - 1 PNK_TEMPLATE_STRING nodes
  * PNK_REGEXP   nullary     pn_objbox: RegExp model object
@@ -447,6 +448,8 @@ IsTypeofKind(ParseNodeKind kind)
  *
  * PNK_THIS,        unary   pn_kid: '.this' Name if function `this`, else nullptr
  * PNK_SUPERBASE    unary   pn_kid: '.this' Name
+ *
+ * PNK_SUPERCALL    binary  pn_left: SuperBase pn_right: Arguments
  *
  * PNK_SETTHIS      binary  pn_left: '.this' Name, pn_right: SuperCall
  *
@@ -744,7 +747,7 @@ class ParseNode
     ParseNode* generatorExpr() const {
         MOZ_ASSERT(isKind(PNK_GENEXP));
 
-        ParseNode* callee = this->pn_head;
+        ParseNode* callee = this->pn_left;
         MOZ_ASSERT(callee->isKind(PNK_FUNCTION));
 
         ParseNode* paramsBody = callee->pn_body;

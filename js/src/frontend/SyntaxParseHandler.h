@@ -289,9 +289,12 @@ class SyntaxParseHandler
     MOZ_MUST_USE bool addSpreadElement(Node literal, uint32_t begin, Node inner) { return true; }
     void addArrayElement(Node literal, Node element) { }
 
-    Node newCall() { return NodeFunctionCall; }
-    Node newOptionalCall() { return NodeOptionalFunctionCall; }
-    Node newTaggedTemplate() { return NodeGeneric; }
+    Node newCall(Node callee, Node args) { return NodeFunctionCall; }
+    Node newOptionalCall(Node callee, Node args) { return NodeOptionalFunctionCall; }
+    Node newArguments(const TokenPos& pos) { return NodeGeneric; }
+    Node newSuperCall(Node callee, Node args) { return NodeGeneric; }
+    Node newTaggedTemplate(Node callee, Node args) { return NodeGeneric; }
+    Node newGenExp(Node callee, Node args) { return NodeGeneric; }
 
     Node newObjectLiteral(uint32_t begin) { return NodeUnparenthesizedObject; }
     Node newClassMethodList(uint32_t begin) { return NodeGeneric; }
@@ -489,6 +492,11 @@ class SyntaxParseHandler
                    list == NodeLexicalDeclaration ||
                    list == NodeFunctionCall ||
                    list == NodeOptionalFunctionCall);
+    }
+
+
+    Node newNewExpression(uint32_t begin, Node ctor, Node args) {
+        return NodeGeneric;
     }
 
     Node newAssignment(ParseNodeKind kind, Node lhs, Node rhs, JSOp op) {
