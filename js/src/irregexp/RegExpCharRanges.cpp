@@ -39,6 +39,7 @@
 
 using namespace js::irregexp;
 
+using js::LifoAlloc;
 using mozilla::ArrayLength;
 
 void
