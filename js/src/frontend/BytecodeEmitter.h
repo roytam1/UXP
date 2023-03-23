@@ -123,13 +123,12 @@ typedef Vector<jssrcnote, 64> SrcNotesVector;
 class CallOrNewEmitter;
 class ElemOpEmitter;
 class EmitterScope;
+class NestableControl;
 class PropOpEmitter;
 class TDZCheckCache;
 
 struct MOZ_STACK_CLASS BytecodeEmitter
 {
-    class NestableControl;
-
     SharedContext* const sc;      /* context shared between parsing and bytecode generation */
 
     ExclusiveContext* const cx;
@@ -256,9 +255,6 @@ struct MOZ_STACK_CLASS BytecodeEmitter
                     TokenPos bodyPosition, EmitterMode emitterMode = Normal);
 
     MOZ_MUST_USE bool init();
-
-    template <typename Predicate /* (NestableControl*) -> bool */>
-    NestableControl* findInnermostNestableControl(Predicate predicate) const;
 
     template <typename T>
     T* findInnermostNestableControl() const;

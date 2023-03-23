@@ -139,6 +139,7 @@ UNIFIED_SOURCES += [
     'ds/LifoAlloc.cpp',
     'ds/MemoryProtectionExceptionHandler.cpp',
     'frontend/BytecodeCompiler.cpp',
+    'frontend/BytecodeControlStructures.cpp',
     'frontend/BytecodeEmitter.cpp',
     'frontend/CallOrNewEmitter.cpp',
     'frontend/ElemOpEmitter.cpp',
