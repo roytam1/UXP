@@ -152,6 +152,7 @@ UNIFIED_SOURCES += [
     'frontend/NameOpEmitter.cpp',
     'frontend/ParseNode.cpp',
     'frontend/PropOpEmitter.cpp',
+    'frontend/SwitchEmitter.cpp',
     'frontend/TDZCheckCache.cpp',
     'frontend/TokenStream.cpp',
     'frontend/TryEmitter.cpp',

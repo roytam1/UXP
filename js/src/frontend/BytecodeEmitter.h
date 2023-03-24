@@ -353,7 +353,9 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     }
 
     bool reportError(ParseNode* pn, unsigned errorNumber, ...);
+    bool reportError(const mozilla::Maybe<uint32_t>& maybeOffset, unsigned errorNumber, ...);
     bool reportExtraWarning(ParseNode* pn, unsigned errorNumber, ...);
+    bool reportExtraWarning(const mozilla::Maybe<uint32_t>& maybeOffset, unsigned errorNumber, ...);
     bool reportStrictModeError(ParseNode* pn, unsigned errorNumber, ...);
 
     // If pn contains a useful expression, return true with *answer set to true.
