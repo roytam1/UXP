@@ -5527,10 +5527,6 @@ ac_configure_args="$_SUBDIR_CONFIG_ARGS"
 # and $NSPR_LIBS.
 ac_configure_args="`echo $ac_configure_args | sed -e 's/--with-system-nspr\S* *//'`"
 
-if test "$_INTL_API" = no; then
-    ac_configure_args="$ac_configure_args --without-intl-api"
-fi
-
 if test -n "$NSPR_CFLAGS" -o -n "$NSPR_LIBS"; then
     ac_configure_args="$ac_configure_args --with-nspr-cflags='$NSPR_CFLAGS'"
     ac_configure_args="$ac_configure_args --with-nspr-libs='$NSPR_LIBS'"
