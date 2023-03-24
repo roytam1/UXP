@@ -64,6 +64,7 @@ public:
   static bool HasOptionalSelectorListArg(Type aType);
   static bool IsHiddenFromSerialization(Type aType);
   static bool IsUserActionPseudoClass(Type aType);
+  static bool IsHybridPseudoElement(Type aType);
 
   // Should only be used on types other than Count and NotPseudoClass
   static void PseudoTypeToString(Type aType, nsAString& aString);

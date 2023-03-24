@@ -40,6 +40,10 @@
 // API for creating pseudo-implementing native anonymous content in JS with this
 // pseudo-element?
 #define CSS_PSEUDO_ELEMENT_IS_JS_CREATED_NAC           (1<<5)
+// Is this pseudo-element a pseudo-element that supports a tree-abiding
+// pseudo-element following it, such as ::after or ::before? See
+// https://w3c.github.io/csswg-drafts/css-pseudo-4/#tree-abiding.
+#define CSS_PSEUDO_ELEMENT_SUPPORTS_TREE_ABIDING       (1<<6)
 
 namespace mozilla {
 
@@ -80,6 +84,10 @@ public:
 
   static bool IsCSS2PseudoElement(nsIAtom *aAtom);
 
+  static bool IsHybridPseudoElement(Type aType);
+
+  static bool IsTreeAbidingPseudoElement(Type aType);
+
 #define CSS_PSEUDO_ELEMENT(_name, _value, _flags) \
   static nsICSSPseudoElement* _name;
 #include "nsCSSPseudoElementList.h"
@@ -105,6 +113,12 @@ public:
   static bool PseudoElementIsJSCreatedNAC(Type aType)
   {
     return PseudoElementHasFlags(aType, CSS_PSEUDO_ELEMENT_IS_JS_CREATED_NAC);
+  }
+
+  static bool PseudoElementSupportsTreeAbiding(const Type aType)
+  {
+    return PseudoElementHasFlags(aType,
+                                 CSS_PSEUDO_ELEMENT_SUPPORTS_TREE_ABIDING);
   }
 
   static bool IsEnabled(Type aType, EnabledState aEnabledState)

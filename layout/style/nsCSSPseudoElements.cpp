@@ -75,6 +75,22 @@ nsCSSPseudoElements::IsCSS2PseudoElement(nsIAtom *aAtom)
   return result;
 }
 
+/* static */ bool
+nsCSSPseudoElements::IsHybridPseudoElement(CSSPseudoElementType aType)
+{
+  return aType == CSSPseudoElementType::slotted;
+}
+
+/* static */ bool
+nsCSSPseudoElements::IsTreeAbidingPseudoElement(CSSPseudoElementType aType)
+{
+  // TODO: ::marker should be added here once we have support for it.
+  return aType == CSSPseudoElementType::after ||
+         aType == CSSPseudoElementType::before ||
+         aType == CSSPseudoElementType::mozPlaceholder ||
+         aType == CSSPseudoElementType::placeholder;
+}
+
 /* static */ CSSPseudoElementType
 nsCSSPseudoElements::GetPseudoType(nsIAtom *aAtom, EnabledState aEnabledState)
 {

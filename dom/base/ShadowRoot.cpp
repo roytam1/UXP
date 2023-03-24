@@ -9,6 +9,7 @@
 #include "mozilla/dom/DocumentFragment.h"
 #include "ChildIterator.h"
 #include "nsContentUtils.h"
+#include "nsLayoutUtils.h"
 #include "nsDOMClassInfoID.h"
 #include "nsIDOMHTMLElement.h"
 #include "nsIStyleSheetLinkingElement.h"
@@ -162,6 +163,19 @@ ShadowRoot::AddSlot(HTMLSlotElement* aSlot)
 
       oldSlot->RemoveAssignedNode(assignedNode);
       currentSlot->AppendAssignedNode(assignedNode);
+
+      Element* restyleElement;
+      if (assignedNode->IsElement()) {
+        restyleElement = assignedNode->AsElement();
+      } else {
+        // This is likely a text node. Use the host instead.
+        restyleElement = GetHost();
+      }
+      if (restyleElement) {
+        nsLayoutUtils::PostRestyleEvent(
+          restyleElement, eRestyle_Subtree, nsChangeHint(0));
+      }
+
       doEnqueueSlotChange = true;
     }
 

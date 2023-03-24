@@ -371,6 +371,9 @@ struct MOZ_STACK_CLASS TreeMatchContext {
   // match.
   bool mOnlyMatchHostPseudo;
 
+  // Restrict matching to selectors that contain a :slotted() pseudo-class.
+  bool mRestrictToSlottedPseudo;
+
   // Root of scoped stylesheet (set and unset by the supplier of the
   // scoped stylesheet).
   nsIContent* mScopedRoot;
@@ -403,6 +406,13 @@ struct MOZ_STACK_CLASS TreeMatchContext {
   // for an HTML5 scoped style sheet.
   bool mForScopedStyle;
 
+  // Whether we're currently in the topmost scope for shadow DOM.
+  bool mIsTopmostScope;
+
+  // Whether we're testing for the assigned slot instead of the slottable
+  // when matching type/class/ID/attribute.
+  bool mForAssignedSlot;
+
   enum MatchVisited {
     eNeverMatchVisited,
     eMatchVisitedDefault
@@ -429,6 +439,7 @@ struct MOZ_STACK_CLASS TreeMatchContext {
     , mVisitedHandling(aVisitedHandling)
     , mDocument(aDocument)
     , mOnlyMatchHostPseudo(false)
+    , mRestrictToSlottedPseudo(false)
     , mScopedRoot(nullptr)
     , mIsHTMLDocument(aDocument->IsHTMLDocument())
     , mCompatMode(aDocument->GetCompatibilityMode())
@@ -436,6 +447,8 @@ struct MOZ_STACK_CLASS TreeMatchContext {
     , mSkippingParentDisplayBasedStyleFixup(false)
     , mForScopedStyle(false)
     , mCurrentStyleScope(nullptr)
+    , mIsTopmostScope(false)
+    , mForAssignedSlot(false)
   {
     if (aMatchVisited != eNeverMatchVisited) {
       nsILoadContext* loadContext = mDocument->GetLoadContext();
