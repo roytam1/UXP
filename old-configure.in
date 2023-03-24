@@ -5152,6 +5152,11 @@ MOZ_ARG_ENABLE_BOOL(shared-icu,
     MOZ_SHARED_ICU=1,
     MOZ_SHARED_ICU=)
 
+# We want shared ICU to always be enabled on Windows regardless of the enable bool.
+if test "$OS_ARCH" = "WINNT"; then
+  MOZ_SHARED_ICU=1
+fi
+
 MOZ_CONFIG_ICU()
 
 dnl Echo the CFLAGS to remove extra whitespace.
