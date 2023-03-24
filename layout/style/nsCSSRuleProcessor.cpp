@@ -1997,11 +1997,9 @@ static bool SelectorMatches(Element* aElement,
             return false;
           }
 
-          NodeMatchContext nodeContext(EventStates(),
-                                       aNodeMatchContext.mIsRelevantLink);
           if (!SelectorListMatches(aElement,
                                    pseudoClass,
-                                   nodeContext,
+                                   aNodeMatchContext,
                                    aTreeMatchContext)) {
             return false;
           }
@@ -2049,7 +2047,7 @@ static bool SelectorMatches(Element* aElement,
           // Match if any selector in the argument list matches.
           // FIXME: What this effectively does is bypass the "featureless"
           // selector check under SelectorMatches.
-          NodeMatchContext nodeContext(EventStates(),
+          NodeMatchContext nodeContext(aNodeMatchContext.mStateMask,
                                        aNodeMatchContext.mIsRelevantLink);
           if (!SelectorListMatches(aElement,
                                    pseudoClass,
