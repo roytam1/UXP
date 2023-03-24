@@ -258,6 +258,7 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_SWITCH   binary      pn_left: discriminant
  *                          pn_right: PNK_LEXICALSCOPE node that contains the list
  *                            of PNK_CASE nodes, with at most one default node.
+ *                          hasDefault: true if there's a default case
  * PNK_CASE     binary      pn_left: case-expression if CaseClause, or
  *                            null if DefaultClause
  *                          pn_right: PNK_STATEMENTLIST node for this case's
@@ -589,6 +590,7 @@ class ParseNode
             union {
                 unsigned iflags;        /* JSITER_* flags for PNK_{COMPREHENSION,}FOR node */
                 bool isStatic;          /* only for PNK_CLASSMETHOD */
+                bool hasDefault;        /* only for PNK_SWITCH */
             };
         } binary;
         struct {                        /* one kid if unary */
@@ -1375,7 +1377,7 @@ struct CallSiteNode : public ListNode {
 
 struct ClassMethod : public BinaryNode {
     /*
-     * Method defintions often keep a name and function body that overlap,
+     * Method definitions often keep a name and function body that overlap,
      * so explicitly define the beginning and end here.
      */
     ClassMethod(ParseNode* name, ParseNode* body, JSOp op, bool isStatic)
@@ -1398,6 +1400,48 @@ struct ClassMethod : public BinaryNode {
     }
     bool isStatic() const {
         return pn_u.binary.isStatic;
+    }
+};
+
+struct SwitchStatement : public BinaryNode {
+    SwitchStatement(uint32_t begin, ParseNode* discriminant, ParseNode* lexicalForCaseList,
+                    bool hasDefault)
+      : BinaryNode(PNK_SWITCH, JSOP_NOP,
+                   TokenPos(begin, lexicalForCaseList->pn_pos.end),
+                   discriminant, lexicalForCaseList)
+    {
+#ifdef DEBUG
+        MOZ_ASSERT(lexicalForCaseList->isKind(PNK_LEXICALSCOPE));
+        ParseNode* cases = lexicalForCaseList->scopeBody();
+        MOZ_ASSERT(cases->isKind(PNK_STATEMENTLIST));
+        bool found = false;
+        CaseClause* firstCase = cases->pn_head ? &cases->pn_head->as<CaseClause>() : nullptr;
+        for (CaseClause* caseNode = firstCase; caseNode; caseNode = caseNode->next()) {
+            if (caseNode->isDefault()) {
+                found = true;
+                break;
+            }
+        }
+        MOZ_ASSERT(found == hasDefault);
+#endif
+
+        pn_u.binary.hasDefault = hasDefault;
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_SWITCH);
+        MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
+        return match;
+    }
+
+    ParseNode& discriminant() const {
+        return *pn_u.binary.left;
+    }
+    ParseNode& lexicalForCaseList() const {
+        return *pn_u.binary.right;
+    }
+    bool hasDefault() const {
+        return pn_u.binary.hasDefault;
     }
 };
 

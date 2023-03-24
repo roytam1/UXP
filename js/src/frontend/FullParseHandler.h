@@ -661,9 +661,11 @@ class FullParseHandler
         return new_<TernaryNode>(kind, JSOP_NOP, target, nullptr, iteratedExpr, pos);
     }
 
-    ParseNode* newSwitchStatement(uint32_t begin, ParseNode* discriminant, ParseNode* caseList) {
-        TokenPos pos(begin, caseList->pn_pos.end);
-        return new_<BinaryNode>(PNK_SWITCH, JSOP_NOP, pos, discriminant, caseList);
+    ParseNode* newSwitchStatement(uint32_t begin, ParseNode* discriminant,
+                                  ParseNode* lexicalForCaseList, bool hasDefault)
+    {
+        return new_<SwitchStatement>(begin, discriminant, lexicalForCaseList, hasDefault);
+
     }
 
     ParseNode* newCaseOrDefault(uint32_t begin, ParseNode* expr, ParseNode* body) {
