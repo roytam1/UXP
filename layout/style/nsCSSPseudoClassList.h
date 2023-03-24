@@ -93,6 +93,9 @@ CSS_PSEUDO_CLASS(nthLastChild, ":nth-last-child", 0, "")
 CSS_PSEUDO_CLASS(nthOfType, ":nth-of-type", 0, "")
 CSS_PSEUDO_CLASS(nthLastOfType, ":nth-last-of-type", 0, "")
 
+// Match slot nodes.
+CSS_PSEUDO_CLASS(slotted, ":slotted", 0, "layout.css.slotted-pseudo.enabled")
+
 // Match nodes that are HTML but not XHTML
 CSS_PSEUDO_CLASS(mozIsHTML, ":-moz-is-html", 0, "")
 
