@@ -177,6 +177,10 @@ public:
     return mLowercaseTag && !mCasedTag;
   }
 
+  inline bool IsHybridPseudoElement() const {
+    return HybridPseudoType() != mozilla::CSSPseudoElementType::NotPseudo;
+  }
+
   // Calculate the specificity of this selector (not including its mNext!).
   int32_t CalcWeight() const;
 
@@ -218,6 +222,12 @@ public:
   void SetPseudoType(mozilla::CSSPseudoElementType aType) {
     mPseudoType = aType;
   }
+  mozilla::CSSPseudoElementType HybridPseudoType() const {
+    return mHybridPseudoType;
+  }
+  void SetHybridPseudoType(mozilla::CSSPseudoElementType aType) {
+    mHybridPseudoType = aType;
+  }
 
   size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
@@ -241,6 +251,7 @@ private:
   // The underlying type of CSSPseudoElementType is uint8_t and
   // it packs well with mOperator. (char16_t + uint8_t is less than 32bits.)
   mozilla::CSSPseudoElementType mPseudoType;
+  mozilla::CSSPseudoElementType mHybridPseudoType;
 
   nsCSSSelector(const nsCSSSelector& aCopy) = delete;
   nsCSSSelector& operator=(const nsCSSSelector& aCopy) = delete;

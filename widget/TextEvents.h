@@ -207,6 +207,36 @@ public:
                            MODIFIER_OS));
   }
 
+  /**
+   * ShouldKeyPressEventBeFiredOnContent() should be called only when the
+   * instance is eKeyPress event.  This returns true when the eKeyPress
+   * event should be fired even on content in the default event group.
+   */
+  bool ShouldKeyPressEventBeFiredOnContent() const
+  {
+    MOZ_DIAGNOSTIC_ASSERT(mMessage == eKeyPress);
+    // Case 1: Inputting text or a line break: always fire keypress event.
+    if (IsInputtingText() || IsInputtingLineBreak()) {
+      return true;
+    }
+    // Case 2: Ctrl + Enter
+    // Ctrl + Enter won't cause actual input in our editor so should not fire the event if people would be consistent
+    // in setting rules for themselves (foreshadowing... ;P).
+    // However, the other browsers fire the keypress event in this case (but not with other modifiers).
+    // So, for compatibility with them, we should fire the keypress event for Ctrl + Enter too.
+    if (mMessage == eKeyPress &&
+        mKeyNameIndex == KEY_NAME_INDEX_Enter &&
+        !(mModifiers & (MODIFIER_ALT |
+                        MODIFIER_META |
+                        MODIFIER_OS |
+                        MODIFIER_SHIFT))) {
+      return true;
+    }
+    
+    // Default: dont't fire in the default event group.
+    return false;
+  }
+
   virtual WidgetEvent* Duplicate() const override
   {
     MOZ_ASSERT(mClass == eKeyboardEventClass,

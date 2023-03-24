@@ -318,7 +318,8 @@ nsCSSSelector::nsCSSSelector(void)
     mNext(nullptr),
     mNameSpace(kNameSpaceID_Unknown),
     mOperator(0),
-    mPseudoType(CSSPseudoElementType::NotPseudo)
+    mPseudoType(CSSPseudoElementType::NotPseudo),
+    mHybridPseudoType(CSSPseudoElementType::NotPseudo)
 {
   MOZ_COUNT_CTOR(nsCSSSelector);
 }
@@ -915,6 +916,11 @@ nsCSSSelector::AppendToStringWithoutCombinatorsOrNegations
 
   // Append each pseudo-class in the linked list
   for (nsPseudoClassList* list = mPseudoClassList; list; list = list->mNext) {
+    // Serialize pseudo-elements that were treated as if they were a
+    // pseudo-class to the two colon syntax.
+    if (nsCSSPseudoClasses::IsHybridPseudoElement(list->mType)) {
+      aString.Append(char16_t(':'));
+    }
     nsCSSPseudoClasses::PseudoTypeToString(list->mType, temp);
     // This should not be escaped since (a) the pseudo-class string
     // has a ":" that can't be escaped and (b) all pseudo-classes at

@@ -3839,8 +3839,13 @@ RestyleManager::ComputeAndProcessStyleChange(nsStyleContext*        aNewContext,
   MOZ_ASSERT(mReframingStyleContexts, "should have rsc");
   MOZ_ASSERT(aNewContext->StyleDisplay()->mDisplay == StyleDisplay::Contents);
   nsIFrame* frame = GetNearestAncestorFrame(aElement);
-  MOZ_ASSERT(frame, "display:contents node in map although it's a "
-                    "display:none descendant?");
+  // Return early if we don't have a frame.
+  if (!frame) {
+    NS_ASSERTION(frame,
+                 "display:contents node in map although it's a "
+                 "display:none descendant?");
+    return;
+  }
   TreeMatchContext treeMatchContext(true,
                                     nsRuleWalker::eRelevantLinkUnvisited,
                                     frame->PresContext()->Document());
