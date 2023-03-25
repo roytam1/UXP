@@ -545,15 +545,16 @@ class NameResolver
             break;
 
           // Ternary nodes with three expression children.
-          case PNK_CONDITIONAL:
-            MOZ_ASSERT(cur->isArity(PN_TERNARY));
-            if (!resolve(cur->pn_kid1, prefix))
+          case PNK_CONDITIONAL: {
+            TernaryNode* condNode = &cur->as<TernaryNode>();
+            if (!resolve(condNode->kid1(), prefix))
                 return false;
-            if (!resolve(cur->pn_kid2, prefix))
+            if (!resolve(condNode->kid2(), prefix))
                 return false;
-            if (!resolve(cur->pn_kid3, prefix))
+            if (!resolve(condNode->kid3(), prefix))
                 return false;
             break;
+          }
 
           // The first part of a for-in/of is the declaration in the loop (or
           // null if no declaration).  The latter two parts are the location
@@ -562,107 +563,115 @@ class NameResolver
           // computed property names, and possibly through [deprecated!]
           // initializers) also contain functions to name.
           case PNK_FORIN:
-          case PNK_FOROF:
-            MOZ_ASSERT(cur->isArity(PN_TERNARY));
-            if (ParseNode* decl = cur->pn_kid1) {
+          case PNK_FOROF: {
+            TernaryNode* forHead = &cur->as<TernaryNode>();
+            if (ParseNode* decl = forHead->kid1()) {
                 if (!resolve(decl, prefix))
                     return false;
             }
-            if (!resolve(cur->pn_kid2, prefix))
-                return false;
-            if (!resolve(cur->pn_kid3, prefix))
+            MOZ_ASSERT(!forHead->kid2());
+            if (!resolve(forHead->kid3(), prefix))
                 return false;
             break;
+          }
 
           // Every part of a for(;;) head may contain a function needing name
           // resolution.
-          case PNK_FORHEAD:
-            MOZ_ASSERT(cur->isArity(PN_TERNARY));
-            if (ParseNode* init = cur->pn_kid1) {
+          case PNK_FORHEAD: {
+            TernaryNode* forHead = &cur->as<TernaryNode>();
+            if (ParseNode* init = forHead->kid1()) {
                 if (!resolve(init, prefix))
                     return false;
             }
-            if (ParseNode* cond = cur->pn_kid2) {
+            if (ParseNode* cond = forHead->kid2()) {
                 if (!resolve(cond, prefix))
                     return false;
             }
-            if (ParseNode* step = cur->pn_kid3) {
-                if (!resolve(step, prefix))
+            if (ParseNode* update = forHead->kid3()) {
+                if (!resolve(update, prefix))
                     return false;
             }
             break;
+          }
 
           // The first child of a class is a pair of names referring to it,
           // inside and outside the class.  The second is the class's heritage,
           // if any.  The third is the class body.
-          case PNK_CLASS:
-            MOZ_ASSERT(cur->isArity(PN_TERNARY));
-            MOZ_ASSERT_IF(cur->pn_kid1, cur->pn_kid1->isKind(PNK_CLASSNAMES));
-            MOZ_ASSERT_IF(cur->pn_kid1, cur->pn_kid1->isArity(PN_BINARY));
-            MOZ_ASSERT_IF(cur->pn_kid1 && cur->pn_kid1->pn_left,
-                          cur->pn_kid1->pn_left->isKind(PNK_NAME));
-            MOZ_ASSERT_IF(cur->pn_kid1 && cur->pn_kid1->pn_left,
-                          !cur->pn_kid1->pn_left->expr());
-            MOZ_ASSERT_IF(cur->pn_kid1, cur->pn_kid1->pn_right->isKind(PNK_NAME));
-            MOZ_ASSERT_IF(cur->pn_kid1, !cur->pn_kid1->pn_right->expr());
-            if (cur->pn_kid2) {
-                if (!resolve(cur->pn_kid2, prefix))
+          case PNK_CLASS: {
+            ClassNode* classNode = &cur->as<ClassNode>();
+#ifdef DEBUG
+            if (classNode->names()) {
+                ParseNode* name = classNode->names();
+                MOZ_ASSERT(name->isKind(PNK_CLASSNAMES));
+                MOZ_ASSERT(name->isArity(PN_BINARY));
+                MOZ_ASSERT_IF(name->pn_left, name->pn_left->isKind(PNK_NAME));
+                MOZ_ASSERT_IF(name->pn_left, !name->pn_left->expr());
+                MOZ_ASSERT(name->pn_right->isKind(PNK_NAME));
+                MOZ_ASSERT(!name->pn_right->expr());
+            }
+#endif
+            if (ParseNode* heritage = classNode->heritage()) {
+                if (!resolve(heritage, prefix))
                     return false;
             }
-            if (!resolve(cur->pn_kid3, prefix))
+            if (!resolve(classNode->methodList(), prefix))
                 return false;
             break;
+          }
 
           // The condition and consequent are non-optional, but the alternative
           // might be omitted.
-          case PNK_IF:
-            MOZ_ASSERT(cur->isArity(PN_TERNARY));
-            if (!resolve(cur->pn_kid1, prefix))
+          case PNK_IF: {
+            TernaryNode* ifNode = &cur->as<TernaryNode>();
+            if (!resolve(ifNode->kid1(), prefix))
                 return false;
-            if (!resolve(cur->pn_kid2, prefix))
+            if (!resolve(ifNode->kid2(), prefix))
                 return false;
-            if (cur->pn_kid3) {
-                if (!resolve(cur->pn_kid3, prefix))
+            if (ParseNode* alternative = ifNode->kid3()) {
+                if (!resolve(alternative, prefix))
                     return false;
             }
             break;
+          }
 
           // The statements in the try-block are mandatory.  The catch-blocks
           // and finally block are optional (but at least one or the other must
           // be present).
-          case PNK_TRY:
-            MOZ_ASSERT(cur->isArity(PN_TERNARY));
-            if (!resolve(cur->pn_kid1, prefix))
+          case PNK_TRY: {
+            TernaryNode* tryNode = &cur->as<TernaryNode>();
+            if (!resolve(tryNode->kid1(), prefix))
                 return false;
-            MOZ_ASSERT(cur->pn_kid2 || cur->pn_kid3);
-            if (ParseNode* catchList = cur->pn_kid2) {
+            MOZ_ASSERT(tryNode->kid2() || tryNode->kid3());
+            if (ParseNode* catchList = tryNode->kid2()) {
                 MOZ_ASSERT(catchList->isKind(PNK_CATCHLIST));
                 if (!resolve(catchList, prefix))
                     return false;
             }
-            if (ParseNode* finallyBlock = cur->pn_kid3) {
+            if (ParseNode* finallyBlock = tryNode->kid3()) {
                 if (!resolve(finallyBlock, prefix))
                     return false;
             }
             break;
+          }
 
           // The first child, the catch-pattern, may contain functions via
           // computed property names.  The optional catch-conditions may
           // contain any expression.  The catch statements, of course, may
           // contain arbitrary expressions.
-          case PNK_CATCH:
-            MOZ_ASSERT(cur->isArity(PN_TERNARY));
-            if (cur->pn_kid1) {
-                if (!resolve(cur->pn_kid1, prefix))
+          case PNK_CATCH: {
+            TernaryNode* catchNode = &cur->as<TernaryNode>();
+            if (ParseNode* patNode = catchNode->kid1()) {
+                if (!resolve(patNode, prefix))
                     return false;
             }
-            if (cur->pn_kid2) {
-                if (!resolve(cur->pn_kid2, prefix))
+            if (ParseNode* condNode = catchNode->kid2()) {
+                if (!resolve(condNode, prefix))
                     return false;
             }
-            if (!resolve(cur->pn_kid3, prefix))
+            if (!resolve(catchNode->kid3(), prefix))
                 return false;
             break;
+          }
 
           // Nodes with arbitrary-expression children.
           case PNK_COALESCE:

@@ -349,10 +349,10 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
 
       // Ternary nodes with all children non-null.
       case PNK_CONDITIONAL: {
-        MOZ_ASSERT(pn->isArity(PN_TERNARY));
-        stack->push(pn->pn_kid1);
-        stack->push(pn->pn_kid2);
-        stack->push(pn->pn_kid3);
+        TernaryNode* tn = &pn->as<TernaryNode>();
+        stack->push(tn->kid1());
+        stack->push(tn->kid2());
+        stack->push(tn->kid3());
         return PushResult::Recyclable;
       }
 
@@ -363,57 +363,57 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       // p|, the second child is null, and the third child is |obj|.
       case PNK_FORIN:
       case PNK_FOROF: {
-        MOZ_ASSERT(pn->isArity(PN_TERNARY));
-        MOZ_ASSERT(!pn->pn_kid2);
-        stack->push(pn->pn_kid1);
-        stack->push(pn->pn_kid3);
+        TernaryNode* tn = &pn->as<TernaryNode>();
+        MOZ_ASSERT(!tn->kid2());
+        stack->push(tn->kid1());
+        stack->push(tn->kid3());
         return PushResult::Recyclable;
       }
 
       // for (;;) nodes have one child per optional component of the loop head.
       case PNK_FORHEAD: {
-        MOZ_ASSERT(pn->isArity(PN_TERNARY));
-        if (pn->pn_kid1)
-            stack->push(pn->pn_kid1);
-        if (pn->pn_kid2)
-            stack->push(pn->pn_kid2);
-        if (pn->pn_kid3)
-            stack->push(pn->pn_kid3);
+        TernaryNode* tn = &pn->as<TernaryNode>();
+        if (tn->kid1())
+            stack->push(tn->kid1());
+        if (tn->kid2())
+            stack->push(tn->kid2());
+        if (tn->kid3())
+            stack->push(tn->kid3());
         return PushResult::Recyclable;
       }
 
       // classes might have an optional node for the heritage, as well as the names
       case PNK_CLASS: {
-        MOZ_ASSERT(pn->isArity(PN_TERNARY));
-        if (pn->pn_kid1)
-            stack->push(pn->pn_kid1);
-        if (pn->pn_kid2)
-            stack->push(pn->pn_kid2);
-        stack->push(pn->pn_kid3);
+        TernaryNode* tn = &pn->as<TernaryNode>();
+        if (tn->kid1())
+            stack->push(tn->kid1());
+        if (tn->kid2())
+            stack->push(tn->kid2());
+        stack->push(tn->kid3());
         return PushResult::Recyclable;
       }
 
       // if-statement nodes have condition and consequent children and a
       // possibly-null alternative.
       case PNK_IF: {
-        MOZ_ASSERT(pn->isArity(PN_TERNARY));
-        stack->push(pn->pn_kid1);
-        stack->push(pn->pn_kid2);
-        if (pn->pn_kid3)
-            stack->push(pn->pn_kid3);
+        TernaryNode* tn = &pn->as<TernaryNode>();
+        stack->push(tn->kid1());
+        stack->push(tn->kid2());
+        if (tn->kid3())
+            stack->push(tn->kid3());
         return PushResult::Recyclable;
       }
 
       // try-statements have statements to execute, and one or both of a
       // catch-list and a finally-block.
       case PNK_TRY: {
-        MOZ_ASSERT(pn->isArity(PN_TERNARY));
-        MOZ_ASSERT(pn->pn_kid2 || pn->pn_kid3);
-        stack->push(pn->pn_kid1);
-        if (pn->pn_kid2)
-            stack->push(pn->pn_kid2);
-        if (pn->pn_kid3)
-            stack->push(pn->pn_kid3);
+        TernaryNode* tn = &pn->as<TernaryNode>();
+        MOZ_ASSERT(tn->kid2() || tn->kid3());
+        stack->push(tn->kid1());
+        if (tn->kid2())
+            stack->push(tn->kid2());
+        if (tn->kid3())
+            stack->push(tn->kid3());
         return PushResult::Recyclable;
       }
 
@@ -422,12 +422,12 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       // |<cond>| in SpiderMonkey's |catch (e if <cond>)| extension), and
       // third kid as the statements in the catch block.
       case PNK_CATCH: {
-        MOZ_ASSERT(pn->isArity(PN_TERNARY));
-        if (pn->pn_kid1)
-            stack->push(pn->pn_kid1);
-        if (pn->pn_kid2)
-            stack->push(pn->pn_kid2);
-        stack->push(pn->pn_kid3);
+        TernaryNode* tn = &pn->as<TernaryNode>();
+        if (tn->kid1())
+            stack->push(tn->kid1());
+        if (tn->kid2())
+            stack->push(tn->kid2());
+        stack->push(tn->kid3());
         return PushResult::Recyclable;
       }
 
@@ -663,7 +663,7 @@ ParseNode::dump(int indent)
         ((BinaryNode*) this)->dump(indent);
         break;
       case PN_TERNARY:
-        ((TernaryNode*) this)->dump(indent);
+        as<TernaryNode>().dump(indent);
         break;
       case PN_CODE:
         ((CodeNode*) this)->dump(indent);
@@ -757,11 +757,11 @@ TernaryNode::dump(int indent)
     const char* name = parseNodeNames[getKind()];
     fprintf(stderr, "(%s ", name);
     indent += strlen(name) + 2;
-    DumpParseTree(pn_kid1, indent);
+    DumpParseTree(kid1(), indent);
     IndentNewLine(indent);
-    DumpParseTree(pn_kid2, indent);
+    DumpParseTree(kid2(), indent);
     IndentNewLine(indent);
-    DumpParseTree(pn_kid3, indent);
+    DumpParseTree(kid3(), indent);
     fprintf(stderr, ")");
 }
 

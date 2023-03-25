@@ -1216,7 +1216,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     Node returnStatement(YieldHandling yieldHandling);
     Node withStatement(YieldHandling yieldHandling);
     Node throwStatement(YieldHandling yieldHandling);
-    Node tryStatement(YieldHandling yieldHandling);
+    TernaryNodeType tryStatement(YieldHandling yieldHandling);
     Node catchBlockStatement(YieldHandling yieldHandling, ParseContext::Scope& catchParamScope);
     Node debuggerStatement();
 
@@ -1225,7 +1225,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     Node labeledStatement(YieldHandling yieldHandling);
     Node labeledItem(YieldHandling yieldHandling);
 
-    Node ifStatement(YieldHandling yieldHandling);
+    TernaryNodeType ifStatement(YieldHandling yieldHandling);
     Node consequentOrAlternative(YieldHandling yieldHandling);
 
     // While on a |let| TOK_NAME token, examine |next|.  Indicate whether
@@ -1395,11 +1395,11 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     bool checkExportedNameForClause(Node node);
     bool checkExportedNameForFunction(Node node);
-    bool checkExportedNameForClass(Node node);
+    bool checkExportedNameForClass(ClassNodeType classNode);
 
     enum ClassContext { ClassStatement, ClassExpression };
-    Node classDefinition(YieldHandling yieldHandling, ClassContext classContext,
-                         DefaultHandling defaultHandling);
+    ClassNodeType classDefinition(YieldHandling yieldHandling, ClassContext classContext,
+                                  DefaultHandling defaultHandling);
 
     bool checkLabelOrIdentifierReference(HandlePropertyName ident,
                                          uint32_t offset,

@@ -1806,7 +1806,7 @@ class ASTSerializer
     bool importSpecifier(ParseNode* pn, MutableHandleValue dst);
     bool exportDeclaration(ParseNode* pn, MutableHandleValue dst);
     bool exportSpecifier(ParseNode* pn, MutableHandleValue dst);
-    bool classDefinition(ParseNode* pn, bool expr, MutableHandleValue dst);
+    bool classDefinition(ClassNode* pn, bool expr, MutableHandleValue dst);
 
     bool optStatement(ParseNode* pn, MutableHandleValue dst) {
         if (!pn) {
@@ -1817,16 +1817,16 @@ class ASTSerializer
     }
 
     bool forInit(ParseNode* pn, MutableHandleValue dst);
-    bool forIn(ParseNode* loop, ParseNode* head, HandleValue var, HandleValue stmt,
+    bool forIn(ParseNode* loop, ParseNode* iterExpr, HandleValue var, HandleValue stmt,
                MutableHandleValue dst);
-    bool forOf(ParseNode* loop, ParseNode* head, HandleValue var, HandleValue stmt,
+    bool forOf(ParseNode* loop, ParseNode* iterExpr, HandleValue var, HandleValue stmt,
                MutableHandleValue dst);
     bool statement(ParseNode* pn, MutableHandleValue dst);
     bool blockStatement(ListNode* node, MutableHandleValue dst);
     bool switchStatement(ParseNode* pn, MutableHandleValue dst);
     bool switchCase(ParseNode* pn, MutableHandleValue dst);
-    bool tryStatement(ParseNode* pn, MutableHandleValue dst);
-    bool catchClause(ParseNode* pn, bool* isGuarded, MutableHandleValue dst);
+    bool tryStatement(TernaryNode* tryNode, MutableHandleValue dst);
+    bool catchClause(TernaryNode* clauseNode, bool* isGuarded, MutableHandleValue dst);
 
     bool optExpression(ParseNode* pn, MutableHandleValue dst) {
         if (!pn) {
@@ -1874,7 +1874,7 @@ class ASTSerializer
     bool functionBody(ParseNode* pn, TokenPos* pos, MutableHandleValue dst);
 
     bool comprehensionBlock(ParseNode* pn, MutableHandleValue dst);
-    bool comprehensionIf(ParseNode* pn, MutableHandleValue dst);
+    bool comprehensionIf(TernaryNode* ifNode, MutableHandleValue dst);
     bool comprehension(ParseNode* pn, MutableHandleValue dst);
     bool generatorExpression(ParseNode* pn, MutableHandleValue dst);
 
@@ -2236,7 +2236,7 @@ ASTSerializer::exportDeclaration(ParseNode* pn, MutableHandleValue dst)
         break;
 
       case PNK_CLASS:
-        if (!classDefinition(kid, false, &decl))
+        if (!classDefinition(&kid->as<ClassNode>(), false, &decl))
             return false;
         break;
 
@@ -2321,47 +2321,58 @@ ASTSerializer::switchStatement(ParseNode* pn, MutableHandleValue dst)
 }
 
 bool
-ASTSerializer::catchClause(ParseNode* pn, bool* isGuarded, MutableHandleValue dst)
+ASTSerializer::catchClause(TernaryNode* clauseNode, bool* isGuarded, MutableHandleValue dst)
 {
-    MOZ_ASSERT_IF(pn->pn_kid1, pn->pn_pos.encloses(pn->pn_kid1->pn_pos));
-    MOZ_ASSERT_IF(pn->pn_kid2, pn->pn_pos.encloses(pn->pn_kid2->pn_pos));
-    MOZ_ASSERT(pn->pn_pos.encloses(pn->pn_kid3->pn_pos));
+    ParseNode* patNode = clauseNode->kid1();
+    MOZ_ASSERT_IF(patNode, clauseNode->pn_pos.encloses(patNode->pn_pos));
+
+    ParseNode* condNode = clauseNode->kid2();
+    MOZ_ASSERT_IF(condNode, clauseNode->pn_pos.encloses(condNode->pn_pos));
+
+    ParseNode* bodyNode = clauseNode->kid3();
+    MOZ_ASSERT(clauseNode->pn_pos.encloses(bodyNode->pn_pos));
 
     RootedValue var(cx), guard(cx), body(cx);
 
-    if (!optPattern(pn->pn_kid1, &var) ||
-        !optExpression(pn->pn_kid2, &guard)) {
+    if (!optPattern(patNode, &var) ||
+        !optExpression(condNode, &guard)) {
         return false;
     }
 
     *isGuarded = !guard.isMagic(JS_SERIALIZE_NO_NODE);
 
-    return statement(pn->pn_kid3, &body) &&
-           builder.catchClause(var, guard, body, &pn->pn_pos, dst);
+    return statement(bodyNode, &body) &&
+           builder.catchClause(var, guard, body, &clauseNode->pn_pos, dst);
 }
 
 bool
-ASTSerializer::tryStatement(ParseNode* pn, MutableHandleValue dst)
+ASTSerializer::tryStatement(TernaryNode* tryNode, MutableHandleValue dst)
 {
-    MOZ_ASSERT(pn->pn_pos.encloses(pn->pn_kid1->pn_pos));
-    MOZ_ASSERT_IF(pn->pn_kid2, pn->pn_pos.encloses(pn->pn_kid2->pn_pos));
-    MOZ_ASSERT_IF(pn->pn_kid3, pn->pn_pos.encloses(pn->pn_kid3->pn_pos));
+    ParseNode* bodyNode = tryNode->kid1();
+    MOZ_ASSERT(tryNode->pn_pos.encloses(bodyNode->pn_pos));
+
+    ParseNode* catchNode = tryNode->kid2();
+    MOZ_ASSERT_IF(catchNode, tryNode->pn_pos.encloses(catchNode->pn_pos));
+
+    ParseNode* finallyNode = tryNode->kid3();
+    MOZ_ASSERT_IF(finallyNode, tryNode->pn_pos.encloses(finallyNode->pn_pos));
 
     RootedValue body(cx);
-    if (!statement(pn->pn_kid1, &body))
+    if (!statement(bodyNode, &body))
         return false;
 
     NodeVector guarded(cx);
     RootedValue unguarded(cx, NullValue());
 
-    if (ListNode* catchList = &pn->pn_kid2->as<ListNode>()) {
+    if (ListNode* catchList = &catchNode->as<ListNode>()) {
         if (!guarded.reserve(catchList->count()))
             return false;
 
-        for (ParseNode* next : catchList->contents()) {
+        for (ParseNode* catchScope : catchList->contents()) {
+            MOZ_ASSERT(catchScope->isKind(PNK_LEXICALSCOPE));
             RootedValue clause(cx);
             bool isGuarded;
-            if (!catchClause(next->pn_expr, &isGuarded, &clause))
+            if (!catchClause(&catchScope->scopeBody()->as<TernaryNode>(), &isGuarded, &clause))
                 return false;
             if (isGuarded)
                 guarded.infallibleAppend(clause);
@@ -2371,8 +2382,8 @@ ASTSerializer::tryStatement(ParseNode* pn, MutableHandleValue dst)
     }
 
     RootedValue finally(cx);
-    return optStatement(pn->pn_kid3, &finally) &&
-           builder.tryStatement(body, guarded, unguarded, finally, &pn->pn_pos, dst);
+    return optStatement(finallyNode, &finally) &&
+           builder.tryStatement(body, guarded, unguarded, finally, &tryNode->pn_pos, dst);
 }
 
 bool
@@ -2390,40 +2401,40 @@ ASTSerializer::forInit(ParseNode* pn, MutableHandleValue dst)
 }
 
 bool
-ASTSerializer::forOf(ParseNode* loop, ParseNode* head, HandleValue var, HandleValue stmt,
+ASTSerializer::forOf(ParseNode* loop, ParseNode* iterExpr, HandleValue var, HandleValue stmt,
                          MutableHandleValue dst)
 {
     RootedValue expr(cx);
 
-    return expression(head->pn_kid3, &expr) &&
+    return expression(iterExpr, &expr) &&
         builder.forOfStatement(var, expr, stmt, &loop->pn_pos, dst);
 }
 
 bool
-ASTSerializer::forIn(ParseNode* loop, ParseNode* head, HandleValue var, HandleValue stmt,
+ASTSerializer::forIn(ParseNode* loop, ParseNode* iterExpr, HandleValue var, HandleValue stmt,
                          MutableHandleValue dst)
 {
     RootedValue expr(cx);
     bool isForEach = loop->pn_iflags & JSITER_FOREACH;
 
-    return expression(head->pn_kid3, &expr) &&
+    return expression(iterExpr, &expr) &&
         builder.forInStatement(var, expr, stmt, isForEach, &loop->pn_pos, dst);
 }
 
 bool
-ASTSerializer::classDefinition(ParseNode* pn, bool expr, MutableHandleValue dst)
+ASTSerializer::classDefinition(ClassNode* pn, bool expr, MutableHandleValue dst)
 {
     RootedValue className(cx, MagicValue(JS_SERIALIZE_NO_NODE));
     RootedValue heritage(cx);
     RootedValue classBody(cx);
 
-    if (pn->pn_kid1) {
-        if (!identifier(pn->pn_kid1->as<ClassNames>().innerBinding(), &className))
+    if (ClassNames* names = pn->names()) {
+        if (!identifier(names->innerBinding(), &className))
             return false;
     }
 
-    return optExpression(pn->pn_kid2, &heritage) &&
-           statement(pn->pn_kid3, &classBody) &&
+    return optExpression(pn->heritage(), &heritage) &&
+           statement(pn->methodList(), &classBody) &&
            builder.classDefinition(expr, className, heritage, classBody, &pn->pn_pos, dst);
 }
 
@@ -2467,23 +2478,30 @@ ASTSerializer::statement(ParseNode* pn, MutableHandleValue dst)
 
       case PNK_IF:
       {
-        MOZ_ASSERT(pn->pn_pos.encloses(pn->pn_kid1->pn_pos));
-        MOZ_ASSERT(pn->pn_pos.encloses(pn->pn_kid2->pn_pos));
-        MOZ_ASSERT_IF(pn->pn_kid3, pn->pn_pos.encloses(pn->pn_kid3->pn_pos));
+        TernaryNode* ifNode = &pn->as<TernaryNode>();
+
+        ParseNode* testNode = ifNode->kid1();
+        MOZ_ASSERT(ifNode->pn_pos.encloses(testNode->pn_pos));
+
+        ParseNode* consNode = ifNode->kid2();
+        MOZ_ASSERT(ifNode->pn_pos.encloses(consNode->pn_pos));
+
+        ParseNode* altNode = ifNode->kid3();
+        MOZ_ASSERT_IF(altNode, ifNode->pn_pos.encloses(altNode->pn_pos));
 
         RootedValue test(cx), cons(cx), alt(cx);
 
-        return expression(pn->pn_kid1, &test) &&
-               statement(pn->pn_kid2, &cons) &&
-               optStatement(pn->pn_kid3, &alt) &&
-               builder.ifStatement(test, cons, alt, &pn->pn_pos, dst);
+        return expression(testNode, &test) &&
+               statement(consNode, &cons) &&
+               optStatement(altNode, &alt) &&
+               builder.ifStatement(test, cons, alt, &ifNode->pn_pos, dst);
       }
 
       case PNK_SWITCH:
         return switchStatement(pn, dst);
 
       case PNK_TRY:
-        return tryStatement(pn, dst);
+        return tryStatement(&pn->as<TernaryNode>(), dst);
 
       case PNK_WITH:
       case PNK_WHILE:
@@ -2518,11 +2536,16 @@ ASTSerializer::statement(ParseNode* pn, MutableHandleValue dst)
         MOZ_ASSERT(pn->pn_pos.encloses(pn->pn_left->pn_pos));
         MOZ_ASSERT(pn->pn_pos.encloses(pn->pn_right->pn_pos));
 
-        ParseNode* head = pn->pn_left;
+        TernaryNode* head = &pn->pn_left->as<TernaryNode>();
 
-        MOZ_ASSERT_IF(head->pn_kid1, head->pn_pos.encloses(head->pn_kid1->pn_pos));
-        MOZ_ASSERT_IF(head->pn_kid2, head->pn_pos.encloses(head->pn_kid2->pn_pos));
-        MOZ_ASSERT_IF(head->pn_kid3, head->pn_pos.encloses(head->pn_kid3->pn_pos));
+        ParseNode* initNode = head->kid1();
+        MOZ_ASSERT_IF(initNode, head->pn_pos.encloses(initNode->pn_pos));
+
+        ParseNode* maybeTest = head->kid2();
+        MOZ_ASSERT_IF(maybeTest, head->pn_pos.encloses(maybeTest->pn_pos));
+
+        ParseNode* updateOrIter = head->kid3();
+        MOZ_ASSERT_IF(updateOrIter, head->pn_pos.encloses(updateOrIter->pn_pos));
 
         RootedValue stmt(cx);
         if (!statement(pn->pn_right, &stmt))
@@ -2530,34 +2553,34 @@ ASTSerializer::statement(ParseNode* pn, MutableHandleValue dst)
 
         if (head->isKind(PNK_FORIN) || head->isKind(PNK_FOROF)) {
             RootedValue var(cx);
-            if (head->pn_kid1->isKind(PNK_LEXICALSCOPE)) {
-                if (!variableDeclaration(&head->pn_kid1->scopeBody()->as<ListNode>(), true, &var))
+            if (initNode->isKind(PNK_LEXICALSCOPE)) {
+                if (!variableDeclaration(&initNode->scopeBody()->as<ListNode>(), true, &var))
                     return false;
-            } else if (!head->pn_kid1->isKind(PNK_VAR) &&
-                       !head->pn_kid1->isKind(PNK_LET) &&
-                       !head->pn_kid1->isKind(PNK_CONST))
+            } else if (!initNode->isKind(PNK_VAR) &&
+                       !initNode->isKind(PNK_LET) &&
+                       !initNode->isKind(PNK_CONST))
             {
-                if (!pattern(head->pn_kid1, &var))
+                if (!pattern(initNode, &var))
                     return false;
             } else {
-                if (!variableDeclaration(&head->pn_kid1->as<ListNode>(),
-                                         head->pn_kid1->isKind(PNK_LET) ||
-                                         head->pn_kid1->isKind(PNK_CONST),
+                if (!variableDeclaration(&initNode->as<ListNode>(),
+                                         initNode->isKind(PNK_LET) ||
+                                         initNode->isKind(PNK_CONST),
                                          &var))
                 {
                     return false;
                 }
             }
             if (head->isKind(PNK_FORIN))
-                return forIn(pn, head, var, stmt, dst);
-            return forOf(pn, head, var, stmt, dst);
+                return forIn(pn, updateOrIter, var, stmt, dst);
+            return forOf(pn, updateOrIter, var, stmt, dst);
         }
 
         RootedValue init(cx), test(cx), update(cx);
 
-        return forInit(head->pn_kid1, &init) &&
-               optExpression(head->pn_kid2, &test) &&
-               optExpression(head->pn_kid3, &update) &&
+        return forInit(initNode, &init) &&
+               optExpression(maybeTest, &test) &&
+               optExpression(updateOrIter, &update) &&
                builder.forStatement(init, test, update, stmt, &pn->pn_pos, dst);
       }
 
@@ -2607,7 +2630,7 @@ ASTSerializer::statement(ParseNode* pn, MutableHandleValue dst)
         return builder.debuggerStatement(&pn->pn_pos, dst);
 
       case PNK_CLASS:
-        return classDefinition(pn, false, dst);
+        return classDefinition(&pn->as<ClassNode>(), false, dst);
 
       case PNK_CLASSMETHODLIST:
       {
@@ -2748,7 +2771,7 @@ ASTSerializer::comprehensionBlock(ParseNode* pn, MutableHandleValue dst)
 {
     LOCAL_ASSERT(pn->isArity(PN_BINARY));
 
-    ParseNode* in = pn->pn_left;
+    TernaryNode* in = &pn->pn_left->as<TernaryNode>();
 
     LOCAL_ASSERT(in && (in->isKind(PNK_FORIN) || in->isKind(PNK_FOROF)));
 
@@ -2756,27 +2779,27 @@ ASTSerializer::comprehensionBlock(ParseNode* pn, MutableHandleValue dst)
     bool isForOf = in->isKind(PNK_FOROF);
 
     ListNode* decl;
-    if (in->pn_kid1->isKind(PNK_LEXICALSCOPE))
-        decl = &in->pn_kid1->pn_expr->as<ListNode>();
+    if (in->kid1()->isKind(PNK_LEXICALSCOPE))
+        decl = &in->kid1()->pn_expr->as<ListNode>();
     else
-        decl = &in->pn_kid1->as<ListNode>();
+        decl = &in->kid1()->as<ListNode>();
     MOZ_ASSERT(decl->count() == 1);
 
     RootedValue patt(cx), src(cx);
     return pattern(decl->head(), &patt) &&
-           expression(in->pn_kid3, &src) &&
+           expression(in->kid3(), &src) &&
            builder.comprehensionBlock(patt, src, isForEach, isForOf, &in->pn_pos, dst);
 }
 
 bool
-ASTSerializer::comprehensionIf(ParseNode* pn, MutableHandleValue dst)
+ASTSerializer::comprehensionIf(TernaryNode* ifNode, MutableHandleValue dst)
 {
-    LOCAL_ASSERT(pn->isKind(PNK_IF));
-    LOCAL_ASSERT(!pn->pn_kid3);
+    LOCAL_ASSERT(ifNode->isKind(PNK_IF));
+    LOCAL_ASSERT(!ifNode->kid3());
 
     RootedValue patt(cx);
-    return pattern(pn->pn_kid1, &patt) &&
-           builder.comprehensionIf(patt, &pn->pn_pos, dst);
+    return pattern(ifNode->kid1(), &patt) &&
+           builder.comprehensionIf(patt, &ifNode->pn_pos, dst);
 }
 
 bool
@@ -2799,17 +2822,19 @@ ASTSerializer::comprehension(ParseNode* pn, MutableHandleValue dst)
                 return false;
             next = next->pn_right;
         } else if (next->isKind(PNK_IF)) {
+            TernaryNode* tn = &next->as<TernaryNode>();
             if (isLegacy) {
                 MOZ_ASSERT(filter.isMagic(JS_SERIALIZE_NO_NODE));
-                if (!optExpression(next->pn_kid1, &filter))
+                if (!optExpression(tn->kid1(), &filter))
                     return false;
             } else {
                 // ES7 comprehension can contain multiple ComprehensionIfs.
                 RootedValue compif(cx);
-                if (!comprehensionIf(next, &compif) || !blocks.append(compif))
+                if (!comprehensionIf(tn, &compif) ||
+                    !blocks.append(compif))
                     return false;
             }
-            next = next->pn_kid2;
+            next = tn->kid2();
         } else {
             break;
         }
@@ -2842,17 +2867,19 @@ ASTSerializer::generatorExpression(ParseNode* pn, MutableHandleValue dst)
                 return false;
             next = next->pn_right;
         } else if (next->isKind(PNK_IF)) {
+            TernaryNode* tn = &next->as<TernaryNode>();
             if (isLegacy) {
                 MOZ_ASSERT(filter.isMagic(JS_SERIALIZE_NO_NODE));
-                if (!optExpression(next->pn_kid1, &filter))
+                if (!optExpression(tn->kid1(), &filter))
                     return false;
             } else {
                 // ES7 comprehension can contain multiple ComprehensionIfs.
                 RootedValue compif(cx);
-                if (!comprehensionIf(next, &compif) || !blocks.append(compif))
+                if (!comprehensionIf(tn, &compif) ||
+                    !blocks.append(compif))
                     return false;
             }
-            next = next->pn_kid2;
+            next = tn->kid2();
         } else {
             break;
         }
@@ -2888,16 +2915,20 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
 
       case PNK_CONDITIONAL:
       {
-        MOZ_ASSERT(pn->pn_pos.encloses(pn->pn_kid1->pn_pos));
-        MOZ_ASSERT(pn->pn_pos.encloses(pn->pn_kid2->pn_pos));
-        MOZ_ASSERT(pn->pn_pos.encloses(pn->pn_kid3->pn_pos));
+        ConditionalExpression* condNode = &pn->as<ConditionalExpression>();
+        ParseNode* testNode = condNode->kid1();
+        ParseNode* consNode = condNode->kid2();
+        ParseNode* altNode = condNode->kid3();
+        MOZ_ASSERT(condNode->pn_pos.encloses(testNode->pn_pos));
+        MOZ_ASSERT(condNode->pn_pos.encloses(consNode->pn_pos));
+        MOZ_ASSERT(condNode->pn_pos.encloses(altNode->pn_pos));
 
         RootedValue test(cx), cons(cx), alt(cx);
 
-        return expression(pn->pn_kid1, &test) &&
-               expression(pn->pn_kid2, &cons) &&
-               expression(pn->pn_kid3, &alt) &&
-               builder.conditionalExpression(test, cons, alt, &pn->pn_pos, dst);
+        return expression(testNode, &test) &&
+               expression(consNode, &cons) &&
+               expression(altNode, &alt) &&
+               builder.conditionalExpression(test, cons, alt, &condNode->pn_pos, dst);
       }
 
       case PNK_COALESCE:
@@ -3281,7 +3312,7 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
       }
 
       case PNK_CLASS:
-        return classDefinition(pn, true, dst);
+        return classDefinition(&pn->as<ClassNode>(), true, dst);
 
       case PNK_NEWTARGET:
       {

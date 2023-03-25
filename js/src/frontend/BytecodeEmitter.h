@@ -583,8 +583,8 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitElemOpBase(JSOp op);
     MOZ_MUST_USE bool emitElemIncDec(ParseNode* pn);
 
-    MOZ_MUST_USE bool emitCatch(ParseNode* pn);
-    MOZ_MUST_USE bool emitIf(ParseNode* pn);
+    MOZ_MUST_USE bool emitCatch(TernaryNode* catchNode);
+    MOZ_MUST_USE bool emitIf(TernaryNode* ifNode);
     MOZ_MUST_USE bool emitWith(ParseNode* pn);
 
     MOZ_NEVER_INLINE MOZ_MUST_USE bool emitLabeledStatement(const LabeledStatement* pn);
@@ -592,7 +592,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitLexicalScopeBody(ParseNode* body,
                                            EmitLineNumberNote emitLineNote = EMIT_LINENOTE);
     MOZ_NEVER_INLINE MOZ_MUST_USE bool emitSwitch(SwitchStatement* pn);
-    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitTry(ParseNode* pn);
+    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitTry(TernaryNode* tryNode);
 
     enum DestructuringFlavor {
         // Destructuring into a declaration.
@@ -778,7 +778,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitForIn(ParseNode* pn, EmitterScope* headLexicalEmitterScope);
     MOZ_MUST_USE bool emitForOf(ParseNode* pn, EmitterScope* headLexicalEmitterScope);
 
-    MOZ_MUST_USE bool emitInitializeForInOrOfTarget(ParseNode* forHead);
+    MOZ_MUST_USE bool emitInitializeForInOrOfTarget(TernaryNode* forHead);
 
     MOZ_MUST_USE bool emitBreak(PropertyName* label);
     MOZ_MUST_USE bool emitContinue(PropertyName* label);
@@ -799,7 +799,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     // iteration count). The stack after iteration will look like |ARRAY INDEX|.
     MOZ_MUST_USE bool emitSpread(bool allowSelfHosted = false);
 
-    MOZ_MUST_USE bool emitClass(ParseNode* pn);
+    MOZ_MUST_USE bool emitClass(ClassNode* classNode);
 };
 
 class MOZ_RAII AutoCheckUnstableEmitterScope {

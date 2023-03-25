@@ -241,16 +241,31 @@ IsTypeofKind(ParseNodeKind kind)
  *           * Return for expression closure
  *   count: number of formal parameters + 1
  * PNK_SPREAD   unary       pn_kid: expression being spread
+ * PNK_CLASS (ClassNode)
+ *   kid1: PNK_CLASSNAMES for class name. can be null for anonymous class.
+ *   kid2: expression after `extends`. null if no expression
+ *   kid3: either of
+ *           * PNK_CLASSMETHODLIST, if anonymous class
+ *           * PNK_LEXICALSCOPE which contains PNK_CLASSMETHODLIST as scopeBody,
+ *             if named class
+ * PNK_CLASSNAMES (ClassNames)
+ *   pn_left: Name node for outer binding. can be null
+ *   pn_right: Name node for inner binding
+ * PNK_CLASSMETHODLIST (ListNode)
+ *   head: list of N PNK_CLASSMETHOD nodes
+ *   count: N >= 0
+ * PNK_CLASSMETHOD (ClassMethod)
+ *   name: propertyName
+ *   method: methodDefinition
  *
  * <Statements>
  * PNK_STATEMENTLIST (ListNode)
  *   head: list of N statements
  *   count: N >= 0
- * PNK_IF       ternary     pn_kid1: cond, pn_kid2: then, pn_kid3: else or null.
- *                            In body of a comprehension or desugared generator
- *                            expression, pn_kid2 is PNK_YIELD, PNK_ARRAYPUSH,
- *                            or (if the push was optimized away) empty
- *                            PNK_STATEMENTLIST.
+ * PNK_IF (TernaryNode)     In body of a comprehension or desugared PNK_GENEXP:
+ *   kid1: cond
+ *   kid2: then             = PNK_YIELD, PNK_ARRAYPUSH, (empty) PNK_STATEMENTLIST
+ *   kid3: else or null
  * PNK_SWITCH   binary      pn_left: discriminant
  *                          pn_right: PNK_LEXICALSCOPE node that contains the list
  *                            of PNK_CASE nodes, with at most one default node.
@@ -266,26 +281,30 @@ IsTypeofKind(ParseNodeKind kind)
  *                          pn_right: body
  * PNK_COMPREHENSIONFOR     pn_left: either PNK_FORIN or PNK_FOROF
  *              binary      pn_right: body
- * PNK_FORIN    ternary     pn_kid1: declaration or expression to left of 'in'
- *                          pn_kid2: null
- *                          pn_kid3: object expr to right of 'in'
- * PNK_FOROF    ternary     pn_kid1: declaration or expression to left of 'of'
- *                          pn_kid2: null
- *                          pn_kid3: expr to right of 'of'
- * PNK_FORHEAD  ternary     pn_kid1:  init expr before first ';' or nullptr
- *                          pn_kid2:  cond expr before second ';' or nullptr
- *                          pn_kid3:  update expr after second ';' or nullptr
- * PNK_THROW    unary       pn_op: JSOP_THROW, pn_kid: exception
- * PNK_TRY      ternary     pn_kid1: try block
- *                          pn_kid2: null or PNK_CATCHLIST list
- *                          pn_kid3: null or finally block
+ * PNK_FORIN (TernaryNode)
+ *   kid1: declaration or expression to left of 'in'
+ *   kid2: null
+ *   kid3: object expr to right of 'in'
+ * PNK_FOROF (TernaryNode)
+ *   kid1: declaration or expression to left of 'of'
+ *   kid2: null
+ *   kid3: expr to right of 'of'
+ * PNK_FORHEAD (TernaryNode)
+ *   kid1:  init expr before first ';' or nullptr
+ *   kid2:  cond expr before second ';' or nullptr
+ *   kid3:  update expr after second ';' or nullptr
+ * PNK_TRY (TernaryNode)
+ *   kid1: try block
+ *   kid2: null or PNK_CATCHLIST list
+ *   kid3: null or finally block
  * PNK_CATCHLIST list       pn_head: list of PNK_LEXICALSCOPE nodes, one per
  *                                   catch-block, each with pn_expr pointing
  *                                   to a PNK_CATCH node
- * PNK_CATCH    ternary     pn_kid1: PNK_NAME, PNK_ARRAY, or PNK_OBJECT catch var node
- *                                   (PNK_ARRAY or PNK_OBJECT if destructuring)
- *                          pn_kid2: null or the catch guard expression
- *                          pn_kid3: catch block statements
+ * PNK_CATCH (TernaryNode)
+ *   kid1: PNK_NAME, PNK_ARRAY, or PNK_OBJECT catch binding node (PNK_ARRAY or PNK_OBJECT if destructuring)
+           or null if optional catch binding
+ *   kid2: null or the catch guard expression
+ *   kid3: catch block statements
  * PNK_BREAK    name        pn_atom: label or null
  * PNK_CONTINUE name        pn_atom: label or null
  * PNK_WITH     binary      pn_left: head expr; pn_right: body;
@@ -342,8 +361,11 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_DIVASSIGN,
  * PNK_MODASSIGN,
  * PNK_POWASSIGN
- * PNK_CONDITIONAL ternary  (cond ? trueExpr : falseExpr)
- *                          pn_kid1: cond, pn_kid2: then, pn_kid3: else
+ * PNK_CONDITIONAL (ConditionalExpression)
+ *   (cond ? thenExpr : elseExpr)
+ *   kid1: cond
+ *   kid2: thenExpr
+ *   kid3: elseExpr
  * PNK_COALESCE,   list     pn_head; list of pn_count subexpressions
  * PNK_OR, PNK_AND, PNK_BITOR,
  * PNK_BITXOR, PNK_BITAND, PNK_EQ,
@@ -498,12 +520,15 @@ enum ParseNodeArity
 
 #define FOR_EACH_PARSENODE_SUBCLASS(macro) \
     macro(ListNode, ListNodeType, asList) \
-    macro(CallSiteNode, CallSiteNodeType, asCallSite)
+    macro(CallSiteNode, CallSiteNodeType, asCallSite) \
+    \
+    macro(TernaryNode, TernaryNodeType, asTernary) \
+    macro(ClassNode, ClassNodeType, asClass) \
+    macro(ConditionalExpression, ConditionalExpressionType, asConditionalExpression)
 
 class LoopControlStatement;
 class BreakStatement;
 class ContinueStatement;
-class ConditionalExpression;
 class PropertyAccess;
 
 #define DECLARE_CLASS(typeName, longTypeName, asMethodName) \
@@ -604,6 +629,8 @@ class ParseNode
             uint32_t    xflags;         /* see ListNode class */
         } list;
         struct {                        /* ternary: if, for(;;), ?: */
+          private:
+            friend class TernaryNode;
             ParseNode*  kid1;           /* condition, discriminant, etc. */
             ParseNode*  kid2;           /* then-part, case list, etc. */
             ParseNode*  kid3;           /* else-part, default case, etc. */
@@ -648,9 +675,6 @@ class ParseNode
 #define pn_objbox       pn_u.name.objbox
 #define pn_funbox       pn_u.name.funbox
 #define pn_body         pn_u.name.expr
-#define pn_kid1         pn_u.ternary.kid1
-#define pn_kid2         pn_u.ternary.kid2
-#define pn_kid3         pn_u.ternary.kid3
 #define pn_left         pn_u.binary.left
 #define pn_right        pn_u.binary.right
 #define pn_pval         pn_u.binary.pval
@@ -854,30 +878,56 @@ struct BinaryNode : public ParseNode
 #endif
 };
 
-struct TernaryNode : public ParseNode
+class TernaryNode : public ParseNode
 {
+  public:
     TernaryNode(ParseNodeKind kind, JSOp op, ParseNode* kid1, ParseNode* kid2, ParseNode* kid3)
-      : ParseNode(kind, op, PN_TERNARY,
-                  TokenPos((kid1 ? kid1 : kid2 ? kid2 : kid3)->pn_pos.begin,
-                           (kid3 ? kid3 : kid2 ? kid2 : kid1)->pn_pos.end))
-    {
-        pn_kid1 = kid1;
-        pn_kid2 = kid2;
-        pn_kid3 = kid3;
-    }
+      : TernaryNode(kind, op, kid1, kid2, kid3,
+                    TokenPos((kid1 ? kid1 : kid2 ? kid2 : kid3)->pn_pos.begin,
+                             (kid3 ? kid3 : kid2 ? kid2 : kid1)->pn_pos.end))
+    {}
 
     TernaryNode(ParseNodeKind kind, JSOp op, ParseNode* kid1, ParseNode* kid2, ParseNode* kid3,
                 const TokenPos& pos)
       : ParseNode(kind, op, PN_TERNARY, pos)
     {
-        pn_kid1 = kid1;
-        pn_kid2 = kid2;
-        pn_kid3 = kid3;
+        pn_u.ternary.kid1 = kid1;
+        pn_u.ternary.kid2 = kid2;
+        pn_u.ternary.kid3 = kid3;
+    }
+
+    static bool test(const ParseNode& node) {
+        return node.isArity(PN_TERNARY);
     }
 
 #ifdef DEBUG
     void dump(int indent);
 #endif
+
+    ParseNode* kid1() const {
+        return pn_u.ternary.kid1;
+    }
+
+    ParseNode* kid2() const {
+        return pn_u.ternary.kid2;
+    }
+
+    ParseNode* kid3() const {
+        return pn_u.ternary.kid3;
+    }
+
+    // Methods used by FoldConstants.cpp.
+    ParseNode** unsafeKid1Reference() {
+        return &pn_u.ternary.kid1;
+    }
+
+    ParseNode** unsafeKid2Reference() {
+        return &pn_u.ternary.kid2;
+    }
+
+    ParseNode** unsafeKid3Reference() {
+        return &pn_u.ternary.kid3;
+    }
 };
 
 class ListNode : public ParseNode
@@ -1377,36 +1427,33 @@ class DebuggerStatement : public ParseNode
     { }
 };
 
-class ConditionalExpression : public ParseNode
+class ConditionalExpression : public TernaryNode
 {
   public:
     ConditionalExpression(ParseNode* condition, ParseNode* thenExpr, ParseNode* elseExpr)
-      : ParseNode(PNK_CONDITIONAL, JSOP_NOP, PN_TERNARY,
-                  TokenPos(condition->pn_pos.begin, elseExpr->pn_pos.end))
+      : TernaryNode(PNK_CONDITIONAL, JSOP_NOP, condition, thenExpr, elseExpr,
+                    TokenPos(condition->pn_pos.begin, elseExpr->pn_pos.end))
     {
         MOZ_ASSERT(condition);
         MOZ_ASSERT(thenExpr);
         MOZ_ASSERT(elseExpr);
-        pn_u.ternary.kid1 = condition;
-        pn_u.ternary.kid2 = thenExpr;
-        pn_u.ternary.kid3 = elseExpr;
     }
 
     ParseNode& condition() const {
-        return *pn_u.ternary.kid1;
+        return *kid1();
     }
 
     ParseNode& thenExpression() const {
-        return *pn_u.ternary.kid2;
+        return *kid2();
     }
 
     ParseNode& elseExpression() const {
-        return *pn_u.ternary.kid3;
+        return *kid3();
     }
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_CONDITIONAL);
-        MOZ_ASSERT_IF(match, node.isArity(PN_TERNARY));
+        MOZ_ASSERT_IF(match, node.is<TernaryNode>());
         MOZ_ASSERT_IF(match, node.isOp(JSOP_NOP));
         return match;
     }
@@ -1721,7 +1768,9 @@ struct ClassNames : public BinaryNode {
     }
 };
 
-struct ClassNode : public TernaryNode {
+class ClassNode : public TernaryNode
+{
+  public:
     ClassNode(ParseNode* names, ParseNode* heritage, ParseNode* methodsOrBlock,
               const TokenPos& pos)
       : TernaryNode(PNK_CLASS, JSOP_NOP, names, heritage, methodsOrBlock, pos)
@@ -1733,28 +1782,30 @@ struct ClassNode : public TernaryNode {
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_CLASS);
-        MOZ_ASSERT_IF(match, node.isArity(PN_TERNARY));
+        MOZ_ASSERT_IF(match, node.is<TernaryNode>());
         return match;
     }
 
     ClassNames* names() const {
-        return pn_kid1 ? &pn_kid1->as<ClassNames>() : nullptr;
+        return kid1() ? &kid1()->as<ClassNames>() : nullptr;
     }
     ParseNode* heritage() const {
-        return pn_kid2;
+        return kid2();
     }
     ListNode* methodList() const {
-        if (pn_kid3->isKind(PNK_CLASSMETHODLIST))
-            return &pn_kid3->as<ListNode>();
+        ParseNode* methodsOrBlock = kid3();
+        if (methodsOrBlock->isKind(PNK_CLASSMETHODLIST))
+            return &methodsOrBlock->as<ListNode>();
 
-        MOZ_ASSERT(pn_kid3->is<LexicalScopeNode>());
-        ListNode* list = &pn_kid3->scopeBody()->as<ListNode>();
+        MOZ_ASSERT(methodsOrBlock->is<LexicalScopeNode>());
+        ListNode* list = &methodsOrBlock->scopeBody()->as<ListNode>();
         MOZ_ASSERT(list->isKind(PNK_CLASSMETHODLIST));
         return list;
     }
     Handle<LexicalScope::Data*> scopeBindings() const {
-        MOZ_ASSERT(pn_kid3->is<LexicalScopeNode>());
-        return pn_kid3->scopeBindings();
+        ParseNode* scope = kid3();
+        MOZ_ASSERT(scope->is<LexicalScopeNode>());
+        return scope->scopeBindings();
     }
 };
 

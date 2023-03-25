@@ -218,7 +218,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<RegExpLiteral>(objbox, pos);
     }
 
-    ParseNode* newConditional(ParseNode* cond, ParseNode* thenExpr, ParseNode* elseExpr) {
+    ConditionalExpressionType newConditional(Node cond, Node thenExpr, Node elseExpr) {
         return new_<ConditionalExpression>(cond, thenExpr, elseExpr);
     }
 
@@ -372,9 +372,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return literal;
     }
 
-    ParseNode* newClass(ParseNode* name, ParseNode* heritage, ParseNode* methodBlock,
-                        const TokenPos& pos)
-    {
+    ClassNodeType newClass(Node name, Node heritage, Node methodBlock, const TokenPos& pos) {
         return new_<ClassNode>(name, heritage, methodBlock, pos);
     }
     ListNodeType newClassMethodList(uint32_t begin) {
@@ -606,14 +604,12 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<UnaryNode>(PNK_SEMI, JSOP_NOP, TokenPos(expr->pn_pos.begin, end), expr);
     }
 
-    ParseNode* newIfStatement(uint32_t begin, ParseNode* cond, ParseNode* thenBranch,
-                              ParseNode* elseBranch)
-    {
-        ParseNode* pn = new_<TernaryNode>(PNK_IF, JSOP_NOP, cond, thenBranch, elseBranch);
-        if (!pn)
+    TernaryNodeType newIfStatement(uint32_t begin, Node cond, Node thenBranch, Node elseBranch) {
+        TernaryNode* node = new_<TernaryNode>(PNK_IF, JSOP_NOP, cond, thenBranch, elseBranch);
+        if (!node)
             return null();
-        pn->pn_pos.begin = begin;
-        return pn;
+        node->pn_pos.begin = begin;
+        return node;
     }
 
     ParseNode* newDoWhileStatement(ParseNode* body, ParseNode* cond, const TokenPos& pos) {
@@ -625,9 +621,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<BinaryNode>(PNK_WHILE, JSOP_NOP, pos, cond, body);
     }
 
-    ParseNode* newForStatement(uint32_t begin, ParseNode* forHead, ParseNode* body,
-                               unsigned iflags)
-    {
+    Node newForStatement(uint32_t begin, TernaryNodeType forHead, Node body, unsigned iflags) {
         /* A FOR node is binary, left is loop control and right is the body. */
         JSOp op = forHead->isKind(PNK_FORIN) ? JSOP_ITER : JSOP_NOP;
         BinaryNode* pn = new_<BinaryNode>(PNK_FOR, op, TokenPos(begin, body->pn_pos.end),
@@ -638,7 +632,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return pn;
     }
 
-    ParseNode* newComprehensionFor(uint32_t begin, ParseNode* forHead, ParseNode* body) {
+    Node newComprehensionFor(uint32_t begin, TernaryNodeType forHead, Node body) {
         // A PNK_COMPREHENSIONFOR node is binary: left is loop control, right
         // is the body.
         MOZ_ASSERT(forHead->isKind(PNK_FORIN) || forHead->isKind(PNK_FOROF));
@@ -656,14 +650,12 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<ListNode>(PNK_LET, JSOP_NOP, kid);
     }
 
-    ParseNode* newForHead(ParseNode* init, ParseNode* test, ParseNode* update,
-                          const TokenPos& pos)
-    {
+    TernaryNodeType newForHead(Node init, Node test, Node update, const TokenPos& pos) {
         return new_<TernaryNode>(PNK_FORHEAD, JSOP_NOP, init, test, update, pos);
     }
 
-    ParseNode* newForInOrOfHead(ParseNodeKind kind, ParseNode* target, ParseNode* iteratedExpr,
-                                const TokenPos& pos)
+    TernaryNodeType newForInOrOfHead(ParseNodeKind kind, Node target, Node iteratedExpr,
+                                     const TokenPos& pos)
     {
         MOZ_ASSERT(kind == PNK_FORIN || kind == PNK_FOROF);
         return new_<TernaryNode>(kind, JSOP_NOP, target, nullptr, iteratedExpr, pos);
@@ -707,8 +699,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<UnaryNode>(PNK_THROW, JSOP_THROW, pos, expr);
     }
 
-    ParseNode* newTryStatement(uint32_t begin, ParseNode* body, ListNodeType catchList,
-                               ParseNode* finallyBlock) {
+    TernaryNodeType newTryStatement(uint32_t begin, Node body, ListNodeType catchList,
+                                    Node finallyBlock) {
         TokenPos pos(begin, (finallyBlock ? finallyBlock : catchList)->pn_pos.end);
         return new_<TernaryNode>(PNK_TRY, JSOP_NOP, body, catchList, finallyBlock, pos);
     }
@@ -738,7 +730,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     }
 
     inline MOZ_MUST_USE bool addCatchBlock(ListNodeType catchList, ParseNode* lexicalScope,
-                                           ParseNode* catchName, ParseNode* catchGuard,
+                                           ParseNode* catchBinding, ParseNode* catchGuard,
                                            ParseNode* catchBody);
 
     inline MOZ_MUST_USE bool setLastFunctionFormalParameterDefault(ParseNode* funcpn,
@@ -1023,9 +1015,9 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
 
 inline bool
 FullParseHandler::addCatchBlock(ListNodeType catchList, ParseNode* lexicalScope,
-                                ParseNode* catchName, ParseNode* catchGuard, ParseNode* catchBody)
+                                ParseNode* catchBinding, ParseNode* catchGuard, ParseNode* catchBody)
 {
-    ParseNode* catchpn = newTernary(PNK_CATCH, catchName, catchGuard, catchBody);
+    ParseNode* catchpn = newTernary(PNK_CATCH, catchBinding, catchGuard, catchBody);
     if (!catchpn)
         return false;
     catchList->append(lexicalScope);
