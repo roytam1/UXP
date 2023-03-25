@@ -145,6 +145,13 @@ class SyntaxParseHandler
         NodeSuperBase
     };
 
+#define DECLARE_TYPE(typeName, longTypeName, asMethodName) \
+    using longTypeName = Node;
+FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
+#undef DECLARE_TYPE
+
+    using NullNode = Node;
+
     bool isPropertyAccess(Node node) {
         return node == NodeDottedProperty || node == NodeElement;
     }
@@ -183,7 +190,14 @@ class SyntaxParseHandler
         tokenStream(tokenStream)
     {}
 
-    static Node null() { return NodeFailure; }
+    static NullNode null() { return NodeFailure; }
+
+#define DECLARE_AS(typeName, longTypeName, asMethodName) \
+    static longTypeName asMethodName(Node node) { \
+        return node; \
+    }
+FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
+#undef DECLARE_AS
 
     void prepareNodeForMutation(Node node) {}
     void freeTree(Node node) {}
@@ -222,11 +236,11 @@ class SyntaxParseHandler
         return NodeGeneric;
     }
 
-    Node newCallSiteObject(uint32_t begin) {
+    CallSiteNodeType newCallSiteObject(uint32_t begin) {
         return NodeGeneric;
     }
 
-    void addToCallSiteObject(Node callSiteObj, Node rawNode, Node cookedNode) {}
+    void addToCallSiteObject(CallSiteNodeType callSiteObj, Node rawNode, Node cookedNode) {}
 
     Node newThisLiteral(const TokenPos& pos, Node thisName) { return NodeGeneric; }
     Node newNullLiteral(const TokenPos& pos) { return NodeGeneric; }
@@ -283,21 +297,20 @@ class SyntaxParseHandler
 
     // Expressions
 
-    Node newArrayComprehension(Node body, const TokenPos& pos) { return NodeGeneric; }
-    Node newArrayLiteral(uint32_t begin) { return NodeUnparenthesizedArray; }
-    MOZ_MUST_USE bool addElision(Node literal, const TokenPos& pos) { return true; }
-    MOZ_MUST_USE bool addSpreadElement(Node literal, uint32_t begin, Node inner) { return true; }
-    void addArrayElement(Node literal, Node element) { }
+    ListNodeType newArrayLiteral(uint32_t begin) { return NodeUnparenthesizedArray; }
+    MOZ_MUST_USE bool addElision(ListNodeType literal, const TokenPos& pos) { return true; }
+    MOZ_MUST_USE bool addSpreadElement(ListNodeType literal, uint32_t begin, Node inner) { return true; }
+    void addArrayElement(ListNodeType literal, Node element) { }
 
     Node newCall(Node callee, Node args) { return NodeFunctionCall; }
     Node newOptionalCall(Node callee, Node args) { return NodeOptionalFunctionCall; }
-    Node newArguments(const TokenPos& pos) { return NodeGeneric; }
+    ListNodeType newArguments(const TokenPos& pos) { return NodeGeneric; }
     Node newSuperCall(Node callee, Node args) { return NodeGeneric; }
     Node newTaggedTemplate(Node callee, Node args) { return NodeGeneric; }
     Node newGenExp(Node callee, Node args) { return NodeGeneric; }
 
-    Node newObjectLiteral(uint32_t begin) { return NodeUnparenthesizedObject; }
-    Node newClassMethodList(uint32_t begin) { return NodeGeneric; }
+    ListNodeType newObjectLiteral(uint32_t begin) { return NodeUnparenthesizedObject; }
+    ListNodeType newClassMethodList(uint32_t begin) { return NodeGeneric; }
     Node newClassNames(Node outer, Node inner, const TokenPos& pos) { return NodeGeneric; }
     Node newClass(Node name, Node heritage, Node methodBlock, const TokenPos& pos) { return NodeGeneric; }
 
@@ -305,12 +318,12 @@ class SyntaxParseHandler
     Node newPosHolder(const TokenPos& pos) { return NodeGeneric; }
     Node newSuperBase(Node thisName, const TokenPos& pos) { return NodeSuperBase; }
 
-    MOZ_MUST_USE bool addPrototypeMutation(Node literal, uint32_t begin, Node expr) { return true; }
-    MOZ_MUST_USE bool addPropertyDefinition(Node literal, Node name, Node expr) { return true; }
-    MOZ_MUST_USE bool addShorthand(Node literal, Node name, Node expr) { return true; }
-    MOZ_MUST_USE bool addSpreadProperty(Node literal, uint32_t begin, Node inner) { return true; }
-    MOZ_MUST_USE bool addObjectMethodDefinition(Node literal, Node name, Node fn, JSOp op) { return true; }
-    MOZ_MUST_USE bool addClassMethodDefinition(Node literal, Node name, Node fn, JSOp op, bool isStatic) { return true; }
+    MOZ_MUST_USE bool addPrototypeMutation(ListNodeType literal, uint32_t begin, Node expr) { return true; }
+    MOZ_MUST_USE bool addPropertyDefinition(ListNodeType literal, Node name, Node expr) { return true; }
+    MOZ_MUST_USE bool addShorthand(ListNodeType literal, Node name, Node expr) { return true; }
+    MOZ_MUST_USE bool addSpreadProperty(ListNodeType literal, uint32_t begin, Node inner) { return true; }
+    MOZ_MUST_USE bool addObjectMethodDefinition(ListNodeType literal, Node name, Node fn, JSOp op) { return true; }
+    MOZ_MUST_USE bool addClassMethodDefinition(ListNodeType literal, Node name, Node fn, JSOp op, bool isStatic) { return true; }
     Node newYieldExpression(uint32_t begin, Node value) { return NodeGeneric; }
     Node newYieldStarExpression(uint32_t begin, Node value) { return NodeGeneric; }
     Node newAwaitExpression(uint32_t begin, Node value) { return NodeGeneric; }
@@ -318,10 +331,10 @@ class SyntaxParseHandler
 
     // Statements
 
-    Node newStatementList(const TokenPos& pos) { return NodeGeneric; }
-    void addStatementToList(Node list, Node stmt) {}
-    void addCaseStatementToList(Node list, Node stmt) {}
-    MOZ_MUST_USE bool prependInitialYield(Node stmtList, Node gen) { return true; }
+    ListNodeType newStatementList(const TokenPos& pos) { return NodeGeneric; }
+    void addStatementToList(ListNodeType list, Node stmt) {}
+    void addCaseStatementToList(ListNodeType list, Node caseClause) {}
+    MOZ_MUST_USE bool prependInitialYield(ListNodeType stmtList, Node genName) { return true; }
     Node newEmptyStatement(const TokenPos& pos) { return NodeEmptyStatement; }
 
     Node newExportDeclaration(Node kid, const TokenPos& pos) {
@@ -358,7 +371,7 @@ class SyntaxParseHandler
     }
 
     Node newThrowStatement(Node expr, const TokenPos& pos) { return NodeThrow; }
-    Node newTryStatement(uint32_t begin, Node body, Node catchList, Node finallyBlock) {
+    Node newTryStatement(uint32_t begin, Node body, ListNodeType catchList, Node finallyBlock) {
         return NodeGeneric;
     }
     Node newDebuggerStatement(const TokenPos& pos) { return NodeGeneric; }
@@ -380,7 +393,7 @@ class SyntaxParseHandler
 
     Node newOptionalPropertyByValue(Node pn, Node kid, uint32_t end) { return NodeOptionalElement; }
 
-    MOZ_MUST_USE bool addCatchBlock(Node catchList, Node letBlock, Node catchName,
+    MOZ_MUST_USE bool addCatchBlock(ListNodeType catchList, Node letBlock, Node catchName,
                                     Node catchGuard, Node catchBody) { return true; }
 
     MOZ_MUST_USE bool setLastFunctionFormalParameterDefault(Node funcpn, Node pn) { return true; }
@@ -434,26 +447,26 @@ class SyntaxParseHandler
         return tokenStream.currentToken().pos;
     }
 
-    Node newList(ParseNodeKind kind, JSOp op = JSOP_NOP) {
+    ListNodeType newList(ParseNodeKind kind, JSOp op = JSOP_NOP) {
         MOZ_ASSERT(kind != PNK_VAR);
         MOZ_ASSERT(kind != PNK_LET);
         MOZ_ASSERT(kind != PNK_CONST);
         return NodeGeneric;
     }
-    Node newList(ParseNodeKind kind, uint32_t begin, JSOp op = JSOP_NOP) {
+    ListNodeType newList(ParseNodeKind kind, uint32_t begin, JSOp op = JSOP_NOP) {
         return newList(kind, op);
     }
-    Node newList(ParseNodeKind kind, Node kid, JSOp op = JSOP_NOP) {
+    ListNodeType newList(ParseNodeKind kind, Node kid, JSOp op = JSOP_NOP) {
         return newList(kind, op);
     }
 
-    Node newDeclarationList(ParseNodeKind kind, JSOp op = JSOP_NOP) {
+    ListNodeType newDeclarationList(ParseNodeKind kind, JSOp op = JSOP_NOP) {
         if (kind == PNK_VAR)
             return NodeVarDeclaration;
         MOZ_ASSERT(kind == PNK_LET || kind == PNK_CONST);
         return NodeLexicalDeclaration;
     }
-    Node newDeclarationList(ParseNodeKind kind, Node kid, JSOp op = JSOP_NOP) {
+    ListNodeType newDeclarationList(ParseNodeKind kind, Node kid, JSOp op = JSOP_NOP) {
         return newDeclarationList(kind, op);
     }
 
@@ -461,7 +474,7 @@ class SyntaxParseHandler
         return node == NodeVarDeclaration || node == NodeLexicalDeclaration;
     }
 
-    Node singleBindingFromDeclaration(Node decl) {
+    Node singleBindingFromDeclaration(ListNodeType decl) {
         MOZ_ASSERT(isDeclarationList(decl));
 
         // This is, unfortunately, very dodgy.  Obviously NodeVarDeclaration
@@ -485,11 +498,11 @@ class SyntaxParseHandler
         return newList(PNK_CATCHLIST, JSOP_NOP);
     }
 
-    Node newCommaExpressionList(Node kid) {
+    ListNodeType newCommaExpressionList(Node kid) {
         return NodeUnparenthesizedCommaExpr;
     }
 
-    void addList(Node list, Node kid) {
+    void addList(ListNodeType list, Node kid) {
         MOZ_ASSERT(list == NodeGeneric ||
                    list == NodeUnparenthesizedArray ||
                    list == NodeUnparenthesizedObject ||
@@ -539,7 +552,7 @@ class SyntaxParseHandler
     }
 
     void setOp(Node pn, JSOp op) {}
-    void setListFlag(Node pn, unsigned flag) {}
+    void setListHasNonConstInitializer(ListNodeType literal) {}
     MOZ_MUST_USE Node parenthesize(Node node) {
         // A number of nodes have different behavior upon parenthesization, but
         // only in some circumstances.  Convert these nodes to special

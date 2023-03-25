@@ -969,7 +969,7 @@ MarkParser(JSTracer* trc, AutoGCRooter* parser)
  * Parse a top-level JS script.
  */
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ListNodeType
 Parser<ParseHandler>::parse()
 {
     MOZ_ASSERT(checkOptionsCalled);
@@ -985,8 +985,8 @@ Parser<ParseHandler>::parse()
     if (!varScope.init(pc))
         return null();
 
-    Node pn = statementList(YieldIsName);
-    if (!pn)
+    ListNodeType stmtList = statementList(YieldIsName);
+    if (!stmtList)
         return null();
 
     TokenKind tt;
@@ -997,11 +997,14 @@ Parser<ParseHandler>::parse()
         return null();
     }
     if (foldConstants) {
-        if (!FoldConstants(context, &pn, this))
+        Node node = stmtList;
+        if (!FoldConstants(context, &node, this)) {
             return null();
+        }
+        stmtList = handler.asList(node);
     }
 
-    return pn;
+    return stmtList;
 }
 
 /*
@@ -2179,7 +2182,7 @@ Parser<FullParseHandler>::evalBody(EvalSharedContext* evalsc)
 }
 
 template <>
-ParseNode*
+ListNode*
 Parser<FullParseHandler>::globalBody(GlobalSharedContext* globalsc)
 {
     ParseContext globalpc(this, globalsc, /* newDirectives = */ nullptr);
@@ -2190,15 +2193,18 @@ Parser<FullParseHandler>::globalBody(GlobalSharedContext* globalsc)
     if (!varScope.init(pc))
         return nullptr;
 
-    ParseNode* body = statementList(YieldIsName);
+    ListNode* body = statementList(YieldIsName);
     if (!body)
         return nullptr;
 
     if (!checkStatementsEOF())
         return nullptr;
 
-    if (!FoldConstants(context, &body, this))
-        return nullptr;
+    ParseNode* node = body;
+    if (!FoldConstants(context, &node, this)) {
+        return null();
+    }
+    body = &node->as<ListNode>();
 
     Maybe<GlobalScope::Data*> bindings = newGlobalScopeData(pc->varScope());
     if (!bindings)
@@ -2227,12 +2233,13 @@ Parser<FullParseHandler>::moduleBody(ModuleSharedContext* modulesc)
         return null();
 
     AutoAwaitIsKeyword<FullParseHandler> awaitIsKeyword(this, true);
-    ParseNode* pn = statementList(YieldIsKeyword);
-    if (!pn)
+    ListNode* stmtList = statementList(YieldIsName);
+    if (!stmtList) {
         return null();
+    }
 
-    MOZ_ASSERT(pn->isKind(PNK_STATEMENTLIST));
-    mn->pn_body = pn;
+    MOZ_ASSERT(stmtList->isKind(PNK_STATEMENTLIST));
+    mn->pn_body = stmtList;
 
     TokenKind tt;
     if (!tokenStream.getToken(&tt, TokenStream::Operand))
@@ -2264,8 +2271,11 @@ Parser<FullParseHandler>::moduleBody(ModuleSharedContext* modulesc)
         p->value()->setClosedOver();
     }
 
-    if (!FoldConstants(context, &pn, this))
+    ParseNode* node = stmtList;
+    if (!FoldConstants(context, &node, this)) {
         return null();
+    }
+    stmtList = &node->as<ListNode>();
 
     if (!propagateFreeNamesAndMarkClosedOverBindings(modulepc.varScope()))
         return null();
@@ -2536,7 +2546,7 @@ Parser<FullParseHandler>::standaloneFunction(HandleFunction fun,
     if (!fn)
         return null();
 
-    ParseNode* argsbody = handler.newList(PNK_PARAMSBODY);
+    ListNodeType argsbody = handler.newList(PNK_PARAMSBODY);
     if (!argsbody)
         return null();
     fn->pn_body = argsbody;
@@ -2662,11 +2672,11 @@ Parser<ParseHandler>::functionBody(InHandling inHandling, YieldHandling yieldHan
     uint32_t startYieldOffset = pc->lastYieldOffset;
 #endif
 
-    Node pn;
+    Node body;
     if (type == StatementListBody) {
         bool inheritedStrict = pc->sc()->strict();
-        pn = statementList(yieldHandling);
-        if (!pn)
+        body = statementList(yieldHandling);
+        if (!body)
             return null();
 
         // When we transitioned from non-strict to strict mode, we need to
@@ -2687,7 +2697,7 @@ Parser<ParseHandler>::functionBody(InHandling inHandling, YieldHandling yieldHan
         // Async functions are implemented as star generators, and star
         // generators are assumed to be statement lists, to prepend initial
         // `yield`.
-        Node stmtList = null();
+        ListNodeType stmtList = null();
         if (pc->isAsync()) {
             stmtList = handler.newStatementList(pos());
             if (!stmtList)
@@ -2698,13 +2708,13 @@ Parser<ParseHandler>::functionBody(InHandling inHandling, YieldHandling yieldHan
         if (!kid)
             return null();
 
-        pn = handler.newReturnStatement(kid, handler.getPosition(kid));
-        if (!pn)
+        body = handler.newReturnStatement(kid, handler.getPosition(kid));
+        if (!body)
             return null();
 
         if (pc->isAsync()) {
-            handler.addStatementToList(stmtList, pn);
-            pn = stmtList;
+            handler.addStatementToList(stmtList, body);
+            body = stmtList;
         }
     }
 
@@ -2738,7 +2748,7 @@ Parser<ParseHandler>::functionBody(InHandling inHandling, YieldHandling yieldHan
         Node generator = newDotGeneratorName();
         if (!generator)
             return null();
-        if (!handler.prependInitialYield(pn, generator))
+        if (!handler.prependInitialYield(handler.asList(body), generator))
             return null();
     }
 
@@ -2752,7 +2762,7 @@ Parser<ParseHandler>::functionBody(InHandling inHandling, YieldHandling yieldHan
             return null();
     }
 
-    return finishLexicalScope(pc->varScope(), pn);
+    return finishLexicalScope(pc->varScope(), body);
 }
 
 template <typename ParseHandler>
@@ -3000,7 +3010,7 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
         funbox->setStart(tokenStream);
     }
 
-    Node argsbody = handler.newList(PNK_PARAMSBODY);
+    ListNodeType argsbody = handler.newList(PNK_PARAMSBODY);
     if (!argsbody)
         return false;
     handler.setFunctionFormalParametersAndBody(funcpn, argsbody);
@@ -3259,7 +3269,7 @@ Parser<SyntaxParseHandler>::skipLazyInnerFunction(Node pn, uint32_t toStringStar
 
 template <typename ParseHandler>
 bool
-Parser<ParseHandler>::addExprAndGetNextTemplStrToken(YieldHandling yieldHandling, Node nodeList,
+Parser<ParseHandler>::addExprAndGetNextTemplStrToken(YieldHandling yieldHandling, ListNodeType nodeList,
                                                      TokenKind* ttp)
 {
     Node pn = expr(InAllowed, yieldHandling, TripledotProhibited);
@@ -3280,9 +3290,9 @@ Parser<ParseHandler>::addExprAndGetNextTemplStrToken(YieldHandling yieldHandling
 
 template <typename ParseHandler>
 bool
-Parser<ParseHandler>::taggedTemplate(YieldHandling yieldHandling, Node tagArgsList, TokenKind tt)
+Parser<ParseHandler>::taggedTemplate(YieldHandling yieldHandling, ListNodeType tagArgsList, TokenKind tt)
 {
-    Node callSiteObjNode = handler.newCallSiteObject(pos().begin);
+    CallSiteNodeType callSiteObjNode = handler.newCallSiteObject(pos().begin);
     if (!callSiteObjNode)
         return false;
     handler.addList(tagArgsList, callSiteObjNode);
@@ -3301,14 +3311,14 @@ Parser<ParseHandler>::taggedTemplate(YieldHandling yieldHandling, Node tagArgsLi
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ListNodeType
 Parser<ParseHandler>::templateLiteral(YieldHandling yieldHandling)
 {
     Node pn = noSubstitutionUntaggedTemplate();
     if (!pn)
         return null();
 
-    Node nodeList = handler.newList(PNK_TEMPLATE_STRING_LIST, pn);
+    ListNodeType nodeList = handler.newList(PNK_TEMPLATE_STRING_LIST, pn);
     if (!nodeList)
         return null();
 
@@ -3543,7 +3553,7 @@ Parser<ParseHandler>::innerFunction(Node pn, ParseContext* outerpc, HandleFuncti
 
 template <typename ParseHandler>
 bool
-Parser<ParseHandler>::appendToCallSiteObj(Node callSiteObj)
+Parser<ParseHandler>::appendToCallSiteObj(CallSiteNodeType callSiteObj)
 {
     Node cookedNode = noSubstitutionTaggedTemplate();
     if (!cookedNode)
@@ -3914,7 +3924,7 @@ IsEscapeFreeStringLiteral(const TokenPos& pos, JSAtom* str)
 
 template <>
 bool
-Parser<SyntaxParseHandler>::asmJS(Node list)
+Parser<SyntaxParseHandler>::asmJS(ListNodeType list)
 {
     // While asm.js could technically be validated and compiled during syntax
     // parsing, we have no guarantee that some later JS wouldn't abort the
@@ -3928,7 +3938,7 @@ Parser<SyntaxParseHandler>::asmJS(Node list)
 
 template <>
 bool
-Parser<FullParseHandler>::asmJS(Node list)
+Parser<FullParseHandler>::asmJS(ListNodeType list)
 {
     // Disable syntax parsing in anything nested inside the asm.js module.
     handler.disableSyntaxParser();
@@ -3984,7 +3994,7 @@ Parser<FullParseHandler>::asmJS(Node list)
  */
 template <typename ParseHandler>
 bool
-Parser<ParseHandler>::maybeParseDirective(Node list, Node possibleDirective, bool* cont)
+Parser<ParseHandler>::maybeParseDirective(ListNodeType list, Node possibleDirective, bool* cont)
 {
     TokenPos directivePos;
     JSAtom* directive = handler.isStringExprStatement(possibleDirective, &directivePos);
@@ -4046,13 +4056,13 @@ Parser<ParseHandler>::maybeParseDirective(Node list, Node possibleDirective, boo
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ListNodeType
 Parser<ParseHandler>::statementList(YieldHandling yieldHandling)
 {
     JS_CHECK_RECURSION(context, return null());
 
-    Node pn = handler.newStatementList(pos());
-    if (!pn)
+    ListNodeType stmtList = handler.newStatementList(pos());
+    if (!stmtList)
         return null();
 
     bool canHaveDirectives = pc->atBodyLevel();
@@ -4094,14 +4104,14 @@ Parser<ParseHandler>::statementList(YieldHandling yieldHandling)
         }
 
         if (canHaveDirectives) {
-            if (!maybeParseDirective(pn, next, &canHaveDirectives))
+            if (!maybeParseDirective(stmtList, next, &canHaveDirectives))
                 return null();
         }
 
-        handler.addStatementToList(pn, next);
+        handler.addStatementToList(stmtList, next);
     }
 
-    return pn;
+    return stmtList;
 }
 
 template <typename ParseHandler>
@@ -4357,7 +4367,7 @@ Parser<ParseHandler>::bindingIdentifierOrPattern(DeclarationKind kind, YieldHand
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ListNodeType
 Parser<ParseHandler>::objectBindingPattern(DeclarationKind kind, YieldHandling yieldHandling)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_LC));
@@ -4365,7 +4375,7 @@ Parser<ParseHandler>::objectBindingPattern(DeclarationKind kind, YieldHandling y
     JS_CHECK_RECURSION(context, return null());
 
     uint32_t begin = pos().begin;
-    Node literal = handler.newObjectLiteral(begin);
+    ListNodeType literal = handler.newObjectLiteral(begin);
     if (!literal)
         return null();
 
@@ -4477,7 +4487,7 @@ Parser<ParseHandler>::objectBindingPattern(DeclarationKind kind, YieldHandling y
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ListNodeType
 Parser<ParseHandler>::arrayBindingPattern(DeclarationKind kind, YieldHandling yieldHandling)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_LB));
@@ -4485,7 +4495,7 @@ Parser<ParseHandler>::arrayBindingPattern(DeclarationKind kind, YieldHandling yi
     JS_CHECK_RECURSION(context, return null());
 
     uint32_t begin = pos().begin;
-    Node literal = handler.newArrayLiteral(begin);
+    ListNodeType literal = handler.newArrayLiteral(begin);
     if (!literal)
         return null();
 
@@ -4611,7 +4621,7 @@ Parser<ParseHandler>::blockStatement(YieldHandling yieldHandling, unsigned error
     if (!scope.init(pc))
         return null();
 
-    Node list = statementList(yieldHandling);
+    ListNodeType list = statementList(yieldHandling);
     if (!list)
         return null();
 
@@ -4871,7 +4881,7 @@ Parser<ParseHandler>::declarationName(Node decl, DeclarationKind declKind, Token
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ListNodeType
 Parser<ParseHandler>::declarationList(YieldHandling yieldHandling,
                                       ParseNodeKind kind,
                                       ParseNodeKind* forHeadKind /* = nullptr */,
@@ -4898,7 +4908,7 @@ Parser<ParseHandler>::declarationList(YieldHandling yieldHandling,
         MOZ_CRASH("Unknown declaration kind");
     }
 
-    Node decl = handler.newDeclarationList(kind, op);
+    ListNodeType decl = handler.newDeclarationList(kind, op);
     if (!decl)
         return null();
 
@@ -4935,7 +4945,7 @@ Parser<ParseHandler>::declarationList(YieldHandling yieldHandling,
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ListNodeType
 Parser<ParseHandler>::lexicalDeclaration(YieldHandling yieldHandling, DeclarationKind kind)
 {
     MOZ_ASSERT(kind == DeclarationKind::Const || kind == DeclarationKind::Let);
@@ -4951,8 +4961,8 @@ Parser<ParseHandler>::lexicalDeclaration(YieldHandling yieldHandling, Declaratio
      *
      * See 8.1.1.1.6 and the note in 13.2.1.
      */
-    Node decl = declarationList(yieldHandling,
-                                kind == DeclarationKind::Const ? PNK_CONST : PNK_LET);
+    ListNodeType decl = declarationList(yieldHandling,
+                                        kind == DeclarationKind::Const ? PNK_CONST : PNK_LET);
     if (!decl || !matchOrInsertSemicolonAfterExpression())
         return null();
 
@@ -4961,7 +4971,7 @@ Parser<ParseHandler>::lexicalDeclaration(YieldHandling yieldHandling, Declaratio
 
 template <>
 bool
-Parser<FullParseHandler>::namedImportsOrNamespaceImport(TokenKind tt, Node importSpecSet)
+Parser<FullParseHandler>::namedImportsOrNamespaceImport(TokenKind tt, ListNodeType importSpecSet)
 {
     if (tt == TOK_LC) {
         while (true) {
@@ -5092,7 +5102,7 @@ Parser<FullParseHandler>::importDeclaration()
     if (!tokenStream.getToken(&tt))
         return null();
 
-    Node importSpecSet = handler.newList(PNK_IMPORT_SPEC_LIST);
+    ListNodeType importSpecSet = handler.newList(PNK_IMPORT_SPEC_LIST);
     if (!importSpecSet)
         return null();
 
@@ -5204,12 +5214,11 @@ Parser<SyntaxParseHandler>::checkExportedName(JSAtom* exportName)
 
 template<>
 bool
-Parser<FullParseHandler>::checkExportedNamesForArrayBinding(ParseNode* pn)
+Parser<FullParseHandler>::checkExportedNamesForArrayBinding(ListNode* array)
 {
-    MOZ_ASSERT(pn->isKind(PNK_ARRAY));
-    MOZ_ASSERT(pn->isArity(PN_LIST));
+    MOZ_ASSERT(array->isKind(PNK_ARRAY));
 
-    for (ParseNode* node = pn->pn_head; node; node = node->pn_next) {
+    for (ParseNode* node : array->contents()) {
         if (node->isKind(PNK_ELISION))
             continue;
 
@@ -5230,7 +5239,7 @@ Parser<FullParseHandler>::checkExportedNamesForArrayBinding(ParseNode* pn)
 
 template<>
 inline bool
-Parser<SyntaxParseHandler>::checkExportedNamesForArrayBinding(Node node)
+Parser<SyntaxParseHandler>::checkExportedNamesForArrayBinding(ListNodeType array)
 {
     MOZ_ALWAYS_FALSE(abortIfSyntaxParser());
     return false;
@@ -5238,12 +5247,11 @@ Parser<SyntaxParseHandler>::checkExportedNamesForArrayBinding(Node node)
 
 template<>
 bool
-Parser<FullParseHandler>::checkExportedNamesForObjectBinding(ParseNode* pn)
+Parser<FullParseHandler>::checkExportedNamesForObjectBinding(ListNode* obj)
 {
-    MOZ_ASSERT(pn->isKind(PNK_OBJECT));
-    MOZ_ASSERT(pn->isArity(PN_LIST));
+    MOZ_ASSERT(obj->isKind(PNK_OBJECT));
 
-    for (ParseNode* node = pn->pn_head; node; node = node->pn_next) {
+    for (ParseNode* node : obj->contents()) {
         MOZ_ASSERT(node->isKind(PNK_MUTATEPROTO) ||
                    node->isKind(PNK_COLON) ||
                    node->isKind(PNK_SHORTHAND) ||
@@ -5271,7 +5279,7 @@ Parser<FullParseHandler>::checkExportedNamesForObjectBinding(ParseNode* pn)
 
 template<>
 inline bool
-Parser<SyntaxParseHandler>::checkExportedNamesForObjectBinding(Node node)
+Parser<SyntaxParseHandler>::checkExportedNamesForObjectBinding(ListNodeType obj)
 {
     MOZ_ALWAYS_FALSE(abortIfSyntaxParser());
     return false;
@@ -5285,11 +5293,11 @@ Parser<FullParseHandler>::checkExportedNamesForDeclaration(ParseNode* node)
         if (!checkExportedName(node->pn_atom))
             return false;
     } else if (node->isKind(PNK_ARRAY)) {
-        if (!checkExportedNamesForArrayBinding(node))
+        if (!checkExportedNamesForArrayBinding(&node->as<ListNode>()))
             return false;
     } else {
         MOZ_ASSERT(node->isKind(PNK_OBJECT));
-        if (!checkExportedNamesForObjectBinding(node))
+        if (!checkExportedNamesForObjectBinding(&node->as<ListNode>()))
             return false;
     }
 
@@ -5306,10 +5314,9 @@ Parser<SyntaxParseHandler>::checkExportedNamesForDeclaration(Node node)
 
 template<>
 bool
-Parser<FullParseHandler>::checkExportedNamesForDeclarationList(ParseNode* node)
+Parser<FullParseHandler>::checkExportedNamesForDeclarationList(ListNode* node)
 {
-    MOZ_ASSERT(node->isArity(PN_LIST));
-    for (ParseNode* binding = node->pn_head; binding; binding = binding->pn_next) {
+    for (ParseNode* binding : node->contents()) {
         if (binding->isKind(PNK_ASSIGN))
             binding = binding->pn_left;
         else
@@ -5324,7 +5331,7 @@ Parser<FullParseHandler>::checkExportedNamesForDeclarationList(ParseNode* node)
 
 template<>
 bool
-Parser<SyntaxParseHandler>::checkExportedNamesForDeclarationList(Node node)
+Parser<SyntaxParseHandler>::checkExportedNamesForDeclarationList(ListNodeType node)
 {
     MOZ_ALWAYS_FALSE(abortIfSyntaxParser());
     return false;
@@ -5447,7 +5454,7 @@ Parser<ParseHandler>::exportBatch(uint32_t begin)
 
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_MUL));
 
-    Node kid = handler.newList(PNK_EXPORT_SPEC_LIST);
+    ListNodeType kid = handler.newList(PNK_EXPORT_SPEC_LIST);
     if (!kid)
         return null();
 
@@ -5466,10 +5473,10 @@ Parser<ParseHandler>::exportBatch(uint32_t begin)
 
 template<>
 bool
-Parser<FullParseHandler>::checkLocalExportNames(ParseNode* node)
+Parser<FullParseHandler>::checkLocalExportNames(ListNode* node)
 {
     // ES 2017 draft 15.2.3.1.
-    for (ParseNode* next = node->pn_head; next; next = next->pn_next) {
+    for (ParseNode* next : node->contents()) {
         ParseNode* name = next->pn_left;
         MOZ_ASSERT(name->isKind(PNK_NAME));
 
@@ -5483,7 +5490,7 @@ Parser<FullParseHandler>::checkLocalExportNames(ParseNode* node)
 
 template<>
 bool
-Parser<SyntaxParseHandler>::checkLocalExportNames(Node node)
+Parser<SyntaxParseHandler>::checkLocalExportNames(ListNodeType node)
 {
     MOZ_ALWAYS_FALSE(abortIfSyntaxParser());
     return false;
@@ -5498,7 +5505,7 @@ Parser<ParseHandler>::exportClause(uint32_t begin)
 
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_LC));
 
-    Node kid = handler.newList(PNK_EXPORT_SPEC_LIST);
+    ListNodeType kid = handler.newList(PNK_EXPORT_SPEC_LIST);
     if (!kid)
         return null();
 
@@ -5598,7 +5605,7 @@ Parser<ParseHandler>::exportVariableStatement(uint32_t begin)
 
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_VAR));
 
-    Node kid = declarationList(YieldIsName, PNK_VAR);
+    ListNodeType kid = declarationList(YieldIsName, PNK_VAR);
     if (!kid)
         return null();
     if (!matchOrInsertSemicolonAfterExpression())
@@ -5679,7 +5686,7 @@ Parser<ParseHandler>::exportLexicalDeclaration(uint32_t begin, DeclarationKind k
     MOZ_ASSERT_IF(kind == DeclarationKind::Const, tokenStream.isCurrentTokenType(TOK_CONST));
     MOZ_ASSERT_IF(kind == DeclarationKind::Let, tokenStream.isCurrentTokenType(TOK_LET));
 
-    Node kid = lexicalDeclaration(YieldIsName, kind);
+    ListNodeType kid = lexicalDeclaration(YieldIsName, kind);
     if (!kid)
         return null();
     if (!checkExportedNamesForDeclarationList(kid))
@@ -5947,7 +5954,7 @@ Parser<ParseHandler>::consequentOrAlternative(YieldHandling yieldHandling)
         if (!fun)
             return null();
 
-        Node block = handler.newStatementList(funcPos);
+        ListNodeType block = handler.newStatementList(funcPos);
         if (!block)
             return null();
 
@@ -6436,7 +6443,7 @@ Parser<ParseHandler>::switchStatement(YieldHandling yieldHandling)
     if (!scope.init(pc))
         return null();
 
-    Node caseList = handler.newStatementList(pos());
+    ListNodeType caseList = handler.newStatementList(pos());
     if (!caseList)
         return null();
 
@@ -6473,7 +6480,7 @@ Parser<ParseHandler>::switchStatement(YieldHandling yieldHandling)
 
         MUST_MATCH_TOKEN(TOK_COLON, JSMSG_COLON_AFTER_CASE);
 
-        Node body = handler.newStatementList(pos());
+        ListNodeType body = handler.newStatementList(pos());
         if (!body)
             return null();
 
@@ -6513,13 +6520,13 @@ Parser<ParseHandler>::switchStatement(YieldHandling yieldHandling)
         handler.addCaseStatementToList(caseList, casepn);
     }
 
-    caseList = finishLexicalScope(scope, caseList);
-    if (!caseList)
+    Node lexicalForCaseList = finishLexicalScope(scope, caseList);
+    if (!lexicalForCaseList)
         return null();
 
-    handler.setEndPosition(caseList, pos().end);
+    handler.setEndPosition(lexicalForCaseList, pos().end);
 
-    return handler.newSwitchStatement(begin, discriminant, caseList, seenDefault);
+    return handler.newSwitchStatement(begin, discriminant, lexicalForCaseList, seenDefault);
 }
 
 template <typename ParseHandler>
@@ -6989,7 +6996,7 @@ Parser<ParseHandler>::tryStatement(YieldHandling yieldHandling)
     }
 
     bool hasUnconditionalCatch = false;
-    Node catchList = null();
+    ListNodeType catchList = null();
     TokenKind tt;
     if (!tokenStream.getToken(&tt))
         return null();
@@ -7158,7 +7165,7 @@ Parser<ParseHandler>::catchBlockStatement(YieldHandling yieldHandling,
     if (!scope.addCatchParameters(pc, catchParamScope))
         return null();
 
-    Node list = statementList(yieldHandling);
+    ListNodeType list = statementList(yieldHandling);
     if (!list)
         return null();
 
@@ -7281,7 +7288,7 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
 
     MUST_MATCH_TOKEN(TOK_LC, JSMSG_CURLY_BEFORE_CLASS);
 
-    Node classMethods = handler.newClassMethodList(pos().begin);
+    ListNodeType classMethods = handler.newClassMethodList(pos().begin);
     if (!classMethods)
         return null();
 
@@ -7494,7 +7501,7 @@ template <typename ParseHandler>
 typename ParseHandler::Node
 Parser<ParseHandler>::variableStatement(YieldHandling yieldHandling)
 {
-    Node vars = declarationList(yieldHandling, PNK_VAR);
+    ListNodeType vars = declarationList(yieldHandling, PNK_VAR);
     if (!vars)
         return null();
     if (!matchOrInsertSemicolonAfterExpression())
@@ -7909,7 +7916,7 @@ Parser<ParseHandler>::expr(InHandling inHandling, YieldHandling yieldHandling,
     if (!matched)
         return pn;
 
-    Node seq = handler.newCommaExpressionList(pn);
+    ListNodeType seq = handler.newCommaExpressionList(pn);
     if (!seq)
         return null();
     while (true) {
@@ -8815,7 +8822,7 @@ Parser<ParseHandler>::generatorComprehensionLambda(unsigned begin)
     if (!declareDotGeneratorName())
         return null();
 
-    Node body = handler.newStatementList(TokenPos(begin, pos().end));
+    ListNodeType body = handler.newStatementList(TokenPos(begin, pos().end));
     if (!body)
         return null();
 
@@ -9014,7 +9021,7 @@ Parser<ParseHandler>::comprehension(GeneratorKind comprehensionKind)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ListNodeType
 Parser<ParseHandler>::arrayComprehension(uint32_t begin)
 {
     Node inner = comprehension(NotGenerator);
@@ -9023,7 +9030,7 @@ Parser<ParseHandler>::arrayComprehension(uint32_t begin)
 
     MUST_MATCH_TOKEN(TOK_RB, JSMSG_BRACKET_AFTER_ARRAY_COMPREHENSION);
 
-    Node comp = handler.newList(PNK_ARRAYCOMP, inner);
+    ListNodeType comp = handler.newList(PNK_ARRAYCOMP, inner);
     if (!comp)
         return null();
 
@@ -9086,11 +9093,11 @@ Parser<ParseHandler>::assignExprWithoutYieldOrAwait(YieldHandling yieldHandling)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ListNodeType
 Parser<ParseHandler>::argumentList(YieldHandling yieldHandling, bool* isSpread,
                                    PossibleError* possibleError /* = nullptr */)
 {
-    Node argsList = handler.newArguments(pos());
+    ListNodeType argsList = handler.newArguments(pos());
     if (!argsList)
         return null();
 
@@ -9473,7 +9480,7 @@ Parser<ParseHandler>::memberCall(
         if (!nextMember)
             return null();
     } else {
-        Node args = handler.newArguments(pos());
+        ListNodeType args = handler.newArguments(pos());
         if (!args)
             return null();
 
@@ -9752,13 +9759,13 @@ Parser<ParseHandler>::checkDestructuringAssignmentElement(Node expr, TokenPos ex
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ListNodeType
 Parser<ParseHandler>::arrayInitializer(YieldHandling yieldHandling, PossibleError* possibleError)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_LB));
 
     uint32_t begin = pos().begin;
-    Node literal = handler.newArrayLiteral(begin);
+    ListNodeType literal = handler.newArrayLiteral(begin);
     if (!literal)
         return null();
 
@@ -9775,7 +9782,7 @@ Parser<ParseHandler>::arrayInitializer(YieldHandling yieldHandling, PossibleErro
          * Mark empty arrays as non-constant, since we cannot easily
          * determine their type.
          */
-        handler.setListFlag(literal, PNX_NONCONST);
+        handler.setListHasNonConstInitializer(literal);
     } else {
         tokenStream.ungetToken();
 
@@ -9861,7 +9868,7 @@ DoubleToAtom(ExclusiveContext* cx, double value)
 template <typename ParseHandler>
 typename ParseHandler::Node
 Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
-                                   const Maybe<DeclarationKind>& maybeDecl, Node propList,
+                                   const Maybe<DeclarationKind>& maybeDecl, ListNodeType propList,
                                    PropertyType* propType, MutableHandleAtom propAtom)
 {
     TokenKind ltok;
@@ -10054,7 +10061,7 @@ template <typename ParseHandler>
 typename ParseHandler::Node
 Parser<ParseHandler>::computedPropertyName(YieldHandling yieldHandling,
                                            const Maybe<DeclarationKind>& maybeDecl,
-                                           Node literal)
+                                           ListNodeType literal)
 {
     uint32_t begin = pos().begin;
 
@@ -10062,7 +10069,7 @@ Parser<ParseHandler>::computedPropertyName(YieldHandling yieldHandling,
         if (*maybeDecl == DeclarationKind::FormalParameter)
             pc->functionBox()->hasParameterExprs = true;
     } else {
-        handler.setListFlag(literal, PNX_NONCONST);
+        handler.setListHasNonConstInitializer(literal);
     }
 
     Node assignNode = assignExpr(InAllowed, yieldHandling, TripledotProhibited);
@@ -10074,14 +10081,14 @@ Parser<ParseHandler>::computedPropertyName(YieldHandling yieldHandling,
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ListNodeType
 Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* possibleError)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_LC));
 
     uint32_t openedPos = pos().begin;
 
-    Node literal = handler.newObjectLiteral(pos().begin);
+    ListNodeType literal = handler.newObjectLiteral(pos().begin);
     if (!literal)
         return null();
 
@@ -10164,7 +10171,7 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
                         return null();
                 } else {
                     if (!handler.isConstant(propExpr))
-                        handler.setListFlag(literal, PNX_NONCONST);
+                        handler.setListHasNonConstInitializer(literal);
 
                     if (!handler.addPropertyDefinition(literal, propName, propExpr))
                         return null();

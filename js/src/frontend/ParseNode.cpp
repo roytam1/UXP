@@ -17,26 +17,24 @@ using mozilla::IsFinite;
 
 #ifdef DEBUG
 void
-ParseNode::checkListConsistency()
+ListNode::checkConsistency() const
 {
-    MOZ_ASSERT(isArity(PN_LIST));
-    ParseNode** tail;
-    uint32_t count = 0;
-    if (pn_head) {
-        ParseNode* last = pn_head;
-        ParseNode* pn = last;
+    ParseNode* const* tailNode;
+    uint32_t actualCount = 0;
+    if (const ParseNode* last = head()) {
+        const ParseNode* pn = last;
         while (pn) {
             last = pn;
             pn = pn->pn_next;
-            count++;
+            actualCount++;
         }
 
-        tail = &last->pn_next;
+        tailNode = &last->pn_next;
     } else {
-        tail = &pn_head;
+        tailNode = &pn_u.list.head;
     }
-    MOZ_ASSERT(pn_tail == tail);
-    MOZ_ASSERT(pn_count == count);
+    MOZ_ASSERT(tail() == tailNode);
+    MOZ_ASSERT(count() == actualCount);
 }
 #endif
 
@@ -76,10 +74,10 @@ class NodeStack {
         top = pn;
     }
     /* Push the children of the PN_LIST node |pn| on the stack. */
-    void pushList(ParseNode* pn) {
+    void pushList(ListNode* pn) {
         /* This clobbers pn->pn_head if the list is empty; should be okay. */
-        *pn->pn_tail = top;
-        top = pn->pn_head;
+        pn->unsafeSetTail(top);
+        top = pn->head();
     }
     ParseNode* pop() {
         MOZ_ASSERT(!empty());
@@ -148,10 +146,10 @@ PushScopeNodeChildren(ParseNode* node, NodeStack* stack)
 }
 
 static PushResult
-PushListNodeChildren(ParseNode* node, NodeStack* stack)
+PushListNodeChildren(ListNode* node, NodeStack* stack)
 {
     MOZ_ASSERT(node->isArity(PN_LIST));
-    node->checkListConsistency();
+    node->checkConsistency();
 
     stack->pushList(node);
 
@@ -335,7 +333,7 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
         MOZ_ASSERT_IF(pn->isKind(PNK_EXPORT_FROM), pn->pn_left->isKind(PNK_EXPORT_SPEC_LIST));
         MOZ_ASSERT(pn->pn_left->isArity(PN_LIST));
         MOZ_ASSERT(pn->pn_right->isKind(PNK_STRING));
-        stack->pushList(pn->pn_left);
+        stack->pushList(&pn->pn_left->as<ListNode>());
         stack->push(pn->pn_right);
         return PushResult::Recyclable;
       }
@@ -474,20 +472,17 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       case PNK_EXPORT_SPEC_LIST:
       case PNK_PARAMSBODY:
       case PNK_CLASSMETHODLIST:
-        return PushListNodeChildren(pn, stack);
+        return PushListNodeChildren(&pn->as<ListNode>(), stack);
 
       // Array comprehension nodes are lists with a single child:
       // PNK_COMPREHENSIONFOR for comprehensions, PNK_LEXICALSCOPE for legacy
       // comprehensions.  Probably this should be a non-list eventually.
       case PNK_ARRAYCOMP: {
-#ifdef DEBUG
-        MOZ_ASSERT(pn->isKind(PNK_ARRAYCOMP));
-        MOZ_ASSERT(pn->isArity(PN_LIST));
-        MOZ_ASSERT(pn->pn_count == 1);
-        MOZ_ASSERT(pn->pn_head->isKind(PNK_LEXICALSCOPE) ||
-                   pn->pn_head->isKind(PNK_COMPREHENSIONFOR));
-#endif
-        return PushListNodeChildren(pn, stack);
+        ListNode* literal = &pn->as<ListNode>();
+        MOZ_ASSERT(literal->count() == 1);
+        MOZ_ASSERT(literal->head()->isKind(PNK_LEXICALSCOPE) ||
+                   literal->head()->isKind(PNK_COMPREHENSIONFOR));
+        return PushListNodeChildren(literal, stack);
       }
 
       case PNK_LABEL:
@@ -614,7 +609,7 @@ ParseNode::appendOrCreateList(ParseNodeKind kind, JSOp op, ParseNode* left, Pars
         }
     }
 
-    ParseNode* list = handler->new_<ListNode>(kind, op, left);
+    ListNode* list = handler->new_<ListNode>(kind, op, left);
     if (!list)
         return nullptr;
 
@@ -674,7 +669,7 @@ ParseNode::dump(int indent)
         ((CodeNode*) this)->dump(indent);
         break;
       case PN_LIST:
-        ((ListNode*) this)->dump(indent);
+        as<ListNode>().dump(indent);
         break;
       case PN_NAME:
         ((NameNode*) this)->dump(indent);
@@ -785,14 +780,12 @@ ListNode::dump(int indent)
 {
     const char* name = parseNodeNames[getKind()];
     fprintf(stderr, "(%s [", name);
-    if (pn_head != nullptr) {
+    if (ParseNode* listHead = head()) {
         indent += strlen(name) + 3;
-        DumpParseTree(pn_head, indent);
-        ParseNode* pn = pn_head->pn_next;
-        while (pn != nullptr) {
+        DumpParseTree(listHead, indent);
+        for (ParseNode* item : contentsFrom(listHead->pn_next)) {
             IndentNewLine(indent);
-            DumpParseTree(pn, indent);
-            pn = pn->pn_next;
+            DumpParseTree(item, indent);
         }
     }
     fprintf(stderr, "])");

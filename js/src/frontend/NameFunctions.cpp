@@ -284,12 +284,12 @@ class NameResolver
      * for new variables and then return an anonymous function using this scope.
      */
     bool isDirectCall(int pos, ParseNode* cur) {
-        return pos >= 0 && call(parents[pos]) && parents[pos]->pn_head == cur;
+        return pos >= 0 && call(parents[pos]) && parents[pos]->pn_left == cur;
     }
 
-    bool resolveTemplateLiteral(ParseNode* node, HandleAtom prefix) {
+    bool resolveTemplateLiteral(ListNode* node, HandleAtom prefix) {
         MOZ_ASSERT(node->isKind(PNK_TEMPLATE_STRING_LIST));
-        ParseNode* element = node->pn_head;
+        ParseNode* element = node->head();
         while (true) {
             MOZ_ASSERT(element->isKind(PNK_TEMPLATE_STRING));
 
@@ -317,16 +317,18 @@ class NameResolver
         // The callsite object node is first.  This node only contains
         // internal strings or undefined and an array -- no user-controlled
         // expressions.
-        ParseNode* element = node->pn_right->pn_head;
+        CallSiteNode* element = &node->pn_right->as<ListNode>().head()->as<CallSiteNode>();
 #ifdef DEBUG
         {
-            MOZ_ASSERT(element->isKind(PNK_CALLSITEOBJ));
-            ParseNode* array = element->pn_head;
-            MOZ_ASSERT(array->isKind(PNK_ARRAY));
-            for (ParseNode* kid = array->pn_head; kid; kid = kid->pn_next)
-                MOZ_ASSERT(kid->isKind(PNK_TEMPLATE_STRING));
-            for (ParseNode* next = array->pn_next; next; next = next->pn_next)
-                MOZ_ASSERT(next->isKind(PNK_TEMPLATE_STRING) || next->isKind(PNK_RAW_UNDEFINED));
+            ListNode* rawNodes = &element->head()->as<ListNode>();
+            MOZ_ASSERT(rawNodes->isKind(PNK_ARRAY));
+            for (ParseNode* raw : rawNodes->contents()) {
+                MOZ_ASSERT(raw->isKind(PNK_TEMPLATE_STRING));
+            }
+            for (ParseNode* cooked : element->contentsFrom(rawNodes->pn_next)) {
+                MOZ_ASSERT(cooked->isKind(PNK_TEMPLATE_STRING) ||
+                           cooked->isKind(PNK_RAW_UNDEFINED));
+            }
         }
 #endif
 
@@ -697,8 +699,7 @@ class NameResolver
           case PNK_VAR:
           case PNK_CONST:
           case PNK_LET:
-            MOZ_ASSERT(cur->isArity(PN_LIST));
-            for (ParseNode* element = cur->pn_head; element; element = element->pn_next) {
+            for (ParseNode* element : cur->as<ListNode>().contents()) {
                 if (!resolve(element, prefix))
                     return false;
             }
@@ -708,19 +709,19 @@ class NameResolver
           // PNK_COMPREHENSIONFOR for comprehensions, PNK_LEXICALSCOPE for
           // legacy comprehensions.  Probably this should be a non-list
           // eventually.
-          case PNK_ARRAYCOMP:
-            MOZ_ASSERT(cur->isArity(PN_LIST));
-            MOZ_ASSERT(cur->pn_count == 1);
-            MOZ_ASSERT(cur->pn_head->isKind(PNK_LEXICALSCOPE) ||
-                       cur->pn_head->isKind(PNK_COMPREHENSIONFOR));
-            if (!resolve(cur->pn_head, prefix))
+          case PNK_ARRAYCOMP: {
+            ListNode* literal = &cur->as<ListNode>();
+            MOZ_ASSERT(literal->count() == 1);
+            MOZ_ASSERT(literal->head()->isKind(PNK_LEXICALSCOPE) ||
+                       literal->head()->isKind(PNK_COMPREHENSIONFOR));
+            if (!resolve(literal->head(), prefix))
                 return false;
             break;
+          }
 
           case PNK_OBJECT:
           case PNK_CLASSMETHODLIST:
-            MOZ_ASSERT(cur->isArity(PN_LIST));
-            for (ParseNode* element = cur->pn_head; element; element = element->pn_next) {
+            for (ParseNode* element : cur->as<ListNode>().contents()) {
                 if (!resolve(element, prefix))
                     return false;
             }
@@ -729,8 +730,7 @@ class NameResolver
           // A template string list's contents alternate raw template string
           // contents with expressions interpolated into the overall literal.
           case PNK_TEMPLATE_STRING_LIST:
-            MOZ_ASSERT(cur->isArity(PN_LIST));
-            if (!resolveTemplateLiteral(cur, prefix))
+            if (!resolveTemplateLiteral(&cur->as<ListNode>(), prefix))
                 return false;
             break;
 
@@ -755,8 +755,7 @@ class NameResolver
           // the Arguments node used by tagged template literals, since that is
           // special-cased inside of resolveTaggedTemplate.
           case PNK_ARGUMENTS:
-            MOZ_ASSERT(cur->isArity(PN_LIST));
-            for (ParseNode* element = cur->pn_head; element; element = element->pn_next) {
+            for (ParseNode* element : cur->as<ListNode>().contents()) {
                 if (!resolve(element, prefix))
                     return false;
             }
@@ -767,15 +766,15 @@ class NameResolver
           // contain a single export batch specifier.
           case PNK_EXPORT_SPEC_LIST:
           case PNK_IMPORT_SPEC_LIST: {
-            MOZ_ASSERT(cur->isArity(PN_LIST));
 #ifdef DEBUG
             bool isImport = cur->isKind(PNK_IMPORT_SPEC_LIST);
-            ParseNode* item = cur->pn_head;
+            ListNode* list = &cur->as<ListNode>();
+            ParseNode* item = list->head();
             if (!isImport && item && item->isKind(PNK_EXPORT_BATCH_SPEC)) {
                 MOZ_ASSERT(item->isArity(PN_NULLARY));
                 break;
             }
-            for (; item; item = item->pn_next) {
+            for (ParseNode* item : list->contents()) {
                 MOZ_ASSERT(item->isKind(isImport ? PNK_IMPORT_SPEC : PNK_EXPORT_SPEC));
                 MOZ_ASSERT(item->isArity(PN_BINARY));
                 MOZ_ASSERT(item->pn_left->isKind(PNK_NAME));
@@ -788,8 +787,8 @@ class NameResolver
           }
 
           case PNK_CATCHLIST: {
-            MOZ_ASSERT(cur->isArity(PN_LIST));
-            for (ParseNode* catchNode = cur->pn_head; catchNode; catchNode = catchNode->pn_next) {
+            ListNode* catchList = &cur->as<ListNode>();
+            for (ParseNode* catchNode : catchList->contents()) {
                 MOZ_ASSERT(catchNode->isKind(PNK_LEXICALSCOPE));
                 MOZ_ASSERT(catchNode->scopeBody()->isKind(PNK_CATCH));
                 MOZ_ASSERT(catchNode->scopeBody()->isArity(PN_TERNARY));

@@ -220,8 +220,6 @@ IsTypeofKind(ParseNodeKind kind)
 }
 
 /*
- * Label        Variant     Members
- * -----        -------     -------
  * <Definitions>
  * PNK_FUNCTION name        pn_funbox: ptr to js::FunctionBox holding function
  *                            object containing arg and var properties.  We
@@ -229,27 +227,25 @@ IsTypeofKind(ParseNodeKind kind)
  *                            time to specialize arg and var bytecodes early.
  *                          pn_body: PNK_PARAMSBODY, ordinarily;
  *                            PNK_LEXICALSCOPE for implicit function in genexpr
- * PNK_PARAMSBODY list      list of formal parameters with
- *                              PNK_NAME node with non-empty name for
- *                                SingleNameBinding without Initializer
- *                              PNK_ASSIGN node for SingleNameBinding with
- *                                Initializer
- *                              PNK_NAME node with empty name for destructuring
- *                                pn_expr: PNK_ARRAY, PNK_OBJECT, or PNK_ASSIGN
- *                                  PNK_ARRAY or PNK_OBJECT for BindingPattern
- *                                    without Initializer
- *                                  PNK_ASSIGN for BindingPattern with
- *                                    Initializer
- *                          followed by:
- *                              PNK_STATEMENTLIST node for function body
- *                                statements,
- *                              PNK_RETURN for expression closure
- *                          pn_count: 1 + number of formal parameters
- *                          pn_tree: PNK_PARAMSBODY or PNK_STATEMENTLIST node
+ * PNK_PARAMSBODY (ListNode)
+ *   head: list of formal parameters with
+ *           * Name node with non-empty name for SingleNameBinding without
+ *             Initializer
+ *           * Assign node for SingleNameBinding with Initializer
+ *           * Name node with empty name for destructuring
+ *               pn_expr: Array or Object for BindingPattern without
+ *                        Initializer, Assign for BindingPattern with
+ *                        Initializer
+ *         followed by either:
+ *           * StatementList node for function body statements
+ *           * Return for expression closure
+ *   count: number of formal parameters + 1
  * PNK_SPREAD   unary       pn_kid: expression being spread
  *
  * <Statements>
- * PNK_STATEMENTLIST list   pn_head: list of pn_count statements
+ * PNK_STATEMENTLIST (ListNode)
+ *   head: list of N statements
+ *   count: N >= 0
  * PNK_IF       ternary     pn_kid1: cond, pn_kid2: then, pn_kid3: else or null.
  *                            In body of a comprehension or desugared generator
  *                            expression, pn_kid2 is PNK_YIELD, PNK_ARRAYPUSH,
@@ -293,19 +289,21 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_BREAK    name        pn_atom: label or null
  * PNK_CONTINUE name        pn_atom: label or null
  * PNK_WITH     binary      pn_left: head expr; pn_right: body;
- * PNK_VAR,     list        pn_head: list of PNK_NAME or PNK_ASSIGN nodes
- * PNK_LET,                          each name node has either
- * PNK_CONST                           pn_used: false
- *                                     pn_atom: variable name
- *                                     pn_expr: initializer or null
- *                                   or
- *                                     pn_used: true
- *                                     pn_atom: variable name
- *                                     pn_lexdef: def node
- *                                   each assignment node has
- *                                     pn_left: PNK_NAME with pn_used true and
- *                                              pn_lexdef (NOT pn_expr) set
- *                                     pn_right: initializer
+ * PNK_VAR, PNK_LET, PNK_CONST (ListNode)
+ *   head: list of N Name or Assign nodes
+ *         each name node has either
+ *           pn_used: false
+ *           pn_atom: variable name
+ *           pn_expr: initializer or null
+ *         or
+ *           pn_used: true
+ *           pn_atom: variable name
+ *           pn_lexdef: def node
+ *         each assignment node has
+ *           pn_left: Name with pn_used true and
+ *                    pn_lexdef (NOT pn_expr) set
+ *           pn_right: initializer
+ *   count: N > 0
  * PNK_RETURN   unary       pn_kid: return expr or null
  * PNK_SEMI     unary       pn_kid: expr or null statement
  *                          pn_prologue: true if Directive Prologue member
@@ -314,15 +312,23 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_LABEL    name        pn_atom: label, pn_expr: labeled statement
  * PNK_IMPORT   binary      pn_left: PNK_IMPORT_SPEC_LIST import specifiers
  *                          pn_right: PNK_STRING module specifier
+ * PNK_IMPORT_SPEC_LIST (ListNode)
+ *   head: list of N ImportSpec nodes
+ *   count: N >= 0 (N = 0 for `import {} from ...`)
  * PNK_EXPORT   unary       pn_kid: declaration expression
  * PNK_EXPORT_FROM binary   pn_left: PNK_EXPORT_SPEC_LIST export specifiers
  *                          pn_right: PNK_STRING module specifier
+ * PNK_EXPORT_SPEC_LIST (ListNode)
+ *   head: list of N ExportSpec nodes
+ *   count: N >= 0 (N = 0 for `export {}`)
  * PNK_EXPORT_DEFAULT unary pn_kid: export default declaration or expression
  *
  * <Expressions>
  * All left-associated binary trees of the same type are optimized into lists
  * to avoid recursion when processing expression chains.
- * PNK_COMMA    list        pn_head: list of pn_count comma-separated exprs
+ * PNK_COMMA (ListNode)
+ *   head: list of N comma-separated exprs
+ *   count: N >= 2
  * PNK_ASSIGN   binary      pn_left: lvalue, pn_right: rvalue
  * PNK_ADDASSIGN,   binary  pn_left: lvalue, pn_right: rvalue
  * PNK_SUBASSIGN,           pn_op: JSOP_ADD for +=, etc.
@@ -339,29 +345,18 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_CONDITIONAL ternary  (cond ? trueExpr : falseExpr)
  *                          pn_kid1: cond, pn_kid2: then, pn_kid3: else
  * PNK_COALESCE,   list     pn_head; list of pn_count subexpressions
- * PNK_OR,                  All of these operators are left-associative except (**).
- * PNK_AND
- * PNK_BITOR,
- * PNK_BITXOR,
- * PNK_BITAND,
- * PNK_EQ,
- * PNK_NE,
- * PNK_STRICTEQ,
- * PNK_STRICTNE,
- * PNK_LT,
- * PNK_LE,
- * PNK_GT,
- * PNK_GE,
- * PNK_LSH,
- * PNK_RSH,
- * PNK_URSH,
- * PNK_ADD,
- * PNK_SUB,
- * PNK_STAR,
- * PNK_DIV,
- * PNK_MOD,
- * PNK_POW                  (**) is right-associative, but forms a list
- *                          nonetheless. Special hacks everywhere.
+ * PNK_OR, PNK_AND, PNK_BITOR,
+ * PNK_BITXOR, PNK_BITAND, PNK_EQ,
+ * PNK_NE, PNK_STRICTEQ, PNK_STRICTNE,
+ * PNK_LT, PNK_LE, PNK_GT, PNK_GE,
+ * PNK_LSH, PNK_RSH, PNK_URSH,
+ * PNK_ADD, PNK_SUB, PNK_STAR,
+ * PNK_DIV, PNK_MOD, PNK_POW (ListNode)
+ *   head: list of N subexpressions
+ *         All of these operators are left-associative except Pow which is
+ *         right-associative, but still forms a list (see comments in
+ *         ParseNode::appendOrCreateList).
+ *   count: N >= 2
  *
  * PNK_POS,     unary       pn_kid: UNARY expr
  * PNK_NEG
@@ -420,10 +415,21 @@ IsTypeofKind(ParseNodeKind kind)
  *                          pn_count: N (where N is number of args)
  * PNK_GENEXP   binary      Exactly like PNK_CALL, used for the implicit call
  *                          in the desugaring of a generator-expression.
- * PNK_ARRAY    list        pn_head: list of pn_count array element exprs
- *                          [,,] holes are represented by PNK_ELISION nodes
- *                          pn_xflags: PN_ENDCOMMA if extra comma at end
- * PNK_OBJECT   list        pn_head: list of pn_count binary PNK_COLON nodes
+ * PNK_ARGUMENTS (ListNode)
+ *   head: list of arg1, arg2, ... argN
+ *   count: N >= 0
+ * PNK_ARRAY (ListNode)
+ *   head: list of N array element expressions
+ *         holes ([,,]) are represented by Elision nodes,
+ *         spread elements ([...X]) are represented by Spread nodes
+ *   count: N >= 0
+ * PNK_OBJECT (ListNode)
+ *   head: list of N nodes, each item is one of:
+ *           * MutateProto
+ *           * Colon
+ *           * Shorthand
+ *           * Spread
+ *   count: N >= 0
  * PNK_COLON    binary      key-value pair in object initializer or
  *                          destructuring lhs
  *                          pn_left: property id, pn_right: value
@@ -435,14 +441,21 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_STRING               pn_op: JSOP_GETNAME, JSOP_STRING, or JSOP_OBJECT
  *                          If JSOP_GETNAME, pn_op may be JSOP_*ARG or JSOP_*VAR
  *                          telling const-ness and static analysis results
- * PNK_TEMPLATE_STRING_LIST pn_head: list of alternating expr and template strings
- *              list
+ * PNK_TEMPLATE_STRING_LIST (ListNode)
+ *   head: list of alternating expr and template strings
+ *           TemplateString [, expression, TemplateString]+
+ *         there's at least one expression.  If the template literal contains
+ *         no ${}-delimited expression, it's parsed as a single TemplateString
  * PNK_TEMPLATE_STRING      pn_atom: template string atom
                 nullary     pn_op: JSOP_NOP
  * PNK_TAGGED_TEMPLATE      pn_left: tag expression
  *              binary      pn_right: Arguments, with the first being the call site object, then arg1, arg2, ... argN
- * PNK_CALLSITEOBJ list     pn_head: a PNK_ARRAY node followed by
- *                          list of pn_count - 1 PNK_TEMPLATE_STRING nodes
+ * PNK_CALLSITEOBJ (CallSiteNode)
+ *   head:  an Array of raw TemplateString, then corresponding cooked
+ *          TemplateString nodes
+ *            Array [, cooked TemplateString]+
+ *          where the Array is
+ *            [raw TemplateString]+
  * PNK_REGEXP   nullary     pn_objbox: RegExp model object
  * PNK_NUMBER   dval        pn_dval: double value of numeric literal
  * PNK_TRUE,    nullary     pn_op: JSOp bytecode
@@ -483,11 +496,20 @@ enum ParseNodeArity
     PN_SCOPE                            /* lexical scope */
 };
 
+#define FOR_EACH_PARSENODE_SUBCLASS(macro) \
+    macro(ListNode, ListNodeType, asList) \
+    macro(CallSiteNode, CallSiteNodeType, asCallSite)
+
 class LoopControlStatement;
 class BreakStatement;
 class ContinueStatement;
 class ConditionalExpression;
 class PropertyAccess;
+
+#define DECLARE_CLASS(typeName, longTypeName, asMethodName) \
+class typeName;
+FOR_EACH_PARSENODE_SUBCLASS(DECLARE_CLASS)
+#undef DECLARE_CLASS
 
 class ParseNode
 {
@@ -574,10 +596,12 @@ class ParseNode
 
     union {
         struct {                        /* list of next-linked nodes */
+          private:
+            friend class ListNode;
             ParseNode*  head;           /* first node in list */
-            ParseNode** tail;           /* ptr to ptr to last node in list */
+            ParseNode** tail;           /* ptr to last node's pn_next in list */
             uint32_t    count;          /* number of nodes in list */
-            uint32_t    xflags;         /* see PNX_* below */
+            uint32_t    xflags;         /* see ListNode class */
         } list;
         struct {                        /* ternary: if, for(;;), ?: */
             ParseNode*  kid1;           /* condition, discriminant, etc. */
@@ -624,10 +648,6 @@ class ParseNode
 #define pn_objbox       pn_u.name.objbox
 #define pn_funbox       pn_u.name.funbox
 #define pn_body         pn_u.name.expr
-#define pn_head         pn_u.list.head
-#define pn_tail         pn_u.list.tail
-#define pn_count        pn_u.list.count
-#define pn_xflags       pn_u.list.xflags
 #define pn_kid1         pn_u.ternary.kid1
 #define pn_kid2         pn_u.ternary.kid2
 #define pn_kid3         pn_u.ternary.kid3
@@ -682,13 +702,6 @@ class ParseNode
         pn_u.scope.body = body;
     }
 
-/* PN_LIST pn_xflags bits. */
-#define PNX_FUNCDEFS    0x01            /* contains top-level function statements */
-#define PNX_ARRAYHOLESPREAD 0x02        /* one or more of
-                                           1. array initialiser has holes
-                                           2. array initializer has spread node */
-#define PNX_NONCONST    0x04            /* initialiser has non-constants */
-
     bool functionIsHoisted() const {
         MOZ_ASSERT(pn_arity == PN_CODE && getKind() == PNK_FUNCTION);
         MOZ_ASSERT(isOp(JSOP_LAMBDA) ||        // lambda, genexpr
@@ -738,41 +751,7 @@ class ParseNode
     bool isDirectivePrologueMember() const { return pn_prologue; }
 
     // True iff this is a for-in/of loop variable declaration (var/let/const).
-    bool isForLoopDeclaration() const {
-        if (isKind(PNK_VAR) || isKind(PNK_LET) || isKind(PNK_CONST)) {
-            MOZ_ASSERT(isArity(PN_LIST));
-            MOZ_ASSERT(pn_count > 0);
-            return true;
-        }
-
-        return false;
-    }
-
-    ParseNode* generatorExpr() const {
-        MOZ_ASSERT(isKind(PNK_GENEXP));
-
-        ParseNode* callee = this->pn_left;
-        MOZ_ASSERT(callee->isKind(PNK_FUNCTION));
-
-        ParseNode* paramsBody = callee->pn_body;
-        MOZ_ASSERT(paramsBody->isKind(PNK_PARAMSBODY));
-
-        ParseNode* body = paramsBody->last();
-        MOZ_ASSERT(body->isKind(PNK_STATEMENTLIST));
-        MOZ_ASSERT(body->last()->isKind(PNK_LEXICALSCOPE) ||
-                   body->last()->isKind(PNK_COMPREHENSIONFOR));
-        return body->last();
-    }
-
-    /*
-     * Compute a pointer to the last element in a singly-linked list. NB: list
-     * must be non-empty for correct PN_LAST usage -- this is asserted!
-     */
-    ParseNode* last() const {
-        MOZ_ASSERT(pn_arity == PN_LIST);
-        MOZ_ASSERT(pn_count != 0);
-        return (ParseNode*)(uintptr_t(pn_tail) - offsetof(ParseNode, pn_next));
-    }
+    bool isForLoopDeclaration() const;
 
     void initNumber(double value, DecimalPoint decimalPoint) {
         MOZ_ASSERT(pn_arity == PN_NULLARY);
@@ -780,49 +759,6 @@ class ParseNode
         pn_u.number.value = value;
         pn_u.number.decimalPoint = decimalPoint;
     }
-
-    void makeEmpty() {
-        MOZ_ASSERT(pn_arity == PN_LIST);
-        pn_head = nullptr;
-        pn_tail = &pn_head;
-        pn_count = 0;
-        pn_xflags = 0;
-    }
-
-    void initList(ParseNode* pn) {
-        MOZ_ASSERT(pn_arity == PN_LIST);
-        if (pn->pn_pos.begin < pn_pos.begin)
-            pn_pos.begin = pn->pn_pos.begin;
-        pn_pos.end = pn->pn_pos.end;
-        pn_head = pn;
-        pn_tail = &pn->pn_next;
-        pn_count = 1;
-        pn_xflags = 0;
-    }
-
-    void append(ParseNode* pn) {
-        MOZ_ASSERT(pn_arity == PN_LIST);
-        MOZ_ASSERT(pn->pn_pos.begin >= pn_pos.begin);
-        pn_pos.end = pn->pn_pos.end;
-        *pn_tail = pn;
-        pn_tail = &pn->pn_next;
-        pn_count++;
-    }
-
-    void prepend(ParseNode* pn) {
-        MOZ_ASSERT(pn_arity == PN_LIST);
-        pn->pn_next = pn_head;
-        pn_head = pn;
-        if (pn_tail == &pn_head)
-            pn_tail = &pn->pn_next;
-        pn_count++;
-    }
-
-    void checkListConsistency()
-#ifndef DEBUG
-    {}
-#endif
-    ;
 
     enum AllowConstantObjects {
         DontAllowObjects = 0,
@@ -944,8 +880,33 @@ struct TernaryNode : public ParseNode
 #endif
 };
 
-struct ListNode : public ParseNode
+class ListNode : public ParseNode
 {
+  private:
+    // xflags bits.
+
+    // Statement list has top-level function statements.
+    static constexpr uint32_t hasTopLevelFunctionDeclarationsBit = 0x01;
+
+    // One or more of
+    //   * array has holes
+    //   * array has spread node
+    static constexpr uint32_t hasArrayHoleOrSpreadBit = 0x02;
+
+    // Array/Object/Class initializer has non-constants.
+    //   * array has holes
+    //   * array has spread node
+    //   * array has element which is known not to be constant
+    //   * array has no element
+    //   * object/class has __proto__
+    //   * object/class has property which is known not to be constant
+    //   * object/class shorthand property
+    //   * object/class spread property
+    //   * object/class has method
+    //   * object/class has computed property
+    static constexpr uint32_t hasNonConstInitializerBit = 0x04;
+
+  public:
     ListNode(ParseNodeKind kind, const TokenPos& pos)
       : ParseNode(kind, JSOP_NOP, PN_LIST, pos)
     {
@@ -961,7 +922,15 @@ struct ListNode : public ParseNode
     ListNode(ParseNodeKind kind, JSOp op, ParseNode* kid)
       : ParseNode(kind, op, PN_LIST, kid->pn_pos)
     {
-        initList(kid);
+        if (kid->pn_pos.begin < pn_pos.begin) {
+            pn_pos.begin = kid->pn_pos.begin;
+        }
+        pn_pos.end = kid->pn_pos.end;
+
+        pn_u.list.head = kid;
+        pn_u.list.tail = &kid->pn_next;
+        pn_u.list.count = 1;
+        pn_u.list.xflags = 0;
     }
 
     static bool test(const ParseNode& node) {
@@ -971,7 +940,277 @@ struct ListNode : public ParseNode
 #ifdef DEBUG
     void dump(int indent);
 #endif
+
+    ParseNode* head() const {
+        return pn_u.list.head;
+    }
+
+    ParseNode** tail() const {
+        return pn_u.list.tail;
+    }
+
+    uint32_t count() const {
+        return pn_u.list.count;
+    }
+
+    bool empty() const {
+        return count() == 0;
+    }
+
+    MOZ_MUST_USE bool hasTopLevelFunctionDeclarations() const {
+        MOZ_ASSERT(isKind(PNK_STATEMENTLIST));
+        return pn_u.list.xflags & hasTopLevelFunctionDeclarationsBit;
+    }
+
+    MOZ_MUST_USE bool hasArrayHoleOrSpread() const {
+        MOZ_ASSERT(isKind(PNK_ARRAY));
+        return pn_u.list.xflags & hasArrayHoleOrSpreadBit;
+    }
+
+    MOZ_MUST_USE bool hasNonConstInitializer() const {
+        MOZ_ASSERT(isKind(PNK_ARRAY) ||
+                   isKind(PNK_OBJECT) ||
+                   isKind(PNK_CLASSMETHODLIST));
+        return pn_u.list.xflags & hasNonConstInitializerBit;
+    }
+
+    void setHasTopLevelFunctionDeclarations() {
+        MOZ_ASSERT(isKind(PNK_STATEMENTLIST));
+        pn_u.list.xflags |= hasTopLevelFunctionDeclarationsBit;
+    }
+
+    void setHasArrayHoleOrSpread() {
+        MOZ_ASSERT(isKind(PNK_ARRAY));
+        pn_u.list.xflags |= hasArrayHoleOrSpreadBit;
+    }
+
+    void setHasNonConstInitializer() {
+        MOZ_ASSERT(isKind(PNK_ARRAY) ||
+                   isKind(PNK_OBJECT) ||
+                   isKind(PNK_CLASSMETHODLIST));
+        pn_u.list.xflags |= hasNonConstInitializerBit;
+    }
+
+    void checkConsistency() const
+#ifndef DEBUG
+    {}
+#endif
+    ;
+
+    /*
+     * Compute a pointer to the last element in a singly-linked list. NB: list
+     * must be non-empty -- this is asserted!
+     */
+    ParseNode* last() const {
+        MOZ_ASSERT(!empty());
+        //
+        // ParseNode                      ParseNode
+        // +-----+---------+-----+        +-----+---------+-----+
+        // | ... | pn_next | ... | +-...->| ... | pn_next | ... |
+        // +-----+---------+-----+ |      +-----+---------+-----+
+        // ^       |               |      ^     ^
+        // |       +---------------+      |     |
+        // |                              |     tail()
+        // |                              |
+        // head()                         last()
+        //
+        return (ParseNode*)(uintptr_t(tail()) - offsetof(ParseNode, pn_next));
+    }
+
+    void replaceLast(ParseNode* node) {
+        MOZ_ASSERT(!empty());
+        pn_pos.end = node->pn_pos.end;
+
+        ParseNode* item = head();
+        ParseNode* lastNode = last();
+        MOZ_ASSERT(item);
+        if (item == lastNode) {
+            pn_u.list.head = node;
+        } else {
+            while (item->pn_next != lastNode) {
+                MOZ_ASSERT(item->pn_next);
+                item = item->pn_next;
+            }
+            item->pn_next = node;
+        }
+        pn_u.list.tail = &node->pn_next;
+    }
+
+    void makeEmpty() {
+        pn_u.list.head = nullptr;
+        pn_u.list.tail = &pn_u.list.head;
+        pn_u.list.count = 0;
+        pn_u.list.xflags = 0;
+    }
+
+    void append(ParseNode* item) {
+        MOZ_ASSERT(item->pn_pos.begin >= pn_pos.begin);
+        pn_pos.end = item->pn_pos.end;
+        *pn_u.list.tail = item;
+        pn_u.list.tail = &item->pn_next;
+        pn_u.list.count++;
+    }
+
+    void prepend(ParseNode* item) {
+        item->pn_next = pn_u.list.head;
+        pn_u.list.head = item;
+        if (pn_u.list.tail == &pn_u.list.head) {
+            pn_u.list.tail = &item->pn_next;
+        }
+        pn_u.list.count++;
+    }
+
+    // Methods used by FoldConstants.cpp.
+    // Caller is responsible for keeping the list consistent.
+    ParseNode** unsafeHeadReference() {
+        return &pn_u.list.head;
+    }
+
+    void unsafeReplaceTail(ParseNode** newTail) {
+        pn_u.list.tail = newTail;
+        checkConsistency();
+    }
+
+    void unsafeSetTail(ParseNode* newTail) {
+        *pn_u.list.tail = newTail;
+    }
+
+    void unsafeDecrementCount() {
+        MOZ_ASSERT(count() > 1);
+        pn_u.list.count--;
+    }
+
+  private:
+    // Classes to iterate over ListNode contents:
+    //
+    // Usage:
+    //   ListNode* list;
+    //   for (ParseNode* item : list->contents()) {
+    //     // item is ParseNode* typed.
+    //   }
+    class iterator
+    {
+      private:
+        ParseNode* node_;
+
+        friend class ListNode;
+        explicit iterator(ParseNode* node)
+          : node_(node)
+        {}
+
+      public:
+        bool operator==(const iterator& other) const {
+            return node_ == other.node_;
+        }
+
+        bool operator!=(const iterator& other) const {
+            return !(*this == other);
+        }
+
+        iterator& operator++() {
+            node_ = node_->pn_next;
+            return *this;
+        }
+
+        ParseNode* operator*() {
+            return node_;
+        }
+
+        const ParseNode* operator*() const {
+            return node_;
+        }
+    };
+
+    class range
+    {
+      private:
+        ParseNode* begin_;
+        ParseNode* end_;
+
+        friend class ListNode;
+        range(ParseNode* begin, ParseNode* end)
+          : begin_(begin),
+            end_(end)
+        {}
+
+      public:
+        iterator begin() {
+            return iterator(begin_);
+        }
+
+        iterator end() {
+            return iterator(end_);
+        }
+
+        const iterator begin() const {
+            return iterator(begin_);
+        }
+
+        const iterator end() const {
+            return iterator(end_);
+        }
+
+        const iterator cbegin() const {
+            return begin();
+        }
+
+        const iterator cend() const {
+            return end();
+        }
+    };
+
+#ifdef DEBUG
+  MOZ_MUST_USE bool contains(ParseNode* target) const {
+      MOZ_ASSERT(target);
+      for (ParseNode* node : contents()) {
+          if (target == node) {
+              return true;
+          }
+      }
+      return false;
+  }
+#endif
+
+  public:
+    range contents() {
+        return range(head(), nullptr);
+    }
+
+    const range contents() const {
+        return range(head(), nullptr);
+    }
+
+    range contentsFrom(ParseNode* begin) {
+        MOZ_ASSERT_IF(begin, contains(begin));
+        return range(begin, nullptr);
+    }
+
+    const range contentsFrom(ParseNode* begin) const {
+        MOZ_ASSERT_IF(begin, contains(begin));
+        return range(begin, nullptr);
+    }
+
+    range contentsTo(ParseNode* end) {
+        MOZ_ASSERT_IF(end, contains(end));
+        return range(head(), end);
+    }
+
+    const range contentsTo(ParseNode* end) const {
+        MOZ_ASSERT_IF(end, contains(end));
+        return range(head(), end);
+    }
 };
+
+inline bool
+ParseNode::isForLoopDeclaration() const
+{
+    if (isKind(PNK_VAR) || isKind(PNK_LET) || isKind(PNK_CONST)) {
+        MOZ_ASSERT(!as<ListNode>().empty());
+        return true;
+    }
+
+    return false;
+}
 
 struct CodeNode : public ParseNode
 {
@@ -1066,10 +1305,7 @@ class CaseClause : public BinaryNode
 
     ParseNode* caseExpression() const { return pn_left; }
     bool isDefault() const { return !caseExpression(); }
-    ParseNode* statementList() const { return pn_right; }
-
-    // The next CaseClause in the same switch statement.
-    CaseClause* next() const { return pn_next ? &pn_next->as<CaseClause>() : nullptr; }
+    ListNode* statementList() const { return &pn_right->as<ListNode>(); }
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_CASE);
@@ -1363,15 +1599,24 @@ class OptionalPropertyByValue : public PropertyByValueBase {
 /*
  * A CallSiteNode represents the implicit call site object argument in a TaggedTemplate.
  */
-struct CallSiteNode : public ListNode {
+class CallSiteNode : public ListNode
+{
+  public:
     explicit CallSiteNode(uint32_t begin): ListNode(PNK_CALLSITEOBJ, TokenPos(begin, begin + 1)) {}
 
     static bool test(const ParseNode& node) {
-        return node.isKind(PNK_CALLSITEOBJ);
+        bool match = node.isKind(PNK_CALLSITEOBJ);
+        MOZ_ASSERT_IF(match, node.is<ListNode>());
+        return match;
     }
 
     MOZ_MUST_USE bool getRawArrayValue(ExclusiveContext* cx, MutableHandleValue vp) {
-        return pn_head->getConstantValue(cx, AllowObjects, vp);
+        return head()->getConstantValue(cx, AllowObjects, vp);
+    }
+
+    ListNode* rawNodes() const {
+        MOZ_ASSERT(head());
+        return &head()->as<ListNode>();
     }
 };
 
@@ -1412,11 +1657,11 @@ struct SwitchStatement : public BinaryNode {
     {
 #ifdef DEBUG
         MOZ_ASSERT(lexicalForCaseList->isKind(PNK_LEXICALSCOPE));
-        ParseNode* cases = lexicalForCaseList->scopeBody();
+        ListNode* cases = &lexicalForCaseList->scopeBody()->as<ListNode>();
         MOZ_ASSERT(cases->isKind(PNK_STATEMENTLIST));
         bool found = false;
-        CaseClause* firstCase = cases->pn_head ? &cases->pn_head->as<CaseClause>() : nullptr;
-        for (CaseClause* caseNode = firstCase; caseNode; caseNode = caseNode->next()) {
+        for (ParseNode* item : cases->contents()) {
+            CaseClause* caseNode = &item->as<CaseClause>();
             if (caseNode->isDefault()) {
                 found = true;
                 break;
@@ -1498,12 +1743,12 @@ struct ClassNode : public TernaryNode {
     ParseNode* heritage() const {
         return pn_kid2;
     }
-    ParseNode* methodList() const {
+    ListNode* methodList() const {
         if (pn_kid3->isKind(PNK_CLASSMETHODLIST))
-            return pn_kid3;
+            return &pn_kid3->as<ListNode>();
 
         MOZ_ASSERT(pn_kid3->is<LexicalScopeNode>());
-        ParseNode* list = pn_kid3->scopeBody();
+        ListNode* list = &pn_kid3->scopeBody()->as<ListNode>();
         MOZ_ASSERT(list->isKind(PNK_CLASSMETHODLIST));
         return list;
     }
@@ -1550,7 +1795,7 @@ ParseNode::isConstant()
       case PNK_ARRAY:
       case PNK_OBJECT:
         MOZ_ASSERT(isOp(JSOP_NEWINIT));
-        return !(pn_xflags & PNX_NONCONST);
+        return !as<ListNode>().hasNonConstInitializer();
       default:
         return false;
     }
@@ -1628,17 +1873,16 @@ static inline ParseNode*
 FunctionFormalParametersList(ParseNode* fn, unsigned* numFormals)
 {
     MOZ_ASSERT(fn->isKind(PNK_FUNCTION));
-    ParseNode* argsBody = fn->pn_body;
+    ListNode* argsBody = &fn->pn_body->as<ListNode>();
     MOZ_ASSERT(argsBody->isKind(PNK_PARAMSBODY));
-    *numFormals = argsBody->pn_count;
+    *numFormals = argsBody->count();
     if (*numFormals > 0 &&
         argsBody->last()->isKind(PNK_LEXICALSCOPE) &&
         argsBody->last()->scopeBody()->isKind(PNK_STATEMENTLIST))
     {
         (*numFormals)--;
     }
-    MOZ_ASSERT(argsBody->isArity(PN_LIST));
-    return argsBody->pn_head;
+    return argsBody->head();
 }
 
 bool
