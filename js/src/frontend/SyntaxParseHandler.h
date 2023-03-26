@@ -304,19 +304,19 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     MOZ_MUST_USE bool addSpreadElement(ListNodeType literal, uint32_t begin, Node inner) { return true; }
     void addArrayElement(ListNodeType literal, Node element) { }
 
-    Node newCall(Node callee, Node args) { return NodeFunctionCall; }
-    Node newOptionalCall(Node callee, Node args) { return NodeOptionalFunctionCall; }
+    BinaryNodeType newCall(Node callee, Node args) { return NodeFunctionCall; }
+    BinaryNodeType newOptionalCall(Node callee, Node args) { return NodeOptionalFunctionCall; }
     ListNodeType newArguments(const TokenPos& pos) { return NodeGeneric; }
-    Node newSuperCall(Node callee, Node args) { return NodeGeneric; }
-    Node newTaggedTemplate(Node callee, Node args) { return NodeGeneric; }
+    BinaryNodeType newSuperCall(Node callee, Node args) { return NodeGeneric; }
+    BinaryNodeType newTaggedTemplate(Node callee, Node args) { return NodeGeneric; }
     Node newGenExp(Node callee, Node args) { return NodeGeneric; }
 
     ListNodeType newObjectLiteral(uint32_t begin) { return NodeUnparenthesizedObject; }
     ListNodeType newClassMethodList(uint32_t begin) { return NodeGeneric; }
-    Node newClassNames(Node outer, Node inner, const TokenPos& pos) { return NodeGeneric; }
+    ClassNamesType newClassNames(Node outer, Node inner, const TokenPos& pos) { return NodeGeneric; }
     ClassNodeType newClass(Node name, Node heritage, Node methodBlock, const TokenPos& pos) { return NodeGeneric; }
 
-    Node newNewTarget(Node newHolder, Node targetHolder) { return NodeGeneric; }
+    BinaryNodeType newNewTarget(Node newHolder, Node targetHolder) { return NodeGeneric; }
     Node newPosHolder(const TokenPos& pos) { return NodeGeneric; }
     Node newSuperBase(Node thisName, const TokenPos& pos) { return NodeSuperBase; }
 
@@ -335,21 +335,21 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
 
     ListNodeType newStatementList(const TokenPos& pos) { return NodeGeneric; }
     void addStatementToList(ListNodeType list, Node stmt) {}
-    void addCaseStatementToList(ListNodeType list, Node caseClause) {}
+    void addCaseStatementToList(ListNodeType list, CaseClauseType caseClause) {}
     MOZ_MUST_USE bool prependInitialYield(ListNodeType stmtList, Node genName) { return true; }
     Node newEmptyStatement(const TokenPos& pos) { return NodeEmptyStatement; }
 
     Node newExportDeclaration(Node kid, const TokenPos& pos) {
         return NodeGeneric;
     }
-    Node newExportFromDeclaration(uint32_t begin, Node exportSpecSet, Node moduleSpec) {
+    BinaryNodeType newExportFromDeclaration(uint32_t begin, Node exportSpecSet, Node moduleSpec) {
         return NodeGeneric;
     }
-    Node newExportDefaultDeclaration(Node kid, Node maybeBinding, const TokenPos& pos) {
+    BinaryNodeType newExportDefaultDeclaration(Node kid, Node maybeBinding, const TokenPos& pos) {
         return NodeGeneric;
     }
 
-    Node newSetThis(Node thisName, Node value) { return value; }
+    BinaryNodeType newSetThis(Node thisName, Node value) { return value; }
 
     Node newExprStatement(Node expr, uint32_t end) {
         return expr == NodeUnparenthesizedString ? NodeStringExprStatement : NodeGeneric;
@@ -358,17 +358,17 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     TernaryNodeType newIfStatement(uint32_t begin, Node cond, Node thenBranch, Node elseBranch) {
         return NodeGeneric;
     }
-    Node newDoWhileStatement(Node body, Node cond, const TokenPos& pos) { return NodeGeneric; }
-    Node newWhileStatement(uint32_t begin, Node cond, Node body) { return NodeGeneric; }
-    Node newSwitchStatement(uint32_t begin, Node discriminant, Node lexicalForCaseList, bool hasDefault)
+    BinaryNodeType newDoWhileStatement(Node body, Node cond, const TokenPos& pos) { return NodeGeneric; }
+    BinaryNodeType newWhileStatement(uint32_t begin, Node cond, Node body) { return NodeGeneric; }
+    SwitchStatementType newSwitchStatement(uint32_t begin, Node discriminant, Node lexicalForCaseList, bool hasDefault)
     {
         return NodeGeneric;
     }
-    Node newCaseOrDefault(uint32_t begin, Node expr, Node body) { return NodeGeneric; }
+    CaseClauseType newCaseOrDefault(uint32_t begin, Node expr, Node body) { return NodeGeneric; }
     Node newContinueStatement(PropertyName* label, const TokenPos& pos) { return NodeGeneric; }
     Node newBreakStatement(PropertyName* label, const TokenPos& pos) { return NodeBreak; }
     Node newReturnStatement(Node expr, const TokenPos& pos) { return NodeReturn; }
-    Node newWithStatement(uint32_t begin, Node expr, Node body) { return NodeGeneric; }
+    BinaryNodeType newWithStatement(uint32_t begin, Node expr, Node body) { return NodeGeneric; }
 
     Node newLabeledStatement(PropertyName* label, Node stmt, uint32_t begin) {
         return NodeGeneric;
@@ -385,7 +385,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return NodeGeneric;
     }
 
-    Node newPropertyAccess(Node expr, Node key) {
+    PropertyAccessType newPropertyAccess(Node expr, Node key) {
         return NodeDottedProperty;
     }
 
@@ -393,7 +393,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return NodeOptionalDottedProperty;
     }
 
-    Node newPropertyByValue(Node pn, Node kid, uint32_t end) { return NodeElement; }
+    PropertyByValueType newPropertyByValue(Node lhs, Node index, uint32_t end) { return NodeElement; }
 
     Node newOptionalPropertyByValue(Node pn, Node kid, uint32_t end) { return NodeOptionalElement; }
 
@@ -414,7 +414,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     void setFunctionBox(Node pn, FunctionBox* funbox) {}
     void addFunctionFormalParameter(Node pn, Node argpn) {}
 
-    Node newForStatement(uint32_t begin, TernaryNodeType forHead, Node body, unsigned iflags) {
+    ForNodeType newForStatement(uint32_t begin, TernaryNodeType forHead, Node body, unsigned iflags) {
         return NodeGeneric;
     }
 
@@ -518,11 +518,11 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     }
 
 
-    Node newNewExpression(uint32_t begin, Node ctor, Node args) {
+    BinaryNodeType newNewExpression(uint32_t begin, Node ctor, Node args) {
         return NodeGeneric;
     }
 
-    Node newAssignment(ParseNodeKind kind, Node lhs, Node rhs, JSOp op) {
+    AssignmentNodeType newAssignment(ParseNodeKind kind, Node lhs, Node rhs, JSOp op) {
         if (kind == PNK_ASSIGN)
             return NodeUnparenthesizedAssignment;
         return newBinary(kind, lhs, rhs, op);

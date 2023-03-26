@@ -1198,8 +1198,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     Node blockStatement(YieldHandling yieldHandling,
                         unsigned errorNumber = JSMSG_CURLY_IN_COMPOUND);
-    Node doWhileStatement(YieldHandling yieldHandling);
-    Node whileStatement(YieldHandling yieldHandling);
+    BinaryNodeType doWhileStatement(YieldHandling yieldHandling);
+    BinaryNodeType whileStatement(YieldHandling yieldHandling);
 
     Node forStatement(YieldHandling yieldHandling);
     bool forHeadStart(YieldHandling yieldHandling,
@@ -1210,11 +1210,11 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
                       Node* forInOrOfExpression);
     Node expressionAfterForInOrOf(ParseNodeKind forHeadKind, YieldHandling yieldHandling);
 
-    Node switchStatement(YieldHandling yieldHandling);
+    SwitchStatementType switchStatement(YieldHandling yieldHandling);
     Node continueStatement(YieldHandling yieldHandling);
     Node breakStatement(YieldHandling yieldHandling);
     Node returnStatement(YieldHandling yieldHandling);
-    Node withStatement(YieldHandling yieldHandling);
+    BinaryNodeType withStatement(YieldHandling yieldHandling);
     Node throwStatement(YieldHandling yieldHandling);
     TernaryNodeType tryStatement(YieldHandling yieldHandling);
     Node catchBlockStatement(YieldHandling yieldHandling, ParseContext::Scope& catchParamScope);
@@ -1235,24 +1235,24 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     ListNodeType lexicalDeclaration(YieldHandling yieldHandling, DeclarationKind kind);
 
-    Node importDeclaration();
+    inline BinaryNodeType importDeclaration();
 
     bool processExport(Node node);
-    bool processExportFrom(Node node);
+    bool processExportFrom(BinaryNodeType node);
 
-    Node exportFrom(uint32_t begin, Node specList);
-    Node exportBatch(uint32_t begin);
+    BinaryNodeType exportFrom(uint32_t begin, Node specList);
+    BinaryNodeType exportBatch(uint32_t begin);
     bool checkLocalExportNames(ListNodeType node);
     Node exportClause(uint32_t begin);
     Node exportFunctionDeclaration(uint32_t begin);
     Node exportVariableStatement(uint32_t begin);
     Node exportClassDeclaration(uint32_t begin);
     Node exportLexicalDeclaration(uint32_t begin, DeclarationKind kind);
-    Node exportDefaultFunctionDeclaration(uint32_t begin,
-                                          FunctionAsyncKind asyncKind = SyncFunction);
-    Node exportDefaultClassDeclaration(uint32_t begin);
-    Node exportDefaultAssignExpr(uint32_t begin);
-    Node exportDefault(uint32_t begin);
+    BinaryNodeType exportDefaultFunctionDeclaration(uint32_t begin,
+                                                    FunctionAsyncKind asyncKind = SyncFunction);
+    BinaryNodeType exportDefaultClassDeclaration(uint32_t begin);
+    BinaryNodeType exportDefaultAssignExpr(uint32_t begin);
+    BinaryNodeType exportDefault(uint32_t begin);
 
     Node exportDeclaration();
     Node expressionStatement(YieldHandling yieldHandling,
@@ -1343,7 +1343,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     Node exprInParens(InHandling inHandling, YieldHandling yieldHandling,
                       TripledotHandling tripledotHandling, PossibleError* possibleError = nullptr);
 
-    bool tryNewTarget(Node& newTarget);
+    bool tryNewTarget(BinaryNodeType* newTarget);
     bool checkAndMarkSuperScope();
 
     Node methodDefinition(uint32_t toStringStart, PropertyType propType, HandleAtom funName);
@@ -1526,7 +1526,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     ListNodeType objectLiteral(YieldHandling yieldHandling, PossibleError* possibleError);
 
-    Node bindingInitializer(Node lhs, DeclarationKind kind, YieldHandling yieldHandling);
+    BinaryNodeType bindingInitializer(Node lhs, DeclarationKind kind, YieldHandling yieldHandling);
     Node bindingIdentifier(DeclarationKind kind, YieldHandling yieldHandling);
     Node bindingIdentifierOrPattern(DeclarationKind kind, YieldHandling yieldHandling,
                                     TokenKind tt);

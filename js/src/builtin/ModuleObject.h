@@ -24,6 +24,7 @@ class ModuleEnvironmentObject;
 class ModuleObject;
 
 namespace frontend {
+class BinaryNode;
 class ListNode;
 class ParseNode;
 class TokenStream;
@@ -319,9 +320,9 @@ class MOZ_STACK_CLASS ModuleBuilder
     explicit ModuleBuilder(ExclusiveContext* cx, HandleModuleObject module,
                            const frontend::TokenStream& tokenStream);
 
-    bool processImport(frontend::ParseNode* pn);
-    bool processExport(frontend::ParseNode* pn);
-    bool processExportFrom(frontend::ParseNode* pn);
+    bool processImport(frontend::BinaryNode* importNode);
+    bool processExport(frontend::ParseNode* exportNode);
+    bool processExportFrom(frontend::BinaryNode* exportNode);
 
     bool hasExportedName(JSAtom* name) const;
 

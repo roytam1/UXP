@@ -276,9 +276,9 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       case PNK_FOR:
       case PNK_COMPREHENSIONFOR:
       case PNK_WITH: {
-        MOZ_ASSERT(pn->isArity(PN_BINARY));
-        stack->push(pn->pn_left);
-        stack->push(pn->pn_right);
+        BinaryNode* bn = &pn->as<BinaryNode>();
+        stack->push(bn->left());
+        stack->push(bn->right());
         return PushResult::Recyclable;
       }
 
@@ -287,10 +287,10 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       // So both are binary nodes with a possibly-null pn_left.
       case PNK_CASE:
       case PNK_CLASSNAMES: {
-        MOZ_ASSERT(pn->isArity(PN_BINARY));
-        if (pn->pn_left)
-            stack->push(pn->pn_left);
-        stack->push(pn->pn_right);
+        BinaryNode* bn = &pn->as<BinaryNode>();
+        if (bn->left())
+            stack->push(bn->left());
+        stack->push(bn->right());
         return PushResult::Recyclable;
       }
 
@@ -298,9 +298,12 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       // '.generator' local, for a synthesized, prepended initial yield.
       case PNK_INITIALYIELD: {
         MOZ_ASSERT(pn->isArity(PN_UNARY));
-        MOZ_ASSERT(pn->pn_kid->isKind(PNK_ASSIGN) &&
-                   pn->pn_kid->pn_left->isKind(PNK_NAME) &&
-                   pn->pn_kid->pn_right->isKind(PNK_GENERATOR));
+#ifdef DEBUG
+        MOZ_ASSERT(pn->pn_kid->isKind(PNK_ASSIGN));
+        BinaryNode* bn = &pn->pn_kid->as<BinaryNode>();
+        MOZ_ASSERT(bn->left()->isKind(PNK_NAME) &&
+                   bn->right()->isKind(PNK_GENERATOR));
+#endif
         stack->push(pn->pn_kid);
         return PushResult::Recyclable;
       }
@@ -328,22 +331,22 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       // and a module string on the right.
       case PNK_IMPORT:
       case PNK_EXPORT_FROM: {
-        MOZ_ASSERT(pn->isArity(PN_BINARY));
-        MOZ_ASSERT_IF(pn->isKind(PNK_IMPORT), pn->pn_left->isKind(PNK_IMPORT_SPEC_LIST));
-        MOZ_ASSERT_IF(pn->isKind(PNK_EXPORT_FROM), pn->pn_left->isKind(PNK_EXPORT_SPEC_LIST));
-        MOZ_ASSERT(pn->pn_left->isArity(PN_LIST));
-        MOZ_ASSERT(pn->pn_right->isKind(PNK_STRING));
-        stack->pushList(&pn->pn_left->as<ListNode>());
-        stack->push(pn->pn_right);
+        BinaryNode* bn = &pn->as<BinaryNode>();
+        MOZ_ASSERT_IF(pn->isKind(PNK_IMPORT), bn->left()->isKind(PNK_IMPORT_SPEC_LIST));
+        MOZ_ASSERT_IF(pn->isKind(PNK_EXPORT_FROM), bn->left()->isKind(PNK_EXPORT_SPEC_LIST));
+        MOZ_ASSERT(bn->left()->isArity(PN_LIST));
+        MOZ_ASSERT(bn->right()->isKind(PNK_STRING));
+        stack->pushList(&bn->left()->as<ListNode>());
+        stack->push(bn->right());
         return PushResult::Recyclable;
       }
 
       case PNK_EXPORT_DEFAULT: {
-        MOZ_ASSERT(pn->isArity(PN_BINARY));
-        MOZ_ASSERT_IF(pn->pn_right, pn->pn_right->isKind(PNK_NAME));
-        stack->push(pn->pn_left);
-        if (pn->pn_right)
-            stack->push(pn->pn_right);
+        BinaryNode* bn = &pn->as<BinaryNode>();
+        MOZ_ASSERT_IF(bn->right(), bn->right()->isKind(PNK_NAME));
+        stack->push(bn->left());
+        if (bn->right())
+            stack->push(bn->right());
         return PushResult::Recyclable;
       }
 
@@ -660,7 +663,7 @@ ParseNode::dump(int indent)
         ((UnaryNode*) this)->dump(indent);
         break;
       case PN_BINARY:
-        ((BinaryNode*) this)->dump(indent);
+        as<BinaryNode>().dump(indent);
         break;
       case PN_TERNARY:
         as<TernaryNode>().dump(indent);
@@ -730,13 +733,13 @@ BinaryNode::dump(int indent)
     if (isKind(PNK_DOT)) {
         fprintf(stderr, "(.");
 
-        DumpParseTree(pn_right, indent + 2);
+        DumpParseTree(right(), indent + 2);
 
         fprintf(stderr, " ");
         if (as<PropertyAccess>().isSuper())
             fprintf(stderr, "super");
         else
-            DumpParseTree(pn_left, indent + 2);
+            DumpParseTree(left(), indent + 2);
 
         fprintf(stderr, ")");
         return;
@@ -745,9 +748,9 @@ BinaryNode::dump(int indent)
     const char* name = parseNodeNames[getKind()];
     fprintf(stderr, "(%s ", name);
     indent += strlen(name) + 2;
-    DumpParseTree(pn_left, indent);
+    DumpParseTree(left(), indent);
     IndentNewLine(indent);
-    DumpParseTree(pn_right, indent);
+    DumpParseTree(right(), indent);
     fprintf(stderr, ")");
 }
 
