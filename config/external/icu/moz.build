@@ -17,3 +17,9 @@ else:
     USE_LIBS += ['icudata']
     SharedLibrary('icu')
     SHARED_LIBRARY_NAME = 'icu' + CONFIG['MOZ_ICU_VERSION']
+    # Linking ICU gets too spammy in warnings with MSVC
+    if CONFIG['_MSC_VER'] and not CONFIG['CLANG_CL']:
+        LDFLAGS += [
+            '/IGNORE:4217', # symbol defined in $1.obj is defined in $2.obj
+            '/IGNORE:4286', # similar with LNK4217
+        ]
