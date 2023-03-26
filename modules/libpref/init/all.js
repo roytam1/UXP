@@ -5244,6 +5244,9 @@ pref("prompts.content_handling_dialog_modal.enabled", false);
 // Whether module scripts (<script type="module">) are enabled for content.
 pref("dom.moduleScripts.enabled", true);
 
+// Whether read-only Window property event is enabled for content.
+pref("dom.window.event.enabled", false);
+
 // Report details when a media source error occurs?
 // Enabled by default in debug builds, otherwise should be explicitly enabled
 // by the user to prevent XO leaking of the response status (CVE-2020-15666)
