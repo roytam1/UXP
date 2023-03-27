@@ -1213,9 +1213,9 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     SwitchStatementType switchStatement(YieldHandling yieldHandling);
     Node continueStatement(YieldHandling yieldHandling);
     Node breakStatement(YieldHandling yieldHandling);
-    Node returnStatement(YieldHandling yieldHandling);
+    UnaryNodeType returnStatement(YieldHandling yieldHandling);
     BinaryNodeType withStatement(YieldHandling yieldHandling);
-    Node throwStatement(YieldHandling yieldHandling);
+    UnaryNodeType throwStatement(YieldHandling yieldHandling);
     TernaryNodeType tryStatement(YieldHandling yieldHandling);
     Node catchBlockStatement(YieldHandling yieldHandling, ParseContext::Scope& catchParamScope);
     Node debuggerStatement();
@@ -1244,10 +1244,10 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     BinaryNodeType exportBatch(uint32_t begin);
     bool checkLocalExportNames(ListNodeType node);
     Node exportClause(uint32_t begin);
-    Node exportFunctionDeclaration(uint32_t begin);
-    Node exportVariableStatement(uint32_t begin);
-    Node exportClassDeclaration(uint32_t begin);
-    Node exportLexicalDeclaration(uint32_t begin, DeclarationKind kind);
+    UnaryNodeType exportFunctionDeclaration(uint32_t begin);
+    UnaryNodeType exportVariableStatement(uint32_t begin);
+    UnaryNodeType exportClassDeclaration(uint32_t begin);
+    UnaryNodeType exportLexicalDeclaration(uint32_t begin, DeclarationKind kind);
     BinaryNodeType exportDefaultFunctionDeclaration(uint32_t begin,
                                                     FunctionAsyncKind asyncKind = SyncFunction);
     BinaryNodeType exportDefaultClassDeclaration(uint32_t begin);
@@ -1255,7 +1255,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     BinaryNodeType exportDefault(uint32_t begin);
 
     Node exportDeclaration();
-    Node expressionStatement(YieldHandling yieldHandling,
+    UnaryNodeType expressionStatement(YieldHandling yieldHandling,
                              InvokedPrediction invoked = PredictUninvoked);
 
     // Declaration parsing.  The main entrypoint is Parser::declarationList,
@@ -1316,7 +1316,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
                     TripledotHandling tripledotHandling, PossibleError* possibleError = nullptr,
                     InvokedPrediction invoked = PredictUninvoked);
     Node assignExprWithoutYieldOrAwait(YieldHandling yieldHandling);
-    Node yieldExpression(InHandling inHandling);
+    UnaryNodeType yieldExpression(InHandling inHandling);
     Node condExpr1(InHandling inHandling, YieldHandling yieldHandling,
                    TripledotHandling tripledotHandling,
                    PossibleError* possibleError,
@@ -1366,7 +1366,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     Node functionBody(InHandling inHandling, YieldHandling yieldHandling, FunctionSyntaxKind kind,
                       FunctionBodyType type);
 
-    Node unaryOpExpr(YieldHandling yieldHandling, ParseNodeKind kind, JSOp op, uint32_t begin);
+    UnaryNodeType unaryOpExpr(YieldHandling yieldHandling, ParseNodeKind kind, JSOp op, uint32_t begin);
 
     Node condition(InHandling inHandling, YieldHandling yieldHandling);
 
@@ -1519,8 +1519,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     Node propertyName(YieldHandling yieldHandling,
                       const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType propList,
                       PropertyType* propType, MutableHandleAtom propAtom);
-    Node computedPropertyName(YieldHandling yieldHandling,
-                              const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType literal);
+    UnaryNodeType computedPropertyName(YieldHandling yieldHandling,
+                                       const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType literal);
     ListNodeType arrayInitializer(YieldHandling yieldHandling, PossibleError* possibleError);
     Node newRegExp();
 

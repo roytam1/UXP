@@ -404,9 +404,8 @@ class NameResolver
 
           case PNK_TYPEOFNAME:
           case PNK_SUPERBASE:
-            MOZ_ASSERT(cur->isArity(PN_UNARY));
-            MOZ_ASSERT(cur->pn_kid->isKind(PNK_NAME));
-            MOZ_ASSERT(!cur->pn_kid->expr());
+            MOZ_ASSERT(cur->as<UnaryNode>().kid()->isKind(PNK_NAME));
+            MOZ_ASSERT(!cur->as<UnaryNode>().kid()->expr());
             break;
 
           case PNK_NEWTARGET: {
@@ -436,16 +435,14 @@ class NameResolver
           case PNK_SPREAD:
           case PNK_MUTATEPROTO:
           case PNK_EXPORT:
-            MOZ_ASSERT(cur->isArity(PN_UNARY));
-            if (!resolve(cur->pn_kid, prefix))
+            if (!resolve(cur->as<UnaryNode>().kid(), prefix))
                 return false;
             break;
 
           // Nodes with a single nullable child.
           case PNK_SEMI:
           case PNK_THIS:
-            MOZ_ASSERT(cur->isArity(PN_UNARY));
-            if (ParseNode* expr = cur->pn_kid) {
+            if (ParseNode* expr = cur->as<UnaryNode>().kid()) {
                 if (!resolve(expr, prefix))
                     return false;
             }
@@ -515,7 +512,7 @@ class NameResolver
 
           case PNK_INITIALYIELD: {
 #ifdef DEBUG
-            AssignmentNode* assignNode = &cur->pn_kid->as<AssignmentNode>();
+            AssignmentNode* assignNode = &cur->as<UnaryNode>().kid()->as<AssignmentNode>();
             MOZ_ASSERT(assignNode->left()->isKind(PNK_NAME));
             MOZ_ASSERT(assignNode->right()->isKind(PNK_GENERATOR));
 #endif
@@ -523,23 +520,20 @@ class NameResolver
           }
 
           case PNK_YIELD_STAR:
-            MOZ_ASSERT(cur->isArity(PN_UNARY));
-            if (!resolve(cur->pn_kid, prefix))
+            if (!resolve(cur->as<UnaryNode>().kid(), prefix))
                 return false;
             break;
 
           case PNK_YIELD:
           case PNK_AWAIT:
-            MOZ_ASSERT(cur->isArity(PN_UNARY));
-            if (cur->pn_kid) {
-                if (!resolve(cur->pn_kid, prefix))
+            if (ParseNode* expr = cur->as<UnaryNode>().kid()) {
+                if (!resolve(expr, prefix))
                     return false;
             }
             break;
 
           case PNK_RETURN:
-            MOZ_ASSERT(cur->isArity(PN_UNARY));
-            if (ParseNode* returnValue = cur->pn_kid) {
+            if (ParseNode* returnValue = cur->as<UnaryNode>().kid()) {
                 if (!resolve(returnValue, prefix))
                     return false;
             }

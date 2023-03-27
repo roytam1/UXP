@@ -157,11 +157,9 @@ PushListNodeChildren(ListNode* node, NodeStack* stack)
 }
 
 static PushResult
-PushUnaryNodeChild(ParseNode* node, NodeStack* stack)
+PushUnaryNodeChild(UnaryNode* node, NodeStack* stack)
 {
-    MOZ_ASSERT(node->isArity(PN_UNARY));
-
-    stack->push(node->pn_kid);
+    stack->push(node->kid());
 
     return PushResult::Recyclable;
 }
@@ -223,16 +221,16 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       case PNK_MUTATEPROTO:
       case PNK_EXPORT:
       case PNK_SUPERBASE:
-        return PushUnaryNodeChild(pn, stack);
+        return PushUnaryNodeChild(&pn->as<UnaryNode>(), stack);
 
       // Nodes with a single nullable child.
       case PNK_OPTCHAIN:
       case PNK_DELETEOPTCHAIN:
       case PNK_THIS:
       case PNK_SEMI: {
-        MOZ_ASSERT(pn->isArity(PN_UNARY));
-        if (pn->pn_kid)
-            stack->push(pn->pn_kid);
+        UnaryNode* un = &pn->as<UnaryNode>();
+        if (un->kid())
+            stack->push(un->kid());
         return PushResult::Recyclable;
       }
 
@@ -297,14 +295,14 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       // The child is an assignment of a PNK_GENERATOR node to the
       // '.generator' local, for a synthesized, prepended initial yield.
       case PNK_INITIALYIELD: {
-        MOZ_ASSERT(pn->isArity(PN_UNARY));
+        UnaryNode* un = &pn->as<UnaryNode>();
 #ifdef DEBUG
-        MOZ_ASSERT(pn->pn_kid->isKind(PNK_ASSIGN));
-        BinaryNode* bn = &pn->pn_kid->as<BinaryNode>();
+        MOZ_ASSERT(un->kid()->isKind(PNK_ASSIGN));
+        BinaryNode* bn = &un->kid()->as<BinaryNode>();
         MOZ_ASSERT(bn->left()->isKind(PNK_NAME) &&
                    bn->right()->isKind(PNK_GENERATOR));
 #endif
-        stack->push(pn->pn_kid);
+        stack->push(un->kid());
         return PushResult::Recyclable;
       }
 
@@ -312,18 +310,18 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       case PNK_YIELD_STAR:
       case PNK_YIELD:
       case PNK_AWAIT: {
-        MOZ_ASSERT(pn->isArity(PN_UNARY));
-        if (pn->pn_kid)
-            stack->push(pn->pn_kid);
+        UnaryNode* un = &pn->as<UnaryNode>();
+        if (un->kid())
+            stack->push(un->kid());
         return PushResult::Recyclable;
       }
 
       // A return node's child is what you'd expect: the return expression,
       // if any.
       case PNK_RETURN: {
-        MOZ_ASSERT(pn->isArity(PN_UNARY));
-        if (pn->pn_kid)
-            stack->push(pn->pn_kid);
+        UnaryNode* un = &pn->as<UnaryNode>();
+        if (un->kid())
+            stack->push(un->kid());
         return PushResult::Recyclable;
       }
 
@@ -660,7 +658,7 @@ ParseNode::dump(int indent)
         ((NullaryNode*) this)->dump();
         break;
       case PN_UNARY:
-        ((UnaryNode*) this)->dump(indent);
+        as<UnaryNode>().dump(indent);
         break;
       case PN_BINARY:
         as<BinaryNode>().dump(indent);
@@ -723,7 +721,7 @@ UnaryNode::dump(int indent)
     const char* name = parseNodeNames[getKind()];
     fprintf(stderr, "(%s ", name);
     indent += strlen(name) + 2;
-    DumpParseTree(pn_kid, indent);
+    DumpParseTree(kid(), indent);
     fprintf(stderr, ")");
 }
 

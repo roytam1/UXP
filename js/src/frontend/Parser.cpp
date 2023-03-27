@@ -3977,7 +3977,7 @@ Parser<FullParseHandler>::asmJS(ListNodeType list)
  * Recognize Directive Prologue members and directives. Assuming |pn| is a
  * candidate for membership in a directive prologue, recognize directives and
  * set |pc|'s flags accordingly. If |pn| is indeed part of a prologue, set its
- * |pn_prologue| flag.
+ * |prologue| flag.
  *
  * Note that the following is a strict mode function:
  *
@@ -4014,7 +4014,7 @@ Parser<ParseHandler>::maybeParseDirective(ListNodeType list, Node possibleDirect
         // directive in the future. We don't want to interfere with people
         // taking advantage of directive-prologue-enabled features that appear
         // in other browsers first.
-        handler.setInDirectivePrologue(possibleDirective);
+        handler.setInDirectivePrologue(handler.asUnary(possibleDirective));
 
         if (directive == context->names().useStrict) {
             // Functions with non-simple parameter lists (destructuring,
@@ -5229,7 +5229,7 @@ Parser<FullParseHandler>::checkExportedNamesForArrayBinding(ListNode* array)
 
         ParseNode* binding;
         if (node->isKind(PNK_SPREAD))
-            binding = node->pn_kid;
+            binding = node->as<UnaryNode>().kid();
         else if (node->isKind(PNK_ASSIGN))
             binding = node->as<AssignmentNode>().left();
         else
@@ -5264,10 +5264,10 @@ Parser<FullParseHandler>::checkExportedNamesForObjectBinding(ListNode* obj)
 
         ParseNode* target;
         if (node->isKind(PNK_SPREAD)) {
-            target = node->pn_kid;
+            target = node->as<UnaryNode>().kid();
         } else {
             if (node->isKind(PNK_MUTATEPROTO))
-                target = node->pn_kid;
+                target = node->as<UnaryNode>().kid();
             else
                 target = node->as<BinaryNode>().right();
 
@@ -5590,7 +5590,7 @@ Parser<ParseHandler>::exportClause(uint32_t begin)
     if (!checkLocalExportNames(kid))
         return null();
 
-    Node node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
+    UnaryNodeType node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
     if (!node)
         return null();
 
@@ -5601,7 +5601,7 @@ Parser<ParseHandler>::exportClause(uint32_t begin)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::UnaryNodeType
 Parser<ParseHandler>::exportVariableStatement(uint32_t begin)
 {
     if (!abortIfSyntaxParser())
@@ -5617,7 +5617,7 @@ Parser<ParseHandler>::exportVariableStatement(uint32_t begin)
     if (!checkExportedNamesForDeclarationList(kid))
         return null();
 
-    Node node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
+    UnaryNodeType node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
     if (!node)
         return null();
 
@@ -5628,7 +5628,7 @@ Parser<ParseHandler>::exportVariableStatement(uint32_t begin)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::UnaryNodeType
 Parser<ParseHandler>::exportFunctionDeclaration(uint32_t begin)
 {
     if (!abortIfSyntaxParser())
@@ -5643,7 +5643,7 @@ Parser<ParseHandler>::exportFunctionDeclaration(uint32_t begin)
     if (!checkExportedNameForFunction(kid))
         return null();
 
-    Node node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
+    UnaryNodeType node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
     if (!node)
         return null();
 
@@ -5654,7 +5654,7 @@ Parser<ParseHandler>::exportFunctionDeclaration(uint32_t begin)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::UnaryNodeType
 Parser<ParseHandler>::exportClassDeclaration(uint32_t begin)
 {
     if (!abortIfSyntaxParser())
@@ -5669,7 +5669,7 @@ Parser<ParseHandler>::exportClassDeclaration(uint32_t begin)
     if (!checkExportedNameForClass(kid))
         return null();
 
-    Node node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
+    UnaryNodeType node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
     if (!node)
         return null();
 
@@ -5680,7 +5680,7 @@ Parser<ParseHandler>::exportClassDeclaration(uint32_t begin)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::UnaryNodeType
 Parser<ParseHandler>::exportLexicalDeclaration(uint32_t begin, DeclarationKind kind)
 {
     if (!abortIfSyntaxParser())
@@ -5696,7 +5696,7 @@ Parser<ParseHandler>::exportLexicalDeclaration(uint32_t begin, DeclarationKind k
     if (!checkExportedNamesForDeclarationList(kid))
         return null();
 
-    Node node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
+    UnaryNodeType node = handler.newExportDeclaration(kid, TokenPos(begin, pos().end));
     if (!node)
         return null();
 
@@ -5878,7 +5878,7 @@ Parser<ParseHandler>::exportDeclaration()
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::UnaryNodeType
 Parser<ParseHandler>::expressionStatement(YieldHandling yieldHandling, InvokedPrediction invoked)
 {
     tokenStream.ungetToken();
@@ -6635,7 +6635,7 @@ Parser<ParseHandler>::breakStatement(YieldHandling yieldHandling)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::UnaryNodeType
 Parser<ParseHandler>::returnStatement(YieldHandling yieldHandling)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_RETURN));
@@ -6675,7 +6675,7 @@ Parser<ParseHandler>::returnStatement(YieldHandling yieldHandling)
             return null();
     }
 
-    Node pn = handler.newReturnStatement(exprNode, TokenPos(begin, pos().end));
+    UnaryNodeType pn = handler.newReturnStatement(exprNode, TokenPos(begin, pos().end));
     if (!pn)
         return null();
 
@@ -6689,7 +6689,7 @@ Parser<ParseHandler>::returnStatement(YieldHandling yieldHandling)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::UnaryNodeType
 Parser<ParseHandler>::yieldExpression(InHandling inHandling)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_YIELD));
@@ -6924,7 +6924,7 @@ Parser<ParseHandler>::labeledStatement(YieldHandling yieldHandling)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::UnaryNodeType
 Parser<ParseHandler>::throwStatement(YieldHandling yieldHandling)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_THROW));
@@ -8540,7 +8540,7 @@ Parser<ParseHandler>::checkIncDecOperand(Node operand, uint32_t operandOffset)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::UnaryNodeType
 Parser<ParseHandler>::unaryOpExpr(YieldHandling yieldHandling, ParseNodeKind kind, JSOp op,
                                   uint32_t begin)
 {
@@ -10065,7 +10065,7 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::UnaryNodeType
 Parser<ParseHandler>::computedPropertyName(YieldHandling yieldHandling,
                                            const Maybe<DeclarationKind>& maybeDecl,
                                            ListNodeType literal)

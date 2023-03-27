@@ -1210,10 +1210,11 @@ ModuleBuilder::processExport(frontend::ParseNode* exportNode)
 {
     MOZ_ASSERT(exportNode->isKind(PNK_EXPORT) ||
                exportNode->isKind(PNK_EXPORT_DEFAULT));
-    MOZ_ASSERT_IF(exportNode->isKind(PNK_EXPORT), exportNode->is<UnaryNode>());
 
     bool isDefault = exportNode->isKind(PNK_EXPORT_DEFAULT);
-    ParseNode* kid = isDefault ? exportNode->as<BinaryNode>().left() : exportNode->pn_kid;
+    ParseNode* kid = isDefault
+                     ? exportNode->as<BinaryNode>().left()
+                     : exportNode->as<UnaryNode>().kid();
 
     if (isDefault && exportNode->as<BinaryNode>().right()) {
         // This is an export default containing an expression.
@@ -1321,7 +1322,7 @@ ModuleBuilder::processExportArrayBinding(frontend::ListNode* array)
             continue;
 
         if (node->isKind(PNK_SPREAD))
-            node = node->pn_kid;
+            node = node->as<UnaryNode>().kid();
         else if (node->isKind(PNK_ASSIGN))
             node = node->as<AssignmentNode>().left();
 
@@ -1345,10 +1346,10 @@ ModuleBuilder::processExportObjectBinding(frontend::ListNode* obj)
 
         ParseNode* target;
         if (node->isKind(PNK_SPREAD)) {
-            target = node->pn_kid;
+            target = node->as<UnaryNode>().kid();
         } else {
             if (node->isKind(PNK_MUTATEPROTO))
-                target = node->pn_kid;
+                target = node->as<UnaryNode>().kid();
             else
                 target = node->as<BinaryNode>().right();
 
