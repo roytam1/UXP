@@ -1858,7 +1858,13 @@ nsNSSComponent::InitializeNSS()
   SSL_OptionSetDefault(SSL_ENABLE_RENEGOTIATION, SSL_RENEGOTIATE_REQUIRES_XTN);
 
   SSL_OptionSetDefault(SSL_ENABLE_EXTENDED_MASTER_SECRET, true);
-  
+
+  // Set TLS 1.3 hello downgrade sentinel?
+  bool enableDowngradeCheck =
+    Preferences::GetBool("security.tls.hello_downgrade_check",
+                         HELLO_DOWNGRADE_CHECK_DEFAULT);
+  SSL_OptionSetDefault(SSL_ENABLE_HELLO_DOWNGRADE_CHECK, enableDowngradeCheck);
+
   SSL_OptionSetDefault(SSL_ENABLE_FALSE_START,
                        Preferences::GetBool("security.ssl.enable_false_start",
                                             FALSE_START_ENABLED_DEFAULT));
@@ -1882,12 +1888,6 @@ nsNSSComponent::InitializeNSS()
   SSL_OptionSetDefault(SSL_ENABLE_TLS13_COMPAT_MODE,
                        Preferences::GetBool("security.ssl.enable_tls13_compat_mode",
                                             TLS13_COMPAT_MODE_DEFAULT));  
-
-  // Set TLS 1.3 hello downgrade sentinel?
-  bool enableDowngradeCheck =
-    Preferences::GetBool("security.tls.hello_downgrade_check",
-                         HELLO_DOWNGRADE_CHECK_DEFAULT);
-  SSL_OptionSetDefault(SSL_ENABLE_HELLO_DOWNGRADE_CHECK, enableDowngradeCheck);
 
   
   if (NS_FAILED(InitializeCipherSuite())) {
