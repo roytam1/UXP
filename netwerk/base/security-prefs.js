@@ -118,6 +118,15 @@ pref("security.ssl.enable_ocsp_must_staple", true);
 // Restart required.
 pref("security.ssl.enable_tls13_compat_mode", false);
 
+// Enable TLS 1.3 hello downgrade sentinel?
+// One of the key protections offered by TLS 1.3 is preventing protocol downgrades
+// as part of the initial handshake.
+// Some domains, middleware and transparent routers may try to downgrade connections
+// this way (which is a bad thing!). To allow users to connect anyway this
+// check can be disabled here. Default is for the sentinel to be enabled, preventing
+// bad downgrades of the protocol version.
+pref("security.tls.hello_downgrade_check", true);
+
 // If a request is mixed-content, send an HSTS priming request to attempt to
 // see if it is available over HTTPS.
 pref("security.mixed_content.send_hsts_priming", true);
