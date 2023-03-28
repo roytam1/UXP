@@ -34,11 +34,10 @@ if test -n "$USE_ICU"; then
     ICU_DATA_FILE="icudt${version}l.dat"
 
     dnl We won't build ICU data as a separate file when building
-    dnl JS standalone so that embedders don't have to deal with it.
-    dnl We also don't do it on Windows because sometimes the file goes
-    dnl missing -- possibly due to overzealous antivirus software? --
-    dnl which prevents the browser from starting up :(
-    if test -z "$JS_STANDALONE"; then
+    dnl ICU as a shared library, as we need to fold the data into
+    dnl the shared library in order for consumers like Spidermonkey
+    dnl to use it without code duplication.
+    if test -z "$MOZ_SHARED_ICU"; then
         MOZ_ICU_DATA_ARCHIVE=1
     else
         MOZ_ICU_DATA_ARCHIVE=
@@ -46,17 +45,18 @@ if test -n "$USE_ICU"; then
 fi
 
 AC_SUBST(MOZ_ICU_VERSION)
-AC_SUBST(ENABLE_INTL_API)
 AC_SUBST(USE_ICU)
 AC_SUBST(ICU_DATA_FILE)
 AC_SUBST(MOZ_ICU_DATA_ARCHIVE)
+AC_SUBST(MOZ_SHARED_ICU)
 
 if test -n "$USE_ICU"; then
     if test -z "$YASM" -a -z "$GNU_AS" -a "$COMPILE_ENVIRONMENT"; then
       AC_MSG_ERROR([Building ICU requires either yasm or a GNU assembler. If you do not have either of those available for this platform you must use --without-intl-api])
     fi
-    dnl We build ICU as a static library.
-    AC_DEFINE(U_STATIC_IMPLEMENTATION)
+    if test -z "$MOZ_SHARED_ICU"; then
+       AC_DEFINE(U_STATIC_IMPLEMENTATION)
+    fi
     dnl Source files that use ICU should have control over which parts of the ICU
     dnl namespace they want to use.
     AC_DEFINE(U_USING_ICU_NAMESPACE,0)

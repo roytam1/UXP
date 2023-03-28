@@ -277,6 +277,8 @@ class MOZ_NON_MEMMOVABLE Heap : public js::HeapBase<T, Heap<T>>
 
     T* unsafeGet() { return &ptr; }
 
+    void unsafeSet(const T& newPtr) { ptr = newPtr; }
+
     void set(const T& newPtr) {
         T tmp = ptr;
         ptr = newPtr;

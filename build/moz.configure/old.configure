@@ -226,6 +226,8 @@ def old_configure_options(*options):
     '--enable-safe-browsing',
     '--enable-sandbox',
     '--enable-security-sqlstore',
+    '--enable-shared-icu',
+    '--enable-shared-media',
     '--enable-signmar',
     '--enable-simulator',
     '--enable-small-chunk-size',

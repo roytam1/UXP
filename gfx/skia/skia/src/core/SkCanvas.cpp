@@ -22,6 +22,7 @@
 #include "SkLatticeIter.h"
 #include "SkMatrixUtils.h"
 #include "SkMetaData.h"
+#include "SkNWayCanvas.h"
 #include "SkNx.h"
 #include "SkPaintPriv.h"
 #include "SkPatchUtils.h"
@@ -45,8 +46,9 @@
 #include "GrContext.h"
 #include "GrRenderTarget.h"
 #include "SkGrPriv.h"
-
 #endif
+
+class SkNWayCanvas;
 
 #define RETURN_ON_NULL(ptr)     do { if (nullptr == (ptr)) return; } while (0)
 
