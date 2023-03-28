@@ -10,7 +10,7 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/Maybe.h"
 
-#include "frontend/SharedContext.h"                        // for Nestable
+#include "ds/Nestable.h"
 #include "frontend/NameCollections.h"
 #include "js/TypeDecls.h"
 #include "vm/Stack.h"

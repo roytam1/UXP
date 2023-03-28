@@ -27,7 +27,7 @@ public:
      * specified canvas.  Also copies the target canvas matrix and clip bounds.
      */
     SkPaintFilterCanvas(SkCanvas* canvas);
-
+    
     enum Type {
         kPaint_Type,
         kPoint_Type,

@@ -14,6 +14,7 @@
 #include "jsiter.h"
 #include "jspubtd.h"
 
+#include "ds/Nestable.h"
 #include "frontend/BytecodeCompiler.h"
 #include "frontend/FullParseHandler.h"
 #include "frontend/NameAnalysisTypes.h"
