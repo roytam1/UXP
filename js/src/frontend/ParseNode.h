@@ -254,16 +254,12 @@ IsTypeofKind(ParseNodeKind kind)
  *                            or (if the push was optimized away) empty
  *                            PNK_STATEMENTLIST.
  * PNK_SWITCH   binary      pn_left: discriminant
- *                          pn_right: list of PNK_CASE nodes, with at most one
- *                            default node, or if there are let bindings
- *                            in the top level of the switch body's cases, a
- *                            PNK_LEXICALSCOPE node that contains the list of
- *                            PNK_CASE nodes.
+ *                          pn_right: PNK_LEXICALSCOPE node that contains the list
+ *                            of PNK_CASE nodes, with at most one default node.
  * PNK_CASE     binary      pn_left: case-expression if CaseClause, or
  *                            null if DefaultClause
  *                          pn_right: PNK_STATEMENTLIST node for this case's
  *                            statements
- *                          pn_u.binary.offset: scratch space for the emitter
  * PNK_WHILE    binary      pn_left: cond, pn_right: body
  * PNK_DOWHILE  binary      pn_left: body, pn_right: cond
  * PNK_FOR      binary      pn_left: either PNK_FORIN (for-in statement),
@@ -587,7 +583,6 @@ class ParseNode
             union {
                 unsigned iflags;        /* JSITER_* flags for PNK_{COMPREHENSION,}FOR node */
                 bool isStatic;          /* only for PNK_CLASSMETHOD */
-                uint32_t offset;        /* for the emitter's use on PNK_CASE nodes */
             };
         } binary;
         struct {                        /* one kid if unary */
@@ -1068,10 +1063,6 @@ class CaseClause : public BinaryNode
 
     // The next CaseClause in the same switch statement.
     CaseClause* next() const { return pn_next ? &pn_next->as<CaseClause>() : nullptr; }
-
-    // Scratch space used by the emitter.
-    uint32_t offset() const { return pn_u.binary.offset; }
-    void setOffset(uint32_t u) { pn_u.binary.offset = u; }
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_CASE);

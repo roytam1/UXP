@@ -251,7 +251,7 @@ SkScalerContext* DWriteFontTypeface::onCreateScalerContext(const SkScalerContext
 }
 
 #ifdef MOZ_SKIA
-IDWriteRenderingParams* GetDwriteRenderingParams(bool aGDI);
+extern IDWriteRenderingParams* GetDwriteRenderingParams(bool aGDI);
 #endif
 
 void DWriteFontTypeface::onFilterRec(SkScalerContext::Rec* rec) const {

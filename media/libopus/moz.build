@@ -23,8 +23,10 @@ DEFINES['OPUS_VERSION'] = '2654707e86cc94413998976d179b2ab4a2aa3114'
 DEFINES['USE_ALLOCA'] = True
 DEFINES['ENABLE_HARDENING'] = True
 
-# Don't export symbols
-DEFINES['OPUS_EXPORT'] = ''
+# We only need to export symbols if we're built into libgkmedias
+# instead of libxul.
+if not CONFIG['GKMEDIAS_SHARED_LIBRARY']:
+    DEFINES['OPUS_EXPORT'] = ''
 
 if CONFIG['CPU_ARCH'] == 'arm' and CONFIG['GNU_AS']:
     DEFINES['OPUS_ARM_ASM'] = True

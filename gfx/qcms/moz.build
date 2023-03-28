@@ -16,7 +16,10 @@ SOURCES += [
     'transform_util.c',
 ]
 
-FINAL_LIBRARY = 'xul'
+if CONFIG['GKMEDIAS_SHARED_LIBRARY']:
+    NO_VISIBILITY_FLAGS = True
+
+FINAL_LIBRARY = 'gkmedias'
 
 if CONFIG['GNU_CC']:
     CFLAGS += ['-Wno-missing-field-initializers']

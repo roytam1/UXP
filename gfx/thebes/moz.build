@@ -248,6 +248,9 @@ LOCAL_INCLUDES += ['/media/libyuv/include']
 
 DEFINES['GRAPHITE2_STATIC'] = True
 
+if CONFIG['GKMEDIAS_SHARED_LIBRARY']:
+    DEFINES['OTS_DLL'] = True
+
 if CONFIG['CLANG_CXX']:
     # Suppress warnings from Skia header files.
     SOURCES['gfxPlatform.cpp'].flags += ['-Wno-implicit-fallthrough']

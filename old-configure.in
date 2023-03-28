@@ -4577,11 +4577,31 @@ dnl =
 dnl ========================================================
 MOZ_ARG_HEADER(Static build options)
 
-if test -z "$MOZ_SYSTEM_ZLIB"; then
-if test -n "$JS_SHARED_LIBRARY"; then
-  ZLIB_IN_MOZGLUE=1
-  AC_DEFINE(ZLIB_IN_MOZGLUE)
+# Option to enable shared gkmedias on other target operating systems.
+# This is overriden for Windows regardless if it is set or not.
+MOZ_ARG_ENABLE_BOOL(shared-media,
+[  --enable-shared-media          Build GKMedias as a shared lib],
+    GKMEDIAS_SHARED_LIBRARY=1,
+    GKMEDIAS_SHARED_LIBRARY=)
+
+# We want gkmedias always be enabled on Windows regardless of the enable bool.
+if test "$OS_ARCH" = "WINNT"; then
+  GKMEDIAS_SHARED_LIBRARY=1
 fi
+
+if test -n "$GKMEDIAS_SHARED_LIBRARY"; then
+  AC_DEFINE(GKMEDIAS_SHARED_LIBRARY)
+fi
+
+AC_SUBST(GKMEDIAS_SHARED_LIBRARY)
+
+# Shared JS or gkmedias needs zlib in mozglue
+if test -z "$MOZ_SYSTEM_ZLIB"; then
+  # XXX: Currently JS_SHARED_LIBRARY lives in mozconfigure
+  if test -n "$JS_SHARED_LIBRARY" -o "$GKMEDIAS_SHARED_LIBRARY"; then
+    ZLIB_IN_MOZGLUE=1
+    AC_DEFINE(ZLIB_IN_MOZGLUE)
+  fi
 fi
 
 AC_SUBST(ZLIB_IN_MOZGLUE)
@@ -5135,11 +5155,17 @@ AC_SUBST(WIN32_REDIST_DIR)
 AC_SUBST(WIN_UCRT_REDIST_DIR)
 
 dnl ========================================================
-dnl ICU Support
+dnl ICU Shared Library Support
 dnl ========================================================
 
-if test "$MOZ_WIDGET_TOOLKIT" = "cocoa"; then
-    USE_ICU=1
+MOZ_ARG_ENABLE_BOOL(shared-icu,
+[  --enable-shared-icu           Build ICU as a shared library],
+    MOZ_SHARED_ICU=1,
+    MOZ_SHARED_ICU=)
+
+# We want shared ICU to always be enabled on Windows regardless of the enable bool.
+if test "$OS_ARCH" = "WINNT"; then
+  MOZ_SHARED_ICU=1
 fi
 
 MOZ_CONFIG_ICU()
@@ -5512,10 +5538,6 @@ ac_configure_args="$_SUBDIR_CONFIG_ARGS"
 # --with-system-nspr will have been converted into the relevant $NSPR_CFLAGS
 # and $NSPR_LIBS.
 ac_configure_args="`echo $ac_configure_args | sed -e 's/--with-system-nspr\S* *//'`"
-
-if test "$_INTL_API" = no; then
-    ac_configure_args="$ac_configure_args --without-intl-api"
-fi
 
 if test -n "$NSPR_CFLAGS" -o -n "$NSPR_LIBS"; then
     ac_configure_args="$ac_configure_args --with-nspr-cflags='$NSPR_CFLAGS'"

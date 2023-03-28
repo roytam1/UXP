@@ -5440,7 +5440,7 @@ class JSErrorBase
 /**
  * Notes associated with JSErrorReport.
  */
-class JSErrorNotes
+class JS_PUBLIC_API(JSErrorNotes)
 {
   public:
     class Note : public JSErrorBase

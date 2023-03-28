@@ -24,7 +24,10 @@ include('objs.mozbuild')
 
 UNIFIED_SOURCES += intl_unicharutil_util_cppsrcs
 
-Library('unicharutil_external_s')
+# This line breaks building ICU as a shared library due to a
+# SandboxValidationError from the frontend reader.
+if not CONFIG['MOZ_SHARED_ICU']:
+    Library('unicharutil_external_s')
 
 FORCE_STATIC_LIB = True
 

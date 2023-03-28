@@ -643,11 +643,11 @@ else:
         'skia/src/opts/SkBlitRow_opts_none.cpp',
     ]
 
-
 # We allow warnings for third-party code that can be updated from upstream.
 ALLOW_COMPILER_WARNINGS = True
 
-FINAL_LIBRARY = 'gkmedias'
+FINAL_LIBRARY = 'xul'
+
 LOCAL_INCLUDES += [
     'skia/include/c',
     'skia/include/config',

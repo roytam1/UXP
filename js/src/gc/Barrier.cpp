@@ -182,6 +182,7 @@ MovableCellHasher<T>::match(const Key& k, const Lookup& l)
 #endif // JS_BROKEN_GCC_ATTRIBUTE_WARNING
 
 template struct JS_PUBLIC_API(MovableCellHasher<JSObject*>);
+template struct JS_PUBLIC_API(MovableCellHasher<JS::Heap<JSObject*>>);
 template struct JS_PUBLIC_API(MovableCellHasher<GlobalObject*>);
 template struct JS_PUBLIC_API(MovableCellHasher<SavedFrame*>);
 template struct JS_PUBLIC_API(MovableCellHasher<EnvironmentObject*>);

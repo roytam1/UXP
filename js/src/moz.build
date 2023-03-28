@@ -139,18 +139,23 @@ UNIFIED_SOURCES += [
     'ds/LifoAlloc.cpp',
     'ds/MemoryProtectionExceptionHandler.cpp',
     'frontend/BytecodeCompiler.cpp',
+    'frontend/BytecodeControlStructures.cpp',
     'frontend/BytecodeEmitter.cpp',
     'frontend/CallOrNewEmitter.cpp',
     'frontend/ElemOpEmitter.cpp',
+    'frontend/EmitterScope.cpp',
     'frontend/FoldConstants.cpp',
+    'frontend/ForOfLoopControl.cpp',
     'frontend/IfEmitter.cpp',
     'frontend/JumpList.cpp',
     'frontend/NameFunctions.cpp',
     'frontend/NameOpEmitter.cpp',
     'frontend/ParseNode.cpp',
     'frontend/PropOpEmitter.cpp',
+    'frontend/SwitchEmitter.cpp',
     'frontend/TDZCheckCache.cpp',
     'frontend/TokenStream.cpp',
+    'frontend/TryEmitter.cpp',
     'gc/Allocator.cpp',
     'gc/Barrier.cpp',
     'gc/GCTrace.cpp',
@@ -606,23 +611,21 @@ if CONFIG['JS_SHARED_LIBRARY']:
     GeckoSharedLibrary('js', linkage=None)
     SHARED_LIBRARY_NAME = CONFIG['JS_LIBRARY_NAME']
     SDK_LIBRARY = True
-else:
-    Library('js')
-
-FORCE_STATIC_LIB = True
-STATIC_LIBRARY_NAME = 'js_static'
-
-if not CONFIG['MOZ_ICU_DATA_ARCHIVE']:
     USE_LIBS += [
         'icu',
     ]
 else:
-    # Linking 'icu' will pull in the stubdata library,
-    # which the shell doesn't want, so link the other bits.
-    USE_LIBS += [
-        'icui18n',
-        'icuuc',
-    ]
+    Library('js')
+    FORCE_STATIC_LIB = True
+    STATIC_LIBRARY_NAME = 'js_static'
+    NO_EXPAND_LIBS = True
+    if CONFIG['MOZ_ICU_DATA_ARCHIVE']:
+        # Linking 'icu' will pull in the stubdata library,
+        # which the shell doesn't want, so link the other bits.
+        USE_LIBS += [
+            'icui18n',
+            'icuuc',
+        ]
 
 USE_LIBS += [
     'nspr',
@@ -654,8 +657,6 @@ if CONFIG['OS_ARCH'] == 'SunOS':
     ]
 
 OS_LIBS += CONFIG['REALTIME_LIBS']
-
-NO_EXPAND_LIBS = True
 
 DIST_INSTALL = True
 
