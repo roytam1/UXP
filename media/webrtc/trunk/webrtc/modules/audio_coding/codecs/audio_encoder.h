@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <limits>
 
 #include "webrtc/base/array_view.h"
 #include "webrtc/typedefs.h"

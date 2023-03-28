@@ -22,6 +22,7 @@
 #include "transportflow.h"
 #include "AudioPacketizer.h"
 #include "StreamTracks.h"
+#include "webrtc/base/basictypes.h"
 
 #include "webrtc/modules/rtp_rtcp/include/rtp_header_parser.h"
 

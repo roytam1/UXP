@@ -122,14 +122,13 @@ typedef Vector<jssrcnote, 64> SrcNotesVector;
 
 class CallOrNewEmitter;
 class ElemOpEmitter;
+class EmitterScope;
+class NestableControl;
 class PropOpEmitter;
 class TDZCheckCache;
 
 struct MOZ_STACK_CLASS BytecodeEmitter
 {
-    class NestableControl;
-    class EmitterScope;
-
     SharedContext* const sc;      /* context shared between parsing and bytecode generation */
 
     ExclusiveContext* const cx;
@@ -257,9 +256,6 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     MOZ_MUST_USE bool init();
 
-    template <typename Predicate /* (NestableControl*) -> bool */>
-    NestableControl* findInnermostNestableControl(Predicate predicate) const;
-
     template <typename T>
     T* findInnermostNestableControl() const;
 
@@ -357,7 +353,9 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     }
 
     bool reportError(ParseNode* pn, unsigned errorNumber, ...);
+    bool reportError(const mozilla::Maybe<uint32_t>& maybeOffset, unsigned errorNumber, ...);
     bool reportExtraWarning(ParseNode* pn, unsigned errorNumber, ...);
+    bool reportExtraWarning(const mozilla::Maybe<uint32_t>& maybeOffset, unsigned errorNumber, ...);
     bool reportStrictModeError(ParseNode* pn, unsigned errorNumber, ...);
 
     // If pn contains a useful expression, return true with *answer set to true.
