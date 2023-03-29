@@ -106,13 +106,7 @@
 @RESPATH@/@ICU_DATA_FILE@
 #endif
 #ifdef MOZ_SHARED_ICU
-#ifdef XP_WIN
-@BINPATH@/icu@MOZ_ICU_VERSION@.dll
-#elif defined(XP_MACOSX)
-@BINPATH@/icu@MOZ_ICU_VERSION@.dylib
-#elif defined(XP_UNIX)
-@BINPATH@/libicu@MOZ_ICU_VERSION@.so
-#endif
+@BINPATH@/@DLL_PREFIX@icu@MOZ_ICU_VERSION@@DLL_SUFFIX@
 #endif
 #ifdef MOZ_GTK3
 @BINPATH@/@DLL_PREFIX@mozgtk@DLL_SUFFIX@
