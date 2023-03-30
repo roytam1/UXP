@@ -1443,6 +1443,8 @@ static const bool FALSE_START_ENABLED_DEFAULT = true;
 static const bool NPN_ENABLED_DEFAULT = true;
 static const bool ALPN_ENABLED_DEFAULT = false;
 static const bool ENABLED_0RTT_DATA_DEFAULT = false;
+static const bool TLS13_COMPAT_MODE_DEFAULT = false;
+static const bool HELLO_DOWNGRADE_CHECK_DEFAULT = true;
 
 static void
 ConfigureTLSSessionIdentifiers()
@@ -1857,6 +1859,12 @@ nsNSSComponent::InitializeNSS()
 
   SSL_OptionSetDefault(SSL_ENABLE_EXTENDED_MASTER_SECRET, true);
 
+  // Set TLS 1.3 hello downgrade sentinel?
+  bool enableDowngradeCheck =
+    Preferences::GetBool("security.tls.hello_downgrade_check",
+                         HELLO_DOWNGRADE_CHECK_DEFAULT);
+  SSL_OptionSetDefault(SSL_ENABLE_HELLO_DOWNGRADE_CHECK, enableDowngradeCheck);
+
   SSL_OptionSetDefault(SSL_ENABLE_FALSE_START,
                        Preferences::GetBool("security.ssl.enable_false_start",
                                             FALSE_START_ENABLED_DEFAULT));
@@ -1876,6 +1884,12 @@ nsNSSComponent::InitializeNSS()
                        Preferences::GetBool("security.tls.enable_0rtt_data",
                                             ENABLED_0RTT_DATA_DEFAULT));
 
+  // Set TLS 1.3 compatibility mode for bad middleware boxes?
+  SSL_OptionSetDefault(SSL_ENABLE_TLS13_COMPAT_MODE,
+                       Preferences::GetBool("security.ssl.enable_tls13_compat_mode",
+                                            TLS13_COMPAT_MODE_DEFAULT));  
+
+  
   if (NS_FAILED(InitializeCipherSuite())) {
 
     MOZ_LOG(gPIPNSSLog, LogLevel::Error, ("Unable to initialize cipher suite settings\n"));
@@ -2038,6 +2052,11 @@ nsNSSComponent::Observe(nsISupports* aSubject, const char* aTopic,
     if (prefName.EqualsLiteral("security.tls.version.min") ||
         prefName.EqualsLiteral("security.tls.version.max")) {
       (void) setEnabledTLSVersions();
+    } else if (prefName.EqualsLiteral("security.tls.hello_downgrade_check")) {
+      bool enableDowngradeCheck =
+        Preferences::GetBool("security.tls.hello_downgrade_check",
+                             HELLO_DOWNGRADE_CHECK_DEFAULT);
+      SSL_OptionSetDefault(SSL_ENABLE_HELLO_DOWNGRADE_CHECK, enableDowngradeCheck);
     } else if (prefName.EqualsLiteral("security.ssl.require_safe_negotiation")) {
       bool requireSafeNegotiation =
         Preferences::GetBool("security.ssl.require_safe_negotiation",
