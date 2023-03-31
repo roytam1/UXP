@@ -388,12 +388,21 @@ class NameResolver
           case PNK_RAW_UNDEFINED:
           case PNK_ELISION:
           case PNK_GENERATOR:
-          case PNK_BREAK:
-          case PNK_CONTINUE:
-          case PNK_DEBUGGER:
           case PNK_EXPORT_BATCH_SPEC:
           case PNK_POSHOLDER:
-            MOZ_ASSERT(cur->isArity(PN_NULLARY));
+            MOZ_ASSERT(cur->is<NullaryNode>());
+            break;
+
+          case PNK_DEBUGGER:
+            MOZ_ASSERT(cur->is<DebuggerStatement>());
+            break;
+
+          case PNK_BREAK:
+            MOZ_ASSERT(cur->is<BreakStatement>());
+            break;
+
+          case PNK_CONTINUE:
+            MOZ_ASSERT(cur->is<ContinueStatement>());
             break;
 
           case PNK_OBJECT_PROPERTY_NAME:
@@ -801,7 +810,7 @@ class NameResolver
             ListNode* list = &cur->as<ListNode>();
             ParseNode* item = list->head();
             if (!isImport && item && item->isKind(PNK_EXPORT_BATCH_SPEC)) {
-                MOZ_ASSERT(item->isArity(PN_NULLARY));
+                MOZ_ASSERT(item->is<NullaryNode>());
                 break;
             }
             for (ParseNode* item : list->contents()) {

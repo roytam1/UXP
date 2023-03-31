@@ -321,9 +321,9 @@ IsTypeofKind(ParseNodeKind kind)
  *   kid2: null or the catch guard expression
  *   kid3: catch block statements
  * PNK_BREAK (BreakStatement)
- *   atom: label or null
+ *   label: label or null
  * PNK_CONTINUE (ContinueStatement)
- *   atom: label or null
+ *   label: label or null
  * PNK_WITH (BinaryNode)
  *   left: head expr
  *   right: body
@@ -506,10 +506,12 @@ IsTypeofKind(ParseNodeKind kind)
  *   regexp: RegExp model object
  * PNK_NUMBER (NumericLiteral)
  *   value: double value of numeric literal
- * PNK_TRUE,    nullary     pn_op: JSOp bytecode
- * PNK_FALSE,
- * PNK_NULL,
- * PNK_RAW_UNDEFINED
+ * PNK_TRUE, PNK_FALSE (BooleanLiteral)
+ *   pn_op: JSOp bytecode
+ * PNK_NULL (NullLiteral)
+ *   pn_op: JSOp bytecode
+ * PNK_RAW_UNDEFINED (RawUndefinedLiteral)
+ *   pn_op: JSOp bytecode
  *
  * PNK_THIS (UnaryNode)
  *   kid: '.this' Name if function `this`, else nullptr
@@ -524,7 +526,7 @@ IsTypeofKind(ParseNodeKind kind)
  *   right: SuperCall
  * PNK_LEXICALSCOPE scope   pn_u.scope.bindings: scope bindings
  *                          pn_u.scope.body: scope body
- * PNK_GENERATOR    nullary
+ * PNK_GENERATOR (NullaryNode)
  * PNK_INITIALYIELD (UnaryNode)
  *   kid: generator object
  * PNK_YIELD, PNK_YIELD_STAR, PNK_AWAIT (UnaryNode)
@@ -535,7 +537,7 @@ IsTypeofKind(ParseNodeKind kind)
  *                          if-guarded PNK_ARRAYPUSH
  * PNK_ARRAYPUSH    unary   pn_op: JSOP_ARRAYCOMP
  *                          pn_kid: array comprehension expression
- * PNK_NOP          nullary
+ * PNK_NOP (NullaryNode)
  */
 enum ParseNodeArity
 {
@@ -548,6 +550,7 @@ enum ParseNodeArity
     PN_NAME,                            /* name, label, string */
     PN_NUMBER,                          /* numeric literal */
     PN_REGEXP,                          /* regexp literal */
+    PN_LOOP,                            /* loop control (break/continue) */
     PN_SCOPE                            /* lexical scope */
 };
 
@@ -567,8 +570,18 @@ enum ParseNodeArity
     macro(ListNode, ListNodeType, asList) \
     macro(CallSiteNode, CallSiteNodeType, asCallSite) \
     \
+    macro(LoopControlStatement, LoopControlStatementType, asLoopControlStatement) \
+    macro(BreakStatement, BreakStatementType, asBreakStatement) \
+    macro(ContinueStatement, ContinueStatementType, asContinueStatement) \
+    \
     macro(NameNode, NameNodeType, asName) \
     macro(LabeledStatement, LabeledStatementType, asLabeledStatement) \
+    \
+    macro(NullaryNode, NullaryNodeType, asNullary) \
+    macro(BooleanLiteral, BooleanLiteralType, asBooleanLiteral) \
+    macro(DebuggerStatement, DebuggerStatementType, asDebuggerStatement) \
+    macro(NullLiteral, NullLiteralType, asNullLiteral) \
+    macro(RawUndefinedLiteral, RawUndefinedLiteralType, asRawUndefinedLiteral) \
     \
     macro(NumericLiteral, NumericLiteralType, asNumericLiteral) \
     \
@@ -579,10 +592,6 @@ enum ParseNodeArity
     macro(ConditionalExpression, ConditionalExpressionType, asConditionalExpression) \
     macro(UnaryNode, UnaryNodeType, asUnary) \
     macro(ThisLiteral, ThisLiteralType, asThisLiteral)
-
-class LoopControlStatement;
-class BreakStatement;
-class ContinueStatement;
 
 #define DECLARE_CLASS(typeName, longTypeName, asMethodName) \
 class typeName;
@@ -733,6 +742,7 @@ class ParseNode
             DecimalPoint decimalPoint;  /* Whether the number has a decimal point */
         } number;
         class {
+          private:
             friend class LoopControlStatement;
             PropertyName*    label;    /* target of break/continue statement */
         } loopControl;
@@ -819,12 +829,17 @@ class ParseNode
 #endif
 };
 
-struct NullaryNode : public ParseNode
+class NullaryNode : public ParseNode
 {
+  public:
     NullaryNode(ParseNodeKind kind, const TokenPos& pos)
       : ParseNode(kind, JSOP_NOP, PN_NULLARY, pos) {}
     NullaryNode(ParseNodeKind kind, JSOp op, const TokenPos& pos)
       : ParseNode(kind, op, PN_NULLARY, pos) {}
+
+    static bool test(const ParseNode& node) {
+        return node.isArity(PN_NULLARY);
+    }
 
 #ifdef DEBUG
     void dump();
@@ -1587,7 +1602,7 @@ class LoopControlStatement : public ParseNode
 {
   protected:
     LoopControlStatement(ParseNodeKind kind, PropertyName* label, const TokenPos& pos)
-      : ParseNode(kind, JSOP_NOP, PN_NULLARY, pos)
+      : ParseNode(kind, JSOP_NOP, PN_LOOP, pos)
     {
         MOZ_ASSERT(kind == PNK_BREAK || kind == PNK_CONTINUE);
         pn_u.loopControl.label = label;
@@ -1599,9 +1614,13 @@ class LoopControlStatement : public ParseNode
         return pn_u.loopControl.label;
     }
 
+#ifdef DEBUG
+    void dump(int indent);
+#endif
+
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_BREAK) || node.isKind(PNK_CONTINUE);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NULLARY));
+        MOZ_ASSERT_IF(match, node.isArity(PN_LOOP));
         MOZ_ASSERT_IF(match, node.isOp(JSOP_NOP));
         return match;
     }
@@ -1616,7 +1635,7 @@ class BreakStatement : public LoopControlStatement
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_BREAK);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NULLARY));
+        MOZ_ASSERT_IF(match, node.is<LoopControlStatement>());
         MOZ_ASSERT_IF(match, node.isOp(JSOP_NOP));
         return match;
     }
@@ -1631,18 +1650,24 @@ class ContinueStatement : public LoopControlStatement
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_CONTINUE);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NULLARY));
+        MOZ_ASSERT_IF(match, node.is<LoopControlStatement>());
         MOZ_ASSERT_IF(match, node.isOp(JSOP_NOP));
         return match;
     }
 };
 
-class DebuggerStatement : public ParseNode
+class DebuggerStatement : public NullaryNode
 {
   public:
     explicit DebuggerStatement(const TokenPos& pos)
-      : ParseNode(PNK_DEBUGGER, JSOP_NOP, PN_NULLARY, pos)
+      : NullaryNode(PNK_DEBUGGER, JSOP_NOP, pos)
     { }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_DEBUGGER);
+        MOZ_ASSERT_IF(match, node.is<NullaryNode>());
+        return match;
+    }
 };
 
 class ConditionalExpression : public TernaryNode
@@ -1697,6 +1722,12 @@ class NullLiteral : public NullaryNode
     explicit NullLiteral(const TokenPos& pos)
       : NullaryNode(PNK_NULL, JSOP_NULL, pos)
     { }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_NULL);
+        MOZ_ASSERT_IF(match, node.is<NullaryNode>());
+        return match;
+    }
 };
 
 // This is only used internally, currently just for tagged templates.
@@ -1707,6 +1738,12 @@ class RawUndefinedLiteral : public NullaryNode
   public:
     explicit RawUndefinedLiteral(const TokenPos& pos)
       : NullaryNode(PNK_RAW_UNDEFINED, JSOP_UNDEFINED, pos) { }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_RAW_UNDEFINED);
+        MOZ_ASSERT_IF(match, node.is<NullaryNode>());
+        return match;
+    }
 };
 
 class BooleanLiteral : public NullaryNode
@@ -1715,6 +1752,12 @@ class BooleanLiteral : public NullaryNode
     BooleanLiteral(bool b, const TokenPos& pos)
       : NullaryNode(b ? PNK_TRUE : PNK_FALSE, b ? JSOP_TRUE : JSOP_FALSE, pos)
     { }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_TRUE) || node.isKind(PNK_FALSE);
+        MOZ_ASSERT_IF(match, node.is<NullaryNode>());
+        return match;
+    }
 };
 
 class RegExpLiteral : public ParseNode

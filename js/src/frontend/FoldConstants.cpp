@@ -101,8 +101,12 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
 
       // Statements with no sub-components at all.
       case PNK_NOP: // induced by function f() {} function f() {}
+        MOZ_ASSERT(node->is<NullaryNode>());
+        *result = false;
+        return true;
+
       case PNK_DEBUGGER:
-        MOZ_ASSERT(node->isArity(PN_NULLARY));
+        MOZ_ASSERT(node->is<DebuggerStatement>());
         *result = false;
         return true;
 
@@ -1655,13 +1659,22 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
       case PNK_NULL:
       case PNK_RAW_UNDEFINED:
       case PNK_ELISION:
-      case PNK_DEBUGGER:
-      case PNK_BREAK:
-      case PNK_CONTINUE:
       case PNK_GENERATOR:
       case PNK_EXPORT_BATCH_SPEC:
       case PNK_POSHOLDER:
-        MOZ_ASSERT(pn->isArity(PN_NULLARY));
+        MOZ_ASSERT(pn->is<NullaryNode>());
+        return true;
+
+      case PNK_DEBUGGER:
+        MOZ_ASSERT(pn->is<DebuggerStatement>());
+        return true;
+
+      case PNK_BREAK:
+        MOZ_ASSERT(pn->is<BreakStatement>());
+        return true;
+
+      case PNK_CONTINUE:
+        MOZ_ASSERT(pn->is<ContinueStatement>());
         return true;
 
       case PNK_OBJECT_PROPERTY_NAME:

@@ -5469,7 +5469,7 @@ Parser<ParseHandler>::exportBatch(uint32_t begin)
 
     // Handle the form |export *| by adding a special export batch
     // specifier to the list.
-    Node exportSpec = handler.newNullary(PNK_EXPORT_BATCH_SPEC, JSOP_NOP, pos());
+    NullaryNodeType exportSpec = handler.newNullary(PNK_EXPORT_BATCH_SPEC, JSOP_NOP, pos());
     if (!exportSpec)
         return null();
 
@@ -6542,7 +6542,7 @@ Parser<ParseHandler>::switchStatement(YieldHandling yieldHandling)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::ContinueStatementType
 Parser<ParseHandler>::continueStatement(YieldHandling yieldHandling)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_CONTINUE));
@@ -6600,7 +6600,7 @@ Parser<ParseHandler>::continueStatement(YieldHandling yieldHandling)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::BreakStatementType
 Parser<ParseHandler>::breakStatement(YieldHandling yieldHandling)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_BREAK));
@@ -7192,7 +7192,7 @@ Parser<ParseHandler>::catchBlockStatement(YieldHandling yieldHandling,
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::DebuggerStatementType
 Parser<ParseHandler>::debuggerStatement()
 {
     TokenPos p;
@@ -10378,7 +10378,7 @@ Parser<ParseHandler>::tryNewTarget(BinaryNodeType* newTarget)
 
     *newTarget = null();
 
-    Node newHolder = handler.newPosHolder(pos());
+    NullaryNodeType newHolder = handler.newPosHolder(pos());
     if (!newHolder)
         return false;
 
@@ -10406,7 +10406,7 @@ Parser<ParseHandler>::tryNewTarget(BinaryNodeType* newTarget)
         return false;
     }
 
-    Node targetHolder = handler.newPosHolder(pos());
+    NullaryNodeType targetHolder = handler.newPosHolder(pos());
     if (!targetHolder)
         return false;
 

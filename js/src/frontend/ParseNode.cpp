@@ -183,13 +183,22 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       case PNK_RAW_UNDEFINED:
       case PNK_ELISION:
       case PNK_GENERATOR:
-      case PNK_BREAK:
-      case PNK_CONTINUE:
-      case PNK_DEBUGGER:
       case PNK_EXPORT_BATCH_SPEC:
       case PNK_POSHOLDER:
-        MOZ_ASSERT(pn->isArity(PN_NULLARY));
+        MOZ_ASSERT(pn->is<NullaryNode>());
         return PushResult::Recyclable;
+
+      case PNK_DEBUGGER:
+          MOZ_ASSERT(pn->is<DebuggerStatement>());
+          return PushResult::Recyclable;
+
+      case PNK_BREAK:
+          MOZ_ASSERT(pn->is<BreakStatement>());
+          return PushResult::Recyclable;
+
+      case PNK_CONTINUE:
+          MOZ_ASSERT(pn->is<ContinueStatement>());
+          return PushResult::Recyclable;
 
       case PNK_OBJECT_PROPERTY_NAME:
       case PNK_STRING:
@@ -662,7 +671,7 @@ ParseNode::dump(int indent)
 {
     switch (pn_arity) {
       case PN_NULLARY:
-        ((NullaryNode*) this)->dump();
+        as<NullaryNode>().dump();
         return;
       case PN_UNARY:
         as<UnaryNode>().dump(indent);
@@ -687,6 +696,9 @@ ParseNode::dump(int indent)
         return;
       case PN_REGEXP:
         as<RegExpLiteral>().dump(indent);
+        return;
+      case PN_LOOP:
+        as<LoopControlStatement>().dump(indent);
         return;
       case PN_SCOPE:
         ((LexicalScopeNode*) this)->dump(indent);
@@ -729,6 +741,18 @@ void
 RegExpLiteral::dump(int indent)
 {
     fprintf(stderr, "(%s)", parseNodeNames[size_t(getKind())]);
+}
+
+void
+LoopControlStatement::dump(int indent)
+{
+    const char* name = parseNodeNames[size_t(getKind())];
+    fprintf(stderr, "(%s", name);
+    if (label()) {
+        fprintf(stderr, " ");
+        label()->dumpCharsNoNewline();
+    }
+    fprintf(stderr, ")");
 }
 
 void

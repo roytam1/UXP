@@ -151,7 +151,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<NumericLiteral>(value, decimalPoint, pos);
     }
 
-    ParseNode* newBooleanLiteral(bool cond, const TokenPos& pos) {
+    BooleanLiteralType newBooleanLiteral(bool cond, const TokenPos& pos) {
         return new_<BooleanLiteral>(cond, pos);
     }
 
@@ -195,11 +195,11 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<ThisLiteral>(pos, thisName);
     }
 
-    ParseNode* newNullLiteral(const TokenPos& pos) {
+    NullLiteralType newNullLiteral(const TokenPos& pos) {
         return new_<NullLiteral>(pos);
     }
 
-    ParseNode* newRawUndefinedLiteral(const TokenPos& pos) {
+    RawUndefinedLiteralType newRawUndefinedLiteral(const TokenPos& pos) {
         return new_<RawUndefinedLiteral>(pos);
     }
 
@@ -251,7 +251,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<UnaryNode>(kind, JSOP_NOP, pos, kid);
     }
 
-    ParseNode* newNullary(ParseNodeKind kind, JSOp op, const TokenPos& pos) {
+    NullaryNodeType newNullary(ParseNodeKind kind, JSOp op, const TokenPos& pos) {
         return new_<NullaryNode>(kind, op, pos);
     }
 
@@ -311,7 +311,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     }
 
     MOZ_MUST_USE bool addElision(ListNodeType literal, const TokenPos& pos) {
-        ParseNode* elision = new_<NullaryNode>(PNK_ELISION, pos);
+        NullaryNode* elision = new_<NullaryNode>(PNK_ELISION, pos);
         if (!elision)
             return false;
         literal->append(elision);
@@ -377,10 +377,10 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     ClassNamesType newClassNames(ParseNode* outer, ParseNode* inner, const TokenPos& pos) {
         return new_<ClassNames>(outer, inner, pos);
     }
-    BinaryNodeType newNewTarget(ParseNode* newHolder, ParseNode* targetHolder) {
+    BinaryNodeType newNewTarget(NullaryNodeType newHolder, NullaryNodeType targetHolder) {
         return new_<BinaryNode>(PNK_NEWTARGET, JSOP_NOP, newHolder, targetHolder);
     }
-    ParseNode* newPosHolder(const TokenPos& pos) {
+    NullaryNodeType newPosHolder(const TokenPos& pos) {
         return new_<NullaryNode>(PNK_POSHOLDER, pos);
     }
     UnaryNodeType newSuperBase(Node thisName, const TokenPos& pos) {
@@ -536,7 +536,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         MOZ_ASSERT(stmtList->isKind(PNK_STATEMENTLIST));
 
         TokenPos yieldPos(stmtList->pn_pos.begin, stmtList->pn_pos.begin + 1);
-        ParseNode* makeGen = new_<NullaryNode>(PNK_GENERATOR, yieldPos);
+        NullaryNode* makeGen = new_<NullaryNode>(PNK_GENERATOR, yieldPos);
         if (!makeGen)
             return false;
 
@@ -560,7 +560,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return newBinary(PNK_SETTHIS, thisName, val);
     }
 
-    ParseNode* newEmptyStatement(const TokenPos& pos) {
+    UnaryNodeType newEmptyStatement(const TokenPos& pos) {
         return new_<UnaryNode>(PNK_SEMI, JSOP_NOP, pos, (ParseNode*) nullptr);
     }
 
@@ -657,11 +657,11 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<CaseClause>(expr, body, begin);
     }
 
-    ParseNode* newContinueStatement(PropertyName* label, const TokenPos& pos) {
+    ContinueStatementType newContinueStatement(PropertyName* label, const TokenPos& pos) {
         return new_<ContinueStatement>(label, pos);
     }
 
-    ParseNode* newBreakStatement(PropertyName* label, const TokenPos& pos) {
+    BreakStatementType newBreakStatement(PropertyName* label, const TokenPos& pos) {
         return new_<BreakStatement>(label, pos);
     }
 
@@ -690,7 +690,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<TernaryNode>(PNK_TRY, JSOP_NOP, body, catchList, finallyBlock, pos);
     }
 
-    ParseNode* newDebuggerStatement(const TokenPos& pos) {
+    DebuggerStatementType newDebuggerStatement(const TokenPos& pos) {
         return new_<DebuggerStatement>(pos);
     }
 

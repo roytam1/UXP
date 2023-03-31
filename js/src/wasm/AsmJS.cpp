@@ -598,7 +598,6 @@ static inline PropertyName*
 LoopControlMaybeLabel(ParseNode* pn)
 {
     MOZ_ASSERT(pn->isKind(PNK_BREAK) || pn->isKind(PNK_CONTINUE));
-    MOZ_ASSERT(pn->isArity(PN_NULLARY));
     return pn->as<LoopControlStatement>().label();
 }
 
