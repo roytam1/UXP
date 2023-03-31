@@ -79,12 +79,12 @@ class NameResolver
                 return false;
             if (!*foundName)
                 return true;
-            return appendPropertyReference(prop->right()->pn_atom);
+            return appendPropertyReference(prop->right()->as<NameNode>().atom());
           }
 
           case PNK_NAME:
             *foundName = true;
-            return buf->append(n->pn_atom);
+            return buf->append(n->as<NameNode>().atom());
 
           case PNK_THIS:
             *foundName = true;
@@ -105,7 +105,7 @@ class NameResolver
 
           case PNK_NUMBER:
             *foundName = true;
-            return appendNumber(n->pn_dval);
+            return appendNumber(n->as<NumericLiteral>().value());
 
           default:
             /* We're confused as to what to call this function. */
@@ -190,11 +190,10 @@ class NameResolver
      * listed, then it is skipped. Otherwise an intelligent name is guessed to
      * assign to the function's displayAtom field.
      */
-    bool resolveFun(ParseNode* pn, HandleAtom prefix, MutableHandleAtom retAtom) {
-        MOZ_ASSERT(pn != nullptr);
-        MOZ_ASSERT(pn->isKind(PNK_FUNCTION));
-        MOZ_ASSERT(pn->isArity(PN_CODE));
-        RootedFunction fun(cx, pn->pn_funbox->function());
+    bool resolveFun(CodeNode* funNode, HandleAtom prefix, MutableHandleAtom retAtom) {
+        MOZ_ASSERT(funNode != nullptr);
+        MOZ_ASSERT(funNode->isKind(PNK_FUNCTION));
+        RootedFunction fun(cx, funNode->funbox()->function());
 
         StringBuffer buf(cx);
         this->buf = &buf;
@@ -246,10 +245,10 @@ class NameResolver
             if (node->isKind(PNK_COLON) || node->isKind(PNK_SHORTHAND)) {
                 ParseNode* left = node->as<BinaryNode>().left();
                 if (left->isKind(PNK_OBJECT_PROPERTY_NAME) || left->isKind(PNK_STRING)) {
-                    if (!appendPropertyReference(left->pn_atom))
+                    if (!appendPropertyReference(left->as<NameNode>().atom()))
                         return false;
                 } else if (left->isKind(PNK_NUMBER)) {
-                    if (!appendNumericPropertyReference(left->pn_dval))
+                    if (!appendNumericPropertyReference(left->as<NumericLiteral>().value()))
                         return false;
                 } else {
                     MOZ_ASSERT(left->isKind(PNK_COMPUTED_NAME));
@@ -360,10 +359,10 @@ class NameResolver
         if (cur == nullptr)
             return true;
 
-        MOZ_ASSERT((cur->isKind(PNK_FUNCTION) || cur->isKind(PNK_MODULE)) == cur->isArity(PN_CODE));
+        MOZ_ASSERT((cur->isKind(PNK_FUNCTION) || cur->isKind(PNK_MODULE)) == cur->is<CodeNode>());
         if (cur->isKind(PNK_FUNCTION)) {
             RootedAtom prefix2(cx);
-            if (!resolveFun(cur, prefix, &prefix2))
+            if (!resolveFun(&cur->as<CodeNode>(), prefix, &prefix2))
                 return false;
 
             /*
@@ -383,29 +382,39 @@ class NameResolver
           // Nodes with no children that might require name resolution need no
           // further work.
           case PNK_NOP:
-          case PNK_STRING:
-          case PNK_TEMPLATE_STRING:
-          case PNK_REGEXP:
           case PNK_TRUE:
           case PNK_FALSE:
           case PNK_NULL:
           case PNK_RAW_UNDEFINED:
           case PNK_ELISION:
           case PNK_GENERATOR:
-          case PNK_NUMBER:
           case PNK_BREAK:
           case PNK_CONTINUE:
           case PNK_DEBUGGER:
           case PNK_EXPORT_BATCH_SPEC:
-          case PNK_OBJECT_PROPERTY_NAME:
           case PNK_POSHOLDER:
             MOZ_ASSERT(cur->isArity(PN_NULLARY));
             break;
 
+          case PNK_OBJECT_PROPERTY_NAME:
+          case PNK_STRING:
+          case PNK_TEMPLATE_STRING:
+            MOZ_ASSERT(cur->is<NameNode>());
+            break;
+
+          case PNK_REGEXP:
+            MOZ_ASSERT(cur->is<RegExpLiteral>());
+            break;
+
+          case PNK_NUMBER:
+            MOZ_ASSERT(cur->is<NumericLiteral>());
+            break;
+
+
           case PNK_TYPEOFNAME:
           case PNK_SUPERBASE:
             MOZ_ASSERT(cur->as<UnaryNode>().kid()->isKind(PNK_NAME));
-            MOZ_ASSERT(!cur->as<UnaryNode>().kid()->expr());
+            MOZ_ASSERT(!cur->as<UnaryNode>().kid()->as<NameNode>().initializer());
             break;
 
           case PNK_NEWTARGET: {
@@ -612,14 +621,14 @@ class NameResolver
 #ifdef DEBUG
             if (classNode->names()) {
                 ClassNames* names = classNode->names();
-                if (ParseNode* outerBinding = names->outerBinding()) {
+                if (NameNode* outerBinding = names->outerBinding()) {
                     MOZ_ASSERT(outerBinding->isKind(PNK_NAME));
-                    MOZ_ASSERT(!outerBinding->expr());
+                    MOZ_ASSERT(!outerBinding->initializer());
                 }
 
-                ParseNode* innerBinding = names->innerBinding();
+                NameNode* innerBinding = names->innerBinding();
                 MOZ_ASSERT(innerBinding->isKind(PNK_NAME));
-                MOZ_ASSERT(!innerBinding->expr());
+                MOZ_ASSERT(!innerBinding->initializer());
             }
 #endif
             if (ParseNode* heritage = classNode->heritage()) {
@@ -799,9 +808,9 @@ class NameResolver
                 BinaryNode* spec = &item->as<BinaryNode>();
                 MOZ_ASSERT(spec->isKind(isImport ? PNK_IMPORT_SPEC : PNK_EXPORT_SPEC));
                 MOZ_ASSERT(spec->left()->isKind(PNK_NAME));
-                MOZ_ASSERT(!spec->left()->expr());
+                MOZ_ASSERT(!spec->left()->as<NameNode>().initializer());
                 MOZ_ASSERT(spec->right()->isKind(PNK_NAME));
-                MOZ_ASSERT(!spec->right()->expr());
+                MOZ_ASSERT(!spec->right()->as<NameNode>().initializer());
             }
 #endif
             break;
@@ -832,15 +841,15 @@ class NameResolver
           }
 
           case PNK_LABEL:
-            MOZ_ASSERT(cur->isArity(PN_NAME));
-            if (!resolve(cur->expr(), prefix))
+            if (!resolve(cur->as<LabeledStatement>().statement(), prefix))
                 return false;
             break;
 
           case PNK_NAME:
-            MOZ_ASSERT(cur->isArity(PN_NAME));
-            if (!resolve(cur->expr(), prefix))
-                return false;
+            if (ParseNode* init = cur->as<NameNode>().initializer()) {
+                if (!resolve(init, prefix))
+                    return false;
+            }
             break;
 
           case PNK_LEXICALSCOPE:
@@ -851,9 +860,10 @@ class NameResolver
 
           case PNK_FUNCTION:
           case PNK_MODULE:
-            MOZ_ASSERT(cur->isArity(PN_CODE));
-            if (!resolve(cur->pn_body, prefix))
-                return false;
+            if (ParseNode* body = cur->as<CodeNode>().body()) {
+                if (!resolve(body, prefix))
+                    return false;
+            }
             break;
 
           // Kinds that should be handled by parent node resolution.

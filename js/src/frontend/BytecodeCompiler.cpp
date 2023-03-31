@@ -413,7 +413,7 @@ BytecodeCompiler::compileModule()
     Maybe<BytecodeEmitter> emitter;
     if (!emplaceEmitter(emitter, &modulesc))
         return nullptr;
-    if (!emitter->emitScript(pn->pn_body))
+    if (!emitter->emitScript(pn->as<CodeNode>().body()))
         return nullptr;
 
     if (!NameFunctions(cx, pn))
@@ -466,19 +466,20 @@ BytecodeCompiler::compileStandaloneFunction(MutableHandleFunction fun,
             return false;
     } while (!fn);
 
-    if (fn->pn_funbox->function()->isInterpreted()) {
-        MOZ_ASSERT(fun == fn->pn_funbox->function());
+    FunctionBox* funbox = fn->as<CodeNode>().funbox();
+    if (funbox->function()->isInterpreted()) {
+        MOZ_ASSERT(fun == funbox->function());
 
-        if (!createScript(fn->pn_funbox->toStringStart, fn->pn_funbox->toStringEnd))
+        if (!createScript(funbox->toStringStart, funbox->toStringEnd))
             return false;
 
         Maybe<BytecodeEmitter> emitter;
-        if (!emplaceEmitter(emitter, fn->pn_funbox))
+        if (!emplaceEmitter(emitter, funbox))
             return false;
-        if (!emitter->emitFunctionScript(fn->pn_body))
+        if (!emitter->emitFunctionScript(&fn->as<CodeNode>()))
             return false;
     } else {
-        fun.set(fn->pn_funbox->function());
+        fun.set(funbox->function());
         MOZ_ASSERT(IsAsmJSModule(fun));
     }
 
@@ -673,12 +674,12 @@ frontend::CompileLazyFunction(JSContext* cx, Handle<LazyScript*> lazy, const cha
     if (lazy->hasBeenCloned())
         script->setHasBeenCloned();
 
-    BytecodeEmitter bce(/* parent = */ nullptr, &parser, pn->pn_funbox, script, lazy,
+    BytecodeEmitter bce(/* parent = */ nullptr, &parser, pn->as<CodeNode>().funbox(), script, lazy,
                         pn->pn_pos, BytecodeEmitter::LazyFunction);
     if (!bce.init())
         return false;
 
-    if (!bce.emitFunctionScript(pn->pn_body))
+    if (!bce.emitFunctionScript(&pn->as<CodeNode>()))
         return false;
 
     if (!NameFunctions(cx, pn))

@@ -204,7 +204,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
 
     void trace(JSTracer* trc) {}
 
-    Node newName(PropertyName* name, const TokenPos& pos, ExclusiveContext* cx) {
+    NameNodeType newName(PropertyName* name, const TokenPos& pos, ExclusiveContext* cx) {
         lastAtom = name;
         if (name == cx->names().arguments)
             return NodeUnparenthesizedArgumentsName;
@@ -219,20 +219,20 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return NodeGeneric;
     }
 
-    Node newObjectLiteralPropertyName(JSAtom* atom, const TokenPos& pos) {
+    NameNodeType newObjectLiteralPropertyName(JSAtom* atom, const TokenPos& pos) {
         return NodeUnparenthesizedName;
     }
 
-    Node newNumber(double value, DecimalPoint decimalPoint, const TokenPos& pos) { return NodeGeneric; }
+    NumericLiteralType newNumber(double value, DecimalPoint decimalPoint, const TokenPos& pos) { return NodeGeneric; }
     Node newBooleanLiteral(bool cond, const TokenPos& pos) { return NodeGeneric; }
 
-    Node newStringLiteral(JSAtom* atom, const TokenPos& pos) {
+    NameNodeType newStringLiteral(JSAtom* atom, const TokenPos& pos) {
         lastAtom = atom;
         lastStringPos = pos;
         return NodeUnparenthesizedString;
     }
 
-    Node newTemplateStringLiteral(JSAtom* atom, const TokenPos& pos) {
+    NameNodeType newTemplateStringLiteral(JSAtom* atom, const TokenPos& pos) {
         return NodeGeneric;
     }
 
@@ -247,7 +247,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     Node newRawUndefinedLiteral(const TokenPos& pos) { return NodeGeneric; }
 
     template <class Boxer>
-    Node newRegExp(RegExpObject* reobj, const TokenPos& pos, Boxer& boxer) { return NodeGeneric; }
+    RegExpLiteralType newRegExp(RegExpObject* reobj, const TokenPos& pos, Boxer& boxer) { return NodeGeneric; }
 
     ConditionalExpressionType newConditional(Node cond, Node thenExpr, Node elseExpr) {
         return NodeGeneric;
@@ -322,10 +322,10 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
 
     MOZ_MUST_USE bool addPrototypeMutation(ListNodeType literal, uint32_t begin, Node expr) { return true; }
     MOZ_MUST_USE bool addPropertyDefinition(ListNodeType literal, Node name, Node expr) { return true; }
-    MOZ_MUST_USE bool addShorthand(ListNodeType literal, Node name, Node expr) { return true; }
+    MOZ_MUST_USE bool addShorthand(ListNodeType literal, NameNodeType name, NameNodeType expr) { return true; }
     MOZ_MUST_USE bool addSpreadProperty(ListNodeType literal, uint32_t begin, Node inner) { return true; }
-    MOZ_MUST_USE bool addObjectMethodDefinition(ListNodeType literal, Node name, Node fn, JSOp op) { return true; }
-    MOZ_MUST_USE bool addClassMethodDefinition(ListNodeType literal, Node name, Node fn, JSOp op, bool isStatic) { return true; }
+    MOZ_MUST_USE bool addObjectMethodDefinition(ListNodeType literal, Node name, CodeNodeType funNode, JSOp op) { return true; }
+    MOZ_MUST_USE bool addClassMethodDefinition(ListNodeType literal, Node name, CodeNodeType funNode, JSOp op, bool isStatic) { return true; }
     UnaryNodeType newYieldExpression(uint32_t begin, Node value) { return NodeGeneric; }
     UnaryNodeType newYieldStarExpression(uint32_t begin, Node value) { return NodeGeneric; }
     UnaryNodeType newAwaitExpression(uint32_t begin, Node value) { return NodeGeneric; }
@@ -370,7 +370,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     UnaryNodeType newReturnStatement(Node expr, const TokenPos& pos) { return NodeReturn; }
     BinaryNodeType newWithStatement(uint32_t begin, Node expr, Node body) { return NodeGeneric; }
 
-    Node newLabeledStatement(PropertyName* label, Node stmt, uint32_t begin) {
+    LabeledStatementType newLabeledStatement(PropertyName* label, Node stmt, uint32_t begin) {
         return NodeGeneric;
     }
 
@@ -380,16 +380,16 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     }
     Node newDebuggerStatement(const TokenPos& pos) { return NodeGeneric; }
 
-    Node newPropertyName(PropertyName* name, const TokenPos& pos) {
+    NameNodeType newPropertyName(PropertyName* name, const TokenPos& pos) {
         lastAtom = name;
         return NodeGeneric;
     }
 
-    PropertyAccessType newPropertyAccess(Node expr, Node key) {
+    PropertyAccessType newPropertyAccess(Node expr, NameNodeType key) {
         return NodeDottedProperty;
     }
 
-    Node newOptionalPropertyAccess(Node expr, Node key) {
+    Node newOptionalPropertyAccess(Node expr, NameNodeType key) {
         return NodeOptionalDottedProperty;
     }
 
@@ -400,19 +400,19 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     MOZ_MUST_USE bool addCatchBlock(ListNodeType catchList, Node letBlock, Node catchBinding,
                                     Node catchGuard, Node catchBody) { return true; }
 
-    MOZ_MUST_USE bool setLastFunctionFormalParameterDefault(Node funcpn, Node pn) { return true; }
+    MOZ_MUST_USE bool setLastFunctionFormalParameterDefault(CodeNodeType funNode, Node pn) { return true; }
 
     void checkAndSetIsDirectRHSAnonFunction(Node pn) {}
 
-    Node newFunctionStatement() { return NodeFunctionDefinition; }
-    Node newFunctionExpression() { return NodeFunctionDefinition; }
-    Node newArrowFunction() { return NodeFunctionDefinition; }
+    CodeNodeType newFunctionStatement() { return NodeFunctionDefinition; }
+    CodeNodeType newFunctionExpression() { return NodeFunctionDefinition; }
+    CodeNodeType newArrowFunction() { return NodeFunctionDefinition; }
 
-    bool setComprehensionLambdaBody(Node pn, Node body) { return true; }
-    void setFunctionFormalParametersAndBody(Node pn, Node kid) {}
-    void setFunctionBody(Node pn, Node kid) {}
-    void setFunctionBox(Node pn, FunctionBox* funbox) {}
-    void addFunctionFormalParameter(Node pn, Node argpn) {}
+    bool setComprehensionLambdaBody(CodeNodeType funNode, ListNodeType body) { return true; }
+    void setFunctionFormalParametersAndBody(CodeNodeType funNode, ListNodeType paramsBody) {}
+    void setFunctionBody(CodeNodeType funNode, Node body) {}
+    void setFunctionBox(CodeNodeType funNode, FunctionBox* funbox) {}
+    void addFunctionFormalParameter(CodeNodeType funNode, Node argpn) {}
 
     ForNodeType newForStatement(uint32_t begin, TernaryNodeType forHead, Node body, unsigned iflags) {
         return NodeGeneric;
@@ -438,7 +438,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return NodeGeneric;
     }
 
-    MOZ_MUST_USE bool finishInitializerAssignment(Node pn, Node init) { return true; }
+    MOZ_MUST_USE bool finishInitializerAssignment(NameNodeType nameNode, Node init) { return true; }
 
     void setBeginPosition(Node pn, Node oth) {}
     void setBeginPosition(Node pn, uint32_t begin) {}
@@ -587,8 +587,9 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         // to the unparenthesized form: return |node| unchanged.
         return node;
     }
-    MOZ_MUST_USE Node setLikelyIIFE(Node pn) {
-        return pn; // Remain in syntax-parse mode.
+    template <typename NodeType>
+    MOZ_MUST_USE NodeType setLikelyIIFE(NodeType node) {
+        return node; // Remain in syntax-parse mode.
     }
     void setInDirectivePrologue(UnaryNodeType exprStmt) {}
 

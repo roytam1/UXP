@@ -1085,7 +1085,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
      * cx->tempLifoAlloc.
      */
     ObjectBox* newObjectBox(JSObject* obj);
-    FunctionBox* newFunctionBox(Node fn, JSFunction* fun, uint32_t toStringStart,
+    FunctionBox* newFunctionBox(CodeNodeType funNode, JSFunction* fun, uint32_t toStringStart,
                                 Directives directives,
                                 GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
                                 bool tryAnnexB);
@@ -1105,9 +1105,9 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     JSAtom* stopStringCompression();
 
-    Node stringLiteral();
+    NameNodeType stringLiteral();
     Node noSubstitutionTaggedTemplate();
-    Node noSubstitutionUntaggedTemplate();
+    NameNodeType noSubstitutionUntaggedTemplate();
     ListNodeType templateLiteral(YieldHandling yieldHandling);
     bool taggedTemplate(YieldHandling yieldHandling, ListNodeType tagArgsList, TokenKind tt);
     bool appendToCallSiteObj(CallSiteNodeType callSiteObj);
@@ -1115,8 +1115,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
                                         TokenKind* ttp);
     bool checkStatementsEOF();
 
-    inline Node newName(PropertyName* name);
-    inline Node newName(PropertyName* name, TokenPos pos);
+    inline NameNodeType newName(PropertyName* name);
+    inline NameNodeType newName(PropertyName* name, TokenPos pos);
 
     inline bool abortIfSyntaxParser();
 
@@ -1138,23 +1138,23 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     ListNodeType globalBody(GlobalSharedContext* globalsc);
 
     // Parse a module.
-    Node moduleBody(ModuleSharedContext* modulesc);
+    CodeNodeType moduleBody(ModuleSharedContext* modulesc);
 
     // Parse a function, used for the Function, GeneratorFunction, and
     // AsyncFunction constructors.
-    Node standaloneFunction(HandleFunction fun, HandleScope enclosingScope,
-                            mozilla::Maybe<uint32_t> parameterListEnd,
-                            GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
-                            Directives inheritedDirectives, Directives* newDirectives);
+    CodeNodeType standaloneFunction(HandleFunction fun, HandleScope enclosingScope,
+                                    mozilla::Maybe<uint32_t> parameterListEnd,
+                                    GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
+                                    Directives inheritedDirectives, Directives* newDirectives);
 
     // Parse a function, given only its arguments and body. Used for lazily
     // parsed functions.
-    Node standaloneLazyFunction(HandleFunction fun, bool strict,
-                                GeneratorKind generatorKind, FunctionAsyncKind asyncKind);
+    CodeNodeType standaloneLazyFunction(HandleFunction fun, bool strict,
+                                        GeneratorKind generatorKind, FunctionAsyncKind asyncKind);
 
     // Parse an inner function given an enclosing ParseContext and a
     // FunctionBox for the inner function.
-    bool innerFunction(Node pn, ParseContext* outerpc, FunctionBox* funbox, uint32_t toStringStart,
+    bool innerFunction(CodeNodeType funNode, ParseContext* outerpc, FunctionBox* funbox, uint32_t toStringStart,
                        InHandling inHandling, YieldHandling yieldHandling,
                        FunctionSyntaxKind kind,
                        Directives inheritedDirectives, Directives* newDirectives);
@@ -1162,7 +1162,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     // Parse a function's formal parameters and its body assuming its function
     // ParseContext is already on the stack.
     bool functionFormalParametersAndBody(InHandling inHandling, YieldHandling yieldHandling,
-                                         Node pn, FunctionSyntaxKind kind,
+                                         CodeNodeType funNode, FunctionSyntaxKind kind,
                                          mozilla::Maybe<uint32_t> parameterListEnd = mozilla::Nothing(),
                                          bool isStandaloneFunction = false);
 
@@ -1188,11 +1188,11 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
      * Some parsers have two versions:  an always-inlined version (with an 'i'
      * suffix) and a never-inlined version (with an 'n' suffix).
      */
-    Node functionStmt(uint32_t toStringStart,
-                      YieldHandling yieldHandling, DefaultHandling defaultHandling,
-                      FunctionAsyncKind asyncKind = SyncFunction);
-    Node functionExpr(uint32_t toStringStart, InvokedPrediction invoked = PredictUninvoked,
-                      FunctionAsyncKind asyncKind = SyncFunction);
+    CodeNodeType functionStmt(uint32_t toStringStart,
+                              YieldHandling yieldHandling, DefaultHandling defaultHandling,
+                              FunctionAsyncKind asyncKind = SyncFunction);
+    CodeNodeType functionExpr(uint32_t toStringStart, InvokedPrediction invoked = PredictUninvoked,
+                              FunctionAsyncKind asyncKind = SyncFunction);
 
     ListNodeType statementList(YieldHandling yieldHandling);
 
@@ -1222,7 +1222,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     Node variableStatement(YieldHandling yieldHandling);
 
-    Node labeledStatement(YieldHandling yieldHandling);
+    LabeledStatementType labeledStatement(YieldHandling yieldHandling);
     Node labeledItem(YieldHandling yieldHandling);
 
     TernaryNodeType ifStatement(YieldHandling yieldHandling);
@@ -1295,16 +1295,16 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     Node declarationPattern(Node decl, DeclarationKind declKind, TokenKind tt,
                             bool initialDeclaration, YieldHandling yieldHandling,
                             ParseNodeKind* forHeadKind, Node* forInOrOfExpression);
-    Node declarationName(Node decl, DeclarationKind declKind, TokenKind tt,
-                         bool initialDeclaration, YieldHandling yieldHandling,
-                         ParseNodeKind* forHeadKind, Node* forInOrOfExpression);
+    NameNodeType declarationName(Node decl, DeclarationKind declKind, TokenKind tt,
+                                 bool initialDeclaration, YieldHandling yieldHandling,
+                                 ParseNodeKind* forHeadKind, Node* forInOrOfExpression);
 
     // Having parsed a name (not found in a destructuring pattern) declared by
     // a declaration, with the current token being the '=' separating the name
     // from its initializer, parse and bind that initializer -- and possibly
     // consume trailing in/of and subsequent expression, if so directed by
     // |forHeadKind|.
-    bool initializerInNameDeclaration(Node decl, Node binding, Handle<PropertyName*> name,
+    bool initializerInNameDeclaration(Node decl, NameNodeType binding, Handle<PropertyName*> name,
                                       DeclarationKind declKind, bool initialDeclaration,
                                       YieldHandling yieldHandling, ParseNodeKind* forHeadKind,
                                       Node* forInOrOfExpression);
@@ -1346,19 +1346,19 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     bool tryNewTarget(BinaryNodeType* newTarget);
     bool checkAndMarkSuperScope();
 
-    Node methodDefinition(uint32_t toStringStart, PropertyType propType, HandleAtom funName);
+    CodeNodeType methodDefinition(uint32_t toStringStart, PropertyType propType, HandleAtom funName);
 
     /*
      * Additional JS parsers.
      */
     bool functionArguments(YieldHandling yieldHandling, FunctionSyntaxKind kind,
-                           Node funcpn);
+                           CodeNodeType funNode);
 
-    Node functionDefinition(uint32_t toStringStart, Node pn,
-                            InHandling inHandling, YieldHandling yieldHandling, HandleAtom name,
-                            FunctionSyntaxKind kind,
-                            GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
-                            bool tryAnnexB = false);
+    CodeNodeType functionDefinition(uint32_t toStringStart, CodeNodeType funNode,
+                                    InHandling inHandling, YieldHandling yieldHandling, HandleAtom name,
+                                    FunctionSyntaxKind kind,
+                                    GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
+                                    bool tryAnnexB = false);
 
     // Parse a function body.  Pass StatementListBody if the body is a list of
     // statements; pass ExpressionBody if the body is a single expression.
@@ -1393,8 +1393,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     bool checkExportedNamesForDeclaration(Node node);
     bool checkExportedNamesForDeclarationList(ListNodeType node);
 
-    bool checkExportedNameForClause(Node node);
-    bool checkExportedNameForFunction(Node node);
+    bool checkExportedNameForClause(NameNodeType funNode);
+    bool checkExportedNameForFunction(CodeNodeType funNode);
     bool checkExportedNameForClass(ClassNodeType classNode);
 
     enum ClassContext { ClassStatement, ClassExpression };
@@ -1427,7 +1427,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
         return bindingIdentifier(YieldIsName);
     }
 
-    Node identifierReference(Handle<PropertyName*> name);
+    NameNodeType identifierReference(Handle<PropertyName*> name);
 
     bool matchLabel(YieldHandling yieldHandling, MutableHandle<PropertyName*> label);
 
@@ -1444,19 +1444,19 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     bool hasUsedFunctionSpecialName(HandlePropertyName name);
     bool declareFunctionArgumentsObject();
     bool declareFunctionThis();
-    Node newInternalDotName(HandlePropertyName name);
-    Node newThisName();
-    Node newDotGeneratorName();
+    NameNodeType newInternalDotName(HandlePropertyName name);
+    NameNodeType newThisName();
+    NameNodeType newDotGeneratorName();
     bool declareDotGeneratorName();
 
-    bool skipLazyInnerFunction(Node pn, uint32_t toStringStart, FunctionSyntaxKind kind,
+    bool skipLazyInnerFunction(CodeNodeType funNode, uint32_t toStringStart, FunctionSyntaxKind kind,
                                bool tryAnnexB);
-    bool innerFunction(Node pn, ParseContext* outerpc, HandleFunction fun, uint32_t toStringStart,
+    bool innerFunction(CodeNodeType funNode, ParseContext* outerpc, HandleFunction fun, uint32_t toStringStart,
                        InHandling inHandling, YieldHandling yieldHandling,
                        FunctionSyntaxKind kind,
                        GeneratorKind generatorKind, FunctionAsyncKind asyncKind, bool tryAnnexB,
                        Directives inheritedDirectives, Directives* newDirectives);
-    bool trySyntaxParseInnerFunction(Node pn, HandleFunction fun, uint32_t toStringStart,
+    bool trySyntaxParseInnerFunction(CodeNodeType funNode, HandleFunction fun, uint32_t toStringStart,
                                      InHandling inHandling, YieldHandling yieldHandling,
                                      FunctionSyntaxKind kind,
                                      GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
@@ -1489,9 +1489,9 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     void reportRedeclaration(HandlePropertyName name, DeclarationKind prevKind, TokenPos pos,
                              uint32_t prevPos);
-    bool notePositionalFormalParameter(Node fn, HandlePropertyName name, uint32_t beginPos,
+    bool notePositionalFormalParameter(CodeNodeType funNode, HandlePropertyName name, uint32_t beginPos,
                                        bool disallowDuplicateParams, bool* duplicatedParam);
-    bool noteDestructuredPositionalFormalParameter(Node fn, Node destruct);
+    bool noteDestructuredPositionalFormalParameter(CodeNodeType funNode, Node destruct);
     mozilla::Maybe<DeclarationKind> isVarRedeclaredInEval(HandlePropertyName name,
                                                           DeclarationKind kind);
     bool tryDeclareVar(HandlePropertyName name, DeclarationKind kind, uint32_t beginPos,
@@ -1522,12 +1522,12 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     UnaryNodeType computedPropertyName(YieldHandling yieldHandling,
                                        const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType literal);
     ListNodeType arrayInitializer(YieldHandling yieldHandling, PossibleError* possibleError);
-    Node newRegExp();
+    RegExpLiteralType newRegExp();
 
     ListNodeType objectLiteral(YieldHandling yieldHandling, PossibleError* possibleError);
 
     BinaryNodeType bindingInitializer(Node lhs, DeclarationKind kind, YieldHandling yieldHandling);
-    Node bindingIdentifier(DeclarationKind kind, YieldHandling yieldHandling);
+    NameNodeType bindingIdentifier(DeclarationKind kind, YieldHandling yieldHandling);
     Node bindingIdentifierOrPattern(DeclarationKind kind, YieldHandling yieldHandling,
                                     TokenKind tt);
     ListNodeType objectBindingPattern(DeclarationKind kind, YieldHandling yieldHandling);
@@ -1538,7 +1538,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     void checkDestructuringAssignmentElement(Node expr, TokenPos exprPos,
                                              PossibleError* possibleError);
 
-    Node newNumber(const Token& tok) {
+    NumericLiteralType newNumber(const Token& tok) {
         return handler.newNumber(tok.number(), tok.decimalPoint(), tok.pos);
     }
 

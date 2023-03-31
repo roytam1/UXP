@@ -94,7 +94,7 @@ class NodeStack {
 enum class PushResult { Recyclable, CleanUpLater };
 
 static PushResult
-PushCodeNodeChildren(ParseNode* node, NodeStack* stack)
+PushCodeNodeChildren(CodeNode* node, NodeStack* stack)
 {
     MOZ_ASSERT(node->isArity(PN_CODE));
 
@@ -108,29 +108,27 @@ PushCodeNodeChildren(ParseNode* node, NodeStack* stack)
      *
      * In fact, we can't recycle the parse node yet, either: it may appear
      * on a method list, and reusing the node would corrupt that. Instead,
-     * we clear its pn_funbox pointer to mark it as deleted;
+     * we clear its funbox pointer to mark it as deleted;
      * CleanFunctionList recycles it as well.
      *
      * We do recycle the nodes around it, though, so we must clear pointers
      * to them to avoid leaving dangling references where someone can find
      * them.
      */
-    node->pn_funbox = nullptr;
-    if (node->pn_body)
-        stack->push(node->pn_body);
-    node->pn_body = nullptr;
+    node->setFunbox(nullptr);
+    if (node->body())
+        stack->push(node->body());
+    node->setBody(nullptr);
 
     return PushResult::CleanUpLater;
 }
 
 static PushResult
-PushNameNodeChildren(ParseNode* node, NodeStack* stack)
+PushNameNodeChildren(NameNode* node, NodeStack* stack)
 {
-    MOZ_ASSERT(node->isArity(PN_NAME));
-
-    if (node->pn_expr)
-        stack->push(node->pn_expr);
-    node->pn_expr = nullptr;
+    if (node->initializer())
+        stack->push(node->initializer());
+    node->setInitializer(nullptr);
     return PushResult::Recyclable;
 }
 
@@ -179,23 +177,32 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       // Trivial nodes that refer to no nodes, are referred to by nothing
       // but their parents, are never used, and are never a definition.
       case PNK_NOP:
-      case PNK_STRING:
-      case PNK_TEMPLATE_STRING:
-      case PNK_REGEXP:
       case PNK_TRUE:
       case PNK_FALSE:
       case PNK_NULL:
       case PNK_RAW_UNDEFINED:
       case PNK_ELISION:
       case PNK_GENERATOR:
-      case PNK_NUMBER:
       case PNK_BREAK:
       case PNK_CONTINUE:
       case PNK_DEBUGGER:
       case PNK_EXPORT_BATCH_SPEC:
-      case PNK_OBJECT_PROPERTY_NAME:
       case PNK_POSHOLDER:
         MOZ_ASSERT(pn->isArity(PN_NULLARY));
+        return PushResult::Recyclable;
+
+      case PNK_OBJECT_PROPERTY_NAME:
+      case PNK_STRING:
+      case PNK_TEMPLATE_STRING:
+        MOZ_ASSERT(pn->is<NameNode>());
+        return PushResult::Recyclable;
+
+      case PNK_REGEXP:
+        MOZ_ASSERT(pn->is<RegExpLiteral>());
+        return PushResult::Recyclable;
+
+      case PNK_NUMBER:
+        MOZ_ASSERT(pn->is<NumericLiteral>());
         return PushResult::Recyclable;
 
       // Nodes with a single non-null child.
@@ -489,14 +496,14 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       case PNK_LABEL:
       case PNK_NAME:
       case PNK_PROPERTYNAME:
-        return PushNameNodeChildren(pn, stack);
+        return PushNameNodeChildren(&pn->as<NameNode>(), stack);
 
       case PNK_LEXICALSCOPE:
         return PushScopeNodeChildren(pn, stack);
 
       case PNK_FUNCTION:
       case PNK_MODULE:
-        return PushCodeNodeChildren(pn, stack);
+        return PushCodeNodeChildren(&pn->as<CodeNode>(), stack);
 
       case PNK_LIMIT: // invalid sentinel value
         MOZ_CRASH("invalid node kind");
@@ -656,33 +663,37 @@ ParseNode::dump(int indent)
     switch (pn_arity) {
       case PN_NULLARY:
         ((NullaryNode*) this)->dump();
-        break;
+        return;
       case PN_UNARY:
         as<UnaryNode>().dump(indent);
-        break;
+        return;
       case PN_BINARY:
         as<BinaryNode>().dump(indent);
-        break;
+        return;
       case PN_TERNARY:
         as<TernaryNode>().dump(indent);
-        break;
+        return;
       case PN_CODE:
-        ((CodeNode*) this)->dump(indent);
-        break;
+        as<CodeNode>().dump(indent);
+        return;
       case PN_LIST:
         as<ListNode>().dump(indent);
-        break;
+        return;
       case PN_NAME:
-        ((NameNode*) this)->dump(indent);
-        break;
+        as<NameNode>().dump(indent);
+        return;
+      case PN_NUMBER:
+        as<NumericLiteral>().dump(indent);
+        return;
+      case PN_REGEXP:
+        as<RegExpLiteral>().dump(indent);
+        return;
       case PN_SCOPE:
         ((LexicalScopeNode*) this)->dump(indent);
-        break;
-      default:
-        fprintf(stderr, "#<BAD NODE %p, kind=%u, arity=%u>",
-                (void*) this, unsigned(getKind()), unsigned(pn_arity));
-        break;
+        return;
     }
+    fprintf(stderr, "#<BAD NODE %p, kind=%u, arity=%u>",
+            (void*) this, unsigned(getKind()), unsigned(pn_arity));
 }
 
 void
@@ -694,25 +705,30 @@ NullaryNode::dump()
       case PNK_NULL:  fprintf(stderr, "#null");  break;
       case PNK_RAW_UNDEFINED: fprintf(stderr, "#undefined"); break;
 
-      case PNK_NUMBER: {
-        ToCStringBuf cbuf;
-        const char* cstr = NumberToCString(nullptr, &cbuf, pn_dval);
-        if (!IsFinite(pn_dval))
-            fputc('#', stderr);
-        if (cstr)
-            fprintf(stderr, "%s", cstr);
-        else
-            fprintf(stderr, "%g", pn_dval);
-        break;
-      }
-
-      case PNK_STRING:
-        pn_atom->dumpCharsNoNewline();
-        break;
-
       default:
         fprintf(stderr, "(%s)", parseNodeNames[getKind()]);
     }
+}
+
+void
+NumericLiteral::dump(int indent)
+{
+    ToCStringBuf cbuf;
+    const char* cstr = NumberToCString(nullptr, &cbuf, value());
+    if (!IsFinite(value())) {
+        fprintf(stderr, "#");
+    }
+    if (cstr) {
+        fprintf(stderr, "%s", cstr);
+    } else {
+        fprintf(stderr, "%g", value());
+    }
+}
+
+void
+RegExpLiteral::dump(int indent)
+{
+    fprintf(stderr, "(%s)", parseNodeNames[size_t(getKind())]);
 }
 
 void
@@ -772,7 +788,7 @@ CodeNode::dump(int indent)
     const char* name = parseNodeNames[getKind()];
     fprintf(stderr, "(%s ", name);
     indent += strlen(name) + 2;
-    DumpParseTree(pn_body, indent);
+    DumpParseTree(body(), indent);
     fprintf(stderr, ")");
 }
 
@@ -813,29 +829,53 @@ DumpName(const CharT* s, size_t len)
 void
 NameNode::dump(int indent)
 {
-    if (isKind(PNK_NAME) || isKind(PNK_PROPERTYNAME)) {
-        if (!pn_atom) {
+    switch (getKind()) {
+      case PNK_STRING:
+      case PNK_TEMPLATE_STRING:
+      case PNK_OBJECT_PROPERTY_NAME: {
+        atom()->dumpCharsNoNewline();
+        return;
+      }
+      
+      case PNK_NAME:
+      case PNK_PROPERTYNAME: {
+        if (!atom()) {
             fprintf(stderr, "#<null name>");
-        } else if (getOp() == JSOP_GETARG && pn_atom->length() == 0) {
+        } else if (getOp() == JSOP_GETARG && atom()->length() == 0) {
             // Dump destructuring parameter.
-            fprintf(stderr, "(#<zero-length name> ");
-            DumpParseTree(expr(), indent + 21);
+            static const char ZeroLengthPrefix[] = "(#<zero-length name> ";
+            fprintf(stderr, ZeroLengthPrefix);
+            DumpParseTree(initializer(), indent + strlen(ZeroLengthPrefix));
             fputc(')', stderr);
         } else {
             JS::AutoCheckCannotGC nogc;
-            if (pn_atom->hasLatin1Chars())
-                DumpName(pn_atom->latin1Chars(nogc), pn_atom->length());
+            if (atom()->hasLatin1Chars())
+                DumpName(atom()->latin1Chars(nogc), atom()->length());
             else
-                DumpName(pn_atom->twoByteChars(nogc), pn_atom->length());
+                DumpName(atom()->twoByteChars(nogc), atom()->length());
         }
         return;
-    }
+      }
 
-    const char* name = parseNodeNames[getKind()];
-    fprintf(stderr, "(%s ", name);
-    indent += strlen(name) + 2;
-    DumpParseTree(expr(), indent);
-    fprintf(stderr, ")");
+      case PNK_LABEL: {
+        const char* name = parseNodeNames[getKind()];
+        fprintf(stderr, "(%s ", name);
+        atom()->dumpCharsNoNewline();
+        indent += strlen(name) + atom()->length() + 2;
+        DumpParseTree(initializer(), indent);
+        fprintf(stderr, ")");
+        return;
+      }
+
+      default: {
+        const char* name = parseNodeNames[getKind()];
+        fprintf(stderr, "(%s ", name);
+        indent += strlen(name) + 2;
+        DumpParseTree(initializer(), indent);
+        fprintf(stderr, ")");
+        return;
+      }
+    }
 }
 
 void
@@ -920,7 +960,8 @@ js::frontend::IsAnonymousFunctionDefinition(ParseNode* pn)
     // 14.1.12 (FunctionExpression).
     // 14.4.8 (GeneratorExpression).
     // 14.6.8 (AsyncFunctionExpression)
-    if (pn->isKind(PNK_FUNCTION) && !pn->pn_funbox->function()->explicitName())
+    if (pn->isKind(PNK_FUNCTION) &&
+        !pn->as<CodeNode>().funbox()->function()->explicitName())
         return true;
 
     // 14.5.8 (ClassExpression)
