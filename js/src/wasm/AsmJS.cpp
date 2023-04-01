@@ -668,8 +668,7 @@ static inline ParseNode*
 FunctionStatementList(CodeNode* funNode)
 {
     MOZ_ASSERT(funNode->body()->isKind(PNK_PARAMSBODY));
-    ParseNode* last = funNode->body()->as<ListNode>().last();
-    MOZ_ASSERT(last->isKind(PNK_LEXICALSCOPE));
+    LexicalScopeNode* last = &funNode->body()->as<ListNode>().last()->as<LexicalScopeNode>();
     MOZ_ASSERT(last->isEmptyScope());
     ParseNode* body = last->scopeBody();
     MOZ_ASSERT(body->isKind(PNK_STATEMENTLIST));
@@ -6807,10 +6806,11 @@ CheckSwitch(FunctionValidator& f, ParseNode* switchStmt)
     ParseNode* switchExpr = BinaryLeft(switchStmt);
     ParseNode* switchBody = BinaryRight(switchStmt);
 
-    if (switchBody->isKind(PNK_LEXICALSCOPE)) {
-        if (!switchBody->isEmptyScope())
-            return f.fail(switchBody, "switch body may not contain lexical declarations");
-        switchBody = switchBody->scopeBody();
+    if (switchBody->is<LexicalScopeNode>()) {
+        LexicalScopeNode* scope = &switchBody->as<LexicalScopeNode>();
+        if (!scope->isEmptyScope())
+            return f.fail(scope, "switch body may not contain lexical declarations");
+        switchBody = scope->scopeBody();
     }
 
     ParseNode* stmt = ListHead(switchBody);
@@ -6984,10 +6984,9 @@ CheckStatementList(FunctionValidator& f, ParseNode* stmtList, const NameVector* 
 }
 
 static bool
-CheckLexicalScope(FunctionValidator& f, ParseNode* lexicalScope)
+CheckLexicalScope(FunctionValidator& f, ParseNode* node)
 {
-    MOZ_ASSERT(lexicalScope->isKind(PNK_LEXICALSCOPE));
-
+    LexicalScopeNode* lexicalScope = &node->as<LexicalScopeNode>();
     if (!lexicalScope->isEmptyScope())
         return f.fail(lexicalScope, "cannot have 'let' or 'const' declarations");
 

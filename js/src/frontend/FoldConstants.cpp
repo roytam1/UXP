@@ -207,8 +207,8 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
 
         if (tryNode->kid2()) {
             if (ListNode* catchList = &tryNode->kid2()->as<ListNode>()) {
-                for (ParseNode* lexicalScope : catchList->contents()) {
-                    MOZ_ASSERT(lexicalScope->isKind(PNK_LEXICALSCOPE));
+                for (ParseNode* scopeNode : catchList->contents()) {
+                    LexicalScopeNode* lexicalScope = &scopeNode->as<LexicalScopeNode>();
 
                     TernaryNode* catchNode = &lexicalScope->scopeBody()->as<TernaryNode>();
                     MOZ_ASSERT(catchNode->isKind(PNK_CATCH));
@@ -286,14 +286,14 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       }
 
       case PNK_LEXICALSCOPE: {
-        MOZ_ASSERT(node->isArity(PN_SCOPE));
-        ParseNode* expr = node->scopeBody();
+        LexicalScopeNode* scope = &node->as<LexicalScopeNode>();
+        ParseNode* expr = scope->scopeBody();
 
         if (expr->isKind(PNK_FOR) || expr->isKind(PNK_FUNCTION))
             return ContainsHoistedDeclaration(cx, expr, result);
 
         MOZ_ASSERT(expr->isKind(PNK_STATEMENTLIST));
-        return ListContainsHoistedDeclaration(cx, &node->scopeBody()->as<ListNode>(), result);
+        return ListContainsHoistedDeclaration(cx, &scope->scopeBody()->as<ListNode>(), result);
       }
 
       // List nodes with all non-null children.
@@ -1966,11 +1966,12 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
       case PNK_DOT:
         return FoldDottedProperty(cx, &pn->as<PropertyAccessBase>(), parser, inGenexpLambda);
 
-      case PNK_LEXICALSCOPE:
-        MOZ_ASSERT(pn->isArity(PN_SCOPE));
-        if (!pn->scopeBody())
+      case PNK_LEXICALSCOPE: {
+        LexicalScopeNode* node = &pn->as<LexicalScopeNode>();
+        if (!node->scopeBody())
             return true;
-        return Fold(cx, &pn->pn_u.scope.body, parser, inGenexpLambda);
+        return Fold(cx, node->unsafeScopeBodyReference(), parser, inGenexpLambda);
+      }
 
       case PNK_NAME:
         return FoldName(cx, &pn->as<NameNode>(), parser, inGenexpLambda);

@@ -2066,16 +2066,16 @@ Parser<FullParseHandler>::newLexicalScopeData(ParseContext::Scope& scope)
 }
 
 template <>
-SyntaxParseHandler::Node
+SyntaxParseHandler::LexicalScopeNodeType
 Parser<SyntaxParseHandler>::finishLexicalScope(ParseContext::Scope& scope, Node body)
 {
     if (!propagateFreeNamesAndMarkClosedOverBindings(scope))
         return null();
-    return body;
+    return handler.newLexicalScope(body);
 }
 
 template <>
-ParseNode*
+LexicalScopeNode*
 Parser<FullParseHandler>::finishLexicalScope(ParseContext::Scope& scope, ParseNode* body)
 {
     if (!propagateFreeNamesAndMarkClosedOverBindings(scope))
@@ -2108,7 +2108,7 @@ IsArgumentsUsedInLegacyGenerator(ExclusiveContext* cx, Scope* scope)
 }
 
 template <>
-ParseNode*
+LexicalScopeNode*
 Parser<FullParseHandler>::evalBody(EvalSharedContext* evalsc)
 {
     ParseContext evalpc(this, evalsc, /* newDirectives = */ nullptr);
@@ -2119,21 +2119,24 @@ Parser<FullParseHandler>::evalBody(EvalSharedContext* evalsc)
     if (!varScope.init(pc))
         return nullptr;
 
-    // All evals have an implicit non-extensible lexical scope.
-    ParseContext::Scope lexicalScope(this);
-    if (!lexicalScope.init(pc))
-        return nullptr;
+    LexicalScopeNode* body;
+    {
+        // All evals have an implicit non-extensible lexical scope.
+        ParseContext::Scope lexicalScope(this);
+        if (!lexicalScope.init(pc))
+            return nullptr;
 
-    ParseNode* body = statementList(YieldIsName);
-    if (!body)
-        return nullptr;
+        ParseNode* list = statementList(YieldIsName);
+        if (!list)
+            return nullptr;
 
-    if (!checkStatementsEOF())
-        return nullptr;
+        if (!checkStatementsEOF())
+            return nullptr;
 
-    body = finishLexicalScope(lexicalScope, body);
-    if (!body)
-        return nullptr;
+        body = finishLexicalScope(lexicalScope, list);
+        if (!body)
+            return nullptr;
+    }
 
     // It's an error to use 'arguments' in a legacy generator expression.
     //
@@ -2170,8 +2173,10 @@ Parser<FullParseHandler>::evalBody(EvalSharedContext* evalsc)
     }
 #endif
 
-    if (!FoldConstants(context, &body, this))
+    ParseNode* node = body;
+    if (!FoldConstants(context, &node, this))
         return nullptr;
+    body = handler.asLexicalScope(node);
 
     Maybe<EvalScope::Data*> bindings = newEvalScopeData(pc->varScope());
     if (!bindings)
@@ -2663,7 +2668,7 @@ Parser<ParseHandler>::declareFunctionArgumentsObject()
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::LexicalScopeNodeType
 Parser<ParseHandler>::functionBody(InHandling inHandling, YieldHandling yieldHandling,
                                    FunctionSyntaxKind kind, FunctionBodyType type)
 {
@@ -3721,7 +3726,7 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
     // Whereas the |yield| in the function body is always parsed as a name.
     // The same goes when parsing |await| in arrow functions.
     YieldHandling bodyYieldHandling = GetYieldHandling(pc->generatorKind());
-    Node body;
+    LexicalScopeNodeType body;
     {
         AutoAwaitIsKeyword<ParseHandler> awaitIsKeyword(this, funbox->isAsync());
         body = functionBody(inHandling, bodyYieldHandling, kind, bodyType);
@@ -4620,7 +4625,7 @@ Parser<ParseHandler>::destructuringDeclarationWithoutYieldOrAwait(DeclarationKin
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::LexicalScopeNodeType
 Parser<ParseHandler>::blockStatement(YieldHandling yieldHandling, unsigned errorNumber)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_LC));
@@ -6532,7 +6537,7 @@ Parser<ParseHandler>::switchStatement(YieldHandling yieldHandling)
         handler.addCaseStatementToList(caseList, caseClause);
     }
 
-    Node lexicalForCaseList = finishLexicalScope(scope, caseList);
+    LexicalScopeNodeType lexicalForCaseList = finishLexicalScope(scope, caseList);
     if (!lexicalForCaseList)
         return null();
 
@@ -6983,7 +6988,7 @@ Parser<ParseHandler>::tryStatement(YieldHandling yieldHandling)
      * finally nodes are TOK_LC statement lists.
      */
 
-    Node innerBlock;
+    LexicalScopeNodeType innerBlock;
     {
         MUST_MATCH_TOKEN(TOK_LC, JSMSG_CURLY_BEFORE_TRY);
 
@@ -6994,11 +6999,11 @@ Parser<ParseHandler>::tryStatement(YieldHandling yieldHandling)
         if (!scope.init(pc))
             return null();
 
-        innerBlock = statementList(yieldHandling);
-        if (!innerBlock)
+        ListNodeType list = statementList(yieldHandling);
+        if (!list)
             return null();
 
-        innerBlock = finishLexicalScope(scope, innerBlock);
+        innerBlock = finishLexicalScope(scope, list);
         if (!innerBlock)
             return null();
 
@@ -7018,8 +7023,6 @@ Parser<ParseHandler>::tryStatement(YieldHandling yieldHandling)
             return null();
 
         do {
-            Node pnblock;
-
             /* Check for another catch after unconditional catch. */
             if (hasUnconditionalCatch) {
                 error(JSMSG_CATCH_AFTER_GENERAL);
@@ -7100,28 +7103,28 @@ Parser<ParseHandler>::tryStatement(YieldHandling yieldHandling)
                 MUST_MATCH_TOKEN(TOK_LC, JSMSG_CURLY_BEFORE_CATCH);
             }
 
-            Node catchBody = catchBlockStatement(yieldHandling, scope);
+            LexicalScopeNodeType catchBody = catchBlockStatement(yieldHandling, scope);
             if (!catchBody)
                 return null();
 
             if (!catchGuard)
                 hasUnconditionalCatch = true;
 
-            pnblock = finishLexicalScope(scope, catchBody);
-            if (!pnblock)
+            LexicalScopeNodeType catchScope = finishLexicalScope(scope, catchBody);
+            if (!catchScope)
                 return null();
 
-            if (!handler.addCatchBlock(catchList, pnblock, catchName, catchGuard, catchBody))
+            if (!handler.addCatchBlock(catchList, catchScope, catchName, catchGuard, catchBody))
                 return null();
             handler.setEndPosition(catchList, pos().end);
-            handler.setEndPosition(pnblock, pos().end);
+            handler.setEndPosition(catchScope, pos().end);
 
             if (!tokenStream.getToken(&tt, TokenStream::Operand))
                 return null();
         } while (tt == TOK_CATCH);
     }
 
-    Node finallyBlock = null();
+    LexicalScopeNodeType finallyBlock = null();
 
     if (tt == TOK_FINALLY) {
         MUST_MATCH_TOKEN(TOK_LC, JSMSG_CURLY_BEFORE_FINALLY);
@@ -7133,11 +7136,11 @@ Parser<ParseHandler>::tryStatement(YieldHandling yieldHandling)
         if (!scope.init(pc))
             return null();
 
-        finallyBlock = statementList(yieldHandling);
-        if (!finallyBlock)
+        ListNodeType list = statementList(yieldHandling);
+        if (!list)
             return null();
 
-        finallyBlock = finishLexicalScope(scope, finallyBlock);
+        finallyBlock = finishLexicalScope(scope, list);
         if (!finallyBlock)
             return null();
 
@@ -7156,7 +7159,7 @@ Parser<ParseHandler>::tryStatement(YieldHandling yieldHandling)
 }
 
 template <typename ParseHandler>
-typename ParseHandler::Node
+typename ParseHandler::LexicalScopeNodeType
 Parser<ParseHandler>::catchBlockStatement(YieldHandling yieldHandling,
                                           ParseContext::Scope& catchParamScope)
 {
@@ -7427,7 +7430,7 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
         if (!innerName)
             return null();
 
-        Node classBlock = finishLexicalScope(*innerScope, classMethods);
+        LexicalScopeNodeType classBlock = finishLexicalScope(*innerScope, classMethods);
         if (!classBlock)
             return null();
 
@@ -8937,7 +8940,7 @@ Parser<ParseHandler>::comprehensionFor(GeneratorKind comprehensionKind)
         return null();
 
     // Finish the lexical scope after parsing the tail.
-    Node lexicalScope = finishLexicalScope(scope, decls);
+    LexicalScopeNodeType lexicalScope = finishLexicalScope(scope, decls);
     if (!lexicalScope)
         return null();
 

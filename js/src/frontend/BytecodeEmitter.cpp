@@ -592,8 +592,8 @@ BytecodeEmitter::emitLoopHead(ParseNode* nextpn, JumpTarget* top)
          * instruction. nextpn is often a block, in which case the next
          * instruction typically comes from the first statement inside.
          */
-        if (nextpn->isKind(PNK_LEXICALSCOPE))
-            nextpn = nextpn->scopeBody();
+        if (nextpn->is<LexicalScopeNode>())
+            nextpn = nextpn->as<LexicalScopeNode>().scopeBody();
         if (nextpn->isKind(PNK_STATEMENTLIST)) {
             if (ParseNode* firstStatement = nextpn->as<ListNode>().head()) {
                 nextpn = firstStatement;
@@ -612,8 +612,8 @@ BytecodeEmitter::emitLoopEntry(ParseNode* nextpn, JumpList entryJump)
 {
     if (nextpn) {
         /* Update the line number, as for LOOPHEAD. */
-        if (nextpn->isKind(PNK_LEXICALSCOPE))
-            nextpn = nextpn->scopeBody();
+        if (nextpn->is<LexicalScopeNode>())
+            nextpn = nextpn->as<LexicalScopeNode>().scopeBody();
         if (nextpn->isKind(PNK_STATEMENTLIST)) {
             if (ParseNode* firstStatement = nextpn->as<ListNode>().head()) {
                 nextpn = firstStatement;
@@ -1487,7 +1487,7 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
 
       case PNK_LEXICALSCOPE:
         MOZ_ASSERT(pn->isArity(PN_SCOPE));
-        return checkSideEffects(pn->scopeBody(), answer);
+        return checkSideEffects(pn->as<LexicalScopeNode>().scopeBody(), answer);
 
       // We could methodically check every interpolated expression, but it's
       // probably not worth the trouble.  Treat template strings as effect-free
@@ -2080,8 +2080,7 @@ BytecodeEmitter::emitNumberOp(double dval)
 MOZ_NEVER_INLINE bool
 BytecodeEmitter::emitSwitch(SwitchStatement* switchStmt)
 {
-    ParseNode& lexical = switchStmt->lexicalForCaseList();
-    MOZ_ASSERT(lexical.isKind(PNK_LEXICALSCOPE));
+    LexicalScopeNode& lexical = switchStmt->lexicalForCaseList();
     ListNode* cases = &lexical.scopeBody()->as<ListNode>();
     MOZ_ASSERT(cases->isKind(PNK_STATEMENTLIST));
 
@@ -2343,20 +2342,21 @@ BytecodeEmitter::emitScript(ParseNode* body)
     setFunctionBodyEndPos(body->pn_pos);
 
     if (sc->isEvalContext() && !sc->strict() &&
-        body->isKind(PNK_LEXICALSCOPE) && !body->isEmptyScope())
+        body->is<LexicalScopeNode>() && !body->as<LexicalScopeNode>().isEmptyScope())
     {
         // Sloppy eval scripts may need to emit DEFFUNs in the prologue. If there is
         // an immediately enclosed lexical scope, we need to enter the lexical
         // scope in the prologue for the DEFFUNs to pick up the right
         // environment chain.
         EmitterScope lexicalEmitterScope(this);
+        LexicalScopeNode* scope = &body->as<LexicalScopeNode>();
 
         switchToPrologue();
-        if (!lexicalEmitterScope.enterLexical(this, ScopeKind::Lexical, body->scopeBindings()))
+        if (!lexicalEmitterScope.enterLexical(this, ScopeKind::Lexical, scope->scopeBindings()))
             return false;
         switchToMain();
 
-        if (!emitLexicalScopeBody(body->scopeBody()))
+        if (!emitLexicalScopeBody(scope->scopeBody()))
             return false;
 
         if (!lexicalEmitterScope.leave(this))
@@ -4272,13 +4272,13 @@ BytecodeEmitter::emitTry(TernaryNode* tryNode)
         // code if appropriate, and is also used for the catch-all trynote for
         // capturing exceptions thrown from catch{} blocks.
         //
-        for (ParseNode* lexicalScope : catchList->as<ListNode>().contents()) {
+        for (ParseNode* scopeNode : catchList->as<ListNode>().contents()) {
+            LexicalScopeNode* catchScope = &scopeNode->as<LexicalScopeNode>();
             if (!tryCatch.emitCatch())
                 return false;
 
             // Emit the lexical scope and catch body.
-            MOZ_ASSERT(lexicalScope->isKind(PNK_LEXICALSCOPE));
-            if (!emitTree(lexicalScope))
+            if (!emitTree(catchScope))
                 return false;
         }
     }
@@ -4387,14 +4387,12 @@ BytecodeEmitter::emitLexicalScopeBody(ParseNode* body, EmitLineNumberNote emitLi
 // Using MOZ_NEVER_INLINE in here is a workaround for llvm.org/pr14047. See
 // the comment on emitSwitch.
 MOZ_NEVER_INLINE bool
-BytecodeEmitter::emitLexicalScope(ParseNode* pn)
+BytecodeEmitter::emitLexicalScope(LexicalScopeNode* lexicalScope)
 {
-    MOZ_ASSERT(pn->isKind(PNK_LEXICALSCOPE));
-
     TDZCheckCache tdzCache(this);
 
-    ParseNode* body = pn->scopeBody();
-    if (pn->isEmptyScope())
+    ParseNode* body = lexicalScope->scopeBody();
+    if (lexicalScope->isEmptyScope())
         return emitLexicalScopeBody(body);
 
     // Update line number notes before emitting TDZ poison in
@@ -4431,7 +4429,7 @@ BytecodeEmitter::emitLexicalScope(ParseNode* pn)
     } else
         kind = ScopeKind::Lexical;
 
-    if (!emitterScope.enterLexical(this, kind, pn->scopeBindings()))
+    if (!emitterScope.enterLexical(this, kind, lexicalScope->scopeBindings()))
         return false;
 
     if (body->isKind(PNK_FOR)) {
@@ -5310,7 +5308,7 @@ BytecodeEmitter::emitComprehensionForInOrOfVariables(ParseNode* pn, bool* lexica
     // for-in/of loops, and we haven't extended these requirements to
     // comprehension syntax.
 
-    *lexicalScope = pn->isKind(PNK_LEXICALSCOPE);
+    *lexicalScope = pn->is<LexicalScopeNode>();
     if (*lexicalScope) {
         // This is initially-ES7-tracked syntax, now with considerably murkier
         // outlook. The scope work is done by the caller by instantiating an
@@ -5369,9 +5367,10 @@ BytecodeEmitter::emitComprehensionForOf(ForNode* forNode)
     Maybe<EmitterScope> emitterScope;
     ParseNode* loopVariableName;
     if (lexicalScope) {
-        loopVariableName = parser->handler.singleBindingFromDeclaration(&loopDecl->scopeBody()->as<ListNode>());
+        LexicalScopeNode* scopeNode = &loopDecl->as<LexicalScopeNode>();
+        loopVariableName = parser->handler.singleBindingFromDeclaration(&scopeNode->scopeBody()->as<ListNode>());
         emitterScope.emplace(this);
-        if (!emitterScope->enterComprehensionFor(this, loopDecl->scopeBindings()))
+        if (!emitterScope->enterComprehensionFor(this, scopeNode->scopeBindings()))
             return false;
     } else {
         loopVariableName = parser->handler.singleBindingFromDeclaration(&loopDecl->as<ListNode>());
@@ -5515,7 +5514,8 @@ BytecodeEmitter::emitComprehensionForIn(ForNode* forNode)
     Maybe<EmitterScope> emitterScope;
     if (lexicalScope) {
         emitterScope.emplace(this);
-        if (!emitterScope->enterComprehensionFor(this, loopDecl->scopeBindings()))
+        LexicalScopeNode* scopeNode = &loopDecl->as<LexicalScopeNode>();
+        if (!emitterScope->enterComprehensionFor(this, scopeNode->scopeBindings()))
             return false;
     }
 
@@ -8945,7 +8945,7 @@ BytecodeEmitter::emitTree(ParseNode* pn, ValueUsage valueUsage /* = ValueUsage::
         break;
 
       case PNK_LEXICALSCOPE:
-        if (!emitLexicalScope(pn))
+        if (!emitLexicalScope(&pn->as<LexicalScopeNode>()))
             return false;
         break;
 

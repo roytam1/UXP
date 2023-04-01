@@ -648,7 +648,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     }
 
     SwitchStatementType newSwitchStatement(uint32_t begin, Node discriminant,
-                                           Node lexicalForCaseList, bool hasDefault)
+                                           LexicalScopeNodeType lexicalForCaseList, bool hasDefault)
     {
         return new_<SwitchStatement>(begin, discriminant, lexicalForCaseList, hasDefault);
     }
@@ -714,7 +714,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<OptionalPropertyByValue>(lhs, index, lhs->pn_pos.begin, end);
     }
 
-    inline MOZ_MUST_USE bool addCatchBlock(ListNodeType catchList, ParseNode* lexicalScope,
+    inline MOZ_MUST_USE bool addCatchBlock(ListNodeType catchList, LexicalScopeNodeType lexicalScope,
                                            ParseNode* catchBinding, ParseNode* catchGuard,
                                            ParseNode* catchBody);
 
@@ -759,7 +759,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     void addFunctionFormalParameter(CodeNodeType funNode, Node argpn) {
         addList(/* list = */ funNode->body(), /* child = */ argpn);
     }
-    void setFunctionBody(CodeNodeType funNode, Node body) {
+    void setFunctionBody(CodeNodeType funNode, LexicalScopeNodeType body) {
         MOZ_ASSERT(funNode->body()->isKind(PNK_PARAMSBODY));
         addList(/* list = */ funNode->body(), /* child = */ body);
     }
@@ -772,7 +772,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<BinaryNode>(PNK_NEW, JSOP_NEW, TokenPos(begin, args->pn_pos.end), ctor, args);
     }
 
-    ParseNode* newLexicalScope(LexicalScope::Data* bindings, ParseNode* body) {
+    LexicalScopeNodeType newLexicalScope(LexicalScope::Data* bindings, Node body) {
         return new_<LexicalScopeNode>(bindings, body);
     }
 
@@ -1002,7 +1002,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
 };
 
 inline bool
-FullParseHandler::addCatchBlock(ListNodeType catchList, ParseNode* lexicalScope,
+FullParseHandler::addCatchBlock(ListNodeType catchList, LexicalScopeNodeType lexicalScope,
                                 ParseNode* catchBinding, ParseNode* catchGuard, ParseNode* catchBody)
 {
     ParseNode* catchpn = newTernary(PNK_CATCH, catchBinding, catchGuard, catchBody);

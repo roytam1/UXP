@@ -828,10 +828,10 @@ class NameResolver
           case PNK_CATCHLIST: {
             ListNode* catchList = &cur->as<ListNode>();
             for (ParseNode* catchNode : catchList->contents()) {
-                MOZ_ASSERT(catchNode->isKind(PNK_LEXICALSCOPE));
-                MOZ_ASSERT(catchNode->scopeBody()->isKind(PNK_CATCH));
-                MOZ_ASSERT(catchNode->scopeBody()->isArity(PN_TERNARY));
-                if (!resolve(catchNode->scopeBody(), prefix))
+                LexicalScopeNode* catchScope = &catchNode->as<LexicalScopeNode>();
+                MOZ_ASSERT(catchScope->scopeBody()->isKind(PNK_CATCH));
+                MOZ_ASSERT(catchScope->scopeBody()->isArity(PN_TERNARY));
+                if (!resolve(catchScope->scopeBody(), prefix))
                     return false;
             }
             break;
@@ -862,8 +862,7 @@ class NameResolver
             break;
 
           case PNK_LEXICALSCOPE:
-            MOZ_ASSERT(cur->isArity(PN_SCOPE));
-            if (!resolve(cur->scopeBody(), prefix))
+            if (!resolve(cur->as<LexicalScopeNode>().scopeBody(), prefix))
                 return false;
             break;
 

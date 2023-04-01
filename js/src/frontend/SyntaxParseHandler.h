@@ -316,6 +316,10 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     ClassNamesType newClassNames(Node outer, Node inner, const TokenPos& pos) { return NodeGeneric; }
     ClassNodeType newClass(Node name, Node heritage, Node methodBlock, const TokenPos& pos) { return NodeGeneric; }
 
+    LexicalScopeNodeType newLexicalScope(Node body) {
+        return NodeLexicalDeclaration;
+    }
+
     BinaryNodeType newNewTarget(NullaryNodeType newHolder, NullaryNodeType targetHolder) {
         return NodeGeneric;
     }
@@ -362,7 +366,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     }
     BinaryNodeType newDoWhileStatement(Node body, Node cond, const TokenPos& pos) { return NodeGeneric; }
     BinaryNodeType newWhileStatement(uint32_t begin, Node cond, Node body) { return NodeGeneric; }
-    SwitchStatementType newSwitchStatement(uint32_t begin, Node discriminant, Node lexicalForCaseList, bool hasDefault)
+    SwitchStatementType newSwitchStatement(uint32_t begin, Node discriminant,
+                                           LexicalScopeNodeType lexicalForCaseList, bool hasDefault)
     {
         return NodeGeneric;
     }
@@ -399,8 +404,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
 
     Node newOptionalPropertyByValue(Node pn, Node kid, uint32_t end) { return NodeOptionalElement; }
 
-    MOZ_MUST_USE bool addCatchBlock(ListNodeType catchList, Node letBlock, Node catchBinding,
-                                    Node catchGuard, Node catchBody) { return true; }
+    MOZ_MUST_USE bool addCatchBlock(ListNodeType catchList, LexicalScopeNodeType lexicalScope,
+                                    Node catchBinding, Node catchGuard, Node catchBody) { return true; }
 
     MOZ_MUST_USE bool setLastFunctionFormalParameterDefault(CodeNodeType funNode, Node pn) { return true; }
 
@@ -412,7 +417,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
 
     bool setComprehensionLambdaBody(CodeNodeType funNode, ListNodeType body) { return true; }
     void setFunctionFormalParametersAndBody(CodeNodeType funNode, ListNodeType paramsBody) {}
-    void setFunctionBody(CodeNodeType funNode, Node body) {}
+    void setFunctionBody(CodeNodeType funNode, LexicalScopeNodeType body) {}
     void setFunctionBox(CodeNodeType funNode, FunctionBox* funbox) {}
     void addFunctionFormalParameter(CodeNodeType funNode, Node argpn) {}
 
