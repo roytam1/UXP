@@ -686,8 +686,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
 
     TernaryNodeType newTryStatement(uint32_t begin, Node body, ListNodeType catchList,
                                     Node finallyBlock) {
-        TokenPos pos(begin, (finallyBlock ? finallyBlock : catchList)->pn_pos.end);
-        return new_<TernaryNode>(PNK_TRY, JSOP_NOP, body, catchList, finallyBlock, pos);
+        return new_<TryNode>(begin, body, catchList, finallyBlock);
     }
 
     DebuggerStatementType newDebuggerStatement(const TokenPos& pos) {

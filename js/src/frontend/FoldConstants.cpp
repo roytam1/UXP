@@ -1230,10 +1230,9 @@ FoldReturn(ExclusiveContext* cx, UnaryNode* node, Parser<FullParseHandler>& pars
 }
 
 static bool
-FoldTry(ExclusiveContext* cx, TernaryNode* node, Parser<FullParseHandler>& parser,
+FoldTry(ExclusiveContext* cx, TryNode* node, Parser<FullParseHandler>& parser,
         bool inGenexpLambda)
 {
-    MOZ_ASSERT(node->isKind(PNK_TRY));
     ParseNode** statements = node->unsafeKid1Reference();
     if (!Fold(cx, statements, parser, inGenexpLambda))
         return false;
@@ -1845,7 +1844,7 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
         return FoldReturn(cx, &pn->as<UnaryNode>(), parser, inGenexpLambda);
 
       case PNK_TRY:
-        return FoldTry(cx, &pn->as<TernaryNode>(), parser, inGenexpLambda);
+        return FoldTry(cx, &pn->as<TryNode>(), parser, inGenexpLambda);
 
       case PNK_CATCH:
         return FoldCatch(cx, &pn->as<TernaryNode>(), parser, inGenexpLambda);

@@ -308,10 +308,10 @@ IsTypeofKind(ParseNodeKind kind)
  *   kid3:  update expr after second ';' or nullptr
  * PNK_THROW (UnaryNode)
  *   kid: thrown exception
- * PNK_TRY (TernaryNode)
- *   kid1: try block
- *   kid2: null or PNK_CATCHLIST list
- *   kid3: null or finally block
+ * PNK_TRY (TryNode)
+ *   body: try block
+ *   catchList: null or PNK_CATCHLIST list
+ *   finallyBlock: null or finally block
  * PNK_CATCHLIST (ListNode)
  *    head: list of PNK_LEXICALSCOPE nodes, one per catch-block,
  *           each with scopeBody pointing to a PNK_CATCH node
@@ -593,6 +593,8 @@ enum ParseNodeArity
     macro(TernaryNode, TernaryNodeType, asTernary) \
     macro(ClassNode, ClassNodeType, asClass) \
     macro(ConditionalExpression, ConditionalExpressionType, asConditionalExpression) \
+    macro(TryNode, TryNodeType, asTry) \
+    \
     macro(UnaryNode, UnaryNodeType, asUnary) \
     macro(ThisLiteral, ThisLiteralType, asThisLiteral)
 
@@ -1708,6 +1710,37 @@ class ConditionalExpression : public TernaryNode
         MOZ_ASSERT_IF(match, node.is<TernaryNode>());
         MOZ_ASSERT_IF(match, node.isOp(JSOP_NOP));
         return match;
+    }
+};
+
+class TryNode : public TernaryNode
+{
+  public:
+    TryNode(uint32_t begin, ParseNode* body, ListNode* catchList, ParseNode* finallyBlock)
+      : TernaryNode(PNK_TRY, JSOP_NOP, body, catchList, finallyBlock,
+                    TokenPos(begin, (finallyBlock ? finallyBlock : catchList)->pn_pos.end))
+    {
+        MOZ_ASSERT(body);
+        MOZ_ASSERT(catchList || finallyBlock);
+        MOZ_ASSERT_IF(catchList, catchList->isKind(PNK_CATCHLIST));
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_TRY);
+        MOZ_ASSERT_IF(match, node.is<TernaryNode>());
+        return match;
+    }
+
+    ParseNode* body() const {
+        return kid1();
+    }
+
+    ListNode* catchList() const {
+        return kid2() ? &kid2()->as<ListNode>() : nullptr;
+    }
+
+    ParseNode* finallyBlock() const {
+        return kid3();
     }
 };
 

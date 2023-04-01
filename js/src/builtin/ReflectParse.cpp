@@ -1825,7 +1825,7 @@ class ASTSerializer
     bool blockStatement(ListNode* node, MutableHandleValue dst);
     bool switchStatement(SwitchStatement* switchStmt, MutableHandleValue dst);
     bool switchCase(CaseClause* caseClause, MutableHandleValue dst);
-    bool tryStatement(TernaryNode* tryNode, MutableHandleValue dst);
+    bool tryStatement(TryNode* tryNode, MutableHandleValue dst);
     bool catchClause(TernaryNode* clauseNode, bool* isGuarded, MutableHandleValue dst);
 
     bool optExpression(ParseNode* pn, MutableHandleValue dst) {
@@ -2358,15 +2358,15 @@ ASTSerializer::catchClause(TernaryNode* clauseNode, bool* isGuarded, MutableHand
 }
 
 bool
-ASTSerializer::tryStatement(TernaryNode* tryNode, MutableHandleValue dst)
+ASTSerializer::tryStatement(TryNode* tryNode, MutableHandleValue dst)
 {
-    ParseNode* bodyNode = tryNode->kid1();
+    ParseNode* bodyNode = tryNode->body();
     MOZ_ASSERT(tryNode->pn_pos.encloses(bodyNode->pn_pos));
 
-    ParseNode* catchNode = tryNode->kid2();
-    MOZ_ASSERT_IF(catchNode, tryNode->pn_pos.encloses(catchNode->pn_pos));
+    ListNode* catchList = tryNode->catchList();
+    MOZ_ASSERT_IF(catchList, tryNode->pn_pos.encloses(catchList->pn_pos));
 
-    ParseNode* finallyNode = tryNode->kid3();
+    ParseNode* finallyNode = tryNode->finallyBlock();
     MOZ_ASSERT_IF(finallyNode, tryNode->pn_pos.encloses(finallyNode->pn_pos));
 
     RootedValue body(cx);
@@ -2376,7 +2376,7 @@ ASTSerializer::tryStatement(TernaryNode* tryNode, MutableHandleValue dst)
     NodeVector guarded(cx);
     RootedValue unguarded(cx, NullValue());
 
-    if (ListNode* catchList = &catchNode->as<ListNode>()) {
+    if (catchList) {
         if (!guarded.reserve(catchList->count()))
             return false;
 
@@ -2513,7 +2513,7 @@ ASTSerializer::statement(ParseNode* pn, MutableHandleValue dst)
         return switchStatement(&pn->as<SwitchStatement>(), dst);
 
       case PNK_TRY:
-        return tryStatement(&pn->as<TernaryNode>(), dst);
+        return tryStatement(&pn->as<TryNode>(), dst);
 
       case PNK_WITH:
       case PNK_WHILE:

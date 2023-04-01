@@ -668,16 +668,15 @@ class NameResolver
           // and finally block are optional (but at least one or the other must
           // be present).
           case PNK_TRY: {
-            TernaryNode* tryNode = &cur->as<TernaryNode>();
-            if (!resolve(tryNode->kid1(), prefix))
+            TryNode* tryNode = &cur->as<TryNode>();
+            if (!resolve(tryNode->body(), prefix))
                 return false;
-            MOZ_ASSERT(tryNode->kid2() || tryNode->kid3());
-            if (ParseNode* catchList = tryNode->kid2()) {
-                MOZ_ASSERT(catchList->isKind(PNK_CATCHLIST));
+            MOZ_ASSERT(tryNode->catchList() || tryNode->finallyBlock());
+            if (ListNode* catchList = tryNode->catchList()) {
                 if (!resolve(catchList, prefix))
                     return false;
             }
-            if (ParseNode* finallyBlock = tryNode->kid3()) {
+            if (ParseNode* finallyBlock = tryNode->finallyBlock()) {
                 if (!resolve(finallyBlock, prefix))
                     return false;
             }

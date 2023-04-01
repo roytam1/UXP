@@ -1438,19 +1438,18 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
 
       case PNK_TRY:
       {
-        TernaryNode* tryNode = &pn->as<TernaryNode>();
-        if (!checkSideEffects(tryNode->kid1(), answer))
+        TryNode* tryNode = &pn->as<TryNode>();
+        if (!checkSideEffects(tryNode->body(), answer))
             return false;
         if (*answer)
             return true;
-        if (ParseNode* catchList = tryNode->kid2()) {
-            MOZ_ASSERT(catchList->isKind(PNK_CATCHLIST));
+        if (ListNode* catchList = tryNode->catchList()) {
             if (!checkSideEffects(catchList, answer))
                 return false;
             if (*answer)
                 return true;
         }
-        if (ParseNode* finallyBlock = tryNode->kid3()) {
+        if (ParseNode* finallyBlock = tryNode->finallyBlock()) {
             if (!checkSideEffects(finallyBlock, answer))
                 return false;
         }
@@ -4220,10 +4219,10 @@ BytecodeEmitter::emitCatch(TernaryNode* catchNode)
 // Using MOZ_NEVER_INLINE in here is a workaround for llvm.org/pr14047. See the
 // comment on EmitSwitch.
 MOZ_NEVER_INLINE bool
-BytecodeEmitter::emitTry(TernaryNode* tryNode)
+BytecodeEmitter::emitTry(TryNode* tryNode)
 {
-    ParseNode* catchList = tryNode->kid2();
-    ParseNode* finallyNode = tryNode->kid3();
+    ListNode* catchList = tryNode->catchList();
+    ParseNode* finallyNode = tryNode->finallyBlock();
 
     TryEmitter::Kind kind;
     if (catchList) {
@@ -4240,13 +4239,11 @@ BytecodeEmitter::emitTry(TernaryNode* tryNode)
     if (!tryCatch.emitTry())
         return false;
 
-    if (!emitTree(tryNode->kid1()))
+    if (!emitTree(tryNode->body()))
         return false;
 
     // If this try has a catch block, emit it.
     if (catchList) {
-        MOZ_ASSERT(catchList->isKind(PNK_CATCHLIST));
-
         // The emitted code for a catch block looks like:
         //
         // [pushlexicalenv]             only if any local aliased
@@ -4272,7 +4269,7 @@ BytecodeEmitter::emitTry(TernaryNode* tryNode)
         // code if appropriate, and is also used for the catch-all trynote for
         // capturing exceptions thrown from catch{} blocks.
         //
-        for (ParseNode* scopeNode : catchList->as<ListNode>().contents()) {
+        for (ParseNode* scopeNode : catchList->contents()) {
             LexicalScopeNode* catchScope = &scopeNode->as<LexicalScopeNode>();
             if (!tryCatch.emitCatch())
                 return false;
@@ -8703,7 +8700,7 @@ BytecodeEmitter::emitTree(ParseNode* pn, ValueUsage valueUsage /* = ValueUsage::
         break;
 
       case PNK_TRY:
-        if (!emitTry(&pn->as<TernaryNode>()))
+        if (!emitTry(&pn->as<TryNode>()))
             return false;
         break;
 
