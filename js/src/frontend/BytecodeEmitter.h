@@ -581,7 +581,6 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     MOZ_MUST_USE bool emitElemObjAndKey(PropertyByValue* elem, bool isSuper, ElemOpEmitter& eoe);
     MOZ_MUST_USE bool emitElemOpBase(JSOp op);
-    MOZ_MUST_USE bool emitElemOp(ParseNode* pn, JSOp op);
     MOZ_MUST_USE bool emitElemIncDec(ParseNode* pn);
 
     MOZ_MUST_USE bool emitCatch(ParseNode* pn);
@@ -805,9 +804,6 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitSpread(bool allowSelfHosted = false);
 
     MOZ_MUST_USE bool emitClass(ParseNode* pn);
-    MOZ_MUST_USE bool emitSuperElemOperands(ParseNode* pn,
-                                            EmitElemOption opts = EmitElemOption::Get);
-    MOZ_MUST_USE bool emitSuperElemOp(ParseNode* pn, JSOp op, bool isCall = false);
 };
 
 class MOZ_RAII AutoCheckUnstableEmitterScope {

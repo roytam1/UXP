@@ -1330,7 +1330,7 @@ ExpressionDecompiler::decompilePC(jsbytecode* pc)
                write("]");
       case JSOP_GETELEM_SUPER:
         return write("super[") &&
-               decompilePCForStackOperand(pc, -3) &&
+               decompilePCForStackOperand(pc, -2) &&
                write("]");
       case JSOP_NULL:
         return write(js_null_str);
