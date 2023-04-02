@@ -5735,7 +5735,7 @@ BytecodeEmitter::emitFunction(FunctionNode* funNode, bool needsProto)
     /* Non-hoisted functions simply emit their respective op. */
     if (!funNode->functionIsHoisted()) {
         /* JSOP_LAMBDA_ARROW is always preceded by a new.target */
-        MOZ_ASSERT(fun->isArrow() == (funNode->getOp() == JSOP_LAMBDA_ARROW));
+        MOZ_ASSERT(fun->isArrow() == (funNode->syntaxKind() == FunctionSyntaxKind::Arrow));
         if (funbox->isAsync()) {
             MOZ_ASSERT(!needsProto);
             return emitAsyncWrapper(index, funbox->needsHomeObject(), fun->isArrow(),
@@ -5753,13 +5753,16 @@ BytecodeEmitter::emitFunction(FunctionNode* funNode, bool needsProto)
         }
 
         if (needsProto) {
-            MOZ_ASSERT(funNode->getOp() == JSOP_LAMBDA);
+            MOZ_ASSERT(funNode->syntaxKind() == FunctionSyntaxKind::DerivedClassConstructor);
             return emitIndex32(JSOP_FUNWITHPROTO, index);
         }
 
         // This is a FunctionExpression, ArrowFunctionExpression, or class
         // constructor. Emit the single instruction (without location info).
-        return emitIndex32(funNode->getOp(), index);
+        JSOp op = funNode->syntaxKind() == FunctionSyntaxKind::Arrow
+                  ? JSOP_LAMBDA_ARROW
+                  : JSOP_LAMBDA;
+        return emitIndex32(op, index);
     }
 
     MOZ_ASSERT(!needsProto);
@@ -5787,7 +5790,7 @@ BytecodeEmitter::emitFunction(FunctionNode* funNode, bool needsProto)
                 return false;
         } else {
             MOZ_ASSERT(sc->isGlobalContext() || sc->isEvalContext());
-            MOZ_ASSERT(funNode->getOp() == JSOP_NOP);
+            MOZ_ASSERT(funNode->syntaxKind() == FunctionSyntaxKind::Statement);
             switchToPrologue();
             if (funbox->isAsync()) {
                 if (!emitAsyncWrapper(index, fun->isMethod(), fun->isArrow(),

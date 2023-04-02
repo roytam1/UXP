@@ -411,9 +411,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
 
     void checkAndSetIsDirectRHSAnonFunction(Node pn) {}
 
-    FunctionNodeType newFunctionStatement() { return NodeFunctionDefinition; }
-    FunctionNodeType newFunctionExpression() { return NodeFunctionDefinition; }
-    FunctionNodeType newArrowFunction() { return NodeFunctionDefinition; }
+    FunctionNodeType newFunction(FunctionSyntaxKind syntaxKind) { return NodeFunctionDefinition; }
 
     bool setComprehensionLambdaBody(FunctionNodeType funNode, ListNodeType body) { return true; }
     void setFunctionFormalParametersAndBody(FunctionNodeType funNode, ListNodeType paramsBody) {}

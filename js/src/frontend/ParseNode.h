@@ -227,6 +227,7 @@ IsTypeofKind(ParseNodeKind kind)
  *           time to specialize arg and var bytecodes early.
  *   body: PNK_PARAMSBODY or null for lazily-parsed function, ordinarily;
  *         PNK_LEXICALSCOPE for implicit function in genexpr
+ *   syntaxKind: the syntax of the function
  * PNK_PARAMSBODY (ListNode)
  *   head: list of formal parameters with
  *           * Name node with non-empty name for SingleNameBinding without
@@ -606,6 +607,49 @@ class typeName;
 FOR_EACH_PARSENODE_SUBCLASS(DECLARE_CLASS)
 #undef DECLARE_CLASS
 
+enum class FunctionSyntaxKind
+{
+    Expression,                                  // A non-arrow function expression.
+    Statement,                                   // A named function appearing as a Statement.
+    Arrow,
+    Method,
+    ClassConstructor,
+    DerivedClassConstructor,
+    Getter,
+    GetterNoExpressionClosure,                   // Deprecated syntax: get a() this._a; (bug 1203742)
+    Setter,
+    SetterNoExpressionClosure                    // Deprecated syntax: set a(x) this._a = x;
+};
+
+static inline bool
+IsConstructorKind(FunctionSyntaxKind kind)
+{
+    return kind == FunctionSyntaxKind::ClassConstructor ||
+           kind == FunctionSyntaxKind::DerivedClassConstructor;
+}
+
+static inline bool
+IsGetterKind(FunctionSyntaxKind kind)
+{
+    return kind == FunctionSyntaxKind::Getter ||
+           kind == FunctionSyntaxKind::GetterNoExpressionClosure;
+}
+
+static inline bool
+IsSetterKind(FunctionSyntaxKind kind)
+{
+    return kind == FunctionSyntaxKind::Setter ||
+           kind == FunctionSyntaxKind::SetterNoExpressionClosure;
+}
+
+static inline bool
+IsMethodDefinitionKind(FunctionSyntaxKind kind)
+{
+    return kind == FunctionSyntaxKind::Method ||
+           IsConstructorKind(kind) ||
+           IsGetterKind(kind) || IsSetterKind(kind);
+}
+
 class ParseNode
 {
     uint16_t pn_type;   /* PNK_* type */
@@ -738,6 +782,7 @@ class ParseNode
             friend class FunctionNode;
             FunctionBox* funbox;
             ParseNode* body;
+            FunctionSyntaxKind syntaxKind;
         } function;
         struct {
           private:
@@ -1427,14 +1472,12 @@ ParseNode::isForLoopDeclaration() const
 class FunctionNode : public ParseNode
 {
   public:
-    FunctionNode(JSOp op, const TokenPos& pos)
-      : ParseNode(PNK_FUNCTION, op, PN_FUNCTION, pos)
+    FunctionNode(FunctionSyntaxKind syntaxKind, const TokenPos& pos)
+      : ParseNode(PNK_FUNCTION, JSOP_NOP, PN_FUNCTION, pos)
     {
-        MOZ_ASSERT(op == JSOP_NOP || // statement, module
-                   op == JSOP_LAMBDA_ARROW || // arrow function
-                   op == JSOP_LAMBDA); // expression, method, comprehension, accessor, &c.
         MOZ_ASSERT(!pn_u.function.body);
         MOZ_ASSERT(!pn_u.function.funbox);
+        pn_u.function.syntaxKind = syntaxKind;
     }
 
     static bool test(const ParseNode& node) {
@@ -1468,11 +1511,10 @@ class FunctionNode : public ParseNode
         return &pn_u.function.body;
     }
 
+    FunctionSyntaxKind syntaxKind() const { return pn_u.function.syntaxKind; }
+
     bool functionIsHoisted() const {
-        MOZ_ASSERT(isOp(JSOP_LAMBDA) ||        // lambda
-                   isOp(JSOP_LAMBDA_ARROW) ||  // arrow function
-                   isOp(JSOP_NOP));            // body-level function stmt in global code
-        return isOp(JSOP_NOP);
+        return syntaxKind() == FunctionSyntaxKind::Statement;
     }
 };
 
@@ -2246,45 +2288,6 @@ enum ParseReportKind
     ParseExtraWarning,
     ParseStrictError
 };
-
-enum FunctionSyntaxKind
-{
-    Expression,
-    Statement,
-    Arrow,
-    Method,
-    ClassConstructor,
-    DerivedClassConstructor,
-    Getter,
-    GetterNoExpressionClosure,
-    Setter,
-    SetterNoExpressionClosure
-};
-
-static inline bool
-IsConstructorKind(FunctionSyntaxKind kind)
-{
-    return kind == ClassConstructor || kind == DerivedClassConstructor;
-}
-
-static inline bool
-IsGetterKind(FunctionSyntaxKind kind)
-{
-    return kind == Getter || kind == GetterNoExpressionClosure;
-}
-
-static inline bool
-IsSetterKind(FunctionSyntaxKind kind)
-{
-    return kind == Setter || kind == SetterNoExpressionClosure;
-}
-
-static inline bool
-IsMethodDefinitionKind(FunctionSyntaxKind kind)
-{
-    return kind == Method || IsConstructorKind(kind) ||
-           IsGetterKind(kind) || IsSetterKind(kind);
-}
 
 static inline ParseNode*
 FunctionFormalParametersList(ParseNode* fn, unsigned* numFormals)

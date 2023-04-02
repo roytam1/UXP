@@ -722,16 +722,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
             pn->setDirectRHSAnonFunction(true);
     }
 
-    FunctionNodeType newFunctionStatement() {
-        return new_<FunctionNode>(JSOP_NOP, pos());
-    }
-
-    FunctionNodeType newFunctionExpression() {
-        return new_<FunctionNode>(JSOP_LAMBDA, pos());
-    }
-
-    FunctionNodeType newArrowFunction() {
-        return new_<FunctionNode>(JSOP_LAMBDA_ARROW, pos());
+    FunctionNodeType newFunction(FunctionSyntaxKind syntaxKind) {
+        return new_<FunctionNode>(syntaxKind, pos());
     }
 
     bool setComprehensionLambdaBody(FunctionNodeType funNode, ListNodeType body) {
