@@ -221,7 +221,7 @@ IsTypeofKind(ParseNodeKind kind)
 
 /*
  * <Definitions>
- * PNK_FUNCTION (CodeNode)
+ * PNK_FUNCTION (FunctionNode)
  *   funbox: ptr to js::FunctionBox holding function object containing arg and
  *           var properties.  We create the function object at parse (not emit)
  *           time to specialize arg and var bytecodes early.
@@ -259,9 +259,8 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_CLASSMETHOD (ClassMethod)
  *   name: propertyName
  *   method: methodDefinition
- * PNK_MODULE (CodeNode)
- *   funbox: ?
- *   body: ?
+ * PNK_MODULE (ModuleNode)
+ *   body: statement list of the module
  *
  * <Statements>
  * PNK_STATEMENTLIST (ListNode)
@@ -546,7 +545,8 @@ enum ParseNodeArity
     PN_UNARY,                           /* one kid, plus a couple of scalars */
     PN_BINARY,                          /* two kids, plus a couple of scalars */
     PN_TERNARY,                         /* three kids */
-    PN_CODE,                            /* module or function definition node */
+    PN_FUNCTION,                        /* function definition node */
+    PN_MODULE,                          /* module node */
     PN_LIST,                            /* generic singly linked list */
     PN_NAME,                            /* name, label, string */
     PN_NUMBER,                          /* numeric literal */
@@ -568,7 +568,8 @@ enum ParseNodeArity
     macro(OptionalPropertyByValue, OptionalPropertyByValueType, asOptionalPropertyByValue) \
     macro(SwitchStatement, SwitchStatementType, asSwitchStatement) \
     \
-    macro(CodeNode, CodeNodeType, asCode) \
+    macro(FunctionNode, FunctionNodeType, asFunction) \
+    macro(ModuleNode, ModuleNodeType, asModule) \
     \
     macro(LexicalScopeNode, LexicalScopeNodeType, asLexicalScope) \
     \
@@ -734,10 +735,15 @@ class ParseNode
         } regexp;
         struct {
           private:
-            friend class CodeNode;
-            FunctionBox* funbox;        /* function object */
-            ParseNode*  body;           /* module or function body */
-        } code;
+            friend class FunctionNode;
+            FunctionBox* funbox;
+            ParseNode* body;
+        } function;
+        struct {
+          private:
+            friend class ModuleNode;
+            ParseNode* body;
+        } module;
         struct {
           private:
             friend class LexicalScopeNode;
@@ -1418,24 +1424,22 @@ ParseNode::isForLoopDeclaration() const
     return false;
 }
 
-class CodeNode : public ParseNode
+class FunctionNode : public ParseNode
 {
   public:
-    CodeNode(ParseNodeKind kind, JSOp op, const TokenPos& pos)
-      : ParseNode(kind, op, PN_CODE, pos)
+    FunctionNode(JSOp op, const TokenPos& pos)
+      : ParseNode(PNK_FUNCTION, op, PN_FUNCTION, pos)
     {
-        MOZ_ASSERT(kind == PNK_FUNCTION || kind == PNK_MODULE);
-        MOZ_ASSERT_IF(kind == PNK_MODULE, op == JSOP_NOP);
         MOZ_ASSERT(op == JSOP_NOP || // statement, module
                    op == JSOP_LAMBDA_ARROW || // arrow function
                    op == JSOP_LAMBDA); // expression, method, comprehension, accessor, &c.
-        MOZ_ASSERT(!pn_u.code.body);
-        MOZ_ASSERT(!pn_u.code.funbox);
+        MOZ_ASSERT(!pn_u.function.body);
+        MOZ_ASSERT(!pn_u.function.funbox);
     }
 
     static bool test(const ParseNode& node) {
-        bool match = node.isKind(PNK_FUNCTION) || node.isKind(PNK_MODULE);
-        MOZ_ASSERT_IF(match, node.isArity(PN_CODE));
+        bool match = node.isKind(PNK_FUNCTION);
+        MOZ_ASSERT_IF(match, node.isArity(PN_FUNCTION));
         return match;
     }
 
@@ -1444,32 +1448,64 @@ class CodeNode : public ParseNode
 #endif
 
     FunctionBox* funbox() const {
-        return pn_u.code.funbox;
+        return pn_u.function.funbox;
     }
 
     ListNode* body() const {
-        return pn_u.code.body ? &pn_u.code.body->as<ListNode>() : nullptr;
+        return pn_u.function.body ? &pn_u.function.body->as<ListNode>() : nullptr;
     }
 
     void setFunbox(FunctionBox* funbox) {
-        pn_u.code.funbox = funbox;
+        pn_u.function.funbox = funbox;
     }
 
     void setBody(ListNode* body) {
-        pn_u.code.body = body;
+        pn_u.function.body = body;
     }
 
     // Methods used by FoldConstants.cpp.
     ParseNode** unsafeBodyReference() {
-        return &pn_u.code.body;
+        return &pn_u.function.body;
     }
 
     bool functionIsHoisted() const {
-        MOZ_ASSERT(isKind(PNK_FUNCTION));
         MOZ_ASSERT(isOp(JSOP_LAMBDA) ||        // lambda
                    isOp(JSOP_LAMBDA_ARROW) ||  // arrow function
                    isOp(JSOP_NOP));            // body-level function stmt in global code
         return isOp(JSOP_NOP);
+    }
+};
+
+class ModuleNode : public ParseNode
+{
+  public:
+    ModuleNode(const TokenPos& pos)
+      : ParseNode(PNK_MODULE, JSOP_NOP, PN_MODULE, pos)
+    {
+        MOZ_ASSERT(!pn_u.module.body);
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_MODULE);
+        MOZ_ASSERT_IF(match, node.isArity(PN_MODULE));
+        return match;
+    }
+
+#ifdef DEBUG
+    void dump(int indent);
+#endif
+
+    ListNode* body() const {
+        return &pn_u.module.body->as<ListNode>();
+    }
+
+    void setBody(ListNode* body) {
+        pn_u.module.body = body;
+    }
+
+    // Methods used by FoldConstants.cpp.
+    ParseNode** unsafeBodyReference() {
+        return &pn_u.module.body;
     }
 };
 
@@ -2012,8 +2048,8 @@ class ClassMethod : public BinaryNode
     ParseNode& name() const {
         return *left();
     }
-    CodeNode& method() const {
-        return right()->as<CodeNode>();
+    FunctionNode& method() const {
+        return right()->as<FunctionNode>();
     }
     bool isStatic() const {
         return pn_u.binary.isStatic;
@@ -2254,7 +2290,7 @@ static inline ParseNode*
 FunctionFormalParametersList(ParseNode* fn, unsigned* numFormals)
 {
     MOZ_ASSERT(fn->isKind(PNK_FUNCTION));
-    ListNode* argsBody = fn->as<CodeNode>().body();
+    ListNode* argsBody = fn->as<FunctionNode>().body();
     MOZ_ASSERT(argsBody->isKind(PNK_PARAMSBODY));
     *numFormals = argsBody->count();
     if (*numFormals > 0 &&

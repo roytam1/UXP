@@ -1415,7 +1415,7 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
         return true;
 
       case PNK_FUNCTION:
-        MOZ_ASSERT(pn->is<CodeNode>());
+        MOZ_ASSERT(pn->is<FunctionNode>());
         /*
          * A named function, contrary to ES3, is no longer effectful, because
          * we bind its name lexically (using JSOP_CALLEE) instead of creating
@@ -2385,9 +2385,8 @@ BytecodeEmitter::emitScript(ParseNode* body)
 }
 
 bool
-BytecodeEmitter::emitFunctionScript(CodeNode* funNode)
+BytecodeEmitter::emitFunctionScript(FunctionNode* funNode)
 {
-    MOZ_ASSERT(funNode->isKind(PNK_FUNCTION));
     ParseNode* body = funNode->body();
     FunctionBox* funbox = sc->asFunctionBox();
 
@@ -2967,10 +2966,10 @@ bool
 BytecodeEmitter::setOrEmitSetFunName(ParseNode* maybeFun, HandleAtom name,
                                      FunctionPrefixKind prefixKind)
 {
-    if (maybeFun->isKind(PNK_FUNCTION)) {
+    if (maybeFun->is<FunctionNode>()) {
         // Function doesn't have 'name' property at this point.
         // Set function's name at compile time.
-        RootedFunction fun(cx, maybeFun->as<CodeNode>().funbox()->function());
+        RootedFunction fun(cx, maybeFun->as<FunctionNode>().funbox()->function());
 
         // Single node can be emitted multiple times if it appears in
         // array destructuring default.  If function already has a name,
@@ -4355,7 +4354,7 @@ BytecodeEmitter::emitHoistedFunctionsInList(ListNode* stmtList)
                 maybeFun = maybeFun->as<LabeledStatement>().statement();
         }
 
-        if (maybeFun->isKind(PNK_FUNCTION) && maybeFun->as<CodeNode>().functionIsHoisted()) {
+        if (maybeFun->is<FunctionNode>() && maybeFun->as<FunctionNode>().functionIsHoisted()) {
             if (!emitTree(maybeFun))
                 return false;
         }
@@ -5609,7 +5608,7 @@ BytecodeEmitter::emitComprehensionFor(ForNode* forNode)
 }
 
 MOZ_NEVER_INLINE bool
-BytecodeEmitter::emitFunction(CodeNode* funNode, bool needsProto)
+BytecodeEmitter::emitFunction(FunctionNode* funNode, bool needsProto)
 {
     FunctionBox* funbox = funNode->funbox();
     RootedFunction fun(cx, funbox->function());
@@ -7808,10 +7807,9 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, MutableHandlePlainObject objp, 
         if (op == JSOP_INITPROP_GETTER || op == JSOP_INITPROP_SETTER)
             objp.set(nullptr);
 
-        if (propVal->isKind(PNK_FUNCTION) &&
-            propVal->as<CodeNode>().funbox()->needsHomeObject())
-        {
-            FunctionBox* funbox = propVal->as<CodeNode>().funbox();
+        if (propVal->is<FunctionNode>() &&
+            propVal->as<FunctionNode>().funbox()->needsHomeObject()) {
+            FunctionBox* funbox = propVal->as<FunctionNode>().funbox();
             MOZ_ASSERT(funbox->function()->allowSuperProperty());
             bool isAsync = funbox->isAsync();
             if (isAsync) {
@@ -8507,7 +8505,7 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
     ParseNode* heritageExpression = classNode->heritage();
     ListNode* classMethods = classNode->methodList();
 
-    CodeNode* constructor = nullptr;
+    FunctionNode* constructor = nullptr;
     for (ParseNode* mn : classMethods->contents()) {
         ClassMethod& method = mn->as<ClassMethod>();
         ParseNode& methodName = method.name();
@@ -8641,7 +8639,7 @@ BytecodeEmitter::emitTree(ParseNode* pn, ValueUsage valueUsage /* = ValueUsage::
 
     switch (pn->getKind()) {
       case PNK_FUNCTION:
-        if (!emitFunction(&pn->as<CodeNode>()))
+        if (!emitFunction(&pn->as<FunctionNode>()))
             return false;
         break;
 

@@ -650,14 +650,14 @@ ElemIndex(ParseNode* pn)
 }
 
 static inline JSFunction*
-FunctionObject(CodeNode* funNode)
+FunctionObject(FunctionNode* funNode)
 {
     MOZ_ASSERT(funNode->isKind(PNK_FUNCTION));
     return funNode->funbox()->function();
 }
 
 static inline PropertyName*
-FunctionName(CodeNode* funNode)
+FunctionName(FunctionNode* funNode)
 {
     if (JSAtom* name = FunctionObject(funNode)->explicitName())
         return name->asPropertyName();
@@ -665,7 +665,7 @@ FunctionName(CodeNode* funNode)
 }
 
 static inline ParseNode*
-FunctionStatementList(CodeNode* funNode)
+FunctionStatementList(FunctionNode* funNode)
 {
     MOZ_ASSERT(funNode->body()->isKind(PNK_PARAMSBODY));
     LexicalScopeNode* last = &funNode->body()->as<ListNode>().last()->as<LexicalScopeNode>();
@@ -1615,7 +1615,7 @@ class MOZ_STACK_CLASS ModuleValidator
 
     ExclusiveContext*     cx_;
     AsmJSParser&          parser_;
-    CodeNode*             moduleFunctionNode_;
+    FunctionNode*         moduleFunctionNode_;
     PropertyName*         moduleFunctionName_;
     PropertyName*         globalArgumentName_;
     PropertyName*         importArgumentName_;
@@ -1694,7 +1694,7 @@ class MOZ_STACK_CLASS ModuleValidator
     }
 
   public:
-    ModuleValidator(ExclusiveContext* cx, AsmJSParser& parser, CodeNode* moduleFunctionNode)
+    ModuleValidator(ExclusiveContext* cx, AsmJSParser& parser, FunctionNode* moduleFunctionNode)
       : cx_(cx),
         parser_(parser),
         moduleFunctionNode_(moduleFunctionNode),
@@ -3226,7 +3226,7 @@ CheckModuleLevelName(ModuleValidator& m, ParseNode* usepn, PropertyName* name)
 }
 
 static bool
-CheckFunctionHead(ModuleValidator& m, CodeNode* funNode)
+CheckFunctionHead(ModuleValidator& m, FunctionNode* funNode)
 {
     FunctionBox* funbox = funNode->funbox();
     MOZ_ASSERT(!funbox->isExprBody());
@@ -3266,7 +3266,7 @@ CheckModuleArgument(ModuleValidator& m, ParseNode* arg, PropertyName** name)
 }
 
 static bool
-CheckModuleArguments(ModuleValidator& m, CodeNode* funNode)
+CheckModuleArguments(ModuleValidator& m, FunctionNode* funNode)
 {
     unsigned numFormals;
     ParseNode* arg1 = FunctionFormalParametersList(funNode, &numFormals);
@@ -7026,7 +7026,7 @@ CheckStatement(FunctionValidator& f, ParseNode* stmt)
 }
 
 static bool
-ParseFunction(ModuleValidator& m, CodeNode** funNodeOut, unsigned* line)
+ParseFunction(ModuleValidator& m, FunctionNode** funNodeOut, unsigned* line)
 {
     TokenStream& tokenStream = m.tokenStream();
 
@@ -7044,7 +7044,7 @@ ParseFunction(ModuleValidator& m, CodeNode** funNodeOut, unsigned* line)
     if (!name)
         return false;
 
-    CodeNode* funNode = m.parser().handler.newFunctionStatement();
+    FunctionNode* funNode = m.parser().handler.newFunctionStatement();
     if (!funNode)
         return false;
 
@@ -7086,7 +7086,7 @@ CheckFunction(ModuleValidator& m)
     // the backing LifoAlloc after parsing/compiling each function.
     AsmJSParser::Mark mark = m.parser().mark();
 
-    CodeNode* funNode = nullptr;
+    FunctionNode* funNode = nullptr;
     unsigned line = 0;
     if (!ParseFunction(m, &funNode, &line))
         return false;
@@ -7336,7 +7336,7 @@ CheckModule(ExclusiveContext* cx, AsmJSParser& parser, ParseNode* stmtList, unsi
 {
     int64_t before = PRMJ_Now();
 
-    CodeNode* moduleFunctionNode = parser.pc->functionBox()->functionNode;
+    FunctionNode* moduleFunctionNode = parser.pc->functionBox()->functionNode;
 
     ModuleValidator m(cx, parser, moduleFunctionNode);
     if (!m.init())
@@ -8292,7 +8292,7 @@ class ModuleCharsForStore : ModuleChars
         isFunCtor_ = parser.pc->isStandaloneFunctionBody();
         if (isFunCtor_) {
             unsigned numArgs;
-            CodeNode* functionNode = parser.pc->functionBox()->functionNode;
+            FunctionNode* functionNode = parser.pc->functionBox()->functionNode;
             ParseNode* arg = FunctionFormalParametersList(functionNode, &numArgs);
             for (unsigned i = 0; i < numArgs; i++, arg = arg->pn_next) {
                 UniqueChars name = StringToNewUTF8CharsZ(nullptr, *arg->name());
@@ -8373,7 +8373,7 @@ class ModuleCharsForLookup : ModuleChars
             if (parseBegin + chars_.length() != parseLimit)
                 return false;
             unsigned numArgs;
-            CodeNode* functionNode = parser.pc->functionBox()->functionNode;
+            FunctionNode* functionNode = parser.pc->functionBox()->functionNode;
             ParseNode* arg = FunctionFormalParametersList(functionNode, &numArgs);
             if (funCtorArgs_.length() != numArgs)
                 return false;

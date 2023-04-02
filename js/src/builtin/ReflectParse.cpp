@@ -1867,7 +1867,7 @@ class ASTSerializer
     bool arrayPattern(ListNode* array, MutableHandleValue dst);
     bool objectPattern(ListNode* obj, MutableHandleValue dst);
 
-    bool function(CodeNode* funNode, ASTType type, MutableHandleValue dst);
+    bool function(FunctionNode* funNode, ASTType type, MutableHandleValue dst);
     bool functionArgsAndBody(ParseNode* pn, NodeVector& args, NodeVector& defaults,
                              bool isAsync, bool isExpression,
                              MutableHandleValue body, MutableHandleValue rest);
@@ -2095,7 +2095,7 @@ ASTSerializer::declaration(ParseNode* pn, MutableHandleValue dst)
 
     switch (pn->getKind()) {
       case PNK_FUNCTION:
-        return function(&pn->as<CodeNode>(), AST_FUNC_DECL, dst);
+        return function(&pn->as<FunctionNode>(), AST_FUNC_DECL, dst);
 
       case PNK_VAR:
         return variableDeclaration(&pn->as<ListNode>(), false, dst);
@@ -2239,7 +2239,7 @@ ASTSerializer::exportDeclaration(ParseNode* exportNode, MutableHandleValue dst)
       }
 
       case PNK_FUNCTION:
-        if (!function(&kid->as<CodeNode>(), AST_FUNC_DECL, &decl))
+        if (!function(&kid->as<FunctionNode>(), AST_FUNC_DECL, &decl))
             return false;
         break;
 
@@ -2937,7 +2937,7 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
     switch (pn->getKind()) {
       case PNK_FUNCTION:
       {
-        CodeNode* funNode = &pn->as<CodeNode>();
+        FunctionNode* funNode = &pn->as<FunctionNode>();
         ASTType type = funNode->funbox()->function()->isArrow() ? AST_ARROW_EXPR : AST_FUNC_EXPR;
         return function(funNode, type, dst);
       }
@@ -3081,7 +3081,7 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
         ParseNode* callee = pn->as<BinaryNode>().left();
         MOZ_ASSERT(callee->isKind(PNK_FUNCTION));
 
-        ListNode* paramsBody = callee->as<CodeNode>().body();
+        ListNode* paramsBody = callee->as<FunctionNode>().body();
         MOZ_ASSERT(paramsBody->isKind(PNK_PARAMSBODY));
 
         ListNode* body = &paramsBody->last()->as<ListNode>();
@@ -3441,9 +3441,8 @@ ASTSerializer::property(ParseNode* pn, MutableHandleValue dst)
     ParseNode* valNode = node->right();
 
     bool isShorthand = node->isKind(PNK_SHORTHAND);
-    bool isMethod =
-        valNode->isKind(PNK_FUNCTION) &&
-        valNode->as<CodeNode>().funbox()->function()->kind() == JSFunction::Method;
+    bool isMethod = valNode->is<FunctionNode>() &&
+                    valNode->as<FunctionNode>().funbox()->function()->kind() == JSFunction::Method;
     RootedValue key(cx), val(cx);
     return propertyName(keyNode, &key) &&
            expression(valNode, &val) &&
@@ -3614,7 +3613,7 @@ ASTSerializer::identifier(NameNode* id, MutableHandleValue dst)
 }
 
 bool
-ASTSerializer::function(CodeNode* funNode, ASTType type, MutableHandleValue dst)
+ASTSerializer::function(FunctionNode* funNode, ASTType type, MutableHandleValue dst)
 {
     FunctionBox* funbox = funNode->funbox();
     RootedFunction func(cx, funbox->function());
@@ -3938,8 +3937,7 @@ reflect_parse(JSContext* cx, uint32_t argc, Value* vp)
         if (!pn)
             return false;
 
-        MOZ_ASSERT(pn->getKind() == PNK_MODULE);
-        pn = pn->as<CodeNode>().body();
+        pn = pn->as<ModuleNode>().body();
     }
 
     RootedValue val(cx);

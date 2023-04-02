@@ -1085,7 +1085,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
      * cx->tempLifoAlloc.
      */
     ObjectBox* newObjectBox(JSObject* obj);
-    FunctionBox* newFunctionBox(CodeNodeType funNode, JSFunction* fun, uint32_t toStringStart,
+    FunctionBox* newFunctionBox(FunctionNodeType funNode, JSFunction* fun, uint32_t toStringStart,
                                 Directives directives,
                                 GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
                                 bool tryAnnexB);
@@ -1138,23 +1138,23 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     ListNodeType globalBody(GlobalSharedContext* globalsc);
 
     // Parse a module.
-    CodeNodeType moduleBody(ModuleSharedContext* modulesc);
+    ModuleNodeType moduleBody(ModuleSharedContext* modulesc);
 
     // Parse a function, used for the Function, GeneratorFunction, and
     // AsyncFunction constructors.
-    CodeNodeType standaloneFunction(HandleFunction fun, HandleScope enclosingScope,
-                                    mozilla::Maybe<uint32_t> parameterListEnd,
-                                    GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
-                                    Directives inheritedDirectives, Directives* newDirectives);
+    FunctionNodeType standaloneFunction(HandleFunction fun, HandleScope enclosingScope,
+                                        mozilla::Maybe<uint32_t> parameterListEnd,
+                                        GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
+                                        Directives inheritedDirectives, Directives* newDirectives);
 
     // Parse a function, given only its arguments and body. Used for lazily
     // parsed functions.
-    CodeNodeType standaloneLazyFunction(HandleFunction fun, bool strict,
-                                        GeneratorKind generatorKind, FunctionAsyncKind asyncKind);
+    FunctionNodeType standaloneLazyFunction(HandleFunction fun, bool strict,
+                                            GeneratorKind generatorKind, FunctionAsyncKind asyncKind);
 
     // Parse an inner function given an enclosing ParseContext and a
     // FunctionBox for the inner function.
-    bool innerFunction(CodeNodeType funNode, ParseContext* outerpc, FunctionBox* funbox, uint32_t toStringStart,
+    bool innerFunction(FunctionNodeType funNode, ParseContext* outerpc, FunctionBox* funbox, uint32_t toStringStart,
                        InHandling inHandling, YieldHandling yieldHandling,
                        FunctionSyntaxKind kind,
                        Directives inheritedDirectives, Directives* newDirectives);
@@ -1162,7 +1162,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     // Parse a function's formal parameters and its body assuming its function
     // ParseContext is already on the stack.
     bool functionFormalParametersAndBody(InHandling inHandling, YieldHandling yieldHandling,
-                                         CodeNodeType funNode, FunctionSyntaxKind kind,
+                                         FunctionNodeType funNode, FunctionSyntaxKind kind,
                                          mozilla::Maybe<uint32_t> parameterListEnd = mozilla::Nothing(),
                                          bool isStandaloneFunction = false);
 
@@ -1188,11 +1188,11 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
      * Some parsers have two versions:  an always-inlined version (with an 'i'
      * suffix) and a never-inlined version (with an 'n' suffix).
      */
-    CodeNodeType functionStmt(uint32_t toStringStart,
-                              YieldHandling yieldHandling, DefaultHandling defaultHandling,
-                              FunctionAsyncKind asyncKind = SyncFunction);
-    CodeNodeType functionExpr(uint32_t toStringStart, InvokedPrediction invoked = PredictUninvoked,
-                              FunctionAsyncKind asyncKind = SyncFunction);
+    FunctionNodeType functionStmt(uint32_t toStringStart,
+                                  YieldHandling yieldHandling, DefaultHandling defaultHandling,
+                                  FunctionAsyncKind asyncKind = SyncFunction);
+    FunctionNodeType functionExpr(uint32_t toStringStart, InvokedPrediction invoked = PredictUninvoked,
+                                  FunctionAsyncKind asyncKind = SyncFunction);
 
     ListNodeType statementList(YieldHandling yieldHandling);
 
@@ -1346,19 +1346,19 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     bool tryNewTarget(BinaryNodeType* newTarget);
     bool checkAndMarkSuperScope();
 
-    CodeNodeType methodDefinition(uint32_t toStringStart, PropertyType propType, HandleAtom funName);
+    FunctionNodeType methodDefinition(uint32_t toStringStart, PropertyType propType, HandleAtom funName);
 
     /*
      * Additional JS parsers.
      */
     bool functionArguments(YieldHandling yieldHandling, FunctionSyntaxKind kind,
-                           CodeNodeType funNode);
+                           FunctionNodeType funNode);
 
-    CodeNodeType functionDefinition(uint32_t toStringStart, CodeNodeType funNode,
-                                    InHandling inHandling, YieldHandling yieldHandling, HandleAtom name,
-                                    FunctionSyntaxKind kind,
-                                    GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
-                                    bool tryAnnexB = false);
+    FunctionNodeType functionDefinition(uint32_t toStringStart, FunctionNodeType funNode,
+                                        InHandling inHandling, YieldHandling yieldHandling, HandleAtom name,
+                                        FunctionSyntaxKind kind,
+                                        GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
+                                        bool tryAnnexB = false);
 
     // Parse a function body.  Pass StatementListBody if the body is a list of
     // statements; pass ExpressionBody if the body is a single expression.
@@ -1394,7 +1394,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     bool checkExportedNamesForDeclarationList(ListNodeType node);
 
     bool checkExportedNameForClause(NameNodeType funNode);
-    bool checkExportedNameForFunction(CodeNodeType funNode);
+    bool checkExportedNameForFunction(FunctionNodeType funNode);
     bool checkExportedNameForClass(ClassNodeType classNode);
 
     enum ClassContext { ClassStatement, ClassExpression };
@@ -1449,14 +1449,14 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     NameNodeType newDotGeneratorName();
     bool declareDotGeneratorName();
 
-    bool skipLazyInnerFunction(CodeNodeType funNode, uint32_t toStringStart, FunctionSyntaxKind kind,
+    bool skipLazyInnerFunction(FunctionNodeType funNode, uint32_t toStringStart, FunctionSyntaxKind kind,
                                bool tryAnnexB);
-    bool innerFunction(CodeNodeType funNode, ParseContext* outerpc, HandleFunction fun, uint32_t toStringStart,
+    bool innerFunction(FunctionNodeType funNode, ParseContext* outerpc, HandleFunction fun, uint32_t toStringStart,
                        InHandling inHandling, YieldHandling yieldHandling,
                        FunctionSyntaxKind kind,
                        GeneratorKind generatorKind, FunctionAsyncKind asyncKind, bool tryAnnexB,
                        Directives inheritedDirectives, Directives* newDirectives);
-    bool trySyntaxParseInnerFunction(CodeNodeType funNode, HandleFunction fun, uint32_t toStringStart,
+    bool trySyntaxParseInnerFunction(FunctionNodeType funNode, HandleFunction fun, uint32_t toStringStart,
                                      InHandling inHandling, YieldHandling yieldHandling,
                                      FunctionSyntaxKind kind,
                                      GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
@@ -1489,9 +1489,9 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     void reportRedeclaration(HandlePropertyName name, DeclarationKind prevKind, TokenPos pos,
                              uint32_t prevPos);
-    bool notePositionalFormalParameter(CodeNodeType funNode, HandlePropertyName name, uint32_t beginPos,
+    bool notePositionalFormalParameter(FunctionNodeType funNode, HandlePropertyName name, uint32_t beginPos,
                                        bool disallowDuplicateParams, bool* duplicatedParam);
-    bool noteDestructuredPositionalFormalParameter(CodeNodeType funNode, Node destruct);
+    bool noteDestructuredPositionalFormalParameter(FunctionNodeType funNode, Node destruct);
     mozilla::Maybe<DeclarationKind> isVarRedeclaredInEval(HandlePropertyName name,
                                                           DeclarationKind kind);
     bool tryDeclareVar(HandlePropertyName name, DeclarationKind kind, uint32_t beginPos,

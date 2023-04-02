@@ -1279,7 +1279,7 @@ ModuleBuilder::processExport(frontend::ParseNode* exportNode)
       }
 
       case PNK_FUNCTION: {
-        RootedFunction func(cx_, kid->as<CodeNode>().funbox()->function());
+        RootedFunction func(cx_, kid->as<FunctionNode>().funbox()->function());
         MOZ_ASSERT(!func->isArrow());
         RootedAtom localName(cx_, func->explicitName());
         RootedAtom exportName(cx_, isDefault ? cx_->names().default_ : localName.get());

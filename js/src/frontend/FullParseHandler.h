@@ -439,7 +439,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return true;
     }
 
-    MOZ_MUST_USE bool addObjectMethodDefinition(ListNodeType literal, Node key, CodeNodeType funNode,
+    MOZ_MUST_USE bool addObjectMethodDefinition(ListNodeType literal, Node key, FunctionNodeType funNode,
                                                 JSOp op)
     {
         MOZ_ASSERT(key->isKind(PNK_NUMBER) ||
@@ -455,7 +455,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return true;
     }
 
-    MOZ_MUST_USE bool addClassMethodDefinition(ListNodeType methodList, Node key, CodeNodeType funNode,
+    MOZ_MUST_USE bool addClassMethodDefinition(ListNodeType methodList, Node key, FunctionNodeType funNode,
                                                JSOp op, bool isStatic)
     {
         MOZ_ASSERT(methodList->isKind(PNK_CLASSMETHODLIST));
@@ -505,7 +505,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     MOZ_MUST_USE bool isFunctionStmt(Node stmt) {
         while (stmt->isKind(PNK_LABEL))
             stmt = stmt->as<LabeledStatement>().statement();
-        return stmt->isKind(PNK_FUNCTION);
+        return stmt->is<FunctionNode>();
     }
 
     void addStatementToList(ListNodeType list, Node stmt) {
@@ -713,7 +713,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     inline MOZ_MUST_USE bool addCatchBlock(ListNodeType catchList, LexicalScopeNodeType lexicalScope,
                                            Node catchBinding, Node catchGuard, Node catchBody);
 
-    inline MOZ_MUST_USE bool setLastFunctionFormalParameterDefault(CodeNodeType funNode,
+    inline MOZ_MUST_USE bool setLastFunctionFormalParameterDefault(FunctionNodeType funNode,
                                                                    Node defaultValue);
     inline void setLastFunctionFormalParameterDestructuring(Node funcpn, Node pn);
 
@@ -722,19 +722,19 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
             pn->setDirectRHSAnonFunction(true);
     }
 
-    CodeNodeType newFunctionStatement() {
-        return new_<CodeNode>(PNK_FUNCTION, JSOP_NOP, pos());
+    FunctionNodeType newFunctionStatement() {
+        return new_<FunctionNode>(JSOP_NOP, pos());
     }
 
-    CodeNodeType newFunctionExpression() {
-        return new_<CodeNode>(PNK_FUNCTION, JSOP_LAMBDA, pos());
+    FunctionNodeType newFunctionExpression() {
+        return new_<FunctionNode>(JSOP_LAMBDA, pos());
     }
 
-    CodeNodeType newArrowFunction() {
-        return new_<CodeNode>(PNK_FUNCTION, JSOP_LAMBDA_ARROW, pos());
+    FunctionNodeType newArrowFunction() {
+        return new_<FunctionNode>(JSOP_LAMBDA_ARROW, pos());
     }
 
-    bool setComprehensionLambdaBody(CodeNodeType funNode, ListNodeType body) {
+    bool setComprehensionLambdaBody(FunctionNodeType funNode, ListNodeType body) {
         MOZ_ASSERT(body->isKind(PNK_STATEMENTLIST));
         ListNode* paramsBody = newList(PNK_PARAMSBODY, body);
         if (!paramsBody)
@@ -742,25 +742,24 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         setFunctionFormalParametersAndBody(funNode, paramsBody);
         return true;
     }
-    void setFunctionFormalParametersAndBody(CodeNodeType funNode, ListNodeType paramsBody) {
+    void setFunctionFormalParametersAndBody(FunctionNodeType funNode, ListNodeType paramsBody) {
         MOZ_ASSERT_IF(paramsBody, paramsBody->isKind(PNK_PARAMSBODY));
         funNode->setBody(paramsBody);
     }
-    void setFunctionBox(CodeNodeType funNode, FunctionBox* funbox) {
-        MOZ_ASSERT(funNode->isKind(PNK_FUNCTION));
+    void setFunctionBox(FunctionNodeType funNode, FunctionBox* funbox) {
         funNode->setFunbox(funbox);
         funbox->functionNode = funNode;
     }
-    void addFunctionFormalParameter(CodeNodeType funNode, Node argpn) {
+    void addFunctionFormalParameter(FunctionNodeType funNode, Node argpn) {
         addList(/* list = */ funNode->body(), /* child = */ argpn);
     }
-    void setFunctionBody(CodeNodeType funNode, LexicalScopeNodeType body) {
+    void setFunctionBody(FunctionNodeType funNode, LexicalScopeNodeType body) {
         MOZ_ASSERT(funNode->body()->isKind(PNK_PARAMSBODY));
         addList(/* list = */ funNode->body(), /* child = */ body);
     }
 
-    CodeNodeType newModule() {
-        return new_<CodeNode>(PNK_MODULE, JSOP_NOP, pos());
+    ModuleNodeType newModule() {
+        return new_<ModuleNode>(pos());
     }
 
     BinaryNodeType newNewExpression(uint32_t begin, Node ctor, Node args) {
@@ -1009,7 +1008,7 @@ FullParseHandler::addCatchBlock(ListNodeType catchList, LexicalScopeNodeType lex
 }
 
 inline bool
-FullParseHandler::setLastFunctionFormalParameterDefault(CodeNodeType funNode, Node defaultValue)
+FullParseHandler::setLastFunctionFormalParameterDefault(FunctionNodeType funNode, Node defaultValue)
 {
     MOZ_ASSERT(funNode->isKind(PNK_FUNCTION));
     ListNode* body = funNode->body();

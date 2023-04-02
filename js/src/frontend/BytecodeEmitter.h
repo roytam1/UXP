@@ -416,7 +416,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitScript(ParseNode* body);
 
     // Emit function code for the tree rooted at body.
-    MOZ_MUST_USE bool emitFunctionScript(CodeNode* funNode);
+    MOZ_MUST_USE bool emitFunctionScript(FunctionNode* funNode);
 
     // If op is JOF_TYPESET (see the type barriers comment in TypeInference.h),
     // reserve a type set to store its result.
@@ -508,7 +508,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitObjectPairOp(ObjectBox* objbox1, ObjectBox* objbox2, JSOp op);
     MOZ_MUST_USE bool emitRegExp(uint32_t index);
 
-    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitFunction(CodeNode* funNode, bool needsProto = false);
+    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitFunction(FunctionNode* funNode, bool needsProto = false);
     MOZ_NEVER_INLINE MOZ_MUST_USE bool emitObject(ListNode* objNode);
 
     MOZ_MUST_USE bool replaceNewInitWithNewObject(JSObject* obj, ptrdiff_t offset);

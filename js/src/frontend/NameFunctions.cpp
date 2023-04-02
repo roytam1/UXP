@@ -190,9 +190,8 @@ class NameResolver
      * listed, then it is skipped. Otherwise an intelligent name is guessed to
      * assign to the function's displayAtom field.
      */
-    bool resolveFun(CodeNode* funNode, HandleAtom prefix, MutableHandleAtom retAtom) {
+    bool resolveFun(FunctionNode* funNode, HandleAtom prefix, MutableHandleAtom retAtom) {
         MOZ_ASSERT(funNode != nullptr);
-        MOZ_ASSERT(funNode->isKind(PNK_FUNCTION));
         RootedFunction fun(cx, funNode->funbox()->function());
 
         StringBuffer buf(cx);
@@ -359,10 +358,9 @@ class NameResolver
         if (cur == nullptr)
             return true;
 
-        MOZ_ASSERT((cur->isKind(PNK_FUNCTION) || cur->isKind(PNK_MODULE)) == cur->is<CodeNode>());
-        if (cur->isKind(PNK_FUNCTION)) {
+        if (cur->is<FunctionNode>()) {
             RootedAtom prefix2(cx);
-            if (!resolveFun(&cur->as<CodeNode>(), prefix, &prefix2))
+            if (!resolveFun(&cur->as<FunctionNode>(), prefix, &prefix2))
                 return false;
 
             /*
@@ -866,8 +864,14 @@ class NameResolver
             break;
 
           case PNK_FUNCTION:
+            if (ParseNode* body = cur->as<FunctionNode>().body()) {
+                if (!resolve(body, prefix))
+                    return false;
+            }
+            break;
+
           case PNK_MODULE:
-            if (ParseNode* body = cur->as<CodeNode>().body()) {
+            if (ParseNode* body = cur->as<ModuleNode>().body()) {
                 if (!resolve(body, prefix))
                     return false;
             }

@@ -330,8 +330,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     MOZ_MUST_USE bool addPropertyDefinition(ListNodeType literal, Node name, Node expr) { return true; }
     MOZ_MUST_USE bool addShorthand(ListNodeType literal, NameNodeType name, NameNodeType expr) { return true; }
     MOZ_MUST_USE bool addSpreadProperty(ListNodeType literal, uint32_t begin, Node inner) { return true; }
-    MOZ_MUST_USE bool addObjectMethodDefinition(ListNodeType literal, Node name, CodeNodeType funNode, JSOp op) { return true; }
-    MOZ_MUST_USE bool addClassMethodDefinition(ListNodeType literal, Node name, CodeNodeType funNode, JSOp op, bool isStatic) { return true; }
+    MOZ_MUST_USE bool addObjectMethodDefinition(ListNodeType literal, Node name, FunctionNodeType funNode, JSOp op) { return true; }
+    MOZ_MUST_USE bool addClassMethodDefinition(ListNodeType literal, Node name, FunctionNodeType funNode, JSOp op, bool isStatic) { return true; }
     UnaryNodeType newYieldExpression(uint32_t begin, Node value) { return NodeGeneric; }
     UnaryNodeType newYieldStarExpression(uint32_t begin, Node value) { return NodeGeneric; }
     UnaryNodeType newAwaitExpression(uint32_t begin, Node value) { return NodeGeneric; }
@@ -407,19 +407,19 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     MOZ_MUST_USE bool addCatchBlock(ListNodeType catchList, LexicalScopeNodeType lexicalScope,
                                     Node catchBinding, Node catchGuard, Node catchBody) { return true; }
 
-    MOZ_MUST_USE bool setLastFunctionFormalParameterDefault(CodeNodeType funNode, Node pn) { return true; }
+    MOZ_MUST_USE bool setLastFunctionFormalParameterDefault(FunctionNodeType funNode, Node pn) { return true; }
 
     void checkAndSetIsDirectRHSAnonFunction(Node pn) {}
 
-    CodeNodeType newFunctionStatement() { return NodeFunctionDefinition; }
-    CodeNodeType newFunctionExpression() { return NodeFunctionDefinition; }
-    CodeNodeType newArrowFunction() { return NodeFunctionDefinition; }
+    FunctionNodeType newFunctionStatement() { return NodeFunctionDefinition; }
+    FunctionNodeType newFunctionExpression() { return NodeFunctionDefinition; }
+    FunctionNodeType newArrowFunction() { return NodeFunctionDefinition; }
 
-    bool setComprehensionLambdaBody(CodeNodeType funNode, ListNodeType body) { return true; }
-    void setFunctionFormalParametersAndBody(CodeNodeType funNode, ListNodeType paramsBody) {}
-    void setFunctionBody(CodeNodeType funNode, LexicalScopeNodeType body) {}
-    void setFunctionBox(CodeNodeType funNode, FunctionBox* funbox) {}
-    void addFunctionFormalParameter(CodeNodeType funNode, Node argpn) {}
+    bool setComprehensionLambdaBody(FunctionNodeType funNode, ListNodeType body) { return true; }
+    void setFunctionFormalParametersAndBody(FunctionNodeType funNode, ListNodeType paramsBody) {}
+    void setFunctionBody(FunctionNodeType funNode, LexicalScopeNodeType body) {}
+    void setFunctionBox(FunctionNodeType funNode, FunctionBox* funbox) {}
+    void addFunctionFormalParameter(FunctionNodeType funNode, Node argpn) {}
 
     ForNodeType newForStatement(uint32_t begin, TernaryNodeType forHead, Node body, unsigned iflags) {
         return NodeGeneric;

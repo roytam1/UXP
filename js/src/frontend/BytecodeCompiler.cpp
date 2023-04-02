@@ -413,7 +413,7 @@ BytecodeCompiler::compileModule()
     Maybe<BytecodeEmitter> emitter;
     if (!emplaceEmitter(emitter, &modulesc))
         return nullptr;
-    if (!emitter->emitScript(pn->as<CodeNode>().body()))
+    if (!emitter->emitScript(pn->as<ModuleNode>().body()))
         return nullptr;
 
     if (!NameFunctions(cx, pn))
@@ -457,7 +457,7 @@ BytecodeCompiler::compileStandaloneFunction(MutableHandleFunction fun,
     // function should have been parsed, we backup and reparse with the new set
     // of directives.
 
-    ParseNode* fn;
+    FunctionNode* fn;
     do {
         Directives newDirectives = directives;
         fn = parser->standaloneFunction(fun, enclosingScope, parameterListEnd, generatorKind,
@@ -466,7 +466,7 @@ BytecodeCompiler::compileStandaloneFunction(MutableHandleFunction fun,
             return false;
     } while (!fn);
 
-    FunctionBox* funbox = fn->as<CodeNode>().funbox();
+    FunctionBox* funbox = fn->funbox();
     if (funbox->function()->isInterpreted()) {
         MOZ_ASSERT(fun == funbox->function());
 
@@ -476,7 +476,7 @@ BytecodeCompiler::compileStandaloneFunction(MutableHandleFunction fun,
         Maybe<BytecodeEmitter> emitter;
         if (!emplaceEmitter(emitter, funbox))
             return false;
-        if (!emitter->emitFunctionScript(&fn->as<CodeNode>()))
+        if (!emitter->emitFunctionScript(fn))
             return false;
     } else {
         fun.set(funbox->function());
@@ -674,12 +674,12 @@ frontend::CompileLazyFunction(JSContext* cx, Handle<LazyScript*> lazy, const cha
     if (lazy->hasBeenCloned())
         script->setHasBeenCloned();
 
-    BytecodeEmitter bce(/* parent = */ nullptr, &parser, pn->as<CodeNode>().funbox(), script, lazy,
+    BytecodeEmitter bce(/* parent = */ nullptr, &parser, pn->as<FunctionNode>().funbox(), script, lazy,
                         pn->pn_pos, BytecodeEmitter::LazyFunction);
     if (!bce.init())
         return false;
 
-    if (!bce.emitFunctionScript(&pn->as<CodeNode>()))
+    if (!bce.emitFunctionScript(&pn->as<FunctionNode>()))
         return false;
 
     if (!NameFunctions(cx, pn))

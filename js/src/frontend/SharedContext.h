@@ -395,7 +395,7 @@ class FunctionBox : public ObjectBox, public SharedContext
     void initWithEnclosingScope(Scope* enclosingScope);
 
   public:
-    CodeNode*       functionNode;           /* back pointer used by asm.js for error messages */
+    FunctionNode*   functionNode;           /* back pointer used by asm.js for error messages */
     uint32_t        bufStart;
     uint32_t        bufEnd;
     uint32_t        startLine;
