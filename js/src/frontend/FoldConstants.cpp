@@ -1544,9 +1544,13 @@ FoldCall(ExclusiveContext* cx, BinaryNode* node, Parser<FullParseHandler>& parse
     //   assertEq((true ? obj.f : null)``, "global");
     //   assertEq(obj.f``, "obj");
     //
+    // As an exception to this, we do allow folding the function in
+    // `(function() { ... })()` (the module pattern), because that lets us
+    // constant fold code inside that function.
+    //
     // See bug 537673 and bug 1182373.
     ParseNode* callee = node->left();
-    if (node->isKind(PNK_NEW) || !callee->isInParens()) {
+    if (node->isKind(PNK_NEW) || !callee->isInParens() || callee->is<FunctionNode>()) {
         if (!Fold(cx, node->unsafeLeftReference(), parser, inGenexpLambda))
             return false;
     }
