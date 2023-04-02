@@ -5755,15 +5755,11 @@ BytecodeEmitter::emitFunction(CodeNode* funNode, bool needsProto)
 
         if (needsProto) {
             MOZ_ASSERT(funNode->getOp() == JSOP_LAMBDA);
-            funNode->setOp(JSOP_FUNWITHPROTO);
+            return emitIndex32(JSOP_FUNWITHPROTO, index);
         }
 
-        if (funNode->getOp() == JSOP_DEFFUN) {
-            if (!emitIndex32(JSOP_LAMBDA, index))
-                return false;
-            return emit1(JSOP_DEFFUN);
-        }
-
+        // This is a FunctionExpression, ArrowFunctionExpression, or class
+        // constructor. Emit the single instruction (without location info).
         return emitIndex32(funNode->getOp(), index);
     }
 
