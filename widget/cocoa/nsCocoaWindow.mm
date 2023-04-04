@@ -3351,6 +3351,15 @@ static const NSString* kStateCollectionBehavior = @"collectionBehavior";
     if ([self respondsToSelector:@selector(setBottomCornerRounded:)])
       [self setBottomCornerRounded:YES];
 
+    // setTitlebarAppearsTransparent is only on 10.10+ so make sure it responds
+    if ([self respondsToSelector:@selector(setTitlebarAppearsTransparent:)])
+        [self setTitlebarAppearsTransparent:YES];
+#if defined(MAC_OS_VERSION_11_0) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0
+    if (nsCocoaFeatures::OnBigSurOrLater()) {
+       self.titlebarSeparatorStyle = NSTitlebarSeparatorStyleNone;
+    }
+#endif
+
     [self setAutorecalculatesContentBorderThickness:NO forEdge:NSMaxYEdge];
     [self setContentBorderThickness:0.0f forEdge:NSMaxYEdge];
   }
@@ -3527,6 +3536,11 @@ static const NSString* kStateCollectionBehavior = @"collectionBehavior";
   BOOL stateChanged = ([self drawsContentsIntoWindowFrame] != aState);
   [super setDrawsContentsIntoWindowFrame:aState];
   if (stateChanged && [[self delegate] isKindOfClass:[WindowDelegate class]]) {
+#if defined(MAC_OS_X_VERSION_10_10) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_10
+    // Also need to hide the window title, or it will draw over the custom titlebar
+    if ([self respondsToSelector:@selector(setTitleVisibility:)])
+        [self setTitleVisibility:(aState ? NSWindowTitleHidden : NSWindowTitleVisible)];
+#endif
     // Here we extend / shrink our mainChildView. We do that by firing a resize
     // event which will cause the ChildView to be resized to the rect returned
     // by nsCocoaWindow::GetClientBounds. GetClientBounds bases its return
