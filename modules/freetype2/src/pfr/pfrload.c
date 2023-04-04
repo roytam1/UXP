@@ -1,114 +1,114 @@
-/***************************************************************************/
-/*                                                                         */
-/*  pfrload.c                                                              */
-/*                                                                         */
-/*    FreeType PFR loader (body).                                          */
-/*                                                                         */
-/*  Copyright 2002-2018 by                                                 */
-/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
-/*                                                                         */
-/*  This file is part of the FreeType project, and may only be used,       */
-/*  modified, and distributed under the terms of the FreeType project      */
-/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
-/*  this file you indicate that you have read the license and              */
-/*  understand and accept it fully.                                        */
-/*                                                                         */
-/***************************************************************************/
+/****************************************************************************
+ *
+ * pfrload.c
+ *
+ *   FreeType PFR loader (body).
+ *
+ * Copyright (C) 2002-2023 by
+ * David Turner, Robert Wilhelm, and Werner Lemberg.
+ *
+ * This file is part of the FreeType project, and may only be used,
+ * modified, and distributed under the terms of the FreeType project
+ * license, LICENSE.TXT.  By continuing to use, modify, or distribute
+ * this file you indicate that you have read the license and
+ * understand and accept it fully.
+ *
+ */
 
 
 #include "pfrload.h"
-#include FT_INTERNAL_DEBUG_H
-#include FT_INTERNAL_STREAM_H
+#include <freetype/internal/ftdebug.h>
+#include <freetype/internal/ftstream.h>
 
 #include "pfrerror.h"
 
 #undef  FT_COMPONENT
-#define FT_COMPONENT  trace_pfr
+#define FT_COMPONENT  pfr
 
 
   /*
-   *  The overall structure of a PFR file is as follows.
+   * The overall structure of a PFR file is as follows.
    *
-   *    PFR header
-   *      58 bytes (contains nPhysFonts)
+   *   PFR header
+   *     58 bytes (contains nPhysFonts)
    *
-   *    Logical font directory (size at most 2^16 bytes)
-   *      2 bytes (nLogFonts)
-   *      + nLogFonts * 5 bytes
+   *   Logical font directory (size at most 2^16 bytes)
+   *     2 bytes (nLogFonts)
+   *     + nLogFonts * 5 bytes
    *
-   *         ==>   nLogFonts <= 13106
+   *        ==>  nLogFonts <= 13106
    *
-   *    Logical font section (size at most 2^24 bytes)
-   *      nLogFonts * logFontRecord
+   *   Logical font section (size at most 2^24 bytes)
+   *     nLogFonts * logFontRecord
    *
-   *      logFontRecord (size at most 2^16 bytes)
-   *        12 bytes (fontMatrix)
-   *        + 1 byte (flags)
-   *        + 0-5 bytes (depending on `flags')
-   *        + 0-(1+255*(2+255)) = 0-65536 (depending on `flags')
-   *        + 5 bytes (physical font info)
-   *        + 0-1 bytes (depending on PFR header)
+   *     logFontRecord (size at most 2^16 bytes)
+   *       12 bytes (fontMatrix)
+   *       + 1 byte (flags)
+   *       + 0-5 bytes (depending on `flags')
+   *       + 0-(1+255*(2+255)) = 0-65536 (depending on `flags')
+   *       + 5 bytes (physical font info)
+   *       + 0-1 bytes (depending on PFR header)
    *
-   *         ==>   minimum size 18 bytes
+   *        ==>  minimum size 18 bytes
    *
-   *    Physical font section (size at most 2^24 bytes)
-   *      nPhysFonts * (physFontRecord
-   *                    + nBitmapSizes * nBmapChars * bmapCharRecord)
+   *   Physical font section (size at most 2^24 bytes)
+   *     nPhysFonts * (physFontRecord
+   *                   + nBitmapSizes * nBmapChars * bmapCharRecord)
    *
-   *      physFontRecord (size at most 2^24 bytes)
-   *        14 bytes (font info)
-   *        + 1 byte (flags)
-   *        + 0-2 (depending on `flags')
-   *        + 0-? (structure too complicated to be shown here; depending on
-   *               `flags'; contains `nBitmapSizes' and `nBmapChars')
-   *        + 3 bytes (nAuxBytes)
-   *        + nAuxBytes
-   *        + 1 byte (nBlueValues)
-   *        + 2 * nBlueValues
-   *        + 6 bytes (hinting data)
-   *        + 2 bytes (nCharacters)
-   *        + nCharacters * (4-10 bytes) (depending on `flags')
+   *     physFontRecord (size at most 2^24 bytes)
+   *       14 bytes (font info)
+   *       + 1 byte (flags)
+   *       + 0-2 (depending on `flags')
+   *       + 0-? (structure too complicated to be shown here; depending on
+   *              `flags'; contains `nBitmapSizes' and `nBmapChars')
+   *       + 3 bytes (nAuxBytes)
+   *       + nAuxBytes
+   *       + 1 byte (nBlueValues)
+   *       + 2 * nBlueValues
+   *       + 6 bytes (hinting data)
+   *       + 2 bytes (nCharacters)
+   *       + nCharacters * (4-10 bytes) (depending on `flags')
    *
-   *         ==>   minimum size 27 bytes
+   *        ==>  minimum size 27 bytes
    *
-   *      bmapCharRecord
-   *        4-7 bytes
+   *     bmapCharRecord
+   *       4-7 bytes
    *
-   *    Glyph program strings (three possible types: simpleGps, compoundGps,
-   *                           and bitmapGps; size at most 2^24 bytes)
-   *      simpleGps (size at most 2^16 bytes)
-   *        1 byte (flags)
-   *        1-2 bytes (n[XY]orus, depending on `flags')
-   *        0-(64+512*2) = 0-1088 bytes (depending on `n[XY]orus')
-   *        0-? (structure too complicated to be shown here; depending on
-   *             `flags')
-   *        1-? glyph data (faintly resembling PS Type 1 charstrings)
+   *   Glyph program strings (three possible types: simpleGps, compoundGps,
+   *                          and bitmapGps; size at most 2^24 bytes)
+   *     simpleGps (size at most 2^16 bytes)
+   *       1 byte (flags)
+   *       1-2 bytes (n[XY]orus, depending on `flags')
+   *       0-(64+512*2) = 0-1088 bytes (depending on `n[XY]orus')
+   *       0-? (structure too complicated to be shown here; depending on
+   *            `flags')
+   *       1-? glyph data (faintly resembling PS Type 1 charstrings)
    *
-   *         ==>   minimum size 3 bytes
+   *        ==>  minimum size 3 bytes
    *
-   *      compoundGps (size at most 2^16 bytes)
-   *        1 byte (nElements <= 63, flags)
-   *        + 0-(1+255*(2+255)) = 0-65536 (depending on `flags')
-   *        + nElements * (6-14 bytes)
+   *     compoundGps (size at most 2^16 bytes)
+   *       1 byte (nElements <= 63, flags)
+   *       + 0-(1+255*(2+255)) = 0-65536 (depending on `flags')
+   *       + nElements * (6-14 bytes)
    *
-   *      bitmapGps (size at most 2^16 bytes)
-   *        1 byte (flags)
-   *        3-13 bytes (position info, depending on `flags')
-   *        0-? bitmap data
+   *     bitmapGps (size at most 2^16 bytes)
+   *       1 byte (flags)
+   *       3-13 bytes (position info, depending on `flags')
+   *       0-? bitmap data
    *
-   *         ==>   minimum size 4 bytes
+   *        ==>  minimum size 4 bytes
    *
-   *    PFR trailer
-   *        8 bytes
+   *   PFR trailer
+   *       8 bytes
    *
    *
-   * ==>   minimum size of a valid PFR:
-   *         58 (header)
-   *         + 2 (nLogFonts)
-   *         + 27 (1 physFontRecord)
-   *         + 8 (trailer)
-   *        -----
-   *         95 bytes
+   * ==>  minimum size of a valid PFR:
+   *        58 (header)
+   *        + 2 (nLogFonts)
+   *        + 27 (1 physFontRecord)
+   *        + 8 (trailer)
+   *       -----
+   *        95 bytes
    *
    */
 
@@ -268,9 +268,7 @@
          header->version     > 4           ||
          header->header_size < 58          ||
          header->signature2 != 0x0D0A      )    /* CR/LF  */
-    {
       result = 0;
-    }
 
     return result;
   }
@@ -406,11 +404,9 @@
       }
 
       if ( flags & PFR_LOG_BOLD )
-      {
         log_font->bold_thickness = ( flags & PFR_LOG_2BYTE_BOLD )
                                    ? PFR_NEXT_SHORT( p )
                                    : PFR_NEXT_BYTE( p );
-      }
 
       if ( flags & PFR_LOG_EXTRA_ITEMS )
       {
@@ -565,7 +561,7 @@
     if ( phy_font->font_id )
       goto Exit;
 
-    if ( FT_ALLOC( phy_font->font_id, len + 1 ) )
+    if ( FT_QALLOC( phy_font->font_id, len + 1 ) )
       goto Exit;
 
     /* copy font ID name, and terminate it for safety */
@@ -601,10 +597,10 @@
 
     PFR_CHECK( count * 2 );
 
-    if ( FT_NEW_ARRAY( snaps, count ) )
+    if ( FT_QNEW_ARRAY( snaps, count ) )
       goto Exit;
 
-    phy_font->vertical.stem_snaps = snaps;
+    phy_font->vertical.stem_snaps   = snaps;
     phy_font->horizontal.stem_snaps = snaps + num_vert;
 
     for ( ; count > 0; count--, snaps++ )
@@ -619,7 +615,6 @@
                " invalid stem snaps table\n" ));
     goto Exit;
   }
-
 
 
   /* load kerning pair data */
@@ -761,7 +756,7 @@
 
     if ( ok )
     {
-      if ( FT_ALLOC( result, len + 1 ) )
+      if ( FT_QALLOC( result, len + 1 ) )
         goto Exit;
 
       FT_MEM_COPY( result, p, len );
@@ -857,8 +852,16 @@
     phy_font->bbox.yMax          = PFR_NEXT_SHORT( p );
     phy_font->flags      = flags = PFR_NEXT_BYTE( p );
 
+    if ( !phy_font->outline_resolution ||
+         !phy_font->metrics_resolution )
+    {
+      error = FT_THROW( Invalid_Table );
+      FT_ERROR(( "pfr_phy_font_load: invalid resolution\n" ));
+      goto Fail;
+    }
+
     /* get the standard advance for non-proportional fonts */
-    if ( !(flags & PFR_PHY_PROPORTIONAL) )
+    if ( !( flags & PFR_PHY_PROPORTIONAL ) )
     {
       PFR_CHECK( 2 );
       phy_font->standard_advance = PFR_NEXT_SHORT( p );
@@ -869,14 +872,13 @@
     {
       error = pfr_extra_items_parse( &p, limit,
                                      pfr_phy_font_extra_items, phy_font );
-
       if ( error )
         goto Fail;
     }
 
     /* In certain fonts, the auxiliary bytes contain interesting   */
     /* information.  These are not in the specification but can be */
-    /* guessed by looking at the content of a few PFR0 fonts.      */
+    /* guessed by looking at the content of a few 'PFR0' fonts.    */
     PFR_CHECK( 3 );
     num_aux = PFR_NEXT_ULONG( p );
 
@@ -953,7 +955,7 @@
 
       PFR_CHECK( count * 2 );
 
-      if ( FT_NEW_ARRAY( phy_font->blue_values, count ) )
+      if ( FT_QNEW_ARRAY( phy_font->blue_values, count ) )
         goto Fail;
 
       for ( n = 0; n < count; n++ )
@@ -975,6 +977,13 @@
       phy_font->num_chars    = count = PFR_NEXT_USHORT( p );
       phy_font->chars_offset = offset + (FT_Offset)( p - stream->cursor );
 
+      if ( !phy_font->num_chars )
+      {
+        error = FT_THROW( Invalid_Table );
+        FT_ERROR(( "pfr_phy_font_load: no glyphs\n" ));
+        goto Fail;
+      }
+
       Size = 1 + 1 + 2;
       if ( flags & PFR_PHY_2BYTE_CHARCODE )
         Size += 1;
@@ -993,7 +1002,7 @@
 
       PFR_CHECK_SIZE( count * Size );
 
-      if ( FT_NEW_ARRAY( phy_font->chars, count ) )
+      if ( FT_QNEW_ARRAY( phy_font->chars, count ) )
         goto Fail;
 
       for ( n = 0; n < count; n++ )

@@ -32,6 +32,7 @@ class ObjectBox;
     F(POSTINCREMENT) \
     F(PREDECREMENT) \
     F(POSTDECREMENT) \
+    F(PROPERTYNAME) \
     F(DOT) \
     F(ELEM) \
     F(OPTDOT) \
@@ -44,6 +45,7 @@ class ObjectBox;
     F(LABEL) \
     F(OBJECT) \
     F(CALL) \
+    F(ARGUMENTS) \
     F(NAME) \
     F(OBJECT_PROPERTY_NAME) \
     F(COMPUTED_NAME) \
@@ -218,171 +220,212 @@ IsTypeofKind(ParseNodeKind kind)
 }
 
 /*
- * Label        Variant     Members
- * -----        -------     -------
  * <Definitions>
- * PNK_FUNCTION name        pn_funbox: ptr to js::FunctionBox holding function
- *                            object containing arg and var properties.  We
- *                            create the function object at parse (not emit)
- *                            time to specialize arg and var bytecodes early.
- *                          pn_body: PNK_PARAMSBODY, ordinarily;
- *                            PNK_LEXICALSCOPE for implicit function in genexpr
- * PNK_PARAMSBODY list      list of formal parameters with
- *                              PNK_NAME node with non-empty name for
- *                                SingleNameBinding without Initializer
- *                              PNK_ASSIGN node for SingleNameBinding with
- *                                Initializer
- *                              PNK_NAME node with empty name for destructuring
- *                                pn_expr: PNK_ARRAY, PNK_OBJECT, or PNK_ASSIGN
- *                                  PNK_ARRAY or PNK_OBJECT for BindingPattern
- *                                    without Initializer
- *                                  PNK_ASSIGN for BindingPattern with
- *                                    Initializer
- *                          followed by:
- *                              PNK_STATEMENTLIST node for function body
- *                                statements,
- *                              PNK_RETURN for expression closure
- *                          pn_count: 1 + number of formal parameters
- *                          pn_tree: PNK_PARAMSBODY or PNK_STATEMENTLIST node
- * PNK_SPREAD   unary       pn_kid: expression being spread
+ * PNK_FUNCTION (FunctionNode)
+ *   funbox: ptr to js::FunctionBox holding function object containing arg and
+ *           var properties.  We create the function object at parse (not emit)
+ *           time to specialize arg and var bytecodes early.
+ *   body: PNK_PARAMSBODY or null for lazily-parsed function, ordinarily;
+ *         PNK_LEXICALSCOPE for implicit function in genexpr
+ *   syntaxKind: the syntax of the function
+ * PNK_PARAMSBODY (ListNode)
+ *   head: list of formal parameters with
+ *           * Name node with non-empty name for SingleNameBinding without
+ *             Initializer
+ *           * Assign node for SingleNameBinding with Initializer
+ *           * Name node with empty name for destructuring
+ *               expr: Array or Object for BindingPattern without
+ *                     Initializer, Assign for BindingPattern with
+ *                     Initializer
+ *         followed by either:
+ *           * StatementList node for function body statements
+ *           * Return for expression closure
+ *   count: number of formal parameters + 1
+ * PNK_SPREAD (UnaryNode)
+ *   kid: expression being spread
+ * PNK_CLASS (ClassNode)
+ *   kid1: PNK_CLASSNAMES for class name. can be null for anonymous class.
+ *   kid2: expression after `extends`. null if no expression
+ *   kid3: either of
+ *           * PNK_CLASSMETHODLIST, if anonymous class
+ *           * PNK_LEXICALSCOPE which contains PNK_CLASSMETHODLIST as scopeBody,
+ *             if named class
+ * PNK_CLASSNAMES (ClassNames)
+ *   left: Name node for outer binding, or null if the class is an expression
+ *         that doesn't create an outer binding
+ *   right: Name node for inner binding
+ * PNK_CLASSMETHODLIST (ListNode)
+ *   head: list of N PNK_CLASSMETHOD nodes
+ *   count: N >= 0
+ * PNK_CLASSMETHOD (ClassMethod)
+ *   name: propertyName
+ *   method: methodDefinition
+ * PNK_MODULE (ModuleNode)
+ *   body: statement list of the module
  *
  * <Statements>
- * PNK_STATEMENTLIST list   pn_head: list of pn_count statements
- * PNK_IF       ternary     pn_kid1: cond, pn_kid2: then, pn_kid3: else or null.
- *                            In body of a comprehension or desugared generator
- *                            expression, pn_kid2 is PNK_YIELD, PNK_ARRAYPUSH,
- *                            or (if the push was optimized away) empty
- *                            PNK_STATEMENTLIST.
- * PNK_SWITCH   binary      pn_left: discriminant
- *                          pn_right: PNK_LEXICALSCOPE node that contains the list
- *                            of PNK_CASE nodes, with at most one default node.
- * PNK_CASE     binary      pn_left: case-expression if CaseClause, or
- *                            null if DefaultClause
- *                          pn_right: PNK_STATEMENTLIST node for this case's
- *                            statements
- * PNK_WHILE    binary      pn_left: cond, pn_right: body
- * PNK_DOWHILE  binary      pn_left: body, pn_right: cond
- * PNK_FOR      binary      pn_left: either PNK_FORIN (for-in statement),
- *                            PNK_FOROF (for-of) or PNK_FORHEAD (for(;;))
- *                          pn_right: body
- * PNK_COMPREHENSIONFOR     pn_left: either PNK_FORIN or PNK_FOROF
- *              binary      pn_right: body
- * PNK_FORIN    ternary     pn_kid1: declaration or expression to left of 'in'
- *                          pn_kid2: null
- *                          pn_kid3: object expr to right of 'in'
- * PNK_FOROF    ternary     pn_kid1: declaration or expression to left of 'of'
- *                          pn_kid2: null
- *                          pn_kid3: expr to right of 'of'
- * PNK_FORHEAD  ternary     pn_kid1:  init expr before first ';' or nullptr
- *                          pn_kid2:  cond expr before second ';' or nullptr
- *                          pn_kid3:  update expr after second ';' or nullptr
- * PNK_THROW    unary       pn_op: JSOP_THROW, pn_kid: exception
- * PNK_TRY      ternary     pn_kid1: try block
- *                          pn_kid2: null or PNK_CATCHLIST list
- *                          pn_kid3: null or finally block
- * PNK_CATCHLIST list       pn_head: list of PNK_LEXICALSCOPE nodes, one per
- *                                   catch-block, each with pn_expr pointing
- *                                   to a PNK_CATCH node
- * PNK_CATCH    ternary     pn_kid1: PNK_NAME, PNK_ARRAY, or PNK_OBJECT catch var node
- *                                   (PNK_ARRAY or PNK_OBJECT if destructuring)
- *                          pn_kid2: null or the catch guard expression
- *                          pn_kid3: catch block statements
- * PNK_BREAK    name        pn_atom: label or null
- * PNK_CONTINUE name        pn_atom: label or null
- * PNK_WITH     binary      pn_left: head expr; pn_right: body;
- * PNK_VAR,     list        pn_head: list of PNK_NAME or PNK_ASSIGN nodes
- * PNK_LET,                          each name node has either
- * PNK_CONST                           pn_used: false
- *                                     pn_atom: variable name
- *                                     pn_expr: initializer or null
- *                                   or
- *                                     pn_used: true
- *                                     pn_atom: variable name
- *                                     pn_lexdef: def node
- *                                   each assignment node has
- *                                     pn_left: PNK_NAME with pn_used true and
- *                                              pn_lexdef (NOT pn_expr) set
- *                                     pn_right: initializer
- * PNK_RETURN   unary       pn_kid: return expr or null
- * PNK_SEMI     unary       pn_kid: expr or null statement
- *                          pn_prologue: true if Directive Prologue member
- *                              in original source, not introduced via
- *                              constant folding or other tree rewriting
- * PNK_LABEL    name        pn_atom: label, pn_expr: labeled statement
- * PNK_IMPORT   binary      pn_left: PNK_IMPORT_SPEC_LIST import specifiers
- *                          pn_right: PNK_STRING module specifier
- * PNK_EXPORT   unary       pn_kid: declaration expression
- * PNK_EXPORT_FROM binary   pn_left: PNK_EXPORT_SPEC_LIST export specifiers
- *                          pn_right: PNK_STRING module specifier
- * PNK_EXPORT_DEFAULT unary pn_kid: export default declaration or expression
+ * PNK_STATEMENTLIST (ListNode)
+ *   head: list of N statements
+ *   count: N >= 0
+ * PNK_IF (TernaryNode)     In body of a comprehension or desugared PNK_GENEXP:
+ *   kid1: cond
+ *   kid2: then             = PNK_YIELD, PNK_ARRAYPUSH, (empty) PNK_STATEMENTLIST
+ *   kid3: else or null
+ * PNK_SWITCH (SwitchStatement)
+ *   left: discriminant
+ *   right: LexicalScope node that contains the list of Case nodes, with at
+ *          most one default node.
+ *   hasDefault: true if there's a default case
+ * PNK_CASE (CaseClause)
+ *   left: case-expression if CaseClause, or null if DefaultClause
+ *   right: StatementList node for this case's statements
+ * PNK_WHILE (BinaryNode)
+ *   left: cond
+ *   right: body
+ * PNK_DOWHILE (BinaryNode)
+ *   left: body
+ *   right: cond
+ * PNK_FOR (ForNode)
+ *   left: one of
+ *           * PNK_FORIN: for (x in y) ...
+ *           * PNK_FOROF: for (x of x) ...
+ *           * PNK_FORHEAD: for (;;) ...
+ *   right: body
+ * PNK_COMPREHENSIONFOR (ForNode)
+ *   left: either PNK_FORIN or PNK_FOROF
+ *   right: body
+ * PNK_FORIN (TernaryNode)
+ *   kid1: declaration or expression to left of 'in'
+ *   kid2: null
+ *   kid3: object expr to right of 'in'
+ * PNK_FOROF (TernaryNode)
+ *   kid1: declaration or expression to left of 'of'
+ *   kid2: null
+ *   kid3: expr to right of 'of'
+ * PNK_FORHEAD (TernaryNode)
+ *   kid1:  init expr before first ';' or nullptr
+ *   kid2:  cond expr before second ';' or nullptr
+ *   kid3:  update expr after second ';' or nullptr
+ * PNK_THROW (UnaryNode)
+ *   kid: thrown exception
+ * PNK_TRY (TryNode)
+ *   body: try block
+ *   catchList: null or PNK_CATCHLIST list
+ *   finallyBlock: null or finally block
+ * PNK_CATCHLIST (ListNode)
+ *    head: list of PNK_LEXICALSCOPE nodes, one per catch-block,
+ *           each with scopeBody pointing to a PNK_CATCH node
+ * PNK_CATCH (TernaryNode)
+ *   kid1: PNK_NAME, PNK_ARRAY, or PNK_OBJECT catch binding node (PNK_ARRAY or PNK_OBJECT if destructuring)
+           or null if optional catch binding
+ *   kid2: null or the catch guard expression
+ *   kid3: catch block statements
+ * PNK_BREAK (BreakStatement)
+ *   label: label or null
+ * PNK_CONTINUE (ContinueStatement)
+ *   label: label or null
+ * PNK_WITH (BinaryNode)
+ *   left: head expr
+ *   right: body
+ * PNK_VAR, PNK_LET, PNK_CONST (ListNode)
+ *   head: list of N Name or Assign nodes
+ *         each name node has either
+ *           atom: variable name
+ *           expr: initializer or null
+ *         or
+ *           atom: variable name
+ *         each assignment node has
+ *           left: pattern
+ *           right: initializer
+ *   count: N > 0
+ * PNK_RETURN  (UnaryNode)
+ *   kid: returned expression, or null if none
+ * PNK_SEMI (UnaryNode)
+ *   kid: expr
+ *   prologue: true if Directive Prologue member in original source, not
+ *             introduced via constant folding or other tree rewriting
+ * PNK_NOP (NullaryNode)
+ *   (no fields)
+ * PNK_LABEL (LabeledStatement)
+ *   atom: label
+ *   expr: labeled statement
+ * PNK_IMPORT (BinaryNode)
+ *   left: PNK_IMPORT_SPEC_LIST import specifiers
+ *   right: PNK_STRING module specifier
+ * PNK_IMPORT_SPEC_LIST (ListNode)
+ *   head: list of N ImportSpec nodes
+ *   count: N >= 0 (N = 0 for `import {} from ...`)
+ * PNK_IMPORT_SPEC (BinaryNode)
+ *   left: import name
+ *   right: local binding name
+ * PNK_EXPORT (UnaryNode)
+ *   kid: declaration expression
+ * PNK_EXPORT_FROM (BinaryNode)
+ *   left: PNK_EXPORT_SPEC_LIST export specifiers
+ *   right: PNK_STRING module specifier
+ * PNK_EXPORT_SPEC_LIST (ListNode)
+ *   head: list of N ExportSpec nodes
+ *   count: N >= 0 (N = 0 for `export {}`)
+ * PNK_EXPORT (BinaryNode)
+ *   left: local binding name
+ *   right: export name
+ * PNK_EXPORT_DEFAULT (BinaryNode)
+ *   left: export default declaration or expression
+ *   right: PNK_NAME node for assignment
  *
  * <Expressions>
  * All left-associated binary trees of the same type are optimized into lists
  * to avoid recursion when processing expression chains.
- * PNK_COMMA    list        pn_head: list of pn_count comma-separated exprs
- * PNK_ASSIGN   binary      pn_left: lvalue, pn_right: rvalue
- * PNK_ADDASSIGN,   binary  pn_left: lvalue, pn_right: rvalue
- * PNK_SUBASSIGN,           pn_op: JSOP_ADD for +=, etc.
- * PNK_BITORASSIGN,
- * PNK_BITXORASSIGN,
- * PNK_BITANDASSIGN,
- * PNK_LSHASSIGN,
- * PNK_RSHASSIGN,
- * PNK_URSHASSIGN,
- * PNK_MULASSIGN,
- * PNK_DIVASSIGN,
- * PNK_MODASSIGN,
- * PNK_POWASSIGN
- * PNK_CONDITIONAL ternary  (cond ? trueExpr : falseExpr)
- *                          pn_kid1: cond, pn_kid2: then, pn_kid3: else
+ * PNK_COMMA (ListNode)
+ *   head: list of N comma-separated exprs
+ *   count: N >= 2
+ * PNK_ASSIGN (BinaryNode)
+ *   left: target of assignment
+ *   right: value to assign
+ * PNK_ADDASSIGN, PNK_SUBASSIGN, PNK_BITORASSIGN, PNK_BITXORASSIGN,
+ * PNK_BITANDASSIGN, PNK_LSHASSIGN, PNK_RSHASSIGN, PNK_URSHASSIGN,
+ * PNK_MULASSIGN, PNK_DIVASSIGN, PNK_MODASSIGN, PNK_POWASSIGN (AssignmentNode)
+ *   left: target of assignment
+ *   right: value to assign
+ *   pn_op: JSOP_ADD for +=, etc
+ * PNK_CONDITIONAL (ConditionalExpression)
+ *   (cond ? thenExpr : elseExpr)
+ *   kid1: cond
+ *   kid2: thenExpr
+ *   kid3: elseExpr
  * PNK_COALESCE,   list     pn_head; list of pn_count subexpressions
- * PNK_OR,                  All of these operators are left-associative except (**).
- * PNK_AND
- * PNK_BITOR,
- * PNK_BITXOR,
- * PNK_BITAND,
- * PNK_EQ,
- * PNK_NE,
- * PNK_STRICTEQ,
- * PNK_STRICTNE,
- * PNK_LT,
- * PNK_LE,
- * PNK_GT,
- * PNK_GE,
- * PNK_LSH,
- * PNK_RSH,
- * PNK_URSH,
- * PNK_ADD,
- * PNK_SUB,
- * PNK_STAR,
- * PNK_DIV,
- * PNK_MOD,
- * PNK_POW                  (**) is right-associative, but forms a list
- *                          nonetheless. Special hacks everywhere.
+ * PNK_OR, PNK_AND, PNK_BITOR,
+ * PNK_BITXOR, PNK_BITAND, PNK_EQ,
+ * PNK_NE, PNK_STRICTEQ, PNK_STRICTNE,
+ * PNK_LT, PNK_LE, PNK_GT, PNK_GE,
+ * PNK_LSH, PNK_RSH, PNK_URSH,
+ * PNK_ADD, PNK_SUB, PNK_STAR,
+ * PNK_DIV, PNK_MOD, PNK_POW (ListNode)
+ *   head: list of N subexpressions
+ *         All of these operators are left-associative except Pow which is
+ *         right-associative, but still forms a list (see comments in
+ *         ParseNode::appendOrCreateList).
+ *   count: N >= 2
  *
- * PNK_POS,     unary       pn_kid: UNARY expr
- * PNK_NEG
- * PNK_VOID,    unary       pn_kid: UNARY expr
- * PNK_NOT,
- * PNK_BITNOT,
- * PNK_AWAIT
- * PNK_TYPEOFNAME, unary    pn_kid: UNARY expr
- * PNK_TYPEOFEXPR
- * PNK_PREINCREMENT, unary  pn_kid: MEMBER expr
- * PNK_POSTINCREMENT,
- * PNK_PREDECREMENT,
- * PNK_POSTDECREMENT
- * PNK_NEW      list        pn_head: list of ctor, arg1, arg2, ... argN
- *                          pn_count: 1 + N (where N is number of args)
- *                          ctor is a MEMBER expr
- * PNK_DELETENAME unary     pn_kid: PNK_NAME expr
- * PNK_DELETEPROP unary     pn_kid: PNK_DOT expr
- * PNK_DELETEELEM unary     pn_kid: PNK_ELEM expr
- * PNK_DELETEEXPR unary     pn_kid: MEMBER expr that's evaluated, then the
- *                          overall delete evaluates to true; can't be a kind
- *                          for a more-specific PNK_DELETE* unless constant
- *                          folding (or a similar parse tree manipulation) has
- *                          occurred
+ * PNK_POS, PNK_NEG, PNK_VOID, PNK_NOT, PNK_BITNOT,
+ * PNK_TYPEOFNAME, PNK_TYPEOFEXPR (UnaryNode)
+ *   kid: unary expr
+ * PNK_PREINCREMENT, PNK_POSTINCREMENT,
+ * PNK_PREDECREMENT, PNK_POSTDECREMENT (UnaryNode)
+ *   kid: member expr
+ * PNK_NEW (BinaryNode)
+ *   left: ctor expression on the left of the '('
+ *   right: Arguments
+ * PNK_DELETENAME, PNK_DELETEPROP, PNK_DELETEELEM,
+ * PNK_DELETEEXPR (UnaryNode)
+ *   kid: expression that's evaluated, then the overall delete evaluates to
+ *        true; can't be a kind for a more-specific ParseNodeKind::Delete*
+ *        unless constant folding (or a similar parse tree manipulation) has
+ *        occurred
+ *          * DeleteName: PNK_NAME expr
+ *          * DeleteProp: PNK_DOT expr
+ *          * DeleteElem: PNK_ELEM expr
+ *          * DeleteExpr: MEMBER expr
  * PNK_DELETEOPTCHAIN unary pn_kid: MEMBER expr that's evaluated, then the
  *                          overall delete evaluates to true; If constant
  *                          folding occurs, PNK_ELEM may become PNK_DOT.
@@ -396,91 +439,216 @@ IsTypeofKind(ParseNodeKind kind)
  *                          contains are nullish. An optional chain can also
  *                          contain nodes such as PNK_DOT, PNK_ELEM, PNK_NAME,
  *                          PNK_CALL, etc. These are evaluated normally.
- * PNK_OPTDOT   name        pn_expr: MEMBER expr to left of .
- *                          short circuits back to PNK_OPTCHAIN if nullish.
- *                          pn_atom: name to right of .
- * PNK_OPTELEM  binary      pn_left: MEMBER expr to left of [
- *                          short circuits back to PNK_OPTCHAIN if nullish.
- *                          pn_right: expr between [ and ]
- * PNK_OPTCALL  list        pn_head: list of call, arg1, arg2, ... argN
- *                          pn_count: 1 + N (where N is number of args)
- *                          call is a MEMBER expr naming a callable object,
- *                          short circuits back to PNK_OPTCHAIN if nullish.
- * PNK_DOT      name        pn_expr: MEMBER expr to left of .
- *                          pn_atom: name to right of .
- * PNK_ELEM     binary      pn_left: MEMBER expr to left of [
- *                          pn_right: expr between [ and ]
- * PNK_CALL     list        pn_head: list of call, arg1, arg2, ... argN
- *                          pn_count: 1 + N (where N is number of args)
- *                          call is a MEMBER expr naming a callable object
- * PNK_GENEXP   list        Exactly like PNK_CALL, used for the implicit call
+ * PNK_PROPERTYNAME (NameNode)
+ *   atom: property name being accessed
+ * PNK_DOT, PNK_OPTDOT (PropertyAccess)         short circuits back to PNK_OPTCHAIN if nullish.
+ *   left: MEMBER expr to left of '.'
+ *   right: PropertyName to right of '.'
+ * PNK_ELEM, PNK_OPTELEM (PropertyByValue)      short circuits back to PNK_OPTCHAIN if nullish.
+ *   left: MEMBER expr to left of '['
+ *   right: expr between '[' and ']'
+ * PNK_CALL, PNK_OPTCALL (BinaryNode)           short circuits back to PNK_OPTCHAIN if nullish.
+ *   left: callee expression on the left of the '('
+ *   right: Arguments
+ * PNK_GENEXP   binary      Exactly like PNK_CALL, used for the implicit call
  *                          in the desugaring of a generator-expression.
- * PNK_ARRAY    list        pn_head: list of pn_count array element exprs
- *                          [,,] holes are represented by PNK_ELISION nodes
- *                          pn_xflags: PN_ENDCOMMA if extra comma at end
- * PNK_OBJECT   list        pn_head: list of pn_count binary PNK_COLON nodes
- * PNK_COLON    binary      key-value pair in object initializer or
- *                          destructuring lhs
- *                          pn_left: property id, pn_right: value
- * PNK_SHORTHAND binary     Same fields as PNK_COLON. This is used for object
- *                          literal properties using shorthand ({x}).
- * PNK_COMPUTED_NAME unary  ES6 ComputedPropertyName.
+ * PNK_ARGUMENTS (ListNode)
+ *   head: list of arg1, arg2, ... argN
+ *   count: N >= 0
+ * PNK_ARRAY (ListNode)
+ *   head: list of N array element expressions
+ *         holes ([,,]) are represented by Elision nodes,
+ *         spread elements ([...X]) are represented by Spread nodes
+ *   count: N >= 0
+ * PNK_OBJECT (ListNode)
+ *   head: list of N nodes, each item is one of:
+ *           * MutateProto
+ *           * Colon
+ *           * Shorthand
+ *           * Spread
+ *   count: N >= 0
+ * PNK_COLON (BinaryNode)
+ *   key-value pair in object initializer or destructuring lhs
+ *   left: property id
+ *   right: value
+ * PNK_SHORTHAND (BinaryNode)
+ *   Same fields as Colon. This is used for object literal properties using
+ *   shorthand ({x}).
+ * PNK_COMPUTED_NAME (UnaryNode)
+ *   ES6 ComputedPropertyName.
+ *   kid: the AssignmentExpression inside the square brackets
  *                          pn_kid: the AssignmentExpression inside the square brackets
- * PNK_NAME,    name        pn_atom: name, string, or object atom
- * PNK_STRING               pn_op: JSOP_GETNAME, JSOP_STRING, or JSOP_OBJECT
- *                          If JSOP_GETNAME, pn_op may be JSOP_*ARG or JSOP_*VAR
- *                          telling const-ness and static analysis results
- * PNK_TEMPLATE_STRING_LIST pn_head: list of alternating expr and template strings
- *              list
- * PNK_TEMPLATE_STRING      pn_atom: template string atom
-                nullary     pn_op: JSOP_NOP
- * PNK_TAGGED_TEMPLATE      pn_head: list of call, call site object, arg1, arg2, ... argN
- *              list        pn_count: 2 + N (N is the number of substitutions)
- * PNK_CALLSITEOBJ list     pn_head: a PNK_ARRAY node followed by
- *                          list of pn_count - 1 PNK_TEMPLATE_STRING nodes
- * PNK_REGEXP   nullary     pn_objbox: RegExp model object
- * PNK_NUMBER   dval        pn_dval: double value of numeric literal
- * PNK_TRUE,    nullary     pn_op: JSOp bytecode
- * PNK_FALSE,
- * PNK_NULL,
- * PNK_RAW_UNDEFINED
+ * PNK_NAME (NameNode)
+ *   atom: name, or object atom
+ *   pn_op: JSOP_GETNAME, JSOP_STRING, or JSOP_OBJECT
+ *          If JSOP_GETNAME, pn_op may be JSOP_*ARG or JSOP_*VAR telling
+ *          const-ness and static analysis results
+ * PNK_STRING (NameNode)
+ *   atom: string
+ * PNK_TEMPLATE_STRING_LIST (ListNode)
+ *   head: list of alternating expr and template strings
+ *           TemplateString [, expression, TemplateString]+
+ *         there's at least one expression.  If the template literal contains
+ *         no ${}-delimited expression, it's parsed as a single TemplateString
+ * PNK_TEMPLATE_STRING (NameNode)
+ *   atom: template string atom
+ * PNK_TAGGED_TEMPLATE (BinaryNode)
+ *   left: tag expression
+ *   right: Arguments, with the first being the call site object, then
+ *          arg1, arg2, ... argN
+ * PNK_CALLSITEOBJ (CallSiteNode)
+ *   head:  an Array of raw TemplateString, then corresponding cooked
+ *          TemplateString nodes
+ *            Array [, cooked TemplateString]+
+ *          where the Array is
+ *            [raw TemplateString]+
+ * PNK_REGEXP (RegExpLiteral)
+ *   regexp: RegExp model object
+ * PNK_NUMBER (NumericLiteral)
+ *   value: double value of numeric literal
+ * PNK_TRUE, PNK_FALSE (BooleanLiteral)
+ *   pn_op: JSOp bytecode
+ * PNK_NULL (NullLiteral)
+ *   pn_op: JSOp bytecode
+ * PNK_RAW_UNDEFINED (RawUndefinedLiteral)
+ *   pn_op: JSOp bytecode
  *
- * PNK_THIS,        unary   pn_kid: '.this' Name if function `this`, else nullptr
- * PNK_SUPERBASE    unary   pn_kid: '.this' Name
+ * PNK_THIS (UnaryNode)
+ *   kid: '.this' Name if function `this`, else nullptr
+ * PNK_SUPERBASE (UnaryNode)
+ *   kid: '.this' Name
  *
- * PNK_SETTHIS      binary  pn_left: '.this' Name, pn_right: SuperCall
- *
- * PNK_LEXICALSCOPE scope   pn_u.scope.bindings: scope bindings
- *                          pn_u.scope.body: scope body
- * PNK_GENERATOR    nullary
- * PNK_INITIALYIELD unary   pn_kid: generator object
- * PNK_YIELD,       unary   pn_kid: expr or null
- * PNK_YIELD_STAR,
+ * PNK_SUPERCALL (BinaryNode)
+ *   left: SuperBase
+ *   right: Arguments
+ * PNK_SETTHIS (BinaryNode)
+ *   left: '.this' Name
+ *   right: SuperCall
+ * PNK_LEXICALSCOPE (LexicalScopeNode)
+ *   scopeBindings: scope bindings
+ *   scopeBody: scope body
+ * PNK_GENERATOR (NullaryNode)
+ * PNK_INITIALYIELD (UnaryNode)
+ *   kid: generator object
+ * PNK_YIELD, PNK_YIELD_STAR, PNK_AWAIT (UnaryNode)
+ *   kid: expr or null
  * PNK_ARRAYCOMP    list    pn_count: 1
  *                          pn_head: list of 1 element, which is block
  *                          enclosing for loop(s) and optionally
  *                          if-guarded PNK_ARRAYPUSH
  * PNK_ARRAYPUSH    unary   pn_op: JSOP_ARRAYCOMP
  *                          pn_kid: array comprehension expression
- * PNK_NOP          nullary
+ * PNK_NOP (NullaryNode)
  */
 enum ParseNodeArity
 {
-    PN_NULLARY,                         /* 0 kids, only pn_atom/pn_dval/etc. */
+    PN_NULLARY,                         /* 0 kids */
     PN_UNARY,                           /* one kid, plus a couple of scalars */
     PN_BINARY,                          /* two kids, plus a couple of scalars */
     PN_TERNARY,                         /* three kids */
-    PN_CODE,                            /* module or function definition node */
+    PN_FUNCTION,                        /* function definition node */
+    PN_MODULE,                          /* module node */
     PN_LIST,                            /* generic singly linked list */
-    PN_NAME,                            /* name, label, or regexp */
+    PN_NAME,                            /* name, label, string */
+    PN_NUMBER,                          /* numeric literal */
+    PN_REGEXP,                          /* regexp literal */
+    PN_LOOP,                            /* loop control (break/continue) */
     PN_SCOPE                            /* lexical scope */
 };
 
-class LoopControlStatement;
-class BreakStatement;
-class ContinueStatement;
-class ConditionalExpression;
-class PropertyAccess;
+#define FOR_EACH_PARSENODE_SUBCLASS(macro) \
+    macro(BinaryNode, BinaryNodeType, asBinary) \
+    macro(AssignmentNode, AssignmentNodeType, asAssignment) \
+    macro(CaseClause, CaseClauseType, asCaseClause) \
+    macro(ClassMethod, ClassMethodType, asClassMethod) \
+    macro(ClassNames, ClassNamesType, asClassNames) \
+    macro(ForNode, ForNodeType, asFor) \
+    macro(PropertyAccess, PropertyAccessType, asPropertyAccess) \
+    macro(PropertyByValue, PropertyByValueType, asPropertyByValue) \
+    macro(OptionalPropertyAccess, OptionalPropertyAccessType, asOptionalPropertyAccess) \
+    macro(OptionalPropertyByValue, OptionalPropertyByValueType, asOptionalPropertyByValue) \
+    macro(SwitchStatement, SwitchStatementType, asSwitchStatement) \
+    \
+    macro(FunctionNode, FunctionNodeType, asFunction) \
+    macro(ModuleNode, ModuleNodeType, asModule) \
+    \
+    macro(LexicalScopeNode, LexicalScopeNodeType, asLexicalScope) \
+    \
+    macro(ListNode, ListNodeType, asList) \
+    macro(CallSiteNode, CallSiteNodeType, asCallSite) \
+    \
+    macro(LoopControlStatement, LoopControlStatementType, asLoopControlStatement) \
+    macro(BreakStatement, BreakStatementType, asBreakStatement) \
+    macro(ContinueStatement, ContinueStatementType, asContinueStatement) \
+    \
+    macro(NameNode, NameNodeType, asName) \
+    macro(LabeledStatement, LabeledStatementType, asLabeledStatement) \
+    \
+    macro(NullaryNode, NullaryNodeType, asNullary) \
+    macro(BooleanLiteral, BooleanLiteralType, asBooleanLiteral) \
+    macro(DebuggerStatement, DebuggerStatementType, asDebuggerStatement) \
+    macro(NullLiteral, NullLiteralType, asNullLiteral) \
+    macro(RawUndefinedLiteral, RawUndefinedLiteralType, asRawUndefinedLiteral) \
+    \
+    macro(NumericLiteral, NumericLiteralType, asNumericLiteral) \
+    \
+    macro(RegExpLiteral, RegExpLiteralType, asRegExpLiteral) \
+    \
+    macro(TernaryNode, TernaryNodeType, asTernary) \
+    macro(ClassNode, ClassNodeType, asClass) \
+    macro(ConditionalExpression, ConditionalExpressionType, asConditionalExpression) \
+    macro(TryNode, TryNodeType, asTry) \
+    \
+    macro(UnaryNode, UnaryNodeType, asUnary) \
+    macro(ThisLiteral, ThisLiteralType, asThisLiteral)
+
+#define DECLARE_CLASS(typeName, longTypeName, asMethodName) \
+class typeName;
+FOR_EACH_PARSENODE_SUBCLASS(DECLARE_CLASS)
+#undef DECLARE_CLASS
+
+enum class FunctionSyntaxKind
+{
+    Expression,                                  // A non-arrow function expression.
+    Statement,                                   // A named function appearing as a Statement.
+    Arrow,
+    Method,
+    ClassConstructor,
+    DerivedClassConstructor,
+    Getter,
+    GetterNoExpressionClosure,                   // Deprecated syntax: get a() this._a; (bug 1203742)
+    Setter,
+    SetterNoExpressionClosure                    // Deprecated syntax: set a(x) this._a = x;
+};
+
+static inline bool
+IsConstructorKind(FunctionSyntaxKind kind)
+{
+    return kind == FunctionSyntaxKind::ClassConstructor ||
+           kind == FunctionSyntaxKind::DerivedClassConstructor;
+}
+
+static inline bool
+IsGetterKind(FunctionSyntaxKind kind)
+{
+    return kind == FunctionSyntaxKind::Getter ||
+           kind == FunctionSyntaxKind::GetterNoExpressionClosure;
+}
+
+static inline bool
+IsSetterKind(FunctionSyntaxKind kind)
+{
+    return kind == FunctionSyntaxKind::Setter ||
+           kind == FunctionSyntaxKind::SetterNoExpressionClosure;
+}
+
+static inline bool
+IsMethodDefinitionKind(FunctionSyntaxKind kind)
+{
+    return kind == FunctionSyntaxKind::Method ||
+           IsConstructorKind(kind) ||
+           IsGetterKind(kind) || IsSetterKind(kind);
+}
 
 class ParseNode
 {
@@ -540,11 +708,6 @@ class ParseNode
     bool isArity(ParseNodeArity a) const   { return getArity() == a; }
     void setArity(ParseNodeArity a)        { pn_arity = a; }
 
-    bool isAssignment() const {
-        ParseNodeKind kind = getKind();
-        return PNK_ASSIGNMENT_START <= kind && kind <= PNK_ASSIGNMENT_LAST;
-    }
-
     bool isBinaryOperation() const {
         ParseNodeKind kind = getKind();
         return PNK_BINOP_FIRST <= kind && kind <= PNK_BINOP_LAST;
@@ -567,74 +730,83 @@ class ParseNode
 
     union {
         struct {                        /* list of next-linked nodes */
+          private:
+            friend class ListNode;
             ParseNode*  head;           /* first node in list */
-            ParseNode** tail;           /* ptr to ptr to last node in list */
+            ParseNode** tail;           /* ptr to last node's pn_next in list */
             uint32_t    count;          /* number of nodes in list */
-            uint32_t    xflags;         /* see PNX_* below */
+            uint32_t    xflags;         /* see ListNode class */
         } list;
         struct {                        /* ternary: if, for(;;), ?: */
+          private:
+            friend class TernaryNode;
             ParseNode*  kid1;           /* condition, discriminant, etc. */
             ParseNode*  kid2;           /* then-part, case list, etc. */
             ParseNode*  kid3;           /* else-part, default case, etc. */
         } ternary;
         struct {                        /* two kids if binary */
+          private:
+            friend class BinaryNode;
+            friend class ForNode;
+            friend class ClassMethod;
+            friend class PropertyAccessBase;
+            friend class SwitchStatement;
             ParseNode*  left;
             ParseNode*  right;
             union {
                 unsigned iflags;        /* JSITER_* flags for PNK_{COMPREHENSION,}FOR node */
                 bool isStatic;          /* only for PNK_CLASSMETHOD */
+                bool hasDefault;        /* only for PNK_SWITCH */
             };
         } binary;
         struct {                        /* one kid if unary */
+          private:
+            friend class UnaryNode;
             ParseNode*  kid;
-            bool        prologue;       /* directive prologue member (as
-                                           pn_prologue) */
+            bool        prologue;       /* directive prologue member */
         } unary;
         struct {                        /* name, labeled statement, etc. */
-            union {
-                JSAtom*      atom;      /* lexical name or label atom */
-                ObjectBox*   objbox;    /* regexp object */
-                FunctionBox* funbox;    /* function object */
-            };
-            ParseNode*  expr;           /* module or function body, var
-                                           initializer, argument default, or
-                                           base object of PNK_DOT */
+          private:
+            friend class NameNode;
+            JSAtom*     atom;           /* lexical name or label atom */
+            ParseNode*  initOrStmt;     /* var initializer, argument default,
+                                         * or label statement target */
         } name;
         struct {
+          private:
+            friend class RegExpLiteral;
+            ObjectBox* objbox;
+        } regexp;
+        struct {
+          private:
+            friend class FunctionNode;
+            FunctionBox* funbox;
+            ParseNode* body;
+            FunctionSyntaxKind syntaxKind;
+        } function;
+        struct {
+          private:
+            friend class ModuleNode;
+            ParseNode* body;
+        } module;
+        struct {
+          private:
+            friend class LexicalScopeNode;
             LexicalScope::Data* bindings;
             ParseNode*          body;
         } scope;
         struct {
+          private:
+            friend class NumericLiteral;
             double       value;         /* aligned numeric literal value */
             DecimalPoint decimalPoint;  /* Whether the number has a decimal point */
         } number;
         class {
+          private:
             friend class LoopControlStatement;
             PropertyName*    label;    /* target of break/continue statement */
         } loopControl;
     } pn_u;
-
-#define pn_objbox       pn_u.name.objbox
-#define pn_funbox       pn_u.name.funbox
-#define pn_body         pn_u.name.expr
-#define pn_head         pn_u.list.head
-#define pn_tail         pn_u.list.tail
-#define pn_count        pn_u.list.count
-#define pn_xflags       pn_u.list.xflags
-#define pn_kid1         pn_u.ternary.kid1
-#define pn_kid2         pn_u.ternary.kid2
-#define pn_kid3         pn_u.ternary.kid3
-#define pn_left         pn_u.binary.left
-#define pn_right        pn_u.binary.right
-#define pn_pval         pn_u.binary.pval
-#define pn_iflags       pn_u.binary.iflags
-#define pn_kid          pn_u.unary.kid
-#define pn_prologue     pn_u.unary.prologue
-#define pn_atom         pn_u.name.atom
-#define pn_objbox       pn_u.name.objbox
-#define pn_expr         pn_u.name.expr
-#define pn_dval         pn_u.number.value
-
 
   public:
     /*
@@ -646,76 +818,6 @@ class ParseNode
                        FullParseHandler* handler, ParseContext* pc);
 
     inline PropertyName* name() const;
-    inline JSAtom* atom() const;
-
-    ParseNode* expr() const {
-        MOZ_ASSERT(pn_arity == PN_NAME || pn_arity == PN_CODE);
-        return pn_expr;
-    }
-
-    bool isEmptyScope() const {
-        MOZ_ASSERT(pn_arity == PN_SCOPE);
-        return !pn_u.scope.bindings;
-    }
-
-    Handle<LexicalScope::Data*> scopeBindings() const {
-        MOZ_ASSERT(!isEmptyScope());
-        // Bindings' GC safety depend on the presence of an AutoKeepAtoms that
-        // the rest of the frontend also depends on.
-        return Handle<LexicalScope::Data*>::fromMarkedLocation(&pn_u.scope.bindings);
-    }
-
-    ParseNode* scopeBody() const {
-        MOZ_ASSERT(pn_arity == PN_SCOPE);
-        return pn_u.scope.body;
-    }
-
-    void setScopeBody(ParseNode* body) {
-        MOZ_ASSERT(pn_arity == PN_SCOPE);
-        pn_u.scope.body = body;
-    }
-
-/* PN_LIST pn_xflags bits. */
-#define PNX_FUNCDEFS    0x01            /* contains top-level function statements */
-#define PNX_ARRAYHOLESPREAD 0x02        /* one or more of
-                                           1. array initialiser has holes
-                                           2. array initializer has spread node */
-#define PNX_NONCONST    0x04            /* initialiser has non-constants */
-
-    bool functionIsHoisted() const {
-        MOZ_ASSERT(pn_arity == PN_CODE && getKind() == PNK_FUNCTION);
-        MOZ_ASSERT(isOp(JSOP_LAMBDA) ||        // lambda, genexpr
-                   isOp(JSOP_LAMBDA_ARROW) ||  // arrow function
-                   isOp(JSOP_DEFFUN) ||        // non-body-level function statement
-                   isOp(JSOP_NOP) ||           // body-level function stmt in global code
-                   isOp(JSOP_GETLOCAL) ||      // body-level function stmt in function code
-                   isOp(JSOP_GETARG) ||        // body-level function redeclaring formal
-                   isOp(JSOP_INITLEXICAL));    // block-level function stmt
-        return !isOp(JSOP_LAMBDA) && !isOp(JSOP_LAMBDA_ARROW) && !isOp(JSOP_DEFFUN);
-    }
-
-    /*
-     * True if this statement node could be a member of a Directive Prologue: an
-     * expression statement consisting of a single string literal.
-     *
-     * This considers only the node and its children, not its context. After
-     * parsing, check the node's pn_prologue flag to see if it is indeed part of
-     * a directive prologue.
-     *
-     * Note that a Directive Prologue can contain statements that cannot
-     * themselves be directives (string literals that include escape sequences
-     * or escaped newlines, say). This member function returns true for such
-     * nodes; we use it to determine the extent of the prologue.
-     */
-    JSAtom* isStringExprStatement() const {
-        if (getKind() == PNK_SEMI) {
-            MOZ_ASSERT(pn_arity == PN_UNARY);
-            ParseNode* kid = pn_kid;
-            if (kid && kid->getKind() == PNK_STRING && !kid->pn_parens)
-                return kid->pn_atom;
-        }
-        return nullptr;
-    }
 
     /* True if pn is a parsenode representing a literal constant. */
     bool isLiteral() const {
@@ -727,95 +829,8 @@ class ParseNode
                isKind(PNK_RAW_UNDEFINED);
     }
 
-    /* Return true if this node appears in a Directive Prologue. */
-    bool isDirectivePrologueMember() const { return pn_prologue; }
-
     // True iff this is a for-in/of loop variable declaration (var/let/const).
-    bool isForLoopDeclaration() const {
-        if (isKind(PNK_VAR) || isKind(PNK_LET) || isKind(PNK_CONST)) {
-            MOZ_ASSERT(isArity(PN_LIST));
-            MOZ_ASSERT(pn_count > 0);
-            return true;
-        }
-
-        return false;
-    }
-
-    ParseNode* generatorExpr() const {
-        MOZ_ASSERT(isKind(PNK_GENEXP));
-
-        ParseNode* callee = this->pn_head;
-        MOZ_ASSERT(callee->isKind(PNK_FUNCTION));
-
-        ParseNode* paramsBody = callee->pn_body;
-        MOZ_ASSERT(paramsBody->isKind(PNK_PARAMSBODY));
-
-        ParseNode* body = paramsBody->last();
-        MOZ_ASSERT(body->isKind(PNK_STATEMENTLIST));
-        MOZ_ASSERT(body->last()->isKind(PNK_LEXICALSCOPE) ||
-                   body->last()->isKind(PNK_COMPREHENSIONFOR));
-        return body->last();
-    }
-
-    /*
-     * Compute a pointer to the last element in a singly-linked list. NB: list
-     * must be non-empty for correct PN_LAST usage -- this is asserted!
-     */
-    ParseNode* last() const {
-        MOZ_ASSERT(pn_arity == PN_LIST);
-        MOZ_ASSERT(pn_count != 0);
-        return (ParseNode*)(uintptr_t(pn_tail) - offsetof(ParseNode, pn_next));
-    }
-
-    void initNumber(double value, DecimalPoint decimalPoint) {
-        MOZ_ASSERT(pn_arity == PN_NULLARY);
-        MOZ_ASSERT(getKind() == PNK_NUMBER);
-        pn_u.number.value = value;
-        pn_u.number.decimalPoint = decimalPoint;
-    }
-
-    void makeEmpty() {
-        MOZ_ASSERT(pn_arity == PN_LIST);
-        pn_head = nullptr;
-        pn_tail = &pn_head;
-        pn_count = 0;
-        pn_xflags = 0;
-    }
-
-    void initList(ParseNode* pn) {
-        MOZ_ASSERT(pn_arity == PN_LIST);
-        if (pn->pn_pos.begin < pn_pos.begin)
-            pn_pos.begin = pn->pn_pos.begin;
-        pn_pos.end = pn->pn_pos.end;
-        pn_head = pn;
-        pn_tail = &pn->pn_next;
-        pn_count = 1;
-        pn_xflags = 0;
-    }
-
-    void append(ParseNode* pn) {
-        MOZ_ASSERT(pn_arity == PN_LIST);
-        MOZ_ASSERT(pn->pn_pos.begin >= pn_pos.begin);
-        pn_pos.end = pn->pn_pos.end;
-        *pn_tail = pn;
-        pn_tail = &pn->pn_next;
-        pn_count++;
-    }
-
-    void prepend(ParseNode* pn) {
-        MOZ_ASSERT(pn_arity == PN_LIST);
-        pn->pn_next = pn_head;
-        pn_head = pn;
-        if (pn_tail == &pn_head)
-            pn_tail = &pn->pn_next;
-        pn_count++;
-    }
-
-    void checkListConsistency()
-#ifndef DEBUG
-    {}
-#endif
-    ;
+    bool isForLoopDeclaration() const;
 
     enum AllowConstantObjects {
         DontAllowObjects = 0,
@@ -852,20 +867,16 @@ class ParseNode
 #endif
 };
 
-struct NullaryNode : public ParseNode
+class NullaryNode : public ParseNode
 {
+  public:
     NullaryNode(ParseNodeKind kind, const TokenPos& pos)
       : ParseNode(kind, JSOP_NOP, PN_NULLARY, pos) {}
     NullaryNode(ParseNodeKind kind, JSOp op, const TokenPos& pos)
       : ParseNode(kind, op, PN_NULLARY, pos) {}
 
-    // This constructor is for a few mad uses in the emitter. It populates
-    // the pn_atom field even though that field belongs to a branch in pn_u
-    // that nullary nodes shouldn't use -- bogus.
-    NullaryNode(ParseNodeKind kind, JSOp op, const TokenPos& pos, JSAtom* atom)
-      : ParseNode(kind, op, PN_NULLARY, pos)
-    {
-        pn_atom = atom;
+    static bool test(const ParseNode& node) {
+        return node.isArity(PN_NULLARY);
     }
 
 #ifdef DEBUG
@@ -873,12 +884,61 @@ struct NullaryNode : public ParseNode
 #endif
 };
 
-struct UnaryNode : public ParseNode
+class NameNode : public ParseNode
 {
+  protected:
+    NameNode(ParseNodeKind kind, JSOp op, JSAtom* atom, ParseNode* initOrStmt, const TokenPos& pos)
+      : ParseNode(kind, op, PN_NAME, pos)
+    {
+        pn_u.name.atom = atom;
+        pn_u.name.initOrStmt = initOrStmt;
+    }
+
+  public:
+    NameNode(ParseNodeKind kind, JSOp op, JSAtom* atom, const TokenPos& pos)
+      : ParseNode(kind, op, PN_NAME, pos)
+    {
+        pn_u.name.atom = atom;
+        pn_u.name.initOrStmt = nullptr;
+    }
+
+    static bool test(const ParseNode& node) {
+        return node.isArity(PN_NAME);
+    }
+
+#ifdef DEBUG
+    void dump(int indent);
+#endif
+
+    JSAtom* atom() const {
+        return pn_u.name.atom;
+    }
+
+    ParseNode* initializer() const {
+        return pn_u.name.initOrStmt;
+    }
+
+    void setAtom(JSAtom* atom) {
+        pn_u.name.atom = atom;
+    }
+
+    void setInitializer(ParseNode* init) {
+        pn_u.name.initOrStmt = init;
+    }
+
+    // Methods used by FoldConstants.cpp.
+    ParseNode** unsafeInitializerReference() {
+        return &pn_u.name.initOrStmt;
+    }
+};
+
+class UnaryNode : public ParseNode
+{
+  public:
     UnaryNode(ParseNodeKind kind, JSOp op, const TokenPos& pos, ParseNode* kid)
       : ParseNode(kind, op, PN_UNARY, pos)
     {
-        pn_kid = kid;
+        pn_u.unary.kid = kid;
     }
 
     static bool test(const ParseNode& node) {
@@ -888,57 +948,222 @@ struct UnaryNode : public ParseNode
 #ifdef DEBUG
     void dump(int indent);
 #endif
+
+    ParseNode* kid() const {
+        return pn_u.unary.kid;
+    }
+
+    /* Return true if this node appears in a Directive Prologue. */
+    bool isDirectivePrologueMember() const {
+        return pn_u.unary.prologue;
+    }
+
+    void setIsDirectivePrologueMember() {
+        pn_u.unary.prologue = true;
+    }
+
+    /*
+     * Non-null if this is a statement node which could be a member of a
+     * Directive Prologue: an expression statement consisting of a single
+     * string literal.
+     *
+     * This considers only the node and its children, not its context. After
+     * parsing, check the node's prologue flag to see if it is indeed part of
+     * a directive prologue.
+     *
+     * Note that a Directive Prologue can contain statements that cannot
+     * themselves be directives (string literals that include escape sequences
+     * or escaped newlines, say). This member function returns true for such
+     * nodes; we use it to determine the extent of the prologue.
+     */
+    JSAtom* isStringExprStatement() const {
+        if (isKind(PNK_SEMI)) {
+            ParseNode* expr = kid();
+            if (expr && expr->isKind(PNK_STRING) && !expr->isInParens()) {
+                return kid()->as<NameNode>().atom();
+            }
+        }
+        return nullptr;
+    }
+
+    // Methods used by FoldConstants.cpp.
+    ParseNode** unsafeKidReference() {
+        return &pn_u.unary.kid;
+    }
 };
 
-struct BinaryNode : public ParseNode
+class BinaryNode : public ParseNode
 {
+  public:
     BinaryNode(ParseNodeKind kind, JSOp op, const TokenPos& pos, ParseNode* left, ParseNode* right)
       : ParseNode(kind, op, PN_BINARY, pos)
     {
-        pn_left = left;
-        pn_right = right;
+        pn_u.binary.left = left;
+        pn_u.binary.right = right;
     }
 
     BinaryNode(ParseNodeKind kind, JSOp op, ParseNode* left, ParseNode* right)
       : ParseNode(kind, op, PN_BINARY, TokenPos::box(left->pn_pos, right->pn_pos))
     {
-        pn_left = left;
-        pn_right = right;
+        pn_u.binary.left = left;
+        pn_u.binary.right = right;
+    }
+
+    static bool test(const ParseNode& node) {
+        return node.isArity(PN_BINARY);
     }
 
 #ifdef DEBUG
     void dump(int indent);
 #endif
+
+    ParseNode* left() const {
+        return pn_u.binary.left;
+    }
+
+    ParseNode* right() const {
+        return pn_u.binary.right;
+    }
+
+    // Methods used by FoldConstants.cpp.
+    // caller are responsible for keeping the list consistent.
+    ParseNode** unsafeLeftReference() {
+        return &pn_u.binary.left;
+    }
+
+    ParseNode** unsafeRightReference() {
+        return &pn_u.binary.right;
+    }
 };
 
-struct TernaryNode : public ParseNode
+class AssignmentNode : public BinaryNode
 {
-    TernaryNode(ParseNodeKind kind, JSOp op, ParseNode* kid1, ParseNode* kid2, ParseNode* kid3)
-      : ParseNode(kind, op, PN_TERNARY,
-                  TokenPos((kid1 ? kid1 : kid2 ? kid2 : kid3)->pn_pos.begin,
-                           (kid3 ? kid3 : kid2 ? kid2 : kid1)->pn_pos.end))
-    {
-        pn_kid1 = kid1;
-        pn_kid2 = kid2;
-        pn_kid3 = kid3;
+  public:
+    AssignmentNode(ParseNodeKind kind, JSOp op, ParseNode* left, ParseNode* right)
+      : BinaryNode(kind, op, TokenPos(left->pn_pos.begin, right->pn_pos.end), left, right)
+    {}
+
+    static bool test(const ParseNode& node) {
+        ParseNodeKind kind = node.getKind();
+        bool match = PNK_ASSIGNMENT_START <= kind &&
+                     kind <= PNK_ASSIGNMENT_LAST;
+        MOZ_ASSERT_IF(match, node.is<BinaryNode>());
+        return match;
     }
+};
+
+class ForNode : public BinaryNode
+{
+  public:
+    ForNode(const TokenPos& pos, ParseNode* forHead, ParseNode* body, unsigned iflags)
+      : BinaryNode(PNK_FOR,
+                   forHead->isKind(PNK_FORIN) ? JSOP_ITER : JSOP_NOP,
+                   pos, forHead, body)
+    {
+        MOZ_ASSERT(forHead->isKind(PNK_FORIN) ||
+                   forHead->isKind(PNK_FOROF) ||
+                   forHead->isKind(PNK_FORHEAD));
+        pn_u.binary.iflags = iflags;
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_FOR) || node.isKind(PNK_COMPREHENSIONFOR);
+        MOZ_ASSERT_IF(match, node.is<BinaryNode>());
+        return match;
+    }
+
+    TernaryNode* head() const {
+        return &left()->as<TernaryNode>();
+    }
+
+    ParseNode* body() const {
+        return right();
+    }
+
+    unsigned iflags() const {
+        return pn_u.binary.iflags;
+    }
+};
+
+class TernaryNode : public ParseNode
+{
+  public:
+    TernaryNode(ParseNodeKind kind, JSOp op, ParseNode* kid1, ParseNode* kid2, ParseNode* kid3)
+      : TernaryNode(kind, op, kid1, kid2, kid3,
+                    TokenPos((kid1 ? kid1 : kid2 ? kid2 : kid3)->pn_pos.begin,
+                             (kid3 ? kid3 : kid2 ? kid2 : kid1)->pn_pos.end))
+    {}
 
     TernaryNode(ParseNodeKind kind, JSOp op, ParseNode* kid1, ParseNode* kid2, ParseNode* kid3,
                 const TokenPos& pos)
       : ParseNode(kind, op, PN_TERNARY, pos)
     {
-        pn_kid1 = kid1;
-        pn_kid2 = kid2;
-        pn_kid3 = kid3;
+        pn_u.ternary.kid1 = kid1;
+        pn_u.ternary.kid2 = kid2;
+        pn_u.ternary.kid3 = kid3;
+    }
+
+    static bool test(const ParseNode& node) {
+        return node.isArity(PN_TERNARY);
     }
 
 #ifdef DEBUG
     void dump(int indent);
 #endif
+
+    ParseNode* kid1() const {
+        return pn_u.ternary.kid1;
+    }
+
+    ParseNode* kid2() const {
+        return pn_u.ternary.kid2;
+    }
+
+    ParseNode* kid3() const {
+        return pn_u.ternary.kid3;
+    }
+
+    // Methods used by FoldConstants.cpp.
+    ParseNode** unsafeKid1Reference() {
+        return &pn_u.ternary.kid1;
+    }
+
+    ParseNode** unsafeKid2Reference() {
+        return &pn_u.ternary.kid2;
+    }
+
+    ParseNode** unsafeKid3Reference() {
+        return &pn_u.ternary.kid3;
+    }
 };
 
-struct ListNode : public ParseNode
+class ListNode : public ParseNode
 {
+  private:
+    // xflags bits.
+
+    // Statement list has top-level function statements.
+    static constexpr uint32_t hasTopLevelFunctionDeclarationsBit = 0x01;
+
+    // One or more of
+    //   * array has holes
+    //   * array has spread node
+    static constexpr uint32_t hasArrayHoleOrSpreadBit = 0x02;
+
+    // Array/Object/Class initializer has non-constants.
+    //   * array has holes
+    //   * array has spread node
+    //   * array has element which is known not to be constant
+    //   * array has no element
+    //   * object/class has __proto__
+    //   * object/class has property which is known not to be constant
+    //   * object/class shorthand property
+    //   * object/class spread property
+    //   * object/class has method
+    //   * object/class has computed property
+    static constexpr uint32_t hasNonConstInitializerBit = 0x04;
+
+  public:
     ListNode(ParseNodeKind kind, const TokenPos& pos)
       : ParseNode(kind, JSOP_NOP, PN_LIST, pos)
     {
@@ -954,7 +1179,15 @@ struct ListNode : public ParseNode
     ListNode(ParseNodeKind kind, JSOp op, ParseNode* kid)
       : ParseNode(kind, op, PN_LIST, kid->pn_pos)
     {
-        initList(kid);
+        if (kid->pn_pos.begin < pn_pos.begin) {
+            pn_pos.begin = kid->pn_pos.begin;
+        }
+        pn_pos.end = kid->pn_pos.end;
+
+        pn_u.list.head = kid;
+        pn_u.list.tail = &kid->pn_next;
+        pn_u.list.count = 1;
+        pn_u.list.xflags = 0;
     }
 
     static bool test(const ParseNode& node) {
@@ -964,48 +1197,396 @@ struct ListNode : public ParseNode
 #ifdef DEBUG
     void dump(int indent);
 #endif
-};
 
-struct CodeNode : public ParseNode
-{
-    CodeNode(ParseNodeKind kind, JSOp op, const TokenPos& pos)
-      : ParseNode(kind, op, PN_CODE, pos)
-    {
-        MOZ_ASSERT(kind == PNK_FUNCTION || kind == PNK_MODULE);
-        MOZ_ASSERT_IF(kind == PNK_MODULE, op == JSOP_NOP);
-        MOZ_ASSERT(op == JSOP_NOP || // statement, module
-                   op == JSOP_LAMBDA_ARROW || // arrow function
-                   op == JSOP_LAMBDA); // expression, method, comprehension, accessor, &c.
-        MOZ_ASSERT(!pn_body);
-        MOZ_ASSERT(!pn_objbox);
+    ParseNode* head() const {
+        return pn_u.list.head;
     }
 
-  public:
-#ifdef DEBUG
-    void dump(int indent);
+    ParseNode** tail() const {
+        return pn_u.list.tail;
+    }
+
+    uint32_t count() const {
+        return pn_u.list.count;
+    }
+
+    bool empty() const {
+        return count() == 0;
+    }
+
+    MOZ_MUST_USE bool hasTopLevelFunctionDeclarations() const {
+        MOZ_ASSERT(isKind(PNK_STATEMENTLIST));
+        return pn_u.list.xflags & hasTopLevelFunctionDeclarationsBit;
+    }
+
+    MOZ_MUST_USE bool hasArrayHoleOrSpread() const {
+        MOZ_ASSERT(isKind(PNK_ARRAY));
+        return pn_u.list.xflags & hasArrayHoleOrSpreadBit;
+    }
+
+    MOZ_MUST_USE bool hasNonConstInitializer() const {
+        MOZ_ASSERT(isKind(PNK_ARRAY) ||
+                   isKind(PNK_OBJECT) ||
+                   isKind(PNK_CLASSMETHODLIST));
+        return pn_u.list.xflags & hasNonConstInitializerBit;
+    }
+
+    void setHasTopLevelFunctionDeclarations() {
+        MOZ_ASSERT(isKind(PNK_STATEMENTLIST));
+        pn_u.list.xflags |= hasTopLevelFunctionDeclarationsBit;
+    }
+
+    void setHasArrayHoleOrSpread() {
+        MOZ_ASSERT(isKind(PNK_ARRAY));
+        pn_u.list.xflags |= hasArrayHoleOrSpreadBit;
+    }
+
+    void setHasNonConstInitializer() {
+        MOZ_ASSERT(isKind(PNK_ARRAY) ||
+                   isKind(PNK_OBJECT) ||
+                   isKind(PNK_CLASSMETHODLIST));
+        pn_u.list.xflags |= hasNonConstInitializerBit;
+    }
+
+    void checkConsistency() const
+#ifndef DEBUG
+    {}
 #endif
+    ;
+
+    /*
+     * Compute a pointer to the last element in a singly-linked list. NB: list
+     * must be non-empty -- this is asserted!
+     */
+    ParseNode* last() const {
+        MOZ_ASSERT(!empty());
+        //
+        // ParseNode                      ParseNode
+        // +-----+---------+-----+        +-----+---------+-----+
+        // | ... | pn_next | ... | +-...->| ... | pn_next | ... |
+        // +-----+---------+-----+ |      +-----+---------+-----+
+        // ^       |               |      ^     ^
+        // |       +---------------+      |     |
+        // |                              |     tail()
+        // |                              |
+        // head()                         last()
+        //
+        return (ParseNode*)(uintptr_t(tail()) - offsetof(ParseNode, pn_next));
+    }
+
+    void replaceLast(ParseNode* node) {
+        MOZ_ASSERT(!empty());
+        pn_pos.end = node->pn_pos.end;
+
+        ParseNode* item = head();
+        ParseNode* lastNode = last();
+        MOZ_ASSERT(item);
+        if (item == lastNode) {
+            pn_u.list.head = node;
+        } else {
+            while (item->pn_next != lastNode) {
+                MOZ_ASSERT(item->pn_next);
+                item = item->pn_next;
+            }
+            item->pn_next = node;
+        }
+        pn_u.list.tail = &node->pn_next;
+    }
+
+    void makeEmpty() {
+        pn_u.list.head = nullptr;
+        pn_u.list.tail = &pn_u.list.head;
+        pn_u.list.count = 0;
+        pn_u.list.xflags = 0;
+    }
+
+    void append(ParseNode* item) {
+        MOZ_ASSERT(item->pn_pos.begin >= pn_pos.begin);
+        pn_pos.end = item->pn_pos.end;
+        *pn_u.list.tail = item;
+        pn_u.list.tail = &item->pn_next;
+        pn_u.list.count++;
+    }
+
+    void prepend(ParseNode* item) {
+        item->pn_next = pn_u.list.head;
+        pn_u.list.head = item;
+        if (pn_u.list.tail == &pn_u.list.head) {
+            pn_u.list.tail = &item->pn_next;
+        }
+        pn_u.list.count++;
+    }
+
+    // Methods used by FoldConstants.cpp.
+    // Caller is responsible for keeping the list consistent.
+    ParseNode** unsafeHeadReference() {
+        return &pn_u.list.head;
+    }
+
+    void unsafeReplaceTail(ParseNode** newTail) {
+        pn_u.list.tail = newTail;
+        checkConsistency();
+    }
+
+    void unsafeSetTail(ParseNode* newTail) {
+        *pn_u.list.tail = newTail;
+    }
+
+    void unsafeDecrementCount() {
+        MOZ_ASSERT(count() > 1);
+        pn_u.list.count--;
+    }
+
+  private:
+    // Classes to iterate over ListNode contents:
+    //
+    // Usage:
+    //   ListNode* list;
+    //   for (ParseNode* item : list->contents()) {
+    //     // item is ParseNode* typed.
+    //   }
+    class iterator
+    {
+      private:
+        ParseNode* node_;
+
+        friend class ListNode;
+        explicit iterator(ParseNode* node)
+          : node_(node)
+        {}
+
+      public:
+        bool operator==(const iterator& other) const {
+            return node_ == other.node_;
+        }
+
+        bool operator!=(const iterator& other) const {
+            return !(*this == other);
+        }
+
+        iterator& operator++() {
+            node_ = node_->pn_next;
+            return *this;
+        }
+
+        ParseNode* operator*() {
+            return node_;
+        }
+
+        const ParseNode* operator*() const {
+            return node_;
+        }
+    };
+
+    class range
+    {
+      private:
+        ParseNode* begin_;
+        ParseNode* end_;
+
+        friend class ListNode;
+        range(ParseNode* begin, ParseNode* end)
+          : begin_(begin),
+            end_(end)
+        {}
+
+      public:
+        iterator begin() {
+            return iterator(begin_);
+        }
+
+        iterator end() {
+            return iterator(end_);
+        }
+
+        const iterator begin() const {
+            return iterator(begin_);
+        }
+
+        const iterator end() const {
+            return iterator(end_);
+        }
+
+        const iterator cbegin() const {
+            return begin();
+        }
+
+        const iterator cend() const {
+            return end();
+        }
+    };
+
+#ifdef DEBUG
+  MOZ_MUST_USE bool contains(ParseNode* target) const {
+      MOZ_ASSERT(target);
+      for (ParseNode* node : contents()) {
+          if (target == node) {
+              return true;
+          }
+      }
+      return false;
+  }
+#endif
+
+  public:
+    range contents() {
+        return range(head(), nullptr);
+    }
+
+    const range contents() const {
+        return range(head(), nullptr);
+    }
+
+    range contentsFrom(ParseNode* begin) {
+        MOZ_ASSERT_IF(begin, contains(begin));
+        return range(begin, nullptr);
+    }
+
+    const range contentsFrom(ParseNode* begin) const {
+        MOZ_ASSERT_IF(begin, contains(begin));
+        return range(begin, nullptr);
+    }
+
+    range contentsTo(ParseNode* end) {
+        MOZ_ASSERT_IF(end, contains(end));
+        return range(head(), end);
+    }
+
+    const range contentsTo(ParseNode* end) const {
+        MOZ_ASSERT_IF(end, contains(end));
+        return range(head(), end);
+    }
 };
 
-struct NameNode : public ParseNode
+inline bool
+ParseNode::isForLoopDeclaration() const
 {
-    NameNode(ParseNodeKind kind, JSOp op, JSAtom* atom, const TokenPos& pos)
-      : ParseNode(kind, op, PN_NAME, pos)
+    if (isKind(PNK_VAR) || isKind(PNK_LET) || isKind(PNK_CONST)) {
+        MOZ_ASSERT(!as<ListNode>().empty());
+        return true;
+    }
+
+    return false;
+}
+
+class FunctionNode : public ParseNode
+{
+  public:
+    FunctionNode(FunctionSyntaxKind syntaxKind, const TokenPos& pos)
+      : ParseNode(PNK_FUNCTION, JSOP_NOP, PN_FUNCTION, pos)
     {
-        pn_atom = atom;
-        pn_expr = nullptr;
+        MOZ_ASSERT(!pn_u.function.body);
+        MOZ_ASSERT(!pn_u.function.funbox);
+        pn_u.function.syntaxKind = syntaxKind;
     }
 
     static bool test(const ParseNode& node) {
-        return node.isArity(PN_NAME);
+        bool match = node.isKind(PNK_FUNCTION);
+        MOZ_ASSERT_IF(match, node.isArity(PN_FUNCTION));
+        return match;
     }
 
 #ifdef DEBUG
     void dump(int indent);
 #endif
+
+    FunctionBox* funbox() const {
+        return pn_u.function.funbox;
+    }
+
+    ListNode* body() const {
+        return pn_u.function.body ? &pn_u.function.body->as<ListNode>() : nullptr;
+    }
+
+    void setFunbox(FunctionBox* funbox) {
+        pn_u.function.funbox = funbox;
+    }
+
+    void setBody(ListNode* body) {
+        pn_u.function.body = body;
+    }
+
+    // Methods used by FoldConstants.cpp.
+    ParseNode** unsafeBodyReference() {
+        return &pn_u.function.body;
+    }
+
+    FunctionSyntaxKind syntaxKind() const { return pn_u.function.syntaxKind; }
+
+    bool functionIsHoisted() const {
+        return syntaxKind() == FunctionSyntaxKind::Statement;
+    }
 };
 
-struct LexicalScopeNode : public ParseNode
+class ModuleNode : public ParseNode
 {
+  public:
+    ModuleNode(const TokenPos& pos)
+      : ParseNode(PNK_MODULE, JSOP_NOP, PN_MODULE, pos)
+    {
+        MOZ_ASSERT(!pn_u.module.body);
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_MODULE);
+        MOZ_ASSERT_IF(match, node.isArity(PN_MODULE));
+        return match;
+    }
+
+#ifdef DEBUG
+    void dump(int indent);
+#endif
+
+    ListNode* body() const {
+        return &pn_u.module.body->as<ListNode>();
+    }
+
+    void setBody(ListNode* body) {
+        pn_u.module.body = body;
+    }
+
+    // Methods used by FoldConstants.cpp.
+    ParseNode** unsafeBodyReference() {
+        return &pn_u.module.body;
+    }
+};
+
+class NumericLiteral : public ParseNode
+{
+  public:
+    NumericLiteral(double value, DecimalPoint decimalPoint, const TokenPos& pos)
+      : ParseNode(PNK_NUMBER, JSOP_NOP, PN_NUMBER, pos)
+    {
+        pn_u.number.value = value;
+        pn_u.number.decimalPoint = decimalPoint;
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_NUMBER);
+        MOZ_ASSERT_IF(match, node.isArity(PN_NUMBER));
+        return match;
+    }
+
+#ifdef DEBUG
+    void dump(int indent);
+#endif
+
+    double value() const {
+        return pn_u.number.value;
+    }
+
+    DecimalPoint decimalPoint() const {
+        return pn_u.number.decimalPoint;
+    }
+
+    void setValue(double v) {
+        pn_u.number.value = v;
+    }
+};
+
+class LexicalScopeNode : public ParseNode
+{
+  public:
     LexicalScopeNode(LexicalScope::Data* bindings, ParseNode* body)
       : ParseNode(PNK_LEXICALSCOPE, JSOP_NOP, PN_SCOPE, body->pn_pos)
     {
@@ -1014,30 +1595,52 @@ struct LexicalScopeNode : public ParseNode
     }
 
     static bool test(const ParseNode& node) {
-        return node.isKind(PNK_LEXICALSCOPE);
+        bool match = node.isKind(PNK_LEXICALSCOPE);
+        MOZ_ASSERT_IF(match, node.isArity(PN_SCOPE));
+        return match;
     }
 
 #ifdef DEBUG
     void dump(int indent);
 #endif
+
+    Handle<LexicalScope::Data*> scopeBindings() const {
+        MOZ_ASSERT(!isEmptyScope());
+        // Bindings' GC safety depend on the presence of an AutoKeepAtoms that
+        // the rest of the frontend also depends on.
+        return Handle<LexicalScope::Data*>::fromMarkedLocation(&pn_u.scope.bindings);
+    }
+
+    ParseNode* scopeBody() const {
+        return pn_u.scope.body;
+    }
+
+    void setScopeBody(ParseNode* body) {
+        pn_u.scope.body = body;
+    }
+
+    bool isEmptyScope() const {
+        return !pn_u.scope.bindings;
+    }
+
+    ParseNode** unsafeScopeBodyReference() {
+        return &pn_u.scope.body;
+    }
 };
 
-class LabeledStatement : public ParseNode
+class LabeledStatement : public NameNode
 {
   public:
     LabeledStatement(PropertyName* label, ParseNode* stmt, uint32_t begin)
-      : ParseNode(PNK_LABEL, JSOP_NOP, PN_NAME, TokenPos(begin, stmt->pn_pos.end))
-    {
-        pn_atom = label;
-        pn_expr = stmt;
-    }
+      : NameNode(PNK_LABEL, JSOP_NOP, label, stmt, TokenPos(begin, stmt->pn_pos.end))
+    { }
 
     PropertyName* label() const {
-        return pn_atom->asPropertyName();
+        return atom()->asPropertyName();
     }
 
     ParseNode* statement() const {
-        return pn_expr;
+        return initializer();
     }
 
     static bool test(const ParseNode& node) {
@@ -1045,6 +1648,11 @@ class LabeledStatement : public ParseNode
         MOZ_ASSERT_IF(match, node.isArity(PN_NAME));
         MOZ_ASSERT_IF(match, node.isOp(JSOP_NOP));
         return match;
+    }
+
+    // Methods used by FoldConstants.cpp.
+    ParseNode** unsafeStatementReference() {
+        return unsafeInitializerReference();
     }
 };
 
@@ -1057,16 +1665,21 @@ class CaseClause : public BinaryNode
     CaseClause(ParseNode* expr, ParseNode* stmts, uint32_t begin)
       : BinaryNode(PNK_CASE, JSOP_NOP, TokenPos(begin, stmts->pn_pos.end), expr, stmts) {}
 
-    ParseNode* caseExpression() const { return pn_left; }
-    bool isDefault() const { return !caseExpression(); }
-    ParseNode* statementList() const { return pn_right; }
+    ParseNode* caseExpression() const {
+        return left();
+    }
 
-    // The next CaseClause in the same switch statement.
-    CaseClause* next() const { return pn_next ? &pn_next->as<CaseClause>() : nullptr; }
+    bool isDefault() const {
+        return !caseExpression();
+    }
+
+    ListNode* statementList() const {
+        return &right()->as<ListNode>();
+    }
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_CASE);
-        MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
+        MOZ_ASSERT_IF(match, node.is<BinaryNode>());
         MOZ_ASSERT_IF(match, node.isOp(JSOP_NOP));
         return match;
     }
@@ -1076,7 +1689,7 @@ class LoopControlStatement : public ParseNode
 {
   protected:
     LoopControlStatement(ParseNodeKind kind, PropertyName* label, const TokenPos& pos)
-      : ParseNode(kind, JSOP_NOP, PN_NULLARY, pos)
+      : ParseNode(kind, JSOP_NOP, PN_LOOP, pos)
     {
         MOZ_ASSERT(kind == PNK_BREAK || kind == PNK_CONTINUE);
         pn_u.loopControl.label = label;
@@ -1088,9 +1701,13 @@ class LoopControlStatement : public ParseNode
         return pn_u.loopControl.label;
     }
 
+#ifdef DEBUG
+    void dump(int indent);
+#endif
+
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_BREAK) || node.isKind(PNK_CONTINUE);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NULLARY));
+        MOZ_ASSERT_IF(match, node.isArity(PN_LOOP));
         MOZ_ASSERT_IF(match, node.isOp(JSOP_NOP));
         return match;
     }
@@ -1105,7 +1722,7 @@ class BreakStatement : public LoopControlStatement
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_BREAK);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NULLARY));
+        MOZ_ASSERT_IF(match, node.is<LoopControlStatement>());
         MOZ_ASSERT_IF(match, node.isOp(JSOP_NOP));
         return match;
     }
@@ -1120,52 +1737,86 @@ class ContinueStatement : public LoopControlStatement
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_CONTINUE);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NULLARY));
+        MOZ_ASSERT_IF(match, node.is<LoopControlStatement>());
         MOZ_ASSERT_IF(match, node.isOp(JSOP_NOP));
         return match;
     }
 };
 
-class DebuggerStatement : public ParseNode
+class DebuggerStatement : public NullaryNode
 {
   public:
     explicit DebuggerStatement(const TokenPos& pos)
-      : ParseNode(PNK_DEBUGGER, JSOP_NOP, PN_NULLARY, pos)
+      : NullaryNode(PNK_DEBUGGER, JSOP_NOP, pos)
     { }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_DEBUGGER);
+        MOZ_ASSERT_IF(match, node.is<NullaryNode>());
+        return match;
+    }
 };
 
-class ConditionalExpression : public ParseNode
+class ConditionalExpression : public TernaryNode
 {
   public:
     ConditionalExpression(ParseNode* condition, ParseNode* thenExpr, ParseNode* elseExpr)
-      : ParseNode(PNK_CONDITIONAL, JSOP_NOP, PN_TERNARY,
-                  TokenPos(condition->pn_pos.begin, elseExpr->pn_pos.end))
+      : TernaryNode(PNK_CONDITIONAL, JSOP_NOP, condition, thenExpr, elseExpr,
+                    TokenPos(condition->pn_pos.begin, elseExpr->pn_pos.end))
     {
         MOZ_ASSERT(condition);
         MOZ_ASSERT(thenExpr);
         MOZ_ASSERT(elseExpr);
-        pn_u.ternary.kid1 = condition;
-        pn_u.ternary.kid2 = thenExpr;
-        pn_u.ternary.kid3 = elseExpr;
     }
 
     ParseNode& condition() const {
-        return *pn_u.ternary.kid1;
+        return *kid1();
     }
 
     ParseNode& thenExpression() const {
-        return *pn_u.ternary.kid2;
+        return *kid2();
     }
 
     ParseNode& elseExpression() const {
-        return *pn_u.ternary.kid3;
+        return *kid3();
     }
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_CONDITIONAL);
-        MOZ_ASSERT_IF(match, node.isArity(PN_TERNARY));
+        MOZ_ASSERT_IF(match, node.is<TernaryNode>());
         MOZ_ASSERT_IF(match, node.isOp(JSOP_NOP));
         return match;
+    }
+};
+
+class TryNode : public TernaryNode
+{
+  public:
+    TryNode(uint32_t begin, ParseNode* body, ListNode* catchList, ParseNode* finallyBlock)
+      : TernaryNode(PNK_TRY, JSOP_NOP, body, catchList, finallyBlock,
+                    TokenPos(begin, (finallyBlock ? finallyBlock : catchList)->pn_pos.end))
+    {
+        MOZ_ASSERT(body);
+        MOZ_ASSERT(catchList || finallyBlock);
+        MOZ_ASSERT_IF(catchList, catchList->isKind(PNK_CATCHLIST));
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_TRY);
+        MOZ_ASSERT_IF(match, node.is<TernaryNode>());
+        return match;
+    }
+
+    ParseNode* body() const {
+        return kid1();
+    }
+
+    ListNode* catchList() const {
+        return kid2() ? &kid2()->as<ListNode>() : nullptr;
+    }
+
+    ParseNode* finallyBlock() const {
+        return kid3();
     }
 };
 
@@ -1175,99 +1826,126 @@ class ThisLiteral : public UnaryNode
     ThisLiteral(const TokenPos& pos, ParseNode* thisName)
       : UnaryNode(PNK_THIS, JSOP_NOP, pos, thisName)
     { }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_THIS);
+        MOZ_ASSERT_IF(match, node.is<UnaryNode>());
+        return match;
+    }
 };
 
-class NullLiteral : public ParseNode
+class NullLiteral : public NullaryNode
 {
   public:
-    explicit NullLiteral(const TokenPos& pos) : ParseNode(PNK_NULL, JSOP_NULL, PN_NULLARY, pos) { }
+    explicit NullLiteral(const TokenPos& pos)
+      : NullaryNode(PNK_NULL, JSOP_NULL, pos)
+    { }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_NULL);
+        MOZ_ASSERT_IF(match, node.is<NullaryNode>());
+        return match;
+    }
 };
 
 // This is only used internally, currently just for tagged templates.
 // It represents the value 'undefined' (aka `void 0`), like NullLiteral
 // represents the value 'null'.
-class RawUndefinedLiteral : public ParseNode
+class RawUndefinedLiteral : public NullaryNode
 {
   public:
     explicit RawUndefinedLiteral(const TokenPos& pos)
-      : ParseNode(PNK_RAW_UNDEFINED, JSOP_UNDEFINED, PN_NULLARY, pos) { }
+      : NullaryNode(PNK_RAW_UNDEFINED, JSOP_UNDEFINED, pos) { }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_RAW_UNDEFINED);
+        MOZ_ASSERT_IF(match, node.is<NullaryNode>());
+        return match;
+    }
 };
 
-class BooleanLiteral : public ParseNode
+class BooleanLiteral : public NullaryNode
 {
   public:
     BooleanLiteral(bool b, const TokenPos& pos)
-      : ParseNode(b ? PNK_TRUE : PNK_FALSE, b ? JSOP_TRUE : JSOP_FALSE, PN_NULLARY, pos)
+      : NullaryNode(b ? PNK_TRUE : PNK_FALSE, b ? JSOP_TRUE : JSOP_FALSE, pos)
     { }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_TRUE) || node.isKind(PNK_FALSE);
+        MOZ_ASSERT_IF(match, node.is<NullaryNode>());
+        return match;
+    }
 };
 
-class RegExpLiteral : public NullaryNode
+class RegExpLiteral : public ParseNode
 {
   public:
     RegExpLiteral(ObjectBox* reobj, const TokenPos& pos)
-      : NullaryNode(PNK_REGEXP, JSOP_REGEXP, pos)
+      : ParseNode(PNK_REGEXP, JSOP_REGEXP, PN_REGEXP, pos)
     {
-        pn_objbox = reobj;
+        pn_u.regexp.objbox = reobj;
     }
 
-    ObjectBox* objbox() const { return pn_objbox; }
+    ObjectBox* objbox() const {
+        return pn_u.regexp.objbox;
+    }
+
+#ifdef DEBUG
+    void dump(int indent);
+#endif
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_REGEXP);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NULLARY));
+        MOZ_ASSERT_IF(match, node.isArity(PN_REGEXP));
         MOZ_ASSERT_IF(match, node.isOp(JSOP_REGEXP));
         return match;
     }
 };
 
-class PropertyAccessBase : public ParseNode
+class PropertyAccessBase : public BinaryNode
 {
   public:
-    PropertyAccessBase(ParseNodeKind kind, ParseNode* lhs, PropertyName* name,
-                       uint32_t begin, uint32_t end)
-      : ParseNode(kind, JSOP_NOP, PN_NAME, TokenPos(begin, end))
+    /*
+     * PropertyAccess nodes can have any expression/'super' as left-hand
+     * side, but the name must be a PNK_PROPERTYNAME node.
+     */
+    PropertyAccessBase(ParseNodeKind kind, ParseNode* lhs, NameNode* name, uint32_t begin, uint32_t end)
+      : BinaryNode(kind, JSOP_NOP, TokenPos(begin, end), lhs, name)
     {
-        MOZ_ASSERT(lhs != nullptr);
-        MOZ_ASSERT(name != nullptr);
-        pn_u.name.expr = lhs;
-        pn_u.name.atom = name;
+        MOZ_ASSERT(lhs);
+        MOZ_ASSERT(name);
     }
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_DOT) ||
                      node.isKind(PNK_OPTDOT);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NAME));
+        MOZ_ASSERT_IF(match, node.is<BinaryNode>());
+        MOZ_ASSERT_IF(match, node.as<BinaryNode>().right()->isKind(PNK_PROPERTYNAME));
         return match;
     }
 
     ParseNode& expression() const {
-        return *pn_u.name.expr;
+        return *left();
+    }
+
+    NameNode& key() const {
+        return right()->as<NameNode>();
+    }
+
+    // Method used by BytecodeEmitter::emitPropLHS for optimization.
+    // Those methods allow expression to temporarily be nullptr for
+    // optimization purpose.
+    ParseNode* maybeExpression() const {
+        return left();
+    }
+
+    void setExpression(ParseNode* pn) {
+        pn_u.binary.left = pn;
     }
 
     PropertyName& name() const {
-        return *pn_u.name.atom->asPropertyName();
-    }
-
-    JSAtom* nameAtom() const {
-        return pn_u.name.atom;
-    }
-};
-
-class PropertyAccess : public PropertyAccessBase
-{
-  public:
-    PropertyAccess(ParseNode* lhs, PropertyName* name, uint32_t begin,
-                   uint32_t end)
-      : PropertyAccessBase(PNK_DOT, lhs, name, begin, end)
-    {
-        MOZ_ASSERT(lhs != nullptr);
-        MOZ_ASSERT(name != nullptr);
-    }
-
-    static bool test(const ParseNode& node) {
-        bool match = node.isKind(PNK_DOT);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NAME));
-        return match;
+        return *right()->as<NameNode>().atom()->asPropertyName();
     }
 
     bool isSuper() const {
@@ -1276,11 +1954,28 @@ class PropertyAccess : public PropertyAccessBase
     }
 };
 
+class PropertyAccess : public PropertyAccessBase
+{
+  public:
+    PropertyAccess(ParseNode* lhs, NameNode* name, uint32_t begin, uint32_t end)
+      : PropertyAccessBase(PNK_DOT, lhs, name, begin, end)
+    {
+        MOZ_ASSERT(lhs != nullptr);
+        MOZ_ASSERT(name != nullptr);
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_DOT);
+        MOZ_ASSERT_IF(match, node.is<BinaryNode>());
+        MOZ_ASSERT_IF(match, node.as<BinaryNode>().right()->isKind(PNK_PROPERTYNAME));
+        return match;
+    }
+};
+
 class OptionalPropertyAccess : public PropertyAccessBase
 {
   public:
-    OptionalPropertyAccess(ParseNode* lhs, PropertyName* name, uint32_t begin,
-                           uint32_t end)
+    OptionalPropertyAccess(ParseNode* lhs, NameNode* name, uint32_t begin, uint32_t end)
       : PropertyAccessBase(PNK_OPTDOT, lhs, name, begin, end)
     {
         MOZ_ASSERT(lhs != nullptr);
@@ -1289,34 +1984,36 @@ class OptionalPropertyAccess : public PropertyAccessBase
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_OPTDOT);
-        MOZ_ASSERT_IF(match, node.isArity(PN_NAME));
+        MOZ_ASSERT_IF(match, node.is<BinaryNode>());
+        MOZ_ASSERT_IF(match, node.as<BinaryNode>().right()->isKind(PNK_PROPERTYNAME));
         return match;
     }
 };
 
-class PropertyByValueBase : public ParseNode
+class PropertyByValueBase : public BinaryNode
 {
   public:
     PropertyByValueBase(ParseNodeKind kind, ParseNode* lhs, ParseNode* propExpr,
                     uint32_t begin, uint32_t end)
-      : ParseNode(kind, JSOP_NOP, PN_BINARY, TokenPos(begin, end))
-    {
-        pn_u.binary.left = lhs;
-        pn_u.binary.right = propExpr;
-    }
+      : BinaryNode(kind, JSOP_NOP, TokenPos(begin, end), lhs, propExpr)
+    {}
 
     ParseNode& expression() const {
-        return *pn_u.binary.left;
+        return *left();
     }
 
     ParseNode& key() const {
-        return *pn_u.binary.right;
+        return *right();
+    }
+
+    bool isSuper() const {
+        return left()->isKind(PNK_SUPERBASE);
     }
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_ELEM) ||
                      node.isKind(PNK_OPTELEM);
-        MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
+        MOZ_ASSERT_IF(match, node.is<BinaryNode>());
         return match;
     }
 };
@@ -1331,10 +2028,6 @@ class PropertyByValue : public PropertyByValueBase {
         bool match = node.isKind(PNK_ELEM);
         MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
         return match;
-    }
-
-    bool isSuper() const {
-        return pn_left->isKind(PNK_SUPERBASE);
     }
 };
 
@@ -1354,21 +2047,32 @@ class OptionalPropertyByValue : public PropertyByValueBase {
 /*
  * A CallSiteNode represents the implicit call site object argument in a TaggedTemplate.
  */
-struct CallSiteNode : public ListNode {
+class CallSiteNode : public ListNode
+{
+  public:
     explicit CallSiteNode(uint32_t begin): ListNode(PNK_CALLSITEOBJ, TokenPos(begin, begin + 1)) {}
 
     static bool test(const ParseNode& node) {
-        return node.isKind(PNK_CALLSITEOBJ);
+        bool match = node.isKind(PNK_CALLSITEOBJ);
+        MOZ_ASSERT_IF(match, node.is<ListNode>());
+        return match;
     }
 
     MOZ_MUST_USE bool getRawArrayValue(ExclusiveContext* cx, MutableHandleValue vp) {
-        return pn_head->getConstantValue(cx, AllowObjects, vp);
+        return head()->getConstantValue(cx, AllowObjects, vp);
+    }
+
+    ListNode* rawNodes() const {
+        MOZ_ASSERT(head());
+        return &head()->as<ListNode>();
     }
 };
 
-struct ClassMethod : public BinaryNode {
+class ClassMethod : public BinaryNode
+{
+  public:
     /*
-     * Method defintions often keep a name and function body that overlap,
+     * Method definitions often keep a name and function body that overlap,
      * so explicitly define the beginning and end here.
      */
     ClassMethod(ParseNode* name, ParseNode* body, JSOp op, bool isStatic)
@@ -1379,33 +2083,79 @@ struct ClassMethod : public BinaryNode {
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_CLASSMETHOD);
-        MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
+        MOZ_ASSERT_IF(match, node.is<BinaryNode>());
         return match;
     }
 
     ParseNode& name() const {
-        return *pn_u.binary.left;
+        return *left();
     }
-    ParseNode& method() const {
-        return *pn_u.binary.right;
+    FunctionNode& method() const {
+        return right()->as<FunctionNode>();
     }
     bool isStatic() const {
         return pn_u.binary.isStatic;
     }
 };
 
-struct ClassNames : public BinaryNode {
+class SwitchStatement : public BinaryNode
+{
+  public:
+    SwitchStatement(uint32_t begin, ParseNode* discriminant, LexicalScopeNode* lexicalForCaseList,
+                    bool hasDefault)
+      : BinaryNode(PNK_SWITCH, JSOP_NOP,
+                   TokenPos(begin, lexicalForCaseList->pn_pos.end),
+                   discriminant, lexicalForCaseList)
+    {
+#ifdef DEBUG
+        ListNode* cases = &lexicalForCaseList->scopeBody()->as<ListNode>();
+        MOZ_ASSERT(cases->isKind(PNK_STATEMENTLIST));
+        bool found = false;
+        for (ParseNode* item : cases->contents()) {
+            CaseClause* caseNode = &item->as<CaseClause>();
+            if (caseNode->isDefault()) {
+                found = true;
+                break;
+            }
+        }
+        MOZ_ASSERT(found == hasDefault);
+#endif
+
+        pn_u.binary.hasDefault = hasDefault;
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_SWITCH);
+        MOZ_ASSERT_IF(match, node.is<BinaryNode>());
+        return match;
+    }
+
+    ParseNode& discriminant() const {
+        return *left();
+    }
+    LexicalScopeNode& lexicalForCaseList() const {
+        return right()->as<LexicalScopeNode>();
+    }
+    bool hasDefault() const {
+        return pn_u.binary.hasDefault;
+    }
+};
+
+class ClassNames : public BinaryNode
+{
+  public:
     ClassNames(ParseNode* outerBinding, ParseNode* innerBinding, const TokenPos& pos)
       : BinaryNode(PNK_CLASSNAMES, JSOP_NOP, pos, outerBinding, innerBinding)
     {
         MOZ_ASSERT_IF(outerBinding, outerBinding->isKind(PNK_NAME));
         MOZ_ASSERT(innerBinding->isKind(PNK_NAME));
-        MOZ_ASSERT_IF(outerBinding, innerBinding->pn_atom == outerBinding->pn_atom);
+        MOZ_ASSERT_IF(outerBinding,
+                      innerBinding->as<NameNode>().atom() == outerBinding->as<NameNode>().atom());
     }
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_CLASSNAMES);
-        MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
+        MOZ_ASSERT_IF(match, node.is<BinaryNode>());
         return match;
     }
 
@@ -1417,15 +2167,20 @@ struct ClassNames : public BinaryNode {
      * giving the methods access to the static members of the class even if
      * the outer binding has been overwritten.
      */
-    ParseNode* outerBinding() const {
-        return pn_u.binary.left;
+    NameNode* outerBinding() const {
+        if (ParseNode* binding = left()) {
+            return &binding->as<NameNode>();
+        }
+        return nullptr;
     }
-    ParseNode* innerBinding() const {
-        return pn_u.binary.right;
+    NameNode* innerBinding() const {
+        return &right()->as<NameNode>();
     }
 };
 
-struct ClassNode : public TernaryNode {
+class ClassNode : public TernaryNode
+{
+  public:
     ClassNode(ParseNode* names, ParseNode* heritage, ParseNode* methodsOrBlock,
               const TokenPos& pos)
       : TernaryNode(PNK_CLASS, JSOP_NOP, names, heritage, methodsOrBlock, pos)
@@ -1437,28 +2192,28 @@ struct ClassNode : public TernaryNode {
 
     static bool test(const ParseNode& node) {
         bool match = node.isKind(PNK_CLASS);
-        MOZ_ASSERT_IF(match, node.isArity(PN_TERNARY));
+        MOZ_ASSERT_IF(match, node.is<TernaryNode>());
         return match;
     }
 
     ClassNames* names() const {
-        return pn_kid1 ? &pn_kid1->as<ClassNames>() : nullptr;
+        return kid1() ? &kid1()->as<ClassNames>() : nullptr;
     }
     ParseNode* heritage() const {
-        return pn_kid2;
+        return kid2();
     }
-    ParseNode* methodList() const {
-        if (pn_kid3->isKind(PNK_CLASSMETHODLIST))
-            return pn_kid3;
+    ListNode* methodList() const {
+        ParseNode* methodsOrBlock = kid3();
+        if (methodsOrBlock->isKind(PNK_CLASSMETHODLIST))
+            return &methodsOrBlock->as<ListNode>();
 
-        MOZ_ASSERT(pn_kid3->is<LexicalScopeNode>());
-        ParseNode* list = pn_kid3->scopeBody();
+        ListNode* list = &methodsOrBlock->as<LexicalScopeNode>().scopeBody()->as<ListNode>();
         MOZ_ASSERT(list->isKind(PNK_CLASSMETHODLIST));
         return list;
     }
     Handle<LexicalScope::Data*> scopeBindings() const {
-        MOZ_ASSERT(pn_kid3->is<LexicalScopeNode>());
-        return pn_kid3->scopeBindings();
+        ParseNode* scope = kid3();
+        return scope->as<LexicalScopeNode>().scopeBindings();
     }
 };
 
@@ -1499,7 +2254,7 @@ ParseNode::isConstant()
       case PNK_ARRAY:
       case PNK_OBJECT:
         MOZ_ASSERT(isOp(JSOP_NEWINIT));
-        return !(pn_xflags & PNX_NONCONST);
+        return !as<ListNode>().hasNonConstInitializer();
       default:
         return false;
     }
@@ -1534,60 +2289,20 @@ enum ParseReportKind
     ParseStrictError
 };
 
-enum FunctionSyntaxKind
-{
-    Expression,
-    Statement,
-    Arrow,
-    Method,
-    ClassConstructor,
-    DerivedClassConstructor,
-    Getter,
-    GetterNoExpressionClosure,
-    Setter,
-    SetterNoExpressionClosure
-};
-
-static inline bool
-IsConstructorKind(FunctionSyntaxKind kind)
-{
-    return kind == ClassConstructor || kind == DerivedClassConstructor;
-}
-
-static inline bool
-IsGetterKind(FunctionSyntaxKind kind)
-{
-    return kind == Getter || kind == GetterNoExpressionClosure;
-}
-
-static inline bool
-IsSetterKind(FunctionSyntaxKind kind)
-{
-    return kind == Setter || kind == SetterNoExpressionClosure;
-}
-
-static inline bool
-IsMethodDefinitionKind(FunctionSyntaxKind kind)
-{
-    return kind == Method || IsConstructorKind(kind) ||
-           IsGetterKind(kind) || IsSetterKind(kind);
-}
-
 static inline ParseNode*
 FunctionFormalParametersList(ParseNode* fn, unsigned* numFormals)
 {
     MOZ_ASSERT(fn->isKind(PNK_FUNCTION));
-    ParseNode* argsBody = fn->pn_body;
+    ListNode* argsBody = fn->as<FunctionNode>().body();
     MOZ_ASSERT(argsBody->isKind(PNK_PARAMSBODY));
-    *numFormals = argsBody->pn_count;
+    *numFormals = argsBody->count();
     if (*numFormals > 0 &&
-        argsBody->last()->isKind(PNK_LEXICALSCOPE) &&
-        argsBody->last()->scopeBody()->isKind(PNK_STATEMENTLIST))
+        argsBody->last()->is<LexicalScopeNode>() &&
+        argsBody->last()->as<LexicalScopeNode>().scopeBody()->isKind(PNK_STATEMENTLIST))
     {
         (*numFormals)--;
     }
-    MOZ_ASSERT(argsBody->isArity(PN_LIST));
-    return argsBody->pn_head;
+    return argsBody->head();
 }
 
 bool

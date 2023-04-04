@@ -2853,9 +2853,9 @@ END_CASE(JSOP_GETELEM)
 
 CASE(JSOP_GETELEM_SUPER)
 {
-    HandleValue rval = REGS.stackHandleAt(-3);
     ReservedRooted<JSObject*> receiver(&rootObject0);
-    FETCH_OBJECT(cx, -2, receiver);
+    FETCH_OBJECT(cx, -3, receiver);
+    HandleValue rval = REGS.stackHandleAt(-2);
     ReservedRooted<JSObject*> obj(&rootObject1, &REGS.sp[-1].toObject());
 
     MutableHandleValue res = REGS.stackHandleAt(-3);
@@ -2897,9 +2897,9 @@ CASE(JSOP_STRICTSETELEM_SUPER)
     static_assert(JSOP_SETELEM_SUPER_LENGTH == JSOP_STRICTSETELEM_SUPER_LENGTH,
                   "setelem-super and strictsetelem-super must be the same size");
 
+    ReservedRooted<Value> receiver(&rootValue0, REGS.sp[-4]);
     ReservedRooted<jsid> id(&rootId0);
-    FETCH_ELEMENT_ID(-4, id);
-    ReservedRooted<Value> receiver(&rootValue0, REGS.sp[-3]);
+    FETCH_ELEMENT_ID(-3, id);
     ReservedRooted<JSObject*> obj(&rootObject1, &REGS.sp[-2].toObject());
     HandleValue value = REGS.stackHandleAt(-1);
 

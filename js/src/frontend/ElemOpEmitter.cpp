@@ -41,6 +41,8 @@ ElemOpEmitter::prepareForKey()
         }
     }
     if (isCall()) {
+        // We need a second |this| that will be consumed during computation of
+        // the property value. (The original |this| is passed to the call.)
         if (!bce_->emit1(JSOP_DUP)) {                 // [Super]
             //                                        // THIS THIS
             //                                        // [Other]
@@ -60,6 +62,8 @@ ElemOpEmitter::emitGet()
 {
     MOZ_ASSERT(state_ == State::Key);
 
+    // We need to convert the key to an object id first, so that we do not do
+    // it inside both the GETELEM and the SETELEM.
     if (isIncDec() || isCompoundAssignment()) {
         if (!bce_->emit1(JSOP_TOID)) {                // [Super]
             //                                        // THIS KEY
