@@ -416,7 +416,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitScript(ParseNode* body);
 
     // Emit function code for the tree rooted at body.
-    MOZ_MUST_USE bool emitFunctionScript(ParseNode* body);
+    MOZ_MUST_USE bool emitFunctionScript(FunctionNode* funNode);
 
     // If op is JOF_TYPESET (see the type barriers comment in TypeInference.h),
     // reserve a type set to store its result.
@@ -465,11 +465,11 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     MOZ_MUST_USE bool emitNumberOp(double dval);
 
-    MOZ_MUST_USE bool emitThisLiteral(ParseNode* pn);
+    MOZ_MUST_USE bool emitThisLiteral(ThisLiteral* pn);
     MOZ_MUST_USE bool emitGetFunctionThis(ParseNode* pn);
     MOZ_MUST_USE bool emitGetFunctionThis(const mozilla::Maybe<uint32_t>& offset);
-    MOZ_MUST_USE bool emitGetThisForSuperBase(ParseNode* pn);
-    MOZ_MUST_USE bool emitSetThis(ParseNode* pn);
+    MOZ_MUST_USE bool emitGetThisForSuperBase(UnaryNode* superBase);
+    MOZ_MUST_USE bool emitSetThis(BinaryNode* setThisNode);
     MOZ_MUST_USE bool emitCheckDerivedClassConstructorReturn();
 
     // Handle jump opcodes and jump targets.
@@ -484,7 +484,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitCall(JSOp op, uint16_t argc,
                                const mozilla::Maybe<uint32_t>& sourceCoordOffset);
     MOZ_MUST_USE bool emitCall(JSOp op, uint16_t argc, ParseNode* pn = nullptr);
-    MOZ_MUST_USE bool emitCallIncDec(ParseNode* incDec);
+    MOZ_MUST_USE bool emitCallIncDec(UnaryNode* incDec);
 
     MOZ_MUST_USE bool emitLoopHead(ParseNode* nextpn, JumpTarget* top);
     MOZ_MUST_USE bool emitLoopEntry(ParseNode* nextpn, JumpList entryJump);
@@ -498,9 +498,9 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitAtomOp(JSAtom* atom, JSOp op);
     MOZ_MUST_USE bool emitAtomOp(uint32_t atomIndex, JSOp op);
 
-    MOZ_MUST_USE bool emitArrayLiteral(ParseNode* pn);
-    MOZ_MUST_USE bool emitArray(ParseNode* pn, uint32_t count, JSOp op);
-    MOZ_MUST_USE bool emitArrayComp(ParseNode* pn);
+    MOZ_MUST_USE bool emitArrayLiteral(ListNode* array);
+    MOZ_MUST_USE bool emitArray(ParseNode* arrayHead, uint32_t count, JSOp op);
+    MOZ_MUST_USE bool emitArrayComp(ListNode* pn);
 
     MOZ_MUST_USE bool emitInternedScopeOp(uint32_t index, JSOp op);
     MOZ_MUST_USE bool emitInternedObjectOp(uint32_t index, JSOp op);
@@ -508,14 +508,14 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitObjectPairOp(ObjectBox* objbox1, ObjectBox* objbox2, JSOp op);
     MOZ_MUST_USE bool emitRegExp(uint32_t index);
 
-    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitFunction(ParseNode* pn, bool needsProto = false);
-    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitObject(ParseNode* pn);
+    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitFunction(FunctionNode* funNode, bool needsProto = false);
+    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitObject(ListNode* objNode);
 
     MOZ_MUST_USE bool replaceNewInitWithNewObject(JSObject* obj, ptrdiff_t offset);
 
-    MOZ_MUST_USE bool emitHoistedFunctionsInList(ParseNode* pn);
+    MOZ_MUST_USE bool emitHoistedFunctionsInList(ListNode* stmtList);
 
-    MOZ_MUST_USE bool emitPropertyList(ParseNode* pn, MutableHandlePlainObject objp,
+    MOZ_MUST_USE bool emitPropertyList(ListNode* obj, MutableHandlePlainObject objp,
                                        PropListType type);
 
     // To catch accidental misuse, emitUint16Operand/emit3 assert that they are
@@ -536,10 +536,10 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     MOZ_MUST_USE bool emitTDZCheckIfNeeded(JSAtom* name, const NameLocation& loc);
 
-    MOZ_MUST_USE bool emitNameIncDec(ParseNode* incDec);
+    MOZ_MUST_USE bool emitNameIncDec(UnaryNode* incDec);
 
-    MOZ_MUST_USE bool emitDeclarationList(ParseNode* decls);
-    MOZ_MUST_USE bool emitSingleDeclaration(ParseNode* decls, ParseNode* decl,
+    MOZ_MUST_USE bool emitDeclarationList(ListNode* declList);
+    MOZ_MUST_USE bool emitSingleDeclaration(ParseNode* declList, ParseNode* decl,
                                             ParseNode* initializer);
 
     MOZ_MUST_USE bool emitNewInit(JSProtoKey key);
@@ -555,45 +555,44 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     }
     MOZ_MUST_USE bool emitGetDotGeneratorInScope(EmitterScope& currentScope);
 
-    MOZ_MUST_USE bool emitInitialYield(ParseNode* pn);
-    MOZ_MUST_USE bool emitYield(ParseNode* pn);
+    MOZ_MUST_USE bool emitInitialYield(UnaryNode* yieldNode);
+    MOZ_MUST_USE bool emitYield(UnaryNode* yieldNode);
     MOZ_MUST_USE bool emitYieldOp(JSOp op);
     MOZ_MUST_USE bool emitYieldStar(ParseNode* iter);
     MOZ_MUST_USE bool emitAwaitInInnermostScope() {
         return emitAwaitInScope(*innermostEmitterScope());
     }
-    MOZ_MUST_USE bool emitAwaitInInnermostScope(ParseNode* pn);
+    MOZ_MUST_USE bool emitAwaitInInnermostScope(UnaryNode* awaitNode);
     MOZ_MUST_USE bool emitAwaitInScope(EmitterScope& currentScope);
-    MOZ_MUST_USE bool emitPropLHS(ParseNode* pn);
-    MOZ_MUST_USE bool emitPropIncDec(ParseNode* pn);
+    MOZ_MUST_USE bool emitPropLHS(PropertyAccess* prop);
+    MOZ_MUST_USE bool emitPropIncDec(UnaryNode* incDec);
 
     MOZ_MUST_USE bool emitAsyncWrapperLambda(unsigned index, bool isArrow);
     MOZ_MUST_USE bool emitAsyncWrapper(unsigned index, bool needsHomeObject, bool isArrow,
                                        bool isStarGenerator);
 
-    MOZ_MUST_USE bool emitComputedPropertyName(ParseNode* computedPropName);
+    MOZ_MUST_USE bool emitComputedPropertyName(UnaryNode* computedPropName);
 
     // Emit bytecode to put operands for a JSOP_GETELEM/CALLELEM/SETELEM/DELELEM
     // opcode onto the stack in the right order. In the case of SETELEM, the
     // value to be assigned must already be pushed.
     enum class EmitElemOption { Get, Set, Call, IncDec, CompoundAssign, Ref };
-    MOZ_MUST_USE bool emitElemOperands(ParseNode* pn, EmitElemOption opts);
+    MOZ_MUST_USE bool emitElemOperands(PropertyByValue* elem, EmitElemOption opts);
 
     MOZ_MUST_USE bool emitElemObjAndKey(PropertyByValue* elem, bool isSuper, ElemOpEmitter& eoe);
     MOZ_MUST_USE bool emitElemOpBase(JSOp op);
-    MOZ_MUST_USE bool emitElemOp(ParseNode* pn, JSOp op);
-    MOZ_MUST_USE bool emitElemIncDec(ParseNode* pn);
+    MOZ_MUST_USE bool emitElemIncDec(UnaryNode* incDec);
 
-    MOZ_MUST_USE bool emitCatch(ParseNode* pn);
-    MOZ_MUST_USE bool emitIf(ParseNode* pn);
-    MOZ_MUST_USE bool emitWith(ParseNode* pn);
+    MOZ_MUST_USE bool emitCatch(TernaryNode* catchNode);
+    MOZ_MUST_USE bool emitIf(TernaryNode* ifNode);
+    MOZ_MUST_USE bool emitWith(BinaryNode* withNode);
 
     MOZ_NEVER_INLINE MOZ_MUST_USE bool emitLabeledStatement(const LabeledStatement* pn);
-    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitLexicalScope(ParseNode* pn);
+    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitLexicalScope(LexicalScopeNode* lexicalScope);
     MOZ_MUST_USE bool emitLexicalScopeBody(ParseNode* body,
                                            EmitLineNumberNote emitLineNote = EMIT_LINENOTE);
-    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitSwitch(ParseNode* pn);
-    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitTry(ParseNode* pn);
+    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitSwitch(SwitchStatement* switchStmt);
+    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitTry(TryNode* tryNode);
 
     enum DestructuringFlavor {
         // Destructuring into a declaration.
@@ -625,20 +624,17 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     // emitDestructuringObjRestExclusionSet emits the property exclusion set
     // for the rest-property in an object pattern.
-    MOZ_MUST_USE bool emitDestructuringObjRestExclusionSet(ParseNode* pattern);
+    MOZ_MUST_USE bool emitDestructuringObjRestExclusionSet(ListNode* pattern);
 
     // emitDestructuringOps assumes the to-be-destructured value has been
     // pushed on the stack and emits code to destructure each part of a [] or
     // {} lhs expression.
-    MOZ_MUST_USE bool emitDestructuringOps(ParseNode* pattern, DestructuringFlavor flav);
-    MOZ_MUST_USE bool emitDestructuringOpsArray(ParseNode* pattern, DestructuringFlavor flav);
-    MOZ_MUST_USE bool emitDestructuringOpsObject(ParseNode* pattern, DestructuringFlavor flav);
+    MOZ_MUST_USE bool emitDestructuringOps(ListNode* pattern, DestructuringFlavor flav);
+    MOZ_MUST_USE bool emitDestructuringOpsArray(ListNode* pattern, DestructuringFlavor flav);
+    MOZ_MUST_USE bool emitDestructuringOpsObject(ListNode* pattern, DestructuringFlavor flav);
 
     typedef bool
     (*DestructuringDeclEmitter)(BytecodeEmitter* bce, ParseNode* pn);
-
-    template <typename NameEmitter>
-    MOZ_MUST_USE bool emitDestructuringDeclsWithEmitter(ParseNode* pattern, NameEmitter emitName);
 
     // Throw a TypeError if the value atop the stack isn't convertible to an
     // object, with no overall effect on the stack.
@@ -695,26 +691,26 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitInitializer(ParseNode* initializer, ParseNode* pattern);
     MOZ_MUST_USE bool emitInitializerInBranch(ParseNode* initializer, ParseNode* pattern);
 
-    MOZ_MUST_USE bool emitCallSiteObject(ParseNode* pn);
-    MOZ_MUST_USE bool emitTemplateString(ParseNode* pn);
+    MOZ_MUST_USE bool emitCallSiteObject(CallSiteNode* callSiteObj);
+    MOZ_MUST_USE bool emitTemplateString(ListNode* templateString);
     MOZ_MUST_USE bool emitAssignment(ParseNode* lhs, JSOp compoundOp, ParseNode* rhs);
 
-    MOZ_MUST_USE bool emitReturn(ParseNode* pn);
-    MOZ_MUST_USE bool emitStatement(ParseNode* pn);
-    MOZ_MUST_USE bool emitStatementList(ParseNode* pn);
+    MOZ_MUST_USE bool emitReturn(UnaryNode* returnNode);
+    MOZ_MUST_USE bool emitStatement(UnaryNode* exprStmt);
+    MOZ_MUST_USE bool emitStatementList(ListNode* stmtList);
 
-    MOZ_MUST_USE bool emitDeleteName(ParseNode* pn);
-    MOZ_MUST_USE bool emitDeleteProperty(ParseNode* pn);
-    MOZ_MUST_USE bool emitDeleteElement(ParseNode* pn);
-    MOZ_MUST_USE bool emitDeleteExpression(ParseNode* pn);
+    MOZ_MUST_USE bool emitDeleteName(UnaryNode* deleteNode);
+    MOZ_MUST_USE bool emitDeleteProperty(UnaryNode* deleteNode);
+    MOZ_MUST_USE bool emitDeleteElement(UnaryNode* deleteNode);
+    MOZ_MUST_USE bool emitDeleteExpression(UnaryNode* deleteNode);
 
     // Optional methods which emit Optional Jump Target
-    MOZ_MUST_USE bool emitOptionalChain(ParseNode* optionalChain,
+    MOZ_MUST_USE bool emitOptionalChain(UnaryNode* optionalChain,
                                         ValueUsage valueUsage);
-    MOZ_MUST_USE bool emitCalleeAndThisForOptionalChain(ParseNode* optionalChain,
+    MOZ_MUST_USE bool emitCalleeAndThisForOptionalChain(UnaryNode* optionalChain,
                                                         ParseNode* callNode,
                                                         CallOrNewEmitter& cone);
-    MOZ_MUST_USE bool emitDeleteOptionalChain(ParseNode* deleteNode);
+    MOZ_MUST_USE bool emitDeleteOptionalChain(UnaryNode* deleteNode);
 
     // Optional methods which emit a shortCircuit jump. They need to be called by
     // a method which emits an Optional Jump Target, see below.
@@ -724,7 +720,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitOptionalElemExpression(PropertyByValueBase* elem,
                                                  ElemOpEmitter& eoe, bool isSuper,
                                                  OptionalEmitter& oe);
-    MOZ_MUST_USE bool emitOptionalCall(ParseNode* callNode,
+    MOZ_MUST_USE bool emitOptionalCall(BinaryNode* callNode,
                                        OptionalEmitter& oe,
                                        ValueUsage valueUsage);
     MOZ_MUST_USE bool emitDeletePropertyInOptChain(PropertyAccessBase* propExpr,
@@ -733,16 +729,16 @@ struct MOZ_STACK_CLASS BytecodeEmitter
                                                   OptionalEmitter& oe);
 
     // |op| must be JSOP_TYPEOF or JSOP_TYPEOFEXPR.
-    MOZ_MUST_USE bool emitTypeof(ParseNode* node, JSOp op);
+    MOZ_MUST_USE bool emitTypeof(UnaryNode* typeofNode, JSOp op);
 
-    MOZ_MUST_USE bool emitUnary(ParseNode* pn);
-    MOZ_MUST_USE bool emitRightAssociative(ParseNode* pn);
-    MOZ_MUST_USE bool emitLeftAssociative(ParseNode* pn);
-    MOZ_MUST_USE bool emitLogical(ParseNode* pn);
-    MOZ_MUST_USE bool emitSequenceExpr(ParseNode* pn,
+    MOZ_MUST_USE bool emitUnary(UnaryNode* unaryNode);
+    MOZ_MUST_USE bool emitRightAssociative(ListNode* node);
+    MOZ_MUST_USE bool emitLeftAssociative(ListNode* node);
+    MOZ_MUST_USE bool emitLogical(ListNode* node);
+    MOZ_MUST_USE bool emitSequenceExpr(ListNode* node,
                                        ValueUsage valueUsage = ValueUsage::WantValue);
 
-    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitIncOrDec(ParseNode* pn);
+    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitIncOrDec(UnaryNode* incDec);
 
     MOZ_MUST_USE bool emitConditionalExpression(ConditionalExpression& conditional,
                                                 ValueUsage valueUsage = ValueUsage::WantValue);
@@ -751,11 +747,10 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitOptimizeSpread(ParseNode* arg0, JumpList* jmp, bool* emitted);
 
     MOZ_MUST_USE ParseNode* getCoordNode(ParseNode* callNode, ParseNode* calleeNode,
-                                         ParseNode* firstArgNode);
-    MOZ_MUST_USE bool emitArguments(ParseNode* firstArgNode, uint32_t argc,
-                                    bool isCall, bool isSpread,
+                                         ListNode* argsList);
+    MOZ_MUST_USE bool emitArguments(ListNode* argsList, bool isCall, bool isSpread,
                                     CallOrNewEmitter& cone);
-    MOZ_MUST_USE bool emitCallOrNew(ParseNode* pn,
+    MOZ_MUST_USE bool emitCallOrNew(BinaryNode* pn,
                                     ValueUsage valueUsage = ValueUsage::WantValue);
     MOZ_MUST_USE bool emitCalleeAndThis(ParseNode* callNode,
                                         ParseNode* calleeNode,
@@ -765,31 +760,31 @@ struct MOZ_STACK_CLASS BytecodeEmitter
                                                 CallOrNewEmitter& cone,
                                                 OptionalEmitter& oe);
 
-    MOZ_MUST_USE bool emitSelfHostedCallFunction(ParseNode* pn);
-    MOZ_MUST_USE bool emitSelfHostedResumeGenerator(ParseNode* pn);
+    MOZ_MUST_USE bool emitSelfHostedCallFunction(BinaryNode* callNode);
+    MOZ_MUST_USE bool emitSelfHostedResumeGenerator(BinaryNode* callNode);
     MOZ_MUST_USE bool emitSelfHostedForceInterpreter(ParseNode* pn);
-    MOZ_MUST_USE bool emitSelfHostedAllowContentIter(ParseNode* pn);
+    MOZ_MUST_USE bool emitSelfHostedAllowContentIter(BinaryNode* callNode);
 
-    MOZ_MUST_USE bool emitComprehensionFor(ParseNode* compFor);
-    MOZ_MUST_USE bool emitComprehensionForIn(ParseNode* pn);
+    MOZ_MUST_USE bool emitComprehensionFor(ForNode* forNode);
+    MOZ_MUST_USE bool emitComprehensionForIn(ForNode* forNode);
     MOZ_MUST_USE bool emitComprehensionForInOrOfVariables(ParseNode* pn, bool* lexicalScope);
-    MOZ_MUST_USE bool emitComprehensionForOf(ParseNode* pn);
+    MOZ_MUST_USE bool emitComprehensionForOf(ForNode* forNode);
 
-    MOZ_MUST_USE bool emitDo(ParseNode* pn);
-    MOZ_MUST_USE bool emitWhile(ParseNode* pn);
+    MOZ_MUST_USE bool emitDo(BinaryNode* doNode);
+    MOZ_MUST_USE bool emitWhile(BinaryNode* whileNode);
 
-    MOZ_MUST_USE bool emitFor(ParseNode* pn, EmitterScope* headLexicalEmitterScope = nullptr);
-    MOZ_MUST_USE bool emitCStyleFor(ParseNode* pn, EmitterScope* headLexicalEmitterScope);
-    MOZ_MUST_USE bool emitForIn(ParseNode* pn, EmitterScope* headLexicalEmitterScope);
-    MOZ_MUST_USE bool emitForOf(ParseNode* pn, EmitterScope* headLexicalEmitterScope);
+    MOZ_MUST_USE bool emitFor(ForNode* forNode, EmitterScope* headLexicalEmitterScope = nullptr);
+    MOZ_MUST_USE bool emitCStyleFor(ForNode* forNode, EmitterScope* headLexicalEmitterScope);
+    MOZ_MUST_USE bool emitForIn(ForNode* forNode, EmitterScope* headLexicalEmitterScope);
+    MOZ_MUST_USE bool emitForOf(ForNode* forNode, EmitterScope* headLexicalEmitterScope);
 
-    MOZ_MUST_USE bool emitInitializeForInOrOfTarget(ParseNode* forHead);
+    MOZ_MUST_USE bool emitInitializeForInOrOfTarget(TernaryNode* forHead);
 
     MOZ_MUST_USE bool emitBreak(PropertyName* label);
     MOZ_MUST_USE bool emitContinue(PropertyName* label);
 
-    MOZ_MUST_USE bool emitFunctionFormalParametersAndBody(ParseNode* pn);
-    MOZ_MUST_USE bool emitFunctionFormalParameters(ParseNode* pn);
+    MOZ_MUST_USE bool emitFunctionFormalParametersAndBody(ListNode* paramsBody);
+    MOZ_MUST_USE bool emitFunctionFormalParameters(ListNode* paramsBody);
     MOZ_MUST_USE bool emitInitializeFunctionSpecialNames();
     MOZ_MUST_USE bool emitFunctionBody(ParseNode* pn);
     MOZ_MUST_USE bool emitLexicalInitialization(ParseNode* pn);
@@ -804,10 +799,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     // iteration count). The stack after iteration will look like |ARRAY INDEX|.
     MOZ_MUST_USE bool emitSpread(bool allowSelfHosted = false);
 
-    MOZ_MUST_USE bool emitClass(ParseNode* pn);
-    MOZ_MUST_USE bool emitSuperElemOperands(ParseNode* pn,
-                                            EmitElemOption opts = EmitElemOption::Get);
-    MOZ_MUST_USE bool emitSuperElemOp(ParseNode* pn, JSOp op, bool isCall = false);
+    MOZ_MUST_USE bool emitClass(ClassNode* classNode);
 };
 
 class MOZ_RAII AutoCheckUnstableEmitterScope {
