@@ -55,6 +55,20 @@ using namespace mozilla::unicode;
                                    gfxPlatform::GetLog(eGfxLog_cmapdata), \
                                    LogLevel::Debug)
 
+template <>
+class nsAutoRefTraits<FcFontSet> : public nsPointerRefTraits<FcFontSet>
+{
+public:
+    static void Release(FcFontSet *ptr) { FcFontSetDestroy(ptr); }
+};
+
+template <>
+class nsAutoRefTraits<FcObjectSet> : public nsPointerRefTraits<FcObjectSet>
+{
+public:
+    static void Release(FcObjectSet *ptr) { FcObjectSetDestroy(ptr); }
+};
+
 static const FcChar8*
 ToFcChar8Ptr(const char* aStr)
 {
@@ -1078,8 +1092,9 @@ gfxFontconfigFont::gfxFontconfigFont(cairo_scaled_font_t *aScaledFont,
                                      gfxFloat aAdjustedSize,
                                      gfxFontEntry *aFontEntry,
                                      const gfxFontStyle *aFontStyle,
-                                     bool aNeedsBold) :
-    gfxFontconfigFontBase(aScaledFont, aPattern, aFontEntry, aFontStyle)
+                                     bool aNeedsBold)
+    : gfxFT2FontBase(aScaledFont, aFontEntry, aFontStyle)
+    , mPattern(aPattern)
 {
     mAdjustedSize = aAdjustedSize;
 }
