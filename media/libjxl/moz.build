@@ -132,6 +132,20 @@ FINAL_LIBRARY = "gkmedias"
 #      Silence them in the meantime.
 ALLOW_COMPILER_WARNINGS = False
 
+if CONFIG['_MSC_VER']:
+    CFLAGS += [
+        '-wd4646', # function declared with 'noreturn' has non-void return type
+        '-wd4334', # result of 32-bit shift implicitly converted to 64 bits
+        '-wd4305', # truncation from 'type' to 'type'
+        '-wd4146', # unary minus operator applied to unsigned type, result still unsigned
+    ]
+    CXXFLAGS += [
+        '-wd4646', # function declared with 'noreturn' has non-void return type
+        '-wd4334', # result of 32-bit shift implicitly converted to 64 bits
+        '-wd4305', # truncation from 'type' to 'type'
+        '-wd4146', # unary minus operator applied to unsigned type, result still unsigned
+    ]
+
 # Clang 5.0 has a compiler bug that prevents build in c++17
 # See https://gitlab.com/wg1/jpeg-xl/-/issues/227
 # This should be okay since we are using the C API.
