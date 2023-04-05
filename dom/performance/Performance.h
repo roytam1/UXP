@@ -20,11 +20,16 @@ class ErrorResult;
 
 namespace dom {
 
+class OwningStringOrDouble;
+class StringOrPerformanceMeasureOptions;
 class PerformanceEntry;
+struct PerformanceMeasureOptions;
+class PerformanceMeasure;
 class PerformanceNavigation;
 class PerformanceObserver;
 class PerformanceService;
 class PerformanceTiming;
+struct StructuredSerializeOptions;
 
 namespace workers {
 class WorkerPrivate;
@@ -75,10 +80,10 @@ public:
 
   void ClearMarks(const Optional<nsAString>& aName);
 
-  void Measure(const nsAString& aName,
-               const Optional<nsAString>& aStartMark,
-               const Optional<nsAString>& aEndMark,
-               ErrorResult& aRv);
+  already_AddRefed<PerformanceMeasure> Measure(
+      JSContext* aCx, const nsAString& aName,
+      const StringOrPerformanceMeasureOptions& aStartOrMeasureOptions,
+      const Optional<nsAString>& aEndMark, ErrorResult& aRv);
 
   void ClearMeasures(const Optional<nsAString>& aName);
 
@@ -115,9 +120,6 @@ protected:
 
   void ClearUserEntries(const Optional<nsAString>& aEntryName,
                         const nsAString& aEntryType);
-
-  DOMHighResTimeStamp ResolveTimestampFromName(const nsAString& aName,
-                                               ErrorResult& aRv);
 
   virtual nsISupports* GetAsISupports() = 0;
 
@@ -163,6 +165,29 @@ protected:
   bool mPendingNotificationObserversTask;
 
   RefPtr<PerformanceService> mPerformanceService;
+
+private:
+  // The attributes of a PerformanceMeasureOptions that we call
+  // ResolveTimestamp* on.
+  enum class ResolveTimestampAttribute;
+
+  DOMHighResTimeStamp ConvertMarkToTimestampWithString(const nsAString& aName,
+                                                       ErrorResult& aRv);
+  DOMHighResTimeStamp ConvertMarkToTimestampWithDOMHighResTimeStamp(
+      const ResolveTimestampAttribute aAttribute, const double aTimestamp,
+      ErrorResult& aRv);
+  DOMHighResTimeStamp ConvertMarkToTimestamp(
+      const ResolveTimestampAttribute aAttribute,
+      const OwningStringOrDouble& aMarkNameOrTimestamp, ErrorResult& aRv);
+
+  DOMHighResTimeStamp ResolveEndTimeForMeasure(
+      const Optional<nsAString>& aEndMark,
+      const PerformanceMeasureOptions* aOptions,
+      ErrorResult& aRv);
+  DOMHighResTimeStamp ResolveStartTimeForMeasure(
+      const nsAString* aStartMark,
+      const PerformanceMeasureOptions* aOptions,
+      ErrorResult& aRv);
 };
 
 } // namespace dom

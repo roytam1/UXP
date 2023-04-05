@@ -44,6 +44,14 @@ partial interface Performance {
     entryType);
 };
 
+// https://w3c.github.io/user-timing/#extensions-performance-interface
+dictionary PerformanceMeasureOptions {
+  any detail;
+  (DOMString or DOMHighResTimeStamp) start;
+  DOMHighResTimeStamp duration;
+  (DOMString or DOMHighResTimeStamp)end;
+};
+
 // http://www.w3.org/TR/resource-timing/#extensions-performance-interface
 [Exposed=Window]
 partial interface Performance {
@@ -72,7 +80,9 @@ partial interface Performance {
   [Func="Performance::IsEnabled"]
   void clearMarks(optional DOMString markName);
   [Func="Performance::IsEnabled", Throws]
-  void measure(DOMString measureName, optional DOMString startMark, optional DOMString endMark);
+  PerformanceMeasure measure(DOMString measureName,
+                             optional (DOMString or PerformanceMeasureOptions) startOrMeasureOptions,
+                             optional DOMString endMark);
   [Func="Performance::IsEnabled"]
   void clearMeasures(optional DOMString measureName);
 };

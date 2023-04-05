@@ -15,10 +15,15 @@ namespace dom {
 class PerformanceMeasure final : public PerformanceEntry
 {
 public:
+  NS_DECL_ISUPPORTS_INHERITED
+  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS_INHERITED(PerformanceMeasure,
+                                                         PerformanceEntry);
+
   PerformanceMeasure(nsISupports* aParent,
                      const nsAString& aName,
                      DOMHighResTimeStamp aStartTime,
-                     DOMHighResTimeStamp aEndTime);
+                     DOMHighResTimeStamp aEndTime,
+                     const JS::Handle<JS::Value>& aDetail);
 
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
@@ -32,10 +37,15 @@ public:
     return mDuration;
   }
 
+  void GetDetail(JSContext* aCx, JS::MutableHandle<JS::Value> aRv);
+
 protected:
   virtual ~PerformanceMeasure();
   DOMHighResTimeStamp mStartTime;
   DOMHighResTimeStamp mDuration;
+
+private:
+  JS::Heap<JS::Value> mDetail;
 };
 
 } // namespace dom
