@@ -672,38 +672,35 @@ gfxDWriteFont::AddSizeOfIncludingThis(MallocSizeOf aMallocSizeOf,
 already_AddRefed<ScaledFont>
 gfxDWriteFont::GetScaledFont(mozilla::gfx::DrawTarget *aTarget)
 {
-  bool wantCairo = aTarget->GetBackendType() == BackendType::CAIRO;
-  if (mAzureScaledFont && mAzureScaledFontIsCairo == wantCairo) {
-    RefPtr<ScaledFont> scaledFont(mAzureScaledFont);
-    return scaledFont.forget();
-  }
+    if (!mAzureScaledFont) {
+        gfxDWriteFontEntry *fe =
+            static_cast<gfxDWriteFontEntry*>(mFontEntry.get());
+        bool useEmbeddedBitmap =
+            fe->IsCJKFont() &&
+            HasBitmapStrikeForSize(NS_lround(mAdjustedSize));
 
-  NativeFont nativeFont;
-  nativeFont.mType = NativeFontType::DWRITE_FONT_FACE;
-  nativeFont.mFont = GetFontFace();
-
-  if (wantCairo) {
-    mAzureScaledFont = Factory::CreateScaledFontWithCairo(nativeFont,
-                                                        GetAdjustedSize(),
-                                                        GetCairoScaledFont());
-  } else if (aTarget->GetBackendType() == BackendType::SKIA) {
-    gfxDWriteFontEntry *fe =
-        static_cast<gfxDWriteFontEntry*>(mFontEntry.get());
-    bool useEmbeddedBitmap = (fe->IsCJKFont() && HasBitmapStrikeForSize(NS_lround(mAdjustedSize)));
-
-    const gfxFontStyle* fontStyle = GetStyle();
-    mAzureScaledFont =
+        const gfxFontStyle* fontStyle = GetStyle();
+        mAzureScaledFont =
             Factory::CreateScaledFontForDWriteFont(mFontFace, fontStyle,
                                                    GetAdjustedSize(),
                                                    useEmbeddedBitmap,
                                                    GetForceGDIClassic());
-  } else {
-    mAzureScaledFont = Factory::CreateScaledFontForNativeFont(nativeFont,
-                                                            GetAdjustedSize());
-  }
 
-  mAzureScaledFontIsCairo = wantCairo;
+        if (!mAzureScaledFont) {
+            return nullptr;
+        }
+    }
 
-  RefPtr<ScaledFont> scaledFont(mAzureScaledFont);
-  return scaledFont.forget();
+    if (aTarget->GetBackendType() == BackendType::CAIRO) {
+        if (!mAzureScaledFont->GetCairoScaledFont()) {
+            cairo_scaled_font_t* cairoScaledFont = GetCairoScaledFont();
+            if (!cairoScaledFont) {
+                return nullptr;
+            }
+            mAzureScaledFont->SetCairoScaledFont(cairoScaledFont);
+        }
+    }
+
+    RefPtr<ScaledFont> scaledFont(mAzureScaledFont);
+    return scaledFont.forget();
 }

@@ -1826,8 +1826,7 @@ public:
 
     virtual FontType GetType() const = 0;
 
-    virtual already_AddRefed<mozilla::gfx::ScaledFont> GetScaledFont(DrawTarget* aTarget)
-    { return gfxPlatform::GetPlatform()->GetScaledFontForFont(aTarget, this); }
+    virtual already_AddRefed<mozilla::gfx::ScaledFont> GetScaledFont(DrawTarget* aTarget) = 0;
 
     bool KerningDisabled() {
         return mKerningSet && !mKerningEnabled;

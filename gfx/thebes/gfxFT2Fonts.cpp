@@ -34,6 +34,9 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/gfx/2D.h"
 
+using namespace mozilla;
+using namespace mozilla::gfx;
+
 /**
  * gfxFT2Font
  */
@@ -174,6 +177,21 @@ gfxFT2Font::~gfxFT2Font()
 {
 }
 
+already_AddRefed<ScaledFont>
+gfxFT2Font::GetScaledFont(DrawTarget *aTarget)
+{
+    if (!mAzureScaledFont) {
+        NativeFont nativeFont;
+        nativeFont.mType = NativeFontType::CAIRO_FONT_FACE;
+        nativeFont.mFont = GetCairoScaledFont();
+        mAzureScaledFont =
+            Factory::CreateScaledFontForNativeFont(nativeFont, GetAdjustedSize());
+    }
+
+    RefPtr<ScaledFont> scaledFont(mAzureScaledFont);
+    return scaledFont.forget();
+}
+
 void
 gfxFT2Font::FillGlyphDataForChar(uint32_t ch, CachedGlyphData *gd)
 {
@@ -212,7 +230,7 @@ gfxFT2Font::FillGlyphDataForChar(uint32_t ch, CachedGlyphData *gd)
 }
 
 void
-gfxFT2Font::AddSizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf,
+gfxFT2Font::AddSizeOfExcludingThis(MallocSizeOf aMallocSizeOf,
                                    FontCacheSizes* aSizes) const
 {
     gfxFont::AddSizeOfExcludingThis(aMallocSizeOf, aSizes);
@@ -221,7 +239,7 @@ gfxFT2Font::AddSizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf,
 }
 
 void
-gfxFT2Font::AddSizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf,
+gfxFT2Font::AddSizeOfIncludingThis(MallocSizeOf aMallocSizeOf,
                                    FontCacheSizes* aSizes) const
 {
     aSizes->mFontInstances += aMallocSizeOf(this);

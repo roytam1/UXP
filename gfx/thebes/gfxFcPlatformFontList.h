@@ -217,6 +217,9 @@ public:
     virtual FontType GetType() const override { return FONT_TYPE_FONTCONFIG; }
     virtual FcPattern *GetPattern() const { return mPattern; }
 
+    virtual already_AddRefed<mozilla::gfx::ScaledFont>
+    GetScaledFont(DrawTarget *aTarget) override;
+
 private:
     virtual ~gfxFontconfigFont();
 
