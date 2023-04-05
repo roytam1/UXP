@@ -5235,6 +5235,33 @@ Parser<SyntaxParseHandler>::checkExportedName(JSAtom* exportName)
     return false;
 }
 
+// Because all these template methods call each other, let's declare them first before
+// defining them to prevent a GCC compiler error in specialization of member function
+// template after instantiation.
+template<>
+bool
+Parser<FullParseHandler>::checkExportedNamesForDeclaration(ParseNode* node);
+
+template<>
+bool
+Parser<SyntaxParseHandler>::checkExportedNamesForDeclaration(Node node);
+
+template<>
+bool
+Parser<FullParseHandler>::checkExportedNamesForArrayBinding(ListNode* array);
+
+template<>
+inline bool
+Parser<SyntaxParseHandler>::checkExportedNamesForArrayBinding(ListNodeType array);
+
+template<>
+bool
+Parser<FullParseHandler>::checkExportedNamesForObjectBinding(ListNode* obj);
+
+template<>
+inline bool
+Parser<SyntaxParseHandler>::checkExportedNamesForObjectBinding(ListNodeType obj);
+
 template<>
 bool
 Parser<FullParseHandler>::checkExportedNamesForArrayBinding(ListNode* array)
