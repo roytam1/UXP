@@ -326,8 +326,11 @@ DOMHighResTimeStamp
 Performance::ConvertMarkToTimestampWithString(const nsAString& aName,
                                               ErrorResult& aRv)
 {
+  if (IsPerformanceTimingAttribute(aName)) {
+    return ConvertNameToTimestamp(aName, aRv);
+  }
+
   AutoTArray<RefPtr<PerformanceEntry>, 1> arr;
-  DOMHighResTimeStamp ts;
   Optional<nsAString> typeParam;
   nsAutoString str;
   str.AssignLiteral("mark");
@@ -337,18 +340,8 @@ Performance::ConvertMarkToTimestampWithString(const nsAString& aName,
     return arr.LastElement()->StartTime();
   }
 
-  if (!IsPerformanceTimingAttribute(aName)) {
-    aRv.ThrowTypeError<MSG_PMO_UNKNOWN_MARK_NAME>(aName);
-    return 0;
-  }
-
-  ts = GetPerformanceTimingFromString(aName);
-  if (!ts) {
-    aRv.Throw(NS_ERROR_DOM_INVALID_ACCESS_ERR);
-    return 0;
-  }
-
-  return ts - CreationTime();
+  aRv.ThrowTypeError<MSG_PMO_UNKNOWN_MARK_NAME>(aName);
+  return 0;
 }
 
 DOMHighResTimeStamp
@@ -388,6 +381,34 @@ Performance::ConvertMarkToTimestamp(
   }
   return ConvertMarkToTimestampWithDOMHighResTimeStamp(
       aAttribute, aMarkNameOrTimestamp.GetAsDouble(), aRv);
+}
+
+DOMHighResTimeStamp Performance::ConvertNameToTimestamp(const nsAString& aName,
+                                                        ErrorResult& aRv) {
+  if (!IsGlobalObjectWindow()) {
+    aRv.ThrowTypeError<MSG_PMO_INVALID_ATTR_FOR_NON_GLOBAL>(aName);
+    return 0;
+  }
+
+  if (aName.EqualsASCII("navigationStart")) {
+    return 0;
+  }
+
+  // We use GetPerformanceTimingFromString, rather than calling the
+  // navigationStart method timing function directly, because the former handles
+  // reducing precision against timing attacks.
+  const DOMHighResTimeStamp startTime =
+    GetPerformanceTimingFromString(NS_LITERAL_STRING("navigationStart"));
+  const DOMHighResTimeStamp endTime =
+    GetPerformanceTimingFromString(aName);
+  MOZ_ASSERT(endTime >= 0);
+  if (endTime == 0) {
+    // Was given a PerformanceTiming attribute which isn't available yet.
+    aRv.Throw(NS_ERROR_DOM_INVALID_ACCESS_ERR);
+    return 0;
+  }
+
+  return endTime - startTime;
 }
 
 DOMHighResTimeStamp
