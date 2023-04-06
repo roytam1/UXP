@@ -269,13 +269,13 @@ already_AddRefed<PerformanceMark> Performance::Mark(
 
   nsCOMPtr<nsIGlobalObject> parent = GetParentObject();
   if (!parent || parent->IsDying() || !parent->GetGlobalJSObject()) {
-    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    aRv.Throw(NS_ERROR_DOM_UT_UNAVAILABLE_GLOBAL_OBJECT);
     return nullptr;
    }
 
   GlobalObject global(aCx, parent->GetGlobalJSObject());
   if (global.Failed()) {
-    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    aRv.Throw(NS_ERROR_DOM_UT_UNAVAILABLE_GLOBAL_OBJECT);
     return nullptr;
   }
 
@@ -340,7 +340,7 @@ Performance::ConvertMarkToTimestampWithString(const nsAString& aName,
     return arr.LastElement()->StartTime();
   }
 
-  aRv.ThrowTypeError<MSG_PMO_UNKNOWN_MARK_NAME>(aName);
+  aRv.Throw(NS_ERROR_DOM_UT_UNKNOWN_MARK_NAME);
   return 0;
 }
 
@@ -403,8 +403,7 @@ DOMHighResTimeStamp Performance::ConvertNameToTimestamp(const nsAString& aName,
     GetPerformanceTimingFromString(aName);
   MOZ_ASSERT(endTime >= 0);
   if (endTime == 0) {
-    // Was given a PerformanceTiming attribute which isn't available yet.
-    aRv.Throw(NS_ERROR_DOM_INVALID_ACCESS_ERR);
+    aRv.Throw(NS_ERROR_DOM_UT_UNAVAILABLE_ATTR);
     return 0;
   }
 

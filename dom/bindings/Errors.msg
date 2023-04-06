@@ -104,8 +104,6 @@ MSG_DEF(MSG_NO_NEGATIVE_ATTR, 1, JSEXN_TYPEERR, "Given attribute {0} cannot be n
 MSG_DEF(MSG_PMO_NO_SEPARATE_ENDMARK, 0, JSEXN_TYPEERR, "Cannot provide separate endMark argument if PerformanceMeasureOptions argument is given.")
 MSG_DEF(MSG_PMO_MISSING_STARTENDMARK, 0, JSEXN_TYPEERR, "PerformanceMeasureOptions must have start and/or end member.")
 MSG_DEF(MSG_PMO_INVALID_MEMBERS, 0, JSEXN_TYPEERR, "PerformanceMeasureOptions cannot have all of the following members: start, duration, and end.")
-MSG_DEF(MSG_PMO_UNKNOWN_MARK_NAME, 1, JSEXN_SYNTAXERR, "Given mark name, {0}, is unknown.")
 MSG_DEF(MSG_PMO_CONSTRUCTOR_INACCESSIBLE, 0, JSEXN_TYPEERR, "Can't access PerformanceMark constructor, performance is null.")
-MSG_DEF(MSG_PMO_INVALID_TIMING_ATTR, 0, JSEXN_SYNTAXERR, "markName cannot be a performance timing attribute.")
 MSG_DEF(MSG_PMO_UNEXPECTED_START_TIME, 0, JSEXN_TYPEERR, "Expected startTime >= 0.")
 MSG_DEF(MSG_PMO_INVALID_ATTR_FOR_NON_GLOBAL, 1, JSEXN_TYPEERR, "Cannot get PerformanceTiming attribute values for non-Window global object. Given: {0}.")

@@ -991,6 +991,16 @@
 #undef MODULE
 
   /* ======================================================================= */
+  /* 42: NS_ERROR_MODULE_DOM_USER_TIMING */
+  /* ======================================================================= */
+#define MODULE NS_ERROR_MODULE_DOM_USER_TIMING
+  ERROR(NS_ERROR_DOM_UT_UNKNOWN_MARK_NAME,            FAILURE(1)),
+  ERROR(NS_ERROR_DOM_UT_INVALID_TIMING_ATTR,          FAILURE(2)),
+  ERROR(NS_ERROR_DOM_UT_UNAVAILABLE_ATTR,             FAILURE(3)),
+  ERROR(NS_ERROR_DOM_UT_UNAVAILABLE_GLOBAL_OBJECT,    FAILURE(4)),
+#undef MODULE
+
+  /* ======================================================================= */
   /* 51: NS_ERROR_MODULE_GENERAL */
   /* ======================================================================= */
 #define MODULE NS_ERROR_MODULE_GENERAL
