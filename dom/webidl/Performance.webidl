@@ -72,11 +72,17 @@ partial interface Performance {
 };
 #endif
 
+// https://w3c.github.io/user-timing/#extensions-performance-interface
+dictionary PerformanceMarkOptions {
+  any detail;
+  DOMHighResTimeStamp startTime;
+};
+
 // http://www.w3.org/TR/user-timing/
 [Exposed=(Window,Worker)]
 partial interface Performance {
   [Func="Performance::IsEnabled", Throws]
-  void mark(DOMString markName);
+  PerformanceMark mark(DOMString markName, optional PerformanceMarkOptions markOptions);
   [Func="Performance::IsEnabled"]
   void clearMarks(optional DOMString markName);
   [Func="Performance::IsEnabled", Throws]

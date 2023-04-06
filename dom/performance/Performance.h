@@ -23,6 +23,8 @@ namespace dom {
 class OwningStringOrDouble;
 class StringOrPerformanceMeasureOptions;
 class PerformanceEntry;
+class PerformanceMark;
+struct PerformanceMarkOptions;
 struct PerformanceMeasureOptions;
 class PerformanceMeasure;
 class PerformanceNavigation;
@@ -55,6 +57,10 @@ public:
   static already_AddRefed<Performance>
   CreateForWorker(workers::WorkerPrivate* aWorkerPrivate);
 
+  // This will return nullptr if called outside of a Window or Worker.
+  static already_AddRefed<Performance> Get(JSContext* aCx,
+                                           nsIGlobalObject* aGlobal);
+
   JSObject* WrapObject(JSContext *cx,
                        JS::Handle<JSObject*> aGivenProto) override;
 
@@ -76,7 +82,9 @@ public:
 
   DOMHighResTimeStamp TimeOrigin();
 
-  void Mark(const nsAString& aName, ErrorResult& aRv);
+  already_AddRefed<PerformanceMark> Mark(
+      JSContext* aCx, const nsAString& aName,
+      const PerformanceMarkOptions& aMarkOptions, ErrorResult& aRv);
 
   void ClearMarks(const Optional<nsAString>& aName);
 
@@ -109,6 +117,11 @@ public:
 
   virtual nsITimedChannel* GetChannel() const = 0;
 
+  virtual bool IsPerformanceTimingAttribute(const nsAString& aName)
+  {
+    return false;
+  }
+
 protected:
   Performance();
   explicit Performance(nsPIDOMWindowInner* aWindow);
@@ -128,11 +141,6 @@ protected:
   virtual TimeStamp CreationTimeStamp() const = 0;
 
   virtual DOMHighResTimeStamp CreationTime() const = 0;
-
-  virtual bool IsPerformanceTimingAttribute(const nsAString& aName)
-  {
-    return false;
-  }
 
   virtual DOMHighResTimeStamp
   GetPerformanceTimingFromString(const nsAString& aTimingName)

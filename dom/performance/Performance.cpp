@@ -26,6 +26,7 @@
 #include "mozilla/TimerClamping.h"
 #include "WorkerPrivate.h"
 #include "WorkerRunnable.h"
+#include "WorkerScope.h"
 
 #define PERFLOG(msg, ...) printf_stderr(msg, ##__VA_ARGS__)
 
@@ -102,6 +103,27 @@ Performance::CreateForWorker(workers::WorkerPrivate* aWorkerPrivate)
   aWorkerPrivate->AssertIsOnWorkerThread();
 
   RefPtr<Performance> performance = new PerformanceWorker(aWorkerPrivate);
+  return performance.forget();
+}
+
+/* static */
+already_AddRefed<Performance> Performance::Get(JSContext* aCx,
+                                               nsIGlobalObject* aGlobal) {
+  RefPtr<Performance> performance;
+  nsCOMPtr<nsPIDOMWindowInner> window = do_QueryInterface(aGlobal);
+  if (window) {
+    performance = window->GetPerformance();
+  } else {
+    const WorkerPrivate* workerPrivate = GetWorkerPrivateFromContext(aCx);
+    if (!workerPrivate) {
+      return nullptr;
+    }
+
+    WorkerGlobalScope* scope = workerPrivate->GlobalScope();
+    MOZ_ASSERT(scope);
+    performance = scope->GetPerformance();
+  }
+
   return performance.forget();
 }
 
@@ -234,27 +256,42 @@ Performance::RoundTime(double aTime) const
   return floor(aTime / maxResolutionMs) * maxResolutionMs;
 }
 
-
-void
-Performance::Mark(const nsAString& aName, ErrorResult& aRv)
+already_AddRefed<PerformanceMark> Performance::Mark(
+  JSContext* aCx,
+  const nsAString& aName,
+  const PerformanceMarkOptions& aMarkOptions,
+  ErrorResult& aRv)
 {
   // Don't add the entry if the buffer is full. XXX should be removed by bug 1159003.
   if (mUserEntries.Length() >= mResourceTimingBufferSize) {
-    return;
+    return nullptr;
   }
 
-  if (IsPerformanceTimingAttribute(aName)) {
-    aRv.Throw(NS_ERROR_DOM_SYNTAX_ERR);
-    return;
+  nsCOMPtr<nsIGlobalObject> parent = GetParentObject();
+  if (!parent || parent->IsDying() || !parent->GetGlobalJSObject()) {
+    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    return nullptr;
+   }
+
+  GlobalObject global(aCx, parent->GetGlobalJSObject());
+  if (global.Failed()) {
+    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    return nullptr;
   }
 
   RefPtr<PerformanceMark> performanceMark =
-    new PerformanceMark(GetAsISupports(), aName, Now());
+    PerformanceMark::Constructor(global, aName, aMarkOptions, aRv);
+  if (aRv.Failed()) {
+    return nullptr;
+  }
+
   InsertUserEntry(performanceMark);
 
   if (profiler_is_active()) {
     PROFILER_MARKER(NS_ConvertUTF16toUTF8(aName).get());
   }
+
+  return performanceMark.forget();
 }
 
 void
