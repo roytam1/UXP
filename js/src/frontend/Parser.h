@@ -583,7 +583,8 @@ enum class PropertyType {
     AsyncMethod,
     AsyncGeneratorMethod,
     Constructor,
-    DerivedConstructor
+    DerivedConstructor,
+    Field,
 };
 
 // Specify a value for an ES6 grammar parametrization.  We have no enum for
@@ -719,6 +720,15 @@ class UsedNameTracker
 
     MOZ_MUST_USE bool noteUse(ExclusiveContext* cx, JSAtom* name,
                               uint32_t scriptId, uint32_t scopeId);
+
+    MOZ_MUST_USE bool markAsAlwaysClosedOver(ExclusiveContext* cx, JSAtom* name,
+                                             uint32_t scriptId, uint32_t scopeId) {
+        // This marks a variable as always closed over:
+        // UsedNameInfo::noteBoundInScope only checks if scriptId and scopeId are
+        // greater than the current scriptId/scopeId, so do a simple increment to
+        // make that so.
+        return noteUse(cx, name, scriptId + 1, scopeId + 1);
+    }
 
     struct RewindToken
     {
@@ -1171,7 +1181,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
      */
     JSFunction* newFunction(HandleAtom atom, FunctionSyntaxKind kind,
                             GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
-                            HandleObject proto);
+                            HandleObject proto = nullptr);
 
     void trace(JSTracer* trc);
 
@@ -1478,6 +1488,24 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     enum ClassContext { ClassStatement, ClassExpression };
     ClassNodeType classDefinition(YieldHandling yieldHandling, ClassContext classContext,
                                   DefaultHandling defaultHandling);
+    MOZ_MUST_USE bool classMember(YieldHandling yieldHandling,
+                                  DefaultHandling defaultHandling,
+                                  const ParseContext::ClassStatement& classStmt,
+                                  HandlePropertyName className,
+                                  uint32_t classStartOffset, bool hasHeritage,
+                                  size_t& numFields,
+                                  size_t& numFieldKeys,
+                                  ListNodeType& classMembers, bool* done);
+    MOZ_MUST_USE bool finishClassConstructor(
+        const ParseContext::ClassStatement& classStmt,
+        HandlePropertyName className, uint32_t classStartOffset,
+        uint32_t classEndOffset, size_t numFieldsWithInitializers,
+        ListNodeType& classMembers);
+
+    FunctionNodeType fieldInitializerOpt(YieldHandling yieldHandling, bool hasHeritage,
+                                         Node name, HandleAtom atom, size_t& numFieldKeys);
+    FunctionNodeType synthesizeConstructor(HandleAtom className,
+                                           uint32_t classNameOffset);
 
     bool checkLabelOrIdentifierReference(PropertyName* ident,
                                          uint32_t offset,
@@ -1522,8 +1550,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     bool matchInOrOf(bool* isForInp, bool* isForOfp);
 
     bool hasUsedFunctionSpecialName(HandlePropertyName name);
-    bool declareFunctionArgumentsObject();
-    bool declareFunctionThis();
+    bool declareFunctionArgumentsObject(bool canSkipLazyClosedOverBindings);
+    bool declareFunctionThis(bool canSkipLazyClosedOverBindings);
     NameNodeType newInternalDotName(HandlePropertyName name);
     NameNodeType newThisName();
     NameNodeType newDotGeneratorName();
@@ -1596,7 +1624,9 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     mozilla::Maybe<LexicalScope::Data*> newLexicalScopeData(ParseContext::Scope& scope);
     LexicalScopeNodeType finishLexicalScope(ParseContext::Scope& scope, Node body);
 
+    enum PropertyNameContext { PropertyNameInLiteral, PropertyNameInPattern, PropertyNameInClass };
     Node propertyName(YieldHandling yieldHandling,
+                      PropertyNameContext propertyNameContext,
                       const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType propList,
                       PropertyType* propType, MutableHandleAtom propAtom);
     UnaryNodeType computedPropertyName(YieldHandling yieldHandling,

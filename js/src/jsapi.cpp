@@ -4430,7 +4430,7 @@ JS::CompileFunction(JSContext* cx, AutoObjectVector& envChain,
             return false;
 
         // If name is not valid identifier
-        if (!js::frontend::IsIdentifier(name, nameLen))
+        if (!js::frontend::IsIdentifier(reinterpret_cast<const Latin1Char*>(name), nameLen))
             isInvalidName = true;
     }
 

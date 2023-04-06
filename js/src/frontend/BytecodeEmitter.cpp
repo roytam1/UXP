@@ -174,6 +174,10 @@ BytecodeEmitter::BytecodeEmitter(BytecodeEmitter* parent,
     innermostNestableControl(nullptr),
     innermostEmitterScope_(nullptr),
     innermostTDZCheckCache(nullptr),
+    fieldInitializers_(parent
+                       ? parent->fieldInitializers_
+                       : lazyScript ? lazyScript->getFieldInitializers()
+                                    : FieldInitializers::Invalid()),
 #ifdef DEBUG
     unstableEmitterScope(false),
 #endif
@@ -1058,6 +1062,7 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
         return true;
 
       case PNK_OBJECT_PROPERTY_NAME:
+      case PNK_PRIVATE_NAME:                               // no side effects, unlike PNK_NAME
       case PNK_STRING:
       case PNK_TEMPLATE_STRING:
         MOZ_ASSERT(pn->is<NameNode>());
@@ -1515,8 +1520,9 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
       case PNK_FOROF:           // by PNK_FOR/PNK_COMPREHENSIONFOR
       case PNK_FORHEAD:         // by PNK_FOR/PNK_COMPREHENSIONFOR
       case PNK_CLASSMETHOD:     // by PNK_CLASS
+      case PNK_CLASSFIELD:      // by PNK_CLASS
       case PNK_CLASSNAMES:      // by PNK_CLASS
-      case PNK_CLASSMETHODLIST: // by PNK_CLASS
+      case PNK_CLASSMEMBERLIST: // by PNK_CLASS
       case PNK_IMPORT_SPEC_LIST: // by PNK_IMPORT
       case PNK_IMPORT_SPEC:      // by PNK_IMPORT
       case PNK_EXPORT_BATCH_SPEC:// by PNK_EXPORT
@@ -2377,6 +2383,64 @@ BytecodeEmitter::emitScript(ParseNode* body)
         return false;
 
     tellDebuggerAboutCompiledScript(cx);
+
+    return true;
+}
+
+bool BytecodeEmitter::emitInitializeInstanceFields()
+{
+    MOZ_ASSERT(fieldInitializers_.valid);
+    size_t numFields = fieldInitializers_.numFieldInitializers;
+
+    if (numFields == 0) {
+        return true;
+    }
+
+    if (!emitGetName(cx->names().dotInitializers)) {
+        //              [stack] ARRAY
+        return false;
+    }
+
+    for (size_t fieldIndex = 0; fieldIndex < numFields; fieldIndex++) {
+        if (fieldIndex < numFields - 1) {
+            // We DUP to keep the array around (it is consumed in the bytecode below)
+            // for next iterations of this loop, except for the last iteration, which
+            // avoids an extra POP at the end of the loop.
+            if (!emit1(JSOP_DUP)) {
+                //          [stack] ARRAY ARRAY
+                return false;
+            }
+        }
+
+        if (!emitNumberOp(fieldIndex)) {
+            //            [stack] ARRAY? ARRAY INDEX
+            return false;
+        }
+
+        // Don't use CALLELEM here, because the receiver of the call != the receiver
+        // of this getelem. (Specifically, the call receiver is `this`, and the
+        // receiver of this getelem is `.initializers`)
+        if (!emit1(JSOP_GETELEM)) {
+            //            [stack] ARRAY? FUNC
+            return false;
+        }
+
+        // This is guaranteed to run after super(), so we don't need TDZ checks.
+        if (!emitGetName(cx->names().dotThis)) {
+            //            [stack] ARRAY? FUNC THIS
+            return false;
+        }
+
+        if (!emitCall(JSOP_CALL_IGNORES_RV, 0)) {
+            //            [stack] ARRAY? RVAL
+            return false;
+        }
+
+        if (!emit1(JSOP_POP)) {
+            //            [stack] ARRAY?
+            return false;
+        }
+    }
 
     return true;
 }
@@ -7718,6 +7782,12 @@ bool
 BytecodeEmitter::emitPropertyList(ListNode* obj, MutableHandlePlainObject objp, PropListType type)
 {
     for (ParseNode* propdef : obj->contents()) {
+        if (propdef->is<ClassField>()) {
+            // Skip over class fields and emit them at the end.  This is needed
+            // because they're all emitted into a single array, which is then stored
+            // into a local variable
+            continue;
+        }
         if (!updateSourceCoordNotes(propdef->pn_pos.begin))
             return false;
 
@@ -7877,8 +7947,185 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, MutableHandlePlainObject objp, 
                 return false;
         }
     }
+
+    if (obj->getKind() == PNK_CLASSMEMBERLIST) {
+        if (!emitCreateFieldKeys(obj))
+            return false;
+        if (!emitCreateFieldInitializers(obj))
+            return false;
+    }
+
+  return true;
+}
+
+FieldInitializers
+BytecodeEmitter::setupFieldInitializers(ListNode* classMembers)
+{
+    size_t numFields = 0;
+  
+    for (ParseNode* propdef : classMembers->contents()) {
+        if (propdef->is<ClassField>()) {
+            FunctionNode* initializer = propdef->as<ClassField>().initializer();
+            // Don't include fields without initializers.
+            if (initializer != nullptr) {
+                numFields++;
+            }
+            continue;
+        }
+    }
+
+    return FieldInitializers(numFields);
+}
+
+// Purpose of .fieldKeys:
+// Computed field names (`["x"] = 2;`) must be ran at class-evaluation time, not
+// object construction time. The transformation to do so is roughly as follows:
+//
+// class C {
+//   [keyExpr] = valueExpr;
+// }
+// -->
+// let .fieldKeys = [keyExpr];
+// let .initializers = [
+//   () => {
+//     this[.fieldKeys[0]] = valueExpr;
+//   }
+// ];
+// class C {
+//   constructor() {
+//     .initializers[0]();
+//   }
+// }
+//
+// BytecodeEmitter::emitCreateFieldKeys does `let .fieldKeys = [keyExpr, ...];`
+// See Parser::fieldInitializer for the `this[.fieldKeys[0]]` part.
+bool
+BytecodeEmitter::emitCreateFieldKeys(ListNode* obj)
+{
+    size_t numFieldKeys = 0;
+    for (ParseNode* propdef : obj->contents()) {
+        if (propdef->is<ClassField>()) {
+            ClassField* field = &propdef->as<ClassField>();
+            if (field->name().getKind() == PNK_COMPUTED_NAME) {
+                numFieldKeys++;
+            }
+        }
+    }
+
+    if (numFieldKeys == 0)
+        return true;
+
+    NameOpEmitter noe(this, cx->names().dotFieldKeys,
+                      NameOpEmitter::Kind::Initialize);
+    if (!noe.prepareForRhs())
+        return false;
+
+    if (!emitUint32Operand(JSOP_NEWARRAY, numFieldKeys)) {
+        //            [stack] ARRAY
+        return false;
+    }
+
+    size_t curFieldKeyIndex = 0;
+    for (ParseNode* propdef : obj->contents()) {
+        if (propdef->is<ClassField>()) {
+            ClassField* field = &propdef->as<ClassField>();
+            if (field->name().getKind() == PNK_COMPUTED_NAME) {
+                ParseNode* nameExpr = field->name().as<UnaryNode>().kid();
+
+                if (!emitTree(nameExpr)) {
+                    //        [stack] ARRAY KEY
+                    return false;
+                }
+
+                if (!emit1(JSOP_TOID)) {
+                    //        [stack] ARRAY KEY
+                    return false;
+                }
+
+                if (!emitUint32Operand(JSOP_INITELEM_ARRAY, curFieldKeyIndex)) {
+                    //        [stack] ARRAY
+                    return false;
+                }
+
+                curFieldKeyIndex++;
+            }
+        }
+    }
+    MOZ_ASSERT(curFieldKeyIndex == numFieldKeys);
+
+    if (!noe.emitAssignment()) {
+        //            [stack] ARRAY
+        return false;
+    }
+
+    if (!emit1(JSOP_POP)) {
+        //            [stack]
+        return false;
+    }
+
     return true;
 }
+
+bool
+BytecodeEmitter::emitCreateFieldInitializers(ListNode* obj)
+{
+    const FieldInitializers& fieldInitializers = fieldInitializers_;
+    MOZ_ASSERT(fieldInitializers.valid);
+    size_t numFields = fieldInitializers.numFieldInitializers;
+
+    if (numFields == 0)
+        return true;
+
+    // .initializers is a variable that stores an array of lambdas containing
+    // code (the initializer) for each field. Upon an object's construction,
+    // these lambdas will be called, defining the values.
+
+    NameOpEmitter noe(this, cx->names().dotInitializers,
+                      NameOpEmitter::Kind::Initialize);
+    if (!noe.prepareForRhs()) {
+        return false;
+    }
+
+    if (!emitUint32Operand(JSOP_NEWARRAY, numFields)) {
+        //            [stack] CTOR? OBJ ARRAY
+        return false;
+    }
+
+    size_t curFieldIndex = 0;
+    for (ParseNode* propdef : obj->contents()) {
+        if (propdef->is<ClassField>()) {
+            FunctionNode* initializer = propdef->as<ClassField>().initializer();
+            if (initializer == nullptr) {
+                continue;
+            }
+
+            if (!emitTree(initializer)) {
+                //        [stack] CTOR? OBJ ARRAY LAMBDA
+                return false;
+            }
+
+            if (!emitUint32Operand(JSOP_INITELEM_ARRAY, curFieldIndex)) {
+                //        [stack] CTOR? OBJ ARRAY
+                return false;
+            }
+
+            curFieldIndex++;
+        }
+    }
+
+    if (!noe.emitAssignment()) {
+        //            [stack] CTOR? OBJ ARRAY
+        return false;
+    }
+
+    if (!emit1(JSOP_POP)) {
+        //            [stack] CTOR? OBJ
+        return false;
+    }
+
+    return true;
+}
+
 
 // Using MOZ_NEVER_INLINE in here is a workaround for llvm.org/pr14047. See
 // the comment on emitSwitch.
@@ -8414,6 +8661,11 @@ BytecodeEmitter::emitFunctionBody(ParseNode* funBody)
 {
     FunctionBox* funbox = sc->asFunctionBox();
 
+    if (funbox->function()->kind() == JSFunction::FunctionKind::ClassConstructor) {
+        if (!emitInitializeInstanceFields())
+            return false;
+    }
+
     if (!emitTree(funBody))
         return false;
 
@@ -8484,6 +8736,21 @@ BytecodeEmitter::emitLexicalInitialization(ParseNode* pn)
     return true;
 }
 
+class AutoResetFieldInitializers
+{
+    BytecodeEmitter* bce;
+    FieldInitializers oldFieldInfo;
+
+  public:
+    AutoResetFieldInitializers(BytecodeEmitter* bce, FieldInitializers newFieldInfo)
+      : bce(bce), oldFieldInfo(bce->fieldInitializers_)
+    {
+        bce->fieldInitializers_ = newFieldInfo;
+    }
+
+    ~AutoResetFieldInitializers() { bce->fieldInitializers_ = oldFieldInfo; }
+};
+
 // This follows ES6 14.5.14 (ClassDefinitionEvaluation) and ES6 14.5.15
 // (BindingClassDeclarationEvaluation).
 bool
@@ -8491,20 +8758,25 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
 {
     ClassNames* names = classNode->names();
     ParseNode* heritageExpression = classNode->heritage();
-    ListNode* classMethods = classNode->methodList();
+    ListNode* classMembers = classNode->memberList();
 
     FunctionNode* constructor = nullptr;
-    for (ParseNode* mn : classMethods->contents()) {
-        ClassMethod& method = mn->as<ClassMethod>();
-        ParseNode& methodName = method.name();
-        if (!method.isStatic() &&
-            (methodName.isKind(PNK_OBJECT_PROPERTY_NAME) || methodName.isKind(PNK_STRING)) &&
-            methodName.as<NameNode>().atom() == cx->names().constructor)
-        {
-            constructor = &method.method();
-            break;
+    for (ParseNode* mn : classMembers->contents()) {
+        if (mn->is<ClassMethod>()) {
+            ClassMethod& method = mn->as<ClassMethod>();
+            ParseNode& methodName = method.name();
+            if (!method.isStatic() &&
+                (methodName.isKind(PNK_OBJECT_PROPERTY_NAME) || methodName.isKind(PNK_STRING)) &&
+                methodName.as<NameNode>().atom() == cx->names().constructor)
+            {
+                constructor = &method.method();
+                break;
+            }
         }
     }
+
+    // set this->fieldInitializers_
+    AutoResetFieldInitializers _innermostClassAutoReset(this, setupFieldInitializers(classMembers));
 
     bool savedStrictness = sc->setLocalStrictMode(true);
 
@@ -8577,7 +8849,7 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
         return false;
 
     RootedPlainObject obj(cx);
-    if (!emitPropertyList(classMethods, &obj, ClassBody))
+    if (!emitPropertyList(classMembers, &obj, ClassBody))
         return false;
 
     if (!emit1(JSOP_POP))

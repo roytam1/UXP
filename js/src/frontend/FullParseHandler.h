@@ -367,11 +367,11 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return literal;
     }
 
-    ClassNodeType newClass(Node name, Node heritage, Node methodBlock, const TokenPos& pos) {
-        return new_<ClassNode>(name, heritage, methodBlock, pos);
+    ClassNodeType newClass(Node name, Node heritage, Node memberBlock, const TokenPos& pos) {
+        return new_<ClassNode>(name, heritage, memberBlock, pos);
     }
-    ListNodeType newClassMethodList(uint32_t begin) {
-        return new_<ListNode>(PNK_CLASSMETHODLIST, TokenPos(begin, begin + 1));
+    ListNodeType newClassMemberList(uint32_t begin) {
+        return new_<ListNode>(PNK_CLASSMEMBERLIST, TokenPos(begin, begin + 1));
     }
     ClassNamesType newClassNames(Node outer, Node inner, const TokenPos& pos) {
         return new_<ClassNames>(outer, inner, pos);
@@ -457,19 +457,28 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return true;
     }
 
-    MOZ_MUST_USE bool addClassMethodDefinition(ListNodeType methodList, Node key, FunctionNodeType funNode,
+    MOZ_MUST_USE bool addClassMethodDefinition(ListNodeType memberList, Node key, FunctionNodeType funNode,
                                                JSOp op, bool isStatic)
     {
-        MOZ_ASSERT(methodList->isKind(PNK_CLASSMETHODLIST));
-        MOZ_ASSERT(key->isKind(PNK_NUMBER) ||
-                   key->isKind(PNK_OBJECT_PROPERTY_NAME) ||
-                   key->isKind(PNK_STRING) ||
-                   key->isKind(PNK_COMPUTED_NAME));
+        MOZ_ASSERT(memberList->isKind(PNK_CLASSMEMBERLIST));
+        MOZ_ASSERT(isUsableAsObjectPropertyName(key));
 
         ClassMethod* classMethod = new_<ClassMethod>(key, funNode, op, isStatic);
         if (!classMethod)
             return false;
-        methodList->append(classMethod);
+        memberList->append(classMethod);
+        return true;
+    }
+
+    MOZ_MUST_USE bool addClassFieldDefinition(ListNodeType memberList, Node name, FunctionNodeType initializer)
+    {
+        MOZ_ASSERT(memberList->isKind(PNK_CLASSMEMBERLIST));
+        MOZ_ASSERT(isUsableAsObjectPropertyName(name));
+
+        ParseNode* classField = new_<ClassField>(name, initializer);
+        if (!classField)
+            return false;
+        memberList->append(classField);
         return true;
     }
 
@@ -732,8 +741,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
             pn->setDirectRHSAnonFunction(true);
     }
 
-    FunctionNodeType newFunction(FunctionSyntaxKind syntaxKind) {
-        return new_<FunctionNode>(syntaxKind, pos());
+    FunctionNodeType newFunction(FunctionSyntaxKind syntaxKind, const TokenPos& pos) {
+        return new_<FunctionNode>(syntaxKind, pos);
     }
 
     bool setComprehensionLambdaBody(FunctionNodeType funNode, ListNodeType body) {
@@ -819,6 +828,13 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return node->isKind(PNK_SUPERBASE);
     }
 
+    bool isUsableAsObjectPropertyName(ParseNode* node) {
+        return node->isKind(PNK_NUMBER) ||
+               node->isKind(PNK_OBJECT_PROPERTY_NAME) ||
+               node->isKind(PNK_STRING) ||
+               node->isKind(PNK_COMPUTED_NAME);
+    }
+
     inline MOZ_MUST_USE bool finishInitializerAssignment(NameNodeType nameNode, Node init);
 
     void setBeginPosition(Node pn, Node oth) {
@@ -853,9 +869,9 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<ListNode>(kind, op, pos());
     }
 
-    ListNodeType newList(ParseNodeKind kind, uint32_t begin, JSOp op = JSOP_NOP) {
+    ListNodeType newList(ParseNodeKind kind, const TokenPos& pos, JSOp op = JSOP_NOP) {
         MOZ_ASSERT(!isDeclarationKind(kind));
-        return new_<ListNode>(kind, op, TokenPos(begin, begin + 1));
+        return new_<ListNode>(kind, op, pos);
     }
 
     ListNodeType newList(ParseNodeKind kind, Node kid, JSOp op = JSOP_NOP) {

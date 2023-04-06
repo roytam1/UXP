@@ -514,6 +514,7 @@ FunctionBox::initWithEnclosingParseContext(ParseContext* enclosing, FunctionSynt
         allowNewTarget_ = sc->allowNewTarget();
         allowSuperProperty_ = sc->allowSuperProperty();
         allowSuperCall_ = sc->allowSuperCall();
+        allowArguments_ = sc->allowArguments();
         needsThisTDZChecks_ = sc->needsThisTDZChecks();
         thisBinding_ = sc->thisBinding();
     } else {
@@ -547,6 +548,16 @@ FunctionBox::initWithEnclosingParseContext(ParseContext* enclosing, FunctionSynt
 
         inWith_ = enclosing->findInnermostStatement(isWith);
     }
+}
+
+void
+FunctionBox::initFieldInitializer(ParseContext* enclosing, bool hasHeritage)
+{
+    this->initWithEnclosingParseContext(enclosing, FunctionSyntaxKind::Expression);
+    allowSuperProperty_ = false;
+    allowSuperCall_ = false;
+    allowArguments_ = false;
+    needsThisTDZChecks_ = hasHeritage;
 }
 
 void
@@ -2294,7 +2305,7 @@ Parser<ParseHandler>::hasUsedFunctionSpecialName(HandlePropertyName name)
 
 template <typename ParseHandler>
 bool
-Parser<ParseHandler>::declareFunctionThis()
+Parser<ParseHandler>::declareFunctionThis(bool canSkipLazyClosedOverBindings)
 {
     // The asm.js validator does all its own symbol-table management so, as an
     // optimization, avoid doing any work here.
@@ -2307,10 +2318,11 @@ Parser<ParseHandler>::declareFunctionThis()
     HandlePropertyName dotThis = context->names().dotThis;
 
     bool declareThis;
-    if (handler.canSkipLazyClosedOverBindings())
+    if (canSkipLazyClosedOverBindings)
         declareThis = funbox->function()->lazyScript()->hasThisBinding();
     else
-        declareThis = hasUsedFunctionSpecialName(dotThis) || funbox->isDerivedClassConstructor();
+        declareThis = hasUsedFunctionSpecialName(dotThis) ||
+                      funbox->function()->kind() == JSFunction::FunctionKind::ClassConstructor;
 
     if (declareThis) {
         ParseContext::Scope& funScope = pc->functionScope();
@@ -2539,7 +2551,7 @@ Parser<FullParseHandler>::standaloneFunction(HandleFunction fun,
         tokenStream.ungetToken();
     }
 
-    FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Statement);
+    FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Statement, pos());
     if (!funNode)
         return null();
 
@@ -2585,7 +2597,7 @@ Parser<FullParseHandler>::standaloneFunction(HandleFunction fun,
 
 template <typename ParseHandler>
 bool
-Parser<ParseHandler>::declareFunctionArgumentsObject()
+Parser<ParseHandler>::declareFunctionArgumentsObject(bool canSkipLazyClosedOverBindings)
 {
     FunctionBox* funbox = pc->functionBox();
     ParseContext::Scope& funScope = pc->functionScope();
@@ -2597,7 +2609,7 @@ Parser<ParseHandler>::declareFunctionArgumentsObject()
     HandlePropertyName argumentsName = context->names().arguments;
 
     bool tryDeclareArguments;
-    if (handler.canSkipLazyClosedOverBindings())
+    if (canSkipLazyClosedOverBindings)
         tryDeclareArguments = funbox->function()->lazyScript()->shouldDeclareArguments();
     else
         tryDeclareArguments = hasUsedFunctionSpecialName(argumentsName);
@@ -2671,6 +2683,10 @@ Parser<ParseHandler>::functionBody(InHandling inHandling, YieldHandling yieldHan
 #ifdef DEBUG
     uint32_t startYieldOffset = pc->lastYieldOffset;
 #endif
+
+    // One might expect noteUsedName(".initializers") here when parsing a
+    // constructor. See Parser<ParseHandler>::classDefinition on why
+    // it's not here.
 
     Node body;
     if (type == StatementListBody) {
@@ -2756,9 +2772,10 @@ Parser<ParseHandler>::functionBody(InHandling inHandling, YieldHandling yieldHan
     // finishing up the scope so these special bindings get marked as closed
     // over if necessary. Arrow functions don't have these bindings.
     if (kind != FunctionSyntaxKind::Arrow) {
-        if (!declareFunctionArgumentsObject())
+        bool canSkipLazyClosedOverBindings = handler.canSkipLazyClosedOverBindings();
+        if (!declareFunctionArgumentsObject(canSkipLazyClosedOverBindings))
             return null();
-        if (!declareFunctionThis())
+        if (!declareFunctionThis(canSkipLazyClosedOverBindings))
             return null();
     }
 
@@ -2769,7 +2786,7 @@ template <typename ParseHandler>
 JSFunction*
 Parser<ParseHandler>::newFunction(HandleAtom atom, FunctionSyntaxKind kind,
                                   GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
-                                  HandleObject proto)
+                                  HandleObject proto /* = nullptr */)
 {
     MOZ_ASSERT_IF(kind == FunctionSyntaxKind::Statement, atom != nullptr);
 
@@ -3594,7 +3611,7 @@ Parser<FullParseHandler>::standaloneLazyFunction(HandleFunction fun, bool strict
         syntaxKind = FunctionSyntaxKind::Arrow;
     }
 
-    FunctionNodeType funNode = handler.newFunction(syntaxKind);
+    FunctionNodeType funNode = handler.newFunction(syntaxKind, pos());
     if (!funNode)
         return null();
 
@@ -3878,7 +3895,7 @@ Parser<ParseHandler>::functionStmt(uint32_t toStringStart, YieldHandling yieldHa
             return null();
     }
 
-    FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Statement);
+    FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Statement, pos());
     if (!funNode)
         return null();
 
@@ -3918,7 +3935,7 @@ Parser<ParseHandler>::functionExpr(uint32_t toStringStart, InvokedPrediction inv
         tokenStream.ungetToken();
     }
 
-    FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Expression);
+    FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Expression, pos());
     if (!funNode)
         return null();
 
@@ -4442,7 +4459,7 @@ Parser<ParseHandler>::objectBindingPattern(DeclarationKind kind, YieldHandling y
             TokenPos namePos = tokenStream.nextToken().pos;
 
             PropertyType propType;
-            Node propName = propertyName(yieldHandling, declKind, literal, &propType, &propAtom);
+            Node propName = propertyName(yieldHandling, PropertyNameInPattern, declKind, literal, &propType, &propAtom);
             if (!propName)
                 return null();
             if (propType == PropertyType::Normal) {
@@ -7378,6 +7395,224 @@ JSOpFromPropertyType(PropertyType propType)
 }
 
 template <typename ParseHandler>
+bool
+Parser<ParseHandler>::classMember(YieldHandling yieldHandling, DefaultHandling defaultHandling,
+                                  const ParseContext::ClassStatement& classStmt,
+                                  HandlePropertyName className,
+                                  uint32_t classStartOffset, bool hasHeritage,
+                                  size_t& numFields, size_t& numFieldKeys,
+                                  ListNodeType& classMembers, bool* done)
+{
+    *done = false;
+
+    TokenKind tt;
+    if (!tokenStream.getToken(&tt))
+        return false;
+
+    if (tt == TOK_RC) {
+        *done = true;
+        return true;
+    }
+
+    if (tt == TOK_SEMI)
+        return true;
+
+    bool isStatic = false;
+    if (tt == TOK_STATIC) {
+        if (!tokenStream.peekToken(&tt))
+            return false;
+        if (tt == TOK_RC) {
+            tokenStream.consumeKnownToken(tt);
+            error(JSMSG_UNEXPECTED_TOKEN, "property name", TokenKindToDesc(tt));
+            return false;
+        }
+
+        if (tt != TOK_LP) {
+            isStatic = true;
+        } else {
+            tokenStream.ungetToken();
+        }
+    } else {
+        tokenStream.ungetToken();
+    }
+
+    uint32_t propNameOffset;
+    if (!tokenStream.peekOffset(&propNameOffset))
+        return false;
+        
+    RootedAtom propAtom(context);
+    PropertyType propType;
+    Node propName = propertyName(yieldHandling, PropertyNameInClass, /* maybeDecl = */ Nothing(),
+                                 classMembers, &propType, &propAtom);
+    if (!propName)
+        return false;
+
+    if (propType == PropertyType::Field) {
+        if (!options().fieldsEnabledOption) {
+            errorAt(propNameOffset, JSMSG_FIELDS_NOT_SUPPORTED);
+            return false;
+        }
+
+        if (isStatic) {
+            errorAt(propNameOffset, JSMSG_BAD_METHOD_DEF);
+            return false;
+        }
+
+        if (propAtom == context->names().constructor) {
+          errorAt(propNameOffset, JSMSG_BAD_METHOD_DEF);
+          return false;
+        }
+
+        if (!abortIfSyntaxParser())
+            return false;
+
+        numFields++;
+
+        FunctionNodeType initializer = fieldInitializerOpt(yieldHandling, hasHeritage, propName,
+                                                           propAtom, numFieldKeys);
+        if (!initializer)
+            return false;
+
+        if (!tokenStream.getToken(&tt)) {
+            return false;
+        }
+
+        // TODO(khyperia): Implement ASI
+        if (tt != TOK_SEMI) {
+            error(JSMSG_MISSING_SEMI_FIELD);
+            return false;
+        }
+
+        return handler.addClassFieldDefinition(classMembers, propName, initializer);
+    }
+
+    if (propType != PropertyType::Getter && propType != PropertyType::Setter &&
+        propType != PropertyType::Method && propType != PropertyType::GeneratorMethod &&
+        propType != PropertyType::AsyncMethod && propType != PropertyType::AsyncGeneratorMethod &&
+        propType != PropertyType::Constructor && propType != PropertyType::DerivedConstructor)
+    {
+        errorAt(propNameOffset, JSMSG_BAD_METHOD_DEF);
+        return false;
+    }
+
+    if (propType == PropertyType::Getter)
+        propType = PropertyType::GetterNoExpressionClosure;
+    if (propType == PropertyType::Setter)
+        propType = PropertyType::SetterNoExpressionClosure;
+
+    bool isConstructor = !isStatic && propAtom == context->names().constructor;
+    if (isConstructor) {
+        if (propType != PropertyType::Method) {
+            errorAt(propNameOffset, JSMSG_BAD_METHOD_DEF);
+            return false;
+        }
+        if (classStmt.constructorBox) {
+            errorAt(propNameOffset, JSMSG_DUPLICATE_PROPERTY, "constructor");
+            return false;
+        }
+        propType = hasHeritage ? PropertyType::DerivedConstructor
+                               : PropertyType::Constructor;
+    } else if (isStatic && propAtom == context->names().prototype) {
+        errorAt(propNameOffset, JSMSG_BAD_METHOD_DEF);
+        return false;
+    }
+
+    RootedAtom funName(context);
+    switch (propType) {
+      case PropertyType::GetterNoExpressionClosure:
+      case PropertyType::SetterNoExpressionClosure:
+        if (!tokenStream.isCurrentTokenType(TOK_RB)) {
+            funName = prefixAccessorName(propType, propAtom);
+            if (!funName)
+                return false;
+        }
+        break;
+      case PropertyType::Constructor:
+      case PropertyType::DerivedConstructor:
+        funName = className;
+        break;
+      default:
+        if (!tokenStream.isCurrentTokenType(TOK_RB))
+            funName = propAtom;
+    }
+
+    // Calling toString on constructors need to return the source text for
+    // the entire class. The end offset is unknown at this point in
+    // parsing and will be amended when class parsing finishes below.
+    FunctionNodeType funNode = methodDefinition(isConstructor ? classStartOffset : propNameOffset,
+                                                propType, funName);
+    if (!funNode)
+        return false;
+
+    handler.checkAndSetIsDirectRHSAnonFunction(funNode);
+
+    JSOp op = JSOpFromPropertyType(propType);
+    return handler.addClassMethodDefinition(classMembers, propName, funNode, op, isStatic);
+}
+
+template <typename ParseHandler>
+bool
+Parser<ParseHandler>::finishClassConstructor(const ParseContext::ClassStatement& classStmt,
+                                             HandlePropertyName className, uint32_t classStartOffset,
+                                             uint32_t classEndOffset, size_t numFields,
+                                             ListNodeType& classMembers)
+{
+    // Fields cannot re-use the constructor obtained via JSOP_CLASSCONSTRUCTOR or
+    // JSOP_DERIVEDCONSTRUCTOR due to needing to emit calls to the field
+    // initializers in the constructor. So, synthesize a new one.
+    if (classStmt.constructorBox == nullptr && numFields > 0) {
+        // synthesizeConstructor assigns to classStmt.constructorBox
+        FunctionNodeType synthesizedCtor = synthesizeConstructor(className, classStartOffset);
+        if (!synthesizedCtor) {
+            return false;
+        }
+
+        MOZ_ASSERT(classStmt.constructorBox != nullptr);
+
+        // Note: the *function* has the name of the class, but the *property*
+        // containing the function has the name "constructor"
+        Node constructorNameNode = handler.newObjectLiteralPropertyName(context->names().constructor, pos());
+        if (!constructorNameNode) {
+            return false;
+        }
+
+        if (!handler.addClassMethodDefinition(classMembers, constructorNameNode,
+                                              synthesizedCtor, JSOP_INITPROP,
+                                              /* isStatic = */ false)) {
+            return false;
+        }
+    }
+
+    if (FunctionBox* ctorbox = classStmt.constructorBox) {
+        // Amend the toStringEnd offset for the constructor now that we've
+        // finished parsing the class.
+        ctorbox->toStringEnd = classEndOffset;
+
+        if (numFields > 0) {
+            // Field initialization need access to `this`.
+            ctorbox->setHasThisBinding();
+        }
+
+        // Set the same information, but on the lazyScript.
+        if (ctorbox->function()->isInterpretedLazy()) {
+            ctorbox->function()->lazyScript()->setToStringEnd(classEndOffset);
+
+            if (numFields > 0) {
+                ctorbox->function()->lazyScript()->setHasThisBinding();
+            }
+
+            // Field initializers can be retrieved if the class and constructor are
+            // being compiled at the same time, but we need to stash the field
+            // information if the constructor is being compiled lazily.
+            FieldInitializers fieldInfo(numFields);
+            ctorbox->function()->lazyScript()->setFieldInitializers(fieldInfo);
+        }
+    }
+
+    return true;
+}
+
+template <typename ParseHandler>
 typename ParseHandler::ClassNodeType
 Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
                                       ClassContext classContext,
@@ -7392,14 +7627,14 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
     if (!tokenStream.getToken(&tt))
         return null();
 
-    RootedPropertyName name(context);
+    RootedPropertyName className(context);
     if (TokenKindIsPossibleIdentifier(tt)) {
-        name = bindingIdentifier(yieldHandling);
-        if (!name)
+        className = bindingIdentifier(yieldHandling);
+        if (!className)
             return null();
     } else if (classContext == ClassStatement) {
         if (defaultHandling == AllowDefaultName) {
-            name = context->names().starDefaultStar;
+            className = context->names().starDefaultStar;
             tokenStream.ungetToken();
         } else {
             // Class statements must have a bound name
@@ -7411,188 +7646,122 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
         tokenStream.ungetToken();
     }
 
-    // Push a ParseContext::ClassStatement to keep track of the constructor
-    // funbox.
-    ParseContext::ClassStatement classStmt(pc);
-
-    RootedAtom propAtom(context);
-
-    // A named class creates a new lexical scope with a const binding of the
-    // class name for the "inner name".
-    Maybe<ParseContext::Statement> innerScopeStmt;
-    Maybe<ParseContext::Scope> innerScope;
-    if (name) {
-        innerScopeStmt.emplace(pc, StatementKind::Block);
-        innerScope.emplace(this);
-        if (!innerScope->init(pc))
-            return null();
-    }
-
     // Because the binding definitions keep track of their blockId, we need to
     // create at least the inner binding later. Keep track of the name's position
     // in order to provide it for the nodes created later.
     TokenPos namePos = pos();
 
-    Node classHeritage = null();
-    bool hasHeritage;
-    if (!tokenStream.matchToken(&hasHeritage, TOK_EXTENDS))
-        return null();
-    if (hasHeritage) {
-        if (!tokenStream.getToken(&tt))
-            return null();
-        classHeritage = optionalExpr(yieldHandling, TripledotProhibited, tt);
-        if (!classHeritage)
-            return null();
-    }
+    // Push a ParseContext::ClassStatement to keep track of the constructor
+    // funbox.
+    ParseContext::ClassStatement classStmt(pc);
 
-    if (!mustMatchToken(TOK_LC, JSMSG_CURLY_BEFORE_CLASS)) {
-        return null();
-    }
-
-    ListNodeType classMethods = handler.newClassMethodList(pos().begin);
-    if (!classMethods)
-        return null();
-
-    Maybe<DeclarationKind> declKind = Nothing();
-    for (;;) {
-        TokenKind tt;
-        if (!tokenStream.getToken(&tt))
-            return null();
-        if (tt == TOK_RC)
-            break;
-
-        if (tt == TOK_SEMI)
-            continue;
-
-        bool isStatic = false;
-        if (tt == TOK_STATIC) {
-            if (!tokenStream.peekToken(&tt))
-                return null();
-            if (tt == TOK_RC) {
-                tokenStream.consumeKnownToken(tt);
-                error(JSMSG_UNEXPECTED_TOKEN, "property name", TokenKindToDesc(tt));
-                return null();
-            }
-
-            if (tt != TOK_LP) {
-                isStatic = true;
-            } else {
-                tokenStream.ungetToken();
-            }
-        } else {
-            tokenStream.ungetToken();
-        }
-
-        uint32_t nameOffset;
-        if (!tokenStream.peekOffset(&nameOffset))
-            return null();
-            
-        PropertyType propType;
-        Node propName = propertyName(yieldHandling, declKind, classMethods, &propType, &propAtom);
-        if (!propName)
-            return null();
-
-        if (propType != PropertyType::Getter && propType != PropertyType::Setter &&
-            propType != PropertyType::Method && propType != PropertyType::GeneratorMethod &&
-            propType != PropertyType::AsyncMethod && propType != PropertyType::AsyncGeneratorMethod &&
-            propType != PropertyType::Constructor && propType != PropertyType::DerivedConstructor)
-        {
-            errorAt(nameOffset, JSMSG_BAD_METHOD_DEF);
-            return null();
-        }
-
-        if (propType == PropertyType::Getter)
-            propType = PropertyType::GetterNoExpressionClosure;
-        if (propType == PropertyType::Setter)
-            propType = PropertyType::SetterNoExpressionClosure;
-
-        bool isConstructor = !isStatic && propAtom == context->names().constructor;
-        if (isConstructor) {
-            if (propType != PropertyType::Method) {
-                errorAt(nameOffset, JSMSG_BAD_METHOD_DEF);
-                return null();
-            }
-            if (classStmt.constructorBox) {
-                errorAt(nameOffset, JSMSG_DUPLICATE_PROPERTY, "constructor");
-                return null();
-            }
-            propType = hasHeritage ? PropertyType::DerivedConstructor : PropertyType::Constructor;
-        } else if (isStatic && propAtom == context->names().prototype) {
-            errorAt(nameOffset, JSMSG_BAD_METHOD_DEF);
-            return null();
-        }
-
-        RootedAtom funName(context);
-        switch (propType) {
-          case PropertyType::GetterNoExpressionClosure:
-          case PropertyType::SetterNoExpressionClosure:
-            if (!tokenStream.isCurrentTokenType(TOK_RB)) {
-                funName = prefixAccessorName(propType, propAtom);
-                if (!funName)
-                    return null();
-            }
-            break;
-          case PropertyType::Constructor:
-          case PropertyType::DerivedConstructor:
-            funName = name;
-            break;
-          default:
-            if (!tokenStream.isCurrentTokenType(TOK_RB))
-                funName = propAtom;
-        }
-
-        // Calling toString on constructors need to return the source text for
-        // the entire class. The end offset is unknown at this point in
-        // parsing and will be amended when class parsing finishes below.
-        FunctionNodeType funNode = methodDefinition(isConstructor ? classStartOffset : nameOffset,
-                                                    propType, funName);
-        if (!funNode)
-            return null();
-
-        handler.checkAndSetIsDirectRHSAnonFunction(funNode);
-
-        JSOp op = JSOpFromPropertyType(propType);
-        if (!handler.addClassMethodDefinition(classMethods, propName, funNode, op, isStatic))
-            return null();
-    }
-
-    // Amend the toStringEnd offset for the constructor now that we've
-    // finished parsing the class.
-    uint32_t classEndOffset = pos().end;
-    if (FunctionBox* ctorbox = classStmt.constructorBox) {
-        if (ctorbox->function()->isInterpretedLazy())
-            ctorbox->function()->lazyScript()->setToStringEnd(classEndOffset);
-        ctorbox->toStringEnd = classEndOffset;
-    }
-
+    NameNodeType innerName;
     Node nameNode = null();
-    Node methodsOrBlock = classMethods;
-    if (name) {
-        // The inner name is immutable.
-        if (!noteDeclaredName(name, DeclarationKind::Const, namePos))
+    Node classHeritage = null();
+    LexicalScopeNodeType classBlock = null();
+    uint32_t classEndOffset;
+    {
+        // A named class creates a new lexical scope with a const binding of the
+        // class name for the "inner name".
+        ParseContext::Statement innerScopeStmt(pc, StatementKind::Block);
+        ParseContext::Scope innerScope(this);
+        if (!innerScope.init(pc))
             return null();
 
-        NameNodeType innerName = newName(name, namePos);
-        if (!innerName)
+        bool hasHeritage;
+        if (!tokenStream.matchToken(&hasHeritage, TOK_EXTENDS))
+            return null();
+        if (hasHeritage) {
+            if (!tokenStream.getToken(&tt))
+                return null();
+            classHeritage = optionalExpr(yieldHandling, TripledotProhibited, tt);
+            if (!classHeritage)
+                return null();
+        }
+
+        if (!mustMatchToken(TOK_LC, JSMSG_CURLY_BEFORE_CLASS)) {
+            return null();
+        }
+
+        ListNodeType classMembers = handler.newClassMemberList(pos().begin);
+        if (!classMembers)
             return null();
 
-        LexicalScopeNodeType classBlock = finishLexicalScope(*innerScope, classMethods);
+        size_t numFields = 0;
+        size_t numFieldKeys = 0;
+        for (;;) {
+            bool done;
+            if (!classMember(yieldHandling, defaultHandling, classStmt, className,
+                             classStartOffset, hasHeritage, numFields, numFieldKeys,
+                             classMembers, &done))
+                return null();
+            if (done)
+                break;
+        }
+
+        if (numFields > 0) {
+            // .initializers is always closed over by the constructor when there are
+            // fields with initializers. However, there's some strange circumstances
+            // which prevents us from using the normal noteUsedName() system. We
+            // cannot call noteUsedName(".initializers") when parsing the constructor,
+            // because .initializers should be marked as used *only if* there are
+            // fields with initializers. Even if we haven't seen any fields yet,
+            // there may be fields after the constructor.
+            // Consider the following class:
+            //
+            //  class C {
+            //    constructor() {
+            //      // do we noteUsedName(".initializers") here?
+            //    }
+            //    // ... because there might be some fields down here.
+            //  }
+            //
+            // So, instead, at the end of class parsing (where we are now), we do some
+            // tricks to pretend that noteUsedName(".initializers") was called in the
+            // constructor.
+            if (!usedNames.markAsAlwaysClosedOver(context, context->names().dotInitializers,
+                                                  pc->scriptId(),
+                                                  pc->innermostScope()->id()))
+                return null();
+            if (!noteDeclaredName(context->names().dotInitializers,
+                                  DeclarationKind::Var, namePos))
+                return null();
+        }
+
+        if (numFieldKeys > 0) {
+            if (!noteDeclaredName(context->names().dotFieldKeys, DeclarationKind::Let, namePos))
+                return null();
+        }
+        classEndOffset = pos().end;
+        if (!finishClassConstructor(classStmt, className, classStartOffset,
+                                    classEndOffset, numFields, classMembers))
+            return null();
+
+        if (className) {
+            // The inner name is immutable.
+            if (!noteDeclaredName(className, DeclarationKind::Const, namePos))
+                return null();
+
+            innerName = newName(className, namePos);
+            if (!innerName)
+                return null();
+        }
+
+        classBlock = finishLexicalScope(innerScope, classMembers);
         if (!classBlock)
             return null();
 
-        methodsOrBlock = classBlock;
-
         // Pop the inner scope.
-        innerScope.reset();
-        innerScopeStmt.reset();
+    }
 
+    if (className) {
         NameNodeType outerName = null();
         if (classContext == ClassStatement) {
             // The outer name is mutable.
-            if (!noteDeclaredName(name, DeclarationKind::Let, namePos))
+            if (!noteDeclaredName(className, DeclarationKind::Let, namePos))
                 return null();
 
-            outerName = newName(name, namePos);
+            outerName = newName(className, namePos);
             if (!outerName)
                 return null();
         }
@@ -7604,8 +7773,262 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
 
     MOZ_ALWAYS_TRUE(setLocalStrictMode(savedStrictness));
 
-    return handler.newClass(nameNode, classHeritage, methodsOrBlock,
+    return handler.newClass(nameNode, classHeritage, classBlock,
                             TokenPos(classStartOffset, classEndOffset));
+}
+
+template <class ParseHandler>
+typename ParseHandler::FunctionNodeType
+Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t classNameOffset)
+{
+    FunctionSyntaxKind functionSyntaxKind = FunctionSyntaxKind::ClassConstructor;
+
+    // Create the function object.
+    RootedFunction fun(context, newFunction(className, functionSyntaxKind,
+                                            GeneratorKind::NotGenerator,
+                                            FunctionAsyncKind::SyncFunction));
+    if (!fun)
+        return null();
+
+    // Create the top-level field initializer node.
+    FunctionNodeType funNode = handler.newFunction(functionSyntaxKind, pos());
+    if (!funNode)
+        return null();
+
+    // Create the FunctionBox and link it to the function object.
+    Directives directives(true);
+    FunctionBox* funbox = newFunctionBox(funNode, fun, classNameOffset,
+                                         directives, GeneratorKind::NotGenerator,
+                                         FunctionAsyncKind::SyncFunction, false);
+    if (!funbox)
+        return null();
+    funbox->initWithEnclosingParseContext(pc, functionSyntaxKind);
+    handler.setFunctionBox(funNode, funbox);
+    funbox->setEnd(pos().end);
+
+    // Push a ParseContext on to the stack.
+    ParseContext funpc(this, funbox, /* newDirectives = */ nullptr);
+    if (!funpc.init())
+        return null();
+
+    TokenPos synthesizedBodyPos = TokenPos(classNameOffset, classNameOffset + 1);
+    // Create a ListNode for the parameters + body (there are no parameters).
+    ListNodeType argsbody = handler.newList(PNK_PARAMSBODY, synthesizedBodyPos);
+    if (!argsbody)
+        return null();
+    handler.setFunctionFormalParametersAndBody(funNode, argsbody);
+    funbox->function()->setArgCount(0);
+    funbox->setStart(tokenStream);
+
+    // Push a LexicalScope on to the stack.
+    ParseContext::Scope lexicalScope(this);
+    if (!lexicalScope.init(pc))
+        return null();
+
+    auto stmtList = handler.newStatementList(synthesizedBodyPos);
+    if (!stmtList)
+        return null();
+
+    if (!noteUsedName(context->names().dotThis))
+        return null();
+
+    // One might expect a noteUsedName(".initializers") here. See comment in
+    // GeneralParser<ParseHandler, Unit>::classDefinition on why it's not here.
+
+    bool canSkipLazyClosedOverBindings = handler.canSkipLazyClosedOverBindings();
+    if (!declareFunctionThis(canSkipLazyClosedOverBindings))
+        return null();
+
+    auto initializerBody = finishLexicalScope(lexicalScope, stmtList);
+    if (!initializerBody)
+        return null();
+    handler.setBeginPosition(initializerBody, stmtList);
+    handler.setEndPosition(initializerBody, stmtList);
+
+    handler.setFunctionBody(funNode, initializerBody);
+
+    if (!finishFunction())
+        return null();
+
+    // This function is asserted to set classStmt->constructorBox - however, it's
+    // not directly set in this function, but rather in
+    // initWithEnclosingParseContext.
+
+    return funNode;
+}
+
+template <class ParseHandler>
+typename ParseHandler::FunctionNodeType
+Parser<ParseHandler>::fieldInitializerOpt(YieldHandling yieldHandling, bool hasHeritage,
+                                          Node propName, HandleAtom propAtom, size_t& numFieldKeys)
+{
+    bool hasInitializer = false;
+    if (!tokenStream.matchToken(&hasInitializer, TOK_ASSIGN))
+      return null();
+
+    TokenPos firstTokenPos;
+    if (hasInitializer) {
+        firstTokenPos = pos();
+    } else {
+        // the location of the "initializer" should be a zero-width span:
+        // class C {
+        //   x /* here */ ;
+        // }
+        uint32_t endPos = pos().end;
+        firstTokenPos = TokenPos(endPos, endPos);
+    }
+
+    // Create the function object.
+    RootedFunction fun(context,
+                       newFunction(propAtom, FunctionSyntaxKind::Expression,
+                                   GeneratorKind::NotGenerator,
+                                   FunctionAsyncKind::SyncFunction));
+    if (!fun)
+        return null();
+
+    // Create the top-level field initializer node.
+    FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Expression, firstTokenPos);
+    if (!funNode)
+        return null();
+
+    // Create the FunctionBox and link it to the function object.
+    Directives directives(true);
+    FunctionBox* funbox = newFunctionBox(funNode, fun, firstTokenPos.begin, directives,
+                                         GeneratorKind::NotGenerator,
+                                         FunctionAsyncKind::SyncFunction, false);
+    if (!funbox)
+        return null();
+    funbox->initFieldInitializer(pc, hasHeritage);
+    handler.setFunctionBox(funNode, funbox);
+    funbox->setStart(tokenStream, firstTokenPos);
+
+    // Push a SourceParseContext on to the stack.
+    ParseContext* outerpc = pc;
+    ParseContext funpc(this, funbox, /* newDirectives = */ nullptr);
+    if (!funpc.init())
+        return null();
+
+    // Push a VarScope on to the stack.
+    ParseContext::VarScope varScope(this);
+    if (!varScope.init(pc))
+        return null();
+
+    // Push a LexicalScope on to the stack.
+    ParseContext::Scope lexicalScope(this);
+    if (!lexicalScope.init(pc))
+        return null();
+
+    Node initializerExpr;
+    TokenPos wholeInitializerPos;
+    if (hasInitializer) {
+        // Parse the expression for the field initializer.
+        {
+            AutoAwaitIsKeyword<ParseHandler> awaitIsKeyword(this, AwaitIsName);
+            initializerExpr = assignExpr(InAllowed, YieldIsName, TripledotProhibited);
+            if (!initializerExpr)
+                return null();
+        }
+        wholeInitializerPos = pos();
+        wholeInitializerPos.begin = firstTokenPos.begin;
+    } else {
+        initializerExpr = handler.newRawUndefinedLiteral(firstTokenPos);
+        if (!initializerExpr)
+            return null();
+        wholeInitializerPos = firstTokenPos;
+    }
+
+    // Update the end position of the parse node.
+    handler.setEndPosition(funNode, wholeInitializerPos.end);
+    funbox->setEnd(pos().end);
+
+    // Create a ListNode for the parameters + body (there are no parameters)
+    ListNodeType argsbody = handler.newList(PNK_PARAMSBODY, wholeInitializerPos);
+    if (!argsbody)
+        return null();
+    handler.setFunctionFormalParametersAndBody(funNode, argsbody);
+    funbox->function()->setArgCount(0);
+
+    funbox->usesThis = true;
+    NameNodeType thisName = newThisName();
+    if (!thisName)
+        return null();
+
+    // Build `this.field` expression.
+    ThisLiteralType propAssignThis = handler.newThisLiteral(wholeInitializerPos, thisName);
+    if (!propAssignThis)
+        return null();
+
+    Node propAssignFieldAccess;
+    uint32_t indexValue;
+    if (!propAtom) {
+        // See BytecodeEmitter::emitCreateFieldKeys for an explanation of what
+        // .fieldKeys means and its purpose.
+        Node dotFieldKeys = newInternalDotName(context->names().dotFieldKeys);
+        if (!dotFieldKeys)
+            return null();
+
+        double fieldKeyIndex = numFieldKeys;
+        numFieldKeys++;
+        Node fieldKeyIndexNode = handler.newNumber(fieldKeyIndex, DecimalPoint::NoDecimal, wholeInitializerPos);
+        if (!fieldKeyIndexNode)
+            return null();
+
+        Node fieldKeyValue = handler.newPropertyByValue(dotFieldKeys, fieldKeyIndexNode, wholeInitializerPos.end);
+        if (!fieldKeyValue)
+            return null();
+
+        propAssignFieldAccess = handler.newPropertyByValue(propAssignThis, fieldKeyValue, wholeInitializerPos.end);
+        if (!propAssignFieldAccess)
+            return null();
+    } else if (propAtom->isIndex(&indexValue)) {
+        propAssignFieldAccess = handler.newPropertyByValue(propAssignThis, propName, wholeInitializerPos.end);
+        if (!propAssignFieldAccess)
+            return null();
+    } else {
+        NameNodeType propAssignName = handler.newPropertyName(propAtom->asPropertyName(), wholeInitializerPos);
+        if (!propAssignName)
+            return null();
+
+        propAssignFieldAccess = handler.newPropertyAccess(propAssignThis, propAssignName);
+        if (!propAssignFieldAccess)
+            return null();
+    }
+
+    // Synthesize an assignment expression for the property.
+    AssignmentNodeType initializerAssignment = handler.newAssignment(PNK_ASSIGN,
+                                                                     propAssignFieldAccess, initializerExpr,
+                                                                     JSOP_NOP);
+    if (!initializerAssignment)
+        return null();
+
+    bool canSkipLazyClosedOverBindings = handler.canSkipLazyClosedOverBindings();
+    if (!declareFunctionThis(canSkipLazyClosedOverBindings))
+        return null();
+
+    UnaryNodeType exprStatement = handler.newExprStatement(initializerAssignment, wholeInitializerPos.end);
+    if (!exprStatement)
+      return null();
+
+    ListNodeType statementList = handler.newStatementList(wholeInitializerPos);
+    if (!statementList)
+      return null();
+    handler.addStatementToList(statementList, exprStatement);
+
+    // Set the function's body to the field assignment.
+    LexicalScopeNodeType initializerBody = finishLexicalScope(lexicalScope, statementList);
+    if (!initializerBody) {
+        return null();
+    }
+
+    handler.setFunctionBody(funNode, initializerBody);
+
+    if (!finishFunction())
+        return null();
+
+    if (!leaveInnerFunction(outerpc))
+        return null();
+
+    return funNode;
 }
 
 template <class ParseHandler>
@@ -8543,7 +8966,7 @@ Parser<ParseHandler>::assignExpr(InHandling inHandling, YieldHandling yieldHandl
             }
         }
 
-        FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Arrow);
+        FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Arrow, pos());
         if (!funNode)
             return null();
 
@@ -8940,7 +9363,7 @@ template <typename ParseHandler>
 typename ParseHandler::Node
 Parser<ParseHandler>::generatorComprehensionLambda(unsigned begin)
 {
-    FunctionNodeType genfn = handler.newFunction(FunctionSyntaxKind::Expression);
+    FunctionNodeType genfn = handler.newFunction(FunctionSyntaxKind::Expression, pos());
     if (!genfn)
         return null();
 
@@ -9698,7 +10121,12 @@ Parser<ParseHandler>::checkLabelOrIdentifierReference(PropertyName* ident,
         tt = hint;
     }
 
-    if (tt == TOK_NAME)
+    if (!pc->sc()->allowArguments() && ident == context->names().arguments) {
+        error(JSMSG_BAD_ARGUMENTS);
+        return false;
+    }
+
+    if (tt == TOK_NAME || tt == TOK_PRIVATE_NAME)
         return true;
     if (TokenKindIsContextualKeyword(tt)) {
         if (tt == TOK_YIELD) {
@@ -10068,6 +10496,7 @@ DoubleToAtom(ExclusiveContext* cx, double value)
 template <typename ParseHandler>
 typename ParseHandler::Node
 Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
+                                   PropertyNameContext propertyNameContext,
                                    const Maybe<DeclarationKind>& maybeDecl, ListNodeType propList,
                                    PropertyType* propType, MutableHandleAtom propAtom)
 {
@@ -10226,6 +10655,16 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
         return propName;
     }
 
+    if (propertyNameContext == PropertyNameInClass && (tt == TOK_SEMI || tt == TOK_ASSIGN)) {
+        if (isGenerator || isAsync) {
+            error(JSMSG_BAD_PROP_ID);
+            return null();
+        }
+        tokenStream.ungetToken();
+        *propType = PropertyType::Field;
+        return propName;
+    }
+
     if (TokenKindIsPossibleIdentifierName(ltok) &&
         (tt == TOK_COMMA || tt == TOK_RC || tt == TOK_ASSIGN))
     {
@@ -10326,7 +10765,7 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
             TokenPos namePos = tokenStream.nextToken().pos;
 
             PropertyType propType;
-            Node propName = propertyName(yieldHandling, declKind, literal, &propType, &propAtom);
+            Node propName = propertyName(yieldHandling, PropertyNameInLiteral, declKind, literal, &propType, &propAtom);
             if (!propName)
 
                 return null();
@@ -10557,7 +10996,7 @@ Parser<ParseHandler>::methodDefinition(uint32_t toStringStart, PropertyType prop
 
     YieldHandling yieldHandling = GetYieldHandling(generatorKind);
 
-    FunctionNodeType funNode = handler.newFunction(syntaxKind);
+    FunctionNodeType funNode = handler.newFunction(syntaxKind, pos());
     if (!funNode)
         return null();
 

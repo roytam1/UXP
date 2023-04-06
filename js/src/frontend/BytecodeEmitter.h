@@ -177,6 +177,9 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     EmitterScope*    innermostEmitterScope_;
     TDZCheckCache*   innermostTDZCheckCache;
 
+    /* field info for enclosing class */
+    FieldInitializers fieldInitializers_;
+
 #ifdef DEBUG
     bool unstableEmitterScope;
 
@@ -415,6 +418,8 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     // encompasses the entire source.
     MOZ_MUST_USE bool emitScript(ParseNode* body);
 
+    MOZ_MUST_USE bool emitInitializeInstanceFields();
+
     // Emit function code for the tree rooted at body.
     MOZ_MUST_USE bool emitFunctionScript(FunctionNode* funNode);
 
@@ -513,6 +518,10 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     MOZ_MUST_USE bool emitPropertyList(ListNode* obj, MutableHandlePlainObject objp,
                                        PropListType type);
+
+    FieldInitializers setupFieldInitializers(ListNode* classMembers);
+    MOZ_MUST_USE bool emitCreateFieldKeys(ListNode* obj);
+    MOZ_MUST_USE bool emitCreateFieldInitializers(ListNode* obj);
 
     // To catch accidental misuse, emitUint16Operand/emit3 assert that they are
     // not used to unconditionally emit JSOP_GETLOCAL. Variable access should

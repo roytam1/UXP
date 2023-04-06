@@ -49,6 +49,7 @@ class ObjectBox;
     F(CALL) \
     F(ARGUMENTS) \
     F(NAME) \
+    F(PRIVATE_NAME) \
     F(OBJECT_PROPERTY_NAME) \
     F(COMPUTED_NAME) \
     F(NUMBER) \
@@ -116,7 +117,8 @@ class ObjectBox;
     F(MUTATEPROTO) \
     F(CLASS) \
     F(CLASSMETHOD) \
-    F(CLASSMETHODLIST) \
+    F(CLASSFIELD) \
+    F(CLASSMEMBERLIST) \
     F(CLASSNAMES) \
     F(NEWTARGET) \
     F(POSHOLDER) \
@@ -251,19 +253,22 @@ IsTypeofKind(ParseNodeKind kind)
  *   kid1: PNK_CLASSNAMES for class name. can be null for anonymous class.
  *   kid2: expression after `extends`. null if no expression
  *   kid3: either of
- *           * PNK_CLASSMETHODLIST, if anonymous class
- *           * PNK_LEXICALSCOPE which contains PNK_CLASSMETHODLIST as scopeBody,
+ *           * PNK_CLASSMEMBERLIST, if anonymous class
+ *           * PNK_LEXICALSCOPE which contains PNK_CLASSMEMBERLIST as scopeBody,
  *             if named class
  * PNK_CLASSNAMES (ClassNames)
  *   left: Name node for outer binding, or null if the class is an expression
  *         that doesn't create an outer binding
  *   right: Name node for inner binding
- * PNK_CLASSMETHODLIST (ListNode)
- *   head: list of N PNK_CLASSMETHOD nodes
+ * PNK_CLASSMEMBERLIST (ListNode)
+ *   head: list of N PNK_CLASSMETHOD or PNK_CLASSFIELD nodes
  *   count: N >= 0
  * PNK_CLASSMETHOD (ClassMethod)
  *   name: propertyName
  *   method: methodDefinition
+ * PNK_CLASSFIELD (ClassField)
+ *   name: fieldName
+ *   initializer: field initializer or null
  * PNK_MODULE (ModuleNode)
  *   body: statement list of the module
  *
@@ -567,6 +572,7 @@ enum ParseNodeArity
     macro(AssignmentNode, AssignmentNodeType, asAssignment) \
     macro(CaseClause, CaseClauseType, asCaseClause) \
     macro(ClassMethod, ClassMethodType, asClassMethod) \
+    macro(ClassField, ClassFieldType, asClassField) \
     macro(ClassNames, ClassNamesType, asClassNames) \
     macro(ForNode, ForNodeType, asFor) \
     macro(PropertyAccess, PropertyAccessType, asPropertyAccess) \
@@ -778,6 +784,12 @@ class ParseNode
             ParseNode*  initOrStmt;     /* var initializer, argument default,
                                          * or label statement target */
         } name;
+        struct {
+          private:
+            friend class ClassField;
+            ParseNode* name;
+            ParseNode* initializer;     /* field initializer - optional */
+        } field;
         struct {
           private:
             friend class RegExpLiteral;
@@ -1233,7 +1245,7 @@ class ListNode : public ParseNode
     MOZ_MUST_USE bool hasNonConstInitializer() const {
         MOZ_ASSERT(isKind(PNK_ARRAY) ||
                    isKind(PNK_OBJECT) ||
-                   isKind(PNK_CLASSMETHODLIST));
+                   isKind(PNK_CLASSMEMBERLIST));
         return pn_u.list.xflags & hasNonConstInitializerBit;
     }
 
@@ -1250,7 +1262,7 @@ class ListNode : public ParseNode
     void setHasNonConstInitializer() {
         MOZ_ASSERT(isKind(PNK_ARRAY) ||
                    isKind(PNK_OBJECT) ||
-                   isKind(PNK_CLASSMETHODLIST));
+                   isKind(PNK_CLASSMEMBERLIST));
         pn_u.list.xflags |= hasNonConstInitializerBit;
     }
 
@@ -1874,9 +1886,9 @@ class NullLiteral : public NullaryNode
     }
 };
 
-// This is only used internally, currently just for tagged templates.
-// It represents the value 'undefined' (aka `void 0`), like NullLiteral
-// represents the value 'null'.
+// This is only used internally, currently just for tagged templates and the
+// initial value of fields without initializers. It represents the value
+// 'undefined' (aka `void 0`), like NullLiteral represents the value 'null'.
 class RawUndefinedLiteral : public NullaryNode
 {
   public:
@@ -2124,6 +2136,30 @@ class ClassMethod : public BinaryNode
     }
 };
 
+
+class ClassField : public BinaryNode
+{
+  public:
+    ClassField(ParseNode* name, ParseNode* initializer)
+      : BinaryNode(PNK_CLASSFIELD, JSOP_NOP,
+                   initializer == nullptr ? name->pn_pos : TokenPos::box(name->pn_pos, initializer->pn_pos),
+                   name, initializer)
+    {
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_CLASSFIELD);
+        MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
+        return match;
+    }
+
+    ParseNode& name() const { return *left(); }
+
+    FunctionNode* initializer() const {
+        return right() ? &right()->as<FunctionNode>() : nullptr;
+    }
+};
+
 class SwitchStatement : public BinaryNode
 {
   public:
@@ -2207,13 +2243,13 @@ class ClassNames : public BinaryNode
 class ClassNode : public TernaryNode
 {
   public:
-    ClassNode(ParseNode* names, ParseNode* heritage, ParseNode* methodsOrBlock,
+    ClassNode(ParseNode* names, ParseNode* heritage, ParseNode* membersOrBlock,
               const TokenPos& pos)
-      : TernaryNode(PNK_CLASS, JSOP_NOP, names, heritage, methodsOrBlock, pos)
+      : TernaryNode(PNK_CLASS, JSOP_NOP, names, heritage, membersOrBlock, pos)
     {
         MOZ_ASSERT_IF(names, names->is<ClassNames>());
-        MOZ_ASSERT(methodsOrBlock->is<LexicalScopeNode>() ||
-                   methodsOrBlock->isKind(PNK_CLASSMETHODLIST));
+        MOZ_ASSERT(membersOrBlock->is<LexicalScopeNode>() ||
+                   membersOrBlock->isKind(PNK_CLASSMEMBERLIST));
     }
 
     static bool test(const ParseNode& node) {
@@ -2228,13 +2264,13 @@ class ClassNode : public TernaryNode
     ParseNode* heritage() const {
         return kid2();
     }
-    ListNode* methodList() const {
-        ParseNode* methodsOrBlock = kid3();
-        if (methodsOrBlock->isKind(PNK_CLASSMETHODLIST))
-            return &methodsOrBlock->as<ListNode>();
+    ListNode* memberList() const {
+        ParseNode* membersOrBlock = kid3();
+        if (membersOrBlock->isKind(PNK_CLASSMEMBERLIST))
+            return &membersOrBlock->as<ListNode>();
 
-        ListNode* list = &methodsOrBlock->as<LexicalScopeNode>().scopeBody()->as<ListNode>();
-        MOZ_ASSERT(list->isKind(PNK_CLASSMETHODLIST));
+        ListNode* list = &membersOrBlock->as<LexicalScopeNode>().scopeBody()->as<ListNode>();
+        MOZ_ASSERT(list->isKind(PNK_CLASSMEMBERLIST));
         return list;
     }
     Handle<LexicalScope::Data*> scopeBindings() const {

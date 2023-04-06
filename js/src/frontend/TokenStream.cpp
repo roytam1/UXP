@@ -93,18 +93,35 @@ FindReservedWord(const CharT* s, size_t length)
 }
 
 static const ReservedWordInfo*
-FindReservedWord(JSLinearString* str)
+FindReservedWord(JSLinearString* str, js::frontend::NameVisibility* visibility)
 {
     JS::AutoCheckCannotGC nogc;
-    return str->hasLatin1Chars()
-           ? FindReservedWord(str->latin1Chars(nogc), str->length())
-           : FindReservedWord(str->twoByteChars(nogc), str->length());
+    if (str->hasLatin1Chars()) {
+        const JS::Latin1Char* chars = str->latin1Chars(nogc);
+        size_t length = str->length();
+        if (length > 0 && chars[0] == '#') {
+            *visibility = js::frontend::NameVisibility::Private;
+            return nullptr;
+        }
+        *visibility = js::frontend::NameVisibility::Public;
+        return FindReservedWord(chars, length);
+    }
+
+    const char16_t* chars = str->twoByteChars(nogc);
+    size_t length = str->length();
+    if (length > 0 && chars[0] == '#') {
+        *visibility = js::frontend::NameVisibility::Private;
+        return nullptr;
+    }
+    *visibility = js::frontend::NameVisibility::Public;
+    return FindReservedWord(chars, length);
 }
 
 template <typename CharT>
 static bool
 IsIdentifier(const CharT* chars, size_t length)
 {
+    // Generic version for latin1 in char* and UCS-2 in char16_t*
     if (length == 0)
         return false;
 
@@ -138,14 +155,52 @@ GetSingleCodePoint(const char16_t** p, const char16_t* end)
     return codePoint;
 }
 
+namespace js {
+
+namespace frontend {
+
+// Latin1 Variants
+
+bool
+IsIdentifier(const Latin1Char* chars, size_t length)
+{
+    return ::IsIdentifier(chars, length);
+}
+
+static bool
+IsIdentifierNameOrPrivateName(const Latin1Char* chars, size_t length)
+{
+    if (length == 0)
+        return false;
+
+    if (char16_t(*chars) == '#') {
+        ++chars;
+        --length;
+    }
+
+    return IsIdentifier(chars, length);
+}
+
+// UTF-16 Versions
+
+bool
+IsIdentifier(const char16_t* chars, size_t length)
+{
+    return ::IsIdentifier(chars, length);
+}
+
 static bool
 IsIdentifierMaybeNonBMP(const char16_t* chars, size_t length)
 {
-    if (IsIdentifier(chars, length))
-        return true;
-
     if (length == 0)
         return false;
+    // XXX Revisit if this is still faster.
+    //     Assumption is that iterating the string twice in the rare worst case (not a valid UCS-2
+    //     identifier, but valid in UTF-16) is on average better than parsing UTF-16 code points
+    //     individually for every input.
+    if (IsIdentifier(chars, length)) {
+        return true;
+    }
 
     const char16_t* p = chars;
     const char16_t* end = chars + length;
@@ -164,56 +219,75 @@ IsIdentifierMaybeNonBMP(const char16_t* chars, size_t length)
     return true;
 }
 
+static bool
+IsIdentifierNameOrPrivateNameMaybeNonBMP(const char16_t* chars, size_t length)
+{
+    if (length == 0)
+        return false;
+
+    // '#' is always just one character in either UCS-2 or UTF-16, so compare it directly.
+    if (char16_t(*chars) == '#') {
+        ++chars;
+        --length;
+    }
+
+    return IsIdentifierMaybeNonBMP(chars, length);
+}
+
 bool
-frontend::IsIdentifier(JSLinearString* str)
+IsIdentifier(JSLinearString* str)
 {
     JS::AutoCheckCannotGC nogc;
-    return str->hasLatin1Chars()
-           ? ::IsIdentifier(str->latin1Chars(nogc), str->length())
-           : ::IsIdentifierMaybeNonBMP(str->twoByteChars(nogc), str->length());
+    if (str->hasLatin1Chars()) {
+        return IsIdentifier(str->latin1Chars(nogc), str->length());
+
+    }
+    return IsIdentifierMaybeNonBMP(str->twoByteChars(nogc), str->length());
 }
 
 bool
-frontend::IsIdentifier(const char* chars, size_t length)
+IsIdentifierNameOrPrivateName(JSLinearString* str)
 {
-    return ::IsIdentifier(chars, length);
+    JS::AutoCheckCannotGC nogc;
+    if (str->hasLatin1Chars()) {
+        return IsIdentifierNameOrPrivateName(str->latin1Chars(nogc), str->length());
+
+    }
+    return IsIdentifierNameOrPrivateNameMaybeNonBMP(str->twoByteChars(nogc), str->length());
 }
 
 bool
-frontend::IsIdentifier(const char16_t* chars, size_t length)
+IsKeyword(JSLinearString* str)
 {
-    return ::IsIdentifier(chars, length);
-}
-
-bool
-frontend::IsKeyword(JSLinearString* str)
-{
-    if (const ReservedWordInfo* rw = FindReservedWord(str))
+    NameVisibility visibility;
+    if (const ReservedWordInfo* rw = FindReservedWord(str, &visibility))
         return TokenKindIsKeyword(rw->tokentype);
 
     return false;
 }
 
 TokenKind
-frontend::ReservedWordTokenKind(PropertyName* str)
+ReservedWordTokenKind(PropertyName* str)
 {
-    if (const ReservedWordInfo* rw = FindReservedWord(str))
+    NameVisibility visibility;
+    if (const ReservedWordInfo* rw = FindReservedWord(str, &visibility))
         return rw->tokentype;
 
-    return TOK_NAME;
+    return visibility == NameVisibility::Private ? TOK_PRIVATE_NAME : TOK_NAME;
 }
 
 const char*
-frontend::ReservedWordToCharZ(PropertyName* str)
+ReservedWordToCharZ(PropertyName* str)
 {
-    if (const ReservedWordInfo* rw = FindReservedWord(str))
+    NameVisibility visibility;
+    if (const ReservedWordInfo* rw = FindReservedWord(str, &visibility))
         return ReservedWordToCharZ(rw->tokentype);
 
     return nullptr;
 }
 
 const char*
-frontend::ReservedWordToCharZ(TokenKind tt)
+ReservedWordToCharZ(TokenKind tt)
 {
     MOZ_ASSERT(tt != TOK_NAME);
     switch (tt) {
@@ -225,6 +299,10 @@ frontend::ReservedWordToCharZ(TokenKind tt)
     }
     return nullptr;
 }
+
+} // namespace frontend
+
+} // namespace js
 
 PropertyName*
 TokenStream::reservedWordToPropertyName(TokenKind tt) const
@@ -592,7 +670,7 @@ TokenStream::TokenBuf::findEOLMax(size_t start, size_t max)
         if (n >= max)
             break;
         n++;
-        
+
         // This stops at U+2028 LINE SEPARATOR or U+2029 PARAGRAPH SEPARATOR in
         // string and template literals.  These code points do affect line and
         // column coordinates, even as they encode their literal values.
@@ -1302,6 +1380,7 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
     bool hasExp;
     DecimalPoint decimalPoint;
     const char16_t* identStart;
+    NameVisibility identVisibility;
     bool hadUnicodeEscape;
 
     // Check if in the middle of a template string. Have to get this out of
@@ -1346,6 +1425,7 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
         if (unicode::IsUnicodeIDStart(char16_t(c))) {
             identStart = userbuf.addressOfNextRawChar() - 1;
             hadUnicodeEscape = false;
+            identVisibility = NameVisibility::Public;
             goto identifier;
         }
 
@@ -1356,6 +1436,7 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
             {
                 identStart = userbuf.addressOfNextRawChar() - 2;
                 hadUnicodeEscape = false;
+                identVisibility = NameVisibility::Public;
                 goto identifier;
             }
         }
@@ -1404,6 +1485,7 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
         tp = newToken(-1);
         identStart = userbuf.addressOfNextRawChar() - 1;
         hadUnicodeEscape = false;
+        identVisibility = NameVisibility::Public;
 
       identifier:
         for (;;) {
@@ -1445,11 +1527,14 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
             length = userbuf.addressOfNextRawChar() - identStart;
         }
 
-        // Represent reserved words as reserved word tokens.
-        if (!hadUnicodeEscape) {
-            if (const ReservedWordInfo* rw = FindReservedWord(chars, length)) {
-                tp->type = rw->tokentype;
-                goto out;
+        // Private identifiers start with a '#', and so cannot be reserved words.
+        if (identVisibility == NameVisibility::Public) {
+            // Represent reserved words as reserved word tokens.
+            if (!hadUnicodeEscape) {
+                if (const ReservedWordInfo* rw = FindReservedWord(chars, length)) {
+                    tp->type = rw->tokentype;
+                    goto out;
+                }
             }
         }
 
@@ -1457,7 +1542,17 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
         if (!atom) {
             goto error;
         }
-        tp->type = TOK_NAME;
+        if (identVisibility == NameVisibility::Private) {
+            MOZ_ASSERT(identStart[0] == '#', "Private identifier starts with #");
+            tp->type = TOK_PRIVATE_NAME;
+
+            if (!options().fieldsEnabledOption) {
+                reportError(JSMSG_FIELDS_NOT_SUPPORTED);
+                goto error;
+            }
+        } else {
+            tp->type = TOK_NAME;
+        }
         tp->setName(atom->asPropertyName());
         goto out;
     }
@@ -1762,8 +1857,25 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
         if (escapeLength > 0) {
             identStart = userbuf.addressOfNextRawChar() - escapeLength - 1;
             hadUnicodeEscape = true;
+            identVisibility = NameVisibility::Public;
             goto identifier;
         }
+        goto badchar;
+      }
+
+      case '#': {
+        // TODO: This does not handle escaped private property names due to being extremely difficult
+        //       in the current state of the tokenizer. If #1351107 is ported, it becomes straightforward.
+        c = getCharIgnoreEOL();
+        // '$' and '_' are not in IsUnicodeIDStart
+        c1kind = FirstCharKind(firstCharKinds[c]);
+        if (c1kind == Ident || unicode::IsUnicodeIDStart(char16_t(c))) {
+            identStart = userbuf.addressOfNextRawChar() - 2;
+            hadUnicodeEscape = false;
+            identVisibility = NameVisibility::Private;
+            goto identifier;
+        }
+        ungetCharIgnoreEOL(c);
         goto badchar;
       }
 
@@ -2235,7 +2347,7 @@ TokenStream::getStringOrTemplateToken(int untilChar, Token** tp)
             updateFlagsForEOL();
         } else if (c == LINE_SEPARATOR || c == PARA_SEPARATOR) {
             // U+2028 LINE SEPARATOR and U+2029 PARAGRAPH SEPARATOR encode
-            // their literal values in template literals and (as of the 
+            // their literal values in template literals and (as of the
             // JSON superset proposal) string literals, but they still count
             // as line terminators when computing line/column coordinates.
             updateLineInfoForEOL();
