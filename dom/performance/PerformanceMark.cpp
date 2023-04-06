@@ -52,7 +52,8 @@ already_AddRefed<PerformanceMark> PerformanceMark::Constructor(
     return nullptr;
   }
 
-  if (performance->IsPerformanceTimingAttribute(aMarkName)) {
+  if (performance->IsGlobalObjectWindow() &&
+      performance->IsPerformanceTimingAttribute(aMarkName)) {
     aRv.ThrowTypeError<MSG_PMO_INVALID_TIMING_ATTR>();
     return nullptr;
   }

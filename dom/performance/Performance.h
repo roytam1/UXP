@@ -117,7 +117,9 @@ public:
 
   virtual nsITimedChannel* GetChannel() const = 0;
 
-  virtual bool IsPerformanceTimingAttribute(const nsAString& aName)
+  bool IsPerformanceTimingAttribute(const nsAString& aName) const;
+
+  virtual bool IsGlobalObjectWindow() const
   {
     return false;
   }
