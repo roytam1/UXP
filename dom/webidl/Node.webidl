@@ -38,7 +38,7 @@ interface Node : EventTarget {
   readonly attribute boolean isConnected;
   [Pure]
   readonly attribute Document? ownerDocument;
-  [Pure, Pref="dom.getRootNode.enabled"]
+  [Pure, Pref="dom.webcomponents.enabled"]
   Node getRootNode(optional GetRootNodeOptions options);
   [Pure]
   readonly attribute Node? parentNode;
