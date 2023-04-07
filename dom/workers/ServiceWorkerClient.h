@@ -91,7 +91,7 @@ public:
 
   void
   PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
-              const Sequence<JS::Value>& aTransferable,
+              const Sequence<JSObject*>& aTransferable,
               ErrorResult& aRv);
 
   JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;

@@ -94,8 +94,9 @@ private:
 
   // Only called by MessagePort.
   void
-  PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
-              const Sequence<JS::Value>& aTransferable,
+  PostMessage(JSContext* aCx,
+              JS::Handle<JS::Value> aMessage,
+              const Sequence<JSObject*>& aTransferable,
               ErrorResult& aRv);
 };
 

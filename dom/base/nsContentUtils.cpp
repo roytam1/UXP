@@ -9993,3 +9993,33 @@ nsContentUtils::GetClosestNonNativeAnonymousAncestor(Element* aElement)
   }
   return e;
 }
+
+/* static */ nsresult
+nsContentUtils::CreateJSValueFromSequenceOfObject(JSContext* aCx,
+                                                  const Sequence<JSObject*>& aTransfer,
+                                                  JS::MutableHandle<JS::Value> aValue)
+{
+  if (aTransfer.IsEmpty()) {
+    return NS_OK;
+  }
+
+  JS::Rooted<JSObject*> array(aCx, JS_NewArrayObject(aCx, aTransfer.Length()));
+  if (!array) {
+    return NS_ERROR_OUT_OF_MEMORY;
+  }
+
+  for (uint32_t i = 0; i < aTransfer.Length(); ++i) {
+    JS::Rooted<JSObject*> object(aCx, aTransfer[i]);
+    if (!object) {
+      continue;
+    }
+
+    if (NS_WARN_IF(!JS_DefineElement(aCx, array, i, object,
+                                     JSPROP_ENUMERATE))) {
+      return NS_ERROR_OUT_OF_MEMORY;
+    }
+  }
+
+  aValue.setObject(*array);
+  return NS_OK;
+}

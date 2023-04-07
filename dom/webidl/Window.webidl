@@ -22,7 +22,6 @@ interface IID;
 interface nsIBrowserDOMWindow;
 interface nsIMessageBroadcaster;
 interface nsIDOMCrypto;
-typedef any Transferable;
 
 // http://www.whatwg.org/specs/web-apps/current-work/
 [PrimaryGlobal, LegacyUnenumerableNamedProperties, NeedResolve]
@@ -80,7 +79,7 @@ typedef any Transferable;
   [Throws, UnsafeInPrerendering] void print();
 
   [Throws, CrossOriginCallable, NeedsSubjectPrincipal]
-  void postMessage(any message, DOMString targetOrigin, optional sequence<Transferable> transfer = []);
+  void postMessage(any message, DOMString targetOrigin, optional sequence<object> transfer = []);
 
   // also has obsolete members
 };
