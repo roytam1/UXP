@@ -98,6 +98,12 @@ private:
               JS::Handle<JS::Value> aMessage,
               const Sequence<JSObject*>& aTransferable,
               ErrorResult& aRv);
+
+  void
+  PostMessage(JSContext* aCx,
+              JS::Handle<JS::Value> aMessage,
+              const StructuredSerializeOptions& aOptions,
+              ErrorResult& aRv);
 };
 
 END_WORKERS_NAMESPACE

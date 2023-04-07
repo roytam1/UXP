@@ -24,6 +24,7 @@ class Function;
 class IDBFactory;
 enum class ImageBitmapFormat : uint32_t;
 class Performance;
+struct StructuredSerializeOptions;
 class Promise;
 class RequestOrUSVString;
 class ServiceWorkerRegistration;
@@ -216,6 +217,12 @@ public:
   void
   PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
               const Sequence<JSObject*>& aTransferable,
+              ErrorResult& aRv);
+
+  void
+  PostMessage(JSContext* aCx,
+              JS::Handle<JS::Value> aMessage,
+              const StructuredSerializeOptions& aOptions,
               ErrorResult& aRv);
 
   IMPL_EVENT_HANDLER(message)

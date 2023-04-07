@@ -542,6 +542,15 @@ DedicatedWorkerGlobalScope::PostMessage(JSContext* aCx,
   mWorkerPrivate->PostMessageToParent(aCx, aMessage, aTransferable, aRv);
 }
 
+void
+DedicatedWorkerGlobalScope::PostMessage(JSContext* aCx,
+                                        JS::Handle<JS::Value> aMessage,
+                                        const StructuredSerializeOptions& aOptions,
+                                        ErrorResult& aRv)
+{
+  PostMessage(aCx, aMessage, aOptions.mTransfer, aRv);
+}
+
 SharedWorkerGlobalScope::SharedWorkerGlobalScope(WorkerPrivate* aWorkerPrivate,
                                                  const nsCString& aName)
 : WorkerGlobalScope(aWorkerPrivate), mName(aName)

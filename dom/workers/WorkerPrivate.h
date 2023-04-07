@@ -68,6 +68,7 @@ class PromiseNativeHandler;
 class StructuredCloneHolder;
 class WorkerDebuggerGlobalScope;
 class WorkerGlobalScope;
+struct StructuredSerializeOptions;
 } // namespace dom
 namespace ipc {
 class PrincipalInfo;
@@ -401,6 +402,12 @@ public:
   void
   PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
               const Sequence<JSObject*>& aTransferable,
+              ErrorResult& aRv);
+
+  void
+  PostMessage(JSContext* aCx,
+              JS::Handle<JS::Value> aMessage,
+              const StructuredSerializeOptions& aOptions,
               ErrorResult& aRv);
 
   void
