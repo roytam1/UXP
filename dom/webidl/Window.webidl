@@ -80,6 +80,8 @@ interface nsIDOMCrypto;
 
   [Throws, CrossOriginCallable, NeedsSubjectPrincipal]
   void postMessage(any message, DOMString targetOrigin, optional sequence<object> transfer = []);
+  [Throws, CrossOriginCallable, NeedsSubjectPrincipal]
+  void postMessage(any message, optional WindowPostMessageOptions options);
 
   // also has obsolete members
 };
@@ -484,4 +486,8 @@ callback IdleRequestCallback = void (IdleDeadline deadline);
  */
 partial interface Window {
   [ChromeOnly] readonly attribute boolean isSecureContextIfOpenerIgnored;
+};
+
+dictionary WindowPostMessageOptions : StructuredSerializeOptions {
+  USVString targetOrigin = "/";
 };
