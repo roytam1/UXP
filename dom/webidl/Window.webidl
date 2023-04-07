@@ -80,7 +80,7 @@ typedef any Transferable;
   [Throws, UnsafeInPrerendering] void print();
 
   [Throws, CrossOriginCallable, NeedsSubjectPrincipal]
-  void postMessage(any message, DOMString targetOrigin, optional sequence<Transferable> transfer);
+  void postMessage(any message, DOMString targetOrigin, optional sequence<Transferable> transfer = []);
 
   // also has obsolete members
 };
