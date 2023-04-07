@@ -149,22 +149,26 @@ hb_ot_shape_planner_t::compile (hb_ot_shape_plan_t           &plan,
    * Decide who does positioning. GPOS, kerx, kern, or fallback.
    */
 
-  bool has_gsub = hb_ot_layout_has_substitution (face);
+#ifndef HB_NO_AAT_SHAPE
+  bool has_kerx = hb_aat_layout_has_positioning (face);
+  bool has_gsub = !apply_morx && hb_ot_layout_has_substitution (face);
+#endif
   bool has_gpos = !disable_gpos && hb_ot_layout_has_positioning (face);
-  if (0)
+  if (false)
     ;
 #ifndef HB_NO_AAT_SHAPE
-  else if (hb_aat_layout_has_positioning (face) && !(has_gsub && has_gpos))
+  /* Prefer GPOS over kerx if GSUB is present;
+   * https://github.com/harfbuzz/harfbuzz/issues/3008 */
+  else if (has_kerx && !(has_gsub && has_gpos))
     plan.apply_kerx = true;
 #endif
-  else if (!apply_morx && has_gpos)
+  else if (has_gpos)
     plan.apply_gpos = true;
 
   if (!plan.apply_kerx && (!has_gpos_kern || !plan.apply_gpos))
   {
-    /* Apparently Apple applies kerx if GPOS kern was not applied. */
 #ifndef HB_NO_AAT_SHAPE
-    if (hb_aat_layout_has_positioning (face))
+    if (has_kerx)
       plan.apply_kerx = true;
     else
 #endif
@@ -173,6 +177,8 @@ hb_ot_shape_planner_t::compile (hb_ot_shape_plan_t           &plan,
       plan.apply_kern = true;
 #endif
   }
+
+  plan.apply_fallback_kern = !(plan.apply_gpos || plan.apply_kerx || plan.apply_kern);
 
   plan.zero_marks = script_zero_marks &&
 		    !plan.apply_kerx &&
@@ -274,11 +280,12 @@ hb_ot_shape_plan_t::position (hb_font_t   *font,
   else if (this->apply_kerx)
     hb_aat_layout_position (this, font, buffer);
 #endif
+
 #ifndef HB_NO_OT_KERN
-  else if (this->apply_kern)
+  if (this->apply_kern)
     hb_ot_layout_kern (this, font, buffer);
 #endif
-  else
+  else if (this->apply_fallback_kern)
     _hb_ot_shape_fallback_kern (this, font, buffer);
 
 #ifndef HB_NO_AAT_SHAPE
@@ -314,16 +321,17 @@ horizontal_features[] =
 };
 
 static void
-hb_ot_shape_collect_features (hb_ot_shape_planner_t          *planner,
-			      const hb_feature_t             *user_features,
-			      unsigned int                    num_user_features)
+hb_ot_shape_collect_features (hb_ot_shape_planner_t *planner,
+			      const hb_feature_t    *user_features,
+			      unsigned int           num_user_features)
 {
   hb_ot_map_builder_t *map = &planner->map;
 
   map->enable_feature (HB_TAG('r','v','r','n'));
   map->add_gsub_pause (nullptr);
 
-  switch (planner->props.direction) {
+  switch (planner->props.direction)
+  {
     case HB_DIRECTION_LTR:
       map->enable_feature (HB_TAG ('l','t','r','a'));
       map->enable_feature (HB_TAG ('l','t','r','m'));
@@ -356,12 +364,14 @@ hb_ot_shape_collect_features (hb_ot_shape_planner_t          *planner,
   map->enable_feature (HB_TAG ('t','r','a','k'), F_HAS_FALLBACK);
 #endif
 
-  map->enable_feature (HB_TAG ('H','A','R','F'));
+  map->enable_feature (HB_TAG ('H','a','r','f')); /* Considered required. */
+  map->enable_feature (HB_TAG ('H','A','R','F')); /* Considered discretionary. */
 
   if (planner->shaper->collect_features)
     planner->shaper->collect_features (planner);
 
-  map->enable_feature (HB_TAG ('B','U','Z','Z'));
+  map->enable_feature (HB_TAG ('B','u','z','z')); /* Considered required. */
+  map->enable_feature (HB_TAG ('B','U','Z','Z')); /* Considered discretionary. */
 
   for (unsigned int i = 0; i < ARRAY_LENGTH (common_features); i++)
     map->add_feature (common_features[i]);
@@ -371,6 +381,10 @@ hb_ot_shape_collect_features (hb_ot_shape_planner_t          *planner,
       map->add_feature (horizontal_features[i]);
   else
   {
+    /* We only apply `vert` feature. See:
+     * https://github.com/harfbuzz/harfbuzz/commit/d71c0df2d17f4590d5611239577a6cb532c26528
+     * https://lists.freedesktop.org/archives/harfbuzz/2013-August/003490.html */
+
     /* We really want to find a 'vert' feature if there's any in the font, no
      * matter which script/langsys it is listed (or not) under.
      * See various bugs referenced from:
@@ -551,6 +565,7 @@ hb_insert_dotted_circle (hb_buffer_t *buffer, hb_font_t *font)
   info.cluster = buffer->cur().cluster;
   info.mask = buffer->cur().mask;
   (void) buffer->output_info (info);
+
   buffer->swap_buffers ();
 }
 
@@ -613,20 +628,7 @@ hb_ensure_native_direction (hb_buffer_t *buffer)
       (HB_DIRECTION_IS_VERTICAL   (direction) &&
        direction != HB_DIRECTION_TTB))
   {
-
-    if (buffer->cluster_level == HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS)
-      foreach_grapheme (buffer, start, end)
-      {
-	buffer->merge_clusters (start, end);
-	buffer->reverse_range (start, end);
-      }
-    else
-      foreach_grapheme (buffer, start, end)
-	/* form_clusters() merged clusters already, we don't merge. */
-	buffer->reverse_range (start, end);
-
-    buffer->reverse ();
-
+    _hb_ot_layout_reverse_graphemes (buffer);
     buffer->props.direction = HB_DIRECTION_REVERSE (buffer->props.direction);
   }
 }
@@ -636,6 +638,7 @@ hb_ensure_native_direction (hb_buffer_t *buffer)
  * Substitute
  */
 
+#ifndef HB_NO_VERTICAL
 static hb_codepoint_t
 hb_vert_char_for (hb_codepoint_t u)
 {
@@ -686,6 +689,7 @@ hb_vert_char_for (hb_codepoint_t u)
 
   return u;
 }
+#endif
 
 static inline void
 hb_ot_rotate_chars (const hb_ot_shape_context_t *c)
@@ -708,6 +712,7 @@ hb_ot_rotate_chars (const hb_ot_shape_context_t *c)
     }
   }
 
+#ifndef HB_NO_VERTICAL
   if (HB_DIRECTION_IS_VERTICAL (c->target_direction) && !c->plan->has_vert)
   {
     for (unsigned int i = 0; i < count; i++) {
@@ -716,6 +721,7 @@ hb_ot_rotate_chars (const hb_ot_shape_context_t *c)
 	info[i].codepoint = codepoint;
     }
   }
+#endif
 }
 
 static inline void
@@ -1157,8 +1163,6 @@ hb_ot_shape_internal (hb_ot_shape_context_t *c)
 
   _hb_buffer_allocate_unicode_vars (c->buffer);
 
-  c->buffer->clear_output ();
-
   hb_ot_shape_initialize_masks (c);
   hb_set_unicode_props (c->buffer);
   hb_insert_dotted_circle (c->buffer, c->font);
@@ -1168,7 +1172,8 @@ hb_ot_shape_internal (hb_ot_shape_context_t *c)
   hb_ensure_native_direction (c->buffer);
 
   if (c->plan->shaper->preprocess_text &&
-    c->buffer->message(c->font, "start preprocess-text")) {
+      c->buffer->message(c->font, "start preprocess-text"))
+  {
     c->plan->shaper->preprocess_text (c->plan, c->buffer, c->font);
     (void) c->buffer->message(c->font, "end preprocess-text");
   }

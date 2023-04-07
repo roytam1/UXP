@@ -1,9 +1,9 @@
-gfx/harfbuzz status as of 2021-07-09:
+gfx/harfbuzz status as of 2021-12-12:
 
 This directory contains the harfbuzz source from the 'master' branch of
 https://github.com/harfbuzz/harfbuzz.
 
-Current version: 2.8.2
+Current version: 3.2.0
 
 UPDATING:
 
