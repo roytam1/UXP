@@ -13,14 +13,13 @@
 #include "nsUnicodeProperties.h"
 #include "gfx2DGlue.h"
 #include "gfxFcPlatformFontList.h"
-#include "gfxFontconfigUtils.h"
-#include "gfxFontconfigFonts.h"
 #include "gfxConfig.h"
 #include "gfxContext.h"
 #include "gfxUserFontSet.h"
 #include "gfxUtils.h"
 #include "gfxFT2FontBase.h"
 #include "gfxPrefs.h"
+#include "gfxTextRun.h"
 #include "VsyncSource.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/Monitor.h"
@@ -67,22 +66,13 @@ using namespace mozilla;
 using namespace mozilla::gfx;
 using namespace mozilla::unicode;
 
-gfxFontconfigUtils *gfxPlatformGtk::sFontconfigUtils = nullptr;
-
 #if (MOZ_WIDGET_GTK == 2)
 static cairo_user_data_key_t cairo_gdk_drawable_key;
 #endif
 
-bool gfxPlatformGtk::sUseFcFontList = false;
-
 gfxPlatformGtk::gfxPlatformGtk()
 {
     gtk_init(nullptr, nullptr);
-
-    sUseFcFontList = mozilla::Preferences::GetBool("gfx.font_rendering.fontconfig.fontlist.enabled");
-    if (!sUseFcFontList && !sFontconfigUtils) {
-        sFontconfigUtils = gfxFontconfigUtils::GetFontconfigUtils();
-    }
 
     mMaxGenericSubstitutions = UNINITIALIZED_VALUE;
 
@@ -117,12 +107,6 @@ gfxPlatformGtk::gfxPlatformGtk()
 
 gfxPlatformGtk::~gfxPlatformGtk()
 {
-    if (!sUseFcFontList) {
-        gfxFontconfigUtils::Shutdown();
-        sFontconfigUtils = nullptr;
-        gfxPangoFontGroup::Shutdown();
-    }
-
 #ifdef MOZ_X11
     if (mCompositorDisplay) {
       XCloseDisplay(mCompositorDisplay);
@@ -197,27 +181,17 @@ gfxPlatformGtk::GetFontList(nsIAtom *aLangGroup,
                             const nsACString& aGenericFamily,
                             nsTArray<nsString>& aListOfFonts)
 {
-    if (sUseFcFontList) {
-        gfxPlatformFontList::PlatformFontList()->GetFontList(aLangGroup,
-                                                             aGenericFamily,
-                                                             aListOfFonts);
-        return NS_OK;
-    }
-
-    return sFontconfigUtils->GetFontList(aLangGroup,
-                                         aGenericFamily,
-                                         aListOfFonts);
+    gfxPlatformFontList::PlatformFontList()->GetFontList(aLangGroup,
+                                                         aGenericFamily,
+                                                         aListOfFonts);
+    return NS_OK;
 }
 
 nsresult
 gfxPlatformGtk::UpdateFontList()
 {
-    if (sUseFcFontList) {
-        gfxPlatformFontList::PlatformFontList()->UpdateFontList();
-        return NS_OK;
-    }
-
-    return sFontconfigUtils->UpdateFontList();
+    gfxPlatformFontList::PlatformFontList()->UpdateFontList();
+    return NS_OK;
 }
 
 // xxx - this is ubuntu centric, need to go through other distros and flesh
@@ -280,13 +254,9 @@ gfxPlatformGtk::CreatePlatformFontList()
 nsresult
 gfxPlatformGtk::GetStandardFamilyName(const nsAString& aFontName, nsAString& aFamilyName)
 {
-    if (sUseFcFontList) {
-        gfxPlatformFontList::PlatformFontList()->
-            GetStandardFamilyName(aFontName, aFamilyName);
-        return NS_OK;
-    }
-
-    return sFontconfigUtils->GetStandardFamilyName(aFontName, aFamilyName);
+    gfxPlatformFontList::PlatformFontList()->
+        GetStandardFamilyName(aFontName, aFamilyName);
+    return NS_OK;
 }
 
 gfxFontGroup *
@@ -296,13 +266,8 @@ gfxPlatformGtk::CreateFontGroup(const FontFamilyList& aFontFamilyList,
                                 gfxUserFontSet* aUserFontSet,
                                 gfxFloat aDevToCssSize)
 {
-    if (sUseFcFontList) {
-        return new gfxFontGroup(aFontFamilyList, aStyle, aTextPerf,
-                                aUserFontSet, aDevToCssSize);
-    }
-
-    return new gfxPangoFontGroup(aFontFamilyList, aStyle,
-                                 aUserFontSet, aDevToCssSize);
+    return new gfxFontGroup(aFontFamilyList, aStyle, aTextPerf,
+                            aUserFontSet, aDevToCssSize);
 }
 
 gfxFontEntry*
@@ -311,14 +276,9 @@ gfxPlatformGtk::LookupLocalFont(const nsAString& aFontName,
                                 int16_t aStretch,
                                 uint8_t aStyle)
 {
-    if (sUseFcFontList) {
-        gfxPlatformFontList* pfl = gfxPlatformFontList::PlatformFontList();
-        return pfl->LookupLocalFont(aFontName, aWeight, aStretch,
-                                    aStyle);
-    }
-
-    return gfxPangoFontGroup::NewFontEntry(aFontName, aWeight,
-                                           aStretch, aStyle);
+    gfxPlatformFontList* pfl = gfxPlatformFontList::PlatformFontList();
+    return pfl->LookupLocalFont(aFontName, aWeight, aStretch,
+                                aStyle);
 }
 
 gfxFontEntry*
@@ -329,16 +289,9 @@ gfxPlatformGtk::MakePlatformFont(const nsAString& aFontName,
                                  const uint8_t* aFontData,
                                  uint32_t aLength)
 {
-    if (sUseFcFontList) {
-        gfxPlatformFontList* pfl = gfxPlatformFontList::PlatformFontList();
-        return pfl->MakePlatformFont(aFontName, aWeight, aStretch,
-                                     aStyle, aFontData, aLength);
-    }
-
-    // passing ownership of the font data to the new font entry
-    return gfxPangoFontGroup::NewFontEntry(aFontName, aWeight,
-                                           aStretch, aStyle,
-                                           aFontData, aLength);
+    gfxPlatformFontList* pfl = gfxPlatformFontList::PlatformFontList();
+    return pfl->MakePlatformFont(aFontName, aWeight, aStretch,
+                                 aStyle, aFontData, aLength);
 }
 
 bool
@@ -429,11 +382,9 @@ void gfxPlatformGtk::FontsPrefsChanged(const char *aPref)
     }
 
     mMaxGenericSubstitutions = UNINITIALIZED_VALUE;
-    if (sUseFcFontList) {
-        gfxFcPlatformFontList* pfl = gfxFcPlatformFontList::PlatformFontList();
-        pfl->ClearGenericMappings();
-        FlushFontAndWordCaches();
-    }
+    gfxFcPlatformFontList* pfl = gfxFcPlatformFontList::PlatformFontList();
+    pfl->ClearGenericMappings();
+    FlushFontAndWordCaches();
 }
 
 uint32_t gfxPlatformGtk::MaxGenericSubstitions()
@@ -623,25 +574,6 @@ gfxPlatformGtk::GetGdkDrawable(cairo_surface_t *target)
     return nullptr;
 }
 #endif
-
-already_AddRefed<ScaledFont>
-gfxPlatformGtk::GetScaledFontForFont(DrawTarget* aTarget, gfxFont *aFont)
-{
-    switch (aTarget->GetBackendType()) {
-    case BackendType::CAIRO:
-    case BackendType::SKIA:
-        if (aFont->GetType() == gfxFont::FONT_TYPE_FONTCONFIG) {
-            gfxFontconfigFontBase* fcFont = static_cast<gfxFontconfigFontBase*>(aFont);
-            return Factory::CreateScaledFontForFontconfigFont(
-                    fcFont->GetCairoScaledFont(),
-                    fcFont->GetPattern(),
-                    fcFont->GetAdjustedSize());
-        }
-        MOZ_FALLTHROUGH;
-    default:
-        return GetScaledFontForFontWithCairoSkia(aTarget, aFont);
-    }
-}
 
 #ifdef GL_PROVIDER_GLX
 
