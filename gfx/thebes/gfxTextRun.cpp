@@ -26,10 +26,6 @@
 #include "mozilla/gfx/Logging.h"        // for gfxCriticalError
 #include "mozilla/UniquePtr.h"
 
-#if defined(MOZ_WIDGET_GTK)
-#include "gfxPlatformGtk.h" // xxx - for UseFcFontList
-#endif
-
 #ifdef XP_WIN
 #include "gfxWindowsPlatform.h"
 #endif
@@ -1599,7 +1595,6 @@ gfxFontGroup::gfxFontGroup(const FontFamilyList& aFontFamilyList,
     , mPageLang(gfxPlatformFontList::GetFontPrefLangFor(aStyle->language))
     , mLastPrefFirstFont(false)
     , mSkipDrawing(false)
-    , mSkipUpdateUserFonts(false)
 {
     // We don't use SetUserFontSet() here, as we want to unconditionally call
     // BuildFontList() rather than only do UpdateUserFonts() if it changed.
@@ -1615,14 +1610,6 @@ void
 gfxFontGroup::BuildFontList()
 {
     bool enumerateFonts = true;
-
-#if defined(MOZ_WIDGET_GTK)
-    // xxx - eliminate this once gfxPangoFontGroup is no longer needed
-    enumerateFonts = gfxPlatformGtk::UseFcFontList();
-#endif
-    if (!enumerateFonts) {
-        return;
-    }
 
     // initialize fonts in the font family list
     AutoTArray<gfxFontFamily*,10> fonts;
@@ -2338,7 +2325,7 @@ gfxFontGroup::InitScriptRun(DrawTarget* aDrawTarget,
                  "don't call InitScriptRun with aborted shaping state");
 
     // confirm the load state of userfonts in the list
-    if (!mSkipUpdateUserFonts && mUserFontSet &&
+    if (mUserFontSet &&
         mCurrGeneration != mUserFontSet->GetGeneration()) {
         UpdateUserFonts();
     }
@@ -3076,8 +3063,6 @@ gfxFontGroup::GetRebuildGeneration()
     return mUserFontSet->GetRebuildGeneration();
 }
 
-// note: gfxPangoFontGroup overrides UpdateUserFonts, such that
-//       BuildFontList is never used
 void
 gfxFontGroup::UpdateUserFonts()
 {

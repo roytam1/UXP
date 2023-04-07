@@ -22,8 +22,6 @@ struct _XDisplay;
 typedef struct _XDisplay Display;
 #endif // MOZ_X11
 
-class gfxFontconfigUtils;
-
 class gfxPlatformGtk : public gfxPlatform {
 public:
     gfxPlatformGtk();
@@ -36,9 +34,6 @@ public:
     virtual already_AddRefed<gfxASurface>
       CreateOffscreenSurface(const IntSize& aSize,
                              gfxImageFormat aFormat) override;
-
-    virtual already_AddRefed<mozilla::gfx::ScaledFont>
-      GetScaledFontForFont(mozilla::gfx::DrawTarget* aTarget, gfxFont *aFont) override;
 
     virtual nsresult GetFontList(nsIAtom *aLangGroup,
                                  const nsACString& aGenericFamily,
@@ -111,8 +106,6 @@ public:
     }
 #endif
 
-    static bool UseFcFontList() { return sUseFcFontList; }
-
     bool UseImageOffscreenSurfaces();
 
     virtual gfxImageFormat GetOffscreenFormat() override;
@@ -143,8 +136,6 @@ public:
 #endif // MOZ_X11
 
 protected:
-    static gfxFontconfigUtils *sFontconfigUtils;
-
     int8_t mMaxGenericSubstitutions;
 
 private:
@@ -154,10 +145,6 @@ private:
 #ifdef MOZ_X11
     Display* mCompositorDisplay;
 #endif
-
-    // xxx - this will be removed once the new fontconfig platform font list
-    // replaces gfxPangoFontGroup
-    static bool sUseFcFontList;
 };
 
 #endif /* GFX_PLATFORM_GTK_H */
