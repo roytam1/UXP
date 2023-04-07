@@ -183,6 +183,11 @@ public:
                     const mozilla::dom::Sequence<mozilla::dom::ChannelPixelLayout>& aLayout,
                     mozilla::ErrorResult& aRv);
 
+  void StructuredClone(JSContext* aCx, JS::Handle<JS::Value> aValue,
+                       const StructuredSerializeOptions& aOptions,
+                       JS::MutableHandle<JS::Value> aRetval,
+                       ErrorResult& aError);
+
   bool
   WindowInteractionAllowed() const
   {

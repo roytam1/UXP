@@ -7,6 +7,7 @@
 
 #include "jsapi.h"
 #include "mozilla/EventListenerManager.h"
+#include "mozilla/Unused.h"
 #include "mozilla/dom/BindingDeclarations.h"
 #include "mozilla/dom/Console.h"
 #include "mozilla/dom/DedicatedWorkerGlobalScopeBinding.h"
@@ -490,6 +491,45 @@ WorkerGlobalScope::CreateImageBitmap(const ImageBitmapSource& aImage,
     aRv.Throw(NS_ERROR_TYPE_ERR);
     return nullptr;
   }
+}
+
+// https://html.spec.whatwg.org/#structured-cloning
+void WorkerGlobalScope::StructuredClone(JSContext* aCx,
+                                        JS::Handle<JS::Value> aValue,
+                                        const StructuredSerializeOptions& aOptions,
+                                        JS::MutableHandle<JS::Value> aRetval,
+                                        ErrorResult& aError) {
+  JS::Rooted<JS::Value> transferArray(aCx, JS::UndefinedValue());
+  aError = nsContentUtils::CreateJSValueFromSequenceOfObject(
+      aCx, aOptions.mTransfer, &transferArray);
+  if (NS_WARN_IF(aError.Failed())) {
+    return;
+  }
+
+  // FIXME: Uncomment once bug 1609990 and bug 1611855 lands.
+  //JS::CloneDataPolicy clonePolicy;
+  //clonePolicy.allowIntraClusterClonableSharedObjects();
+  //clonePolicy.allowSharedMemoryObjects();
+
+  StructuredCloneHolder holder(StructuredCloneHolder::CloningSupported,
+                               StructuredCloneHolder::TransferringSupported,
+                               JS::StructuredCloneScope::SameProcessDifferentThread);
+  holder.Write(aCx, aValue, transferArray, clonePolicy, aError);
+  if (NS_WARN_IF(aError.Failed())) {
+    return;
+  }
+
+  // TODO: Stop casting to nsISupports once bug 1585284 lands.
+  nsISupports* workerAsSupports = static_cast<nsIGlobalObject*>(this);
+  // TODO: Pass clonePolicy.
+  //holder.Read(this, aCx, aRetval, clonePolicy, aError);
+  holder.Read(workerAsSupports, aCx, aRetval, aError);
+  if (NS_WARN_IF(aError.Failed())) {
+    return;
+  }
+
+  nsTArray<RefPtr<MessagePort>> ports = holder.TakeTransferredPorts();
+  Unused << ports;
 }
 
 DedicatedWorkerGlobalScope::DedicatedWorkerGlobalScope(WorkerPrivate* aWorkerPrivate)
