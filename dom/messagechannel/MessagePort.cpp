@@ -496,6 +496,14 @@ MessagePort::PostMessage(JSContext* aCx,
 }
 
 void
+MessagePort::PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
+                         const StructuredSerializeOptions& aOptions,
+                         ErrorResult& aRv)
+{
+  PostMessage(aCx, aMessage, aOptions.mTransfer, aRv);
+}
+
+void
 MessagePort::Start()
 {
   if (mMessageQueueEnabled) {

@@ -10,7 +10,9 @@
 [Exposed=(Window,Worker,System)]
 interface MessagePort : EventTarget {
   [Throws]
-  void postMessage(any message, optional sequence<object> transferable = []);
+  void postMessage(any message, sequence<object> transferable);
+  [Throws]
+  void postMessage(any message, optional StructuredSerializeOptions options);
 
   void start();
   void close();
@@ -19,3 +21,8 @@ interface MessagePort : EventTarget {
   attribute EventHandler onmessage;
 };
 // MessagePort implements Transferable;
+
+// Used to declare which objects should be transferred.
+dictionary StructuredSerializeOptions {
+  sequence<object> transfer = [];
+};
