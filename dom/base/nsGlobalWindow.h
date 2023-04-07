@@ -1185,7 +1185,7 @@ public:
 
   void StructuredClone(JSContext* aCx, JS::Handle<JS::Value> aValue,
                        const mozilla::dom::StructuredSerializeOptions& aOptions,
-                       JS::MutableHandle<JS::Value> aRetval,
+                       JS::MutableHandle<JS::Value> aRv,
                        mozilla::ErrorResult& aError);
 
   // ChromeWindow bits.  Do NOT call these unless your window is in

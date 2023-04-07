@@ -192,7 +192,6 @@
 #include "mozilla/dom/IDBFactory.h"
 #include "mozilla/dom/MessageChannel.h"
 #include "mozilla/dom/Promise.h"
-#include "mozilla/dom/MessagePort.h"
 
 #ifdef MOZ_GAMEPAD
 #include "mozilla/dom/Gamepad.h"
@@ -14650,40 +14649,10 @@ void
 nsGlobalWindow::StructuredClone(JSContext* aCx,
                                 JS::Handle<JS::Value> aValue,
                                 const StructuredSerializeOptions& aOptions,
-                                JS::MutableHandle<JS::Value> aRetval,
+                                JS::MutableHandle<JS::Value> aRv,
                                 ErrorResult& aError)
 {
-  JS::Rooted<JS::Value> transferArray(aCx, JS::UndefinedValue());
-  aError = nsContentUtils::CreateJSValueFromSequenceOfObject(
-      aCx, aOptions.mTransfer, &transferArray);
-  if (NS_WARN_IF(aError.Failed())) {
-    return;
-  }
-
-  // FIXME: Uncomment once bug 1609990 and bug 1611855 lands.
-  //JS::CloneDataPolicy clonePolicy;
-  //clonePolicy.allowIntraClusterClonableSharedObjects();
-  //clonePolicy.allowSharedMemoryObjects();
-
-  StructuredCloneHolder holder(StructuredCloneHolder::CloningSupported,
-                               StructuredCloneHolder::TransferringSupported,
-                               JS::StructuredCloneScope::SameProcessDifferentThread);
-  holder.Write(aCx, aValue, transferArray, clonePolicy, aError);
-  if (NS_WARN_IF(aError.Failed())) {
-    return;
-  }
-
-  // TODO: Stop casting to nsISupports once bug 1585284 lands.
-  nsISupports* windowAsSupports = static_cast<nsIGlobalObject*>(this);
-  // TODO: Pass clonePolicy.
-  //holder.Read(this, aCx, aRetval, clonePolicy, aError);
-  holder.Read(windowAsSupports, aCx, aRetval, aError);
-  if (NS_WARN_IF(aError.Failed())) {
-    return;
-  }
-
-  nsTArray<RefPtr<MessagePort>> ports = holder.TakeTransferredPorts();
-  Unused << ports;
+  nsContentUtils::StructuredClone(aCx, this, aValue, aOptions, aRv, aError);
 }
 
 // Helper called by methods that move/resize the window,

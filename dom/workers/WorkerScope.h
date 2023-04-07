@@ -185,7 +185,7 @@ public:
 
   void StructuredClone(JSContext* aCx, JS::Handle<JS::Value> aValue,
                        const StructuredSerializeOptions& aOptions,
-                       JS::MutableHandle<JS::Value> aRetval,
+                       JS::MutableHandle<JS::Value> aRv,
                        ErrorResult& aError);
 
   bool
