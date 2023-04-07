@@ -190,8 +190,7 @@ BytecodeEmitter::BytecodeEmitter(BytecodeEmitter* parent,
     hasSingletons(false),
     hasTryFinally(false),
     emittingRunOnceLambda(false),
-    emitterMode(emitterMode),
-    functionBodyEndPosSet(false)
+    emitterMode(emitterMode)
 {
     MOZ_ASSERT_IF(emitterMode == LazyFunction, lazyScript);
 }
@@ -204,7 +203,8 @@ BytecodeEmitter::BytecodeEmitter(BytecodeEmitter* parent,
                       parser->tokenStream.srcCoords.lineNum(bodyPosition.begin),
                       emitterMode)
 {
-    setFunctionBodyEndPos(bodyPosition);
+    setScriptStartOffsetIfUnset(bodyPosition.begin);
+    setFunctionBodyEndPos(bodyPosition.end);
 }
 
 bool
@@ -1645,11 +1645,11 @@ BytecodeEmitter::tokenStream()
 bool
 BytecodeEmitter::reportError(ParseNode* pn, unsigned errorNumber, ...)
 {
-    TokenPos pos = pn ? pn->pn_pos : tokenStream().currentToken().pos;
+    uint32_t offset = pn ? pn->pn_pos.begin : *scriptStartOffset;
 
     va_list args;
     va_start(args, errorNumber);
-    bool result = tokenStream().reportCompileErrorNumberVA(nullptr, pos.begin, JSREPORT_ERROR,
+    bool result = tokenStream().reportCompileErrorNumberVA(nullptr, offset, JSREPORT_ERROR,
                                                            errorNumber, args);
     va_end(args);
     return result;
@@ -1658,7 +1658,7 @@ BytecodeEmitter::reportError(ParseNode* pn, unsigned errorNumber, ...)
 bool
 BytecodeEmitter::reportError(const mozilla::Maybe<uint32_t>& maybeOffset, unsigned errorNumber, ...)
 {
-    uint32_t offset = maybeOffset ? *maybeOffset : tokenStream().currentToken().pos.begin;
+    uint32_t offset = maybeOffset ? *maybeOffset : *scriptStartOffset;
 
     va_list args;
     va_start(args, errorNumber);
@@ -1671,11 +1671,11 @@ BytecodeEmitter::reportError(const mozilla::Maybe<uint32_t>& maybeOffset, unsign
 bool
 BytecodeEmitter::reportExtraWarning(ParseNode* pn, unsigned errorNumber, ...)
 {
-    TokenPos pos = pn ? pn->pn_pos : tokenStream().currentToken().pos;
+    uint32_t offset = pn ? pn->pn_pos.begin : *scriptStartOffset;
 
     va_list args;
     va_start(args, errorNumber);
-    bool result = tokenStream().reportExtraWarningErrorNumberVA(nullptr, pos.begin,
+    bool result = tokenStream().reportExtraWarningErrorNumberVA(nullptr, offset,
                                                                 errorNumber, args);
     va_end(args);
     return result;
@@ -2323,6 +2323,8 @@ BytecodeEmitter::emitSetThis(BinaryNode* setThisNode)
 bool
 BytecodeEmitter::emitScript(ParseNode* body)
 {
+    setScriptStartOffsetIfUnset(body->pn_pos.begin);
+
     TDZCheckCache tdzCache(this);
     EmitterScope emitterScope(this);
     if (sc->isGlobalContext()) {
@@ -2341,7 +2343,7 @@ BytecodeEmitter::emitScript(ParseNode* body)
             return false;
     }
 
-    setFunctionBodyEndPos(body->pn_pos);
+    setFunctionBodyEndPos(body->pn_pos.end);
 
     if (sc->isEvalContext() && !sc->strict() &&
         body->is<LexicalScopeNode>() && !body->as<LexicalScopeNode>().isEmptyScope())
@@ -2451,6 +2453,8 @@ BytecodeEmitter::emitFunctionScript(FunctionNode* funNode)
     ParseNode* body = funNode->body();
     FunctionBox* funbox = sc->asFunctionBox();
 
+    setScriptStartOffsetIfUnset(body->pn_pos.begin);
+
     // The ordering of these EmitterScopes is important. The named lambda
     // scope needs to enclose the function scope needs to enclose the extra
     // var scope.
@@ -2480,7 +2484,7 @@ BytecodeEmitter::emitFunctionScript(FunctionNode* funNode)
         switchToMain();
     }
 
-    setFunctionBodyEndPos(body->pn_pos);
+    setFunctionBodyEndPos(body->pn_pos.end);
     if (!emitTree(body))
         return false;
 
@@ -6235,8 +6239,7 @@ BytecodeEmitter::emitReturn(UnaryNode* returnNode)
     // We know functionBodyEndPos is set because "return" is only
     // valid in a function, and so we've passed through
     // emitFunctionScript.
-    MOZ_ASSERT(functionBodyEndPosSet);
-    if (!updateSourceCoordNotes(functionBodyEndPos))
+    if (!updateSourceCoordNotes(*functionBodyEndPos))
         return false;
 
     /*
