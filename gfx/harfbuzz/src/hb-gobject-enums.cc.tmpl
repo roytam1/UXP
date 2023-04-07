@@ -1,6 +1,6 @@
 /*** BEGIN file-header ***/
 /*
- * Copyright © 2011  Google, Inc.
+ * Copyright (C) 2011  Google, Inc.
  *
  *  This is part of HarfBuzz, a text shaping library.
  *
@@ -25,7 +25,9 @@
  * Google Author(s): Behdad Esfahbod
  */
 
-#include "hb-private.hh"
+#include "hb.hh"
+
+#ifdef HAVE_GOBJECT
 
 /* g++ didn't like older gtype.h gcc-only code path. */
 #include <glib.h>
@@ -41,12 +43,17 @@
 /*** END file-header ***/
 
 /*** BEGIN file-production ***/
-/* enumerations from "@filename@" */
+/* enumerations from "@basename@" */
 /*** END file-production ***/
+
+/*** BEGIN file-tail ***/
+
+#endif
+/*** END file-tail ***/
 
 /*** BEGIN value-header ***/
 GType
-@enum_name@_get_type (void)
+@enum_name@_get_type ()
 {
   static gsize type_id = 0;
 

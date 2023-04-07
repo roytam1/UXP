@@ -24,7 +24,7 @@
  * Google Author(s): Behdad Esfahbod
  */
 
-#ifndef HB_H_IN
+#if !defined(HB_H_IN) && !defined(HB_NO_SINGLE_HEADER_ERROR)
 #error "Include <hb.h> instead."
 #endif
 
@@ -36,11 +36,24 @@
 HB_BEGIN_DECLS
 
 
-/*
+/**
+ * HB_SET_VALUE_INVALID:
+ *
+ * Unset #hb_set_t value.
+ *
  * Since: 0.9.21
  */
 #define HB_SET_VALUE_INVALID ((hb_codepoint_t) -1)
 
+/**
+ * hb_set_t:
+ *
+ * Data type for holding a set of integers. #hb_set_t's are
+ * used to gather and contain glyph IDs, Unicode code
+ * points, and various other collections of discrete 
+ * values.
+ *
+ **/
 typedef struct hb_set_t hb_set_t;
 
 
@@ -72,6 +85,9 @@ hb_set_get_user_data (hb_set_t           *set,
 HB_EXTERN hb_bool_t
 hb_set_allocation_successful (const hb_set_t *set);
 
+HB_EXTERN hb_set_t *
+hb_set_copy (const hb_set_t *set);
+
 HB_EXTERN void
 hb_set_clear (hb_set_t *set);
 
@@ -82,8 +98,6 @@ HB_EXTERN hb_bool_t
 hb_set_has (const hb_set_t *set,
 	    hb_codepoint_t  codepoint);
 
-/* Right now limited to 16-bit integers.  Eventually will do full codepoint range, sans -1
- * which we will use as a sentinel. */
 HB_EXTERN void
 hb_set_add (hb_set_t       *set,
 	    hb_codepoint_t  codepoint);
@@ -106,6 +120,10 @@ HB_EXTERN hb_bool_t
 hb_set_is_equal (const hb_set_t *set,
 		 const hb_set_t *other);
 
+HB_EXTERN hb_bool_t
+hb_set_is_subset (const hb_set_t *set,
+		  const hb_set_t *larger_set);
+
 HB_EXTERN void
 hb_set_set (hb_set_t       *set,
 	    const hb_set_t *other);
@@ -126,30 +144,38 @@ HB_EXTERN void
 hb_set_symmetric_difference (hb_set_t       *set,
 			     const hb_set_t *other);
 
-HB_EXTERN void
-hb_set_invert (hb_set_t *set);
-
 HB_EXTERN unsigned int
 hb_set_get_population (const hb_set_t *set);
 
-/* Returns -1 if set empty. */
+/* Returns HB_SET_VALUE_INVALID if set empty. */
 HB_EXTERN hb_codepoint_t
 hb_set_get_min (const hb_set_t *set);
 
-/* Returns -1 if set empty. */
+/* Returns HB_SET_VALUE_INVALID if set empty. */
 HB_EXTERN hb_codepoint_t
 hb_set_get_max (const hb_set_t *set);
 
-/* Pass -1 in to get started. */
+/* Pass HB_SET_VALUE_INVALID in to get started. */
 HB_EXTERN hb_bool_t
 hb_set_next (const hb_set_t *set,
 	     hb_codepoint_t *codepoint);
 
-/* Pass -1 for first and last to get started. */
+/* Pass HB_SET_VALUE_INVALID in to get started. */
+HB_EXTERN hb_bool_t
+hb_set_previous (const hb_set_t *set,
+		 hb_codepoint_t *codepoint);
+
+/* Pass HB_SET_VALUE_INVALID for first and last to get started. */
 HB_EXTERN hb_bool_t
 hb_set_next_range (const hb_set_t *set,
 		   hb_codepoint_t *first,
 		   hb_codepoint_t *last);
+
+/* Pass HB_SET_VALUE_INVALID for first and last to get started. */
+HB_EXTERN hb_bool_t
+hb_set_previous_range (const hb_set_t *set,
+		       hb_codepoint_t *first,
+		       hb_codepoint_t *last);
 
 
 HB_END_DECLS

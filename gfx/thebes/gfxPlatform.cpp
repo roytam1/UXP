@@ -83,10 +83,6 @@
 #include "GLContextProvider.h"
 #include "mozilla/gfx/Logging.h"
 
-#if defined(MOZ_WIDGET_GTK)
-#include "gfxPlatformGtk.h" // xxx - for UseFcFontList
-#endif
-
 #ifdef USE_SKIA
 # ifdef __GNUC__
 #  pragma GCC diagnostic push
@@ -621,16 +617,9 @@ gfxPlatform::Init()
 
     nsresult rv;
 
-    bool usePlatformFontList = true;
-#if defined(MOZ_WIDGET_GTK)
-    usePlatformFontList = gfxPlatformGtk::UseFcFontList();
-#endif
-
-    if (usePlatformFontList) {
-        rv = gfxPlatformFontList::Init();
-        if (NS_FAILED(rv)) {
-            NS_RUNTIMEABORT("Could not initialize gfxPlatformFontList");
-        }
+    rv = gfxPlatformFontList::Init();
+    if (NS_FAILED(rv)) {
+        NS_RUNTIMEABORT("Could not initialize gfxPlatformFontList");
     }
 
     gPlatform->mScreenReferenceSurface =
@@ -1067,16 +1056,6 @@ gfxPlatform::GetWrappedDataSourceSurface(gfxASurface* aSurface)
   result->AddUserData(&kThebesSurface, srcSurfUD, SourceSurfaceDestroyed);
 
   return result.forget();
-}
-
-already_AddRefed<ScaledFont>
-gfxPlatform::GetScaledFontForFont(DrawTarget* aTarget, gfxFont *aFont)
-{
-  NativeFont nativeFont;
-  nativeFont.mType = NativeFontType::CAIRO_FONT_FACE;
-  nativeFont.mFont = aFont->GetCairoScaledFont();
-  return Factory::CreateScaledFontForNativeFont(nativeFont,
-                                                aFont->GetAdjustedSize());
 }
 
 void
@@ -2181,19 +2160,6 @@ gfxPlatform::DisableBufferRotation()
   MutexAutoLock autoLock(*gGfxPlatformPrefsLock);
 
   sBufferRotationCheckPref = false;
-}
-
-already_AddRefed<ScaledFont>
-gfxPlatform::GetScaledFontForFontWithCairoSkia(DrawTarget* aTarget, gfxFont* aFont)
-{
-    NativeFont nativeFont;
-    if (aTarget->GetBackendType() == BackendType::CAIRO || aTarget->GetBackendType() == BackendType::SKIA) {
-        nativeFont.mType = NativeFontType::CAIRO_FONT_FACE;
-        nativeFont.mFont = aFont->GetCairoScaledFont();
-        return Factory::CreateScaledFontForNativeFont(nativeFont, aFont->GetAdjustedSize());
-    }
-
-    return nullptr;
 }
 
 /* static */ bool

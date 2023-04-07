@@ -76,7 +76,6 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
     ]
 elif 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
     EXPORTS += [
-        'gfxFontconfigFonts.h',
         'gfxFT2FontBase.h',
         'gfxGdkNativeRenderer.h',
         'gfxPlatformGtk.h',
@@ -87,8 +86,6 @@ elif 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
     ]
     SOURCES += [
         'gfxFcPlatformFontList.cpp',
-        'gfxFontconfigFonts.cpp',
-        'gfxFontconfigUtils.cpp',
         'gfxFT2FontBase.cpp',
         'gfxFT2Utils.cpp',
         'gfxGdkNativeRenderer.cpp',

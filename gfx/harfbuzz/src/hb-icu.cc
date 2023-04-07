@@ -27,18 +27,49 @@
  * Google Author(s): Behdad Esfahbod
  */
 
-#include "hb-private.hh"
+#include "hb.hh"
+
+#ifdef HAVE_ICU
 
 #include "hb-icu.h"
 
-#include "hb-unicode-private.hh"
+#include "hb-machinery.hh"
 
 #include <unicode/uchar.h>
-#include <unicode/unorm.h>
+#include <unicode/unorm2.h>
 #include <unicode/ustring.h>
 #include <unicode/utf16.h>
 #include <unicode/uversion.h>
 
+/* ICU extra semicolon, fixed since 65, https://github.com/unicode-org/icu/commit/480bec3 */
+#if U_ICU_VERSION_MAJOR_NUM < 65 && (defined(__GNUC__) || defined(__clang__))
+#define HB_ICU_EXTRA_SEMI_IGNORED
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wextra-semi-stmt"
+#endif
+
+/**
+ * SECTION:hb-icu
+ * @title: hb-icu
+ * @short_description: ICU integration
+ * @include: hb-icu.h
+ *
+ * Functions for using HarfBuzz with the International Components for Unicode
+ * (ICU) library. HarfBuzz supports using ICU to provide Unicode data, by attaching
+ * ICU functions to the virtual methods in a #hb_unicode_funcs_t function
+ * structure.
+ **/
+
+/**
+ * hb_icu_script_to_script:
+ * @script: The UScriptCode identifier to query
+ *
+ * Fetches the #hb_script_t script that corresponds to the
+ * specified UScriptCode identifier.
+ *
+ * Return value: the #hb_script_t script found
+ *
+ **/
 
 hb_script_t
 hb_icu_script_to_script (UScriptCode script)
@@ -49,13 +80,24 @@ hb_icu_script_to_script (UScriptCode script)
   return hb_script_from_string (uscript_getShortName (script), -1);
 }
 
+/**
+ * hb_icu_script_from_script:
+ * @script: The #hb_script_t script to query
+ *
+ * Fetches the UScriptCode identifier that corresponds to the
+ * specified #hb_script_t script.
+ *
+ * Return value: the UScriptCode identifier found
+ *
+ **/
 UScriptCode
 hb_icu_script_from_script (hb_script_t script)
 {
   if (unlikely (script == HB_SCRIPT_INVALID))
     return USCRIPT_INVALID_CODE;
 
-  for (unsigned int i = 0; i < USCRIPT_CODE_LIMIT; i++)
+  unsigned int numScriptCode = 1 + u_getIntPropertyMaxValue (UCHAR_SCRIPT);
+  for (unsigned int i = 0; i < numScriptCode; i++)
     if (unlikely (hb_icu_script_to_script ((UScriptCode) i) == script))
       return (UScriptCode) i;
 
@@ -70,25 +112,6 @@ hb_icu_unicode_combining_class (hb_unicode_funcs_t *ufuncs HB_UNUSED,
 
 {
   return (hb_unicode_combining_class_t) u_getCombiningClass (unicode);
-}
-
-static unsigned int
-hb_icu_unicode_eastasian_width (hb_unicode_funcs_t *ufuncs HB_UNUSED,
-				hb_codepoint_t      unicode,
-				void               *user_data HB_UNUSED)
-{
-  switch (u_getIntPropertyValue(unicode, UCHAR_EAST_ASIAN_WIDTH))
-  {
-  case U_EA_WIDE:
-  case U_EA_FULLWIDTH:
-    return 2;
-  case U_EA_NEUTRAL:
-  case U_EA_AMBIGUOUS:
-  case U_EA_HALFWIDTH:
-  case U_EA_NARROW:
-    return 1;
-  }
-  return 1;
 }
 
 static hb_unicode_general_category_t
@@ -164,53 +187,18 @@ hb_icu_unicode_script (hb_unicode_funcs_t *ufuncs HB_UNUSED,
   return hb_icu_script_to_script (scriptCode);
 }
 
-#if U_ICU_VERSION_MAJOR_NUM >= 49
-static const UNormalizer2 *normalizer;
-#endif
-
 static hb_bool_t
 hb_icu_unicode_compose (hb_unicode_funcs_t *ufuncs HB_UNUSED,
 			hb_codepoint_t      a,
 			hb_codepoint_t      b,
 			hb_codepoint_t     *ab,
-			void               *user_data HB_UNUSED)
+			void               *user_data)
 {
-#if U_ICU_VERSION_MAJOR_NUM >= 49
-  {
-    UChar32 ret = unorm2_composePair (normalizer, a, b);
-    if (ret < 0) return false;
-    *ab = ret;
-    return true;
-  }
-#endif
-
-  /* We don't ifdef-out the fallback code such that compiler always
-   * sees it and makes sure it's compilable. */
-
-  UChar utf16[4], normalized[5];
-  unsigned int len;
-  hb_bool_t ret, err;
-  UErrorCode icu_err;
-
-  len = 0;
-  err = false;
-  U16_APPEND (utf16, len, ARRAY_LENGTH (utf16), a, err);
-  if (err) return false;
-  U16_APPEND (utf16, len, ARRAY_LENGTH (utf16), b, err);
-  if (err) return false;
-
-  icu_err = U_ZERO_ERROR;
-  len = unorm_normalize (utf16, len, UNORM_NFC, 0, normalized, ARRAY_LENGTH (normalized), &icu_err);
-  if (U_FAILURE (icu_err))
-    return false;
-  if (u_countChar32 (normalized, len) == 1) {
-    U16_GET_UNSAFE (normalized, 0, *ab);
-    ret = true;
-  } else {
-    ret = false;
-  }
-
-  return ret;
+  const UNormalizer2 *normalizer = (const UNormalizer2 *) user_data;
+  UChar32 ret = unorm2_composePair (normalizer, a, b);
+  if (ret < 0) return false;
+  *ab = ret;
+  return true;
 }
 
 static hb_bool_t
@@ -218,154 +206,91 @@ hb_icu_unicode_decompose (hb_unicode_funcs_t *ufuncs HB_UNUSED,
 			  hb_codepoint_t      ab,
 			  hb_codepoint_t     *a,
 			  hb_codepoint_t     *b,
-			  void               *user_data HB_UNUSED)
+			  void               *user_data)
 {
-#if U_ICU_VERSION_MAJOR_NUM >= 49
+  const UNormalizer2 *normalizer = (const UNormalizer2 *) user_data;
+  UChar decomposed[4];
+  int len;
+  UErrorCode icu_err = U_ZERO_ERROR;
+  len = unorm2_getRawDecomposition (normalizer, ab, decomposed,
+				    ARRAY_LENGTH (decomposed), &icu_err);
+  if (U_FAILURE (icu_err) || len < 0) return false;
+
+  len = u_countChar32 (decomposed, len);
+  if (len == 1)
   {
-    UChar decomposed[4];
-    int len;
-    UErrorCode icu_err = U_ZERO_ERROR;
-    len = unorm2_getRawDecomposition (normalizer, ab, decomposed,
-				      ARRAY_LENGTH (decomposed), &icu_err);
-    if (U_FAILURE (icu_err) || len < 0) return false;
-
-    len = u_countChar32 (decomposed, len);
-    if (len == 1) {
-      U16_GET_UNSAFE (decomposed, 0, *a);
-      *b = 0;
-      return *a != ab;
-    } else if (len == 2) {
-      len =0;
-      U16_NEXT_UNSAFE (decomposed, len, *a);
-      U16_NEXT_UNSAFE (decomposed, len, *b);
-    }
-    return true;
-  }
-#endif
-
-  /* We don't ifdef-out the fallback code such that compiler always
-   * sees it and makes sure it's compilable. */
-
-  UChar utf16[2], normalized[2 * HB_UNICODE_MAX_DECOMPOSITION_LEN + 1];
-  unsigned int len;
-  hb_bool_t ret, err;
-  UErrorCode icu_err;
-
-  /* This function is a monster! Maybe it wasn't a good idea adding a
-   * pairwise decompose API... */
-  /* Watchout for the dragons.  Err, watchout for macros changing len. */
-
-  len = 0;
-  err = false;
-  U16_APPEND (utf16, len, ARRAY_LENGTH (utf16), ab, err);
-  if (err) return false;
-
-  icu_err = U_ZERO_ERROR;
-  len = unorm_normalize (utf16, len, UNORM_NFD, 0, normalized, ARRAY_LENGTH (normalized), &icu_err);
-  if (U_FAILURE (icu_err))
-    return false;
-
-  len = u_countChar32 (normalized, len);
-
-  if (len == 1) {
-    U16_GET_UNSAFE (normalized, 0, *a);
+    U16_GET_UNSAFE (decomposed, 0, *a);
     *b = 0;
-    ret = *a != ab;
-  } else if (len == 2) {
-    len =0;
-    U16_NEXT_UNSAFE (normalized, len, *a);
-    U16_NEXT_UNSAFE (normalized, len, *b);
-
-    /* Here's the ugly part: if ab decomposes to a single character and
-     * that character decomposes again, we have to detect that and undo
-     * the second part :-(. */
-    UChar recomposed[20];
-    icu_err = U_ZERO_ERROR;
-    unorm_normalize (normalized, len, UNORM_NFC, 0, recomposed, ARRAY_LENGTH (recomposed), &icu_err);
-    if (U_FAILURE (icu_err))
-      return false;
-    hb_codepoint_t c;
-    U16_GET_UNSAFE (recomposed, 0, c);
-    if (c != *a && c != ab) {
-      *a = c;
-      *b = 0;
-    }
-    ret = true;
-  } else {
-    /* If decomposed to more than two characters, take the last one,
-     * and recompose the rest to get the first component. */
-    U16_PREV_UNSAFE (normalized, len, *b); /* Changes len in-place. */
-    UChar recomposed[18 * 2];
-    icu_err = U_ZERO_ERROR;
-    len = unorm_normalize (normalized, len, UNORM_NFC, 0, recomposed, ARRAY_LENGTH (recomposed), &icu_err);
-    if (U_FAILURE (icu_err))
-      return false;
-    /* We expect that recomposed has exactly one character now. */
-    if (unlikely (u_countChar32 (recomposed, len) != 1))
-      return false;
-    U16_GET_UNSAFE (recomposed, 0, *a);
-    ret = true;
+    return *a != ab;
   }
-
-  return ret;
-}
-
-static unsigned int
-hb_icu_unicode_decompose_compatibility (hb_unicode_funcs_t *ufuncs HB_UNUSED,
-					hb_codepoint_t      u,
-					hb_codepoint_t     *decomposed,
-					void               *user_data HB_UNUSED)
-{
-  UChar utf16[2], normalized[2 * HB_UNICODE_MAX_DECOMPOSITION_LEN + 1];
-  unsigned int len;
-  int32_t utf32_len;
-  hb_bool_t err;
-  UErrorCode icu_err;
-
-  /* Copy @u into a UTF-16 array to be passed to ICU. */
-  len = 0;
-  err = false;
-  U16_APPEND (utf16, len, ARRAY_LENGTH (utf16), u, err);
-  if (err)
-    return 0;
-
-  /* Normalise the codepoint using NFKD mode. */
-  icu_err = U_ZERO_ERROR;
-  len = unorm_normalize (utf16, len, UNORM_NFKD, 0, normalized, ARRAY_LENGTH (normalized), &icu_err);
-  if (icu_err)
-    return 0;
-
-  /* Convert the decomposed form from UTF-16 to UTF-32. */
-  icu_err = U_ZERO_ERROR;
-  u_strToUTF32 ((UChar32*) decomposed, HB_UNICODE_MAX_DECOMPOSITION_LEN, &utf32_len, normalized, len, &icu_err);
-  if (icu_err)
-    return 0;
-
-  return utf32_len;
+  else if (len == 2)
+  {
+    len = 0;
+    U16_NEXT_UNSAFE (decomposed, len, *a);
+    U16_NEXT_UNSAFE (decomposed, len, *b);
+  }
+  return true;
 }
 
 
-hb_unicode_funcs_t *
-hb_icu_get_unicode_funcs (void)
-{
-  static const hb_unicode_funcs_t _hb_icu_unicode_funcs = {
-    HB_OBJECT_HEADER_STATIC,
-
-    NULL, /* parent */
-    true, /* immutable */
-    {
-#define HB_UNICODE_FUNC_IMPLEMENT(name) hb_icu_unicode_##name,
-      HB_UNICODE_FUNCS_IMPLEMENT_CALLBACKS
-#undef HB_UNICODE_FUNC_IMPLEMENT
-    }
-  };
-
-#if U_ICU_VERSION_MAJOR_NUM >= 49
-  if (!hb_atomic_ptr_get (&normalizer)) {
-    UErrorCode icu_err = U_ZERO_ERROR;
-    /* We ignore failure in getNFCInstace(). */
-    (void) hb_atomic_ptr_cmpexch (&normalizer, NULL, unorm2_getNFCInstance (&icu_err));
-  }
+#if HB_USE_ATEXIT
+static void free_static_icu_funcs ();
 #endif
-  return const_cast<hb_unicode_funcs_t *> (&_hb_icu_unicode_funcs);
+
+static struct hb_icu_unicode_funcs_lazy_loader_t : hb_unicode_funcs_lazy_loader_t<hb_icu_unicode_funcs_lazy_loader_t>
+{
+  static hb_unicode_funcs_t *create ()
+  {
+    void *user_data = nullptr;
+    UErrorCode icu_err = U_ZERO_ERROR;
+    user_data = (void *) unorm2_getNFCInstance (&icu_err);
+    assert (user_data);
+
+    hb_unicode_funcs_t *funcs = hb_unicode_funcs_create (nullptr);
+
+    hb_unicode_funcs_set_combining_class_func (funcs, hb_icu_unicode_combining_class, nullptr, nullptr);
+    hb_unicode_funcs_set_general_category_func (funcs, hb_icu_unicode_general_category, nullptr, nullptr);
+    hb_unicode_funcs_set_mirroring_func (funcs, hb_icu_unicode_mirroring, nullptr, nullptr);
+    hb_unicode_funcs_set_script_func (funcs, hb_icu_unicode_script, nullptr, nullptr);
+    hb_unicode_funcs_set_compose_func (funcs, hb_icu_unicode_compose, user_data, nullptr);
+    hb_unicode_funcs_set_decompose_func (funcs, hb_icu_unicode_decompose, user_data, nullptr);
+
+    hb_unicode_funcs_make_immutable (funcs);
+
+#if HB_USE_ATEXIT
+    atexit (free_static_icu_funcs);
+#endif
+
+    return funcs;
+  }
+} static_icu_funcs;
+
+#if HB_USE_ATEXIT
+static
+void free_static_icu_funcs ()
+{
+  static_icu_funcs.free_instance ();
 }
+#endif
+
+/**
+ * hb_icu_get_unicode_funcs:
+ *
+ * Fetches a Unicode-functions structure that is populated
+ * with the appropriate ICU function for each method.
+ *
+ * Return value: (transfer none): a pointer to the #hb_unicode_funcs_t Unicode-functions structure
+ *
+ * Since: 0.9.38
+ **/
+hb_unicode_funcs_t *
+hb_icu_get_unicode_funcs ()
+{
+  return static_icu_funcs.get_unconst ();
+}
+
+#ifdef HB_ICU_EXTRA_SEMI_IGNORED
+#pragma GCC diagnostic pop
+#endif
+
+#endif

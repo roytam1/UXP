@@ -27,6 +27,9 @@ public: // new functions
 
     FT2FontEntry *GetFontEntry();
 
+    virtual already_AddRefed<mozilla::gfx::ScaledFont>
+    GetScaledFont(DrawTarget *aTarget) override;
+
     struct CachedGlyphData {
         CachedGlyphData()
             : glyphIndex(0xffffffffU) { }
