@@ -31,36 +31,53 @@
 #include "hb.hh"
 
 #include "hb-subset.h"
+#include "hb-map.hh"
+#include "hb-set.hh"
 
 #include "hb-font.hh"
+
+HB_MARK_AS_FLAG_T (hb_subset_flags_t);
 
 struct hb_subset_input_t
 {
   hb_object_header_t header;
 
-  hb_set_t *unicodes;
-  hb_set_t *glyphs;
-  hb_set_t *name_ids;
-  hb_set_t *name_languages;
-  hb_set_t *drop_tables;
-  hb_set_t *layout_features;
+  struct sets_t {
+    hb_set_t *glyphs;
+    hb_set_t *unicodes;
+    hb_set_t *no_subset_tables;
+    hb_set_t *drop_tables;
+    hb_set_t *name_ids;
+    hb_set_t *name_languages;
+    hb_set_t *layout_features;
+  };
 
-  //use hb_bool_t to be consistent with G option parser
-  hb_bool_t drop_hints;
-  hb_bool_t desubroutinize;
-  hb_bool_t retain_gids;
-  hb_bool_t name_legacy;
-  hb_bool_t overlaps_flag;
-  hb_bool_t notdef_outline;
-  hb_bool_t no_prune_unicode_ranges;
-  hb_bool_t retain_all_layout_features;
-  /* TODO
-   *
-   * features
-   * lookups
-   * name_ids
-   * ...
-   */
+  union {
+    sets_t sets;
+    hb_set_t* set_ptrs[sizeof (sets_t) / sizeof (hb_set_t*)];
+  };
+
+  unsigned flags;
+
+  inline unsigned num_sets () const
+  {
+    return sizeof (set_ptrs) / sizeof (hb_set_t*);
+  }
+
+  inline hb_array_t<hb_set_t*> sets_iter ()
+  {
+    return hb_array_t<hb_set_t*> (set_ptrs, num_sets ());
+  }
+
+  bool in_error () const
+  {
+    for (unsigned i = 0; i < num_sets (); i++)
+    {
+      if (unlikely (set_ptrs[i]->in_error ()))
+        return true;
+    }
+    return false;
+  }
 };
 
 

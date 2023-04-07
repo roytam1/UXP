@@ -47,7 +47,8 @@ use_basic_features[] =
 {
   /*
    * Basic features.
-   * These features are applied all at once, before reordering.
+   * These features are applied all at once, before reordering, constrained
+   * to the syllable.
    */
   HB_TAG('r','k','r','f'),
   HB_TAG('a','b','v','f'),
@@ -256,7 +257,6 @@ setup_topographical_masks (const hb_ot_shape_plan_t *plan,
     use_syllable_type_t syllable_type = (use_syllable_type_t) (info[start].syllable() & 0x0F);
     switch (syllable_type)
     {
-      case use_independent_cluster:
       case use_symbol_cluster:
       case use_hieroglyph_cluster:
       case use_non_cluster:

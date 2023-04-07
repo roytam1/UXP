@@ -106,7 +106,8 @@ indic_features[] =
 {
   /*
    * Basic features.
-   * These features are applied in order, one at a time, after initial_reordering.
+   * These features are applied in order, one at a time, after initial_reordering,
+   * constrained to the syllable.
    */
   {HB_TAG('n','u','k','t'), F_GLOBAL_MANUAL_JOINERS},
   {HB_TAG('a','k','h','n'), F_GLOBAL_MANUAL_JOINERS},
@@ -121,8 +122,8 @@ indic_features[] =
   {HB_TAG('c','j','c','t'), F_GLOBAL_MANUAL_JOINERS},
   /*
    * Other features.
-   * These features are applied all at once, after final_reordering
-   * but before clearing syllables.
+   * These features are applied all at once, after final_reordering, constrained
+   * to the syllable.
    * Default Bengali font in Windows for example has intermixed
    * lookups for init,pres,abvs,blws features.
    */
@@ -200,9 +201,6 @@ collect_features_indic (hb_ot_shape_planner_t *plan)
 
   for (; i < INDIC_NUM_FEATURES; i++)
     map->add_feature (indic_features[i]);
-
-  map->enable_feature (HB_TAG('c','a','l','t'));
-  map->enable_feature (HB_TAG('c','l','i','g'));
 
   map->add_gsub_pause (_hb_clear_syllables);
 }

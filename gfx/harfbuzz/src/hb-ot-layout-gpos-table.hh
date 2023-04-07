@@ -118,7 +118,13 @@ struct ValueFormat : HBUINT16
     if (!format) return ret;
 
     hb_font_t *font = c->font;
-    bool horizontal = HB_DIRECTION_IS_HORIZONTAL (c->direction);
+    bool horizontal =
+#ifndef HB_NO_VERTICAL
+      HB_DIRECTION_IS_HORIZONTAL (c->direction)
+#else
+      true
+#endif
+      ;
 
     if (format & xPlacement) glyph_pos.x_offset  += font->em_scale_x (get_short (values++, &ret));
     if (format & yPlacement) glyph_pos.y_offset  += font->em_scale_y (get_short (values++, &ret));
@@ -538,7 +544,7 @@ struct Anchor
     switch (u.format) {
     case 1: return_trace (bool (reinterpret_cast<Anchor *> (u.format1.copy (c->serializer))));
     case 2:
-      if (c->plan->drop_hints)
+      if (c->plan->flags & HB_SUBSET_FLAGS_NO_HINTING)
       {
         // AnchorFormat 2 just containins extra hinting information, so
         // if hints are being dropped convert to format 1.
@@ -805,7 +811,7 @@ struct SinglePosFormat1
 		  ValueFormat newFormat,
 		  const hb_map_t *layout_variation_idx_map)
   {
-    if (unlikely (!c->extend_min (*this))) return;
+    if (unlikely (!c->extend_min (this))) return;
     if (unlikely (!c->check_assign (valueFormat,
                                     newFormat,
                                     HB_SERIALIZE_ERROR_INT_OVERFLOW))) return;
@@ -925,7 +931,7 @@ struct SinglePosFormat2
 		  ValueFormat newFormat,
 		  const hb_map_t *layout_variation_idx_map)
   {
-    auto out = c->extend_min (*this);
+    auto out = c->extend_min (this);
     if (unlikely (!out)) return;
     if (unlikely (!c->check_assign (valueFormat, newFormat, HB_SERIALIZE_ERROR_INT_OVERFLOW))) return;
     if (unlikely (!c->check_assign (valueCount, it.len (), HB_SERIALIZE_ERROR_ARRAY_OVERFLOW))) return;
@@ -1050,8 +1056,8 @@ struct SinglePos
     TRACE_DISPATCH (this, u.format);
     if (unlikely (!c->may_dispatch (this, &u.format))) return_trace (c->no_dispatch_return_value ());
     switch (u.format) {
-    case 1: return_trace (c->dispatch (u.format1, hb_forward<Ts> (ds)...));
-    case 2: return_trace (c->dispatch (u.format2, hb_forward<Ts> (ds)...));
+    case 1: return_trace (c->dispatch (u.format1, std::forward<Ts> (ds)...));
+    case 2: return_trace (c->dispatch (u.format2, std::forward<Ts> (ds)...));
     default:return_trace (c->default_return_value ());
     }
   }
@@ -1144,7 +1150,7 @@ struct PairValueRecord
   }
 
   protected:
-  HBGlyphID	secondGlyph;		/* GlyphID of second glyph in the
+  HBGlyphID16	secondGlyph;		/* GlyphID of second glyph in the
 					 * pair--first glyph is listed in the
 					 * Coverage table */
   ValueRecord	values;			/* Positioning data for the first glyph
@@ -1220,9 +1226,9 @@ struct PairSet
 						record_size);
     if (record)
     {
-      /* Note the intentional use of "|" instead of short-circuit "||". */
-      if (valueFormats[0].apply_value (c, this, &record->values[0], buffer->cur_pos()) |
-	  valueFormats[1].apply_value (c, this, &record->values[len1], buffer->pos[pos]))
+      bool applied_first = valueFormats[0].apply_value (c, this, &record->values[0], buffer->cur_pos());
+      bool applied_second = valueFormats[1].apply_value (c, this, &record->values[len1], buffer->pos[pos]);
+      if (applied_first || applied_second)
 	buffer->unsafe_to_break (buffer->idx, pos + 1);
       if (len2)
 	pos++;
@@ -1373,7 +1379,7 @@ struct PairPosFormat1
     out->format = format;
     out->valueFormat[0] = valueFormat[0];
     out->valueFormat[1] = valueFormat[1];
-    if (c->plan->drop_hints)
+    if (c->plan->flags & HB_SUBSET_FLAGS_NO_HINTING)
     {
       hb_pair_t<unsigned, unsigned> newFormats = compute_effective_value_formats (glyphset);
       out->valueFormat[0] = newFormats.first;
@@ -1386,9 +1392,9 @@ struct PairPosFormat1
     | hb_filter (glyphset, hb_first)
     | hb_filter ([this, c, out] (const Offset16To<PairSet>& _)
 		 {
+                   auto snap = c->serializer->snapshot ();
 		   auto *o = out->pairSet.serialize_append (c->serializer);
 		   if (unlikely (!o)) return false;
-		   auto snap = c->serializer->snapshot ();
 		   bool ret = o->serialize_subset (c, _, this, valueFormat, out->valueFormat);
 		   if (!ret)
 		   {
@@ -1560,9 +1566,9 @@ struct PairPosFormat2
     if (unlikely (klass1 >= class1Count || klass2 >= class2Count)) return_trace (false);
 
     const Value *v = &values[record_len * (klass1 * class2Count + klass2)];
-    /* Note the intentional use of "|" instead of short-circuit "||". */
-    if (valueFormat1.apply_value (c, this, v, buffer->cur_pos()) |
-	valueFormat2.apply_value (c, this, v + len1, buffer->pos[skippy_iter.idx]))
+    bool applied_first = valueFormat1.apply_value (c, this, v, buffer->cur_pos());
+    bool applied_second = valueFormat2.apply_value (c, this, v + len1, buffer->pos[skippy_iter.idx]);
+    if (applied_first || applied_second)
       buffer->unsafe_to_break (buffer->idx, skippy_iter.idx + 1);
 
     buffer->idx = skippy_iter.idx;
@@ -1591,7 +1597,7 @@ struct PairPosFormat2
     unsigned len2 = valueFormat2.get_len ();
 
     hb_pair_t<unsigned, unsigned> newFormats = hb_pair (valueFormat1, valueFormat2);
-    if (c->plan->drop_hints)
+    if (c->plan->flags & HB_SUBSET_FLAGS_NO_HINTING)
       newFormats = compute_effective_value_formats (klass1_map, klass2_map);
 
     out->valueFormat1 = newFormats.first;
@@ -1702,8 +1708,8 @@ struct PairPos
     TRACE_DISPATCH (this, u.format);
     if (unlikely (!c->may_dispatch (this, &u.format))) return_trace (c->no_dispatch_return_value ());
     switch (u.format) {
-    case 1: return_trace (c->dispatch (u.format1, hb_forward<Ts> (ds)...));
-    case 2: return_trace (c->dispatch (u.format2, hb_forward<Ts> (ds)...));
+    case 1: return_trace (c->dispatch (u.format1, std::forward<Ts> (ds)...));
+    case 2: return_trace (c->dispatch (u.format2, std::forward<Ts> (ds)...));
     default:return_trace (c->default_return_value ());
     }
   }
@@ -1959,7 +1965,7 @@ struct CursivePos
     TRACE_DISPATCH (this, u.format);
     if (unlikely (!c->may_dispatch (this, &u.format))) return_trace (c->no_dispatch_return_value ());
     switch (u.format) {
-    case 1: return_trace (c->dispatch (u.format1, hb_forward<Ts> (ds)...));
+    case 1: return_trace (c->dispatch (u.format1, std::forward<Ts> (ds)...));
     default:return_trace (c->default_return_value ());
     }
   }
@@ -2194,7 +2200,7 @@ struct MarkBasePos
     TRACE_DISPATCH (this, u.format);
     if (unlikely (!c->may_dispatch (this, &u.format))) return_trace (c->no_dispatch_return_value ());
     switch (u.format) {
-    case 1: return_trace (c->dispatch (u.format1, hb_forward<Ts> (ds)...));
+    case 1: return_trace (c->dispatch (u.format1, std::forward<Ts> (ds)...));
     default:return_trace (c->default_return_value ());
     }
   }
@@ -2434,7 +2440,7 @@ struct MarkLigPos
     TRACE_DISPATCH (this, u.format);
     if (unlikely (!c->may_dispatch (this, &u.format))) return_trace (c->no_dispatch_return_value ());
     switch (u.format) {
-    case 1: return_trace (c->dispatch (u.format1, hb_forward<Ts> (ds)...));
+    case 1: return_trace (c->dispatch (u.format1, std::forward<Ts> (ds)...));
     default:return_trace (c->default_return_value ());
     }
   }
@@ -2653,7 +2659,7 @@ struct MarkMarkPos
     TRACE_DISPATCH (this, u.format);
     if (unlikely (!c->may_dispatch (this, &u.format))) return_trace (c->no_dispatch_return_value ());
     switch (u.format) {
-    case 1: return_trace (c->dispatch (u.format1, hb_forward<Ts> (ds)...));
+    case 1: return_trace (c->dispatch (u.format1, std::forward<Ts> (ds)...));
     default:return_trace (c->default_return_value ());
     }
   }
@@ -2704,15 +2710,15 @@ struct PosLookupSubTable
   {
     TRACE_DISPATCH (this, lookup_type);
     switch (lookup_type) {
-    case Single:		return_trace (u.single.dispatch (c, hb_forward<Ts> (ds)...));
-    case Pair:			return_trace (u.pair.dispatch (c, hb_forward<Ts> (ds)...));
-    case Cursive:		return_trace (u.cursive.dispatch (c, hb_forward<Ts> (ds)...));
-    case MarkBase:		return_trace (u.markBase.dispatch (c, hb_forward<Ts> (ds)...));
-    case MarkLig:		return_trace (u.markLig.dispatch (c, hb_forward<Ts> (ds)...));
-    case MarkMark:		return_trace (u.markMark.dispatch (c, hb_forward<Ts> (ds)...));
-    case Context:		return_trace (u.context.dispatch (c, hb_forward<Ts> (ds)...));
-    case ChainContext:		return_trace (u.chainContext.dispatch (c, hb_forward<Ts> (ds)...));
-    case Extension:		return_trace (u.extension.dispatch (c, hb_forward<Ts> (ds)...));
+    case Single:		return_trace (u.single.dispatch (c, std::forward<Ts> (ds)...));
+    case Pair:			return_trace (u.pair.dispatch (c, std::forward<Ts> (ds)...));
+    case Cursive:		return_trace (u.cursive.dispatch (c, std::forward<Ts> (ds)...));
+    case MarkBase:		return_trace (u.markBase.dispatch (c, std::forward<Ts> (ds)...));
+    case MarkLig:		return_trace (u.markLig.dispatch (c, std::forward<Ts> (ds)...));
+    case MarkMark:		return_trace (u.markMark.dispatch (c, std::forward<Ts> (ds)...));
+    case Context:		return_trace (u.context.dispatch (c, std::forward<Ts> (ds)...));
+    case ChainContext:		return_trace (u.chainContext.dispatch (c, std::forward<Ts> (ds)...));
+    case Extension:		return_trace (u.extension.dispatch (c, std::forward<Ts> (ds)...));
     default:			return_trace (c->default_return_value ());
     }
   }
@@ -2800,7 +2806,7 @@ struct PosLookup : Lookup
 
   template <typename context_t, typename ...Ts>
   typename context_t::return_t dispatch (context_t *c, Ts&&... ds) const
-  { return Lookup::dispatch<SubTable> (c, hb_forward<Ts> (ds)...); }
+  { return Lookup::dispatch<SubTable> (c, std::forward<Ts> (ds)...); }
 
   bool subset (hb_subset_context_t *c) const
   { return Lookup::subset<SubTable> (c); }

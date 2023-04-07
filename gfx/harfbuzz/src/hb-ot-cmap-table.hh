@@ -49,6 +49,12 @@ struct CmapSubtableFormat0
     *glyph = gid;
     return true;
   }
+
+  unsigned get_language () const
+  {
+    return language;
+  }
+
   void collect_unicodes (hb_set_t *out) const
   {
     for (unsigned int i = 0; i < 256; i++)
@@ -87,120 +93,192 @@ struct CmapSubtableFormat0
 struct CmapSubtableFormat4
 {
 
+
   template<typename Iterator,
+      typename Writer,
 	   hb_requires (hb_is_iterator (Iterator))>
-  HBUINT16* serialize_endcode_array (hb_serialize_context_t *c,
-				     Iterator it)
+  void to_ranges (Iterator it, Writer& range_writer)
   {
-    HBUINT16 *endCode = c->start_embed<HBUINT16> ();
-    hb_codepoint_t prev_endcp = 0xFFFF;
+    hb_codepoint_t start_cp = 0, prev_run_start_cp = 0, run_start_cp = 0, end_cp = 0, last_gid = 0;
+    int run_length = 0 , delta = 0, prev_delta = 0;
 
-    for (const auto& _ : +it)
-    {
-      if (prev_endcp != 0xFFFF && prev_endcp + 1u != _.first)
-      {
-	HBUINT16 end_code;
-	end_code = prev_endcp;
-	c->copy<HBUINT16> (end_code);
+    enum {
+      FIRST_SUB_RANGE,
+      FOLLOWING_SUB_RANGE,
+    } mode;
+
+    while (it) {
+      // Start a new range
+      start_cp = (*it).first;
+      prev_run_start_cp = (*it).first;
+      run_start_cp = (*it).first;
+      end_cp = (*it).first;
+      last_gid = (*it).second;
+      run_length = 1;
+      prev_delta = 0;
+
+      delta = (*it).second - (*it).first;
+      mode = FIRST_SUB_RANGE;
+      it++;
+
+      while (it) {
+        // Process range
+        hb_codepoint_t next_cp = (*it).first;
+        hb_codepoint_t next_gid = (*it).second;
+        if (next_cp != end_cp + 1) {
+          // Current range is over, stop processing.
+          break;
+        }
+
+        if (next_gid == last_gid + 1) {
+          // The current run continues.
+          end_cp = next_cp;
+          run_length++;
+          last_gid = next_gid;
+          it++;
+          continue;
+        }
+
+        // A new run is starting, decide if we want to commit the current run.
+        int split_cost = (mode == FIRST_SUB_RANGE) ? 8 : 16;
+        int run_cost = run_length * 2;
+        if (run_cost >= split_cost) {
+          commit_current_range(start_cp,
+                               prev_run_start_cp,
+                               run_start_cp,
+                               end_cp,
+                               delta,
+                               prev_delta,
+                               split_cost,
+                               range_writer);
+          start_cp = next_cp;
+        }
+
+        // Start the new run
+        mode = FOLLOWING_SUB_RANGE;
+        prev_run_start_cp = run_start_cp;
+        run_start_cp = next_cp;
+        end_cp = next_cp;
+        prev_delta = delta;
+        delta = next_gid - run_start_cp;
+        run_length = 1;
+        last_gid = next_gid;
+        it++;
       }
-      prev_endcp = _.first;
+
+      // Finalize range
+      commit_current_range (start_cp,
+                            prev_run_start_cp,
+                            run_start_cp,
+                            end_cp,
+                            delta,
+                            prev_delta,
+                            8,
+                            range_writer);
     }
 
-    {
-      // last endCode
-      HBUINT16 endcode;
-      endcode = prev_endcp;
-      if (unlikely (!c->copy<HBUINT16> (endcode))) return nullptr;
-      // There must be a final entry with end_code == 0xFFFF.
-      if (prev_endcp != 0xFFFF)
-      {
-	HBUINT16 finalcode;
-	finalcode = 0xFFFF;
-	if (unlikely (!c->copy<HBUINT16> (finalcode))) return nullptr;
+    if (likely (end_cp != 0xFFFF)) {
+      range_writer (0xFFFF, 0xFFFF, 1);
+    }
+  }
+
+  /*
+   * Writes the current range as either one or two ranges depending on what is most efficient.
+   */
+  template<typename Writer>
+  void commit_current_range (hb_codepoint_t start,
+                             hb_codepoint_t prev_run_start,
+                             hb_codepoint_t run_start,
+                             hb_codepoint_t end,
+                             int run_delta,
+                             int previous_run_delta,
+                             int split_cost,
+                             Writer& range_writer) {
+    bool should_split = false;
+    if (start < run_start && run_start < end) {
+      int run_cost = (end - run_start + 1) * 2;
+      if (run_cost >= split_cost) {
+        should_split = true;
       }
     }
 
-    return endCode;
+    // TODO(grieger): handle case where delta is legitimately 0, mark range offset array instead?
+    if (should_split) {
+      if (start == prev_run_start)
+        range_writer (start, run_start - 1, previous_run_delta);
+      else
+        range_writer (start, run_start - 1, 0);
+      range_writer (run_start, end, run_delta);
+      return;
+    }
+
+
+    if (start == run_start) {
+      // Range is only a run
+      range_writer (start, end, run_delta);
+      return;
+    }
+
+    // Write only a single non-run range.
+    range_writer (start, end, 0);
   }
 
   template<typename Iterator,
 	   hb_requires (hb_is_iterator (Iterator))>
-  HBUINT16* serialize_startcode_array (hb_serialize_context_t *c,
-				       Iterator it)
-  {
-    HBUINT16 *startCode = c->start_embed<HBUINT16> ();
-    hb_codepoint_t prev_cp = 0xFFFF;
+  unsigned serialize_find_segcount (Iterator it) {
+    struct Counter {
+      unsigned segcount = 0;
 
-    for (const auto& _ : +it)
-    {
-      if (prev_cp == 0xFFFF || prev_cp + 1u != _.first)
-      {
-	HBUINT16 start_code;
-	start_code = _.first;
-	c->copy<HBUINT16> (start_code);
+      void operator() (hb_codepoint_t start,
+                       hb_codepoint_t end,
+                       int delta) {
+        segcount++;
       }
+    } counter;
 
-      prev_cp = _.first;
-    }
-
-    // There must be a final entry with end_code == 0xFFFF.
-    if (it.len () == 0 || prev_cp != 0xFFFF)
-    {
-      HBUINT16 finalcode;
-      finalcode = 0xFFFF;
-      if (unlikely (!c->copy<HBUINT16> (finalcode))) return nullptr;
-    }
-
-    return startCode;
+    to_ranges (+it, counter);
+    return counter.segcount;
   }
+
 
   template<typename Iterator,
 	   hb_requires (hb_is_iterator (Iterator))>
-  HBINT16* serialize_idDelta_array (hb_serialize_context_t *c,
-				    Iterator it,
-				    HBUINT16 *endCode,
-				    HBUINT16 *startCode,
-				    unsigned segcount)
+  bool serialize_start_end_delta_arrays (hb_serialize_context_t *c,
+                                         Iterator it,
+                                         int segcount)
   {
-    unsigned i = 0;
-    hb_codepoint_t last_gid = 0, start_gid = 0, last_cp = 0xFFFF;
-    bool use_delta = true;
+    struct Writer {
+      hb_serialize_context_t *serializer_;
+      HBUINT16* end_code_;
+      HBUINT16* start_code_;
+      HBINT16* id_delta_;
+      int index_;
 
-    HBINT16 *idDelta = c->start_embed<HBINT16> ();
-    if ((char *)idDelta - (char *)startCode != (int) segcount * (int) HBINT16::static_size)
-      return nullptr;
-
-    for (const auto& _ : +it)
-    {
-      if (_.first == startCode[i])
-      {
-	use_delta = true;
-	start_gid = _.second;
+      Writer(hb_serialize_context_t *serializer)
+          : serializer_(serializer),
+            end_code_(nullptr),
+            start_code_(nullptr),
+            id_delta_(nullptr),
+            index_ (0) {}
+      void operator() (hb_codepoint_t start,
+                       hb_codepoint_t end,
+                       int delta) {
+        start_code_[index_] = start;
+        end_code_[index_] = end;
+        id_delta_[index_] = delta;
+        index_++;
       }
-      else if (_.second != last_gid + 1) use_delta = false;
+    } writer(c);
 
-      if (_.first == endCode[i])
-      {
-	HBINT16 delta;
-	if (use_delta) delta = (int)start_gid - (int)startCode[i];
-	else delta = 0;
-	c->copy<HBINT16> (delta);
+    writer.end_code_ = c->allocate_size<HBUINT16> (HBUINT16::static_size * segcount);
+    c->allocate_size<HBUINT16> (2); // padding
+    writer.start_code_ = c->allocate_size<HBUINT16> (HBUINT16::static_size * segcount);
+    writer.id_delta_ = c->allocate_size<HBINT16> (HBINT16::static_size * segcount);
 
-	i++;
-      }
+    if (unlikely (!writer.end_code_ || !writer.start_code_ || !writer.id_delta_)) return false;
 
-      last_gid = _.second;
-      last_cp = _.first;
-    }
-
-    if (it.len () == 0 || last_cp != 0xFFFF)
-    {
-      HBINT16 delta;
-      delta = 1;
-      if (unlikely (!c->copy<HBINT16> (delta))) return nullptr;
-    }
-
-    return idDelta;
+    to_ranges (+it, writer);
+    return true;
   }
 
   template<typename Iterator,
@@ -212,29 +290,24 @@ struct CmapSubtableFormat4
 					 HBINT16 *idDelta,
 					 unsigned segcount)
   {
+    hb_hashmap_t<hb_codepoint_t, hb_codepoint_t> cp_to_gid;
+    + it | hb_sink (cp_to_gid);
+
     HBUINT16 *idRangeOffset = c->allocate_size<HBUINT16> (HBUINT16::static_size * segcount);
     if (unlikely (!c->check_success (idRangeOffset))) return nullptr;
     if (unlikely ((char *)idRangeOffset - (char *)idDelta != (int) segcount * (int) HBINT16::static_size)) return nullptr;
 
-    + hb_range (segcount)
-    | hb_filter ([&] (const unsigned _) { return idDelta[_] == 0; })
-    | hb_apply ([&] (const unsigned i)
-		{
-		  idRangeOffset[i] = 2 * (c->start_embed<HBUINT16> () - idRangeOffset - i);
-
-		  + it
-		  | hb_filter ([&] (const hb_item_type<Iterator> _) { return _.first >= startCode[i] && _.first <= endCode[i]; })
-		  | hb_apply ([&] (const hb_item_type<Iterator> _)
-			      {
-				HBUINT16 glyID;
-				glyID = _.second;
-				c->copy<HBUINT16> (glyID);
-			      })
-		  ;
-
-
-		})
-    ;
+    for (unsigned i : + hb_range (segcount)
+             | hb_filter ([&] (const unsigned _) { return idDelta[_] == 0; }))
+    {
+      idRangeOffset[i] = 2 * (c->start_embed<HBUINT16> () - idRangeOffset - i);
+      for (hb_codepoint_t cp = startCode[i]; cp <= endCode[i]; cp++)
+      {
+        HBUINT16 gid;
+        gid = cp_to_gid[cp];
+        c->copy<HBUINT16> (gid);
+      }
+    }
 
     return idRangeOffset;
   }
@@ -253,38 +326,43 @@ struct CmapSubtableFormat4
     if (format4_iter.len () == 0) return;
 
     unsigned table_initpos = c->length ();
-    if (unlikely (!c->extend_min (*this))) return;
+    if (unlikely (!c->extend_min (this))) return;
     this->format = 4;
 
-    //serialize endCode[]
-    HBUINT16 *endCode = serialize_endcode_array (c, format4_iter);
-    if (unlikely (!endCode)) return;
+    //serialize endCode[], startCode[], idDelta[]
+    HBUINT16* endCode = c->start_embed<HBUINT16> ();
+    unsigned segcount = serialize_find_segcount (format4_iter);
+    if (unlikely (!serialize_start_end_delta_arrays (c, format4_iter, segcount)))
+      return;
 
-    unsigned segcount = (c->length () - min_size) / HBUINT16::static_size;
-
-    // 2 bytes of padding.
-    if (unlikely (!c->allocate_size<HBUINT16> (HBUINT16::static_size))) return; // 2 bytes of padding.
-
-   // serialize startCode[]
-    HBUINT16 *startCode = serialize_startcode_array (c, format4_iter);
-    if (unlikely (!startCode)) return;
-
-    //serialize idDelta[]
-    HBINT16 *idDelta = serialize_idDelta_array (c, format4_iter, endCode, startCode, segcount);
-    if (unlikely (!idDelta)) return;
+    HBUINT16 *startCode = endCode + segcount + 1;
+    HBINT16 *idDelta = ((HBINT16*)startCode) + segcount;
 
     HBUINT16 *idRangeOffset = serialize_rangeoffset_glyid (c, format4_iter, endCode, startCode, idDelta, segcount);
     if (unlikely (!c->check_success (idRangeOffset))) return;
 
-    if (unlikely (!c->check_assign(this->length,
-                                   c->length () - table_initpos,
-                                   HB_SERIALIZE_ERROR_INT_OVERFLOW))) return;
+    this->length = c->length () - table_initpos;
+    if ((long long) this->length != (long long) c->length () - table_initpos)
+    {
+      // Length overflowed. Discard the current object before setting the error condition, otherwise
+      // discard is a noop which prevents the higher level code from reverting the serializer to the
+      // pre-error state in cmap4 overflow handling code.
+      c->pop_discard ();
+      c->err (HB_SERIALIZE_ERROR_INT_OVERFLOW);
+      return;
+    }
+
     this->segCountX2 = segcount * 2;
     this->entrySelector = hb_max (1u, hb_bit_storage (segcount)) - 1;
     this->searchRange = 2 * (1u << this->entrySelector);
     this->rangeShift = segcount * 2 > this->searchRange
 		       ? 2 * segcount - this->searchRange
 		       : 0;
+  }
+
+  unsigned get_language () const
+  {
+    return language;
   }
 
   struct accelerator_t
@@ -549,6 +627,12 @@ struct CmapSubtableTrimmed
     *glyph = gid;
     return true;
   }
+
+  unsigned get_language () const
+  {
+    return language;
+  }
+
   void collect_unicodes (hb_set_t *out) const
   {
     hb_codepoint_t start = startCharCode;
@@ -584,7 +668,7 @@ struct CmapSubtableTrimmed
   UINT		length;		/* Byte length of this subtable. */
   UINT		language;	/* Ignore. */
   UINT		startCharCode;	/* First character code covered. */
-  ArrayOf<HBGlyphID, UINT>
+  ArrayOf<HBGlyphID16, UINT>
 		glyphIdArray;	/* Array of glyph index values for character
 				 * codes in the range. */
   public:
@@ -606,6 +690,11 @@ struct CmapSubtableLongSegmented
       return false;
     *glyph = gid;
     return true;
+  }
+
+  unsigned get_language () const
+  {
+    return language;
   }
 
   void collect_unicodes (hb_set_t *out, unsigned int num_glyphs) const
@@ -693,7 +782,7 @@ struct CmapSubtableFormat12 : CmapSubtableLongSegmented<CmapSubtableFormat12>
   {
     if (it.len () == 0) return;
     unsigned table_initpos = c->length ();
-    if (unlikely (!c->extend_min (*this))) return;
+    if (unlikely (!c->extend_min (this))) return;
 
     hb_codepoint_t startCharCode = 0xFFFF, endCharCode = 0xFFFF;
     hb_codepoint_t glyphID = 0;
@@ -875,7 +964,7 @@ struct UVSMapping
   }
 
   HBUINT24	unicodeValue;	/* Base Unicode value of the UVS */
-  HBGlyphID	glyphID;	/* Glyph ID of the UVS */
+  HBGlyphID16	glyphID;	/* Glyph ID of the UVS */
   public:
   DEFINE_SIZE_STATIC (5);
 };
@@ -1077,7 +1166,7 @@ struct CmapSubtableFormat14
     unsigned table_initpos = c->length ();
     const char* init_tail = c->tail;
 
-    if (unlikely (!c->extend_min (*this))) return;
+    if (unlikely (!c->extend_min (this))) return;
     this->format = 14;
 
     auto src_tbl = reinterpret_cast<const CmapSubtableFormat14*> (base);
@@ -1238,6 +1327,20 @@ struct CmapSubtable
     }
   }
 
+  unsigned get_language () const
+  {
+    switch (u.format) {
+    case  0: return u.format0 .get_language ();
+    case  4: return u.format4 .get_language ();
+    case  6: return u.format6 .get_language ();
+    case 10: return u.format10.get_language ();
+    case 12: return u.format12.get_language ();
+    case 13: return u.format13.get_language ();
+    case 14:
+    default: return 0;
+    }
+  }
+
   template<typename Iterator,
 	   hb_requires (hb_is_iterator (Iterator))>
   void serialize (hb_serialize_context_t *c,
@@ -1353,60 +1456,112 @@ struct cmap
 
   template<typename Iterator, typename EncodingRecIter,
 	   hb_requires (hb_is_iterator (EncodingRecIter))>
-  void serialize (hb_serialize_context_t *c,
+  bool serialize (hb_serialize_context_t *c,
 		  Iterator it,
 		  EncodingRecIter encodingrec_iter,
 		  const void *base,
-		  const hb_subset_plan_t *plan)
+		  const hb_subset_plan_t *plan,
+                  bool drop_format_4 = false)
   {
-    if (unlikely (!c->extend_min ((*this))))  return;
+    if (unlikely (!c->extend_min ((*this))))  return false;
     this->version = 0;
 
     unsigned format4objidx = 0, format12objidx = 0, format14objidx = 0;
+    auto snap = c->snapshot ();
 
     for (const EncodingRecord& _ : encodingrec_iter)
     {
+      if (c->in_error ())
+        return false;
+
       unsigned format = (base+_.subtable).u.format;
-      if (!plan->glyphs_requested->is_empty ())
+      if (format != 4 && format != 12 && format != 14) continue;
+
+      hb_set_t unicodes_set;
+      (base+_.subtable).collect_unicodes (&unicodes_set);
+
+      if (!drop_format_4 && format == 4)
       {
-	hb_set_t unicodes_set;
-	hb_map_t cp_glyphid_map;
-	(base+_.subtable).collect_mapping (&unicodes_set, &cp_glyphid_map);
-
-	auto table_iter =
-	+ hb_zip (unicodes_set.iter(), unicodes_set.iter() | hb_map(cp_glyphid_map))
-	| hb_filter (plan->_glyphset, hb_second)
-	| hb_filter ([plan] (const hb_pair_t<hb_codepoint_t, hb_codepoint_t>& p)
-		     {
-		       return plan->unicodes->has (p.first) ||
-			      plan->glyphs_requested->has (p.second);
-		     })
-	| hb_map ([plan] (const hb_pair_t<hb_codepoint_t, hb_codepoint_t>& p_org)
-		  {
-		    return hb_pair_t<hb_codepoint_t, hb_codepoint_t> (p_org.first, plan->glyph_map->get(p_org.second));
-		  })
-	;
-
-	if (format == 4) c->copy (_, table_iter, 4u, base, plan, &format4objidx);
-	else if (format == 12) c->copy (_, table_iter, 12u, base, plan, &format12objidx);
-	else if (format == 14) c->copy (_, table_iter, 14u, base, plan, &format14objidx);
+        c->copy (_, + it | hb_filter (unicodes_set, hb_first), 4u, base, plan, &format4objidx);
+        if (c->in_error () && c->only_overflow ())
+        {
+          // cmap4 overflowed, reset and retry serialization without format 4 subtables.
+          c->revert (snap);
+          return serialize (c, it,
+                            encodingrec_iter,
+                            base,
+                            plan,
+                            true);
+        }
       }
-      /* when --gids option is not used, we iterate input unicodes instead of
-       * all codepoints in each subtable, which is more efficient */
-      else
+
+      else if (format == 12)
       {
-	hb_set_t unicodes_set;
-	(base+_.subtable).collect_unicodes (&unicodes_set);
-
-	if (format == 4) c->copy (_, + it | hb_filter (unicodes_set, hb_first), 4u, base, plan, &format4objidx);
-	else if (format == 12) c->copy (_, + it | hb_filter (unicodes_set, hb_first), 12u, base, plan, &format12objidx);
-	else if (format == 14) c->copy (_, it, 14u, base, plan, &format14objidx);
+        if (_can_drop (_, unicodes_set, base, + it | hb_map (hb_first), encodingrec_iter)) continue;
+        c->copy (_, + it | hb_filter (unicodes_set, hb_first), 12u, base, plan, &format12objidx);
       }
+      else if (format == 14) c->copy (_, it, 14u, base, plan, &format14objidx);
     }
-
     c->check_assign(this->encodingRecord.len,
                     (c->length () - cmap::min_size)/EncodingRecord::static_size,
                     HB_SERIALIZE_ERROR_INT_OVERFLOW);
+
+    // Fail if format 4 was dropped and there is no cmap12.
+    return !drop_format_4 || format12objidx;
+  }
+
+  template<typename Iterator, typename EncodingRecordIterator,
+      hb_requires (hb_is_iterator (Iterator)),
+      hb_requires (hb_is_iterator (EncodingRecordIterator))>
+  bool _can_drop (const EncodingRecord& cmap12,
+                  const hb_set_t& cmap12_unicodes,
+                  const void* base,
+                  Iterator subset_unicodes,
+                  EncodingRecordIterator encoding_records)
+  {
+    for (auto cp : + subset_unicodes | hb_filter (cmap12_unicodes))
+    {
+      if (cp >= 0x10000) return false;
+    }
+
+    unsigned target_platform;
+    unsigned target_encoding;
+    unsigned target_language = (base+cmap12.subtable).get_language ();
+
+    if (cmap12.platformID == 0 && cmap12.encodingID == 4)
+    {
+      target_platform = 0;
+      target_encoding = 3;
+    } else if (cmap12.platformID == 3 && cmap12.encodingID == 10) {
+      target_platform = 3;
+      target_encoding = 1;
+    } else {
+      return false;
+    }
+
+    for (const auto& _ : encoding_records)
+    {
+      if (_.platformID != target_platform
+          || _.encodingID != target_encoding
+          || (base+_.subtable).get_language() != target_language)
+        continue;
+
+      hb_set_t sibling_unicodes;
+      (base+_.subtable).collect_unicodes (&sibling_unicodes);
+
+      auto cmap12 = + subset_unicodes | hb_filter (cmap12_unicodes);
+      auto sibling = + subset_unicodes | hb_filter (sibling_unicodes);
+      for (; cmap12 && sibling; cmap12++, sibling++)
+      {
+        unsigned a = *cmap12;
+        unsigned b = *sibling;
+        if (a != b) return false;
+      }
+
+      return !cmap12 && !sibling;
+    }
+
+    return false;
   }
 
   void closure_glyphs (const hb_set_t      *unicodes,
@@ -1473,8 +1628,8 @@ struct cmap
     | hb_filter ([&] (const hb_pair_t<hb_codepoint_t, hb_codepoint_t> _)
 		 { return (_.second != HB_MAP_VALUE_INVALID); })
     ;
-    cmap_prime->serialize (c->serializer, it, encodingrec_iter, this, c->plan);
-    return_trace (true);
+
+    return_trace (cmap_prime->serialize (c->serializer, it, encodingrec_iter, this, c->plan));
   }
 
   const CmapSubtable *find_best_subtable (bool *symbol = nullptr) const
