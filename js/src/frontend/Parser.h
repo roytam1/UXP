@@ -801,15 +801,21 @@ class ParserBase : public StrictModeGetter
 
     bool awaitIsKeyword_:1;
 
+    uint8_t parseGoal_:1;
+
   public:
     bool awaitIsKeyword() const {
       return awaitIsKeyword_;
     }
 
+    ParseGoal parseGoal() const {
+        return ParseGoal(parseGoal_);
+    }
+
     ParserBase(ExclusiveContext* cx, LifoAlloc& alloc, const ReadOnlyCompileOptions& options,
                const char16_t* chars, size_t length, bool foldConstants,
                UsedNameTracker& usedNames, Parser<SyntaxParseHandler>* syntaxParser,
-               LazyScript* lazyOuterFunction);
+               LazyScript* lazyOuterFunction, ParseGoal parseGoal);
     ~ParserBase();
 
     const char* getFilename() const { return tokenStream.getFilename(); }
@@ -1045,7 +1051,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
   public:
     Parser(ExclusiveContext* cx, LifoAlloc& alloc, const ReadOnlyCompileOptions& options,
            const char16_t* chars, size_t length, bool foldConstants, UsedNameTracker& usedNames,
-           Parser<SyntaxParseHandler>* syntaxParser, LazyScript* lazyOuterFunction);
+           Parser<SyntaxParseHandler>* syntaxParser, LazyScript* lazyOuterFunction, ParseGoal parseGoal);
     ~Parser();
 
     friend class AutoAwaitIsKeyword<ParseHandler>;
@@ -1236,6 +1242,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     ListNodeType lexicalDeclaration(YieldHandling yieldHandling, DeclarationKind kind);
 
     inline BinaryNodeType importDeclaration();
+    Node importDeclarationOrImportExpr(YieldHandling yieldHandling);
 
     bool processExport(Node node);
     bool processExportFrom(BinaryNodeType node);
@@ -1345,6 +1352,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     bool tryNewTarget(BinaryNodeType* newTarget);
     bool checkAndMarkSuperScope();
+
+    Node importExpr(YieldHandling yieldHandling);
 
     FunctionNodeType methodDefinition(uint32_t toStringStart, PropertyType propType, HandleAtom funName);
 

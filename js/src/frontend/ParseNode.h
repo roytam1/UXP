@@ -121,6 +121,8 @@ class ObjectBox;
     F(SUPERBASE) \
     F(SUPERCALL) \
     F(SETTHIS) \
+    F(IMPORT_META) \
+    F(CALL_IMPORT) \
     \
     /* Unary operators. */ \
     F(TYPEOFNAME) \

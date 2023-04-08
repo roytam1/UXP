@@ -424,7 +424,8 @@ class NameResolver
             MOZ_ASSERT(!cur->as<UnaryNode>().kid()->as<NameNode>().initializer());
             break;
 
-          case PNK_NEWTARGET: {
+          case PNK_NEWTARGET:
+          case PNK_IMPORT_META: {
             MOZ_ASSERT(cur->as<BinaryNode>().left()->isKind(PNK_POSHOLDER));
             MOZ_ASSERT(cur->as<BinaryNode>().right()->isKind(PNK_POSHOLDER));
             break;
@@ -831,6 +832,14 @@ class NameResolver
                 if (!resolve(catchScope->scopeBody(), prefix))
                     return false;
             }
+            break;
+          }
+
+          case PNK_CALL_IMPORT: {
+            BinaryNode* node = &cur->as<BinaryNode>();
+            MOZ_ASSERT(cur->isArity(PN_BINARY));
+            if (!resolve(node->right(), prefix))
+                return false;
             break;
           }
 

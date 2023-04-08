@@ -354,6 +354,12 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     BinaryNodeType newExportDefaultDeclaration(Node kid, Node maybeBinding, const TokenPos& pos) {
         return NodeGeneric;
     }
+    Node newImportMeta(Node importHolder, Node metaHolder) {
+        return NodeGeneric;
+    }
+    Node newCallImport(Node importHolder, Node singleArg) {
+        return NodeGeneric;
+    }
 
     BinaryNodeType newSetThis(Node thisName, Node value) { return value; }
 

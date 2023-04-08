@@ -66,6 +66,7 @@
     macro(from, from, TOK_FROM) \
     macro(get, get, TOK_GET) \
     macro(let, let, TOK_LET) \
+    macro(meta, meta, TOK_META) \
     macro(of, of, TOK_OF) \
     macro(set, set, TOK_SET) \
     macro(static, static_, TOK_STATIC) \

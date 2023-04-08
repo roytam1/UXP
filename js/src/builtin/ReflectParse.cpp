@@ -34,12 +34,6 @@ using mozilla::ArrayLength;
 using mozilla::DebugOnly;
 using mozilla::Forward;
 
-enum class ParseTarget
-{
-    Script,
-    Module
-};
-
 enum ASTType {
     AST_ERROR = -1,
 #define ASTDEF(ast, str, method) ast,
@@ -622,6 +616,9 @@ class NodeBuilder
 
     MOZ_MUST_USE bool metaProperty(HandleValue meta, HandleValue property, TokenPos* pos,
                                    MutableHandleValue dst);
+
+    MOZ_MUST_USE bool callImportExpression(HandleValue ident, HandleValue arg, TokenPos* pos,
+                                           MutableHandleValue dst);
 
     MOZ_MUST_USE bool super(TokenPos* pos, MutableHandleValue dst);
 
@@ -1755,6 +1752,20 @@ NodeBuilder::metaProperty(HandleValue meta, HandleValue property, TokenPos* pos,
     return newNode(AST_METAPROPERTY, pos,
                    "meta", meta,
                    "property", property,
+                   dst);
+}
+
+bool
+NodeBuilder::callImportExpression(HandleValue ident, HandleValue arg, TokenPos* pos,
+                                  MutableHandleValue dst)
+{
+    RootedValue cb(cx, callbacks[AST_CALL_IMPORT]);
+    if (!cb.isNull())
+        return callback(cb, arg, pos, dst);
+
+    return newNode(AST_CALL_IMPORT, pos,
+                   "ident", ident,
+                   "arg", arg,
                    dst);
 }
 
@@ -3360,6 +3371,7 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
         return classDefinition(&pn->as<ClassNode>(), true, dst);
 
       case PNK_NEWTARGET:
+      case PNK_IMPORT_META:
       {
         BinaryNode* node = &pn->as<BinaryNode>();
         ParseNode* firstNode = node->left();
@@ -3370,15 +3382,41 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
         MOZ_ASSERT(secondNode->isKind(PNK_POSHOLDER));
         MOZ_ASSERT(node->pn_pos.encloses(secondNode->pn_pos));
 
-        RootedValue newIdent(cx);
-        RootedValue targetIdent(cx);
+        RootedValue firstIdent(cx);
+        RootedValue secondIdent(cx);
 
-        RootedAtom newStr(cx, cx->names().new_);
-        RootedAtom targetStr(cx, cx->names().target);
+        RootedAtom firstStr(cx);
+        RootedAtom secondStr(cx);
 
-        return identifier(newStr, &firstNode->pn_pos, &newIdent) &&
-               identifier(targetStr, &secondNode->pn_pos, &targetIdent) &&
-               builder.metaProperty(newIdent, targetIdent, &node->pn_pos, dst);
+        if (pn->getKind() == PNK_NEWTARGET) {
+            firstStr = cx->names().new_;
+            secondStr = cx->names().target;
+        } else {
+            firstStr = cx->names().import;
+            secondStr = cx->names().meta;
+        }
+
+        return identifier(firstStr, &firstNode->pn_pos, &firstIdent) &&
+               identifier(secondStr, &secondNode->pn_pos, &secondIdent) &&
+               builder.metaProperty(firstIdent, secondIdent, &pn->pn_pos, dst);
+      }
+
+      case PNK_CALL_IMPORT:
+      {
+        BinaryNode* node = &pn->as<BinaryNode>();
+        ParseNode* firstNode = node->left();
+        MOZ_ASSERT(firstNode->isKind(PNK_POSHOLDER));
+        MOZ_ASSERT(pn->pn_pos.encloses(firstNode->pn_pos));
+        ParseNode* secondNode = node->right();
+        MOZ_ASSERT(pn->pn_pos.encloses(secondNode->pn_pos));
+
+        RootedValue ident(cx);
+        RootedValue arg(cx);
+
+        HandlePropertyName name = cx->names().import;
+        return identifier(name, &firstNode->pn_pos, &ident) &&
+               expression(secondNode, &arg) &&
+               builder.callImportExpression(ident, arg, &pn->pn_pos, dst);
       }
 
       case PNK_SETTHIS: {
@@ -3793,7 +3831,7 @@ reflect_parse(JSContext* cx, uint32_t argc, Value* vp)
     uint32_t lineno = 1;
     bool loc = true;
     RootedObject builder(cx);
-    ParseTarget target = ParseTarget::Script;
+    ParseGoal target = ParseGoal::Script;
 
     RootedValue arg(cx, args.get(1));
 
@@ -3881,9 +3919,9 @@ reflect_parse(JSContext* cx, uint32_t argc, Value* vp)
             return false;
 
         if (isScript) {
-            target = ParseTarget::Script;
+            target = ParseGoal::Script;
         } else if (isModule) {
-            target = ParseTarget::Module;
+            target = ParseGoal::Module;
         } else {
             JS_ReportErrorASCII(cx, "Bad target value, expected 'script' or 'module'");
             return false;
@@ -3912,14 +3950,14 @@ reflect_parse(JSContext* cx, uint32_t argc, Value* vp)
         return false;
     Parser<FullParseHandler> parser(cx, cx->tempLifoAlloc(), options, chars.begin().get(),
                                     chars.length(), /* foldConstants = */ false, usedNames,
-                                    nullptr, nullptr);
+                                    nullptr, nullptr, target);
     if (!parser.checkOptions())
         return false;
 
     serialize.setParser(&parser);
 
     ParseNode* pn;
-    if (target == ParseTarget::Script) {
+    if (target == ParseGoal::Script) {
         pn = parser.parse();
         if (!pn)
             return false;
