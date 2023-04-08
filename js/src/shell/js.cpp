@@ -4035,12 +4035,12 @@ SetModuleResolveHook(JSContext* cx, unsigned argc, Value* vp)
 }
 
 static JSObject*
-CallModuleResolveHook(JSContext* cx, HandleObject module, HandleString specifier)
+CallModuleResolveHook(JSContext* cx, HandleValue referencingPrivate, HandleString specifier)
 {
     ShellContext* sc = GetShellContext(cx);
 
     JS::AutoValueArray<2> args(cx);
-    args[0].setObject(*module);
+    args[0].set(referencingPrivate);
     args[1].setString(specifier);
 
     RootedValue result(cx);
@@ -4053,6 +4053,53 @@ CallModuleResolveHook(JSContext* cx, HandleObject module, HandleString specifier
     }
 
     return &result.toObject();
+}
+
+static bool
+ReportArgumentTypeError(JSContext* cx, HandleValue value, const char* expected)
+{
+    const char* typeName = InformalValueTypeName(value);
+    JS_ReportErrorASCII(cx, "Expected %s, got %s", expected, typeName);
+    return false;
+}
+
+static bool
+ShellSetModulePrivate(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+
+    if (args.length() != 2) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_MORE_ARGS_NEEDED,
+                                  "setModulePrivate", "0", "s");
+        return false;
+    }
+
+    if (!args[0].isObject() || !args[0].toObject().is<ModuleObject>()) {
+        return ReportArgumentTypeError(cx, args[0], "module object");
+    }
+
+    JS::SetModulePrivate(&args[0].toObject(), args[1]);
+    args.rval().setUndefined();
+    return true;
+}
+
+static bool
+ShellGetModulePrivate(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+
+    if (args.length() != 1) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_MORE_ARGS_NEEDED,
+                                  "getModulePrivate", "0", "s");
+        return false;
+    }
+
+    if (!args[0].isObject() || !args[0].toObject().is<ModuleObject>()) {
+        return ReportArgumentTypeError(cx, args[0], "module object");
+    }
+
+    args.rval().set(JS::GetModulePrivate(&args[0].toObject()));
+    return true;
 }
 
 static bool
@@ -5922,6 +5969,14 @@ static const JSFunctionSpecWithHelp shell_functions[] = {
 "  Set the HostResolveImportedModule hook to |function|.\n"
 "  This hook is used to look up a previously loaded module object.  It should\n"
 "  be implemented by the module loader."),
+
+    JS_FN_HELP("setModulePrivate", ShellSetModulePrivate, 2, 0,
+"setModulePrivate(scriptObject, privateValue)",
+"  Associate a private value with a module object.\n"),
+
+    JS_FN_HELP("getModulePrivate", ShellGetModulePrivate, 2, 0,
+"getModulePrivate(scriptObject)",
+"  Get the private value associated with a module object.\n"),
 
     JS_FN_HELP("getModuleLoadPath", GetModuleLoadPath, 0, 0,
 "getModuleLoadPath()",

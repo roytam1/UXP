@@ -4324,7 +4324,7 @@ extern JS_PUBLIC_API(bool)
 Evaluate(JSContext* cx, const ReadOnlyCompileOptions& options,
          const char* filename, JS::MutableHandleValue rval);
 
-using ModuleResolveHook = JSObject* (*)(JSContext*, HandleObject, HandleString);
+using ModuleResolveHook = JSObject* (*)(JSContext*, HandleValue, HandleString);
 
 /**
  * Get the HostResolveImportedModule hook for the runtime.
@@ -4347,17 +4347,30 @@ CompileModule(JSContext* cx, const ReadOnlyCompileOptions& options,
               SourceBufferHolder& srcBuf, JS::MutableHandleObject moduleRecord);
 
 /**
- * Set the [[HostDefined]] field of a source text module record to the given
- * value.
+ * Set a private value associated with a source text module record.
  */
 extern JS_PUBLIC_API(void)
-SetModuleHostDefinedField(JSObject* module, const JS::Value& value);
+SetModulePrivate(JSObject* module, const JS::Value& value);
 
 /**
- * Get the [[HostDefined]] field of a source text module record.
+ * Get the private value associated with a source text module record.
  */
 extern JS_PUBLIC_API(JS::Value)
-GetModuleHostDefinedField(JSObject* module);
+GetModulePrivate(JSObject* module);
+
+/**
+ * Set a private value associated with a script. Note that this value is shared
+ * by all nested scripts compiled from a single source file.
+ */
+extern JS_PUBLIC_API(void)
+SetScriptPrivate(JSScript* script, const JS::Value& value);
+
+/**
+ * Get the private value associated with a script. Note that this value is
+ * shared by all nested scripts compiled from a single source file.
+ */
+extern JS_PUBLIC_API(JS::Value)
+GetScriptPrivate(JSScript* script);
 
 /*
  * Perform the ModuleInstantiate operation on the given source text module

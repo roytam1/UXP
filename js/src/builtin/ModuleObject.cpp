@@ -725,6 +725,12 @@ ModuleObject::namespace_()
     return &value.toObject().as<ModuleNamespaceObject>();
 }
 
+ScriptSourceObject*
+ModuleObject::scriptSourceObject() const
+{
+    return &getReservedSlot(ScriptSourceObjectSlot).toObject().as<ScriptSourceObject>();
+}
+
 FunctionDeclarationVector*
 ModuleObject::functionDeclarations()
 {
@@ -738,8 +744,10 @@ ModuleObject::functionDeclarations()
 void
 ModuleObject::init(HandleScript script)
 {
+    MOZ_ASSERT(script);
     initReservedSlot(ScriptSlot, PrivateValue(script));
     initReservedSlot(StatusSlot, Int32Value(MODULE_STATUS_UNINSTANTIATED));
+    initReservedSlot(ScriptSourceObjectSlot, ObjectValue(script->scriptSourceUnwrap()));
 }
 
 void
@@ -866,18 +874,6 @@ ModuleObject::evaluationError() const
 {
     MOZ_ASSERT(hadEvaluationError());
     return getReservedSlot(EvaluationErrorSlot);
-}
-
-Value
-ModuleObject::hostDefinedField() const
-{
-    return getReservedSlot(HostDefinedSlot);
-}
-
-void
-ModuleObject::setHostDefinedField(const JS::Value& value)
-{
-    setReservedSlot(HostDefinedSlot, value);
 }
 
 Scope*
