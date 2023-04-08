@@ -9448,12 +9448,9 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
                 if (!args)
                     return null();
 
-                nextMember = handler.newSuperCall(lhs, args);
+                nextMember = handler.newSuperCall(lhs, args, isSpread);
                 if (!nextMember)
                     return null();
-
-                if (isSpread)
-                    handler.setOp(nextMember, JSOP_SPREADSUPERCALL);
 
                 NameNodeType thisName = newThisName();
                 if (!thisName)
