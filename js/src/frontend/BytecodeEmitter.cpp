@@ -156,7 +156,8 @@ class MOZ_RAII OptionalEmitter
 BytecodeEmitter::BytecodeEmitter(BytecodeEmitter* parent,
                                  Parser<FullParseHandler>* parser, SharedContext* sc,
                                  HandleScript script, Handle<LazyScript*> lazyScript,
-                                 uint32_t lineNum, EmitterMode emitterMode)
+                                 uint32_t lineNum, EmitterMode emitterMode,
+                                 FieldInitializers fieldInitializers /* = FieldInitializers::Invalid() */)
   : sc(sc),
     cx(sc->context),
     parent(parent),
@@ -166,6 +167,7 @@ BytecodeEmitter::BytecodeEmitter(BytecodeEmitter* parent,
     main(cx, lineNum),
     current(&main),
     parser(parser),
+    fieldInitializers_(fieldInitializers),
     atomIndices(cx->frontendCollectionPool()),
     firstLine(lineNum),
     maxFixedSlots(0),
@@ -178,10 +180,6 @@ BytecodeEmitter::BytecodeEmitter(BytecodeEmitter* parent,
     innermostNestableControl(nullptr),
     innermostEmitterScope_(nullptr),
     innermostTDZCheckCache(nullptr),
-    fieldInitializers_(parent
-                       ? parent->fieldInitializers_
-                       : lazyScript ? lazyScript->getFieldInitializers()
-                                    : FieldInitializers::Invalid()),
 #ifdef DEBUG
     unstableEmitterScope(false),
 #endif
@@ -202,10 +200,11 @@ BytecodeEmitter::BytecodeEmitter(BytecodeEmitter* parent,
 BytecodeEmitter::BytecodeEmitter(BytecodeEmitter* parent,
                                  Parser<FullParseHandler>* parser, SharedContext* sc,
                                  HandleScript script, Handle<LazyScript*> lazyScript,
-                                 TokenPos bodyPosition, EmitterMode emitterMode)
+                                 TokenPos bodyPosition, EmitterMode emitterMode,
+                                 FieldInitializers fieldInitializers)
     : BytecodeEmitter(parent, parser, sc, script, lazyScript,
                       parser->tokenStream.srcCoords.lineNum(bodyPosition.begin),
-                      emitterMode)
+                      emitterMode, fieldInitializers)
 {
     setScriptStartOffsetIfUnset(bodyPosition.begin);
     setFunctionBodyEndPos(bodyPosition.end);
@@ -2321,6 +2320,10 @@ BytecodeEmitter::emitSetThis(BinaryNode* setThisNode)
         return false;
     }
 
+    if (!emitInitializeInstanceFields(true)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -2399,6 +2402,9 @@ BytecodeEmitter::emitFunctionScript(FunctionNode* funNode)
     ListNode* paramsBody = &funNode->body()->as<ListNode>();
     FunctionBox* funbox = sc->asFunctionBox();
 
+    MOZ_ASSERT(fieldInitializers_.valid == (funbox->function()->kind() ==
+                                            JSFunction::FunctionKind::ClassConstructor));
+
     setScriptStartOffsetIfUnset(paramsBody->pn_pos.begin);
 
     //                [stack]
@@ -2432,6 +2438,8 @@ BytecodeEmitter::emitFunctionScript(FunctionNode* funNode)
 
     if (!fse.initScript())
         return false;
+
+    script->setFieldInitializers(fieldInitializers_);
 
     return true;
 }
@@ -5593,11 +5601,14 @@ BytecodeEmitter::emitComprehensionFor(ForNode* forNode)
 }
 
 MOZ_NEVER_INLINE bool
-BytecodeEmitter::emitFunction(FunctionNode* funNode, bool needsProto)
+BytecodeEmitter::emitFunction(FunctionNode* funNode, bool needsProto /* = false */,
+                              ListNode* classContentsIfConstructor /* = nullptr */)
 {
     FunctionBox* funbox = funNode->funbox();
     RootedFunction fun(cx, funbox->function());
-    
+
+    MOZ_ASSERT((classContentsIfConstructor != nullptr) == (funbox->function()->kind() ==
+                                                           JSFunction::FunctionKind::ClassConstructor));
     //                [stack]
 
     FunctionEmitter fe(this, funbox, funNode->syntaxKind(),
@@ -5627,6 +5638,9 @@ BytecodeEmitter::emitFunction(FunctionNode* funNode, bool needsProto)
                 return false;
             }
 
+            if (classContentsIfConstructor) {
+                fun->lazyScript()->setFieldInitializers(setupFieldInitializers(classContentsIfConstructor));
+            }
             return true;
         }
 
@@ -5651,14 +5665,21 @@ BytecodeEmitter::emitFunction(FunctionNode* funNode, bool needsProto)
         if (!script)
             return false;
 
+        FieldInitializers fieldInitializers = FieldInitializers::Invalid();
+        if (classContentsIfConstructor) {
+            fieldInitializers = setupFieldInitializers(classContentsIfConstructor);
+        }
+
         BytecodeEmitter bce2(this, parser, funbox, script, /* lazyScript = */ nullptr,
-                             funNode->pn_pos, emitterMode);
+                             funNode->pn_pos, emitterMode, fieldInitializers);
         if (!bce2.init())
             return false;
 
         /* We measured the max scope depth when we parsed the function. */
         if (!bce2.emitFunctionScript(funNode))
             return false;
+
+        // fieldInitializers are copied to the JSScript inside BytecodeEmitter
 
         if (funbox->isLikelyConstructorWrapper()) {
             script->setLikelyConstructorWrapper();
@@ -7932,7 +7953,7 @@ BytecodeEmitter::emitCreateFieldKeys(ListNode* obj)
 bool
 BytecodeEmitter::emitCreateFieldInitializers(ListNode* obj)
 {
-    const FieldInitializers& fieldInitializers = fieldInitializers_;
+    FieldInitializers fieldInitializers = setupFieldInitializers(obj);
     MOZ_ASSERT(fieldInitializers.valid);
     size_t numFields = fieldInitializers.numFieldInitializers;
 
@@ -7989,6 +8010,132 @@ BytecodeEmitter::emitCreateFieldInitializers(ListNode* obj)
     return true;
 }
 
+const FieldInitializers&
+BytecodeEmitter::findFieldInitializersForCall()
+{
+  for (BytecodeEmitter* current = this; current; current = current->parent) {
+      if (current->sc->isFunctionBox()) {
+          FunctionBox* box = current->sc->asFunctionBox();
+          if (box->function()->kind() == JSFunction::FunctionKind::ClassConstructor) {
+              const FieldInitializers& fieldInitializers = current->getFieldInitializers();
+              MOZ_ASSERT(fieldInitializers.valid);
+              return fieldInitializers;
+          }
+      }
+  }
+
+  for (ScopeIter si(innermostScope()); si; si++) {
+      if (si.scope()->is<FunctionScope>()) {
+          JSFunction* fun = si.scope()->as<FunctionScope>().canonicalFunction();
+          if (fun->kind() == JSFunction::FunctionKind::ClassConstructor) {
+              const FieldInitializers& fieldInitializers = fun->isInterpretedLazy()
+                                                ? fun->lazyScript()->getFieldInitializers()
+                                                : fun->nonLazyScript()->getFieldInitializers();
+              MOZ_ASSERT(fieldInitializers.valid);
+              return fieldInitializers;
+          }
+      }
+  }
+
+  MOZ_CRASH("Constructor for field initializers not found.");
+}
+
+bool
+BytecodeEmitter::emitCopyInitializersToLocalInitializers()
+{
+    MOZ_ASSERT(sc->asFunctionBox()->isDerivedClassConstructor());
+    if (getFieldInitializers().numFieldInitializers == 0)
+      return true;
+
+    NameOpEmitter noe(this, cx->names().dotLocalInitializers, NameOpEmitter::Kind::Initialize);
+    if (!noe.prepareForRhs()) {
+        //              [stack]
+        return false;
+    }
+
+    if (!emitGetName(cx->names().dotInitializers)) {
+        //              [stack] .initializers
+        return false;
+    }
+
+    if (!noe.emitAssignment()) {
+        //              [stack] .initializers
+        return false;
+    }
+
+    if (!emit1(JSOP_POP)) {
+        //              [stack]
+        return false;
+    }
+
+    return true;
+}
+
+bool
+BytecodeEmitter::emitInitializeInstanceFields(bool isSuperCall)
+{
+    const FieldInitializers& fieldInitializers = findFieldInitializersForCall();
+    size_t numFields = fieldInitializers.numFieldInitializers;
+
+    if (numFields == 0) {
+      return true;
+    }
+
+    if (isSuperCall) {
+        if (!emitGetName(cx->names().dotLocalInitializers)) {
+            //              [stack] ARRAY
+            return false;
+        }
+    } else {
+        if (!emitGetName(cx->names().dotInitializers)) {
+            //              [stack] ARRAY
+            return false;
+        }
+    }
+
+    for (size_t fieldIndex = 0; fieldIndex < numFields; fieldIndex++) {
+      if (fieldIndex < numFields - 1) {
+        // We DUP to keep the array around (it is consumed in the bytecode below)
+        // for next iterations of this loop, except for the last iteration, which
+        // avoids an extra POP at the end of the loop.
+        if (!emit1(JSOP_DUP)) {
+          //          [stack] ARRAY ARRAY
+          return false;
+        }
+      }
+
+      if (!emitNumberOp(fieldIndex)) {
+        //            [stack] ARRAY? ARRAY INDEX
+        return false;
+      }
+
+      // Don't use CALLELEM here, because the receiver of the call != the receiver
+      // of this getelem. (Specifically, the call receiver is `this`, and the
+      // receiver of this getelem is `.initializers`)
+      if (!emit1(JSOP_GETELEM)) {
+        //            [stack] ARRAY? FUNC
+        return false;
+      }
+
+      // This is guaranteed to run after super(), so we don't need TDZ checks.
+      if (!emitGetName(cx->names().dotThis)) {
+        //            [stack] ARRAY? FUNC THIS
+        return false;
+      }
+
+      if (!emitCall(JSOP_CALL_IGNORES_RV, 0)) {
+        //            [stack] ARRAY? RVAL
+        return false;
+      }
+
+      if (!emit1(JSOP_POP)) {
+        //            [stack] ARRAY?
+        return false;
+      }
+    }
+
+    return true;
+}
 
 // Using MOZ_NEVER_INLINE in here is a workaround for llvm.org/pr14047. See
 // the comment on emitSwitch.
@@ -8446,20 +8593,6 @@ BytecodeEmitter::emitLexicalInitialization(JSAtom* name)
 
     return true;
 }
-class AutoResetFieldInitializers
-{
-    BytecodeEmitter* bce;
-    FieldInitializers oldFieldInfo;
-
-  public:
-    AutoResetFieldInitializers(BytecodeEmitter* bce, FieldInitializers newFieldInfo)
-      : bce(bce), oldFieldInfo(bce->fieldInitializers_)
-    {
-        bce->fieldInitializers_ = newFieldInfo;
-    }
-
-    ~AutoResetFieldInitializers() { bce->fieldInitializers_ = oldFieldInfo; }
-};
 
 // This follows ES6 14.5.14 (ClassDefinitionEvaluation) and ES6 14.5.15
 // (BindingClassDeclarationEvaluation).
@@ -8485,15 +8618,11 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
         }
     }
 
-    // set this->fieldInitializers_
-    AutoResetFieldInitializers _innermostClassAutoReset(this, setupFieldInitializers(classMembers));
-
     //                [stack]
 
     ClassEmitter ce(this);
     RootedAtom innerName(cx);
     ClassEmitter::Kind kind = ClassEmitter::Kind::Expression;
-
     if (names) {
         innerName = names->innerBinding()->as<NameNode>().atom();
         MOZ_ASSERT(innerName);
@@ -8503,8 +8632,10 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
             MOZ_ASSERT(names->outerBinding()->as<NameNode>().atom() == innerName);
             kind = ClassEmitter::Kind::Declaration;
         }
+    }
 
-        if (!ce.emitScopeForNamedClass(classNode->scopeBindings())) {
+    if (!classNode->isEmptyScope()) {
+        if (!ce.emitScope(classNode->scopeBindings(), classNode->names() != nullptr)) {
             //            [stack]
             return false;
         }
@@ -8534,7 +8665,7 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
     if (constructor) {
         bool needsHomeObject = constructor->funbox()->needsHomeObject();
         // HERITAGE is consumed inside emitFunction.
-        if (!emitFunction(constructor, isDerived)) {
+        if (!emitFunction(constructor, isDerived, classMembers)) {
             //          [stack] HOMEOBJ CTOR
             return false;
         }

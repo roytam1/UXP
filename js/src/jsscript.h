@@ -704,6 +704,35 @@ class ScriptSourceObject : public NativeObject
 enum GeneratorKind { NotGenerator, LegacyGenerator, StarGenerator };
 enum FunctionAsyncKind { SyncFunction, AsyncFunction };
 
+struct FieldInitializers
+{
+#ifdef DEBUG
+    bool valid;
+#endif
+    // This struct will eventually have a vector of constant values for optimizing
+    // field initializers.
+    size_t numFieldInitializers;
+
+    explicit FieldInitializers(size_t numFieldInitializers)
+      :
+#ifdef DEBUG
+        valid(true),
+#endif
+        numFieldInitializers(numFieldInitializers) {
+    }
+
+    static FieldInitializers Invalid() { return FieldInitializers(); }
+
+  private:
+    FieldInitializers()
+      :
+#ifdef DEBUG
+        valid(false),
+#endif
+        numFieldInitializers(0) {
+    }
+};
+
 static inline unsigned
 GeneratorKindAsBits(GeneratorKind generatorKind) {
     return static_cast<unsigned>(generatorKind);
@@ -855,6 +884,8 @@ class JSScript : public js::gc::TenuredCell
 
   private:
     js::SharedScriptData* scriptData_;
+
+    js::FieldInitializers fieldInitializers_ = js::FieldInitializers::Invalid();
   public:
     uint8_t*        data;      /* pointer to variable-length data array (see
                                    comment above Create() for details) */
@@ -1454,6 +1485,11 @@ class JSScript : public js::gc::TenuredCell
         return functionHasThisBinding_;
     }
 
+    void setFieldInitializers(js::FieldInitializers fieldInitializers) {
+        fieldInitializers_ = fieldInitializers;
+    }
+    const js::FieldInitializers& getFieldInitializers() const { return fieldInitializers_; }
+
     /*
      * Arguments access (via JSOP_*ARG* opcodes) must access the canonical
      * location for the argument. If an arguments object exists AND it's mapped
@@ -1999,35 +2035,6 @@ static_assert(sizeof(JSScript) % js::gc::CellSize == 0,
 
 namespace js {
 
-struct FieldInitializers
-{
-#ifdef DEBUG
-    bool valid;
-#endif
-    // This struct will eventually have a vector of constant values for optimizing
-    // field initializers.
-    size_t numFieldInitializers;
-
-    explicit FieldInitializers(size_t numFieldInitializers)
-      :
-#ifdef DEBUG
-        valid(true),
-#endif
-        numFieldInitializers(numFieldInitializers) {
-    }
-
-    static FieldInitializers Invalid() { return FieldInitializers(); }
-
-  private:
-    FieldInitializers()
-      :
-#ifdef DEBUG
-        valid(false),
-#endif
-        numFieldInitializers(0) {
-    }
-};
-
 // Information about a script which may be (or has been) lazily compiled to
 // bytecode from its source.
 class LazyScript : public gc::TenuredCell
@@ -2330,7 +2337,7 @@ class LazyScript : public gc::TenuredCell
         fieldInitializers_ = fieldInitializers;
     }
 
-    FieldInitializers getFieldInitializers() const { return fieldInitializers_; }
+    const FieldInitializers& getFieldInitializers() const { return fieldInitializers_; }
 
     const char* filename() const {
         return scriptSource()->filename();

@@ -367,7 +367,9 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return literal;
     }
 
-    ClassNodeType newClass(Node name, Node heritage, Node memberBlock, const TokenPos& pos) {
+    ClassNodeType newClass(Node name, Node heritage, LexicalScopeNodeType memberBlock,
+                           const TokenPos& pos)
+    {
         return new_<ClassNode>(name, heritage, memberBlock, pos);
     }
     ListNodeType newClassMemberList(uint32_t begin) {

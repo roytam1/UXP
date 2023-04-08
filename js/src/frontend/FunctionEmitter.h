@@ -257,7 +257,6 @@ class MOZ_STACK_CLASS FunctionScriptEmitter {
 
  private:
     MOZ_MUST_USE bool emitExtraBodyVarScope();
-    MOZ_MUST_USE bool emitInitializeInstanceFields();
 };
 
 // Class for emitting function parameters.

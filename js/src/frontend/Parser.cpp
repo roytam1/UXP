@@ -2779,6 +2779,12 @@ Parser<ParseHandler>::functionBody(InHandling inHandling, YieldHandling yieldHan
             return null();
     }
 
+    if (kind == FunctionSyntaxKind::DerivedClassConstructor) {
+        if (!noteDeclaredName(context->names().dotLocalInitializers,
+                              DeclarationKind::Var, pos()))
+            return null();
+    }
+
     return finishLexicalScope(pc->varScope(), body);
 }
 
@@ -3600,7 +3606,11 @@ Parser<FullParseHandler>::standaloneLazyFunction(HandleFunction fun, bool strict
 
     FunctionSyntaxKind syntaxKind = FunctionSyntaxKind::Statement;
     if (fun->isClassConstructor()) {
-        syntaxKind = FunctionSyntaxKind::ClassConstructor;
+        if (fun->isDerivedClassConstructor()) {
+            syntaxKind = FunctionSyntaxKind::DerivedClassConstructor;
+        } else {
+            syntaxKind = FunctionSyntaxKind::ClassConstructor;
+        }
     } else if (fun->isMethod()) {
         syntaxKind = FunctionSyntaxKind::Method;
     } else if (fun->isGetter()) {
@@ -7468,7 +7478,7 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling, DefaultHandling d
 
         numFields++;
 
-        FunctionNodeType initializer = fieldInitializerOpt(yieldHandling, hasHeritage, propName,
+        FunctionNodeType initializer = fieldInitializerOpt(yieldHandling, hasHeritage,
                                                            propAtom, numFieldKeys);
         if (!initializer)
             return false;
@@ -7553,8 +7563,9 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling, DefaultHandling d
 template <typename ParseHandler>
 bool
 Parser<ParseHandler>::finishClassConstructor(const ParseContext::ClassStatement& classStmt,
-                                             HandlePropertyName className, uint32_t classStartOffset,
-                                             uint32_t classEndOffset, size_t numFields,
+                                             HandlePropertyName className, bool hasHeritage,
+                                             uint32_t classStartOffset, uint32_t classEndOffset,
+                                             size_t numFields,
                                              ListNodeType& classMembers)
 {
     // Fields cannot re-use the constructor obtained via JSOP_CLASSCONSTRUCTOR or
@@ -7562,7 +7573,7 @@ Parser<ParseHandler>::finishClassConstructor(const ParseContext::ClassStatement&
     // initializers in the constructor. So, synthesize a new one.
     if (classStmt.constructorBox == nullptr && numFields > 0) {
         // synthesizeConstructor assigns to classStmt.constructorBox
-        FunctionNodeType synthesizedCtor = synthesizeConstructor(className, classStartOffset);
+        FunctionNodeType synthesizedCtor = synthesizeConstructor(className, classStartOffset, hasHeritage);
         if (!synthesizedCtor) {
             return false;
         }
@@ -7600,12 +7611,6 @@ Parser<ParseHandler>::finishClassConstructor(const ParseContext::ClassStatement&
             if (numFields > 0) {
                 ctorbox->function()->lazyScript()->setHasThisBinding();
             }
-
-            // Field initializers can be retrieved if the class and constructor are
-            // being compiled at the same time, but we need to stash the field
-            // information if the constructor is being compiled lazily.
-            FieldInitializers fieldInfo(numFields);
-            ctorbox->function()->lazyScript()->setFieldInitializers(fieldInfo);
         }
     }
 
@@ -7724,7 +7729,7 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
                                                   pc->innermostScope()->id()))
                 return null();
             if (!noteDeclaredName(context->names().dotInitializers,
-                                  DeclarationKind::Var, namePos))
+                                  DeclarationKind::Let, namePos))
                 return null();
         }
 
@@ -7733,8 +7738,8 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
                 return null();
         }
         classEndOffset = pos().end;
-        if (!finishClassConstructor(classStmt, className, classStartOffset,
-                                    classEndOffset, numFields, classMembers))
+        if (!finishClassConstructor(classStmt, className, hasHeritage,
+                                    classStartOffset, classEndOffset, numFields, classMembers))
             return null();
 
         if (className) {
@@ -7779,9 +7784,10 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
 
 template <class ParseHandler>
 typename ParseHandler::FunctionNodeType
-Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t classNameOffset)
+Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t classNameOffset, bool hasHeritage)
 {
-    FunctionSyntaxKind functionSyntaxKind = FunctionSyntaxKind::ClassConstructor;
+    FunctionSyntaxKind functionSyntaxKind = hasHeritage ? FunctionSyntaxKind::DerivedClassConstructor
+                                                        : FunctionSyntaxKind::ClassConstructor;
 
     // Create the function object.
     RootedFunction fun(context, newFunction(className, functionSyntaxKind,
@@ -7820,6 +7826,8 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
     funbox->function()->setArgCount(0);
     funbox->setStart(tokenStream);
 
+    pc->functionScope().useAsVarScope(pc);
+
     // Push a LexicalScope on to the stack.
     ParseContext::Scope lexicalScope(this);
     if (!lexicalScope.init(pc))
@@ -7835,9 +7843,54 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
     // One might expect a noteUsedName(".initializers") here. See comment in
     // GeneralParser<ParseHandler, Unit>::classDefinition on why it's not here.
 
+    if (hasHeritage) {
+        if (!noteDeclaredName(context->names().dotLocalInitializers,
+                              DeclarationKind::Var, synthesizedBodyPos))
+            return null();
+    }
+
     bool canSkipLazyClosedOverBindings = handler.canSkipLazyClosedOverBindings();
     if (!declareFunctionThis(canSkipLazyClosedOverBindings))
         return null();
+
+    if (hasHeritage) {
+        // {Goanna} Need a different this-NameNode for SuperBase and SetThis or the recycling
+        //          by ParseNodeAllocator runs into all sorts of problems because the
+        //          same ParseNode gets cleaned up twice.
+        //          Parser<ParseHandler>::memberExpr does the same.
+        NameNodeType thisNameBase = newThisName();
+        if (!thisNameBase)
+            return null();
+
+        UnaryNodeType superBase = handler.newSuperBase(thisNameBase, synthesizedBodyPos);
+        if (!superBase)
+            return null();
+
+        ListNodeType arguments = handler.newArguments(synthesizedBodyPos);
+        if (!arguments)
+            return null();
+
+        BinaryNodeType superCall = handler.newSuperCall(superBase, arguments, false);
+        if (!superCall)
+            return null();
+
+        NameNodeType thisName = newThisName();
+        if (!thisName)
+            return null();
+
+        BinaryNodeType setThis = handler.newSetThis(thisName, superCall);
+        if (!setThis)
+            return null();
+
+        if (!noteUsedName(context->names().dotLocalInitializers))
+          return null();
+
+        UnaryNodeType exprStatement = handler.newExprStatement(setThis, synthesizedBodyPos.end);
+        if (!exprStatement)
+            return null();
+
+        handler.addStatementToList(stmtList, exprStatement);
+    }
 
     auto initializerBody = finishLexicalScope(lexicalScope, stmtList);
     if (!initializerBody)
@@ -7860,7 +7913,7 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
 template <class ParseHandler>
 typename ParseHandler::FunctionNodeType
 Parser<ParseHandler>::fieldInitializerOpt(YieldHandling yieldHandling, bool hasHeritage,
-                                          Node propName, HandleAtom propAtom, size_t& numFieldKeys)
+                                          HandleAtom propAtom, size_t& numFieldKeys)
 {
     bool hasInitializer = false;
     if (!tokenStream.matchToken(&hasInitializer, TOK_ASSIGN))
@@ -7878,9 +7931,9 @@ Parser<ParseHandler>::fieldInitializerOpt(YieldHandling yieldHandling, bool hasH
         firstTokenPos = TokenPos(endPos, endPos);
     }
 
-    // Create the function object.
+    // Create the anonymous function object.
     RootedFunction fun(context,
-                       newFunction(propAtom, FunctionSyntaxKind::Expression,
+                       newFunction(nullptr, FunctionSyntaxKind::Expression,
                                    GeneratorKind::NotGenerator,
                                    FunctionAsyncKind::SyncFunction));
     if (!fun)
@@ -7981,7 +8034,12 @@ Parser<ParseHandler>::fieldInitializerOpt(YieldHandling yieldHandling, bool hasH
         if (!propAssignFieldAccess)
             return null();
     } else if (propAtom->isIndex(&indexValue)) {
-        propAssignFieldAccess = handler.newPropertyByValue(propAssignThis, propName, wholeInitializerPos.end);
+        // {Goanna} Can't reuse propName here, see comment in synthesizeConstructor
+        Node indexNode = handler.newNumber(indexValue, DecimalPoint::NoDecimal, wholeInitializerPos);
+        if (!indexNode)
+            return null();
+
+        propAssignFieldAccess = handler.newPropertyByValue(propAssignThis, indexNode, wholeInitializerPos.end);
         if (!propAssignFieldAccess)
             return null();
     } else {
@@ -9908,6 +9966,9 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
                 nextMember = handler.newSetThis(thisName, nextMember);
                 if (!nextMember)
                     return null();
+
+                if (!noteUsedName(context->names().dotLocalInitializers))
+                  return null();
             } else {
                 nextMember = memberCall(tt, lhs, yieldHandling, possibleError);
                 if (!nextMember)

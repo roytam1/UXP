@@ -103,6 +103,7 @@
     macro(dotGenerator, dotGenerator, ".generator") \
     macro(dotThis, dotThis, ".this") \
     macro(dotInitializers, dotInitializers, ".initializers") \
+    macro(dotLocalInitializers, dotLocalInitializers, ".localInitializers") \
     macro(dotFieldKeys, dotFieldKeys, ".fieldKeys") \
     macro(each, each, "each") \
     macro(elementType, elementType, "elementType") \

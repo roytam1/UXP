@@ -1498,14 +1498,15 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
                                   ListNodeType& classMembers, bool* done);
     MOZ_MUST_USE bool finishClassConstructor(
         const ParseContext::ClassStatement& classStmt,
-        HandlePropertyName className, uint32_t classStartOffset,
-        uint32_t classEndOffset, size_t numFieldsWithInitializers,
-        ListNodeType& classMembers);
+        HandlePropertyName className, bool hasHeritage,
+        uint32_t classStartOffset, uint32_t classEndOffset,
+        size_t numFieldsWithInitializers, ListNodeType& classMembers);
 
     FunctionNodeType fieldInitializerOpt(YieldHandling yieldHandling, bool hasHeritage,
-                                         Node name, HandleAtom atom, size_t& numFieldKeys);
+                                         HandleAtom atom, size_t& numFieldKeys);
     FunctionNodeType synthesizeConstructor(HandleAtom className,
-                                           uint32_t classNameOffset);
+                                           uint32_t classNameOffset,
+                                           bool hasHeritage);
 
     bool checkLabelOrIdentifierReference(PropertyName* ident,
                                          uint32_t offset,

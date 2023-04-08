@@ -181,6 +181,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     /* field info for enclosing class */
     FieldInitializers fieldInitializers_;
+    const FieldInitializers& getFieldInitializers() { return fieldInitializers_; }
 
 #ifdef DEBUG
     bool unstableEmitterScope;
@@ -251,13 +252,15 @@ struct MOZ_STACK_CLASS BytecodeEmitter
      */
     BytecodeEmitter(BytecodeEmitter* parent, Parser<FullParseHandler>* parser, SharedContext* sc,
                     HandleScript script, Handle<LazyScript*> lazyScript, uint32_t lineNum,
-                    EmitterMode emitterMode = Normal);
+                    EmitterMode emitterMode = Normal,
+                    FieldInitializers fieldInitializers = FieldInitializers::Invalid());
 
     // An alternate constructor that uses a TokenPos for the starting
     // line and that sets functionBodyEndPos as well.
     BytecodeEmitter(BytecodeEmitter* parent, Parser<FullParseHandler>* parser, SharedContext* sc,
                     HandleScript script, Handle<LazyScript*> lazyScript,
-                    TokenPos bodyPosition, EmitterMode emitterMode = Normal);
+                    TokenPos bodyPosition, EmitterMode emitterMode = Normal,
+                    FieldInitializers fieldInitializers = FieldInitializers::Invalid());
 
     MOZ_MUST_USE bool init();
 
@@ -514,7 +517,9 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitObjectPairOp(ObjectBox* objbox1, ObjectBox* objbox2, JSOp op);
     MOZ_MUST_USE bool emitRegExp(uint32_t index);
 
-    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitFunction(FunctionNode* funNode, bool needsProto = false);
+    MOZ_NEVER_INLINE MOZ_MUST_USE bool emitFunction(FunctionNode* funNode,
+                                                    bool needsProto = false,
+                                                    ListNode* classContentsIfConstructor = nullptr);
     MOZ_NEVER_INLINE MOZ_MUST_USE bool emitObject(ListNode* objNode);
 
     MOZ_MUST_USE bool replaceNewInitWithNewObject(JSObject* obj, ptrdiff_t offset);
@@ -527,6 +532,9 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     FieldInitializers setupFieldInitializers(ListNode* classMembers);
     MOZ_MUST_USE bool emitCreateFieldKeys(ListNode* obj);
     MOZ_MUST_USE bool emitCreateFieldInitializers(ListNode* obj);
+    const FieldInitializers& findFieldInitializersForCall();
+    MOZ_MUST_USE bool emitCopyInitializersToLocalInitializers();
+    MOZ_MUST_USE bool emitInitializeInstanceFields(bool isSuperCall);
 
     // To catch accidental misuse, emitUint16Operand/emit3 assert that they are
     // not used to unconditionally emit JSOP_GETLOCAL. Variable access should

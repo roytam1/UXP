@@ -252,10 +252,7 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_CLASS (ClassNode)
  *   kid1: PNK_CLASSNAMES for class name. can be null for anonymous class.
  *   kid2: expression after `extends`. null if no expression
- *   kid3: either of
- *           * PNK_CLASSMEMBERLIST, if anonymous class
- *           * PNK_LEXICALSCOPE which contains PNK_CLASSMEMBERLIST as scopeBody,
- *             if named class
+ *   kid3: PNK_LEXICALSCOPE which contains PNK_CLASSMEMBERLIST as scopeBody
  * PNK_CLASSNAMES (ClassNames)
  *   left: Name node for outer binding, or null if the class is an expression
  *         that doesn't create an outer binding
@@ -2243,13 +2240,11 @@ class ClassNames : public BinaryNode
 class ClassNode : public TernaryNode
 {
   public:
-    ClassNode(ParseNode* names, ParseNode* heritage, ParseNode* membersOrBlock,
+    ClassNode(ParseNode* names, ParseNode* heritage, LexicalScopeNode* memberBlock,
               const TokenPos& pos)
-      : TernaryNode(PNK_CLASS, JSOP_NOP, names, heritage, membersOrBlock, pos)
+      : TernaryNode(PNK_CLASS, JSOP_NOP, names, heritage, memberBlock, pos)
     {
         MOZ_ASSERT_IF(names, names->is<ClassNames>());
-        MOZ_ASSERT(membersOrBlock->is<LexicalScopeNode>() ||
-                   membersOrBlock->isKind(PNK_CLASSMEMBERLIST));
     }
 
     static bool test(const ParseNode& node) {
@@ -2265,13 +2260,13 @@ class ClassNode : public TernaryNode
         return kid2();
     }
     ListNode* memberList() const {
-        ParseNode* membersOrBlock = kid3();
-        if (membersOrBlock->isKind(PNK_CLASSMEMBERLIST))
-            return &membersOrBlock->as<ListNode>();
-
-        ListNode* list = &membersOrBlock->as<LexicalScopeNode>().scopeBody()->as<ListNode>();
+        ListNode* list = &kid3()->as<LexicalScopeNode>().scopeBody()->as<ListNode>();
         MOZ_ASSERT(list->isKind(PNK_CLASSMEMBERLIST));
         return list;
+    }
+    bool isEmptyScope() const {
+        ParseNode* scope = kid3();
+        return scope->as<LexicalScopeNode>().isEmptyScope();
     }
     Handle<LexicalScope::Data*> scopeBindings() const {
         ParseNode* scope = kid3();
