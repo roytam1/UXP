@@ -352,8 +352,6 @@ static bool SandboxStructuredClone(JSContext* cx, unsigned argc, Value* vp) {
     return false;
   }
 
-  MOZ_ASSERT_IF(result.isGCThing(),
-                !JS::GCThingIsMarkedGray(result.toGCCellPtr()));
   args.rval().set(result);
   return true;
 }
