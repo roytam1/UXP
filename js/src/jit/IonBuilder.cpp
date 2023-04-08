@@ -2205,6 +2205,9 @@ IonBuilder::inspectOpcode(JSOp op)
       case JSOP_CHECKOBJCOERCIBLE:
         return jsop_checkobjcoercible();
 
+      case JSOP_IMPORTMETA:
+        return jsop_importmeta();
+
       case JSOP_DEBUGCHECKSELFHOSTED:
       {
 #ifdef DEBUG
@@ -14244,6 +14247,21 @@ IonBuilder::jsop_debugger()
     // cx->compartment()->isDebuggee(). Resume in-place and have baseline
     // handle the details.
     return resumeAt(debugger, pc);
+}
+
+bool
+IonBuilder::jsop_importmeta()
+{
+    ModuleObject* module = GetModuleObjectForScript(script());
+    MOZ_ASSERT(module);
+
+    // The object must have been created already when we compiled for baseline.
+    JSObject* metaObject = module->metaObject();
+    MOZ_ASSERT(metaObject);
+
+    pushConstant(ObjectValue(*metaObject));
+
+    return true;
 }
 
 MInstruction*

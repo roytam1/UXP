@@ -240,7 +240,8 @@ namespace jit {
     _(JSOP_DEBUGCHECKSELFHOSTED) \
     _(JSOP_JUMPTARGET)         \
     _(JSOP_IS_CONSTRUCTING)    \
-    _(JSOP_TRY_DESTRUCTURING_ITERCLOSE)
+    _(JSOP_TRY_DESTRUCTURING_ITERCLOSE) \
+    _(JSOP_IMPORTMETA)
 
 class BaselineCompiler : public BaselineCompilerSpecific
 {

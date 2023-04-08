@@ -812,7 +812,7 @@ HostResolveImportedModule(JSContext* aCx,
   if (!string.init(aCx, aSpecifier)) {
     return nullptr;
   }
-  if (!aModule || !aCx) {
+  if (!script || !aCx) {
     // Our module context was ripped out from under us...
     return nullptr;
   }
@@ -839,6 +839,34 @@ HostResolveImportedModule(JSContext* aCx,
   return ms->ModuleRecord();
 }
 
+bool
+HostPopulateImportMeta(JSContext* aCx, JS::Handle<JSObject*> aModule,
+                       JS::Handle<JSObject*> aMetaObject)
+{
+  MOZ_DIAGNOSTIC_ASSERT(aModule);
+
+  JS::Value value = JS::GetModulePrivate(aModule);
+  if (value.isUndefined()) {
+    JS_ReportErrorASCII(aCx, "Module script not found");
+    return false;
+  }
+
+  auto script = static_cast<ModuleScript*>(value.toPrivate());
+  MOZ_DIAGNOSTIC_ASSERT(script->ModuleRecord() == aModule);
+
+  nsAutoCString url;
+  MOZ_DIAGNOSTIC_ASSERT(script->BaseURL());
+  MOZ_ALWAYS_SUCCEEDS(script->BaseURL()->GetAsciiSpec(url));
+
+  JS::Rooted<JSString*> urlString(aCx, JS_NewStringCopyZ(aCx, url.get()));
+  if (!urlString) {
+    JS_ReportOutOfMemory(aCx);
+    return false;
+  }
+
+  return JS_DefineProperty(aCx, aMetaObject, "url", urlString, JSPROP_ENUMERATE);
+}
+
 static void
 EnsureModuleResolveHook(JSContext* aCx)
 {
@@ -848,6 +876,7 @@ EnsureModuleResolveHook(JSContext* aCx)
   }
 
   JS::SetModuleResolveHook(rt, HostResolveImportedModule);
+  JS::SetModuleMetadataHook(aCx, HostPopulateImportMeta);
 }
 
 void

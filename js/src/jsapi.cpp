@@ -4698,6 +4698,20 @@ JS::SetModuleResolveHook(JSRuntime* rt, JS::ModuleResolveHook func)
     rt->moduleResolveHook = func;
 }
 
+JS_PUBLIC_API(JS::ModuleMetadataHook)
+JS::GetModuleMetadataHook(JSContext* cx)
+{
+    AssertHeapIsIdle(cx);
+    return cx->runtime()->moduleMetadataHook;
+}
+
+JS_PUBLIC_API(void)
+JS::SetModuleMetadataHook(JSContext* cx, JS::ModuleMetadataHook func)
+{
+    AssertHeapIsIdle(cx);
+    cx->runtime()->moduleMetadataHook = func;
+}
+
 JS_PUBLIC_API(bool)
 JS::CompileModule(JSContext* cx, const ReadOnlyCompileOptions& options,
                   SourceBufferHolder& srcBuf, JS::MutableHandleObject module)

@@ -222,6 +222,7 @@ class ModuleObject : public NativeObject
         StatusSlot,
         EvaluationErrorSlot,
         ScriptSourceObjectSlot,
+        MetaObjectSlot,
         RequestedModulesSlot,
         ImportEntriesSlot,
         LocalExportEntriesSlot,
@@ -274,6 +275,7 @@ class ModuleObject : public NativeObject
     bool hadEvaluationError() const;
     Value evaluationError() const;
     ScriptSourceObject* scriptSourceObject() const;
+    JSObject* metaObject() const;
     ArrayObject& requestedModules() const;
     ArrayObject& importEntries() const;
     ArrayObject& localExportEntries() const;
@@ -285,6 +287,8 @@ class ModuleObject : public NativeObject
 
     static bool Instantiate(JSContext* cx, HandleModuleObject self);
     static bool Evaluate(JSContext* cx, HandleModuleObject self);
+
+    void setMetaObject(JSObject* obj);
 
     // For BytecodeEmitter.
     bool noteFunctionDeclaration(ExclusiveContext* cx, HandleAtom name, HandleFunction fun);
@@ -366,6 +370,9 @@ class MOZ_STACK_CLASS ModuleBuilder
     template <typename T>
     ArrayObject* createArray(const GCVector<T>& vector);
 };
+
+JSObject*
+GetOrCreateModuleMetaObject(JSContext* cx, HandleObject module);
 
 } // namespace js
 

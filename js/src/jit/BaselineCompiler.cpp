@@ -4694,3 +4694,17 @@ BaselineCompiler::emit_JSOP_JUMPTARGET()
     masm.inc64(AbsoluteAddress(counterAddr));
     return true;
 }
+
+bool
+BaselineCompiler::emit_JSOP_IMPORTMETA()
+{
+    RootedModuleObject module(cx, GetModuleObjectForScript(script));
+    MOZ_ASSERT(module);
+
+    JSObject* metaObject = GetOrCreateModuleMetaObject(cx, module);
+    if (!metaObject)
+        return false;
+
+    frame.push(ObjectValue(*metaObject));
+    return true;
+}
