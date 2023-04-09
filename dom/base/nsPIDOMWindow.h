@@ -194,6 +194,10 @@ protected:
   // we have what it takes to do so.
   void MaybeCreateDoc();
 
+  // The event dispatch code sets and unsets this while keeping
+  // the event object alive.
+  nsIDOMEvent* mEvent;
+
 public:
   inline bool IsLoadingOrRunningTimeout() const;
 
@@ -787,6 +791,17 @@ public:
   bool InnerObjectsFreed() const
   {
     return mInnerObjectsFreed;
+  }
+
+  // Sets the event for window.event. Does NOT take ownership, so
+  // the caller is responsible for clearing the event before the
+  // event gets deallocated. Pass nullptr to set window.event to
+  // undefined. Returns the previous value.
+  nsIDOMEvent* SetEvent(nsIDOMEvent* aEvent)
+  {
+    nsIDOMEvent* old = mEvent;
+    mEvent = aEvent;
+    return old;
   }
 
   /**
