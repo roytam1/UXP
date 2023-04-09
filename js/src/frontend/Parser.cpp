@@ -7845,8 +7845,21 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
     if (!argsbody)
         return null();
     handler.setFunctionFormalParametersAndBody(funNode, argsbody);
-    funbox->function()->setArgCount(0);
     funbox->setStart(tokenStream);
+
+    if (hasHeritage) {
+        // Synthesize the equivalent to `function f(...args)`
+        funbox->setHasRest();
+        if (!notePositionalFormalParameter(funNode, context->names().args,
+                                           synthesizedBodyPos.begin,
+                                           /* disallowDuplicateParams = */ false,
+                                           /* duplicatedParam = */ nullptr)) {
+          return null();
+        }
+        funbox->function()->setArgCount(1);
+    } else {
+        funbox->function()->setArgCount(0);
+    }
 
     pc->functionScope().useAsVarScope(pc);
 
@@ -7881,7 +7894,18 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
         if (!arguments)
             return null();
 
-        BinaryNodeType superCall = handler.newSuperCall(superBase, arguments, false);
+        NameNodeType argsNameNode = newName(context->names().args, synthesizedBodyPos);
+        if (!argsNameNode)
+            return null();
+        if (!noteUsedName(context->names().args))
+            return null();
+
+        UnaryNodeType spreadArgs = handler.newSpread(synthesizedBodyPos.begin, argsNameNode);
+        if (!spreadArgs)
+            return null();
+        handler.addList(arguments, spreadArgs);
+
+        BinaryNodeType superCall = handler.newSuperCall(superBase, arguments, /* isSpread = */ true);
         if (!superCall)
             return null();
 
