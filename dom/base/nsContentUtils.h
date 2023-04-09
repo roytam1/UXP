@@ -132,6 +132,7 @@ class nsIContentParent;
 class TabChild;
 class Selection;
 class TabParent;
+struct StructuredSerializeOptions;
 } // namespace dom
 
 namespace ipc {
@@ -2811,6 +2812,23 @@ public:
 
   static bool
   IsCustomElementsEnabled() { return sIsCustomElementsEnabled; }
+
+  static nsresult
+  CreateJSValueFromSequenceOfObject(JSContext* aCx,
+                                    const mozilla::dom::Sequence<JSObject*>& aTransfer,
+                                    JS::MutableHandle<JS::Value> aValue);
+
+  /**
+   * This implements the structured cloning algorithm as described by
+   * https://html.spec.whatwg.org/#structured-cloning.
+   */
+  static void
+  StructuredClone(JSContext* aCx,
+                  nsIGlobalObject* aGlobal,
+                  JS::Handle<JS::Value> aValue,
+                  const mozilla::dom::StructuredSerializeOptions& aOptions,
+                  JS::MutableHandle<JS::Value> aRv,
+                  mozilla::ErrorResult& aError);
 
 private:
   static bool InitializeEventTable();

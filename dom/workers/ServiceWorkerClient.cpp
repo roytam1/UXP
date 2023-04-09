@@ -11,6 +11,7 @@
 #include "mozilla/dom/Navigator.h"
 #include "mozilla/dom/ServiceWorkerMessageEvent.h"
 #include "mozilla/dom/ServiceWorkerMessageEventBinding.h"
+#include "mozilla/dom/MessagePortBinding.h"
 #include "nsGlobalWindow.h"
 #include "nsIBrowserDOMWindow.h"
 #include "nsIDocument.h"
@@ -190,7 +191,7 @@ private:
 
 void
 ServiceWorkerClient::PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
-                                 const Optional<Sequence<JS::Value>>& aTransferable,
+                                 const Sequence<JSObject*>& aTransferable,
                                  ErrorResult& aRv)
 {
   WorkerPrivate* workerPrivate = GetCurrentThreadWorkerPrivate();
@@ -198,20 +199,11 @@ ServiceWorkerClient::PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
   workerPrivate->AssertIsOnWorkerThread();
 
   JS::Rooted<JS::Value> transferable(aCx, JS::UndefinedValue());
-  if (aTransferable.WasPassed()) {
-    const Sequence<JS::Value>& realTransferable = aTransferable.Value();
-
-    JS::HandleValueArray elements =
-      JS::HandleValueArray::fromMarkedLocation(realTransferable.Length(),
-                                               realTransferable.Elements());
-
-    JSObject* array = JS_NewArrayObject(aCx, elements);
-    if (!array) {
-      aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
-      return;
-    }
-
-    transferable.setObject(*array);
+  aRv = nsContentUtils::CreateJSValueFromSequenceOfObject(aCx,
+                                                          aTransferable,
+                                                          &transferable);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
   }
 
   RefPtr<ServiceWorkerClientPostMessageRunnable> runnable =
@@ -229,3 +221,11 @@ ServiceWorkerClient::PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
   }
 }
 
+void
+ServiceWorkerClient::PostMessage(JSContext* aCx,
+                                 JS::Handle<JS::Value> aMessage,
+                                 const StructuredSerializeOptions& aOptions,
+                                 ErrorResult& aRv)
+{
+  PostMessage(aCx, aMessage, aOptions.mTransfer, aRv);
+}

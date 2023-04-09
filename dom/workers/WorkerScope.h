@@ -24,6 +24,7 @@ class Function;
 class IDBFactory;
 enum class ImageBitmapFormat : uint32_t;
 class Performance;
+struct StructuredSerializeOptions;
 class Promise;
 class RequestOrUSVString;
 class ServiceWorkerRegistration;
@@ -182,6 +183,11 @@ public:
                     const mozilla::dom::Sequence<mozilla::dom::ChannelPixelLayout>& aLayout,
                     mozilla::ErrorResult& aRv);
 
+  void StructuredClone(JSContext* aCx, JS::Handle<JS::Value> aValue,
+                       const StructuredSerializeOptions& aOptions,
+                       JS::MutableHandle<JS::Value> aRv,
+                       ErrorResult& aError);
+
   bool
   WindowInteractionAllowed() const
   {
@@ -215,7 +221,13 @@ public:
 
   void
   PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
-              const Optional<Sequence<JS::Value>>& aTransferable,
+              const Sequence<JSObject*>& aTransferable,
+              ErrorResult& aRv);
+
+  void
+  PostMessage(JSContext* aCx,
+              JS::Handle<JS::Value> aMessage,
+              const StructuredSerializeOptions& aOptions,
               ErrorResult& aRv);
 
   IMPL_EVENT_HANDLER(message)

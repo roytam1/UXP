@@ -15,7 +15,9 @@ interface Client {
   readonly attribute DOMString id;
 
   [Throws]
-  void postMessage(any message, optional sequence<Transferable> transfer);
+  void postMessage(any message, sequence<object> transferable);
+  [Throws]
+  void postMessage(any message, optional StructuredSerializeOptions options);
 };
 
 [Exposed=ServiceWorker]
