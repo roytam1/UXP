@@ -1075,7 +1075,11 @@ CreateObjectsForEnvironmentChain(JSContext* cx, AutoObjectVector& chain,
                                  HandleObject terminatingEnv,
                                  MutableHandleObject envObj);
 
-ModuleObject* GetModuleObjectForScript(JSScript* script);
+ModuleObject*
+GetModuleObjectForScript(JSScript* script);
+
+Value
+FindScriptOrModulePrivateForScript(JSScript* script);
 
 ModuleEnvironmentObject* GetModuleEnvironmentForScript(JSScript* script);
 

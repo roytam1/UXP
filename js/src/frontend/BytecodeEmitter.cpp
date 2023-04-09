@@ -9088,8 +9088,14 @@ BytecodeEmitter::emitTree(ParseNode* pn, ValueUsage valueUsage /* = ValueUsage::
         break;
 
       case PNK_CALL_IMPORT:
-        reportError(nullptr, JSMSG_NO_DYNAMIC_IMPORT);
-        return false;
+        if (!cx->asJSContext()->runtime()->moduleDynamicImportHook) {
+            reportError(nullptr, JSMSG_NO_DYNAMIC_IMPORT);
+            return false;
+        }
+        if (!emitTree(pn->as<BinaryNode>().right()) || !emit1(JSOP_DYNAMIC_IMPORT)) {
+            return false;
+        }
+        break;
 
       case PNK_SETTHIS:
         if (!emitSetThis(&pn->as<BinaryNode>()))

@@ -288,6 +288,9 @@ class ModuleObject : public NativeObject
     static bool Instantiate(JSContext* cx, HandleModuleObject self);
     static bool Evaluate(JSContext* cx, HandleModuleObject self);
 
+    static ModuleNamespaceObject* GetOrCreateModuleNamespace(JSContext* cx,
+                                                             HandleModuleObject self);
+
     void setMetaObject(JSObject* obj);
 
     // For BytecodeEmitter.
@@ -373,6 +376,16 @@ class MOZ_STACK_CLASS ModuleBuilder
 
 JSObject*
 GetOrCreateModuleMetaObject(JSContext* cx, HandleObject module);
+
+JSObject*
+CallModuleResolveHook(JSContext* cx, HandleValue referencingPrivate, HandleString specifier);
+
+JSObject*
+StartDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, HandleValue specifier);
+
+bool
+FinishDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, HandleString specifier,
+                          HandleObject promise);
 
 } // namespace js
 

@@ -4712,6 +4712,29 @@ JS::SetModuleMetadataHook(JSContext* cx, JS::ModuleMetadataHook func)
     cx->runtime()->moduleMetadataHook = func;
 }
 
+JS_PUBLIC_API(JS::ModuleDynamicImportHook)
+JS::GetModuleDynamicImportHook(JSContext* cx)
+{
+    AssertHeapIsIdle(cx);
+    return cx->runtime()->moduleDynamicImportHook;
+}
+
+JS_PUBLIC_API(void)
+JS::SetModuleDynamicImportHook(JSContext* cx, JS::ModuleDynamicImportHook func)
+{
+    AssertHeapIsIdle(cx);
+    cx->runtime()->moduleDynamicImportHook = func;
+}
+
+JS_PUBLIC_API(bool)
+JS::FinishDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, HandleString specifier,
+                              HandleObject promise)
+{
+    AssertHeapIsIdle(cx);
+
+    return js::FinishDynamicModuleImport(cx, referencingPrivate, specifier, promise);
+}
+
 JS_PUBLIC_API(bool)
 JS::CompileModule(JSContext* cx, const ReadOnlyCompileOptions& options,
                   SourceBufferHolder& srcBuf, JS::MutableHandleObject module)

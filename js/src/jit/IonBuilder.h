@@ -789,6 +789,7 @@ class IonBuilder
     MOZ_MUST_USE bool jsop_checkobjcoercible();
     MOZ_MUST_USE bool jsop_pushcallobj();
     MOZ_MUST_USE bool jsop_importmeta();
+    MOZ_MUST_USE bool jsop_dynamic_import();
 
     /* Inlining. */
 

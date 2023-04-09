@@ -19,6 +19,7 @@
 #include "jit/Lowering.h"
 #include "jit/MIRGraph.h"
 #include "vm/ArgumentsObject.h"
+#include "vm/EnvironmentObject.h"
 #include "vm/Opcodes.h"
 #include "vm/RegExpStatics.h"
 #include "vm/TraceLogging.h"
@@ -2207,6 +2208,9 @@ IonBuilder::inspectOpcode(JSOp op)
 
       case JSOP_IMPORTMETA:
         return jsop_importmeta();
+
+      case JSOP_DYNAMIC_IMPORT:
+        return jsop_dynamic_import();
 
       case JSOP_DEBUGCHECKSELFHOSTED:
       {
@@ -14262,6 +14266,20 @@ IonBuilder::jsop_importmeta()
     pushConstant(ObjectValue(*metaObject));
 
     return true;
+}
+
+bool
+IonBuilder::jsop_dynamic_import()
+{
+    Value referencingPrivate = FindScriptOrModulePrivateForScript(script());
+    MConstant* ref = constant(referencingPrivate);
+
+    MDefinition* specifier = current->pop();
+
+    MDynamicImport* ins = MDynamicImport::New(alloc(), ref, specifier);
+    current->add(ins);
+    current->push(ins);
+    return resumeAfter(ins);
 }
 
 MInstruction*

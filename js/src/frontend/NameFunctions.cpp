@@ -837,7 +837,6 @@ class NameResolver
 
           case PNK_CALL_IMPORT: {
             BinaryNode* node = &cur->as<BinaryNode>();
-            MOZ_ASSERT(cur->isArity(PN_BINARY));
             if (!resolve(node->right(), prefix))
                 return false;
             break;

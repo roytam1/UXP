@@ -4201,6 +4201,22 @@ CASE(JSOP_IMPORTMETA)
 }
 END_CASE(JSOP_IMPORTMETA)
 
+CASE(JSOP_DYNAMIC_IMPORT)
+{
+    ReservedRooted<Value> referencingPrivate(&rootValue0);
+    referencingPrivate = FindScriptOrModulePrivateForScript(script);
+
+    ReservedRooted<Value> specifier(&rootValue1);
+    POP_COPY_TO(specifier);
+
+    JSObject* promise = StartDynamicModuleImport(cx, referencingPrivate, specifier);
+    if (!promise)
+        goto error;
+
+    PUSH_OBJECT(*promise);
+}
+END_CASE(JSOP_DYNAMIC_IMPORT)
+
 CASE(JSOP_SUPERFUN)
 {
     ReservedRooted<JSObject*> superEnvFunc(&rootObject0, &GetSuperEnvFunction(cx, REGS));

@@ -4939,6 +4939,26 @@ class LNullarySharedStub : public LCallInstructionHelper<BOX_PIECES, 0, 0>
     }
 };
 
+class LDynamicImport : public LCallInstructionHelper<1, 2 * BOX_PIECES, 0>
+{
+  public:
+    LIR_HEADER(DynamicImport)
+
+    static const size_t ReferencingPrivateIndex = 0;
+    static const size_t SpecifierIndex = BOX_PIECES;
+
+    explicit LDynamicImport(const LBoxAllocation& referencingPrivate,
+                            const LBoxAllocation& specifier)
+    {
+        setBoxOperand(ReferencingPrivateIndex, referencingPrivate);
+        setBoxOperand(SpecifierIndex, specifier);
+    }
+
+    const MDynamicImport* mir() const {
+        return mir_->toDynamicImport();
+    }
+};
+
 class LLambdaForSingleton : public LCallInstructionHelper<1, 1, 0>
 {
   public:

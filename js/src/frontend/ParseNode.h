@@ -541,6 +541,8 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_ARRAYPUSH    unary   pn_op: JSOP_ARRAYCOMP
  *                          pn_kid: array comprehension expression
  * PNK_NOP (NullaryNode)
+ * PNK_IMPORT_META (BinaryNode)
+ * PNK_CALL_IMPORT (BinaryNode)
  */
 enum ParseNodeArity
 {

@@ -33,11 +33,28 @@ Reflect.Loader = new class {
         return module;
     }
 
-    ["import"](name, referrer) {
+    ["import"](name, referencingInfo) {
         let module = this.loadAndParse(name);
         module.declarationInstantiation();
         return module.evaluation();
     }
 };
 
-setModuleResolveHook((module, requestName) => Reflect.Loader.loadAndParse(requestName));
+setModuleResolveHook((referencingInfo, requestName) => {
+    let path = ReflectLoader.resolve(requestName, referencingInfo);
+    return ReflectLoader.loadAndParse(path);
+});
+ 
+setModuleMetadataHook((module, metaObject) => {
+    ReflectLoader.populateImportMeta(module, metaObject);
+});
+ 
+setModuleDynamicImportHook((referencingInfo, specifier, promise) => {
+    try {
+        let path = ReflectLoader.resolve(specifier, referencingInfo);
+        ReflectLoader.loadAndExecute(path);
+        finishDynamicModuleImport(referencingInfo, specifier, promise);
+    } catch (err) {
+        abortDynamicModuleImport(referencingInfo, specifier, promise, err);
+    }
+});

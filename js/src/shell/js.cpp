@@ -603,6 +603,32 @@ EnvironmentPreparer::invoke(HandleObject scope, Closure& closure)
         return;
 }
 
+static bool
+RegisterScriptPathWithModuleLoader(JSContext* cx, HandleScript script, const char* filename)
+{
+    // Set the private value associated with a script to a object containing the
+    // script's filename so that the module loader can use it to resolve
+    // relative imports.
+
+    RootedString path(cx, JS_NewStringCopyZ(cx, filename));
+    if (!path) {
+        return false;
+    }
+
+    RootedObject infoObject(cx, JS_NewPlainObject(cx));
+    if (!infoObject) {
+        return false;
+    }
+
+    RootedValue pathValue(cx, StringValue(path));
+    if (!JS_DefineProperty(cx, infoObject, "path", pathValue, 0)) {
+        return false;
+    }
+
+    JS::SetScriptPrivate(script, ObjectValue(*infoObject));
+    return true;
+}
+
 static MOZ_MUST_USE bool
 RunFile(JSContext* cx, const char* filename, FILE* file, bool compileOnly)
 {
@@ -633,6 +659,10 @@ RunFile(JSContext* cx, const char* filename, FILE* file, bool compileOnly)
         if (!JS::Compile(cx, options, file, &script))
             return false;
         MOZ_ASSERT(script);
+    }
+
+    if (!RegisterScriptPathWithModuleLoader(cx, script, filename)) {
+        return false;
     }
 
     #ifdef DEBUG
@@ -4035,7 +4065,7 @@ SetModuleResolveHook(JSContext* cx, unsigned argc, Value* vp)
 }
 
 static JSObject*
-CallModuleResolveHook(JSContext* cx, HandleValue referencingPrivate, HandleString specifier)
+ShellModuleResolveHook(JSContext* cx, HandleValue referencingPrivate, HandleString specifier)
 {
     ShellContext* sc = GetShellContext(cx);
 
@@ -4115,6 +4145,109 @@ ShellModuleMetadataHook(JSContext* cx, HandleObject module, HandleObject metaObj
 
     if (!JS_DefineProperty(cx, metaObject, "url", url, JSPROP_ENUMERATE))
         return false;
+
+    return true;
+}
+
+static bool
+SetModuleDynamicImportHook(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    if (args.length() != 1) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_MORE_ARGS_NEEDED,
+                                  "setModuleDynamicImportHook", "0", "s");
+        return false;
+    }
+
+    if (!args[0].isObject() || !args[0].toObject().is<JSFunction>()) {
+        const char* typeName = InformalValueTypeName(args[0]);
+        JS_ReportErrorASCII(cx, "expected hook function, got %s", typeName);
+        return false;
+    }
+
+    Handle<GlobalObject*> global = cx->global();
+    global->setReservedSlot(GlobalAppSlotModuleDynamicImportHook, args[0]);
+
+    args.rval().setUndefined();
+    return true;
+}
+
+static bool
+FinishDynamicModuleImport(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    if (args.length() != 3) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_MORE_ARGS_NEEDED,
+                                  "finishDynamicModuleImport", "0", "s");
+        return false;
+    }
+
+    if (!args[1].isString()) {
+        return ReportArgumentTypeError(cx, args[1], "String");
+    }
+
+    if (!args[2].isObject() || !args[2].toObject().is<PromiseObject>()) {
+        return ReportArgumentTypeError(cx, args[2], "PromiseObject");
+    }
+
+    RootedString specifier(cx, args[1].toString());
+    Rooted<PromiseObject*> promise(cx, &args[2].toObject().as<PromiseObject>());
+
+    return js::FinishDynamicModuleImport(cx, args[0], specifier, promise);
+}
+
+static bool
+AbortDynamicModuleImport(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    if (args.length() != 4) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_MORE_ARGS_NEEDED,
+                                  "abortDynamicModuleImport", "0", "s");
+        return false;
+    }
+
+    if (!args[1].isString()) {
+        return ReportArgumentTypeError(cx, args[1], "String");
+    }
+
+    if (!args[2].isObject() || !args[2].toObject().is<PromiseObject>()) {
+        return ReportArgumentTypeError(cx, args[2], "PromiseObject");
+    }
+
+    if (!args[3].isObject() || !args[3].toObject().is<ErrorObject>()) {
+        return ReportArgumentTypeError(cx, args[3], "ErrorObject");
+    }
+
+    RootedString specifier(cx, args[1].toString());
+    Rooted<PromiseObject*> promise(cx, &args[2].toObject().as<PromiseObject>());
+    Rooted<ErrorObject*> error(cx, &args[3].toObject().as<ErrorObject>());
+
+    Rooted<Value> value(cx, ObjectValue(*error));
+    cx->setPendingException(value);
+    return js::FinishDynamicModuleImport(cx, args[0], specifier, promise);
+}
+
+static bool
+ShellModuleDynamicImportHook(JSContext* cx, HandleValue referencingPrivate, HandleString specifier,
+                             HandleObject promise)
+{
+    Handle<GlobalObject*> global = cx->global();
+    RootedValue hookValue(cx, global->getReservedSlot(GlobalAppSlotModuleDynamicImportHook));
+    if (hookValue.isUndefined()) {
+        JS_ReportErrorASCII(cx, "Module resolve hook not set");
+        return false;
+    }
+    MOZ_ASSERT(hookValue.toObject().is<JSFunction>());
+
+    JS::AutoValueArray<3> args(cx);
+    args[0].set(referencingPrivate);
+    args[1].setString(specifier);
+    args[2].setObject(*promise);
+
+    RootedValue result(cx);
+    if (!JS_CallFunctionValue(cx, nullptr, hookValue, args, &result)) {
+        return false;
+    }
 
     return true;
 }
@@ -5984,7 +6117,7 @@ static const JSFunctionSpecWithHelp shell_functions[] = {
 "  Parses source text as a module and returns a Module object."),
 
     JS_FN_HELP("setModuleResolveHook", SetModuleResolveHook, 1, 0,
-"setModuleResolveHook(function(module, specifier) {})",
+"setModuleResolveHook(function(referrer, specifier))",
 "  Set the HostResolveImportedModule hook to |function|.\n"
 "  This hook is used to look up a previously loaded module object.  It should\n"
 "  be implemented by the module loader."),
@@ -5996,6 +6129,28 @@ static const JSFunctionSpecWithHelp shell_functions[] = {
     JS_FN_HELP("getModulePrivate", ShellGetModulePrivate, 2, 0,
 "getModulePrivate(scriptObject)",
 "  Get the private value associated with a module object.\n"),
+
+    JS_FN_HELP("setModuleMetadataHook", SetModuleMetadataHook, 1, 0,
+"setModuleMetadataHook(function(module) {})",
+"  Set the HostPopulateImportMeta hook to |function|.\n"
+"  This hook is used to create the metadata object returned by import.meta for\n"
+"  a module.  It should be implemented by the module loader."),
+
+    JS_FN_HELP("setModuleDynamicImportHook", SetModuleDynamicImportHook, 1, 0,
+"setModuleDynamicImportHook(function(referrer, specifier, promise))",
+"  Set the HostImportModuleDynamically hook to |function|.\n"
+"  This hook is used to dynamically import a module.  It should\n"
+"  be implemented by the module loader."),
+
+    JS_FN_HELP("finishDynamicModuleImport", FinishDynamicModuleImport, 3, 0,
+"finishDynamicModuleImport(referrer, specifier, promise)",
+"  The module loader's dynamic import hook should call this when the module has"
+"  been loaded successfully."),
+
+    JS_FN_HELP("abortDynamicModuleImport", AbortDynamicModuleImport, 4, 0,
+"abortDynamicModuleImport(referrer, specifier, promise, error)",
+"  The module loader's dynamic import hook should call this when the module "
+"  import has failed."),
 
     JS_FN_HELP("getModuleLoadPath", GetModuleLoadPath, 0, 0,
 "getModuleLoadPath()",
@@ -8054,7 +8209,8 @@ main(int argc, char** argv, char** envp)
 
     js::SetPreserveWrapperCallback(cx, DummyPreserveWrapperCallback);
 
-    JS::SetModuleResolveHook(cx->runtime(), CallModuleResolveHook);
+    JS::SetModuleResolveHook(cx->runtime(), ShellModuleResolveHook);
+    JS::SetModuleDynamicImportHook(cx, ShellModuleDynamicImportHook);
     JS::SetModuleMetadataHook(cx, ShellModuleMetadataHook);
 
     result = Shell(cx, &op, envp);

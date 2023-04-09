@@ -241,7 +241,8 @@ namespace jit {
     _(JSOP_JUMPTARGET)         \
     _(JSOP_IS_CONSTRUCTING)    \
     _(JSOP_TRY_DESTRUCTURING_ITERCLOSE) \
-    _(JSOP_IMPORTMETA)
+    _(JSOP_IMPORTMETA) \
+    _(JSOP_DYNAMIC_IMPORT)
 
 class BaselineCompiler : public BaselineCompilerSpecific
 {

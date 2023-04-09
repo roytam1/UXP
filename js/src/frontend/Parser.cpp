@@ -10515,6 +10515,10 @@ Parser<ParseHandler>::importExpr(YieldHandling yieldHandling)
 
         MUST_MATCH_TOKEN_MOD(TOK_RP, TokenStream::Operand, JSMSG_PAREN_AFTER_ARGS);
 
+        if (!context->asJSContext()->runtime()->moduleDynamicImportHook && !abortIfSyntaxParser()) {
+            return null();
+        }
+
         return handler.newCallImport(importHolder, arg);
     } else {
         error(JSMSG_UNEXPECTED_TOKEN, TokenKindToDesc(next));
