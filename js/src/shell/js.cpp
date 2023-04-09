@@ -2830,7 +2830,7 @@ DisassembleToSprinter(JSContext* cx, unsigned argc, Value* vp, Sprinter* sprinte
             RootedScript script(cx);
             RootedValue value(cx, p.argv[i]);
             if (value.isObject() && value.toObject().is<ModuleObject>())
-                script = value.toObject().as<ModuleObject>().script();
+                script = value.toObject().as<ModuleObject>().maybeScript();
             else
                 script = ValueToScript(cx, value, fun.address());
             if (!script)
@@ -4132,21 +4132,46 @@ ShellGetModulePrivate(JSContext* cx, unsigned argc, Value* vp)
     return true;
 }
 
-ShellModuleMetadataHook(JSContext* cx, HandleObject module, HandleObject metaObject)
+static bool
+SetModuleMetadataHook(JSContext* cx, unsigned argc, Value* vp)
 {
-    // For the shell, just use the script's filename as the base URL.
-    RootedScript script(cx, module->as<ModuleObject>().script());
-    const char* filename = script->scriptSource()->filename();
-    MOZ_ASSERT(filename);
-
-    RootedString url(cx, NewStringCopyZ<CanGC>(cx, filename));
-    if (!url)
+    CallArgs args = CallArgsFromVp(argc, vp);
+    if (args.length() != 1) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_MORE_ARGS_NEEDED,
+                                  "setModuleMetadataHook", "0", "s");
         return false;
+    }
 
-    if (!JS_DefineProperty(cx, metaObject, "url", url, JSPROP_ENUMERATE))
+    if (!args[0].isObject() || !args[0].toObject().is<JSFunction>()) {
+        const char* typeName = InformalValueTypeName(args[0]);
+        JS_ReportErrorASCII(cx, "expected hook function, got %s", typeName);
         return false;
+    }
 
+    Handle<GlobalObject*> global = cx->global();
+    global->setReservedSlot(GlobalAppSlotModuleMetadataHook, args[0]);
+
+    args.rval().setUndefined();
     return true;
+}
+
+static bool
+CallModuleMetadataHook(JSContext* cx, HandleObject module, HandleObject metaObject)
+{
+    Handle<GlobalObject*> global = cx->global();
+    RootedValue hookValue(cx, global->getReservedSlot(GlobalAppSlotModuleMetadataHook));
+    if (hookValue.isUndefined()) {
+        JS_ReportErrorASCII(cx, "Module metadata hook not set");
+        return false;
+    }
+    MOZ_ASSERT(hookValue.toObject().is<JSFunction>());
+
+    JS::AutoValueArray<2> args(cx);
+    args[0].setObject(*module);
+    args[1].setObject(*metaObject);
+
+    RootedValue dummy(cx);
+    return JS_CallFunctionValue(cx, nullptr, hookValue, args, &dummy);
 }
 
 static bool
@@ -5616,7 +5641,11 @@ DumpScopeChain(JSContext* cx, unsigned argc, Value* vp)
         }
         script = JSFunction::getOrCreateScript(cx, fun);
     } else {
-        script = obj->as<ModuleObject>().script();
+        script = obj->as<ModuleObject>().maybeScript();
+        if (!script) {
+            JS_ReportErrorASCII(cx, "module does not have an associated script");
+            return false;
+        }
     }
 
     script->bodyScope()->dump();
@@ -7451,7 +7480,7 @@ ProcessArgs(JSContext* cx, OptionParser* op)
     if (const char* path = op->getStringOption("module-load-path"))
         moduleLoadPath = path;
 
-    if (!modulePaths.empty() && !InitModuleLoader(cx))
+    if (!InitModuleLoader(cx))
         return false;
 
     while (!filePaths.empty() || !codeChunks.empty() || !modulePaths.empty()) {

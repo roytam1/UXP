@@ -38,6 +38,18 @@ Reflect.Loader = new class {
         module.declarationInstantiation();
         return module.evaluation();
     }
+
+    populateImportMeta(module, metaObject) {
+        // For the shell, use the script's filename as the base URL.
+
+        let path;
+        if (ReflectApply(MapPrototypeHas, this.modulePaths, [module])) {
+            path = ReflectApply(MapPrototypeGet, this.modulePaths, [module]);
+        } else {
+            path = "(unknown)";
+        }
+        metaObject.url = path;
+    }
 };
 
 setModuleResolveHook((referencingInfo, requestName) => {

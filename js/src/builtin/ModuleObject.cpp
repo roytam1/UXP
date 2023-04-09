@@ -835,18 +835,22 @@ ModuleObject::fixEnvironmentsAfterCompartmentMerge()
     AssertModuleScopesMatch(this);
 }
 
-bool
-ModuleObject::hasScript() const
+JSScript*
+ModuleObject::maybeScript() const
 {
-    // When modules are parsed via the Reflect.parse() API, the module object
-    // doesn't have a script.
-    return !getReservedSlot(ScriptSlot).isUndefined();
+    Value value = getReservedSlot(ScriptSlot);
+    if (value.isUndefined())
+        return nullptr;
+
+    return value.toGCThing()->as<JSScript>();
 }
 
 JSScript*
 ModuleObject::script() const
 {
-    return static_cast<JSScript*>(getReservedSlot(ScriptSlot).toPrivate());
+    JSScript* ptr = maybeScript();
+    MOZ_RELEASE_ASSERT(ptr);
+    return ptr;
 }
 
 static inline void
@@ -906,8 +910,8 @@ ModuleObject::enclosingScope() const
 ModuleObject::trace(JSTracer* trc, JSObject* obj)
 {
     ModuleObject& module = obj->as<ModuleObject>();
-    if (module.hasScript()) {
-        JSScript* script = module.script();
+    JSScript* script = module.maybeScript();
+    if (script) {
         TraceManuallyBarrieredEdge(trc, &script, "Module script");
         module.setReservedSlot(ScriptSlot, PrivateValue(script));
     }
@@ -976,6 +980,11 @@ ModuleObject::execute(JSContext* cx, HandleModuleObject self, MutableHandleValue
 #endif
 
     RootedScript script(cx, self->script());
+
+    // The top-level script if a module is only ever executed once. Clear the
+    // reference to prevent us keeping this alive unnecessarily.
+    self->setReservedSlot(ScriptSlot, UndefinedValue());
+
     RootedModuleEnvironmentObject scope(cx, self->environment());
     if (!scope) {
         JS_ReportErrorASCII(cx, "Module declarations have not yet been instantiated");
