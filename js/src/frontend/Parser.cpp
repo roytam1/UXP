@@ -4469,7 +4469,8 @@ Parser<ParseHandler>::objectBindingPattern(DeclarationKind kind, YieldHandling y
             TokenPos namePos = tokenStream.nextToken().pos;
 
             PropertyType propType;
-            Node propName = propertyName(yieldHandling, PropertyNameInPattern, declKind, literal, &propType, &propAtom);
+            Node propName = propertyOrMethodName(yieldHandling, PropertyNameInPattern, declKind,
+                                                 literal, &propType, &propAtom);
             if (!propName)
                 return null();
             if (propType == PropertyType::Normal) {
@@ -7452,8 +7453,9 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling, DefaultHandling d
         
     RootedAtom propAtom(context);
     PropertyType propType;
-    Node propName = propertyName(yieldHandling, PropertyNameInClass, /* maybeDecl = */ Nothing(),
-                                 classMembers, &propType, &propAtom);
+    Node propName = propertyOrMethodName(yieldHandling, PropertyNameInClass,
+                                         /* maybeDecl = */ Nothing(),
+                                         classMembers, &propType, &propAtom);
     if (!propName)
         return false;
 
@@ -10559,40 +10561,116 @@ typename ParseHandler::Node
 Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
                                    PropertyNameContext propertyNameContext,
                                    const Maybe<DeclarationKind>& maybeDecl, ListNodeType propList,
+                                   MutableHandleAtom propAtom)
+{
+    // PropertyName[Yield, Await]:
+    //   LiteralPropertyName
+    //   ComputedPropertyName[?Yield, ?Await]
+    //
+    // LiteralPropertyName:
+    //   IdentifierName
+    //   StringLiteral
+    //   NumericLiteral
+    TokenKind ltok = tokenStream.currentToken().type;
+
+    propAtom.set(nullptr);
+    switch (ltok) {
+      case TOK_NUMBER:
+        propAtom.set(DoubleToAtom(context, tokenStream.currentToken().number()));
+        if (!propAtom.get())
+            return null();
+        return newNumber(tokenStream.currentToken());
+
+      case TOK_STRING: {
+        propAtom.set(tokenStream.currentToken().atom());
+        uint32_t index;
+        if (propAtom->isIndex(&index)) {
+            return handler.newNumber(index, NoDecimal, pos());
+        }
+        return stringLiteral();
+      }
+
+      case TOK_LB:
+        return computedPropertyName(yieldHandling, maybeDecl, propList);
+
+      default: {
+        if (!TokenKindIsPossibleIdentifierName(ltok)) {
+            error(JSMSG_UNEXPECTED_TOKEN, "property name", TokenKindToDesc(ltok));
+            return null();
+        }
+
+        propAtom.set(tokenStream.currentName());
+        return handler.newObjectLiteralPropertyName(propAtom, pos());
+      }
+    }
+}
+
+// True if `kind` can be the first token of a PropertyName.
+static bool
+TokenKindCanStartPropertyName(TokenKind tt)
+{
+  return TokenKindIsPossibleIdentifierName(tt) || tt == TOK_STRING ||
+         tt == TOK_NUMBER || tt == TOK_LB ||
+         tt == TOK_MUL;
+}
+
+template <typename ParseHandler>
+typename ParseHandler::Node
+Parser<ParseHandler>::propertyOrMethodName(YieldHandling yieldHandling,
+                                   PropertyNameContext propertyNameContext,
+                                   const Maybe<DeclarationKind>& maybeDecl, ListNodeType propList,
                                    PropertyType* propType, MutableHandleAtom propAtom)
 {
+    // We're parsing an object literal, class, or destructuring pattern;
+    // propertyNameContext tells which one. This method parses any of the
+    // following, storing the corresponding PropertyType in `*propType` to tell
+    // the caller what we parsed:
+    //
+    //     async [no LineTerminator here] PropertyName
+    //                            ==> PropertyType::AsyncMethod
+    //     async [no LineTerminator here] * PropertyName
+    //                            ==> PropertyType::AsyncGeneratorMethod
+    //     * PropertyName         ==> PropertyType::GeneratorMethod
+    //     get PropertyName       ==> PropertyType::Getter
+    //     set PropertyName       ==> PropertyType::Setter
+    //     PropertyName :         ==> PropertyType::Normal
+    //     PropertyName           ==> see below
+    //
+    // In the last case, where there's not a `:` token to consume, we peek at
+    // (but don't consume) the next token to decide how to set `*propType`.
+    //
+    //     `=` or `;`             ==> PropertyType::Field (classes only)
+    //     `=`                    ==> PropertyType::CoverInitializedName
+    //     `,` or `}`             ==> PropertyType::Shorthand
+    //     `(`                    ==> PropertyType::Method
+    //
+    // The caller must check `*propType` and throw if whatever we parsed isn't
+    // allowed here (for example, a getter in a destructuring pattern).
+    //
+    // This method does *not* match `static` (allowed in classes) or `...`
+    // (allowed in object literals and patterns). The caller must take care of
+    // those before calling this method.
+
     TokenKind ltok;
     if (!tokenStream.getToken(&ltok))
         return null();
 
     MOZ_ASSERT(ltok != TOK_RC, "caller should have handled TOK_RC");
 
+    // Accept `async` and/or `*`, indicating an async or generator method;
+    // or `get` or `set`, indicating an accessor.
     bool isGenerator = false;
     bool isAsync = false;
+    bool isGetter = false;
+    bool isSetter = false;
 
     if (ltok == TOK_ASYNC) {
-        // AsyncMethod[Yield, Await]:
-        //   async [no LineTerminator here] PropertyName[?Yield, ?Await] ...
-        //
-        //  AsyncGeneratorMethod[Yield, Await]:
-        //    async [no LineTerminator here] * PropertyName[?Yield, ?Await] ...
-        //
-        // PropertyName:
-        //   LiteralPropertyName
-        //   ComputedPropertyName[?Yield, ?Await]
-        //
-        // LiteralPropertyName:
-        //   IdentifierName
-        //   StringLiteral
-        //   NumericLiteral
-        //
-        // ComputedPropertyName[Yield, Await]:
-        //   [ ...
+        // `async` is also a PropertyName by itself (it's a conditional keyword),
+        // so peek at the next token to see if we're really looking at a method.
         TokenKind tt = TOK_EOF;
         if (!tokenStream.peekTokenSameLine(&tt))
             return null();
-        if (tt == TOK_STRING || tt == TOK_NUMBER || tt == TOK_LB ||
-            TokenKindIsPossibleIdentifierName(tt) || tt == TOK_MUL)
+        if (TokenKindCanStartPropertyName(tt))
         {
             isAsync = true;
             tokenStream.consumeKnownToken(tt);
@@ -10606,109 +10684,33 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
             return null();
     }
 
-    propAtom.set(nullptr);
-    Node propName;
-    switch (ltok) {
-      case TOK_NUMBER:
-        propAtom.set(DoubleToAtom(context, tokenStream.currentToken().number()));
-        if (!propAtom.get())
-            return null();
-        propName = newNumber(tokenStream.currentToken());
-        if (!propName)
-            return null();
-        break;
-
-      case TOK_STRING: {
-        propAtom.set(tokenStream.currentToken().atom());
-        uint32_t index;
-        if (propAtom->isIndex(&index)) {
-            propName = handler.newNumber(index, NoDecimal, pos());
-            if (!propName)
-                return null();
-            break;
-        }
-        propName = stringLiteral();
-        if (!propName)
-            return null();
-        break;
-      }
-
-      case TOK_LB:
-        propName = computedPropertyName(yieldHandling, maybeDecl, propList);
-        if (!propName)
-            return null();
-        break;
-
-      default: {
-        if (!TokenKindIsPossibleIdentifierName(ltok)) {
-            error(JSMSG_UNEXPECTED_TOKEN, "property name", TokenKindToDesc(ltok));
-            return null();
-        }
-
-        propAtom.set(tokenStream.currentName());
-        // Do not look for accessor syntax on generator or async methods.
-        if (isGenerator || isAsync || !(ltok == TOK_GET || ltok == TOK_SET)) {
-            propName = handler.newObjectLiteralPropertyName(propAtom, pos());
-            if (!propName)
-                return null();
-            break;
-        }
-
-        *propType = ltok == TOK_GET ? PropertyType::Getter : PropertyType::Setter;
-
+    if (!isAsync && !isGenerator &&
+        (ltok == TOK_GET || ltok == TOK_SET)) {
         // We have parsed |get| or |set|. Look for an accessor property
         // name next.
         TokenKind tt;
         if (!tokenStream.peekToken(&tt))
             return null();
-        if (TokenKindIsPossibleIdentifierName(tt)) {
+        if (TokenKindCanStartPropertyName(tt)) {
             tokenStream.consumeKnownToken(tt);
-
-            propAtom.set(tokenStream.currentName());
-            return handler.newObjectLiteralPropertyName(propAtom, pos());
+            isGetter = (ltok == TOK_GET);
+            isSetter = (ltok == TOK_SET);
         }
-        if (tt == TOK_STRING) {
-            tokenStream.consumeKnownToken(TOK_STRING);
-
-            propAtom.set(tokenStream.currentToken().atom());
-
-            uint32_t index;
-            if (propAtom->isIndex(&index)) {
-                propAtom.set(DoubleToAtom(context, index));
-                if (!propAtom.get())
-                    return null();
-                return handler.newNumber(index, NoDecimal, pos());
-            }
-            return stringLiteral();
-        }
-        if (tt == TOK_NUMBER) {
-            tokenStream.consumeKnownToken(TOK_NUMBER);
-
-            propAtom.set(DoubleToAtom(context, tokenStream.currentToken().number()));
-            if (!propAtom.get())
-                return null();
-            return newNumber(tokenStream.currentToken());
-        }
-        if (tt == TOK_LB) {
-            tokenStream.consumeKnownToken(TOK_LB);
-
-            return computedPropertyName(yieldHandling, maybeDecl, propList);
-        }
-
-        // Not an accessor property after all.
-        propName = handler.newObjectLiteralPropertyName(propAtom.get(), pos());
-        if (!propName)
-            return null();
-        break;
-      }
     }
 
+    Node propName = propertyName(yieldHandling, propertyNameContext, maybeDecl,
+                                 propList, propAtom);
+    if (!propName)
+        return null();
+
+    // Grab the next token following the property/method name.
+    // (If this isn't a colon, we're going to either put it back or throw.)
     TokenKind tt;
     if (!tokenStream.getToken(&tt))
         return null();
 
     if (tt == TOK_COLON) {
-        if (isGenerator || isAsync) {
+        if (isGenerator || isAsync || isGetter || isSetter) {
             error(JSMSG_BAD_PROP_ID);
             return null();
         }
@@ -10717,7 +10719,7 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
     }
 
     if (propertyNameContext == PropertyNameInClass && (tt == TOK_SEMI || tt == TOK_ASSIGN)) {
-        if (isGenerator || isAsync) {
+        if (isGenerator || isAsync || isGetter || isSetter) {
             error(JSMSG_BAD_PROP_ID);
             return null();
         }
@@ -10729,7 +10731,7 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
     if (TokenKindIsPossibleIdentifierName(ltok) &&
         (tt == TOK_COMMA || tt == TOK_RC || tt == TOK_ASSIGN))
     {
-        if (isGenerator || isAsync) {
+        if (isGenerator || isAsync || isGetter || isSetter) {
             error(JSMSG_BAD_PROP_ID);
             return null();
         }
@@ -10748,6 +10750,10 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
             *propType = PropertyType::GeneratorMethod;
         else if (isAsync)
             *propType = PropertyType::AsyncMethod;
+        else if (isGetter)
+            *propType = PropertyType::Getter;
+        else if (isSetter)
+            *propType = PropertyType::Setter;
         else
             *propType = PropertyType::Method;
         return propName;
@@ -10826,7 +10832,8 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
             TokenPos namePos = tokenStream.nextToken().pos;
 
             PropertyType propType;
-            Node propName = propertyName(yieldHandling, PropertyNameInLiteral, declKind, literal, &propType, &propAtom);
+            Node propName = propertyOrMethodName(yieldHandling, PropertyNameInLiteral, declKind,
+                                                 literal, &propType, &propAtom);
             if (!propName)
 
                 return null();

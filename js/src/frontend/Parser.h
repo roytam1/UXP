@@ -1629,7 +1629,11 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     Node propertyName(YieldHandling yieldHandling,
                       PropertyNameContext propertyNameContext,
                       const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType propList,
-                      PropertyType* propType, MutableHandleAtom propAtom);
+                      MutableHandleAtom propAtom);
+    Node propertyOrMethodName(YieldHandling yieldHandling,
+                              PropertyNameContext propertyNameContext,
+                              const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType propList,
+                              PropertyType* propType, MutableHandleAtom propAtom);
     UnaryNodeType computedPropertyName(YieldHandling yieldHandling,
                                        const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType literal);
     ListNodeType arrayInitializer(YieldHandling yieldHandling, PossibleError* possibleError);
