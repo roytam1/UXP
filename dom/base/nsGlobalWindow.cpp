@@ -909,7 +909,8 @@ nsPIDOMWindow<T>::nsPIDOMWindow(nsPIDOMWindowOuter *aOuterWindow)
   mOuterWindow(aOuterWindow),
   // Make sure no actual window ends up with mWindowID == 0
   mWindowID(NextWindowID()), mHasNotifiedGlobalCreated(false),
-  mMarkedCCGeneration(0), mServiceWorkersTestingEnabled(false)
+  mMarkedCCGeneration(0), mServiceWorkersTestingEnabled(false),
+  mEvent(nullptr)
  {}
 
 template<class T>
@@ -5246,6 +5247,16 @@ nsGlobalWindow::SetOpener(JSContext* aCx, JS::Handle<JS::Value> aOpener,
 }
 
 void
+nsGlobalWindow::GetEvent(JSContext* aCx, JS::MutableHandle<JS::Value> aRetval)
+{
+  if (mEvent) {
+    Unused << nsContentUtils::WrapNative(aCx, mEvent, aRetval);
+  } else {
+    aRetval.setUndefined();
+  }
+}
+
+void
 nsGlobalWindow::GetStatusOuter(nsAString& aStatus)
 {
   MOZ_RELEASE_ASSERT(IsOuterWindow());
@@ -8886,30 +8897,33 @@ nsGlobalWindow::PostMessageMoz(JSContext* aCx, JS::Handle<JS::Value> aMessage,
 }
 
 void
-nsGlobalWindow::PostMessageMoz(JSContext* aCx, JS::Handle<JS::Value> aMessage,
+nsGlobalWindow::PostMessageMoz(JSContext* aCx,
+                               JS::Handle<JS::Value> aMessage,
                                const nsAString& aTargetOrigin,
-                               const Optional<Sequence<JS::Value>>& aTransfer,
+                               const Sequence<JSObject*>& aTransfer,
                                nsIPrincipal& aSubjectPrincipal,
-                               ErrorResult& aError)
+                               ErrorResult& aRv)
 {
   JS::Rooted<JS::Value> transferArray(aCx, JS::UndefinedValue());
-  if (aTransfer.WasPassed()) {
-    const Sequence<JS::Value >& values = aTransfer.Value();
-
-    // The input sequence only comes from the generated bindings code, which
-    // ensures it is rooted.
-    JS::HandleValueArray elements =
-      JS::HandleValueArray::fromMarkedLocation(values.Length(), values.Elements());
-
-    transferArray = JS::ObjectOrNullValue(JS_NewArrayObject(aCx, elements));
-    if (transferArray.isNull()) {
-      aError.Throw(NS_ERROR_OUT_OF_MEMORY);
-      return;
-    }
+  aRv = nsContentUtils::CreateJSValueFromSequenceOfObject(aCx, aTransfer,
+                                                          &transferArray);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
   }
 
   PostMessageMoz(aCx, aMessage, aTargetOrigin, transferArray,
-                 aSubjectPrincipal, aError);
+                 aSubjectPrincipal, aRv);
+}
+
+void
+nsGlobalWindow::PostMessageMoz(JSContext* aCx,
+                               JS::Handle<JS::Value> aMessage,
+                               const WindowPostMessageOptions& aOptions,
+                               nsIPrincipal& aSubjectPrincipal,
+                               ErrorResult& aRv)
+{
+  PostMessageMoz(aCx, aMessage, aOptions.mTargetOrigin, aOptions.mTransfer,
+                 aSubjectPrincipal, aRv);
 }
 
 class nsCloseEvent : public Runnable {
@@ -14639,6 +14653,17 @@ nsGlobalWindow::CreateImageBitmap(const ImageBitmapSource& aImage,
     aRv.Throw(NS_ERROR_TYPE_ERR);
     return nullptr;
   }
+}
+
+// https://html.spec.whatwg.org/#structured-cloning
+void
+nsGlobalWindow::StructuredClone(JSContext* aCx,
+                                JS::Handle<JS::Value> aValue,
+                                const StructuredSerializeOptions& aOptions,
+                                JS::MutableHandle<JS::Value> aRv,
+                                ErrorResult& aError)
+{
+  nsContentUtils::StructuredClone(aCx, this, aValue, aOptions, aRv, aError);
 }
 
 // Helper called by methods that move/resize the window,

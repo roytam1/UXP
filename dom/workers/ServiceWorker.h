@@ -15,6 +15,8 @@ class nsPIDOMWindowInner;
 namespace mozilla {
 namespace dom {
 
+struct StructuredSerializeOptions;
+
 namespace workers {
 
 class ServiceWorkerInfo;
@@ -63,7 +65,13 @@ public:
 
   void
   PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
-              const Optional<Sequence<JS::Value>>& aTransferable,
+              const Sequence<JSObject*>& aTransferable,
+              ErrorResult& aRv);
+
+  void
+  PostMessage(JSContext* aCx,
+              JS::Handle<JS::Value> aMessage,
+              const StructuredSerializeOptions& aOptions,
               ErrorResult& aRv);
 
 private:

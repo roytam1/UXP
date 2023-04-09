@@ -141,7 +141,7 @@ NS_IMPL_ISUPPORTS0(MessageWaitUntilHandler)
 nsresult
 ServiceWorkerPrivate::SendMessageEvent(JSContext* aCx,
                                        JS::Handle<JS::Value> aMessage,
-                                       const Optional<Sequence<JS::Value>>& aTransferable,
+                                       const Sequence<JSObject*>& aTransferable,
                                        UniquePtr<ServiceWorkerClientInfo>&& aClientInfo)
 {
   ErrorResult rv(SpawnWorkerIfNeeded(MessageEvent, nullptr));

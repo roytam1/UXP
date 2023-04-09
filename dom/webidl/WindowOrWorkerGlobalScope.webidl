@@ -44,6 +44,10 @@ interface WindowOrWorkerGlobalScope {
   Promise<ImageBitmap> createImageBitmap(ImageBitmapSource aImage);
   [Throws]
   Promise<ImageBitmap> createImageBitmap(ImageBitmapSource aImage, long aSx, long aSy, long aSw, long aSh);
+
+  // structured cloning
+  [Throws]
+  any structuredClone(any value, optional StructuredSerializeOptions options);
 };
 
 // https://fetch.spec.whatwg.org/#fetch-method

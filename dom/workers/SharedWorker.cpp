@@ -22,6 +22,7 @@
 using mozilla::dom::Optional;
 using mozilla::dom::Sequence;
 using mozilla::dom::MessagePort;
+using mozilla::dom::StructuredSerializeOptions;
 using namespace mozilla;
 
 USING_WORKERS_NAMESPACE
@@ -142,7 +143,7 @@ SharedWorker::Close()
 
 void
 SharedWorker::PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
-                          const Optional<Sequence<JS::Value>>& aTransferable,
+                          const Sequence<JSObject*>& aTransferable,
                           ErrorResult& aRv)
 {
   AssertIsOnMainThread();
@@ -150,6 +151,15 @@ SharedWorker::PostMessage(JSContext* aCx, JS::Handle<JS::Value> aMessage,
   MOZ_ASSERT(mMessagePort);
 
   mMessagePort->PostMessage(aCx, aMessage, aTransferable, aRv);
+}
+
+void
+SharedWorker::PostMessage(JSContext* aCx,
+                          JS::Handle<JS::Value> aMessage,
+                          const StructuredSerializeOptions& aOptions,
+                          ErrorResult& aRv)
+{
+  PostMessage(aCx, aMessage, aOptions.mTransfer, aRv);
 }
 
 NS_IMPL_ADDREF_INHERITED(SharedWorker, DOMEventTargetHelper)
