@@ -1321,6 +1321,15 @@ js::GetAllocationMetadata(JSObject* obj)
     return nullptr;
 }
 
+JS_FRIEND_API(JS::Value)
+js::MaybeGetScriptPrivate(JSObject* object) {
+  if (!object->is<ScriptSourceObject>()) {
+    return UndefinedValue();
+  }
+
+  return object->as<ScriptSourceObject>().canonicalPrivate();
+}
+
 JS_FRIEND_API(bool)
 js::ReportIsNotFunction(JSContext* cx, HandleValue v)
 {
