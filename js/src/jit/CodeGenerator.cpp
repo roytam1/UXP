@@ -2402,6 +2402,18 @@ CodeGenerator::visitNullarySharedStub(LNullarySharedStub* lir)
     }
 }
 
+typedef JSObject* (*GetOrCreateModuleMetaObjectFn)(JSContext*, HandleObject);
+static const VMFunction GetOrCreateModuleMetaObjectInfo =
+    FunctionInfo<GetOrCreateModuleMetaObjectFn>(js::GetOrCreateModuleMetaObject,
+                                                "GetOrCreateModuleMetaObject");
+
+void
+CodeGenerator::visitModuleMetadata(LModuleMetadata* lir)
+{
+    pushArg(ImmPtr(lir->mir()->module()));
+    callVM(GetOrCreateModuleMetaObjectInfo, lir);
+}
+
 typedef JSObject* (*StartDynamicModuleImportFn)(JSContext*, HandleValue, HandleValue);
 static const VMFunction StartDynamicModuleImportInfo =
     FunctionInfo<StartDynamicModuleImportFn>(js::StartDynamicModuleImport,

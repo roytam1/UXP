@@ -442,6 +442,7 @@ class CodeGenerator final : public CodeGeneratorSpecific
 
     void visitRandom(LRandom* ins);
     void visitSignExtend(LSignExtend* ins);
+    void visitModuleMetadata(LModuleMetadata* lir);
     void visitDynamicImport(LDynamicImport* lir);
 
 #ifdef DEBUG

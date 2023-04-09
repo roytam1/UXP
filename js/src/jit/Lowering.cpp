@@ -2428,6 +2428,14 @@ LIRGenerator::visitNullarySharedStub(MNullarySharedStub* ins)
 }
 
 void
+LIRGenerator::visitModuleMetadata(MModuleMetadata* ins)
+{
+    LModuleMetadata* lir = new(alloc()) LModuleMetadata();
+    defineReturn(lir, ins);
+    assignSafepoint(lir, ins);
+}
+
+void
 LIRGenerator::visitDynamicImport(MDynamicImport* ins)
 {
     LDynamicImport* lir = new(alloc()) LDynamicImport(useBoxAtStart(ins->referencingPrivate()),

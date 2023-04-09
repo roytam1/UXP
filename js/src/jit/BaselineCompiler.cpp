@@ -4695,17 +4695,27 @@ BaselineCompiler::emit_JSOP_JUMPTARGET()
     return true;
 }
 
+typedef JSObject* (*GetOrCreateModuleMetaObjectFn)(JSContext*, HandleObject);
+static const VMFunction GetOrCreateModuleMetaObjectInfo =
+    FunctionInfo<GetOrCreateModuleMetaObjectFn>(js::GetOrCreateModuleMetaObject,
+                                                "GetOrCreateModuleMetaObject");
+
 bool
 BaselineCompiler::emit_JSOP_IMPORTMETA()
 {
     RootedModuleObject module(cx, GetModuleObjectForScript(script));
     MOZ_ASSERT(module);
 
-    JSObject* metaObject = GetOrCreateModuleMetaObject(cx, module);
-    if (!metaObject)
-        return false;
+    frame.syncStack(0);
 
-    frame.push(ObjectValue(*metaObject));
+    prepareVMCall();
+    pushArg(ImmGCPtr(module));
+    if (!callVM(GetOrCreateModuleMetaObjectInfo)) {
+        return false;
+    }
+
+    masm.tagValue(JSVAL_TYPE_OBJECT, ReturnReg, R0);
+    frame.push(R0);
     return true;
 }
 

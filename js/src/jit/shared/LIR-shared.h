@@ -4939,6 +4939,19 @@ class LNullarySharedStub : public LCallInstructionHelper<BOX_PIECES, 0, 0>
     }
 };
 
+class LModuleMetadata : public LCallInstructionHelper<1, 0, 0>
+{
+  public:
+    LIR_HEADER(ModuleMetadata)
+
+    const MModuleMetadata* mir() const {
+        return mir_->toModuleMetadata();
+    }
+
+    LModuleMetadata()
+    {}
+};
+
 class LDynamicImport : public LCallInstructionHelper<1, 2 * BOX_PIECES, 0>
 {
   public:
