@@ -331,8 +331,9 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     MOZ_MUST_USE bool addShorthand(ListNodeType literal, NameNodeType name, NameNodeType expr) { return true; }
     MOZ_MUST_USE bool addSpreadProperty(ListNodeType literal, uint32_t begin, Node inner) { return true; }
     MOZ_MUST_USE bool addObjectMethodDefinition(ListNodeType literal, Node name, FunctionNodeType funNode, JSOp op) { return true; }
-    MOZ_MUST_USE bool addClassMethodDefinition(ListNodeType memberList, Node key, FunctionNodeType funNode, JSOp op, bool isStatic) { return true; }
-    MOZ_MUST_USE bool addClassFieldDefinition(ListNodeType memberList, Node name, FunctionNodeType initializer) { return true; }
+    MOZ_MUST_USE Node newClassMethodDefinition(Node key, FunctionNodeType funNode, JSOp op, bool isStatic) { return NodeGeneric; }
+    MOZ_MUST_USE Node newClassFieldDefinition(Node name, FunctionNodeType initializer) { return NodeGeneric; }
+    MOZ_MUST_USE bool addClassMemberDefinition(ListNodeType memberList, Node member) { return true; }
     UnaryNodeType newYieldExpression(uint32_t begin, Node value) { return NodeGeneric; }
     UnaryNodeType newYieldStarExpression(uint32_t begin, Node value) { return NodeGeneric; }
     UnaryNodeType newAwaitExpression(uint32_t begin, Node value) { return NodeGeneric; }

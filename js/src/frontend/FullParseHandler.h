@@ -459,30 +459,34 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return true;
     }
 
-    MOZ_MUST_USE bool addClassMethodDefinition(ListNodeType memberList, Node key, FunctionNodeType funNode,
-                                               JSOp op, bool isStatic)
+    MOZ_MUST_USE ClassMethod* newClassMethodDefinition(Node key, FunctionNodeType funNode,
+                                                       JSOp op, bool isStatic)
     {
-        MOZ_ASSERT(memberList->isKind(PNK_CLASSMEMBERLIST));
         MOZ_ASSERT(isUsableAsObjectPropertyName(key));
 
-        ClassMethod* classMethod = new_<ClassMethod>(key, funNode, op, isStatic);
-        if (!classMethod)
-            return false;
-        memberList->append(classMethod);
-        return true;
+        return new_<ClassMethod>(key, funNode, op, isStatic);
     }
 
-    MOZ_MUST_USE bool addClassFieldDefinition(ListNodeType memberList, Node name, FunctionNodeType initializer)
+    MOZ_MUST_USE ClassField* newClassFieldDefinition(Node name, FunctionNodeType initializer)
     {
-        MOZ_ASSERT(memberList->isKind(PNK_CLASSMEMBERLIST));
         MOZ_ASSERT(isUsableAsObjectPropertyName(name));
 
-        ParseNode* classField = new_<ClassField>(name, initializer);
-        if (!classField)
-            return false;
-        memberList->append(classField);
+        return new_<ClassField>(name, initializer);
+    }
+
+    MOZ_MUST_USE bool addClassMemberDefinition(ListNodeType memberList, Node member)
+    {
+        MOZ_ASSERT(memberList->isKind(PNK_CLASSMEMBERLIST));
+        // Constructors can be surrounded by LexicalScopes.
+        MOZ_ASSERT(member->isKind(PNK_CLASSMETHOD) ||
+                   member->isKind(PNK_CLASSFIELD) ||
+                   (member->isKind(PNK_LEXICALSCOPE) &&
+                    member->as<LexicalScopeNode>().scopeBody()->isKind(PNK_CLASSMETHOD)));
+
+        addList(/* list = */ memberList, /* kid = */ member);
         return true;
     }
+
 
     UnaryNodeType newInitialYieldExpression(uint32_t begin, Node gen) {
         TokenPos pos(begin, begin + 1);

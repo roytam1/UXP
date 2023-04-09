@@ -464,7 +464,7 @@ class MOZ_RAII AutoSaveLocalStrictMode
 //
 //   `class {}`
 //     ClassEmitter ce(this);
-//     ce.emitScope(scopeBindings, false);
+//     ce.emitScope(scopeBindings);
 //     ce.emitClass();
 //
 //     ce.emitInitDefaultConstructor(Some(offset_of_class),
@@ -474,7 +474,7 @@ class MOZ_RAII AutoSaveLocalStrictMode
 //
 //   `class { constructor() { ... } }`
 //     ClassEmitter ce(this);
-//     ce.emitScope(scopeBindings, false);
+//     ce.emitScope(scopeBindings);
 //     ce.emitClass();
 //
 //     emit(function_for_constructor);
@@ -484,7 +484,7 @@ class MOZ_RAII AutoSaveLocalStrictMode
 //
 //   `class X { constructor() { ... } }`
 //     ClassEmitter ce(this);
-//     ce.emitScope(scopeBindings, true);
+//     ce.emitScope(scopeBindings);
 //     ce.emitClass(atom_of_X);
 //
 //     ce.emitInitDefaultConstructor(Some(offset_of_class),
@@ -494,7 +494,7 @@ class MOZ_RAII AutoSaveLocalStrictMode
 //
 //   `class X { constructor() { ... } }`
 //     ClassEmitter ce(this);
-//     ce.emitScope(scopeBindings, true);
+//     ce.emitScope(scopeBindings);
 //     ce.emitClass(atom_of_X);
 //
 //     emit(function_for_constructor);
@@ -504,7 +504,7 @@ class MOZ_RAII AutoSaveLocalStrictMode
 //
 //   `class X extends Y { constructor() { ... } }`
 //     ClassEmitter ce(this);
-//     ce.emitScope(scopeBindings, true);
+//     ce.emitScope(scopeBindings);
 //
 //     emit(Y);
 //     ce.emitDerivedClass(atom_of_X);
@@ -516,7 +516,7 @@ class MOZ_RAII AutoSaveLocalStrictMode
 //
 //   `class X extends Y { constructor() { ... super.f(); ... } }`
 //     ClassEmitter ce(this);
-//     ce.emitScope(scopeBindings, true);
+//     ce.emitScope(scopeBindings);
 //
 //     emit(Y);
 //     ce.emitDerivedClass(atom_of_X);
@@ -630,7 +630,7 @@ class MOZ_STACK_CLASS ClassEmitter : public PropertyEmitter
 
     bool isDerived_ = false;
 
-    mozilla::Maybe<TDZCheckCache> tdzCacheForInnerName_;
+    mozilla::Maybe<TDZCheckCache> tdzCache_;
     mozilla::Maybe<EmitterScope> innerScope_;
     AutoSaveLocalStrictMode strictMode_;
 
@@ -691,7 +691,7 @@ class MOZ_STACK_CLASS ClassEmitter : public PropertyEmitter
   public:
     explicit ClassEmitter(BytecodeEmitter* bce);
 
-    MOZ_MUST_USE bool emitScope(JS::Handle<LexicalScope::Data*> scopeBindings, bool hasName);
+    MOZ_MUST_USE bool emitScope(JS::Handle<LexicalScope::Data*> scopeBindings);
 
     // @param name
     //        Name of the class (nullptr if this is anonymous class)

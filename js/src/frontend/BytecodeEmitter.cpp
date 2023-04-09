@@ -2324,7 +2324,7 @@ BytecodeEmitter::emitSetThis(BinaryNode* setThisNode)
         return false;
     }
 
-    if (!emitInitializeInstanceFields(true)) {
+    if (!emitInitializeInstanceFields()) {
         return false;
     }
 
@@ -7623,6 +7623,13 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, PropertyEmitter& pe, PropListTy
             continue;
         }
 
+        if (propdef->is<LexicalScopeNode>()) {
+            // Constructors are sometimes wrapped in LexicalScopeNodes. As we already
+            // handled emitting the constructor, skip it.
+            MOZ_ASSERT(propdef->as<LexicalScopeNode>().scopeBody()->isKind(PNK_CLASSMETHOD));
+            continue;
+        }
+
         // Handle __proto__: v specially because *only* this form, and no other
         // involving "__proto__", performs [[Prototype]] mutation.
         if (propdef->isKind(PNK_MUTATEPROTO)) {
@@ -7854,14 +7861,7 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, PropertyEmitter& pe, PropListTy
         }
     }
 
-    if (obj->getKind() == PNK_CLASSMEMBERLIST) {
-        if (!emitCreateFieldKeys(obj))
-            return false;
-        if (!emitCreateFieldInitializers(obj))
-            return false;
-    }
-
-  return true;
+    return true;
 }
 
 FieldInitializers
@@ -8063,38 +8063,7 @@ BytecodeEmitter::findFieldInitializersForCall()
 }
 
 bool
-BytecodeEmitter::emitCopyInitializersToLocalInitializers()
-{
-    MOZ_ASSERT(sc->asFunctionBox()->isDerivedClassConstructor());
-    if (getFieldInitializers().numFieldInitializers == 0)
-      return true;
-
-    NameOpEmitter noe(this, cx->names().dotLocalInitializers, NameOpEmitter::Kind::Initialize);
-    if (!noe.prepareForRhs()) {
-        //              [stack]
-        return false;
-    }
-
-    if (!emitGetName(cx->names().dotInitializers)) {
-        //              [stack] .initializers
-        return false;
-    }
-
-    if (!noe.emitAssignment()) {
-        //              [stack] .initializers
-        return false;
-    }
-
-    if (!emit1(JSOP_POP)) {
-        //              [stack]
-        return false;
-    }
-
-    return true;
-}
-
-bool
-BytecodeEmitter::emitInitializeInstanceFields(bool isSuperCall)
+BytecodeEmitter::emitInitializeInstanceFields()
 {
     const FieldInitializers& fieldInitializers = findFieldInitializersForCall();
     size_t numFields = fieldInitializers.numFieldInitializers;
@@ -8103,16 +8072,9 @@ BytecodeEmitter::emitInitializeInstanceFields(bool isSuperCall)
       return true;
     }
 
-    if (isSuperCall) {
-        if (!emitGetName(cx->names().dotLocalInitializers)) {
-            //              [stack] ARRAY
-            return false;
-        }
-    } else {
-        if (!emitGetName(cx->names().dotInitializers)) {
-            //              [stack] ARRAY
-            return false;
-        }
+    if (!emitGetName(cx->names().dotInitializers)) {
+        //              [stack] ARRAY
+        return false;
     }
 
     for (size_t fieldIndex = 0; fieldIndex < numFields; fieldIndex++) {
@@ -8625,16 +8587,19 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
     ParseNode* heritageExpression = classNode->heritage();
     ListNode* classMembers = classNode->memberList();
 
-    FunctionNode* constructor = nullptr;
-    for (ParseNode* mn : classMembers->contents()) {
-        if (mn->is<ClassMethod>()) {
-            ClassMethod& method = mn->as<ClassMethod>();
+    ParseNode* constructor = nullptr;
+    for (ParseNode* classElement : classMembers->contents()) {
+        ParseNode* unwrappedElement = classElement;
+        if (unwrappedElement->is<LexicalScopeNode>())
+            unwrappedElement = unwrappedElement->as<LexicalScopeNode>().scopeBody();
+        if (unwrappedElement->is<ClassMethod>()) {
+            ClassMethod& method = unwrappedElement->as<ClassMethod>();
             ParseNode& methodName = method.name();
             if (!method.isStatic() &&
                 (methodName.isKind(PNK_OBJECT_PROPERTY_NAME) || methodName.isKind(PNK_STRING)) &&
                 methodName.as<NameNode>().atom() == cx->names().constructor)
             {
-                constructor = &method.method();
+                constructor = classElement;
                 break;
             }
         }
@@ -8656,8 +8621,8 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
         }
     }
 
-    if (!classNode->isEmptyScope()) {
-        if (!ce.emitScope(classNode->scopeBindings(), classNode->names() != nullptr)) {
+    if (LexicalScopeNode* scopeBindings = classNode->scopeBindings()) {
+        if (!ce.emitScope(scopeBindings->scopeBindings())) {
             //            [stack]
             return false;
         }
@@ -8685,11 +8650,34 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
     }
 
     if (constructor) {
-        bool needsHomeObject = constructor->funbox()->needsHomeObject();
+        FunctionNode* ctor;
+        // .fieldKeys must be declared outside the scope .initializers is declared
+        // in, hence this extra scope.
+        Maybe<LexicalScopeEmitter> lse;
+        if (constructor->is<LexicalScopeNode>()) {
+            lse.emplace(this);
+            if (!lse->emitScope(ScopeKind::Lexical, constructor->as<LexicalScopeNode>().scopeBindings()))
+                return false;
+
+            // Any class with field initializers will have a constructor
+            if (!emitCreateFieldInitializers(classMembers))
+                return false;
+            ctor = &constructor->as<LexicalScopeNode>().scopeBody()->as<ClassMethod>().method();
+        } else {
+            ctor = &constructor->as<ClassMethod>().method();
+        }
+
+        bool needsHomeObject = ctor->funbox()->needsHomeObject();
         // HERITAGE is consumed inside emitFunction.
-        if (!emitFunction(constructor, isDerived, classMembers)) {
+        if (!emitFunction(ctor, isDerived, classMembers)) {
             //          [stack] HOMEOBJ CTOR
             return false;
+        }
+        if (lse.isSome()) {
+            if (!lse->emitEnd()) {
+                return false;
+            }
+            lse.reset();
         }
         if (!ce.emitInitConstructor(needsHomeObject)) {
             //          [stack] CTOR HOMEOBJ
@@ -8706,6 +8694,10 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
         //            [stack] CTOR HOMEOBJ
         return false;
     }
+
+    if (!emitCreateFieldKeys(classMembers))
+        return false;
+
     if (!ce.emitEnd(kind)) {
         //            [stack] # class declaration
         //            [stack]

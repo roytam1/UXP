@@ -2791,12 +2791,6 @@ Parser<ParseHandler>::functionBody(InHandling inHandling, YieldHandling yieldHan
             return null();
     }
 
-    if (kind == FunctionSyntaxKind::DerivedClassConstructor) {
-        if (!noteDeclaredName(context->names().dotLocalInitializers,
-                              DeclarationKind::Var, pos()))
-            return null();
-    }
-
     return finishLexicalScope(pc->varScope(), body);
 }
 
@@ -3688,6 +3682,12 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
 
     FunctionBox* funbox = pc->functionBox();
     RootedFunction fun(context, funbox->function());
+
+    if (kind == FunctionSyntaxKind::ClassConstructor ||
+        kind == FunctionSyntaxKind::DerivedClassConstructor) {
+        if (!noteUsedName(context->names().dotInitializers))
+            return false;
+    }
 
     // See below for an explanation why arrow function parameters and arrow
     // function bodies are parsed with different yield/await settings.
@@ -7501,7 +7501,11 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling, DefaultHandling d
             return false;
         }
 
-        return handler.addClassFieldDefinition(classMembers, propName, initializer);
+        ClassFieldType field = handler.newClassFieldDefinition(propName, initializer);
+        if (!field)
+            return false;
+
+        return handler.addClassMemberDefinition(classMembers, field);
     }
 
     if (propType != PropertyType::Getter && propType != PropertyType::Setter &&
@@ -7554,6 +7558,19 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling, DefaultHandling d
             funName = propAtom;
     }
 
+    // .fieldKeys must be declared outside the scope .initializers is declared in,
+    // hence this extra scope.
+    Maybe<ParseContext::Scope> dotInitializersScope;
+    if (isConstructor && !options().selfHostingMode) {
+        dotInitializersScope.emplace(this);
+        if (!dotInitializersScope->init(pc))
+            return false;
+
+        if (!noteDeclaredName(context->names().dotInitializers, DeclarationKind::Let, pos()))
+            return false;
+    }
+
+
     // Calling toString on constructors need to return the source text for
     // the entire class. The end offset is unknown at this point in
     // parsing and will be amended when class parsing finishes below.
@@ -7565,7 +7582,18 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling, DefaultHandling d
     handler.checkAndSetIsDirectRHSAnonFunction(funNode);
 
     JSOp op = JSOpFromPropertyType(propType);
-    return handler.addClassMethodDefinition(classMembers, propName, funNode, op, isStatic);
+    Node method = handler.newClassMethodDefinition(propName, funNode, op, isStatic);
+    if (!method)
+        return false;
+
+    if (dotInitializersScope.isSome()) {
+        method = finishLexicalScope(*dotInitializersScope, method);
+        if (!method)
+            return false;
+        dotInitializersScope.reset();
+    }
+
+    return handler.addClassMemberDefinition(classMembers, method);
 }
 
 template <typename ParseHandler>
@@ -7580,6 +7608,16 @@ Parser<ParseHandler>::finishClassConstructor(const ParseContext::ClassStatement&
     // JSOP_DERIVEDCONSTRUCTOR due to needing to emit calls to the field
     // initializers in the constructor. So, synthesize a new one.
     if (classStmt.constructorBox == nullptr && numFields > 0) {
+        MOZ_ASSERT(!options().selfHostingMode);
+        // Unconditionally create the scope here, because it's always the
+        // constructor.
+        ParseContext::Scope dotInitializersScope(this);
+        if (!dotInitializersScope.init(pc))
+            return false;
+
+        if (!noteDeclaredName(context->names().dotInitializers, DeclarationKind::Let, pos()))
+            return false;
+
         // synthesizeConstructor assigns to classStmt.constructorBox
         FunctionNodeType synthesizedCtor = synthesizeConstructor(className, classStartOffset, hasHeritage);
         if (!synthesizedCtor) {
@@ -7595,9 +7633,14 @@ Parser<ParseHandler>::finishClassConstructor(const ParseContext::ClassStatement&
             return false;
         }
 
-        if (!handler.addClassMethodDefinition(classMembers, constructorNameNode,
-                                              synthesizedCtor, JSOP_INITPROP,
-                                              /* isStatic = */ false)) {
+        ClassMethodType method = handler.newClassMethodDefinition(constructorNameNode, synthesizedCtor,
+                                                                  JSOP_INITPROP, /* isStatic = */ false);
+        if (!method)
+            return false;
+
+        LexicalScopeNodeType scope = finishLexicalScope(dotInitializersScope, method);
+
+        if (!handler.addClassMemberDefinition(classMembers, scope)) {
             return false;
         }
     }
@@ -7712,35 +7755,6 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
                 break;
         }
 
-        if (numFields > 0) {
-            // .initializers is always closed over by the constructor when there are
-            // fields with initializers. However, there's some strange circumstances
-            // which prevents us from using the normal noteUsedName() system. We
-            // cannot call noteUsedName(".initializers") when parsing the constructor,
-            // because .initializers should be marked as used *only if* there are
-            // fields with initializers. Even if we haven't seen any fields yet,
-            // there may be fields after the constructor.
-            // Consider the following class:
-            //
-            //  class C {
-            //    constructor() {
-            //      // do we noteUsedName(".initializers") here?
-            //    }
-            //    // ... because there might be some fields down here.
-            //  }
-            //
-            // So, instead, at the end of class parsing (where we are now), we do some
-            // tricks to pretend that noteUsedName(".initializers") was called in the
-            // constructor.
-            if (!usedNames.markAsAlwaysClosedOver(context, context->names().dotInitializers,
-                                                  pc->scriptId(),
-                                                  pc->innermostScope()->id()))
-                return null();
-            if (!noteDeclaredName(context->names().dotInitializers,
-                                  DeclarationKind::Let, namePos))
-                return null();
-        }
-
         if (numFieldKeys > 0) {
             if (!noteDeclaredName(context->names().dotFieldKeys, DeclarationKind::Let, namePos))
                 return null();
@@ -7836,11 +7850,6 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
 
     pc->functionScope().useAsVarScope(pc);
 
-    // Push a LexicalScope on to the stack.
-    ParseContext::Scope lexicalScope(this);
-    if (!lexicalScope.init(pc))
-        return null();
-
     auto stmtList = handler.newStatementList(synthesizedBodyPos);
     if (!stmtList)
         return null();
@@ -7848,14 +7857,8 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
     if (!noteUsedName(context->names().dotThis))
         return null();
 
-    // One might expect a noteUsedName(".initializers") here. See comment in
-    // GeneralParser<ParseHandler, Unit>::classDefinition on why it's not here.
-
-    if (hasHeritage) {
-        if (!noteDeclaredName(context->names().dotLocalInitializers,
-                              DeclarationKind::Var, synthesizedBodyPos))
-            return null();
-    }
+    if (!noteUsedName(context->names().dotInitializers))
+        return null();
 
     bool canSkipLazyClosedOverBindings = handler.canSkipLazyClosedOverBindings();
     if (!declareFunctionThis(canSkipLazyClosedOverBindings))
@@ -7890,9 +7893,6 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
         if (!setThis)
             return null();
 
-        if (!noteUsedName(context->names().dotLocalInitializers))
-          return null();
-
         UnaryNodeType exprStatement = handler.newExprStatement(setThis, synthesizedBodyPos.end);
         if (!exprStatement)
             return null();
@@ -7900,7 +7900,7 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
         handler.addStatementToList(stmtList, exprStatement);
     }
 
-    auto initializerBody = finishLexicalScope(lexicalScope, stmtList);
+    auto initializerBody = finishLexicalScope(pc->varScope(), stmtList);
     if (!initializerBody)
         return null();
     handler.setBeginPosition(initializerBody, stmtList);
@@ -7969,15 +7969,7 @@ Parser<ParseHandler>::fieldInitializerOpt(YieldHandling yieldHandling, bool hasH
     if (!funpc.init())
         return null();
 
-    // Push a VarScope on to the stack.
-    ParseContext::VarScope varScope(this);
-    if (!varScope.init(pc))
-        return null();
-
-    // Push a LexicalScope on to the stack.
-    ParseContext::Scope lexicalScope(this);
-    if (!lexicalScope.init(pc))
-        return null();
+    pc->functionScope().useAsVarScope(pc);
 
     Node initializerExpr;
     TokenPos wholeInitializerPos;
@@ -8081,7 +8073,7 @@ Parser<ParseHandler>::fieldInitializerOpt(YieldHandling yieldHandling, bool hasH
     handler.addStatementToList(statementList, exprStatement);
 
     // Set the function's body to the field assignment.
-    LexicalScopeNodeType initializerBody = finishLexicalScope(lexicalScope, statementList);
+    LexicalScopeNodeType initializerBody = finishLexicalScope(pc->varScope(), statementList);
     if (!initializerBody) {
         return null();
     }
@@ -9975,7 +9967,7 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
                 if (!nextMember)
                     return null();
 
-                if (!noteUsedName(context->names().dotLocalInitializers))
+                if (!noteUsedName(context->names().dotInitializers))
                   return null();
             } else {
                 nextMember = memberCall(tt, lhs, yieldHandling, possibleError);

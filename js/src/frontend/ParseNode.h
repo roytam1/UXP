@@ -2268,13 +2268,9 @@ class ClassNode : public TernaryNode
         MOZ_ASSERT(list->isKind(PNK_CLASSMEMBERLIST));
         return list;
     }
-    bool isEmptyScope() const {
-        ParseNode* scope = kid3();
-        return scope->as<LexicalScopeNode>().isEmptyScope();
-    }
-    Handle<LexicalScope::Data*> scopeBindings() const {
-        ParseNode* scope = kid3();
-        return scope->as<LexicalScopeNode>().scopeBindings();
+    LexicalScopeNode* scopeBindings() const {
+        LexicalScopeNode* scope = &kid3()->as<LexicalScopeNode>();
+        return scope->isEmptyScope() ? nullptr : scope;
     }
 };
 
