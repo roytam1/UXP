@@ -7485,13 +7485,7 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling, DefaultHandling d
         if (!initializer)
             return false;
 
-        if (!tokenStream.getToken(&tt)) {
-            return false;
-        }
-
-        // TODO(khyperia): Implement ASI
-        if (tt != TOK_SEMI) {
-            error(JSMSG_MISSING_SEMI_FIELD);
+        if (!matchOrInsertSemicolonAfterExpression()) {
             return false;
         }
 
@@ -10639,10 +10633,11 @@ Parser<ParseHandler>::propertyOrMethodName(YieldHandling yieldHandling,
     // In the last case, where there's not a `:` token to consume, we peek at
     // (but don't consume) the next token to decide how to set `*propType`.
     //
-    //     `=` or `;`             ==> PropertyType::Field (classes only)
-    //     `=`                    ==> PropertyType::CoverInitializedName
     //     `,` or `}`             ==> PropertyType::Shorthand
     //     `(`                    ==> PropertyType::Method
+    //     `=`, not in a class    ==> PropertyType::CoverInitializedName
+    //     '=', in a class        ==> PropertyType::Field
+    //     any token, in a class  ==> PropertyType::Field (ASI)
     //
     // The caller must check `*propType` and throw if whatever we parsed isn't
     // allowed here (for example, a getter in a destructuring pattern).
@@ -10718,17 +10713,8 @@ Parser<ParseHandler>::propertyOrMethodName(YieldHandling yieldHandling,
         return propName;
     }
 
-    if (propertyNameContext == PropertyNameInClass && (tt == TOK_SEMI || tt == TOK_ASSIGN)) {
-        if (isGenerator || isAsync || isGetter || isSetter) {
-            error(JSMSG_BAD_PROP_ID);
-            return null();
-        }
-        tokenStream.ungetToken();
-        *propType = PropertyType::Field;
-        return propName;
-    }
-
-    if (TokenKindIsPossibleIdentifierName(ltok) &&
+    if (propertyNameContext != PropertyNameInClass &&
+        TokenKindIsPossibleIdentifierName(ltok) &&
         (tt == TOK_COMMA || tt == TOK_RC || tt == TOK_ASSIGN))
     {
         if (isGenerator || isAsync || isGetter || isSetter) {
@@ -10756,6 +10742,16 @@ Parser<ParseHandler>::propertyOrMethodName(YieldHandling yieldHandling,
             *propType = PropertyType::Setter;
         else
             *propType = PropertyType::Method;
+        return propName;
+    }
+
+    if (propertyNameContext == PropertyNameInClass) {
+        if (isGenerator || isAsync || isGetter || isSetter) {
+            error(JSMSG_BAD_PROP_ID);
+            return null();
+        }
+        tokenStream.ungetToken();
+        *propType = PropertyType::Field;
         return propName;
     }
 
