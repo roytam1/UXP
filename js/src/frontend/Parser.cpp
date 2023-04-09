@@ -214,12 +214,18 @@ SharedContext::computeAllowSyntax(Scope* scope)
 {
     for (ScopeIter si(scope); si; si++) {
         if (si.kind() == ScopeKind::Function) {
-            JSFunction* fun = si.scope()->as<FunctionScope>().canonicalFunction();
+            FunctionScope* funScope = &si.scope()->as<FunctionScope>();
+            JSFunction* fun = funScope->canonicalFunction();
             if (fun->isArrow())
                 continue;
             allowNewTarget_ = true;
             allowSuperProperty_ = fun->allowSuperProperty();
             allowSuperCall_ = fun->isDerivedClassConstructor();
+            if (funScope->isFieldInitializer()) {
+                allowSuperProperty_ = false;
+                allowSuperCall_ = false;
+                allowArguments_ = false;
+            }
             return;
         }
     }
@@ -1881,7 +1887,8 @@ Parser<FullParseHandler>::newEvalScopeData(ParseContext::Scope& scope)
 
 template <>
 Maybe<FunctionScope::Data*>
-Parser<FullParseHandler>::newFunctionScopeData(ParseContext::Scope& scope, bool hasParameterExprs)
+Parser<FullParseHandler>::newFunctionScopeData(ParseContext::Scope& scope, bool hasParameterExprs,
+                                               bool isFieldInitializer)
 {
     Vector<BindingName> positionalFormals(context);
     Vector<BindingName> formals(context);
@@ -1954,6 +1961,8 @@ Parser<FullParseHandler>::newFunctionScopeData(ParseContext::Scope& scope, bool 
         bindings = NewEmptyBindingData<FunctionScope>(context, alloc, numBindings);
         if (!bindings)
             return Nothing();
+
+        bindings->isFieldInitializer = isFieldInitializer;
 
         // The ordering here is important. See comments in FunctionScope.
         BindingName* start = bindings->trailingNames.start();
@@ -2403,7 +2412,8 @@ Parser<ParseHandler>::finishFunctionScopes(bool isStandaloneFunction)
 
 template <>
 bool
-Parser<FullParseHandler>::finishFunction(bool isStandaloneFunction /* = false */)
+Parser<FullParseHandler>::finishFunction(bool isStandaloneFunction /* = false */,
+                                         bool isFieldInitializer /* = false */)
 {
     if (!finishFunctionScopes(isStandaloneFunction))
         return false;
@@ -2420,7 +2430,8 @@ Parser<FullParseHandler>::finishFunction(bool isStandaloneFunction /* = false */
 
     {
         Maybe<FunctionScope::Data*> bindings = newFunctionScopeData(pc->functionScope(),
-                                                                    hasParameterExprs);
+                                                                    hasParameterExprs,
+                                                                    isFieldInitializer);
         if (!bindings)
             return false;
         funbox->functionScopeBindings().set(*bindings);
@@ -2438,7 +2449,8 @@ Parser<FullParseHandler>::finishFunction(bool isStandaloneFunction /* = false */
 
 template <>
 bool
-Parser<SyntaxParseHandler>::finishFunction(bool isStandaloneFunction /* = false */)
+Parser<SyntaxParseHandler>::finishFunction(bool isStandaloneFunction /* = false */,
+                                           bool isFieldInitializer /* = false */)
 {
     // The LazyScript for a lazily parsed function needs to know its set of
     // free variables and inner functions so that when it is fully parsed, we
@@ -8076,7 +8088,7 @@ Parser<ParseHandler>::fieldInitializerOpt(YieldHandling yieldHandling, bool hasH
 
     handler.setFunctionBody(funNode, initializerBody);
 
-    if (!finishFunction())
+    if (!finishFunction(false, true))
         return null();
 
     if (!leaveInnerFunction(outerpc))

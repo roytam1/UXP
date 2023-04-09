@@ -500,6 +500,9 @@ class FunctionScope : public Scope
         // bindings.
         bool hasParameterExprs = false;
 
+        // Anonymous functions used in field initializers are limited.
+        bool isFieldInitializer = false;
+
         // Bindings are sorted by kind in both frames and environments.
         //
         // Positional formal parameter names are those that are not
@@ -548,8 +551,9 @@ class FunctionScope : public Scope
 
   private:
     static FunctionScope* createWithData(ExclusiveContext* cx, MutableHandle<UniquePtr<Data>> data,
-                                         bool hasParameterExprs, bool needsEnvironment,
-                                         HandleFunction fun, HandleScope enclosing);
+                                         bool hasParameterExprs, bool isFieldInitializer,
+                                         bool needsEnvironment, HandleFunction fun,
+                                         HandleScope enclosing);
 
     Data& data() {
         return *reinterpret_cast<Data*>(data_);
@@ -572,6 +576,10 @@ class FunctionScope : public Scope
 
     bool hasParameterExprs() const {
         return data().hasParameterExprs;
+    }
+
+    bool isFieldInitializer() const {
+        return data().isFieldInitializer;
     }
 
     uint32_t numPositionalFormalParameters() const {

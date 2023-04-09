@@ -610,12 +610,14 @@ FunctionScope::create(ExclusiveContext* cx, Handle<Data*> dataArg,
     if (!data)
         return nullptr;
 
-    return createWithData(cx, &data, hasParameterExprs, needsEnvironment, fun, enclosing);
+    return createWithData(cx, &data, hasParameterExprs, dataArg ? dataArg->isFieldInitializer : false,
+                          needsEnvironment, fun, enclosing);
 }
 
 /* static */ FunctionScope*
 FunctionScope::createWithData(ExclusiveContext* cx, MutableHandle<UniquePtr<Data>> data,
-                              bool hasParameterExprs, bool needsEnvironment,
+                              bool hasParameterExprs, bool isFieldInitializer,
+                              bool needsEnvironment,
                               HandleFunction fun, HandleScope enclosing)
 {
     MOZ_ASSERT(data);
@@ -636,6 +638,7 @@ FunctionScope::createWithData(ExclusiveContext* cx, MutableHandle<UniquePtr<Data
             return nullptr;
         }
 
+        data->isFieldInitializer = isFieldInitializer;
         data->hasParameterExprs = hasParameterExprs;
         data->canonicalFunction.init(fun);
 
@@ -737,15 +740,19 @@ FunctionScope::XDR(XDRState<mode>* xdr, HandleFunction fun, HandleScope enclosin
 
         uint8_t needsEnvironment;
         uint8_t hasParameterExprs;
+        uint8_t isFieldInitializer;
         uint32_t nextFrameSlot;
         if (mode == XDR_ENCODE) {
             needsEnvironment = scope->hasEnvironment();
             hasParameterExprs = data->hasParameterExprs;
+            isFieldInitializer = data->isFieldInitializer;
             nextFrameSlot = data->nextFrameSlot;
         }
         if (!xdr->codeUint8(&needsEnvironment))
             return false;
         if (!xdr->codeUint8(&hasParameterExprs))
+            return false;
+        if (!xdr->codeUint8(&isFieldInitializer))
             return false;
         if (!xdr->codeUint16(&data->nonPositionalFormalStart))
             return false;
@@ -761,8 +768,8 @@ FunctionScope::XDR(XDRState<mode>* xdr, HandleFunction fun, HandleScope enclosin
                 MOZ_ASSERT(!data->nextFrameSlot);
             }
 
-            scope.set(createWithData(cx, &uniqueData.ref(), hasParameterExprs, needsEnvironment, fun,
-                                     enclosing));
+            scope.set(createWithData(cx, &uniqueData.ref(), hasParameterExprs, !!isFieldInitializer,
+                                     needsEnvironment, fun, enclosing));
             if (!scope)
                 return false;
 
