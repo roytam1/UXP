@@ -1214,6 +1214,10 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
         return true;
 
       // Binary cases with obvious side effects.
+      case PNK_INITPROP:
+        *answer = true;
+        return true;
+
       case PNK_ASSIGN:
       case PNK_ADDASSIGN:
       case PNK_SUBASSIGN:
@@ -3697,9 +3701,14 @@ EmitAssignmentRhs(BytecodeEmitter* bce, ParseNode* rhs, uint8_t offset)
 }
 
 bool
-BytecodeEmitter::emitAssignment(ParseNode* lhs, JSOp compoundOp, ParseNode* rhs)
+BytecodeEmitter::emitAssignmentOrInit(ParseNodeKind kind, JSOp compoundOp,
+                                      ParseNode* lhs, ParseNode* rhs)
 {
     bool isCompound = compoundOp != JSOP_NOP;
+    bool isInit = kind == PNK_INITPROP;
+
+    MOZ_ASSERT_IF(isInit, lhs->isKind(PNK_DOT) ||
+                          lhs->isKind(PNK_ELEM));
 
     // Name assignments are handled separately because choosing ops and when
     // to emit BINDNAME is involved and should avoid duplication.
@@ -3754,7 +3763,8 @@ BytecodeEmitter::emitAssignment(ParseNode* lhs, JSOp compoundOp, ParseNode* rhs)
         poe.emplace(this,
                     isCompound
                     ? PropOpEmitter::Kind::CompoundAssignment
-                    : PropOpEmitter::Kind::SimpleAssignment,
+                    : isInit ? PropOpEmitter::Kind::PropInit
+                             : PropOpEmitter::Kind::SimpleAssignment,
                     isSuper
                     ? PropOpEmitter::ObjKind::Super
                     : PropOpEmitter::ObjKind::Other);
@@ -3781,7 +3791,8 @@ BytecodeEmitter::emitAssignment(ParseNode* lhs, JSOp compoundOp, ParseNode* rhs)
         eoe.emplace(this,
                     isCompound
                     ? ElemOpEmitter::Kind::CompoundAssignment
-                    : ElemOpEmitter::Kind::SimpleAssignment,
+                    : isInit ? ElemOpEmitter::Kind::PropInit
+                             : ElemOpEmitter::Kind::SimpleAssignment,
                     isSuper
                     ? ElemOpEmitter::ObjKind::Super
                     : ElemOpEmitter::ObjKind::Other);
@@ -4714,7 +4725,7 @@ BytecodeEmitter::emitInitializeForInOrOfTarget(TernaryNode* forHead)
     // initialization is just assigning the iteration value to a target
     // expression.
     if (!parser->handler.isDeclarationList(target))
-        return emitAssignment(target, JSOP_NOP, nullptr); // ... ITERVAL
+        return emitAssignmentOrInit(PNK_ASSIGN, JSOP_NOP, target, nullptr); // ... ITERVAL
 
     // Otherwise, per-loop initialization is (possibly) declaration
     // initialization.  If the declaration is a lexical declaration, it must be
@@ -4728,8 +4739,19 @@ BytecodeEmitter::emitInitializeForInOrOfTarget(TernaryNode* forHead)
     MOZ_ASSERT(target->isForLoopDeclaration());
     target = parser->handler.singleBindingFromDeclaration(&target->as<ListNode>());
 
+    NameNode* nameNode = nullptr;
     if (target->isKind(PNK_NAME)) {
-        NameOpEmitter noe(this, target->name(), NameOpEmitter::Kind::Initialize);
+        nameNode = &target->as<NameNode>();
+    } else if (target->isKind(PNK_ASSIGN) ||
+               target->isKind(PNK_INITPROP)) {
+        BinaryNode* assignNode = &target->as<BinaryNode>();
+        if (assignNode->left()->is<NameNode>()) {
+            nameNode = &assignNode->left()->as<NameNode>();
+        }
+    }
+
+    if (nameNode) {
+        NameOpEmitter noe(this, nameNode->name(), NameOpEmitter::Kind::Initialize);
         if (!noe.prepareForRhs()) {
             return false;
         }
@@ -4755,7 +4777,7 @@ BytecodeEmitter::emitInitializeForInOrOfTarget(TernaryNode* forHead)
         return true;
     }
 
-    MOZ_ASSERT(!target->isKind(PNK_ASSIGN),
+    MOZ_ASSERT(!target->isKind(PNK_ASSIGN) && !target->isKind(PNK_INITPROP),
                "for-in/of loop destructuring declarations can't have initializers");
 
     MOZ_ASSERT(target->isKind(PNK_ARRAY) || target->isKind(PNK_OBJECT));
@@ -5396,7 +5418,7 @@ BytecodeEmitter::emitComprehensionForOf(ForNode* forNode)
     // Notice: Comprehension for-of doesn't perform IteratorClose, since it's
     // not in the spec.
 
-    if (!emitAssignment(loopVariableName, JSOP_NOP, nullptr)) // ITER RESULT VALUE
+    if (!emitAssignmentOrInit(PNK_ASSIGN, JSOP_NOP, loopVariableName, nullptr)) // ITER RESULT VALUE
         return false;
 
     // Remove VALUE from the stack to release it.
@@ -5533,7 +5555,7 @@ BytecodeEmitter::emitComprehensionForIn(ForNode* forNode)
 
     // Emit code to assign the enumeration value to the left hand side, but
     // also leave it on the stack.
-    if (!emitAssignment(forHead->kid2(), JSOP_NOP, nullptr))
+    if (!emitAssignmentOrInit(PNK_ASSIGN, JSOP_NOP, forHead->kid2(), nullptr))
         return false;
 
     /* The stack should be balanced around the assignment opcode sequence. */
@@ -8384,9 +8406,9 @@ BytecodeEmitter::emitFunctionFormalParameters(ListNode* paramsBody)
     for (ParseNode* arg = paramsBody->head(); arg != funBody; arg = arg->pn_next) {
         ParseNode* bindingElement = arg;
         ParseNode* initializer = nullptr;
-        if (arg->isKind(PNK_ASSIGN)) {
-            bindingElement = arg->as<AssignmentNode>().left();
-            initializer = arg->as<AssignmentNode>().right();
+        if (arg->isKind(PNK_ASSIGN) || arg->isKind(PNK_INITPROP)) {
+            bindingElement = arg->as<BinaryNode>().left();
+            initializer = arg->as<BinaryNode>().right();
         }
         bool hasInitializer = !!initializer;
         bool isRest = hasRest && arg->pn_next == funBody;
@@ -8830,6 +8852,7 @@ BytecodeEmitter::emitTree(ParseNode* pn, ValueUsage valueUsage /* = ValueUsage::
             return false;
         break;
 
+      case PNK_INITPROP:
       case PNK_ASSIGN:
       case PNK_ADDASSIGN:
       case PNK_SUBASSIGN:
@@ -8843,8 +8866,9 @@ BytecodeEmitter::emitTree(ParseNode* pn, ValueUsage valueUsage /* = ValueUsage::
       case PNK_DIVASSIGN:
       case PNK_MODASSIGN:
       case PNK_POWASSIGN: {
-        AssignmentNode* assignNode = &pn->as<AssignmentNode>();
-        if (!emitAssignment(assignNode->left(), assignNode->getOp(), assignNode->right()))
+        BinaryNode* assignNode = &pn->as<BinaryNode>();
+        if (!emitAssignmentOrInit(assignNode->getKind(), assignNode->getOp(),
+                                  assignNode->left(), assignNode->right()))
             return false;
         break;
       }

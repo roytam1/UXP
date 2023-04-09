@@ -257,6 +257,7 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       // Binary nodes with two non-null children.
 
       // All assignment and compound assignment nodes qualify.
+      case PNK_INITPROP:
       case PNK_ASSIGN:
       case PNK_ADDASSIGN:
       case PNK_SUBASSIGN:

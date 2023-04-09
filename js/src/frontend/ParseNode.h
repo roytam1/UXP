@@ -125,6 +125,7 @@ class ObjectBox;
     F(SUPERBASE) \
     F(SUPERCALL) \
     F(SETTHIS) \
+    F(INITPROP) \
     F(IMPORT_META) \
     F(CALL_IMPORT) \
     \
@@ -170,7 +171,7 @@ class ObjectBox;
     F(POW) \
     \
     /* Assignment operators (= += -= etc.). */ \
-    /* ParseNode::isAssignment assumes all these are consecutive. */ \
+    /* AssignmentNode::test assumes all these are consecutive. */ \
     F(ASSIGN) \
     F(ADDASSIGN) \
     F(SUBASSIGN) \
@@ -385,7 +386,10 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_COMMA (ListNode)
  *   head: list of N comma-separated exprs
  *   count: N >= 2
- * PNK_ASSIGN (BinaryNode)
+ * PNK_INITPROP (BinaryNode)
+ *   left: target of assignment, base-class setter will not be invoked
+ *   right: value to assign
+ * PNK_ASSIGN (AssignmentNode)
  *   left: target of assignment
  *   right: value to assign
  * PNK_ADDASSIGN, PNK_SUBASSIGN, PNK_BITORASSIGN, PNK_BITXORASSIGN,

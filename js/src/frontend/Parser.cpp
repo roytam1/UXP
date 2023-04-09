@@ -8048,18 +8048,18 @@ Parser<ParseHandler>::fieldInitializerOpt(YieldHandling yieldHandling, bool hasH
             return null();
     }
 
-    // Synthesize an assignment expression for the property.
-    AssignmentNodeType initializerAssignment = handler.newAssignment(PNK_ASSIGN,
-                                                                     propAssignFieldAccess, initializerExpr,
-                                                                     JSOP_NOP);
-    if (!initializerAssignment)
+    // Synthesize a property init.
+    AssignmentNodeType initializerPropInit = handler.newAssignment(PNK_INITPROP,
+                                                                   propAssignFieldAccess, initializerExpr,
+                                                                   JSOP_NOP);
+    if (!initializerPropInit)
         return null();
 
     bool canSkipLazyClosedOverBindings = handler.canSkipLazyClosedOverBindings();
     if (!declareFunctionThis(canSkipLazyClosedOverBindings))
         return null();
 
-    UnaryNodeType exprStatement = handler.newExprStatement(initializerAssignment, wholeInitializerPos.end);
+    UnaryNodeType exprStatement = handler.newExprStatement(initializerPropInit, wholeInitializerPos.end);
     if (!exprStatement)
       return null();
 
