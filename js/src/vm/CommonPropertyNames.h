@@ -105,6 +105,8 @@
     macro(dotThis, dotThis, ".this") \
     macro(dotInitializers, dotInitializers, ".initializers") \
     macro(dotFieldKeys, dotFieldKeys, ".fieldKeys") \
+    macro(dotStaticInitializers, dotStaticInitializers, ".staticInitializers") \
+    macro(dotStaticFieldKeys, dotStaticFieldKeys, ".staticFieldKeys") \
     macro(each, each, "each") \
     macro(elementType, elementType, "elementType") \
     macro(else, else_, "else") \

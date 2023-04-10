@@ -761,6 +761,7 @@ class ParseNode
           private:
             friend class BinaryNode;
             friend class ForNode;
+            friend class ClassField;
             friend class ClassMethod;
             friend class PropertyAccessBase;
             friend class SwitchStatement;
@@ -768,7 +769,7 @@ class ParseNode
             ParseNode*  right;
             union {
                 unsigned iflags;        /* JSITER_* flags for PNK_{COMPREHENSION,}FOR node */
-                bool isStatic;          /* only for PNK_CLASSMETHOD */
+                bool isStatic;          /* only for PNK_CLASSMETHOD and PNK_CLASSFIELD */
                 bool hasDefault;        /* only for PNK_SWITCH */
             };
         } binary;
@@ -785,12 +786,6 @@ class ParseNode
             ParseNode*  initOrStmt;     /* var initializer, argument default,
                                          * or label statement target */
         } name;
-        struct {
-          private:
-            friend class ClassField;
-            ParseNode* name;
-            ParseNode* initializer;     /* field initializer - optional */
-        } field;
         struct {
           private:
             friend class RegExpLiteral;
@@ -2141,11 +2136,12 @@ class ClassMethod : public BinaryNode
 class ClassField : public BinaryNode
 {
   public:
-    ClassField(ParseNode* name, ParseNode* initializer)
+    ClassField(ParseNode* name, ParseNode* initializer, bool isStatic)
       : BinaryNode(PNK_CLASSFIELD, JSOP_NOP,
                    TokenPos::box(name->pn_pos, initializer->pn_pos),
                    name, initializer)
     {
+        pn_u.binary.isStatic = isStatic;
     }
 
     static bool test(const ParseNode& node) {
@@ -2157,6 +2153,10 @@ class ClassField : public BinaryNode
     ParseNode& name() const { return *left(); }
 
     FunctionNode* initializer() const { return &right()->as<FunctionNode>(); }
+
+    bool isStatic() const {
+        return pn_u.binary.isStatic;
+    }
 };
 
 class SwitchStatement : public BinaryNode

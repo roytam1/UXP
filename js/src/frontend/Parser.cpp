@@ -7419,7 +7419,7 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling,
                                   const ParseContext::ClassStatement& classStmt,
                                   HandlePropertyName className,
                                   uint32_t classStartOffset, bool hasHeritage,
-                                  size_t& numFields, size_t& numFieldKeys,
+                                  ClassFields& classFields,
                                   ListNodeType& classMembers, bool* done)
 {
     *done = false;
@@ -7474,8 +7474,10 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling,
         }
 
         if (isStatic) {
-            errorAt(propNameOffset, JSMSG_BAD_METHOD_DEF);
-            return false;
+            if (propAtom == context->names().prototype) {
+                errorAt(propNameOffset, JSMSG_BAD_METHOD_DEF);
+                return false;
+            }
         }
 
         if (propAtom == context->names().constructor) {
@@ -7486,9 +7488,13 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling,
         if (!abortIfSyntaxParser())
             return false;
 
-        numFields++;
+        if (isStatic) {
+            classFields.staticFields++;
+        } else {
+            classFields.instanceFields++;
+        }
 
-        FunctionNodeType initializer = fieldInitializerOpt(propAtom, numFieldKeys);
+        FunctionNodeType initializer = fieldInitializerOpt(propAtom, classFields, isStatic);
         if (!initializer)
             return false;
 
@@ -7496,7 +7502,7 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling,
             return false;
         }
 
-        ClassFieldType field = handler.newClassFieldDefinition(propName, initializer);
+        ClassFieldType field = handler.newClassFieldDefinition(propName, initializer, isStatic);
         if (!field)
             return false;
 
@@ -7613,12 +7619,12 @@ bool
 Parser<ParseHandler>::finishClassConstructor(const ParseContext::ClassStatement& classStmt,
                                              HandlePropertyName className, bool hasHeritage,
                                              uint32_t classStartOffset, uint32_t classEndOffset,
-                                             size_t numFields,
-                                             ListNodeType& classMembers)
+                                             const ClassFields& classFields, ListNodeType& classMembers)
 {
     // Fields cannot re-use the constructor obtained via JSOP_CLASSCONSTRUCTOR or
     // JSOP_DERIVEDCONSTRUCTOR due to needing to emit calls to the field
     // initializers in the constructor. So, synthesize a new one.
+    size_t numFields = classFields.instanceFields;
     if (classStmt.constructorBox == nullptr && numFields > 0) {
         MOZ_ASSERT(!options().selfHostingMode);
         // Unconditionally create the scope here, because it's always the
@@ -7755,24 +7761,36 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
         if (!classMembers)
             return null();
 
-        size_t numFields = 0;
-        size_t numFieldKeys = 0;
+        ClassFields classFields{};
         for (;;) {
             bool done;
-            if (!classMember(yieldHandling, classStmt, className, classStartOffset,
-                             hasHeritage, numFields, numFieldKeys, classMembers, &done))
+            if (!classMember(yieldHandling, classStmt, className, classStartOffset, hasHeritage,
+                             classFields, classMembers, &done))
                 return null();
             if (done)
                 break;
         }
 
-        if (numFieldKeys > 0) {
+        if (classFields.instanceFieldKeys > 0) {
             if (!noteDeclaredName(context->names().dotFieldKeys, DeclarationKind::Let, namePos))
                 return null();
         }
+
+        if (classFields.staticFields > 0) {
+            if (!noteDeclaredName(context->names().dotStaticInitializers,
+                                  DeclarationKind::Let, namePos))
+                return null();
+        }
+
+        if (classFields.staticFieldKeys > 0) {
+            if (!noteDeclaredName(context->names().dotStaticFieldKeys,
+                                  DeclarationKind::Let, namePos))
+                return null();
+        }
+
         classEndOffset = pos().end;
         if (!finishClassConstructor(classStmt, className, hasHeritage,
-                                    classStartOffset, classEndOffset, numFields, classMembers))
+                                    classStartOffset, classEndOffset, classFields, classMembers))
             return null();
 
         if (className) {
@@ -7954,7 +7972,7 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
 
 template <class ParseHandler>
 typename ParseHandler::FunctionNodeType
-Parser<ParseHandler>::fieldInitializerOpt(HandleAtom propAtom, size_t& numFieldKeys)
+Parser<ParseHandler>::fieldInitializerOpt(HandleAtom propAtom, ClassFields& classFields, bool isStatic)
 {
     bool hasInitializer = false;
     if (!tokenStream.matchToken(&hasInitializer, TOK_ASSIGN))
@@ -8052,17 +8070,18 @@ Parser<ParseHandler>::fieldInitializerOpt(HandleAtom propAtom, size_t& numFieldK
     if (!propAtom) {
         // See BytecodeEmitter::emitCreateFieldKeys for an explanation of what
         // .fieldKeys means and its purpose.
-        Node dotFieldKeys = newInternalDotName(context->names().dotFieldKeys);
-        if (!dotFieldKeys)
+        NameNodeType fieldKeysName = newInternalDotName(isStatic ? context->names().dotStaticFieldKeys
+                                                                 : context->names().dotFieldKeys);
+        if (!fieldKeysName)
             return null();
 
-        double fieldKeyIndex = numFieldKeys;
-        numFieldKeys++;
+        double fieldKeyIndex = isStatic ? classFields.staticFieldKeys++
+                                        : classFields.instanceFieldKeys++;
         Node fieldKeyIndexNode = handler.newNumber(fieldKeyIndex, DecimalPoint::NoDecimal, wholeInitializerPos);
         if (!fieldKeyIndexNode)
             return null();
 
-        Node fieldKeyValue = handler.newPropertyByValue(dotFieldKeys, fieldKeyIndexNode, wholeInitializerPos.end);
+        Node fieldKeyValue = handler.newPropertyByValue(fieldKeysName, fieldKeyIndexNode, wholeInitializerPos.end);
         if (!fieldKeyValue)
             return null();
 

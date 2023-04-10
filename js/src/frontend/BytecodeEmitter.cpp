@@ -5704,7 +5704,8 @@ BytecodeEmitter::emitFunction(FunctionNode* funNode, bool needsProto /* = false 
             }
 
             if (classContentsIfConstructor) {
-                fun->lazyScript()->setFieldInitializers(setupFieldInitializers(classContentsIfConstructor));
+                fun->lazyScript()->setFieldInitializers(setupFieldInitializers(classContentsIfConstructor,
+                                                                               FieldPlacement::Instance));
             }
             return true;
         }
@@ -5732,7 +5733,7 @@ BytecodeEmitter::emitFunction(FunctionNode* funNode, bool needsProto /* = false 
 
         FieldInitializers fieldInitializers = FieldInitializers::Invalid();
         if (classContentsIfConstructor) {
-            fieldInitializers = setupFieldInitializers(classContentsIfConstructor);
+            fieldInitializers = setupFieldInitializers(classContentsIfConstructor, FieldPlacement::Instance);
         }
 
         BytecodeEmitter bce2(this, parser, funbox, script, /* lazyScript = */ nullptr,
@@ -7659,6 +7660,7 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, PropertyEmitter& pe, PropListTy
     //                [stack] CTOR? OBJ
 
     size_t curFieldKeyIndex = 0;
+    size_t curStaticFieldKeyIndex = 0;
     for (ParseNode* propdef : obj->contents()) {
         if (propdef->is<ClassField>()) {
             MOZ_ASSERT(type == ClassBody);
@@ -7666,7 +7668,9 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, PropertyEmitter& pe, PropListTy
             // is created elsewhere.
             ClassField* field = &propdef->as<ClassField>();
             if (field->name().getKind() == PNK_COMPUTED_NAME) {
-                if (!emitGetName(cx->names().dotFieldKeys)) {
+                HandlePropertyName fieldKeys = field->isStatic() ? cx->names().dotStaticFieldKeys
+                                                                 : cx->names().dotFieldKeys;
+                if (!emitGetName(fieldKeys)) {
                     //        [stack] CTOR? OBJ ARRAY
                     return false;
                 }
@@ -7683,7 +7687,9 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, PropertyEmitter& pe, PropListTy
                     return false;
                 }
 
-                if (!emitUint32Operand(JSOP_INITELEM_ARRAY, curFieldKeyIndex)) {
+                size_t fieldKeysIndex = field->isStatic() ? curStaticFieldKeyIndex++
+                                                          : curFieldKeyIndex++;
+                if (!emitUint32Operand(JSOP_INITELEM_ARRAY, fieldKeysIndex)) {
                     //        [stack] ARRAY
                     return false;
                 }
@@ -7692,8 +7698,6 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, PropertyEmitter& pe, PropListTy
                     //        [stack] CTOR? OBJ
                     return false;
                 }
-
-                curFieldKeyIndex++;
             }
             continue;
         }
@@ -7940,9 +7944,13 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, PropertyEmitter& pe, PropListTy
 }
 
 FieldInitializers
-BytecodeEmitter::setupFieldInitializers(ListNode* classMembers)
+BytecodeEmitter::setupFieldInitializers(ListNode* classMembers, FieldPlacement placement)
 {
-    size_t numFields = classMembers->count_if([](ParseNode* propdef) { return propdef->is<ClassField>(); });
+    bool isStatic = placement == FieldPlacement::Static;
+    size_t numFields = classMembers->count_if([isStatic](ParseNode* propdef) {
+        return propdef->is<ClassField>()&&
+               propdef->as<ClassField>().isStatic() == isStatic;
+    });
 
     return FieldInitializers(numFields);
 }
@@ -7971,18 +7979,21 @@ BytecodeEmitter::setupFieldInitializers(ListNode* classMembers)
 // BytecodeEmitter::emitPropertyList fills in the elements of the array.
 // See Parser::fieldInitializer for the `this[.fieldKeys[0]]` part.
 bool
-BytecodeEmitter::emitCreateFieldKeys(ListNode* obj)
+BytecodeEmitter::emitCreateFieldKeys(ListNode* obj, FieldPlacement placement)
 {
-    size_t numFieldKeys = obj->count_if([](ParseNode* propdef) {
+    bool isStatic = placement == FieldPlacement::Static;
+    size_t numFieldKeys = obj->count_if([isStatic](ParseNode* propdef) {
         return propdef->is<ClassField>() &&
+               propdef->as<ClassField>().isStatic() == isStatic &&
                propdef->as<ClassField>().name().getKind() == PNK_COMPUTED_NAME;
     });
 
     if (numFieldKeys == 0)
         return true;
 
-    NameOpEmitter noe(this, cx->names().dotFieldKeys,
-                      NameOpEmitter::Kind::Initialize);
+    HandlePropertyName fieldKeys = isStatic ? cx->names().dotStaticFieldKeys
+                                            : cx->names().dotFieldKeys;
+    NameOpEmitter noe(this, fieldKeys, NameOpEmitter::Kind::Initialize);
     if (!noe.prepareForRhs())
         return false;
 
@@ -8005,45 +8016,64 @@ BytecodeEmitter::emitCreateFieldKeys(ListNode* obj)
 }
 
 bool
-BytecodeEmitter::emitCreateFieldInitializers(ClassEmitter& ce, ListNode* obj)
+BytecodeEmitter::emitCreateFieldInitializers(ClassEmitter& ce, ListNode* obj,
+                                             FieldPlacement placement)
 {
-    //          [stack] HOMEOBJ HERITAGE?
-    FieldInitializers fieldInitializers = setupFieldInitializers(obj);
+  // FieldPlacement::Instance
+  //                [stack] HOMEOBJ HERITAGE?
+  //
+  // FieldPlacement::Static
+  //                [stack] CTOR HOMEOBJ
+    FieldInitializers fieldInitializers = setupFieldInitializers(obj, placement);
     MOZ_ASSERT(fieldInitializers.valid);
     size_t numFields = fieldInitializers.numFieldInitializers;
 
     if (numFields == 0)
         return true;
 
-    if (!ce.prepareForFieldInitializers(numFields)) {
-        //          [stack] HOMEOBJ HERITAGE? ARRAY
+    bool isStatic = placement == FieldPlacement::Static;
+    if (!ce.prepareForFieldInitializers(numFields, isStatic)) {
+        //              [stack] HOMEOBJ HERITAGE? ARRAY
+        // or:
+        //              [stack] CTOR HOMEOBJ ARRAY
         return false;
     }
 
     for (ParseNode* propdef : obj->contents()) {
-        if (!propdef->is<ClassField>())
+        if (!propdef->is<ClassField>() ||
+            propdef->as<ClassField>().isStatic() != isStatic)
             continue;
 
         FunctionNode* initializer = propdef->as<ClassField>().initializer();
+        if (!ce.prepareForFieldInitializer())
+            return false;
         if (!emitTree(initializer)) {
             //          [stack] HOMEOBJ HERITAGE? ARRAY LAMBDA
+            // or:
+            //            [stack] CTOR HOMEOBJ ARRAY LAMBDA
             return false;
         }
         if (initializer->funbox()->needsHomeObject()) {
             MOZ_ASSERT(initializer->funbox()->function()->allowSuperProperty());
-            if (!ce.emitFieldInitializerHomeObject()) {
+            if (!ce.emitFieldInitializerHomeObject(isStatic)) {
                 //          [stack] CTOR OBJ ARRAY LAMBDA
+                // or:
+                //          [stack] CTOR HOMEOBJ ARRAY LAMBDA
                 return false;
             }
         }
         if (!ce.emitStoreFieldInitializer()) {
             //          [stack] HOMEOBJ HERITAGE? ARRAY
+            // or:
+            //            [stack] CTOR HOMEOBJ ARRAY
             return false;
         }
     }
 
     if (!ce.emitFieldInitializersEnd()) {
         //              [stack] HOMEOBJ HERITAGE?
+        // or:
+        //              [stack] CTOR HOMEOBJ
         return false;
     }
 
@@ -8134,6 +8164,108 @@ BytecodeEmitter::emitInitializeInstanceFields()
         //            [stack] ARRAY?
         return false;
       }
+    }
+
+    return true;
+}
+
+bool
+BytecodeEmitter::emitInitializeStaticFields(ListNode* classMembers)
+{
+    size_t numFields = classMembers->count_if([](ParseNode* propdef) {
+        return propdef->is<ClassField>()&&
+               propdef->as<ClassField>().isStatic();
+    });
+
+    if (numFields == 0) {
+      return true;
+    }
+
+    if (!emitGetName(cx->names().dotStaticInitializers)) {
+        //              [stack] CTOR ARRAY
+        return false;
+    }
+
+    for (size_t fieldIndex = 0; fieldIndex < numFields; fieldIndex++) {
+      bool hasNext = fieldIndex < numFields - 1;
+      if (fieldIndex < numFields - 1) {
+        // We DUP to keep the array around (it is consumed in the bytecode below)
+        // for next iterations of this loop, except for the last iteration, which
+        // avoids an extra POP at the end of the loop.
+        if (!emit1(JSOP_DUP)) {
+            //          [stack] CTOR ARRAY ARRAY
+            return false;
+        }
+      }
+
+      if (!emitNumberOp(fieldIndex)) {
+          //            [stack] CTOR ARRAY? ARRAY INDEX
+          return false;
+      }
+
+      // Don't use CALLELEM here, because the receiver of the call != the receiver
+      // of this getelem. (Specifically, the call receiver is `ctor`, and the
+      // receiver of this getelem is `.staticInitializers`)
+      if (!emit1(JSOP_GETELEM)) {
+          //            [stack] CTOR ARRAY? FUNC
+          return false;
+      }
+
+      if (!emitDupAt(1 + hasNext)) {
+          //            [stack] CTOR ARRAY? FUNC CTOR
+          return false;
+      }
+
+      if (!emitCall(JSOP_CALL_IGNORES_RV, 0)) {
+          //            [stack] CTOR ARRAY? RVAL
+          return false;
+      }
+
+      if (!emit1(JSOP_POP)) {
+          //            [stack] CTOR ARRAY?
+          return false;
+      }
+    }
+
+    // Overwrite |.staticInitializers| and |.staticFieldKeys| with undefined to
+    // avoid keeping the arrays alive indefinitely.
+    auto clearStaticFieldSlot = [&](HandlePropertyName name) {
+        NameOpEmitter noe(this, name, NameOpEmitter::Kind::SimpleAssignment);
+        if (!noe.prepareForRhs()) {
+            //            [stack] ENV? VAL?
+            return false;
+        }
+
+        if (!emit1(JSOP_UNDEFINED)) {
+            //            [stack] ENV? VAL? UNDEFINED
+            return false;
+        }
+
+        if (!noe.emitAssignment()) {
+            //            [stack] VAL
+            return false;
+        }
+
+        if (!emit1(JSOP_POP)) {
+            //            [stack]
+            return false;
+        }
+
+        return true;
+    };
+
+    if (!clearStaticFieldSlot(cx->names().dotStaticInitializers))
+        return false;
+
+    auto isStaticFieldWithComputedName = [](ParseNode* propdef) {
+        return propdef->is<ClassField>() &&
+               propdef->as<ClassField>().isStatic() &&
+               propdef->as<ClassField>().name().getKind() == PNK_COMPUTED_NAME;
+    };
+
+    if (classMembers->any_of(isStaticFieldWithComputedName)) {
+        if (!clearStaticFieldSlot(cx->names().dotStaticFieldKeys))
+            return false;
     }
 
     return true;
@@ -8684,15 +8816,17 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
             // As an optimization omit the |.initializers| binding when no instance
             // fields are present.
             bool hasInstanceFields = classMembers->any_of([](ParseNode* propdef) {
-                                                       return propdef->is<ClassField>();
-                                                   });
+                return propdef->is<ClassField>() &&
+                       !propdef->as<ClassField>().isStatic();
+            });
             if (hasInstanceFields) {
                 lse.emplace(this);
                 if (!lse->emitScope(ScopeKind::Lexical, constructorScope->scopeBindings()))
                     return false;
 
                 // Any class with field initializers will have a constructor
-                if (!emitCreateFieldInitializers(ce, classMembers))
+                if (!emitCreateFieldInitializers(ce, classMembers,
+                                                 FieldPlacement::Instance))
                     return false;
             }
             ctor = &constructorScope->scopeBody()->as<ClassMethod>().method();
@@ -8726,11 +8860,27 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
         }
     }
 
-    if (!emitCreateFieldKeys(classMembers))
+    if (!emitCreateFieldKeys(classMembers, FieldPlacement::Instance))
+        return false;
+
+    if (!emitCreateFieldInitializers(ce, classMembers, FieldPlacement::Static))
+        return false;
+
+    if (!emitCreateFieldKeys(classMembers, FieldPlacement::Static))
         return false;
 
     if (!emitPropertyList(classMembers, ce, ClassBody)) {
         //            [stack] CTOR HOMEOBJ
+        return false;
+    }
+
+    if (!ce.emitBinding()) {
+        //              [stack] CTOR
+        return false;
+    }
+
+    if (!emitInitializeStaticFields(classMembers)) {
+        //              [stack] CTOR
         return false;
     }
 

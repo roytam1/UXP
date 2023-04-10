@@ -1488,20 +1488,32 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     enum ClassContext { ClassStatement, ClassExpression };
     ClassNodeType classDefinition(YieldHandling yieldHandling, ClassContext classContext,
                                   DefaultHandling defaultHandling);
+    struct ClassFields {
+        // The number of instance class fields.
+        size_t instanceFields = 0;
+
+        // The number of instance class fields with computed property names.
+        size_t instanceFieldKeys = 0;
+
+        // The number of static class fields.
+        size_t staticFields = 0;
+
+        // The number of static class fields with computed property names.
+        size_t staticFieldKeys = 0;
+    };
     MOZ_MUST_USE bool classMember(YieldHandling yieldHandling,
                                   const ParseContext::ClassStatement& classStmt,
                                   HandlePropertyName className,
                                   uint32_t classStartOffset, bool hasHeritage,
-                                  size_t& numFields,
-                                  size_t& numFieldKeys,
+                                  ClassFields& classFields,
                                   ListNodeType& classMembers, bool* done);
     MOZ_MUST_USE bool finishClassConstructor(
         const ParseContext::ClassStatement& classStmt,
         HandlePropertyName className, bool hasHeritage,
         uint32_t classStartOffset, uint32_t classEndOffset,
-        size_t numFieldsWithInitializers, ListNodeType& classMembers);
+        const ClassFields& classFields, ListNodeType& classMembers);
 
-    FunctionNodeType fieldInitializerOpt(HandleAtom atom, size_t& numFieldKeys);
+    FunctionNodeType fieldInitializerOpt(HandleAtom atom, ClassFields& classFields, bool isStatic);
     FunctionNodeType synthesizeConstructor(HandleAtom className,
                                            uint32_t classNameOffset,
                                            bool hasHeritage);

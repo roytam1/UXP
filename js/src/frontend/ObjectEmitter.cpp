@@ -484,51 +484,79 @@ bool ObjectEmitter::emitObject(size_t propertyCount)
     return true;
 }
 
-bool ClassEmitter::prepareForFieldInitializers(size_t numFields)
+bool ClassEmitter::prepareForFieldInitializers(size_t numFields, bool isStatic)
 {
-    MOZ_ASSERT(classState_ == ClassState::Class);
+    MOZ_ASSERT_IF(!isStatic, classState_ == ClassState::Class);
+    MOZ_ASSERT_IF(isStatic, classState_ == ClassState::InitConstructor);
+    MOZ_ASSERT(fieldState_ == FieldState::Start);
 
     // .initializers is a variable that stores an array of lambdas containing
     // code (the initializer) for each field. Upon an object's construction,
     // these lambdas will be called, defining the values.
-    initializersAssignment_.emplace(bce_, bce_->cx->names().dotInitializers,
+    HandlePropertyName initializers = isStatic ? bce_->cx->names().dotStaticInitializers
+                                               : bce_->cx->names().dotInitializers;
+    initializersAssignment_.emplace(bce_, initializers,
                                     NameOpEmitter::Kind::Initialize);
     if (!initializersAssignment_->prepareForRhs()) {
         return false;
     }
 
     if (!bce_->emitUint32Operand(JSOP_NEWARRAY, numFields)) {
-        //              [stack] HOMEOBJ HERITAGE? ARRAY
+        //              [stack] ARRAY
         return false;
     }
 
-    MOZ_ASSERT(fieldIndex_ == 0);
+    fieldIndex_ = 0;
 #ifdef DEBUG
-    classState_ = ClassState::FieldInitializers;
+    if (isStatic) {
+        classState_ = ClassState::StaticFieldInitializers;
+    } else {
+        classState_ = ClassState::InstanceFieldInitializers;
+    }
     numFields_ = numFields;
 #endif
     return true;
 }
 
-bool ClassEmitter::emitFieldInitializerHomeObject()
+bool ClassEmitter::prepareForFieldInitializer()
 {
-    MOZ_ASSERT(classState_ == ClassState::FieldInitializers);
-    //          [stack] OBJ HERITAGE? ARRAY METHOD
-    if (!bce_->emit2(JSOP_INITHOMEOBJECT, isDerived_ ? 2 : 1)) {
-        //              [stack] OBJ HERITAGE? ARRAY METHOD
+    MOZ_ASSERT(classState_ == ClassState::InstanceFieldInitializers ||
+               classState_ == ClassState::StaticFieldInitializers);
+    MOZ_ASSERT(fieldState_ == FieldState::Start);
+
+#ifdef DEBUG
+    fieldState_ = FieldState::Initializer;
+#endif
+    return true;
+}
+
+bool ClassEmitter::emitFieldInitializerHomeObject(bool isStatic)
+{
+    MOZ_ASSERT(fieldState_ == FieldState::Initializer);
+    //                [stack] OBJ HERITAGE? ARRAY METHOD
+    // or:
+    //                [stack] CTOR HOMEOBJ ARRAY METHOD
+    uint8_t ofs = isStatic ? 2
+    //                [stack] CTOR HOMEOBJ ARRAY METHOD CTOR
+                           : isDerived_ ? 2 : 1;
+    //                [stack] OBJ HERITAGE? ARRAY METHOD OBJ
+    if (!bce_->emit2(JSOP_INITHOMEOBJECT, ofs)) {
+        //            [stack] OBJ HERITAGE? ARRAY METHOD
+        // or:
+        //            [stack] CTOR HOMEOBJ ARRAY METHOD
         return false;
     }
 
 #ifdef DEBUG
-    classState_ = ClassState::FieldInitializerWithHomeObject;
+    fieldState_ = FieldState::InitializerWithHomeObject;
 #endif
     return true;
 }
 
 bool ClassEmitter::emitStoreFieldInitializer()
 {
-    MOZ_ASSERT(classState_ == ClassState::FieldInitializers ||
-               classState_ == ClassState::FieldInitializerWithHomeObject);
+    MOZ_ASSERT(fieldState_ == FieldState::Initializer ||
+               fieldState_ == FieldState::InitializerWithHomeObject);
     MOZ_ASSERT(fieldIndex_ < numFields_);
     //          [stack] HOMEOBJ HERITAGE? ARRAY METHOD
 
@@ -539,7 +567,7 @@ bool ClassEmitter::emitStoreFieldInitializer()
 
     fieldIndex_++;
 #ifdef DEBUG
-    classState_ = ClassState::FieldInitializers;
+    fieldState_ = FieldState::Start;
 #endif
     return true;
 }
@@ -548,8 +576,9 @@ bool ClassEmitter::emitFieldInitializersEnd()
 {
     MOZ_ASSERT(propertyState_ == PropertyState::Start ||
                propertyState_ == PropertyState::Init);
-    MOZ_ASSERT(classState_ == ClassState::FieldInitializers ||
-               classState_ == ClassState::FieldInitializerWithHomeObject);
+    MOZ_ASSERT(classState_ == ClassState::InstanceFieldInitializers ||
+               classState_ == ClassState::StaticFieldInitializers);
+    MOZ_ASSERT(fieldState_ == FieldState::Start);
     MOZ_ASSERT(fieldIndex_ == numFields_);
 
     if (!initializersAssignment_->emitAssignment()) {
@@ -564,7 +593,11 @@ bool ClassEmitter::emitFieldInitializersEnd()
     }
 
 #ifdef DEBUG
-    classState_ = ClassState::FieldInitializersEnd;
+    if (classState_ == ClassState::InstanceFieldInitializers) {
+        classState_ = ClassState::InstanceFieldInitializersEnd;
+    } else {
+        classState_ = ClassState::StaticFieldInitializersEnd;
+    }
 #endif
     return true;
 }
@@ -700,7 +733,7 @@ bool ClassEmitter::emitInitConstructor(bool needsHomeObject)
 {
     MOZ_ASSERT(propertyState_ == PropertyState::Start);
     MOZ_ASSERT(classState_ == ClassState::Class ||
-               classState_ == ClassState::FieldInitializersEnd);
+               classState_ == ClassState::InstanceFieldInitializersEnd);
 
     //                [stack] HOMEOBJ CTOR
 
@@ -726,8 +759,7 @@ bool ClassEmitter::emitInitDefaultConstructor(const Maybe<uint32_t>& classStart,
                                               const Maybe<uint32_t>& classEnd)
 {
     MOZ_ASSERT(propertyState_ == PropertyState::Start);
-    MOZ_ASSERT(classState_ == ClassState::Class ||
-               classState_ == ClassState::FieldInitializersEnd);
+    MOZ_ASSERT(classState_ == ClassState::Class);
 
     if (classStart && classEnd) {
         // In the case of default class constructors, emit the start and end
@@ -789,12 +821,13 @@ bool ClassEmitter::initProtoAndCtor()
     return true;
 }
 
-bool ClassEmitter::emitEnd(Kind kind)
+bool ClassEmitter::emitBinding()
 {
     MOZ_ASSERT(propertyState_ == PropertyState::Start ||
                propertyState_ == PropertyState::Init);
     MOZ_ASSERT(classState_ == ClassState::InitConstructor ||
-               classState_ == ClassState::FieldInitializersEnd);
+               classState_ == ClassState::InstanceFieldInitializersEnd ||
+               classState_ == ClassState::StaticFieldInitializersEnd);
 
     //                [stack] CTOR HOMEOBJ
 
@@ -804,47 +837,52 @@ bool ClassEmitter::emitEnd(Kind kind)
     }
 
     if (name_ != bce_->cx->names().empty) {
-        MOZ_ASSERT(tdzCache_.isSome());
         MOZ_ASSERT(innerScope_.isSome());
 
         if (!bce_->emitLexicalInitialization(name_)) {
             //            [stack] CTOR
             return false;
         }
+    }
 
-        // Pop the inner scope.
-        if (!innerScope_->leave(bce_))
-            return false;
-        innerScope_.reset();
+    //                [stack] CTOR
 
-        if (kind == Kind::Declaration) {
-            if (!bce_->emitLexicalInitialization(name_)) {
-                //          [stack] CTOR
-                return false;
-            }
-            // Only class statements make outer bindings, and they do not leave
-            // themselves on the stack.
-            if (!bce_->emit1(JSOP_POP)) {
-                //          [stack]
-                return false;
-            }
-        }
+#ifdef DEBUG
+    classState_ = ClassState::BoundName;
+#endif
+    return true;
+}
 
-        tdzCache_.reset();
-    } else if (innerScope_.isSome()) {
-        //              [stack] CTOR
-        MOZ_ASSERT(kind == Kind::Expression);
+bool ClassEmitter::emitEnd(Kind kind)
+{
+    MOZ_ASSERT(classState_ == ClassState::BoundName);
+    //                [stack] CTOR
+
+    if (innerScope_.isSome()) {
         MOZ_ASSERT(tdzCache_.isSome());
 
         if (!innerScope_->leave(bce_))
             return false;
         innerScope_.reset();
         tdzCache_.reset();
-    }else {
-        //              [stack] CTOR
-
+    } else {
         MOZ_ASSERT(kind == Kind::Expression);
         MOZ_ASSERT(tdzCache_.isNothing());
+    }
+
+    if (kind == Kind::Declaration) {
+        MOZ_ASSERT(name_);
+
+        if (!bce_->emitLexicalInitialization(name_)) {
+            //            [stack] CTOR
+            return false;
+        }
+        // Only class statements make outer bindings, and they do not leave
+        // themselves on the stack.
+        if (!bce_->emit1(JSOP_POP)) {
+            //            [stack]
+            return false;
+        }
     }
 
     //                [stack] # class declaration

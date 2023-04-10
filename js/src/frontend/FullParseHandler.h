@@ -467,11 +467,11 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<ClassMethod>(key, funNode, op, isStatic);
     }
 
-    MOZ_MUST_USE ClassField* newClassFieldDefinition(Node name, FunctionNodeType initializer)
+    MOZ_MUST_USE ClassField* newClassFieldDefinition(Node name, FunctionNodeType initializer, bool isStatic)
     {
         MOZ_ASSERT(isUsableAsObjectPropertyName(name));
 
-        return new_<ClassField>(name, initializer);
+        return new_<ClassField>(name, initializer, isStatic);
     }
 
     MOZ_MUST_USE bool addClassMemberDefinition(ListNodeType memberList, Node member)
