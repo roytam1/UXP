@@ -3710,53 +3710,21 @@ BytecodeEmitter::emitAssignmentOrInit(ParseNodeKind kind, JSOp compoundOp,
     MOZ_ASSERT_IF(isInit, lhs->isKind(PNK_DOT) ||
                           lhs->isKind(PNK_ELEM));
 
-    // Name assignments are handled separately because choosing ops and when
-    // to emit BINDNAME is involved and should avoid duplication.
-    if (lhs->isKind(PNK_NAME)) {
-        NameOpEmitter noe(this,
-                          lhs->name(),
-                          isCompound
-                          ? NameOpEmitter::Kind::CompoundAssignment
-                          : NameOpEmitter::Kind::SimpleAssignment);
-        if (!noe.prepareForRhs()) {                       // ENV? VAL?
-            return false;
-        }
-
-        // Emit the RHS. If we emitted a BIND[G]NAME, then the scope is on
-        // the top of the stack and we need to pick the right RHS value.
-        uint8_t offset = noe.emittedBindOp() ? 2 : 1;
-        if (!EmitAssignmentRhs(this, rhs, offset)) {      // ENV? VAL? RHS
-            return false;
-        }
-        // Assign inferred function name, unless the lhs is parenthesized
-        if (rhs && rhs->isDirectRHSAnonFunction() && !lhs->isInParens()) {
-            MOZ_ASSERT(!isCompound);
-            RootedAtom name(cx, lhs->name());
-            if (!setOrEmitSetFunName(rhs, name)) {         // ENV? VAL? RHS
-                return false;
-            }
-        }
-
-        // Emit the compound assignment op if there is one.
-        if (isCompound) {
-            if (!emit1(compoundOp)) {                     // ENV? VAL
-                return false;
-            }
-        }
-        if (!noe.emitAssignment()) {                      // VAL
-            return false;
-        }
-
-        return true;
-    }
-
+    Maybe<NameOpEmitter> noe;
     Maybe<PropOpEmitter> poe;
     Maybe<ElemOpEmitter> eoe;
 
-    // Deal with non-name assignments.
     uint8_t offset = 1;
 
     switch (lhs->getKind()) {
+      case PNK_NAME: {
+        noe.emplace(this,
+                    lhs->name(),
+                    isCompound
+                    ? NameOpEmitter::Kind::CompoundAssignment
+                    : NameOpEmitter::Kind::SimpleAssignment);
+        break;
+      }
       case PNK_DOT: {
         PropertyAccess* prop = &lhs->as<PropertyAccess>();
         bool isSuper = prop->isSuper();
@@ -3861,6 +3829,15 @@ BytecodeEmitter::emitAssignmentOrInit(ParseNodeKind kind, JSOp compoundOp,
     }
 
     switch (lhs->getKind()) {
+      case PNK_NAME:
+        if (!noe->prepareForRhs()) {                      // ENV? VAL?
+            return false;
+        }
+        // If we emitted a BIND[G]NAME, then the scope is on
+        // the top of the stack and we need to pick the right RHS value.
+        if (noe->emittedBindOp())
+            offset += 1;
+        break;
       case PNK_DOT:
         if (!poe->prepareForRhs()) {                      // [Simple,Super]
             //                                            // THIS SUPERBASE
@@ -3892,6 +3869,17 @@ BytecodeEmitter::emitAssignmentOrInit(ParseNodeKind kind, JSOp compoundOp,
     if (!EmitAssignmentRhs(this, rhs, offset))             // ... VAL? RHS
         return false;
 
+    if (lhs->isKind(PNK_NAME)) {
+        // Assign inferred function name, unless the lhs is parenthesized
+        if (rhs && rhs->isDirectRHSAnonFunction() && !lhs->isInParens()) {
+            MOZ_ASSERT(!isCompound);
+            RootedAtom name(cx, lhs->name());
+            if (!setOrEmitSetFunName(rhs, name)) {         // ENV? VAL? RHS
+                return false;
+            }
+        }
+    }
+
     /* If += etc., emit the binary operator with a source note. */
     if (isCompound) {
         if (!newSrcNote(SRC_ASSIGNOP))
@@ -3902,6 +3890,14 @@ BytecodeEmitter::emitAssignmentOrInit(ParseNodeKind kind, JSOp compoundOp,
 
     /* Finally, emit the specialized assignment bytecode. */
     switch (lhs->getKind()) {
+      case PNK_NAME:  {
+        if (!noe->emitAssignment()) {                      // VAL
+            return false;
+        }
+
+        noe.reset();
+        break;
+      }
       case PNK_DOT: {
         PropertyAccess* prop = &lhs->as<PropertyAccess>();
         if (!poe->emitAssignment(prop->key().atom())) {    // VAL
