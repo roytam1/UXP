@@ -47,6 +47,33 @@ enum class ScriptKind {
   Module
 };
 
+/*
+ * Some options used when fetching script resources. This only loosely
+ * corresponds to HTML's "script fetch options".
+ *
+ * These are common to all modules in a module graph, and hence a single
+ * instance is shared by all ModuleLoadRequest objects in a graph.
+ */
+
+class ScriptFetchOptions
+{
+  ~ScriptFetchOptions();
+
+public:
+  NS_INLINE_DECL_CYCLE_COLLECTING_NATIVE_REFCOUNTING(ScriptFetchOptions)
+  NS_DECL_CYCLE_COLLECTION_NATIVE_CLASS(ScriptFetchOptions)
+
+  ScriptFetchOptions(mozilla::CORSMode aCORSMode,
+                     mozilla::net::ReferrerPolicy aReferrerPolicy,
+                     nsIScriptElement* aElement,
+                     nsIPrincipal* aTriggeringPrincipal);
+
+  const mozilla::CORSMode mCORSMode;
+  const mozilla::net::ReferrerPolicy mReferrerPolicy;
+  nsCOMPtr<nsIScriptElement> mElement;
+  nsCOMPtr<nsIPrincipal> mTriggeringPrincipal;
+};
+
 class ScriptLoadRequest : public nsISupports,
                           private mozilla::LinkedListElement<ScriptLoadRequest>
 {
@@ -62,16 +89,12 @@ protected:
 public:
   ScriptLoadRequest(ScriptKind aKind,
                     nsIURI* aURI,
-                    nsIScriptElement* aElement,
-                    uint32_t aVersion,
-                    mozilla::CORSMode aCORSMode,
+                    ScriptFetchOptions* aFetchOptions,
                     const SRIMetadata& aIntegrity,
-                    nsIURI* aReferrer,
-                    mozilla::net::ReferrerPolicy aReferrerPolicy)
+                    nsIURI* aReferrer)
     : mKind(aKind),
-      mElement(aElement),
-      mProgress(Progress::Loading),
       mScriptMode(ScriptMode::eBlocking),
+      mProgress(Progress::Loading),
       mIsInline(true),
       mHasSourceMapURL(false),
       mInDeferList(false),
@@ -83,13 +106,10 @@ public:
       mOffThreadToken(nullptr),
       mScriptTextBuf(nullptr),
       mScriptTextLength(0),
-      mJSVersion(aVersion),
       mURI(aURI),
       mLineNo(1),
-      mCORSMode(aCORSMode),
       mIntegrity(aIntegrity),
-      mReferrer(aReferrer),
-      mReferrerPolicy(aReferrerPolicy)
+      mReferrer(aReferrer)
   {
   }
 
@@ -106,16 +126,16 @@ public:
   void FireScriptAvailable(nsresult aResult)
   {
     bool isInlineClassicScript = mIsInline && !IsModuleRequest();
-    mElement->ScriptAvailable(aResult, mElement, isInlineClassicScript, mURI, mLineNo);
+    Element()->ScriptAvailable(aResult, Element(), isInlineClassicScript, mURI, mLineNo);
   }
   void FireScriptEvaluated(nsresult aResult)
   {
-    mElement->ScriptEvaluated(aResult, mElement, mIsInline);
+    Element()->ScriptEvaluated(aResult, Element(), mIsInline);
   }
 
   bool IsPreload()
   {
-    return mElement == nullptr;
+    return Element() == nullptr;
   }
 
   virtual void Cancel();
@@ -178,15 +198,42 @@ public:
     return true;
   }
 
+  mozilla::CORSMode CORSMode() const
+  {
+    return mFetchOptions->mCORSMode;
+  }
+  mozilla::net::ReferrerPolicy ReferrerPolicy() const
+  {
+    return mFetchOptions->mReferrerPolicy;
+  }
+  nsIScriptElement* Element() const
+  {
+    return mFetchOptions->mElement;
+  }
+  nsIPrincipal* TriggeringPrincipal() const
+  {
+    return mFetchOptions->mTriggeringPrincipal;
+  }
+
+  void SetElement(nsIScriptElement* aElement)
+  {
+    // Called when a preload request is later used for an actual request.
+    MOZ_ASSERT(aElement);
+    MOZ_ASSERT(!Element());
+    mFetchOptions->mElement = aElement;
+   }
+
+  void SetScript(JSScript* aScript);
+
   void MaybeCancelOffThreadScript();
 
   using super::getNext;
   using super::isInList;
 
-  const ScriptKind mKind;
-  nsCOMPtr<nsIScriptElement> mElement;
+  const ScriptKind mKind; // Whether this is a classic script or a module script.
+  ScriptMode mScriptMode; // Whether this is a blocking, defer or async script.
   Progress mProgress;     // Are we still waiting for a load to complete?
-  ScriptMode mScriptMode; // Whether this script is blocking, deferred or async.
+  bool mScriptFromHead;   // Synchronous head script block loading of other non js/css content.
   bool mIsInline;         // Is the script inline or loaded?
   bool mHasSourceMapURL;  // Does the HTTP header have a source map url?
   bool mInDeferList;      // True if we live in mDeferRequests.
@@ -199,15 +246,18 @@ public:
   nsString mSourceMapURL; // Holds source map url for loaded scripts
   char16_t* mScriptTextBuf; // Holds script text for non-inline scripts. Don't
   size_t mScriptTextLength; // use nsString so we can give ownership to jsapi.
-  uint32_t mJSVersion;
   const nsCOMPtr<nsIURI> mURI;
   nsCOMPtr<nsIPrincipal> mOriginPrincipal;
   nsAutoCString mURL;     // Keep the URI's filename alive during off thread parsing.
   int32_t mLineNo;
-  const mozilla::CORSMode mCORSMode;
   const SRIMetadata mIntegrity;
   const nsCOMPtr<nsIURI> mReferrer;
-  const mozilla::net::ReferrerPolicy mReferrerPolicy;
+
+  RefPtr<ScriptFetchOptions> mFetchOptions;
+
+  // Holds the top-level JSScript that corresponds to the current source, once
+  // it is parsed, and planned to be saved in the bytecode cache.
+  JS::Heap<JSScript*> mScript;
 };
 
 class ScriptLoadRequestList : private mozilla::LinkedList<ScriptLoadRequest>
@@ -511,13 +561,20 @@ public:
    */
   void ClearModuleMap();
 
+  void StartDynamicImport(ModuleLoadRequest* aRequest);
+  void FinishDynamicImport(ModuleLoadRequest* aRequest, nsresult aResult);
+  void FinishDynamicImport(JSContext* aCx, ModuleLoadRequest* aRequest,
+                           nsresult aResult);
+
 private:
   virtual ~ScriptLoader();
+
+  void EnsureModuleHooksInitialized();
 
   ScriptLoadRequest* CreateLoadRequest(ScriptKind aKind,
                                        nsIURI* aURI,
                                        nsIScriptElement* aElement,
-                                       uint32_t aVersion,
+                                       nsIPrincipal* aTriggeringPrincipal,
                                        mozilla::CORSMode aCORSMode,
                                        const SRIMetadata& aIntegrity,
                                        mozilla::net::ReferrerPolicy aReferrerPolicy);
@@ -591,6 +648,7 @@ private:
 
   nsresult AttemptAsyncScriptCompile(ScriptLoadRequest* aRequest);
   nsresult ProcessRequest(ScriptLoadRequest* aRequest);
+  void ProcessDynamicImport(ModuleLoadRequest* aRequest);
   nsresult CompileOffThreadOrProcessRequest(ScriptLoadRequest* aRequest);
   void FireScriptAvailable(nsresult aResult,
                            ScriptLoadRequest* aRequest);
@@ -645,6 +703,8 @@ private:
   RefPtr<mozilla::GenericPromise>
   StartFetchingModuleAndDependencies(ModuleLoadRequest* aParent, nsIURI* aURI);
 
+  void RunScriptWhenSafe(ScriptLoadRequest* aRequest);
+  
   nsIDocument* mDocument;                   // [WEAK]
   nsCOMArray<nsIScriptLoaderObserver> mObservers;
   ScriptLoadRequestList mNonAsyncExternalScriptInsertedRequests;
@@ -654,6 +714,7 @@ private:
   ScriptLoadRequestList mLoadedAsyncRequests;
   ScriptLoadRequestList mDeferRequests;
   ScriptLoadRequestList mXSLTRequests;
+  ScriptLoadRequestList mDynamicImportRequests;
   RefPtr<ScriptLoadRequest> mParserBlockingRequest;
 
   // In mRequests, the additional information here is stored by the element.

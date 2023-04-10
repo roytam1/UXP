@@ -17,9 +17,12 @@ namespace dom {
 
 class ScriptLoader;
 
+void HostFinalizeTopLevelScript(JSFreeOp* aFop, const JS::Value& aPrivate);
+
 class ModuleScript final : public nsISupports
 {
   RefPtr<ScriptLoader> mLoader;
+  RefPtr<ScriptFetchOptions> mFetchOptions;
   nsCOMPtr<nsIURI> mBaseURL;
   JS::Heap<JSObject*> mModuleRecord;
   JS::Heap<JS::Value> mParseError;
@@ -31,7 +34,7 @@ public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(ModuleScript)
 
-  ModuleScript(ScriptLoader* aLoader,
+  ModuleScript(ScriptLoader* aLoader, ScriptFetchOptions* aFetchOptions,
                nsIURI* aBaseURL);
 
   void SetModuleRecord(JS::Handle<JSObject*> aModuleRecord);
@@ -39,6 +42,7 @@ public:
   void SetErrorToRethrow(const JS::Value& aError);
 
   ScriptLoader* Loader() const { return mLoader; }
+  ScriptFetchOptions* FetchOptions() const { return mFetchOptions; }
   JSObject* ModuleRecord() const { return mModuleRecord; }
   nsIURI* BaseURL() const { return mBaseURL; }
 
@@ -48,6 +52,8 @@ public:
   bool HasErrorToRethrow() const { return !mErrorToRethrow.isUndefined(); }
 
   void UnlinkModuleRecord();
+
+  friend void HostFinalizeTopLevelScript(JSFreeOp*, const JS::Value&);
 };
 
 } // dom namespace
