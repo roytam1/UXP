@@ -510,9 +510,25 @@ bool ClassEmitter::prepareForFieldInitializers(size_t numFields)
     return true;
 }
 
-bool ClassEmitter::emitStoreFieldInitializer()
+bool ClassEmitter::emitFieldInitializerHomeObject()
 {
     MOZ_ASSERT(classState_ == ClassState::FieldInitializers);
+    //          [stack] OBJ HERITAGE? ARRAY METHOD
+    if (!bce_->emit2(JSOP_INITHOMEOBJECT, isDerived_ ? 2 : 1)) {
+        //              [stack] OBJ HERITAGE? ARRAY METHOD
+        return false;
+    }
+
+#ifdef DEBUG
+    classState_ = ClassState::FieldInitializerWithHomeObject;
+#endif
+    return true;
+}
+
+bool ClassEmitter::emitStoreFieldInitializer()
+{
+    MOZ_ASSERT(classState_ == ClassState::FieldInitializers ||
+               classState_ == ClassState::FieldInitializerWithHomeObject);
     MOZ_ASSERT(fieldIndex_ < numFields_);
     //          [stack] HOMEOBJ HERITAGE? ARRAY METHOD
 
@@ -522,6 +538,9 @@ bool ClassEmitter::emitStoreFieldInitializer()
     }
 
     fieldIndex_++;
+#ifdef DEBUG
+    classState_ = ClassState::FieldInitializers;
+#endif
     return true;
 }
 
@@ -529,7 +548,8 @@ bool ClassEmitter::emitFieldInitializersEnd()
 {
     MOZ_ASSERT(propertyState_ == PropertyState::Start ||
                propertyState_ == PropertyState::Init);
-    MOZ_ASSERT(classState_ == ClassState::FieldInitializers);
+    MOZ_ASSERT(classState_ == ClassState::FieldInitializers ||
+               classState_ == ClassState::FieldInitializerWithHomeObject);
     MOZ_ASSERT(fieldIndex_ == numFields_);
 
     if (!initializersAssignment_->emitAssignment()) {

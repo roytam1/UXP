@@ -222,7 +222,6 @@ SharedContext::computeAllowSyntax(Scope* scope)
             allowSuperProperty_ = fun->allowSuperProperty();
             allowSuperCall_ = fun->isDerivedClassConstructor();
             if (funScope->isFieldInitializer()) {
-                allowSuperProperty_ = false;
                 allowSuperCall_ = false;
                 allowArguments_ = false;
             }
@@ -7975,14 +7974,14 @@ Parser<ParseHandler>::fieldInitializerOpt(HandleAtom propAtom, size_t& numFieldK
 
     // Create the anonymous function object.
     RootedFunction fun(context,
-                       newFunction(nullptr, FunctionSyntaxKind::Expression,
+                       newFunction(nullptr, FunctionSyntaxKind::Method,
                                    GeneratorKind::NotGenerator,
                                    FunctionAsyncKind::SyncFunction));
     if (!fun)
         return null();
 
     // Create the top-level field initializer node.
-    FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Expression, firstTokenPos);
+    FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Method, firstTokenPos);
     if (!funNode)
         return null();
 
@@ -8116,6 +8115,10 @@ Parser<ParseHandler>::fieldInitializerOpt(HandleAtom propAtom, size_t& numFieldK
     }
 
     handler.setFunctionBody(funNode, initializerBody);
+
+    if (pc->superScopeNeedsHomeObject()) {
+        funbox->setNeedsHomeObject();
+    }
 
     if (!finishFunction(false, true))
         return null();

@@ -625,7 +625,7 @@ enum class FunctionSyntaxKind
     Expression,                                  // A non-arrow function expression.
     Statement,                                   // A named function appearing as a Statement.
     Arrow,
-    Method,
+    Method,                                      // Method of a class or object. Field initializers also desugar to methods.
     ClassConstructor,
     DerivedClassConstructor,
     Getter,
