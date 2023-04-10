@@ -1489,7 +1489,6 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     ClassNodeType classDefinition(YieldHandling yieldHandling, ClassContext classContext,
                                   DefaultHandling defaultHandling);
     MOZ_MUST_USE bool classMember(YieldHandling yieldHandling,
-                                  DefaultHandling defaultHandling,
                                   const ParseContext::ClassStatement& classStmt,
                                   HandlePropertyName className,
                                   uint32_t classStartOffset, bool hasHeritage,
@@ -1502,8 +1501,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
         uint32_t classStartOffset, uint32_t classEndOffset,
         size_t numFieldsWithInitializers, ListNodeType& classMembers);
 
-    FunctionNodeType fieldInitializerOpt(YieldHandling yieldHandling, bool hasHeritage,
-                                         HandleAtom atom, size_t& numFieldKeys);
+    FunctionNodeType fieldInitializerOpt(HandleAtom atom, size_t& numFieldKeys);
     FunctionNodeType synthesizeConstructor(HandleAtom className,
                                            uint32_t classNameOffset,
                                            bool hasHeritage);

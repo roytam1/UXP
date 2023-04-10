@@ -7942,18 +7942,7 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, PropertyEmitter& pe, PropListTy
 FieldInitializers
 BytecodeEmitter::setupFieldInitializers(ListNode* classMembers)
 {
-    size_t numFields = 0;
-
-    for (ParseNode* propdef : classMembers->contents()) {
-        if (propdef->is<ClassField>()) {
-            FunctionNode* initializer = propdef->as<ClassField>().initializer();
-            // Don't include fields without initializers.
-            if (initializer != nullptr) {
-                numFields++;
-            }
-            continue;
-        }
-    }
+    size_t numFields = classMembers->count_if([](ParseNode* propdef) { return propdef->is<ClassField>(); });
 
     return FieldInitializers(numFields);
 }
@@ -7984,15 +7973,10 @@ BytecodeEmitter::setupFieldInitializers(ListNode* classMembers)
 bool
 BytecodeEmitter::emitCreateFieldKeys(ListNode* obj)
 {
-    size_t numFieldKeys = 0;
-    for (ParseNode* propdef : obj->contents()) {
-        if (propdef->is<ClassField>()) {
-            ClassField* field = &propdef->as<ClassField>();
-            if (field->name().getKind() == PNK_COMPUTED_NAME) {
-                numFieldKeys++;
-            }
-        }
-    }
+    size_t numFieldKeys = obj->count_if([](ParseNode* propdef) {
+        return propdef->is<ClassField>() &&
+               propdef->as<ClassField>().name().getKind() == PNK_COMPUTED_NAME;
+    });
 
     if (numFieldKeys == 0)
         return true;
@@ -8021,8 +8005,9 @@ BytecodeEmitter::emitCreateFieldKeys(ListNode* obj)
 }
 
 bool
-BytecodeEmitter::emitCreateFieldInitializers(ListNode* obj)
+BytecodeEmitter::emitCreateFieldInitializers(ClassEmitter& ce, ListNode* obj)
 {
+    //          [stack] HOMEOBJ HERITAGE?
     FieldInitializers fieldInitializers = setupFieldInitializers(obj);
     MOZ_ASSERT(fieldInitializers.valid);
     size_t numFields = fieldInitializers.numFieldInitializers;
@@ -8030,50 +8015,28 @@ BytecodeEmitter::emitCreateFieldInitializers(ListNode* obj)
     if (numFields == 0)
         return true;
 
-    // .initializers is a variable that stores an array of lambdas containing
-    // code (the initializer) for each field. Upon an object's construction,
-    // these lambdas will be called, defining the values.
-
-    NameOpEmitter noe(this, cx->names().dotInitializers,
-                      NameOpEmitter::Kind::Initialize);
-    if (!noe.prepareForRhs()) {
+    if (!ce.prepareForFieldInitializers(numFields)) {
+        //          [stack] HOMEOBJ HERITAGE? ARRAY
         return false;
     }
 
-    if (!emitUint32Operand(JSOP_NEWARRAY, numFields)) {
-        //            [stack] CTOR? OBJ ARRAY
-        return false;
-    }
-
-    size_t curFieldIndex = 0;
     for (ParseNode* propdef : obj->contents()) {
-        if (propdef->is<ClassField>()) {
-            FunctionNode* initializer = propdef->as<ClassField>().initializer();
-            if (initializer == nullptr) {
-                continue;
-            }
+        if (!propdef->is<ClassField>())
+            continue;
 
-            if (!emitTree(initializer)) {
-                //        [stack] CTOR? OBJ ARRAY LAMBDA
-                return false;
-            }
-
-            if (!emitUint32Operand(JSOP_INITELEM_ARRAY, curFieldIndex)) {
-                //        [stack] CTOR? OBJ ARRAY
-                return false;
-            }
-
-            curFieldIndex++;
+        FunctionNode* initializer = propdef->as<ClassField>().initializer();
+        if (!emitTree(initializer)) {
+            //          [stack] HOMEOBJ HERITAGE? ARRAY LAMBDA
+            return false;
+        }
+        if (!ce.emitStoreFieldInitializer()) {
+            //          [stack] HOMEOBJ HERITAGE? ARRAY
+            return false;
         }
     }
 
-    if (!noe.emitAssignment()) {
-        //            [stack] CTOR? OBJ ARRAY
-        return false;
-    }
-
-    if (!emit1(JSOP_POP)) {
-        //            [stack] CTOR? OBJ
+    if (!ce.emitFieldInitializersEnd()) {
+        //              [stack] HOMEOBJ HERITAGE?
         return false;
     }
 
@@ -8698,20 +8661,37 @@ BytecodeEmitter::emitClass(ClassNode* classNode)
     }
 
     if (constructor) {
-        FunctionNode* ctor;
-        // .fieldKeys must be declared outside the scope .initializers is declared
-        // in, hence this extra scope.
+        // See |Parser::classMember(...)| for the reason why |.initializers| is
+        // created within its own scope.
         Maybe<LexicalScopeEmitter> lse;
+        FunctionNode* ctor;
         if (constructor->is<LexicalScopeNode>()) {
-            lse.emplace(this);
-            if (!lse->emitScope(ScopeKind::Lexical, constructor->as<LexicalScopeNode>().scopeBindings()))
-                return false;
+            LexicalScopeNode* constructorScope = &constructor->as<LexicalScopeNode>();
 
-            // Any class with field initializers will have a constructor
-            if (!emitCreateFieldInitializers(classMembers))
-                return false;
-            ctor = &constructor->as<LexicalScopeNode>().scopeBody()->as<ClassMethod>().method();
+            // The constructor scope should only contain the |.initializers| binding.
+            MOZ_ASSERT(!constructorScope->isEmptyScope());
+            MOZ_ASSERT(constructorScope->scopeBindings()->length == 1);
+            MOZ_ASSERT(constructorScope->scopeBindings()->trailingNames[0].name() ==
+                       cx->names().dotInitializers);
+
+            // As an optimization omit the |.initializers| binding when no instance
+            // fields are present.
+            bool hasInstanceFields = classMembers->any_of([](ParseNode* propdef) {
+                                                       return propdef->is<ClassField>();
+                                                   });
+            if (hasInstanceFields) {
+                lse.emplace(this);
+                if (!lse->emitScope(ScopeKind::Lexical, constructorScope->scopeBindings()))
+                    return false;
+
+                // Any class with field initializers will have a constructor
+                if (!emitCreateFieldInitializers(ce, classMembers))
+                    return false;
+            }
+            ctor = &constructorScope->scopeBody()->as<ClassMethod>().method();
         } else {
+            // The |.initializers| binding is never emitted when in self-hosting mode.
+            MOZ_ASSERT(emitterMode == BytecodeEmitter::SelfHosting);
             ctor = &constructor->as<ClassMethod>().method();
         }
 

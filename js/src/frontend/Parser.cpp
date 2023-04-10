@@ -557,13 +557,10 @@ FunctionBox::initWithEnclosingParseContext(ParseContext* enclosing, FunctionSynt
 }
 
 void
-FunctionBox::initFieldInitializer(ParseContext* enclosing, bool hasHeritage)
+FunctionBox::initFieldInitializer(ParseContext* enclosing)
 {
-    this->initWithEnclosingParseContext(enclosing, FunctionSyntaxKind::Expression);
-    allowSuperProperty_ = false;
-    allowSuperCall_ = false;
+    this->initWithEnclosingParseContext(enclosing, FunctionSyntaxKind::Method);
     allowArguments_ = false;
-    needsThisTDZChecks_ = hasHeritage;
 }
 
 void
@@ -7419,7 +7416,7 @@ JSOpFromPropertyType(PropertyType propType)
 
 template <typename ParseHandler>
 bool
-Parser<ParseHandler>::classMember(YieldHandling yieldHandling, DefaultHandling defaultHandling,
+Parser<ParseHandler>::classMember(YieldHandling yieldHandling,
                                   const ParseContext::ClassStatement& classStmt,
                                   HandlePropertyName className,
                                   uint32_t classStartOffset, bool hasHeritage,
@@ -7492,8 +7489,7 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling, DefaultHandling d
 
         numFields++;
 
-        FunctionNodeType initializer = fieldInitializerOpt(yieldHandling, hasHeritage,
-                                                           propAtom, numFieldKeys);
+        FunctionNodeType initializer = fieldInitializerOpt(propAtom, numFieldKeys);
         if (!initializer)
             return false;
 
@@ -7558,8 +7554,25 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling, DefaultHandling d
             funName = propAtom;
     }
 
-    // .fieldKeys must be declared outside the scope .initializers is declared in,
-    // hence this extra scope.
+    // When |super()| is invoked, we search for the nearest scope containing
+    // |.initializers| to initialize the class fields. This set-up precludes
+    // declaring |.initializers| in the class scope, because in some syntactic
+    // contexts |super()| can appear nested in a class, while actually belonging
+    // to an outer class definition.
+    //
+    // Example:
+    // class Outer extends Base {
+    //   field = 1;
+    //   constructor() {
+    //     class Inner {
+    //       field = 2;
+    //
+    //       // The super() call in the computed property name mustn't access
+    //       // Inner's |.initializers| array, but instead Outer's.
+    //       [super()]() {}
+    //     }
+    //   }
+    // }
     Maybe<ParseContext::Scope> dotInitializersScope;
     if (isConstructor && !options().selfHostingMode) {
         dotInitializersScope.emplace(this);
@@ -7747,9 +7760,8 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
         size_t numFieldKeys = 0;
         for (;;) {
             bool done;
-            if (!classMember(yieldHandling, defaultHandling, classStmt, className,
-                             classStartOffset, hasHeritage, numFields, numFieldKeys,
-                             classMembers, &done))
+            if (!classMember(yieldHandling, classStmt, className, classStartOffset,
+                             hasHeritage, numFields, numFieldKeys, classMembers, &done))
                 return null();
             if (done)
                 break;
@@ -7831,7 +7843,6 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
     if (!funbox)
         return null();
     funbox->initWithEnclosingParseContext(pc, functionSyntaxKind);
-    handler.setFunctionBox(funNode, funbox);
     funbox->setEnd(pos().end);
 
     // Push a ParseContext on to the stack.
@@ -7944,8 +7955,7 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
 
 template <class ParseHandler>
 typename ParseHandler::FunctionNodeType
-Parser<ParseHandler>::fieldInitializerOpt(YieldHandling yieldHandling, bool hasHeritage,
-                                          HandleAtom propAtom, size_t& numFieldKeys)
+Parser<ParseHandler>::fieldInitializerOpt(HandleAtom propAtom, size_t& numFieldKeys)
 {
     bool hasInitializer = false;
     if (!tokenStream.matchToken(&hasInitializer, TOK_ASSIGN))
@@ -7983,8 +7993,7 @@ Parser<ParseHandler>::fieldInitializerOpt(YieldHandling yieldHandling, bool hasH
                                          FunctionAsyncKind::SyncFunction, false);
     if (!funbox)
         return null();
-    funbox->initFieldInitializer(pc, hasHeritage);
-    handler.setFunctionBox(funNode, funbox);
+    funbox->initFieldInitializer(pc);
     funbox->setStart(tokenStream, firstTokenPos);
 
     // Push a SourceParseContext on to the stack.

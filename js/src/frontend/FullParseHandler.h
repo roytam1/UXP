@@ -487,7 +487,6 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return true;
     }
 
-
     UnaryNodeType newInitialYieldExpression(uint32_t begin, Node gen) {
         TokenPos pos(begin, begin + 1);
         return new_<UnaryNode>(PNK_INITIALYIELD, JSOP_INITIALYIELD, pos, gen);

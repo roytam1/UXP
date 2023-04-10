@@ -2766,24 +2766,22 @@ ASTSerializer::classField(ClassField* classField, MutableHandleValue dst)
 {
     RootedValue key(cx), val(cx);
     // Dig through the lambda and get to the actual expression
-    if (classField->initializer()) {
-        ParseNode* value = classField->initializer()
-                               ->body()
-                               ->head()->as<LexicalScopeNode>()
-                               .scopeBody()->as<ListNode>()
-                               .head()->as<UnaryNode>()
-                               .kid()->as<BinaryNode>()
-                               .right();
-        // RawUndefinedExpr is the node we use for "there is no initializer". If one
-        // writes, literally, `x = undefined;`, it will not be a RawUndefinedExpr
-        // node, but rather a variable reference.
-        // Behavior for "there is no initializer" should be { ..., "init": null }
-        if (value->getKind() != PNK_RAW_UNDEFINED) {
-            if (!expression(value, &val))
-              return false;
-        } else {
-            val.setNull();
-        }
+    ParseNode* value = classField->initializer()
+                           ->body()
+                           ->head()->as<LexicalScopeNode>()
+                           .scopeBody()->as<ListNode>()
+                           .head()->as<UnaryNode>()
+                           .kid()->as<BinaryNode>()
+                           .right();
+    // RawUndefinedExpr is the node we use for "there is no initializer". If one
+    // writes, literally, `x = undefined;`, it will not be a RawUndefinedExpr
+    // node, but rather a variable reference.
+    // Behavior for "there is no initializer" should be { ..., "init": null }
+    if (value->getKind() != PNK_RAW_UNDEFINED) {
+        if (!expression(value, &val))
+          return false;
+    } else {
+        val.setNull();
     }
     return propertyName(&classField->name(), &key) &&
            builder.classField(key, val, &classField->pn_pos, dst);
