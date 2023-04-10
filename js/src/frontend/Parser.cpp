@@ -8005,6 +8005,10 @@ Parser<ParseHandler>::fieldInitializerOpt(YieldHandling yieldHandling, bool hasH
             if (!initializerExpr)
                 return null();
         }
+
+        // In `class { x = function() {} }`, the anon function can get a name.
+        handler.checkAndSetIsDirectRHSAnonFunction(initializerExpr);
+
         wholeInitializerPos = pos();
         wholeInitializerPos.begin = firstTokenPos.begin;
     } else {

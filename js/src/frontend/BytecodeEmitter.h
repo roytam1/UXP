@@ -690,6 +690,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool setOrEmitSetFunName(ParseNode* maybeFun, HandleAtom name);
     MOZ_MUST_USE bool setFunName(JSFunction* fun, JSAtom* name);
     MOZ_MUST_USE bool emitSetClassConstructorName(JSAtom* name);
+    MOZ_MUST_USE bool emitSetFunctionNameFromStack(uint8_t offset);
 
     MOZ_MUST_USE bool emitInitializer(ParseNode* initializer, ParseNode* pattern);
 

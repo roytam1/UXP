@@ -1234,7 +1234,7 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
         MOZ_ASSERT(pn->is<AssignmentNode>());
         *answer = true;
         return true;
-      
+
       case PNK_SETTHIS:
         MOZ_ASSERT(pn->is<BinaryNode>());
         *answer = true;
@@ -1385,7 +1385,7 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
         MOZ_ASSERT(pn->is<ListNode>());
         *answer = true;
         return true;
-    
+
       case PNK_OPTCHAIN:
         MOZ_ASSERT(pn->is<UnaryNode>());
         *answer = true;
@@ -3003,6 +3003,21 @@ BytecodeEmitter::emitSetClassConstructorName(JSAtom* name)
 }
 
 bool
+BytecodeEmitter::emitSetFunctionNameFromStack(uint8_t offset)
+{
+    //                       [stack] KEY ... FUN
+    if (!emitDupAt(offset))
+        return false;
+    //                       [stack] KEY ... FUN KEY
+    uint8_t kind = uint8_t(FunctionPrefixKind::None);
+    if (!emit2(JSOP_SETFUNNAME, kind)) {
+        //                   [stack] KEY ... FUN
+        return false;
+    }
+    return true;
+}
+
+bool
 BytecodeEmitter::emitInitializer(ParseNode* initializer, ParseNode* pattern)
 {
     if (!emitTree(initializer))
@@ -3715,6 +3730,23 @@ BytecodeEmitter::emitAssignmentOrInit(ParseNodeKind kind, JSOp compoundOp,
     Maybe<ElemOpEmitter> eoe;
 
     uint8_t offset = 1;
+    // Anonymous functions get their inferred name in simple assignments:
+    //    x = function() {};                // x.name === "x"
+    // In this case, rhs->isDirectRHSAnonFunction() from parsing the statement.
+    // To suppress this, put the variable in parentheses:
+    //    (x) = function() {};              // x.name === undefined
+    // In normal property assignments (`obj.x = function(){}`), the anonymous
+    // function does not have a computed name and rhs->isDirectRHSAnonFunction()==false.
+    // However, in field initializers (`class C { x = function(){} }`), field
+    // initialization is implemented via a property or elem assignment *and*
+    // rhs->isDirectRHSAnonFunction() is set. In this case (detected by `isInit`),
+    // we'll assign the name of the function using the same plumbing as binding assignments.
+    // For PNK_NAME and PNK_DOT, the name is compile-time constant, and is stored in `anonFunctionName`.
+    // For PNK_ELEM, we grab it from the stack before emitting the actual assignment.
+    RootedAtom anonFunctionName(cx);
+    bool inferFunctionName = !isCompound &&
+                             rhs && rhs->isDirectRHSAnonFunction() && !lhs->isInParens() &&
+                             (lhs->isKind(PNK_NAME) || isInit);
 
     switch (lhs->getKind()) {
       case PNK_NAME: {
@@ -3723,6 +3755,9 @@ BytecodeEmitter::emitAssignmentOrInit(ParseNodeKind kind, JSOp compoundOp,
                     isCompound
                     ? NameOpEmitter::Kind::CompoundAssignment
                     : NameOpEmitter::Kind::SimpleAssignment);
+        if (inferFunctionName) {
+            anonFunctionName = lhs->name();
+        }
         break;
       }
       case PNK_DOT: {
@@ -3738,6 +3773,9 @@ BytecodeEmitter::emitAssignmentOrInit(ParseNodeKind kind, JSOp compoundOp,
                     : PropOpEmitter::ObjKind::Other);
         if (!poe->prepareForObj()) {
             return false;
+        }
+        if (inferFunctionName) {
+            anonFunctionName = &prop->name();
         }
         if (isSuper) {
             UnaryNode* base = &prop->expression().as<UnaryNode>();
@@ -3869,14 +3907,23 @@ BytecodeEmitter::emitAssignmentOrInit(ParseNodeKind kind, JSOp compoundOp,
     if (!EmitAssignmentRhs(this, rhs, offset))             // ... VAL? RHS
         return false;
 
-    if (lhs->isKind(PNK_NAME)) {
-        // Assign inferred function name, unless the lhs is parenthesized
-        if (rhs && rhs->isDirectRHSAnonFunction() && !lhs->isInParens()) {
-            MOZ_ASSERT(!isCompound);
-            RootedAtom name(cx, lhs->name());
-            if (!setOrEmitSetFunName(rhs, name)) {         // ENV? VAL? RHS
+    // Assign inferred function name
+    if (inferFunctionName) {
+        MOZ_ASSERT(!isCompound);
+        if (anonFunctionName) {
+            // Name is an atom known at compile time
+            MOZ_ASSERT_IF(!lhs->isKind(PNK_NAME), isInit);
+            if (!setOrEmitSetFunName(rhs, anonFunctionName)) {         // ENV? VAL? RHS
                 return false;
             }
+        } else if (lhs->isKind(PNK_ELEM)) {
+            // offset points to the SP relative to RHS.    // [Simple,Super] offset = 4
+            // Find KEY relative to that.                  // {offset} THIS KEY SUPERBASE FUN  
+            //                                             // [Simple,Other] offset = 3
+            //                                             // {offset} OBJ KEY FUN
+            MOZ_ASSERT(offset >= 2);
+            if (!emitSetFunctionNameFromStack(offset - 2))
+                return false;
         }
     }
 
@@ -6977,7 +7024,7 @@ BytecodeEmitter::isRestParameter(ParseNode* pn)
 
     FunctionBox* funbox = sc->asFunctionBox();
     RootedFunction fun(cx, funbox->function());
-    if (!funbox->hasRest()) 
+    if (!funbox->hasRest())
         return false;
 
     if (!pn->isKind(PNK_NAME)) {
@@ -7750,7 +7797,7 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, PropertyEmitter& pe, PropListTy
                 //        [stack] CTOR? OBJ CTOR? KEY VAL
                 return false;
             }
-            
+
             switch (op) {
               case JSOP_INITPROP:
                 if (!pe.emitInitIndexProp(isPropertyAnonFunctionOrClass)) {
@@ -7838,7 +7885,7 @@ BytecodeEmitter::emitPropertyList(ListNode* obj, PropertyEmitter& pe, PropListTy
               break;
               default: MOZ_CRASH("Invalid op");
             }
-            
+
             continue;
         }
 
@@ -7896,7 +7943,7 @@ FieldInitializers
 BytecodeEmitter::setupFieldInitializers(ListNode* classMembers)
 {
     size_t numFields = 0;
-  
+
     for (ParseNode* propdef : classMembers->contents()) {
         if (propdef->is<ClassField>()) {
             FunctionNode* initializer = propdef->as<ClassField>().initializer();
@@ -9220,7 +9267,7 @@ BytecodeEmitter::emitOptionalTree(
     ValueUsage valueUsage /* = ValueUsage::WantValue */)
 {
     JS_CHECK_RECURSION(cx, return false);
-  
+
     ParseNodeKind kind = pn->getKind();
     switch (kind) {
       case PNK_OPTDOT: {
@@ -9477,7 +9524,7 @@ AllocSrcNote(ExclusiveContext* cx, SrcNotesVector& notes, unsigned* index)
         ReportAllocationOverflow(cx);
         return false;
     }
-    
+
     if (!notes.growBy(1)) {
         ReportOutOfMemory(cx);
         return false;
