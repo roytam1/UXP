@@ -236,6 +236,7 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       case PNK_PREDECREMENT:
       case PNK_POSTDECREMENT:
       case PNK_COMPUTED_NAME:
+      case PNK_STATICCLASSBLOCK:
       case PNK_ARRAYPUSH:
       case PNK_SPREAD:
       case PNK_MUTATEPROTO:

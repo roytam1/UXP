@@ -117,6 +117,7 @@ class ObjectBox;
     F(MUTATEPROTO) \
     F(CLASS) \
     F(CLASSMETHOD) \
+    F(STATICCLASSBLOCK) \
     F(CLASSFIELD) \
     F(CLASSMEMBERLIST) \
     F(CLASSNAMES) \
@@ -259,7 +260,7 @@ IsTypeofKind(ParseNodeKind kind)
  *         that doesn't create an outer binding
  *   right: Name node for inner binding
  * PNK_CLASSMEMBERLIST (ListNode)
- *   head: list of N PNK_CLASSMETHOD or PNK_CLASSFIELD nodes
+ *   head: list of N PNK_CLASSMETHOD, PNK_CLASSFIELD or PNK_STATICCLASSBLOCK nodes
  *   count: N >= 0
  * PNK_CLASSMETHOD (ClassMethod)
  *   name: propertyName
@@ -267,6 +268,8 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_CLASSFIELD (ClassField)
  *   name: fieldName
  *   initializer: field initializer or null
+ * PNK_STATICCLASSBLOCK (StaticClassBlock)
+ *   block: block initializer
  * PNK_MODULE (ModuleNode)
  *   body: statement list of the module
  *
@@ -574,6 +577,7 @@ enum ParseNodeArity
     macro(CaseClause, CaseClauseType, asCaseClause) \
     macro(ClassMethod, ClassMethodType, asClassMethod) \
     macro(ClassField, ClassFieldType, asClassField) \
+    macro(StaticClassBlock, StaticClassBlockType, asStaticClassBlock) \
     macro(ClassNames, ClassNamesType, asClassNames) \
     macro(ForNode, ForNodeType, asFor) \
     macro(PropertyAccess, PropertyAccessType, asPropertyAccess) \
@@ -627,6 +631,8 @@ enum class FunctionSyntaxKind
     Arrow,
     Method,                                      // Method of a class or object.
     FieldInitializer,                            // Field initializers desugar to methods.
+    StaticClassBlock,                            // Mostly static class blocks act similar to field initializers, however,
+                                                 // there is some difference in static semantics.
     ClassConstructor,
     DerivedClassConstructor,
     Getter,
@@ -2160,6 +2166,28 @@ class ClassField : public BinaryNode
         return pn_u.binary.isStatic;
     }
 };
+
+// Hold onto the function generated for a class static block like
+//
+// class A {
+//  static { /* this static block */ }
+// }
+//
+class StaticClassBlock : public UnaryNode
+{
+  public:
+    explicit StaticClassBlock(FunctionNode* function)
+        : UnaryNode(PNK_STATICCLASSBLOCK, JSOP_NOP, function->pn_pos, function) {
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_STATICCLASSBLOCK);
+        MOZ_ASSERT_IF(match, node.is<UnaryNode>());
+        return match;
+    }
+    FunctionNode* function() const { return &kid()->as<FunctionNode>(); }
+};
+
 
 class SwitchStatement : public BinaryNode
 {

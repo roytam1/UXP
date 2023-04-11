@@ -432,6 +432,8 @@ class FunctionBox : public ObjectBox, public SharedContext
     bool            isExprBody_:1;          /* arrow function with expression
                                              * body or expression closure:
                                              * function(x) x*x */
+    bool            allowReturn_ : 1;       /* Used to issue an early error in static class blocks. */
+
 
     FunctionContextFlags funCxFlags;
 
@@ -522,6 +524,8 @@ class FunctionBox : public ObjectBox, public SharedContext
     void setIsExprBody() {
         isExprBody_ = true;
     }
+
+    bool allowReturn() const { return allowReturn_; }
 
     void setGeneratorKind(GeneratorKind kind) {
         // A generator kind can be set at initialization, or when "yield" is

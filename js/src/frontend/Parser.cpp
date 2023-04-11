@@ -463,6 +463,7 @@ FunctionBox::FunctionBox(ExclusiveContext* cx, LifoAlloc& alloc, ObjectBox* trac
     hasParameterExprs(false),
     hasDirectEvalInParameterExpr(false),
     hasDuplicateParameters(false),
+    allowReturn_(true),
     useAsm(false),
     insideUseAsm(false),
     isAnnexB(false),
@@ -526,27 +527,34 @@ FunctionBox::initWithEnclosingParseContext(ParseContext* enclosing, FunctionSynt
         allowNewTarget_ = true;
         allowSuperProperty_ = fun->allowSuperProperty();
 
-        if (kind == FunctionSyntaxKind::FieldInitializer) {
-            setFieldInitializer();
-            allowArguments_ = false;
-        }
+        if (isGenexpLambda)
+            thisBinding_ = sc->thisBinding();
+        else
+            thisBinding_ = ThisBinding::Function;
 
         if (IsConstructorKind(kind)) {
             auto stmt = enclosing->findInnermostStatement<ParseContext::ClassStatement>();
             MOZ_ASSERT(stmt);
             stmt->constructorBox = this;
-
-            if (kind == FunctionSyntaxKind::DerivedClassConstructor) {
-                setDerivedClassConstructor();
-                allowSuperCall_ = true;
-                needsThisTDZChecks_ = true;
-            }
         }
 
-        if (isGenexpLambda)
-            thisBinding_ = sc->thisBinding();
-        else
-            thisBinding_ = ThisBinding::Function;
+        if (kind == FunctionSyntaxKind::DerivedClassConstructor) {
+            setDerivedClassConstructor();
+            allowSuperCall_ = true;
+            needsThisTDZChecks_ = true;
+        }
+
+        if (kind == FunctionSyntaxKind::FieldInitializer ||
+            kind == FunctionSyntaxKind::StaticClassBlock) {
+            allowArguments_ = false;
+            if (kind == FunctionSyntaxKind::StaticClassBlock) {
+                allowSuperCall_ = false;
+                allowReturn_ = false;
+            } else {
+                MOZ_ASSERT(kind == FunctionSyntaxKind::FieldInitializer);
+                setFieldInitializer();
+            }
+        }
     }
 
     if (sc->inWith()) {
@@ -2809,6 +2817,7 @@ Parser<ParseHandler>::newFunction(HandleAtom atom, FunctionSyntaxKind kind,
         break;
       case FunctionSyntaxKind::Method:
       case FunctionSyntaxKind::FieldInitializer:
+      case FunctionSyntaxKind::StaticClassBlock:
         MOZ_ASSERT(generatorKind == NotGenerator || generatorKind == StarGenerator);
         flags = (generatorKind == NotGenerator && asyncKind == SyncFunction
                  ? JSFunction::INTERPRETED_METHOD
@@ -3686,10 +3695,12 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
     // See below for an explanation why arrow function parameters and arrow
     // function bodies are parsed with different yield/await settings.
     {
-        AwaitHandling awaitHandling = funbox->isAsync() ||
-                                      (kind == FunctionSyntaxKind::Arrow && awaitIsKeyword())
-                                      ? AwaitIsKeyword
-                                      : AwaitIsName;
+        AwaitHandling awaitHandling = kind == FunctionSyntaxKind::StaticClassBlock
+                                         ? AwaitIsDisallowed
+                                         : (funbox->isAsync() ||
+                                            (kind == FunctionSyntaxKind::Arrow && awaitIsKeyword()))
+                                            ? AwaitIsKeyword
+                                            : AwaitIsName;
         AutoAwaitIsKeyword<ParseHandler> awaitIsKeyword(this, awaitHandling);
         if (!functionArguments(yieldHandling, kind, funNode))
             return false;
@@ -7438,10 +7449,24 @@ Parser<ParseHandler>::classMember(YieldHandling yieldHandling,
     if (tt == TOK_STATIC) {
         if (!tokenStream.peekToken(&tt))
             return false;
+
         if (tt == TOK_RC) {
             tokenStream.consumeKnownToken(tt);
             error(JSMSG_UNEXPECTED_TOKEN, "property name", TokenKindToDesc(tt));
             return false;
+        }
+
+        if (tt == TOK_LC) {
+            /* Parsing static class block: static { ... } */
+            FunctionNodeType staticBlockBody = staticClassBlock(classFields);
+            if (!staticBlockBody)
+                return false;
+
+            StaticClassBlockType classBlock = handler.newStaticClassBlock(staticBlockBody);
+            if (!classBlock)
+                return false;
+
+            return handler.addClassMemberDefinition(classMembers, classBlock);
         }
 
         if (tt != TOK_LP) {
@@ -7970,6 +7995,108 @@ Parser<ParseHandler>::synthesizeConstructor(HandleAtom className, uint32_t class
 
 template <class ParseHandler>
 typename ParseHandler::FunctionNodeType
+Parser<ParseHandler>::staticClassBlock(ClassFields& classFields)
+{
+    // Both for getting-this-done, and because this will invariably be executed,
+    // syntax parsing should be aborted.
+    if (!abortIfSyntaxParser())
+        return null();
+
+    TokenPos firstTokenPos(pos());
+
+    // Create the anonymous function object.
+    FunctionSyntaxKind syntaxKind = FunctionSyntaxKind::StaticClassBlock;
+    AutoAwaitIsKeyword<ParseHandler> awaitIsKeyword(this, AwaitIsDisallowed);
+
+    RootedFunction fun(context,
+                       newFunction(nullptr, syntaxKind,
+                                   GeneratorKind::NotGenerator,
+                                   FunctionAsyncKind::SyncFunction));
+    if (!fun)
+        return null();
+
+    // Create the function node for the static class body.
+    FunctionNodeType funNode = handler.newFunction(syntaxKind, firstTokenPos);
+    if (!funNode)
+        return null();
+
+    // Create the FunctionBox and link it to the function object.
+    Directives directives(true);
+    FunctionBox* funbox = newFunctionBox(funNode, fun, firstTokenPos.begin, directives,
+                                         GeneratorKind::NotGenerator,
+                                         FunctionAsyncKind::SyncFunction, false);
+    if (!funbox)
+        return null();
+    funbox->initWithEnclosingParseContext(pc, syntaxKind);
+    MOZ_ASSERT(!funbox->allowSuperCall());
+    MOZ_ASSERT(!funbox->allowArguments());
+    MOZ_ASSERT(!funbox->allowReturn());
+
+    // Set start at `static` token.
+    MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_STATIC));
+    funbox->setStart(tokenStream, firstTokenPos);
+
+    // Push a SourceParseContext on to the stack.
+    ParseContext* outerpc = pc;
+    ParseContext funpc(this, funbox, /* newDirectives = */ nullptr);
+    if (!funpc.init())
+        return null();
+
+    pc->functionScope().useAsVarScope(pc);
+
+    uint32_t start = firstTokenPos.begin;
+
+    tokenStream.consumeKnownToken(TOK_LC);
+
+    // Static class blocks are code-generated as if they were static field
+    // initializers, so we bump the staticFields count here, which ensures
+    // .staticInitializers is noted as used.
+    classFields.staticFields++;
+
+    LexicalScopeNodeType body = functionBody(InAllowed, YieldIsKeyword, syntaxKind,
+                                             StatementListBody);
+    if (!body)
+        return null();
+
+    if (tokenStream.isEOF()) {
+        error(JSMSG_UNTERMINATED_STATIC_CLASS_BLOCK);
+        return null();
+    }
+
+    tokenStream.consumeKnownToken(TOK_RC, TokenStream::Operand);
+
+    TokenPos wholeBodyPos(start, pos().end);
+
+    handler.setEndPosition(funNode, wholeBodyPos.end);
+    funbox->setEnd(pos().end);
+
+    // Create a ListNode for the parameters + body (there are no parameters).
+    ListNodeType argsbody = handler.newList(PNK_PARAMSBODY, wholeBodyPos);
+    if (!argsbody)
+        return null();
+
+    handler.setFunctionFormalParametersAndBody(funNode, argsbody);
+    funbox->function()->setArgCount(0);
+
+    if (pc->superScopeNeedsHomeObject()) {
+        funbox->setNeedsHomeObject();
+    }
+
+    handler.setEndPosition(body, pos().begin);
+    handler.setEndPosition(funNode, pos().end);
+    handler.setFunctionBody(funNode, body);
+
+    if (!finishFunction())
+        return null();
+
+    if (!leaveInnerFunction(outerpc))
+        return null();
+
+    return funNode;
+}
+
+template <class ParseHandler>
+typename ParseHandler::FunctionNodeType
 Parser<ParseHandler>::fieldInitializerOpt(HandleAtom propAtom, ClassFields& classFields, bool isStatic)
 {
     bool hasInitializer = false;
@@ -8349,7 +8476,7 @@ Parser<ParseHandler>::statement(YieldHandling yieldHandling)
         // The Return parameter is only used here, and the effect is easily
         // detected this way, so don't bother passing around an extra parameter
         // everywhere.
-        if (!pc->isFunctionBox()) {
+        if (!pc->allowReturn()) {
             error(JSMSG_BAD_RETURN_OR_YIELD, js_return_str);
             return null();
         }
@@ -8535,7 +8662,7 @@ Parser<ParseHandler>::statementListItem(YieldHandling yieldHandling,
         // The Return parameter is only used here, and the effect is easily
         // detected this way, so don't bother passing around an extra parameter
         // everywhere.
-        if (!pc->isFunctionBox()) {
+        if (!pc->allowReturn()) {
             error(JSMSG_BAD_RETURN_OR_YIELD, js_return_str);
             return null();
         }
@@ -10261,7 +10388,7 @@ Parser<ParseHandler>::checkLabelOrIdentifierReference(PropertyName* ident,
             return true;
         }
         if (tt == TOK_AWAIT) {
-            if (awaitIsKeyword()) {
+            if (awaitIsKeyword() || awaitIsDisallowed()) {
                 errorAt(offset, JSMSG_RESERVED_ID, "await");
                 return false;
             }

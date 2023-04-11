@@ -347,6 +347,7 @@ MSG_DEF(JSMSG_UNNAMED_CLASS_STMT,      0, JSEXN_SYNTAXERR, "class statement requ
 MSG_DEF(JSMSG_UNNAMED_FUNCTION_STMT,   0, JSEXN_SYNTAXERR, "function statement requires a name")
 MSG_DEF(JSMSG_UNTERMINATED_COMMENT,    0, JSEXN_SYNTAXERR, "unterminated comment")
 MSG_DEF(JSMSG_UNTERMINATED_REGEXP,     0, JSEXN_SYNTAXERR, "unterminated regular expression literal")
+MSG_DEF(JSMSG_UNTERMINATED_STATIC_CLASS_BLOCK, 0, JSEXN_SYNTAXERR, "unterminated static class block")
 MSG_DEF(JSMSG_UNTERMINATED_STRING,     0, JSEXN_SYNTAXERR, "unterminated string literal")
 MSG_DEF(JSMSG_USELESS_EXPR,            0, JSEXN_TYPEERR, "useless expression")
 MSG_DEF(JSMSG_USE_ASM_DIRECTIVE_FAIL,  0, JSEXN_SYNTAXERR, "\"use asm\" is only meaningful in the Directive Prologue of a function body")

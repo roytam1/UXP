@@ -474,12 +474,18 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<ClassField>(name, initializer, isStatic);
     }
 
+    MOZ_MUST_USE StaticClassBlock* newStaticClassBlock(FunctionNodeType block)
+    {
+        return new_<StaticClassBlock>(block);
+    }
+
     MOZ_MUST_USE bool addClassMemberDefinition(ListNodeType memberList, Node member)
     {
         MOZ_ASSERT(memberList->isKind(PNK_CLASSMEMBERLIST));
         // Constructors can be surrounded by LexicalScopes.
         MOZ_ASSERT(member->isKind(PNK_CLASSMETHOD) ||
                    member->isKind(PNK_CLASSFIELD) ||
+                   member->isKind(PNK_STATICCLASSBLOCK) ||
                    (member->isKind(PNK_LEXICALSCOPE) &&
                     member->as<LexicalScopeNode>().scopeBody()->isKind(PNK_CLASSMETHOD)));
 

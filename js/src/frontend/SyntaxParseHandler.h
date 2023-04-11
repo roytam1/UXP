@@ -333,6 +333,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     MOZ_MUST_USE bool addObjectMethodDefinition(ListNodeType literal, Node name, FunctionNodeType funNode, JSOp op) { return true; }
     MOZ_MUST_USE Node newClassMethodDefinition(Node key, FunctionNodeType funNode, JSOp op, bool isStatic) { return NodeGeneric; }
     MOZ_MUST_USE Node newClassFieldDefinition(Node name, FunctionNodeType initializer, bool isStatic) { return NodeGeneric; }
+    MOZ_MUST_USE Node newStaticClassBlock(FunctionNodeType block) { return NodeGeneric; }
     MOZ_MUST_USE bool addClassMemberDefinition(ListNodeType memberList, Node member) { return true; }
     UnaryNodeType newYieldExpression(uint32_t begin, Node value) { return NodeGeneric; }
     UnaryNodeType newYieldStarExpression(uint32_t begin, Node value) { return NodeGeneric; }

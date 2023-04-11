@@ -526,6 +526,10 @@ class ParseContext : public Nestable<ParseContext>
         return sc_->isFunctionBox() && sc_->asFunctionBox()->function()->isMethod();
     }
 
+    bool allowReturn() const {
+        return sc_->isFunctionBox() && sc_->asFunctionBox()->allowReturn();
+    }
+
     uint32_t scriptId() const {
         return scriptId_;
     }
@@ -588,11 +592,11 @@ enum class PropertyType {
 };
 
 // Specify a value for an ES6 grammar parametrization.  We have no enum for
-// [Return] because its behavior is exactly equivalent to checking whether
+// [Return] because its behavior is almost exactly equivalent to checking whether
 // we're in a function box -- easier and simpler than passing an extra
 // parameter everywhere.
 enum YieldHandling { YieldIsName, YieldIsKeyword };
-enum AwaitHandling : uint8_t { AwaitIsName, AwaitIsKeyword, AwaitIsModuleKeyword };
+enum AwaitHandling : uint8_t { AwaitIsName, AwaitIsKeyword, AwaitIsModuleKeyword, AwaitIsDisallowed };
 enum InHandling { InAllowed, InProhibited };
 enum DefaultHandling { NameRequired, AllowDefaultName };
 enum TripledotHandling { TripledotAllowed, TripledotProhibited };
@@ -817,7 +821,10 @@ class ParserBase : public StrictModeGetter
 
   public:
     bool awaitIsKeyword() const {
-        return awaitHandling_ != AwaitIsName;
+        return awaitHandling_ == AwaitIsKeyword || awaitHandling_ == AwaitIsModuleKeyword;
+    }
+    bool awaitIsDisallowed() const {
+        return awaitHandling_ == AwaitIsDisallowed;
     }
 
     ParseGoal parseGoal() const {
@@ -1450,6 +1457,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     // Parse a function body.  Pass StatementListBody if the body is a list of
     // statements; pass ExpressionBody if the body is a single expression.
+    //
+    // Don't include opening LeftCurly token when invoking.
     enum FunctionBodyType { StatementListBody, ExpressionBody };
     LexicalScopeNodeType functionBody(InHandling inHandling, YieldHandling yieldHandling,
                                       FunctionSyntaxKind kind, FunctionBodyType type);
@@ -1498,6 +1507,9 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
         // The number of static class fields.
         size_t staticFields = 0;
 
+        // The number of static blocks
+        size_t staticBlocks = 0;
+
         // The number of static class fields with computed property names.
         size_t staticFieldKeys = 0;
     };
@@ -1514,6 +1526,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
         const ClassFields& classFields, ListNodeType& classMembers);
 
     FunctionNodeType fieldInitializerOpt(HandleAtom atom, ClassFields& classFields, bool isStatic);
+    FunctionNodeType staticClassBlock(ClassFields& classFields);
     FunctionNodeType synthesizeConstructor(HandleAtom className,
                                            uint32_t classNameOffset,
                                            bool hasHeritage);

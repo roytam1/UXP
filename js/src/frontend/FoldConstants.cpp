@@ -403,6 +403,7 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_FOROF:
       case PNK_FORHEAD:
       case PNK_CLASSFIELD:
+      case PNK_STATICCLASSBLOCK:
       case PNK_CLASSMEMBERLIST:
       case PNK_CLASSNAMES:
       case PNK_NEWTARGET:
@@ -1749,6 +1750,7 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
       case PNK_ARRAYPUSH:
       case PNK_MUTATEPROTO:
       case PNK_COMPUTED_NAME:
+      case PNK_STATICCLASSBLOCK:
       case PNK_SPREAD:
       case PNK_EXPORT:
       case PNK_VOID:
