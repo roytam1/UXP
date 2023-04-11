@@ -1325,6 +1325,8 @@ pref("javascript.options.main_thread_stack_quota_cap", 6291456);
 pref("javascript.options.main_thread_stack_quota_cap", 2097152);
 #endif
 
+// Dynamic module import.
+pref("javascript.options.dynamicImport", false);
 
 // advanced prefs
 pref("advanced.mailftp",                    false);

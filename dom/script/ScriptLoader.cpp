@@ -118,6 +118,35 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(ScriptLoadRequest)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFetchOptions)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
+
+ScriptLoadRequest::ScriptLoadRequest(ScriptKind aKind,
+                                     nsIURI* aURI,
+                                     ScriptFetchOptions* aFetchOptions,
+                                     const SRIMetadata& aIntegrity,
+                                     nsIURI* aReferrer)
+  : mKind(aKind),
+    mScriptMode(ScriptMode::eBlocking),
+    mProgress(Progress::Loading),
+    mIsInline(true),
+    mHasSourceMapURL(false),
+    mInDeferList(false),
+    mInAsyncList(false),
+    mIsNonAsyncScriptInserted(false),
+    mIsXSLT(false),
+    mIsCanceled(false),
+    mWasCompiledOMT(false),
+    mOffThreadToken(nullptr),
+    mScriptTextBuf(nullptr),
+    mScriptTextLength(0),
+    mURI(aURI),
+    mLineNo(1),
+    mIntegrity(aIntegrity),
+    mReferrer(aReferrer),
+    mFetchOptions(aFetchOptions)
+{
+  MOZ_ASSERT(mFetchOptions);
+}
+
 ScriptLoadRequest::~ScriptLoadRequest()
 {
   js_free(mScriptTextBuf);
