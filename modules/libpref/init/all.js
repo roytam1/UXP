@@ -189,7 +189,7 @@ pref("dom.enable_resource_timing", true);
 pref("dom.enable_user_timing", true);
 
 // Whether performance.GetEntries* will contain an entry for the active document
-pref("dom.enable_performance_navigation_timing", false);
+pref("dom.enable_performance_navigation_timing", true);
 
 // Enable printing performance marks/measures to log
 pref("dom.performance.enable_user_timing_logging", false);
