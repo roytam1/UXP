@@ -1582,7 +1582,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
                                      bool tryAnnexB,
                                      Directives inheritedDirectives, Directives* newDirectives);
     bool finishFunctionScopes(bool isStandaloneFunction);
-    bool finishFunction(bool isStandaloneFunction = false, bool isFieldInitializer = false);
+    bool finishFunction(bool isStandaloneFunction = false);
     bool leaveInnerFunction(ParseContext* outerpc);
 
     bool matchOrInsertSemicolonHelper(TokenStream::Modifier modifier);
@@ -1630,8 +1630,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     mozilla::Maybe<ModuleScope::Data*> newModuleScopeData(ParseContext::Scope& scope);
     mozilla::Maybe<EvalScope::Data*> newEvalScopeData(ParseContext::Scope& scope);
     mozilla::Maybe<FunctionScope::Data*> newFunctionScopeData(ParseContext::Scope& scope,
-                                                              bool hasParameterExprs,
-                                                              bool isFieldInitializer);
+                                                              bool hasParameterExprs);
     mozilla::Maybe<VarScope::Data*> newVarScopeData(ParseContext::Scope& scope);
     mozilla::Maybe<LexicalScope::Data*> newLexicalScopeData(ParseContext::Scope& scope);
     LexicalScopeNodeType finishLexicalScope(ParseContext::Scope& scope, Node body);

@@ -625,7 +625,8 @@ enum class FunctionSyntaxKind
     Expression,                                  // A non-arrow function expression.
     Statement,                                   // A named function appearing as a Statement.
     Arrow,
-    Method,                                      // Method of a class or object. Field initializers also desugar to methods.
+    Method,                                      // Method of a class or object.
+    FieldInitializer,                            // Field initializers desugar to methods.
     ClassConstructor,
     DerivedClassConstructor,
     Getter,
@@ -659,6 +660,7 @@ static inline bool
 IsMethodDefinitionKind(FunctionSyntaxKind kind)
 {
     return kind == FunctionSyntaxKind::Method ||
+           kind == FunctionSyntaxKind::FieldInitializer ||
            IsConstructorKind(kind) ||
            IsGetterKind(kind) || IsSetterKind(kind);
 }

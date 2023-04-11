@@ -221,7 +221,7 @@ SharedContext::computeAllowSyntax(Scope* scope)
             allowNewTarget_ = true;
             allowSuperProperty_ = fun->allowSuperProperty();
             allowSuperCall_ = fun->isDerivedClassConstructor();
-            if (funScope->isFieldInitializer()) {
+            if (fun->isFieldInitializer()) {
                 allowSuperCall_ = false;
                 allowArguments_ = false;
             }
@@ -526,6 +526,11 @@ FunctionBox::initWithEnclosingParseContext(ParseContext* enclosing, FunctionSynt
         allowNewTarget_ = true;
         allowSuperProperty_ = fun->allowSuperProperty();
 
+        if (kind == FunctionSyntaxKind::FieldInitializer) {
+            setFieldInitializer();
+            allowArguments_ = false;
+        }
+
         if (IsConstructorKind(kind)) {
             auto stmt = enclosing->findInnermostStatement<ParseContext::ClassStatement>();
             MOZ_ASSERT(stmt);
@@ -553,13 +558,6 @@ FunctionBox::initWithEnclosingParseContext(ParseContext* enclosing, FunctionSynt
 
         inWith_ = enclosing->findInnermostStatement(isWith);
     }
-}
-
-void
-FunctionBox::initFieldInitializer(ParseContext* enclosing)
-{
-    this->initWithEnclosingParseContext(enclosing, FunctionSyntaxKind::Method);
-    allowArguments_ = false;
 }
 
 void
@@ -1883,8 +1881,7 @@ Parser<FullParseHandler>::newEvalScopeData(ParseContext::Scope& scope)
 
 template <>
 Maybe<FunctionScope::Data*>
-Parser<FullParseHandler>::newFunctionScopeData(ParseContext::Scope& scope, bool hasParameterExprs,
-                                               bool isFieldInitializer)
+Parser<FullParseHandler>::newFunctionScopeData(ParseContext::Scope& scope, bool hasParameterExprs)
 {
     Vector<BindingName> positionalFormals(context);
     Vector<BindingName> formals(context);
@@ -1957,8 +1954,6 @@ Parser<FullParseHandler>::newFunctionScopeData(ParseContext::Scope& scope, bool 
         bindings = NewEmptyBindingData<FunctionScope>(context, alloc, numBindings);
         if (!bindings)
             return Nothing();
-
-        bindings->isFieldInitializer = isFieldInitializer;
 
         // The ordering here is important. See comments in FunctionScope.
         BindingName* start = bindings->trailingNames.start();
@@ -2408,8 +2403,7 @@ Parser<ParseHandler>::finishFunctionScopes(bool isStandaloneFunction)
 
 template <>
 bool
-Parser<FullParseHandler>::finishFunction(bool isStandaloneFunction /* = false */,
-                                         bool isFieldInitializer /* = false */)
+Parser<FullParseHandler>::finishFunction(bool isStandaloneFunction /* = false */)
 {
     if (!finishFunctionScopes(isStandaloneFunction))
         return false;
@@ -2426,8 +2420,7 @@ Parser<FullParseHandler>::finishFunction(bool isStandaloneFunction /* = false */
 
     {
         Maybe<FunctionScope::Data*> bindings = newFunctionScopeData(pc->functionScope(),
-                                                                    hasParameterExprs,
-                                                                    isFieldInitializer);
+                                                                    hasParameterExprs);
         if (!bindings)
             return false;
         funbox->functionScopeBindings().set(*bindings);
@@ -2445,8 +2438,7 @@ Parser<FullParseHandler>::finishFunction(bool isStandaloneFunction /* = false */
 
 template <>
 bool
-Parser<SyntaxParseHandler>::finishFunction(bool isStandaloneFunction /* = false */,
-                                           bool isFieldInitializer /* = false */)
+Parser<SyntaxParseHandler>::finishFunction(bool isStandaloneFunction /* = false */)
 {
     // The LazyScript for a lazily parsed function needs to know its set of
     // free variables and inner functions so that when it is fully parsed, we
@@ -2816,6 +2808,7 @@ Parser<ParseHandler>::newFunction(HandleAtom atom, FunctionSyntaxKind kind,
         allocKind = gc::AllocKind::FUNCTION_EXTENDED;
         break;
       case FunctionSyntaxKind::Method:
+      case FunctionSyntaxKind::FieldInitializer:
         MOZ_ASSERT(generatorKind == NotGenerator || generatorKind == StarGenerator);
         flags = (generatorKind == NotGenerator && asyncKind == SyncFunction
                  ? JSFunction::INTERPRETED_METHOD
@@ -3056,6 +3049,7 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
         bool duplicatedParam = false;
         bool disallowDuplicateParams = kind == FunctionSyntaxKind::Arrow ||
                                        kind == FunctionSyntaxKind::Method ||
+                                       kind == FunctionSyntaxKind::FieldInitializer ||
                                        kind == FunctionSyntaxKind::ClassConstructor;
         AtomVector& positionalFormals = pc->positionalFormalParameterNames();
 
@@ -3614,7 +3608,11 @@ Parser<FullParseHandler>::standaloneLazyFunction(HandleFunction fun, bool strict
             syntaxKind = FunctionSyntaxKind::ClassConstructor;
         }
     } else if (fun->isMethod()) {
-        syntaxKind = FunctionSyntaxKind::Method;
+        if (fun->isFieldInitializer()) {
+            syntaxKind = FunctionSyntaxKind::FieldInitializer;
+        } else {
+            syntaxKind = FunctionSyntaxKind::Method;
+        }
     } else if (fun->isGetter()) {
         syntaxKind = FunctionSyntaxKind::Getter;
     } else if (fun->isSetter()) {
@@ -7991,15 +7989,16 @@ Parser<ParseHandler>::fieldInitializerOpt(HandleAtom propAtom, ClassFields& clas
     }
 
     // Create the anonymous function object.
+    FunctionSyntaxKind syntaxKind = FunctionSyntaxKind::FieldInitializer;
     RootedFunction fun(context,
-                       newFunction(nullptr, FunctionSyntaxKind::Method,
+                       newFunction(nullptr, syntaxKind,
                                    GeneratorKind::NotGenerator,
                                    FunctionAsyncKind::SyncFunction));
     if (!fun)
         return null();
 
     // Create the top-level field initializer node.
-    FunctionNodeType funNode = handler.newFunction(FunctionSyntaxKind::Method, firstTokenPos);
+    FunctionNodeType funNode = handler.newFunction(syntaxKind, firstTokenPos);
     if (!funNode)
         return null();
 
@@ -8010,7 +8009,8 @@ Parser<ParseHandler>::fieldInitializerOpt(HandleAtom propAtom, ClassFields& clas
                                          FunctionAsyncKind::SyncFunction, false);
     if (!funbox)
         return null();
-    funbox->initFieldInitializer(pc);
+    funbox->initWithEnclosingParseContext(pc, syntaxKind);
+    MOZ_ASSERT(funbox->isFieldInitializer());
     funbox->setStart(tokenStream, firstTokenPos);
 
     // Push a SourceParseContext on to the stack.
@@ -8139,7 +8139,7 @@ Parser<ParseHandler>::fieldInitializerOpt(HandleAtom propAtom, ClassFields& clas
         funbox->setNeedsHomeObject();
     }
 
-    if (!finishFunction(false, true))
+    if (!finishFunction())
         return null();
 
     if (!leaveInnerFunction(outerpc))

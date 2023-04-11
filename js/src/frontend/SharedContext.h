@@ -155,6 +155,7 @@ class FunctionContextFlags
 
     bool needsHomeObject:1;
     bool isDerivedClassConstructor:1;
+    bool isFieldInitializer:1;
 
     // Whether this function has a .this binding. If true, we need to emit
     // JSOP_FUNCTIONTHIS in the prologue to initialize it.
@@ -170,6 +171,7 @@ class FunctionContextFlags
         definitelyNeedsArgsObj(false),
         needsHomeObject(false),
         isDerivedClassConstructor(false),
+        isFieldInitializer(false),
         hasThisBinding(false),
         hasInnerFunctions(false)
     { }
@@ -454,8 +456,7 @@ class FunctionBox : public ObjectBox, public SharedContext
 
     void initFromLazyFunction();
     void initStandaloneFunction(Scope* enclosingScope);
-    void initWithEnclosingParseContext(ParseContext* enclosing, FunctionSyntaxKind kind);
-    void initFieldInitializer(ParseContext* enclosing);  
+    void initWithEnclosingParseContext(ParseContext* enclosing, FunctionSyntaxKind kind); 
 
     ObjectBox* toObjectBox() override { return this; }
     JSFunction* function() const { return &object->as<JSFunction>(); }
@@ -537,6 +538,7 @@ class FunctionBox : public ObjectBox, public SharedContext
     bool needsHomeObject()           const { return funCxFlags.needsHomeObject; }
     bool isDerivedClassConstructor() const { return funCxFlags.isDerivedClassConstructor; }
     bool hasInnerFunctions()         const { return funCxFlags.hasInnerFunctions; }
+    bool isFieldInitializer()        const { return funCxFlags.isFieldInitializer; }
 
     void setHasExtensibleScope()           { funCxFlags.hasExtensibleScope       = true; }
     void setHasThisBinding()               { funCxFlags.hasThisBinding           = true; }
@@ -548,6 +550,8 @@ class FunctionBox : public ObjectBox, public SharedContext
     void setDerivedClassConstructor()      { MOZ_ASSERT(function()->isClassConstructor());
                                              funCxFlags.isDerivedClassConstructor = true; }
     void setHasInnerFunctions()            { funCxFlags.hasInnerFunctions         = true; }
+    void setFieldInitializer()             { MOZ_ASSERT(function()->isMethod());
+                                             funCxFlags.isFieldInitializer        = true; }
 
     bool hasSimpleParameterList() const {
         return !hasRest() && !hasParameterExprs && !hasDestructuringArgs;
