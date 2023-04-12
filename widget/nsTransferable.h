@@ -37,7 +37,7 @@ protected:
   enum {
     // The size of data over which we write the data to disk rather than
     // keep it around in memory.
-    kLargeDatasetSize = 1000000        // 1 million bytes
+    kLargeDatasetSize = 4194304        // 4 Megabytes
   };
   
   nsresult WriteCache(nsISupports* aData, uint32_t aDataLen );
