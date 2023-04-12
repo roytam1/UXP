@@ -3,11 +3,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "Performance.h"
 #include "PerformanceMark.h"
 #include "MainThreadUtils.h"
+#include "mozilla/HoldDropJSObjects.h"
+#include "mozilla/dom/PerformanceBinding.h"
 #include "mozilla/dom/PerformanceMarkBinding.h"
 #include "mozilla/dom/MessagePortBinding.h"
+#include "nsContentUtils.h"
 
+using mozilla::ErrorResult;
 using mozilla::dom::StructuredSerializeOptions;
 using namespace mozilla::dom;
 

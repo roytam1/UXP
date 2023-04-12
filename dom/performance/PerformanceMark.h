@@ -8,9 +8,13 @@
 
 #include "mozilla/dom/PerformanceEntry.h"
 
+class nsIGlobalObject;
 namespace mozilla {
+
+class ErrorResult;
 namespace dom {
 
+class GlobalObject;
 struct PerformanceMarkOptions;
 
 // http://www.w3.org/TR/user-timing/#performancemark
