@@ -11,15 +11,39 @@
 namespace mozilla {
 namespace dom {
 
+struct PerformanceMarkOptions;
+
 // http://www.w3.org/TR/user-timing/#performancemark
 class PerformanceMark final : public PerformanceEntry
 {
-public:
+private:
   PerformanceMark(nsISupports* aParent,
                   const nsAString& aName,
-                  DOMHighResTimeStamp aStartTime);
+                  DOMHighResTimeStamp aStartTime,
+                  const JS::Handle<JS::Value>& aDetail);
+
+  JS::Heap<JS::Value> mDetail;
+
+public:
+  NS_DECL_ISUPPORTS_INHERITED
+  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS_INHERITED(PerformanceMark,
+                                                         PerformanceEntry);
+
+  static already_AddRefed<PerformanceMark> Constructor(
+    const GlobalObject& aGlobal,
+    const nsAString& aMarkName,
+    const PerformanceMarkOptions& aMarkOptions,
+    ErrorResult& aRv);
+
+  static already_AddRefed<PerformanceMark> Constructor(
+    JSContext* aCx, nsIGlobalObject* aGlobal,
+    const nsAString& aMarkName,
+    const PerformanceMarkOptions& aMarkOptions,
+    ErrorResult& aRv);
 
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
+
+  void GetDetail(JSContext* aCx, JS::MutableHandle<JS::Value> aRv);
 
   virtual DOMHighResTimeStamp StartTime() const override
   {
