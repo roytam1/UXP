@@ -7,7 +7,8 @@
  * http://www.w3.org/TR/user-timing/#performancemark
  */
 
-[Exposed=(Window,Worker)]
+[Exposed=(Window,Worker), Constructor(DOMString markName, optional PerformanceMarkOptions markOptions)]
 interface PerformanceMark : PerformanceEntry
 {
+  readonly attribute any detail;
 };

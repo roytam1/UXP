@@ -20,11 +20,18 @@ class ErrorResult;
 
 namespace dom {
 
+class OwningStringOrDouble;
+class StringOrPerformanceMeasureOptions;
 class PerformanceEntry;
+class PerformanceMark;
+struct PerformanceMarkOptions;
+struct PerformanceMeasureOptions;
+class PerformanceMeasure;
 class PerformanceNavigation;
 class PerformanceObserver;
 class PerformanceService;
 class PerformanceTiming;
+struct StructuredSerializeOptions;
 
 namespace workers {
 class WorkerPrivate;
@@ -50,6 +57,10 @@ public:
   static already_AddRefed<Performance>
   CreateForWorker(workers::WorkerPrivate* aWorkerPrivate);
 
+  // This will return nullptr if called outside of a Window or Worker.
+  static already_AddRefed<Performance> Get(JSContext* aCx,
+                                           nsIGlobalObject* aGlobal);
+
   JSObject* WrapObject(JSContext *cx,
                        JS::Handle<JSObject*> aGivenProto) override;
 
@@ -71,14 +82,16 @@ public:
 
   DOMHighResTimeStamp TimeOrigin();
 
-  void Mark(const nsAString& aName, ErrorResult& aRv);
+  already_AddRefed<PerformanceMark> Mark(
+      JSContext* aCx, const nsAString& aName,
+      const PerformanceMarkOptions& aMarkOptions, ErrorResult& aRv);
 
   void ClearMarks(const Optional<nsAString>& aName);
 
-  void Measure(const nsAString& aName,
-               const Optional<nsAString>& aStartMark,
-               const Optional<nsAString>& aEndMark,
-               ErrorResult& aRv);
+  already_AddRefed<PerformanceMeasure> Measure(
+      JSContext* aCx, const nsAString& aName,
+      const StringOrPerformanceMeasureOptions& aStartOrMeasureOptions,
+      const Optional<nsAString>& aEndMark, ErrorResult& aRv);
 
   void ClearMeasures(const Optional<nsAString>& aName);
 
@@ -104,6 +117,13 @@ public:
 
   virtual nsITimedChannel* GetChannel() const = 0;
 
+  bool IsPerformanceTimingAttribute(const nsAString& aName) const;
+
+  virtual bool IsGlobalObjectWindow() const
+  {
+    return false;
+  }
+
 protected:
   Performance();
   explicit Performance(nsPIDOMWindowInner* aWindow);
@@ -116,9 +136,6 @@ protected:
   void ClearUserEntries(const Optional<nsAString>& aEntryName,
                         const nsAString& aEntryType);
 
-  DOMHighResTimeStamp ResolveTimestampFromName(const nsAString& aName,
-                                               ErrorResult& aRv);
-
   virtual nsISupports* GetAsISupports() = 0;
 
   virtual void DispatchBufferFullEvent() = 0;
@@ -126,11 +143,6 @@ protected:
   virtual TimeStamp CreationTimeStamp() const = 0;
 
   virtual DOMHighResTimeStamp CreationTime() const = 0;
-
-  virtual bool IsPerformanceTimingAttribute(const nsAString& aName)
-  {
-    return false;
-  }
 
   virtual DOMHighResTimeStamp
   GetPerformanceTimingFromString(const nsAString& aTimingName)
@@ -159,10 +171,36 @@ protected:
   nsTArray<RefPtr<PerformanceEntry>> mResourceEntries;
 
   uint64_t mResourceTimingBufferSize;
-  static const uint64_t kDefaultResourceTimingBufferSize = 150;
+  static const uint64_t kDefaultResourceTimingBufferSize = 1500;
   bool mPendingNotificationObserversTask;
 
   RefPtr<PerformanceService> mPerformanceService;
+
+private:
+  // The attributes of a PerformanceMeasureOptions that we call
+  // ResolveTimestamp* on.
+  enum class ResolveTimestampAttribute;
+
+  DOMHighResTimeStamp ConvertMarkToTimestampWithString(const nsAString& aName,
+                                                       ErrorResult& aRv);
+  DOMHighResTimeStamp ConvertMarkToTimestampWithDOMHighResTimeStamp(
+      const ResolveTimestampAttribute aAttribute, const double aTimestamp,
+      ErrorResult& aRv);
+  DOMHighResTimeStamp ConvertMarkToTimestamp(
+      const ResolveTimestampAttribute aAttribute,
+      const OwningStringOrDouble& aMarkNameOrTimestamp, ErrorResult& aRv);
+
+  DOMHighResTimeStamp ConvertNameToTimestamp(const nsAString& aName,
+                                             ErrorResult& aRv);
+
+  DOMHighResTimeStamp ResolveEndTimeForMeasure(
+      const Optional<nsAString>& aEndMark,
+      const PerformanceMeasureOptions* aOptions,
+      ErrorResult& aRv);
+  DOMHighResTimeStamp ResolveStartTimeForMeasure(
+      const nsAString* aStartMark,
+      const PerformanceMeasureOptions* aOptions,
+      ErrorResult& aRv);
 };
 
 } // namespace dom
