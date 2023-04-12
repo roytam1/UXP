@@ -432,6 +432,16 @@ var tests = [
   // Bug 783502 - xpcshell test netwerk/test/unit/test_MIME_params.js fails on AddressSanitizer
   ['attachment; filename="\\b\\a\\', 
    "attachment", "ba\\"], 
+
+  // Bug 1784348
+  ["attachment; filename=foo.exe\0.pdf",
+    Cr.NS_ERROR_ILLEGAL_VALUE,
+    Cr.NS_ERROR_INVALID_ARG],
+  ["attachment; filename=\0\0foo\0",
+    Cr.NS_ERROR_ILLEGAL_VALUE,
+    Cr.NS_ERROR_INVALID_ARG],
+  ["attachment; filename=foo\0\0\0", "attachment", "foo"],
+  ["attachment; filename=\0\0\0", "attachment", ""],
 ];
 
 var rfc5987paramtests = [
