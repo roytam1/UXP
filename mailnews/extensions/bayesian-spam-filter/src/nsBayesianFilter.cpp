@@ -510,13 +510,13 @@ void Tokenizer::tokenizeHeaders(nsIUTF8StringEnumerator * aHeaderNames, nsIUTF8S
 
           // extract the charset parameter
           nsCString parameterValue;
-          mimehdrpar->GetParameterInternal(headerValue.get(), "charset", nullptr, nullptr, getter_Copies(parameterValue));
+          mimehdrpar->GetParameterInternal(headerValue, "charset", nullptr, nullptr, getter_Copies(parameterValue));
           addTokenForHeader("charset", parameterValue);
 
           // create a token containing just the content type
-          mimehdrpar->GetParameterInternal(headerValue.get(), "type", nullptr, nullptr, getter_Copies(parameterValue));
+          mimehdrpar->GetParameterInternal(headerValue, "type", nullptr, nullptr, getter_Copies(parameterValue));
           if (!parameterValue.Length())
-            mimehdrpar->GetParameterInternal(headerValue.get(), nullptr /* use first unnamed param */, nullptr, nullptr, getter_Copies(parameterValue));
+            mimehdrpar->GetParameterInternal(headerValue, nullptr /* use first unnamed param */, nullptr, nullptr, getter_Copies(parameterValue));
           addTokenForHeader("content-type/type", parameterValue);
 
           // XXX: should we add a token for the entire content-type header as well or just these parts we have extracted?
