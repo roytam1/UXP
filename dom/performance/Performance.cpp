@@ -262,11 +262,6 @@ already_AddRefed<PerformanceMark> Performance::Mark(
   const PerformanceMarkOptions& aMarkOptions,
   ErrorResult& aRv)
 {
-  // Don't add the entry if the buffer is full. XXX should be removed by bug 1159003.
-  if (mUserEntries.Length() >= mResourceTimingBufferSize) {
-    return nullptr;
-  }
-
   nsCOMPtr<nsIGlobalObject> parent = GetParentObject();
   if (!parent || parent->IsDying() || !parent->GetGlobalJSObject()) {
     aRv.Throw(NS_ERROR_DOM_UT_UNAVAILABLE_GLOBAL_OBJECT);
@@ -490,12 +485,6 @@ Performance::Measure(JSContext* aCx,
                      const Optional<nsAString>& aEndMark,
                      ErrorResult& aRv)
 {
-  // Don't add the entry if the buffer is full. XXX should be removed by bug
-  // 1159003.
-  if (mUserEntries.Length() >= mResourceTimingBufferSize) {
-    return nullptr;
-  }
-
   const PerformanceMeasureOptions* options = nullptr;
   if (aStartOrMeasureOptions.IsPerformanceMeasureOptions()) {
     options = &aStartOrMeasureOptions.GetAsPerformanceMeasureOptions();
@@ -751,6 +740,12 @@ Performance::IsObserverEnabled(JSContext* aCx, JSObject* aGlobal)
                             NS_LITERAL_CSTRING("dom.enable_performance_observer"));
 
   return runnable->Dispatch() && runnable->IsEnabled();
+}
+
+void
+Performance::MemoryPressure()
+{
+  mUserEntries.Clear();
 }
 
 } // dom namespace

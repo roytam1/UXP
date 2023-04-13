@@ -124,6 +124,8 @@ public:
     return false;
   }
 
+  void MemoryPressure();
+
 protected:
   Performance();
   explicit Performance(nsPIDOMWindowInner* aWindow);
