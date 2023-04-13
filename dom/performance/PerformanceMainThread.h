@@ -65,11 +65,6 @@ public:
 protected:
   ~PerformanceMainThread();
 
-  nsISupports* GetAsISupports() override
-  {
-    return this;
-  }
-
   void InsertUserEntry(PerformanceEntry* aEntry) override;
 
   DOMHighResTimeStamp
