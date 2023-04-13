@@ -29,13 +29,14 @@ private:
                           char **aLang, 
                           nsAString& aResult);
 
-  nsresult DoParameterInternal(const char *aHeaderValue, 
-                               const char *aParamName,
+  nsresult DoParameterInternal(const nsACString& aHeaderValue, 
+                               const char* aParamName,
                                ParamDecoding aDecoding,
-                               char **aCharset,
-                               char **aLang,
-                               char **aResult);
-
+                               char** aCharset,
+                               char** aLang,
+                               char** aResult);
+  
+  static bool ContainsTrailingCharPastNull(const nsACString& aVal);
 };
 
 #endif 

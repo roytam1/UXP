@@ -65,6 +65,28 @@ nsMIMEHeaderParamImpl::GetParameterHTTP(const nsACString& aHeaderVal,
                         aFallbackCharset, aTryLocaleCharset, aLang, aResult);
 }
 
+/* static */
+// Detects the presence of any non-null characters past null in a header.
+bool
+nsMIMEHeaderParamImpl::ContainsTrailingCharPastNull(const nsACString& aVal) {
+  nsACString::const_iterator first;
+  aVal.BeginReading(first);
+  nsACString::const_iterator end;
+  aVal.EndReading(end);
+
+  if (FindCharInReadable(L'\0', first, end)) {
+    while (first != end) {
+      if (*first != '\0') {
+        // Header contains trailing characters past the null character
+        return true;
+      }
+      ++first;
+    }
+  }
+  // No stray non-null characters found.
+  return false;
+}
+
 // XXX : aTryLocaleCharset is not yet effective.
 nsresult 
 nsMIMEHeaderParamImpl::DoGetParameter(const nsACString& aHeaderVal, 
@@ -81,9 +103,8 @@ nsMIMEHeaderParamImpl::DoGetParameter(const nsACString& aHeaderVal,
     // aDecoding (5987 being a subset of 2231) and return charset.)
     nsXPIDLCString med;
     nsXPIDLCString charset;
-    rv = DoParameterInternal(PromiseFlatCString(aHeaderVal).get(), aParamName, 
-                             aDecoding, getter_Copies(charset), aLang, 
-                             getter_Copies(med));
+    rv = DoParameterInternal(aHeaderVal, aParamName, aDecoding,
+                             getter_Copies(charset), aLang, getter_Copies(med));
     if (NS_FAILED(rv))
         return rv; 
 
@@ -346,11 +367,11 @@ bool IsValidOctetSequenceForCharset(nsACString& aCharset, const char *aOctets)
 // The format of these header lines  is
 // <token> [ ';' <token> '=' <token-or-quoted-string> ]*
 NS_IMETHODIMP 
-nsMIMEHeaderParamImpl::GetParameterInternal(const char *aHeaderValue, 
-                                            const char *aParamName,
-                                            char **aCharset,
-                                            char **aLang,
-                                            char **aResult)
+nsMIMEHeaderParamImpl::GetParameterInternal(const nsACString& aHeaderValue, 
+                                            const char* aParamName,
+                                            char** aCharset,
+                                            char** aLang,
+                                            char** aResult)
 {
   return DoParameterInternal(aHeaderValue, aParamName, MIME_FIELD_ENCODING,
                              aCharset, aLang, aResult);
@@ -358,16 +379,29 @@ nsMIMEHeaderParamImpl::GetParameterInternal(const char *aHeaderValue,
 
 
 nsresult 
-nsMIMEHeaderParamImpl::DoParameterInternal(const char *aHeaderValue, 
-                                           const char *aParamName,
+nsMIMEHeaderParamImpl::DoParameterInternal(const nsACString& aHeaderValue, 
+                                           const char* aParamName,
                                            ParamDecoding aDecoding,
-                                           char **aCharset,
-                                           char **aLang,
-                                           char **aResult)
+                                           char** aCharset,
+                                           char** aLang,
+                                           char** aResult)
 {
 
-  if (!aHeaderValue ||  !*aHeaderValue || !aResult)
+  if (aHeaderValue.IsEmpty() || !aResult) {
     return NS_ERROR_INVALID_ARG;
+  }
+
+  if (ContainsTrailingCharPastNull(aHeaderValue)) {
+    // See Bug 1784348
+    return NS_ERROR_INVALID_ARG;
+  }
+
+  const nsCString& flat = PromiseFlatCString(aHeaderValue);
+  const char* str = flat.get();
+
+  if (!*str) {
+    return NS_ERROR_INVALID_ARG;
+  }
 
   *aResult = nullptr;
 
@@ -379,8 +413,6 @@ nsMIMEHeaderParamImpl::DoParameterInternal(const char *aHeaderValue,
   // change to (aDecoding != HTTP_FIELD_ENCODING) when we want to disable
   // them for HTTP header fields later on, see bug 776324
   bool acceptContinuations = true;
-
-  const char *str = aHeaderValue;
 
   // skip leading white space.
   for (; *str &&  nsCRT::IsAsciiSpace(*str); ++str)

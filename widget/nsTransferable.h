@@ -6,16 +6,15 @@
 #ifndef nsTransferable_h__
 #define nsTransferable_h__
 
-#include "nsIContentPolicyBase.h"
 #include "nsIFormatConverter.h"
 #include "nsITransferable.h"
 #include "nsCOMPtr.h"
 #include "nsString.h"
 #include "nsTArray.h"
 #include "nsIPrincipal.h"
+#include "prio.h"
 
 class nsIMutableArray;
-class nsString;
 
 //
 // DataStruct
@@ -25,21 +24,20 @@ class nsString;
 struct DataStruct
 {
   explicit DataStruct ( const char* aFlavor )
-    : mDataLen(0), mFlavor(aFlavor), mCacheFileName(nullptr) { }
+    : mDataLen(0), mFlavor(aFlavor), mCacheFD(nullptr) { }
   ~DataStruct();
   
   const nsCString& GetFlavor() const { return mFlavor; }
   void SetData( nsISupports* inData, uint32_t inDataLen, bool aIsPrivateData );
   void GetData( nsISupports** outData, uint32_t *outDataLen );
-  already_AddRefed<nsIFile> GetFileSpec(const char* aFileName);
-  bool IsDataAvailable() const { return (mData && mDataLen > 0) || (!mData && mCacheFileName); }
+  bool IsDataAvailable() const { return mData ? mDataLen > 0 : mCacheFD != nullptr; }
   
 protected:
 
   enum {
     // The size of data over which we write the data to disk rather than
     // keep it around in memory.
-    kLargeDatasetSize = 1000000        // 1 million bytes
+    kLargeDatasetSize = 4194304        // 4 Megabytes
   };
   
   nsresult WriteCache(nsISupports* aData, uint32_t aDataLen );
@@ -47,8 +45,8 @@ protected:
   
   nsCOMPtr<nsISupports> mData;   // OWNER - some varient of primitive wrapper
   uint32_t mDataLen;
+  PRFileDesc* mCacheFD;
   const nsCString mFlavor;
-  char *   mCacheFileName;
 
 };
 

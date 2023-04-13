@@ -12,7 +12,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(9c9252a1-fdaf-40a2-9c2b-a3dc45e28dde)]
+[scriptable, uuid(6e8476d5-ba95-4fee-85d9-f96729b387d8)]
 interface nsIMIMEHeaderParam : nsISupports {
 
   /** 
@@ -132,7 +132,7 @@ interface nsIMIMEHeaderParam : nsISupports {
    */
 
   [noscript]
-  string getParameterInternal(in string aHeaderVal,
+  string getParameterInternal(in ACString aHeaderVal,
                               in string aParamName,
                               out string aCharset,
                               out string aLang);
