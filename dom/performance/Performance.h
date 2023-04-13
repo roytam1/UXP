@@ -138,8 +138,6 @@ protected:
   void ClearUserEntries(const Optional<nsAString>& aEntryName,
                         const nsAString& aEntryType);
 
-  virtual nsISupports* GetAsISupports() = 0;
-
   virtual void DispatchBufferFullEvent() = 0;
 
   virtual TimeStamp CreationTimeStamp() const = 0;
