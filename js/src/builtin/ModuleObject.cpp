@@ -842,7 +842,7 @@ ModuleObject::maybeScript() const
     if (value.isUndefined())
         return nullptr;
 
-    return value.toGCThing()->as<JSScript>();
+    return static_cast<JSScript*>(value.toPrivate());
 }
 
 JSScript*
