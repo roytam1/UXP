@@ -26,13 +26,11 @@ NS_INTERFACE_MAP_END
 NS_IMPL_CYCLE_COLLECTION_CLASS(LoadedScript)
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(LoadedScript)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mLoader)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mFetchOptions)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mBaseURL)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(LoadedScript)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mLoader)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFetchOptions)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
@@ -42,28 +40,52 @@ NS_IMPL_CYCLE_COLLECTION_TRACE_END
 NS_IMPL_CYCLE_COLLECTING_ADDREF(LoadedScript)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(LoadedScript)
 
-LoadedScript::LoadedScript(ScriptKind aKind, ScriptLoader* aLoader,
+LoadedScript::LoadedScript(ScriptKind aKind,
                            ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL)
     : mKind(aKind),
-      mLoader(aLoader),
       mFetchOptions(aFetchOptions),
       mBaseURL(aBaseURL) 
 {
-  MOZ_ASSERT(mLoader);
   MOZ_ASSERT(mFetchOptions);
   MOZ_ASSERT(mBaseURL);
 }
 
 LoadedScript::~LoadedScript() { DropJSObjects(this); }
 
+void LoadedScript::AssociateWithScript(JSScript* aScript) {
+  // Set a JSScript's private value to point to this object and
+  // increment our reference count. This is decremented by
+  // HostFinalizeTopLevelScript() below when the JSScript dies.
+
+  MOZ_ASSERT(JS::GetScriptPrivate(aScript).isUndefined());
+  JS::SetScriptPrivate(aScript, JS::PrivateValue(this));
+  AddRef();
+}
+
+void HostFinalizeTopLevelScript(JSFreeOp* aFop, const JS::Value& aPrivate) {
+  // Decrement the reference count of a LoadedScript object that is
+  // pointed to by a dying JSScript. The reference count was
+  // originally incremented by AssociateWithScript() above.
+
+  auto script = static_cast<LoadedScript*>(aPrivate.toPrivate());
+
+#ifdef DEBUG
+  if (script->IsModuleScript()) {
+    JSObject* module = script->AsModuleScript()->mModuleRecord.unbarrieredGet();
+    MOZ_ASSERT(JS::GetModulePrivate(module) == aPrivate);
+  }
+#endif
+
+  script->Release();
+}
+
 //////////////////////////////////////////////////////////////
 // ClassicScript
 //////////////////////////////////////////////////////////////
 
-ClassicScript::ClassicScript(ScriptLoader* aLoader,
-                             ScriptFetchOptions* aFetchOptions,
+ClassicScript::ClassicScript(ScriptFetchOptions* aFetchOptions,
                              nsIURI* aBaseURL)
-    : LoadedScript(ScriptKind::Classic, aLoader, aFetchOptions, aBaseURL) {}
+    : LoadedScript(ScriptKind::Classic, aFetchOptions, aBaseURL) {}
 
 //////////////////////////////////////////////////////////////
 // ModuleScript
@@ -92,9 +114,8 @@ NS_IMPL_CYCLE_COLLECTION_TRACE_END
 NS_IMPL_ADDREF_INHERITED(ModuleScript, LoadedScript)
 NS_IMPL_RELEASE_INHERITED(ModuleScript, LoadedScript)
 
-ModuleScript::ModuleScript(ScriptLoader* aLoader,
-                           ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL)
-    : LoadedScript(ScriptKind::Module, aLoader, aFetchOptions, aBaseURL) {
+ModuleScript::ModuleScript(ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL)
+    : LoadedScript(ScriptKind::Module, aFetchOptions, aBaseURL) {
   MOZ_ASSERT(!ModuleRecord());
   MOZ_ASSERT(!HasParseError());
   MOZ_ASSERT(!HasErrorToRethrow());
@@ -148,15 +169,6 @@ ModuleScript::SetParseError(const JS::Value& aError)
   mParseError = aError;
   HoldJSObjects(this);
   AddRef();
-}
-
-void HostFinalizeTopLevelScript(JSFreeOp* aFop, const JS::Value& aPrivate) {
-  auto script = static_cast<ModuleScript*>(aPrivate.toPrivate());
-  if (script) {
-    MOZ_ASSERT(JS::GetModulePrivate(script->mModuleRecord.unbarrieredGet()) ==
-               aPrivate);
-    script->UnlinkModuleRecord();
-  }
 }
 
 void

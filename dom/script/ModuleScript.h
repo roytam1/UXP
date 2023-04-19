@@ -31,8 +31,8 @@ class LoadedScript : public nsISupports
   nsCOMPtr<nsIURI> mBaseURL;
  
   protected:
-   LoadedScript(ScriptKind aKind, ScriptLoader* aLoader,
-               ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL);
+   LoadedScript(ScriptKind aKind,
+                ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL);
 
   virtual ~LoadedScript();
 
@@ -45,9 +45,10 @@ class LoadedScript : public nsISupports
   inline ClassicScript* AsClassicScript();
   inline ModuleScript* AsModuleScript();
 
-  ScriptLoader* Loader() const { return mLoader; }
   ScriptFetchOptions* FetchOptions() const { return mFetchOptions; }
   nsIURI* BaseURL() const { return mBaseURL; }
+
+  void AssociateWithScript(JSScript* aScript);
 };
 
 class ClassicScript final : public LoadedScript
@@ -55,8 +56,7 @@ class ClassicScript final : public LoadedScript
   ~ClassicScript() = default;
 
  public:
-  ClassicScript(ScriptLoader* aLoader, ScriptFetchOptions* aFetchOptions,
-                nsIURI* aBaseURL);
+  ClassicScript(ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL);
 };
 
 // A single module script. May be used to satisfy multiple load requests.
@@ -74,8 +74,7 @@ public:
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS_INHERITED(ModuleScript,
                                                          LoadedScript)
 
-  ModuleScript(ScriptLoader* aLoader, ScriptFetchOptions* aFetchOptions,
-               nsIURI* aBaseURL);
+  ModuleScript(ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL);
 
   void SetModuleRecord(JS::Handle<JSObject*> aModuleRecord);
   void SetParseError(const JS::Value& aError);

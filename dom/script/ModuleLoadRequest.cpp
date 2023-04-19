@@ -20,13 +20,13 @@ NS_IMPL_CYCLE_COLLECTION_CLASS(ModuleLoadRequest)
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(ModuleLoadRequest,
                                                 ScriptLoadRequest)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mBaseURL, mLoader, mModuleScript, mImports)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mLoader, mModuleScript, mImports)
   tmp->ClearDynamicImport();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(ModuleLoadRequest,
                                                   ScriptLoadRequest)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBaseURL, mLoader, mModuleScript, mImports)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mLoader, mModuleScript, mImports)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 NS_IMPL_CYCLE_COLLECTION_TRACE_BEGIN_INHERITED(ModuleLoadRequest,
@@ -69,17 +69,18 @@ static VisitedURLSet* NewVisitedSetForTopLevelImport(nsIURI* aURI) {
 }
 
 /* static */ ModuleLoadRequest* ModuleLoadRequest::CreateDynamicImport(
-    nsIURI* aURI, ModuleScript* aScript,
-    JS::Handle<JS::Value> aReferencingPrivate, JS::Handle<JSString*> aSpecifier,
-    JS::Handle<JSObject*> aPromise) {
+    nsIURI* aURI, ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL,
+    ScriptLoader* aLoader, JS::Handle<JS::Value> aReferencingPrivate,
+    JS::Handle<JSString*> aSpecifier, JS::Handle<JSObject*> aPromise) 
+{
   MOZ_ASSERT(aSpecifier);
   MOZ_ASSERT(aPromise);
 
   auto request = new ModuleLoadRequest(
-      aURI, aScript->FetchOptions(), SRIMetadata(), aScript->BaseURL(),
+      aURI, aFetchOptions, SRIMetadata(), aBaseURL,
       true, /* is top level */
       true, /* is dynamic import */
-      aScript->Loader(), NewVisitedSetForTopLevelImport(aURI));
+      aLoader, NewVisitedSetForTopLevelImport(aURI));
 
   request->mIsInline = false;
   request->mScriptMode = ScriptMode::eAsync;

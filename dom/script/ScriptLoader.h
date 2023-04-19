@@ -258,6 +258,9 @@ public:
   // Holds the top-level JSScript that corresponds to the current source, once
   // it is parsed, and planned to be saved in the bytecode cache.
   JS::Heap<JSScript*> mScript;
+
+  // The base URL used for resolving relative module imports.
+  nsCOMPtr<nsIURI> mBaseURL;
 };
 
 class ScriptLoadRequestList : private mozilla::LinkedList<ScriptLoadRequest>
@@ -561,10 +564,29 @@ public:
    */
   void ClearModuleMap();
 
+  /**
+   * Implement the HostResolveImportedModule abstract operation.
+   *
+   * Resolve a module specifier string and look this up in the module
+   * map, returning the result. This is only called for previously
+   * loaded modules and always succeeds.
+   *
+   * @param aReferencingPrivate A JS::Value which is either undefined
+   *                            or contains a LoadedScript private pointer.
+   * @param aSpecifier The module specifier.
+   * @param aModuleOut This is set to the module found.
+   */
+  static void ResolveImportedModule(JSContext* aCx,
+                                    JS::Handle<JS::Value> aReferencingPrivate,
+                                    JS::Handle<JSString*> aSpecifier,
+                                    JS::MutableHandle<JSObject*> aModuleOut);
+
   void StartDynamicImport(ModuleLoadRequest* aRequest);
   void FinishDynamicImport(ModuleLoadRequest* aRequest, nsresult aResult);
   void FinishDynamicImport(JSContext* aCx, ModuleLoadRequest* aRequest,
                            nsresult aResult);
+
+  nsIDocument* GetDocument() const { return mDocument; }
 
 private:
   virtual ~ScriptLoader();
