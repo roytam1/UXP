@@ -1958,10 +1958,9 @@ ScriptSource::addSizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf,
 }
 
 bool
-ScriptSource::xdrEncodeTopLevel(ExclusiveContext* cx, JS::TranscodeBuffer& buffer,
-                                HandleScript script)
+ScriptSource::xdrEncodeTopLevel(ExclusiveContext* cx, HandleScript script)
 {
-    xdrEncoder_ = js::MakeUnique<XDRIncrementalEncoder>(cx, buffer, buffer.length());
+    xdrEncoder_ = js::MakeUnique<XDRIncrementalEncoder>(cx);
     if (!xdrEncoder_) {
         ReportOutOfMemory(cx);
         return false;
@@ -2003,14 +2002,14 @@ ScriptSource::xdrEncodeFunction(ExclusiveContext* cx, HandleFunction fun, Handle
 }
 
 bool
-ScriptSource::xdrFinalizeEncoder()
+ScriptSource::xdrFinalizeEncoder(JS::TranscodeBuffer& buffer)
 {
     MOZ_ASSERT(hasEncoder());
     auto cleanup = mozilla::MakeScopeExit([&] {
         xdrEncoder_.reset(nullptr);
     });
 
-    if (!xdrEncoder_->linearize())
+    if (!xdrEncoder_->linearize(buffer))
         return false;
     return true;
 }

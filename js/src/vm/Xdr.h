@@ -410,18 +410,15 @@ class XDRIncrementalEncoder : public XDREncoder
     // Tree of slices.
     SlicesTree tree_;
     JS::TranscodeBuffer slices_;
-    JS::TranscodeBuffer& buffer_;
     bool oom_;
 
   public:
-    XDRIncrementalEncoder(ExclusiveContext* cx, JS::TranscodeBuffer& buffer, size_t cursor)
+    XDRIncrementalEncoder(ExclusiveContext* cx)
       : XDREncoder(cx, slices_, 0),
         scope_(nullptr),
         node_(nullptr),
-        buffer_(buffer),
         oom_(false)
     {
-        MOZ_ASSERT(buffer.length() == cursor, "NYI");
     }
 
     virtual ~XDRIncrementalEncoder() {}
@@ -434,9 +431,9 @@ class XDRIncrementalEncoder : public XDREncoder
     void createOrReplaceSubTree(AutoXDRTree* child) override;
     void endSubTree() override;
 
-    // In the current XDRBuffer, move replaceable-parts to form a linear
-    // sequence of bytes.
-    MOZ_MUST_USE bool linearize();
+    // Append the content collected during the incremental encoding into the
+    // buffer given as argument.
+    MOZ_MUST_USE bool linearize(JS::TranscodeBuffer& buffer);
 };
 
 } /* namespace js */

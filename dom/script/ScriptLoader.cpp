@@ -2348,12 +2348,23 @@ ScriptLoader::EvaluateScript(ScriptLoadRequest* aRequest)
         {
           nsJSUtils::ExecutionContext exec(cx, global);
           if (aRequest->mOffThreadToken) {
-            JS::Rooted<JSScript*> script(cx);
-            rv = exec.JoinAndExec(&aRequest->mOffThreadToken, &script);
+            rv = exec.JoinDecode(&aRequest->mOffThreadToken);
           } else {
             nsAutoString inlineData;
             SourceBufferHolder srcBuf = GetScriptSource(aRequest, inlineData);
-            rv = exec.CompileAndExec(options, srcBuf);
+            rv = exec.Compile(options, srcBuf);
+          }
+          if (rv == NS_OK) {
+             JS::Rooted<JSScript*> script(cx);
+             script = exec.GetScript();
+
+             // Create a ClassicScript object and associate it with the
+             // JSScript.
+             RefPtr<ClassicScript> classicScript = new ClassicScript(
+                 aRequest->mFetchOptions, aRequest->mBaseURL);
+             classicScript->AssociateWithScript(script);
+
+             rv = exec.ExecScript();
           }
         }
       }
