@@ -8854,7 +8854,7 @@ Parser<ParseHandler>::generatorComprehensionLambda(unsigned begin)
     ParseContext* outerpc = pc;
 
     // If we are off the main thread, the generator meta-objects have
-    // already been created by js::StartOffThreadParseScript, so cx will not
+    // already been created by js::StartOffThreadParseTask, so cx will not
     // be necessary.
     RootedObject proto(context);
     JSContext* cx = context->maybeJSContext();

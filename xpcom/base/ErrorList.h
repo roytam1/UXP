@@ -568,6 +568,13 @@
   ERROR(NS_ERROR_DOM_INVALID_STATE_XHR_CHUNKED_RESPONSETYPES_UNSUPPORTED_FOR_SYNC,     FAILURE(1027)),
   ERROR(NS_ERROR_DOM_INVALID_ACCESS_XHR_TIMEOUT_AND_RESPONSETYPE_UNSUPPORTED_FOR_SYNC, FAILURE(1028)),
 
+
+  /* When manipulating the bytecode cache with the JS API, some transcoding
+   * errors, such as a different bytecode format can cause failures of the
+   * decoding process.
+   */
+  ERROR(NS_ERROR_DOM_JS_DECODING_ERROR,            FAILURE(1030)),
+
   /* May be used to indicate when e.g. setting a property value didn't
    * actually change the value, like for obj.foo = "bar"; obj.foo = "bar";
    * the second assignment throws NS_SUCCESS_DOM_NO_OPERATION.

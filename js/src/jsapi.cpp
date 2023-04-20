@@ -4203,6 +4203,31 @@ JS::CancelOffThreadModule(JSContext* cx, void* token)
 }
 
 JS_PUBLIC_API(bool)
+JS::DecodeOffThreadScript(JSContext* cx, const ReadOnlyCompileOptions& options,
+                          mozilla::Vector<uint8_t>& buffer /* TranscodeBuffer& */, size_t cursor,
+                          OffThreadCompileCallback callback, void* callbackData)
+{
+    MOZ_ASSERT(CanCompileOffThread(cx, options, buffer.length() - cursor));
+    return StartOffThreadDecodeScript(cx, options, buffer, cursor, callback, callbackData);
+}
+
+JS_PUBLIC_API(JSScript*)
+JS::FinishOffThreadScriptDecoder(JSContext* cx, void* token)
+{
+    MOZ_ASSERT(cx);
+    MOZ_ASSERT(CurrentThreadCanAccessRuntime(cx));
+    return HelperThreadState().finishScriptDecodeTask(cx, token);
+}
+
+JS_PUBLIC_API(void)
+JS::CancelOffThreadScriptDecoder(JSContext* cx, void* token)
+{
+    MOZ_ASSERT(cx);
+    MOZ_ASSERT(CurrentThreadCanAccessRuntime(cx));
+    HelperThreadState().cancelParseTask(cx, ParseTaskKind::ScriptDecode, token);
+}
+
+JS_PUBLIC_API(bool)
 JS_CompileScript(JSContext* cx, const char* ascii, size_t length,
                  const JS::CompileOptions& options, MutableHandleScript script)
 {
@@ -7099,6 +7124,26 @@ JS::DecodeInterpretedFunction(JSContext* cx, TranscodeBuffer& buffer,
     decoder.codeFunction(funp);
     MOZ_ASSERT(bool(funp) == (decoder.resultCode() == TranscodeResult_Ok));
     return decoder.resultCode();
+}
+
+JS_PUBLIC_API(bool)
+JS::StartIncrementalEncoding(JSContext* cx, TranscodeBuffer& buffer, JS::HandleScript script)
+{
+    if (!script)
+        return false;
+    if (!script->scriptSource()->xdrEncodeTopLevel(cx, buffer, script))
+        return false;
+    return true;
+}
+
+JS_PUBLIC_API(bool)
+JS::FinishIncrementalEncoding(JSContext* cx, JS::HandleScript script)
+{
+    if (!script)
+        return false;
+    if (!script->scriptSource()->xdrFinalizeEncoder())
+        return false;
+    return true;
 }
 
 JS_PUBLIC_API(void)

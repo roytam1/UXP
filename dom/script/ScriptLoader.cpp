@@ -62,8 +62,6 @@ using JS::SourceBufferHolder;
 namespace mozilla {
 namespace dom {
 
-static LazyLogModule gCspPRLog("CSP");
-
 void
 ImplCycleCollectionUnlink(ScriptLoadRequestList& aField);
 
@@ -2343,17 +2341,21 @@ ScriptLoader::EvaluateScript(ScriptLoadRequest* aRequest)
         FinishDynamicImport(cx, request, rv);
       }
     } else {
-      // Update our current script.
-      AutoCurrentScriptUpdater scriptUpdater(this, aRequest->Element());
-
       JS::CompileOptions options(cx);
       rv = FillCompileOptionsForRequest(aes, aRequest, global, &options);
 
       if (NS_SUCCEEDED(rv)) {
-        nsAutoString inlineData;
-        SourceBufferHolder srcBuf = GetScriptSource(aRequest, inlineData);
-        rv = nsJSUtils::EvaluateString(cx, srcBuf, global, options,
-                                       aRequest->OffThreadTokenPtr());
+        {
+          nsJSUtils::ExecutionContext exec(cx, global);
+          if (aRequest->mOffThreadToken) {
+            JS::Rooted<JSScript*> script(cx);
+            rv = exec.JoinAndExec(&aRequest->mOffThreadToken, &script);
+          } else {
+            nsAutoString inlineData;
+            SourceBufferHolder srcBuf = GetScriptSource(aRequest, inlineData);
+            rv = exec.CompileAndExec(options, srcBuf);
+          }
+        }
       }
     }
   }
