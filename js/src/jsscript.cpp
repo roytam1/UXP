@@ -1401,7 +1401,7 @@ const Class ScriptSourceObject::class_ = {
 };
 
 ScriptSourceObject*
-ScriptSourceObject::create(ExclusiveContext* cx, ScriptSource* source)
+ScriptSourceObject::createInternal(ExclusiveContext* cx, ScriptSource* source, HandleObject canonical)
 {
     RootedObject object(cx, NewObjectWithGivenProto(cx, &class_, nullptr));
     if (!object)
@@ -1411,6 +1411,12 @@ ScriptSourceObject::create(ExclusiveContext* cx, ScriptSource* source)
     source->incref();    // The matching decref is in ScriptSourceObject::finalize.
     sourceObject->initReservedSlot(SOURCE_SLOT, PrivateValue(source));
 
+    if (canonical) {
+        sourceObject->initReservedSlot(CANONICAL_SLOT, ObjectValue(*canonical));
+    } else {
+        sourceObject->initReservedSlot(CANONICAL_SLOT, ObjectValue(*sourceObject));
+    }
+
     // The remaining slots should eventually be populated by a call to
     // initFromOptions. Poison them until that point.
     sourceObject->initReservedSlot(ELEMENT_SLOT, MagicValue(JS_GENERIC_MAGIC));
@@ -1418,6 +1424,20 @@ ScriptSourceObject::create(ExclusiveContext* cx, ScriptSource* source)
     sourceObject->initReservedSlot(INTRODUCTION_SCRIPT_SLOT, MagicValue(JS_GENERIC_MAGIC));
 
     return sourceObject;
+}
+
+ScriptSourceObject*
+ScriptSourceObject::create(ExclusiveContext* cx, ScriptSource* source)
+{
+    return createInternal(cx, source, nullptr);
+}
+
+ScriptSourceObject* ScriptSourceObject::unwrappedCanonical() const
+{
+    MOZ_ASSERT(CurrentThreadCanAccessRuntime(runtimeFromAnyThread()));
+ 
+    JSObject* obj = &getReservedSlot(CANONICAL_SLOT).toObject();
+    return &UncheckedUnwrap(obj)->as<ScriptSourceObject>();
 }
 
 /* static */ bool

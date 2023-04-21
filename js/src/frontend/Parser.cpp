@@ -5220,7 +5220,7 @@ template <class ParseHandler>
 inline typename ParseHandler::Node
 Parser<ParseHandler>::importDeclarationOrImportExpr(YieldHandling yieldHandling)
 {
-    MOZ_ASSERT(anyChars.isCurrentTokenType(TOK_IMPORT));
+    MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_IMPORT));
 
     TokenKind tt;
     if (!tokenStream.peekToken(&tt))
@@ -10480,7 +10480,7 @@ template <typename ParseHandler>
 typename ParseHandler::Node
 Parser<ParseHandler>::importExpr(YieldHandling yieldHandling)
 {
-    MOZ_ASSERT(anyChars.isCurrentTokenType(TOK_IMPORT));
+    MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_IMPORT));
 
     Node importHolder = handler.newPosHolder(pos());
     if (!importHolder)

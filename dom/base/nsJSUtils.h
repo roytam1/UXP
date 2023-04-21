@@ -90,6 +90,9 @@ public:
     // Should the result be serialized before being returned.
     bool mCoerceToString;
 
+    // Encode the bytecode before it is being executed.
+    bool mEncodeBytecode;
+
 #ifdef DEBUG
     // Should we set the return value.
     bool mWantsReturnValue;

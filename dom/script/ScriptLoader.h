@@ -34,6 +34,7 @@ namespace mozilla {
 namespace dom {
 
 class AutoJSAPI;
+class LoadedScript;
 class ModuleLoadRequest;
 class ModuleScript;
 class ScriptLoadRequestList;
@@ -585,6 +586,12 @@ public:
   void FinishDynamicImport(ModuleLoadRequest* aRequest, nsresult aResult);
   void FinishDynamicImport(JSContext* aCx, ModuleLoadRequest* aRequest,
                            nsresult aResult);
+
+  /*
+   * Get the currently active script. This is used as the initiating script when
+   * executing timeout handler scripts.
+   */
+  static LoadedScript* GetActiveScript(JSContext* aCx);
 
   nsIDocument* GetDocument() const { return mDocument; }
 

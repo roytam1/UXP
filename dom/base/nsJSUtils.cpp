@@ -142,6 +142,7 @@ nsJSUtils::ExecutionContext::ExecutionContext(JSContext* aCx,
   , mRv(NS_OK)
   , mSkip(false)
   , mCoerceToString(false)
+  , mEncodeBytecode(false)
 #ifdef DEBUG
   , mWantsReturnValue(false)
   , mExpectScopeChain(false)
@@ -150,7 +151,6 @@ nsJSUtils::ExecutionContext::ExecutionContext(JSContext* aCx,
 {
   MOZ_ASSERT(aCx == nsContentUtils::GetCurrentJSContext());
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(nsContentUtils::IsInMicroTask());
   MOZ_ASSERT(mRetValue.isUndefined());
 
   MOZ_ASSERT(js::GetGlobalForObjectCrossCompartment(aGlobal) == aGlobal);
@@ -207,7 +207,7 @@ nsJSUtils::ExecutionContext::JoinCompile(void** aOffThreadToken)
     return mRv;
   }
 
-  if (!StartIncrementalEncoding(mCx, mScript)) {
+  if (mEncodeBytecode && !StartIncrementalEncoding(mCx, mScript)) {
     mSkip = true;
     mRv = EvaluationExceptionToNSResult(mCx);
     return mRv;
@@ -246,7 +246,7 @@ nsJSUtils::ExecutionContext::Compile(JS::CompileOptions& aCompileOptions,
     return mRv;
   }
  
-  if (!StartIncrementalEncoding(mCx, mScript)) {
+  if (mEncodeBytecode && !StartIncrementalEncoding(mCx, mScript)) {
     mSkip = true;
     mRv = EvaluationExceptionToNSResult(mCx);
     return mRv;
@@ -340,6 +340,19 @@ nsresult nsJSUtils::ExecutionContext::ExecScript() {
   return NS_OK;
 }
 
+static bool IsPromiseValue(JSContext* aCx, JS::Handle<JS::Value> aValue) {
+  if (!aValue.isObject()) {
+    return false;
+  }
+
+  JS::Rooted<JSObject*> obj(aCx, js::CheckedUnwrap(&aValue.toObject()));
+  if (!obj) {
+    return false;
+  }
+
+  return JS::IsPromiseObject(obj);
+}
+
 nsresult
 nsJSUtils::ExecutionContext::ExecScript(JS::MutableHandle<JS::Value> aRetValue)
 {
@@ -359,6 +372,15 @@ nsJSUtils::ExecutionContext::ExecScript(JS::MutableHandle<JS::Value> aRetValue)
 #ifdef DEBUG
   mWantsReturnValue = false;
 #endif
+  if (mCoerceToString && IsPromiseValue(mCx, aRetValue)) {
+    // We're a javascript: url and we should treat Promise return values as
+    // undefined.
+    //
+    // Once bug 1477821 is fixed this code might be able to go away, or will
+    // become enshrined in the spec, depending.
+    aRetValue.setUndefined();
+  }
+
   if (mCoerceToString && !aRetValue.isUndefined()) {
     JSString* str = JS::ToString(mCx, aRetValue);
     if (!str) {

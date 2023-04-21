@@ -1072,7 +1072,7 @@ void ScriptLoader::FinishDynamicImport(JSContext* aCx,
   if (NS_FAILED(aResult)) {
     MOZ_ASSERT(!JS_IsExceptionPending(aCx));
     JS_ReportErrorNumberUC(aCx, js::GetErrorMessage, nullptr,
-                           JSMSG_IMPORT_SCRIPT_NOT_FOUND);
+                           JSMSG_DYNAMIC_IMPORT_FAILED);
   }
 
   JS::Rooted<JS::Value> referencingScript(aCx,
@@ -2372,6 +2372,15 @@ ScriptLoader::EvaluateScript(ScriptLoadRequest* aRequest)
   }
 
   return rv;
+}
+
+/* static */ LoadedScript* ScriptLoader::GetActiveScript(JSContext* aCx) {
+  JS::Value value = JS::GetScriptedCallerPrivate(aCx);
+  if (value.isUndefined()) {
+    return nullptr;
+  }
+
+  return static_cast<LoadedScript*>(value.toPrivate());
 }
 
 void

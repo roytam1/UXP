@@ -637,6 +637,14 @@ class ScriptSourceObject : public NativeObject
 {
     static const ClassOps classOps_;
 
+    static ScriptSourceObject* createInternal(ExclusiveContext* cx, ScriptSource* source,
+                                              HandleObject canonical);
+
+    bool isCanonical() const {
+      return &getReservedSlot(CANONICAL_SLOT).toObject() == this;
+    }
+    ScriptSourceObject* unwrappedCanonical() const;
+
   public:
     static const Class class_;
 
@@ -684,6 +692,7 @@ class ScriptSourceObject : public NativeObject
   private:
     enum {
         SOURCE_SLOT = 0,
+        CANONICAL_SLOT,
         ELEMENT_SLOT,
         ELEMENT_PROPERTY_SLOT,
         INTRODUCTION_SCRIPT_SLOT,
