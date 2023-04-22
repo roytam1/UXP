@@ -1764,10 +1764,10 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
   MOZ_ASSERT_IF(!request->IsModuleRequest(), !aElement->GetScriptAsync());
   request->SetScriptMode(false, aElement->GetScriptAsync());
 
+  request->mBaseURL = mDocument->GetDocBaseURI();
+
   if (request->IsModuleRequest()) {
     ModuleLoadRequest* modReq = request->AsModuleRequest();
-
-    request->mBaseURL = mDocument->GetDocBaseURI();
 
     if (aElement->GetScriptAsync()) {
       AddAsyncRequest(modReq);
