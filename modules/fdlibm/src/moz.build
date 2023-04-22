@@ -38,6 +38,12 @@ if CONFIG['CC_TYPE'] == 'clang-cl':
         '-Wno-sign-compare', # signed/unsigned mismatch
     ]
 
+# Explicitly enable WPO and LTCG in MSVC if we're doing LTO.
+if CONFIG['JS_LTO']:
+    if CONFIG['_MSC_VER'] and not CONFIG['CLANG_CL']:
+        CFLAGS += [ '-GL' ]
+        CXXFLAGS += [ '-GL' ]
+
 SOURCES += [
     'e_acos.cpp',
     'e_acosh.cpp',

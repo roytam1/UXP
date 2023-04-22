@@ -128,3 +128,9 @@ else:
         '/js/src/ctypes/libffi/src/%s/%s' % (CONFIG['FFI_TARGET_DIR'], s)
         for s in sorted(ffi_srcs)
     ]
+
+    # Explicitly enable WPO and LTCG in MSVC if we're doing LTO.
+    if CONFIG['JS_LTO']:
+        if CONFIG['_MSC_VER'] and not CONFIG['CLANG_CL']:
+            CFLAGS += [ '-GL' ]
+            CXXFLAGS += [ '-GL' ]
