@@ -81,13 +81,6 @@
 #include "atypes.hxx"
 #include "langnum.hxx"
 
-// Unicode character encoding information
-struct unicode_info {
-  unsigned short c;
-  unsigned short cupper;
-  unsigned short clower;
-};
-
 #ifdef _WIN32
 #include <windows.h>
 #include <wchar.h>

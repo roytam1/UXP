@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'affentry.cxx',
     'affixmgr.cxx',
     'csutil.cxx',
@@ -14,13 +14,16 @@ UNIFIED_SOURCES += [
     'phonet.cxx',
     'replist.cxx',
     'suggestmgr.cxx',
+    'utf_info.cxx',
 ]
 
-# This variable is referenced in configure.in.  Make sure to change that file
-# too if you need to change this variable.
-DEFINES['HUNSPELL_STATIC'] = True
+DEFINES['BUILDING_LIBHUNSPELL'] = True
 
-FINAL_LIBRARY = 'xul'
+SharedLibrary('hunspell')
+
+USE_LIBS += [
+    'mozglue'
+]
 
 LOCAL_INCLUDES += [
     '../glue',
