@@ -2350,7 +2350,7 @@ ScriptLoader::EvaluateScript(ScriptLoadRequest* aRequest)
         {
           nsJSUtils::ExecutionContext exec(cx, global);
           if (aRequest->mOffThreadToken) {
-            rv = exec.JoinDecode(&aRequest->mOffThreadToken);
+            rv = exec.JoinCompile(&aRequest->mOffThreadToken);
           } else {
             nsAutoString inlineData;
             SourceBufferHolder srcBuf = GetScriptSource(aRequest, inlineData);
