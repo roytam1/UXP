@@ -3162,7 +3162,7 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
       case PNK_OPTDOT:
       case PNK_DOT:
       {
-        PropertyAccess* prop = &pn->as<PropertyAccess>();
+        PropertyAccessBase* prop = &pn->as<PropertyAccessBase>();
         MOZ_ASSERT(prop->pn_pos.encloses(prop->expression().pn_pos));
 
         RootedValue expr(cx);
