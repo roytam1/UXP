@@ -9392,7 +9392,7 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
         if (!lhs)
             return null();
     } else if (tt == TOK_IMPORT) {
-        lhs = importExpr(yieldHandling);
+        lhs = importExpr(yieldHandling, allowCallSyntax);
         if (!lhs)
             return null();
     } else {
@@ -10579,7 +10579,7 @@ Parser<ParseHandler>::tryNewTarget(BinaryNodeType* newTarget)
 
 template <typename ParseHandler>
 typename ParseHandler::Node
-Parser<ParseHandler>::importExpr(YieldHandling yieldHandling)
+Parser<ParseHandler>::importExpr(YieldHandling yieldHandling, bool allowCallSyntax)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_IMPORT));
 
@@ -10609,7 +10609,7 @@ Parser<ParseHandler>::importExpr(YieldHandling yieldHandling)
             return null();
 
         return handler.newImportMeta(importHolder, metaHolder);
-    } else if (next == TOK_LP) {
+    } else if (next == TOK_LP && allowCallSyntax) {
         Node arg = assignExpr(InAllowed, yieldHandling, TripledotProhibited);
         if (!arg)
             return null();

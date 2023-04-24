@@ -1421,7 +1421,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     bool tryNewTarget(BinaryNodeType* newTarget);
     bool checkAndMarkSuperScope();
 
-    Node importExpr(YieldHandling yieldHandling);
+    Node importExpr(YieldHandling yieldHandling, bool allowCallSyntax);
 
     FunctionNodeType methodDefinition(uint32_t toStringStart, PropertyType propType, HandleAtom funName);
 
