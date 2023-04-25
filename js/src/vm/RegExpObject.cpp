@@ -994,10 +994,32 @@ RegExpShared::initializeNamedCaptures(JSContext* cx, HandleRegExpShared re,
                                       irregexp::CharacterVectorVector* names,
                                       irregexp::IntegerVector* indices)
 {
-    MOZ_ASSERT(!re->groupsTemplate_);
     MOZ_ASSERT(names);
     MOZ_ASSERT(indices);
     MOZ_ASSERT(names->length() == indices->length());
+
+    if (re->getGroupsTemplate()) {
+        // If initializeNamedCaptures was previously called for a different CompilationMode/Latin1Chars combination,
+        // the template object is already created and correct.
+#ifdef DEBUG
+        // In debug builds, verify that.
+        MOZ_ASSERT(re->getGroupsTemplate()->propertyCount() == names->length());
+        RootedId id(cx);
+        RootedNativeObject groupsTemplate(cx, re->getGroupsTemplate());
+        Rooted<PropertyDescriptor> desc(cx);
+        for (uint32_t i = 0; i < names->length(); i++) {
+            irregexp::CharacterVector* cv = (*names)[i];
+            JSAtom* atom = AtomizeChars(cx, cv->begin(), cv->length());
+            MOZ_ASSERT(atom);
+            id = NameToId(atom->asPropertyName());
+            MOZ_ASSERT(NativeGetOwnPropertyDescriptor(cx, groupsTemplate, id, &desc));
+            int32_t idx;
+            MOZ_ASSERT(ToInt32(cx, desc.value(), &idx));
+            MOZ_ASSERT(idx == (*indices)[i]);
+        }
+#endif
+        return true;
+    }
 
     // The irregexp parser returns named capture information in the form
     // of two arrays. We create a template object with a property for each
@@ -1025,7 +1047,7 @@ RegExpShared::initializeNamedCaptures(JSContext* cx, HandleRegExpShared re,
         // Need to explicitly create an Atom (not a String) or it won't get added to the atom table
         JSAtom* atom = AtomizeChars(cx, cv->begin(), cv->length());
         if (!atom) {
-          return false;
+            return false;
         }
         id = NameToId(atom->asPropertyName());
         RootedValue idx(cx, Int32Value((*indices)[i]));
