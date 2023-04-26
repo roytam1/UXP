@@ -145,6 +145,7 @@ main_deunified_sources = [
     'frontend/EmitterScope.cpp',
     'frontend/FoldConstants.cpp',
     'frontend/ForOfLoopControl.cpp',
+    'frontend/FunctionEmitter.cpp',
     'frontend/IfEmitter.cpp',
     'frontend/JumpList.cpp',
     'frontend/LexicalScopeEmitter.cpp',
