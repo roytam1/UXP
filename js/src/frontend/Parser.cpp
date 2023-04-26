@@ -9150,6 +9150,9 @@ Parser<ParseHandler>::assignExpr(InHandling inHandling, YieldHandling yieldHandl
       case TOK_ASSIGN:       kind = PNK_ASSIGN;       op = JSOP_NOP;    break;
       case TOK_ADDASSIGN:    kind = PNK_ADDASSIGN;    op = JSOP_ADD;    break;
       case TOK_SUBASSIGN:    kind = PNK_SUBASSIGN;    op = JSOP_SUB;    break;
+      case TOK_COALESCEASSIGN:  kind = PNK_COALESCEASSIGN;  op = JSOP_COALESCE;  break;
+      case TOK_ORASSIGN:     kind = PNK_ORASSIGN;     op = JSOP_OR;     break;
+      case TOK_ANDASSIGN:    kind = PNK_ANDASSIGN;    op = JSOP_AND;    break;
       case TOK_BITORASSIGN:  kind = PNK_BITORASSIGN;  op = JSOP_BITOR;  break;
       case TOK_BITXORASSIGN: kind = PNK_BITXORASSIGN; op = JSOP_BITXOR; break;
       case TOK_BITANDASSIGN: kind = PNK_BITANDASSIGN; op = JSOP_BITAND; break;
@@ -9279,6 +9282,17 @@ Parser<ParseHandler>::assignExpr(InHandling inHandling, YieldHandling yieldHandl
     } else if (handler.isPropertyAccess(lhs)) {
         // Permitted: no additional testing/fixup needed.
     } else if (handler.isFunctionCall(lhs)) {
+        // We don't have to worry about backward compatibility issues with the new
+        // compound assignment operators, so we always throw here. Also that way we
+        // don't have to worry if |f() &&= expr| should always throw an error or
+        // only if |f()| returns true.
+        if (kind == PNK_COALESCEASSIGN ||
+            kind == PNK_ORASSIGN ||
+            kind == PNK_ADDASSIGN) {
+          errorAt(exprPos.begin, JSMSG_BAD_LEFTSIDE_OF_ASS);
+          return null();
+        }
+        
         if (!strictModeErrorAt(exprPos.begin, JSMSG_BAD_LEFTSIDE_OF_ASS))
             return null();
 

@@ -219,6 +219,9 @@
     range(ASSIGNMENT_START, ASSIGN) \
     macro(ADDASSIGN,    "'+='") \
     macro(SUBASSIGN,    "'-='") \
+    macro(COALESCEASSIGN, "'\?\?='") /* avoid trigraphs warning */ \
+    macro(ORASSIGN,     "'||='") \
+    macro(ANDASSIGN,    "'&&='") \
     macro(BITORASSIGN,  "'|='") \
     macro(BITXORASSIGN, "'^='") \
     macro(BITANDASSIGN, "'&='") \

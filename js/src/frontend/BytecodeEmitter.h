@@ -457,6 +457,9 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     // Helper to emit JSOP_POP or JSOP_POPN.
     MOZ_MUST_USE bool emitPopN(unsigned n);
 
+    // Helper to emit JSOP_SWAP or JSOP_UNPICK.
+    MOZ_MUST_USE bool emitUnpickN(unsigned n);
+
     // Helper to emit JSOP_CHECKISOBJ.
     MOZ_MUST_USE bool emitCheckIsObj(CheckIsObjectKind kind);
 
@@ -701,6 +704,8 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitTemplateString(ListNode* templateString);
     MOZ_MUST_USE bool emitAssignmentOrInit(ParseNodeKind kind, JSOp compoundOp,
                                            ParseNode* lhs, ParseNode* rhs);
+    MOZ_MUST_USE bool emitShortCircuitAssignment(ParseNodeKind kind, JSOp op,
+                                                 ParseNode* lhs, ParseNode* rhs);
 
     MOZ_MUST_USE bool emitReturn(UnaryNode* returnNode);
     MOZ_MUST_USE bool emitStatement(UnaryNode* exprStmt);

@@ -1876,7 +1876,7 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
 
       case '|':
         if (matchChar('|'))
-            tp->type = TOK_OR;
+            tp->type = matchChar('=') ? TOK_ORASSIGN : TOK_OR;
         else
             tp->type = matchChar('=') ? TOK_BITORASSIGN : TOK_BITOR;
         goto out;
@@ -1887,7 +1887,7 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
 
       case '&':
         if (matchChar('&'))
-            tp->type = TOK_AND;
+            tp->type = matchChar('=') ? TOK_ANDASSIGN : TOK_AND;
         else
             tp->type = matchChar('=') ? TOK_BITANDASSIGN : TOK_BITAND;
         goto out;
@@ -1906,8 +1906,10 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
                 ungetCharIgnoreEOL(c);
                 tp->type = TOK_OPTCHAIN;
             }
-        } else {
-            tp->type = matchChar('?') ? TOK_COALESCE : TOK_HOOK;
+        } else if (matchChar('?')) {
+            tp->type = matchChar('=') ? TOK_COALESCEASSIGN : TOK_COALESCE;
+        } else  {
+            tp->type = TOK_HOOK;
         }
         goto out;
 
