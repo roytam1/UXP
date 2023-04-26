@@ -351,7 +351,10 @@ InterpreterStack::resumeGeneratorCallFrame(JSContext* cx, InterpreterRegs& regs,
         constructing = MaybeConstruct(newTarget.isObject());
         MOZ_ASSERT_IF(constructing, callee->isConstructor());
     } else {
-        MOZ_ASSERT(!callee->isConstructor());
+        // We should really be doing MOZ_ASSERT(!callee->isConstructor()) here.
+        // However, the GeneratorObject only stores the callee as-is, which in the case of a lambda generator
+        // (i.e. a |new GeneratorFunction(...)| or derieved generator class) is still flagged as a constructor.
+        // Instead, we check for the correct state in GeneratorObject::resume.
     }
 
     // Include callee, |this|, and maybe |new.target|
