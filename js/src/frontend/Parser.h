@@ -1479,17 +1479,19 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     ClassNodeType classDefinition(YieldHandling yieldHandling, ClassContext classContext,
                                   DefaultHandling defaultHandling);
 
-    bool checkLabelOrIdentifierReference(HandlePropertyName ident,
+    bool checkLabelOrIdentifierReference(PropertyName* ident,
                                          uint32_t offset,
-                                         YieldHandling yieldHandling);
+                                         YieldHandling yieldHandling,
+                                         TokenKind hint = TOK_LIMIT);
 
-    bool checkLocalExportName(HandlePropertyName ident, uint32_t offset) {
+    bool checkLocalExportName(PropertyName* ident, uint32_t offset) {
         return checkLabelOrIdentifierReference(ident, offset, YieldIsName);
     }
 
-    bool checkBindingIdentifier(HandlePropertyName ident,
+    bool checkBindingIdentifier(PropertyName* ident,
                                 uint32_t offset,
-                                YieldHandling yieldHandling);
+                                YieldHandling yieldHandling,
+                                TokenKind hint = TOK_LIMIT);
 
     PropertyName* labelOrIdentifierReference(YieldHandling yieldHandling);
 

@@ -244,17 +244,14 @@ class CompileError : public JSErrorReport {
     void throwError(JSContext* cx);
 };
 
+extern TokenKind
+ReservedWordTokenKind(PropertyName* str);
+
 extern const char*
 ReservedWordToCharZ(PropertyName* str);
 
-extern MOZ_MUST_USE bool
-IsFutureReservedWord(JSLinearString* str);
-
-extern MOZ_MUST_USE bool
-IsReservedWordLiteral(JSLinearString* str);
-
-extern MOZ_MUST_USE bool
-IsStrictReservedWord(JSLinearString* str);
+extern const char*
+ReservedWordToCharZ(TokenKind tt);
 
 // Ideally, tokenizing would be entirely independent of context.  But the
 // strict mode flag, which is in SharedContext, affects tokenizing, and
@@ -353,6 +350,16 @@ class MOZ_STACK_CLASS TokenStream
 
         MOZ_ASSERT(TokenKindIsPossibleIdentifierName(currentToken().type));
         return reservedWordToPropertyName(currentToken().type);
+    }
+
+    bool currentNameHasEscapes() const {
+        if (isCurrentTokenType(TOK_NAME)) {
+            TokenPos pos = currentToken().pos;
+            return (pos.end - pos.begin) != currentToken().name()->length();
+        }
+
+        MOZ_ASSERT(TokenKindIsPossibleIdentifierName(currentToken().type));
+        return false;
     }
 
     PropertyName* nextName() const {
