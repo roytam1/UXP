@@ -457,6 +457,11 @@ pref("dom.disable_window_move_resize",            false);
 // prevent JS from monkeying with window focus, etc
 pref("dom.disable_window_flip",                   true);
 
+// Whether performance.GetEntries* will contain an entry for the active document
+// Disabled by default in Basilisk (unlike in UXP) since it can be used for
+// tracking/profiling.
+pref("dom.enable_performance_navigation_timing", false);
+
 // popups.policy 1=allow,2=reject
 pref("privacy.popups.policy",               1);
 pref("privacy.popups.usecustom",            true);
