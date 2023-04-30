@@ -1545,11 +1545,6 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
         if (identVisibility == NameVisibility::Private) {
             MOZ_ASSERT(identStart[0] == '#', "Private identifier starts with #");
             tp->type = TOK_PRIVATE_NAME;
-
-            if (!options().fieldsEnabledOption) {
-                reportError(JSMSG_FIELDS_NOT_SUPPORTED);
-                goto error;
-            }
         } else {
             tp->type = TOK_NAME;
         }
