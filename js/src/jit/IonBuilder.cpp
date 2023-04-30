@@ -19,6 +19,7 @@
 #include "jit/Lowering.h"
 #include "jit/MIRGraph.h"
 #include "vm/ArgumentsObject.h"
+#include "vm/EnvironmentObject.h"
 #include "vm/Opcodes.h"
 #include "vm/RegExpStatics.h"
 #include "vm/TraceLogging.h"
@@ -2204,6 +2205,12 @@ IonBuilder::inspectOpcode(JSOp op)
 
       case JSOP_CHECKOBJCOERCIBLE:
         return jsop_checkobjcoercible();
+
+      case JSOP_IMPORTMETA:
+        return jsop_importmeta();
+
+      case JSOP_DYNAMIC_IMPORT:
+        return jsop_dynamic_import();
 
       case JSOP_DEBUGCHECKSELFHOSTED:
       {
@@ -14244,6 +14251,32 @@ IonBuilder::jsop_debugger()
     // cx->compartment()->isDebuggee(). Resume in-place and have baseline
     // handle the details.
     return resumeAt(debugger, pc);
+}
+
+bool
+IonBuilder::jsop_importmeta()
+{
+    ModuleObject* module = GetModuleObjectForScript(script());
+    MOZ_ASSERT(module);
+
+    MModuleMetadata* meta = MModuleMetadata::New(alloc(), module);
+    current->add(meta);
+    current->push(meta);
+    return resumeAfter(meta);
+}
+
+bool
+IonBuilder::jsop_dynamic_import()
+{
+    Value referencingPrivate = FindScriptOrModulePrivateForScript(script());
+    MConstant* ref = constant(referencingPrivate);
+
+    MDefinition* specifier = current->pop();
+
+    MDynamicImport* ins = MDynamicImport::New(alloc(), ref, specifier);
+    current->add(ins);
+    current->push(ins);
+    return resumeAfter(ins);
 }
 
 MInstruction*

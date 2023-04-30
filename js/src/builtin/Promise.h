@@ -146,6 +146,9 @@ OriginalPromiseThen(JSContext* cx, Handle<PromiseObject*> promise,
 MOZ_MUST_USE JSObject*
 PromiseResolve(JSContext* cx, HandleObject constructor, HandleValue value);
 
+MOZ_MUST_USE bool
+RejectPromiseWithPendingError(JSContext* cx, Handle<PromiseObject*> promise);
+
 MOZ_MUST_USE PromiseObject*
 CreatePromiseObjectForAsync(JSContext* cx, HandleValue generatorVal);
 

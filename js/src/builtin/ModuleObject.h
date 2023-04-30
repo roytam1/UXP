@@ -221,7 +221,8 @@ class ModuleObject : public NativeObject
         NamespaceSlot,
         StatusSlot,
         EvaluationErrorSlot,
-        HostDefinedSlot,
+        ScriptSourceObjectSlot,
+        MetaObjectSlot,
         RequestedModulesSlot,
         ImportEntriesSlot,
         LocalExportEntriesSlot,
@@ -265,6 +266,7 @@ class ModuleObject : public NativeObject
 #endif
     void fixEnvironmentsAfterCompartmentMerge();
 
+    JSScript* maybeScript() const;
     JSScript* script() const;
     Scope* enclosingScope() const;
     ModuleEnvironmentObject& initialEnvironment() const;
@@ -273,7 +275,8 @@ class ModuleObject : public NativeObject
     ModuleStatus status() const;
     bool hadEvaluationError() const;
     Value evaluationError() const;
-    Value hostDefinedField() const;
+    ScriptSourceObject* scriptSourceObject() const;
+    JSObject* metaObject() const;
     ArrayObject& requestedModules() const;
     ArrayObject& importEntries() const;
     ArrayObject& localExportEntries() const;
@@ -286,7 +289,10 @@ class ModuleObject : public NativeObject
     static bool Instantiate(JSContext* cx, HandleModuleObject self);
     static bool Evaluate(JSContext* cx, HandleModuleObject self);
 
-    void setHostDefinedField(const JS::Value& value);
+    static ModuleNamespaceObject* GetOrCreateModuleNamespace(JSContext* cx,
+                                                             HandleModuleObject self);
+
+    void setMetaObject(JSObject* obj);
 
     // For BytecodeEmitter.
     bool noteFunctionDeclaration(ExclusiveContext* cx, HandleAtom name, HandleFunction fun);
@@ -307,7 +313,6 @@ class ModuleObject : public NativeObject
     static void trace(JSTracer* trc, JSObject* obj);
     static void finalize(js::FreeOp* fop, JSObject* obj);
 
-    bool hasScript() const;
     bool hasImportBindings() const;
     FunctionDeclarationVector* functionDeclarations();
 };
@@ -368,6 +373,19 @@ class MOZ_STACK_CLASS ModuleBuilder
     template <typename T>
     ArrayObject* createArray(const GCVector<T>& vector);
 };
+
+JSObject*
+GetOrCreateModuleMetaObject(JSContext* cx, HandleObject module);
+
+JSObject*
+CallModuleResolveHook(JSContext* cx, HandleValue referencingPrivate, HandleString specifier);
+
+JSObject*
+StartDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, HandleValue specifier);
+
+bool
+FinishDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, HandleString specifier,
+                          HandleObject promise);
 
 } // namespace js
 

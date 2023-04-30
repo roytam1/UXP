@@ -6,6 +6,7 @@
 #include "MDNSResponderReply.h"
 #include "mozilla/EndianUtils.h"
 #include "private/pprio.h"
+#include "nsSocketTransportService2.h"
 
 namespace mozilla {
 namespace net {

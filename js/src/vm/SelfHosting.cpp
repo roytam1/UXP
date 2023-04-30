@@ -1999,14 +1999,9 @@ intrinsic_HostResolveImportedModule(JSContext* cx, unsigned argc, Value* vp)
     RootedModuleObject module(cx, &args[0].toObject().as<ModuleObject>());
     RootedString specifier(cx, args[1].toString());
 
-    JS::ModuleResolveHook moduleResolveHook = cx->runtime()->moduleResolveHook;
-    if (!moduleResolveHook) {
-        JS_ReportErrorASCII(cx, "Module resolve hook not set");
-        return false;
-    }
+    RootedValue referencingPrivate(cx, JS::GetModulePrivate(module));
+    RootedObject result(cx, CallModuleResolveHook(cx, referencingPrivate, specifier));
 
-    RootedObject result(cx);
-    result = moduleResolveHook(cx, module, specifier);
     if (!result)
         return false;
 

@@ -366,6 +366,12 @@ js::AssertSameCompartment(JSContext* cx, JSObject* obj)
     assertSameCompartment(cx, obj);
 }
 
+JS_FRIEND_API(void)
+js::AssertSameCompartment(JSContext* cx, JS::HandleValue v)
+{
+    assertSameCompartment(cx, v);
+}
+
 #ifdef DEBUG
 JS_FRIEND_API(void)
 js::AssertSameCompartment(JSObject* objA, JSObject* objB)
@@ -1319,6 +1325,15 @@ js::GetAllocationMetadata(JSObject* obj)
     if (map)
         return map->lookup(obj);
     return nullptr;
+}
+
+JS_FRIEND_API(JS::Value)
+js::MaybeGetScriptPrivate(JSObject* object) {
+  if (!object->is<ScriptSourceObject>()) {
+    return UndefinedValue();
+  }
+
+  return object->as<ScriptSourceObject>().canonicalPrivate();
 }
 
 JS_FRIEND_API(bool)

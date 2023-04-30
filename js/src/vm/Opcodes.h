@@ -62,6 +62,7 @@
  *     Super
  *     Arguments
  *     Var Scope
+ *     Modules
  *   [Operators]
  *     Comparison Operators
  *     Arithmetic Operators
@@ -2335,14 +2336,32 @@
      *   Operands: int32_t offset
      *   Stack: cond => cond
      */ \
-    macro(JSOP_COALESCE, 232, "coalesce", NULL, 5, 1, 1, JOF_JUMP|JOF_DETECTING)
+    macro(JSOP_COALESCE, 232, "coalesce", NULL, 5, 1, 1, JOF_JUMP|JOF_DETECTING) \
+    /*
+     * Push "import.meta"
+     *
+     *   Category: Variables and Scopes
+     *   Type: Modules
+     *   Operands:
+     *   Stack: => import.meta
+     */ \
+    macro(JSOP_IMPORTMETA, 233, "importmeta", NULL, 1, 0, 1, JOF_BYTE) \
+    /*
+     * Dynamic import of the module specified by the string value on the top of
+     * the stack.
+     *
+     *   Category: Variables and Scopes
+     *   Type: Modules
+     *   Operands:
+     *   Stack: arg => rval
+     */ \
+    macro(JSOP_DYNAMIC_IMPORT, 234, "call-import", NULL,      1,  1,  1,  JOF_BYTE)
+
 /*
  * In certain circumstances it may be useful to "pad out" the opcode space to
  * a power of two.  Use this macro to do so.
  */
 #define FOR_EACH_TRAILING_UNUSED_OPCODE(macro) \
-    macro(233) \
-    macro(234) \
     macro(235) \
     macro(236) \
     macro(237) \

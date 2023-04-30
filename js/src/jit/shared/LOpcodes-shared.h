@@ -401,6 +401,8 @@
     _(GlobalNameConflictsCheck)     \
     _(Debugger)                     \
     _(NewTarget)                    \
+    _(ModuleMetadata)               \
+    _(DynamicImport)                \
     _(ArrowNewTarget)               \
     _(CheckReturn)                  \
     _(CheckIsObj)                   \

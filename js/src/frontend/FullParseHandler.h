@@ -590,6 +590,14 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<BinaryNode>(PNK_EXPORT_DEFAULT, JSOP_NOP, pos, kid, maybeBinding);
     }
 
+    BinaryNodeType newImportMeta(Node importHolder, Node metaHolder) {
+        return new_<BinaryNode>(PNK_IMPORT_META, JSOP_NOP, importHolder, metaHolder);
+    }
+
+    BinaryNodeType newCallImport(Node importHolder, Node singleArg) {
+        return new_<BinaryNode>(PNK_CALL_IMPORT, JSOP_DYNAMIC_IMPORT, importHolder, singleArg);
+    }
+
     UnaryNodeType newExprStatement(Node expr, uint32_t end) {
         MOZ_ASSERT(expr->pn_pos.end <= end);
         return new_<UnaryNode>(PNK_SEMI, JSOP_NOP, TokenPos(expr->pn_pos.begin, end), expr);

@@ -12,6 +12,7 @@ XPIDL_MODULE = 'dom'
 EXPORTS += ['nsIScriptElement.h']
 
 EXPORTS.mozilla.dom += [
+    'ModuleScript.h',
     'ScriptElement.h',
     'ScriptLoader.h',
     'ScriptSettings.h',

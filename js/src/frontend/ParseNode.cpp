@@ -293,6 +293,8 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       case PNK_SETTHIS:
       case PNK_FOR:
       case PNK_COMPREHENSIONFOR:
+      case PNK_IMPORT_META:
+      case PNK_CALL_IMPORT:
       case PNK_WITH: {
         BinaryNode* bn = &pn->as<BinaryNode>();
         stack->push(bn->left());

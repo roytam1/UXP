@@ -79,9 +79,6 @@ public:
   StructuredCloneData&
   operator=(const StructuredCloneData& aOther) = delete;
 
-  StructuredCloneData&
-  operator=(StructuredCloneData&& aOther) = default;
-
   const nsTArray<RefPtr<BlobImpl>>& BlobImpls() const
   {
     return mBlobImplArray;

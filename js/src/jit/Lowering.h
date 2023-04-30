@@ -334,6 +334,8 @@ class LIRGenerator : public LIRGeneratorSpecific
     void visitCheckIsCallable(MCheckIsCallable* ins);
     void visitCheckObjCoercible(MCheckObjCoercible* ins);
     void visitDebugCheckSelfHosted(MDebugCheckSelfHosted* ins);
+    void visitModuleMetadata(MModuleMetadata* ins);
+    void visitDynamicImport(MDynamicImport* ins);
 };
 
 } // namespace jit
