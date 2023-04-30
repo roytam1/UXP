@@ -10624,7 +10624,7 @@ Parser<ParseHandler>::importExpr(YieldHandling yieldHandling, bool allowCallSynt
 
         return handler.newCallImport(importHolder, arg);
     } else {
-        error(JSMSG_UNEXPECTED_TOKEN, TokenKindToDesc(next));
+        error(JSMSG_UNEXPECTED_TOKEN_NO_EXPECT, TokenKindToDesc(next));
         return null();
     }
 }
