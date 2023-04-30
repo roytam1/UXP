@@ -179,6 +179,8 @@ GeneratorObject::resume(JSContext* cx, InterpreterActivation& activation,
 {
     Rooted<GeneratorObject*> genObj(cx, &obj->as<GeneratorObject>());
     MOZ_ASSERT(genObj->isSuspended());
+    // See comment in InterpreterStack::resumeGeneratorCallFrame
+    MOZ_ASSERT_IF(genObj->isConstructing(), genObj->is<LegacyGeneratorObject>());
 
     RootedFunction callee(cx, &genObj->callee());
     RootedValue newTarget(cx, genObj->newTarget());

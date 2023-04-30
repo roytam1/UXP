@@ -11,6 +11,7 @@
 #include "frontend/SharedContext.h"
 #include "gc/Policy.h"
 #include "gc/Tracer.h"
+#include "vm/SelfHosting.h"
 
 #include "jsobjinlines.h"
 #include "jsscriptinlines.h"

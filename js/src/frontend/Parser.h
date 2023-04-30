@@ -591,6 +591,7 @@ enum class PropertyType {
 // we're in a function box -- easier and simpler than passing an extra
 // parameter everywhere.
 enum YieldHandling { YieldIsName, YieldIsKeyword };
+enum AwaitHandling : uint8_t { AwaitIsName, AwaitIsKeyword, AwaitIsModuleKeyword };
 enum InHandling { InAllowed, InProhibited };
 enum DefaultHandling { NameRequired, AllowDefaultName };
 enum TripledotHandling { TripledotAllowed, TripledotProhibited };
@@ -800,13 +801,13 @@ class ParserBase : public StrictModeGetter
     /* Unexpected end of input, i.e. TOK_EOF not at top-level. */
     bool isUnexpectedEOF_:1;
 
-    bool awaitIsKeyword_:1;
+    /* AwaitHandling */ uint8_t awaitHandling_:2;
 
     uint8_t parseGoal_:1;
 
   public:
     bool awaitIsKeyword() const {
-      return awaitIsKeyword_;
+        return awaitHandling_ != AwaitIsName;
     }
 
     ParseGoal parseGoal() const {
@@ -1058,7 +1059,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     ~Parser();
 
     friend class AutoAwaitIsKeyword<ParseHandler>;
-    void setAwaitIsKeyword(bool isKeyword);
+    void setAwaitHandling(AwaitHandling awaitHandling);
 
     bool checkOptions();
 
@@ -1643,17 +1644,21 @@ class MOZ_STACK_CLASS AutoAwaitIsKeyword
 {
   private:
     Parser<ParseHandler>* parser_;
-    bool oldAwaitIsKeyword_;
+    AwaitHandling oldAwaitHandling_;
 
   public:
-    AutoAwaitIsKeyword(Parser<ParseHandler>* parser, bool awaitIsKeyword) {
+    AutoAwaitIsKeyword(Parser<ParseHandler>* parser, AwaitHandling awaitHandling) {
         parser_ = parser;
-        oldAwaitIsKeyword_ = parser_->awaitIsKeyword_;
-        parser_->setAwaitIsKeyword(awaitIsKeyword);
+        oldAwaitHandling_ = static_cast<AwaitHandling>(parser_->awaitHandling_);
+
+        // 'await' is always a keyword in module contexts, so we don't modify
+        // the state when the original handling is AwaitIsModuleKeyword.
+        if (oldAwaitHandling_ != AwaitIsModuleKeyword)
+            parser_->setAwaitHandling(awaitHandling);
     }
 
     ~AutoAwaitIsKeyword() {
-        parser_->setAwaitIsKeyword(oldAwaitIsKeyword_);
+        parser_->setAwaitHandling(oldAwaitHandling_);
     }
 };
 

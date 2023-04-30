@@ -345,8 +345,10 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<ListNode>(PNK_ARGUMENTS, JSOP_NOP, pos);
     }
 
-    BinaryNodeType newSuperCall(Node callee, Node args) {
-        return new_<BinaryNode>(PNK_SUPERCALL, JSOP_SUPERCALL, callee, args);
+    BinaryNodeType newSuperCall(Node callee, Node args, bool isSpread) {
+        JSOp op = isSpread ? JSOP_SPREADSUPERCALL : JSOP_SUPERCALL;
+        TokenPos pos(callee->pn_pos.begin, args->pn_pos.end);
+        return new_<BinaryNode>(PNK_SUPERCALL, op, pos, callee, args);
     }
 
     BinaryNodeType newTaggedTemplate(Node tag, Node args) {
