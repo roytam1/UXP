@@ -1263,15 +1263,15 @@ SurfaceCache::MaximumCapacity()
 void SurfaceCache::ReleaseImageOnMainThread(
     already_AddRefed<image::Image> aImage, bool aAlwaysProxy) {
   if (NS_IsMainThread() && !aAlwaysProxy) {
-    RefPtr<image::Image> image = std::move(aImage);
+    RefPtr<image::Image> image = Move(aImage);
     return;
   }
 
   StaticMutexAutoLock lock(sInstanceMutex);
   if (sInstance) {
-    sInstance->ReleaseImageOnMainThread(std::move(aImage), lock);
+    sInstance->ReleaseImageOnMainThread(Move(aImage), lock);
   } else {
-    NS_ReleaseOnMainThread(std::move(aImage), /* aAlwaysProxy */ true);
+    NS_ReleaseOnMainThread(Move(aImage), /* aAlwaysProxy */ true);
   }
 }
 
