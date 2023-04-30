@@ -23,6 +23,7 @@ GeneratorObject::create(JSContext* cx, AbstractFramePtr frame)
     MOZ_ASSERT(frame.script()->isStarGenerator() || frame.script()->isLegacyGenerator() ||
                frame.script()->isAsync());
     MOZ_ASSERT(frame.script()->nfixed() == 0);
+    MOZ_ASSERT_IF(frame.isConstructing(), frame.script()->isLegacyGenerator());
 
     Rooted<GlobalObject*> global(cx, cx->global());
     RootedNativeObject obj(cx);
@@ -52,7 +53,10 @@ GeneratorObject::create(JSContext* cx, AbstractFramePtr frame)
 
     GeneratorObject* genObj = &obj->as<GeneratorObject>();
     genObj->setCallee(*frame.callee());
-    genObj->setNewTarget(frame.newTarget());
+    if (frame.script()->isLegacyGenerator()) {
+        // Only legacy generators can be called with |new|
+        genObj->setNewTarget(frame.newTarget());
+    }
     genObj->setEnvironmentChain(*frame.environmentChain());
     if (frame.script()->needsArgsObj())
         genObj->setArgsObj(frame.argsObj());

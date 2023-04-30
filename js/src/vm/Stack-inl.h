@@ -345,7 +345,14 @@ InterpreterStack::resumeGeneratorCallFrame(JSContext* cx, InterpreterRegs& regs,
 
     LifoAlloc::Mark mark = allocator_.mark();
 
-    MaybeConstruct constructing = MaybeConstruct(newTarget.isObject());
+    MaybeConstruct constructing = NO_CONSTRUCT;
+    // (Async) generators and async functions are never constructors, legacy generators may be
+    if (callee->isLegacyGenerator()) {
+        constructing = MaybeConstruct(newTarget.isObject());
+        MOZ_ASSERT_IF(constructing, callee->isConstructor());
+    } else {
+        MOZ_ASSERT(!callee->isConstructor());
+    }
 
     // Include callee, |this|, and maybe |new.target|
     unsigned nformal = callee->nargs();
@@ -665,6 +672,18 @@ AbstractFramePtr::unsetIsDebuggee()
         asBaselineFrame()->unsetIsDebuggee();
     else
         asRematerializedFrame()->unsetIsDebuggee();
+}
+
+inline bool
+AbstractFramePtr::isConstructing() const
+{
+    if (isInterpreterFrame())
+        return asInterpreterFrame()->isConstructing();
+    if (isBaselineFrame())
+        return asBaselineFrame()->isConstructing();
+    if (isRematerializedFrame())
+        return asRematerializedFrame()->isConstructing();
+    MOZ_CRASH("Unexpected frame");
 }
 
 inline bool
