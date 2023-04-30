@@ -769,6 +769,26 @@ AC_SUBST(MOZILLA_UAVERSION_U)
 MOZ_DOING_LTO(lto_is_enabled)
 
 dnl ========================================================
+dnl Spidermonkey link-time optimization support
+dnl ========================================================
+
+# We want LTO enabled by default in Spidermonkey if we're building it shared.
+if test -n "$JS_SHARED_LIBRARY"; then
+    JS_LTO=1
+fi
+
+MOZ_ARG_DISABLE_BOOL(js-lto,
+[  --disable-js-lto        Disable link-time optimization for the Spidermonkey library],
+    JS_LTO=,
+    JS_LTO=1)
+
+if test -n "$JS_LTO"; then
+    AC_DEFINE(JS_LTO)
+fi
+
+AC_SUBST(JS_LTO)
+
+dnl ========================================================
 dnl System overrides of the defaults for target
 dnl ========================================================
 

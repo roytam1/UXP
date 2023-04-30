@@ -8,6 +8,7 @@
 #include "nsICancelable.h"
 #include "nsXULAppAPI.h"
 #include "private/pprio.h"
+#include "MainThreadUtils.h"
 
 namespace mozilla {
 namespace net {

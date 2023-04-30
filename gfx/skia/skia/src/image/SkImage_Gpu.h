@@ -17,7 +17,7 @@
 #include "SkImagePriv.h"
 #include "SkSurface.h"
 
-class SkImage_Gpu : public SkImage_Base {
+class SK_API SkImage_Gpu : public SkImage_Base {
 public:
     /**
      *  An "image" can be a subset/window into a larger texture, so we explicit take the

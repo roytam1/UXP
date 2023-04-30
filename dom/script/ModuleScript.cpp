@@ -7,48 +7,116 @@
  * A class that handles loading and evaluation of <script> elements.
  */
 
+#include "ScriptLoader.h"
 #include "ModuleScript.h"
 #include "mozilla/HoldDropJSObjects.h"
-#include "ScriptLoader.h"
+
+#include "jsfriendapi.h"
 
 namespace mozilla {
 namespace dom {
 
-// A single module script.  May be used to satisfy multiple load requests.
+//////////////////////////////////////////////////////////////
+// LoadedScript
+//////////////////////////////////////////////////////////////
+
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(LoadedScript)
+NS_INTERFACE_MAP_END
+
+NS_IMPL_CYCLE_COLLECTION_CLASS(LoadedScript)
+
+NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(LoadedScript)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mFetchOptions)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mBaseURL)
+NS_IMPL_CYCLE_COLLECTION_UNLINK_END
+
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(LoadedScript)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFetchOptions)
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
+
+NS_IMPL_CYCLE_COLLECTION_TRACE_BEGIN(LoadedScript)
+NS_IMPL_CYCLE_COLLECTION_TRACE_END
+
+NS_IMPL_CYCLE_COLLECTING_ADDREF(LoadedScript)
+NS_IMPL_CYCLE_COLLECTING_RELEASE(LoadedScript)
+
+LoadedScript::LoadedScript(ScriptKind aKind,
+                           ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL)
+    : mKind(aKind),
+      mFetchOptions(aFetchOptions),
+      mBaseURL(aBaseURL) 
+{
+  MOZ_ASSERT(mFetchOptions);
+  MOZ_ASSERT(mBaseURL);
+}
+
+LoadedScript::~LoadedScript() { DropJSObjects(this); }
+
+void LoadedScript::AssociateWithScript(JSScript* aScript) {
+  // Set a JSScript's private value to point to this object and
+  // increment our reference count. This is decremented by
+  // HostFinalizeTopLevelScript() below when the JSScript dies.
+
+  MOZ_ASSERT(JS::GetScriptPrivate(aScript).isUndefined());
+  JS::SetScriptPrivate(aScript, JS::PrivateValue(this));
+  AddRef();
+}
+
+void HostFinalizeTopLevelScript(JSFreeOp* aFop, const JS::Value& aPrivate) {
+  // Decrement the reference count of a LoadedScript object that is
+  // pointed to by a dying JSScript. The reference count was
+  // originally incremented by AssociateWithScript() above.
+
+  auto script = static_cast<LoadedScript*>(aPrivate.toPrivate());
+
+#ifdef DEBUG
+  if (script->IsModuleScript()) {
+    JSObject* module = script->AsModuleScript()->mModuleRecord.unbarrieredGet();
+    MOZ_ASSERT_IF(module, JS::GetModulePrivate(module) == aPrivate);
+  }
+#endif
+
+  script->Release();
+}
+
+//////////////////////////////////////////////////////////////
+// ClassicScript
+//////////////////////////////////////////////////////////////
+
+ClassicScript::ClassicScript(ScriptFetchOptions* aFetchOptions,
+                             nsIURI* aBaseURL)
+    : LoadedScript(ScriptKind::Classic, aFetchOptions, aBaseURL) {}
+
+//////////////////////////////////////////////////////////////
+// ModuleScript
+//////////////////////////////////////////////////////////////
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(ModuleScript)
-NS_INTERFACE_MAP_END
+NS_INTERFACE_MAP_END_INHERITING(LoadedScript)
 
 NS_IMPL_CYCLE_COLLECTION_CLASS(ModuleScript)
 
-NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(ModuleScript)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mLoader)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mBaseURL)
+NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(ModuleScript, LoadedScript)
   tmp->UnlinkModuleRecord();
   tmp->mParseError.setUndefined();
   tmp->mErrorToRethrow.setUndefined();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
-NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(ModuleScript)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mLoader)
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(ModuleScript, LoadedScript)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
-NS_IMPL_CYCLE_COLLECTION_TRACE_BEGIN(ModuleScript)
+NS_IMPL_CYCLE_COLLECTION_TRACE_BEGIN_INHERITED(ModuleScript, LoadedScript)
   NS_IMPL_CYCLE_COLLECTION_TRACE_JS_MEMBER_CALLBACK(mModuleRecord)
   NS_IMPL_CYCLE_COLLECTION_TRACE_JS_MEMBER_CALLBACK(mParseError)
   NS_IMPL_CYCLE_COLLECTION_TRACE_JS_MEMBER_CALLBACK(mErrorToRethrow)
 NS_IMPL_CYCLE_COLLECTION_TRACE_END
 
-NS_IMPL_CYCLE_COLLECTING_ADDREF(ModuleScript)
-NS_IMPL_CYCLE_COLLECTING_RELEASE(ModuleScript)
+NS_IMPL_ADDREF_INHERITED(ModuleScript, LoadedScript)
+NS_IMPL_RELEASE_INHERITED(ModuleScript, LoadedScript)
 
-ModuleScript::ModuleScript(ScriptLoader *aLoader, nsIURI* aBaseURL)
- : mLoader(aLoader),
-   mBaseURL(aBaseURL)
-{
-  MOZ_ASSERT(mLoader);
-  MOZ_ASSERT(mBaseURL);
-  MOZ_ASSERT(!mModuleRecord);
+ModuleScript::ModuleScript(ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL)
+    : LoadedScript(ScriptKind::Module, aFetchOptions, aBaseURL) {
+  MOZ_ASSERT(!ModuleRecord());
   MOZ_ASSERT(!HasParseError());
   MOZ_ASSERT(!HasErrorToRethrow());
 }
@@ -56,12 +124,15 @@ ModuleScript::ModuleScript(ScriptLoader *aLoader, nsIURI* aBaseURL)
 void
 ModuleScript::UnlinkModuleRecord()
 {
-  // Remove module's back reference to this object request if present.
+  // Remove the module record's pointer to this object if present and
+  // decrement our reference count. The reference is added by
+  // SetModuleRecord() below.
   if (mModuleRecord) {
-    MOZ_ASSERT(JS::GetModuleHostDefinedField(mModuleRecord).toPrivate() ==
+    MOZ_ASSERT(JS::GetModulePrivate(mModuleRecord).toPrivate() ==
                this);
-    JS::SetModuleHostDefinedField(mModuleRecord, JS::UndefinedValue());
+    JS::SetModulePrivate(mModuleRecord, JS::UndefinedValue());
     mModuleRecord = nullptr;
+    Release();
   }
 }
 
@@ -69,22 +140,24 @@ ModuleScript::~ModuleScript()
 {
   // The object may be destroyed without being unlinked first.
   UnlinkModuleRecord();
-  DropJSObjects(this);
 }
 
 void
 ModuleScript::SetModuleRecord(JS::Handle<JSObject*> aModuleRecord)
 {
   MOZ_ASSERT(!mModuleRecord);
-  MOZ_ASSERT(!HasParseError());
-  MOZ_ASSERT(!HasErrorToRethrow());
+  MOZ_ASSERT_IF(IsModuleScript(), !AsModuleScript()->HasParseError());
+  MOZ_ASSERT_IF(IsModuleScript(), !AsModuleScript()->HasErrorToRethrow());
 
   mModuleRecord = aModuleRecord;
 
-  // Make module's host defined field point to this module script object.
-  // This is cleared in the UnlinkModuleRecord().
-  JS::SetModuleHostDefinedField(mModuleRecord, JS::PrivateValue(this));
+  // Make module's host defined field point to this object and
+  // increment our reference count. This is decremented by
+  // UnlinkModuleRecord() above.
+  MOZ_ASSERT(JS::GetModulePrivate(mModuleRecord).isUndefined());
+  JS::SetModulePrivate(mModuleRecord, JS::PrivateValue(this));
   HoldJSObjects(this);
+  AddRef();
 }
 
 void
@@ -103,7 +176,10 @@ void
 ModuleScript::SetErrorToRethrow(const JS::Value& aError)
 {
   MOZ_ASSERT(!aError.isUndefined());
-  MOZ_ASSERT(!HasErrorToRethrow());
+
+  // This is only called after SetModuleRecord() or SetParseError() so we don't
+  // need to call HoldJSObjects() here.
+  MOZ_ASSERT(ModuleRecord() || HasParseError());
 
   mErrorToRethrow = aError;
 }

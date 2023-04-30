@@ -345,8 +345,10 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<ListNode>(PNK_ARGUMENTS, JSOP_NOP, pos);
     }
 
-    BinaryNodeType newSuperCall(Node callee, Node args) {
-        return new_<BinaryNode>(PNK_SUPERCALL, JSOP_SUPERCALL, callee, args);
+    BinaryNodeType newSuperCall(Node callee, Node args, bool isSpread) {
+        JSOp op = isSpread ? JSOP_SPREADSUPERCALL : JSOP_SUPERCALL;
+        TokenPos pos(callee->pn_pos.begin, args->pn_pos.end);
+        return new_<BinaryNode>(PNK_SUPERCALL, op, pos, callee, args);
     }
 
     BinaryNodeType newTaggedTemplate(Node tag, Node args) {
@@ -588,6 +590,14 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
             checkAndSetIsDirectRHSAnonFunction(kid);
         }
         return new_<BinaryNode>(PNK_EXPORT_DEFAULT, JSOP_NOP, pos, kid, maybeBinding);
+    }
+
+    BinaryNodeType newImportMeta(Node importHolder, Node metaHolder) {
+        return new_<BinaryNode>(PNK_IMPORT_META, JSOP_NOP, importHolder, metaHolder);
+    }
+
+    BinaryNodeType newCallImport(Node importHolder, Node singleArg) {
+        return new_<BinaryNode>(PNK_CALL_IMPORT, JSOP_DYNAMIC_IMPORT, importHolder, singleArg);
     }
 
     UnaryNodeType newExprStatement(Node expr, uint32_t end) {

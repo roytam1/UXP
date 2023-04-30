@@ -138,6 +138,7 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_EXPORT_SPEC:
       case PNK_EXPORT:
       case PNK_EXPORT_BATCH_SPEC:
+      case PNK_CALL_IMPORT:
         *result = false;
         return true;
 
@@ -403,6 +404,7 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_CLASSMETHODLIST:
       case PNK_CLASSNAMES:
       case PNK_NEWTARGET:
+      case PNK_IMPORT_META:
       case PNK_POSHOLDER:
       case PNK_SUPERCALL:
       case PNK_SUPERBASE:
@@ -1900,13 +1902,20 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
                Fold(cx, node->unsafeRightReference(), parser, inGenexpLambda);
       }
 
-      case PNK_NEWTARGET:{
+      case PNK_NEWTARGET:
+      case PNK_IMPORT_META:{
 #ifdef DEBUG
         BinaryNode* node = &pn->as<BinaryNode>();
         MOZ_ASSERT(node->left()->isKind(PNK_POSHOLDER));
         MOZ_ASSERT(node->right()->isKind(PNK_POSHOLDER));
 #endif
         return true;
+      }
+
+      case PNK_CALL_IMPORT: {
+        BinaryNode* node = &pn->as<BinaryNode>();
+        MOZ_ASSERT(node->left()->isKind(PNK_POSHOLDER));
+        return Fold(cx, node->unsafeRightReference(), parser, inGenexpLambda);
       }
 
       case PNK_CLASSNAMES: {

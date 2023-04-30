@@ -4203,6 +4203,31 @@ JS::CancelOffThreadModule(JSContext* cx, void* token)
 }
 
 JS_PUBLIC_API(bool)
+JS::DecodeOffThreadScript(JSContext* cx, const ReadOnlyCompileOptions& options,
+                          mozilla::Vector<uint8_t>& buffer /* TranscodeBuffer& */, size_t cursor,
+                          OffThreadCompileCallback callback, void* callbackData)
+{
+    MOZ_ASSERT(CanCompileOffThread(cx, options, buffer.length() - cursor));
+    return StartOffThreadDecodeScript(cx, options, buffer, cursor, callback, callbackData);
+}
+
+JS_PUBLIC_API(JSScript*)
+JS::FinishOffThreadScriptDecoder(JSContext* cx, void* token)
+{
+    MOZ_ASSERT(cx);
+    MOZ_ASSERT(CurrentThreadCanAccessRuntime(cx));
+    return HelperThreadState().finishScriptDecodeTask(cx, token);
+}
+
+JS_PUBLIC_API(void)
+JS::CancelOffThreadScriptDecoder(JSContext* cx, void* token)
+{
+    MOZ_ASSERT(cx);
+    MOZ_ASSERT(CurrentThreadCanAccessRuntime(cx));
+    HelperThreadState().cancelParseTask(cx, ParseTaskKind::ScriptDecode, token);
+}
+
+JS_PUBLIC_API(bool)
 JS_CompileScript(JSContext* cx, const char* ascii, size_t length,
                  const JS::CompileOptions& options, MutableHandleScript script)
 {
@@ -4240,7 +4265,8 @@ JS_BufferIsCompilableUnit(JSContext* cx, HandleObject obj, const char* utf8, siz
     frontend::Parser<frontend::FullParseHandler> parser(cx, cx->tempLifoAlloc(),
                                                         options, chars, length,
                                                         /* foldConstants = */ true,
-                                                        usedNames, nullptr, nullptr);
+                                                        usedNames, nullptr, nullptr,
+                                                        frontend::ParseGoal::Script);
     JS::WarningReporter older = JS::SetWarningReporter(cx, nullptr);
     if (!parser.checkOptions() || !parser.parse()) {
         // We ran into an error. If it was because we ran out of source, we
@@ -4697,6 +4723,43 @@ JS::SetModuleResolveHook(JSRuntime* rt, JS::ModuleResolveHook func)
     rt->moduleResolveHook = func;
 }
 
+JS_PUBLIC_API(JS::ModuleMetadataHook)
+JS::GetModuleMetadataHook(JSContext* cx)
+{
+    AssertHeapIsIdle(cx);
+    return cx->runtime()->moduleMetadataHook;
+}
+
+JS_PUBLIC_API(void)
+JS::SetModuleMetadataHook(JSContext* cx, JS::ModuleMetadataHook func)
+{
+    AssertHeapIsIdle(cx);
+    cx->runtime()->moduleMetadataHook = func;
+}
+
+JS_PUBLIC_API(JS::ModuleDynamicImportHook)
+JS::GetModuleDynamicImportHook(JSContext* cx)
+{
+    AssertHeapIsIdle(cx);
+    return cx->runtime()->moduleDynamicImportHook;
+}
+
+JS_PUBLIC_API(void)
+JS::SetModuleDynamicImportHook(JSContext* cx, JS::ModuleDynamicImportHook func)
+{
+    AssertHeapIsIdle(cx);
+    cx->runtime()->moduleDynamicImportHook = func;
+}
+
+JS_PUBLIC_API(bool)
+JS::FinishDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, HandleString specifier,
+                              HandleObject promise)
+{
+    AssertHeapIsIdle(cx);
+
+    return js::FinishDynamicModuleImport(cx, referencingPrivate, specifier, promise);
+}
+
 JS_PUBLIC_API(bool)
 JS::CompileModule(JSContext* cx, const ReadOnlyCompileOptions& options,
                   SourceBufferHolder& srcBuf, JS::MutableHandleObject module)
@@ -4710,15 +4773,55 @@ JS::CompileModule(JSContext* cx, const ReadOnlyCompileOptions& options,
 }
 
 JS_PUBLIC_API(void)
-JS::SetModuleHostDefinedField(JSObject* module, const JS::Value& value)
+JS::SetModulePrivate(JSObject* module, const JS::Value& value)
 {
-    module->as<ModuleObject>().setHostDefinedField(value);
+    module->as<ModuleObject>().scriptSourceObject()->setPrivate(value);
 }
 
 JS_PUBLIC_API(JS::Value)
-JS::GetModuleHostDefinedField(JSObject* module)
+JS::GetModulePrivate(JSObject* module)
 {
-    return module->as<ModuleObject>().hostDefinedField();
+    return module->as<ModuleObject>().scriptSourceObject()->canonicalPrivate();
+}
+
+JS_PUBLIC_API(void)
+JS::SetScriptPrivate(JSScript* script, const JS::Value& value)
+{
+    script->scriptSourceUnwrap().setPrivate(value);
+}
+
+JS_PUBLIC_API(JS::Value)
+JS::GetScriptPrivate(JSScript* script)
+{
+    return script->scriptSourceUnwrap().canonicalPrivate();
+}
+
+JS_PUBLIC_API(JS::Value)
+JS::GetScriptedCallerPrivate(JSContext* cx)
+{
+  AssertHeapIsIdle(cx);
+  CHECK_REQUEST(cx);
+
+  NonBuiltinFrameIter iter(cx, cx->compartment()->principals());
+  if (iter.done() || !iter.hasScript()) {
+    return UndefinedValue();
+  }
+
+  return FindScriptOrModulePrivateForScript(iter.script());
+}
+
+JS_PUBLIC_API(JS::ScriptPrivateFinalizeHook)
+JS::GetScriptPrivateFinalizeHook(JSContext* cx) 
+{
+  AssertHeapIsIdle(cx);
+  return cx->runtime()->scriptPrivateFinalizeHook;
+}
+
+JS_PUBLIC_API(void)
+JS::SetScriptPrivateFinalizeHook(JSContext* cx, JS::ScriptPrivateFinalizeHook func)
+{
+  AssertHeapIsIdle(cx);
+  cx->runtime()->scriptPrivateFinalizeHook = func;
 }
 
 JS_PUBLIC_API(bool)
@@ -4838,11 +4941,14 @@ JS_PUBLIC_API(JSObject*)
 JS::NewPromiseObject(JSContext* cx, HandleObject executor, HandleObject proto /* = nullptr */)
 {
     MOZ_ASSERT(!cx->runtime()->isAtomsCompartment(cx->compartment()));
-    MOZ_ASSERT(IsCallable(executor));
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);
     assertSameCompartment(cx, executor, proto);
 
+    if (!executor)
+        return PromiseObject::createSkippingExecutor(cx);
+
+    MOZ_ASSERT(IsCallable(executor));
     return PromiseObject::create(cx, executor, proto);
 }
 
@@ -7018,6 +7124,26 @@ JS::DecodeInterpretedFunction(JSContext* cx, TranscodeBuffer& buffer,
     decoder.codeFunction(funp);
     MOZ_ASSERT(bool(funp) == (decoder.resultCode() == TranscodeResult_Ok));
     return decoder.resultCode();
+}
+
+JS_PUBLIC_API(bool)
+JS::StartIncrementalEncoding(JSContext* cx, JS::HandleScript script)
+{
+    if (!script)
+        return false;
+    if (!script->scriptSource()->xdrEncodeTopLevel(cx, script))
+        return false;
+    return true;
+}
+
+JS_PUBLIC_API(bool)
+JS::FinishIncrementalEncoding(JSContext* cx, JS::HandleScript script, TranscodeBuffer& buffer)
+{
+    if (!script)
+        return false;
+    if (!script->scriptSource()->xdrFinalizeEncoder(buffer))
+        return false;
+    return true;
 }
 
 JS_PUBLIC_API(void)

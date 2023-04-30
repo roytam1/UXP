@@ -340,12 +340,15 @@ InitGlobalLexicalOperation(JSContext* cx, LexicalEnvironmentObject* lexicalEnvAr
 }
 
 inline bool
-InitPropertyOperation(JSContext* cx, JSOp op, HandleObject obj, HandleId id, HandleValue rhs)
+InitPropertyOperation(JSContext* cx, JSOp op, HandleObject obj, HandlePropertyName name, HandleValue rhs)
 {
-    if (obj->is<PlainObject>() || obj->is<JSFunction>()) {
+    RootedId id(cx, NameToId(name));
+
+    // {Goanna} DefineProperty works on almost any JSObject, but there's no good way to check what works
+    //          So instead, check what we don't handle explicitly.
+    if (!obj->is<UnboxedPlainObject>()) {
         unsigned propAttrs = GetInitDataPropAttrs(op);
-        return NativeDefineProperty(cx, obj.as<NativeObject>(), id, rhs, nullptr, nullptr,
-                                    propAttrs);
+        return DefineProperty(cx, obj, id, rhs, nullptr, nullptr, propAttrs);
     }
 
     MOZ_ASSERT(obj->as<UnboxedPlainObject>().layout().lookup(id));

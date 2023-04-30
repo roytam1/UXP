@@ -90,8 +90,8 @@
 #define dupSFX (1 << 0)
 #define dupPFX (1 << 1)
 
-class PfxEntry;
-class SfxEntry;
+class LIBHUNSPELL_DLL_EXPORTED PfxEntry;
+class LIBHUNSPELL_DLL_EXPORTED SfxEntry;
 
 class LIBHUNSPELL_DLL_EXPORTED AffixMgr {
   PfxEntry* pStart[SETSIZE];

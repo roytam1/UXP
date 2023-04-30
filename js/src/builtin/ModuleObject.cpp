@@ -5,11 +5,13 @@
 
 #include "builtin/ModuleObject.h"
 
+#include "builtin/Promise.h"
 #include "builtin/SelfHostingDefines.h"
 #include "frontend/ParseNode.h"
 #include "frontend/SharedContext.h"
 #include "gc/Policy.h"
 #include "gc/Tracer.h"
+#include "vm/SelfHosting.h"
 
 #include "jsobjinlines.h"
 #include "jsscriptinlines.h"
@@ -725,6 +727,12 @@ ModuleObject::namespace_()
     return &value.toObject().as<ModuleNamespaceObject>();
 }
 
+ScriptSourceObject*
+ModuleObject::scriptSourceObject() const
+{
+    return &getReservedSlot(ScriptSourceObjectSlot).toObject().as<ScriptSourceObject>();
+}
+
 FunctionDeclarationVector*
 ModuleObject::functionDeclarations()
 {
@@ -738,8 +746,10 @@ ModuleObject::functionDeclarations()
 void
 ModuleObject::init(HandleScript script)
 {
+    MOZ_ASSERT(script);
     initReservedSlot(ScriptSlot, PrivateValue(script));
     initReservedSlot(StatusSlot, Int32Value(MODULE_STATUS_UNINSTANTIATED));
+    initReservedSlot(ScriptSourceObjectSlot, ObjectValue(script->scriptSourceUnwrap()));
 }
 
 void
@@ -826,18 +836,22 @@ ModuleObject::fixEnvironmentsAfterCompartmentMerge()
     AssertModuleScopesMatch(this);
 }
 
-bool
-ModuleObject::hasScript() const
+JSScript*
+ModuleObject::maybeScript() const
 {
-    // When modules are parsed via the Reflect.parse() API, the module object
-    // doesn't have a script.
-    return !getReservedSlot(ScriptSlot).isUndefined();
+    Value value = getReservedSlot(ScriptSlot);
+    if (value.isUndefined())
+        return nullptr;
+
+    return static_cast<JSScript*>(value.toPrivate());
 }
 
 JSScript*
 ModuleObject::script() const
 {
-    return static_cast<JSScript*>(getReservedSlot(ScriptSlot).toPrivate());
+    JSScript* ptr = maybeScript();
+    MOZ_RELEASE_ASSERT(ptr);
+    return ptr;
 }
 
 static inline void
@@ -868,16 +882,23 @@ ModuleObject::evaluationError() const
     return getReservedSlot(EvaluationErrorSlot);
 }
 
-Value
-ModuleObject::hostDefinedField() const
+JSObject*
+ModuleObject::metaObject() const
 {
-    return getReservedSlot(HostDefinedSlot);
+    Value value = getReservedSlot(MetaObjectSlot);
+    if (value.isObject())
+        return &value.toObject();
+
+    MOZ_ASSERT(value.isUndefined());
+    return nullptr;
 }
 
 void
-ModuleObject::setHostDefinedField(const JS::Value& value)
+ModuleObject::setMetaObject(JSObject* obj)
 {
-    setReservedSlot(HostDefinedSlot, value);
+    MOZ_ASSERT(obj);
+    MOZ_ASSERT(!metaObject());
+    setReservedSlot(MetaObjectSlot, ObjectValue(*obj));
 }
 
 Scope*
@@ -890,8 +911,8 @@ ModuleObject::enclosingScope() const
 ModuleObject::trace(JSTracer* trc, JSObject* obj)
 {
     ModuleObject& module = obj->as<ModuleObject>();
-    if (module.hasScript()) {
-        JSScript* script = module.script();
+    JSScript* script = module.maybeScript();
+    if (script) {
         TraceManuallyBarrieredEdge(trc, &script, "Module script");
         module.setReservedSlot(ScriptSlot, PrivateValue(script));
     }
@@ -960,6 +981,11 @@ ModuleObject::execute(JSContext* cx, HandleModuleObject self, MutableHandleValue
 #endif
 
     RootedScript script(cx, self->script());
+
+    // The top-level script if a module is only ever executed once. Clear the
+    // reference to prevent us keeping this alive unnecessarily.
+    self->setReservedSlot(ScriptSlot, UndefinedValue());
+
     RootedModuleEnvironmentObject scope(cx, self->environment());
     if (!scope) {
         JS_ReportErrorASCII(cx, "Module declarations have not yet been instantiated");
@@ -1013,6 +1039,22 @@ ModuleObject::Instantiate(JSContext* cx, HandleModuleObject self)
 ModuleObject::Evaluate(JSContext* cx, HandleModuleObject self)
 {
     return InvokeSelfHostedMethod(cx, self, cx->names().ModuleEvaluate);
+}
+
+/* static */ ModuleNamespaceObject*
+ModuleObject::GetOrCreateModuleNamespace(JSContext* cx, HandleModuleObject self)
+{
+    FixedInvokeArgs<1> args(cx);
+    args[0].setObject(*self);
+
+    RootedValue result(cx);
+    if (!CallSelfHostedFunction(cx, cx->names().GetModuleNamespace, UndefinedHandleValue, args,
+                                &result))
+    {
+        return nullptr;
+    }
+
+    return &result.toObject().as<ModuleNamespaceObject>();
 }
 
 DEFINE_GETTER_FUNCTIONS(ModuleObject, namespace_, NamespaceSlot)
@@ -1482,4 +1524,110 @@ ArrayObject* ModuleBuilder::createArray(const GCVector<T>& vector)
         array->initDenseElement(i, MakeElementValue(vector[i]));
 
     return array;
+}
+
+JSObject*
+js::GetOrCreateModuleMetaObject(JSContext* cx, HandleObject moduleArg)
+{
+    HandleModuleObject module = moduleArg.as<ModuleObject>();
+    if (JSObject* obj = module->metaObject())
+        return obj;
+
+    RootedObject metaObject(cx, NewObjectWithGivenProto<PlainObject>(cx, nullptr));
+    if (!metaObject)
+        return nullptr;
+
+    JS::ModuleMetadataHook func = cx->runtime()->moduleMetadataHook;
+    MOZ_ASSERT(func);
+    if (!func(cx, module, metaObject))
+        return nullptr;
+
+    module->setMetaObject(metaObject);
+
+    return metaObject;
+}
+
+JSObject*
+js::CallModuleResolveHook(JSContext* cx, HandleValue referencingPrivate, HandleString specifier)
+{
+    JS::ModuleResolveHook moduleResolveHook = cx->runtime()->moduleResolveHook;
+    if (!moduleResolveHook) {
+        JS_ReportErrorASCII(cx, "Module resolve hook not set");
+        return nullptr;
+    }
+
+    RootedObject result(cx, moduleResolveHook(cx, referencingPrivate, specifier));
+    if (!result) {
+        return nullptr;
+    }
+
+    if (!result->is<ModuleObject>()) {
+        JS_ReportErrorASCII(cx, "Module resolve hook did not return Module object");
+        return nullptr;
+    }
+
+    return result;
+}
+
+JSObject*
+js::StartDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, HandleValue specifierArg)
+{
+    RootedObject promiseConstructor(cx, JS::GetPromiseConstructor(cx));
+    if (!promiseConstructor) {
+        return nullptr;
+    }
+
+    RootedObject promiseObject(cx, JS::NewPromiseObject(cx, nullptr));
+    if (!promiseObject) {
+        return nullptr;
+    }
+
+    Handle<PromiseObject*> promise = promiseObject.as<PromiseObject>();
+
+    RootedString specifier(cx, ToString(cx, specifierArg));
+    if (!specifier) {
+        if (!RejectPromiseWithPendingError(cx, promise))
+            return nullptr;
+        return promise;
+    }
+
+    JS::ModuleDynamicImportHook importHook = cx->runtime()->moduleDynamicImportHook;
+    MOZ_ASSERT(importHook);
+    if (!importHook(cx, referencingPrivate, specifier, promise)) {
+        if (!RejectPromiseWithPendingError(cx, promise))
+            return nullptr;
+        return promise;
+    }
+
+    return promise;
+}
+
+bool
+js::FinishDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, HandleString specifier,
+                              HandleObject promiseArg)
+{
+    Handle<PromiseObject*> promise = promiseArg.as<PromiseObject>();
+
+    if (cx->isExceptionPending()) {
+        return RejectPromiseWithPendingError(cx, promise);
+    }
+
+    RootedObject result(cx, CallModuleResolveHook(cx, referencingPrivate, specifier));
+    if (!result) {
+        return RejectPromiseWithPendingError(cx, promise);
+    }
+
+    RootedModuleObject module(cx, &result->as<ModuleObject>());
+    if (module->status() != MODULE_STATUS_EVALUATED) {
+        JS_ReportErrorASCII(cx, "Unevaluated or errored module returned by module resolve hook");
+        return RejectPromiseWithPendingError(cx, promise);
+    }
+
+    RootedObject ns(cx, ModuleObject::GetOrCreateModuleNamespace(cx, module));
+    if (!ns) {
+        return RejectPromiseWithPendingError(cx, promise);
+    }
+
+    RootedValue value(cx, ObjectValue(*ns));
+    return PromiseObject::resolve(cx, promise, value);
 }

@@ -232,8 +232,7 @@ bool
 InitProp(JSContext* cx, HandleObject obj, HandlePropertyName name, HandleValue value,
          jsbytecode* pc)
 {
-    RootedId id(cx, NameToId(name));
-    return InitPropertyOperation(cx, JSOp(*pc), obj, id, value);
+    return InitPropertyOperation(cx, JSOp(*pc), obj, name, value);
 }
 
 template<bool Equal>

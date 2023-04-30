@@ -8379,6 +8379,49 @@ class MSubstr
     }
 };
 
+class MModuleMetadata : public MNullaryInstruction
+{
+    CompilerObject module_;
+
+    explicit MModuleMetadata(JSObject* module)
+      : module_(module)
+    {
+        setResultType(MIRType::Object);
+    }
+
+  public:
+    INSTRUCTION_HEADER(ModuleMetadata)
+    TRIVIAL_NEW_WRAPPERS
+
+    JSObject* module() const {
+      return module_;
+    }
+
+    AliasSet getAliasSet() const override {
+        return AliasSet::None();
+    }
+
+    bool appendRoots(MRootList& roots) const override {
+        return roots.append(module_);
+    }
+};
+
+class MDynamicImport : public MBinaryInstruction,
+                       public BoxInputsPolicy::Data
+{
+    explicit MDynamicImport(MDefinition* referencingPrivate, MDefinition* specifier)
+      : MBinaryInstruction(referencingPrivate, specifier)
+    {
+        setResultType(MIRType::Object);
+    }
+
+  public:
+    INSTRUCTION_HEADER(DynamicImport)
+    TRIVIAL_NEW_WRAPPERS
+    NAMED_OPERANDS((0, referencingPrivate))
+    NAMED_OPERANDS((1, specifier))
+};
+
 struct LambdaFunctionInfo
 {
     // The functions used in lambdas are the canonical original function in

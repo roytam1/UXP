@@ -9,6 +9,7 @@
 #include "nsCOMPtr.h"
 #include "nsCycleCollectionParticipant.h"
 #include "jsapi.h"
+#include "ScriptLoader.h"
 
 class nsIURI;
 
@@ -17,10 +18,51 @@ namespace dom {
 
 class ScriptLoader;
 
-class ModuleScript final : public nsISupports
+void HostFinalizeTopLevelScript(JSFreeOp* aFop, const JS::Value& aPrivate);
+
+class ClassicScript;
+class ModuleScript;
+
+class LoadedScript : public nsISupports
 {
+  ScriptKind mKind;
   RefPtr<ScriptLoader> mLoader;
+  RefPtr<ScriptFetchOptions> mFetchOptions;
   nsCOMPtr<nsIURI> mBaseURL;
+ 
+  protected:
+   LoadedScript(ScriptKind aKind,
+                ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL);
+
+  virtual ~LoadedScript();
+
+ public:
+  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
+  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(LoadedScript)
+
+  bool IsModuleScript() const { return mKind == ScriptKind::Module; }
+
+  inline ClassicScript* AsClassicScript();
+  inline ModuleScript* AsModuleScript();
+
+  ScriptFetchOptions* FetchOptions() const { return mFetchOptions; }
+  nsIURI* BaseURL() const { return mBaseURL; }
+
+  void AssociateWithScript(JSScript* aScript);
+};
+
+class ClassicScript final : public LoadedScript
+{
+  ~ClassicScript() = default;
+
+ public:
+  ClassicScript(ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL);
+};
+
+// A single module script. May be used to satisfy multiple load requests.
+
+class ModuleScript final : public LoadedScript
+{
   JS::Heap<JSObject*> mModuleRecord;
   JS::Heap<JS::Value> mParseError;
   JS::Heap<JS::Value> mErrorToRethrow;
@@ -28,19 +70,17 @@ class ModuleScript final : public nsISupports
   ~ModuleScript();
 
 public:
-  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(ModuleScript)
+  NS_DECL_ISUPPORTS_INHERITED
+  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS_INHERITED(ModuleScript,
+                                                         LoadedScript)
 
-  ModuleScript(ScriptLoader* aLoader,
-               nsIURI* aBaseURL);
+  ModuleScript(ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL);
 
   void SetModuleRecord(JS::Handle<JSObject*> aModuleRecord);
   void SetParseError(const JS::Value& aError);
   void SetErrorToRethrow(const JS::Value& aError);
 
-  ScriptLoader* Loader() const { return mLoader; }
   JSObject* ModuleRecord() const { return mModuleRecord; }
-  nsIURI* BaseURL() const { return mBaseURL; }
 
   JS::Value ParseError() const { return mParseError; }
   JS::Value ErrorToRethrow() const { return mErrorToRethrow; }
@@ -48,7 +88,19 @@ public:
   bool HasErrorToRethrow() const { return !mErrorToRethrow.isUndefined(); }
 
   void UnlinkModuleRecord();
+
+  friend void HostFinalizeTopLevelScript(JSFreeOp*, const JS::Value&);
 };
+
+ClassicScript* LoadedScript::AsClassicScript() {
+  MOZ_ASSERT(!IsModuleScript());
+  return static_cast<ClassicScript*>(this);
+}
+
+ModuleScript* LoadedScript::AsModuleScript() {
+  MOZ_ASSERT(IsModuleScript());
+  return static_cast<ModuleScript*>(this);
+}
 
 } // dom namespace
 } // mozilla namespace
