@@ -345,7 +345,17 @@ InterpreterStack::resumeGeneratorCallFrame(JSContext* cx, InterpreterRegs& regs,
 
     LifoAlloc::Mark mark = allocator_.mark();
 
-    MaybeConstruct constructing = MaybeConstruct(newTarget.isObject());
+    MaybeConstruct constructing = NO_CONSTRUCT;
+    // (Async) generators and async functions are never constructors, legacy generators may be
+    if (callee->isLegacyGenerator()) {
+        constructing = MaybeConstruct(newTarget.isObject());
+        MOZ_ASSERT_IF(constructing, callee->isConstructor());
+    } else {
+        // We should really be doing MOZ_ASSERT(!callee->isConstructor()) here.
+        // However, the GeneratorObject only stores the callee as-is, which in the case of a lambda generator
+        // (i.e. a |new GeneratorFunction(...)| or derieved generator class) is still flagged as a constructor.
+        // Instead, we check for the correct state in GeneratorObject::resume.
+    }
 
     // Include callee, |this|, and maybe |new.target|
     unsigned nformal = callee->nargs();
@@ -665,6 +675,18 @@ AbstractFramePtr::unsetIsDebuggee()
         asBaselineFrame()->unsetIsDebuggee();
     else
         asRematerializedFrame()->unsetIsDebuggee();
+}
+
+inline bool
+AbstractFramePtr::isConstructing() const
+{
+    if (isInterpreterFrame())
+        return asInterpreterFrame()->isConstructing();
+    if (isBaselineFrame())
+        return asBaselineFrame()->isConstructing();
+    if (isRematerializedFrame())
+        return asRematerializedFrame()->isConstructing();
+    MOZ_CRASH("Unexpected frame");
 }
 
 inline bool

@@ -6,6 +6,8 @@
 #ifndef frontend_ParseNode_h
 #define frontend_ParseNode_h
 
+#include <functional>
+
 #include "mozilla/Attributes.h"
 
 #include "builtin/ModuleObject.h"
@@ -121,6 +123,8 @@ class ObjectBox;
     F(SUPERBASE) \
     F(SUPERCALL) \
     F(SETTHIS) \
+    F(IMPORT_META) \
+    F(CALL_IMPORT) \
     \
     /* Unary operators. */ \
     F(TYPEOFNAME) \
@@ -539,6 +543,8 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_ARRAYPUSH    unary   pn_op: JSOP_ARRAYCOMP
  *                          pn_kid: array comprehension expression
  * PNK_NOP (NullaryNode)
+ * PNK_IMPORT_META (BinaryNode)
+ * PNK_CALL_IMPORT (BinaryNode)
  */
 enum ParseNodeArity
 {
@@ -1416,6 +1422,8 @@ class ListNode : public ParseNode
         }
     };
 
+    typedef std::function<bool(ParseNode*)> predicate_fun;
+
 #ifdef DEBUG
   MOZ_MUST_USE bool contains(ParseNode* target) const {
       MOZ_ASSERT(target);
@@ -1455,6 +1463,24 @@ class ListNode : public ParseNode
     const range contentsTo(ParseNode* end) const {
         MOZ_ASSERT_IF(end, contains(end));
         return range(head(), end);
+    }
+
+    // Predicate functions, like their counterparts in C++17
+    size_t count_if(predicate_fun predicate) const {
+        size_t count = 0;
+        for (ParseNode* node = head(); node; node = node->pn_next) {
+            if (predicate(node))
+                count++;
+        }
+        return count;
+    }
+
+    bool any_of(predicate_fun predicate) const {
+        for (ParseNode* node = head(); node; node = node->pn_next) {
+            if (predicate(node))
+                return true;
+        }
+        return false;
     }
 };
 

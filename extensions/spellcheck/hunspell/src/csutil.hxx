@@ -74,6 +74,9 @@
 #ifndef __CSUTILHXX__
 #define __CSUTILHXX__
 
+// Quick hack to make building hunspell as a shared library work.
+#undef MOZILLA_CLIENT
+
 #include "hunvisapi.h"
 
 // First some base level utility routines
@@ -188,6 +191,13 @@ struct cs_info {
   unsigned char ccase;
   unsigned char clower;
   unsigned char cupper;
+};
+
+// Unicode character encoding information
+struct unicode_info {
+  unsigned short c;
+  unsigned short cupper;
+  unsigned short clower;
 };
 
 LIBHUNSPELL_DLL_EXPORTED int initialize_utf_tbl();

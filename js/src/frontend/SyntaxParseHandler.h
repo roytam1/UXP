@@ -307,7 +307,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     BinaryNodeType newCall(Node callee, Node args) { return NodeFunctionCall; }
     BinaryNodeType newOptionalCall(Node callee, Node args) { return NodeOptionalFunctionCall; }
     ListNodeType newArguments(const TokenPos& pos) { return NodeGeneric; }
-    BinaryNodeType newSuperCall(Node callee, Node args) { return NodeGeneric; }
+    BinaryNodeType newSuperCall(Node callee, Node args, bool isSpread) { return NodeGeneric; }
     BinaryNodeType newTaggedTemplate(Node callee, Node args) { return NodeGeneric; }
     Node newGenExp(Node callee, Node args) { return NodeGeneric; }
 
@@ -352,6 +352,12 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return NodeGeneric;
     }
     BinaryNodeType newExportDefaultDeclaration(Node kid, Node maybeBinding, const TokenPos& pos) {
+        return NodeGeneric;
+    }
+    Node newImportMeta(Node importHolder, Node metaHolder) {
+        return NodeGeneric;
+    }
+    Node newCallImport(Node importHolder, Node singleArg) {
         return NodeGeneric;
     }
 

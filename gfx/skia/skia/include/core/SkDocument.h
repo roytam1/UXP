@@ -33,7 +33,7 @@ class SkWStream;
  *      c. doc->endPage();
  *  3. Close the document with doc->close().
  */
-class SK_API SkDocument : public SkRefCnt {
+class SkDocument : public SkRefCnt {
 public:
     struct OptionalTimestamp {
         SkTime::DateTime fDateTime;

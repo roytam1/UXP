@@ -202,8 +202,6 @@ public:
     compileOptions.setVersion(JSVERSION_DEFAULT);
     compileOptions.setIsRunOnce(true);
 
-    // We only need the setNoScriptRval bit when compiling off-thread here,
-    // since otherwise nsJSUtils::EvaluateString will set it up for us.
     compileOptions.setNoScriptRval(true);
 
     JS::Rooted<JS::Value> unused(cx);

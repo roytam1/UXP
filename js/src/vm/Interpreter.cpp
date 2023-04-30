@@ -33,6 +33,7 @@
 #include "jsstr.h"
 
 #include "builtin/Eval.h"
+#include "builtin/ModuleObject.h"
 #include "jit/AtomicOperations.h"
 #include "jit/BaselineJIT.h"
 #include "jit/Ion.h"
@@ -3743,12 +3744,9 @@ CASE(JSOP_INITHIDDENPROP)
     /* Load the object being initialized into lval/obj. */
     ReservedRooted<JSObject*> obj(&rootObject0, &REGS.sp[-2].toObject());
 
-    PropertyName* name = script->getName(REGS.pc);
+    ReservedRooted<PropertyName*> name(&rootName0, script->getName(REGS.pc));
 
-    RootedId& id = rootId0;
-    id = NameToId(name);
-
-    if (!InitPropertyOperation(cx, JSOp(*REGS.pc), obj, id, rval))
+    if (!InitPropertyOperation(cx, JSOp(*REGS.pc), obj, name, rval))
         goto error;
 
     REGS.sp--;
@@ -4186,6 +4184,35 @@ CASE(JSOP_NEWTARGET)
     PUSH_COPY(REGS.fp()->newTarget());
     MOZ_ASSERT(REGS.sp[-1].isObject() || REGS.sp[-1].isUndefined());
 END_CASE(JSOP_NEWTARGET)
+
+CASE(JSOP_IMPORTMETA)
+{
+    ReservedRooted<JSObject*> module(&rootObject0, GetModuleObjectForScript(script));
+    MOZ_ASSERT(module);
+
+    JSObject* metaObject = GetOrCreateModuleMetaObject(cx, module);
+    if (!metaObject)
+        goto error;
+
+    PUSH_OBJECT(*metaObject);
+}
+END_CASE(JSOP_IMPORTMETA)
+
+CASE(JSOP_DYNAMIC_IMPORT)
+{
+    ReservedRooted<Value> referencingPrivate(&rootValue0);
+    referencingPrivate = FindScriptOrModulePrivateForScript(script);
+
+    ReservedRooted<Value> specifier(&rootValue1);
+    POP_COPY_TO(specifier);
+
+    JSObject* promise = StartDynamicModuleImport(cx, referencingPrivate, specifier);
+    if (!promise)
+        goto error;
+
+    PUSH_OBJECT(*promise);
+}
+END_CASE(JSOP_DYNAMIC_IMPORT)
 
 CASE(JSOP_SUPERFUN)
 {

@@ -320,11 +320,11 @@ public:
     struct ScriptRange {
         uint32_t         rangeStart;
         uint32_t         rangeEnd;
-        hb_tag_t         tags[3]; // one or two OpenType script tags to check,
-                                  // plus a NULL terminator
+        uint32_t         numTags; // number of entries in the tags[] array
+        hb_tag_t         tags[3]; // up to three OpenType script tags to check
     };
 
-    bool SupportsScriptInGSUB(const hb_tag_t* aScriptTags);
+    bool SupportsScriptInGSUB(const hb_tag_t* aScriptTags, uint32_t aNumTags);
 
     nsString         mName;
     nsString         mFamilyName;

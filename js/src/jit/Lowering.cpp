@@ -2428,6 +2428,23 @@ LIRGenerator::visitNullarySharedStub(MNullarySharedStub* ins)
 }
 
 void
+LIRGenerator::visitModuleMetadata(MModuleMetadata* ins)
+{
+    LModuleMetadata* lir = new(alloc()) LModuleMetadata();
+    defineReturn(lir, ins);
+    assignSafepoint(lir, ins);
+}
+
+void
+LIRGenerator::visitDynamicImport(MDynamicImport* ins)
+{
+    LDynamicImport* lir = new(alloc()) LDynamicImport(useBoxAtStart(ins->referencingPrivate()),
+                                                      useBoxAtStart(ins->specifier()));
+    defineReturn(lir, ins);
+    assignSafepoint(lir, ins);
+}
+
+void
 LIRGenerator::visitLambda(MLambda* ins)
 {
     if (ins->info().singletonType || ins->info().useSingletonForClone) {

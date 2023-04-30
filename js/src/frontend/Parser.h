@@ -21,6 +21,7 @@
 #include "frontend/NameCollections.h"
 #include "frontend/SharedContext.h"
 #include "frontend/SyntaxParseHandler.h"
+#include "frontend/TokenStream.h"
 
 namespace js {
 
@@ -590,6 +591,7 @@ enum class PropertyType {
 // we're in a function box -- easier and simpler than passing an extra
 // parameter everywhere.
 enum YieldHandling { YieldIsName, YieldIsKeyword };
+enum AwaitHandling : uint8_t { AwaitIsName, AwaitIsKeyword, AwaitIsModuleKeyword };
 enum InHandling { InAllowed, InProhibited };
 enum DefaultHandling { NameRequired, AllowDefaultName };
 enum TripledotHandling { TripledotAllowed, TripledotProhibited };
@@ -799,17 +801,23 @@ class ParserBase : public StrictModeGetter
     /* Unexpected end of input, i.e. TOK_EOF not at top-level. */
     bool isUnexpectedEOF_:1;
 
-    bool awaitIsKeyword_:1;
+    /* AwaitHandling */ uint8_t awaitHandling_:2;
+
+    uint8_t parseGoal_:1;
 
   public:
     bool awaitIsKeyword() const {
-      return awaitIsKeyword_;
+        return awaitHandling_ != AwaitIsName;
+    }
+
+    ParseGoal parseGoal() const {
+        return ParseGoal(parseGoal_);
     }
 
     ParserBase(ExclusiveContext* cx, LifoAlloc& alloc, const ReadOnlyCompileOptions& options,
                const char16_t* chars, size_t length, bool foldConstants,
                UsedNameTracker& usedNames, Parser<SyntaxParseHandler>* syntaxParser,
-               LazyScript* lazyOuterFunction);
+               LazyScript* lazyOuterFunction, ParseGoal parseGoal);
     ~ParserBase();
 
     const char* getFilename() const { return tokenStream.getFilename(); }
@@ -900,6 +908,8 @@ class ParserBase : public StrictModeGetter
 template <typename ParseHandler>
 class Parser final : public ParserBase, private JS::AutoGCRooter
 {
+  protected:
+    using Modifier = TokenStream::Modifier;
   private:
     using Node = typename ParseHandler::Node;
 
@@ -1045,11 +1055,11 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
   public:
     Parser(ExclusiveContext* cx, LifoAlloc& alloc, const ReadOnlyCompileOptions& options,
            const char16_t* chars, size_t length, bool foldConstants, UsedNameTracker& usedNames,
-           Parser<SyntaxParseHandler>* syntaxParser, LazyScript* lazyOuterFunction);
+           Parser<SyntaxParseHandler>* syntaxParser, LazyScript* lazyOuterFunction, ParseGoal parseGoal);
     ~Parser();
 
     friend class AutoAwaitIsKeyword<ParseHandler>;
-    void setAwaitIsKeyword(bool isKeyword);
+    void setAwaitHandling(AwaitHandling awaitHandling);
 
     bool checkOptions();
 
@@ -1079,6 +1089,71 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
      * Parse a top-level JS script.
      */
     ListNodeType parse();
+
+  private:
+    /*
+     * Gets the next token and checks if it matches to the given `condition`.
+     * If it matches, returns true.
+     * If it doesn't match, calls `errorReport` to report the error, and
+     * returns false.
+     * If other error happens, it returns false but `errorReport` may not be
+     * called and other error will be thrown in that case.
+     *
+     * In any case, the already gotten token is not ungotten.
+     *
+     * The signature of `condition` is [...](TokenKind actual) -> bool, and
+     * the signature of `errorReport` is [...](TokenKind actual).
+     */
+    template<typename ConditionT, typename ErrorReportT>
+    MOZ_MUST_USE bool mustMatchTokenInternal(ConditionT condition, Modifier modifier,
+                                             ErrorReportT errorReport);
+
+  public:
+    /*
+     * The following mustMatchToken variants follow the behavior and parameter
+     * types of mustMatchTokenInternal above.
+     *
+     * If modifier is omitted, `None` is used.
+     * If TokenKind is passed instead of `condition`, it checks if the next
+     * token is the passed token.
+     * If error number is passed instead of `errorReport`, it reports an
+     * error with the passed errorNumber.
+     */
+    MOZ_MUST_USE bool mustMatchToken(TokenKind expected, Modifier modifier, JSErrNum errorNumber) {
+        return mustMatchTokenInternal([expected](TokenKind actual) {
+                                          return actual == expected;
+                                      },
+                                      modifier,
+                                      [this, errorNumber](TokenKind) {
+                                          this->error(errorNumber);
+                                      });
+    }
+
+    MOZ_MUST_USE bool mustMatchToken(TokenKind excpected, JSErrNum errorNumber) {
+        return mustMatchToken(excpected, TokenStream::None, errorNumber);
+    }
+
+    template<typename ConditionT>
+    MOZ_MUST_USE bool mustMatchToken(ConditionT condition, JSErrNum errorNumber) {
+        return mustMatchTokenInternal(condition, TokenStream::None,
+                                      [this, errorNumber](TokenKind) {
+                                          this->error(errorNumber);
+                                      });
+    }
+
+    template<typename ErrorReportT>
+    MOZ_MUST_USE bool mustMatchToken(TokenKind expected, Modifier modifier,
+                                     ErrorReportT errorReport) {
+        return mustMatchTokenInternal([expected](TokenKind actual) {
+                                          return actual == expected;
+                                      },
+                                      modifier, errorReport);
+    }
+
+    template<typename ErrorReportT>
+    MOZ_MUST_USE bool mustMatchToken(TokenKind expected, ErrorReportT errorReport) {
+        return mustMatchToken(expected, TokenStream::None, errorReport);
+    }
 
     /*
      * Allocate a new parsed object or function container from
@@ -1236,6 +1311,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     ListNodeType lexicalDeclaration(YieldHandling yieldHandling, DeclarationKind kind);
 
     inline BinaryNodeType importDeclaration();
+    Node importDeclarationOrImportExpr(YieldHandling yieldHandling);
 
     bool processExport(Node node);
     bool processExportFrom(BinaryNodeType node);
@@ -1345,6 +1421,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     bool tryNewTarget(BinaryNodeType* newTarget);
     bool checkAndMarkSuperScope();
+
+    Node importExpr(YieldHandling yieldHandling, bool allowCallSyntax);
 
     FunctionNodeType methodDefinition(uint32_t toStringStart, PropertyType propType, HandleAtom funName);
 
@@ -1566,17 +1644,21 @@ class MOZ_STACK_CLASS AutoAwaitIsKeyword
 {
   private:
     Parser<ParseHandler>* parser_;
-    bool oldAwaitIsKeyword_;
+    AwaitHandling oldAwaitHandling_;
 
   public:
-    AutoAwaitIsKeyword(Parser<ParseHandler>* parser, bool awaitIsKeyword) {
+    AutoAwaitIsKeyword(Parser<ParseHandler>* parser, AwaitHandling awaitHandling) {
         parser_ = parser;
-        oldAwaitIsKeyword_ = parser_->awaitIsKeyword_;
-        parser_->setAwaitIsKeyword(awaitIsKeyword);
+        oldAwaitHandling_ = static_cast<AwaitHandling>(parser_->awaitHandling_);
+
+        // 'await' is always a keyword in module contexts, so we don't modify
+        // the state when the original handling is AwaitIsModuleKeyword.
+        if (oldAwaitHandling_ != AwaitIsModuleKeyword)
+            parser_->setAwaitHandling(awaitHandling);
     }
 
     ~AutoAwaitIsKeyword() {
-        parser_->setAwaitIsKeyword(oldAwaitIsKeyword_);
+        parser_->setAwaitHandling(oldAwaitHandling_);
     }
 };
 

@@ -15,7 +15,7 @@
 
     A utility proxy base class for implementing draw/paint filters.
 */
-class SK_API SkPaintFilterCanvas : public SkNWayCanvas {
+class SkPaintFilterCanvas : public SkNWayCanvas {
 public:
     /**
      * DEPRECATED: use the variant below.

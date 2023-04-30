@@ -154,7 +154,7 @@ ScriptLoadHandler::EnsureDecoder(nsIIncrementalStreamLoader *aLoader,
   // request.
   nsAutoString hintCharset;
   if (!mRequest->IsPreload()) {
-    mRequest->mElement->GetScriptCharset(hintCharset);
+    mRequest->Element()->GetScriptCharset(hintCharset);
   } else {
     nsTArray<ScriptLoader::PreloadInfo>::index_type i =
       mScriptLoader->mPreloads.IndexOf(mRequest, 0,
