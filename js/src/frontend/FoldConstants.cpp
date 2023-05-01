@@ -351,9 +351,13 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_DIV:
       case PNK_MOD:
       case PNK_POW:
+      case PNK_INITPROP:
       case PNK_ASSIGN:
       case PNK_ADDASSIGN:
       case PNK_SUBASSIGN:
+      case PNK_COALESCEASSIGN:
+      case PNK_ORASSIGN:
+      case PNK_ANDASSIGN:
       case PNK_BITORASSIGN:
       case PNK_BITXORASSIGN:
       case PNK_BITANDASSIGN:
@@ -377,6 +381,7 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_OPTELEM:
       case PNK_OPTCALL:
       case PNK_NAME:
+      case PNK_PRIVATE_NAME:
       case PNK_TEMPLATE_STRING:
       case PNK_TEMPLATE_STRING_LIST:
       case PNK_TAGGED_TEMPLATE:
@@ -400,8 +405,9 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_FORIN:
       case PNK_FOROF:
       case PNK_FORHEAD:
-      case PNK_CLASSMETHOD:
-      case PNK_CLASSMETHODLIST:
+      case PNK_CLASSFIELD:
+      case PNK_STATICCLASSBLOCK:
+      case PNK_CLASSMEMBERLIST:
       case PNK_CLASSNAMES:
       case PNK_NEWTARGET:
       case PNK_IMPORT_META:
@@ -1679,6 +1685,7 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
         return true;
 
       case PNK_OBJECT_PROPERTY_NAME:
+      case PNK_PRIVATE_NAME:
       case PNK_STRING:
       case PNK_TEMPLATE_STRING:
         MOZ_ASSERT(pn->is<NameNode>());
@@ -1746,6 +1753,7 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
       case PNK_ARRAYPUSH:
       case PNK_MUTATEPROTO:
       case PNK_COMPUTED_NAME:
+      case PNK_STATICCLASSBLOCK:
       case PNK_SPREAD:
       case PNK_EXPORT:
       case PNK_VOID:
@@ -1810,7 +1818,7 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
       case PNK_OBJECT:
       case PNK_ARRAYCOMP:
       case PNK_STATEMENTLIST:
-      case PNK_CLASSMETHODLIST:
+      case PNK_CLASSMEMBERLIST:
       case PNK_CATCHLIST:
       case PNK_TEMPLATE_STRING_LIST:
       case PNK_VAR:
@@ -1875,9 +1883,13 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
 
       case PNK_SWITCH:
       case PNK_COLON:
+      case PNK_INITPROP:
       case PNK_ASSIGN:
       case PNK_ADDASSIGN:
       case PNK_SUBASSIGN:
+      case PNK_COALESCEASSIGN:
+      case PNK_ORASSIGN:
+      case PNK_ANDASSIGN:
       case PNK_BITORASSIGN:
       case PNK_BITANDASSIGN:
       case PNK_BITXORASSIGN:
@@ -1900,6 +1912,16 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
         BinaryNode* node = &pn->as<BinaryNode>();
         return Fold(cx, node->unsafeLeftReference(), parser, inGenexpLambda) &&
                Fold(cx, node->unsafeRightReference(), parser, inGenexpLambda);
+      }
+
+      case PNK_CLASSFIELD: {
+        ClassField* node = &pn->as<ClassField>();
+        if (node->initializer()) {
+            if (!Fold(cx, node->unsafeRightReference(), parser, inGenexpLambda)) {
+                return false;
+            }
+        }
+        return true;
       }
 
       case PNK_NEWTARGET:

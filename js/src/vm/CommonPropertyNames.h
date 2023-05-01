@@ -16,6 +16,7 @@
     macro(anonymous, anonymous, "anonymous") \
     macro(Any, Any, "Any") \
     macro(apply, apply, "apply") \
+    macro(args, args, "args") \
     macro(arguments, arguments, "arguments") \
     macro(ArrayBufferSpecies, ArrayBufferSpecies, "ArrayBufferSpecies") \
     macro(ArrayIterator, ArrayIterator, "Array Iterator") \
@@ -102,6 +103,10 @@
     macro(dotAll, dotAll, "dotAll") \
     macro(dotGenerator, dotGenerator, ".generator") \
     macro(dotThis, dotThis, ".this") \
+    macro(dotInitializers, dotInitializers, ".initializers") \
+    macro(dotFieldKeys, dotFieldKeys, ".fieldKeys") \
+    macro(dotStaticInitializers, dotStaticInitializers, ".staticInitializers") \
+    macro(dotStaticFieldKeys, dotStaticFieldKeys, ".staticFieldKeys") \
     macro(each, each, "each") \
     macro(elementType, elementType, "elementType") \
     macro(else, else_, "else") \

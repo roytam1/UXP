@@ -704,6 +704,35 @@ class ScriptSourceObject : public NativeObject
 enum GeneratorKind { NotGenerator, LegacyGenerator, StarGenerator };
 enum FunctionAsyncKind { SyncFunction, AsyncFunction };
 
+struct FieldInitializers
+{
+#ifdef DEBUG
+    bool valid;
+#endif
+    // This struct will eventually have a vector of constant values for optimizing
+    // field initializers.
+    size_t numFieldInitializers;
+
+    explicit FieldInitializers(size_t numFieldInitializers)
+      :
+#ifdef DEBUG
+        valid(true),
+#endif
+        numFieldInitializers(numFieldInitializers) {
+    }
+
+    static FieldInitializers Invalid() { return FieldInitializers(); }
+
+  private:
+    FieldInitializers()
+      :
+#ifdef DEBUG
+        valid(false),
+#endif
+        numFieldInitializers(0) {
+    }
+};
+
 static inline unsigned
 GeneratorKindAsBits(GeneratorKind generatorKind) {
     return static_cast<unsigned>(generatorKind);
@@ -855,6 +884,8 @@ class JSScript : public js::gc::TenuredCell
 
   private:
     js::SharedScriptData* scriptData_;
+
+    js::FieldInitializers fieldInitializers_ = js::FieldInitializers::Invalid();
   public:
     uint8_t*        data;      /* pointer to variable-length data array (see
                                    comment above Create() for details) */
@@ -1089,6 +1120,8 @@ class JSScript : public js::gc::TenuredCell
     bool isDerivedClassConstructor_:1;
     bool isDefaultClassConstructor_:1;
 
+    bool isFieldInitializer_:1;
+
     bool isAsync_:1;
 
     bool hasRest_:1;
@@ -1098,7 +1131,10 @@ class JSScript : public js::gc::TenuredCell
     // instead of private to suppress -Wunused-private-field compiler warnings.
   protected:
 #if JS_BITS_PER_WORD == 32
-    // Currently no padding is needed.
+#  ifndef DEBUG
+    // DEBUG is currently 4 bytes larger and doesn't need padding to gc::CellSize
+    uint32_t padding_;
+#  endif
 #endif
 
     //
@@ -1427,6 +1463,10 @@ class JSScript : public js::gc::TenuredCell
         return isDerivedClassConstructor_;
     }
 
+    bool isFieldInitializer() const {
+        return isFieldInitializer_;
+    }
+
     /*
      * As an optimization, even when argsHasLocalBinding, the function prologue
      * may not need to create an arguments object. This is determined by
@@ -1453,6 +1493,11 @@ class JSScript : public js::gc::TenuredCell
     bool functionHasThisBinding() const {
         return functionHasThisBinding_;
     }
+
+    void setFieldInitializers(js::FieldInitializers fieldInitializers) {
+        fieldInitializers_ = fieldInitializers;
+    }
+    const js::FieldInitializers& getFieldInitializers() const { return fieldInitializers_; }
 
     /*
      * Arguments access (via JSOP_*ARG* opcodes) must access the canonical
@@ -2003,7 +2048,6 @@ namespace js {
 // bytecode from its source.
 class LazyScript : public gc::TenuredCell
 {
-  private:
     // If non-nullptr, the script has been compiled and this is a forwarding
     // pointer to the result. This is a weak pointer: after relazification, we
     // can collect the script if there are no other pointers to it.
@@ -2030,7 +2074,6 @@ class LazyScript : public gc::TenuredCell
     uint32_t padding;
 #endif
 
-  private:
     static const uint32_t NumClosedOverBindingsBits = 20;
     static const uint32_t NumInnerFunctionsBits = 20;
 
@@ -2062,6 +2105,7 @@ class LazyScript : public gc::TenuredCell
         uint32_t hasBeenCloned : 1;
         uint32_t treatAsRunOnce : 1;
         uint32_t isDerivedClassConstructor : 1;
+        uint32_t isFieldInitializer : 1;
         uint32_t needsHomeObject : 1;
         uint32_t hasRest : 1;
         uint32_t parseGoal : 1;
@@ -2071,6 +2115,8 @@ class LazyScript : public gc::TenuredCell
         PackedView p_;
         uint64_t packedFields_;
     };
+
+    FieldInitializers fieldInitializers_;
 
     // Source location for the script.
     // See the comment in JSScript for the details.
@@ -2276,6 +2322,13 @@ class LazyScript : public gc::TenuredCell
         p_.isDerivedClassConstructor = true;
     }
 
+    bool isFieldInitializer() const {
+        return p_.isFieldInitializer;
+    }
+    void setIsFieldInitializer() {
+        p_.isFieldInitializer = true;
+    }
+
     bool needsHomeObject() const {
         return p_.needsHomeObject;
     }
@@ -2296,6 +2349,12 @@ class LazyScript : public gc::TenuredCell
     void setHasThisBinding() {
         p_.hasThisBinding = true;
     }
+
+    void setFieldInitializers(FieldInitializers fieldInitializers) {
+        fieldInitializers_ = fieldInitializers;
+    }
+
+    const FieldInitializers& getFieldInitializers() const { return fieldInitializers_; }
 
     const char* filename() const {
         return scriptSource()->filename();

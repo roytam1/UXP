@@ -548,8 +548,9 @@ class FunctionScope : public Scope
 
   private:
     static FunctionScope* createWithData(ExclusiveContext* cx, MutableHandle<UniquePtr<Data>> data,
-                                         bool hasParameterExprs, bool needsEnvironment,
-                                         HandleFunction fun, HandleScope enclosing);
+                                         bool hasParameterExprs,
+                                         bool needsEnvironment, HandleFunction fun,
+                                         HandleScope enclosing);
 
     Data& data() {
         return *reinterpret_cast<Data*>(data_);

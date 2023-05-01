@@ -526,6 +526,10 @@ class ParseContext : public Nestable<ParseContext>
         return sc_->isFunctionBox() && sc_->asFunctionBox()->function()->isMethod();
     }
 
+    bool allowReturn() const {
+        return sc_->isFunctionBox() && sc_->asFunctionBox()->allowReturn();
+    }
+
     uint32_t scriptId() const {
         return scriptId_;
     }
@@ -583,15 +587,16 @@ enum class PropertyType {
     AsyncMethod,
     AsyncGeneratorMethod,
     Constructor,
-    DerivedConstructor
+    DerivedConstructor,
+    Field,
 };
 
 // Specify a value for an ES6 grammar parametrization.  We have no enum for
-// [Return] because its behavior is exactly equivalent to checking whether
+// [Return] because its behavior is almost exactly equivalent to checking whether
 // we're in a function box -- easier and simpler than passing an extra
 // parameter everywhere.
 enum YieldHandling { YieldIsName, YieldIsKeyword };
-enum AwaitHandling : uint8_t { AwaitIsName, AwaitIsKeyword, AwaitIsModuleKeyword };
+enum AwaitHandling : uint8_t { AwaitIsName, AwaitIsKeyword, AwaitIsModuleKeyword, AwaitIsDisallowed };
 enum InHandling { InAllowed, InProhibited };
 enum DefaultHandling { NameRequired, AllowDefaultName };
 enum TripledotHandling { TripledotAllowed, TripledotProhibited };
@@ -720,6 +725,15 @@ class UsedNameTracker
     MOZ_MUST_USE bool noteUse(ExclusiveContext* cx, JSAtom* name,
                               uint32_t scriptId, uint32_t scopeId);
 
+    MOZ_MUST_USE bool markAsAlwaysClosedOver(ExclusiveContext* cx, JSAtom* name,
+                                             uint32_t scriptId, uint32_t scopeId) {
+        // This marks a variable as always closed over:
+        // UsedNameInfo::noteBoundInScope only checks if scriptId and scopeId are
+        // greater than the current scriptId/scopeId, so do a simple increment to
+        // make that so.
+        return noteUse(cx, name, scriptId + 1, scopeId + 1);
+    }
+
     struct RewindToken
     {
       private:
@@ -807,7 +821,10 @@ class ParserBase : public StrictModeGetter
 
   public:
     bool awaitIsKeyword() const {
-        return awaitHandling_ != AwaitIsName;
+        return awaitHandling_ == AwaitIsKeyword || awaitHandling_ == AwaitIsModuleKeyword;
+    }
+    bool awaitIsDisallowed() const {
+        return awaitHandling_ == AwaitIsDisallowed;
     }
 
     ParseGoal parseGoal() const {
@@ -1171,7 +1188,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
      */
     JSFunction* newFunction(HandleAtom atom, FunctionSyntaxKind kind,
                             GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
-                            HandleObject proto);
+                            HandleObject proto = nullptr);
 
     void trace(JSTracer* trc);
 
@@ -1440,6 +1457,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
 
     // Parse a function body.  Pass StatementListBody if the body is a list of
     // statements; pass ExpressionBody if the body is a single expression.
+    //
+    // Don't include opening LeftCurly token when invoking.
     enum FunctionBodyType { StatementListBody, ExpressionBody };
     LexicalScopeNodeType functionBody(InHandling inHandling, YieldHandling yieldHandling,
                                       FunctionSyntaxKind kind, FunctionBodyType type);
@@ -1478,18 +1497,53 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     enum ClassContext { ClassStatement, ClassExpression };
     ClassNodeType classDefinition(YieldHandling yieldHandling, ClassContext classContext,
                                   DefaultHandling defaultHandling);
+    struct ClassFields {
+        // The number of instance class fields.
+        size_t instanceFields = 0;
 
-    bool checkLabelOrIdentifierReference(HandlePropertyName ident,
+        // The number of instance class fields with computed property names.
+        size_t instanceFieldKeys = 0;
+
+        // The number of static class fields.
+        size_t staticFields = 0;
+
+        // The number of static blocks
+        size_t staticBlocks = 0;
+
+        // The number of static class fields with computed property names.
+        size_t staticFieldKeys = 0;
+    };
+    MOZ_MUST_USE bool classMember(YieldHandling yieldHandling,
+                                  const ParseContext::ClassStatement& classStmt,
+                                  HandlePropertyName className,
+                                  uint32_t classStartOffset, bool hasHeritage,
+                                  ClassFields& classFields,
+                                  ListNodeType& classMembers, bool* done);
+    MOZ_MUST_USE bool finishClassConstructor(
+        const ParseContext::ClassStatement& classStmt,
+        HandlePropertyName className, bool hasHeritage,
+        uint32_t classStartOffset, uint32_t classEndOffset,
+        const ClassFields& classFields, ListNodeType& classMembers);
+
+    FunctionNodeType fieldInitializerOpt(HandleAtom atom, ClassFields& classFields, bool isStatic);
+    FunctionNodeType staticClassBlock(ClassFields& classFields);
+    FunctionNodeType synthesizeConstructor(HandleAtom className,
+                                           uint32_t classNameOffset,
+                                           bool hasHeritage);
+
+    bool checkLabelOrIdentifierReference(PropertyName* ident,
                                          uint32_t offset,
-                                         YieldHandling yieldHandling);
+                                         YieldHandling yieldHandling,
+                                         TokenKind hint = TOK_LIMIT);
 
-    bool checkLocalExportName(HandlePropertyName ident, uint32_t offset) {
+    bool checkLocalExportName(PropertyName* ident, uint32_t offset) {
         return checkLabelOrIdentifierReference(ident, offset, YieldIsName);
     }
 
-    bool checkBindingIdentifier(HandlePropertyName ident,
+    bool checkBindingIdentifier(PropertyName* ident,
                                 uint32_t offset,
-                                YieldHandling yieldHandling);
+                                YieldHandling yieldHandling,
+                                TokenKind hint = TOK_LIMIT);
 
     PropertyName* labelOrIdentifierReference(YieldHandling yieldHandling);
 
@@ -1520,8 +1574,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     bool matchInOrOf(bool* isForInp, bool* isForOfp);
 
     bool hasUsedFunctionSpecialName(HandlePropertyName name);
-    bool declareFunctionArgumentsObject();
-    bool declareFunctionThis();
+    bool declareFunctionArgumentsObject(bool canSkipLazyClosedOverBindings);
+    bool declareFunctionThis(bool canSkipLazyClosedOverBindings);
     NameNodeType newInternalDotName(HandlePropertyName name);
     NameNodeType newThisName();
     NameNodeType newDotGeneratorName();
@@ -1594,9 +1648,15 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     mozilla::Maybe<LexicalScope::Data*> newLexicalScopeData(ParseContext::Scope& scope);
     LexicalScopeNodeType finishLexicalScope(ParseContext::Scope& scope, Node body);
 
+    enum PropertyNameContext { PropertyNameInLiteral, PropertyNameInPattern, PropertyNameInClass };
     Node propertyName(YieldHandling yieldHandling,
+                      PropertyNameContext propertyNameContext,
                       const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType propList,
-                      PropertyType* propType, MutableHandleAtom propAtom);
+                      MutableHandleAtom propAtom);
+    Node propertyOrMethodName(YieldHandling yieldHandling,
+                              PropertyNameContext propertyNameContext,
+                              const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType propList,
+                              PropertyType* propType, MutableHandleAtom propAtom);
     UnaryNodeType computedPropertyName(YieldHandling yieldHandling,
                                        const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType literal);
     ListNodeType arrayInitializer(YieldHandling yieldHandling, PossibleError* possibleError);
