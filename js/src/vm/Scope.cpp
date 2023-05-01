@@ -761,8 +761,8 @@ FunctionScope::XDR(XDRState<mode>* xdr, HandleFunction fun, HandleScope enclosin
                 MOZ_ASSERT(!data->nextFrameSlot);
             }
 
-            scope.set(createWithData(cx, &uniqueData.ref(), hasParameterExprs, needsEnvironment, fun,
-                                     enclosing));
+            scope.set(createWithData(cx, &uniqueData.ref(), hasParameterExprs,
+                                     needsEnvironment, fun, enclosing));
             if (!scope)
                 return false;
 

@@ -595,6 +595,7 @@ class JSFunction : public js::NativeObject
     }
 
     bool isDerivedClassConstructor();
+    bool isFieldInitializer() const;
 
     static unsigned offsetOfNativeOrScript() {
         static_assert(offsetof(U, n.native) == offsetof(U, i.s.script_),

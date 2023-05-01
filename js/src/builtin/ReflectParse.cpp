@@ -53,6 +53,8 @@ enum AssignmentOperator {
     AOP_LSH, AOP_RSH, AOP_URSH,
     /* binary */
     AOP_BITOR, AOP_BITXOR, AOP_BITAND,
+    /* short-circuit */
+    AOP_COALESCE, AOP_OR, AOP_AND,
 
     AOP_LIMIT
 };
@@ -122,6 +124,9 @@ static const char* const aopNames[] = {
     "|=",   /* AOP_BITOR */
     "^=",   /* AOP_BITXOR */
     "&="    /* AOP_BITAND */
+    "\?\?=", /* AOP_COALESCE */
+    "||=",  /* AOP_OR */
+    "&&=",  /* AOP_AND */
 };
 
 static const char* const binopNames[] = {
@@ -539,9 +544,12 @@ class NodeBuilder
 
     MOZ_MUST_USE bool classDefinition(bool expr, HandleValue name, HandleValue heritage,
                                       HandleValue block, TokenPos* pos, MutableHandleValue dst);
-    MOZ_MUST_USE bool classMethods(NodeVector& methods, MutableHandleValue dst);
+    MOZ_MUST_USE bool classMembers(NodeVector& members, MutableHandleValue dst);
     MOZ_MUST_USE bool classMethod(HandleValue name, HandleValue body, PropKind kind, bool isStatic,
                                   TokenPos* pos, MutableHandleValue dst);
+    MOZ_MUST_USE bool classField(HandleValue name, HandleValue initializer,
+                                 TokenPos* pos, MutableHandleValue dst);
+    MOZ_MUST_USE bool staticClassBlock(HandleValue body, TokenPos* pos, MutableHandleValue dst);
 
     /*
      * expressions
@@ -1721,9 +1729,35 @@ NodeBuilder::classMethod(HandleValue name, HandleValue body, PropKind kind, bool
 }
 
 bool
-NodeBuilder::classMethods(NodeVector& methods, MutableHandleValue dst)
+NodeBuilder::classField(HandleValue name, HandleValue initializer,
+                        TokenPos* pos, MutableHandleValue dst)
 {
-    return newArray(methods, dst);
+    RootedValue cb(cx, callbacks[AST_CLASS_FIELD]);
+    if (!cb.isNull())
+        return callback(cb, name, initializer, pos, dst);
+
+    return newNode(AST_CLASS_FIELD, pos,
+                   "name", name,
+                   "init", initializer,
+                   dst);
+}
+
+bool
+NodeBuilder::staticClassBlock(HandleValue body, TokenPos* pos, MutableHandleValue dst)
+{
+    RootedValue cb(cx, callbacks[AST_STATIC_CLASS_BLOCK]);
+    if (!cb.isNull())
+        return callback(cb, body, pos, dst);
+
+    return newNode(AST_STATIC_CLASS_BLOCK, pos,
+                   "body", body,
+                   dst);
+}
+
+bool
+NodeBuilder::classMembers(NodeVector& members, MutableHandleValue dst)
+{
+    return newArray(members, dst);
 }
 
 bool
@@ -1853,6 +1887,8 @@ class ASTSerializer
     bool property(ParseNode* pn, MutableHandleValue dst);
 
     bool classMethod(ClassMethod* classMethod, MutableHandleValue dst);
+    bool classField(ClassField* classField, MutableHandleValue dst);
+    bool staticClassBlock(StaticClassBlock* staticClassBlock, MutableHandleValue dst);
 
     bool optIdentifier(HandleAtom atom, TokenPos* pos, MutableHandleValue dst) {
         if (!atom) {
@@ -1943,6 +1979,12 @@ ASTSerializer::aop(JSOp op)
         return AOP_BITXOR;
       case JSOP_BITAND:
         return AOP_BITAND;
+      case JSOP_COALESCE:
+        return AOP_COALESCE;
+      case JSOP_OR:
+        return AOP_OR;
+      case JSOP_AND:
+        return AOP_AND;
       default:
         return AOP_ERR;
     }
@@ -2457,7 +2499,7 @@ ASTSerializer::classDefinition(ClassNode* pn, bool expr, MutableHandleValue dst)
     }
 
     return optExpression(pn->heritage(), &heritage) &&
-           statement(pn->methodList(), &classBody) &&
+           statement(pn->memberList(), &classBody) &&
            builder.classDefinition(expr, className, heritage, classBody, &pn->pn_pos, dst);
 }
 
@@ -2676,24 +2718,43 @@ ASTSerializer::statement(ParseNode* pn, MutableHandleValue dst)
       case PNK_CLASS:
         return classDefinition(&pn->as<ClassNode>(), false, dst);
 
-      case PNK_CLASSMETHODLIST:
+      case PNK_CLASSMEMBERLIST:
       {
-        ListNode* methodList = &pn->as<ListNode>();
-        NodeVector methods(cx);
-        if (!methods.reserve(methodList->count()))
+        ListNode* memberList = &pn->as<ListNode>();
+        NodeVector members(cx);
+        if (!members.reserve(memberList->count()))
             return false;
 
-        for (ParseNode* item : methodList->contents()) {
-            ClassMethod* method = &item->as<ClassMethod>();
-            MOZ_ASSERT(methodList->pn_pos.encloses(method->pn_pos));
+        for (ParseNode* item : memberList->contents()) {
+            if (item->is<LexicalScopeNode>())
+                item = item->as<LexicalScopeNode>().scopeBody();
+            if (item->is<ClassField>()) {
+                ClassField* field = &item->as<ClassField>();
+                MOZ_ASSERT(memberList->pn_pos.encloses(field->pn_pos));
 
-            RootedValue prop(cx);
-            if (!classMethod(method, &prop))
-                return false;
-            methods.infallibleAppend(prop);
+                RootedValue prop(cx);
+                if (!classField(field, &prop))
+                    return false;
+                members.infallibleAppend(prop);
+            } else if (item->is<StaticClassBlock>()) {
+                StaticClassBlock* scb = &item->as<StaticClassBlock>();
+                MOZ_ASSERT(memberList->pn_pos.encloses(scb->pn_pos));
+                RootedValue prop(cx);
+                if (!staticClassBlock(scb, &prop))
+                    return false;
+                members.infallibleAppend(prop);
+            } else {
+                ClassMethod* method = &item->as<ClassMethod>();
+                MOZ_ASSERT(memberList->pn_pos.encloses(method->pn_pos));
+
+                RootedValue prop(cx);
+                if (!classMethod(method, &prop))
+                    return false;
+                members.infallibleAppend(prop);
+            }
         }
 
-        return builder.classMethods(methods, dst);
+        return builder.classMembers(members, dst);
       }
 
       case PNK_NOP:
@@ -2730,6 +2791,47 @@ ASTSerializer::classMethod(ClassMethod* classMethod, MutableHandleValue dst)
     return propertyName(&classMethod->name(), &key) &&
            expression(&classMethod->method(), &val) &&
            builder.classMethod(key, val, kind, isStatic, &classMethod->pn_pos, dst);
+}
+
+bool
+ASTSerializer::classField(ClassField* classField, MutableHandleValue dst)
+{
+    RootedValue key(cx), val(cx);
+    // Dig through the lambda and get to the actual expression
+    ParseNode* value = classField->initializer()
+                           ->body()
+                           ->head()->as<LexicalScopeNode>()
+                           .scopeBody()->as<ListNode>()
+                           .head()->as<UnaryNode>()
+                           .kid()->as<BinaryNode>()
+                           .right();
+    // RawUndefinedExpr is the node we use for "there is no initializer". If one
+    // writes, literally, `x = undefined;`, it will not be a RawUndefinedExpr
+    // node, but rather a variable reference.
+    // Behavior for "there is no initializer" should be { ..., "init": null }
+    if (value->getKind() != PNK_RAW_UNDEFINED) {
+        if (!expression(value, &val))
+          return false;
+    } else {
+        val.setNull();
+    }
+    return propertyName(&classField->name(), &key) &&
+           builder.classField(key, val, &classField->pn_pos, dst);
+}
+
+bool
+ASTSerializer::staticClassBlock(StaticClassBlock* staticClassBlock, MutableHandleValue dst)
+{
+    FunctionNode* fun = staticClassBlock->function();
+
+    NodeVector args(cx);
+    NodeVector defaults(cx);
+
+    RootedValue body(cx), rest(cx);
+    rest.setNull();
+    return functionArgsAndBody(fun->body(), args, defaults, false, false,
+                               &body, &rest) &&
+           builder.staticClassBlock(body, &staticClassBlock->pn_pos, dst);
 }
 
 bool
@@ -3012,6 +3114,9 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
       case PNK_ASSIGN:
       case PNK_ADDASSIGN:
       case PNK_SUBASSIGN:
+      case PNK_COALESCEASSIGN:
+      case PNK_ORASSIGN:
+      case PNK_ANDASSIGN:
       case PNK_BITORASSIGN:
       case PNK_BITXORASSIGN:
       case PNK_BITANDASSIGN:
