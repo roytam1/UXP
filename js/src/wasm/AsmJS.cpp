@@ -7045,7 +7045,7 @@ ParseFunction(ModuleValidator& m, FunctionNode** funNodeOut, unsigned* line)
         return false;
 
     FunctionSyntaxKind syntaxKind = FunctionSyntaxKind::Statement;
-    FunctionNode* funNode = m.parser().handler.newFunction(syntaxKind);
+    FunctionNode* funNode = m.parser().handler.newFunction(syntaxKind, m.parser().pos());
     if (!funNode)
         return false;
 
