@@ -1980,6 +1980,7 @@ public:
 
   void Prepend(const Sequence<OwningNodeOrString>& aNodes, ErrorResult& aRv);
   void Append(const Sequence<OwningNodeOrString>& aNodes, ErrorResult& aRv);
+  void ReplaceChildren(const Sequence<OwningNodeOrString>& aNodes, ErrorResult& aRv);
 
   void GetBoxQuads(const BoxQuadOptions& aOptions,
                    nsTArray<RefPtr<DOMQuad> >& aResult,
