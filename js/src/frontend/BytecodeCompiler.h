@@ -121,7 +121,7 @@ IsIdentifier(const Latin1Char* chars, size_t length);
 bool
 IsIdentifier(const char16_t* chars, size_t length);
 
-static bool
+bool
 IsIdentifierNameOrPrivateName(const Latin1Char* chars, size_t length);
 bool
 IsIdentifierNameOrPrivateName(const char16_t* chars, size_t length);
