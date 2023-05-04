@@ -1,6 +1,4 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
- * vim: sw=4 ts=4 et :
- */
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 #include "TestUrgentHangs.h"
 
 #include "IPDLUnitTests.h"      // fail etc.
