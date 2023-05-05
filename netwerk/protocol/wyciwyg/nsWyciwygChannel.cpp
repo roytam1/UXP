@@ -805,4 +805,3 @@ nsWyciwygChannel::NotifyListener()
   }
 }
 
-// vim: ts=2 sw=2

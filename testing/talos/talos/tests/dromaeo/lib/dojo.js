@@ -507,7 +507,6 @@ dojo.global = {
 	d.deprecated = d.experimental = function(){};
 
 })();
-// vim:ai:ts=4:noet
 
 /*
  * loader.js - A bootstrap module.  Runs before the hostenv_*.js file. Contains
