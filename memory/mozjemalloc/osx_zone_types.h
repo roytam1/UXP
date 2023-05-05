@@ -1,5 +1,4 @@
 /* -*- Mode: C; tab-width: 8; c-basic-offset: 8 -*- */
-/* vim:set softtabstop=8 shiftwidth=8: */
 /*-
  * Copyright (C) 2006-2008 Jason Evans <jasone@FreeBSD.org>.
  * Copyright (C) 2015-2018 Mark Straver <moonchild@palemoon.org>

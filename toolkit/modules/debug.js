@@ -1,4 +1,3 @@
-/* vim:set ts=2 sw=2 sts=2 ci et: */
 /* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
 /* This Source Code Form is subject to the terms of the Mozilla Public
