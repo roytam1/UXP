@@ -719,4 +719,3 @@ nsHttpDigestAuth::AppendQuotedString(const nsACString & value,
 } // namespace net
 } // namespace mozilla
 
-// vim: ts=2 sw=2

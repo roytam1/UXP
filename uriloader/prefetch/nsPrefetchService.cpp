@@ -928,4 +928,3 @@ nsPrefetchService::Observe(nsISupports     *aSubject,
     return NS_OK;
 }
 
-// vim: ts=4 sw=4 expandtab

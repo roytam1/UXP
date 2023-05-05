@@ -718,4 +718,3 @@ nsresult nsMailboxProtocol::CloseSocket()
   return NS_OK;
 }
 
-// vim: ts=2 sw=2

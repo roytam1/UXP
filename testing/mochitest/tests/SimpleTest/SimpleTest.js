@@ -1,5 +1,4 @@
 /* -*- js-indent-level: 4; tab-width: 4; indent-tabs-mode: nil -*- */
-/* vim:set ts=4 sw=4 sts=4 et: */
 /**
  * SimpleTest, a partial Test.Simple/Test.More API compatible test library.
  *
