@@ -1,4 +1,3 @@
-/* vim: se cin sw=2 ts=2 et : */
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*-
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
