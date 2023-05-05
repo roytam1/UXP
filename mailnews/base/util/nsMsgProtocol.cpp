@@ -1547,4 +1547,3 @@ char16_t *FormatStringWithHostNameByName(const char16_t* stringName, nsIMsgMailN
   return ptrv;
 }
 
-// vim: ts=2 sw=2

@@ -1,5 +1,4 @@
 /* -*- Mode: C; tab-width: 8; c-basic-offset: 8; indent-tabs-mode: t -*- */
-/* vim:set softtabstop=8 shiftwidth=8 noet: */
 /*-
  * Copyright (C) the Mozilla Foundation.
  * Copyright (C) 2015-2018 Mark Straver <moonchild@palemoon.org>
