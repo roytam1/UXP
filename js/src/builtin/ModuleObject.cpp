@@ -12,6 +12,8 @@
 #include "gc/Policy.h"
 #include "gc/Tracer.h"
 #include "vm/SelfHosting.h"
+#include "vm/AsyncFunction.h"
+#include "vm/AsyncIteration.h"
 
 #include "jsobjinlines.h"
 #include "jsscriptinlines.h"
@@ -954,15 +956,24 @@ ModuleObject::instantiateFunctionDeclarations(JSContext* cx, HandleModuleObject 
 
     RootedModuleEnvironmentObject env(cx, &self->initialEnvironment());
     RootedFunction fun(cx);
+    RootedObject obj(cx);
     RootedValue value(cx);
 
     for (const auto& funDecl : *funDecls) {
         fun = funDecl.fun;
-        RootedObject obj(cx, Lambda(cx, fun, env));
+        obj = Lambda(cx, fun, env);
         if (!obj)
             return false;
 
-        value = ObjectValue(*fun);
+        if (fun->isAsync()) {
+            if (fun->isStarGenerator()) {
+                obj = WrapAsyncGenerator(cx, obj.as<JSFunction>());
+            } else {
+                obj = WrapAsyncFunction(cx, obj.as<JSFunction>());
+            }
+        }
+
+        value = ObjectValue(*obj);
         if (!SetProperty(cx, env, funDecl.name->asPropertyName(), value))
             return false;
     }
