@@ -1337,7 +1337,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     BinaryNodeType exportBatch(uint32_t begin);
     bool checkLocalExportNames(ListNodeType node);
     Node exportClause(uint32_t begin);
-    UnaryNodeType exportFunctionDeclaration(uint32_t begin);
+    UnaryNodeType exportFunctionDeclaration(uint32_t begin,
+                                            FunctionAsyncKind asyncKind = SyncFunction);
     UnaryNodeType exportVariableStatement(uint32_t begin);
     UnaryNodeType exportClassDeclaration(uint32_t begin);
     UnaryNodeType exportLexicalDeclaration(uint32_t begin, DeclarationKind kind);
