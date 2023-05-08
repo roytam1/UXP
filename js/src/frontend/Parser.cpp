@@ -491,6 +491,9 @@ FunctionBox::initFromLazyFunction()
         setDerivedClassConstructor();
     if (fun->lazyScript()->needsHomeObject())
         setNeedsHomeObject();
+    if (fun->lazyScript()->hasModuleGoal()) {
+      setHasModuleGoal();
+    }
     enclosingScope_ = fun->lazyScript()->enclosingScope();
     initWithEnclosingScope(enclosingScope_);
 }
@@ -556,6 +559,9 @@ FunctionBox::initWithEnclosingParseContext(ParseContext* enclosing, FunctionSynt
             }
         }
     }
+
+    // We inherit the parse goal from our top-level.
+    hasModuleGoal_ = sc->hasModuleGoal();
 
     if (sc->inWith()) {
         inWith_ = true;
@@ -787,8 +793,7 @@ ParserBase::ParserBase(ExclusiveContext* cx, LifoAlloc& alloc,
                        bool foldConstants,
                        UsedNameTracker& usedNames,
                        Parser<SyntaxParseHandler>* syntaxParser,
-                       LazyScript* lazyOuterFunction,
-                       ParseGoal parseGoal)
+                       LazyScript* lazyOuterFunction)
   : context(cx),
     alloc(alloc),
     tokenStream(cx, options, chars, length, thisForCtor()),
@@ -804,8 +809,7 @@ ParserBase::ParserBase(ExclusiveContext* cx, LifoAlloc& alloc,
 #endif
     abortedSyntaxParse(false),
     isUnexpectedEOF_(false),
-    awaitHandling_(AwaitIsName),
-    parseGoal_(uint8_t(parseGoal))
+    awaitHandling_(AwaitIsName)
 {
     cx->perThreadData->frontendCollectionPool.addActiveCompilation();
     tempPoolMark = alloc.mark();
@@ -832,10 +836,9 @@ Parser<ParseHandler>::Parser(ExclusiveContext* cx, LifoAlloc& alloc,
                              bool foldConstants,
                              UsedNameTracker& usedNames,
                              Parser<SyntaxParseHandler>* syntaxParser,
-                             LazyScript* lazyOuterFunction,
-                             ParseGoal parseGoal)
+                             LazyScript* lazyOuterFunction)
   : ParserBase(cx, alloc, options, chars, length, foldConstants, usedNames, syntaxParser,
-              lazyOuterFunction, parseGoal),
+              lazyOuterFunction),
     AutoGCRooter(cx, PARSER),
     handler(cx, alloc, tokenStream, syntaxParser, lazyOuterFunction)
 {
@@ -949,6 +952,7 @@ ModuleSharedContext::ModuleSharedContext(ExclusiveContext* cx, ModuleObject* mod
     builder(builder)
 {
     thisBinding_ = ThisBinding::Module;
+    hasModuleGoal_ = true;
 }
 
 template <typename ParseHandler>
@@ -2471,8 +2475,7 @@ Parser<SyntaxParseHandler>::finishFunction(bool isStandaloneFunction /* = false 
                                           pc->innerFunctionsForLazy, versionNumber(),
                                           funbox->bufStart, funbox->bufEnd,
                                           funbox->toStringStart,
-                                          funbox->startLine, funbox->startColumn,
-                                          parseGoal());
+                                          funbox->startLine, funbox->startColumn);
     if (!lazy)
         return false;
 
@@ -2496,6 +2499,8 @@ Parser<SyntaxParseHandler>::finishFunction(bool isStandaloneFunction /* = false 
         lazy->setShouldDeclareArguments();
     if (funbox->hasThisBinding())
         lazy->setHasThisBinding();
+    if (funbox->hasModuleGoal())
+        lazy->setHasModuleGoal();
 
     // Flags that need to copied back into the parser when we do the full
     // parse.

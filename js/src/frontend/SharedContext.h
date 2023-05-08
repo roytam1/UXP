@@ -249,6 +249,9 @@ class SharedContext
     bool inWith_;
     bool needsThisTDZChecks_;
 
+    // Script is being parsed with a goal of Module.
+    bool hasModuleGoal_ : 1;
+
     void computeAllowSyntax(Scope* scope);
     void computeInWith(Scope* scope);
     void computeThisBinding(Scope* scope);
@@ -267,7 +270,8 @@ class SharedContext
         allowSuperCall_(false),
         allowArguments_(true),
         inWith_(false),
-        needsThisTDZChecks_(false)
+        needsThisTDZChecks_(false),
+        hasModuleGoal_(false)
     { }
 
     // If this is the outermost SharedContext, the Scope that encloses
@@ -287,6 +291,7 @@ class SharedContext
 
     ThisBinding thisBinding()          const { return thisBinding_; }
 
+    bool hasModuleGoal()               const { return hasModuleGoal_; }
     bool allowNewTarget()              const { return allowNewTarget_; }
     bool allowSuperProperty()          const { return allowSuperProperty_; }
     bool allowSuperCall()              const { return allowSuperCall_; }
@@ -303,6 +308,7 @@ class SharedContext
     void setBindingsAccessedDynamically() { anyCxFlags.bindingsAccessedDynamically = true; }
     void setHasDebuggerStatement()        { anyCxFlags.hasDebuggerStatement        = true; }
     void setHasDirectEval()               { anyCxFlags.hasDirectEval               = true; }
+    void setHasModuleGoal()               { hasModuleGoal_                         = true; }
 
     inline bool allBindingsClosedOver();
 
