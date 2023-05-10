@@ -4055,7 +4055,7 @@ reflect_parse(JSContext* cx, uint32_t argc, Value* vp)
         return false;
     Parser<FullParseHandler> parser(cx, cx->tempLifoAlloc(), options, chars.begin().get(),
                                     chars.length(), /* foldConstants = */ false, usedNames,
-                                    nullptr, nullptr, target);
+                                    nullptr, nullptr);
     if (!parser.checkOptions())
         return false;
 

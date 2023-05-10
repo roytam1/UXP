@@ -491,6 +491,9 @@ FunctionBox::initFromLazyFunction()
         setDerivedClassConstructor();
     if (fun->lazyScript()->needsHomeObject())
         setNeedsHomeObject();
+    if (fun->lazyScript()->hasModuleGoal()) {
+      setHasModuleGoal();
+    }
     enclosingScope_ = fun->lazyScript()->enclosingScope();
     initWithEnclosingScope(enclosingScope_);
 }
@@ -556,6 +559,9 @@ FunctionBox::initWithEnclosingParseContext(ParseContext* enclosing, FunctionSynt
             }
         }
     }
+
+    // We inherit the parse goal from our top-level.
+    hasModuleGoal_ = sc->hasModuleGoal();
 
     if (sc->inWith()) {
         inWith_ = true;
@@ -787,8 +793,7 @@ ParserBase::ParserBase(ExclusiveContext* cx, LifoAlloc& alloc,
                        bool foldConstants,
                        UsedNameTracker& usedNames,
                        Parser<SyntaxParseHandler>* syntaxParser,
-                       LazyScript* lazyOuterFunction,
-                       ParseGoal parseGoal)
+                       LazyScript* lazyOuterFunction)
   : context(cx),
     alloc(alloc),
     tokenStream(cx, options, chars, length, thisForCtor()),
@@ -804,8 +809,7 @@ ParserBase::ParserBase(ExclusiveContext* cx, LifoAlloc& alloc,
 #endif
     abortedSyntaxParse(false),
     isUnexpectedEOF_(false),
-    awaitHandling_(AwaitIsName),
-    parseGoal_(uint8_t(parseGoal))
+    awaitHandling_(AwaitIsName)
 {
     cx->perThreadData->frontendCollectionPool.addActiveCompilation();
     tempPoolMark = alloc.mark();
@@ -832,10 +836,9 @@ Parser<ParseHandler>::Parser(ExclusiveContext* cx, LifoAlloc& alloc,
                              bool foldConstants,
                              UsedNameTracker& usedNames,
                              Parser<SyntaxParseHandler>* syntaxParser,
-                             LazyScript* lazyOuterFunction,
-                             ParseGoal parseGoal)
+                             LazyScript* lazyOuterFunction)
   : ParserBase(cx, alloc, options, chars, length, foldConstants, usedNames, syntaxParser,
-              lazyOuterFunction, parseGoal),
+              lazyOuterFunction),
     AutoGCRooter(cx, PARSER),
     handler(cx, alloc, tokenStream, syntaxParser, lazyOuterFunction)
 {
@@ -949,6 +952,7 @@ ModuleSharedContext::ModuleSharedContext(ExclusiveContext* cx, ModuleObject* mod
     builder(builder)
 {
     thisBinding_ = ThisBinding::Module;
+    hasModuleGoal_ = true;
 }
 
 template <typename ParseHandler>
@@ -2473,8 +2477,7 @@ Parser<SyntaxParseHandler>::finishFunction(bool isStandaloneFunction /* = false 
                                           pc->innerFunctionsForLazy, versionNumber(),
                                           funbox->bufStart, funbox->bufEnd,
                                           funbox->toStringStart,
-                                          funbox->startLine, funbox->startColumn,
-                                          parseGoal());
+                                          funbox->startLine, funbox->startColumn);
     if (!lazy)
         return false;
 
@@ -2498,6 +2501,8 @@ Parser<SyntaxParseHandler>::finishFunction(bool isStandaloneFunction /* = false 
         lazy->setShouldDeclareArguments();
     if (funbox->hasThisBinding())
         lazy->setHasThisBinding();
+    if (funbox->hasModuleGoal())
+        lazy->setHasModuleGoal();
 
     // Flags that need to copied back into the parser when we do the full
     // parse.
@@ -5780,14 +5785,15 @@ Parser<ParseHandler>::exportVariableStatement(uint32_t begin)
 
 template <typename ParseHandler>
 typename ParseHandler::UnaryNodeType
-Parser<ParseHandler>::exportFunctionDeclaration(uint32_t begin)
+Parser<ParseHandler>::exportFunctionDeclaration(uint32_t begin,
+                                                FunctionAsyncKind asyncKind /* = SyncFunction */)
 {
     if (!abortIfSyntaxParser())
         return null();
 
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_FUNCTION));
 
-    Node kid = functionStmt(pos().begin, YieldIsKeyword, NameRequired);
+    Node kid = functionStmt(pos().begin, YieldIsKeyword, NameRequired, asyncKind);
     if (!kid)
         return null();
 
@@ -6009,6 +6015,20 @@ Parser<ParseHandler>::exportDeclaration()
 
       case TOK_FUNCTION:
         return exportFunctionDeclaration(begin);
+
+      case TOK_ASYNC: {
+        TokenKind nextSameLine = TOK_EOF;
+        if (!tokenStream.peekTokenSameLine(&nextSameLine))
+            return null();
+
+        if (nextSameLine == TOK_FUNCTION) {
+            tokenStream.consumeKnownToken(TOK_FUNCTION);
+            return exportFunctionDeclaration(begin, AsyncFunction);
+        }
+
+        error(JSMSG_DECLARATION_AFTER_EXPORT);
+        return null();
+      }
 
       case TOK_CLASS:
         return exportClassDeclaration(begin);
