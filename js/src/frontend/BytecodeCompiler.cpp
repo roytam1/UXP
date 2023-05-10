@@ -74,9 +74,8 @@ class MOZ_STACK_CLASS BytecodeCompiler
     bool createScriptSource(Maybe<uint32_t> parameterListEnd);
     bool maybeCompressSource();
     bool canLazilyParse();
-    bool createParser(ParseGoal goal);
-    bool createSourceAndParser(ParseGoal goal,
-                               Maybe<uint32_t> parameterListEnd = Nothing());
+    bool createParser();
+    bool createSourceAndParser(Maybe<uint32_t> parameterListEnd = Nothing());
 
     // If toString{Start,End} are not explicitly passed, assume the script's
     // offsets in the source used to parse it are the same as what should be
@@ -213,7 +212,7 @@ BytecodeCompiler::canLazilyParse()
 }
 
 bool
-BytecodeCompiler::createParser(ParseGoal goal)
+BytecodeCompiler::createParser()
 {
     usedNames.emplace(cx);
     if (!usedNames->init())
@@ -222,14 +221,14 @@ BytecodeCompiler::createParser(ParseGoal goal)
     if (canLazilyParse()) {
         syntaxParser.emplace(cx, alloc, options, sourceBuffer.get(), sourceBuffer.length(),
                              /* foldConstants = */ false, *usedNames,
-                             (Parser<SyntaxParseHandler>*) nullptr, (LazyScript*) nullptr, goal);
+                             (Parser<SyntaxParseHandler>*) nullptr, (LazyScript*) nullptr);
 
         if (!syntaxParser->checkOptions())
             return false;
     }
 
     parser.emplace(cx, alloc, options, sourceBuffer.get(), sourceBuffer.length(),
-                   /* foldConstants = */ true, *usedNames, syntaxParser.ptrOr(nullptr), nullptr, goal);
+                   /* foldConstants = */ true, *usedNames, syntaxParser.ptrOr(nullptr), nullptr);
     parser->sct = sourceCompressor;
     parser->ss = scriptSource;
     if (!parser->checkOptions())
@@ -240,12 +239,11 @@ BytecodeCompiler::createParser(ParseGoal goal)
 }
 
 bool
-BytecodeCompiler::createSourceAndParser(ParseGoal goal,
-                                        Maybe<uint32_t> parameterListEnd /* = Nothing() */)
+BytecodeCompiler::createSourceAndParser(Maybe<uint32_t> parameterListEnd /* = Nothing() */)
 {
     return createScriptSource(parameterListEnd) &&
            maybeCompressSource() &&
-           createParser(goal);
+           createParser();
 }
 
 bool
@@ -324,7 +322,7 @@ BytecodeCompiler::maybeCompleteCompressSource()
 JSScript*
 BytecodeCompiler::compileScript(HandleObject environment, SharedContext* sc)
 {
-    if (!createSourceAndParser(ParseGoal::Script))
+    if (!createSourceAndParser())
         return nullptr;
 
     if (!createScript())
@@ -394,7 +392,7 @@ BytecodeCompiler::compileEvalScript(HandleObject environment, HandleScope enclos
 ModuleObject*
 BytecodeCompiler::compileModule()
 {
-    if (!createSourceAndParser(ParseGoal::Module))
+    if (!createSourceAndParser())
         return nullptr;
 
     Rooted<ModuleObject*> module(cx, ModuleObject::create(cx));
@@ -451,7 +449,7 @@ BytecodeCompiler::compileStandaloneFunction(MutableHandleFunction fun,
     MOZ_ASSERT(fun);
     MOZ_ASSERT(fun->isTenured());
 
-    if (!createSourceAndParser(ParseGoal::Script, parameterListEnd))
+    if (!createSourceAndParser(parameterListEnd))
         return false;
 
     // Speculatively parse using the default directives implied by the context.
@@ -651,7 +649,7 @@ frontend::CompileLazyFunction(JSContext* cx, Handle<LazyScript*> lazy, const cha
     if (!usedNames.init())
         return false;
     Parser<FullParseHandler> parser(cx, cx->tempLifoAlloc(), options, chars, length,
-                                    /* foldConstants = */ true, usedNames, nullptr, lazy, lazy->parseGoal());
+                                    /* foldConstants = */ true, usedNames, nullptr, lazy);
     if (!parser.checkOptions())
         return false;
 
