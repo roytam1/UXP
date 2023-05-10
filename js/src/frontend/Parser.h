@@ -817,8 +817,6 @@ class ParserBase : public StrictModeGetter
 
     /* AwaitHandling */ uint8_t awaitHandling_:2;
 
-    uint8_t parseGoal_:1;
-
   public:
     bool awaitIsKeyword() const {
         return awaitHandling_ == AwaitIsKeyword || awaitHandling_ == AwaitIsModuleKeyword;
@@ -828,13 +826,13 @@ class ParserBase : public StrictModeGetter
     }
 
     ParseGoal parseGoal() const {
-        return ParseGoal(parseGoal_);
+        return pc->sc()->hasModuleGoal() ? ParseGoal::Module : ParseGoal::Script;
     }
 
     ParserBase(ExclusiveContext* cx, LifoAlloc& alloc, const ReadOnlyCompileOptions& options,
                const char16_t* chars, size_t length, bool foldConstants,
                UsedNameTracker& usedNames, Parser<SyntaxParseHandler>* syntaxParser,
-               LazyScript* lazyOuterFunction, ParseGoal parseGoal);
+               LazyScript* lazyOuterFunction);
     ~ParserBase();
 
     const char* getFilename() const { return tokenStream.getFilename(); }
@@ -1072,7 +1070,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
   public:
     Parser(ExclusiveContext* cx, LifoAlloc& alloc, const ReadOnlyCompileOptions& options,
            const char16_t* chars, size_t length, bool foldConstants, UsedNameTracker& usedNames,
-           Parser<SyntaxParseHandler>* syntaxParser, LazyScript* lazyOuterFunction, ParseGoal parseGoal);
+           Parser<SyntaxParseHandler>* syntaxParser, LazyScript* lazyOuterFunction);
     ~Parser();
 
     friend class AutoAwaitIsKeyword<ParseHandler>;
@@ -1337,7 +1335,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     BinaryNodeType exportBatch(uint32_t begin);
     bool checkLocalExportNames(ListNodeType node);
     Node exportClause(uint32_t begin);
-    UnaryNodeType exportFunctionDeclaration(uint32_t begin);
+    UnaryNodeType exportFunctionDeclaration(uint32_t begin,
+                                            FunctionAsyncKind asyncKind = SyncFunction);
     UnaryNodeType exportVariableStatement(uint32_t begin);
     UnaryNodeType exportClassDeclaration(uint32_t begin);
     UnaryNodeType exportLexicalDeclaration(uint32_t begin, DeclarationKind kind);
