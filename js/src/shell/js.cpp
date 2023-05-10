@@ -71,6 +71,7 @@
 #include "jit/JitcodeMap.h"
 #include "jit/OptimizationTracking.h"
 #include "js/Debug.h"
+#include "js/Equality.h"  // JS::SameValue
 #include "js/GCAPI.h"
 #include "js/Initialization.h"
 #include "js/StructuredClone.h"
@@ -2286,7 +2287,7 @@ AssertEq(JSContext* cx, unsigned argc, Value* vp)
     }
 
     bool same;
-    if (!JS_SameValue(cx, args[0], args[1], &same))
+    if (!JS::SameValue(cx, args[0], args[1], &same))
         return false;
     if (!same) {
         JSAutoByteString bytes0, bytes1;

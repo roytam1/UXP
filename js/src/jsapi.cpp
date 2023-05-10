@@ -392,36 +392,6 @@ JS_TypeOfValue(JSContext* cx, HandleValue value)
 }
 
 JS_PUBLIC_API(bool)
-JS_StrictlyEqual(JSContext* cx, HandleValue value1, HandleValue value2, bool* equal)
-{
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-    assertSameCompartment(cx, value1, value2);
-    MOZ_ASSERT(equal);
-    return StrictlyEqual(cx, value1, value2, equal);
-}
-
-JS_PUBLIC_API(bool)
-JS_LooselyEqual(JSContext* cx, HandleValue value1, HandleValue value2, bool* equal)
-{
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-    assertSameCompartment(cx, value1, value2);
-    MOZ_ASSERT(equal);
-    return LooselyEqual(cx, value1, value2, equal);
-}
-
-JS_PUBLIC_API(bool)
-JS_SameValue(JSContext* cx, HandleValue value1, HandleValue value2, bool* same)
-{
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-    assertSameCompartment(cx, value1, value2);
-    MOZ_ASSERT(same);
-    return SameValue(cx, value1, value2, same);
-}
-
-JS_PUBLIC_API(bool)
 JS_IsBuiltinEvalFunction(JSFunction* fun)
 {
     return IsAnyBuiltinEval(fun);
