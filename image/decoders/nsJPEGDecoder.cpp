@@ -154,6 +154,10 @@ nsJPEGDecoder::InitInternal()
   mSourceMgr.skip_input_data = skip_input_data;
   mSourceMgr.resync_to_restart = jpeg_resync_to_restart;
   mSourceMgr.term_source = term_source;
+  
+  // Limit the maximum allocation to the maximum our surface cache can hold.
+  mInfo.mem->max_memory_to_use = static_cast<long>(
+      std::min<size_t>(SurfaceCache::MaximumCapacity(), LONG_MAX));
 
   // Record app markers for ICC data
   for (uint32_t m = 0; m < 16; m++) {
