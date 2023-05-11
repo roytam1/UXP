@@ -42,6 +42,12 @@ public:
     }
   }
 
+  DOMMatrixReadOnly(nsISupports* aParent, const gfx::Matrix4x4& aMatrix)
+    : mParent(aParent)
+  {
+    mMatrix3D = new gfx::Matrix4x4(aMatrix);
+  }
+
   NS_INLINE_DECL_CYCLE_COLLECTING_NATIVE_REFCOUNTING(DOMMatrixReadOnly)
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_NATIVE_CLASS(DOMMatrixReadOnly)
 
@@ -152,6 +158,10 @@ public:
 
   DOMMatrix(nsISupports* aParent, const DOMMatrixReadOnly& other)
     : DOMMatrixReadOnly(aParent, other)
+  {}
+
+  DOMMatrix(nsISupports* aParent, const gfx::Matrix4x4& aMatrix)
+    : DOMMatrixReadOnly(aParent, aMatrix)
   {}
 
   static already_AddRefed<DOMMatrix>
