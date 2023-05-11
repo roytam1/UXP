@@ -201,9 +201,11 @@ static DllBlockInfo sWindowsDllBlocklist[] = {
   // ESET, bug 1229252
   { "eoppmonitor.dll", ALL_VERSIONS },
 
-  // SS2OSD, bug 1262348
+  // SS2OSD, Sonic Studio, bugs 1262348, 1540883
   { "ss2osd.dll", ALL_VERSIONS },
+  { "ss3osd.dll", ALL_VERSIONS }, 
   { "ss2devprops.dll", ALL_VERSIONS },
+  { "ss3devprops.dll", ALL_VERSIONS },
 
   // NHASUSSTRIXOSD.DLL, bug 1269244
   { "nhasusstrixosd.dll", ALL_VERSIONS },
