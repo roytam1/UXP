@@ -25,6 +25,7 @@ class DOMMatrix;
 class DOMPoint;
 class StringOrUnrestrictedDoubleSequence;
 struct DOMPointInit;
+struct DOMMatrixInit;
 
 class DOMMatrixReadOnly : public nsWrapperCache
 {
@@ -55,6 +56,9 @@ public:
 
   nsISupports* GetParentObject() const { return mParent; }
   virtual JSObject* WrapObject(JSContext* cx, JS::Handle<JSObject*> aGivenProto) override;
+
+  static already_AddRefed<DOMMatrixReadOnly>
+  FromMatrix(const GlobalObject& aGlobal, const DOMMatrixInit& aMatrixInit, ErrorResult& aRv);
 
   static already_AddRefed<DOMMatrixReadOnly>
   Constructor(const GlobalObject& aGlobal, const Optional<StringOrUnrestrictedDoubleSequence>& aArg, ErrorResult& aRv);
@@ -180,7 +184,8 @@ public:
                                               double aAngle) const;
   already_AddRefed<DOMMatrix> SkewX(double aSx) const;
   already_AddRefed<DOMMatrix> SkewY(double aSy) const;
-  already_AddRefed<DOMMatrix> Multiply(const DOMMatrix& aOther) const;
+  already_AddRefed<DOMMatrix> Multiply(const DOMMatrixInit& aOther,
+                                       ErrorResult& aRv) const;
   already_AddRefed<DOMMatrix> FlipX() const;
   already_AddRefed<DOMMatrix> FlipY() const;
   already_AddRefed<DOMMatrix> Inverse() const;
@@ -203,6 +208,13 @@ protected:
   nsAutoPtr<gfx::Matrix4x4> mMatrix3D;
 
   virtual ~DOMMatrixReadOnly() {}
+
+  /**
+   * Sets data from a fully validated and fixed-up matrix init,
+   * where all of its members are properly defined.
+   * The init dictionary's dimension must match the matrix one.
+   */
+  void SetDataFromMatrixInit(DOMMatrixInit& aMatrixInit);
 
   DOMMatrixReadOnly* SetMatrixValue(const nsAString& aTransformList, ErrorResult& aRv);
   void Ensure3DMatrix();
@@ -237,6 +249,11 @@ public:
   {}
 
   static already_AddRefed<DOMMatrix>
+  FromMatrix(nsISupports* aParent, const DOMMatrixInit& aMatrixInit, ErrorResult& aRv);
+  static already_AddRefed<DOMMatrix>
+  FromMatrix(const GlobalObject& aGlobal, const DOMMatrixInit& aMatrixInit, ErrorResult& aRv);
+
+  static already_AddRefed<DOMMatrix>
   Constructor(const GlobalObject& aGlobal, ErrorResult& aRv);
   static already_AddRefed<DOMMatrix>
   Constructor(const GlobalObject& aGlobal, const nsAString& aTransformList, ErrorResult& aRv);
@@ -254,8 +271,8 @@ public:
 
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
-  DOMMatrix* MultiplySelf(const DOMMatrix& aOther);
-  DOMMatrix* PreMultiplySelf(const DOMMatrix& aOther);
+  DOMMatrix* MultiplySelf(const DOMMatrixInit& aOther, ErrorResult& aRv);
+  DOMMatrix* PreMultiplySelf(const DOMMatrixInit& aOther, ErrorResult& aRv);
   DOMMatrix* TranslateSelf(double aTx,
                            double aTy,
                            double aTz = 0);

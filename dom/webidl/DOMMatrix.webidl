@@ -13,6 +13,8 @@
 [Constructor(optional (DOMString or sequence<unrestricted double>) init),
  Exposed=(Window,Worker)]
 interface DOMMatrixReadOnly {
+    [NewObject, Throws] static DOMMatrixReadOnly fromMatrix(optional DOMMatrixInit other);
+
     // These attributes are simple aliases for certain elements of the 4x4 matrix
     readonly attribute unrestricted double a;
     readonly attribute unrestricted double b;
@@ -66,7 +68,7 @@ interface DOMMatrixReadOnly {
                               unrestricted double angle);
     DOMMatrix skewX(unrestricted double sx);
     DOMMatrix skewY(unrestricted double sy);
-    DOMMatrix multiply(DOMMatrix other);
+    [NewObject, Throws] DOMMatrix multiply(optional DOMMatrixInit other);
     DOMMatrix flipX();
     DOMMatrix flipY();
     DOMMatrix inverse();
@@ -88,6 +90,8 @@ interface DOMMatrixReadOnly {
  Constructor(sequence<unrestricted double> numberSequence),
  Exposed=(Window,Worker)]
 interface DOMMatrix : DOMMatrixReadOnly {
+    [NewObject, Throws] static DOMMatrix fromMatrix(optional DOMMatrixInit other);
+
     // These attributes are simple aliases for certain elements of the 4x4 matrix
     inherit attribute unrestricted double a;
     inherit attribute unrestricted double b;
@@ -114,8 +118,8 @@ interface DOMMatrix : DOMMatrixReadOnly {
     inherit attribute unrestricted double m44;
 
     // Mutable transform methods
-    DOMMatrix multiplySelf(DOMMatrix other);
-    DOMMatrix preMultiplySelf(DOMMatrix other);
+    [Throws] DOMMatrix multiplySelf(optional DOMMatrixInit other);
+    [Throws] DOMMatrix preMultiplySelf(optional DOMMatrixInit other);
     DOMMatrix translateSelf(unrestricted double tx,
                             unrestricted double ty,
                             optional unrestricted double tz = 0);
@@ -147,3 +151,31 @@ interface DOMMatrix : DOMMatrixReadOnly {
     [Exposed=Window, Throws] DOMMatrix setMatrixValue(DOMString transformList);
 };
 
+dictionary DOMMatrix2DInit {
+    unrestricted double a;
+    unrestricted double b;
+    unrestricted double c;
+    unrestricted double d;
+    unrestricted double e;
+    unrestricted double f;
+    unrestricted double m11;
+    unrestricted double m12;
+    unrestricted double m21;
+    unrestricted double m22;
+    unrestricted double m41;
+    unrestricted double m42;
+};
+
+dictionary DOMMatrixInit : DOMMatrix2DInit {
+    unrestricted double m13 = 0;
+    unrestricted double m14 = 0;
+    unrestricted double m23 = 0;
+    unrestricted double m24 = 0;
+    unrestricted double m31 = 0;
+    unrestricted double m32 = 0;
+    unrestricted double m33 = 1;
+    unrestricted double m34 = 0;
+    unrestricted double m43 = 0;
+    unrestricted double m44 = 1;
+    boolean is2D;
+};
