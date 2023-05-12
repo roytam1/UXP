@@ -176,9 +176,9 @@ const getRelativeRect = function (node, relativeTo) {
   // Width and Height can be taken from the rect.
   let {width, height} = node.getBoundingClientRect();
 
-  let quads = node.getBoxQuads({relativeTo});
-  let top = quads[0].bounds.top;
-  let left = quads[0].bounds.left;
+  let quadBounds = node.getBoxQuads({relativeTo})[0].getBounds();
+  let top = quadBounds.top;
+  let left = quadBounds.left;
 
   // Compute right and bottom coordinates using the rest of the data.
   let right = left + width;
