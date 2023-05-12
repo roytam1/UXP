@@ -24,6 +24,7 @@ class DOMPoint;
 struct DOMQuadJSON;
 struct DOMPointInit;
 struct DOMQuadInit;
+struct DOMRectInit;
 
 class DOMQuad final : public nsWrapperCache
 {
