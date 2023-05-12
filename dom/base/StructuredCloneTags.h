@@ -30,6 +30,15 @@ enum StructuredCloneTags {
 
   // New IDB tags go here!
 
+  // Tags for Geometry interfaces.
+  SCTAG_DOM_DOMPOINT,
+  SCTAG_DOM_DOMPOINT_READONLY,
+  SCTAG_DOM_DOMQUAD,
+  SCTAG_DOM_DOMRECT,
+  SCTAG_DOM_DOMRECT_READONLY,
+  SCTAG_DOM_DOMMATRIX,
+  SCTAG_DOM_DOMMATRIX_READONLY,
+
   // These tags are used for both main thread and workers.
   SCTAG_DOM_IMAGEDATA,
   SCTAG_DOM_MAP_MESSAGEPORT,

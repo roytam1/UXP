@@ -6,6 +6,7 @@
 #ifndef MOZILLA_DOM_DOMMATRIX_H_
 #define MOZILLA_DOM_DOMMATRIX_H_
 
+#include "js/StructuredClone.h"
 #include "nsWrapperCache.h"
 #include "nsISupports.h"
 #include "nsCycleCollectionParticipant.h"
@@ -57,6 +58,12 @@ public:
 
   static already_AddRefed<DOMMatrixReadOnly>
   Constructor(const GlobalObject& aGlobal, const Optional<StringOrUnrestrictedDoubleSequence>& aArg, ErrorResult& aRv);
+
+  static already_AddRefed<DOMMatrixReadOnly>
+  ReadStructuredClone(nsISupports* aParent, JSStructuredCloneReader* aReader);
+
+  static bool
+  ReadStructuredCloneElements(JSStructuredCloneReader* aReader, DOMMatrixReadOnly* matrix);
 
 #define GetMatrixMember(entry2D, entry3D, default) \
 { \
@@ -188,6 +195,8 @@ public:
                                              JS::MutableHandle<JSObject*> aResult,
                                              ErrorResult& aRv) const;
   void                        Stringify(nsAString& aResult);
+  bool                        WriteStructuredClone(JSStructuredCloneWriter* aWriter) const;
+
 protected:
   nsCOMPtr<nsISupports>     mParent;
   nsAutoPtr<gfx::Matrix>    mMatrix2D;
@@ -197,6 +206,14 @@ protected:
 
   DOMMatrixReadOnly* SetMatrixValue(const nsAString& aTransformList, ErrorResult& aRv);
   void Ensure3DMatrix();
+
+  DOMMatrixReadOnly(nsISupports* aParent, bool is2D) : mParent(aParent) {
+    if (is2D) {
+      mMatrix2D = new gfx::Matrix();
+    } else {
+      mMatrix3D = new gfx::Matrix4x4();
+    }
+  }
 
 private:
   DOMMatrixReadOnly() = delete;
@@ -231,6 +248,9 @@ public:
   Constructor(const GlobalObject& aGlobal, const Float64Array& aArray64, ErrorResult& aRv);
   static already_AddRefed<DOMMatrix>
   Constructor(const GlobalObject& aGlobal, const Sequence<double>& aNumberSequence, ErrorResult& aRv);
+
+  static already_AddRefed<DOMMatrix>
+  ReadStructuredClone(nsISupports* aParent, JSStructuredCloneReader* aReader);
 
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
@@ -267,6 +287,10 @@ public:
   DOMMatrix* SetMatrixValue(const nsAString& aTransformList, ErrorResult& aRv);
 
   virtual ~DOMMatrix() {}
+
+ private:
+  DOMMatrix(nsISupports* aParent, bool is2D)
+      : DOMMatrixReadOnly(aParent, is2D) {}
 };
 
 } // namespace dom
