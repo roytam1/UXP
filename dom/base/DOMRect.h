@@ -32,8 +32,13 @@ public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(DOMRectReadOnly)
 
-  explicit DOMRectReadOnly(nsISupports* aParent)
+  explicit DOMRectReadOnly(nsISupports* aParent, double aX = 0, double aY = 0,
+                           double aWidth = 0, double aHeight = 0)
     : mParent(aParent)
+    , mX(aX)
+    , mY(aY)
+    , mWidth(aWidth)
+    , mHeight(aHeight)
   {
   }
 
@@ -44,10 +49,26 @@ public:
   }
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
-  virtual double X() const = 0;
-  virtual double Y() const = 0;
-  virtual double Width() const = 0;
-  virtual double Height() const = 0;
+  static already_AddRefed<DOMRectReadOnly>
+  Constructor(const GlobalObject& aGlobal, double aX, double aY,
+              double aWidth, double aHeight, ErrorResult& aRv);
+
+  double X() const
+  {
+    return mX;
+  }
+  double Y() const
+  {
+    return mY;
+  }
+  double Width() const
+  {
+    return mWidth;
+  }
+  double Height() const
+  {
+    return mHeight;
+  }
 
   double Left() const
   {
@@ -72,6 +93,7 @@ public:
 
 protected:
   nsCOMPtr<nsISupports> mParent;
+  double mX, mY, mWidth, mHeight;
 };
 
 class DOMRect final : public DOMRectReadOnly
@@ -80,22 +102,16 @@ class DOMRect final : public DOMRectReadOnly
 public:
   explicit DOMRect(nsISupports* aParent, double aX = 0, double aY = 0,
                    double aWidth = 0, double aHeight = 0)
-    : DOMRectReadOnly(aParent)
-    , mX(aX)
-    , mY(aY)
-    , mWidth(aWidth)
-    , mHeight(aHeight)
+    : DOMRectReadOnly(aParent, aX, aY, aWidth, aHeight)
   {
   }
-  
+
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_NSIDOMCLIENTRECT
 
   static already_AddRefed<DOMRect>
-  Constructor(const GlobalObject& aGlobal, ErrorResult& aRV);
-  static already_AddRefed<DOMRect>
   Constructor(const GlobalObject& aGlobal, double aX, double aY,
-              double aWidth, double aHeight, ErrorResult& aRV);
+              double aWidth, double aHeight, ErrorResult& aRv);
 
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
@@ -103,23 +119,6 @@ public:
     mX = aX; mY = aY; mWidth = aWidth; mHeight = aHeight;
   }
   void SetLayoutRect(const nsRect& aLayoutRect);
-
-  virtual double X() const override
-  {
-    return mX;
-  }
-  virtual double Y() const override
-  {
-    return mY;
-  }
-  virtual double Width() const override
-  {
-    return mWidth;
-  }
-  virtual double Height() const override
-  {
-    return mHeight;
-  }
 
   void SetX(double aX)
   {
@@ -138,11 +137,8 @@ public:
     mHeight = aHeight;
   }
 
-protected:
-  double mX, mY, mWidth, mHeight;
-
 private:
-  ~DOMRect() {};
+  ~DOMRect() {}
 };
 
 class DOMRectList final : public nsIDOMClientRectList,
