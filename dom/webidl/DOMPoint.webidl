@@ -10,8 +10,7 @@
  * liability, trademark and document use rules apply.
  */
 
-[Pref="layout.css.DOMPoint.enabled",
- Constructor(optional unrestricted double x = 0, optional unrestricted double y = 0,
+[Constructor(optional unrestricted double x = 0, optional unrestricted double y = 0,
              optional unrestricted double z = 0, optional unrestricted double w = 1),
  Exposed=(Window,Worker)]
 interface DOMPointReadOnly {
@@ -21,12 +20,9 @@ interface DOMPointReadOnly {
     readonly attribute unrestricted double y;
     readonly attribute unrestricted double z;
     readonly attribute unrestricted double w; 
-
-    [Default] object toJSON();
 };
 
-[Pref="layout.css.DOMPoint.enabled",
- Constructor(optional unrestricted double x = 0, optional unrestricted double y = 0,
+[Constructor(optional unrestricted double x = 0, optional unrestricted double y = 0,
              optional unrestricted double z = 0, optional unrestricted double w = 1),
  Exposed=(Window,Worker)]
 interface DOMPoint : DOMPointReadOnly {

@@ -10,8 +10,7 @@
  * liability, trademark and document use rules apply.
  */
 
-[Pref="layout.css.DOMQuad.enabled",
- Constructor(optional DOMPointInit p1, optional DOMPointInit p2,
+[Constructor(optional DOMPointInit p1, optional DOMPointInit p2,
              optional DOMPointInit p3, optional DOMPointInit p4),
  Constructor(DOMRectReadOnly rect),
  Exposed=(Window,Worker)]

@@ -10,8 +10,7 @@
  * liability, trademark and document use rules apply.
  */
 
-[Pref="layout.css.DOMMatrix.enabled",
- Constructor(optional (DOMString or sequence<unrestricted double>) init),
+[Constructor(optional (DOMString or sequence<unrestricted double>) init),
  Exposed=(Window,Worker)]
 interface DOMMatrixReadOnly {
     // These attributes are simple aliases for certain elements of the 4x4 matrix
@@ -79,11 +78,9 @@ interface DOMMatrixReadOnly {
     [Throws] Float32Array      toFloat32Array();
     [Throws] Float64Array      toFloat64Array();
     [Exposed=Window]           stringifier;
-    [Default] object           toJSON();
 };
 
-[Pref="layout.css.DOMMatrix.enabled",
- Constructor,
+[Constructor,
  Constructor(DOMString transformList),
  Constructor(DOMMatrixReadOnly other),
  Constructor(Float32Array array32),
