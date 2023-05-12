@@ -20,8 +20,7 @@ static const double sRadPerDegree = 2.0 * M_PI / 360.0;
 bool
 WebKitCSSMatrix::FeatureEnabled(JSContext* aCx, JSObject* aObj)
 {
-  return Preferences::GetBool("layout.css.DOMMatrix.enabled", false) &&
-         Preferences::GetBool("layout.css.prefixes.webkit", false);
+  return Preferences::GetBool("layout.css.prefixes.webkit", false);
 }
 
 already_AddRefed<WebKitCSSMatrix>

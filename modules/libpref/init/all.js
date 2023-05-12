@@ -2501,15 +2501,6 @@ pref("layout.css.scroll-snap.prediction-sensitivity", "0.750");
 // Is support for basic shapes in clip-path enabled?
 pref("layout.css.clip-path-shapes.enabled", true);
 
-// Is support for DOMPoint enabled?
-pref("layout.css.DOMPoint.enabled", true);
-
-// Is support for DOMQuad enabled?
-pref("layout.css.DOMQuad.enabled", true);
-
-// Is support for DOMMatrix enabled?
-pref("layout.css.DOMMatrix.enabled", true);
-
 // Is support for GeometryUtils.getBoxQuads enabled?
 pref("layout.css.getBoxQuads.enabled", true);
 
