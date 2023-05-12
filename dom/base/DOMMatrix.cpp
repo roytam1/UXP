@@ -163,6 +163,35 @@ DOMMatrixReadOnly::FromMatrix(const GlobalObject& aGlobal, const DOMMatrixInit& 
   return rval.forget();
 }
 
+
+already_AddRefed<DOMMatrixReadOnly>
+DOMMatrixReadOnly::FromFloat32Array(const GlobalObject& aGlobal, const Float32Array& aArray32, ErrorResult& aRv)
+{
+  aArray32.ComputeLengthAndData();
+
+  const int length = aArray32.Length();
+  const bool is2D = length == 6;
+  RefPtr<DOMMatrixReadOnly> obj =
+      new DOMMatrixReadOnly(aGlobal.GetAsSupports(), is2D);
+  SetDataInMatrix(obj, aArray32.Data(), length, aRv);
+
+  return obj.forget();
+}
+
+already_AddRefed<DOMMatrixReadOnly>
+DOMMatrixReadOnly::FromFloat64Array(const GlobalObject& aGlobal, const Float64Array& aArray64, ErrorResult& aRv)
+{
+  aArray64.ComputeLengthAndData();
+
+  const int length = aArray64.Length();
+  const bool is2D = length == 6;
+  RefPtr<DOMMatrixReadOnly> obj =
+      new DOMMatrixReadOnly(aGlobal.GetAsSupports(), is2D);
+  SetDataInMatrix(obj, aArray64.Data(), length, aRv);
+
+  return obj.forget();
+}
+
 already_AddRefed<DOMMatrixReadOnly>
 DOMMatrixReadOnly::Constructor(
   const GlobalObject& aGlobal,
@@ -574,6 +603,32 @@ DOMMatrix::FromMatrix(const GlobalObject& aGlobal, const DOMMatrixInit& aMatrixI
 }
 
 already_AddRefed<DOMMatrix>
+DOMMatrix::FromFloat32Array(const GlobalObject& aGlobal, const Float32Array& aArray32, ErrorResult& aRv)
+{
+  aArray32.ComputeLengthAndData();
+
+  const int length = aArray32.Length();
+  const bool is2D = length == 6;
+  RefPtr<DOMMatrix> obj = new DOMMatrix(aGlobal.GetAsSupports(), is2D);
+  SetDataInMatrix(obj, aArray32.Data(), length, aRv);
+
+  return obj.forget();
+}
+
+already_AddRefed<DOMMatrix>
+DOMMatrix::FromFloat64Array(const GlobalObject& aGlobal, const Float64Array& aArray64, ErrorResult& aRv)
+{
+  aArray64.ComputeLengthAndData();
+
+  const int length = aArray64.Length();
+  const bool is2D = length == 6;
+  RefPtr<DOMMatrix> obj = new DOMMatrix(aGlobal.GetAsSupports(), is2D);
+  SetDataInMatrix(obj, aArray64.Data(), length, aRv);
+
+  return obj.forget();
+}
+
+already_AddRefed<DOMMatrix>
 DOMMatrix::Constructor(const GlobalObject& aGlobal, ErrorResult& aRv)
 {
   RefPtr<DOMMatrix> obj = new DOMMatrix(aGlobal.GetAsSupports());
@@ -639,21 +694,13 @@ SetDataInMatrix(DOMMatrixReadOnly* aMatrix, const T* aData, int aLength, ErrorRe
 already_AddRefed<DOMMatrix>
 DOMMatrix::Constructor(const GlobalObject& aGlobal, const Float32Array& aArray32, ErrorResult& aRv)
 {
-  RefPtr<DOMMatrix> obj = new DOMMatrix(aGlobal.GetAsSupports());
-  aArray32.ComputeLengthAndData();
-  SetDataInMatrix(obj, aArray32.Data(), aArray32.Length(), aRv);
-
-  return obj.forget();
+  return FromFloat32Array(aGlobal, aArray32, aRv);
 }
 
 already_AddRefed<DOMMatrix>
 DOMMatrix::Constructor(const GlobalObject& aGlobal, const Float64Array& aArray64, ErrorResult& aRv)
 {
-  RefPtr<DOMMatrix> obj = new DOMMatrix(aGlobal.GetAsSupports());
-  aArray64.ComputeLengthAndData();
-  SetDataInMatrix(obj, aArray64.Data(), aArray64.Length(), aRv);
-
-  return obj.forget();
+  return FromFloat64Array(aGlobal, aArray64, aRv);
 }
 
 already_AddRefed<DOMMatrix>
