@@ -15,6 +15,9 @@
  Constructor(DOMRectReadOnly rect),
  Exposed=(Window,Worker)]
 interface DOMQuad {
+    [NewObject] static DOMQuad fromRect(optional DOMRectInit other);
+    [NewObject] static DOMQuad fromQuad(optional DOMQuadInit other);
+
     [SameObject] readonly attribute DOMPoint p1;
     [SameObject] readonly attribute DOMPoint p2;
     [SameObject] readonly attribute DOMPoint p3;
@@ -34,8 +37,8 @@ dictionary DOMQuadJSON {
 };
 
 dictionary DOMQuadInit {
-    DOMPointInit p1;
-    DOMPointInit p2;
-    DOMPointInit p3;
-    DOMPointInit p4;
+    DOMPointInit p1 = null;
+    DOMPointInit p2 = null;
+    DOMPointInit p3 = null;
+    DOMPointInit p4 = null;
 };

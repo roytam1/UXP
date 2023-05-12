@@ -14,6 +14,8 @@
              optional unrestricted double width = 0, optional unrestricted double height = 0),
  Exposed=(Window,Worker)]
 interface DOMRect : DOMRectReadOnly {
+    [NewObject] static DOMRect fromRect(optional DOMRectInit other);
+
     inherit attribute unrestricted double x;
     inherit attribute unrestricted double y;
     inherit attribute unrestricted double width;
@@ -24,6 +26,8 @@ interface DOMRect : DOMRectReadOnly {
              optional unrestricted double width = 0, optional unrestricted double height = 0),
  Exposed=(Window,Worker)]
 interface DOMRectReadOnly {
+    [NewObject] static DOMRectReadOnly fromRect(optional DOMRectInit other);
+
     readonly attribute unrestricted double x;
     readonly attribute unrestricted double y;
     readonly attribute unrestricted double width;

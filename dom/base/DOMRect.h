@@ -23,6 +23,8 @@ struct nsRect;
 namespace mozilla {
 namespace dom {
 
+struct DOMRectInit;
+
 class DOMRectReadOnly : public nsISupports
                       , public nsWrapperCache
 {
@@ -49,6 +51,9 @@ public:
     return mParent;
   }
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
+
+  static already_AddRefed<DOMRectReadOnly>
+  FromRect(const GlobalObject& aGlobal, const DOMRectInit& aInit);
 
   static already_AddRefed<DOMRectReadOnly>
   Constructor(const GlobalObject& aGlobal, double aX, double aY,
@@ -113,6 +118,9 @@ public:
 
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_NSIDOMCLIENTRECT
+
+  static already_AddRefed<DOMRect>
+  FromRect(const GlobalObject& aGlobal, const DOMRectInit& aInit);
 
   static already_AddRefed<DOMRect>
   Constructor(const GlobalObject& aGlobal, double aX, double aY,
