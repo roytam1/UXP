@@ -675,6 +675,11 @@ protected:
   bool SkipAtRule(bool aInsideBlock);
   bool SkipDeclaration(bool aCheckForBraces);
 
+  // Returns true when the target token type is found, and false for the
+  // end of declaration, start of !important flag, end of declaration
+  // block, or EOF.
+  bool LookForTokenType(nsCSSTokenType aType);
+
   void PushGroup(css::GroupRule* aRule);
   void PopGroup();
 
@@ -5413,6 +5418,33 @@ CSSParserImpl::SkipDeclaration(bool aCheckForBraces)
   return true;
 }
 
+bool
+CSSParserImpl::LookForTokenType(nsCSSTokenType aType) {
+  bool rv = false;
+  CSSParserInputState stateBeforeValue;
+  SaveInputState(stateBeforeValue);
+
+  const char16_t stopChars[] = { ';', '!', '}', 0 };
+  nsDependentString stopSymbolChars(stopChars);
+  while (GetToken(true)) {
+    // The current function has percentage values.
+    if (mToken.mType == eCSSToken_Percentage) {
+      rv = true;
+      break;
+    }
+    // Stop looking if we're at the end of the declaration, encountered an
+    // !important flag, or at the end of the declaration block.
+    if (mToken.mType == eCSSToken_Symbol &&
+        stopSymbolChars.FindChar(mToken.mSymbol) != -1) {
+      rv = false;
+      break;
+    }
+  }
+
+  RestoreSavedInputState(stateBeforeValue);
+  return rv;
+}
+
 void
 CSSParserImpl::SkipRuleSet(bool aInsideBraces)
 {
@@ -7005,7 +7037,15 @@ CSSParserImpl::ParseColor(nsCSSValue& aValue)
         if (GetToken(true)) {
           UngetToken();
         }
-        if (mToken.mType == eCSSToken_Number) { // <number>
+
+        bool isNumber = mToken.mType == eCSSToken_Number;
+
+        // Check first if we have percentage values inside the function.
+        if (mToken.mType == eCSSToken_Function) {
+          isNumber = !LookForTokenType(eCSSToken_Percentage);
+        }
+
+        if (isNumber) { // <number>
           uint8_t r, g, b, a;
 
           if (ParseRGBColor(r, g, b, a)) {
@@ -7112,13 +7152,21 @@ CSSParserImpl::ParseColorComponent(uint8_t& aComponent, Maybe<char> aSeparator)
     return false;
   }
 
-  if (mToken.mType != eCSSToken_Number) {
+  float value;
+  if (mToken.mType == eCSSToken_Number) {
+    value = mToken.mNumber;
+  } else if (IsCalcFunctionToken(mToken)) {
+    nsCSSValue aValue;
+    if (!ParseCalc(aValue, VARIANT_LPN | VARIANT_CALC)) {
+      return false;
+    }
+    ReduceNumberCalcOps ops;
+    value = mozilla::css::ComputeCalc(aValue, ops);
+  } else {
     REPORT_UNEXPECTED_TOKEN(PEExpectedNumber);
     UngetToken();
     return false;
   }
-
-  float value = mToken.mNumber;
 
   if (aSeparator && !ExpectSymbol(*aSeparator, true)) {
     REPORT_UNEXPECTED_TOKEN_CHAR(PEColorComponentBadTerm, *aSeparator);
@@ -7140,13 +7188,21 @@ CSSParserImpl::ParseColorComponent(float& aComponent, Maybe<char> aSeparator)
     return false;
   }
 
-  if (mToken.mType != eCSSToken_Percentage) {
+  float value;
+  if (mToken.mType == eCSSToken_Percentage) {
+    value = mToken.mNumber;
+  } else if (IsCalcFunctionToken(mToken)) {
+    nsCSSValue aValue;
+    if (!ParseCalc(aValue, VARIANT_LPN | VARIANT_CALC)) {
+      return false;
+    }
+    ReduceNumberCalcOps ops;
+    value = mozilla::css::ComputeCalc(aValue, ops);
+  } else {
     REPORT_UNEXPECTED_TOKEN(PEExpectedPercent);
     UngetToken();
     return false;
   }
-
-  float value = mToken.mNumber;
 
   if (aSeparator && !ExpectSymbol(*aSeparator, true)) {
     REPORT_UNEXPECTED_TOKEN_CHAR(PEColorComponentBadTerm, *aSeparator);
