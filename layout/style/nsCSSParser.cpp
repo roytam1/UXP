@@ -5427,8 +5427,7 @@ CSSParserImpl::LookForTokenType(nsCSSTokenType aType) {
   const char16_t stopChars[] = { ';', '!', '}', 0 };
   nsDependentString stopSymbolChars(stopChars);
   while (GetToken(true)) {
-    // The current function has percentage values.
-    if (mToken.mType == eCSSToken_Percentage) {
+    if (mToken.mType == aType) {
       rv = true;
       break;
     }
