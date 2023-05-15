@@ -11,6 +11,7 @@
 #include "gc/Marking.h"
 #include "js/Value.h"
 #include "vm/Debugger.h"
+#include "vm/EqualityOperations.h"  // js::SameValue
 #include "vm/TypedArrayCommon.h"
 
 #include "jsobjinlines.h"

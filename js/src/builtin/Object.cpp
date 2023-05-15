@@ -15,6 +15,7 @@
 #include "jit/InlinableNatives.h"
 #include "js/UniquePtr.h"
 #include "vm/AsyncFunction.h"
+#include "vm/EqualityOperations.h"  // js::SameValue
 #include "vm/StringBuffer.h"
 
 #include "jsobjinlines.h"
