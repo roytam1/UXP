@@ -3071,7 +3071,10 @@ function nodeHasSize(node) {
   }
 
   let quads = node.getBoxQuads();
-  return quads.length && quads.some(quad => quad.bounds.width && quad.bounds.height);
+  return quads.some(quad => {
+    let bounds = quad.getBounds();
+    return bounds.width && bounds.height;
+  });
 }
 
 /**

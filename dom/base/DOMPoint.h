@@ -6,6 +6,7 @@
 #ifndef MOZILLA_DOMPOINT_H_
 #define MOZILLA_DOMPOINT_H_
 
+#include "js/StructuredClone.h"
 #include "nsWrapperCache.h"
 #include "nsISupports.h"
 #include "nsCycleCollectionParticipant.h"
@@ -23,8 +24,8 @@ struct DOMPointInit;
 class DOMPointReadOnly : public nsWrapperCache
 {
 public:
-  DOMPointReadOnly(nsISupports* aParent, double aX, double aY,
-                   double aZ, double aW)
+  explicit DOMPointReadOnly(nsISupports* aParent, double aX = 0.0,
+                            double aY = 0.0, double aZ = 0.0, double aW = 1.0)
     : mParent(aParent)
     , mX(aX)
     , mY(aY)
@@ -33,6 +34,12 @@ public:
   {
   }
 
+  static already_AddRefed<DOMPointReadOnly>
+  FromPoint(const GlobalObject& aGlobal, const DOMPointInit& aParams);
+  static already_AddRefed<DOMPointReadOnly>
+  Constructor(const GlobalObject& aGlobal, double aX, double aY,
+              double aZ, double aW, ErrorResult& aRV);
+
   NS_INLINE_DECL_CYCLE_COLLECTING_NATIVE_REFCOUNTING(DOMPointReadOnly)
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_NATIVE_CLASS(DOMPointReadOnly)
 
@@ -40,6 +47,13 @@ public:
   double Y() const { return mY; }
   double Z() const { return mZ; }
   double W() const { return mW; }
+
+  nsISupports* GetParentObject() const { return mParent; }
+  virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
+
+  bool WriteStructuredClone(JSStructuredCloneWriter* aWriter) const;
+
+  bool ReadStructuredClone(JSStructuredCloneReader* aReader);
 
 protected:
   virtual ~DOMPointReadOnly() {}
@@ -57,13 +71,11 @@ public:
   {}
 
   static already_AddRefed<DOMPoint>
-  Constructor(const GlobalObject& aGlobal, const DOMPointInit& aParams,
-              ErrorResult& aRV);
+  FromPoint(const GlobalObject& aGlobal, const DOMPointInit& aParams);
   static already_AddRefed<DOMPoint>
   Constructor(const GlobalObject& aGlobal, double aX, double aY,
               double aZ, double aW, ErrorResult& aRV);
 
-  nsISupports* GetParentObject() const { return mParent; }
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
   void SetX(double aX) { mX = aX; }

@@ -7,6 +7,8 @@
 
 #include "jsapi.h"
 
+#include "vm/EqualityOperations.h"  // js::SameValue
+
 #include "jsobjinlines.h"
 #include "vm/NativeObject-inl.h"
 
