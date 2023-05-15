@@ -27,6 +27,59 @@ DOMRectReadOnly::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
   return DOMRectReadOnlyBinding::Wrap(aCx, this, aGivenProto);
 }
 
+already_AddRefed<DOMRectReadOnly>
+DOMRectReadOnly::FromRect(const GlobalObject& aGlobal, const DOMRectInit& aInit)
+{
+  RefPtr<DOMRectReadOnly> obj = new DOMRectReadOnly(
+      aGlobal.GetAsSupports(), aInit.mX, aInit.mY, aInit.mWidth, aInit.mHeight);
+  return obj.forget();
+}
+
+already_AddRefed<DOMRectReadOnly>
+DOMRectReadOnly::Constructor(const GlobalObject& aGlobal, double aX, double aY,
+                             double aWidth, double aHeight, ErrorResult& aRv)
+{
+  RefPtr<DOMRectReadOnly> obj =
+    new DOMRectReadOnly(aGlobal.GetAsSupports(), aX, aY, aWidth, aHeight);
+  return obj.forget();
+}
+
+// https://drafts.fxtf.org/geometry/#structured-serialization
+bool
+DOMRectReadOnly::WriteStructuredClone(JSStructuredCloneWriter* aWriter) const
+{
+#define WriteDouble(d)                                                       \
+  JS_WriteUint32Pair(aWriter, (BitwiseCast<uint64_t>(d) >> 32) & 0xffffffff, \
+                     BitwiseCast<uint64_t>(d) & 0xffffffff)
+
+  return WriteDouble(mX) && WriteDouble(mY) && WriteDouble(mWidth) &&
+         WriteDouble(mHeight);
+
+#undef WriteDouble
+}
+
+bool
+DOMRectReadOnly::ReadStructuredClone(JSStructuredCloneReader* aReader)
+{
+  uint32_t high;
+  uint32_t low;
+
+#define ReadDouble(d)                             \
+  if (!JS_ReadUint32Pair(aReader, &high, &low)) { \
+    return false;                                 \
+  }                                               \
+  (*(d) = BitwiseCast<double>(static_cast<uint64_t>(high) << 32 | low))
+
+  ReadDouble(&mX);
+  ReadDouble(&mY);
+  ReadDouble(&mWidth);
+  ReadDouble(&mHeight);
+
+  return true;
+
+#undef ReadDouble
+}
+
 // -----------------------------------------------------------------------------
 
 NS_IMPL_ISUPPORTS_INHERITED(DOMRect, DOMRectReadOnly, nsIDOMClientRect)
@@ -54,16 +107,16 @@ DOMRect::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 }
 
 already_AddRefed<DOMRect>
-DOMRect::Constructor(const GlobalObject& aGlobal, ErrorResult& aRV)
+DOMRect::FromRect(const GlobalObject& aGlobal, const DOMRectInit& aInit)
 {
-  RefPtr<DOMRect> obj =
-    new DOMRect(aGlobal.GetAsSupports(), 0.0, 0.0, 0.0, 0.0);
+  RefPtr<DOMRect> obj = new DOMRect(aGlobal.GetAsSupports(), aInit.mX, aInit.mY,
+                                    aInit.mWidth, aInit.mHeight);
   return obj.forget();
 }
 
 already_AddRefed<DOMRect>
 DOMRect::Constructor(const GlobalObject& aGlobal, double aX, double aY,
-                     double aWidth, double aHeight, ErrorResult& aRV)
+                     double aWidth, double aHeight, ErrorResult& aRv)
 {
   RefPtr<DOMRect> obj =
     new DOMRect(aGlobal.GetAsSupports(), aX, aY, aWidth, aHeight);

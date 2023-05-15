@@ -20,8 +20,7 @@ static const double sRadPerDegree = 2.0 * M_PI / 360.0;
 bool
 WebKitCSSMatrix::FeatureEnabled(JSContext* aCx, JSObject* aObj)
 {
-  return Preferences::GetBool("layout.css.DOMMatrix.enabled", false) &&
-         Preferences::GetBool("layout.css.prefixes.webkit", false);
+  return Preferences::GetBool("layout.css.prefixes.webkit", false);
 }
 
 already_AddRefed<WebKitCSSMatrix>
@@ -115,10 +114,10 @@ WebKitCSSMatrix::SetMatrixValue(const nsAString& aTransformList,
 }
 
 already_AddRefed<WebKitCSSMatrix>
-WebKitCSSMatrix::Multiply(const WebKitCSSMatrix& other) const
+WebKitCSSMatrix::Multiply(const DOMMatrixInit& aOtherInit, ErrorResult& aRv) const
 {
   RefPtr<WebKitCSSMatrix> retval = new WebKitCSSMatrix(mParent, *this);
-  retval->MultiplySelf(other);
+  retval->MultiplySelf(aOtherInit, aRv);
 
   return retval.forget();
 }

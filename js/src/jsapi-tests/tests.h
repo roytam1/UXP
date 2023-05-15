@@ -18,6 +18,7 @@
 #include "jscntxt.h"
 #include "jsgc.h"
 
+#include "js/Equality.h"  // JS::SameValue
 #include "js/Vector.h"
 
 /* Note: Aborts on OOM. */
@@ -201,9 +202,9 @@ class JSAPITest
                    const char* filename, int lineno) {
         bool same;
         JS::RootedValue actual(cx, actualArg), expected(cx, expectedArg);
-        return (JS_SameValue(cx, actual, expected, &same) && same) ||
-               fail(JSAPITestString("CHECK_SAME failed: expected JS_SameValue(cx, ") +
-                    actualExpr + ", " + expectedExpr + "), got !JS_SameValue(cx, " +
+        return (JS::SameValue(cx, actual, expected, &same) && same) ||
+               fail(JSAPITestString("CHECK_SAME failed: expected JS::SameValue(cx, ") +
+                    actualExpr + ", " + expectedExpr + "), got !JS::SameValue(cx, " +
                     jsvalToSource(actual) + ", " + jsvalToSource(expected) + ")", filename, lineno);
     }
 

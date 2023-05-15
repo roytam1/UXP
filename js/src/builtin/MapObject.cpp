@@ -12,6 +12,7 @@
 #include "ds/OrderedHashTable.h"
 #include "gc/Marking.h"
 #include "js/Utility.h"
+#include "vm/EqualityOperations.h"  // js::SameValue
 #include "vm/GlobalObject.h"
 #include "vm/Interpreter.h"
 #include "vm/SelfHosting.h"

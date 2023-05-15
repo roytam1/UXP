@@ -78,9 +78,9 @@ function* runTests(doc) {
     ok(arrow, "Tooltip has an arrow");
 
     // Get the geometry of the anchor, the tooltip panel & arrow.
-    let arrowBounds = arrow.getBoxQuads({relativeTo: doc})[0].bounds;
-    let panelBounds = tooltip.panel.getBoxQuads({relativeTo: doc})[0].bounds;
-    let anchorBounds = el.getBoxQuads({relativeTo: doc})[0].bounds;
+    let arrowBounds = arrow.getBoxQuads({relativeTo: doc})[0].getBounds();
+    let panelBounds = tooltip.panel.getBoxQuads({relativeTo: doc})[0].getBounds();
+    let anchorBounds = el.getBoxQuads({relativeTo: doc})[0].getBounds();
 
     let intersects = arrowBounds.left <= anchorBounds.right &&
                      arrowBounds.right >= anchorBounds.left;
