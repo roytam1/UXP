@@ -474,6 +474,8 @@ elif CONFIG['JS_CODEGEN_ARM']:
             'jit/arm/llvm-compiler-rt/arm/aeabi_idivmod.S',
             'jit/arm/llvm-compiler-rt/arm/aeabi_uidivmod.S',
         ]
+    else:
+        jit_ioncheck2_deunified_sources = []
 elif CONFIG['JS_CODEGEN_ARM64']:
     jit_ioncheck1_deunified_sources = [
         'jit/arm64/Architecture-arm64.cpp',
@@ -504,6 +506,8 @@ elif CONFIG['JS_CODEGEN_ARM64']:
             'jit/arm64/vixl/MozSimulator-vixl.cpp',
             'jit/arm64/vixl/Simulator-vixl.cpp'
         ]
+    else:
+        jit_ioncheck2_deunified_sources = []
 elif CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
     jit_ioncheck1_deunified_sources = [
         'jit/mips-shared/Architecture-mips-shared.cpp',
@@ -534,6 +538,8 @@ elif CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
             jit_ioncheck3_deunified_sources = [
                 'jit/mips32/Simulator-mips32.cpp'
             ]
+        else:
+            jit_ioncheck3_deunified_sources = []
     elif CONFIG['JS_CODEGEN_MIPS64']:
         jit_ioncheck2_deunified_sources = [
             'jit/mips64/Architecture-mips64.cpp',
@@ -552,6 +558,13 @@ elif CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
             jit_ioncheck3_deunified_sources = [
                 'jit/mips64/Simulator-mips64.cpp'
             ]
+        else:
+            jit_ioncheck3_deunified_sources = []
+    else:
+        jit_ioncheck2_deunified_sources = []
+        jit_ioncheck3_deunified_sources = []
+else:
+    jit_ioncheck1_deunified_sources = []
 
 if CONFIG['OS_ARCH'] == 'WINNT':
     SOURCES += [
@@ -643,8 +656,8 @@ if CONFIG['JS_LTO']:
     SOURCES += jit_ioncheck1_deunified_sources
     if CONFIG['ENABLE_ION']:
         SOURCES += jit_ioncheck2_deunified_sources
-    if CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
-        SOURCES += jit_ioncheck3_deunified_sources
+        if CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
+            SOURCES += jit_ioncheck3_deunified_sources
 else:
     FILES_PER_UNIFIED_FILE = 6
     UNIFIED_SOURCES += main_deunified_sources
@@ -653,8 +666,8 @@ else:
     UNIFIED_SOURCES += jit_ioncheck1_deunified_sources
     if CONFIG['ENABLE_ION']:
         UNIFIED_SOURCES += jit_ioncheck2_deunified_sources
-    if CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
-        UNIFIED_SOURCES += jit_ioncheck3_deunified_sources
+        if CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
+            UNIFIED_SOURCES += jit_ioncheck3_deunified_sources
 
 USE_LIBS += [
     'nspr',
