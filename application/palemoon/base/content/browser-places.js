@@ -505,15 +505,21 @@ function HistoryMenu(aPopupShowingEvent) {
                                      "@mozilla.org/browser/sessionstore;1",
                                      "nsISessionStore");
   let maxResults = Services.prefs.getIntPref("browser.history.menuMaxResults", 15);
-  // Workaround so that maxResults = 0 wouldn't create unlimited items
+  if (maxResults < 0) {
+    Components.utils.reportError("Maximum number of history menu entries is invalid! Using defaults.");
+    maxResults = 15;
+  }
   if (maxResults > 0) {
     if (maxResults > 50) {
       // Return to sanity...
-      maxResults = 15;
+      Components.utils.reportError("Maximum number of history menu entries is too large! Capping to 50.");
+      maxResults = 50;
     }
     PlacesMenu.call(this, aPopupShowingEvent,
                     "place:sort=4&maxResults=" + maxResults.toString().trim());
-  }
+  } else {
+    // maxResults == 0; do nothing. This suppresses the history entries.
+  }  
 }
 
 HistoryMenu.prototype = {
