@@ -3191,6 +3191,10 @@ static const JSFunctionSpec array_methods[] = {
     
     /* ES2022 additions */
     JS_SELF_HOSTED_FN("at",          "ArrayAt",          1,0),
+
+    /* ES2023 proposals */
+    JS_SELF_HOSTED_FN("findLast",    "ArrayFindLast",    1,0),
+    JS_SELF_HOSTED_FN("findLastIndex", "ArrayFindLastIndex", 1,0),
     
     JS_FS_END
 };
@@ -3356,6 +3360,8 @@ array_proto_finish(JSContext* cx, JS::HandleObject ctor, JS::HandleObject proto)
         !DefineProperty(cx, unscopables, cx->names().fill, value) ||
         !DefineProperty(cx, unscopables, cx->names().find, value) ||
         !DefineProperty(cx, unscopables, cx->names().findIndex, value) ||
+        !DefineProperty(cx, unscopables, cx->names().findLast, value) ||
+        !DefineProperty(cx, unscopables, cx->names().findLastIndex, value) ||
         !DefineProperty(cx, unscopables, cx->names().flat, value) ||
         !DefineProperty(cx, unscopables, cx->names().flatMap, value) ||
         !DefineProperty(cx, unscopables, cx->names().includes, value) ||

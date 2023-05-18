@@ -135,6 +135,8 @@
     macro(finally, finally_, "finally") \
     macro(find, find, "find") \
     macro(findIndex, findIndex, "findIndex") \
+    macro(findLast, findLast, "findLast") \
+    macro(findLastIndex, findLastIndex, "findLastIndex") \
     macro(firstDayOfWeek, firstDayOfWeek, "firstDayOfWeek") \
     macro(fix, fix, "fix") \
     macro(flags, flags, "flags") \

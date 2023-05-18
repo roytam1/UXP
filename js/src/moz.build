@@ -408,12 +408,15 @@ if CONFIG['ENABLE_TRACE_LOGGING']:
         'vm/TraceLoggingTypes.cpp',
     ]
 
+jit_ioncheck1_deunified_sources = []
+jit_ioncheck2_deunified_sources = []
+jit_ioncheck3_deunified_sources = []
 if not CONFIG['ENABLE_ION']:
-    jit_ioncheck1_deunified_sources = [
+    jit_ioncheck1_deunified_sources += [
         'jit/none/Trampoline-none.cpp'
     ]
 elif CONFIG['JS_CODEGEN_X86'] or CONFIG['JS_CODEGEN_X64']:
-    jit_ioncheck1_deunified_sources = [
+    jit_ioncheck1_deunified_sources += [
         'jit/x86-shared/Architecture-x86-shared.cpp',
         'jit/x86-shared/Assembler-x86-shared.cpp',
         'jit/x86-shared/AssemblerBuffer-x86-shared.cpp',
@@ -426,7 +429,7 @@ elif CONFIG['JS_CODEGEN_X86'] or CONFIG['JS_CODEGEN_X64']:
         'jit/x86-shared/MoveEmitter-x86-shared.cpp',
     ]
     if CONFIG['JS_CODEGEN_X64']:
-        jit_ioncheck2_deunified_sources = [
+        jit_ioncheck2_deunified_sources += [
             'jit/x64/Assembler-x64.cpp',
             'jit/x64/Bailouts-x64.cpp',
             'jit/x64/BaselineCompiler-x64.cpp',
@@ -438,7 +441,7 @@ elif CONFIG['JS_CODEGEN_X86'] or CONFIG['JS_CODEGEN_X64']:
             'jit/x64/Trampoline-x64.cpp',
         ]
     else:
-        jit_ioncheck2_deunified_sources = [
+        jit_ioncheck2_deunified_sources += [
             'jit/x86/Assembler-x86.cpp',
             'jit/x86/Bailouts-x86.cpp',
             'jit/x86/BaselineCompiler-x86.cpp',
@@ -450,7 +453,7 @@ elif CONFIG['JS_CODEGEN_X86'] or CONFIG['JS_CODEGEN_X64']:
             'jit/x86/Trampoline-x86.cpp',
         ]
 elif CONFIG['JS_CODEGEN_ARM']:
-    jit_ioncheck1_deunified_sources = [
+    jit_ioncheck1_deunified_sources += [
         'jit/arm/Architecture-arm.cpp',
         'jit/arm/Assembler-arm.cpp',
         'jit/arm/Bailouts-arm.cpp',
@@ -466,16 +469,16 @@ elif CONFIG['JS_CODEGEN_ARM']:
         'jit/arm/Trampoline-arm.cpp',
     ]
     if CONFIG['JS_SIMULATOR_ARM']:
-        jit_ioncheck2_deunified_sources = [
+        jit_ioncheck2_deunified_sources += [
             'jit/arm/Simulator-arm.cpp'
         ]
     elif CONFIG['OS_ARCH'] == 'Darwin':
-        jit_ioncheck2_deunified_sources = [
+        jit_ioncheck2_deunified_sources += [
             'jit/arm/llvm-compiler-rt/arm/aeabi_idivmod.S',
             'jit/arm/llvm-compiler-rt/arm/aeabi_uidivmod.S',
         ]
 elif CONFIG['JS_CODEGEN_ARM64']:
-    jit_ioncheck1_deunified_sources = [
+    jit_ioncheck1_deunified_sources += [
         'jit/arm64/Architecture-arm64.cpp',
         'jit/arm64/Assembler-arm64.cpp',
         'jit/arm64/Bailouts-arm64.cpp',
@@ -498,14 +501,14 @@ elif CONFIG['JS_CODEGEN_ARM64']:
         'jit/arm64/vixl/Utils-vixl.cpp'
     ]
     if CONFIG['JS_SIMULATOR_ARM64']:
-        jit_ioncheck2_deunified_sources = [
+        jit_ioncheck2_deunified_sources += [
             'jit/arm64/vixl/Debugger-vixl.cpp',
             'jit/arm64/vixl/Logic-vixl.cpp',
             'jit/arm64/vixl/MozSimulator-vixl.cpp',
             'jit/arm64/vixl/Simulator-vixl.cpp'
         ]
 elif CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
-    jit_ioncheck1_deunified_sources = [
+    jit_ioncheck1_deunified_sources += [
         'jit/mips-shared/Architecture-mips-shared.cpp',
         'jit/mips-shared/Assembler-mips-shared.cpp',
         'jit/mips-shared/Bailouts-mips-shared.cpp',
@@ -517,7 +520,7 @@ elif CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
         'jit/mips-shared/MoveEmitter-mips-shared.cpp',
     ]
     if CONFIG['JS_CODEGEN_MIPS32']:
-        jit_ioncheck2_deunified_sources = [
+        jit_ioncheck2_deunified_sources += [
             'jit/mips32/Architecture-mips32.cpp',
             'jit/mips32/Assembler-mips32.cpp',
             'jit/mips32/Bailouts-mips32.cpp',
@@ -531,11 +534,11 @@ elif CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
             'jit/mips32/Trampoline-mips32.cpp',
         ]
         if CONFIG['JS_SIMULATOR_MIPS32']:
-            jit_ioncheck3_deunified_sources = [
+            jit_ioncheck3_deunified_sources += [
                 'jit/mips32/Simulator-mips32.cpp'
             ]
     elif CONFIG['JS_CODEGEN_MIPS64']:
-        jit_ioncheck2_deunified_sources = [
+        jit_ioncheck2_deunified_sources += [
             'jit/mips64/Architecture-mips64.cpp',
             'jit/mips64/Assembler-mips64.cpp',
             'jit/mips64/Bailouts-mips64.cpp',
@@ -549,7 +552,7 @@ elif CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
             'jit/mips64/Trampoline-mips64.cpp',
         ]
         if CONFIG['JS_SIMULATOR_MIPS64']:
-            jit_ioncheck3_deunified_sources = [
+            jit_ioncheck3_deunified_sources += [
                 'jit/mips64/Simulator-mips64.cpp'
             ]
 
@@ -641,20 +644,16 @@ if CONFIG['JS_LTO']:
     if CONFIG['JS_POSIX_NSPR']:
         SOURCES += posix_nspr_deunified_sources
     SOURCES += jit_ioncheck1_deunified_sources
-    if CONFIG['ENABLE_ION']:
-        SOURCES += jit_ioncheck2_deunified_sources
-    if CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
-        SOURCES += jit_ioncheck3_deunified_sources
+    SOURCES += jit_ioncheck2_deunified_sources
+    SOURCES += jit_ioncheck3_deunified_sources
 else:
     FILES_PER_UNIFIED_FILE = 6
     UNIFIED_SOURCES += main_deunified_sources
     if CONFIG['JS_POSIX_NSPR']:
         UNIFIED_SOURCES += posix_nspr_deunified_sources
     UNIFIED_SOURCES += jit_ioncheck1_deunified_sources
-    if CONFIG['ENABLE_ION']:
-        UNIFIED_SOURCES += jit_ioncheck2_deunified_sources
-    if CONFIG['JS_CODEGEN_MIPS32'] or CONFIG['JS_CODEGEN_MIPS64']:
-        UNIFIED_SOURCES += jit_ioncheck3_deunified_sources
+    UNIFIED_SOURCES += jit_ioncheck2_deunified_sources
+    UNIFIED_SOURCES += jit_ioncheck3_deunified_sources
 
 USE_LIBS += [
     'nspr',
