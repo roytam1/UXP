@@ -504,13 +504,16 @@ function HistoryMenu(aPopupShowingEvent) {
   XPCOMUtils.defineLazyServiceGetter(this, "_ss",
                                      "@mozilla.org/browser/sessionstore;1",
                                      "nsISessionStore");
-  let maxResults = Services.prefs.getIntPref("browser.history.menuMaxResults",15);
-  if (maxResults < 1 || maxResults > 50) {
-    // Return to sanity... 
-    maxResults = 15;
+  let maxResults = Services.prefs.getIntPref("browser.history.menuMaxResults", 15);
+  // Workaround so that maxResults = 0 wouldn't create unlimited items
+  if (maxResults > 0) {
+    if (maxResults > 50) {
+      // Return to sanity...
+      maxResults = 15;
+    }
+    PlacesMenu.call(this, aPopupShowingEvent,
+                    "place:sort=4&maxResults=" + maxResults.toString().trim());
   }
-  PlacesMenu.call(this, aPopupShowingEvent,
-                  "place:sort=4&maxResults=" + maxResults.toString().trim());
 }
 
 HistoryMenu.prototype = {
