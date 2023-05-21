@@ -2363,11 +2363,14 @@ ScriptLoader::EvaluateScript(ScriptLoadRequest* aRequest)
              JS::Rooted<JSScript*> script(cx);
              script = exec.GetScript();
 
-             // Create a ClassicScript object and associate it with the
-             // JSScript.
-             RefPtr<ClassicScript> classicScript = new ClassicScript(
-                 aRequest->mFetchOptions, aRequest->mBaseURL);
-             classicScript->AssociateWithScript(script);
+             // With scripts disabled GetScript() will return nullptr
+             if (script) {
+                 // Create a ClassicScript object and associate it with the
+                 // JSScript.
+                 RefPtr<ClassicScript> classicScript = new ClassicScript(
+                     aRequest->mFetchOptions, aRequest->mBaseURL);
+                 classicScript->AssociateWithScript(script);
+             }
 
              rv = exec.ExecScript();
           }
