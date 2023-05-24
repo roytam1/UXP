@@ -680,7 +680,11 @@ void RuleHash::EnumerateAllRules(Element* aElement, ElementDependentRuleProcesso
       aData->mTreeMatchContext.mAncestorFilter.HasFilter() ?
         &aData->mTreeMatchContext.mAncestorFilter : nullptr;
 #ifdef DEBUG
-    if (filter) {
+    bool isRestricted = (aData->mTreeMatchContext.mShadowHosts.Length() > 0 ||
+      aData->mTreeMatchContext.mRestrictToSlottedPseudo ||
+      aData->mTreeMatchContext.mOnlyMatchHostPseudo ||
+      aData->mTreeMatchContext.mForAssignedSlot);
+    if (filter && !isRestricted) {
       filter->AssertHasAllAncestors(aElement);
     }
 #endif
@@ -1732,7 +1736,13 @@ static bool SelectorMatches(Element* aElement,
 
   Element* targetElement = aElement;
   if (aTreeMatchContext.mForAssignedSlot) {
-    targetElement = aElement->GetAssignedSlot()->AsElement();
+    HTMLSlotElement* slot = aElement->GetAssignedSlot();
+    // We're likely testing the slottable's ancestors and it might
+    // not have an assigned slot, so return early.
+    if (!slot) {
+      return false;
+    }
+    targetElement = slot->AsElement();
   }
 
   // namespace/tag match
