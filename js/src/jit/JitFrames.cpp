@@ -888,7 +888,12 @@ HandleException(ResumeFromException* rfe)
                 ++frames;
             }
 
+            // Remove left-over state which might have been needed for bailout.
             activation->removeIonFrameRecovery(iter.jsFrame());
+            activation->removeRematerializedFrame(iter.fp());
+
+            // If invalidated, decrement the number of frames remaining on the
+            // stack for the given IonScript.
             if (invalidated)
                 ionScript->decrementInvalidationCount(cx->runtime()->defaultFreeOp());
 
