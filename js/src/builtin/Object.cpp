@@ -1240,6 +1240,7 @@ static const JSFunctionSpec object_static_methods[] = {
     JS_FN("seal",                      obj_seal,                    1, 0),
     JS_FN("isSealed",                  obj_isSealed,                1, 0),
     JS_SELF_HOSTED_FN("fromEntries",   "ObjectFromEntries",         1, 0),
+    JS_SELF_HOSTED_FN("hasOwn",        "ObjectHasOwn",              2, 0),
     JS_FS_END
 };
 
