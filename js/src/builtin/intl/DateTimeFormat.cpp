@@ -241,19 +241,16 @@ js::intl_DateTimeFormat_availableLocales(JSContext* cx, unsigned argc, Value* vp
     return true;
 }
 
-// ICU returns old-style keyword values; map them to BCP 47 equivalents
-// (see http://bugs.icu-project.org/trac/ticket/9620).
-static const char*
-bcp47CalendarName(const char* icuName)
+struct CalendarAlias
 {
-    if (StringsAreEqual(icuName, "ethiopic-amete-alem"))
-        return "ethioaa";
-    if (StringsAreEqual(icuName, "gregorian"))
-        return "gregory";
-    if (StringsAreEqual(icuName, "islamic-civil"))
-        return "islamicc";
-    return icuName;
-}
+    const char* const calendar;
+    const char* const alias;
+};
+
+const CalendarAlias calendarAliases[] = {
+    { "islamic-civil", "islamicc" },
+    { "ethioaa", "ethiopic-amete-alem" }
+};
 
 bool
 js::intl_availableCalendars(JSContext* cx, unsigned argc, Value* vp)
@@ -286,7 +283,8 @@ js::intl_availableCalendars(JSContext* cx, unsigned argc, Value* vp)
             return false;
         }
 
-        jscalendar = JS_NewStringCopyZ(cx, bcp47CalendarName(calendar));
+        // ICU returns old-style keyword values; map them to BCP 47 equivalents
+        jscalendar = JS_NewStringCopyZ(cx, uloc_toUnicodeLocaleType("ca", calendar));
         if (!jscalendar)
             return false;
     }
@@ -316,12 +314,27 @@ js::intl_availableCalendars(JSContext* cx, unsigned argc, Value* vp)
             return false;
         }
 
-        jscalendar = JS_NewStringCopyZ(cx, bcp47CalendarName(calendar));
+        // ICU returns old-style keyword values; map them to BCP 47 equivalents
+        calendar = uloc_toUnicodeLocaleType("ca", calendar);
+
+        jscalendar = JS_NewStringCopyZ(cx, calendar);
         if (!jscalendar)
             return false;
         element = StringValue(jscalendar);
         if (!DefineElement(cx, calendars, index++, element))
             return false;
+
+        // ICU doesn't return calendar aliases, append them here.
+        for (const auto& calendarAlias : calendarAliases) {
+            if (StringsAreEqual(calendar, calendarAlias.calendar)) {
+                jscalendar = JS_NewStringCopyZ(cx, calendarAlias.alias);
+                if (!jscalendar)
+                    return false;
+                element = StringValue(jscalendar);
+                if (!DefineElement(cx, calendars, index++, element))
+                    return false;
+            }
+        }
     }
 
     args.rval().setObject(*calendars);

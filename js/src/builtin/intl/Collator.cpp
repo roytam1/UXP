@@ -227,6 +227,15 @@ js::intl_availableCollations(JSContext* cx, unsigned argc, Value* vp)
         return false;
 
     uint32_t index = 0;
+
+    // The first element of the collations array must be |null| per
+    // ES2017 Intl, 10.2.3 Internal Slots.
+    if (!DefineElement(cx, collations, index++, NullHandleValue))
+        return false;
+
+    RootedString jscollation(cx);
+    RootedValue element(cx);
+
     for (uint32_t i = 0; i < count; i++) {
         const char* collation = uenum_next(values, nullptr, &status);
         if (U_FAILURE(status)) {
@@ -241,21 +250,12 @@ js::intl_availableCollations(JSContext* cx, unsigned argc, Value* vp)
         if (StringsAreEqual(collation, "standard") || StringsAreEqual(collation, "search"))
             continue;
 
-        // ICU returns old-style keyword values; map them to BCP 47 equivalents
-        // (see http://bugs.icu-project.org/trac/ticket/9620).
-        if (StringsAreEqual(collation, "dictionary"))
-            collation = "dict";
-        else if (StringsAreEqual(collation, "gb2312han"))
-            collation = "gb2312";
-        else if (StringsAreEqual(collation, "phonebook"))
-            collation = "phonebk";
-        else if (StringsAreEqual(collation, "traditional"))
-            collation = "trad";
+        // ICU returns old-style keyword values; map them to BCP 47 equivalents.
+        jscollation = JS_NewStringCopyZ(cx, uloc_toUnicodeLocaleType("co", collation));
 
-        RootedString jscollation(cx, JS_NewStringCopyZ(cx, collation));
         if (!jscollation)
             return false;
-        RootedValue element(cx, StringValue(jscollation));
+        element = StringValue(jscollation);
         if (!DefineElement(cx, collations, index++, element))
             return false;
     }
