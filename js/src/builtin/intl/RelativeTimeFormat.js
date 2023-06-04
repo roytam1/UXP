@@ -191,7 +191,7 @@ function Intl_RelativeTimeFormat_format(value, unit) {
 
     // PartitionRelativeTimePattern, step 4.
     if (!Number_isFinite(t)) {
-        ThrowRangeError(JSMSG_DATE_NOT_FINITE, "RelativeTimeFormat");
+        ThrowRangeError(JSMSG_DATE_NOT_FINITE, "RelativeTimeFormat", "format");
     }
 
     // PartitionRelativeTimePattern, step 5.
