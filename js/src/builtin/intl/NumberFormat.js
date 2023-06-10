@@ -446,9 +446,12 @@ function getNumberingSystems(locale) {
 }
 
 
-function numberFormatLocaleData(locale) {
+function numberFormatLocaleData() {
     return {
-        nu: getNumberingSystems(locale)
+        nu: getNumberingSystems,
+        default: {
+            nu: intl_numberingSystem,
+        }
     };
 }
 

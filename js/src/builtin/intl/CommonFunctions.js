@@ -767,8 +767,6 @@ function BestAvailableLocaleIgnoringDefault(availableLocales, locale) {
     return BestAvailableLocaleHelper(availableLocales, locale, false);
 }
 
-var noRelevantExtensionKeys = [];
-
 /**
  * Compares a BCP 47 language priority list against the set of locales in
  * availableLocales and determines the best available language to meet the
@@ -925,21 +923,17 @@ function ResolveLocale(availableLocales, requestedLocales, options, relevantExte
     // Step 8.
     var supportedExtension = "-u";
 
+    // In this implementation, localeData is a function, not an object.
+    var localeDataProvider = localeData();
+
     // Steps 9-12.
-    var i = 0;
-    var len = relevantExtensionKeys.length;
-    while (i < len) {
+    for (var i = 0; i < relevantExtensionKeys.length; i++) {
         // Steps 12.a-c.
         var key = relevantExtensionKeys[i];
 
-        // In this implementation, localeData is a function, not an object.
-        var foundLocaleData = localeData(foundLocale);
-        var keyLocaleData = foundLocaleData[key];
-
-        // Locale data provides default value.
-        // Step 12.d.
-        var value = keyLocaleData[0];
-        assert(typeof value === "string" || value === null, "unexpected locale data value");
+        // Steps 12.b-d (The locale data is only computed when needed).
+        var keyLocaleData = undefined;
+        var value = undefined;
 
         // Locale tag may override.
 
@@ -958,6 +952,9 @@ function ResolveLocale(availableLocales, requestedLocales, options, relevantExte
 
             // Step 12.f.ii.
             if (requestedValue !== undefined) {
+                // Steps 12.b-c.
+                keyLocaleData = callFunction(localeDataProvider[key], null, foundLocale);
+
                 // Step 12.f.ii.1.
                 if (requestedValue !== "") {
                     // Step 12.f.ii.1.a.
@@ -983,18 +980,29 @@ function ResolveLocale(availableLocales, requestedLocales, options, relevantExte
         var optionsValue = options[key];
 
         // Step 12.g, 12.gg.ii.
-        if (optionsValue !== undefined &&
-            optionsValue !== value &&
-            callFunction(ArrayIndexOf, keyLocaleData, optionsValue) !== -1)
-        {
-            value = optionsValue;
-            supportedExtensionAddition = "";
+        if (optionsValue !== undefined && optionsValue !== value) {
+            // Steps 12.b-c.
+            if (keyLocaleData === undefined)
+                keyLocaleData = callFunction(localeDataProvider[key], null, foundLocale);
+
+            if (callFunction(ArrayIndexOf, keyLocaleData, optionsValue) !== -1) {
+                value = optionsValue;
+                supportedExtensionAddition = "";
+            }
+        }
+
+        // Locale data provides default value.
+        if (value === undefined) {
+            // Steps 12.b-d.
+            value = keyLocaleData === undefined
+                    ? callFunction(localeDataProvider.default[key], null, foundLocale)
+                    : keyLocaleData[0];
         }
 
         // Steps 12.h-j.
+        assert(typeof value === "string" || value === null, "unexpected locale data value");
         result[key] = value;
         supportedExtension += supportedExtensionAddition;
-        i++;
     }
 
     // Step 13.

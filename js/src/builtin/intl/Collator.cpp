@@ -233,7 +233,6 @@ js::intl_availableCollations(JSContext* cx, unsigned argc, Value* vp)
     if (!DefineElement(cx, collations, index++, NullHandleValue))
         return false;
 
-    RootedString jscollation(cx);
     RootedValue element(cx);
 
     for (uint32_t i = 0; i < count; i++) {
@@ -251,8 +250,7 @@ js::intl_availableCollations(JSContext* cx, unsigned argc, Value* vp)
             continue;
 
         // ICU returns old-style keyword values; map them to BCP 47 equivalents.
-        jscollation = JS_NewStringCopyZ(cx, uloc_toUnicodeLocaleType("co", collation));
-
+        JSString* jscollation = JS_NewStringCopyZ(cx, uloc_toUnicodeLocaleType("co", collation));
         if (!jscollation)
             return false;
         element = StringValue(jscollation);

@@ -10,6 +10,7 @@
  * Spec: ECMAScript 402 API, PluralRules, 1.3.3.
  */
 var pluralRulesInternalProperties = {
+    localeData: pluralRulesLocaleData,
     _availableLocales: null,
     availableLocales: function()
     {
@@ -20,8 +21,16 @@ var pluralRulesInternalProperties = {
         locales = intl_PluralRules_availableLocales();
         addSpecialMissingLanguageTags(locales);
         return (this._availableLocales = locales);
-    }
+    },
+    relevantExtensionKeys: [],
 };
+
+
+function pluralRulesLocaleData() {
+    // PluralRules don't support any extension keys.
+    return {};
+}
+
 
 /**
  * Compute an internal properties object from |lazyPluralRulesData|.
@@ -39,7 +48,7 @@ function resolvePluralRulesInternals(lazyPluralRulesData) {
     const r = ResolveLocale(callFunction(PluralRules.availableLocales, PluralRules),
                           lazyPluralRulesData.requestedLocales,
                           lazyPluralRulesData.opt,
-                          noRelevantExtensionKeys, undefined);
+                          PluralRules.relevantExtensionKeys, PluralRules.localeData);
 
     // Step 14.
     internalProps.locale = r.locale;

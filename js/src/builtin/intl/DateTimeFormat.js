@@ -793,10 +793,14 @@ var dateTimeFormatInternalProperties = {
 };
 
 
-function dateTimeFormatLocaleData(locale) {
+function dateTimeFormatLocaleData() {
     return {
-        ca: intl_availableCalendars(locale),
-        nu: getNumberingSystems(locale)
+        ca: intl_availableCalendars,
+        nu: getNumberingSystems,
+        default: {
+            ca: intl_defaultCalendar,
+            nu: intl_numberingSystem,
+        }
     };
 }
 

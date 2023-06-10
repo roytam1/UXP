@@ -92,7 +92,6 @@ js::intl::GetAvailableLocales(JSContext* cx, CountAvailable countAvailable,
         return false;
 
     uint32_t count = countAvailable();
-    RootedValue t(cx, BooleanValue(true));
     for (uint32_t i = 0; i < count; i++) {
         const char* locale = getAvailable(i);
         auto lang = DuplicateString(cx, locale);
@@ -104,7 +103,7 @@ js::intl::GetAvailableLocales(JSContext* cx, CountAvailable countAvailable,
         RootedAtom a(cx, Atomize(cx, lang.get(), strlen(lang.get())));
         if (!a)
             return false;
-        if (!DefineProperty(cx, locales, a->asPropertyName(), t, nullptr, nullptr,
+        if (!DefineProperty(cx, locales, a->asPropertyName(), TrueHandleValue, nullptr, nullptr,
                             JSPROP_ENUMERATE))
         {
             return false;
