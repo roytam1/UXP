@@ -31,9 +31,7 @@ template<typename Char>
 static constexpr Char
 ToUpperASCII(Char c)
 {
-    return ('a' <= c && c <= 'z')
-           ? (c & ~0x20)
-           : c;
+  return mozilla::IsAsciiLowercaseAlpha(c) ? (c - 0x20) : c;
 }
 
 static_assert(ToUpperASCII('a') == 'A', "verifying 'a' uppercases correctly");

@@ -485,6 +485,7 @@ MSG_DEF(JSMSG_TRACELOGGER_ENABLE_FAIL, 1, JSEXN_ERR, "enabling tracelogger faile
 
 // Intl
 MSG_DEF(JSMSG_DATE_NOT_FINITE,         2, JSEXN_RANGEERR, "date value is not finite in {0}.{1}()")
+MSG_DEF(JSMSG_DUPLICATE_VARIANT_SUBTAG, 1, JSEXN_RANGEERR, "duplicate variant subtag: {0}")
 MSG_DEF(JSMSG_INTERNAL_INTL_ERROR,     0, JSEXN_ERR, "internal error while computing Intl data")
 MSG_DEF(JSMSG_INTL_OBJECT_NOT_INITED,  3, JSEXN_TYPEERR, "Intl.{0}.prototype.{1} called on value that's not an object initialized as a {2}")
 MSG_DEF(JSMSG_INVALID_CURRENCY_CODE,   1, JSEXN_RANGEERR, "invalid currency code in NumberFormat(): {0}")
