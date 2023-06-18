@@ -18,6 +18,7 @@
 #include "mozilla/Move.h"
 #include "mozilla/OperatorNewExtensions.h"
 #include "mozilla/ReentrancyGuard.h"
+#include "mozilla/Span.h"
 #include "mozilla/TemplateLib.h"
 #include "mozilla/TypeTraits.h"
 
@@ -551,6 +552,16 @@ public:
     MOZ_ASSERT(!mEntered);
     MOZ_ASSERT(!empty());
     return *(end() - 1);
+  }
+
+  operator mozilla::Span<const T>() const
+  {
+    return mozilla::MakeSpan(mBegin, mLength);
+  }
+
+  operator mozilla::Span<T>()
+  {
+    return mozilla::MakeSpan(mBegin, mLength);
   }
 
   class Range
