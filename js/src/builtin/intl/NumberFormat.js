@@ -366,7 +366,7 @@ function CurrencyDigits(currency) {
     assert(typeof currency === "string", "CurrencyDigits");
     assert(regexp_test_no_statics(getCurrencyDigitsRE(), currency), "CurrencyDigits");
 
-    if (callFunction(std_Object_hasOwnProperty, currencyDigits, currency))
+    if (hasOwn(currency, currencyDigits))
         return currencyDigits[currency];
     return 2;
 }
@@ -502,7 +502,7 @@ function Intl_NumberFormat_resolvedOptions() {
     ];
     for (var i = 0; i < optionalProperties.length; i++) {
         var p = optionalProperties[i];
-        if (callFunction(std_Object_hasOwnProperty, internals, p))
+        if (hasOwn(p, internals))
             _DefineDataProperty(result, p, internals[p]);
     }
     return result;

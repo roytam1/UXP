@@ -5,6 +5,14 @@
 /* Portions Copyright Norbert Lindenberg 2011-2012. */
 
 
+
+/**
+ * Shorthand for hasOwnProperty.
+ */
+function hasOwn(propName, object) {
+    return callFunction(std_Object_hasOwnProperty, object, propName);
+}
+
 /**
  * Holder object for encapsulating regexp instances.
  *
@@ -346,7 +354,7 @@ function CanonicalizeLanguageTag(locale) {
     locale = callFunction(std_String_toLowerCase, locale);
 
     // Handle mappings for complete tags.
-    if (callFunction(std_Object_hasOwnProperty, langTagMappings, locale))
+    if (hasOwn(locale, langTagMappings))
         return langTagMappings[locale];
 
     var subtags = StringSplitString(ToString(locale), "-");
@@ -378,7 +386,7 @@ function CanonicalizeLanguageTag(locale) {
                 subtag = callFunction(std_String_toUpperCase, subtag);
             }
         }
-        if (callFunction(std_Object_hasOwnProperty, langSubtagMappings, subtag)) {
+        if (hasOwn(subtag, langSubtagMappings)) {
             // Replace deprecated subtags with their preferred values.
             // "BU" -> "MM"
             // This has to come after we capitalize region codes because
@@ -388,7 +396,7 @@ function CanonicalizeLanguageTag(locale) {
             // Note that the script generating langSubtagMappings makes sure
             // that no regular subtag mapping will replace an extlang code.
             subtag = langSubtagMappings[subtag];
-        } else if (callFunction(std_Object_hasOwnProperty, extlangMappings, subtag)) {
+        } else if (hasOwn(subtag, extlangMappings)) {
             // Replace deprecated extlang subtags with their preferred values,
             // and remove the preceding subtag if it's a redundant prefix.
             // "zh-nan" -> "nan"
@@ -516,7 +524,7 @@ function DefaultLocaleIgnoringAvailableLocales() {
         // remove any present in the candidate.
         candidate = removeUnicodeExtensions(candidate);
 
-        if (callFunction(std_Object_hasOwnProperty, oldStyleLanguageTagMappings, candidate))
+        if (hasOwn(candidate, oldStyleLanguageTagMappings))
             candidate = oldStyleLanguageTagMappings[candidate];
     }
 
@@ -1163,14 +1171,14 @@ function isInitializedIntlObject(obj) {
 #ifdef DEBUG
     var internals = callFunction(std_WeakMap_get, internalsMap, obj);
     if (IsObject(internals)) {
-        assert(callFunction(std_Object_hasOwnProperty, internals, "type"), "missing type");
+        assert(hasOwn("type", internals), "missing type");
         var type = internals.type;
         assert(type === "partial" || type === "Collator" ||
                type === "DateTimeFormat" || type === "NumberFormat" ||
                type === "PluralRules" || type === "RelativeTimeFormat",
                "unexpected type");
-        assert(callFunction(std_Object_hasOwnProperty, internals, "lazyData"), "missing lazyData");
-        assert(callFunction(std_Object_hasOwnProperty, internals, "internalProps"), "missing internalProps");
+        assert(hasOwn("lazyData", internals), "missing lazyData");
+        assert(hasOwn("internalProps", internals), "missing internalProps");
     } else {
         assert(internals === undefined, "bad mapping for |obj|");
     }

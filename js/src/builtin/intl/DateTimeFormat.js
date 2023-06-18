@@ -623,7 +623,7 @@ function BasicFormatMatcher(options, formats) {
             formatProp = undefined;
 
             // Steps 11.c.ii-iii.
-            if (callFunction(std_Object_hasOwnProperty, format, property))
+            if (hasOwn(property, format))
                 formatProp = format[property];
 
             if (optionsProp === undefined && formatProp !== undefined) {
@@ -886,7 +886,7 @@ function resolveICUPattern(pattern, result) {
             default:
                 // skip other pattern characters and literal text
             }
-            if (callFunction(std_Object_hasOwnProperty, icuPatternCharToComponent, c))
+            if (hasOwn(c, icuPatternCharToComponent))
                 _DefineDataProperty(result, icuPatternCharToComponent[c], value);
             if (c === "h" || c === "K")
                 _DefineDataProperty(result, "hour12", true);
