@@ -90,6 +90,10 @@ using JS::AutoValueVector;
 using JS::AutoIdVector;
 using JS::AutoObjectVector;
 
+using JS::RootedValueVector;
+using JS::HandleValueVector;
+using JS::MutableHandleValueVector;
+
 using JS::ValueVector;
 using JS::IdVector;
 using JS::ScriptVector;
