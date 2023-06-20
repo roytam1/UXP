@@ -244,16 +244,6 @@ Gecko_GetServoDeclarationBlock(RawGeckoElementBorrowed aElement)
   return nullptr;
 }
 
-void
-Gecko_FillAllBackgroundLists(nsStyleImageLayers* aLayers, uint32_t aMaxLen)
-{
-}
-
-void
-Gecko_FillAllMaskLists(nsStyleImageLayers* aLayers, uint32_t aMaxLen)
-{
-}
-
 template <typename Implementor>
 static nsIAtom*
 AtomAttrValue(Implementor* aElement, nsIAtom* aName)

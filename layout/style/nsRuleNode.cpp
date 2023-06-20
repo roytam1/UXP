@@ -7404,8 +7404,8 @@ FillImageLayerPositionCoordList(
 
 /* static */
 void
-nsRuleNode::FillAllBackgroundLists(nsStyleImageLayers& aImage,
-                                   uint32_t aMaxItemCount)
+nsRuleNode::FillAllMaskLists(nsStyleImageLayers& aImage,
+                             uint32_t aMaxItemCount)
 {
   // Delete any extra items.  We need to keep layers in which any
   // property was specified.
@@ -7560,7 +7560,7 @@ nsRuleNode::ComputeBackgroundData(void* aStartStruct,
                         conditions);
 
   if (rebuild) {
-    FillAllBackgroundLists(bg->mImage, maxItemCount);
+    FillAllMaskLists(bg->mImage, maxItemCount);
   }
 
   COMPUTE_END_RESET(Background, bg)
@@ -9479,50 +9479,6 @@ SetSVGOpacity(const nsCSSValue& aValue,
   }
 }
 
-/* static */
-void
-nsRuleNode::FillAllMaskLists(nsStyleImageLayers& aMask,
-                             uint32_t aMaxItemCount)
-{
-
-  // Delete any extra items.  We need to keep layers in which any
-  // property was specified.
-  aMask.mLayers.TruncateLengthNonZero(aMaxItemCount);
-
-  uint32_t fillCount = aMask.mImageCount;
-
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mImage,
-                     aMask.mImageCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mSourceURI,
-                     aMask.mImageCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mRepeat,
-                     aMask.mRepeatCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mClip,
-                     aMask.mClipCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mOrigin,
-                     aMask.mOriginCount, fillCount);
-  FillImageLayerPositionCoordList(aMask.mLayers,
-                                  &Position::mXPosition,
-                                  aMask.mPositionXCount, fillCount);
-  FillImageLayerPositionCoordList(aMask.mLayers,
-                                  &Position::mYPosition,
-                                  aMask.mPositionYCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mSize,
-                     aMask.mSizeCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mMaskMode,
-                     aMask.mMaskModeCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mComposite,
-                     aMask.mCompositeCount, fillCount);
-}
-
 const void*
 nsRuleNode::ComputeSVGData(void* aStartStruct,
                            const nsRuleData* aRuleData,
@@ -10257,7 +10213,7 @@ nsRuleNode::ComputeSVGResetData(void* aStartStruct,
                     svgReset->mMask.mCompositeCount, maxItemCount, rebuild, conditions);
 
   if (rebuild) {
-    FillAllBackgroundLists(svgReset->mMask, maxItemCount);
+    FillAllMaskLists(svgReset->mMask, maxItemCount);
   }
 
   COMPUTE_END_RESET(SVGReset, svgReset)
