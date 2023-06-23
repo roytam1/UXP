@@ -1212,7 +1212,10 @@ pref("dom.sysmsg.enabled", false);
 // Enable pre-installed applications.
 pref("dom.webapps.useCurrentProfile", false);
 
-pref("dom.cycle_collector.incremental", true);
+// Use incremental cycle collection?
+// In practice this gave a noticeable performance hit. Default off.
+// See forum topic https://forum.palemoon.org/viewtopic.php?f=62&t=29887
+pref("dom.cycle_collector.incremental", false);
 
 // Parsing perf prefs. For now just mimic what the old code did.
 #ifndef XP_WIN
