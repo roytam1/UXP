@@ -79,6 +79,24 @@ aom_codec_peek_stream_info
 aom_img_alloc
 aom_img_free
 #endif
+#ifdef MOZ_JXL
+JxlDecoderCreate
+JxlDecoderDestroy
+JxlDecoderSetParallelRunner
+JxlDecoderSubscribeEvents
+JxlDecoderProcessInput
+JxlDecoderSetInput
+JxlDecoderReleaseInput
+JxlDecoderGetBasicInfo
+JxlDecoderImageOutBufferSize
+JxlDecoderSetImageOutBuffer
+JxlDecoderGetFrameHeader
+JxlDecoderFlushImage
+JxlThreadParallelRunner
+JxlThreadParallelRunnerCreate
+JxlThreadParallelRunnerDestroy
+JxlThreadParallelRunnerDefaultNumWorkerThreads
+#endif
 #ifdef MOZ_VORBIS
 ogg_page_bos
 ogg_page_granulepos

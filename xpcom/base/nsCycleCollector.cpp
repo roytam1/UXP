@@ -622,13 +622,12 @@ PtrInfo::AnnotatedReleaseAssert(bool aCondition, const char* aMessage)
     return;
   }
 
-#ifdef MOZ_CRASHREPORTER
+#ifdef MOZ_DEBUG
   const char* piName = "Unknown";
   if (mParticipant) {
     piName = mParticipant->ClassName();
   }
-  nsPrintfCString msg("%s, for class %s", aMessage, piName);
-  CrashReporter::AnnotateCrashReport(NS_LITERAL_CSTRING("CycleCollector"), msg);
+  printf("cc: %s, for class %s\n", aMessage, piName);
 #endif
 
   MOZ_CRASH();

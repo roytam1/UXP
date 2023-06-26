@@ -202,10 +202,6 @@ setting[type="menulist"] {
   display: none;
 }
 
-#addons-page .view-pane:not([type="experiment"]) .experiment-info-container {
-  display: none;
-}
-
 .addon .relnotes {
   -moz-user-select: text;
 }
@@ -233,36 +229,6 @@ richlistitem:not([selected]) * {
 }
 
 .discover-button[disabled="true"] {
-  display: none;
-}
-
-#experiments-learn-more[disabled="true"] {
-  display: none;
-}
-
-#experiments-change-telemetry[disabled="true"] {
-  display: none;
-}
-
-.view-pane[type="experiment"] .error,
-.view-pane[type="experiment"] .warning,
-.view-pane[type="experiment"] .addon:not([pending="uninstall"]) .pending,
-.view-pane[type="experiment"] .disabled-postfix,
-.view-pane[type="experiment"] .update-postfix,
-.view-pane[type="experiment"] .version,
-#detail-view[type="experiment"] .alert-container,
-#detail-view[type="experiment"] #detail-version,
-#detail-view[type="experiment"] #detail-creator {
-  display: none;
-}
-
-.view-pane:not([type="experiment"]) .experiment-container,
-.view-pane:not([type="experiment"]) #detail-experiment-container {
-  display: none;
-}
-
-.addon[type="experiment"][status="installing"] .experiment-time,
-.addon[type="experiment"][status="installing"] .experiment-state {
   display: none;
 }
 
