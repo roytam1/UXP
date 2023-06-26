@@ -1,0 +1,153 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+LOCAL_INCLUDES += [
+    "./include/",
+    "/media/libjxl/src/",
+    "/media/libjxl/src/lib/include/",
+]
+
+SOURCES += [
+    "/media/libjxl/src/lib/jxl/ac_strategy.cc",
+    "/media/libjxl/src/lib/jxl/alpha.cc",
+    "/media/libjxl/src/lib/jxl/ans_common.cc",
+    "/media/libjxl/src/lib/jxl/aux_out.cc",
+    "/media/libjxl/src/lib/jxl/base/cache_aligned.cc",
+    "/media/libjxl/src/lib/jxl/base/data_parallel.cc",
+    "/media/libjxl/src/lib/jxl/base/padded_bytes.cc",
+    "/media/libjxl/src/lib/jxl/base/random.cc",
+    "/media/libjxl/src/lib/jxl/blending.cc",
+    "/media/libjxl/src/lib/jxl/box_content_decoder.cc",
+    "/media/libjxl/src/lib/jxl/chroma_from_luma.cc",
+    "/media/libjxl/src/lib/jxl/coeff_order.cc",
+    "/media/libjxl/src/lib/jxl/color_encoding_internal.cc",
+    "/media/libjxl/src/lib/jxl/color_management.cc",
+    "/media/libjxl/src/lib/jxl/compressed_dc.cc",
+    "/media/libjxl/src/lib/jxl/convolve_separable5.cc",
+    "/media/libjxl/src/lib/jxl/convolve_separable7.cc",
+    "/media/libjxl/src/lib/jxl/convolve_slow.cc",
+    "/media/libjxl/src/lib/jxl/convolve_symmetric3.cc",
+    "/media/libjxl/src/lib/jxl/convolve_symmetric5.cc",
+    "/media/libjxl/src/lib/jxl/dct_scales.cc",
+    "/media/libjxl/src/lib/jxl/dec_ans.cc",
+    "/media/libjxl/src/lib/jxl/dec_cache.cc",
+    "/media/libjxl/src/lib/jxl/dec_context_map.cc",
+    "/media/libjxl/src/lib/jxl/dec_external_image.cc",
+    "/media/libjxl/src/lib/jxl/dec_frame.cc",
+    "/media/libjxl/src/lib/jxl/dec_group.cc",
+    "/media/libjxl/src/lib/jxl/dec_group_border.cc",
+    "/media/libjxl/src/lib/jxl/dec_huffman.cc",
+    "/media/libjxl/src/lib/jxl/dec_modular.cc",
+    "/media/libjxl/src/lib/jxl/dec_noise.cc",
+    "/media/libjxl/src/lib/jxl/dec_patch_dictionary.cc",
+    "/media/libjxl/src/lib/jxl/dec_xyb.cc",
+    "/media/libjxl/src/lib/jxl/decode.cc",
+    "/media/libjxl/src/lib/jxl/enc_bit_writer.cc",
+    "/media/libjxl/src/lib/jxl/entropy_coder.cc",
+    "/media/libjxl/src/lib/jxl/epf.cc",
+    "/media/libjxl/src/lib/jxl/fast_dct.cc",
+    "/media/libjxl/src/lib/jxl/fields.cc",
+    "/media/libjxl/src/lib/jxl/frame_header.cc",
+    "/media/libjxl/src/lib/jxl/gauss_blur.cc",
+    "/media/libjxl/src/lib/jxl/headers.cc",
+    "/media/libjxl/src/lib/jxl/huffman_table.cc",
+    "/media/libjxl/src/lib/jxl/icc_codec.cc",
+    "/media/libjxl/src/lib/jxl/icc_codec_common.cc",
+    "/media/libjxl/src/lib/jxl/image.cc",
+    "/media/libjxl/src/lib/jxl/image_bundle.cc",
+    "/media/libjxl/src/lib/jxl/image_metadata.cc",
+    "/media/libjxl/src/lib/jxl/jpeg/dec_jpeg_data.cc",
+    "/media/libjxl/src/lib/jxl/jpeg/dec_jpeg_data_writer.cc",
+    "/media/libjxl/src/lib/jxl/jpeg/jpeg_data.cc",
+    "/media/libjxl/src/lib/jxl/loop_filter.cc",
+    "/media/libjxl/src/lib/jxl/luminance.cc",
+    "/media/libjxl/src/lib/jxl/memory_manager_internal.cc",
+    "/media/libjxl/src/lib/jxl/modular/encoding/dec_ma.cc",
+    "/media/libjxl/src/lib/jxl/modular/encoding/encoding.cc",
+    "/media/libjxl/src/lib/jxl/modular/modular_image.cc",
+    "/media/libjxl/src/lib/jxl/modular/transform/rct.cc",
+    "/media/libjxl/src/lib/jxl/modular/transform/squeeze.cc",
+    "/media/libjxl/src/lib/jxl/modular/transform/transform.cc",
+    "/media/libjxl/src/lib/jxl/opsin_params.cc",
+    "/media/libjxl/src/lib/jxl/passes_state.cc",
+    "/media/libjxl/src/lib/jxl/quant_weights.cc",
+    "/media/libjxl/src/lib/jxl/quantizer.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/low_memory_render_pipeline.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/render_pipeline.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/simple_render_pipeline.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_blending.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_chroma_upsampling.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_epf.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_from_linear.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_gaborish.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_noise.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_patches.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_splines.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_spot.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_to_linear.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_tone_mapping.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_upsampling.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_write.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_xyb.cc",
+    "/media/libjxl/src/lib/jxl/render_pipeline/stage_ycbcr.cc",
+    "/media/libjxl/src/lib/jxl/splines.cc",
+    "/media/libjxl/src/lib/jxl/toc.cc",
+]
+
+SOURCES += [
+    "/media/libjxl/src/lib/threads/thread_parallel_runner.cc",
+    "/media/libjxl/src/lib/threads/thread_parallel_runner_internal.cc",
+]
+
+EXPORTS.jxl += [
+    "./include/jxl/jxl_export.h",
+    "./include/jxl/jxl_threads_export.h",
+    "./include/jxl/version.h",
+    "/media/libjxl/src/lib/include/jxl/butteraugli.h",
+    "/media/libjxl/src/lib/include/jxl/butteraugli_cxx.h",
+    "/media/libjxl/src/lib/include/jxl/cms_interface.h",
+    "/media/libjxl/src/lib/include/jxl/codestream_header.h",
+    "/media/libjxl/src/lib/include/jxl/color_encoding.h",
+    "/media/libjxl/src/lib/include/jxl/decode.h",
+    "/media/libjxl/src/lib/include/jxl/decode_cxx.h",
+    "/media/libjxl/src/lib/include/jxl/encode.h",
+    "/media/libjxl/src/lib/include/jxl/encode_cxx.h",
+    "/media/libjxl/src/lib/include/jxl/memory_manager.h",
+    "/media/libjxl/src/lib/include/jxl/parallel_runner.h",
+    "/media/libjxl/src/lib/include/jxl/thread_parallel_runner.h",
+    "/media/libjxl/src/lib/include/jxl/thread_parallel_runner_cxx.h",
+    "/media/libjxl/src/lib/include/jxl/types.h",
+]
+
+# DEFINES["JPEGXL_ENABLE_BOXES"] = "0"
+DEFINES["JPEGXL_ENABLE_TRANSCODE_JPEG"] = "0"
+
+FINAL_LIBRARY = "gkmedias"
+
+# We allow warnings for third-party code that can be updated from upstream.
+# XXX: libjxl produces way too many compiler warnings.
+#      Silence them in the meantime.
+ALLOW_COMPILER_WARNINGS = False
+
+if CONFIG['_MSC_VER']:
+    CFLAGS += [
+        '-wd4646', # function declared with 'noreturn' has non-void return type
+        '-wd4334', # result of 32-bit shift implicitly converted to 64 bits
+        '-wd4305', # truncation from 'type' to 'type'
+        '-wd4146', # unary minus operator applied to unsigned type, result still unsigned
+    ]
+    CXXFLAGS += [
+        '-wd4646', # function declared with 'noreturn' has non-void return type
+        '-wd4334', # result of 32-bit shift implicitly converted to 64 bits
+        '-wd4305', # truncation from 'type' to 'type'
+        '-wd4146', # unary minus operator applied to unsigned type, result still unsigned
+    ]
+
+# Clang 5.0 has a compiler bug that prevents build in c++17
+# See https://gitlab.com/wg1/jpeg-xl/-/issues/227
+# This should be okay since we are using the C API.
+if CONFIG["CC_TYPE"] == "clang":
+    CXXFLAGS += ["-std=c++11"]

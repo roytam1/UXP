@@ -265,35 +265,8 @@ case "$target" in
 
         unset _MSVC_VER_FILTER
 
-        AC_CACHE_CHECK(for overridable _RAISE,
-                       ac_cv_have__RAISE,
-            [
-                AC_LANG_SAVE
-                AC_LANG_CPLUSPLUS
-                _SAVE_CXXFLAGS="$CXXFLAGS"
-                CXXFLAGS="${CXXFLAGS} -D_HAS_EXCEPTIONS=0"
-                AC_TRY_COMPILE([#include <xstddef>
-                                #undef _RAISE
-                                #define _RAISE(x) externallyDefinedFunction((x).what())
-                                #include <vector>
-                               ],
-                               [std::vector<int> v; return v.at(1);],
-                               ac_cv_have__RAISE="no",
-                               ac_cv_have__RAISE="yes")
-                CXXFLAGS="$_SAVE_CXXFLAGS"
-                AC_LANG_RESTORE
-            ])
-        if test "$ac_cv_have__RAISE" = "yes"; then
-            WRAP_STL_INCLUDES=1
-            MOZ_MSVC_STL_WRAP_RAISE=1
-            AC_DEFINE(MOZ_MSVC_STL_WRAP_RAISE)
-        else
-            AC_MSG_ERROR([Gecko exception wrapping doesn't understand your your MSVC/SDK.  Please file a bug describing this error and your build configuration.])
-        fi
-
-        if test "$WRAP_STL_INCLUDES" = "1"; then
-            STL_FLAGS="-I${DIST}/stl_wrappers"
-        fi
+        WRAP_STL_INCLUDES=1
+        STL_FLAGS="-I${DIST}/stl_wrappers"
         CFLAGS="$CFLAGS -D_HAS_EXCEPTIONS=0"
         CXXFLAGS="$CXXFLAGS -D_HAS_EXCEPTIONS=0"
     else
@@ -380,7 +353,6 @@ AC_SUBST(GNU_CXX)
 
 AC_SUBST(STL_FLAGS)
 AC_SUBST(WRAP_STL_INCLUDES)
-AC_SUBST(MOZ_MSVC_STL_WRAP_RAISE)
 
 dnl ========================================================
 dnl Checks for programs.
@@ -2084,6 +2056,7 @@ MOZ_FEEDS=1
 MOZ_AUTH_EXTENSION=1
 MOZ_RAW=
 MOZ_AV1=
+MOZ_JXL=
 MOZ_VORBIS=
 MOZ_TREMOR=
 MOZ_SAMPLE_TYPE_FLOAT32=
@@ -2850,6 +2823,20 @@ if test -n "$MOZ_AV1"; then
 fi
 
 AC_SUBST(MOZ_AV1)
+
+dnl ========================================================
+dnl = Enable JPEG-XL Codec
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(jxl,
+[  --enable-jxl           Enable libjxl and highway for jxl image support],
+    MOZ_JXL=1,
+    MOZ_JXL=)
+
+if test -n "$MOZ_JXL"; then
+    AC_DEFINE(MOZ_JXL)
+fi
+
+AC_SUBST(MOZ_JXL)
 
 dnl ========================================================
 dnl = Apple platform decoder support

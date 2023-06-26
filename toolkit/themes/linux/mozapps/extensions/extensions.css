@@ -226,9 +226,6 @@
 #category-dictionary > .category-icon {
   list-style-image: url("chrome://mozapps/skin/extensions/category-dictionaries.png");
 }
-#category-experiment > .category-icon {
-  list-style-image: url("chrome://mozapps/skin/extensions/category-experiments.png");
-}
 #category-availableUpdates > .category-icon {
   list-style-image: url("chrome://mozapps/skin/extensions/category-available.png");
 }
@@ -418,10 +415,6 @@
 
 .addon-view[type="dictionary"] .icon {
   list-style-image: url("chrome://mozapps/skin/extensions/dictionaryGeneric.png");
-}
-
-.addon-view[type="experiment"] .icon {
-  list-style-image: url("chrome://mozapps/skin/extensions/experimentGeneric.png");
 }
 
 .name-container {
@@ -926,31 +919,4 @@ setting[type="radio"] > radiogroup {
 
 .header-button .toolbarbutton-text {
   display: none;
-}
-
-/*** telemetry experiments ***/
-
-#detail-experiment-container {
-  font-size: 80%;
-  margin-bottom: 1em;
-}
-
-#detail-experiment-bullet-container,
-#detail-experiment-state,
-#detail-experiment-time,
-.experiment-bullet-container,
-.experiment-state,
-.experiment-time {
-  vertical-align: middle;
-  display: inline-block;
-}
-
-.addon .experiment-bullet,
-#detail-experiment-bullet {
-  fill: rgb(158, 158, 158);
-}
-
-.addon[active="true"] .experiment-bullet,
-#detail-view[active="true"] #detail-experiment-bullet {
-  fill: rgb(106, 201, 20);
 }

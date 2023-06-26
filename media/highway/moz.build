@@ -1,0 +1,48 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+LOCAL_INCLUDES += [
+    "/media/highway/src/",
+]
+
+SOURCES += [
+    "/media/highway/src/hwy/aligned_allocator.cc",
+    "/media/highway/src/hwy/contrib/image/image.cc",
+    "/media/highway/src/hwy/per_target.cc",
+    "/media/highway/src/hwy/targets.cc",
+]
+
+EXPORTS.hwy += [
+    "/media/highway/src/hwy/aligned_allocator.h",
+    "/media/highway/src/hwy/base.h",
+    "/media/highway/src/hwy/cache_control.h",
+    "/media/highway/src/hwy/detect_compiler_arch.h",
+    "/media/highway/src/hwy/detect_targets.h",
+    "/media/highway/src/hwy/foreach_target.h",
+    "/media/highway/src/hwy/highway.h",
+    "/media/highway/src/hwy/highway_export.h",
+    "/media/highway/src/hwy/targets.h",
+]
+
+EXPORTS.hwy.ops += [
+    "/media/highway/src/hwy/ops/arm_neon-inl.h",
+    "/media/highway/src/hwy/ops/arm_sve-inl.h",
+    "/media/highway/src/hwy/ops/emu128-inl.h",
+    "/media/highway/src/hwy/ops/generic_ops-inl.h",
+    "/media/highway/src/hwy/ops/rvv-inl.h",
+    "/media/highway/src/hwy/ops/scalar-inl.h",
+    "/media/highway/src/hwy/ops/set_macros-inl.h",
+    "/media/highway/src/hwy/ops/shared-inl.h",
+    "/media/highway/src/hwy/ops/wasm_128-inl.h",
+    "/media/highway/src/hwy/ops/x86_128-inl.h",
+    "/media/highway/src/hwy/ops/x86_256-inl.h",
+    "/media/highway/src/hwy/ops/x86_512-inl.h",
+]
+
+FINAL_LIBRARY = "gkmedias"
+
+# We allow warnings for third-party code that can be updated from upstream.
+ALLOW_COMPILER_WARNINGS = True

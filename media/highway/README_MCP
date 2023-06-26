@@ -1,0 +1,12 @@
+This directory contains build files for the Highway C++
+SIMD library.
+
+Any patches or additional configuration to be applied to the
+upstream source should be kept here in the media/highway
+directory.
+
+The upstream highway git repository is:
+
+    https://github.com/google/highway
+
+The version used was tagged 1.0.2.
