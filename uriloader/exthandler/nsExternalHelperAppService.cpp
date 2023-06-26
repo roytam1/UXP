@@ -425,6 +425,9 @@ static const nsDefaultMimeTypeEntry defaultMimeEntries[] =
   { TEXT_CSS, "css" },
   { IMAGE_JPEG, "jpeg" },
   { IMAGE_JPEG, "jpg" },
+#ifdef MOZ_JXL
+  { IMAGE_JXL, "jxl" },
+#endif
   { IMAGE_SVG_XML, "svg" },
   { TEXT_HTML, "html" },
   { TEXT_HTML, "htm" },
@@ -497,12 +500,16 @@ static const nsExtraMimeTypeEntry extraMimeEntries[] =
   { IMAGE_GIF, "gif", "GIF Image" },
   { IMAGE_ICO, "ico,cur", "ICO Image" },
   { IMAGE_JPEG, "jpeg,jpg,jfif,pjpeg,pjp", "JPEG Image" },
+#ifdef MOZ_JXL
+  { IMAGE_JXL, "jxl", "JPEG-XL Image" },
+#endif
   { IMAGE_PNG, "png", "PNG Image" },
   { IMAGE_APNG, "apng", "APNG Image" },
   { IMAGE_TIFF, "tiff,tif", "TIFF Image" },
   { IMAGE_XBM, "xbm", "XBM Image" },
   { IMAGE_SVG_XML, "svg", "Scalable Vector Graphics" },
   { IMAGE_WEBP, "webp", "WebP Image" },
+  { IMAGE_JXL, "jxl", "JPEG XL Image File" },
   { MESSAGE_RFC822, "eml", "RFC-822 data" },
   { TEXT_PLAIN, "txt,text", "Text File" },
   { TEXT_HTML, "html,htm,shtml,ehtml", "HyperText Markup Language" },
