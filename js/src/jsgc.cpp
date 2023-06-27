@@ -3952,7 +3952,7 @@ struct AddOutgoingEdgeFunctor {
          */
         if (needsEdge_) {
             JS::Zone* zone = other.zone();
-            if (zone->isGCMarking())
+            if (zone->shouldMarkInZone())
                 finder_.addEdgeTo(zone);
         }
     }
@@ -3983,14 +3983,14 @@ Zone::findOutgoingEdges(ZoneComponentFinder& finder)
      */
     JSRuntime* rt = runtimeFromMainThread();
     Zone* atomsZone = rt->atomsCompartment(finder.lock)->zone();
-    if (atomsZone->isGCMarking())
+    if (atomsZone->shouldMarkInZone())
         finder.addEdgeTo(atomsZone);
 
     for (CompartmentsInZoneIter comp(this); !comp.done(); comp.next())
         comp->findOutgoingEdges(finder);
 
     for (ZoneSet::Range r = gcZoneGroupEdges.all(); !r.empty(); r.popFront()) {
-        if (r.front()->isGCMarking())
+        if (r.front()->shouldMarkInZone())
             finder.addEdgeTo(r.front());
     }
 
@@ -4032,7 +4032,7 @@ GCRuntime::findZoneGroups(AutoLockForExclusiveAccess& lock)
         finder.useOneComponent();
 
     for (GCZonesIter zone(rt); !zone.done(); zone.next()) {
-        MOZ_ASSERT(zone->isGCMarking());
+        MOZ_ASSERT(zone->shouldMarkInZone());
         finder.addNode(zone);
     }
     zoneGroups = finder.getResultsList();
@@ -4045,7 +4045,7 @@ GCRuntime::findZoneGroups(AutoLockForExclusiveAccess& lock)
 #ifdef DEBUG
     for (Zone* head = currentZoneGroup; head; head = head->nextGroup()) {
         for (Zone* zone = head; zone; zone = zone->nextNodeInGroup())
-            MOZ_ASSERT(zone->isGCMarking());
+            MOZ_ASSERT(zone->shouldMarkInZone());
     }
 
     MOZ_ASSERT_IF(!isIncremental, !currentZoneGroup->nextGroup());
@@ -4068,7 +4068,7 @@ GCRuntime::getNextZoneGroup()
     }
 
     for (Zone* zone = currentZoneGroup; zone; zone = zone->nextNodeInGroup()) {
-        MOZ_ASSERT(zone->isGCMarking());
+        MOZ_ASSERT(zone->shouldMarkInZone());
         MOZ_ASSERT(!zone->isQueuedForBackgroundSweep());
     }
 
@@ -4079,7 +4079,7 @@ GCRuntime::getNextZoneGroup()
         MOZ_ASSERT(!isIncremental);
         for (GCZoneGroupIter zone(rt); !zone.done(); zone.next()) {
             MOZ_ASSERT(!zone->gcNextGraphComponent);
-            MOZ_ASSERT(zone->isGCMarking());
+            MOZ_ASSERT(zone->shouldMarkInZone());
             zone->setNeedsIncrementalBarrier(false, Zone::UpdateJit);
             zone->setGCState(Zone::NoGC);
             zone->gcGrayRoots.clearAndFree();
@@ -4522,7 +4522,7 @@ GCRuntime::beginSweepingZoneGroup(AutoLockForExclusiveAccess& lock)
     bool sweepingAtoms = false;
     for (GCZoneGroupIter zone(rt); !zone.done(); zone.next()) {
         /* Set the GC state to sweeping. */
-        MOZ_ASSERT(zone->isGCMarking());
+        MOZ_ASSERT(zone->shouldMarkInZone());
         zone->setGCState(Zone::Sweep);
 
         /* Purge the ArenaLists before sweeping. */
@@ -5231,7 +5231,7 @@ GCRuntime::resetIncrementalGC(gc::AbortReason reason, AutoLockForExclusiveAccess
             ResetGrayList(c);
 
         for (GCZonesIter zone(rt); !zone.done(); zone.next()) {
-            MOZ_ASSERT(zone->isGCMarking());
+            MOZ_ASSERT(zone->shouldMarkInZone());
             zone->setNeedsIncrementalBarrier(false, Zone::UpdateJit);
             zone->setGCState(Zone::NoGC);
         }
@@ -5355,7 +5355,7 @@ AutoGCSlice::AutoGCSlice(JSRuntime* rt)
          * is expensive) because Ion code doesn't run during GC. If need be,
          * we'll update the Ion barriers in ~AutoGCSlice.
          */
-        if (zone->isGCMarking()) {
+        if (zone->shouldMarkInZone()) {
             MOZ_ASSERT(zone->needsIncrementalBarrier());
             zone->setNeedsIncrementalBarrier(false, Zone::DontUpdateJit);
         } else {
@@ -5368,7 +5368,7 @@ AutoGCSlice::~AutoGCSlice()
 {
     /* We can't use GCZonesIter if this is the end of the last slice. */
     for (ZonesIter zone(runtime, WithAtoms); !zone.done(); zone.next()) {
-        if (zone->isGCMarking()) {
+        if (zone->shouldMarkInZone()) {
             zone->setNeedsIncrementalBarrier(true, Zone::UpdateJit);
             zone->arenas.purge();
         } else {

@@ -232,11 +232,9 @@ struct Zone : public JS::shadow::Zone,
         return rt->isHeapMajorCollecting() && !rt->gc.isHeapCompacting() && gcState_ != NoGC;
     }
 
-    bool isGCMarking() {
-        if (runtimeFromMainThread()->isHeapCollecting())
-            return gcState_ == Mark || gcState_ == MarkGray;
-        else
-            return needsIncrementalBarrier();
+    bool shouldMarkInZone() const {
+        return needsIncrementalBarrier() ||
+               (gcState_ == Mark || gcState_ == MarkGray);
     }
 
     GCState gcState() const { return gcState_; }

@@ -2989,7 +2989,7 @@ Debugger::markAllIteratively(GCMarker* trc)
                  *   - it actually has hooks that might be called
                  */
                 GCPtrNativeObject& dbgobj = dbg->toJSObjectRef();
-                if (!dbgobj->zone()->isGCMarking())
+                if (!dbgobj->zone()->shouldMarkInZone())
                     continue;
 
                 bool dbgMarked = IsMarked(rt, &dbgobj);
@@ -3139,7 +3139,7 @@ Debugger::findZoneEdges(Zone* zone, js::gc::ZoneComponentFinder& finder)
      */
     for (Debugger* dbg : zone->runtimeFromMainThread()->debuggerList) {
         Zone* w = dbg->object->zone();
-        if (w == zone || !w->isGCMarking())
+        if (w == zone || !w->shouldMarkInZone())
             continue;
         if (dbg->debuggeeZones.has(zone) ||
             dbg->scripts.hasKeyInZone(zone) ||
