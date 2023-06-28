@@ -730,7 +730,7 @@ GCMarker::markImplicitEdgesHelper(T markedThing)
         return;
 
     Zone* zone = gc::TenuredCell::fromPointer(markedThing)->zone();
-    MOZ_ASSERT(zone->isGCMarking());
+    MOZ_ASSERT(zone->shouldMarkInZone());
     MOZ_ASSERT(!zone->isGCSweeping());
 
     auto p = zone->gcWeakKeys.get(JS::GCCellPtr(markedThing));

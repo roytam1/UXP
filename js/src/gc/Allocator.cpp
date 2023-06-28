@@ -254,7 +254,7 @@ GCRuntime::checkIncrementalZoneState(ExclusiveContext* cx, T* t)
         return;
 
     Zone* zone = cx->asJSContext()->zone();
-    MOZ_ASSERT_IF(t && zone->wasGCStarted() && (zone->isGCMarking() || zone->isGCSweeping()),
+    MOZ_ASSERT_IF(t && zone->wasGCStarted() && (zone->shouldMarkInZone() || zone->isGCSweeping()),
                   t->asTenured().arena()->allocatedDuringIncremental);
 #endif
 }
