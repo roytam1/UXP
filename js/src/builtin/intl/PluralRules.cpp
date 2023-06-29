@@ -79,7 +79,7 @@ static const JSFunctionSpec pluralRules_methods[] = {
 
 /**
  * PluralRules constructor.
- * Spec: ECMAScript 402 API, PluralRules, 1.1
+ * Spec: ECMAScript 402 API, PluralRules, 13.2.1
  */
 static bool
 PluralRules(JSContext* cx, const CallArgs& args, bool construct)
