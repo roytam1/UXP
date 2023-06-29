@@ -373,8 +373,10 @@ NewUCollator(JSContext* cx, Handle<CollatorObject*> collator)
             uCaseFirst = UCOL_UPPER_FIRST;
         else if (StringsAreEqual(caseFirst, "lower"))
             uCaseFirst = UCOL_LOWER_FIRST;
-        else
+        else {
             MOZ_ASSERT(StringsAreEqual(caseFirst, "false"));
+            uCaseFirst = UCOL_OFF;
+        }
     }
 
     UErrorCode status = U_ZERO_ERROR;
@@ -462,4 +464,22 @@ js::intl_CompareStrings(JSContext* cx, unsigned argc, Value* vp)
     RootedString str1(cx, args[1].toString());
     RootedString str2(cx, args[2].toString());
     return intl_CompareStrings(cx, coll, str1, str2, args.rval());
+}
+
+bool
+js::intl_isUpperCaseFirst(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 1);
+    MOZ_ASSERT(args[0].isString());
+
+    SharedIntlData& sharedIntlData = cx->sharedIntlData;
+
+    RootedString locale(cx, args[0].toString());
+    bool isUpperFirst;
+    if (!sharedIntlData.isUpperCaseFirst(cx, locale, &isUpperFirst))
+        return false;
+
+    args.rval().setBoolean(isUpperFirst);
+    return true;
 }

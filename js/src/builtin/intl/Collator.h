@@ -87,6 +87,15 @@ intl_availableCollations(JSContext* cx, unsigned argc, Value* vp);
 extern MOZ_MUST_USE bool
 intl_CompareStrings(JSContext* cx, unsigned argc, Value* vp);
 
+/**
+ * Returns true if the given locale sorts upper-case before lower-case
+ * characters.
+ *
+ * Usage: result = intl_isUpperCaseFirst(locale)
+ */
+extern MOZ_MUST_USE bool
+intl_isUpperCaseFirst(JSContext* cx, unsigned argc, Value* vp);
+
 
 } // namespace js
 
