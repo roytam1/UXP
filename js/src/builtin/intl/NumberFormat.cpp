@@ -35,6 +35,7 @@ using mozilla::IsFinite;
 using mozilla::IsNaN;
 using mozilla::IsNegativeZero;
 using js::intl::CallICU;
+using js::intl::DateTimeFormatOptions;
 using js::intl::GetAvailableLocales;
 using js::intl::IcuLocale;
 using js::intl::INITIAL_CHAR_BUFFER_SIZE;
@@ -119,7 +120,7 @@ NumberFormat(JSContext* cx, const CallArgs& args, bool construct)
 
     // Step 3.
     return intl::LegacyIntlInitialize(cx, numberFormat, cx->names().InitializeNumberFormat, thisValue,
-                                      locales, options, args.rval());
+                                      locales, options, DateTimeFormatOptions::Standard, args.rval());
 }
 
 static bool

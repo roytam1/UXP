@@ -38,10 +38,17 @@ InitializeObject(JSContext* cx, HandleObject obj, Handle<PropertyName*> initiali
  * self-hosted function.  This is only for a few old Intl.* constructors, for
  * legacy reasons -- new ones should use the function above instead.
  */
+
+enum class DateTimeFormatOptions
+{
+    Standard,
+    EnableMozExtensions,
+};
+
 extern bool
 LegacyIntlInitialize(JSContext* cx, HandleObject obj, Handle<PropertyName*> initializer,
                      HandleValue thisValue, HandleValue locales, HandleValue options,
-                     MutableHandleValue result);
+                     DateTimeFormatOptions dtfOptions, MutableHandleValue result);
 /**
  * Returns the object holding the internal properties for obj.
  */

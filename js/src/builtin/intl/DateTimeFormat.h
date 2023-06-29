@@ -41,7 +41,8 @@ class DateTimeFormatObject : public NativeObject
 extern JSObject*
 
 CreateDateTimeFormatPrototype(JSContext* cx, JS::Handle<JSObject*> Intl,
-                              JS::Handle<GlobalObject*> global, MutableHandleObject constructor);
+                              JS::Handle<GlobalObject*> global, MutableHandleObject constructor,
+                              intl::DateTimeFormatOptions dtfOptions);
 
 /**
  * Returns a new instance of the standard built-in DateTimeFormat constructor.
@@ -123,6 +124,35 @@ intl_defaultTimeZoneOffset(JSContext* cx, unsigned argc, Value* vp);
  */
 extern MOZ_MUST_USE bool
 intl_patternForSkeleton(JSContext* cx, unsigned argc, Value* vp);
+
+/**
+ * Return a pattern in the date-time format pattern language of Unicode
+ * Technical Standard 35, Unicode Locale Data Markup Language, for the
+ * best-fit date-time style for the given locale.
+ * The function takes four arguments:
+ *
+ *   locale
+ *     BCP47 compliant locale string
+ *   dateStyle
+ *     A string with values: full or long or medium or short, or `undefined`
+ *   timeStyle
+ *     A string with values: full or long or medium or short, or `undefined`
+ *   timeZone
+ *     IANA time zone name
+ *
+ * Date and time style categories map to CLDR time/date standard
+ * format patterns.
+ *
+ * For the definition of a pattern string, see LDML 4.8:
+ * http://unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+ *
+ * If `undefined` is passed to `dateStyle` or `timeStyle`, the respective
+ * portions of the pattern will not be included in the result.
+ *
+ * Usage: pattern = intl_patternForStyle(locale, dateStyle, timeStyle, timeZone)
+ */
+extern MOZ_MUST_USE bool
+intl_patternForStyle(JSContext* cx, unsigned argc, Value* vp);
 
 /**
  * Returns a String value representing x (which must be a Number value)

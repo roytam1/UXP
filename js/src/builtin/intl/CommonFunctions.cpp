@@ -42,14 +42,15 @@ js::intl::InitializeObject(JSContext* cx, HandleObject obj, Handle<PropertyName*
 bool
 js::intl::LegacyIntlInitialize(JSContext* cx, HandleObject obj, Handle<PropertyName*> initializer,
                                HandleValue thisValue, HandleValue locales, HandleValue options,
-                               MutableHandleValue result)
+                               DateTimeFormatOptions dtfOptions, MutableHandleValue result)
 {
-    FixedInvokeArgs<4> args(cx);
+    FixedInvokeArgs<5> args(cx);
 
     args[0].setObject(*obj);
     args[1].set(thisValue);
     args[2].set(locales);
     args[3].set(options);
+    args[4].setBoolean(dtfOptions == DateTimeFormatOptions::EnableMozExtensions);
 
     RootedValue thisv(cx, NullValue());
     if (!js::CallSelfHostedFunction(cx, initializer, thisv, args, result))

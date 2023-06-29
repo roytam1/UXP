@@ -32,6 +32,18 @@ function resolveDateTimeFormatInternals(lazyDateTimeFormatData) {
     //       }
     //
     //     formatMatcher: "basic" / "best fit",
+    //
+    //     mozExtensions: true / false,
+    //
+    //
+    //     // If mozExtensions is true:
+    //
+    //     dateStyle: "full" / "long" / "medium" / "short" / undefined,
+    //
+    //     timeStyle: "full" / "long" / "medium" / "short" / undefined,
+    //
+    //     patternOption:
+    //       String representing LDML Date Format pattern or undefined
     //   }
     //
     // Note that lazy data is only installed as a final step of initialization,
@@ -75,7 +87,26 @@ function resolveDateTimeFormatInternals(lazyDateTimeFormatData) {
     var formatOpt = lazyDateTimeFormatData.formatOpt;
 
     // Steps 27-28, more or less - see comment after this function.
-    var pattern = toBestICUPattern(dataLocale, formatOpt);
+    var pattern;
+    if (lazyDateTimeFormatData.mozExtensions) {
+        if (lazyDateTimeFormatData.patternOption !== undefined) {
+            pattern = lazyDateTimeFormatData.patternOption;
+
+            internalProps.patternOption = lazyDateTimeFormatData.patternOption;
+        } else if (lazyDateTimeFormatData.dateStyle || lazyDateTimeFormatData.timeStyle) {
+            pattern = intl_patternForStyle(dataLocale,
+              lazyDateTimeFormatData.dateStyle, lazyDateTimeFormatData.timeStyle,
+              lazyDateTimeFormatData.timeZone);
+
+            internalProps.dateStyle = lazyDateTimeFormatData.dateStyle;
+            internalProps.timeStyle = lazyDateTimeFormatData.timeStyle;
+        } else {
+            pattern = toBestICUPattern(dataLocale, formatOpt);
+        }
+        internalProps.mozExtensions = true;
+    } else {
+      pattern = toBestICUPattern(dataLocale, formatOpt);
+    }
 
     // Step 29.
     internalProps.pattern = pattern;
@@ -250,7 +281,7 @@ function UnwrapDateTimeFormat(dtf, methodName) {
  *
  * Spec: ECMAScript Internationalization API Specification, 12.1.1.
  */
-function InitializeDateTimeFormat(dateTimeFormat, thisValue, locales, options) {
+function InitializeDateTimeFormat(dateTimeFormat, thisValue, locales, options, mozExtensions) {
     assert(IsObject(dateTimeFormat), "InitializeDateTimeFormat called with non-Object");
     assert(IsDateTimeFormat(dateTimeFormat),
            "InitializeDateTimeFormat called with non-DateTimeFormat");
@@ -323,6 +354,18 @@ function InitializeDateTimeFormat(dateTimeFormat, thisValue, locales, options) {
     // Step 18.
     var formatOpt = new Record();
     lazyDateTimeFormatData.formatOpt = formatOpt;
+
+    lazyDateTimeFormatData.mozExtensions = mozExtensions;
+
+    if (mozExtensions) {
+        let pattern = GetOption(options, "pattern", "string", undefined, undefined);
+        lazyDateTimeFormatData.patternOption = pattern;
+
+        let dateStyle = GetOption(options, "dateStyle", "string", ["full", "long", "medium", "short"], undefined);
+        lazyDateTimeFormatData.dateStyle = dateStyle;
+        let timeStyle = GetOption(options, "timeStyle", "string", ["full", "long", "medium", "short"], undefined);
+        lazyDateTimeFormatData.timeStyle = timeStyle;
+    }
 
     // Step 19.
     var i, prop;
@@ -832,8 +875,18 @@ function Intl_DateTimeFormat_resolvedOptions() {
         locale: internals.locale,
         calendar: internals.calendar,
         numberingSystem: internals.numberingSystem,
-        timeZone: internals.timeZone
+        timeZone: internals.timeZone,
     };
+
+    if (internals.mozExtensions) {
+        if (internals.patternOption !== undefined) {
+            result.pattern = internals.pattern;
+        } else if (internals.dateStyle || internals.timeStyle) {
+            result.dateStyle = internals.dateStyle;
+            result.timeStyle = internals.timeStyle;
+        }
+    }
+
     resolveICUPattern(internals.pattern, result);
     return result;
 }
