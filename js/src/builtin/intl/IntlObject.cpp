@@ -19,6 +19,7 @@
 #include "builtin/intl/CommonFunctions.h"
 #include "builtin/intl/DateTimeFormat.h"
 #include "builtin/intl/ICUHeader.h"
+#include "builtin/intl/Locale.h"
 #include "builtin/intl/NumberFormat.h"
 #include "builtin/intl/PluralRules.h"
 #include "builtin/intl/RelativeTimeFormat.h"
@@ -459,6 +460,10 @@ GlobalObject::initIntlObject(JSContext* cx, Handle<GlobalObject*> global)
     dateTimeFormatProto = CreateDateTimeFormatPrototype(cx, intl, global, &dateTimeFormat, DateTimeFormatOptions::Standard);
     if (!dateTimeFormatProto)
         return false;
+    RootedObject localeProto(cx);
+    localeProto = CreateLocalePrototype(cx, intl, global);
+    if (!localeProto)
+        return false;
     RootedObject numberFormatProto(cx), numberFormat(cx);
     numberFormatProto = CreateNumberFormatPrototype(cx, intl, global, &numberFormat);
     if (!numberFormatProto)
@@ -492,6 +497,7 @@ GlobalObject::initIntlObject(JSContext* cx, Handle<GlobalObject*> global)
     global->setReservedSlot(COLLATOR_PROTO, ObjectValue(*collatorProto));
     global->setReservedSlot(DATE_TIME_FORMAT, ObjectValue(*dateTimeFormat));
     global->setReservedSlot(DATE_TIME_FORMAT_PROTO, ObjectValue(*dateTimeFormatProto));
+    global->setReservedSlot(LOCALE_PROTO, ObjectValue(*localeProto));
     global->setReservedSlot(NUMBER_FORMAT, ObjectValue(*numberFormat));
     global->setReservedSlot(NUMBER_FORMAT_PROTO, ObjectValue(*numberFormatProto));
     global->setReservedSlot(PLURAL_RULES_PROTO, ObjectValue(*pluralRulesProto));

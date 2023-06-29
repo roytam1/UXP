@@ -113,6 +113,7 @@ class GlobalObject : public NativeObject
         DATE_TIME_FORMAT_PROTO,
         PLURAL_RULES_PROTO,
         RELATIVE_TIME_FORMAT_PROTO,
+        LOCALE_PROTO,
         MODULE_PROTO,
         IMPORT_ENTRY_PROTO,
         EXPORT_ENTRY_PROTO,
@@ -499,6 +500,11 @@ class GlobalObject : public NativeObject
     static JSObject*
     getOrCreateCollatorPrototype(JSContext* cx, Handle<GlobalObject*> global) {
         return getOrCreateObject(cx, global, COLLATOR_PROTO, initIntlObject);
+    }
+
+    static JSObject*
+    getOrCreateLocalePrototype(JSContext* cx, Handle<GlobalObject*> global) {
+        return getOrCreateObject(cx, global, LOCALE_PROTO, initIntlObject);
     }
 
     static JSFunction*

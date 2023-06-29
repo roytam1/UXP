@@ -89,9 +89,9 @@ static_assert(mozilla::IsSame<UChar, char16_t>::value,
 // buffer's entire inline capacity before growing it and heap-allocating.
 static const size_t INITIAL_CHAR_BUFFER_SIZE = 32;
 
-template <typename ICUStringFunction, size_t InlineCapacity>
+template <typename ICUStringFunction, typename CharT, size_t InlineCapacity>
 static int32_t
-CallICU(JSContext* cx, Vector<char16_t, InlineCapacity>& chars, const ICUStringFunction& strFn)
+CallICU(JSContext* cx, Vector<CharT, InlineCapacity>& chars, const ICUStringFunction& strFn)
 {
     MOZ_ASSERT(chars.length() == 0);
     MOZ_ALWAYS_TRUE(chars.resize(InlineCapacity));

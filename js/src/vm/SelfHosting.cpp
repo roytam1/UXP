@@ -25,6 +25,7 @@
 #include "builtin/intl/Collator.h"
 #include "builtin/intl/DateTimeFormat.h"
 #include "builtin/intl/IntlObject.h"
+#include "builtin/intl/Locale.h"
 #include "builtin/intl/NumberFormat.h"
 #include "builtin/intl/PluralRules.h"
 #include "builtin/intl/RelativeTimeFormat.h"
@@ -2486,6 +2487,8 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_FN("intl_SelectPluralRule", intl_SelectPluralRule, 2,0),
     JS_FN("intl_toLocaleLowerCase", intl_toLocaleLowerCase, 2,0),
     JS_FN("intl_toLocaleUpperCase", intl_toLocaleUpperCase, 2,0),
+    JS_FN("intl_ValidateAndCanonicalizeLanguageTag", intl_ValidateAndCanonicalizeLanguageTag, 2, 0),
+    JS_FN("intl_TryValidateAndCanonicalizeLanguageTag", intl_TryValidateAndCanonicalizeLanguageTag, 1, 0),
     JS_FN("intl_RelativeTimeFormat_availableLocales", intl_RelativeTimeFormat_availableLocales, 0,0),
     JS_FN("intl_FormatRelativeTime", intl_FormatRelativeTime, 3,0),
 
