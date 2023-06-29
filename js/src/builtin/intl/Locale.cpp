@@ -106,12 +106,7 @@ static LocaleObject* CreateLocaleObject(JSContext* cx, HandleObject prototype,
     }
   }
 
-  StringBuffer sb(cx);
-  if (!tag.appendTo(cx, sb)) {
-    return nullptr;
-  }
-
-  RootedString tagStr(cx, sb.finishString());
+  RootedString tagStr(cx, tag.toString(cx));
   if (!tagStr) {
     return nullptr;
   }
@@ -1320,12 +1315,7 @@ bool js::intl_ValidateAndCanonicalizeLanguageTag(JSContext* cx, unsigned argc,
     return false;
   }
 
-  StringBuffer sb(cx);
-  if (!tag.appendTo(cx, sb)) {
-    return false;
-  }
-
-  JSString* resultStr = sb.finishString();
+  JSString* resultStr = tag.toString(cx);
   if (!resultStr) {
     return false;
   }
@@ -1358,12 +1348,7 @@ bool js::intl_TryValidateAndCanonicalizeLanguageTag(JSContext* cx,
     return false;
   }
 
-  StringBuffer sb(cx);
-  if (!tag.appendTo(cx, sb)) {
-    return false;
-  }
-
-  JSString* resultStr = sb.finishString();
+  JSString* resultStr = tag.toString(cx);
   if (!resultStr) {
     return false;
   }

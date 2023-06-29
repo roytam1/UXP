@@ -83,33 +83,10 @@ js::intl::ReportInternalError(JSContext* cx)
     JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_INTERNAL_INTL_ERROR);
 }
 
-bool
-js::intl::GetAvailableLocales(JSContext* cx, CountAvailable countAvailable,
-                              GetAvailable getAvailable, MutableHandleValue result)
-{
-    RootedObject locales(cx, NewObjectWithGivenProto<PlainObject>(cx, nullptr));
-    if (!locales)
-        return false;
+const js::intl::OldStyleLanguageTagMapping
+    js::intl::oldStyleLanguageTagMappings[] = {
+        {"pa-PK", "pa-Arab-PK"}, {"zh-CN", "zh-Hans-CN"},
+        {"zh-HK", "zh-Hant-HK"}, {"zh-SG", "zh-Hans-SG"},
+        {"zh-TW", "zh-Hant-TW"},
+};
 
-    uint32_t count = countAvailable();
-    for (uint32_t i = 0; i < count; i++) {
-        const char* locale = getAvailable(i);
-        auto lang = DuplicateString(cx, locale);
-        if (!lang)
-            return false;
-        char* p;
-        while ((p = strchr(lang.get(), '_')))
-            *p = '-';
-        RootedAtom a(cx, Atomize(cx, lang.get(), strlen(lang.get())));
-        if (!a)
-            return false;
-        if (!DefineProperty(cx, locales, a->asPropertyName(), TrueHandleValue, nullptr, nullptr,
-                            JSPROP_ENUMERATE))
-        {
-            return false;
-        }
-    }
-
-    result.setObject(*locales);
-    return true;
-}

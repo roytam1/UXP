@@ -40,17 +40,6 @@ CreateRelativeTimeFormatPrototype(JSContext* cx, JS::Handle<JSObject*> Intl,
                                   JS::Handle<GlobalObject*> global);
 
 /**
- * Returns an object indicating the supported locales for relative time format
- * by having a true-valued property for each such locale with the
- * canonicalized language tag as the property name. The object has no
- * prototype.
- *
- * Usage: availableLocales = intl_RelativeTimeFormat_availableLocales()
- */
-extern MOZ_MUST_USE bool
-intl_RelativeTimeFormat_availableLocales(JSContext* cx, unsigned argc, Value* vp);
-
-/**
  * Returns a relative time as a string formatted according to the effective
  * locale and the formatting options of the given RelativeTimeFormat.
  *

@@ -24,7 +24,6 @@
 #include "jsobjinlines.h"
 
 using namespace js;
-using js::intl::GetAvailableLocales;
 using js::intl::IcuLocale;
 using js::intl::ReportInternalError;
 using js::intl::SharedIntlData;
@@ -183,19 +182,6 @@ js::CreateCollatorPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObjec
         return nullptr;
 
     return proto;
-}
-
-bool
-js::intl_Collator_availableLocales(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-    MOZ_ASSERT(args.length() == 0);
-
-    RootedValue result(cx);
-    if (!GetAvailableLocales(cx, ucol_countAvailable, ucol_getAvailable, &result))
-        return false;
-    args.rval().set(result);
-    return true;
 }
 
 bool

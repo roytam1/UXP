@@ -36,7 +36,6 @@ using mozilla::IsNaN;
 using mozilla::IsNegativeZero;
 using js::intl::CallICU;
 using js::intl::DateTimeFormatOptions;
-using js::intl::GetAvailableLocales;
 using js::intl::IcuLocale;
 using js::intl::INITIAL_CHAR_BUFFER_SIZE;
 using js::intl::StringsAreEqual;
@@ -201,19 +200,6 @@ js::CreateNumberFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalO
 
     constructor.set(ctor);
     return proto;
-}
-
-bool
-js::intl_NumberFormat_availableLocales(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-    MOZ_ASSERT(args.length() == 0);
-
-    RootedValue result(cx);
-    if (!GetAvailableLocales(cx, unum_countAvailable, unum_getAvailable, &result))
-        return false;
-    args.rval().set(result);
-    return true;
 }
 
 bool

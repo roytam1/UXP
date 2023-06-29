@@ -11,17 +11,6 @@
  */
 var pluralRulesInternalProperties = {
     localeData: pluralRulesLocaleData,
-    _availableLocales: null,
-    availableLocales: function()
-    {
-        var locales = this._availableLocales;
-        if (locales)
-            return locales;
-
-        locales = intl_PluralRules_availableLocales();
-        addSpecialMissingLanguageTags(locales);
-        return (this._availableLocales = locales);
-    },
     relevantExtensionKeys: [],
 };
 
@@ -50,7 +39,7 @@ function resolvePluralRulesInternals(lazyPluralRulesData) {
     var localeData = PluralRules.localeData;
 
     // Step 11.
-    const r = ResolveLocale(callFunction(PluralRules.availableLocales, PluralRules),
+    const r = ResolveLocale("PluralRules",
                             lazyPluralRulesData.requestedLocales,
                             lazyPluralRulesData.opt,
                             PluralRules.relevantExtensionKeys,
@@ -187,8 +176,8 @@ function Intl_PluralRules_supportedLocalesOf(locales /*, options*/) {
     var options = arguments.length > 1 ? arguments[1] : undefined;
 
     // Step 1.
-    var availableLocales = callFunction(pluralRulesInternalProperties.availableLocales,
-                                        pluralRulesInternalProperties);
+    var availableLocales = "PluralRules";
+
     // Step 2.
     let requestedLocales = CanonicalizeLocaleList(locales);
 
