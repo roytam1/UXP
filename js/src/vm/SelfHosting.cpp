@@ -2487,6 +2487,7 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_FN("intl_toLocaleUpperCase", intl_toLocaleUpperCase, 2,0),
     JS_FN("intl_ValidateAndCanonicalizeLanguageTag", intl_ValidateAndCanonicalizeLanguageTag, 2, 0),
     JS_FN("intl_TryValidateAndCanonicalizeLanguageTag", intl_TryValidateAndCanonicalizeLanguageTag, 1, 0),
+    JS_FN("intl_ValidateAndCanonicalizeUnicodeExtensionType", intl_ValidateAndCanonicalizeUnicodeExtensionType, 3, 0),
     JS_FN("intl_FormatRelativeTime", intl_FormatRelativeTime, 3,0),
 
     JS_INLINABLE_FN("IsCollator",

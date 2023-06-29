@@ -15,6 +15,7 @@
 
 #include "builtin/intl/CommonFunctions.h"
 #include "builtin/intl/ICUHeader.h"
+#include "builtin/intl/LanguageTag.h"
 #include "builtin/intl/ScopedICUObject.h"
 #include "builtin/intl/SharedIntlData.h"
 #include "builtin/intl/TimeZoneDataGenerated.h"
@@ -582,13 +583,56 @@ NewUDateFormat(JSContext* cx, Handle<DateTimeFormatObject*> dateTimeFormat)
 
     if (!GetProperty(cx, internals, internals, cx->names().locale, &value))
         return nullptr;
-    JSAutoByteString locale(cx, value.toString());
-    if (!locale)
+
+    // ICU expects calendar and numberingSystem as Unicode locale extensions on
+    // locale.
+
+    intl::LanguageTag tag(cx);
+    {
+        JSLinearString* locale = value.toString()->ensureLinear(cx);
+        if (!locale)
+            return nullptr;
+
+        if (!intl::LanguageTagParser::parse(cx, locale, tag))
+            return nullptr;
+    }
+
+    JS::RootedVector<intl::UnicodeExtensionKeyword> keywords(cx);
+
+    if (!GetProperty(cx, internals, internals, cx->names().calendar, &value))
         return nullptr;
 
-    // We don't need to look at calendar and numberingSystem - they can only be
-    // set via the Unicode locale extension and are therefore already set on
-    // locale.
+    {
+        JSLinearString* calendar = value.toString()->ensureLinear(cx);
+        if (!calendar)
+            return nullptr;
+
+        if (!keywords.emplaceBack("ca", calendar))
+            return nullptr;
+    }
+
+    if (!GetProperty(cx, internals, internals, cx->names().numberingSystem, &value))
+        return nullptr;
+
+    {
+        JSLinearString* numberingSystem = value.toString()->ensureLinear(cx);
+        if (!numberingSystem)
+            return nullptr;
+
+        if (!keywords.emplaceBack("nu", numberingSystem))
+            return nullptr;
+    }
+
+    // |ApplyUnicodeExtensionToTag| applies the new keywords to the front of
+    // the Unicode extension subtag. We're then relying on ICU to follow RFC
+    // 6067, which states that any trailing keywords using the same key
+    // should be ignored.
+    if (!intl::ApplyUnicodeExtensionToTag(cx, tag, keywords))
+        return nullptr;
+
+    UniqueChars locale = tag.toStringZ(cx);
+    if (!locale)
+        return nullptr;
 
     if (!GetProperty(cx, internals, internals, cx->names().timeZone, &value))
         return nullptr;
@@ -614,7 +658,7 @@ NewUDateFormat(JSContext* cx, Handle<DateTimeFormatObject*> dateTimeFormat)
 
     UErrorCode status = U_ZERO_ERROR;
     UDateFormat* df =
-        udat_open(UDAT_PATTERN, UDAT_PATTERN, IcuLocale(locale.ptr()), uTimeZone, uTimeZoneLength,
+        udat_open(UDAT_PATTERN, UDAT_PATTERN, IcuLocale(locale.get()), uTimeZone, uTimeZoneLength,
                   uPattern, uPatternLength, &status);
     if (U_FAILURE(status)) {
         intl::ReportInternalError(cx);

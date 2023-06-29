@@ -211,6 +211,8 @@ function InitializeNumberFormat(numberFormat, thisValue, locales, options) {
     //     opt: // opt object computed in InitializeNumberFormat
     //       {
     //         localeMatcher: "lookup" / "best fit",
+    //
+    //         nu: string matching a Unicode extension type, // optional
     //       }
     //
     //     minimumIntegerDigits: integer ∈ [1, 21],
@@ -253,6 +255,16 @@ function InitializeNumberFormat(numberFormat, thisValue, locales, options) {
     // Steps 5-6.
     var matcher = GetOption(options, "localeMatcher", "string", ["lookup", "best fit"], "best fit");
     opt.localeMatcher = matcher;
+    
+    var numberingSystem = GetOption(options, "numberingSystem", "string", undefined, undefined);
+
+    if (numberingSystem !== undefined) {
+        numberingSystem = intl_ValidateAndCanonicalizeUnicodeExtensionType(numberingSystem,
+                                                                           "numberingSystem",
+                                                                           "nu");
+    }
+
+    opt.nu = numberingSystem;
 
     // Compute formatting options.
     // Step 12.
