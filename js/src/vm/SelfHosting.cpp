@@ -2207,11 +2207,9 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_FN("std_String_trimStart",                str_trimStart,                0,0),
     JS_FN("std_String_trimRight",                str_trimEnd,                  0,0),
     JS_FN("std_String_trimEnd",                  str_trimEnd,                  0,0),
-    JS_FN("std_String_toLocaleLowerCase",        str_toLocaleLowerCase,        0,0),
-    JS_FN("std_String_toLocaleUpperCase",        str_toLocaleUpperCase,        0,0),
     JS_FN("std_String_normalize",                str_normalize,                0,0),
     JS_FN("std_String_concat",                   str_concat,                   1,0),
-    
+
     JS_FN("std_TypedArray_buffer",               js::TypedArray_bufferGetter,  1,0),
 
     JS_FN("std_WeakMap_has",                     WeakMap_has,                  1,0),
@@ -2485,6 +2483,8 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_FN("intl_PluralRules_availableLocales", intl_PluralRules_availableLocales, 0,0),
     JS_FN("intl_GetPluralCategories", intl_GetPluralCategories, 2, 0),
     JS_FN("intl_SelectPluralRule", intl_SelectPluralRule, 2,0),
+    JS_FN("intl_toLocaleLowerCase", intl_toLocaleLowerCase, 2,0),
+    JS_FN("intl_toLocaleUpperCase", intl_toLocaleUpperCase, 2,0),
     JS_FN("intl_RelativeTimeFormat_availableLocales", intl_RelativeTimeFormat_availableLocales, 0,0),
     JS_FN("intl_FormatRelativeTime", intl_FormatRelativeTime, 3,0),
 

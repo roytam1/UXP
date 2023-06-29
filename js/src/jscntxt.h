@@ -365,6 +365,7 @@ struct JSContext : public js::ExclusiveContext,
     using ExclusiveContext::permanentAtoms;
     using ExclusiveContext::pod_calloc;
     using ExclusiveContext::pod_malloc;
+    using ExclusiveContext::pod_realloc;
     using ExclusiveContext::staticStrings;
     using ExclusiveContext::updateMallocCounter;
     using ExclusiveContext::wellKnownSymbols;
