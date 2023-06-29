@@ -91,63 +91,35 @@ static const JSFunctionSpec dateTimeFormat_methods[] = {
 static bool
 DateTimeFormat(JSContext* cx, const CallArgs& args, bool construct)
 {
-    RootedObject obj(cx);
+    // Step 1 (Handled by OrdinaryCreateFromConstructor fallback code).
 
-    // We're following ECMA-402 1st Edition when DateTimeFormat is called
-    // because of backward compatibility issues.
-    // See https://github.com/tc39/ecma402/issues/57
-    if (!construct) {
-        // ES Intl 1st ed., 12.1.2.1 step 3
-        JSObject* intl = GlobalObject::getOrCreateIntlObject(cx, cx->global());
-        if (!intl)
-            return false;
-        RootedValue self(cx, args.thisv());
-        if (!self.isUndefined() && (!self.isObject() || self.toObject() != *intl)) {
-            // ES Intl 1st ed., 12.1.2.1 step 4
-            obj = ToObject(cx, self);
-            if (!obj)
-                return false;
-
-            // ES Intl 1st ed., 12.1.2.1 step 5
-            bool extensible;
-            if (!IsExtensible(cx, obj, &extensible))
-                return false;
-            if (!extensible)
-                return Throw(cx, obj, JSMSG_OBJECT_NOT_EXTENSIBLE);
-        } else {
-            // ES Intl 1st ed., 12.1.2.1 step 3.a
-            construct = true;
-        }
-    }
-    if (construct) {
-        // Step 2 (Inlined 9.1.14, OrdinaryCreateFromConstructor).
-        RootedObject proto(cx);
-        if (args.isConstructing() && !GetPrototypeFromCallableConstructor(cx, args, &proto))
-            return false;
-
-        if (!proto) {
-            proto = GlobalObject::getOrCreateDateTimeFormatPrototype(cx, cx->global());
-            if (!proto)
-                return false;
-        }
-
-        obj = NewObjectWithGivenProto<DateTimeFormatObject>(cx, proto);
-        if (!obj)
-            return false;
-
-        obj->as<NativeObject>().setReservedSlot(DateTimeFormatObject::INTERNALS_SLOT, NullValue());
-        obj->as<NativeObject>().setReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT, PrivateValue(nullptr));
-    }
-
-    RootedValue locales(cx, args.length() > 0 ? args[0] : UndefinedValue());
-    RootedValue options(cx, args.length() > 1 ? args[1] : UndefinedValue());
-
-    // Step 3.
-    if (!intl::InitializeObject(cx, obj, cx->names().InitializeDateTimeFormat, locales, options))
+    // Step 2 (Inlined 9.1.14, OrdinaryCreateFromConstructor).
+    RootedObject proto(cx);
+    if (args.isConstructing() && !GetPrototypeFromCallableConstructor(cx, args, &proto))
         return false;
 
-    args.rval().setObject(*obj);
-    return true;
+    if (!proto) {
+        proto = GlobalObject::getOrCreateDateTimeFormatPrototype(cx, cx->global());
+        if (!proto)
+            return false;
+    }
+
+    Rooted<DateTimeFormatObject*> dateTimeFormat(cx);
+    dateTimeFormat = NewObjectWithGivenProto<DateTimeFormatObject>(cx, proto);
+    if (!dateTimeFormat)
+        return false;
+
+    dateTimeFormat->setReservedSlot(DateTimeFormatObject::INTERNALS_SLOT, NullValue());
+    dateTimeFormat->setReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT,
+                                    PrivateValue(nullptr));
+
+    RootedValue thisValue(cx, construct ? ObjectValue(*dateTimeFormat) : args.thisv());
+    RootedValue locales(cx, args.get(0));
+    RootedValue options(cx, args.get(1));
+
+    // Step 3.
+    return intl::LegacyIntlInitialize(cx, dateTimeFormat, cx->names().InitializeDateTimeFormat,
+                                      thisValue, locales, options, args.rval());
 }
 
 static bool
@@ -174,30 +146,23 @@ js::DateTimeFormatObject::finalize(FreeOp* fop, JSObject* obj)
 {
     MOZ_ASSERT(fop->onMainThread());
 
-    // This is-undefined check shouldn't be necessary, but for internal
-    // brokenness in object allocation code.  For the moment, hack around it by
-    // explicitly guarding against the possibility of the reserved slot not
-    // containing a private.  See bug 949220.
     const Value& slot = obj->as<DateTimeFormatObject>().getReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT);
-    if (!slot.isUndefined()) {
-        if (UDateFormat* df = static_cast<UDateFormat*>(slot.toPrivate()))
-            udat_close(df);
-    }
+    if (UDateFormat* df = static_cast<UDateFormat*>(slot.toPrivate()))
+        udat_close(df);
 }
 
 JSObject*
-js::CreateDateTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObject*> global)
+js::CreateDateTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObject*> global,
+                                  MutableHandleObject constructor)
 {
     RootedFunction ctor(cx);
     ctor = GlobalObject::createConstructor(cx, &DateTimeFormat, cx->names().DateTimeFormat, 0);
     if (!ctor)
         return nullptr;
 
-    RootedNativeObject proto(cx, GlobalObject::createBlankPrototype(cx, global,
-                                                                    &DateTimeFormatObject::class_));
+    RootedObject proto(cx, GlobalObject::createBlankPrototype<PlainObject>(cx, global));
     if (!proto)
         return nullptr;
-    proto->setReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT, PrivateValue(nullptr));
 
     if (!LinkConstructorAndPrototype(cx, ctor, proto))
         return nullptr;
@@ -226,22 +191,12 @@ js::CreateDateTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<Globa
         return nullptr;
     }
 
-    RootedValue options(cx);
-    if (!intl::CreateDefaultOptions(cx, &options))
-        return nullptr;
-
-    // 12.2.1 and 12.3
-    if (!intl::InitializeObject(cx, proto, cx->names().InitializeDateTimeFormat, UndefinedHandleValue,
-                        options))
-    {
-        return nullptr;
-    }
-
     // 8.1
     RootedValue ctorValue(cx, ObjectValue(*ctor));
     if (!DefineProperty(cx, Intl, cx->names().DateTimeFormat, ctorValue, nullptr, nullptr, 0))
         return nullptr;
 
+    constructor.set(ctor);
     return proto;
 }
 
@@ -495,7 +450,7 @@ js::intl_patternForSkeleton(JSContext* cx, unsigned argc, Value* vp)
  * of the given DateTimeFormat.
  */
 static UDateFormat*
-NewUDateFormat(JSContext* cx, HandleObject dateTimeFormat)
+NewUDateFormat(JSContext* cx, Handle<DateTimeFormatObject*> dateTimeFormat)
 {
     RootedValue value(cx);
 
@@ -779,42 +734,23 @@ js::intl_FormatDateTime(JSContext* cx, unsigned argc, Value* vp)
     MOZ_ASSERT(args[1].isNumber());
     MOZ_ASSERT(args[2].isBoolean());
 
-    RootedObject dateTimeFormat(cx, &args[0].toObject());
+    Rooted<DateTimeFormatObject*> dateTimeFormat(cx);
+    dateTimeFormat = &args[0].toObject().as<DateTimeFormatObject>();
 
-    // Obtain a UDateFormat object, cached if possible.
-    bool isDateTimeFormatInstance = dateTimeFormat->getClass() == &DateTimeFormatObject::class_;
-    UDateFormat* df;
-    if (isDateTimeFormatInstance) {
-        void* priv =
-            dateTimeFormat->as<NativeObject>().getReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT).toPrivate();
-        df = static_cast<UDateFormat*>(priv);
-        if (!df) {
-            df = NewUDateFormat(cx, dateTimeFormat);
-            if (!df)
-                return false;
-            dateTimeFormat->as<NativeObject>().setReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT, PrivateValue(df));
-        }
-    } else {
-        // There's no good place to cache the ICU date-time format for an object
-        // that has been initialized as a DateTimeFormat but is not a
-        // DateTimeFormat instance. One possibility might be to add a
-        // DateTimeFormat instance as an internal property to each such object.
+    // Obtain a cached UDateFormat object.
+    void* priv =
+        dateTimeFormat->getReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT).toPrivate();
+    UDateFormat* df = static_cast<UDateFormat*>(priv);
+    if (!df) {
         df = NewUDateFormat(cx, dateTimeFormat);
         if (!df)
             return false;
+        dateTimeFormat->setReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT, PrivateValue(df));
     }
 
     // Use the UDateFormat to actually format the time stamp.
-    RootedValue result(cx);
-    bool success = args[2].toBoolean()
-                   ? intl_FormatToPartsDateTime(cx, df, args[1].toNumber(), &result)
-                   : intl_FormatDateTime(cx, df, args[1].toNumber(), &result);
-
-    if (!isDateTimeFormatInstance)
-        udat_close(df);
-    if (!success)
-        return false;
-    args.rval().set(result);
-    return true;
+    return args[2].toBoolean()
+           ? intl_FormatToPartsDateTime(cx, df, args[1].toNumber(), args.rval())
+           : intl_FormatDateTime(cx, df, args[1].toNumber(), args.rval());
 }
 

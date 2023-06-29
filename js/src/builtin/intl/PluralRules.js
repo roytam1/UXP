@@ -63,11 +63,13 @@ function resolvePluralRulesInternals(lazyPluralRulesData) {
 }
 
 /**
- * Returns an object containing the PluralRules internal properties of |obj|,
- * or throws a TypeError if |obj| isn't PluralRules-initialized.
+ * Returns an object containing the PluralRules internal properties of |obj|.
  */
-function getPluralRulesInternals(obj, methodName) {
-    var internals = getIntlObjectInternals(obj, "PluralRules", methodName);
+function getPluralRulesInternals(obj) {
+    assert(IsObject(obj), "getPluralRulesInternals called with non-object");
+    assert(IsPluralRules(obj), "getPluralRulesInternals called with non-PluralRules");
+
+    var internals = getIntlObjectInternals(obj);
     assert(internals.type === "PluralRules", "bad type escaped getIntlObjectInternals");
 
     var internalProps = maybeInternalProperties(internals);
@@ -91,13 +93,11 @@ function getPluralRulesInternals(obj, methodName) {
  * Spec: ECMAScript 402 API, PluralRules, 1.1.1.
  */
 function InitializePluralRules(pluralRules, locales, options) {
-    assert(IsObject(pluralRules), "InitializePluralRules");
+    assert(IsObject(pluralRules), "InitializePluralRules called with non-object");
+    assert(IsPluralRules(pluralRules), "InitializePluralRules called with non-PluralRules");
 
-    // Step 1.
-    if (isInitializedIntlObject(pluralRules))
-        ThrowTypeError(JSMSG_INTL_OBJECT_REINITED);
-
-    let internals = initializeIntlObject(pluralRules);
+    // Steps 1-2 (These steps are no longer required and should be removed
+    // from the spec; https://github.com/tc39/ecma402/issues/115).
 
     // Lazy PluralRules data has the following structure:
     //
@@ -156,7 +156,7 @@ function InitializePluralRules(pluralRules, locales, options) {
            std_Math_max(lazyPluralRulesData.minimumFractionDigits, 3);
     }
 
-    setLazyData(internals, "PluralRules", lazyPluralRulesData)
+    initializeIntlObject(pluralRules, "PluralRules", lazyPluralRulesData)
 }
 
 /**
@@ -189,8 +189,13 @@ function Intl_PluralRules_supportedLocalesOf(locales /*, options*/) {
 function Intl_PluralRules_select(value) {
     // Step 1.
     let pluralRules = this;
+
     // Step 2.
-    let internals = getPluralRulesInternals(pluralRules, "select");
+    if (!IsObject(pluralRules) || !IsPluralRules(pluralRules))
+        ThrowTypeError(JSMSG_INTL_OBJECT_NOT_INITED, "PluralRules", "select", "PluralRules");
+
+    // Ensure the PluralRules internals are resolved.
+    getPluralRulesInternals(pluralRules);
 
     // Steps 3-4.
     let n = ToNumber(value);
@@ -205,7 +210,13 @@ function Intl_PluralRules_select(value) {
  * Spec: ECMAScript 402 API, PluralRules, 1.4.4.
  */
 function Intl_PluralRules_resolvedOptions() {
-    var internals = getPluralRulesInternals(this, "resolvedOptions");
+    // Check "this PluralRules object" per introduction of section 1.4.
+    if (!IsObject(this) || !IsPluralRules(this)) {
+        ThrowTypeError(JSMSG_INTL_OBJECT_NOT_INITED, "PluralRules", "resolvedOptions",
+                       "PluralRules");
+    }
+
+    var internals = getPluralRulesInternals(this);
 
     var result = {
         locale: internals.locale,

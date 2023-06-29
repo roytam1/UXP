@@ -37,7 +37,8 @@ class NumberFormatObject : public NativeObject
 };
 
 extern JSObject*
-CreateNumberFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObject*> global);
+CreateNumberFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObject*> global,
+                            MutableHandleObject constructor);
 
 /**
  * Returns a new instance of the standard built-in NumberFormat constructor.
@@ -76,7 +77,7 @@ intl_numberingSystem(JSContext* cx, unsigned argc, Value* vp);
  *
  * Spec: ECMAScript Internationalization API Specification, 11.3.2.
  *
- * Usage: formatted = intl_FormatNumber(numberFormat, x)
+ * Usage: formatted = intl_FormatNumber(numberFormat, x, formatToParts)
  */
 extern MOZ_MUST_USE bool
 intl_FormatNumber(JSContext* cx, unsigned argc, Value* vp);

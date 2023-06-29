@@ -27,18 +27,21 @@ namespace js {
 namespace intl {
 
 /**
- * Setup the |options| argument of |IntlInitialize|
- */
-extern bool
-CreateDefaultOptions(JSContext* cx, MutableHandleValue defaultOptions);
-
-/**
  * Initialize a new Intl.* object using the named self-hosted function.
  */
 extern bool
 InitializeObject(JSContext* cx, HandleObject obj, Handle<PropertyName*> initializer,
                  HandleValue locales, HandleValue options);
 
+/**
+ * Initialize an existing object as an Intl.* object using the named
+ * self-hosted function.  This is only for a few old Intl.* constructors, for
+ * legacy reasons -- new ones should use the function above instead.
+ */
+extern bool
+LegacyIntlInitialize(JSContext* cx, HandleObject obj, Handle<PropertyName*> initializer,
+                     HandleValue thisValue, HandleValue locales, HandleValue options,
+                     MutableHandleValue result);
 /**
  * Returns the object holding the internal properties for obj.
  */

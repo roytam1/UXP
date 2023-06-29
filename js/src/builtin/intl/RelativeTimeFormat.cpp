@@ -108,8 +108,8 @@ RelativeTimeFormat(JSContext* cx, unsigned argc, Value* vp)
     if (!relativeTimeFormat)
         return false;
 
-    relativeTimeFormat->as<NativeObject>().setReservedSlot(RelativeTimeFormatObject::INTERNALS_SLOT, NullValue());
-    relativeTimeFormat->as<NativeObject>().setReservedSlot(RelativeTimeFormatObject::URELATIVE_TIME_FORMAT_SLOT, PrivateValue(nullptr));
+    relativeTimeFormat->as<RelativeTimeFormatObject>().setReservedSlot(RelativeTimeFormatObject::INTERNALS_SLOT, NullValue());
+    relativeTimeFormat->as<RelativeTimeFormatObject>().setReservedSlot(RelativeTimeFormatObject::URELATIVE_TIME_FORMAT_SLOT, PrivateValue(nullptr));
 
     RootedValue locales(cx, args.get(0));
     RootedValue options(cx, args.get(1));
@@ -127,15 +127,9 @@ js::RelativeTimeFormatObject::finalize(FreeOp* fop, JSObject* obj)
 {
     MOZ_ASSERT(fop->onMainThread());
 
-    // This is-undefined check shouldn't be necessary, but for internal
-    // brokenness in object allocation code.  For the moment, hack around it by
-    // explicitly guarding against the possibility of the reserved slot not
-    // containing a private.  See bug 949220.
     const Value& slot = obj->as<RelativeTimeFormatObject>().getReservedSlot(RelativeTimeFormatObject::URELATIVE_TIME_FORMAT_SLOT);
-    if (!slot.isUndefined()) {
-        if (URelativeDateTimeFormatter* rtf = static_cast<URelativeDateTimeFormatter*>(slot.toPrivate()))
-            ureldatefmt_close(rtf);
-    }
+    if (URelativeDateTimeFormatter* rtf = static_cast<URelativeDateTimeFormatter*>(slot.toPrivate()))
+        ureldatefmt_close(rtf);
 }
 
 JSObject*
@@ -146,10 +140,9 @@ js::CreateRelativeTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<G
     if (!ctor)
         return nullptr;
 
-    RootedNativeObject proto(cx, GlobalObject::createBlankPrototype(cx, global, &RelativeTimeFormatObject::class_));
+    RootedObject proto(cx, GlobalObject::createBlankPrototype<PlainObject>(cx, global));
     if (!proto)
         return nullptr;
-    proto->setReservedSlot(RelativeTimeFormatObject::URELATIVE_TIME_FORMAT_SLOT, PrivateValue(nullptr));
 
     if (!LinkConstructorAndPrototype(cx, ctor, proto))
         return nullptr;
@@ -162,16 +155,6 @@ js::CreateRelativeTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<G
 
     if (!JS_DefineProperties(cx, proto, relativeTimeFormat_properties))
         return nullptr;
-
-    RootedValue options(cx);
-    if (!intl::CreateDefaultOptions(cx, &options))
-        return nullptr;
-
-    if (!intl::InitializeObject(cx, proto, cx->names().InitializeRelativeTimeFormat, UndefinedHandleValue,
-                        options))
-    {
-        return nullptr;
-    }
 
     RootedValue ctorValue(cx, ObjectValue(*ctor));
     if (!DefineProperty(cx, Intl, cx->names().RelativeTimeFormat, ctorValue, nullptr, nullptr, 0)) {

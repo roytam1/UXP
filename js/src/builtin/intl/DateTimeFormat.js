@@ -90,11 +90,13 @@ function resolveDateTimeFormatInternals(lazyDateTimeFormatData) {
 
 
 /**
- * Returns an object containing the DateTimeFormat internal properties of |obj|,
- * or throws a TypeError if |obj| isn't DateTimeFormat-initialized.
+ * Returns an object containing the DateTimeFormat internal properties of |obj|.
  */
-function getDateTimeFormatInternals(obj, methodName) {
-    var internals = getIntlObjectInternals(obj, "DateTimeFormat", methodName);
+function getDateTimeFormatInternals(obj) {
+    assert(IsObject(obj), "getDateTimeFormatInternals called with non-object");
+    assert(IsDateTimeFormat(obj), "getDateTimeFormatInternals called with non-DateTimeFormat");
+
+    var internals = getIntlObjectInternals(obj);
     assert(internals.type === "DateTimeFormat", "bad type escaped getIntlObjectInternals");
 
     // If internal properties have already been computed, use them.
@@ -214,6 +216,29 @@ function DefaultTimeZone() {
     return defaultTimeZone;
 }
 
+
+/**
+ * UnwrapDateTimeFormat(dtf)
+ */
+function UnwrapDateTimeFormat(dtf, methodName) {
+    // Step 1.
+    if ((!IsObject(dtf) || !IsDateTimeFormat(dtf)) &&
+        dtf instanceof GetDateTimeFormatConstructor())
+    {
+        dtf = dtf[intlFallbackSymbol()];
+    }
+
+    // Step 2.
+    if (!IsObject(dtf) || !IsDateTimeFormat(dtf)) {
+        ThrowTypeError(JSMSG_INTL_OBJECT_NOT_INITED, "DateTimeFormat", methodName,
+                       "DateTimeFormat");
+    }
+
+    // Step 3.
+    return dtf;
+}
+
+
 /**
  * Initializes an object as a DateTimeFormat.
  *
@@ -225,15 +250,13 @@ function DefaultTimeZone() {
  *
  * Spec: ECMAScript Internationalization API Specification, 12.1.1.
  */
-function InitializeDateTimeFormat(dateTimeFormat, locales, options) {
-    assert(IsObject(dateTimeFormat), "InitializeDateTimeFormat");
+function InitializeDateTimeFormat(dateTimeFormat, thisValue, locales, options) {
+    assert(IsObject(dateTimeFormat), "InitializeDateTimeFormat called with non-Object");
+    assert(IsDateTimeFormat(dateTimeFormat),
+           "InitializeDateTimeFormat called with non-DateTimeFormat");
 
-    // Step 1.
-    if (isInitializedIntlObject(dateTimeFormat))
-        ThrowTypeError(JSMSG_INTL_OBJECT_REINITED);
-
-    // Step 2.
-    var internals = initializeIntlObject(dateTimeFormat);
+    // Steps 1-2 (These steps are no longer required and should be removed
+    // from the spec; https://github.com/tc39/ecma402/issues/115).
 
     // Lazy DateTimeFormat data has the following structure:
     //
@@ -334,7 +357,19 @@ function InitializeDateTimeFormat(dateTimeFormat, locales, options) {
     //
     // We've done everything that must be done now: mark the lazy data as fully
     // computed and install it.
-    setLazyData(internals, "DateTimeFormat", lazyDateTimeFormatData);
+    initializeIntlObject(dateTimeFormat, "DateTimeFormat", lazyDateTimeFormatData);
+
+    if (dateTimeFormat !== thisValue && thisValue instanceof GetDateTimeFormatConstructor()) {
+        if (!IsObject(thisValue))
+            ThrowTypeError(JSMSG_NOT_NONNULL_OBJECT, typeof thisValue);
+
+        _DefineDataProperty(thisValue, intlFallbackSymbol(), dateTimeFormat,
+                            ATTR_NONENUMERABLE | ATTR_NONCONFIGURABLE | ATTR_NONWRITABLE);
+
+        return thisValue;
+    }
+
+    return dateTimeFormat;
 }
 
 
@@ -734,7 +769,7 @@ function dateTimeFormatFormatToBind() {
     var x = (date === undefined) ? std_Date_now() : ToNumber(date);
 
     // Step 1.a.iii.
-    return intl_FormatDateTime(this, x, false);
+    return intl_FormatDateTime(this, x, /* formatToParts = */ false);
 }
 
 /**
@@ -745,34 +780,40 @@ function dateTimeFormatFormatToBind() {
  * Spec: ECMAScript Internationalization API Specification, 12.3.2.
  */
 function Intl_DateTimeFormat_format_get() {
-    // Check "this DateTimeFormat object" per introduction of section 12.3.
-    var internals = getDateTimeFormatInternals(this, "format");
+    // Steps 1-3.
+    var dtf = UnwrapDateTimeFormat(this, "format");
 
-    // Step 1.
+    var internals = getDateTimeFormatInternals(dtf);
+
+    // Step 4.
     if (internals.boundFormat === undefined) {
-        // Step 1.a.
+        // Step 4.a.
         var F = dateTimeFormatFormatToBind;
 
-        // Step 1.b-d.
-        var bf = callFunction(FunctionBind, F, this);
+        // Steps 4.b-d.
+        var bf = callFunction(FunctionBind, F, dtf);
         internals.boundFormat = bf;
     }
 
-    // Step 2.
+    // Step 5.
     return internals.boundFormat;
 }
+_SetCanonicalName(Intl_DateTimeFormat_format_get, "get format");
 
 
 function Intl_DateTimeFormat_formatToParts() {
-    // Check "this DateTimeFormat object" per introduction of section 12.3.
-    getDateTimeFormatInternals(this, "formatToParts");
+    // Steps 1-3.
+    var dtf = UnwrapDateTimeFormat(this, "formatToParts");
 
-    // Steps 1.a.i-ii
+    // Ensure the DateTimeFormat internals are resolved.
+    getDateTimeFormatInternals(dtf);
+
+    // Steps 4-5.
     var date = arguments.length > 0 ? arguments[0] : undefined;
     var x = (date === undefined) ? std_Date_now() : ToNumber(date);
 
-    // Step 1.a.iii.
-    return intl_FormatDateTime(this, x, true);
+    // Step 6.
+    return intl_FormatDateTime(dtf, x, /* formatToParts = */ true);
 }
 
 
@@ -782,8 +823,10 @@ function Intl_DateTimeFormat_formatToParts() {
  * Spec: ECMAScript Internationalization API Specification, 12.3.3 and 12.4.
  */
 function Intl_DateTimeFormat_resolvedOptions() {
-    // Check "this DateTimeFormat object" per introduction of section 12.3.
-    var internals = getDateTimeFormatInternals(this, "resolvedOptions");
+    // Invoke |UnwrapDateTimeFormat| per introduction of section 12.3.
+    var dtf = UnwrapDateTimeFormat(this, "resolvedOptions");
+
+    var internals = getDateTimeFormatInternals(dtf);
 
     var result = {
         locale: internals.locale,

@@ -487,7 +487,6 @@ MSG_DEF(JSMSG_TRACELOGGER_ENABLE_FAIL, 1, JSEXN_ERR, "enabling tracelogger faile
 MSG_DEF(JSMSG_DATE_NOT_FINITE,         2, JSEXN_RANGEERR, "date value is not finite in {0}.{1}()")
 MSG_DEF(JSMSG_INTERNAL_INTL_ERROR,     0, JSEXN_ERR, "internal error while computing Intl data")
 MSG_DEF(JSMSG_INTL_OBJECT_NOT_INITED,  3, JSEXN_TYPEERR, "Intl.{0}.prototype.{1} called on value that's not an object initialized as a {2}")
-MSG_DEF(JSMSG_INTL_OBJECT_REINITED,    0, JSEXN_TYPEERR, "can't initialize object twice as an object of an Intl constructor")
 MSG_DEF(JSMSG_INVALID_CURRENCY_CODE,   1, JSEXN_RANGEERR, "invalid currency code in NumberFormat(): {0}")
 MSG_DEF(JSMSG_INVALID_DIGITS_VALUE,    1, JSEXN_RANGEERR, "invalid digits value: {0}")
 MSG_DEF(JSMSG_INVALID_KEYS_TYPE,       0, JSEXN_TYPEERR, "calendar info keys must be an object or undefined")

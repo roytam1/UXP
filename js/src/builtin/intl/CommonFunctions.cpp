@@ -20,25 +20,9 @@
 #include "jsobjinlines.h"
 
 bool
-js::intl::CreateDefaultOptions(JSContext* cx, MutableHandleValue defaultOptions)
-{
-    RootedObject options(cx, NewObjectWithGivenProto<PlainObject>(cx, nullptr));
-    if (!options)
-        return false;
-    defaultOptions.setObject(*options);
-    return true;
-}
-
-bool
 js::intl::InitializeObject(JSContext* cx, HandleObject obj, Handle<PropertyName*> initializer,
                            HandleValue locales, HandleValue options)
 {
-    RootedValue initializerValue(cx);
-    if (!GlobalObject::getIntrinsicValue(cx, cx->global(), initializer, &initializerValue))
-        return false;
-    MOZ_ASSERT(initializerValue.isObject());
-    MOZ_ASSERT(initializerValue.toObject().is<JSFunction>());
-
     FixedInvokeArgs<3> args(cx);
 
     args[0].setObject(*obj);
@@ -47,7 +31,32 @@ js::intl::InitializeObject(JSContext* cx, HandleObject obj, Handle<PropertyName*
 
     RootedValue thisv(cx, NullValue());
     RootedValue ignored(cx);
-    return js::Call(cx, initializerValue, thisv, args, &ignored);
+    if (!js::CallSelfHostedFunction(cx, initializer, thisv, args, &ignored))
+        return false;
+
+    MOZ_ASSERT(ignored.isUndefined(),
+               "Unexpected return value from non-legacy Intl object initializer");
+    return true;
+}
+
+bool
+js::intl::LegacyIntlInitialize(JSContext* cx, HandleObject obj, Handle<PropertyName*> initializer,
+                               HandleValue thisValue, HandleValue locales, HandleValue options,
+                               MutableHandleValue result)
+{
+    FixedInvokeArgs<4> args(cx);
+
+    args[0].setObject(*obj);
+    args[1].set(thisValue);
+    args[2].set(locales);
+    args[3].set(options);
+
+    RootedValue thisv(cx, NullValue());
+    if (!js::CallSelfHostedFunction(cx, initializer, thisv, args, result))
+        return false;
+
+    MOZ_ASSERT(result.isObject(), "Legacy Intl object initializer must return an object");
+    return true;
 }
 
 /**
@@ -56,21 +65,12 @@ js::intl::InitializeObject(JSContext* cx, HandleObject obj, Handle<PropertyName*
 JSObject*
 js::intl::GetInternalsObject(JSContext* cx, HandleObject obj)
 {
-    RootedValue getInternalsValue(cx);
-    if (!GlobalObject::getIntrinsicValue(cx, cx->global(), cx->names().getInternals,
-                                         &getInternalsValue))
-    {
-        return nullptr;
-    }
-    MOZ_ASSERT(getInternalsValue.isObject());
-    MOZ_ASSERT(getInternalsValue.toObject().is<JSFunction>());
-
     FixedInvokeArgs<1> args(cx);
 
     args[0].setObject(*obj);
 
     RootedValue v(cx, NullValue());
-    if (!js::Call(cx, getInternalsValue, v, args, &v))
+    if (!js::CallSelfHostedFunction(cx, cx->names().getInternals, v, args, &v))
         return nullptr;
 
     return &v.toObject();

@@ -41,7 +41,7 @@ class DateTimeFormatObject : public NativeObject
 extern JSObject*
 
 CreateDateTimeFormatPrototype(JSContext* cx, JS::Handle<JSObject*> Intl,
-                              JS::Handle<GlobalObject*> global);
+                              JS::Handle<GlobalObject*> global, MutableHandleObject constructor);
 
 /**
  * Returns a new instance of the standard built-in DateTimeFormat constructor.
@@ -131,7 +131,7 @@ intl_patternForSkeleton(JSContext* cx, unsigned argc, Value* vp);
  *
  * Spec: ECMAScript Internationalization API Specification, 12.3.2.
  *
- * Usage: formatted = intl_FormatDateTime(dateTimeFormat, x)
+ * Usage: formatted = intl_FormatDateTime(dateTimeFormat, x, formatToParts)
  */
 extern MOZ_MUST_USE bool
 intl_FormatDateTime(JSContext* cx, unsigned argc, Value* vp);
