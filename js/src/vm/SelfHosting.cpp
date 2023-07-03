@@ -25,6 +25,7 @@
 #include "builtin/intl/Collator.h"
 #include "builtin/intl/DateTimeFormat.h"
 #include "builtin/intl/IntlObject.h"
+#include "builtin/intl/Locale.h"
 #include "builtin/intl/NumberFormat.h"
 #include "builtin/intl/PluralRules.h"
 #include "builtin/intl/RelativeTimeFormat.h"
@@ -1905,6 +1906,23 @@ intrinsic_RuntimeDefaultLocale(JSContext* cx, unsigned argc, Value* vp)
     return true;
 }
 
+using GetOrCreateIntlConstructor = JSFunction* (*)(JSContext*, Handle<GlobalObject*>);
+
+template <GetOrCreateIntlConstructor getOrCreateIntlConstructor>
+static bool
+intrinsic_GetBuiltinIntlConstructor(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 0);
+
+    JSFunction* constructor = getOrCreateIntlConstructor(cx, cx->global());
+    if (!constructor)
+        return false;
+
+    args.rval().setObject(*constructor);
+    return true;
+}
+
 static bool
 intrinsic_ConstructFunction(JSContext* cx, unsigned argc, Value* vp)
 {
@@ -2190,11 +2208,9 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_FN("std_String_trimStart",                str_trimStart,                0,0),
     JS_FN("std_String_trimRight",                str_trimEnd,                  0,0),
     JS_FN("std_String_trimEnd",                  str_trimEnd,                  0,0),
-    JS_FN("std_String_toLocaleLowerCase",        str_toLocaleLowerCase,        0,0),
-    JS_FN("std_String_toLocaleUpperCase",        str_toLocaleUpperCase,        0,0),
     JS_FN("std_String_normalize",                str_normalize,                0,0),
     JS_FN("std_String_concat",                   str_concat,                   1,0),
-    
+
     JS_FN("std_TypedArray_buffer",               js::TypedArray_bufferGetter,  1,0),
 
     JS_FN("std_WeakMap_has",                     WeakMap_has,                  1,0),
@@ -2446,28 +2462,55 @@ static const JSFunctionSpec intrinsic_functions[] = {
     // See builtin/intl/*.h for descriptions of the intl_* functions.
     JS_FN("intl_availableCalendars", intl_availableCalendars, 1,0),
     JS_FN("intl_availableCollations", intl_availableCollations, 1,0),
+    JS_FN("intl_BestAvailableLocale", intl_BestAvailableLocale, 3, 0),
+    JS_FN("intl_supportedLocaleOrFallback", intl_supportedLocaleOrFallback, 1, 0),
     JS_FN("intl_canonicalizeTimeZone", intl_canonicalizeTimeZone, 1,0),
     JS_FN("intl_Collator", intl_Collator, 2,0),
-    JS_FN("intl_Collator_availableLocales", intl_Collator_availableLocales, 0,0),
     JS_FN("intl_CompareStrings", intl_CompareStrings, 3,0),
     JS_FN("intl_DateTimeFormat", intl_DateTimeFormat, 2,0),
-    JS_FN("intl_DateTimeFormat_availableLocales", intl_DateTimeFormat_availableLocales, 0,0),
+    JS_FN("intl_defaultCalendar", intl_defaultCalendar, 1,0),
     JS_FN("intl_defaultTimeZone", intl_defaultTimeZone, 0,0),
     JS_FN("intl_defaultTimeZoneOffset", intl_defaultTimeZoneOffset, 0,0),
     JS_FN("intl_FormatDateTime", intl_FormatDateTime, 2,0),
     JS_FN("intl_FormatNumber", intl_FormatNumber, 2,0),
     JS_FN("intl_GetCalendarInfo", intl_GetCalendarInfo, 1,0),
     JS_FN("intl_ComputeDisplayNames", intl_ComputeDisplayNames, 3,0),
+    JS_FN("intl_isUpperCaseFirst", intl_isUpperCaseFirst, 1,0),
     JS_FN("intl_IsValidTimeZoneName", intl_IsValidTimeZoneName, 1,0),
     JS_FN("intl_NumberFormat", intl_NumberFormat, 2,0),
-    JS_FN("intl_NumberFormat_availableLocales", intl_NumberFormat_availableLocales, 0,0),
     JS_FN("intl_numberingSystem", intl_numberingSystem, 1,0),
-    JS_FN("intl_patternForSkeleton", intl_patternForSkeleton, 2,0),
-    JS_FN("intl_PluralRules_availableLocales", intl_PluralRules_availableLocales, 0,0),
+    JS_FN("intl_patternForSkeleton", intl_patternForSkeleton, 3, 0),
+    JS_FN("intl_patternForStyle", intl_patternForStyle, 6, 0),
     JS_FN("intl_GetPluralCategories", intl_GetPluralCategories, 2, 0),
     JS_FN("intl_SelectPluralRule", intl_SelectPluralRule, 2,0),
-    JS_FN("intl_RelativeTimeFormat_availableLocales", intl_RelativeTimeFormat_availableLocales, 0,0),
+    JS_FN("intl_toLocaleLowerCase", intl_toLocaleLowerCase, 2,0),
+    JS_FN("intl_toLocaleUpperCase", intl_toLocaleUpperCase, 2,0),
+    JS_FN("intl_ValidateAndCanonicalizeLanguageTag", intl_ValidateAndCanonicalizeLanguageTag, 2, 0),
+    JS_FN("intl_TryValidateAndCanonicalizeLanguageTag", intl_TryValidateAndCanonicalizeLanguageTag, 1, 0),
+    JS_FN("intl_ValidateAndCanonicalizeUnicodeExtensionType", intl_ValidateAndCanonicalizeUnicodeExtensionType, 3, 0),
     JS_FN("intl_FormatRelativeTime", intl_FormatRelativeTime, 3,0),
+
+    JS_INLINABLE_FN("IsCollator",
+                    intrinsic_IsInstanceOfBuiltin<CollatorObject>, 1,0,
+                    IntlIsCollator),
+    JS_INLINABLE_FN("IsDateTimeFormat",
+                    intrinsic_IsInstanceOfBuiltin<DateTimeFormatObject>, 1,0,
+                    IntlIsDateTimeFormat),
+    JS_INLINABLE_FN("IsNumberFormat",
+                    intrinsic_IsInstanceOfBuiltin<NumberFormatObject>, 1,0,
+                    IntlIsNumberFormat),
+    JS_INLINABLE_FN("IsPluralRules",
+                    intrinsic_IsInstanceOfBuiltin<PluralRulesObject>, 1,0,
+                    IntlIsPluralRules),
+    JS_INLINABLE_FN("IsRelativeTimeFormat",
+                    intrinsic_IsInstanceOfBuiltin<RelativeTimeFormatObject>, 1,0,
+                    IntlIsRelativeTimeFormat),
+    JS_FN("GetDateTimeFormatConstructor",
+          intrinsic_GetBuiltinIntlConstructor<GlobalObject::getOrCreateDateTimeFormatConstructor>,
+          0,0),
+    JS_FN("GetNumberFormatConstructor",
+          intrinsic_GetBuiltinIntlConstructor<GlobalObject::getOrCreateNumberFormatConstructor>,
+          0,0),
 
     JS_INLINABLE_FN("IsRegExpObject",
                     intrinsic_IsInstanceOfBuiltin<RegExpObject>, 1,0,
@@ -2503,8 +2546,6 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_FN("StringSplitStringLimit", intrinsic_StringSplitStringLimit, 3, 0),
 
     // See builtin/RegExp.h for descriptions of the regexp_* functions.
-    JS_FN("regexp_exec_no_statics", regexp_exec_no_statics, 2,0),
-    JS_FN("regexp_test_no_statics", regexp_test_no_statics, 2,0),
     JS_FN("regexp_construct_raw_flags", regexp_construct_raw_flags, 2,0),
     JS_FN("regexp_clone", regexp_clone, 1,0),
 
