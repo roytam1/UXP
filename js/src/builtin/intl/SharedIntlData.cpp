@@ -34,12 +34,16 @@ ToUpperASCII(Char c)
   return mozilla::IsAsciiLowercaseAlpha(c) ? (c - 0x20) : c;
 }
 
+#if defined(_MSC_VER) && _MSC_VER < 1910
+/* don't do static asserts here */
+#else
 static_assert(ToUpperASCII('a') == 'A', "verifying 'a' uppercases correctly");
 static_assert(ToUpperASCII('m') == 'M', "verifying 'm' uppercases correctly");
 static_assert(ToUpperASCII('z') == 'Z', "verifying 'z' uppercases correctly");
 static_assert(ToUpperASCII(u'a') == u'A', "verifying u'a' uppercases correctly");
 static_assert(ToUpperASCII(u'k') == u'K', "verifying u'k' uppercases correctly");
 static_assert(ToUpperASCII(u'z') == u'Z', "verifying u'z' uppercases correctly");
+#endif
 
 template<typename Char>
 static HashNumber

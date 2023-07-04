@@ -10,6 +10,12 @@
 
 #include "mozilla/TypeTraits.h"
 
+#if defined(_MSC_VER) && _MSC_VER < 1910
+#define MOZ_CONSTEXPR_FUNC /*constexpr*/
+#else
+#define MOZ_CONSTEXPR_FUNC constexpr
+#endif
+
 namespace mozilla {
 
 namespace detail {
@@ -63,7 +69,7 @@ inline constexpr bool IsAscii(char32_t aChar) { return aChar < 0x80; }
  * |aChar| is ASCII, i.e. in the range [0, 0x80).
  */
 template <typename Char>
-constexpr bool IsAsciiNullTerminated(const Char* aChar) {
+MOZ_CONSTEXPR_FUNC bool IsAsciiNullTerminated(const Char* aChar) {
   while (Char c = *aChar++) {
     if (!IsAscii(c)) {
       return false;
@@ -79,7 +85,7 @@ constexpr bool IsAsciiNullTerminated(const Char* aChar) {
  * (https://infra.spec.whatwg.org/#ascii-whitespace)
  */
 template <typename Char>
-constexpr bool IsAsciiWhitespace(Char aChar) {
+MOZ_CONSTEXPR_FUNC bool IsAsciiWhitespace(Char aChar) {
   using UnsignedChar = typename detail::MakeUnsignedChar<Char>::Type;
   auto uc = static_cast<UnsignedChar>(aChar);
   return uc == 0x9 || uc == 0xA || uc == 0xC || uc == 0xD || uc == 0x20;
@@ -92,7 +98,7 @@ constexpr bool IsAsciiWhitespace(Char aChar) {
  * doesn't depend on the user's current locale.
  */
 template<typename Char>
-constexpr bool
+MOZ_CONSTEXPR_FUNC bool
 IsAsciiLowercaseAlpha(Char aChar)
 {
   using UnsignedChar = typename detail::MakeUnsignedChar<Char>::Type;
@@ -107,7 +113,7 @@ IsAsciiLowercaseAlpha(Char aChar)
  * doesn't depend on the user's current locale.
  */
 template<typename Char>
-constexpr bool
+MOZ_CONSTEXPR_FUNC bool
 IsAsciiUppercaseAlpha(Char aChar)
 {
   using UnsignedChar = typename detail::MakeUnsignedChar<Char>::Type;
@@ -135,7 +141,7 @@ IsAsciiAlpha(Char aChar)
  * doesn't depend on the user's current locale.
  */
 template<typename Char>
-constexpr bool
+MOZ_CONSTEXPR_FUNC bool
 IsAsciiDigit(Char aChar)
 {
   using UnsignedChar = typename detail::MakeUnsignedChar<Char>::Type;
@@ -149,7 +155,7 @@ IsAsciiDigit(Char aChar)
  * This function is basically isxdigit, but guaranteed to be only for ASCII.
  */
 template <typename Char>
-constexpr bool IsAsciiHexDigit(Char aChar) {
+MOZ_CONSTEXPR_FUNC bool IsAsciiHexDigit(Char aChar) {
   using UnsignedChar = typename detail::MakeUnsignedChar<Char>::Type;
   auto uc = static_cast<UnsignedChar>(aChar);
   return ('0' <= uc && uc <= '9') || ('a' <= uc && uc <= 'f') ||
