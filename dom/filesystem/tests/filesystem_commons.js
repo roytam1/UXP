@@ -38,6 +38,10 @@ function test_getFilesAndDirectories(aDirectory, aRecursive, aNext) {
           if (data[i] instanceof File) {
             is(data[i].webkitRelativePath, createRelativePath(dir, data[i]), "File.webkitRelativePath should be called: parentdir.path + '/' + file.name: " + data[i].webkitRelativePath);
           }
+          ok(
+            !data[i].webkitRelativePath.endsWith("symlink.txt"),
+            "We should never see a path ending with symlink.txt, our symlink sentinel."
+          );
         }
       }
     );

@@ -36,6 +36,15 @@ function createTreeFile(depth, parent) {
   if (depth == 0) {
     nextFile.append('file.txt');
     nextFile.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0o600);
+
+#ifdef XP_UNIX
+    // It's not possible to create symlinks on windows by default or on our
+    // Android platforms, so we can't create the symlink file there.  Our
+    // callers that care are aware of this.
+    var linkFile = parent.clone();
+    linkFile.append("symlink.txt");
+    createSymLink(nextFile.path, linkFile.path);
+#endif
   } else {
     nextFile.append('subdir' + depth);
     nextFile.createUnique(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0o700);
@@ -84,6 +93,15 @@ function createTestFile() {
   file2.append('bar.txt');
   file2.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0o600);
 
+#ifdef XP_UNIX
+  // It's not possible to create symlinks on windows by default or on our
+  // Android platforms, so we can't create the symlink file there.  Our
+  // callers that care are aware of this.
+  var linkFile = dir.clone();
+  linkFile.append("symlink.txt");
+  createSymLink(file1.path, linkFile.path);
+#endif 
+
   return tmpFile;
 }
 
@@ -125,5 +143,16 @@ addMessageListener("file.open", function (e) {
 
   sendAsyncMessage("file.opened", {
     file: File.createFromNsIFile(testFile)
+  });
+});
+
+addMessageListener("symlink.open", function (e) {
+  let testDir = createTestFile();
+  let testFile = testDir.clone();
+  testFile.append("subdir");
+  testFile.append("symlink.txt");
+
+  File.createFromNsIFile(testFile).then(function (file) {
+    sendAsyncMessage("symlink.opened", { dir: testDir.path, file });
   });
 });
