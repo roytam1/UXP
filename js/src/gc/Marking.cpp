@@ -308,7 +308,7 @@ ShouldMarkCrossCompartment(JSTracer* trc, JSObject* src, Cell* cell)
             MOZ_ASSERT(!zone->isCollecting());
             trc->runtime()->gc.setFoundBlackGrayEdges(tenured);
         }
-        return zone->isGCMarking();
+        return zone->shouldMarkInZone();
     } else {
         if (zone->isGCMarkingBlack()) {
             /*
@@ -331,26 +331,26 @@ ShouldMarkCrossCompartment(JSTracer* trc, JSObject* src, const Value& val)
 }
 
 static void
-AssertZoneIsMarking(Cell* thing)
+AssertShouldMarkInZone(Cell* thing)
 {
-    MOZ_ASSERT(TenuredCell::fromPointer(thing)->zone()->isGCMarking());
+    MOZ_ASSERT(thing->asTenured().zone()->shouldMarkInZone());
 }
 
 static void
-AssertZoneIsMarking(JSString* str)
+AssertShouldMarkInZone(JSString* str)
 {
 #ifdef DEBUG
-    Zone* zone = TenuredCell::fromPointer(str)->zone();
-    MOZ_ASSERT(zone->isGCMarking() || zone->isAtomsZone());
+    Zone* zone = str->asTenured().zone();
+    MOZ_ASSERT(zone->shouldMarkInZone() || zone->isAtomsZone());
 #endif
 }
 
 static void
-AssertZoneIsMarking(JS::Symbol* sym)
+AssertShouldMarkInZone(JS::Symbol* sym)
 {
 #ifdef DEBUG
-    Zone* zone = TenuredCell::fromPointer(sym)->zone();
-    MOZ_ASSERT(zone->isGCMarking() || zone->isAtomsZone());
+    Zone* zone = sym->asTenured().zone();
+    MOZ_ASSERT(zone->shouldMarkInZone() || zone->isAtomsZone());
 #endif
 }
 
@@ -730,7 +730,7 @@ GCMarker::markImplicitEdgesHelper(T markedThing)
         return;
 
     Zone* zone = gc::TenuredCell::fromPointer(markedThing)->zone();
-    MOZ_ASSERT(zone->isGCMarking());
+    MOZ_ASSERT(zone->shouldMarkInZone());
     MOZ_ASSERT(!zone->isGCSweeping());
 
     auto p = zone->gcWeakKeys.get(JS::GCCellPtr(markedThing));
@@ -759,35 +759,35 @@ GCMarker::markImplicitEdges(T* thing)
 
 template <typename T>
 static inline bool
-MustSkipMarking(GCMarker* gcmarker, T thing)
+ShouldMark(GCMarker* gcmarker, T thing)
 {
     // Don't trace things that are owned by another runtime.
     if (IsOwnedByOtherRuntime(gcmarker->runtime(), thing))
-        return true;
+        return false;
 
     // Don't mark things outside a zone if we are in a per-zone GC.
-    return !thing->zone()->isGCMarking();
+    return thing->zone()->shouldMarkInZone();
 }
 
 template <>
 bool
-MustSkipMarking<JSObject*>(GCMarker* gcmarker, JSObject* obj)
+ShouldMark<JSObject*>(GCMarker* gcmarker, JSObject* obj)
 {
     // Don't trace things that are owned by another runtime.
     if (IsOwnedByOtherRuntime(gcmarker->runtime(), obj))
-        return true;
+        return false;
 
     // We may mark a Nursery thing outside the context of the
     // MinorCollectionTracer because of a pre-barrier. The pre-barrier is not
     // needed in this case because we perform a minor collection before each
     // incremental slice.
     if (IsInsideNursery(obj))
-        return true;
+        return false;
 
     // Don't mark things outside a zone if we are in a per-zone GC. It is
     // faster to check our own arena, which we can do since we know that
     // the object is tenured.
-    return !TenuredCell::fromPointer(obj)->zone()->isGCMarking();
+    return obj->asTenured().zone()->shouldMarkInZone();
 }
 
 template <typename T>
@@ -795,7 +795,7 @@ void
 DoMarking(GCMarker* gcmarker, T* thing)
 {
     // Do per-type marking precondition checks.
-    if (MustSkipMarking(gcmarker, thing))
+    if (!ShouldMark(gcmarker, thing))
         return;
 
     CheckTracedThing(gcmarker, thing);
@@ -822,7 +822,7 @@ void
 NoteWeakEdge(GCMarker* gcmarker, T** thingp)
 {
     // Do per-type marking precondition checks.
-    if (MustSkipMarking(gcmarker, *thingp))
+    if (!ShouldMark(gcmarker, *thingp))
         return;
 
     CheckTracedThing(gcmarker, *thingp);
@@ -971,7 +971,7 @@ template <typename T>
 bool
 js::GCMarker::mark(T* thing)
 {
-    AssertZoneIsMarking(thing);
+    AssertShouldMarkInZone(thing);
     MOZ_ASSERT(!IsInsideNursery(gc::TenuredCell::fromPointer(thing)));
     return gc::ParticipatesInCC<T>::value
            ? gc::TenuredCell::fromPointer(thing)->markIfUnmarked(markColor())
@@ -1106,7 +1106,7 @@ JSString::traceBase(JSTracer* trc)
 inline void
 js::GCMarker::eagerlyMarkChildren(JSLinearString* linearStr)
 {
-    AssertZoneIsMarking(linearStr);
+    AssertShouldMarkInZone(linearStr);
     MOZ_ASSERT(linearStr->isMarked());
     MOZ_ASSERT(linearStr->JSString::isLinear());
 
@@ -1116,7 +1116,7 @@ js::GCMarker::eagerlyMarkChildren(JSLinearString* linearStr)
         MOZ_ASSERT(linearStr->JSString::isLinear());
         if (linearStr->isPermanentAtom())
             break;
-        AssertZoneIsMarking(linearStr);
+        AssertShouldMarkInZone(linearStr);
         if (!mark(static_cast<JSString*>(linearStr)))
             break;
     }
@@ -1169,7 +1169,7 @@ js::GCMarker::eagerlyMarkChildren(JSRope* rope)
 
         JS_DIAGNOSTICS_ASSERT(rope->getTraceKind() == JS::TraceKind::String);
         JS_DIAGNOSTICS_ASSERT(rope->JSString::isRope());
-        AssertZoneIsMarking(rope);
+        AssertShouldMarkInZone(rope);
         MOZ_ASSERT(rope->isMarked());
         JSRope* next = nullptr;
 
@@ -1649,7 +1649,7 @@ GCMarker::processMarkStackTop(SliceBudget& budget)
 
       case ObjectTag: {
         obj = reinterpret_cast<JSObject*>(addr);
-        AssertZoneIsMarking(obj);
+        AssertShouldMarkInZone(obj);
         goto scan_obj;
       }
 
@@ -1712,7 +1712,7 @@ GCMarker::processMarkStackTop(SliceBudget& budget)
 
   scan_obj:
     {
-        AssertZoneIsMarking(obj);
+        AssertShouldMarkInZone(obj);
 
         budget.step();
         if (budget.isOverBudget()) {

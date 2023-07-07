@@ -13,6 +13,7 @@
 #include "unicode/udatpg.h"
 #include "unicode/udisplaycontext.h"
 #include "unicode/uenum.h"
+#include "unicode/uloc.h"
 #include "unicode/unum.h"
 #include "unicode/unumsys.h"
 #include "unicode/upluralrules.h"

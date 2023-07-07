@@ -130,6 +130,17 @@ class GCVector
     }
 };
 
+// AllocPolicy is optional. It has a default value declared in TypeDecls.h
+template <typename T, typename AllocPolicy>
+class MOZ_STACK_CLASS StackGCVector : public GCVector<T, 8, AllocPolicy> {
+ public:
+  using Base = GCVector<T, 8, AllocPolicy>;
+
+ private:
+  // Inherit constructor from GCVector.
+  using Base::Base;
+};
+
 } // namespace JS
 
 namespace js {
@@ -191,7 +202,7 @@ class MutableWrappedPtrOperations<JS::GCVector<T, Capacity, AllocPolicy>, Wrappe
     void clearAndFree() { vec().clearAndFree(); }
     template<typename U> bool append(U&& aU) { return vec().append(mozilla::Forward<U>(aU)); }
     template<typename... Args> bool emplaceBack(Args&&... aArgs) {
-        return vec().emplaceBack(mozilla::Forward<Args...>(aArgs...));
+        return vec().emplaceBack(mozilla::Forward<Args>(aArgs)...);
     }
     template<typename U, size_t O, class BP>
     bool appendAll(const mozilla::Vector<U, O, BP>& aU) { return vec().appendAll(aU); }
@@ -223,6 +234,29 @@ class MutableWrappedPtrOperations<JS::GCVector<T, Capacity, AllocPolicy>, Wrappe
     void erase(T* aBegin, T* aEnd) { vec().erase(aBegin, aEnd); }
 };
 
+template <typename Wrapper, typename T, typename AllocPolicy>
+class WrappedPtrOperations<JS::StackGCVector<T, AllocPolicy>, Wrapper> :
+  public WrappedPtrOperations<typename JS::StackGCVector<T, AllocPolicy>::Base,
+                              Wrapper> {};
+
+template <typename Wrapper, typename T, typename AllocPolicy>
+class MutableWrappedPtrOperations<JS::StackGCVector<T, AllocPolicy>, Wrapper> :
+  public MutableWrappedPtrOperations<typename JS::StackGCVector<T, AllocPolicy>::Base,
+                                     Wrapper> {};
+
 } // namespace js
 
+namespace JS {
+
+// An automatically rooted GCVector for stack use.
+template <typename T>
+class RootedVector : public Rooted<StackGCVector<T>> {
+  using Vec = StackGCVector<T>;
+  using Base = Rooted<Vec>;
+
+ public:
+  explicit RootedVector(JSContext* cx) : Base(cx, Vec(cx)) {}
+};
+
+}  // namespace JS
 #endif // js_GCVector_h

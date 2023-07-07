@@ -195,17 +195,42 @@ function ArrayStaticSome(list, callbackfn/*, thisArg*/) {
     return callFunction(ArraySome, list, callbackfn, T);
 }
 
-/* ES6 draft 2016-1-15 22.1.3.25 Array.prototype.sort (comparefn) */
+// ES2018 draft rev 3bbc87cd1b9d3bf64c3e68ca2fe9c5a3f2c304c0
+// 22.1.3.25 Array.prototype.sort ( comparefn )
 function ArraySort(comparefn) {
     /* Step 1. */
-    var O = ToObject(this);
+    if (comparefn !== undefined) {
+        if (!IsCallable(comparefn)) {
+            ThrowTypeError(JSMSG_NOT_FUNCTION, DecompileArg(0, comparefn));
+        }
+    }
 
     /* Step 2. */
+    var O = ToObject(this);
+
+    /* Step 3. */
     var len = ToLength(O.length);
 
     if (len <= 1)
       return this;
 
+    if (comparefn === undefined) {
+        // {Goanna} This implementation slightly breaks the standard. The default
+        //          comparator function depends on the type of items in the Array
+        //          (Strings, Numbers, etc.) and can be literal, lexicograpic, numeric,
+        //          lexicograpic-number...
+        //          Mozilla implements this correctly only in the native implementation.
+        //          Note that this must be stable regardless of casting, so we can only
+        //          use one of > or <, as the other may involve weird equality.
+        comparefn = function(x, y) {
+            /* Step 4.a. */
+            if (x == y)
+                return 0;
+            if (x > y)
+                return 1;
+            return -1;
+        }
+    }
     /* 22.1.3.25.1 Runtime Semantics: SortCompare( x, y ) */
     var wrappedCompareFn = comparefn;
     comparefn = function(x, y) {

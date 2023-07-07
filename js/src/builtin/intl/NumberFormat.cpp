@@ -18,6 +18,7 @@
 
 #include "builtin/intl/CommonFunctions.h"
 #include "builtin/intl/ICUHeader.h"
+#include "builtin/intl/LanguageTag.h"
 #include "builtin/intl/ScopedICUObject.h"
 #include "ds/Sort.h"
 #include "js/RootingAPI.h"
@@ -35,7 +36,7 @@ using mozilla::IsFinite;
 using mozilla::IsNaN;
 using mozilla::IsNegativeZero;
 using js::intl::CallICU;
-using js::intl::GetAvailableLocales;
+using js::intl::DateTimeFormatOptions;
 using js::intl::IcuLocale;
 using js::intl::INITIAL_CHAR_BUFFER_SIZE;
 using js::intl::StringsAreEqual;
@@ -92,63 +93,34 @@ static const JSFunctionSpec numberFormat_methods[] = {
 static bool
 NumberFormat(JSContext* cx, const CallArgs& args, bool construct)
 {
-    RootedObject obj(cx);
+    // Step 1 (Handled by OrdinaryCreateFromConstructor fallback code).
 
-    // We're following ECMA-402 1st Edition when NumberFormat is called
-    // because of backward compatibility issues.
-    // See https://github.com/tc39/ecma402/issues/57
-    if (!construct) {
-        // ES Intl 1st ed., 11.1.2.1 step 3
-        JSObject* intl = GlobalObject::getOrCreateIntlObject(cx, cx->global());
-        if (!intl)
-            return false;
-        RootedValue self(cx, args.thisv());
-        if (!self.isUndefined() && (!self.isObject() || self.toObject() != *intl)) {
-            // ES Intl 1st ed., 11.1.2.1 step 4
-            obj = ToObject(cx, self);
-            if (!obj)
-                return false;
-
-            // ES Intl 1st ed., 11.1.2.1 step 5
-            bool extensible;
-            if (!IsExtensible(cx, obj, &extensible))
-                return false;
-            if (!extensible)
-                return Throw(cx, obj, JSMSG_OBJECT_NOT_EXTENSIBLE);
-        } else {
-            // ES Intl 1st ed., 11.1.2.1 step 3.a
-            construct = true;
-        }
-    }
-    if (construct) {
-        // Step 2 (Inlined 9.1.14, OrdinaryCreateFromConstructor).
-        RootedObject proto(cx);
-        if (args.isConstructing() && !GetPrototypeFromCallableConstructor(cx, args, &proto))
-            return false;
-
-        if (!proto) {
-            proto = GlobalObject::getOrCreateNumberFormatPrototype(cx, cx->global());
-            if (!proto)
-                return false;
-        }
-
-        obj = NewObjectWithGivenProto<NumberFormatObject>(cx, proto);
-        if (!obj)
-            return false;
-
-        obj->as<NativeObject>().setReservedSlot(NumberFormatObject::INTERNALS_SLOT, NullValue());
-        obj->as<NativeObject>().setReservedSlot(NumberFormatObject::UNUMBER_FORMAT_SLOT, PrivateValue(nullptr));
-    }
-
-    RootedValue locales(cx, args.length() > 0 ? args[0] : UndefinedValue());
-    RootedValue options(cx, args.length() > 1 ? args[1] : UndefinedValue());
-
-    // Step 3.
-    if (!intl::InitializeObject(cx, obj, cx->names().InitializeNumberFormat, locales, options))
+    // Step 2 (Inlined 9.1.14, OrdinaryCreateFromConstructor).
+    RootedObject proto(cx);
+    if (args.isConstructing() && !GetPrototypeFromCallableConstructor(cx, args, &proto))
         return false;
 
-    args.rval().setObject(*obj);
-    return true;
+    if (!proto) {
+        proto = GlobalObject::getOrCreateNumberFormatPrototype(cx, cx->global());
+        if (!proto)
+            return false;
+    }
+
+    Rooted<NumberFormatObject*> numberFormat(cx);
+    numberFormat = NewObjectWithGivenProto<NumberFormatObject>(cx, proto);
+    if (!numberFormat)
+        return false;
+
+    numberFormat->setReservedSlot(NumberFormatObject::INTERNALS_SLOT, NullValue());
+    numberFormat->setReservedSlot(NumberFormatObject::UNUMBER_FORMAT_SLOT, PrivateValue(nullptr));
+
+    RootedValue thisValue(cx, construct ? ObjectValue(*numberFormat) : args.thisv());
+    RootedValue locales(cx, args.get(0));
+    RootedValue options(cx, args.get(1));
+
+    // Step 3.
+    return intl::LegacyIntlInitialize(cx, numberFormat, cx->names().InitializeNumberFormat, thisValue,
+                                      locales, options, DateTimeFormatOptions::Standard, args.rval());
 }
 
 static bool
@@ -175,30 +147,23 @@ js::NumberFormatObject::finalize(FreeOp* fop, JSObject* obj)
 {
     MOZ_ASSERT(fop->onMainThread());
 
-    // This is-undefined check shouldn't be necessary, but for internal
-    // brokenness in object allocation code.  For the moment, hack around it by
-    // explicitly guarding against the possibility of the reserved slot not
-    // containing a private.  See bug 949220.
-    const Value& slot = obj->as<NativeObject>().getReservedSlot(NumberFormatObject::UNUMBER_FORMAT_SLOT);
-    if (!slot.isUndefined()) {
-        if (UNumberFormat* nf = static_cast<UNumberFormat*>(slot.toPrivate()))
-            unum_close(nf);
-    }
+    const Value& slot = obj->as<NumberFormatObject>().getReservedSlot(NumberFormatObject::UNUMBER_FORMAT_SLOT);
+    if (UNumberFormat* nf = static_cast<UNumberFormat*>(slot.toPrivate()))
+        unum_close(nf);
 }
 
 JSObject*
-js::CreateNumberFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObject*> global)
+js::CreateNumberFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObject*> global,
+                                MutableHandleObject constructor)
 {
     RootedFunction ctor(cx);
     ctor = GlobalObject::createConstructor(cx, &NumberFormat, cx->names().NumberFormat, 0);
     if (!ctor)
         return nullptr;
 
-    RootedNativeObject proto(cx, GlobalObject::createBlankPrototype(cx, global,
-                                                                    &NumberFormatObject::class_));
+    RootedObject proto(cx, GlobalObject::createBlankPrototype<PlainObject>(cx, global));
     if (!proto)
         return nullptr;
-    proto->setReservedSlot(NumberFormatObject::UNUMBER_FORMAT_SLOT, PrivateValue(nullptr));
 
     if (!LinkConstructorAndPrototype(cx, ctor, proto))
         return nullptr;
@@ -229,36 +194,13 @@ js::CreateNumberFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalO
         return nullptr;
     }
 
-    RootedValue options(cx);
-    if (!intl::CreateDefaultOptions(cx, &options))
-        return nullptr;
-
-    // 11.2.1 and 11.3
-    if (!intl::InitializeObject(cx, proto, cx->names().InitializeNumberFormat, UndefinedHandleValue,
-                        options))
-    {
-        return nullptr;
-    }
-
     // 8.1
     RootedValue ctorValue(cx, ObjectValue(*ctor));
     if (!DefineProperty(cx, Intl, cx->names().NumberFormat, ctorValue, nullptr, nullptr, 0))
         return nullptr;
 
+    constructor.set(ctor);
     return proto;
-}
-
-bool
-js::intl_NumberFormat_availableLocales(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-    MOZ_ASSERT(args.length() == 0);
-
-    RootedValue result(cx);
-    if (!GetAvailableLocales(cx, unum_countAvailable, unum_getAvailable, &result))
-        return false;
-    args.rval().set(result);
-    return true;
 }
 
 bool
@@ -295,7 +237,7 @@ js::intl_numberingSystem(JSContext* cx, unsigned argc, Value* vp)
  * of the given NumberFormat.
  */
 static UNumberFormat*
-NewUNumberFormat(JSContext* cx, HandleObject numberFormat)
+NewUNumberFormat(JSContext* cx, Handle<NumberFormatObject*> numberFormat)
 {
     RootedValue value(cx);
 
@@ -305,7 +247,41 @@ NewUNumberFormat(JSContext* cx, HandleObject numberFormat)
 
     if (!GetProperty(cx, internals, internals, cx->names().locale, &value))
         return nullptr;
-    JSAutoByteString locale(cx, value.toString());
+
+    // ICU expects numberingSystem as a Unicode locale extensions on locale.
+
+    intl::LanguageTag tag(cx);
+    {
+        JSLinearString* locale = value.toString()->ensureLinear(cx);
+        if (!locale)
+            return nullptr;
+
+        if (!intl::LanguageTagParser::parse(cx, locale, tag))
+            return nullptr;
+    }
+
+    JS::RootedVector<intl::UnicodeExtensionKeyword> keywords(cx);
+
+    if (!GetProperty(cx, internals, internals, cx->names().numberingSystem, &value))
+        return nullptr;
+
+    {
+        JSLinearString* numberingSystem = value.toString()->ensureLinear(cx);
+        if (!numberingSystem)
+            return nullptr;
+
+        if (!keywords.emplaceBack("nu", numberingSystem))
+            return nullptr;
+    }
+
+    // |ApplyUnicodeExtensionToTag| applies the new keywords to the front of
+    // the Unicode extension subtag. We're then relying on ICU to follow RFC
+    // 6067, which states that any trailing keywords using the same key
+    // should be ignored.
+    if (!intl::ApplyUnicodeExtensionToTag(cx, tag, keywords))
+        return nullptr;
+
+    UniqueChars locale = tag.toStringZ(cx);
     if (!locale)
         return nullptr;
 
@@ -322,9 +298,6 @@ NewUNumberFormat(JSContext* cx, HandleObject numberFormat)
     // Sprinkle appropriate rooting flavor over things the GC might care about.
     RootedString currency(cx);
     AutoStableStringChars stableChars(cx);
-
-    // We don't need to look at numberingSystem - it can only be set via
-    // the Unicode locale extension and is therefore already set on locale.
 
     if (!GetProperty(cx, internals, internals, cx->names().style, &value))
         return nullptr;
@@ -398,7 +371,7 @@ NewUNumberFormat(JSContext* cx, HandleObject numberFormat)
     uUseGrouping = value.toBoolean();
 
     UErrorCode status = U_ZERO_ERROR;
-    UNumberFormat* nf = unum_open(uStyle, nullptr, 0, IcuLocale(locale.ptr()), nullptr, &status);
+    UNumberFormat* nf = unum_open(uStyle, nullptr, 0, IcuLocale(locale.get()), nullptr, &status);
     if (U_FAILURE(status)) {
         intl::ReportInternalError(cx);
         return nullptr;
@@ -854,50 +827,23 @@ js::intl_FormatNumber(JSContext* cx, unsigned argc, Value* vp)
     MOZ_ASSERT(args[1].isNumber());
     MOZ_ASSERT(args[2].isBoolean());
 
-    RootedObject numberFormat(cx, &args[0].toObject());
+    Rooted<NumberFormatObject*> numberFormat(cx, &args[0].toObject().as<NumberFormatObject>());
 
-    // Obtain a UNumberFormat object, cached if possible.
-    bool isNumberFormatInstance = numberFormat->getClass() == &NumberFormatObject::class_;
-    UNumberFormat* nf;
-    if (isNumberFormatInstance) {
-        void* priv =
-            numberFormat->as<NativeObject>().getReservedSlot(NumberFormatObject::UNUMBER_FORMAT_SLOT).toPrivate();
-        nf = static_cast<UNumberFormat*>(priv);
-        if (!nf) {
-            nf = NewUNumberFormat(cx, numberFormat);
-            if (!nf)
-                return false;
-            numberFormat->as<NativeObject>().setReservedSlot(NumberFormatObject::UNUMBER_FORMAT_SLOT, PrivateValue(nf));
-        }
-    } else {
-        // There's no good place to cache the ICU number format for an object
-        // that has been initialized as a NumberFormat but is not a
-        // NumberFormat instance. One possibility might be to add a
-        // NumberFormat instance as an internal property to each such object.
+    // Obtain a cached UNumberFormat object.
+    void* priv =
+        numberFormat->getReservedSlot(NumberFormatObject::UNUMBER_FORMAT_SLOT).toPrivate();
+    UNumberFormat* nf = static_cast<UNumberFormat*>(priv);
+    if (!nf) {
         nf = NewUNumberFormat(cx, numberFormat);
         if (!nf)
             return false;
+        numberFormat->setReservedSlot(NumberFormatObject::UNUMBER_FORMAT_SLOT, PrivateValue(nf));
     }
 
     // Use the UNumberFormat to actually format the number.
-    double d = args[1].toNumber();
-    RootedValue result(cx);
-
-    bool success;
     if (args[2].toBoolean()) {
-        success = intl_FormatNumberToParts(cx, nf, d, &result);
-    } else {
-        MOZ_ASSERT(!args[2].toBoolean(),
-                   "shouldn't be doing formatToParts without an ICU that "
-                   "supports it");
-        success = js::intl_FormatNumber(cx, nf, d, &result);
+        return intl_FormatNumberToParts(cx, nf, args[1].toNumber(), args.rval());
     }
-
-    if (!isNumberFormatInstance)
-        unum_close(nf);
-    if (!success)
-        return false;
-    args.rval().set(result);
-    return true;
+    return intl_FormatNumber(cx, nf, args[1].toNumber(), args.rval());
 }
 

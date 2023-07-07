@@ -28,7 +28,6 @@ using namespace js;
 using mozilla::AssertedCast;
 
 using js::intl::CallICU;
-using js::intl::GetAvailableLocales;
 using js::intl::IcuLocale;
 using js::intl::INITIAL_CHAR_BUFFER_SIZE;
 using js::intl::StringsAreEqual;
@@ -79,7 +78,7 @@ static const JSFunctionSpec pluralRules_methods[] = {
 
 /**
  * PluralRules constructor.
- * Spec: ECMAScript 402 API, PluralRules, 1.1
+ * Spec: ECMAScript 402 API, PluralRules, 13.2.1
  */
 static bool
 PluralRules(JSContext* cx, const CallArgs& args, bool construct)
@@ -113,8 +112,8 @@ PluralRules(JSContext* cx, const CallArgs& args, bool construct)
         if (!obj)
             return false;
 
-        obj->as<NativeObject>().setReservedSlot(PluralRulesObject::INTERNALS_SLOT, NullValue());
-        obj->as<NativeObject>().setReservedSlot(PluralRulesObject::UPLURAL_RULES_SLOT, PrivateValue(nullptr));
+        obj->as<PluralRulesObject>().setReservedSlot(PluralRulesObject::INTERNALS_SLOT, NullValue());
+        obj->as<PluralRulesObject>().setReservedSlot(PluralRulesObject::UPLURAL_RULES_SLOT, PrivateValue(nullptr));
     }
 
     RootedValue locales(cx, args.get(0));
@@ -147,15 +146,9 @@ js::PluralRulesObject::finalize(FreeOp* fop, JSObject* obj)
 {
     MOZ_ASSERT(fop->onMainThread());
 
-    // This is-undefined check shouldn't be necessary, but for internal
-    // brokenness in object allocation code.  For the moment, hack around it by
-    // explicitly guarding against the possibility of the reserved slot not
-    // containing a private.  See bug 949220.
     const Value& slot = obj->as<PluralRulesObject>().getReservedSlot(PluralRulesObject::UPLURAL_RULES_SLOT);
-    if (!slot.isUndefined()) {
-        if (UPluralRules* pr = static_cast<UPluralRules*>(slot.toPrivate()))
-            uplrules_close(pr);
-    }
+    if (UPluralRules* pr = static_cast<UPluralRules*>(slot.toPrivate()))
+        uplrules_close(pr);
 }
 
 JSObject*
@@ -166,10 +159,9 @@ js::CreatePluralRulesPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalOb
     if (!ctor)
         return nullptr;
 
-    RootedNativeObject proto(cx, GlobalObject::createBlankPrototype(cx, global, &PluralRulesObject::class_));
+    RootedObject proto(cx, GlobalObject::createBlankPrototype<PlainObject>(cx, global));
     if (!proto)
         return nullptr;
-    proto->setReservedSlot(PluralRulesObject::UPLURAL_RULES_SLOT, PrivateValue(nullptr));
 
     if (!LinkConstructorAndPrototype(cx, ctor, proto))
         return nullptr;
@@ -180,36 +172,11 @@ js::CreatePluralRulesPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalOb
     if (!JS_DefineFunctions(cx, proto, pluralRules_methods))
         return nullptr;
 
-    RootedValue options(cx);
-    if (!intl::CreateDefaultOptions(cx, &options))
-        return nullptr;
-
-    if (!intl::InitializeObject(cx, proto, cx->names().InitializePluralRules, UndefinedHandleValue,
-                        options))
-    {
-        return nullptr;
-    }
-
     RootedValue ctorValue(cx, ObjectValue(*ctor));
     if (!DefineProperty(cx, Intl, cx->names().PluralRules, ctorValue, nullptr, nullptr, 0))
         return nullptr;
 
     return proto;
-}
-
-bool
-js::intl_PluralRules_availableLocales(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-    MOZ_ASSERT(args.length() == 0);
-
-    RootedValue result(cx);
-    // We're going to use ULocale availableLocales as per ICU recommendation:
-    // https://ssl.icu-project.org/trac/ticket/12756
-    if (!GetAvailableLocales(cx, uloc_countAvailable, uloc_getAvailable, &result))
-        return false;
-    args.rval().set(result);
-    return true;
 }
 
 /**
@@ -222,7 +189,7 @@ js::intl_PluralRules_availableLocales(JSContext* cx, unsigned argc, Value* vp)
  *
  */
 static UNumberFormat*
-NewUNumberFormatForPluralRules(JSContext* cx, HandleObject pluralRules)
+NewUNumberFormatForPluralRules(JSContext* cx, Handle<PluralRulesObject*> pluralRules)
 {
     RootedObject internals(cx, intl::GetInternalsObject(cx, pluralRules));
     if (!internals)
@@ -299,7 +266,7 @@ js::intl_SelectPluralRule(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
 
-    RootedObject pluralRules(cx, &args[0].toObject());
+    Rooted<PluralRulesObject*> pluralRules(cx, &args[0].toObject().as<PluralRulesObject>());
 
     UNumberFormat* nf = NewUNumberFormatForPluralRules(cx, pluralRules);
     if (!nf)

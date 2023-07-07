@@ -9,12 +9,14 @@
 
 #include "mozilla/Assertions.h"
 #include "mozilla/Range.h"
+#include "mozilla/Span.h"
 
 #include "jscntxt.h"
 #include "jsfriendapi.h"
 
 #include "builtin/intl/CommonFunctions.h"
 #include "builtin/intl/ICUHeader.h"
+#include "builtin/intl/LanguageTag.h"
 #include "builtin/intl/ScopedICUObject.h"
 #include "builtin/intl/SharedIntlData.h"
 #include "builtin/intl/TimeZoneDataGenerated.h"
@@ -33,7 +35,7 @@ using JS::ClippedTime;
 using JS::TimeClip;
 
 using js::intl::CallICU;
-using js::intl::GetAvailableLocales;
+using js::intl::DateTimeFormatOptions;
 using js::intl::IcuLocale;
 using js::intl::INITIAL_CHAR_BUFFER_SIZE;
 using js::intl::SharedIntlData;
@@ -89,72 +91,58 @@ static const JSFunctionSpec dateTimeFormat_methods[] = {
  * ES2017 Intl draft rev 94045d234762ad107a3d09bb6f7381a65f1a2f9b
  */
 static bool
-DateTimeFormat(JSContext* cx, const CallArgs& args, bool construct)
+DateTimeFormat(JSContext* cx, const CallArgs& args, bool construct, DateTimeFormatOptions dtfOptions)
 {
-    RootedObject obj(cx);
+    // Step 1 (Handled by OrdinaryCreateFromConstructor fallback code).
 
-    // We're following ECMA-402 1st Edition when DateTimeFormat is called
-    // because of backward compatibility issues.
-    // See https://github.com/tc39/ecma402/issues/57
-    if (!construct) {
-        // ES Intl 1st ed., 12.1.2.1 step 3
-        JSObject* intl = GlobalObject::getOrCreateIntlObject(cx, cx->global());
-        if (!intl)
-            return false;
-        RootedValue self(cx, args.thisv());
-        if (!self.isUndefined() && (!self.isObject() || self.toObject() != *intl)) {
-            // ES Intl 1st ed., 12.1.2.1 step 4
-            obj = ToObject(cx, self);
-            if (!obj)
-                return false;
-
-            // ES Intl 1st ed., 12.1.2.1 step 5
-            bool extensible;
-            if (!IsExtensible(cx, obj, &extensible))
-                return false;
-            if (!extensible)
-                return Throw(cx, obj, JSMSG_OBJECT_NOT_EXTENSIBLE);
-        } else {
-            // ES Intl 1st ed., 12.1.2.1 step 3.a
-            construct = true;
-        }
-    }
-    if (construct) {
-        // Step 2 (Inlined 9.1.14, OrdinaryCreateFromConstructor).
-        RootedObject proto(cx);
-        if (args.isConstructing() && !GetPrototypeFromCallableConstructor(cx, args, &proto))
-            return false;
-
-        if (!proto) {
-            proto = GlobalObject::getOrCreateDateTimeFormatPrototype(cx, cx->global());
-            if (!proto)
-                return false;
-        }
-
-        obj = NewObjectWithGivenProto<DateTimeFormatObject>(cx, proto);
-        if (!obj)
-            return false;
-
-        obj->as<NativeObject>().setReservedSlot(DateTimeFormatObject::INTERNALS_SLOT, NullValue());
-        obj->as<NativeObject>().setReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT, PrivateValue(nullptr));
-    }
-
-    RootedValue locales(cx, args.length() > 0 ? args[0] : UndefinedValue());
-    RootedValue options(cx, args.length() > 1 ? args[1] : UndefinedValue());
-
-    // Step 3.
-    if (!intl::InitializeObject(cx, obj, cx->names().InitializeDateTimeFormat, locales, options))
+    // Step 2 (Inlined 9.1.14, OrdinaryCreateFromConstructor).
+    RootedObject proto(cx);
+    if (args.isConstructing() && !GetPrototypeFromCallableConstructor(cx, args, &proto))
         return false;
 
-    args.rval().setObject(*obj);
-    return true;
+    if (!proto) {
+        proto = GlobalObject::getOrCreateDateTimeFormatPrototype(cx, cx->global());
+        if (!proto)
+            return false;
+    }
+
+    Rooted<DateTimeFormatObject*> dateTimeFormat(cx);
+    dateTimeFormat = NewObjectWithGivenProto<DateTimeFormatObject>(cx, proto);
+    if (!dateTimeFormat)
+        return false;
+
+    dateTimeFormat->setReservedSlot(DateTimeFormatObject::INTERNALS_SLOT, NullValue());
+    dateTimeFormat->setReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT,
+                                    PrivateValue(nullptr));
+
+    RootedValue thisValue(cx, construct ? ObjectValue(*dateTimeFormat) : args.thisv());
+    RootedValue locales(cx, args.get(0));
+    RootedValue options(cx, args.get(1));
+
+    // Step 3.
+    return intl::LegacyIntlInitialize(cx, dateTimeFormat, cx->names().InitializeDateTimeFormat,
+                                      thisValue, locales, options, dtfOptions, args.rval());
 }
 
 static bool
 DateTimeFormat(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
-    return DateTimeFormat(cx, args, args.isConstructing());
+    return DateTimeFormat(cx, args, args.isConstructing(), DateTimeFormatOptions::Standard);
+}
+
+static bool
+MozDateTimeFormat(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+
+    // Don't allow to call mozIntl.DateTimeFormat as a function. That way we
+    // don't need to worry how to handle the legacy initialization semantics
+    // when applied on mozIntl.DateTimeFormat.
+    if (!ThrowIfNotConstructing(cx, args, "mozIntl.DateTimeFormat"))
+        return false;
+
+    return DateTimeFormat(cx, args, true, DateTimeFormatOptions::EnableMozExtensions);
 }
 
 bool
@@ -166,7 +154,7 @@ js::intl_DateTimeFormat(JSContext* cx, unsigned argc, Value* vp)
     // intl_DateTimeFormat is an intrinsic for self-hosted JavaScript, so it
     // cannot be used with "new", but it still has to be treated as a
     // constructor.
-    return DateTimeFormat(cx, args, true);
+    return DateTimeFormat(cx, args, true, DateTimeFormatOptions::Standard);
 }
 
 void
@@ -174,30 +162,25 @@ js::DateTimeFormatObject::finalize(FreeOp* fop, JSObject* obj)
 {
     MOZ_ASSERT(fop->onMainThread());
 
-    // This is-undefined check shouldn't be necessary, but for internal
-    // brokenness in object allocation code.  For the moment, hack around it by
-    // explicitly guarding against the possibility of the reserved slot not
-    // containing a private.  See bug 949220.
     const Value& slot = obj->as<DateTimeFormatObject>().getReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT);
-    if (!slot.isUndefined()) {
-        if (UDateFormat* df = static_cast<UDateFormat*>(slot.toPrivate()))
-            udat_close(df);
-    }
+    if (UDateFormat* df = static_cast<UDateFormat*>(slot.toPrivate()))
+        udat_close(df);
 }
 
 JSObject*
-js::CreateDateTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObject*> global)
+js::CreateDateTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObject*> global,
+                                  MutableHandleObject constructor, DateTimeFormatOptions dtfOptions)
 {
     RootedFunction ctor(cx);
-    ctor = GlobalObject::createConstructor(cx, &DateTimeFormat, cx->names().DateTimeFormat, 0);
+    ctor = dtfOptions == DateTimeFormatOptions::EnableMozExtensions
+           ? GlobalObject::createConstructor(cx, MozDateTimeFormat, cx->names().DateTimeFormat, 0)
+           : GlobalObject::createConstructor(cx, DateTimeFormat, cx->names().DateTimeFormat, 0);
     if (!ctor)
         return nullptr;
 
-    RootedNativeObject proto(cx, GlobalObject::createBlankPrototype(cx, global,
-                                                                    &DateTimeFormatObject::class_));
+    RootedObject proto(cx, GlobalObject::createBlankPrototype<PlainObject>(cx, global));
     if (!proto)
         return nullptr;
-    proto->setReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT, PrivateValue(nullptr));
 
     if (!LinkConstructorAndPrototype(cx, ctor, proto))
         return nullptr;
@@ -226,51 +209,60 @@ js::CreateDateTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<Globa
         return nullptr;
     }
 
-    RootedValue options(cx);
-    if (!intl::CreateDefaultOptions(cx, &options))
-        return nullptr;
-
-    // 12.2.1 and 12.3
-    if (!intl::InitializeObject(cx, proto, cx->names().InitializeDateTimeFormat, UndefinedHandleValue,
-                        options))
-    {
-        return nullptr;
-    }
-
     // 8.1
     RootedValue ctorValue(cx, ObjectValue(*ctor));
     if (!DefineProperty(cx, Intl, cx->names().DateTimeFormat, ctorValue, nullptr, nullptr, 0))
         return nullptr;
 
+    constructor.set(ctor);
     return proto;
 }
 
 bool
-js::intl_DateTimeFormat_availableLocales(JSContext* cx, unsigned argc, Value* vp)
+js::AddMozDateTimeFormatConstructor(JSContext* cx, JS::Handle<JSObject*> intl)
 {
-    CallArgs args = CallArgsFromVp(argc, vp);
-    MOZ_ASSERT(args.length() == 0);
+    Handle<GlobalObject*> global = cx->global();
 
-    RootedValue result(cx);
-    if (!GetAvailableLocales(cx, udat_countAvailable, udat_getAvailable, &result))
+    RootedObject mozDateTimeFormat(cx);
+    JSObject* mozDateTimeFormatProto =
+        CreateDateTimeFormatPrototype(cx, intl, global, &mozDateTimeFormat, DateTimeFormatOptions::EnableMozExtensions);
+    return mozDateTimeFormatProto != nullptr;
+}
+
+static bool
+DefaultCalendar(JSContext* cx, const JSAutoByteString& locale, MutableHandleValue rval)
+{
+    UErrorCode status = U_ZERO_ERROR;
+    UCalendar* cal = ucal_open(nullptr, 0, locale.ptr(), UCAL_DEFAULT, &status);
+
+    // This correctly handles nullptr |cal| when opening failed.
+    ScopedICUObject<UCalendar, ucal_close> closeCalendar(cal);
+
+    const char* calendar = ucal_getType(cal, &status);
+    if (U_FAILURE(status)) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_INTERNAL_INTL_ERROR);
         return false;
-    args.rval().set(result);
+    }
+
+    // ICU returns old-style keyword values; map them to BCP 47 equivalents
+    JSString* str = JS_NewStringCopyZ(cx, uloc_toUnicodeLocaleType("ca", calendar));
+    if (!str)
+        return false;
+
+    rval.setString(str);
     return true;
 }
 
-// ICU returns old-style keyword values; map them to BCP 47 equivalents
-// (see http://bugs.icu-project.org/trac/ticket/9620).
-static const char*
-bcp47CalendarName(const char* icuName)
+struct CalendarAlias
 {
-    if (StringsAreEqual(icuName, "ethiopic-amete-alem"))
-        return "ethioaa";
-    if (StringsAreEqual(icuName, "gregorian"))
-        return "gregory";
-    if (StringsAreEqual(icuName, "islamic-civil"))
-        return "islamicc";
-    return icuName;
-}
+    const char* const calendar;
+    const char* const alias;
+};
+
+const CalendarAlias calendarAliases[] = {
+    { "islamic-civil", "islamicc" },
+    { "ethioaa", "ethiopic-amete-alem" }
+};
 
 bool
 js::intl_availableCalendars(JSContext* cx, unsigned argc, Value* vp)
@@ -289,30 +281,15 @@ js::intl_availableCalendars(JSContext* cx, unsigned argc, Value* vp)
     uint32_t index = 0;
 
     // We need the default calendar for the locale as the first result.
-    UErrorCode status = U_ZERO_ERROR;
-    RootedString jscalendar(cx);
-    {
-        UCalendar* cal = ucal_open(nullptr, 0, locale.ptr(), UCAL_DEFAULT, &status);
+    RootedValue element(cx);
+    if (!DefaultCalendar(cx, locale, &element))
+        return false;
 
-        // This correctly handles nullptr |cal| when opening failed.
-        ScopedICUObject<UCalendar, ucal_close> closeCalendar(cal);
-
-        const char* calendar = ucal_getType(cal, &status);
-        if (U_FAILURE(status)) {
-            intl::ReportInternalError(cx);
-            return false;
-        }
-
-        jscalendar = JS_NewStringCopyZ(cx, bcp47CalendarName(calendar));
-        if (!jscalendar)
-            return false;
-    }
-
-    RootedValue element(cx, StringValue(jscalendar));
     if (!DefineElement(cx, calendars, index++, element))
         return false;
 
     // Now get the calendars that "would make a difference", i.e., not the default.
+    UErrorCode status = U_ZERO_ERROR;
     UEnumeration* values = ucal_getKeywordValuesForLocale("ca", locale.ptr(), false, &status);
     if (U_FAILURE(status)) {
         intl::ReportInternalError(cx);
@@ -333,16 +310,45 @@ js::intl_availableCalendars(JSContext* cx, unsigned argc, Value* vp)
             return false;
         }
 
-        jscalendar = JS_NewStringCopyZ(cx, bcp47CalendarName(calendar));
+        // ICU returns old-style keyword values; map them to BCP 47 equivalents
+        calendar = uloc_toUnicodeLocaleType("ca", calendar);
+
+        JSString* jscalendar = JS_NewStringCopyZ(cx, calendar);
         if (!jscalendar)
             return false;
         element = StringValue(jscalendar);
         if (!DefineElement(cx, calendars, index++, element))
             return false;
+
+        // ICU doesn't return calendar aliases, append them here.
+        for (const auto& calendarAlias : calendarAliases) {
+            if (StringsAreEqual(calendar, calendarAlias.calendar)) {
+                JSString* jscalendar = JS_NewStringCopyZ(cx, calendarAlias.alias);
+                if (!jscalendar)
+                    return false;
+                element = StringValue(jscalendar);
+                if (!DefineElement(cx, calendars, index++, element))
+                    return false;
+            }
+        }
     }
 
     args.rval().setObject(*calendars);
     return true;
+}
+
+bool
+js::intl_defaultCalendar(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 1);
+    MOZ_ASSERT(args[0].isString());
+
+    JSAutoByteString locale(cx, args[0].toString());
+    if (!locale)
+        return false;
+
+    return DefaultCalendar(cx, locale, args.rval());
 }
 
 bool
@@ -448,13 +454,139 @@ js::intl_defaultTimeZoneOffset(JSContext* cx, unsigned argc, Value* vp) {
     return true;
 }
 
+enum class HourCycle {
+    // 12 hour cycle, from 0 to 11.
+    H11,
+
+    // 12 hour cycle, from 1 to 12.
+    H12,
+
+    // 24 hour cycle, from 0 to 23.
+    H23,
+
+    // 24 hour cycle, from 1 to 24.
+    H24
+};
+
+static bool
+IsHour12(HourCycle hc)
+{
+    return hc == HourCycle::H11 || hc == HourCycle::H12;
+}
+
+static char16_t
+HourSymbol(HourCycle hc)
+{
+    switch (hc) {
+      case HourCycle::H11:
+        return 'K';
+      case HourCycle::H12:
+        return 'h';
+      case HourCycle::H23:
+        return 'H';
+      case HourCycle::H24:
+        return 'k';
+    }
+    MOZ_MAKE_COMPILER_ASSUME_IS_UNREACHABLE("unexpected hour cycle");
+}
+
+/**
+* Parse a pattern according to the format specified in
+* <https://unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns>.
+*/
+template <typename CharT>
+class PatternIterator {
+    CharT* iter_;
+    const CharT* const end_;
+
+  public:
+    explicit PatternIterator(mozilla::Span<CharT> pattern)
+      : iter_(pattern.data()), end_(pattern.data() + pattern.size()) {}
+
+    CharT* next() {
+        MOZ_ASSERT(iter_ != nullptr);
+
+        bool inQuote = false;
+        while (iter_ < end_) {
+            CharT* cur = iter_++;
+            if (*cur == '\'') {
+                inQuote = !inQuote;
+            } else if (!inQuote) {
+                return cur;
+            }
+        }
+
+        iter_ = nullptr;
+        return nullptr;
+    }
+};
+
+/**
+* Return the hour cycle for the given option string.
+*/
+static HourCycle
+HourCycleFromOption(JSLinearString* str)
+{
+    if (StringEqualsAscii(str, "h11")) {
+        return HourCycle::H11;
+    }
+    if (StringEqualsAscii(str, "h12")) {
+        return HourCycle::H12;
+    }
+    if (StringEqualsAscii(str, "h23")) {
+        return HourCycle::H23;
+    }
+    MOZ_ASSERT(StringEqualsAscii(str, "h24"));
+    return HourCycle::H24;
+}
+
+/**
+* Return the hour cycle used in the input pattern or Nothing if none was found.
+*/
+static mozilla::Maybe<HourCycle>
+HourCycleFromPattern(mozilla::Span<const char16_t> pattern)
+{
+    PatternIterator<const char16_t> iter(pattern);
+    while (const auto* ptr = iter.next()) {
+        switch (*ptr) {
+          case 'K':
+            return mozilla::Some(HourCycle::H11);
+          case 'h':
+            return mozilla::Some(HourCycle::H12);
+          case 'H':
+            return mozilla::Some(HourCycle::H23);
+          case 'k':
+            return mozilla::Some(HourCycle::H24);
+        }
+    }
+    return mozilla::Nothing();
+}
+
+/**
+* Replaces all hour pattern characters in |pattern| to use the matching hour
+* representation for |hourCycle|.
+*/
+static void
+ReplaceHourSymbol(mozilla::Span<char16_t> pattern, HourCycle hc)
+{
+    char16_t replacement = HourSymbol(hc);
+    PatternIterator<char16_t> iter(pattern);
+    while (auto* ptr = iter.next()) {
+        char16_t ch = *ptr;
+        if (ch == 'K' || ch == 'h' || ch == 'H' || ch == 'k') {
+            *ptr = replacement;
+        }
+    }
+}
+
 bool
 js::intl_patternForSkeleton(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
-    MOZ_ASSERT(args.length() == 2);
+    MOZ_ASSERT(args.length() == 3);
     MOZ_ASSERT(args[0].isString());
     MOZ_ASSERT(args[1].isString());
+    MOZ_ASSERT(args[2].isString() || args[2].isUndefined());
 
     JSAutoByteString locale(cx, args[0].toString());
     if (!locale)
@@ -468,6 +600,16 @@ js::intl_patternForSkeleton(JSContext* cx, unsigned argc, Value* vp)
     if (!stableChars.initTwoByte(cx, skeletonFlat))
         return false;
 
+    mozilla::Maybe<HourCycle> hourCycle;
+    if (args[2].isString()) {
+        JSLinearString* hourCycleStr = args[2].toString()->ensureLinear(cx);
+        if (!hourCycleStr) {
+            return false;
+        }
+
+        hourCycle.emplace(HourCycleFromOption(hourCycleStr));
+    }
+
     mozilla::Range<const char16_t> skeletonChars = stableChars.twoByteRange();
     uint32_t skeletonLen = u_strlen(Char16ToUChar(skeletonChars.begin().get()));
 
@@ -479,11 +621,220 @@ js::intl_patternForSkeleton(JSContext* cx, unsigned argc, Value* vp)
     }
     ScopedICUObject<UDateTimePatternGenerator, udatpg_close> toClose(gen);
 
-    JSString* str =
-        CallICU(cx, [gen, &skeletonChars, skeletonLen](UChar* chars, uint32_t size, UErrorCode* status) {
-            return udatpg_getBestPattern(gen, skeletonChars.begin().get(), skeletonLen,
-                                         chars, size, status);
+    Vector<char16_t, intl::INITIAL_CHAR_BUFFER_SIZE> pattern(cx);
+
+    int32_t patternSize = CallICU(
+        cx,
+        pattern,
+        [gen, &skeletonChars](UChar* chars, uint32_t size, UErrorCode* status) {
+            return udatpg_getBestPattern(gen, skeletonChars.begin().get(),
+            skeletonChars.length(), chars, size, status);
         });
+    if (patternSize < 0) {
+        return false;
+    }
+
+    // If the hourCycle option was set, adjust the resolved pattern to use the
+    // requested hour cycle representation.
+    if (hourCycle) {
+        ReplaceHourSymbol(pattern, hourCycle.value());
+    }
+
+    JSString* str = NewStringCopyN<CanGC>(cx, pattern.begin(), pattern.length());
+    if (!str) {
+        return false;
+    }
+    args.rval().setString(str);
+    return true;
+}
+
+/**
+ * Find a matching pattern using the requested hour-12 options.
+ *
+ * This function is needed to work around the following two issues.
+ * - https://unicode-org.atlassian.net/browse/ICU-21023
+ * - https://unicode-org.atlassian.net/browse/CLDR-13425
+ *
+ * We're currently using a relatively simple workaround, which doesn't give the
+ * most accurate results. For example:
+ *
+ * ```
+ * var dtf = new Intl.DateTimeFormat("en", {
+ *   timeZone: "UTC",
+ *   dateStyle: "long",
+ *   timeStyle: "long",
+ *   hourCycle: "h12",
+ * });
+ * print(dtf.format(new Date("2020-01-01T00:00Z")));
+ * ```
+ *
+ * Returns the pattern "MMMM d, y 'at' h:mm:ss a z", but when going through
+ * |udatpg_getSkeleton| and then |udatpg_getBestPattern| to find an equivalent
+ * pattern for "h23", we'll end up with the pattern "MMMM d, y, HH:mm:ss z", so
+ * the combinator element " 'at' " was lost in the process.
+ */
+template <size_t N>
+static bool
+FindPatternWithHourCycle(JSContext* cx, const char* locale,
+                         Vector<char16_t, N>& pattern, bool hour12)
+{
+    UErrorCode status = U_ZERO_ERROR;
+    UDateTimePatternGenerator* gen = udatpg_open(IcuLocale(locale), &status);
+    if (U_FAILURE(status)) {
+        intl::ReportInternalError(cx);
+        return false;
+    }
+    ScopedICUObject<UDateTimePatternGenerator, udatpg_close> toClose(gen);
+
+    if (!gen) {
+        return false;
+    }
+
+    Vector<char16_t, intl::INITIAL_CHAR_BUFFER_SIZE> skeleton(cx);
+
+    int32_t skeletonSize = CallICU(
+        cx,
+        skeleton,
+        [&pattern](UChar* chars, uint32_t size, UErrorCode* status) {
+            return udatpg_getSkeleton(nullptr, pattern.begin(), pattern.length(),
+            chars, size, status);
+        });
+    if (skeletonSize < 0) {
+        return false;
+    }
+
+    // Input skeletons don't differentiate between "K" and "h" resp. "k" and "H".
+    ReplaceHourSymbol(skeleton, hour12 ? HourCycle::H12 : HourCycle::H23);
+
+    MOZ_ALWAYS_TRUE(pattern.resize(0));
+
+    int32_t patternSize = CallICU(
+        cx,
+        pattern,
+        [gen, &skeleton](UChar* chars, uint32_t size, UErrorCode* status) {
+            return udatpg_getBestPattern(gen, skeleton.begin(), skeleton.length(),
+            chars, size, status);
+        });
+    if (patternSize < 0) {
+        return false;
+    }
+
+    return true;
+}
+
+bool
+js::intl_patternForStyle(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 6);
+    MOZ_ASSERT(args[0].isString());
+    MOZ_ASSERT(args[1].isString() || args[1].isUndefined());
+    MOZ_ASSERT(args[2].isString() || args[2].isUndefined());
+    MOZ_ASSERT(args[3].isString());
+    MOZ_ASSERT(args[4].isBoolean() || args[4].isUndefined());
+    MOZ_ASSERT(args[5].isString() || args[5].isUndefined());
+
+    JSAutoByteString locale(cx, args[0].toString());
+    if (!locale)
+        return false;
+
+    auto toDateFormatStyle = [](JSLinearString* str) {
+        if (StringEqualsAscii(str, "full")) {
+            return UDAT_FULL;
+        }
+        if (StringEqualsAscii(str, "long")) {
+            return UDAT_LONG;
+        }
+        if (StringEqualsAscii(str, "medium")) {
+            return UDAT_MEDIUM;
+        }
+        MOZ_ASSERT(StringEqualsAscii(str, "short"));
+        return UDAT_SHORT;
+    };
+
+    UDateFormatStyle dateStyle = UDAT_NONE;
+
+    if (args[1].isString()) {
+        JSLinearString* dateStyleStr = args[1].toString()->ensureLinear(cx);
+        if (!dateStyleStr)
+            return false;
+
+        dateStyle = toDateFormatStyle(dateStyleStr);
+    }
+
+    UDateFormatStyle timeStyle = UDAT_NONE;
+    if (args[2].isString()) {
+        JSLinearString* timeStyleStr = args[2].toString()->ensureLinear(cx);
+        if (!timeStyleStr)
+            return false;
+
+        timeStyle = toDateFormatStyle(timeStyleStr);
+    }
+
+    AutoStableStringChars timeZone(cx);
+    if (!timeZone.initTwoByte(cx, args[3].toString()))
+        return false;
+
+    mozilla::Maybe<bool> hour12;
+    if (args[4].isBoolean()) {
+        hour12.emplace(args[4].toBoolean());
+    }
+
+    mozilla::Maybe<HourCycle> hourCycle;
+    if (args[5].isString()) {
+        JSLinearString* hourCycleStr = args[5].toString()->ensureLinear(cx);
+        if (!hourCycleStr) {
+            return false;
+        }
+
+        hourCycle.emplace(HourCycleFromOption(hourCycleStr));
+    }
+
+    mozilla::Range<const char16_t> timeZoneChars = timeZone.twoByteRange();
+
+    UErrorCode status = U_ZERO_ERROR;
+    UDateFormat* df = udat_open(timeStyle, dateStyle, IcuLocale(locale.ptr()),
+                                Char16ToUChar(timeZoneChars.begin().get()),
+                                timeZoneChars.length(), nullptr, -1, &status);
+    if (U_FAILURE(status)) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_INTERNAL_INTL_ERROR);
+        return false;
+    }
+    ScopedICUObject<UDateFormat, udat_close> toClose(df);
+
+    Vector<char16_t, intl::INITIAL_CHAR_BUFFER_SIZE> pattern(cx);
+
+    int32_t patternSize = CallICU(
+        cx,
+        pattern,
+        [df](UChar* chars, uint32_t size, UErrorCode* status) {
+            return udat_toPattern(df, false, chars, size, status);
+        });
+    if (patternSize < 0) {
+        return false;
+    }
+
+    // If a specific hour cycle was requested and this hour cycle doesn't match
+    // the hour cycle used in the resolved pattern, find an equivalent pattern
+    // with the correct hour cycle.
+    if (timeStyle != UDAT_NONE && (hour12 || hourCycle)) {
+        if (auto hcPattern = HourCycleFromPattern(pattern)) {
+            bool wantHour12 = hour12 ? hour12.value() : IsHour12(hourCycle.value());
+            if (wantHour12 != IsHour12(hcPattern.value())) {
+                if (!FindPatternWithHourCycle(cx, locale.ptr(), pattern, wantHour12)) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    // If the hourCycle option was set, adjust the resolved pattern to use the
+    // requested hour cycle representation.
+    if (hourCycle) {
+        ReplaceHourSymbol(pattern, hourCycle.value());
+    }
+
+    JSString* str = NewStringCopyN<CanGC>(cx, pattern.begin(), pattern.length());
     if (!str)
         return false;
     args.rval().setString(str);
@@ -495,7 +846,7 @@ js::intl_patternForSkeleton(JSContext* cx, unsigned argc, Value* vp)
  * of the given DateTimeFormat.
  */
 static UDateFormat*
-NewUDateFormat(JSContext* cx, HandleObject dateTimeFormat)
+NewUDateFormat(JSContext* cx, Handle<DateTimeFormatObject*> dateTimeFormat)
 {
     RootedValue value(cx);
 
@@ -505,13 +856,56 @@ NewUDateFormat(JSContext* cx, HandleObject dateTimeFormat)
 
     if (!GetProperty(cx, internals, internals, cx->names().locale, &value))
         return nullptr;
-    JSAutoByteString locale(cx, value.toString());
-    if (!locale)
+
+    // ICU expects calendar and numberingSystem as Unicode locale extensions on
+    // locale.
+
+    intl::LanguageTag tag(cx);
+    {
+        JSLinearString* locale = value.toString()->ensureLinear(cx);
+        if (!locale)
+            return nullptr;
+
+        if (!intl::LanguageTagParser::parse(cx, locale, tag))
+            return nullptr;
+    }
+
+    JS::RootedVector<intl::UnicodeExtensionKeyword> keywords(cx);
+
+    if (!GetProperty(cx, internals, internals, cx->names().calendar, &value))
         return nullptr;
 
-    // We don't need to look at calendar and numberingSystem - they can only be
-    // set via the Unicode locale extension and are therefore already set on
-    // locale.
+    {
+        JSLinearString* calendar = value.toString()->ensureLinear(cx);
+        if (!calendar)
+            return nullptr;
+
+        if (!keywords.emplaceBack("ca", calendar))
+            return nullptr;
+    }
+
+    if (!GetProperty(cx, internals, internals, cx->names().numberingSystem, &value))
+        return nullptr;
+
+    {
+        JSLinearString* numberingSystem = value.toString()->ensureLinear(cx);
+        if (!numberingSystem)
+            return nullptr;
+
+        if (!keywords.emplaceBack("nu", numberingSystem))
+            return nullptr;
+    }
+
+    // |ApplyUnicodeExtensionToTag| applies the new keywords to the front of
+    // the Unicode extension subtag. We're then relying on ICU to follow RFC
+    // 6067, which states that any trailing keywords using the same key
+    // should be ignored.
+    if (!intl::ApplyUnicodeExtensionToTag(cx, tag, keywords))
+        return nullptr;
+
+    UniqueChars locale = tag.toStringZ(cx);
+    if (!locale)
+        return nullptr;
 
     if (!GetProperty(cx, internals, internals, cx->names().timeZone, &value))
         return nullptr;
@@ -537,7 +931,7 @@ NewUDateFormat(JSContext* cx, HandleObject dateTimeFormat)
 
     UErrorCode status = U_ZERO_ERROR;
     UDateFormat* df =
-        udat_open(UDAT_PATTERN, UDAT_PATTERN, IcuLocale(locale.ptr()), uTimeZone, uTimeZoneLength,
+        udat_open(UDAT_PATTERN, UDAT_PATTERN, IcuLocale(locale.get()), uTimeZone, uTimeZoneLength,
                   uPattern, uPatternLength, &status);
     if (U_FAILURE(status)) {
         intl::ReportInternalError(cx);
@@ -558,7 +952,8 @@ static bool
 intl_FormatDateTime(JSContext* cx, UDateFormat* df, double x, MutableHandleValue result)
 {
     if (!IsFinite(x)) {
-        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DATE_NOT_FINITE);
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DATE_NOT_FINITE,
+                                  "DateTimeFormat", "format");
         return false;
     }
 
@@ -664,7 +1059,8 @@ static bool
 intl_FormatToPartsDateTime(JSContext* cx, UDateFormat* df, double x, MutableHandleValue result)
 {
     if (!IsFinite(x)) {
-        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DATE_NOT_FINITE);
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DATE_NOT_FINITE,
+                                  "DateTimeFormat", "formatToParts");
         return false;
     }
 
@@ -777,42 +1173,23 @@ js::intl_FormatDateTime(JSContext* cx, unsigned argc, Value* vp)
     MOZ_ASSERT(args[1].isNumber());
     MOZ_ASSERT(args[2].isBoolean());
 
-    RootedObject dateTimeFormat(cx, &args[0].toObject());
+    Rooted<DateTimeFormatObject*> dateTimeFormat(cx);
+    dateTimeFormat = &args[0].toObject().as<DateTimeFormatObject>();
 
-    // Obtain a UDateFormat object, cached if possible.
-    bool isDateTimeFormatInstance = dateTimeFormat->getClass() == &DateTimeFormatObject::class_;
-    UDateFormat* df;
-    if (isDateTimeFormatInstance) {
-        void* priv =
-            dateTimeFormat->as<NativeObject>().getReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT).toPrivate();
-        df = static_cast<UDateFormat*>(priv);
-        if (!df) {
-            df = NewUDateFormat(cx, dateTimeFormat);
-            if (!df)
-                return false;
-            dateTimeFormat->as<NativeObject>().setReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT, PrivateValue(df));
-        }
-    } else {
-        // There's no good place to cache the ICU date-time format for an object
-        // that has been initialized as a DateTimeFormat but is not a
-        // DateTimeFormat instance. One possibility might be to add a
-        // DateTimeFormat instance as an internal property to each such object.
+    // Obtain a cached UDateFormat object.
+    void* priv =
+        dateTimeFormat->getReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT).toPrivate();
+    UDateFormat* df = static_cast<UDateFormat*>(priv);
+    if (!df) {
         df = NewUDateFormat(cx, dateTimeFormat);
         if (!df)
             return false;
+        dateTimeFormat->setReservedSlot(DateTimeFormatObject::UDATE_FORMAT_SLOT, PrivateValue(df));
     }
 
     // Use the UDateFormat to actually format the time stamp.
-    RootedValue result(cx);
-    bool success = args[2].toBoolean()
-                   ? intl_FormatToPartsDateTime(cx, df, args[1].toNumber(), &result)
-                   : intl_FormatDateTime(cx, df, args[1].toNumber(), &result);
-
-    if (!isDateTimeFormatInstance)
-        udat_close(df);
-    if (!success)
-        return false;
-    args.rval().set(result);
-    return true;
+    return args[2].toBoolean()
+           ? intl_FormatToPartsDateTime(cx, df, args[1].toNumber(), args.rval())
+           : intl_FormatDateTime(cx, df, args[1].toNumber(), args.rval());
 }
 
