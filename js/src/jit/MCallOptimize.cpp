@@ -13,6 +13,11 @@
 #include "builtin/SIMD.h"
 #include "builtin/TestingFunctions.h"
 #include "builtin/TypedObject.h"
+#include "builtin/intl/Collator.h"
+#include "builtin/intl/DateTimeFormat.h"
+#include "builtin/intl/NumberFormat.h"
+#include "builtin/intl/PluralRules.h"
+#include "builtin/intl/RelativeTimeFormat.h"
 #include "jit/BaselineInspector.h"
 #include "jit/InlinableNatives.h"
 #include "jit/IonBuilder.h"
@@ -103,6 +108,18 @@ IonBuilder::inlineNativeCall(CallInfo& callInfo, JSFunction* target)
         return inlineAtomicsBinop(callInfo, inlNative);
       case InlinableNative::AtomicsIsLockFree:
         return inlineAtomicsIsLockFree(callInfo);
+
+      // Intl natives.
+      case InlinableNative::IntlIsCollator:
+        return inlineHasClass(callInfo, &CollatorObject::class_);
+      case InlinableNative::IntlIsDateTimeFormat:
+        return inlineHasClass(callInfo, &DateTimeFormatObject::class_);
+      case InlinableNative::IntlIsNumberFormat:
+        return inlineHasClass(callInfo, &NumberFormatObject::class_);
+      case InlinableNative::IntlIsPluralRules:
+        return inlineHasClass(callInfo, &PluralRulesObject::class_);
+      case InlinableNative::IntlIsRelativeTimeFormat:
+        return inlineHasClass(callInfo, &RelativeTimeFormatObject::class_);
 
       // Math natives.
       case InlinableNative::MathAbs:

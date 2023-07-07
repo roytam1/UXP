@@ -8,21 +8,10 @@
 /**
  * NumberFormat internal properties.
  *
- * Spec: ECMAScript Internationalization API Specification, 9.1 and 11.2.3.
+ * Spec: ECMAScript Internationalization API Specification, 9.1 and 11.3.3.
  */
 var numberFormatInternalProperties = {
     localeData: numberFormatLocaleData,
-    _availableLocales: null,
-    availableLocales: function()
-    {
-        var locales = this._availableLocales;
-        if (locales)
-            return locales;
-
-        locales = intl_NumberFormat_availableLocales();
-        addSpecialMissingLanguageTags(locales);
-        return (this._availableLocales = locales);
-    },
     relevantExtensionKeys: ["nu"]
 };
 
@@ -35,44 +24,38 @@ function resolveNumberFormatInternals(lazyNumberFormatData) {
 
     var internalProps = std_Object_create(null);
 
-    // Step 3.
-    var requestedLocales = lazyNumberFormatData.requestedLocales;
-
-    // Compute options that impact interpretation of locale.
-    // Step 6.
-    var opt = lazyNumberFormatData.opt;
-
     var NumberFormat = numberFormatInternalProperties;
 
-    // Step 9.
+    // Compute effective locale.
+
+    // Step 7.
     var localeData = NumberFormat.localeData;
 
-    // Step 10.
-    var r = ResolveLocale(callFunction(NumberFormat.availableLocales, NumberFormat),
+    // Step 8.
+    var r = ResolveLocale("NumberFormat",
                           lazyNumberFormatData.requestedLocales,
                           lazyNumberFormatData.opt,
                           NumberFormat.relevantExtensionKeys,
                           localeData);
 
-    // Steps 11-12.  (Step 13 is not relevant to our implementation.)
+    // Steps 9-10. (Step 11 is not relevant to our implementation.)
     internalProps.locale = r.locale;
     internalProps.numberingSystem = r.nu;
 
     // Compute formatting options.
-    // Step 15.
+    // Step 13.
     var s = lazyNumberFormatData.style;
     internalProps.style = s;
 
-    // Steps 19, 21.
+    // Steps 17, 19.
     if (s === "currency") {
         internalProps.currency = lazyNumberFormatData.currency;
         internalProps.currencyDisplay = lazyNumberFormatData.currencyDisplay;
     }
 
+    // Step 22.
     internalProps.minimumIntegerDigits = lazyNumberFormatData.minimumIntegerDigits;
-
     internalProps.minimumFractionDigits = lazyNumberFormatData.minimumFractionDigits;
-
     internalProps.maximumFractionDigits = lazyNumberFormatData.maximumFractionDigits;
 
     if ("minimumSignificantDigits" in lazyNumberFormatData) {
@@ -83,11 +66,8 @@ function resolveNumberFormatInternals(lazyNumberFormatData) {
         internalProps.maximumSignificantDigits = lazyNumberFormatData.maximumSignificantDigits;
     }
 
-    // Step 27.
+    // Step 24.
     internalProps.useGrouping = lazyNumberFormatData.useGrouping;
-
-    // Step 34.
-    internalProps.boundFormat = undefined;
 
     // The caller is responsible for associating |internalProps| with the right
     // object using |setInternalProperties|.
@@ -96,11 +76,13 @@ function resolveNumberFormatInternals(lazyNumberFormatData) {
 
 
 /**
- * Returns an object containing the NumberFormat internal properties of |obj|,
- * or throws a TypeError if |obj| isn't NumberFormat-initialized.
+ * Returns an object containing the NumberFormat internal properties of |obj|.
  */
-function getNumberFormatInternals(obj, methodName) {
-    var internals = getIntlObjectInternals(obj, "NumberFormat", methodName);
+function getNumberFormatInternals(obj) {
+    assert(IsObject(obj), "getNumberFormatInternals called with non-object");
+    assert(IsNumberFormat(obj), "getNumberFormatInternals called with non-NumberFormat");
+
+    var internals = getIntlObjectInternals(obj);
     assert(internals.type === "NumberFormat", "bad type escaped getIntlObjectInternals");
 
     // If internal properties have already been computed, use them.
@@ -114,24 +96,45 @@ function getNumberFormatInternals(obj, methodName) {
     return internalProps;
 }
 
+
+/**
+ * 11.1.11 UnwrapNumberFormat( nf )
+ */
+function UnwrapNumberFormat(nf, methodName) {
+    // Step 1 (not applicable in our implementation).
+
+    // Step 2.
+    if ((!IsObject(nf) || !IsNumberFormat(nf)) && nf instanceof GetNumberFormatConstructor()) {
+        nf = nf[intlFallbackSymbol()];
+    }
+
+    // Step 3.
+    if (!IsObject(nf) || !IsNumberFormat(nf))
+        ThrowTypeError(JSMSG_INTL_OBJECT_NOT_INITED, "NumberFormat", methodName, "NumberFormat");
+
+    // Step 4.
+    return nf;
+}
+
+
 /**
  * Applies digit options used for number formatting onto the intl object.
  *
  * Spec: ECMAScript Internationalization API Specification, 11.1.1.
  */
 function SetNumberFormatDigitOptions(lazyData, options, mnfdDefault) {
-    // We skip Step 1 because we set the properties on a lazyData object.
+    // We skip step 1 because we set the properties on a lazyData object.
 
-    // Step 2-3.
+    // Steps 2-4.
     assert(IsObject(options), "SetNumberFormatDigitOptions");
     assert(typeof mnfdDefault === "number", "SetNumberFormatDigitOptions");
 
-    // Steps 4-6.
+    // Steps 5-8.
     const mnid = GetNumberOption(options, "minimumIntegerDigits", 1, 21, 1);
     const mnfd = GetNumberOption(options, "minimumFractionDigits", 0, 20, mnfdDefault);
     const mxfd = GetNumberOption(options, "maximumFractionDigits", mnfd, 20);
 
-    // Steps 7-8.
+    // Steps 9-10.
     let mnsd = options.minimumSignificantDigits;
     let mxsd = options.maximumSignificantDigits;
 
@@ -175,17 +178,9 @@ function toASCIIUpperCase(s) {
  *
  * Spec: ECMAScript Internationalization API Specification, 6.3.1.
  */
-function getIsWellFormedCurrencyCodeRE() {
-    return internalIntlRegExps.isWellFormedCurrencyCodeRE ||
-           (internalIntlRegExps.isWellFormedCurrencyCodeRE = RegExpCreate("[^A-Z]"));
-}
-
 function IsWellFormedCurrencyCode(currency) {
-    var c = ToString(currency);
-    var normalized = toASCIIUpperCase(c);
-    if (normalized.length !== 3)
-        return false;
-    return !regexp_test_no_statics(getIsWellFormedCurrencyCodeRE(), normalized);
+    assert(typeof currency === "string", "currency is a string value");
+    return currency.length === 3 && IsASCIIAlphaString(currency);
 }
 
 /**
@@ -197,17 +192,11 @@ function IsWellFormedCurrencyCode(currency) {
  * This later work occurs in |resolveNumberFormatInternals|; steps not noted
  * here occur there.
  *
- * Spec: ECMAScript Internationalization API Specification, 11.1.1.
+ * Spec: ECMAScript Internationalization API Specification, 11.1.2.
  */
-function InitializeNumberFormat(numberFormat, locales, options) {
-    assert(IsObject(numberFormat), "InitializeNumberFormat");
-
-    // Step 1.
-    if (isInitializedIntlObject(numberFormat))
-        ThrowTypeError(JSMSG_INTL_OBJECT_REINITED);
-
-    // Step 2.
-    var internals = initializeIntlObject(numberFormat);
+function InitializeNumberFormat(numberFormat, thisValue, locales, options) {
+    assert(IsObject(numberFormat), "InitializeNumberFormat called with non-object");
+    assert(IsNumberFormat(numberFormat), "InitializeNumberFormat called with non-NumberFormat");
 
     // Lazy NumberFormat data has the following structure:
     //
@@ -222,6 +211,8 @@ function InitializeNumberFormat(numberFormat, locales, options) {
     //     opt: // opt object computed in InitializeNumberFormat
     //       {
     //         localeMatcher: "lookup" / "best fit",
+    //
+    //         nu: string matching a Unicode extension type, // optional
     //       }
     //
     //     minimumIntegerDigits: integer ∈ [1, 21],
@@ -240,11 +231,11 @@ function InitializeNumberFormat(numberFormat, locales, options) {
     // subset of them.
     var lazyNumberFormatData = std_Object_create(null);
 
-    // Step 3.
+    // Step 1.
     var requestedLocales = CanonicalizeLocaleList(locales);
     lazyNumberFormatData.requestedLocales = requestedLocales;
 
-    // Steps 4-5.
+    // Steps 2-3.
     //
     // If we ever need more speed here at startup, we should try to detect the
     // case where |options === undefined| and Object.prototype hasn't been
@@ -257,20 +248,30 @@ function InitializeNumberFormat(numberFormat, locales, options) {
         options = ToObject(options);
 
     // Compute options that impact interpretation of locale.
-    // Step 6.
+    // Step 4.
     var opt = new Record();
     lazyNumberFormatData.opt = opt;
 
-    // Steps 7-8.
+    // Steps 5-6.
     var matcher = GetOption(options, "localeMatcher", "string", ["lookup", "best fit"], "best fit");
     opt.localeMatcher = matcher;
+    
+    var numberingSystem = GetOption(options, "numberingSystem", "string", undefined, undefined);
+
+    if (numberingSystem !== undefined) {
+        numberingSystem = intl_ValidateAndCanonicalizeUnicodeExtensionType(numberingSystem,
+                                                                           "numberingSystem",
+                                                                           "nu");
+    }
+
+    opt.nu = numberingSystem;
 
     // Compute formatting options.
-    // Step 14.
+    // Step 12.
     var s = GetOption(options, "style", "string", ["decimal", "percent", "currency"], "decimal");
     lazyNumberFormatData.style = s;
 
-    // Steps 16-19.
+    // Steps 14-17.
     var c = GetOption(options, "currency", "string", undefined, undefined);
     if (c !== undefined && !IsWellFormedCurrencyCode(c))
         ThrowRangeError(JSMSG_INVALID_CURRENCY_CODE, c);
@@ -285,12 +286,12 @@ function InitializeNumberFormat(numberFormat, locales, options) {
         cDigits = CurrencyDigits(c);
     }
 
-    // Step 20.
+    // Step 18.
     var cd = GetOption(options, "currencyDisplay", "string", ["code", "symbol", "name"], "symbol");
     if (s === "currency")
         lazyNumberFormatData.currencyDisplay = cd;
 
-    // Steps 22-24.
+    // Steps 20-22.
     SetNumberFormatDigitOptions(lazyNumberFormatData, options, s === "currency" ? cDigits: 0);
 
     // Step 25.
@@ -304,15 +305,31 @@ function InitializeNumberFormat(numberFormat, locales, options) {
             std_Math_max(lazyNumberFormatData.minimumFractionDigits, mxfdDefault);
     }
 
-    // Step 26.
+    // Steps 23.
     var g = GetOption(options, "useGrouping", "boolean", undefined, true);
     lazyNumberFormatData.useGrouping = g;
 
-    // Steps 35-36.
+    // Step 31.
     //
     // We've done everything that must be done now: mark the lazy data as fully
     // computed and install it.
-    setLazyData(internals, "NumberFormat", lazyNumberFormatData);
+    initializeIntlObject(numberFormat, "NumberFormat", lazyNumberFormatData);
+
+    // 11.2.1, steps 4-5.
+    // TODO: spec issue - The current spec doesn't have the IsObject check,
+    // which means |Intl.NumberFormat.call(null)| is supposed to throw here.
+    if (numberFormat !== thisValue && thisValue instanceof GetNumberFormatConstructor()) {
+        if (!IsObject(thisValue))
+            ThrowTypeError(JSMSG_NOT_NONNULL_OBJECT, typeof thisValue);
+
+        _DefineDataProperty(thisValue, intlFallbackSymbol(), numberFormat,
+                            ATTR_NONENUMERABLE | ATTR_NONCONFIGURABLE | ATTR_NONWRITABLE);
+
+        return thisValue;
+    }
+
+    // 11.2.1, step 6.
+    return numberFormat;
 }
 
 
@@ -356,17 +373,14 @@ var currencyDigits = {
 /**
  * Returns the number of decimal digits to be used for the given currency.
  *
- * Spec: ECMAScript Internationalization API Specification, 11.1.1.
+ * Spec: ECMAScript Internationalization API Specification, 11.1.3.
  */
-function getCurrencyDigitsRE() {
-    return internalIntlRegExps.currencyDigitsRE ||
-           (internalIntlRegExps.currencyDigitsRE = RegExpCreate("^[A-Z]{3}$"));
-}
 function CurrencyDigits(currency) {
-    assert(typeof currency === "string", "CurrencyDigits");
-    assert(regexp_test_no_statics(getCurrencyDigitsRE(), currency), "CurrencyDigits");
+    assert(typeof currency === "string", "currency is a string value");
+    assert(IsWellFormedCurrencyCode(currency), "currency is well-formed");
+    assert(currency == toASCIIUpperCase(currency), "currency is all upper-case");
 
-    if (callFunction(std_Object_hasOwnProperty, currencyDigits, currency))
+    if (hasOwn(currency, currencyDigits))
         return currencyDigits[currency];
     return 2;
 }
@@ -377,14 +391,18 @@ function CurrencyDigits(currency) {
  * matching (possibly fallback) locale. Locales appear in the same order in the
  * returned list as in the input list.
  *
- * Spec: ECMAScript Internationalization API Specification, 11.2.2.
+ * Spec: ECMAScript Internationalization API Specification, 11.3.2.
  */
 function Intl_NumberFormat_supportedLocalesOf(locales /*, options*/) {
     var options = arguments.length > 1 ? arguments[1] : undefined;
 
-    var availableLocales = callFunction(numberFormatInternalProperties.availableLocales,
-                                        numberFormatInternalProperties);
+    // Step 1.
+    var availableLocales = "NumberFormat";
+
+    // Step 2.
     var requestedLocales = CanonicalizeLocaleList(locales);
+
+    // Step 3.
     return SupportedLocales(availableLocales, requestedLocales, options);
 }
 
@@ -397,8 +415,8 @@ function getNumberingSystems(locale) {
     // Algorithmic numbering systems are typically tied to one locale, so for
     // lack of information we don't offer them. To increase chances that
     // other software will process output correctly, we further restrict to
-    // those decimal numbering systems explicitly listed in table 2 of
-    // the ECMAScript Internationalization API Specification, 11.3.2, which
+    // those decimal numbering systems explicitly listed in table 3 of
+    // the ECMAScript Internationalization API Specification, 11.1.6, which
     // in turn are those with full specifications in version 21 of Unicode
     // Technical Standard #35 using digits that were defined in Unicode 5.0,
     // the Unicode version supported in Windows Vista.
@@ -416,9 +434,12 @@ function getNumberingSystems(locale) {
 }
 
 
-function numberFormatLocaleData(locale) {
+function numberFormatLocaleData() {
     return {
-        nu: getNumberingSystems(locale)
+        nu: getNumberingSystems,
+        default: {
+            nu: intl_numberingSystem,
+        }
     };
 }
 
@@ -426,7 +447,7 @@ function numberFormatLocaleData(locale) {
 /**
  * Function to be bound and returned by Intl.NumberFormat.prototype.format.
  *
- * Spec: ECMAScript Internationalization API Specification, 11.3.2.
+ * Spec: ECMAScript Internationalization API Specification, 11.1.4.
  */
 function numberFormatFormatToBind(value) {
     // Steps 1.a.i implemented by ECMAScript declaration binding instantiation,
@@ -443,31 +464,37 @@ function numberFormatFormatToBind(value) {
  * representing the result of calling ToNumber(value) according to the
  * effective locale and the formatting options of this NumberFormat.
  *
- * Spec: ECMAScript Internationalization API Specification, 11.3.2.
+ * Spec: ECMAScript Internationalization API Specification, 11.4.3.
  */
 function Intl_NumberFormat_format_get() {
-    // Check "this NumberFormat object" per introduction of section 11.3.
-    var internals = getNumberFormatInternals(this, "format");
+    // Steps 1-3.
+    var nf = UnwrapNumberFormat(this, "format");
 
-    // Step 1.
+    var internals = getNumberFormatInternals(nf);
+
+    // Step 4.
     if (internals.boundFormat === undefined) {
-        // Step 1.a.
-        var F = numberFormatFormatToBind;
+        // Steps 4.a-b.
+        var F = callFunction(FunctionBind, numberFormatFormatToBind, nf);
 
-        // Step 1.b-d.
-        var bf = callFunction(FunctionBind, F, this);
-        internals.boundFormat = bf;
+        // Step 4.c.
+        internals.boundFormat = F;
     }
-    // Step 2.
+
+    // Step 5.
     return internals.boundFormat;
 }
+_SetCanonicalName(Intl_NumberFormat_format_get, "get format");
 
+/**
+ * 11.4.4 Intl.NumberFormat.prototype.formatToParts ( value )
+ */
 function Intl_NumberFormat_formatToParts(value) {
-    // Step 1.
-    var nf = this;
+    // Steps 1-3.
+    var nf = UnwrapNumberFormat(this, "formatToParts");
 
-    // Steps 2-3.
-    getNumberFormatInternals(nf, "formatToParts");
+    // Ensure the NumberFormat internals are resolved.
+    getNumberFormatInternals(nf);
 
     // Step 4.
     var x = ToNumber(value);
@@ -479,12 +506,15 @@ function Intl_NumberFormat_formatToParts(value) {
 /**
  * Returns the resolved options for a NumberFormat object.
  *
- * Spec: ECMAScript Internationalization API Specification, 11.3.3 and 11.4.
+ * Spec: ECMAScript Internationalization API Specification, 11.4.5.
  */
 function Intl_NumberFormat_resolvedOptions() {
-    // Check "this NumberFormat object" per introduction of section 11.3.
-    var internals = getNumberFormatInternals(this, "resolvedOptions");
+    // Steps 1-3.
+    var nf = UnwrapNumberFormat(this, "resolvedOptions");
 
+    var internals = getNumberFormatInternals(nf);
+
+    // Steps 4-5.
     var result = {
         locale: internals.locale,
         numberingSystem: internals.numberingSystem,
@@ -494,17 +524,31 @@ function Intl_NumberFormat_resolvedOptions() {
         maximumFractionDigits: internals.maximumFractionDigits,
         useGrouping: internals.useGrouping
     };
-    var optionalProperties = [
-        "currency",
-        "currencyDisplay",
-        "minimumSignificantDigits",
-        "maximumSignificantDigits"
-    ];
-    for (var i = 0; i < optionalProperties.length; i++) {
-        var p = optionalProperties[i];
-        if (callFunction(std_Object_hasOwnProperty, internals, p))
-            _DefineDataProperty(result, p, internals[p]);
+
+    // currency and currencyDisplay are only present for currency formatters.
+    assert(hasOwn("currency", internals) === (internals.style === "currency"),
+           "currency is present iff style is 'currency'");
+    assert(hasOwn("currencyDisplay", internals) === (internals.style === "currency"),
+           "currencyDisplay is present iff style is 'currency'");
+
+    if (hasOwn("currency", internals)) {
+        _DefineDataProperty(result, "currency", internals.currency);
+        _DefineDataProperty(result, "currencyDisplay", internals.currencyDisplay);
     }
+
+    // Min/Max significant digits are either both present or not at all.
+    assert(hasOwn("minimumSignificantDigits", internals) ===
+           hasOwn("maximumSignificantDigits", internals),
+           "minimumSignificantDigits is present iff maximumSignificantDigits is present");
+
+    if (hasOwn("minimumSignificantDigits", internals)) {
+        _DefineDataProperty(result, "minimumSignificantDigits",
+                            internals.minimumSignificantDigits);
+        _DefineDataProperty(result, "maximumSignificantDigits",
+                            internals.maximumSignificantDigits);
+    }
+
+    // Step 6.
     return result;
 }
 

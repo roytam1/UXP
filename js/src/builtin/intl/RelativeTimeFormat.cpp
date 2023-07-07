@@ -26,7 +26,6 @@ using mozilla::Range;
 using mozilla::RangedPtr;
 
 using js::intl::CallICU;
-using js::intl::GetAvailableLocales;
 using js::intl::IcuLocale;
 using js::intl::INITIAL_CHAR_BUFFER_SIZE;
 using js::intl::StringsAreEqual;
@@ -108,8 +107,8 @@ RelativeTimeFormat(JSContext* cx, unsigned argc, Value* vp)
     if (!relativeTimeFormat)
         return false;
 
-    relativeTimeFormat->as<NativeObject>().setReservedSlot(RelativeTimeFormatObject::INTERNALS_SLOT, NullValue());
-    relativeTimeFormat->as<NativeObject>().setReservedSlot(RelativeTimeFormatObject::URELATIVE_TIME_FORMAT_SLOT, PrivateValue(nullptr));
+    relativeTimeFormat->as<RelativeTimeFormatObject>().setReservedSlot(RelativeTimeFormatObject::INTERNALS_SLOT, NullValue());
+    relativeTimeFormat->as<RelativeTimeFormatObject>().setReservedSlot(RelativeTimeFormatObject::URELATIVE_TIME_FORMAT_SLOT, PrivateValue(nullptr));
 
     RootedValue locales(cx, args.get(0));
     RootedValue options(cx, args.get(1));
@@ -127,15 +126,9 @@ js::RelativeTimeFormatObject::finalize(FreeOp* fop, JSObject* obj)
 {
     MOZ_ASSERT(fop->onMainThread());
 
-    // This is-undefined check shouldn't be necessary, but for internal
-    // brokenness in object allocation code.  For the moment, hack around it by
-    // explicitly guarding against the possibility of the reserved slot not
-    // containing a private.  See bug 949220.
     const Value& slot = obj->as<RelativeTimeFormatObject>().getReservedSlot(RelativeTimeFormatObject::URELATIVE_TIME_FORMAT_SLOT);
-    if (!slot.isUndefined()) {
-        if (URelativeDateTimeFormatter* rtf = static_cast<URelativeDateTimeFormatter*>(slot.toPrivate()))
-            ureldatefmt_close(rtf);
-    }
+    if (URelativeDateTimeFormatter* rtf = static_cast<URelativeDateTimeFormatter*>(slot.toPrivate()))
+        ureldatefmt_close(rtf);
 }
 
 JSObject*
@@ -146,10 +139,9 @@ js::CreateRelativeTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<G
     if (!ctor)
         return nullptr;
 
-    RootedNativeObject proto(cx, GlobalObject::createBlankPrototype(cx, global, &RelativeTimeFormatObject::class_));
+    RootedObject proto(cx, GlobalObject::createBlankPrototype<PlainObject>(cx, global));
     if (!proto)
         return nullptr;
-    proto->setReservedSlot(RelativeTimeFormatObject::URELATIVE_TIME_FORMAT_SLOT, PrivateValue(nullptr));
 
     if (!LinkConstructorAndPrototype(cx, ctor, proto))
         return nullptr;
@@ -163,16 +155,6 @@ js::CreateRelativeTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<G
     if (!JS_DefineProperties(cx, proto, relativeTimeFormat_properties))
         return nullptr;
 
-    RootedValue options(cx);
-    if (!intl::CreateDefaultOptions(cx, &options))
-        return nullptr;
-
-    if (!intl::InitializeObject(cx, proto, cx->names().InitializeRelativeTimeFormat, UndefinedHandleValue,
-                        options))
-    {
-        return nullptr;
-    }
-
     RootedValue ctorValue(cx, ObjectValue(*ctor));
     if (!DefineProperty(cx, Intl, cx->names().RelativeTimeFormat, ctorValue, nullptr, nullptr, 0)) {
         return nullptr;
@@ -180,22 +162,6 @@ js::CreateRelativeTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<G
 
     return proto;
 }
-
-bool
-js::intl_RelativeTimeFormat_availableLocales(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-    MOZ_ASSERT(args.length() == 0);
-
-    RootedValue result(cx);
-    // We're going to use ULocale availableLocales as per ICU recommendation:
-    // https://ssl.icu-project.org/trac/ticket/12756
-    if (!GetAvailableLocales(cx, uloc_countAvailable, uloc_getAvailable, &result))
-        return false;
-    args.rval().set(result);
-    return true;
-}
-
 
 enum class RelativeTimeNumeric
 {

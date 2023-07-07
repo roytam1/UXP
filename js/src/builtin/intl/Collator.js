@@ -6,18 +6,6 @@
 
 
 /**
- * Mapping from Unicode extension keys for collation to options properties,
- * their types and permissible values.
- *
- * Spec: ECMAScript Internationalization API Specification, 10.1.1.
- */
-var collatorKeyMappings = {
-    kn: {property: "numeric", type: "boolean"},
-    kf: {property: "caseFirst", type: "string", values: ["upper", "lower", "false"]}
-};
-
-
-/**
  * Compute an internal properties object from |lazyCollatorData|.
  */
 function resolveCollatorInternals(lazyCollatorData)
@@ -26,79 +14,63 @@ function resolveCollatorInternals(lazyCollatorData)
 
     var internalProps = std_Object_create(null);
 
-    // Step 7.
-    internalProps.usage = lazyCollatorData.usage;
-
-    // Step 8.
     var Collator = collatorInternalProperties;
 
-    // Step 9.
+    // Step 5.
+    internalProps.usage = lazyCollatorData.usage;
+
+    // Steps 6-7.
     var collatorIsSorting = lazyCollatorData.usage === "sort";
     var localeData = collatorIsSorting
                      ? Collator.sortLocaleData
                      : Collator.searchLocaleData;
 
     // Compute effective locale.
-    // Step 14.
+    // Step 16.
     var relevantExtensionKeys = Collator.relevantExtensionKeys;
 
-    // Step 15.
-    var r = ResolveLocale(callFunction(Collator.availableLocales, Collator),
+    // Step 17.
+    var r = ResolveLocale("Collator",
                           lazyCollatorData.requestedLocales,
                           lazyCollatorData.opt,
                           relevantExtensionKeys,
                           localeData);
 
-    // Step 16.
+    // Step 18.
     internalProps.locale = r.locale;
 
-    // Steps 17-19.
-    var key, property, value, mapping;
-    var i = 0, len = relevantExtensionKeys.length;
-    while (i < len) {
-        // Step 19.a.
-        key = relevantExtensionKeys[i];
-        if (key === "co") {
-            // Step 19.b.
-            property = "collation";
-            value = r.co === null ? "default" : r.co;
-        } else {
-            // Step 19.c.
-            mapping = collatorKeyMappings[key];
-            property = mapping.property;
-            value = r[key];
-            if (mapping.type === "boolean")
-                value = value === "true";
-        }
+    // Step 19.
+    var collation = r.co;
 
-        // Step 19.d.
-        internalProps[property] = value;
+    // Step 20.
+    if (collation === null)
+        collation = "default";
 
-        // Step 19.e.
-        i++;
-    }
+    // Step 21.
+    internalProps.collation = collation;
+
+    // Step 22.
+    internalProps.numeric = r.kn === "true";
+
+    // Step 23.
+    internalProps.caseFirst = r.kf;
 
     // Compute remaining collation options.
-    // Steps 21-22.
+    // Step 25.
     var s = lazyCollatorData.rawSensitivity;
     if (s === undefined) {
-        if (collatorIsSorting) {
-            // Step 21.a.
-            s = "variant";
-        } else {
-            // Step 21.b.
-            var dataLocale = r.dataLocale;
-            var dataLocaleData = localeData(dataLocale);
-            s = dataLocaleData.sensitivity;
-        }
+        // In theory the default sensitivity for the "search" collator is
+        // locale dependent; in reality the CLDR/ICU default strength is
+        // always tertiary. Therefore use "variant" as the default value for
+        // both collation modes.
+        s = "variant";
     }
+
+    // Step 26.
     internalProps.sensitivity = s;
 
-    // Step 24.
+    // Step 28.
     internalProps.ignorePunctuation = lazyCollatorData.ignorePunctuation;
-
-    // Step 25.
-    internalProps.boundFormat = undefined;
 
     // The caller is responsible for associating |internalProps| with the right
     // object using |setInternalProperties|.
@@ -107,11 +79,13 @@ function resolveCollatorInternals(lazyCollatorData)
 
 
 /**
- * Returns an object containing the Collator internal properties of |obj|, or
- * throws a TypeError if |obj| isn't Collator-initialized.
+ * Returns an object containing the Collator internal properties of |obj|.
  */
-function getCollatorInternals(obj, methodName) {
-    var internals = getIntlObjectInternals(obj, "Collator", methodName);
+function getCollatorInternals(obj) {
+    assert(IsObject(obj), "getCollatorInternals called with non-object");
+    assert(IsCollator(obj), "getCollatorInternals called with non-Collator");
+
+    var internals = getIntlObjectInternals(obj);
     assert(internals.type === "Collator", "bad type escaped getIntlObjectInternals");
 
     // If internal properties have already been computed, use them.
@@ -138,14 +112,8 @@ function getCollatorInternals(obj, methodName) {
  * Spec: ECMAScript Internationalization API Specification, 10.1.1.
  */
 function InitializeCollator(collator, locales, options) {
-    assert(IsObject(collator), "InitializeCollator");
-
-    // Step 1.
-    if (isInitializedIntlObject(collator))
-        ThrowTypeError(JSMSG_INTL_OBJECT_REINITED);
-
-    // Step 2.
-    var internals = initializeIntlObject(collator);
+    assert(IsObject(collator), "InitializeCollator called with non-object");
+    assert(IsCollator(collator), "InitializeCollator called with non-Collator");
 
     // Lazy Collator data has the following structure:
     //
@@ -167,11 +135,11 @@ function InitializeCollator(collator, locales, options) {
     // subset of them.
     var lazyCollatorData = std_Object_create(null);
 
-    // Step 3.
+    // Step 1.
     var requestedLocales = CanonicalizeLocaleList(locales);
     lazyCollatorData.requestedLocales = requestedLocales;
 
-    // Steps 4-5.
+    // Steps 2-3.
     //
     // If we ever need more speed here at startup, we should try to detect the
     // case where |options === undefined| and Object.prototype hasn't been
@@ -184,42 +152,43 @@ function InitializeCollator(collator, locales, options) {
         options = ToObject(options);
 
     // Compute options that impact interpretation of locale.
-    // Step 6.
+    // Step 4.
     var u = GetOption(options, "usage", "string", ["sort", "search"], "sort");
     lazyCollatorData.usage = u;
 
-    // Step 10.
+    // Step 8.
     var opt = new Record();
     lazyCollatorData.opt = opt;
 
-    // Steps 11-12.
+    // Steps 9-10.
     var matcher = GetOption(options, "localeMatcher", "string", ["lookup", "best fit"], "best fit");
     opt.localeMatcher = matcher;
 
-    // Step 13, unrolled.
+    // Steps 11-13.
     var numericValue = GetOption(options, "numeric", "boolean", undefined, undefined);
     if (numericValue !== undefined)
         numericValue = numericValue ? 'true' : 'false';
     opt.kn = numericValue;
 
+    // Steps 14-15.
     var caseFirstValue = GetOption(options, "caseFirst", "string", ["upper", "lower", "false"], undefined);
     opt.kf = caseFirstValue;
 
     // Compute remaining collation options.
-    // Step 20.
+    // Step 24.
     var s = GetOption(options, "sensitivity", "string",
                       ["base", "accent", "case", "variant"], undefined);
     lazyCollatorData.rawSensitivity = s;
 
-    // Step 23.
+    // Step 27.
     var ip = GetOption(options, "ignorePunctuation", "boolean", undefined, false);
     lazyCollatorData.ignorePunctuation = ip;
 
-    // Step 26.
+    // Step 29.
     //
     // We've done everything that must be done now: mark the lazy data as fully
     // computed and install it.
-    setLazyData(internals, "Collator", lazyCollatorData);
+    initializeIntlObject(collator, "Collator", lazyCollatorData);
 }
 
 
@@ -233,9 +202,13 @@ function InitializeCollator(collator, locales, options) {
 function Intl_Collator_supportedLocalesOf(locales /*, options*/) {
     var options = arguments.length > 1 ? arguments[1] : undefined;
 
-    var availableLocales = callFunction(collatorInternalProperties.availableLocales,
-                                        collatorInternalProperties);
+    // Step 1.
+    var availableLocales = "Collator";
+
+    // Step 2.
     var requestedLocales = CanonicalizeLocaleList(locales);
+
+    // Step 3.
     return SupportedLocales(availableLocales, requestedLocales, options);
 }
 
@@ -248,46 +221,106 @@ function Intl_Collator_supportedLocalesOf(locales /*, options*/) {
 var collatorInternalProperties = {
     sortLocaleData: collatorSortLocaleData,
     searchLocaleData: collatorSearchLocaleData,
-    _availableLocales: null,
-    availableLocales: function()
-    {
-        var locales = this._availableLocales;
-        if (locales)
-            return locales;
-
-        locales = intl_Collator_availableLocales();
-        addSpecialMissingLanguageTags(locales);
-        return (this._availableLocales = locales);
-    },
-    relevantExtensionKeys: ["co", "kn"]
+    relevantExtensionKeys: ["co", "kn", "kf"]
 };
 
 
-function collatorSortLocaleData(locale) {
-    var collations = intl_availableCollations(locale);
-    callFunction(std_Array_unshift, collations, null);
-    return {
-        co: collations,
-        kn: ["false", "true"]
-    };
-}
+/**
+ * Returns the actual locale used when a collator for |locale| is constructed.
+ */
+function collatorActualLocale(locale) {
+    assert(typeof locale === "string", "locale should be string");
 
-
-function collatorSearchLocaleData(locale) {
-    return {
-        co: [null],
-        kn: ["false", "true"],
-        // In theory the default sensitivity is locale dependent;
-        // in reality the CLDR/ICU default strength is always tertiary.
-        sensitivity: "variant"
-    };
+    // If |locale| is the default locale (e.g. da-DK), but only supported
+    // through a fallback (da), we need to get the actual locale before we
+    // can call intl_isUpperCaseFirst. Also see intl_BestAvailableLocale.
+    return BestAvailableLocaleIgnoringDefault("Collator", locale);
 }
 
 
 /**
- * Function to be bound and returned by Intl.Collator.prototype.format.
+ * Returns the default caseFirst values for the given locale. The first
+ * element in the returned array denotes the default value per ES2017 Intl,
+ * 9.1 Internal slots of Service Constructors.
+ */
+function collatorSortCaseFirst(locale) {
+    var actualLocale = collatorActualLocale(locale);
+    if (intl_isUpperCaseFirst(actualLocale))
+        return ["upper", "false", "lower"];
+
+    // Default caseFirst values for all other languages.
+    return ["false", "lower", "upper"];
+}
+
+
+/**
+ * Returns the default caseFirst value for the given locale.
+ */
+function collatorSortCaseFirstDefault(locale) {
+    var actualLocale = collatorActualLocale(locale);
+    if (intl_isUpperCaseFirst(actualLocale))
+        return "upper";
+
+    // Default caseFirst value for all other languages.
+    return "false";
+}
+
+function collatorSortLocaleData() {
+    /* eslint-disable object-shorthand */
+    return {
+        co: intl_availableCollations,
+        kn: function() {
+            return ["false", "true"];
+        },
+        kf: collatorSortCaseFirst,
+        default: {
+            co: function() {
+                // The first element of the collations array must be |null|
+                // per ES2017 Intl, 10.2.3 Internal Slots.
+                return null;
+            },
+            kn: function() {
+                return "false";
+            },
+            kf: collatorSortCaseFirstDefault,
+        }
+    };
+    /* eslint-enable object-shorthand */
+}
+
+
+function collatorSearchLocaleData() {
+    /* eslint-disable object-shorthand */
+    return {
+        co: function() {
+            return [null];
+        },
+        kn: function() {
+            return ["false", "true"];
+        },
+        kf: function() {
+            return ["false", "lower", "upper"];
+        },
+        default: {
+            co: function() {
+                return null;
+            },
+            kn: function() {
+                return "false";
+            },
+            kf: function() {
+                return "false";
+            },
+        }
+    };
+    /* eslint-enable object-shorthand */
+}
+
+
+/**
+ * Function to be bound and returned by Intl.Collator.prototype.compare.
  *
- * Spec: ECMAScript Internationalization API Specification, 12.3.2.
+ * Spec: ECMAScript Internationalization API Specification, 10.3.3.1.
  */
 function collatorCompareToBind(x, y) {
     // Steps 1.a.i-ii implemented by ECMAScript declaration binding instantiation,
@@ -307,49 +340,60 @@ function collatorCompareToBind(x, y) {
  * than 0 if x > y according to the sort order for the locale and collation
  * options of this Collator object.
  *
- * Spec: ECMAScript Internationalization API Specification, 10.3.2.
+ * Spec: ECMAScript Internationalization API Specification, 10.3.3.
  */
 function Intl_Collator_compare_get() {
-    // Check "this Collator object" per introduction of section 10.3.
-    var internals = getCollatorInternals(this, "compare");
-
     // Step 1.
-    if (internals.boundCompare === undefined) {
-        // Step 1.a.
-        var F = collatorCompareToBind;
+    var collator = this;
 
-        // Step 1.b-d.
-        var bc = callFunction(FunctionBind, F, this);
-        internals.boundCompare = bc;
+    // Steps 2-3.
+    if (!IsObject(collator) || !IsCollator(collator))
+        ThrowTypeError(JSMSG_INTL_OBJECT_NOT_INITED, "Collator", "compare", "Collator");
+
+    var internals = getCollatorInternals(collator);
+
+    // Step 4.
+    if (internals.boundCompare === undefined) {
+        // Steps 4.a-b.
+        var F = callFunction(FunctionBind, collatorCompareToBind, collator);
+
+        // Step 4.c.
+        internals.boundCompare = F;
     }
 
-    // Step 2.
+    // Step 5.
     return internals.boundCompare;
 }
+_SetCanonicalName(Intl_Collator_compare_get, "get compare");
 
 
 /**
  * Returns the resolved options for a Collator object.
  *
- * Spec: ECMAScript Internationalization API Specification, 10.3.3 and 10.4.
+ * Spec: ECMAScript Internationalization API Specification, 10.3.4.
  */
 function Intl_Collator_resolvedOptions() {
-    // Check "this Collator object" per introduction of section 10.3.
-    var internals = getCollatorInternals(this, "resolvedOptions");
+    // Step 1.
+    var collator = this;
 
+    // Steps 2-3.
+    if (!IsObject(collator) || !IsCollator(collator))
+        ThrowTypeError(JSMSG_INTL_OBJECT_NOT_INITED, "Collator", "resolvedOptions", "Collator");
+
+    var internals = getCollatorInternals(collator);
+
+    // Steps 4-5.
     var result = {
         locale: internals.locale,
         usage: internals.usage,
         sensitivity: internals.sensitivity,
-        ignorePunctuation: internals.ignorePunctuation
+        ignorePunctuation: internals.ignorePunctuation,
+        collation: internals.collation,
+        numeric: internals.numeric,
+        caseFirst: internals.caseFirst,
     };
 
-    var relevantExtensionKeys = collatorInternalProperties.relevantExtensionKeys;
-    for (var i = 0; i < relevantExtensionKeys.length; i++) {
-        var key = relevantExtensionKeys[i];
-        var property = (key === "co") ? "collation" : collatorKeyMappings[key].property;
-        _DefineDataProperty(result, property, internals[property]);
-    }
+    // Step 6.
     return result;
 }
 

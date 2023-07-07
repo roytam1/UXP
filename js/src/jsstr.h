@@ -371,11 +371,24 @@ str_trimStart(JSContext* cx, unsigned argc, Value* vp);
 extern bool
 str_trimEnd(JSContext* cx, unsigned argc, Value* vp);
 
-extern bool
-str_toLocaleLowerCase(JSContext* cx, unsigned argc, Value* vp);
+/**
+ * Returns the input string converted to lower case based on the language
+ * specific case mappings for the input locale.
+ *
+ * Usage: lowerCase = intl_toLocaleLowerCase(string, locale)
+ */
+extern MOZ_MUST_USE bool
+intl_toLocaleLowerCase(JSContext* cx, unsigned argc, Value* vp);
 
-extern bool
-str_toLocaleUpperCase(JSContext* cx, unsigned argc, Value* vp);
+/**
+ * Returns the input string converted to upper case based on the language
+ * specific case mappings for the input locale.
+ *
+ * Usage: upperCase = intl_toLocaleUpperCase(string, locale)
+ */
+extern MOZ_MUST_USE bool
+intl_toLocaleUpperCase(JSContext* cx, unsigned argc, Value* vp);
+
 
 extern bool
 str_normalize(JSContext* cx, unsigned argc, Value* vp);
@@ -479,6 +492,12 @@ str_replace_string_raw(JSContext* cx, HandleString string, HandleString pattern,
 JSString*
 str_replaceAll_string_raw(JSContext* cx, HandleString string, HandleString pattern,
                        HandleString replacement);
+
+extern JSString*
+StringToLowerCase(JSContext* cx, HandleLinearString string);
+
+extern JSString*
+StringToUpperCase(JSContext* cx, HandleLinearString string);
 
 extern bool
 StringConstructor(JSContext* cx, unsigned argc, Value* vp);

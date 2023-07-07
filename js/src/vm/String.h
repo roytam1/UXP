@@ -1131,6 +1131,20 @@ class StaticStrings
     static bool isStatic(JSAtom* atom);
 
     /* Return null if no static atom exists for the given (chars, length). */
+    MOZ_ALWAYS_INLINE JSAtom* lookup(const char* chars, size_t length) {
+        // Collapse calls for |const char*| into |const Latin1Char char*| to avoid
+        // excess instantiations.
+        return lookup(reinterpret_cast<const Latin1Char*>(chars), length);
+    }
+
+    template <typename CharT,
+              typename = typename std::enable_if<!std::is_const<CharT>::value>::type>
+    MOZ_ALWAYS_INLINE JSAtom* lookup(CharT* chars, size_t length) {
+        // Collapse the remaining |CharT*| to |const CharT*| to avoid excess
+        // instantiations.
+        return lookup(const_cast<const CharT*>(chars), length);
+    }
+
     template <typename CharT>
     JSAtom* lookup(const CharT* chars, size_t length) {
         switch (length) {

@@ -41,7 +41,8 @@ class DateTimeFormatObject : public NativeObject
 extern JSObject*
 
 CreateDateTimeFormatPrototype(JSContext* cx, JS::Handle<JSObject*> Intl,
-                              JS::Handle<GlobalObject*> global);
+                              JS::Handle<GlobalObject*> global, MutableHandleObject constructor,
+                              intl::DateTimeFormatOptions dtfOptions);
 
 /**
  * Returns a new instance of the standard built-in DateTimeFormat constructor.
@@ -54,17 +55,6 @@ extern MOZ_MUST_USE bool
 intl_DateTimeFormat(JSContext* cx, unsigned argc, Value* vp);
 
 /**
- * Returns an object indicating the supported locales for date and time
- * formatting by having a true-valued property for each such locale with the
- * canonicalized language tag as the property name. The object has no
- * prototype.
- *
- * Usage: availableLocales = intl_DateTimeFormat_availableLocales()
- */
-extern MOZ_MUST_USE bool
-intl_DateTimeFormat_availableLocales(JSContext* cx, unsigned argc, Value* vp);
-
-/**
  * Returns an array with the calendar type identifiers per Unicode
  * Technical Standard 35, Unicode Locale Data Markup Language, for the
  * supported calendars for the given locale. The default calendar is
@@ -74,6 +64,16 @@ intl_DateTimeFormat_availableLocales(JSContext* cx, unsigned argc, Value* vp);
  */
 extern MOZ_MUST_USE bool
 intl_availableCalendars(JSContext* cx, unsigned argc, Value* vp);
+
+/**
+ * Returns the calendar type identifier per Unicode Technical Standard 35,
+ * Unicode Locale Data Markup Language, for the default calendar for the given
+ * locale.
+ *
+ * Usage: calendar = intl_defaultCalendar(locale)
+ */
+extern MOZ_MUST_USE bool
+intl_defaultCalendar(JSContext* cx, unsigned argc, Value* vp);
 
 /**
  * 6.4.1 IsValidTimeZoneName ( timeZone )
@@ -119,10 +119,44 @@ intl_defaultTimeZoneOffset(JSContext* cx, unsigned argc, Value* vp);
  * best-fit date-time format pattern corresponding to skeleton for the
  * given locale.
  *
- * Usage: pattern = intl_patternForSkeleton(locale, skeleton)
+ * Usage: pattern = intl_patternForSkeleton(locale, skeleton, hourCycle)
  */
 extern MOZ_MUST_USE bool
 intl_patternForSkeleton(JSContext* cx, unsigned argc, Value* vp);
+
+/**
+ * Return a pattern in the date-time format pattern language of Unicode
+ * Technical Standard 35, Unicode Locale Data Markup Language, for the
+ * best-fit date-time style for the given locale.
+ * The function takes six arguments:
+ *
+ *   locale
+ *     BCP47 compliant locale string
+ *   dateStyle
+ *     A string with values: full or long or medium or short, or `undefined`
+ *   timeStyle
+ *     A string with values: full or long or medium or short, or `undefined`
+ *   timeZone
+ *     IANA time zone name
+ *   hour12
+ *     A boolean to request hour12 representation, or `undefined`
+ *   hourCycle
+ *     A string with values: h11, h12, h23, or h24, or `undefined`
+ *
+ * Date and time style categories map to CLDR time/date standard
+ * format patterns.
+ *
+ * For the definition of a pattern string, see LDML 4.8:
+ * http://unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+ *
+ * If `undefined` is passed to `dateStyle` or `timeStyle`, the respective
+ * portions of the pattern will not be included in the result.
+ *
+ * Usage: pattern = intl_patternForStyle(locale, dateStyle, timeStyle, timeZone,
+ *                                       hour12, hourCycle)
+ */
+extern MOZ_MUST_USE bool
+intl_patternForStyle(JSContext* cx, unsigned argc, Value* vp);
 
 /**
  * Returns a String value representing x (which must be a Number value)
@@ -131,7 +165,7 @@ intl_patternForSkeleton(JSContext* cx, unsigned argc, Value* vp);
  *
  * Spec: ECMAScript Internationalization API Specification, 12.3.2.
  *
- * Usage: formatted = intl_FormatDateTime(dateTimeFormat, x)
+ * Usage: formatted = intl_FormatDateTime(dateTimeFormat, x, formatToParts)
  */
 extern MOZ_MUST_USE bool
 intl_FormatDateTime(JSContext* cx, unsigned argc, Value* vp);

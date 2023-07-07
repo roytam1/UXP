@@ -11,17 +11,6 @@
  */
 var relativeTimeFormatInternalProperties = {
     localeData: relativeTimeFormatLocaleData,
-    _availableLocales: null,
-    availableLocales: function() // eslint-disable-line object-shorthand
-    {
-        var locales = this._availableLocales;
-        if (locales)
-            return locales;
-
-        locales = intl_RelativeTimeFormat_availableLocales();
-        addSpecialMissingLanguageTags(locales);
-        return (this._availableLocales = locales);
-    },
     relevantExtensionKeys: [],
 };
 
@@ -41,7 +30,7 @@ function resolveRelativeTimeFormatInternals(lazyRelativeTimeFormatData) {
     var RelativeTimeFormat = relativeTimeFormatInternalProperties;
 
     // Steps 7-8.
-    const r = ResolveLocale(callFunction(RelativeTimeFormat.availableLocales, RelativeTimeFormat),
+    const r = ResolveLocale("RelativeTimeFormat",
                             lazyRelativeTimeFormatData.requestedLocales,
                             lazyRelativeTimeFormatData.opt,
                             RelativeTimeFormat.relevantExtensionKeys,
@@ -69,8 +58,11 @@ function resolveRelativeTimeFormatInternals(lazyRelativeTimeFormatData) {
  * Returns an object containing the RelativeTimeFormat internal properties of |obj|,
  * or throws a TypeError if |obj| isn't RelativeTimeFormat-initialized.
  */
-function getRelativeTimeFormatInternals(obj, methodName) {
-    var internals = getIntlObjectInternals(obj, "RelativeTimeFormat", methodName);
+function getRelativeTimeFormatInternals(obj) {
+    assert(IsObject(obj), "getRelativeTimeFormatInternals called with non-object");
+    assert(IsRelativeTimeFormat(obj), "getRelativeTimeFormatInternals called with non-RelativeTimeFormat");
+
+    var internals = getIntlObjectInternals(obj);
     assert(internals.type === "RelativeTimeFormat", "bad type escaped getIntlObjectInternals");
 
     var internalProps = maybeInternalProperties(internals);
@@ -94,12 +86,8 @@ function getRelativeTimeFormatInternals(obj, methodName) {
  * Spec: ECMAScript 402 API, RelativeTimeFormat, 1.1.1.
  */
 function InitializeRelativeTimeFormat(relativeTimeFormat, locales, options) {
-    assert(IsObject(relativeTimeFormat), "InitializeRelativeTimeFormat");
-
-    if (isInitializedIntlObject(relativeTimeFormat))
-        ThrowTypeError(JSMSG_INTL_OBJECT_REINITED);
-
-    let internals = initializeIntlObject(relativeTimeFormat);
+    assert(IsObject(relativeTimeFormat), "InitializeRelativeTimeFormat called with non-object");
+    assert(IsRelativeTimeFormat(relativeTimeFormat), "InitializeRelativeTimeFormat called with non-RelativeTimeFormat");
 
     // Lazy RelativeTimeFormat data has the following structure:
     //
@@ -146,7 +134,7 @@ function InitializeRelativeTimeFormat(relativeTimeFormat, locales, options) {
     const numeric = GetOption(options, "numeric", "string", ["always", "auto"], "always");
     lazyRelativeTimeFormatData.numeric = numeric;
 
-    setLazyData(internals, "RelativeTimeFormat", lazyRelativeTimeFormatData)
+    initializeIntlObject(relativeTimeFormat, "RelativeTimeFormat", lazyRelativeTimeFormatData)
 }
 
 /**
@@ -160,8 +148,8 @@ function Intl_RelativeTimeFormat_supportedLocalesOf(locales /*, options*/) {
     var options = arguments.length > 1 ? arguments[1] : undefined;
 
     // Step 1.
-    var availableLocales = callFunction(relativeTimeFormatInternalProperties.availableLocales,
-                                        relativeTimeFormatInternalProperties);
+    var availableLocales = "RelativeTimeFormat";
+
     // Step 2.
     let requestedLocales = CanonicalizeLocaleList(locales);
 
@@ -181,7 +169,11 @@ function Intl_RelativeTimeFormat_format(value, unit) {
     let relativeTimeFormat = this;
 
     // Step 2.
-    let internals = getRelativeTimeFormatInternals(relativeTimeFormat, "format");
+    if (!IsObject(relativeTimeFormat) || !IsRelativeTimeFormat(relativeTimeFormat))
+        ThrowTypeError(JSMSG_INTL_OBJECT_NOT_INITED, "RelativeTimeFormat", "format", "RelativeTimeFormat");
+
+    // Ensure the RelativeTimeFormat internals are resolved.
+    let internals = getRelativeTimeFormatInternals(relativeTimeFormat);
 
     // Step 3.
     let t = ToNumber(value);
@@ -191,7 +183,7 @@ function Intl_RelativeTimeFormat_format(value, unit) {
 
     // PartitionRelativeTimePattern, step 4.
     if (!Number_isFinite(t)) {
-        ThrowRangeError(JSMSG_DATE_NOT_FINITE, "RelativeTimeFormat");
+        ThrowRangeError(JSMSG_DATE_NOT_FINITE, "RelativeTimeFormat", "format");
     }
 
     // PartitionRelativeTimePattern, step 5.
@@ -227,7 +219,13 @@ function Intl_RelativeTimeFormat_format(value, unit) {
  * Spec: ECMAScript 402 API, RelativeTimeFormat, 1.4.4.
  */
 function Intl_RelativeTimeFormat_resolvedOptions() {
-    var internals = getRelativeTimeFormatInternals(this, "resolvedOptions");
+    // Check "this RelativeTimeFormat object" per introduction of section 1.4.
+    if (!IsObject(this) || !IsRelativeTimeFormat(this)) {
+        ThrowTypeError(JSMSG_INTL_OBJECT_NOT_INITED, "RelativeTimeFormat", "resolvedOptions",
+                       "RelativeTimeFormat");
+    }
+
+    var internals = getRelativeTimeFormatInternals(this);
 
     // Steps 4-5.
     var result = {

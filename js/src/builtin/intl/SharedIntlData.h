@@ -30,6 +30,34 @@ namespace intl {
  */
 class SharedIntlData
 {
+    struct LinearStringLookup
+    {
+        union {
+            const JS::Latin1Char* latin1Chars;
+            const char16_t* twoByteChars;
+        };
+        bool isLatin1;
+        size_t length;
+        JS::AutoCheckCannotGC nogc;
+        HashNumber hash = 0;
+
+        explicit LinearStringLookup(JSLinearString* string)
+          : isLatin1(string->hasLatin1Chars()), length(string->length())
+        {
+            if (isLatin1)
+                latin1Chars = string->latin1Chars(nogc);
+            else
+                twoByteChars = string->twoByteChars(nogc);
+        }
+
+        LinearStringLookup(const char* chars, size_t length)
+          : isLatin1(true), length(length)
+        {
+            latin1Chars = reinterpret_cast<const JS::Latin1Char*>(chars);
+        }
+    };
+
+  private:
     /**
      * Information tracking the set of the supported time zone names, derived
      * from the IANA time zone database <https://www.iana.org/time-zones>.
@@ -59,17 +87,8 @@ class SharedIntlData
 
     struct TimeZoneHasher
     {
-        struct Lookup
+        struct Lookup : LinearStringLookup
         {
-            union {
-                const JS::Latin1Char* latin1Chars;
-                const char16_t* twoByteChars;
-            };
-            bool isLatin1;
-            size_t length;
-            JS::AutoCheckCannotGC nogc;
-            HashNumber hash;
-
             explicit Lookup(JSFlatString* timeZone);
         };
 
@@ -148,7 +167,110 @@ class SharedIntlData
      */
     bool tryCanonicalizeTimeZoneConsistentWithIANA(JSContext* cx, JS::HandleString timeZone,
                                                    JS::MutableHandleString result);
+  private:
+    using Locale = JSAtom*;
 
+    struct LocaleHasher
+    {
+        struct Lookup : LinearStringLookup
+        {
+            explicit Lookup(JSLinearString* locale);
+            Lookup(const char* chars, size_t length);
+        };
+
+        static js::HashNumber hash(const Lookup& lookup) { return lookup.hash; }
+        static bool match(Locale key, const Lookup& lookup);
+    };
+
+    using LocaleSet = GCHashSet<Locale, LocaleHasher, SystemAllocPolicy>;
+
+    // Set of supported locales for all Intl service constructors except Collator,
+    // which uses its own set.
+    //
+    // UDateFormat:
+    // udat_[count,get]Available() return the same results as their
+    // uloc_[count,get]Available() counterparts.
+    //
+    // UNumberFormatter:
+    // unum_[count,get]Available() return the same results as their
+    // uloc_[count,get]Available() counterparts.
+    //
+    // UPluralRules and URelativeDateTimeFormatter:
+    // We're going to use ULocale availableLocales as per ICU recommendation:
+    // https://unicode-org.atlassian.net/browse/ICU-12756
+    LocaleSet supportedLocales;
+
+    // ucol_[count,get]Available() return different results compared to
+    // uloc_[count,get]Available(), we can't use |supportedLocales| here.
+    LocaleSet collatorSupportedLocales;
+
+    bool supportedLocalesInitialized = false;
+
+    // CountAvailable and GetAvailable describe the signatures used for ICU API
+    // to determine available locales for various functionality.
+    using CountAvailable = int32_t (*)();
+    using GetAvailable = const char* (*)(int32_t localeIndex);
+
+    static bool getAvailableLocales(JSContext* cx, LocaleSet& locales,
+                                    CountAvailable countAvailable,
+                                    GetAvailable getAvailable);
+
+    /**
+    * Precomputes the available locales sets.
+    */
+    bool ensureSupportedLocales(JSContext* cx);
+
+  public:
+    enum class SupportedLocaleKind {
+        Collator,
+        DateTimeFormat,
+        NumberFormat,
+        PluralRules,
+        RelativeTimeFormat
+    };
+
+    /**
+    * Sets |supported| to true if |locale| is supported by the requested Intl
+    * service constructor. Otherwise sets |supported| to false.
+    */
+    MOZ_MUST_USE bool isSupportedLocale(JSContext* cx, SupportedLocaleKind kind,
+                                        JS::Handle<JSString*> locale,
+                                        bool* supported);
+
+  private:
+    /**
+     * The case first parameter (BCP47 key "kf") allows to switch the order of
+     * upper- and lower-case characters. ICU doesn't directly provide an API
+     * to query the default case first value of a given locale, but instead
+     * requires to instantiate a collator object and then query the case first
+     * attribute (UCOL_CASE_FIRST).
+     * To avoid instantiating an additional collator object whenever we need
+     * to retrieve the default case first value of a specific locale, we
+     * compute the default case first value for every supported locale only
+     * once and then keep a list of all locales which don't use the default
+     * case first setting.
+     * There is almost no difference between lower-case first and when case
+     * first is disabled (UCOL_LOWER_FIRST resp. UCOL_OFF), so we only need to
+     * track locales which use upper-case first as their default setting.
+     */
+
+    LocaleSet upperCaseFirstLocales;
+
+    bool upperCaseFirstInitialized = false;
+
+    /**
+     * Precomputes the available locales which use upper-case first sorting.
+     */
+    bool ensureUpperCaseFirstLocales(JSContext* cx);
+
+  public:
+    /**
+     * Sets |isUpperFirst| to true if |locale| sorts upper-case characters
+     * before lower-case characters.
+     */
+    bool isUpperCaseFirst(JSContext* cx, JS::HandleString locale, bool* isUpperFirst);
+
+  public:
     void destroyInstance();
 
     void trace(JSTracer* trc);

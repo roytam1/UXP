@@ -107,10 +107,13 @@ class GlobalObject : public NativeObject
         MAP_ITERATOR_PROTO,
         SET_ITERATOR_PROTO,
         COLLATOR_PROTO,
+        NUMBER_FORMAT,
         NUMBER_FORMAT_PROTO,
+        DATE_TIME_FORMAT,
         DATE_TIME_FORMAT_PROTO,
         PLURAL_RULES_PROTO,
         RELATIVE_TIME_FORMAT_PROTO,
+        LOCALE_PROTO,
         MODULE_PROTO,
         IMPORT_ENTRY_PROTO,
         EXPORT_ENTRY_PROTO,
@@ -500,8 +503,25 @@ class GlobalObject : public NativeObject
     }
 
     static JSObject*
+    getOrCreateLocalePrototype(JSContext* cx, Handle<GlobalObject*> global) {
+        return getOrCreateObject(cx, global, LOCALE_PROTO, initIntlObject);
+    }
+
+    static JSFunction*
+    getOrCreateNumberFormatConstructor(JSContext* cx, Handle<GlobalObject*> global) {
+        JSObject* obj = getOrCreateObject(cx, global, NUMBER_FORMAT, initIntlObject);
+        return obj ? &obj->as<JSFunction>() : nullptr;
+    }
+
+    static JSObject*
     getOrCreateNumberFormatPrototype(JSContext* cx, Handle<GlobalObject*> global) {
         return getOrCreateObject(cx, global, NUMBER_FORMAT_PROTO, initIntlObject);
+    }
+
+    static JSFunction*
+    getOrCreateDateTimeFormatConstructor(JSContext* cx, Handle<GlobalObject*> global) {
+        JSObject* obj = getOrCreateObject(cx, global, DATE_TIME_FORMAT, initIntlObject);
+        return obj ? &obj->as<JSFunction>() : nullptr;
     }
 
     static JSObject*

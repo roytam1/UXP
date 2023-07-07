@@ -3028,6 +3028,8 @@ nsLocalFile::IsExecutable(bool* aResult)
       "com",
       "cpl",
       "crt",
+      "der",
+      "diagcab",
       "exe",
       "fxp",         // FoxPro compiled app
       "hlp",

@@ -18,6 +18,7 @@
 #include "jsprototypes.h"
 #include "jstypes.h"
 
+#include "js/Result.h"
 #include "js/TraceKind.h"
 #include "js/TypeDecls.h"
 
