@@ -642,8 +642,9 @@ var PlacesCommandHook = {
   updateBookmarkAllTabsCommand:
   function PCH_updateBookmarkAllTabsCommand() {
     // There's nothing to do in non-browser windows.
-    if (window.location.href != getBrowserURL())
+    if (!window.location || window.location.href != getBrowserURL()) { 
       return;
+    }
 
     // Disable "Bookmark All Tabs" if there are less than two
     // "unique current pages".
