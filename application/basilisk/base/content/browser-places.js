@@ -717,13 +717,15 @@ function HistoryMenu(aPopupShowingEvent) {
   // Defining the prototype inheritance in the prototype itself would cause
   // browser.js to halt on "PlacesMenu is not defined" error.
   this.__proto__.__proto__ = PlacesMenu.prototype;
-  let maxResults = Services.prefs.getIntPref("browser.history.menuMaxResults",15);
-  if (maxResults < 1 || maxResults > 50) {
-    // Return to sanity... 
-    maxResults = 15;
-  }
-  PlacesMenu.call(this, aPopupShowingEvent,
-                  "place:sort=4&maxResults=" + maxResults.toString().trim()); }
+  let maxResults = Services.prefs.getIntPref("browser.history.menuMaxResults", 15);
+  // Workaround so that maxResults = 0 wouldn't create unlimited items
+  if (maxResults > 0) {
+    if (maxResults > 50) {
+      // Return to sanity...
+      maxResults = 15;
+    }
+    PlacesMenu.call(this, aPopupShowingEvent,
+                    "place:sort=4&maxResults=" + maxResults.toString().trim());
 
 HistoryMenu.prototype = {
   _getClosedTabCount() {
