@@ -195,11 +195,11 @@ private:
 
   DOMHighResTimeStamp ResolveEndTimeForMeasure(
       const Optional<nsAString>& aEndMark,
-      const PerformanceMeasureOptions* aOptions,
+      const Maybe<const PerformanceMeasureOptions&>& aOptions,
       ErrorResult& aRv);
   DOMHighResTimeStamp ResolveStartTimeForMeasure(
-      const nsAString* aStartMark,
-      const PerformanceMeasureOptions* aOptions,
+      const Maybe<const nsAString&>& aStartMark,
+      const Maybe<const PerformanceMeasureOptions&>& aOptions,
       ErrorResult& aRv);
 };
 
