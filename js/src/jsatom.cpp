@@ -487,7 +487,8 @@ ToAtomSlow(ExclusiveContext* cx, typename MaybeRooted<Value, allowGC>::HandleTyp
         return nullptr;
     }
     if (v.isBigInt()) {
-        JSAtom* atom = BigIntToAtom(cx, v.toBigInt());
+        RootedBigInt i(cx, v.toBigInt());
+        JSAtom* atom = BigIntToAtom(cx, i);
         if (!allowGC && !atom)
             cx->recoverFromOutOfMemory();
         return atom;

@@ -19,7 +19,7 @@ FRAGMENT(jsval, simple) {
   RootedString hello(cx, JS_NewStringCopyZ(cx, "Hello!"));
   RootedValue friendly_string(cx, StringValue(hello));
   RootedValue symbol(cx, SymbolValue(GetSymbolFor(cx, hello)));
-  RootedValue bi(cx, BigIntValue(BigInt::create(cx)));
+  RootedValue bi(cx, BigIntValue(BigInt::zero(cx)));
 
   RootedValue global(cx);
   global.setObject(*CurrentGlobalOrNull(cx));

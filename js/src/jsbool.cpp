@@ -172,7 +172,7 @@ js::ToBooleanSlow(HandleValue v)
     if (v.isString())
         return v.toString()->length() != 0;
     if (v.isBigInt())
-        return v.toBigInt()->toBoolean();
+        return !v.toBigInt()->isZero();
 
     MOZ_ASSERT(v.isObject());
     return !EmulatesUndefined(&v.toObject());
