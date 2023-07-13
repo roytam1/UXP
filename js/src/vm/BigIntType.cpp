@@ -11,6 +11,7 @@
 #include "jsapi.h"
 #include "jscntxt.h"
 
+#include "builtin/BigInt.h"
 #include "gc/Allocator.h"
 #include "gc/Tracer.h"
 #include "vm/SelfHosting.h"
@@ -18,7 +19,7 @@
 using namespace js;
 
 BigInt*
-BigInt::create(js::ExclusiveContext* cx)
+BigInt::create(ExclusiveContext* cx)
 {
     BigInt* x = Allocate<BigInt>(cx);
     if (!x)
@@ -27,7 +28,51 @@ BigInt::create(js::ExclusiveContext* cx)
 }
 
 BigInt*
-BigInt::copy(js::ExclusiveContext* cx, HandleBigInt x)
+BigInt::create(ExclusiveContext* cx, double d)
+{
+    return nullptr;
+}
+
+// BigInt proposal section 5.1.1
+static bool
+IsInteger(double d)
+{
+    // Step 1 is an assertion checked by the caller.
+    // Step 2.
+    if (!mozilla::IsFinite(d))
+        return false;
+
+    // Step 3.
+    double i = JS::ToInteger(d);
+
+    // Step 4.
+    if (i != d)
+        return false;
+
+    // Step 5.
+    return true;
+}
+
+// BigInt proposal section 5.1.2
+BigInt*
+js::NumberToBigInt(ExclusiveContext* cx, double d)
+{
+    // Step 1 is an assertion checked by the caller.
+    // Step 2.
+    if (!IsInteger(d)) {
+        if(cx->isJSContext()) {
+            JS_ReportErrorNumberASCII(cx->asJSContext(), GetErrorMessage, nullptr,
+                                      JSMSG_NUMBER_TO_BIGINT);
+        }
+        return nullptr;
+    }
+
+    // Step 3.
+    return BigInt::create(cx, d);
+}
+
+BigInt*
+BigInt::copy(ExclusiveContext* cx, HandleBigInt x)
 {
     BigInt* bi = create(cx);
     if (!bi)
@@ -35,8 +80,29 @@ BigInt::copy(js::ExclusiveContext* cx, HandleBigInt x)
     return bi;
 }
 
+// BigInt proposal section 7.3
+BigInt*
+js::ToBigInt(ExclusiveContext* cx, HandleValue val)
+{
+    RootedValue v(cx, val);
+
+    if(cx->isJSContext()) {
+        // Step 1.
+        if (!ToPrimitive(cx->asJSContext(), JSTYPE_NUMBER, &v))
+        return nullptr;
+
+        // Step 2.
+        // Boolean and string conversions are not yet supported.
+        if (v.isBigInt())
+            return v.toBigInt();
+
+        JS_ReportErrorNumberASCII(cx->asJSContext(), GetErrorMessage, nullptr, JSMSG_NOT_BIGINT);
+    }   
+    return nullptr;
+}
+
 JSLinearString*
-BigInt::toString(ExclusiveContext* cx, BigInt* x)
+BigInt::toString(ExclusiveContext* cx, BigInt* x, uint8_t radix)
 {
     return nullptr;
 }
@@ -50,7 +116,7 @@ BigInt::finalize(js::FreeOp* fop)
 JSAtom*
 js::BigIntToAtom(ExclusiveContext* cx, BigInt* bi)
 {
-    JSString* str = BigInt::toString(cx, bi);
+    JSString* str = BigInt::toString(cx, bi, 10);
     if (!str)
         return nullptr;
     return AtomizeString(cx, str);

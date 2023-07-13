@@ -7,6 +7,8 @@
 
 #include "mozilla/ArrayUtils.h"
 
+#include "builtin/BigInt.h"
+
 #include "jscntxt.h"
 #include "jsstr.h"
 
@@ -470,6 +472,9 @@ js::obj_toString(JSContext* cx, unsigned argc, Value* vp)
             break;
           case ESClass::RegExp:
             builtinTag = cx->names().objectRegExp;
+            break;
+          case ESClass::BigInt:
+            builtinTag = cx->names().objectBigInt;
             break;
           default:
             if (obj->isCallable()) {

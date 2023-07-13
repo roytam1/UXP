@@ -9,6 +9,8 @@
 #include "mozilla/Range.h"
 #include "mozilla/ScopeExit.h"
 
+#include "builtin/BigInt.h"
+
 #include "jsarray.h"
 #include "jsatom.h"
 #include "jscntxt.h"
@@ -328,6 +330,8 @@ PreprocessValue(JSContext* cx, HandleObject holder, KeyType key, MutableHandleVa
         } else if (cls == ESClass::Boolean) {
             if (!Unbox(cx, obj, vp))
                 return false;
+        } else if (cls == ESClass::BigInt) {
+            vp.setBigInt(obj->as<BigIntObject>().unbox());
         }
     }
 
@@ -626,6 +630,7 @@ Str(JSContext* cx, const Value& v, StringifyContext* scx)
         return NumberValueToStringBuffer(cx, v, scx->sb);
     }
 
+    /* Step 10 in the BigInt proposal. */
     if (v.isBigInt()) {
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_BIGINT_NOT_SERIALIZABLE);
         return false;

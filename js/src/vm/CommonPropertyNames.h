@@ -275,6 +275,7 @@
     macro(objectArguments, objectArguments, "[object Arguments]") \
     macro(objectArray, objectArray, "[object Array]") \
     macro(objectBoolean, objectBoolean, "[object Boolean]") \
+    macro(objectBigInt, objectBigInt, "[object BigInt]") \
     macro(objectDate, objectDate, "[object Date]") \
     macro(objectError, objectError, "[object Error]") \
     macro(objectFunction, objectFunction, "[object Function]") \

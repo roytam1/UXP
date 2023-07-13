@@ -171,7 +171,7 @@ js::ValueToStringBufferSlow(JSContext* cx, const Value& arg, StringBuffer& sb)
         return false;
     }
     if (v.isBigInt()) {
-        JSString* str = BigInt::toString(cx, v.toBigInt());
+        JSLinearString* str = BigInt::toString(cx, v.toBigInt(), 10);
         if (!str)
             return false;
         return sb.append(str);

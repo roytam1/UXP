@@ -3737,7 +3737,7 @@ js::ToStringSlow(ExclusiveContext* cx, typename MaybeRooted<Value, allowGC>::Han
     } else if (v.isBigInt()) {
         if (!allowGC)
             return nullptr;
-        str = BigInt::toString(cx, v.toBigInt());
+        str = BigInt::toString(cx, v.toBigInt(), 10);
     } else {
         MOZ_ASSERT(v.isUndefined());
         str = cx->names().undefined;

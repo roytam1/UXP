@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+#include "builtin/BigInt.h"
+
 #include "jscntxt.h"
 #include "jscompartment.h"
 #include "jsgc.h"
@@ -299,6 +301,8 @@ js::GetBuiltinClass(JSContext* cx, HandleObject obj, ESClass* cls)
         *cls = ESClass::Arguments;
     else if (obj->is<ErrorObject>())
         *cls = ESClass::Error;
+    else if (obj->is<BigIntObject>())
+        *cls = ESClass::BigInt;
     else
         *cls = ESClass::Other;
 
