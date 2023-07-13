@@ -425,6 +425,7 @@ struct RewrapTaggedPointer{};
 DECLARE_REWRAP(JS::Value, JSObject, JS::ObjectOrNullValue, );
 DECLARE_REWRAP(JS::Value, JSString, JS::StringValue, );
 DECLARE_REWRAP(JS::Value, JS::Symbol, JS::SymbolValue, );
+DECLARE_REWRAP(JS::Value, JS::BigInt, JS::BigIntValue, );
 DECLARE_REWRAP(jsid, JSString, NON_INTEGER_ATOM_TO_JSID, (JSAtom*));
 DECLARE_REWRAP(jsid, JS::Symbol, SYMBOL_TO_JSID, );
 DECLARE_REWRAP(js::TaggedProto, JSObject, js::TaggedProto, );
@@ -435,7 +436,8 @@ struct IsPrivateGCThingInValue
   : public mozilla::EnableIf<mozilla::IsBaseOf<Cell, T>::value &&
                              !mozilla::IsBaseOf<JSObject, T>::value &&
                              !mozilla::IsBaseOf<JSString, T>::value &&
-                             !mozilla::IsBaseOf<JS::Symbol, T>::value, T>
+                             !mozilla::IsBaseOf<JS::Symbol, T>::value &&
+                             !mozilla::IsBaseOf<JS::BigInt, T>::value, T>
 {
     static_assert(!mozilla::IsSame<Cell, T>::value && !mozilla::IsSame<TenuredCell, T>::value,
                   "T must not be Cell or TenuredCell");

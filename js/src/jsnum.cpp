@@ -1452,9 +1452,19 @@ js::ToNumberSlow(ExclusiveContext* cx, HandleValue v_, double* out)
         return false;
     }
 
-    MOZ_ASSERT(v.isUndefined());
-    *out = GenericNaN();
-    return true;
+    if (v.isUndefined()) {
+        *out = GenericNaN();
+        return true;
+    }
+
+    MOZ_ASSERT(v.isSymbol() || v.isBigInt());
+    if (cx->isJSContext()) {
+        unsigned errnum = JSMSG_SYMBOL_TO_NUMBER;
+        if (v.isBigInt())
+            errnum = JSMSG_BIGINT_TO_NUMBER;
+        JS_ReportErrorNumberASCII(cx->asJSContext(), GetErrorMessage, nullptr, errnum);
+    }
+    return false;
 }
 
 JS_PUBLIC_API(bool)

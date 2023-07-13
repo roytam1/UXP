@@ -1,6 +1,8 @@
 #include "gdb-tests.h"
 #include "jsapi.h"
 
+#include "vm/BigIntType.h"
+
 FRAGMENT(jsval, simple) {
   using namespace JS;
 
@@ -17,6 +19,7 @@ FRAGMENT(jsval, simple) {
   RootedString hello(cx, JS_NewStringCopyZ(cx, "Hello!"));
   RootedValue friendly_string(cx, StringValue(hello));
   RootedValue symbol(cx, SymbolValue(GetSymbolFor(cx, hello)));
+  RootedValue bi(cx, BigIntValue(BigInt::create(cx)));
 
   RootedValue global(cx);
   global.setObject(*CurrentGlobalOrNull(cx));
@@ -36,5 +39,6 @@ FRAGMENT(jsval, simple) {
   (void) empty_string;
   (void) friendly_string;
   (void) symbol;
+  (void) bi;
   (void) global;
 }

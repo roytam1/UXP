@@ -424,5 +424,6 @@
     macro(boolean, boolean, "boolean") \
     macro(null, null, "null") \
     macro(symbol, symbol, "symbol") \
+    macro(bigint, bigint, "bigint") \
 
 #endif /* vm_CommonPropertyNames_h */

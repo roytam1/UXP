@@ -61,7 +61,7 @@ HashableValue::setValue(JSContext* cx, HandleValue v)
     }
 
     MOZ_ASSERT(value.isUndefined() || value.isNull() || value.isBoolean() || value.isNumber() ||
-               value.isString() || value.isSymbol() || value.isObject());
+               value.isString() || value.isSymbol() || value.isObject() || value.isBigInt());
     return true;
 }
 
@@ -81,6 +81,8 @@ HashValue(const Value& v, const mozilla::HashCodeScrambler& hcs)
         return v.toString()->asAtom().hash();
     if (v.isSymbol())
         return v.toSymbol()->hash();
+    if (v.isBigInt())
+        return v.toBigInt()->hash();
     if (v.isObject())
         return hcs.scramble(v.asRawBits());
 
@@ -99,6 +101,16 @@ HashableValue::operator==(const HashableValue& other) const
 {
     // Two HashableValues are equal if they have equal bits.
     bool b = (value.asRawBits() == other.value.asRawBits());
+
+    // BigInt values are considered equal if they represent the same
+    // integer. This test should use a comparison function that doesn't
+    // require a JSContext once one is defined in the BigInt class.
+    if (!b && (value.isBigInt() && other.value.isBigInt())) {
+        JS::RootingContext* rcx = GetJSContextFromMainThread();
+        RootedValue valueRoot(rcx, value);
+        RootedValue otherRoot(rcx, other.value);
+        SameValue(nullptr, valueRoot, otherRoot, &b);
+    }
 
 #ifdef DEBUG
     bool same;

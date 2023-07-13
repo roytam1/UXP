@@ -340,6 +340,21 @@ JSCompartment::wrap(JSContext* cx, MutableHandleString strp)
 }
 
 bool
+JSCompartment::wrap(JSContext* cx, MutableHandleBigInt bi)
+{
+    MOZ_ASSERT(cx->compartment() == this);
+
+    if (bi->zone() == cx->zone())
+        return true;
+
+    BigInt* copy = BigInt::copy(cx, bi);
+    if (!copy)
+        return false;
+    bi.set(copy);
+    return true;
+}
+
+bool
 JSCompartment::getNonWrapperObjectForCurrentCompartment(JSContext* cx, MutableHandleObject obj)
 {
     // Ensure that we have entered a compartment.

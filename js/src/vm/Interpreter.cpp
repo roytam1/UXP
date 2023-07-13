@@ -40,6 +40,7 @@
 #include "jit/IonAnalysis.h"
 #include "vm/AsyncFunction.h"
 #include "vm/AsyncIteration.h"
+#include "vm/BigIntType.h"
 #include "vm/Debugger.h"
 #include "vm/EqualityOperations.h"  // js::StrictlyEqual
 #include "vm/GeneratorObject.h"
@@ -812,6 +813,8 @@ js::TypeOfValue(const Value& v)
         return TypeOfObject(&v.toObject());
     if (v.isBoolean())
         return JSTYPE_BOOLEAN;
+    if (v.isBigInt())
+        return JSTYPE_BIGINT;
     MOZ_ASSERT(v.isSymbol());
     return JSTYPE_SYMBOL;
 }
@@ -4222,7 +4225,8 @@ js::GetProperty(JSContext* cx, HandleValue v, HandlePropertyName name, MutableHa
 
     // Optimize common cases like (2).toString() or "foo".valueOf() to not
     // create a wrapper object.
-    if (v.isPrimitive() && !v.isNullOrUndefined()) {
+    if (v.isPrimitive() && !v.isNullOrUndefined() && !v.isBigInt())
+    {
         NativeObject* proto;
         if (v.isNumber()) {
             proto = GlobalObject::getOrCreateNumberPrototype(cx, cx->global());

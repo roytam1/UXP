@@ -60,7 +60,8 @@ enum class TraceKind
     JitCode = 0x1F,
     LazyScript = 0x2F,
     Scope = 0x3F,
-    RegExpShared = 0x4F
+    RegExpShared = 0x4F,
+    BigInt = 0x5F
 };
 const static uintptr_t OutOfLineTraceKindMask = 0x07;
 static_assert(uintptr_t(JS::TraceKind::BaseShape) & OutOfLineTraceKindMask, "mask bits are set");
@@ -91,6 +92,7 @@ struct MapTypeToTraceKind {
     D(Shape,         js::Shape,         true) \
     D(String,        JSString,          false) \
     D(Symbol,        JS::Symbol,        false) \
+    D(BigInt,        JS::BigInt,        false) \
     D(RegExpShared,  js::RegExpShared,  true)
 
 // Map from all public types to their trace kind.

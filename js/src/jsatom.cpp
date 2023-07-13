@@ -28,6 +28,8 @@
 
 #include "vm/String-inl.h"
 
+#include "vm/BigIntType.h"
+
 using namespace js;
 using namespace js::gc;
 
@@ -483,6 +485,12 @@ ToAtomSlow(ExclusiveContext* cx, typename MaybeRooted<Value, allowGC>::HandleTyp
                                       JSMSG_SYMBOL_TO_STRING);
         }
         return nullptr;
+    }
+    if (v.isBigInt()) {
+        JSAtom* atom = BigIntToAtom(cx, v.toBigInt());
+        if (!allowGC && !atom)
+            cx->recoverFromOutOfMemory();
+        return atom;
     }
     MOZ_ASSERT(v.isUndefined());
     return cx->names().undefined;
