@@ -2807,9 +2807,6 @@ Parser<ParseHandler>::newFunction(HandleAtom atom, FunctionSyntaxKind kind,
 
     gc::AllocKind allocKind = gc::AllocKind::FUNCTION;
     JSFunction::Flags flags;
-#ifdef DEBUG
-    bool isGlobalSelfHostedBuiltin = false;
-#endif
     switch (kind) {
       case FunctionSyntaxKind::Expression:
         flags = (generatorKind == NotGenerator && asyncKind == SyncFunction
@@ -2846,12 +2843,9 @@ Parser<ParseHandler>::newFunction(HandleAtom atom, FunctionSyntaxKind kind,
         break;
       default:
         MOZ_ASSERT(kind == FunctionSyntaxKind::Statement);
-#ifdef DEBUG
         if (options().selfHostingMode && !pc->isFunctionBox()) {
-            isGlobalSelfHostedBuiltin = true;
             allocKind = gc::AllocKind::FUNCTION_EXTENDED;
         }
-#endif
         flags = (generatorKind == NotGenerator && asyncKind == SyncFunction
                  ? JSFunction::INTERPRETED_NORMAL
                  : JSFunction::INTERPRETED_GENERATOR_OR_ASYNC);
@@ -2867,10 +2861,6 @@ Parser<ParseHandler>::newFunction(HandleAtom atom, FunctionSyntaxKind kind,
         return nullptr;
     if (options().selfHostingMode) {
         fun->setIsSelfHostedBuiltin();
-#ifdef DEBUG
-        if (isGlobalSelfHostedBuiltin)
-            fun->setExtendedSlot(HAS_SELFHOSTED_CANONICAL_NAME_SLOT, BooleanValue(false));
-#endif
     }
     return fun;
 }

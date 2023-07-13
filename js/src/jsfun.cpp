@@ -1251,7 +1251,7 @@ JSFunction::infallibleIsDefaultClassConstructor(JSContext* cx) const
 
     bool isDefault = false;
     if (isInterpretedLazy()) {
-        JSAtom* name = &getExtendedSlot(LAZY_FUNCTION_NAME_SLOT).toString()->asAtom();
+        JSAtom* name = GetSelfHostedFunctionName(const_cast<JSFunction*>(this));
         isDefault = name == cx->names().DefaultDerivedClassConstructor ||
                     name == cx->names().DefaultBaseClassConstructor;
     } else {
@@ -1271,7 +1271,7 @@ JSFunction::isDerivedClassConstructor()
         // There is only one plausible lazy self-hosted derived
         // constructor.
         if (isSelfHostedBuiltin()) {
-            JSAtom* name = &getExtendedSlot(LAZY_FUNCTION_NAME_SLOT).toString()->asAtom();
+            JSAtom* name = GetSelfHostedFunctionName(this);
 
             // This function is called from places without access to a
             // JSContext. Trace some plumbing to get what we want.
@@ -1530,7 +1530,7 @@ JSFunction::createScriptForLazilyInterpretedFunction(JSContext* cx, HandleFuncti
 
     /* Lazily cloned self-hosted script. */
     MOZ_ASSERT(fun->isSelfHostedBuiltin());
-    RootedAtom funAtom(cx, &fun->getExtendedSlot(LAZY_FUNCTION_NAME_SLOT).toString()->asAtom());
+    RootedAtom funAtom(cx, GetSelfHostedFunctionName(fun));
     if (!funAtom)
         return false;
     Rooted<PropertyName*> funName(cx, funAtom->asPropertyName());
@@ -1569,9 +1569,7 @@ JSFunction::maybeRelazify(JSRuntime* rt)
         return;
 
     // To delazify self-hosted builtins we need the name of the function
-    // to clone. This name is stored in the first extended slot. Since
-    // that slot is sometimes also used for other purposes, make sure it
-    // contains a string.
+    // to clone. This name is stored in the first extended slot.
     if (isSelfHostedBuiltin() &&
         (!isExtended() || !getExtendedSlot(LAZY_FUNCTION_NAME_SLOT).isString()))
     {
@@ -1589,7 +1587,7 @@ JSFunction::maybeRelazify(JSRuntime* rt)
     } else {
         MOZ_ASSERT(isSelfHostedBuiltin());
         MOZ_ASSERT(isExtended());
-        MOZ_ASSERT(getExtendedSlot(LAZY_FUNCTION_NAME_SLOT).toString()->isAtom());
+        MOZ_ASSERT(GetSelfHostedFunctionName(this));
     }
 
     comp->scheduleDelazificationForDebugger();
