@@ -51,6 +51,7 @@
 #include "mozilla/Char16.h"
 #include "mozilla/MathAlgorithms.h"
 #include "mozilla/Types.h"
+#include "mozilla/WrappingOperations.h"
 
 #include <stdint.h>
 
@@ -95,7 +96,9 @@ AddU32ToHash(uint32_t aHash, uint32_t aValue)
    * Otherwise, if |aHash| is 0 (as it often is for the beginning of a
    * message), the expression
    *
-   *   (kGoldenRatioU32 * RotateBitsLeft(aHash, 5)) |xor| aValue
+   *   mozilla::WrappingMultiply(kGoldenRatioU32, RotateBitsLeft(aHash, 5))
+   *   |xor|
+   *   aValue
    *
    * evaluates to |aValue|.
    *
@@ -113,7 +116,8 @@ AddU32ToHash(uint32_t aHash, uint32_t aValue)
    * multiplicative effect.  Our golden ratio constant has order 2^29, which is
    * more than enough for our purposes.)
    */
-  return kGoldenRatioU32 * (RotateBitsLeft32(aHash, 5) ^ aValue);
+  return mozilla::WrappingMultiply(kGoldenRatioU32,
+                                   (RotateBitsLeft32(aHash, 5) ^ aValue));
 }
 
 /**
