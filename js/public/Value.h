@@ -507,7 +507,7 @@ class MOZ_NON_PARAM alignas(8) Value
 #if defined(JS_NUNBOX32)
         return uint32_t(toTag()) <= uint32_t(JSVAL_TAG_CLEAR);
 #elif defined(JS_PUNBOX64)
-        return (data.asBits | mozilla::DoubleTypeTraits::kSignBit) <= JSVAL_SHIFTED_TAG_MAX_DOUBLE;
+        return (data.asBits | mozilla::FloatingPoint<double>::kSignBit) <= JSVAL_SHIFTED_TAG_MAX_DOUBLE;
 #endif
     }
 
@@ -1090,7 +1090,7 @@ IsCanonicalized(double d)
 
   uint64_t bits;
   mozilla::BitwiseCast<uint64_t>(d, &bits);
-  return (bits & ~mozilla::DoubleTypeTraits::kSignBit) == detail::CanonicalizedNaNBits;
+  return (bits & ~mozilla::FloatingPoint<double>::kSignBit) == detail::CanonicalizedNaNBits;
 }
 
 static inline Value
