@@ -642,8 +642,9 @@ var PlacesCommandHook = {
   updateBookmarkAllTabsCommand:
   function PCH_updateBookmarkAllTabsCommand() {
     // There's nothing to do in non-browser windows.
-    if (window.location.href != getBrowserURL())
+    if (!window.location || window.location.href != getBrowserURL()) { 
       return;
+    }
 
     // Disable "Bookmark All Tabs" if there are less than two
     // "unique current pages".
@@ -717,10 +718,22 @@ function HistoryMenu(aPopupShowingEvent) {
   // Defining the prototype inheritance in the prototype itself would cause
   // browser.js to halt on "PlacesMenu is not defined" error.
   this.__proto__.__proto__ = PlacesMenu.prototype;
-  PlacesMenu.call(this, aPopupShowingEvent,
-                  "place:sort=4&maxResults=15");
-}
-
+  let maxResults = Services.prefs.getIntPref("browser.history.menuMaxResults", 15);
+  if (maxResults < 0) {
+    Components.utils.reportError("Maximum number of history menu entries is invalid! Using defaults.");
+    maxResults = 15;
+  }
+  if (maxResults > 0) {
+    if (maxResults > 50) {
+      // Return to sanity...
+      Components.utils.reportError("Maximum number of history menu entries is too large! Capping to 50.");
+      maxResults = 50;
+    }
+    PlacesMenu.call(this, aPopupShowingEvent,
+                    "place:sort=4&maxResults=" + maxResults.toString().trim());
+  } else {
+    // maxResults == 0; do nothing. This suppresses the history entries.
+  } 
 HistoryMenu.prototype = {
   _getClosedTabCount() {
     // SessionStore doesn't track the hidden window, so just return zero then.
