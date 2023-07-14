@@ -408,16 +408,16 @@ DOMHighResTimeStamp Performance::ConvertNameToTimestamp(const nsAString& aName,
 DOMHighResTimeStamp
 Performance::ResolveEndTimeForMeasure(
   const Optional<nsAString>& aEndMark,
-  const PerformanceMeasureOptions* aOptions,
+  const Maybe<const PerformanceMeasureOptions&>& aOptions,
   ErrorResult& aRv)
 {
   DOMHighResTimeStamp endTime;
   if (aEndMark.WasPassed()) {
     endTime = ConvertMarkToTimestampWithString(aEndMark.Value(), aRv);
-  } else if (aOptions != nullptr && aOptions->mEnd.WasPassed()) {
+  } else if (aOptions && aOptions->mEnd.WasPassed()) {
     endTime = ConvertMarkToTimestamp(ResolveTimestampAttribute::End,
                                      aOptions->mEnd.Value(), aRv);
-  } else if (aOptions != nullptr && aOptions->mStart.WasPassed() &&
+  } else if (aOptions && aOptions->mStart.WasPassed() &&
              aOptions->mDuration.WasPassed()) {
     const DOMHighResTimeStamp start = ConvertMarkToTimestamp(
         ResolveTimestampAttribute::Start, aOptions->mStart.Value(), aRv);
@@ -442,16 +442,16 @@ Performance::ResolveEndTimeForMeasure(
 
 DOMHighResTimeStamp
 Performance::ResolveStartTimeForMeasure(
-  const nsAString* aStartMark,
-  const PerformanceMeasureOptions* aOptions,
+  const Maybe<const nsAString&>& aStartMark,
+  const Maybe<const PerformanceMeasureOptions&>& aOptions,
   ErrorResult& aRv)
 {
   DOMHighResTimeStamp startTime;
-  if (aOptions != nullptr && aOptions->mStart.WasPassed()) {
+  if (aOptions && aOptions->mStart.WasPassed()) {
     startTime = ConvertMarkToTimestamp(ResolveTimestampAttribute::Start,
                                        aOptions->mStart.Value(),
                                        aRv);
-  } else if (aOptions != nullptr && aOptions->mDuration.WasPassed() &&
+  } else if (aOptions && aOptions->mDuration.WasPassed() &&
              aOptions->mEnd.WasPassed()) {
     const DOMHighResTimeStamp duration =
       ConvertMarkToTimestampWithDOMHighResTimeStamp(
@@ -469,7 +469,7 @@ Performance::ResolveStartTimeForMeasure(
     }
 
     startTime = end - duration;
-  } else if (aStartMark != nullptr) {
+  } else if (aStartMark) {
     startTime = ConvertMarkToTimestampWithString(*aStartMark, aRv);
   } else {
     startTime = 0;
@@ -485,13 +485,14 @@ Performance::Measure(JSContext* aCx,
                      const Optional<nsAString>& aEndMark,
                      ErrorResult& aRv)
 {
-  const PerformanceMeasureOptions* options = nullptr;
+  // Maybe is more readable than using the union type directly.
+  Maybe<const PerformanceMeasureOptions&> options;
   if (aStartOrMeasureOptions.IsPerformanceMeasureOptions()) {
-    options = &aStartOrMeasureOptions.GetAsPerformanceMeasureOptions();
+    options.emplace(aStartOrMeasureOptions.GetAsPerformanceMeasureOptions());
   }
 
   const bool isOptionsNotEmpty =
-      (options != nullptr) &&
+      options.isSome() &&
       (!options->mDetail.isUndefined() || options->mStart.WasPassed() ||
        options->mEnd.WasPassed() || options->mDuration.WasPassed());
   if (isOptionsNotEmpty) {
@@ -518,9 +519,10 @@ Performance::Measure(JSContext* aCx,
     return nullptr;
   }
 
-  const nsAString* startMark = nullptr;
+  // Convert to Maybe for consistency with options.
+  Maybe<const nsAString&> startMark;
   if (aStartOrMeasureOptions.IsString()) {
-    startMark = &aStartOrMeasureOptions.GetAsString();
+    startMark.emplace(aStartOrMeasureOptions.GetAsString());
   }
   const DOMHighResTimeStamp startTime =
     ResolveStartTimeForMeasure(startMark, options, aRv);
@@ -529,7 +531,7 @@ Performance::Measure(JSContext* aCx,
   }
 
   JS::Rooted<JS::Value> detail(aCx);
-  if (options != nullptr && !options->mDetail.isNullOrUndefined()) {
+  if (options && !options->mDetail.isNullOrUndefined()) {
     StructuredSerializeOptions serializeOptions;
     JS::Rooted<JS::Value> valueToClone(aCx, options->mDetail);
     nsContentUtils::StructuredClone(aCx, GetParentObject(), valueToClone,
