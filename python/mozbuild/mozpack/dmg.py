@@ -44,19 +44,25 @@ def set_folder_icon(dir):
 
 def create_dmg_from_staged(stagedir, output_dmg, tmpdir, volume_name):
     'Given a prepared directory stagedir, produce a DMG at output_dmg.'
+    import buildconfig
     if not is_linux:
         # Running on OS X
         hybrid = os.path.join(tmpdir, 'hybrid.dmg')
-        subprocess.check_call(['hdiutil', 'create',
-                               '-fs', 'HFS+',
-                               '-volname', volume_name,
-                               '-srcfolder', stagedir,
-                               '-ov', hybrid])
+        hdiutiloptions = ['create', '-fs', 'HFS+',
+                                    '-volname', volume_name,
+                                    '-srcfolder', stagedir,
+                                    '-ov', hybrid]
+        if buildconfig.substs['MOZ_MACBUNDLE_TYPE'] == 'hybrid':
+            hdiutiloptions = ['makehybrid', '-hfs',
+                                            '-hfs-volume-name', volume_name,
+                                            '-hfs-openfolder', stagedir,
+                                            '-ov', stagedir,
+                                            '-o', hybrid]
+        subprocess.check_call(['hdiutil'] + hdiutiloptions)
         subprocess.check_call(['hdiutil', 'convert', '-format', 'UDBZ',
                                '-imagekey', 'bzip2-level=9',
                                '-ov', hybrid, '-o', output_dmg])
     else:
-        import buildconfig
         uncompressed = os.path.join(tmpdir, 'uncompressed.dmg')
         subprocess.check_call([
             buildconfig.substs['GENISOIMAGE'],
@@ -123,15 +129,28 @@ def create_dmg(source_directory, output_dmg, volume_name, extra_files):
             identity = buildconfig.substs['MOZ_MACBUNDLE_IDENTITY']
             if identity != '':
                 dylibs = []
+                entitlements = []
                 appbundle = os.path.join(stagedir, buildconfig.substs['MOZ_MACBUNDLE_NAME'])
                 # If the -bin file is in Resources add it to the dylibs as well
                 resourcebin = os.path.join(appbundle, 'Contents/Resources/' + buildconfig.substs['MOZ_APP_NAME'] + '-bin')
                 if os.path.isfile(resourcebin):
                     dylibs.append(resourcebin)
                 # Create a list of dylibs in Contents/Resources that won't get signed by --deep
-                for root, dirnames, filenames in os.walk('Contents/Resources/'):
+                for root, dirnames, filenames in os.walk(os.path.join(appbundle,'Contents/Resources/')):
                     for filename in fnmatch.filter(filenames, '*.dylib'):
                         dylibs.append(os.path.join(root, filename))
+                # Select default entitlements based on whether debug is enabled
                 entitlement = os.path.abspath(os.path.join(os.getcwd(), '../../platform/security/mac/production.entitlements.xml'))
-                subprocess.check_call(['codesign', '--deep', '--timestamp', '--options', 'runtime', '--entitlements', entitlement, '-s', identity] + dylibs + [appbundle])
+                if buildconfig.substs['MOZ_DEBUG']:
+                    entitlement = os.path.abspath(os.path.join(os.getcwd(), '../../platform/security/mac/developer.entitlements.xml'))
+                # Check to see if the entitlements are disabled or overrided by mozconfig
+                entitlementname = buildconfig.substs['MOZ_MACBUNDLE_ENTITLEMENT']
+                if entitlementname != '':
+                    if os.path.isfile(entitlementname):
+                        entitlement = entitlementname
+                if entitlementname != 'none':
+                    if os.path.isfile(entitlement):
+                        entitlements = ['--entitlements', entitlement]
+                # Call the codesign tool
+                subprocess.check_call(['codesign', '--deep', '--timestamp', '--options', 'runtime'] + entitlements + [ '-s', identity] + dylibs + [appbundle])
         create_dmg_from_staged(stagedir, output_dmg, tmpdir, volume_name)
