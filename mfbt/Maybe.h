@@ -16,6 +16,7 @@
 
 #include <new>  // for placement new
 #include <type_traits>
+#include <utility>
 
 namespace mozilla {
 
@@ -83,7 +84,15 @@ template<class T>
 class Maybe
 {
   bool mIsSome;
-  AlignedStorage2<T> mStorage;
+
+  // To support |Maybe<const Type>| we give |mStorage| the type |T| with any
+  // const-ness removed.  That allows us to |emplace()| an object into
+  // |mStorage|.  Since we treat the contained object as having type |T|
+  // everywhere else (both internally, and when exposed via public methods) the
+  // contained object is still treated as const once stored since |const| is
+  // part of |T|'s type signature.
+  typedef typename RemoveCV<T>::Type StorageType;
+  AlignedStorage2<StorageType> mStorage;
 
 public:
   typedef T ValueType;
@@ -453,6 +462,72 @@ public:
   }
 };
 
+template <typename T>
+class Maybe<T&> {
+ public:
+  constexpr Maybe() = default;
+  constexpr MOZ_IMPLICIT Maybe(Nothing) {}
+
+  void emplace(T& aRef) { mValue = &aRef; }
+
+  /* Methods that check whether this Maybe contains a value */
+  explicit operator bool() const { return isSome(); }
+  bool isSome() const { return mValue; }
+  bool isNothing() const { return !mValue; }
+
+  T& ref() const {
+    MOZ_DIAGNOSTIC_ASSERT(isSome());
+    return *mValue;
+  }
+
+  T* operator->() const { return &ref(); }
+  T& operator*() const { return ref(); }
+
+  // Deliberately not defining value and ptr accessors, as these may be
+  // confusing on a reference-typed Maybe.
+
+  // XXX Should we define refOr?
+
+  void reset() { mValue = nullptr; }
+
+  template <typename Func>
+  Maybe& apply(Func&& aFunc) {
+    if (isSome()) {
+      std::forward<Func>(aFunc)(ref());
+    }
+    return *this;
+  }
+
+  template <typename Func>
+  const Maybe& apply(Func&& aFunc) const {
+    if (isSome()) {
+      std::forward<Func>(aFunc)(ref());
+    }
+    return *this;
+  }
+
+  template <typename Func>
+  auto map(Func&& aFunc) {
+    Maybe<decltype(std::forward<Func>(aFunc)(ref()))> val;
+    if (isSome()) {
+      val.emplace(std::forward<Func>(aFunc)(ref()));
+    }
+    return val;
+  }
+
+  template <typename Func>
+  auto map(Func&& aFunc) const {
+    Maybe<decltype(std::forward<Func>(aFunc)(ref()))> val;
+    if (isSome()) {
+      val.emplace(std::forward<Func>(aFunc)(ref()));
+    }
+    return val;
+  }
+
+ private:
+  T* mValue = nullptr;
+};
+
 /*
  * Some() creates a Maybe<T> value containing the provided T value. If T has a
  * move constructor, it's used to make this as efficient as possible.
@@ -474,6 +549,13 @@ Some(T&& aValue)
   return value;
 }
 
+template <typename T>
+Maybe<T&> SomeRef(T& aValue) {
+  Maybe<T&> value;
+  value.emplace(aValue);
+  return value;
+}
+
 template<typename T>
 Maybe<typename RemoveCV<typename RemoveReference<T>::Type>::Type>
 ToMaybe(T* aPtr)
@@ -492,6 +574,9 @@ ToMaybe(T* aPtr)
 template<typename T> bool
 operator==(const Maybe<T>& aLHS, const Maybe<T>& aRHS)
 {
+  static_assert(!std::is_reference<T>::value,
+                "operator== is not defined for Maybe<T&>, compare values or "
+                "addresses explicitly instead");
   if (aLHS.isNothing() != aRHS.isNothing()) {
     return false;
   }

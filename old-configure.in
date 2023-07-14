@@ -5022,6 +5022,16 @@ AC_DEFINE_UNQUOTED(MOZ_MACBUNDLE_ID,$MOZ_MACBUNDLE_ID)
 AC_SUBST(MOZ_MACBUNDLE_ID)
 
 dnl ========================================================
+dnl = Mac bundle codesign entitlements
+dnl ========================================================
+MOZ_ARG_WITH_STRING(macbundle-entitlement,
+[  --with-macbundle-entitlement=entitlementname
+                          Entitlements to add to the Mac application bundle],
+[ MOZ_MACBUNDLE_ENTITLEMENT="$withval"])
+
+AC_SUBST(MOZ_MACBUNDLE_ENTITLEMENT)
+
+dnl ========================================================
 dnl = Mac bundle codesign identity
 dnl ========================================================
 MOZ_ARG_WITH_STRING(macbundle-identity,
@@ -5030,6 +5040,17 @@ MOZ_ARG_WITH_STRING(macbundle-identity,
 [ MOZ_MACBUNDLE_IDENTITY="$withval"])
 
 AC_SUBST(MOZ_MACBUNDLE_IDENTITY)
+
+dnl ========================================================
+dnl = Mac bundle DMG type
+dnl ========================================================
+MOZ_ARG_WITH_STRING(macbundle-type,
+[  --with-macbundle-type=hybrid
+                          Method to use to create the DMG],
+[ MOZ_MACBUNDLE_TYPE="$withval"])
+
+AC_SUBST(MOZ_MACBUNDLE_TYPE)
+
 
 dnl ========================================================
 dnl = Child Process Name for IPC

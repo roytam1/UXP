@@ -4,7 +4,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "PoisonIOInterposer.h"
+#ifndef __aarch64__
 #include "mach_override.h"
+#endif
 
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/Assertions.h"
@@ -360,9 +362,11 @@ InitPoisonIOInterposer()
     if (!d->Function) {
       continue;
     }
+#ifndef __aarch64__
     DebugOnly<mach_error_t> t = mach_override_ptr(d->Function, d->Wrapper,
                                                   &d->Buffer);
     MOZ_ASSERT(t == err_none);
+#endif
   }
 }
 
