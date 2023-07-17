@@ -144,7 +144,7 @@ RectTextureImage::DeleteTexture()
 void
 RectTextureImage::BindIOSurfaceToTexture(gl::GLContext* aGL)
 {
-  if (!mTexture) {
+  if (!mTexture && mIOSurface) {
     MOZ_ASSERT(aGL);
     aGL->fGenTextures(1, &mTexture);
     aGL->fActiveTexture(LOCAL_GL_TEXTURE0);
