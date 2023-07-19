@@ -2357,14 +2357,20 @@
      *   Operands:
      *   Stack: arg => rval
      */ \
-    macro(JSOP_DYNAMIC_IMPORT, 234, "call-import", NULL,      1,  1,  1,  JOF_BYTE)
-
+    macro(JSOP_DYNAMIC_IMPORT, 234, "call-import", NULL,      1,  1,  1,  JOF_BYTE) \
+    /*
+     * Pushes a BigInt constant onto the stack.
+     *   Category: Literals
+     *   Type: Constants
+     *   Operands: uint32_t constIndex
+     *   Stack: => val
+     */ \
+    macro(JSOP_BIGINT, 235, "bigint", NULL,      5, 0, 1, JOF_BIGINT)
 /*
  * In certain circumstances it may be useful to "pad out" the opcode space to
  * a power of two.  Use this macro to do so.
  */
 #define FOR_EACH_TRAILING_UNUSED_OPCODE(macro) \
-    macro(235) \
     macro(236) \
     macro(237) \
     macro(238) \

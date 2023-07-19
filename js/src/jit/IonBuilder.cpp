@@ -1765,6 +1765,7 @@ IonBuilder::inspectOpcode(JSOp op)
         return jsop_compare(op);
 
       case JSOP_DOUBLE:
+      case JSOP_BIGINT:
         pushConstant(info().getConst(pc));
         return true;
 

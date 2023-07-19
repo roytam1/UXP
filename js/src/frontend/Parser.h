@@ -779,8 +779,8 @@ class ParserBase : public StrictModeGetter
     TokenStream tokenStream;
     LifoAlloc::Mark tempPoolMark;
 
-    /* list of parsed objects for GC tracing */
-    ObjectBox* traceListHead;
+    /* list of parsed objects and BigInts for GC tracing */
+    TraceListNode* traceListHead;
 
     /* innermost parse context (stack-allocated) */
     ParseContext* pc;
@@ -914,6 +914,13 @@ class ParserBase : public StrictModeGetter
 
     bool warnOnceAboutExprClosure();
     bool warnOnceAboutForEach();
+
+    ObjectBox* newObjectBox(JSObject* obj);
+    BigIntBox* newBigIntBox(BigInt* val);
+
+private:
+    template <typename BoxT, typename ArgT>
+    BoxT* newTraceListNode(ArgT* arg);
 
   protected:
     enum InvokedPrediction { PredictUninvoked = false, PredictInvoked = true };
@@ -1085,7 +1092,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     {
         friend class Parser;
         LifoAlloc::Mark mark;
-        ObjectBox* traceListHead;
+        TraceListNode* traceListHead;
     };
     Mark mark() const {
         Mark m;
@@ -1174,7 +1181,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
      * Allocate a new parsed object or function container from
      * cx->tempLifoAlloc.
      */
-    ObjectBox* newObjectBox(JSObject* obj);
+  public:
     FunctionBox* newFunctionBox(FunctionNodeType funNode, JSFunction* fun, uint32_t toStringStart,
                                 Directives directives,
                                 GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
@@ -1660,6 +1667,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
                                        const mozilla::Maybe<DeclarationKind>& maybeDecl, ListNodeType literal);
     ListNodeType arrayInitializer(YieldHandling yieldHandling, PossibleError* possibleError);
     RegExpLiteralType newRegExp();
+    BigIntLiteralType newBigInt();
 
     ListNodeType objectLiteral(YieldHandling yieldHandling, PossibleError* possibleError);
 

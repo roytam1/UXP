@@ -1987,6 +1987,8 @@ BigInt* BigInt::rshByAbsolute(ExclusiveContext* cx, HandleBigInt x, HandleBigInt
     return nullptr;
   }
   if (!bitsShift) {
+    // If roundingCanOverflow, manually initialize the overflow digit.
+    result->setDigit(resultLength - 1, 0);
     for (int i = digitShift; i < length; i++) {
       result->setDigit(i - digitShift, x->digit(i));
     }
@@ -3144,16 +3146,14 @@ JS::ubi::Node::Size JS::ubi::Concrete<BigInt>::size(
   return size;
 }
 
-#if 0 // Future XDR support
 template <XDRMode mode>
-XDRResult js::XDRBigInt(XDRState<mode>* xdr, MutableHandleBigInt bi) {
-  JSContext* cx = xdr->cx();
+bool js::XDRBigInt(XDRState<mode>* xdr, MutableHandleBigInt bi) {
+  ExclusiveContext* cx = xdr->cx();
 
   uint8_t sign;
   uint32_t length;
 
   if (mode == XDR_ENCODE) {
-    cx->check(bi);
     sign = static_cast<uint8_t>(bi->isNegative());
     uint64_t sz = bi->digitLength() * sizeof(BigInt::Digit);
     // As the maximum source code size is currently UINT32_MAX code units
@@ -3165,8 +3165,10 @@ XDRResult js::XDRBigInt(XDRState<mode>* xdr, MutableHandleBigInt bi) {
     length = static_cast<uint32_t>(sz);
   }
 
-  MOZ_TRY(xdr->codeUint8(&sign));
-  MOZ_TRY(xdr->codeUint32(&length));
+  if(!xdr->codeUint8(&sign))
+      return false;
+  if(!xdr->codeUint32(&length))
+      return false;
 
   MOZ_RELEASE_ASSERT(length % sizeof(BigInt::Digit) == 0);
   uint32_t digitLength = length / sizeof(BigInt::Digit);
@@ -3179,7 +3181,8 @@ XDRResult js::XDRBigInt(XDRState<mode>* xdr, MutableHandleBigInt bi) {
     std::uninitialized_copy_n(bi->digits().Elements(), digitLength, buf.get());
   }
 
-  MOZ_TRY(xdr->codeBytes(buf.get(), length));
+  if(!xdr->codeBytes(buf.get(), length))
+      return false;
 
   if (mode == XDR_DECODE) {
     BigInt* res = BigInt::createUninitialized(cx, digitLength, sign);
@@ -3190,12 +3193,10 @@ XDRResult js::XDRBigInt(XDRState<mode>* xdr, MutableHandleBigInt bi) {
     bi.set(res);
   }
 
-  return Ok();
+  return true;
 }
 
-template XDRResult js::XDRBigInt(XDRState<XDR_ENCODE>* xdr,
-                                 MutableHandleBigInt bi);
+template bool js::XDRBigInt(XDRState<XDR_ENCODE>* xdr, MutableHandleBigInt bi);
 
-template XDRResult js::XDRBigInt(XDRState<XDR_DECODE>* xdr,
-                                 MutableHandleBigInt bi);
-#endif
+template bool js::XDRBigInt(XDRState<XDR_DECODE>* xdr, MutableHandleBigInt bi);
+

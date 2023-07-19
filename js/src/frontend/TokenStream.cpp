@@ -1382,6 +1382,7 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
     const char16_t* identStart;
     NameVisibility identVisibility;
     bool hadUnicodeEscape;
+    bool isBigInt = false;
 
     // Check if in the middle of a template string. Have to get this out of
     // the way first.
@@ -1619,6 +1620,10 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
                 }
             } while (true);
         }
+        if (c == 'n') {
+            isBigInt = true;
+            c = getCharIgnoreEOL();
+        }
         ungetCharIgnoreEOL(c);
 
         if (c != EOF) {
@@ -1636,6 +1641,16 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
                     goto error;
                 }
             }
+        }
+
+        if (isBigInt) {
+            size_t length = userbuf.addressOfNextRawChar() - numStart - 1;
+            tokenbuf.clear();
+            if(!tokenbuf.reserve(length))
+                goto error;
+            tokenbuf.infallibleAppend(numStart, length);
+            tp->type = TOK_BIGINT;
+            goto out;
         }
 
         // Unlike identifiers and strings, numbers cannot contain escaped
@@ -1777,6 +1792,10 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
             hasExp = false;
             goto decimal_rest;
         }
+        if (c == 'n') {
+            isBigInt = true;
+            c = getCharIgnoreEOL();
+        }
         ungetCharIgnoreEOL(c);
 
         if (c != EOF) {
@@ -1794,6 +1813,16 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
                     goto error;
                 }
             }
+        }
+
+        if (isBigInt) {
+            size_t length = userbuf.addressOfNextRawChar() - numStart - 1;
+            tokenbuf.clear();
+            if(!tokenbuf.reserve(length))
+                goto error;
+            tokenbuf.infallibleAppend(numStart, length);
+            tp->type = TOK_BIGINT;
+            goto out;
         }
 
         double dval;

@@ -1621,6 +1621,13 @@ BaselineCompiler::emit_JSOP_DOUBLE()
 }
 
 bool
+BaselineCompiler::emit_JSOP_BIGINT()
+{
+    frame.push(script->getConst(GET_UINT32_INDEX(pc)));
+    return true;
+}
+
+bool
 BaselineCompiler::emit_JSOP_STRING()
 {
     frame.push(StringValue(script->getAtom(pc)));

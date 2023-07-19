@@ -26,7 +26,6 @@
 
 namespace JS {
 
-#if 0 // Future XDR support
 class BigInt;
 
 }  // namespace JS
@@ -34,12 +33,11 @@ class BigInt;
 namespace js {
 
 template <XDRMode mode>
-XDRResult XDRBigInt(XDRState<mode>* xdr, MutableHandle<JS::BigInt*> bi);
+bool XDRBigInt(XDRState<mode>* xdr, MutableHandle<JS::BigInt*> bi);
 
 }  // namespace js
 
 namespace JS {
-#endif
 
 class BigInt final : public js::gc::TenuredCell {
  public:
@@ -332,11 +330,8 @@ class BigInt final : public js::gc::TenuredCell {
 
   friend struct JSStructuredCloneReader;
   friend struct JSStructuredCloneWriter;
-#if 0 // Future XDR support
   template <js::XDRMode mode>
-  friend js::XDRResult js::XDRBigInt(js::XDRState<mode>* xdr,
-                                     MutableHandle<BigInt*> bi);
-#endif
+  friend bool js::XDRBigInt(js::XDRState<mode>* xdr, MutableHandle<BigInt*> bi);
 
   BigInt() = delete;
   BigInt(const BigInt& other) = delete;

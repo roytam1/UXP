@@ -667,7 +667,7 @@ class MOZ_NON_PARAM alignas(8) Value
 #if defined(JS_NUNBOX32)
         return data.s.payload.bi;
 #elif defined(JS_PUNBOX64)
-        return reinterpret_cast<JS::BigInt*>(data.asBits & JSVAL_SHIFTED_TAG_BIGINT);
+        return reinterpret_cast<JS::BigInt*>(data.asBits & JSVAL_PAYLOAD_MASK);
 #endif
     }
 

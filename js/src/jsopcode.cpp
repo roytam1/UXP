@@ -1039,6 +1039,9 @@ js::Disassemble1(JSContext* cx, HandleScript script, jsbytecode* pc,
         break;
       }
 
+      case JOF_BIGINT:
+        // Fallthrough.
+
       case JOF_DOUBLE: {
         RootedValue v(cx, script->getConst(GET_UINT32_INDEX(pc)));
         JSAutoByteString bytes;
