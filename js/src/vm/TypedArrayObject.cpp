@@ -1959,6 +1959,8 @@ template <> struct DataToRepType<int16_t>  { typedef uint16_t result; };
 template <> struct DataToRepType<uint16_t> { typedef uint16_t result; };
 template <> struct DataToRepType<int32_t>  { typedef uint32_t result; };
 template <> struct DataToRepType<uint32_t> { typedef uint32_t result; };
+template <> struct DataToRepType<int64_t>  { typedef uint64_t result; };
+template <> struct DataToRepType<uint64_t> { typedef uint64_t result; };
 template <> struct DataToRepType<float>    { typedef uint32_t result; };
 template <> struct DataToRepType<double>   { typedef uint64_t result; };
 
@@ -2059,6 +2061,28 @@ WebIDLCast(JSContext* cx, HandleValue value, NativeType* out)
 }
 
 template <>
+inline bool WebIDLCast<int64_t>(JSContext* cx, HandleValue value, int64_t* out) 
+{
+    RootedBigInt bi(cx, ToBigInt(cx, value));
+    if (!bi) {
+        return false;
+    }
+    *out = BigInt::toInt64(bi);
+    return true;
+}
+
+template <>
+inline bool WebIDLCast<uint64_t>(JSContext* cx, HandleValue value, uint64_t* out) 
+{
+    RootedBigInt bi(cx, ToBigInt(cx, value));
+    if (!bi) {
+        return false;
+    }
+    *out = BigInt::toUint64(bi);
+    return true;
+}
+
+template <>
 inline bool
 WebIDLCast<float>(JSContext* cx, HandleValue value, float* out)
 {
@@ -2076,6 +2100,8 @@ WebIDLCast<double>(JSContext* cx, HandleValue value, double* out)
     return ToNumber(cx, value, out);
 }
 
+// https://tc39.github.io/ecma262/#sec-setviewvalue
+// SetViewValue ( view, requestIndex, isLittleEndian, type, value )
 template<typename NativeType>
 /* static */ bool
 DataViewObject::write(JSContext* cx, Handle<DataViewObject*> obj,
@@ -2089,7 +2115,7 @@ DataViewObject::write(JSContext* cx, Handle<DataViewObject*> obj,
     if (!ToIndex(cx, args.get(0), &getIndex))
         return false;
 
-    // Step 5. Should just call ToNumber (unobservable)
+    // Step 5. Extended by the BigInt proposal to call either ToBigInt or ToNumber
     NativeType value;
     if (!WebIDLCast(cx, args.get(1), &value))
         return false;
@@ -2243,6 +2269,60 @@ DataViewObject::fun_getUint32(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
     return CallNonGenericMethod<is, getUint32Impl>(cx, args);
+}
+
+// BigInt proposal 7.26
+// DataView.prototype.getBigInt64 ( byteOffset [ , littleEndian ] )
+bool DataViewObject::getBigInt64Impl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(is(args.thisv()));
+
+    Rooted<DataViewObject*> thisView(cx, &args.thisv().toObject().as<DataViewObject>());
+
+    int64_t val;
+    if (!read(cx, thisView, args, &val, "getBigInt64")) {
+        return false;
+    }
+
+    BigInt* bi = BigInt::createFromInt64(cx, val);
+    if (!bi) {
+        return false;
+    }
+    args.rval().setBigInt(bi);
+    return true;
+}
+
+bool DataViewObject::fun_getBigInt64(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<is, getBigInt64Impl>(cx, args);
+}
+
+// BigInt proposal 7.27
+// DataView.prototype.getBigUint64 ( byteOffset [ , littleEndian ] )
+bool DataViewObject::getBigUint64Impl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(is(args.thisv()));
+
+    Rooted<DataViewObject*> thisView(cx, &args.thisv().toObject().as<DataViewObject>());
+
+    int64_t val;
+    if (!read(cx, thisView, args, &val, "getBigUint64")) {
+        return false;
+    }
+
+    BigInt* bi = BigInt::createFromUint64(cx, val);
+    if (!bi) {
+        return false;
+    }
+    args.rval().setBigInt(bi);
+    return true;
+}
+
+bool DataViewObject::fun_getBigUint64(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<is, getBigUint64Impl>(cx, args);
 }
 
 bool
@@ -2407,6 +2487,48 @@ DataViewObject::fun_setUint32(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
     return CallNonGenericMethod<is, setUint32Impl>(cx, args);
+}
+
+// BigInt proposal 7.28
+// DataView.prototype.setBigInt64 ( byteOffset, value [ , littleEndian ] )
+bool DataViewObject::setBigInt64Impl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(is(args.thisv()));
+
+    Rooted<DataViewObject*> thisView(cx, &args.thisv().toObject().as<DataViewObject>());
+
+    if (!write<int64_t>(cx, thisView, args, "setBigInt64")) {
+        return false;
+    }
+    args.rval().setUndefined();
+    return true;
+}
+
+bool DataViewObject::fun_setBigInt64(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<is, setBigInt64Impl>(cx, args);
+}
+
+// BigInt proposal 7.29
+// DataView.prototype.setBigUint64 ( byteOffset, value [ , littleEndian ] )
+bool DataViewObject::setBigUint64Impl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(is(args.thisv()));
+
+    Rooted<DataViewObject*> thisView(cx, &args.thisv().toObject().as<DataViewObject>());
+
+    if (!write<uint64_t>(cx, thisView, args, "setBigUint64")) {
+        return false;
+    }
+    args.rval().setUndefined();
+    return true;
+}
+
+bool DataViewObject::fun_setBigUint64(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<is, setBigUint64Impl>(cx, args);
 }
 
 bool
@@ -2820,6 +2942,13 @@ const JSFunctionSpec DataViewObject::jsfuncs[] = {
     JS_FS_END
 };
 
+const JSFunctionSpec DataViewObject::bigIntMethods[] = {
+    JS_FN("getBigInt64",  DataViewObject::fun_getBigInt64,  1, 0),
+    JS_FN("getBigUint64", DataViewObject::fun_getBigUint64, 1, 0),
+    JS_FN("setBigInt64",  DataViewObject::fun_setBigInt64,  2, 0),
+    JS_FN("setBigUint64", DataViewObject::fun_setBigUint64, 2, 0),
+    JS_FS_END};
+
 template<Value ValueGetter(DataViewObject* view)>
 bool
 DataViewObject::getterImpl(JSContext* cx, const CallArgs& args)
@@ -2886,6 +3015,9 @@ DataViewObject::initClass(JSContext* cx)
         return false;
 
     if (!JS_DefineFunctions(cx, proto, DataViewObject::jsfuncs))
+        return false;
+
+    if (!JS_DefineFunctions(cx, proto, DataViewObject::bigIntMethods))
         return false;
 
     if (!DefineToStringTag(cx, proto, cx->names().DataView))
