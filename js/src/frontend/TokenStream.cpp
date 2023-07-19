@@ -1692,7 +1692,7 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
     //
     if (c1kind == BasePrefix) {
         tp = newToken(-1);
-        int radix;
+        int radix = 10;
         c = getCharIgnoreEOL();
         if (c == 'x' || c == 'X') {
             radix = 16;
@@ -1818,8 +1818,20 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
         if (isBigInt) {
             size_t length = userbuf.addressOfNextRawChar() - numStart - 1;
             tokenbuf.clear();
-            if(!tokenbuf.reserve(length))
+            if(!tokenbuf.reserve(radix == 10 ? length : (length + 2)))
                 goto error;
+            switch(radix)
+            {
+                case 2:
+                tokenbuf.infallibleAppend("0b", 2);
+                break;
+                case 8:
+                tokenbuf.infallibleAppend("0o", 2);
+                break;
+                case 16:
+                tokenbuf.infallibleAppend("0x", 2);
+                break;
+            }
             tokenbuf.infallibleAppend(numStart, length);
             tp->type = TOK_BIGINT;
             goto out;
