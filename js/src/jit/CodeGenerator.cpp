@@ -10306,7 +10306,7 @@ CodeGenerator::visitThrow(LThrow* lir)
     callVM(ThrowInfoCodeGen, lir);
 }
 
-typedef bool (*BitNotFn)(JSContext*, HandleValue, int* p);
+typedef bool (*BitNotFn)(JSContext*, MutableHandleValue, MutableHandleValue);
 static const VMFunction BitNotInfo = FunctionInfo<BitNotFn>(BitNot, "BitNot");
 
 void
@@ -10316,7 +10316,7 @@ CodeGenerator::visitBitNotV(LBitNotV* lir)
     callVM(BitNotInfo, lir);
 }
 
-typedef bool (*BitopFn)(JSContext*, HandleValue, HandleValue, int* p);
+typedef bool (*BitopFn)(JSContext*, MutableHandleValue, MutableHandleValue, MutableHandleValue);
 static const VMFunction BitAndInfo = FunctionInfo<BitopFn>(BitAnd, "BitAnd");
 static const VMFunction BitOrInfo = FunctionInfo<BitopFn>(BitOr, "BitOr");
 static const VMFunction BitXorInfo = FunctionInfo<BitopFn>(BitXor, "BitXor");
