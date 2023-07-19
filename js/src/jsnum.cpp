@@ -524,15 +524,21 @@ Number(JSContext* cx, unsigned argc, Value* vp)
     bool isConstructing = args.isConstructing();
 
     if (args.length() > 0) {
-        if (!ToNumber(cx, args[0]))
+        // BigInt proposal section 6.2, steps 2a-c.
+        if (!ToNumeric(cx, args[0]))
             return false;
-        args.rval().set(args[0]);
-    } else {
-        args.rval().setInt32(0);
+        if (args[0].isBigInt())
+            args[0].setNumber(BigInt::numberValue(args[0].toBigInt()));
     }
 
-    if (!isConstructing)
+    if (!isConstructing) {
+        if (args.length() > 0) {
+            args.rval().set(args[0]);
+        } else {
+            args.rval().setInt32(0);
+        }
         return true;
+    }
 
     RootedObject newTarget(cx, &args.newTarget().toObject());
     RootedObject proto(cx);
@@ -1490,6 +1496,30 @@ js::ToInt8Slow(JSContext *cx, const HandleValue v, int8_t *out)
     }
     *out = ToInt8(d);
     return true;
+}
+
+// BigInt proposal section 3.1.6
+bool
+js::ToNumericSlow(ExclusiveContext* cx, MutableHandleValue vp)
+{
+    MOZ_ASSERT(!vp.isNumber());
+    MOZ_ASSERT(!vp.isBigInt());
+
+    // Step 1.
+    if (!vp.isPrimitive()) {
+        if (!cx->isJSContext())
+            return false;
+        if (!ToPrimitive(cx->asJSContext(), JSTYPE_NUMBER, vp))
+            return false;
+    }
+
+    // Step 2.
+    if (vp.isBigInt()) {
+        return true;
+    }
+
+    // Step 3.
+    return ToNumber(cx->asJSContext(), vp);
 }
 
 /*
