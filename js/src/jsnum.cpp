@@ -529,6 +529,7 @@ Number(JSContext* cx, unsigned argc, Value* vp)
             return false;
         if (args[0].isBigInt())
             args[0].setNumber(BigInt::numberValue(args[0].toBigInt()));
+        MOZ_ASSERT(args[0].isNumber());
     }
 
     if (!isConstructing) {

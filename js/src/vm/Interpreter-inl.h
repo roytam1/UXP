@@ -390,7 +390,7 @@ DefVarOperation(JSContext* cx, HandleObject varobj, HandlePropertyName dn, unsig
 }
 
 static MOZ_ALWAYS_INLINE bool
-NegOperation(JSContext* cx, HandleScript script, jsbytecode* pc, HandleValue val,
+NegOperation(JSContext* cx, HandleScript script, jsbytecode* pc, MutableHandleValue val,
              MutableHandleValue res)
 {
     /*
@@ -401,13 +401,16 @@ NegOperation(JSContext* cx, HandleScript script, jsbytecode* pc, HandleValue val
     int32_t i;
     if (val.isInt32() && (i = val.toInt32()) != 0 && i != INT32_MIN) {
         res.setInt32(-i);
-    } else {
-        double d;
-        if (!ToNumber(cx, val, &d))
-            return false;
-        res.setNumber(-d);
+        return true;
     }
 
+    if (!ToNumeric(cx, val))
+        return false;
+
+    if (val.isBigInt())
+        return BigInt::neg(cx, val, res);
+
+    res.setNumber(-val.toNumber());
     return true;
 }
 
