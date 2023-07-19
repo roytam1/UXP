@@ -442,7 +442,7 @@ class DataViewObject : public NativeObject
 
     template <typename NativeType>
     static uint8_t*
-    getDataPointer(JSContext* cx, Handle<DataViewObject*> obj, double offset);
+    getDataPointer(JSContext* cx, Handle<DataViewObject*> obj, uint64_t offset);
 
     template<Value ValueGetter(DataViewObject* view)>
     static bool
