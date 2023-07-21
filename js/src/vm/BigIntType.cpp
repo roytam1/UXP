@@ -1778,7 +1778,7 @@ BigInt* BigInt::mod(ExclusiveContext* cx, HandleBigInt x, HandleBigInt y) {
       return nullptr;
     }
     MOZ_ASSERT(remainder);
-    return remainder;
+    return destructivelyTrimHighZeroDigits(cx, remainder);
   }
 }
 
@@ -2195,7 +2195,7 @@ uint64_t BigInt::toUint64(BigInt* x) {
 
   uint64_t digit = x->digit(0);
 
-  if (DigitBits == 32 && x->digitLength() >= 1) {
+  if (DigitBits == 32 && x->digitLength() > 1) {
     digit |= static_cast<uint64_t>(x->digit(1)) << 32;
   }
 

@@ -1508,6 +1508,8 @@ DispatchTyped(F f, const JS::Value& val, Args&&... args)
         return f(&val.toObject(), mozilla::Forward<Args>(args)...);
     if (val.isSymbol())
         return f(val.toSymbol(), mozilla::Forward<Args>(args)...);
+    if (val.isBigInt())
+        return f(val.toBigInt(), mozilla::Forward<Args>(args)...);
     if (MOZ_UNLIKELY(val.isPrivateGCThing()))
         return DispatchTyped(f, val.toGCCellPtr(), mozilla::Forward<Args>(args)...);
     MOZ_ASSERT(!val.isGCThing());

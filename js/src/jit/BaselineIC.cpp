@@ -8093,6 +8093,9 @@ ICTypeOf_Typed::Compiler::generateStubCode(MacroAssembler& masm)
         masm.branchTestSymbol(Assembler::NotEqual, R0, &failure);
         break;
 
+      case JSTYPE_BIGINT:
+          return false;
+
       default:
         MOZ_CRASH("Unexpected type");
     }
