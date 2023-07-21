@@ -1646,9 +1646,12 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
         if (isBigInt) {
             size_t length = userbuf.addressOfNextRawChar() - numStart - 1;
             tokenbuf.clear();
-            if(!tokenbuf.reserve(length))
+            if(!tokenbuf.reserve(length > 0 ? length : 1))
                 goto error;
-            tokenbuf.infallibleAppend(numStart, length);
+            if(length > 0)
+                tokenbuf.infallibleAppend(numStart, length);
+            else
+                tokenbuf.infallibleAppend("0", 1);
             tp->type = TOK_BIGINT;
             goto out;
         }
