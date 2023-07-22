@@ -100,6 +100,9 @@ LIRGeneratorShared::visitConstant(MConstant* ins)
       case MIRType::Symbol:
         define(new(alloc()) LPointer(ins->toSymbol()), ins);
         break;
+      case MIRType::BigInt:
+        define(new (alloc()) LPointer(ins->toBigInt()), ins);
+        break;
       case MIRType::Object:
         define(new(alloc()) LPointer(&ins->toObject()), ins);
         break;

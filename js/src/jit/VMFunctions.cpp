@@ -1236,15 +1236,27 @@ AssertValidSymbolPtr(JSContext* cx, JS::Symbol* sym)
     MOZ_ASSERT(sym->getAllocKind() == gc::AllocKind::SYMBOL);
 }
 
+void 
+AssertValidBigIntPtr(JSContext* cx, JS::BigInt* bi) {
+    // FIXME: check runtime?
+    MOZ_ASSERT(cx->zone() == bi->zone());
+    MOZ_ASSERT(bi->isAligned());
+    MOZ_ASSERT(bi->isTenured());
+    MOZ_ASSERT(bi->getAllocKind() == gc::AllocKind::BIGINT);
+}
+
 void
 AssertValidValue(JSContext* cx, Value* v)
 {
-    if (v->isObject())
+    if (v->isObject()) {
         AssertValidObjectPtr(cx, &v->toObject());
-    else if (v->isString())
+    } else if (v->isString()) {
         AssertValidStringPtr(cx, v->toString());
-    else if (v->isSymbol())
+    } else if (v->isSymbol()) {
         AssertValidSymbolPtr(cx, v->toSymbol());
+    } else if (v->isBigInt()) {
+        AssertValidBigIntPtr(cx, v->toBigInt());
+    }
 }
 
 bool

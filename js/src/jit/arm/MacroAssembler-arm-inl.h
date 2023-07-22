@@ -1880,6 +1880,29 @@ MacroAssembler::branchTestSymbolImpl(Condition cond, const T& t, Label* label)
     ma_b(label, c);
 }
 
+void MacroAssembler::branchTestBigInt(Condition cond, Register tag, Label* label) {
+  branchTestBigIntImpl(cond, tag, label);
+}
+
+void MacroAssembler::branchTestBigInt(Condition cond, const BaseIndex& address, Label* label) {
+  branchTestBigIntImpl(cond, address, label);
+}
+
+void MacroAssembler::branchTestBigInt(Condition cond, const ValueOperand& value, Label* label) {
+  branchTestBigIntImpl(cond, value, label);
+}
+
+template <typename T>
+void MacroAssembler::branchTestBigIntImpl(Condition cond, const T& t, Label* label) {
+  Condition c = testBigInt(cond, t);
+  ma_b(label, c);
+}
+
+void MacroAssembler::branchTestBigIntTruthy(bool truthy, const ValueOperand& value, Label* label) {
+  Condition c = testBigIntTruthy(truthy, value);
+  ma_b(label, c);
+}
+
 void
 MacroAssembler::branchTestNull(Condition cond, Register tag, Label* label)
 {

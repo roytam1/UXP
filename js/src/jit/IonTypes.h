@@ -103,6 +103,7 @@ enum BailoutKind
     Bailout_NonObjectInput,
     Bailout_NonStringInput,
     Bailout_NonSymbolInput,
+    Bailout_NonBigIntInput,
 
     // SIMD Unbox expects a given type, bails out if it doesn't match.
     Bailout_UnexpectedSimdInput,
@@ -212,6 +213,8 @@ BailoutKindString(BailoutKind kind)
         return "Bailout_NonStringInput";
       case Bailout_NonSymbolInput:
         return "Bailout_NonSymbolInput";
+      case Bailout_NonBigIntInput:
+        return "Bailout_NonBigIntInput";
       case Bailout_UnexpectedSimdInput:
         return "Bailout_UnexpectedSimdInput";
       case Bailout_NonSharedTypedArrayInput:
@@ -412,6 +415,7 @@ enum class MIRType
     // Types above have trivial conversion to a number.
     String,
     Symbol,
+    BigInt,
     // Types above are primitive (including undefined and null).
     Object,
     MagicOptimizedArguments,   // JS_OPTIMIZED_ARGUMENTS magic value.
@@ -496,6 +500,8 @@ MIRTypeFromValueType(JSValueType type)
         return MIRType::String;
       case JSVAL_TYPE_SYMBOL:
         return MIRType::Symbol;
+      case JSVAL_TYPE_BIGINT:
+        return MIRType::BigInt;
       case JSVAL_TYPE_BOOLEAN:
         return MIRType::Boolean;
       case JSVAL_TYPE_NULL:
@@ -528,6 +534,8 @@ ValueTypeFromMIRType(MIRType type)
       return JSVAL_TYPE_STRING;
     case MIRType::Symbol:
       return JSVAL_TYPE_SYMBOL;
+    case MIRType::BigInt:
+      return JSVAL_TYPE_BIGINT;
     case MIRType::MagicOptimizedArguments:
     case MIRType::MagicOptimizedOut:
     case MIRType::MagicHole:
@@ -568,6 +576,8 @@ StringFromMIRType(MIRType type)
       return "String";
     case MIRType::Symbol:
       return "Symbol";
+    case MIRType::BigInt:
+      return "BigInt";
     case MIRType::Object:
       return "Object";
     case MIRType::MagicOptimizedArguments:
