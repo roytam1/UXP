@@ -1391,10 +1391,14 @@ BigInt* BigInt::parseLiteralDigits(ExclusiveContext* cx,
 
   result->initializeDigitsToZero();
 
+  RangedPtr<const CharT> begin = start;
   for (; start < end; start++) {
     uint32_t digit;
     CharT c = *start;
-    if (c >= '0' && c < limit0) {
+    if (c == '_' && start > begin && start < end - 1) {
+      // skip over block delimiters unless at the very start or end
+      continue;
+    } else if (c >= '0' && c < limit0) {
       digit = c - '0';
     } else if (c >= 'a' && c < limita) {
       digit = c - 'a' + 10;

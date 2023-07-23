@@ -82,7 +82,7 @@ HashValue(const Value& v, const mozilla::HashCodeScrambler& hcs)
     if (v.isSymbol())
         return v.toSymbol()->hash();
     if (v.isBigInt())
-        return v.toBigInt()->hash();
+        return MaybeForwarded(v.toBigInt())->hash();
     if (v.isObject())
         return hcs.scramble(v.asRawBits());
 
@@ -103,13 +103,9 @@ HashableValue::operator==(const HashableValue& other) const
     bool b = (value.asRawBits() == other.value.asRawBits());
 
     // BigInt values are considered equal if they represent the same
-    // integer. This test should use a comparison function that doesn't
-    // require a JSContext once one is defined in the BigInt class.
+    // mathematical value.
     if (!b && (value.isBigInt() && other.value.isBigInt())) {
-        JS::RootingContext* rcx = GetJSContextFromMainThread();
-        RootedValue valueRoot(rcx, value);
-        RootedValue otherRoot(rcx, other.value);
-        SameValue(nullptr, valueRoot, otherRoot, &b);
+        b = BigInt::equal(value.toBigInt(), other.value.toBigInt());
     }
 
 #ifdef DEBUG
@@ -390,8 +386,9 @@ MarkKey(Range& r, const HashableValue& key, JSTracer* trc)
     HashableValue newKey = key.mark(trc);
 
     if (newKey.get() != key.get()) {
-        // The hash function only uses the bits of the Value, so it is safe to
-        // rekey even when the object or string has been modified by the GC.
+        // The hash function must take account of the fact that the thing being
+        // hashed may have been moved by GC. This is only an issue for BigInt as for
+        // other types the hash function only uses the bits of the Value.
         r.rekeyFront(newKey);
     }
 }
