@@ -2159,6 +2159,12 @@ function createValueGrip(value, pool, makeObjectGrip) {
       }
       return value;
 
+    case "bigint":
+      return {
+        type: "BigInt",
+        text: value.toString(),
+      };
+
     case "undefined":
       return { type: "undefined" };
 
