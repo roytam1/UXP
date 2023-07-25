@@ -87,6 +87,7 @@
 #include "mozilla/WrappingOperations.h"
 
 #include <functional>
+#include <limits>
 #include <math.h>
 #include <memory>
 
@@ -2211,6 +2212,43 @@ uint64_t BigInt::toUint64(BigInt* x) {
   return digit;
 }
 
+bool BigInt::isInt64(BigInt* x, int64_t* result) {
+  MOZ_MAKE_MEM_UNDEFINED(result, sizeof(*result));
+
+  size_t length = x->digitLength();
+  if (length > (DigitBits == 32 ? 2 : 1)) {
+    return false;
+  }
+
+  if (length == 0) {
+    *result = 0;
+    return true;
+  }
+
+  uint64_t magnitude = x->digit(0);
+  if (DigitBits == 32 && length > 1) {
+    magnitude |= static_cast<uint64_t>(x->digit(1)) << 32;
+  }
+
+  if (x->isNegative()) {
+    constexpr uint64_t Int64MinMagnitude = uint64_t(1) << 63;
+    if (magnitude <= Int64MinMagnitude) {
+      *result = magnitude == Int64MinMagnitude
+                    ? std::numeric_limits<int64_t>::min()
+                    : -AssertedCast<int64_t>(magnitude);
+      return true;
+    }
+  } else {
+    if (magnitude <=
+        static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+      *result = AssertedCast<int64_t>(magnitude);
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // Compute `2**bits - (x & (2**bits - 1))`.  Used when treating BigInt values as
 // arbitrary-precision two's complement signed integers.
 BigInt* BigInt::truncateAndSubFromPowerOfTwo(ExclusiveContext* cx, HandleBigInt x,
@@ -2661,7 +2699,7 @@ double BigInt::numberValue(BigInt* x) {
   if (length <= 64 / DigitBits) {
     uint64_t magnitude = x->digit(0);
     if (DigitBits == 32 && length > 1) {
-      magnitude |= uint64_t(x->digit(1)) << 32;
+      magnitude |= static_cast<uint64_t>(x->digit(1)) << 32;
     }
     const uint64_t MaxIntegralPrecisionDouble = uint64_t(1)
                                                 << (SignificandWidth + 1);

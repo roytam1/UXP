@@ -417,18 +417,26 @@ PartitionNumberPattern(JSContext* cx, UNumberFormat* nf, HandleValue x,
         });
     } else if(x.isBigInt()) {
         RootedBigInt bi(cx, x.toBigInt());
-        JSLinearString* str = BigInt::toString(cx, bi, 10);
-        if (!str) {
-            return nullptr;
-        }
-        MOZ_ASSERT(str->hasLatin1Chars());
+        int64_t num;
 
-        JS::AutoCheckCannotGC noGC(cx);
-        const char* latinchars = reinterpret_cast<const char*>(str->latin1Chars(noGC));
-        size_t length = str->length();
-        return CallICU(cx, [nf, latinchars, length](UChar* chars, int32_t size, UErrorCode* status) {
-            return unum_formatDecimal(nf, latinchars, length, chars, size, nullptr, status);
-        });
+        if (BigInt::isInt64(bi, &num)) {
+            return CallICU(cx, [nf, num](UChar* chars, int32_t size, UErrorCode* status) {
+                return unum_formatInt64(nf, num, chars, size, nullptr, status);
+            });
+        } else {
+            JSLinearString* str = BigInt::toString(cx, bi, 10);
+            if (!str) {
+                return nullptr;
+            }
+            MOZ_ASSERT(str->hasLatin1Chars());
+
+            JS::AutoCheckCannotGC noGC(cx);
+            const char* latinchars = reinterpret_cast<const char*>(str->latin1Chars(noGC));
+            size_t length = str->length();
+            return CallICU(cx, [nf, latinchars, length](UChar* chars, int32_t size, UErrorCode* status) {
+                return unum_formatDecimal(nf, latinchars, length, chars, size, nullptr, status);
+            });
+        }
     }
     return nullptr;
 }
