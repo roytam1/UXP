@@ -222,6 +222,7 @@
 #include "jit/JitcodeMap.h"
 #include "js/SliceBudget.h"
 #include "proxy/DeadObjectProxy.h"
+#include "vm/BigIntType.h"
 #include "vm/Debugger.h"
 #include "vm/ProxyObject.h"
 #include "vm/Shape.h"
@@ -371,7 +372,8 @@ static const FinalizePhase BackgroundFinalizePhases[] = {
             AllocKind::STRING,
             AllocKind::FAT_INLINE_ATOM,
             AllocKind::ATOM,
-            AllocKind::SYMBOL
+            AllocKind::SYMBOL,
+            AllocKind::BIGINT
         }
     },
     {
@@ -1986,6 +1988,7 @@ MovingTracer::updateEdge(T** thingp)
 void MovingTracer::onObjectEdge(JSObject** objp) { updateEdge(objp); }
 void MovingTracer::onShapeEdge(Shape** shapep) { updateEdge(shapep); }
 void MovingTracer::onStringEdge(JSString** stringp) { updateEdge(stringp); }
+void MovingTracer::onBigIntEdge(JS::BigInt** bip) { updateEdge(bip); }
 void MovingTracer::onScriptEdge(JSScript** scriptp) { updateEdge(scriptp); }
 void MovingTracer::onLazyScriptEdge(LazyScript** lazyp) { updateEdge(lazyp); }
 void MovingTracer::onBaseShapeEdge(BaseShape** basep) { updateEdge(basep); }
@@ -6557,6 +6560,8 @@ JS::GCCellPtr::GCCellPtr(const Value& v)
         ptr = checkedCast(&v.toObject(), JS::TraceKind::Object);
     else if (v.isSymbol())
         ptr = checkedCast(v.toSymbol(), JS::TraceKind::Symbol);
+    else if (v.isBigInt())
+        ptr = checkedCast(v.toBigInt(), JS::TraceKind::BigInt);
     else if (v.isPrivateGCThing())
         ptr = checkedCast(v.toGCThing(), v.toGCThing()->getTraceKind());
     else

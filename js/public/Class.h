@@ -1100,6 +1100,7 @@ enum class ESClass {
     SetIterator,
     Arguments,
     Error,
+    BigInt,
 
     /** None of the above. */
     Other

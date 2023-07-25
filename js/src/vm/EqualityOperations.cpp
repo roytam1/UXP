@@ -31,6 +31,10 @@ EqualGivenSameType(JSContext* cx, JS::HandleValue lval, JS::HandleValue rval, bo
         *equal = (lval.toDouble() == rval.toDouble());
         return true;
     }
+    if (lval.isBigInt()) {
+        *equal = JS::BigInt::equal(lval.toBigInt(), rval.toBigInt());
+        return true;
+    }
     if (lval.isGCThing()) {  // objects or symbols
         *equal = (lval.toGCThing() == rval.toGCThing());
         return true;
@@ -132,6 +136,22 @@ js::LooselyEqual(JSContext* cx, JS::HandleValue lval, JS::HandleValue rval, bool
         if (!ToPrimitive(cx, &lvalue))
             return false;
         return js::LooselyEqual(cx, lvalue, rval, result);
+    }
+
+    if (lval.isBigInt()) {
+        RootedBigInt lbi(cx, lval.toBigInt());
+        bool tmpResult;
+        JS_TRY_VAR_OR_RETURN_FALSE(cx, tmpResult, BigInt::looselyEqual(cx, lbi, rval));
+        *result = tmpResult;
+        return true;
+    }
+
+    if (rval.isBigInt()) {
+        RootedBigInt rbi(cx, rval.toBigInt());
+        bool tmpResult;
+        JS_TRY_VAR_OR_RETURN_FALSE(cx, tmpResult, BigInt::looselyEqual(cx, rbi, lval));
+        *result = tmpResult;
+        return true;
     }
 
     // Step 12.

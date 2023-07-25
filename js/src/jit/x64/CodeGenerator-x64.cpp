@@ -121,6 +121,9 @@ CodeGeneratorX64::visitUnbox(LUnbox* unbox)
           case MIRType::Symbol:
             cond = masm.testSymbol(Assembler::NotEqual, value);
             break;
+          case MIRType::BigInt:
+            cond = masm.testBigInt(Assembler::NotEqual, value);
+            break;
           default:
             MOZ_CRASH("Given MIRType cannot be unboxed.");
         }
@@ -144,6 +147,9 @@ CodeGeneratorX64::visitUnbox(LUnbox* unbox)
         break;
       case MIRType::Symbol:
         masm.unboxSymbol(input, result);
+        break;
+      case MIRType::BigInt:
+        masm.unboxBigInt(input, result);
         break;
       default:
         MOZ_CRASH("Given MIRType cannot be unboxed.");

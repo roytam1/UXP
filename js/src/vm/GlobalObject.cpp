@@ -15,6 +15,7 @@
 #include "jsweakmap.h"
 
 #include "builtin/AtomicsObject.h"
+#include "builtin/BigInt.h"
 #include "builtin/Eval.h"
 #include "builtin/MapObject.h"
 #include "builtin/ModuleObject.h"

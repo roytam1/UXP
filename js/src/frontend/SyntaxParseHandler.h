@@ -224,6 +224,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
     }
 
     NumericLiteralType newNumber(double value, DecimalPoint decimalPoint, const TokenPos& pos) { return NodeGeneric; }
+    BigIntLiteralType newBigInt() { return NodeGeneric; }
     BooleanLiteralType newBooleanLiteral(bool cond, const TokenPos& pos) { return NodeGeneric; }
 
     NameNodeType newStringLiteral(JSAtom* atom, const TokenPos& pos) {

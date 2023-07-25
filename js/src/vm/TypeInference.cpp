@@ -111,6 +111,8 @@ TypeSet::NonObjectTypeString(TypeSet::Type type)
             return "string";
           case JSVAL_TYPE_SYMBOL:
             return "symbol";
+          case JSVAL_TYPE_BIGINT:
+            return "BigInt";
           case JSVAL_TYPE_MAGIC:
             return "lazyargs";
           default:
@@ -366,6 +368,8 @@ TypeSet::mightBeMIRType(jit::MIRType type) const
         return baseFlags() & TYPE_FLAG_STRING;
       case jit::MIRType::Symbol:
         return baseFlags() & TYPE_FLAG_SYMBOL;
+      case jit::MIRType::BigInt:
+        return baseFlags() & TYPE_FLAG_BIGINT;
       case jit::MIRType::MagicOptimizedArguments:
         return baseFlags() & TYPE_FLAG_LAZYARGS;
       case jit::MIRType::MagicHole:
@@ -755,6 +759,8 @@ TypeSet::print(FILE* fp)
         fprintf(fp, " string");
     if (flags & TYPE_FLAG_SYMBOL)
         fprintf(fp, " symbol");
+    if (flags & TYPE_FLAG_BIGINT)
+        fprintf(fp, " BigInt");
     if (flags & TYPE_FLAG_LAZYARGS)
         fprintf(fp, " lazyargs");
 
@@ -1631,6 +1637,8 @@ GetMIRTypeFromTypeFlags(TypeFlags flags)
         return jit::MIRType::String;
       case TYPE_FLAG_SYMBOL:
         return jit::MIRType::Symbol;
+      case TYPE_FLAG_BIGINT:
+        return jit::MIRType::BigInt;
       case TYPE_FLAG_LAZYARGS:
         return jit::MIRType::MagicOptimizedArguments;
       case TYPE_FLAG_ANYOBJECT:

@@ -11,6 +11,7 @@
 #include "mozilla/Casting.h"
 #include "mozilla/FloatingPoint.h"
 #include "mozilla/TypeTraits.h"
+#include "mozilla/WrappingOperations.h"
 
 #include <math.h>
 
@@ -120,7 +121,7 @@ ToBoolean(HandleValue v)
     if (v.isSymbol())
         return true;
 
-    /* The slow path handles strings and objects. */
+    /* The slow path handles strings, BigInts and objects. */
     return js::ToBooleanSlow(v);
 }
 

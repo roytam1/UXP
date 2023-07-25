@@ -74,6 +74,7 @@
     macro(PRIVATE_NAME, "private identifier") \
     macro(NUMBER,       "numeric literal") \
     macro(STRING,       "string literal") \
+    macro(BIGINT,       "bigint literal") \
     \
     /* start of template literal with substitutions */ \
     macro(TEMPLATE_HEAD,    "'${'") \

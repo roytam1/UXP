@@ -942,47 +942,43 @@ DoBinaryArithFallback(JSContext* cx, void* payload, ICBinaryArith_Fallback* stub
             return false;
         break;
       case JSOP_POW:
-        if (!math_pow_handle(cx, lhsCopy, rhsCopy, ret))
+        if (!PowValues(cx, &lhsCopy, &rhsCopy, ret))
             return false;
         break;
       case JSOP_BITOR: {
-        int32_t result;
-        if (!BitOr(cx, lhs, rhs, &result))
+        if (!BitOr(cx, &lhsCopy, &rhsCopy, ret)) {
             return false;
-        ret.setInt32(result);
+        }
         break;
       }
       case JSOP_BITXOR: {
-        int32_t result;
-        if (!BitXor(cx, lhs, rhs, &result))
+       if (!BitXor(cx, &lhsCopy, &rhsCopy, ret)) {
             return false;
-        ret.setInt32(result);
+       }
         break;
       }
       case JSOP_BITAND: {
-        int32_t result;
-        if (!BitAnd(cx, lhs, rhs, &result))
+        if (!BitAnd(cx, &lhsCopy, &rhsCopy, ret)) {
             return false;
-        ret.setInt32(result);
+        }
         break;
       }
       case JSOP_LSH: {
-        int32_t result;
-        if (!BitLsh(cx, lhs, rhs, &result))
+        if (!BitLsh(cx, &lhsCopy, &rhsCopy, ret)) {
             return false;
-        ret.setInt32(result);
+        }
         break;
       }
       case JSOP_RSH: {
-        int32_t result;
-        if (!BitRsh(cx, lhs, rhs, &result))
+        if (!BitRsh(cx, &lhsCopy, &rhsCopy, ret)) {
             return false;
-        ret.setInt32(result);
+        }
         break;
       }
       case JSOP_URSH: {
-        if (!UrshOperation(cx, lhs, rhs, ret))
+        if (!UrshOperation(cx, &lhsCopy, &rhsCopy, ret)) {
             return false;
+        }
         break;
       }
       default:
@@ -1475,16 +1471,19 @@ DoUnaryArithFallback(JSContext* cx, void* payload, ICUnaryArith_Fallback* stub_,
 
     switch (op) {
       case JSOP_BITNOT: {
-        int32_t result;
-        if (!BitNot(cx, val, &result))
+        RootedValue valCopy(cx, val);
+        if (!BitNot(cx, &valCopy, res)) {
             return false;
-        res.setInt32(result);
+        }
         break;
       }
-      case JSOP_NEG:
-        if (!NegOperation(cx, script, pc, val, res))
+      case JSOP_NEG: {
+        // We copy val here because the original value is needed below.
+        RootedValue valCopy(cx, val);
+        if (!NegOperation(cx, script, pc, &valCopy, res))
             return false;
         break;
+      }
       default:
         MOZ_CRASH("Unexpected op");
     }

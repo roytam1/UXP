@@ -79,6 +79,14 @@ JSCompartment::wrap(JSContext* cx, JS::MutableHandleValue vp)
         return true;
     }
 
+    if (vp.isBigInt()) {
+        JS::RootedBigInt bi(cx, vp.toBigInt());
+        if (!wrap(cx, &bi))
+            return false;
+        vp.setBigInt(bi);
+        return true;
+    }
+
     MOZ_ASSERT(vp.isObject());
 
     /*

@@ -54,7 +54,7 @@ template<class T>
 bool
 js::wasm::RenderNaN(StringBuffer& sb, Raw<T> num)
 {
-    typedef typename mozilla::SelectTrait<T> Traits;
+    typedef typename mozilla::FloatingPoint<T> Traits;
 
     MOZ_ASSERT(IsNaN(num.fp()));
 

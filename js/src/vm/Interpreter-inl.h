@@ -8,6 +8,8 @@
 
 #include "vm/Interpreter.h"
 
+#include "mozilla/Maybe.h"
+
 #include "jscompartment.h"
 #include "jsnum.h"
 #include "jsstr.h"
@@ -390,7 +392,7 @@ DefVarOperation(JSContext* cx, HandleObject varobj, HandlePropertyName dn, unsig
 }
 
 static MOZ_ALWAYS_INLINE bool
-NegOperation(JSContext* cx, HandleScript script, jsbytecode* pc, HandleValue val,
+NegOperation(JSContext* cx, HandleScript script, jsbytecode* pc, MutableHandleValue val,
              MutableHandleValue res)
 {
     /*
@@ -401,13 +403,16 @@ NegOperation(JSContext* cx, HandleScript script, jsbytecode* pc, HandleValue val
     int32_t i;
     if (val.isInt32() && (i = val.toInt32()) != 0 && i != INT32_MIN) {
         res.setInt32(-i);
-    } else {
-        double d;
-        if (!ToNumber(cx, val, &d))
-            return false;
-        res.setNumber(-d);
+        return true;
     }
 
+    if (!ToNumeric(cx, val))
+        return false;
+
+    if (val.isBigInt())
+        return BigInt::neg(cx, val, res);
+
+    res.setNumber(-val.toNumber());
     return true;
 }
 
@@ -657,120 +662,268 @@ ProcessCallSiteObjOperation(JSContext* cx, RootedObject& cso, RootedObject& raw,
     return true;
 }
 
-#define RELATIONAL_OP(OP)                                                     \
-    JS_BEGIN_MACRO                                                            \
-        /* Optimize for two int-tagged operands (typical loop control). */    \
-        if (lhs.isInt32() && rhs.isInt32()) {                                 \
-            *res = lhs.toInt32() OP rhs.toInt32();                            \
-        } else {                                                              \
-            if (!ToPrimitive(cx, JSTYPE_NUMBER, lhs))                         \
-                return false;                                                 \
-            if (!ToPrimitive(cx, JSTYPE_NUMBER, rhs))                         \
-                return false;                                                 \
-            if (lhs.isString() && rhs.isString()) {                           \
-                JSString* l = lhs.toString();                                 \
-                JSString* r = rhs.toString();                                 \
-                int32_t result;                                               \
-                if (!CompareStrings(cx, l, r, &result))                       \
-                    return false;                                             \
-                *res = result OP 0;                                           \
-            } else {                                                          \
-                double l, r;                                                  \
-                if (!ToNumber(cx, lhs, &l) || !ToNumber(cx, rhs, &r))         \
-                    return false;                                             \
-                *res = (l OP r);                                              \
-            }                                                                 \
-        }                                                                     \
-        return true;                                                          \
-    JS_END_MACRO
-
+// BigInt proposal 3.2.4 Abstract Relational Comparison
+// Returns Nothing when at least one operand is a NaN, or when
+// ToNumeric or StringToBigInt can't interpret a string as a numeric
+// value. (These cases correspond to a NaN result in the spec.)
+// Otherwise, return a boolean to indicate whether lhs is less than
+// rhs. The operands must be primitives; the caller is responsible for
+// evaluating them in the correct order.
 static MOZ_ALWAYS_INLINE bool
-LessThanOperation(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, bool* res) {
-    RELATIONAL_OP(<);
-}
-
-static MOZ_ALWAYS_INLINE bool
-LessThanOrEqualOperation(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, bool* res) {
-    RELATIONAL_OP(<=);
-}
-
-static MOZ_ALWAYS_INLINE bool
-GreaterThanOperation(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, bool* res) {
-    RELATIONAL_OP(>);
-}
-
-static MOZ_ALWAYS_INLINE bool
-GreaterThanOrEqualOperation(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, bool* res) {
-    RELATIONAL_OP(>=);
-}
-
-static MOZ_ALWAYS_INLINE bool
-BitNot(JSContext* cx, HandleValue in, int* out)
+LessThanImpl(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs,
+             mozilla::Maybe<bool>& res)
 {
-    int i;
-    if (!ToInt32(cx, in, &i))
+    // Steps 1 and 2 are performed by the caller.
+
+    // Step 3.
+    if (lhs.isString() && rhs.isString()) {
+        JSString* l = lhs.toString();
+        JSString* r = rhs.toString();
+        int32_t result;
+        if (!CompareStrings(cx, l, r, &result)) {
+            return false;
+        }
+        res = mozilla::Some(result < 0);
+        return true;
+    }
+
+    // Step 4a.
+    if (lhs.isBigInt() && rhs.isString()) {
+        return BigInt::lessThan(cx, lhs, rhs, res);
+    }
+    // Step 4b.
+    if (lhs.isString() && rhs.isBigInt()) {
+        return BigInt::lessThan(cx, lhs, rhs, res);
+    }
+
+    // Steps 4c and 4d.
+    if (!ToNumeric(cx, lhs) || !ToNumeric(cx, rhs)) {
         return false;
-    *out = ~i;
+    }
+
+    // Steps 4e-j.
+    if (lhs.isBigInt() || rhs.isBigInt()) {
+        return BigInt::lessThan(cx, lhs, rhs, res);
+    }
+
+    // Step 4e for Number operands.
+    MOZ_ASSERT(lhs.isNumber() && rhs.isNumber());
+    double lhsNum = lhs.toNumber();
+    double rhsNum = rhs.toNumber();
+
+    if (mozilla::IsNaN(lhsNum) || mozilla::IsNaN(rhsNum)) {
+        res = mozilla::Maybe<bool>(mozilla::Nothing());
+        return true;
+    }
+
+    res = mozilla::Some(lhsNum < rhsNum);
     return true;
 }
 
 static MOZ_ALWAYS_INLINE bool
-BitXor(JSContext* cx, HandleValue lhs, HandleValue rhs, int* out)
+LessThanOperation(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, bool* res)
 {
-    int left, right;
-    if (!ToInt32(cx, lhs, &left) || !ToInt32(cx, rhs, &right))
+    if (lhs.isInt32() && rhs.isInt32()) {
+        *res = lhs.toInt32() < rhs.toInt32();
+        return true;
+    }
+
+    if (!ToPrimitive(cx, JSTYPE_NUMBER, lhs)) {
         return false;
-    *out = left ^ right;
+    }
+
+    if (!ToPrimitive(cx, JSTYPE_NUMBER, rhs)) {
+        return false;
+    }
+
+    mozilla::Maybe<bool> tmpResult;
+    if (!LessThanImpl(cx, lhs, rhs, tmpResult)) {
+        return false;
+    }
+    *res = tmpResult.valueOr(false);
     return true;
 }
 
 static MOZ_ALWAYS_INLINE bool
-BitOr(JSContext* cx, HandleValue lhs, HandleValue rhs, int* out)
+LessThanOrEqualOperation(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, bool* res)
 {
-    int left, right;
-    if (!ToInt32(cx, lhs, &left) || !ToInt32(cx, rhs, &right))
+    if (lhs.isInt32() && rhs.isInt32()) {
+        *res = lhs.toInt32() <= rhs.toInt32();
+        return true;
+    }
+
+    if (!ToPrimitive(cx, JSTYPE_NUMBER, lhs)) {
         return false;
-    *out = left | right;
+    }
+
+    if (!ToPrimitive(cx, JSTYPE_NUMBER, rhs)) {
+        return false;
+    }
+
+    mozilla::Maybe<bool> tmpResult;
+    if (!LessThanImpl(cx, rhs, lhs, tmpResult)) {
+        return false;
+    }
+    *res = !tmpResult.valueOr(true);
     return true;
 }
 
 static MOZ_ALWAYS_INLINE bool
-BitAnd(JSContext* cx, HandleValue lhs, HandleValue rhs, int* out)
+GreaterThanOperation(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, bool* res)
 {
-    int left, right;
-    if (!ToInt32(cx, lhs, &left) || !ToInt32(cx, rhs, &right))
+    if (lhs.isInt32() && rhs.isInt32()) {
+        *res = lhs.toInt32() > rhs.toInt32();
+        return true;
+    }
+
+    if (!ToPrimitive(cx, JSTYPE_NUMBER, lhs)) {
         return false;
-    *out = left & right;
+    }
+
+    if (!ToPrimitive(cx, JSTYPE_NUMBER, rhs)) {
+        return false;
+    }
+
+    mozilla::Maybe<bool> tmpResult;
+    if (!LessThanImpl(cx, rhs, lhs, tmpResult)) {
+        return false;
+    }
+    *res = tmpResult.valueOr(false);
     return true;
 }
 
 static MOZ_ALWAYS_INLINE bool
-BitLsh(JSContext* cx, HandleValue lhs, HandleValue rhs, int* out)
+GreaterThanOrEqualOperation(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, bool* res)
 {
-    int32_t left, right;
-    if (!ToInt32(cx, lhs, &left) || !ToInt32(cx, rhs, &right))
+    if (lhs.isInt32() && rhs.isInt32()) {
+        *res = lhs.toInt32() >= rhs.toInt32();
+        return true;
+    }
+
+    if (!ToPrimitive(cx, JSTYPE_NUMBER, lhs)) {
         return false;
-    *out = uint32_t(left) << (right & 31);
+    }
+
+    if (!ToPrimitive(cx, JSTYPE_NUMBER, rhs)) {
+        return false;
+    }
+
+    mozilla::Maybe<bool> tmpResult;
+    if (!LessThanImpl(cx, lhs, rhs, tmpResult)) {
+        return false;
+    }
+    *res = !tmpResult.valueOr(true);
     return true;
 }
 
 static MOZ_ALWAYS_INLINE bool
-BitRsh(JSContext* cx, HandleValue lhs, HandleValue rhs, int* out)
+BitNot(JSContext* cx, MutableHandleValue in, MutableHandleValue out)
 {
-    int32_t left, right;
-    if (!ToInt32(cx, lhs, &left) || !ToInt32(cx, rhs, &right))
+    if (!ToInt32OrBigInt(cx, in)) {
         return false;
-    *out = left >> (right & 31);
+    }
+
+    if (in.isBigInt()) {
+        return BigInt::bitNot(cx, in, out);
+    }
+
+    out.setInt32(~in.toInt32());
     return true;
 }
 
 static MOZ_ALWAYS_INLINE bool
-UrshOperation(JSContext* cx, HandleValue lhs, HandleValue rhs, MutableHandleValue out)
+BitXor(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, MutableHandleValue out)
 {
+    if (!ToInt32OrBigInt(cx, lhs) || !ToInt32OrBigInt(cx, rhs)) {
+        return false;
+    }
+
+    if (lhs.isBigInt() || rhs.isBigInt()) {
+        return BigInt::bitXor(cx, lhs, rhs, out);
+    }
+
+    out.setInt32(lhs.toInt32() ^ rhs.toInt32());
+    return true;
+}
+
+static MOZ_ALWAYS_INLINE bool
+BitOr(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, MutableHandleValue out)
+{
+    if (!ToInt32OrBigInt(cx, lhs) || !ToInt32OrBigInt(cx, rhs)) {
+        return false;
+    }
+
+    if (lhs.isBigInt() || rhs.isBigInt()) {
+        return BigInt::bitOr(cx, lhs, rhs, out);
+    }
+
+    out.setInt32(lhs.toInt32() | rhs.toInt32());
+    return true;
+}
+
+static MOZ_ALWAYS_INLINE bool
+BitAnd(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, MutableHandleValue out)
+{
+    if (!ToInt32OrBigInt(cx, lhs) || !ToInt32OrBigInt(cx, rhs)) {
+        return false;
+    }
+
+    if (lhs.isBigInt() || rhs.isBigInt()) {
+        return BigInt::bitAnd(cx, lhs, rhs, out);
+    }
+
+    out.setInt32(lhs.toInt32() & rhs.toInt32());
+    return true;
+}
+
+static MOZ_ALWAYS_INLINE bool
+BitLsh(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, MutableHandleValue out)
+{
+    if (!ToInt32OrBigInt(cx, lhs) || !ToInt32OrBigInt(cx, rhs)) {
+        return false;
+    }
+
+    if (lhs.isBigInt() || rhs.isBigInt()) {
+        return BigInt::lsh(cx, lhs, rhs, out);
+    }
+
+    out.setInt32(lhs.toInt32() << (rhs.toInt32() & 31));
+    return true;
+}
+
+static MOZ_ALWAYS_INLINE bool
+BitRsh(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, MutableHandleValue out)
+{
+    if (!ToInt32OrBigInt(cx, lhs) || !ToInt32OrBigInt(cx, rhs)) {
+        return false;
+    }
+
+    if (lhs.isBigInt() || rhs.isBigInt()) {
+        return BigInt::rsh(cx, lhs, rhs, out);
+    }
+
+    out.setInt32(lhs.toInt32() >> (rhs.toInt32() & 31));
+    return true;
+}
+
+static MOZ_ALWAYS_INLINE bool
+UrshOperation(JSContext* cx, MutableHandleValue lhs, MutableHandleValue rhs, MutableHandleValue out)
+{
+    if (!ToNumeric(cx, lhs) || !ToNumeric(cx, rhs)) {
+        return false;
+    }
+
+    if (lhs.isBigInt() || rhs.isBigInt()) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                                  JSMSG_BIGINT_TO_NUMBER);
+        return false;
+    }
+
     uint32_t left;
-    int32_t  right;
-    if (!ToUint32(cx, lhs, &left) || !ToInt32(cx, rhs, &right))
+    int32_t right;
+    if (!ToUint32(cx, lhs, &left) || !ToInt32(cx, rhs, &right)) {
         return false;
+    }
     left >>= right & 31;
     out.setNumber(uint32_t(left));
     return true;

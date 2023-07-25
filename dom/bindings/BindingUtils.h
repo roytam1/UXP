@@ -1037,11 +1037,17 @@ MaybeWrapValue(JSContext* cx, JS::MutableHandle<JS::Value> rval)
     return MaybeWrapStringValue(cx, rval);
   }
 
-  if (!rval.isObject()) {
-    return true;
+  if (rval.isObject()) {
+    return MaybeWrapObjectValue(cx, rval);
   }
-
-  return MaybeWrapObjectValue(cx, rval);
+  // This could be optimized by checking the zone first, similar to
+  // the way strings are handled. At present, this is used primarily
+  // for structured cloning, so avoiding the overhead of JS_WrapValue
+  // calls is less important than for other types.
+  if (rval.isBigInt()) {
+    return JS_WrapValue(cx, rval);
+  }
+  return true;
 }
 
 namespace binding_detail {

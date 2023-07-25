@@ -21,6 +21,7 @@
 #include "js/SliceBudget.h"
 #include "vm/ArgumentsObject.h"
 #include "vm/ArrayObject.h"
+#include "vm/BigIntType.h"
 #include "vm/Debugger.h"
 #include "vm/EnvironmentObject.h"
 #include "vm/Scope.h"
@@ -875,6 +876,7 @@ js::GCMarker::markAndTraceChildren(T* thing)
 namespace js {
 template <> void GCMarker::traverse(BaseShape* thing) { markAndTraceChildren(thing); }
 template <> void GCMarker::traverse(JS::Symbol* thing) { markAndTraceChildren(thing); }
+template <> void GCMarker::traverse(JS::BigInt* thing) { markAndTraceChildren(thing); }
 template <> void GCMarker::traverse(RegExpShared* thing) { markAndTraceChildren(thing); }
 } // namespace js
 
@@ -1458,6 +1460,12 @@ js::GCMarker::lazilyMarkChildren(ObjectGroup* group)
         traverseEdge(group, static_cast<JSObject*>(fun));
 }
 
+void
+JS::BigInt::traceChildren(JSTracer* trc)
+{
+    return;
+}
+
 struct TraverseObjectFunctor
 {
     template <typename T>
@@ -1704,6 +1712,8 @@ GCMarker::processMarkStackTop(SliceBudget& budget)
             }
         } else if (v.isSymbol()) {
             traverseEdge(obj, v.toSymbol());
+        } else if (v.isBigInt()) {
+            traverseEdge(obj, v.toBigInt());
         } else if (v.isPrivateGCThing()) {
             traverseEdge(obj, v.toGCCellPtr());
         }

@@ -8709,7 +8709,7 @@ js::CompileAsmJS(ExclusiveContext* cx, AsmJSParser& parser, ParseNode* stmtList,
     // generating bytecode for asm.js functions, allowing this asm.js module
     // function to be the finished result.
     MOZ_ASSERT(funbox->function()->isInterpreted());
-    funbox->object = moduleFun;
+    funbox->clobberFunction(moduleFun);
 
     // Success! Write to the console with a "warning" message.
     *validated = true;

@@ -442,7 +442,7 @@ class DataViewObject : public NativeObject
 
     template <typename NativeType>
     static uint8_t*
-    getDataPointer(JSContext* cx, Handle<DataViewObject*> obj, double offset);
+    getDataPointer(JSContext* cx, Handle<DataViewObject*> obj, uint64_t offset);
 
     template<Value ValueGetter(DataViewObject* view)>
     static bool
@@ -521,6 +521,12 @@ class DataViewObject : public NativeObject
     static bool getUint32Impl(JSContext* cx, const CallArgs& args);
     static bool fun_getUint32(JSContext* cx, unsigned argc, Value* vp);
 
+    static bool getBigInt64Impl(JSContext* cx, const CallArgs& args);
+    static bool fun_getBigInt64(JSContext* cx, unsigned argc, Value* vp);
+
+    static bool getBigUint64Impl(JSContext* cx, const CallArgs& args);
+    static bool fun_getBigUint64(JSContext* cx, unsigned argc, Value* vp);
+
     static bool getFloat32Impl(JSContext* cx, const CallArgs& args);
     static bool fun_getFloat32(JSContext* cx, unsigned argc, Value* vp);
 
@@ -545,6 +551,12 @@ class DataViewObject : public NativeObject
     static bool setUint32Impl(JSContext* cx, const CallArgs& args);
     static bool fun_setUint32(JSContext* cx, unsigned argc, Value* vp);
 
+    static bool setBigInt64Impl(JSContext* cx, const CallArgs& args);
+    static bool fun_setBigInt64(JSContext* cx, unsigned argc, Value* vp);
+
+    static bool setBigUint64Impl(JSContext* cx, const CallArgs& args);
+    static bool fun_setBigUint64(JSContext* cx, unsigned argc, Value* vp);
+
     static bool setFloat32Impl(JSContext* cx, const CallArgs& args);
     static bool fun_setFloat32(JSContext* cx, unsigned argc, Value* vp);
 
@@ -564,6 +576,10 @@ class DataViewObject : public NativeObject
 
   private:
     static const JSFunctionSpec jsfuncs[];
+
+    static const JSFunctionSpec bigIntMethods[];
+    static bool finishInit(JSContext* cx, JS::HandleObject ctor,
+                           JS::HandleObject proto);
 };
 
 static inline int32_t

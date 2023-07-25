@@ -61,7 +61,7 @@ HashableValue::setValue(JSContext* cx, HandleValue v)
     }
 
     MOZ_ASSERT(value.isUndefined() || value.isNull() || value.isBoolean() || value.isNumber() ||
-               value.isString() || value.isSymbol() || value.isObject());
+               value.isString() || value.isSymbol() || value.isObject() || value.isBigInt());
     return true;
 }
 
@@ -81,6 +81,8 @@ HashValue(const Value& v, const mozilla::HashCodeScrambler& hcs)
         return v.toString()->asAtom().hash();
     if (v.isSymbol())
         return v.toSymbol()->hash();
+    if (v.isBigInt())
+        return MaybeForwarded(v.toBigInt())->hash();
     if (v.isObject())
         return hcs.scramble(v.asRawBits());
 
@@ -99,6 +101,12 @@ HashableValue::operator==(const HashableValue& other) const
 {
     // Two HashableValues are equal if they have equal bits.
     bool b = (value.asRawBits() == other.value.asRawBits());
+
+    // BigInt values are considered equal if they represent the same
+    // mathematical value.
+    if (!b && (value.isBigInt() && other.value.isBigInt())) {
+        b = BigInt::equal(value.toBigInt(), other.value.toBigInt());
+    }
 
 #ifdef DEBUG
     bool same;
@@ -378,8 +386,9 @@ MarkKey(Range& r, const HashableValue& key, JSTracer* trc)
     HashableValue newKey = key.mark(trc);
 
     if (newKey.get() != key.get()) {
-        // The hash function only uses the bits of the Value, so it is safe to
-        // rekey even when the object or string has been modified by the GC.
+        // The hash function must take account of the fact that the thing being
+        // hashed may have been moved by GC. This is only an issue for BigInt as for
+        // other types the hash function only uses the bits of the Value.
         r.rekeyFront(newKey);
     }
 }

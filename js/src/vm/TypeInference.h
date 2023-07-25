@@ -59,17 +59,18 @@ enum : uint32_t {
     TYPE_FLAG_DOUBLE    =  0x10,
     TYPE_FLAG_STRING    =  0x20,
     TYPE_FLAG_SYMBOL    =  0x40,
-    TYPE_FLAG_LAZYARGS  =  0x80,
-    TYPE_FLAG_ANYOBJECT = 0x100,
+    TYPE_FLAG_BIGINT    =  0x80,
+    TYPE_FLAG_LAZYARGS  = 0x100,
+    TYPE_FLAG_ANYOBJECT = 0x200,
 
     /* Mask containing all primitives */
     TYPE_FLAG_PRIMITIVE = TYPE_FLAG_UNDEFINED | TYPE_FLAG_NULL | TYPE_FLAG_BOOLEAN |
                           TYPE_FLAG_INT32 | TYPE_FLAG_DOUBLE | TYPE_FLAG_STRING |
-                          TYPE_FLAG_SYMBOL,
+                          TYPE_FLAG_SYMBOL |TYPE_FLAG_BIGINT,
 
     /* Mask/shift for the number of objects in objectSet */
-    TYPE_FLAG_OBJECT_COUNT_MASK     = 0x3e00,
-    TYPE_FLAG_OBJECT_COUNT_SHIFT    = 9,
+    TYPE_FLAG_OBJECT_COUNT_MASK     = 0x3c00,
+    TYPE_FLAG_OBJECT_COUNT_SHIFT    = 10,
     TYPE_FLAG_OBJECT_COUNT_LIMIT    = 7,
     TYPE_FLAG_DOMOBJECT_COUNT_LIMIT =
         TYPE_FLAG_OBJECT_COUNT_MASK >> TYPE_FLAG_OBJECT_COUNT_SHIFT,
@@ -78,7 +79,7 @@ enum : uint32_t {
     TYPE_FLAG_UNKNOWN             = 0x00004000,
 
     /* Mask of normal type flags on a type set. */
-    TYPE_FLAG_BASE_MASK           = 0x000041ff,
+    TYPE_FLAG_BASE_MASK           = TYPE_FLAG_PRIMITIVE | TYPE_FLAG_LAZYARGS | TYPE_FLAG_ANYOBJECT | TYPE_FLAG_UNKNOWN,
 
     /* Additional flags for HeapTypeSet sets. */
 
@@ -108,6 +109,10 @@ enum : uint32_t {
     TYPE_FLAG_DEFINITE_SHIFT      = 18
 };
 typedef uint32_t TypeFlags;
+
+static_assert(TYPE_FLAG_PRIMITIVE < TYPE_FLAG_ANYOBJECT &&
+              TYPE_FLAG_LAZYARGS < TYPE_FLAG_ANYOBJECT,
+              "TYPE_FLAG_ANYOBJECT should be greater than primitive type flags");
 
 /* Flags and other state stored in ObjectGroup::Flags */
 enum : uint32_t {
@@ -366,6 +371,7 @@ class TypeSet
     static inline Type DoubleType()    { return Type(JSVAL_TYPE_DOUBLE); }
     static inline Type StringType()    { return Type(JSVAL_TYPE_STRING); }
     static inline Type SymbolType()    { return Type(JSVAL_TYPE_SYMBOL); }
+    static inline Type BigIntType()    { return Type(JSVAL_TYPE_BIGINT); }
     static inline Type MagicArgType()  { return Type(JSVAL_TYPE_MAGIC); }
     static inline Type AnyObjectType() { return Type(JSVAL_TYPE_OBJECT); }
     static inline Type UnknownType()   { return Type(JSVAL_TYPE_UNKNOWN); }
