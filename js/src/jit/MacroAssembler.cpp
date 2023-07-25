@@ -345,6 +345,11 @@ MacroAssembler::loadFromTypedArray(Scalar::Type arrayType, const T& src, AnyRegi
             branchTest32(Assembler::Signed, dest.gpr(), dest.gpr(), fail);
         }
         break;
+      case Scalar::BigInt64:
+      case Scalar::BigUint64:
+        // FIXME: https://bugzil.la/1536702
+        jump(fail);
+        break;
       case Scalar::Float32:
         loadFloat32(src, dest.fpu());
         canonicalizeFloat(dest.fpu());
@@ -447,17 +452,25 @@ MacroAssembler::loadFromTypedArray(Scalar::Type arrayType, const T& src, const V
             tagValue(JSVAL_TYPE_INT32, temp, dest);
         }
         break;
-      case Scalar::Float32:
+      case Scalar::Float32: {
         loadFromTypedArray(arrayType, src, AnyRegister(ScratchFloat32Reg), dest.scratchReg(),
                            nullptr);
         convertFloat32ToDouble(ScratchFloat32Reg, ScratchDoubleReg);
         boxDouble(ScratchDoubleReg, dest);
         break;
-      case Scalar::Float64:
+      }
+      case Scalar::Float64: {
         loadFromTypedArray(arrayType, src, AnyRegister(ScratchDoubleReg), dest.scratchReg(),
                            nullptr);
         boxDouble(ScratchDoubleReg, dest);
         break;
+      }
+      // FIXME: https://bugzil.la/1536702
+      case Scalar::BigInt64:
+      case Scalar::BigUint64: {
+        jump(fail);
+        break;
+      }
       default:
         MOZ_CRASH("Invalid typed array type");
     }

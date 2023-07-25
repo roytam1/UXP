@@ -44,6 +44,7 @@
 #include "jit/InlinableNatives.h"
 #include "js/CharacterEncoding.h"
 #include "js/Date.h"
+#include "vm/BigIntType.h"
 #include "vm/Compression.h"
 #include "vm/GeneratorObject.h"
 #include "vm/Interpreter.h"
@@ -1182,6 +1183,18 @@ intrinsic_IsFloat32TypedArray(JSContext* cx, unsigned argc, Value* vp)
 }
 
 static bool
+intrinsic_IsBigInt64TypedArray(JSContext* cx, unsigned argc, Value* vp)
+{
+    return intrinsic_IsSpecificTypedArray(cx, argc, vp, Scalar::BigInt64);
+}
+
+static bool
+intrinsic_IsBigUint64TypedArray(JSContext* cx, unsigned argc, Value* vp)
+{
+    return intrinsic_IsSpecificTypedArray(cx, argc, vp, Scalar::BigUint64);
+}
+
+static bool
 intrinsic_TypedArrayBuffer(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
@@ -1521,6 +1534,14 @@ struct DisjointElements
             CopyValues(dest, src.cast<double*>(), count);
             return;
 
+          case Scalar::BigInt64:
+            CopyValues(dest, src.cast<int64_t*>(), count);
+            return;
+
+          case Scalar::BigUint64:
+            CopyValues(dest, src.cast<uint64_t*>(), count);
+            return;
+
           case Scalar::Uint8Clamped:
             CopyValues(dest, src.cast<uint8_clamped*>(), count);
             return;
@@ -1576,6 +1597,16 @@ CopyToDisjointArray(TypedArrayObject* target, uint32_t targetOffset, SharedMem<v
 
       case Scalar::Float64: {
         DisjointElements::copy(dest.cast<double*>(), src, srcType, count);
+        break;
+      }
+
+      case Scalar::BigInt64: {
+        DisjointElements::copy(dest.cast<int64_t*>(), src, srcType, count);
+        break;
+      }
+
+      case Scalar::BigUint64: {
+        DisjointElements::copy(dest.cast<uint64_t*>(), src, srcType, count);
         break;
       }
 
@@ -2164,6 +2195,18 @@ intrinsic_PromiseResolve(JSContext* cx, unsigned argc, Value* vp)
     return true;
 }
 
+static bool intrinsic_ToBigInt(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 1);
+    BigInt* res = ToBigInt(cx, args[0]);
+    if (!res) {
+        return false;
+    }
+    args.rval().setBigInt(res);
+    return true;
+}
+
 // The self-hosting global isn't initialized with the normal set of builtins.
 // Instead, individual C++-implemented functions that're required by
 // self-hosted code are defined as global functions. Accessing these
@@ -2399,6 +2442,8 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_FN("IsUint32TypedArray",       intrinsic_IsUint32TypedArray,     1,0),
     JS_FN("IsInt32TypedArray",        intrinsic_IsInt32TypedArray,      1,0),
     JS_FN("IsFloat32TypedArray",      intrinsic_IsFloat32TypedArray,    1,0),
+    JS_FN("IsBigInt64TypedArray",     intrinsic_IsBigInt64TypedArray,   1,0),
+    JS_FN("IsBigUint64TypedArray",    intrinsic_IsBigUint64TypedArray,  1,0),
     JS_INLINABLE_FN("IsTypedArray",
                     intrinsic_IsInstanceOfBuiltin<TypedArrayObject>,    1,0,
                     IntrinsicIsTypedArray),
@@ -2590,6 +2635,8 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_FN("IsPromiseObject", intrinsic_IsInstanceOfBuiltin<PromiseObject>, 1, 0),
     JS_FN("CallPromiseMethodIfWrapped", CallNonGenericSelfhostedMethod<Is<PromiseObject>>, 2, 0),
     JS_FN("PromiseResolve", intrinsic_PromiseResolve, 2, 0),
+
+    JS_FN("ToBigInt", intrinsic_ToBigInt, 1, 0),
 
     JS_FS_END
 };

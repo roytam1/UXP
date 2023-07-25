@@ -82,6 +82,8 @@ class GlobalObject : public NativeObject
         FROM_BUFFER_INT16,
         FROM_BUFFER_UINT32,
         FROM_BUFFER_INT32,
+        FROM_BUFFER_UINT64,
+        FROM_BUFFER_INT64,
         FROM_BUFFER_FLOAT32,
         FROM_BUFFER_FLOAT64,
         FROM_BUFFER_UINT8CLAMPED,
@@ -959,6 +961,20 @@ GlobalObject::setCreateArrayFromBuffer<int32_t>(Handle<JSFunction*> fun)
 
 template<>
 inline void
+GlobalObject::setCreateArrayFromBuffer<uint64_t>(Handle<JSFunction*> fun)
+{
+    setCreateArrayFromBufferHelper(FROM_BUFFER_UINT64, fun);
+}
+
+template<>
+inline void
+GlobalObject::setCreateArrayFromBuffer<int64_t>(Handle<JSFunction*> fun)
+{
+    setCreateArrayFromBufferHelper(FROM_BUFFER_INT64, fun);
+}
+
+template<>
+inline void
 GlobalObject::setCreateArrayFromBuffer<float>(Handle<JSFunction*> fun)
 {
     setCreateArrayFromBufferHelper(FROM_BUFFER_FLOAT32, fun);
@@ -1018,6 +1034,20 @@ inline Value
 GlobalObject::createArrayFromBuffer<int32_t>() const
 {
     return createArrayFromBufferHelper(FROM_BUFFER_INT32);
+}
+
+template<>
+inline Value
+GlobalObject::createArrayFromBuffer<uint64_t>() const
+{
+    return createArrayFromBufferHelper(FROM_BUFFER_UINT64);
+}
+
+template<>
+inline Value
+GlobalObject::createArrayFromBuffer<int64_t>() const
+{
+    return createArrayFromBufferHelper(FROM_BUFFER_INT64);
 }
 
 template<>

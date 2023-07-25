@@ -879,7 +879,7 @@ function SetFromNonTypedArray(target, array, targetOffset, targetLength, targetB
     // Steps 12-15, 21, 23-24.
     while (targetOffset < limitOffset) {
         // Steps 24a-c.
-        var kNumber = ToNumber(src[k]);
+        var kNumber = ToNumeric(src[k]);
 
         // Step 24d.  This explicit check will be unnecessary when we implement
         // throw-on-getting/setting-element-in-detached-buffer semantics.
@@ -1096,6 +1096,30 @@ function TypedArrayCompare(x, y) {
 
     // Steps 5, 10.
     return Number_isNaN(y) ? -1 : 0;
+}
+
+// https://tc39.github.io/proposal-bigint/#sec-%typedarray%.prototype.sort
+// TypedArray SortCompare specialization for BigInt values.
+function TypedArrayCompareBigInt(x, y) {
+    // Step 1.
+    // eslint-disable-next-line valid-typeof
+    assert(typeof x === "bigint" && typeof y === "bigint",
+           "x and y are not BigInts.");
+
+    // Step 2 (Implemented in TypedArraySort).
+
+    // Step 6.
+    if (x < y)
+        return -1;
+
+    // Step 7.
+    if (x > y)
+        return 1;
+
+    // Steps 3-5, 8-9 (Not applicable when sorting BigInt values).
+
+    // Step 10.
+    return 0;
 }
 
 // TypedArray SortCompare specialization for integer values.

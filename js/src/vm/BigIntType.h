@@ -358,6 +358,8 @@ namespace js {
 extern JSAtom* BigIntToAtom(js::ExclusiveContext* cx, JS::HandleBigInt bi);
 
 extern JS::BigInt* NumberToBigInt(js::ExclusiveContext* cx, double d);
+extern JS::Result<int64_t> ToBigInt64(JSContext* cx, JS::Handle<JS::Value> v);
+extern JS::Result<uint64_t> ToBigUint64(JSContext* cx, JS::Handle<JS::Value> v);
 
 // Parse a BigInt from a string, using the method specified for StringToBigInt.
 // Used by the BigInt constructor among other places.

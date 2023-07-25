@@ -842,7 +842,9 @@ EnumerableOwnProperties(JSContext* cx, const JS::CallArgs& args, EnumerableOwnPr
         if (obj->is<NativeObject>()) {
             HandleNativeObject nobj = obj.as<NativeObject>();
             if (JSID_IS_INT(id) && nobj->containsDenseElement(JSID_TO_INT(id))) {
-                value = nobj->getDenseOrTypedArrayElement(JSID_TO_INT(id));
+                if(!nobj->getDenseOrTypedArrayElement<CanGC>(cx, JSID_TO_INT(id), &value)) {
+                    return false;
+                }
             } else {
                 shape = nobj->lookup(cx, id);
                 if (!shape || !(shape->attributes() & JSPROP_ENUMERATE))
