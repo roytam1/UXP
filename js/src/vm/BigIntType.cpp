@@ -85,6 +85,7 @@
 #include "mozilla/Range.h"
 #include "mozilla/RangedPtr.h"
 #include "mozilla/WrappingOperations.h"
+#include "mozilla/TextUtils.h"
 
 #include <functional>
 #include <limits>
@@ -1186,7 +1187,7 @@ JSLinearString* BigInt::toStringBasePowerOfTwo(ExclusiveContext* cx, HandleBigIn
   return NewStringCopyN<CanGC>(cx, resultChars.get(), charsRequired);
 }
 
-static constexpr BigInt::Digit MaxPowerInDigit(uint8_t radix) {
+static MOZ_CONSTEXPR_FUNC BigInt::Digit MaxPowerInDigit(uint8_t radix) {
   BigInt::Digit result = 1;
   while (result < BigInt::Digit(-1) / radix) {
     result *= radix;
@@ -1194,7 +1195,7 @@ static constexpr BigInt::Digit MaxPowerInDigit(uint8_t radix) {
   return result;
 }
 
-static constexpr uint8_t MaxExponentInDigit(uint8_t radix) {
+static MOZ_CONSTEXPR_FUNC uint8_t MaxExponentInDigit(uint8_t radix) {
   uint8_t exp = 0;
   BigInt::Digit result = 1;
   while (result < BigInt::Digit(-1) / radix) {
@@ -1211,11 +1212,11 @@ struct RadixInfo {
   constexpr RadixInfo(BigInt::Digit maxPower, uint8_t maxExponent)
       : maxPowerInDigit(maxPower), maxExponentInDigit(maxExponent) {}
 
-  explicit constexpr RadixInfo(uint8_t radix)
+  explicit MOZ_CONSTEXPR_FUNC RadixInfo(uint8_t radix)
       : RadixInfo(MaxPowerInDigit(radix), MaxExponentInDigit(radix)) {}
 };
 
-static constexpr const RadixInfo toStringInfo[37] = {
+static MOZ_CONSTEXPR_FUNC const RadixInfo toStringInfo[37] = {
     {0, 0},        {0, 0},        RadixInfo(2),  RadixInfo(3),  RadixInfo(4),
     RadixInfo(5),  RadixInfo(6),  RadixInfo(7),  RadixInfo(8),  RadixInfo(9),
     RadixInfo(10), RadixInfo(11), RadixInfo(12), RadixInfo(13), RadixInfo(14),
