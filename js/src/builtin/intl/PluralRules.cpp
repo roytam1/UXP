@@ -292,8 +292,6 @@ js::intl_SelectPluralRule(JSContext* cx, unsigned argc, Value* vp)
     if (!type)
         return false;
 
-    double x = args[1].toNumber();
-
     // We need a NumberFormat in order to format the number
     // using the number formatting options (minimum/maximum*Digits)
     // before we push the result to PluralRules
@@ -302,7 +300,7 @@ js::intl_SelectPluralRule(JSContext* cx, unsigned argc, Value* vp)
     // API: http://bugs.icu-project.org/trac/ticket/12763
     //
     RootedValue fmtNumValue(cx);
-    if (!intl_FormatNumber(cx, nf, x, &fmtNumValue))
+    if (!FormatNumeric(cx, nf, args[1], &fmtNumValue))
         return false;
     RootedString fmtNumValueString(cx, fmtNumValue.toString());
     AutoStableStringChars stableChars(cx);

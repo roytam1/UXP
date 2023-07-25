@@ -1503,8 +1503,7 @@ js::ToInt8Slow(JSContext *cx, const HandleValue v, int8_t *out)
 bool
 js::ToNumericSlow(ExclusiveContext* cx, MutableHandleValue vp)
 {
-    MOZ_ASSERT(!vp.isNumber());
-    MOZ_ASSERT(!vp.isBigInt());
+    MOZ_ASSERT(!vp.isNumeric());
 
     // Step 1.
     if (!vp.isPrimitive()) {
