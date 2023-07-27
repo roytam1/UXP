@@ -751,6 +751,7 @@ void AssertValidObjectPtr(JSContext* cx, JSObject* obj);
 void AssertValidObjectOrNullPtr(JSContext* cx, JSObject* obj);
 void AssertValidStringPtr(JSContext* cx, JSString* str);
 void AssertValidSymbolPtr(JSContext* cx, JS::Symbol* sym);
+void AssertValidBigIntPtr(JSContext* cx, JS::BigInt* bi);
 void AssertValidValue(JSContext* cx, Value* v);
 
 void MarkValueFromIon(JSRuntime* rt, Value* vp);

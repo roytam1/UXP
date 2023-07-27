@@ -17,6 +17,7 @@
 #include "jit/BaselineJIT.h"
 #include "jit/Ion.h"
 #include "vm/ArrayObject.h"
+#include "vm/BigIntType.h"
 #include "vm/Runtime.h"
 #include "vm/Shape.h"
 #include "vm/String.h"
@@ -545,6 +546,13 @@ StatsCellCallback(JSRuntime* rt, void* data, void* thing, JS::TraceKind traceKin
       case JS::TraceKind::Symbol:
         zStats->symbolsGCHeap += thingSize;
         break;
+
+      case JS::TraceKind::BigInt: {
+        JS::BigInt* bi = static_cast<BigInt*>(thing);
+        zStats->bigIntsGCHeap += thingSize;
+        zStats->bigIntsMallocHeap += bi->sizeOfExcludingThis(rtStats->mallocSizeOf_);
+        break;
+      }
 
       case JS::TraceKind::BaseShape: {
         JS::ShapeInfo info;        // This zeroes all the sizes.

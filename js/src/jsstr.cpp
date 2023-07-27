@@ -3734,6 +3734,11 @@ js::ToStringSlow(ExclusiveContext* cx, typename MaybeRooted<Value, allowGC>::Han
                                       JSMSG_SYMBOL_TO_STRING);
         }
         return nullptr;
+    } else if (v.isBigInt()) {
+        if (!allowGC)
+            return nullptr;
+        RootedBigInt i(cx, v.toBigInt());
+        str = BigInt::toString(cx, i, 10);
     } else {
         MOZ_ASSERT(v.isUndefined());
         str = cx->names().undefined;

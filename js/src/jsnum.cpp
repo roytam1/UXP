@@ -524,15 +524,22 @@ Number(JSContext* cx, unsigned argc, Value* vp)
     bool isConstructing = args.isConstructing();
 
     if (args.length() > 0) {
-        if (!ToNumber(cx, args[0]))
+        // BigInt proposal section 6.2, steps 2a-c.
+        if (!ToNumeric(cx, args[0]))
             return false;
-        args.rval().set(args[0]);
-    } else {
-        args.rval().setInt32(0);
+        if (args[0].isBigInt())
+            args[0].setNumber(BigInt::numberValue(args[0].toBigInt()));
+        MOZ_ASSERT(args[0].isNumber());
     }
 
-    if (!isConstructing)
+    if (!isConstructing) {
+        if (args.length() > 0) {
+            args.rval().set(args[0]);
+        } else {
+            args.rval().setInt32(0);
+        }
         return true;
+    }
 
     RootedObject newTarget(cx, &args.newTarget().toObject());
     RootedObject proto(cx);
@@ -1452,9 +1459,19 @@ js::ToNumberSlow(ExclusiveContext* cx, HandleValue v_, double* out)
         return false;
     }
 
-    MOZ_ASSERT(v.isUndefined());
-    *out = GenericNaN();
-    return true;
+    if (v.isUndefined()) {
+        *out = GenericNaN();
+        return true;
+    }
+
+    MOZ_ASSERT(v.isSymbol() || v.isBigInt());
+    if (cx->isJSContext()) {
+        unsigned errnum = JSMSG_SYMBOL_TO_NUMBER;
+        if (v.isBigInt())
+            errnum = JSMSG_BIGINT_TO_NUMBER;
+        JS_ReportErrorNumberASCII(cx->asJSContext(), GetErrorMessage, nullptr, errnum);
+    }
+    return false;
 }
 
 JS_PUBLIC_API(bool)
@@ -1480,6 +1497,30 @@ js::ToInt8Slow(JSContext *cx, const HandleValue v, int8_t *out)
     }
     *out = ToInt8(d);
     return true;
+}
+
+// BigInt proposal section 3.1.6
+bool
+js::ToNumericSlow(ExclusiveContext* cx, MutableHandleValue vp)
+{
+    MOZ_ASSERT(!vp.isNumber());
+    MOZ_ASSERT(!vp.isBigInt());
+
+    // Step 1.
+    if (!vp.isPrimitive()) {
+        if (!cx->isJSContext())
+            return false;
+        if (!ToPrimitive(cx->asJSContext(), JSTYPE_NUMBER, vp))
+            return false;
+    }
+
+    // Step 2.
+    if (vp.isBigInt()) {
+        return true;
+    }
+
+    // Step 3.
+    return ToNumber(cx->asJSContext(), vp);
 }
 
 /*
@@ -1570,6 +1611,27 @@ js::ToInt32Slow(JSContext* cx, const HandleValue v, int32_t* out)
             return false;
     }
     *out = ToInt32(d);
+    return true;
+}
+
+bool
+js::ToInt32OrBigIntSlow(JSContext* cx, MutableHandleValue vp)
+{
+    MOZ_ASSERT(!vp.isInt32());
+    if (vp.isDouble()) {
+        vp.setInt32(ToInt32(vp.toDouble()));
+        return true;
+    }
+
+    if (!ToNumeric(cx, vp)) {
+        return false;
+    }
+
+    if (vp.isBigInt()) {
+        return true;
+    }
+
+    vp.setInt32(ToInt32(vp.toNumber()));
     return true;
 }
 
@@ -1703,6 +1765,35 @@ js::ToIntegerIndex(JSContext* cx, JS::HandleValue v, uint64_t* index)
     }
 
     *index = i;
+    return true;
+}
+
+// ES2017 draft 7.1.17 ToIndex
+bool
+js::ToIndex(JSContext* cx, JS::HandleValue v, uint64_t* index)
+{
+    // Step 1.
+    if (v.isUndefined()) {
+        *index = 0;
+        return true;
+    }
+
+    // Step 2.a.
+    double integerIndex;
+    if (!ToInteger(cx, v, &integerIndex))
+        return false;
+
+    // Inlined version of ToLength.
+    // 1. Already an integer.
+    // 2. Step eliminates < 0, +0 == -0 with SameValueZero.
+    // 3/4. Limit to <= 2^53-1, so everything above should fail.
+    if (integerIndex < 0 || integerIndex >= DOUBLE_INTEGRAL_PRECISION_LIMIT) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_BAD_INDEX);
+        return false;
+    }
+
+    // Step 3.
+    *index = uint64_t(integerIndex);
     return true;
 }
 

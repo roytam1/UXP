@@ -35,20 +35,21 @@ class SharedContext;
 class TokenStream;
 
 class CGConstList {
-    Vector<Value> list;
+    Rooted<ValueVector> vector;
   public:
-    explicit CGConstList(ExclusiveContext* cx) : list(cx) {}
+    explicit CGConstList(ExclusiveContext* cx)
+      : vector(cx, ValueVector(cx))
+    { }
     MOZ_MUST_USE bool append(const Value& v) {
-        MOZ_ASSERT_IF(v.isString(), v.toString()->isAtom());
-        return list.append(v);
+        return vector.append(v);
     }
-    size_t length() const { return list.length(); }
+    size_t length() const { return vector.length(); }
     void finish(ConstArray* array);
 };
 
 struct CGObjectList {
     uint32_t            length;     /* number of emitted so far objects */
-    ObjectBox*          lastbox;   /* last emitted object */
+    ObjectBox*          lastbox;    /* last emitted object */
 
     CGObjectList() : length(0), lastbox(nullptr) {}
 
@@ -198,7 +199,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
         return innermostEmitterScope_;
     }
 
-    CGConstList      constList;      /* constants to be included with the script */
+    CGConstList      constList;      /* double and bigint values used by script */
     CGObjectList     objectList;     /* list of emitted objects */
     CGScopeList      scopeList;      /* list of emitted scopes */
     CGTryNoteList    tryNoteList;    /* list of emitted try notes */
@@ -477,6 +478,8 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitN(JSOp op, size_t extra, ptrdiff_t* offset = nullptr);
 
     MOZ_MUST_USE bool emitNumberOp(double dval);
+
+    MOZ_MUST_USE bool emitBigIntOp(BigInt* bigint);
 
     MOZ_MUST_USE bool emitThisLiteral(ThisLiteral* pn);
     MOZ_MUST_USE bool emitGetFunctionThis(ParseNode* pn);

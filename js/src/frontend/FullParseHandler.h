@@ -151,6 +151,18 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return new_<NumericLiteral>(value, decimalPoint, pos);
     }
 
+    // The Boxer object here is any object that can allocate BigIntBoxes.
+    // Specifically, a Boxer has a .newBigIntBox(T) method that accepts a
+    // BigInt* argument and returns a BigIntBox*.
+    template <class Boxer>
+    BigIntLiteralType newBigInt(BigInt* bi, const TokenPos& pos, Boxer& boxer) {
+        BigIntBox* box = boxer.newBigIntBox(bi);
+        if (!box) {
+            return null();
+        }
+        return new_<BigIntLiteral>(box, pos);
+    }
+
     BooleanLiteralType newBooleanLiteral(bool cond, const TokenPos& pos) {
         return new_<BooleanLiteral>(cond, pos);
     }

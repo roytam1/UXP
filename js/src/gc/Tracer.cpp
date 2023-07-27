@@ -20,6 +20,7 @@
 #include "gc/Marking.h"
 #include "gc/Zone.h"
 
+#include "vm/BigIntType.h"
 #include "vm/Shape.h"
 #include "vm/Symbol.h"
 
@@ -317,6 +318,10 @@ JS_GetTraceThingInfo(char* buf, size_t bufsize, JSTracer* trc, void* thing,
 
       case JS::TraceKind::Symbol:
         name = "symbol";
+        break;
+
+      case JS::TraceKind::BigInt:
+        name = "BigInt";
         break;
 
       case JS::TraceKind::BaseShape:

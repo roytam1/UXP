@@ -1495,6 +1495,21 @@ MacroAssemblerMIPS64Compat::unboxSymbol(Register src, Register dest)
     ma_dext(dest, src, Imm32(0), Imm32(JSVAL_TAG_SHIFT));
 }
 
+void MacroAssemblerMIPS64Compat::unboxBigInt(const ValueOperand& operand, Register dest)
+{
+  unboxNonDouble(operand, dest, JSVAL_TYPE_BIGINT);
+}
+
+void MacroAssemblerMIPS64Compat::unboxBigInt(Register src, Register dest)
+{
+  unboxNonDouble(src, dest, JSVAL_TYPE_BIGINT);
+}
+
+void MacroAssemblerMIPS64Compat::unboxBigInt(const Address& src, Register dest)
+{
+  unboxNonDouble(src, dest, JSVAL_TYPE_BIGINT);
+}
+
 void
 MacroAssemblerMIPS64Compat::unboxSymbol(const Address& src, Register dest)
 {

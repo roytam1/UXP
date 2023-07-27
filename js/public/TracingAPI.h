@@ -141,6 +141,7 @@ class JS_PUBLIC_API(CallbackTracer) : public JSTracer
     virtual void onObjectEdge(JSObject** objp) { onChild(JS::GCCellPtr(*objp)); }
     virtual void onStringEdge(JSString** strp) { onChild(JS::GCCellPtr(*strp)); }
     virtual void onSymbolEdge(JS::Symbol** symp) { onChild(JS::GCCellPtr(*symp)); }
+    virtual void onBigIntEdge(JS::BigInt** bip) { onChild(JS::GCCellPtr(*bip)); }
     virtual void onScriptEdge(JSScript** scriptp) { onChild(JS::GCCellPtr(*scriptp)); }
     virtual void onShapeEdge(js::Shape** shapep) {
         onChild(JS::GCCellPtr(*shapep, JS::TraceKind::Shape));
@@ -226,6 +227,7 @@ class JS_PUBLIC_API(CallbackTracer) : public JSTracer
     void dispatchToOnEdge(JSObject** objp) { onObjectEdge(objp); }
     void dispatchToOnEdge(JSString** strp) { onStringEdge(strp); }
     void dispatchToOnEdge(JS::Symbol** symp) { onSymbolEdge(symp); }
+    void dispatchToOnEdge(JS::BigInt** bip) { onBigIntEdge(bip); }
     void dispatchToOnEdge(JSScript** scriptp) { onScriptEdge(scriptp); }
     void dispatchToOnEdge(js::Shape** shapep) { onShapeEdge(shapep); }
     void dispatchToOnEdge(js::ObjectGroup** groupp) { onObjectGroupEdge(groupp); }

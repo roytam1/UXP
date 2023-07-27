@@ -14,5 +14,7 @@ assert_pretty('elements_hole', '$jsmagic(JS_ELEMENTS_HOLE)')
 assert_pretty('empty_string', '$jsval("")')
 assert_pretty('friendly_string', '$jsval("Hello!")')
 assert_pretty('symbol', '$jsval(Symbol.for("Hello!"))')
+if enable_bigint:
+    assert_pretty('bi', '$JS::BigIntValue()')
 assert_pretty('global', '$jsval((JSObject *)  [object global] delegate)')
 assert_pretty('onehundredthirtysevenonehundredtwentyeighths', '$jsval(1.0703125)')

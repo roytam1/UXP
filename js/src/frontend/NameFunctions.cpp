@@ -420,6 +420,9 @@ class NameResolver
             MOZ_ASSERT(cur->is<NumericLiteral>());
             break;
 
+          case PNK_BIGINT:
+            MOZ_ASSERT(cur->is<BigIntLiteral>());
+            break;
 
           case PNK_TYPEOFNAME:
           case PNK_SUPERBASE:

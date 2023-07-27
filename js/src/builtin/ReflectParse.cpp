@@ -21,6 +21,7 @@
 #include "frontend/TokenStream.h"
 #include "js/CharacterEncoding.h"
 #include "vm/RegExpObject.h"
+#include "vm/BigIntType.h"
 
 #include "jsobjinlines.h"
 
@@ -3434,6 +3435,7 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
       case PNK_STRING:
       case PNK_REGEXP:
       case PNK_NUMBER:
+      case PNK_BIGINT:
       case PNK_TRUE:
       case PNK_FALSE:
       case PNK_NULL:
@@ -3604,7 +3606,7 @@ ASTSerializer::literal(ParseNode* pn, MutableHandleValue dst)
 
       case PNK_REGEXP:
       {
-        RootedObject re1(cx, pn->as<RegExpLiteral>().objbox()->object);
+        RootedObject re1(cx, pn->as<RegExpLiteral>().objbox()->object());
         LOCAL_ASSERT(re1 && re1->is<RegExpObject>());
 
         RootedObject re2(cx, CloneRegExpObject(cx, re1));
@@ -3618,6 +3620,13 @@ ASTSerializer::literal(ParseNode* pn, MutableHandleValue dst)
       case PNK_NUMBER:
         val.setNumber(pn->as<NumericLiteral>().value());
         break;
+
+      case PNK_BIGINT:
+      {
+        BigInt* x = pn->as<BigIntLiteral>().box()->value();
+        val.setBigInt(x);
+        break;
+      }
 
       case PNK_NULL:
         val.setNull();

@@ -443,7 +443,7 @@ class FunctionBox : public ObjectBox, public SharedContext
 
     FunctionContextFlags funCxFlags;
 
-    FunctionBox(ExclusiveContext* cx, LifoAlloc& alloc, ObjectBox* traceListHead, JSFunction* fun,
+    FunctionBox(ExclusiveContext* cx, LifoAlloc& alloc, TraceListNode* traceListHead, JSFunction* fun,
                 uint32_t toStringStart, Directives directives, bool extraWarnings,
                 GeneratorKind generatorKind, FunctionAsyncKind asyncKind);
 
@@ -467,7 +467,8 @@ class FunctionBox : public ObjectBox, public SharedContext
     void initWithEnclosingParseContext(ParseContext* enclosing, FunctionSyntaxKind kind); 
 
     ObjectBox* toObjectBox() override { return this; }
-    JSFunction* function() const { return &object->as<JSFunction>(); }
+    JSFunction* function() const { return &object()->as<JSFunction>(); }
+    void clobberFunction(JSFunction* function) { gcThing = function; }
 
     Scope* compilationEnclosingScope() const override {
         // This method is used to distinguish the outermost SharedContext. If

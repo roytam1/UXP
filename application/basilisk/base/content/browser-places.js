@@ -733,7 +733,9 @@ function HistoryMenu(aPopupShowingEvent) {
                     "place:sort=4&maxResults=" + maxResults.toString().trim());
   } else {
     // maxResults == 0; do nothing. This suppresses the history entries.
-  } 
+  }
+}
+
 HistoryMenu.prototype = {
   _getClosedTabCount() {
     // SessionStore doesn't track the hidden window, so just return zero then.
