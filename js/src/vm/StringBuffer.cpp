@@ -170,6 +170,13 @@ js::ValueToStringBufferSlow(JSContext* cx, const Value& arg, StringBuffer& sb)
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_SYMBOL_TO_STRING);
         return false;
     }
+    if (v.isBigInt()) {
+        RootedBigInt i(cx, v.toBigInt());
+        JSLinearString* str = BigInt::toString(cx, i, 10);
+        if (!str)
+            return false;
+        return sb.append(str);
+    }
     MOZ_ASSERT(v.isUndefined());
     return sb.append(cx->names().undefined);
 }

@@ -83,7 +83,8 @@ js::XDRScriptConst(XDRState<mode>* xdr, MutableHandleValue vp)
         SCRIPT_NULL,
         SCRIPT_OBJECT,
         SCRIPT_VOID,
-        SCRIPT_HOLE
+        SCRIPT_HOLE,
+        SCRIPT_BIGINT
     };
 
     ConstTag tag;
@@ -104,6 +105,8 @@ js::XDRScriptConst(XDRState<mode>* xdr, MutableHandleValue vp)
             tag = SCRIPT_OBJECT;
         } else if (vp.isMagic(JS_ELEMENTS_HOLE)) {
             tag = SCRIPT_HOLE;
+        } else if (vp.isBigInt()) {
+            tag = SCRIPT_BIGINT;
         } else {
             MOZ_ASSERT(vp.isUndefined());
             tag = SCRIPT_VOID;
@@ -176,6 +179,20 @@ js::XDRScriptConst(XDRState<mode>* xdr, MutableHandleValue vp)
         if (mode == XDR_DECODE)
             vp.setMagic(JS_ELEMENTS_HOLE);
         break;
+      case SCRIPT_BIGINT: {
+        RootedBigInt bi(cx);
+        if (mode == XDR_ENCODE) {
+            bi = vp.toBigInt();
+        }
+
+        if(!XDRBigInt(xdr, &bi))
+            return false;
+
+        if (mode == XDR_DECODE) {
+            vp.setBigInt(bi);
+        }
+        break;
+      }
       default:
         // Fail in debug, but only soft-fail in release
         MOZ_ASSERT(false, "Bad XDR value kind");
@@ -3418,6 +3435,38 @@ js::detail::CopyScript(JSContext* cx, HandleScript src, HandleScript dst,
         }
     }
 
+    /* Constants */
+
+    AutoValueVector consts(cx);
+    if (nconsts != 0) {
+        GCPtrValue* vector = src->consts()->vector;
+        RootedValue val(cx);
+        RootedValue clone(cx);
+        for (unsigned i = 0; i < nconsts; i++) {
+            val = vector[i];
+            if (val.isDouble()) {
+                clone = val;
+            } else if (val.isBigInt()) {
+                if (cx->zone() == val.toBigInt()->zone()) {
+                    clone.setBigInt(val.toBigInt());
+                } else {
+                    RootedBigInt b(cx, val.toBigInt());
+                    BigInt* copy = BigInt::copy(cx, b);
+                    if (!copy) {
+                        return false;
+                    }
+                    clone.setBigInt(copy);
+                }
+            } else {
+                MOZ_ASSERT_UNREACHABLE("bad script consts() element");
+            }
+
+            if (!consts.append(clone)) {
+                return false;
+            }
+        }
+    }
+
     /* Objects */
 
     AutoObjectVector objects(cx);
@@ -3508,7 +3557,7 @@ js::detail::CopyScript(JSContext* cx, HandleScript src, HandleScript dst,
         GCPtrValue* vector = Rebase<GCPtrValue>(dst, src, src->consts()->vector);
         dst->consts()->vector = vector;
         for (unsigned i = 0; i < nconsts; ++i)
-            MOZ_ASSERT_IF(vector[i].isGCThing(), vector[i].toString()->isAtom());
+            vector[i].init(consts[i]);
     }
     if (nobjects != 0) {
         GCPtrObject* vector = Rebase<GCPtrObject>(dst, src, src->objects()->vector);

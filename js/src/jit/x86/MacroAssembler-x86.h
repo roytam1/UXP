@@ -294,6 +294,11 @@ class MacroAssemblerX86 : public MacroAssemblerX86Shared
         cmp32(tag, ImmTag(JSVAL_TAG_SYMBOL));
         return cond;
     }
+    Condition testBigInt(Condition cond, Register tag) {
+        MOZ_ASSERT(cond == Equal || cond == NotEqual);
+        cmp32(tag, ImmTag(JSVAL_TAG_BIGINT));
+        return cond;
+    }
     Condition testObject(Condition cond, Register tag) {
         MOZ_ASSERT(cond == Equal || cond == NotEqual);
         cmp32(tag, ImmTag(JSVAL_TAG_OBJECT));
@@ -410,6 +415,9 @@ class MacroAssemblerX86 : public MacroAssemblerX86Shared
     Condition testSymbol(Condition cond, const ValueOperand& value) {
         return testSymbol(cond, value.typeReg());
     }
+    Condition testBigInt(Condition cond, const ValueOperand& value) {
+        return testBigInt(cond, value.typeReg());
+    }
     Condition testObject(Condition cond, const ValueOperand& value) {
         return testObject(cond, value.typeReg());
     }
@@ -453,6 +461,11 @@ class MacroAssemblerX86 : public MacroAssemblerX86Shared
     Condition testSymbol(Condition cond, const BaseIndex& address) {
         MOZ_ASSERT(cond == Equal || cond == NotEqual);
         cmp32(tagOf(address), ImmTag(JSVAL_TAG_SYMBOL));
+        return cond;
+    }
+    Condition testBigInt(Condition cond, const BaseIndex& address) {
+        MOZ_ASSERT(cond == Equal || cond == NotEqual);
+        cmp32(tagOf(address), ImmTag(JSVAL_TAG_BIGINT));
         return cond;
     }
     Condition testInt32(Condition cond, const BaseIndex& address) {
@@ -696,6 +709,8 @@ class MacroAssemblerX86 : public MacroAssemblerX86Shared
     void unboxString(const Address& src, Register dest) { unboxNonDouble(src, dest); }
     void unboxSymbol(const ValueOperand& src, Register dest) { unboxNonDouble(src, dest); }
     void unboxSymbol(const Address& src, Register dest) { unboxNonDouble(src, dest); }
+    void unboxBigInt(const ValueOperand& src, Register dest) { unboxNonDouble(src, dest); }
+    void unboxBigInt(const Address& src, Register dest) { unboxNonDouble(src, dest); }
     void unboxObject(const ValueOperand& src, Register dest) { unboxNonDouble(src, dest); }
     void unboxObject(const Address& src, Register dest) { unboxNonDouble(src, dest); }
     void unboxObject(const BaseIndex& src, Register dest) { unboxNonDouble(src, dest); }
@@ -791,6 +806,12 @@ class MacroAssemblerX86 : public MacroAssemblerX86Shared
     Condition testStringTruthy(bool truthy, const ValueOperand& value) {
         Register string = value.payloadReg();
         cmp32(Operand(string, JSString::offsetOfLength()), Imm32(0));
+        return truthy ? Assembler::NotEqual : Assembler::Equal;
+    }
+    Condition testBigIntTruthy(bool truthy, const ValueOperand& value) {
+        Register bi = value.payloadReg();
+        cmpPtr(Operand(bi, BigInt::offsetOfLengthSignAndReservedBits()),
+               ImmWord(0));
         return truthy ? Assembler::NotEqual : Assembler::Equal;
     }
 

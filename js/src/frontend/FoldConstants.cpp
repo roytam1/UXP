@@ -395,6 +395,7 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_THIS:
       case PNK_ELISION:
       case PNK_NUMBER:
+      case PNK_BIGINT:
       case PNK_NEW:
       case PNK_GENERATOR:
       case PNK_GENEXP:
@@ -485,6 +486,7 @@ IsEffectless(ParseNode* node)
            node->isKind(PNK_FALSE) ||
            node->isKind(PNK_STRING) ||
            node->isKind(PNK_TEMPLATE_STRING) ||
+           node->isKind(PNK_BIGINT) ||
            node->isKind(PNK_NUMBER) ||
            node->isKind(PNK_NULL) ||
            node->isKind(PNK_RAW_UNDEFINED) ||
@@ -502,6 +504,9 @@ Boolish(ParseNode* pn, bool isNullish = false)
         bool isNonZeroNumber = (pn->as<NumericLiteral>().value() != 0 && !IsNaN(pn->as<NumericLiteral>().value()));
         return (isNullish || isNonZeroNumber) ? Truthy : Falsy;
       }
+
+      case PNK_BIGINT:
+        return (pn->as<BigIntLiteral>().box()->value()->isZero()) ? Falsy : Truthy;
 
       case PNK_STRING:
       case PNK_TEMPLATE_STRING: {
@@ -591,6 +596,8 @@ FoldTypeOfExpr(ExclusiveContext* cx, UnaryNode* node, Parser<FullParseHandler>& 
         result = cx->names().string;
     else if (expr->isKind(PNK_NUMBER))
         result = cx->names().number;
+    else if (expr->isKind(PNK_BIGINT))
+        result = cx->names().bigint;
     else if (expr->isKind(PNK_NULL))
         result = cx->names().object;
     else if (expr->isKind(PNK_TRUE) || expr->isKind(PNK_FALSE))
@@ -1697,6 +1704,10 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
 
       case PNK_NUMBER:
         MOZ_ASSERT(pn->is<NumericLiteral>());
+        return true;
+
+      case PNK_BIGINT:
+        MOZ_ASSERT(pn->is<BigIntLiteral>());
         return true;
 
       case PNK_SUPERBASE:

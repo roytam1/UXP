@@ -14,6 +14,7 @@
 #include "gc/Zone.h"
 #include "vm/HelperThreads.h"
 #include "vm/Runtime.h"
+#include "vm/BigIntType.h"
 
 namespace js {
 namespace gc {
@@ -71,6 +72,7 @@ struct MovingTracer : JS::CallbackTracer
     void onObjectEdge(JSObject** objp) override;
     void onShapeEdge(Shape** shapep) override;
     void onStringEdge(JSString** stringp) override;
+    void onBigIntEdge(JS::BigInt** bip) override;
     void onScriptEdge(JSScript** scriptp) override;
     void onLazyScriptEdge(LazyScript** lazyp) override;
     void onBaseShapeEdge(BaseShape** basep) override;

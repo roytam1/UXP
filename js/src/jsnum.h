@@ -308,6 +308,15 @@ MOZ_MUST_USE bool ToLengthClamped(T* cx, HandleValue v, uint32_t* out, bool* ove
  */
 MOZ_MUST_USE bool ToIntegerIndex(JSContext* cx, JS::HandleValue v, uint64_t* index);
 
+/* ES2017 draft 7.1.17 ToIndex
+ *
+ * Return true and set |*index| to the integer value if |v| is a valid
+ * integer index value. Otherwise report a RangeError and return false.
+ *
+ * The returned index will always be in the range 0 <= *index <= 2^53-1.
+ */
+MOZ_MUST_USE bool ToIndex(JSContext* cx, JS::HandleValue v, uint64_t* index);
+
 MOZ_MUST_USE inline bool
 SafeAdd(int32_t one, int32_t two, int32_t* res)
 {
@@ -360,6 +369,32 @@ ToNumber(ExclusiveContext* cx, HandleValue v, double* out)
         return true;
     }
     return ToNumberSlow(cx, v, out);
+}
+
+bool
+ToNumericSlow(ExclusiveContext* cx, JS::MutableHandleValue vp);
+
+// BigInt proposal section 3.1.6
+MOZ_ALWAYS_INLINE MOZ_MUST_USE bool
+ToNumeric(ExclusiveContext* cx, JS::MutableHandleValue vp)
+{
+    if (vp.isNumber())
+        return true;
+    if (vp.isBigInt())
+        return true;
+    return ToNumericSlow(cx, vp);
+}
+
+bool
+ToInt32OrBigIntSlow(JSContext* cx, JS::MutableHandleValue vp);
+
+MOZ_ALWAYS_INLINE MOZ_MUST_USE bool
+ToInt32OrBigInt(JSContext* cx, JS::MutableHandleValue vp)
+{
+    if (vp.isInt32()) {
+        return true;
+    }
+    return ToInt32OrBigIntSlow(cx, vp);
 }
 
 void FIX_FPU();

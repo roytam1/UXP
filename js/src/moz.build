@@ -384,6 +384,7 @@ main_deunified_sources = [
 # instantiations may or may not be needed depending on what it gets bundled
 # with.
 SOURCES += [
+    'builtin/BigInt.cpp',
     'builtin/RegExp.cpp',
     'frontend/Parser.cpp',
     'gc/StoreBuffer.cpp',
@@ -392,6 +393,7 @@ SOURCES += [
     'jsdtoa.cpp',
     'jsmath.cpp',
     'jsutil.cpp',
+    'vm/BigIntType.cpp',
     'vm/Initialization.cpp',
 ]
 

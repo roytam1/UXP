@@ -65,6 +65,7 @@ namespace jit {
     _(JSOP_UINT16)             \
     _(JSOP_UINT24)             \
     _(JSOP_DOUBLE)             \
+    _(JSOP_BIGINT)             \
     _(JSOP_STRING)             \
     _(JSOP_SYMBOL)             \
     _(JSOP_OBJECT)             \

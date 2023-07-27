@@ -2717,6 +2717,11 @@ MacroAssemblerARMCompat::testSymbol(Assembler::Condition cond, const ValueOperan
     return testSymbol(cond, value.typeReg());
 }
 
+Assembler::Condition MacroAssemblerARMCompat::testBigInt(Assembler::Condition cond, const ValueOperand& value)
+{
+    return testBigInt(cond, value.typeReg());
+}
+
 Assembler::Condition
 MacroAssemblerARMCompat::testObject(Assembler::Condition cond, const ValueOperand& value)
 {
@@ -2787,6 +2792,13 @@ MacroAssemblerARMCompat::testSymbol(Assembler::Condition cond, Register tag)
 {
     MOZ_ASSERT(cond == Equal || cond == NotEqual);
     ma_cmp(tag, ImmTag(JSVAL_TAG_SYMBOL));
+    return cond;
+}
+
+Assembler::Condition MacroAssemblerARMCompat::testBigInt(Assembler::Condition cond, Register tag)
+{
+    MOZ_ASSERT(cond == Equal || cond == NotEqual);
+    ma_cmp(tag, ImmTag(JSVAL_TAG_BIGINT));
     return cond;
 }
 
@@ -2907,6 +2919,14 @@ MacroAssemblerARMCompat::testObject(Condition cond, const Address& address)
     return testObject(cond, scratch);
 }
 
+Assembler::Condition MacroAssemblerARMCompat::testBigInt(Condition cond, const Address& address)
+{
+    MOZ_ASSERT(cond == Equal || cond == NotEqual);
+    ScratchRegisterScope scratch(asMasm());
+    Register tag = extractTag(address, scratch);
+    return testBigInt(cond, tag);
+}
+
 Assembler::Condition
 MacroAssemblerARMCompat::testNumber(Condition cond, const Address& address)
 {
@@ -2990,6 +3010,16 @@ MacroAssemblerARMCompat::testInt32(Condition cond, const BaseIndex& src)
     ScratchRegisterScope scratch(asMasm());
     extractTag(src, scratch);
     ma_cmp(scratch, ImmTag(JSVAL_TAG_INT32));
+    return cond;
+}
+
++Assembler::Condition
+MacroAssemblerARMCompat::testBigInt(Condition cond,const BaseIndex& src)
+{
+    MOZ_ASSERT(cond == Equal || cond == NotEqual);
+    ScratchRegisterScope scratch(asMasm());
+    Register tag = extractTag(src, scratch);
+    ma_cmp(tag, ImmTag(JSVAL_TAG_BIGINT));
     return cond;
 }
 
@@ -3732,6 +3762,19 @@ MacroAssemblerARMCompat::testStringTruthy(bool truthy, const ValueOperand& value
     SecondScratchRegisterScope scratch2(asMasm());
 
     ma_dtr(IsLoad, string, Imm32(JSString::offsetOfLength()), scratch, scratch2);
+    as_cmp(scratch, Imm8(0));
+    return truthy ? Assembler::NotEqual : Assembler::Equal;
+}
+
++Assembler::Condition
+MacroAssemblerARMCompat::testBigIntTruthy(bool truthy, const ValueOperand& value)
+{
+    Register bi = value.payloadReg();
+    ScratchRegisterScope scratch(asMasm());
+    SecondScratchRegisterScope scratch2(asMasm());
+
+    ma_dtr(IsLoad, bi, Imm32(BigInt::offsetOfLengthSignAndReservedBits()),
+           scratch, scratch2);
     as_cmp(scratch, Imm8(0));
     return truthy ? Assembler::NotEqual : Assembler::Equal;
 }

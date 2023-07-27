@@ -438,7 +438,7 @@ UsedNameTracker::rewind(RewindToken token)
         r.front().value().resetToScope(token.scriptId, token.scopeId);
 }
 
-FunctionBox::FunctionBox(ExclusiveContext* cx, LifoAlloc& alloc, ObjectBox* traceListHead,
+FunctionBox::FunctionBox(ExclusiveContext* cx, LifoAlloc& alloc, TraceListNode* traceListHead,
                          JSFunction* fun, uint32_t toStringStart,
                          Directives directives, bool extraWarnings,
                          GeneratorKind generatorKind, FunctionAsyncKind asyncKind)
@@ -882,11 +882,11 @@ Parser<FullParseHandler>::setAwaitHandling(AwaitHandling awaitHandling)
         parser->setAwaitHandling(awaitHandling);
 }
 
-template <typename ParseHandler>
-ObjectBox*
-Parser<ParseHandler>::newObjectBox(JSObject* obj)
+template <typename BoxT, typename ArgT>
+BoxT*
+ParserBase::newTraceListNode(ArgT* arg)
 {
-    MOZ_ASSERT(obj);
+    MOZ_ASSERT(arg);
 
     /*
      * We use JSContext.tempLifoAlloc to allocate parsed objects and place them
@@ -896,15 +896,27 @@ Parser<ParseHandler>::newObjectBox(JSObject* obj)
      * function.
      */
 
-    ObjectBox* objbox = alloc.new_<ObjectBox>(obj, traceListHead);
-    if (!objbox) {
+    BoxT* box = alloc.template new_<BoxT>(arg, traceListHead);
+    if (!box) {
         ReportOutOfMemory(context);
         return nullptr;
     }
 
-    traceListHead = objbox;
+    traceListHead = box;
 
-    return objbox;
+    return box;
+}
+
+ObjectBox*
+ParserBase::newObjectBox(JSObject* obj)
+{
+    return newTraceListNode<ObjectBox, JSObject>(obj);
+}
+
+BigIntBox*
+ParserBase::newBigIntBox(BigInt* val)
+{
+    return newTraceListNode<BigIntBox, BigInt>(val);
 }
 
 template <typename ParseHandler>
@@ -10581,6 +10593,37 @@ Parser<ParseHandler>::newRegExp()
     return handler.newRegExp(reobj, pos(), *this);
 }
 
+template <>
+BigIntLiteral*
+Parser<FullParseHandler>::newBigInt()
+{
+    // The token's charBuffer contains the DecimalIntegerLiteral or
+    // NumericLiteralBase production, and as such does not include the
+    // BigIntLiteralSuffix (the trailing "n").  Note that NumericLiteralBase
+    // productions may start with 0[bBoOxX], indicating binary/octal/hex.
+    const auto& chars = tokenStream.getTokenbuf();
+    mozilla::Range<const char16_t> source(chars.begin(), chars.length());
+
+    BigInt* b = js::ParseBigIntLiteral(context, source);
+    if (!b) {
+        return null();
+    }
+
+    // newBigInt immediately puts "b" in a BigIntBox, which is allocated using
+    // tempLifoAlloc, avoiding any potential GC.  Therefore it's OK to pass a
+    // raw pointer.
+    return handler.newBigInt(b, pos(), *this);
+}
+
+template <>
+SyntaxParseHandler::BigIntLiteralType
+Parser<SyntaxParseHandler>::newBigInt()
+{
+    // The tokenizer has already checked the syntax of the bigint.
+
+    return handler.newBigInt();
+}
+
 template <typename ParseHandler>
 void
 Parser<ParseHandler>::checkDestructuringAssignmentTarget(Node expr, TokenPos exprPos,
@@ -11475,6 +11518,9 @@ Parser<ParseHandler>::primaryExpr(YieldHandling yieldHandling, TripledotHandling
 
       case TOK_NUMBER:
         return newNumber(tokenStream.currentToken());
+
+      case TOK_BIGINT:
+        return newBigInt();
 
       case TOK_TRUE:
         return handler.newBooleanLiteral(true, pos());

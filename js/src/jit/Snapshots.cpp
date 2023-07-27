@@ -409,6 +409,8 @@ ValTypeToString(JSValueType type)
         return "string";
       case JSVAL_TYPE_SYMBOL:
         return "symbol";
+      case JSVAL_TYPE_BIGINT:
+        return "BigInt";
       case JSVAL_TYPE_BOOLEAN:
         return "boolean";
       case JSVAL_TYPE_OBJECT:

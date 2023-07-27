@@ -359,6 +359,7 @@ class MacroAssemblerNone : public Assembler
     template <typename T> void unboxBoolean(T, Register) { MOZ_CRASH(); }
     template <typename T> void unboxString(T, Register) { MOZ_CRASH(); }
     template <typename T> void unboxSymbol(T, Register) { MOZ_CRASH(); }
+    template <typename T> void unboxBigInt(T, Register) { MOZ_CRASH(); }
     template <typename T> void unboxObject(T, Register) { MOZ_CRASH(); }
     template <typename T> void unboxDouble(T, FloatRegister) { MOZ_CRASH(); }
     void unboxValue(const ValueOperand&, AnyRegister) { MOZ_CRASH(); }
@@ -393,6 +394,7 @@ class MacroAssemblerNone : public Assembler
     void loadConstantFloat32(wasm::RawF32, FloatRegister) { MOZ_CRASH(); }
     Condition testInt32Truthy(bool, ValueOperand) { MOZ_CRASH(); }
     Condition testStringTruthy(bool, ValueOperand) { MOZ_CRASH(); }
+    Condition testBigIntTruthy(bool, ValueOperand) { MOZ_CRASH(); }
 
     template <typename T> void loadUnboxedValue(T, MIRType, AnyRegister) { MOZ_CRASH(); }
     template <typename T> void storeUnboxedValue(const ConstantOrRegister&, MIRType, T, MIRType) { MOZ_CRASH(); }

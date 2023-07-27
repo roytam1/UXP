@@ -1382,6 +1382,7 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
     const char16_t* identStart;
     NameVisibility identVisibility;
     bool hadUnicodeEscape;
+    bool isBigInt = false;
 
     // Check if in the middle of a template string. Have to get this out of
     // the way first.
@@ -1619,6 +1620,10 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
                 }
             } while (true);
         }
+        if (c == 'n') {
+            isBigInt = true;
+            c = getCharIgnoreEOL();
+        }
         ungetCharIgnoreEOL(c);
 
         if (c != EOF) {
@@ -1636,6 +1641,19 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
                     goto error;
                 }
             }
+        }
+
+        if (isBigInt) {
+            size_t length = userbuf.addressOfNextRawChar() - numStart - 1;
+            tokenbuf.clear();
+            if(!tokenbuf.reserve(length > 0 ? length : 1))
+                goto error;
+            if(length > 0)
+                tokenbuf.infallibleAppend(numStart, length);
+            else
+                tokenbuf.infallibleAppend("0", 1);
+            tp->type = TOK_BIGINT;
+            goto out;
         }
 
         // Unlike identifiers and strings, numbers cannot contain escaped
@@ -1677,7 +1695,7 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
     //
     if (c1kind == BasePrefix) {
         tp = newToken(-1);
-        int radix;
+        int radix = 10;
         c = getCharIgnoreEOL();
         if (c == 'x' || c == 'X') {
             radix = 16;
@@ -1777,6 +1795,10 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
             hasExp = false;
             goto decimal_rest;
         }
+        if (c == 'n') {
+            isBigInt = true;
+            c = getCharIgnoreEOL();
+        }
         ungetCharIgnoreEOL(c);
 
         if (c != EOF) {
@@ -1794,6 +1816,28 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
                     goto error;
                 }
             }
+        }
+
+        if (isBigInt) {
+            size_t length = userbuf.addressOfNextRawChar() - numStart - 1;
+            tokenbuf.clear();
+            if(!tokenbuf.reserve(radix == 10 ? length : (length + 2)))
+                goto error;
+            switch(radix)
+            {
+                case 2:
+                tokenbuf.infallibleAppend("0b", 2);
+                break;
+                case 8:
+                tokenbuf.infallibleAppend("0o", 2);
+                break;
+                case 16:
+                tokenbuf.infallibleAppend("0x", 2);
+                break;
+            }
+            tokenbuf.infallibleAppend(numStart, length);
+            tp->type = TOK_BIGINT;
+            goto out;
         }
 
         double dval;

@@ -196,6 +196,9 @@ CodeGeneratorMIPS64::visitUnbox(LUnbox* unbox)
           case MIRType::Symbol:
             masm.unboxSymbol(inputReg, result);
             break;
+          case MIRType::BigInt:
+            masm.unboxBigInt(inputReg, result);
+            break;
           default:
             MOZ_CRASH("Given MIRType cannot be unboxed.");
         }
@@ -218,6 +221,9 @@ CodeGeneratorMIPS64::visitUnbox(LUnbox* unbox)
         break;
       case MIRType::Symbol:
         masm.unboxSymbol(inputAddr, result);
+        break;
+      case MIRType::BigInt:
+        masm.unboxBigInt(inputAddr, result);
         break;
       default:
         MOZ_CRASH("Given MIRType cannot be unboxed.");
