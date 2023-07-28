@@ -1777,6 +1777,12 @@ FromSymbolPayload(uintptr_t payload)
 }
 
 static Value
+FromBigIntPayload(uintptr_t payload)
+{
+    return BigIntValue(reinterpret_cast<JS::BigInt*>(payload));
+}
+
+static Value
 FromTypedPayload(JSValueType type, uintptr_t payload)
 {
     switch (type) {
@@ -1788,6 +1794,8 @@ FromTypedPayload(JSValueType type, uintptr_t payload)
         return FromStringPayload(payload);
       case JSVAL_TYPE_SYMBOL:
         return FromSymbolPayload(payload);
+      case JSVAL_TYPE_BIGINT:
+        return FromBigIntPayload(payload);
       case JSVAL_TYPE_OBJECT:
         return FromObjectPayload(payload);
       default:
