@@ -2509,6 +2509,10 @@ var Debugger =
 	
 	  var Attribute = _require9.Attribute;
 	
+	  var _require23 = __webpack_require__(460);
+	
+	  var BigInt = _require23.BigInt;
+	
 	  var _require10 = __webpack_require__(47);
 	
 	  var DateTime = _require10.DateTime;
@@ -2565,7 +2569,7 @@ var Debugger =
 	  // XXX there should be a way for extensions to register a new
 	  // or modify an existing rep.
 	
-	  var reps = [RegExp, StyleSheet, Event, DateTime, TextNode, Attribute, Func, ArrayRep, Document, Window, ObjectWithText, ObjectWithURL, GripArray, GripMap, Grip, Undefined, Null, StringRep, Number, SymbolRep];
+	  var reps = [RegExp, StyleSheet, Event, DateTime, TextNode, Attribute, Func, ArrayRep, Document, Window, ObjectWithText, ObjectWithURL, GripArray, GripMap, Grip, Undefined, Null, StringRep, Number, BigInt, SymbolRep];
 	
 	  /**
 	   * Generic rep that is using for rendering native JS types or an object.
@@ -2605,10 +2609,12 @@ var Debugger =
 	    var defaultRep = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : Obj;
 	
 	    var type = typeof object;
-	    if (type == "object" && object instanceof String) {
-	      type = "string";
-	    } else if (type == "object" && object.type === "symbol") {
-	      type = "symbol";
+	    if (type == "object") {
+	      if (object instanceof String) {
+	        type = "string";
+	      } else if (["symbol", "BigInt"].includes(object.type)) {
+	        type = object.type;
+	      }
 	    }
 	
 	    if (isGrip(object)) {
@@ -58324,6 +58330,59 @@ var Debugger =
 	  getFormatStr,
 	  setBundle
 	};
+
+/***/ },
+/* 460 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_RESULT__;/* -*- indent-tabs-mode: nil; js-indent-level: 2 -*- */
+	/* vim: set ft=javascript ts=2 et sw=2 tw=80: */
+	/* This Source Code Form is subject to the terms of the Mozilla Public
+	 * License, v. 2.0. If a copy of the MPL was not distributed with this
+	 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+	
+	"use strict";
+	
+	// Make this available to both AMD and CJS environments
+	
+	!(__WEBPACK_AMD_DEFINE_RESULT__ = function (require, exports, module) {
+	  // Dependencies
+	  var React = __webpack_require__(2);
+	
+	  // Shortcuts
+	  var span = React.DOM.span;
+	
+	  /**
+	   * Renders a number
+	   */
+	
+	  var BigInt = React.createClass({
+	    displayName: "BigInt",
+	
+        propTypes: {
+          object: React.PropTypes.object.isRequired
+        },
+	
+	    render: function () {
+          let {object} = this.props;
+          let {text} = object;
+	
+	      return span({ className: "objectBox objectBox-number" }, `${text}n`);
+	    }
+	  });
+	
+	  function supportsObject(object, type) {
+	    return type == "BigInt";
+	  }
+	
+	  // Exports from this module
+	
+	  exports.BigInt = {
+	    rep: BigInt,
+	    supportsObject: supportsObject
+	  };
+	}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
 
 /***/ }
 /******/ ]);
