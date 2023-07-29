@@ -2392,6 +2392,15 @@ SetExistingProperty(JSContext* cx, HandleNativeObject obj, HandleId id, HandleVa
             Rooted<TypedArrayObject*> tobj(cx, &pobj->as<TypedArrayObject>());
             return SetTypedArrayElement(cx, tobj, index, v, result);
           }
+
+          if (WouldDefinePastNonwritableLength(pobj, index))
+            return result.fail(JSMSG_CANT_DEFINE_PAST_ARRAY_LENGTH);
+
+          if (!pobj->maybeCopyElementsForWrite(cx))
+            return false;
+ 
+          pobj->setDenseElementWithType(cx, index, v);
+          return result.succeed();
         }
 
         // Steps 5.b-f.
