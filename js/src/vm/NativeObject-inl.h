@@ -239,12 +239,15 @@ NativeObject::ensureDenseElements(ExclusiveContext* cx, uint32_t index, uint32_t
     return DenseElementResult::Success;
 }
 
-inline Value
-NativeObject::getDenseOrTypedArrayElement(uint32_t idx)
+template <AllowGC allowGC>
+inline bool
+NativeObject::getDenseOrTypedArrayElement(ExclusiveContext* cx, uint32_t idx,
+                                          typename MaybeRooted<Value, allowGC>::MutableHandleType val)
 {
     if (is<TypedArrayObject>())
-        return as<TypedArrayObject>().getElement(idx);
-    return getDenseElement(idx);
+        return as<TypedArrayObject>().getElement<allowGC>(cx, idx, val);
+    val.set(getDenseElement(idx));
+    return true;
 }
 
 /* static */ inline NativeObject*

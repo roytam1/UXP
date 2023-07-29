@@ -71,7 +71,7 @@ intl_numberingSystem(JSContext* cx, unsigned argc, Value* vp);
 extern MOZ_MUST_USE bool
 intl_FormatNumber(JSContext* cx, unsigned argc, Value* vp);
 extern MOZ_MUST_USE bool
-intl_FormatNumber(JSContext* cx, UNumberFormat* nf, double x, MutableHandleValue result);
+FormatNumeric(JSContext* cx, UNumberFormat* nf, HandleValue x, MutableHandleValue result);
 
 } // namespace js
 

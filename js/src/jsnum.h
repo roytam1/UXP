@@ -378,10 +378,9 @@ ToNumericSlow(ExclusiveContext* cx, JS::MutableHandleValue vp);
 MOZ_ALWAYS_INLINE MOZ_MUST_USE bool
 ToNumeric(ExclusiveContext* cx, JS::MutableHandleValue vp)
 {
-    if (vp.isNumber())
+    if (vp.isNumeric()) {
         return true;
-    if (vp.isBigInt())
-        return true;
+    }
     return ToNumericSlow(cx, vp);
 }
 

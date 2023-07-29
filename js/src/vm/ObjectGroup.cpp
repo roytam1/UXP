@@ -686,6 +686,8 @@ GetClassForProtoKey(JSProtoKey key)
       case JSProto_Float32Array:
       case JSProto_Float64Array:
       case JSProto_Uint8ClampedArray:
+      case JSProto_BigInt64Array:
+      case JSProto_BigUint64Array:
         return &TypedArrayObject::classes[key - JSProto_Int8Array];
 
       case JSProto_ArrayBuffer:

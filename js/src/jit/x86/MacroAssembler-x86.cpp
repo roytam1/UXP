@@ -616,6 +616,8 @@ MacroAssembler::wasmLoad(const wasm::MemoryAccessDesc& access, Operand srcAddr, 
         vmovdquWithPatch(srcAddr, out.fpu());
         break;
       case Scalar::Int64:
+      case Scalar::BigInt64:
+      case Scalar::BigUint64:
       case Scalar::Uint8Clamped:
       case Scalar::MaxTypedArrayViewType:
         MOZ_CRASH("unexpected type");
@@ -727,6 +729,8 @@ MacroAssembler::wasmLoadI64(const wasm::MemoryAccessDesc& access, Operand srcAdd
       case Scalar::Int16x8:
       case Scalar::Int32x4:
         MOZ_CRASH("non-int64 loads should use load()");
+      case Scalar::BigInt64:
+      case Scalar::BigUint64:
       case Scalar::Uint8Clamped:
       case Scalar::MaxTypedArrayViewType:
         MOZ_CRASH("unexpected array type");
@@ -790,6 +794,8 @@ MacroAssembler::wasmStore(const wasm::MemoryAccessDesc& access, AnyRegister valu
       case Scalar::Int64:
         MOZ_CRASH("Should be handled in storeI64.");
       case Scalar::MaxTypedArrayViewType:
+      case Scalar::BigInt64:
+      case Scalar::BigUint64:
         MOZ_CRASH("unexpected type");
     }
     append(wasm::MemoryPatch(size()));

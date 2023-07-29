@@ -119,6 +119,11 @@ class BigInt final : public js::gc::TenuredCell {
   static int64_t toInt64(BigInt* x);
   static uint64_t toUint64(BigInt* x);
 
+  // Return true if the BigInt is without loss of precision representable as an
+  // int64 and store the int64 value in the output. Otherwise return false and
+  // leave the value of the output parameter unspecified.
+  static bool isInt64(BigInt* x, int64_t* result);
+
   static BigInt* asIntN(js::ExclusiveContext* cx, Handle<BigInt*> x, uint64_t bits);
   static BigInt* asUintN(js::ExclusiveContext* cx, Handle<BigInt*> x, uint64_t bits);
 
@@ -358,6 +363,8 @@ namespace js {
 extern JSAtom* BigIntToAtom(js::ExclusiveContext* cx, JS::HandleBigInt bi);
 
 extern JS::BigInt* NumberToBigInt(js::ExclusiveContext* cx, double d);
+extern JS::Result<int64_t> ToBigInt64(JSContext* cx, JS::Handle<JS::Value> v);
+extern JS::Result<uint64_t> ToBigUint64(JSContext* cx, JS::Handle<JS::Value> v);
 
 // Parse a BigInt from a string, using the method specified for StringToBigInt.
 // Used by the BigInt constructor among other places.
