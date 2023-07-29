@@ -545,7 +545,9 @@ Number(JSContext* cx, unsigned argc, Value* vp)
     RootedObject proto(cx);
     if (!GetPrototypeFromConstructor(cx, newTarget, &proto))
         return false;
-    JSObject* obj = NumberObject::create(cx, args.rval().toNumber(), proto);
+
+    double d = args.length() > 0 ? args[0].toNumber() : 0;
+    JSObject* obj = NumberObject::create(cx, d, proto);
     if (!obj)
         return false;
     args.rval().setObject(*obj);
