@@ -1895,6 +1895,8 @@ SnapshotIterator::allocationValue(const RValueAllocation& alloc, ReadMethod rm)
             return FromStringPayload(fromStack(alloc.stackOffset2()));
           case JSVAL_TYPE_SYMBOL:
             return FromSymbolPayload(fromStack(alloc.stackOffset2()));
+          case JSVAL_TYPE_BIGINT:
+            return FromBigIntPayload(fromStack(alloc.stackOffset2()));
           case JSVAL_TYPE_OBJECT:
             return FromObjectPayload(fromStack(alloc.stackOffset2()));
           default:

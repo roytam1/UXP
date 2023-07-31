@@ -1293,6 +1293,7 @@ Messages.Extended.prototype = extend(Messages.Simple.prototype, {
   {
     let map = {
       "number": "cm-number",
+      "bigint": "cm-number",
       "longstring": "console-string",
       "string": "console-string",
       "regexp": "cm-string-2",
@@ -3360,6 +3361,15 @@ Widgets.ObjectRenderers.add({
  */
 Widgets.ObjectRenderers.add({
   byClass: "Number",
+
+  render: WrappedPrimitiveRenderer,
+});
+
+/**
+ * The widget used for displaying BigInt previews.
+ */
+Widgets.ObjectRenderers.add({
+  byClass: "BigInt",
 
   render: WrappedPrimitiveRenderer,
 });

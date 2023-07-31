@@ -644,7 +644,7 @@ void
 MacroAssembler::canonicalizeFloatIfDeterministic(FloatRegister reg)
 {
 #ifdef JS_MORE_DETERMINISTIC
-    // See the comment in TypedArrayObjectTemplate::getIndexValue.
+    // See the comment in TypedArrayObjectTemplate::getElement.
     canonicalizeFloat(reg);
 #endif // JS_MORE_DETERMINISTIC
 }
@@ -662,7 +662,7 @@ void
 MacroAssembler::canonicalizeDoubleIfDeterministic(FloatRegister reg)
 {
 #ifdef JS_MORE_DETERMINISTIC
-    // See the comment in TypedArrayObjectTemplate::getIndexValue.
+    // See the comment in TypedArrayObjectTemplate::getElement.
     canonicalizeDouble(reg);
 #endif // JS_MORE_DETERMINISTIC
 }

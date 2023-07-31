@@ -33,6 +33,7 @@ using namespace js;
 
 using mozilla::AssertedCast;
 using mozilla::IsFinite;
+using mozilla::IsNegative;
 using mozilla::IsNaN;
 using mozilla::IsNegativeZero;
 using js::intl::CallICU;
@@ -401,24 +402,51 @@ NewUNumberFormat(JSContext* cx, Handle<NumberFormatObject*> numberFormat)
 }
 
 static JSString*
-PartitionNumberPattern(JSContext* cx, UNumberFormat* nf, double* x,
+PartitionNumberPattern(JSContext* cx, UNumberFormat* nf, HandleValue x,
                        UFieldPositionIterator* fpositer)
 {
-    // PartitionNumberPattern doesn't consider -0.0 to be negative.
-    if (IsNegativeZero(*x))
-        *x = 0.0;
+    if (x.isNumber()) {
+       double num = x.toNumber();
 
-    return CallICU(cx, [nf, x, fpositer](UChar* chars, int32_t size, UErrorCode* status) {
-         return unum_formatDoubleForFields(nf, *x, chars, size, fpositer, status);
-    });
+        // PartitionNumberPattern doesn't consider -0.0 to be negative.
+        if (IsNegativeZero(num))
+            num = 0.0;
+
+        return CallICU(cx, [nf, num, fpositer](UChar* chars, int32_t size, UErrorCode* status) {
+            return unum_formatDoubleForFields(nf, num, chars, size, fpositer, status);
+        });
+    } else if(x.isBigInt()) {
+        RootedBigInt bi(cx, x.toBigInt());
+        int64_t num;
+
+        if (BigInt::isInt64(bi, &num)) {
+            return CallICU(cx, [nf, num](UChar* chars, int32_t size, UErrorCode* status) {
+                return unum_formatInt64(nf, num, chars, size, nullptr, status);
+            });
+        } else {
+            JSLinearString* str = BigInt::toString(cx, bi, 10);
+            if (!str) {
+                return nullptr;
+            }
+            MOZ_ASSERT(str->hasLatin1Chars());
+
+            JS::AutoCheckCannotGC noGC(cx);
+            const char* latinchars = reinterpret_cast<const char*>(str->latin1Chars(noGC));
+            size_t length = str->length();
+            return CallICU(cx, [nf, latinchars, length](UChar* chars, int32_t size, UErrorCode* status) {
+                return unum_formatDecimal(nf, latinchars, length, chars, size, nullptr, status);
+            });
+        }
+    }
+    return nullptr;
 }
 
 bool
-js::intl_FormatNumber(JSContext* cx, UNumberFormat* nf, double x, MutableHandleValue result)
+js::FormatNumeric(JSContext* cx, UNumberFormat* nf, HandleValue x, MutableHandleValue result)
 {
     // Passing null for |fpositer| will just not compute partition information,
     // letting us common up all ICU number-formatting code.
-    JSString* str = PartitionNumberPattern(cx, nf, &x, nullptr);
+    JSString* str = PartitionNumberPattern(cx, nf, x, nullptr);
     if (!str)
         return false;
 
@@ -429,7 +457,7 @@ js::intl_FormatNumber(JSContext* cx, UNumberFormat* nf, double x, MutableHandleV
 using FieldType = ImmutablePropertyNamePtr JSAtomState::*;
 
 static FieldType
-GetFieldTypeForNumberField(UNumberFormatFields fieldName, double d)
+GetFieldTypeForNumberField(UNumberFormatFields fieldName, HandleValue x)
 {
     // See intl/icu/source/i18n/unicode/unum.h for a detailed field list.  This
     // list is deliberately exhaustive: cases might have to be added/removed if
@@ -438,10 +466,15 @@ GetFieldTypeForNumberField(UNumberFormatFields fieldName, double d)
     // version-testing #ifdefs, should cross-version divergence occur.
     switch (fieldName) {
       case UNUM_INTEGER_FIELD:
-        if (IsNaN(d))
-            return &JSAtomState::nan;
-        if (!IsFinite(d))
-            return &JSAtomState::infinity;
+        if (x.isNumber()) {
+            double d = x.toNumber();
+            if (IsNaN(d)) {
+                return &JSAtomState::nan;
+            }
+            if (!IsFinite(d)) {
+                return &JSAtomState::infinity;
+            }
+        }
         return &JSAtomState::integer;
 
       case UNUM_GROUPING_SEPARATOR_FIELD:
@@ -454,13 +487,17 @@ GetFieldTypeForNumberField(UNumberFormatFields fieldName, double d)
         return &JSAtomState::fraction;
 
       case UNUM_SIGN_FIELD: {
-        MOZ_ASSERT(!IsNegativeZero(d),
-                   "-0 should have been excluded by PartitionNumberPattern");
-
-        // Manual trawling through the ICU call graph appears to indicate that
-        // the basic formatting we request will never include a positive sign.
-        // But this analysis may be mistaken, so don't absolutely trust it.
-        return d < 0 ? &JSAtomState::minusSign : &JSAtomState::plusSign;
+       // Manual trawling through the ICU call graph appears to indicate that
+       // the basic formatting we request will never include a positive sign.
+       // But this analysis may be mistaken, so don't absolutely trust it.
+       MOZ_ASSERT(!x.isNumber() || !IsNaN(x.toNumber()),
+                  "ICU appearing not to produce positive-sign among fields, "
+                  "plus our coercing all NaNs to one with sign bit unset "
+                  "(i.e. \"positive\"), means we shouldn't reach here with a "
+                  "NaN value");
+        bool isNegative =
+            x.isNumber() ? IsNegative(x.toNumber()) : x.toBigInt()->isNegative();
+        return isNegative ? &JSAtomState::minusSign : &JSAtomState::plusSign;
       }
 
       case UNUM_PERCENT_FIELD:
@@ -495,7 +532,7 @@ GetFieldTypeForNumberField(UNumberFormatFields fieldName, double d)
 }
 
 static bool
-intl_FormatNumberToParts(JSContext* cx, UNumberFormat* nf, double x, MutableHandleValue result)
+FormatNumericToParts(JSContext* cx, UNumberFormat* nf, HandleValue x, MutableHandleValue result)
 {
     UErrorCode status = U_ZERO_ERROR;
 
@@ -508,7 +545,7 @@ intl_FormatNumberToParts(JSContext* cx, UNumberFormat* nf, double x, MutableHand
     MOZ_ASSERT(fpositer);
     ScopedICUObject<UFieldPositionIterator, ufieldpositer_close> toClose(fpositer);
 
-    RootedString overallResult(cx, PartitionNumberPattern(cx, nf, &x, fpositer));
+    RootedString overallResult(cx, PartitionNumberPattern(cx, nf, x, fpositer));
     if (!overallResult)
         return false;
 
@@ -824,7 +861,7 @@ js::intl_FormatNumber(JSContext* cx, unsigned argc, Value* vp)
     CallArgs args = CallArgsFromVp(argc, vp);
     MOZ_ASSERT(args.length() == 3);
     MOZ_ASSERT(args[0].isObject());
-    MOZ_ASSERT(args[1].isNumber());
+    MOZ_ASSERT(args[1].isNumeric());
     MOZ_ASSERT(args[2].isBoolean());
 
     Rooted<NumberFormatObject*> numberFormat(cx, &args[0].toObject().as<NumberFormatObject>());
@@ -842,8 +879,7 @@ js::intl_FormatNumber(JSContext* cx, unsigned argc, Value* vp)
 
     // Use the UNumberFormat to actually format the number.
     if (args[2].toBoolean()) {
-        return intl_FormatNumberToParts(cx, nf, args[1].toNumber(), args.rval());
+        return FormatNumericToParts(cx, nf, args.get(1), args.rval());
     }
-    return intl_FormatNumber(cx, nf, args[1].toNumber(), args.rval());
+    return FormatNumeric(cx, nf, args.get(1), args.rval());
 }
-

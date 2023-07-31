@@ -454,14 +454,14 @@ function numberFormatFormatToBind(value) {
     // ES5.1 10.5, step 4.d.ii.
 
     // Step 1.a.ii-iii.
-    var x = ToNumber(value);
+    var x = ToNumeric(value);
     return intl_FormatNumber(this, x, /* formatToParts = */ false);
 }
 
 
 /**
  * Returns a function bound to this NumberFormat that returns a String value
- * representing the result of calling ToNumber(value) according to the
+ * representing the result of calling ToNumeric(value) according to the
  * effective locale and the formatting options of this NumberFormat.
  *
  * Spec: ECMAScript Internationalization API Specification, 11.4.3.
@@ -497,7 +497,7 @@ function Intl_NumberFormat_formatToParts(value) {
     getNumberFormatInternals(nf);
 
     // Step 4.
-    var x = ToNumber(value);
+    var x = ToNumeric(value);
 
     // Step 5.
     return intl_FormatNumber(nf, x, /* formatToParts = */ true);

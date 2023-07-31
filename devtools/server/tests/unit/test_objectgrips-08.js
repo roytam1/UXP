@@ -41,25 +41,15 @@ function test_object_grip()
 
     let objClient = gThreadClient.pauseGrip(args[0]);
     objClient.getPrototypeAndProperties(function (aResponse) {
-      do_check_eq(aResponse.ownProperties.a.configurable, true);
-      do_check_eq(aResponse.ownProperties.a.enumerable, true);
-      do_check_eq(aResponse.ownProperties.a.writable, true);
-      do_check_eq(aResponse.ownProperties.a.value.type, "Infinity");
+      const {a, b, c, d, e, f, g} = aResponse.ownProperties;
 
-      do_check_eq(aResponse.ownProperties.b.configurable, true);
-      do_check_eq(aResponse.ownProperties.b.enumerable, true);
-      do_check_eq(aResponse.ownProperties.b.writable, true);
-      do_check_eq(aResponse.ownProperties.b.value.type, "-Infinity");
-
-      do_check_eq(aResponse.ownProperties.c.configurable, true);
-      do_check_eq(aResponse.ownProperties.c.enumerable, true);
-      do_check_eq(aResponse.ownProperties.c.writable, true);
-      do_check_eq(aResponse.ownProperties.c.value.type, "NaN");
-
-      do_check_eq(aResponse.ownProperties.d.configurable, true);
-      do_check_eq(aResponse.ownProperties.d.enumerable, true);
-      do_check_eq(aResponse.ownProperties.d.writable, true);
-      do_check_eq(aResponse.ownProperties.d.value.type, "-0");
+      testPropertyType(a, "Infinity");
+      testPropertyType(b, "-Infinity");
+      testPropertyType(c, "NaN");
+      testPropertyType(d, "-0");
+      testPropertyType(e, "BigInt");
+      testPropertyType(f, "BigInt");
+      testPropertyType(g, "BigInt");
 
       gThreadClient.resume(function () {
         gClient.close().then(gCallback);
@@ -67,6 +57,20 @@ function test_object_grip()
     });
   });
 
-  gDebuggee.eval("stopMe({ a: Infinity, b: -Infinity, c: NaN, d: -0 })");
+    gDebuggee.eval(`stopMe({
+      a: Infinity,
+      b: -Infinity,
+      c: NaN,
+      d: -0,
+      e: 1n,
+      f: -2n,
+      g: 0n,
+    })`);
 }
 
+function testPropertyType(prop, expectedType) {
+  do_check_eq(prop.configurable, true);
+  do_check_eq(prop.enumerable, true);
+  do_check_eq(prop.writable, true);
+  do_check_eq(prop.value.type, expectedType);
+}
