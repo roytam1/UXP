@@ -545,7 +545,9 @@ Number(JSContext* cx, unsigned argc, Value* vp)
     RootedObject proto(cx);
     if (!GetPrototypeFromConstructor(cx, newTarget, &proto))
         return false;
-    JSObject* obj = NumberObject::create(cx, args.rval().toNumber(), proto);
+
+    double d = args.length() > 0 ? args[0].toNumber() : 0;
+    JSObject* obj = NumberObject::create(cx, d, proto);
     if (!obj)
         return false;
     args.rval().setObject(*obj);
@@ -1503,8 +1505,7 @@ js::ToInt8Slow(JSContext *cx, const HandleValue v, int8_t *out)
 bool
 js::ToNumericSlow(ExclusiveContext* cx, MutableHandleValue vp)
 {
-    MOZ_ASSERT(!vp.isNumber());
-    MOZ_ASSERT(!vp.isBigInt());
+    MOZ_ASSERT(!vp.isNumeric());
 
     // Step 1.
     if (!vp.isPrimitive()) {

@@ -36,6 +36,8 @@
     macro(AsyncWrapped, AsyncWrapped, "AsyncWrapped") \
     macro(async, async, "async") \
     macro(await, await, "await") \
+    macro(bigint64, bigint64, "bigint64") \
+    macro(biguint64, biguint64, "biguint64") \
     macro(Bool8x16, Bool8x16, "Bool8x16") \
     macro(Bool16x8, Bool16x8, "Bool16x8") \
     macro(Bool32x4, Bool32x4, "Bool32x4") \

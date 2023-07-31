@@ -725,7 +725,6 @@ class MemoryAccessDesc
         trapOffset_(trapOffset)
     {
         MOZ_ASSERT(Scalar::isSimdType(type) == (numSimdElems > 0));
-        MOZ_ASSERT(numSimdElems <= jit::ScalarTypeToLength(type));
         MOZ_ASSERT(mozilla::IsPowerOfTwo(align));
         MOZ_ASSERT_IF(isSimd(), hasTrap());
         MOZ_ASSERT_IF(isAtomic(), hasTrap());

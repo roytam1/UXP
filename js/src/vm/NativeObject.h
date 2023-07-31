@@ -18,6 +18,7 @@
 #include "gc/Barrier.h"
 #include "gc/Heap.h"
 #include "gc/Marking.h"
+#include "js/RootingAPI.h"
 #include "js/Value.h"
 #include "vm/Shape.h"
 #include "vm/ShapedObject.h"
@@ -1088,7 +1089,9 @@ class NativeObject : public ShapedObject
     static inline void removeDenseElementForSparseIndex(ExclusiveContext* cx,
                                                         HandleNativeObject obj, uint32_t index);
 
-    inline Value getDenseOrTypedArrayElement(uint32_t idx);
+    template <AllowGC allowGC> inline bool 
+    getDenseOrTypedArrayElement(ExclusiveContext* cx, uint32_t idx,
+                                typename MaybeRooted<Value, allowGC>::MutableHandleType val);
 
     void copyDenseElements(uint32_t dstStart, const Value* src, uint32_t count) {
         MOZ_ASSERT(dstStart + count <= getDenseCapacity());

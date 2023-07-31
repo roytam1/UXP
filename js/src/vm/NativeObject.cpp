@@ -20,6 +20,7 @@
 #include "vm/ArrayObject-inl.h"
 #include "vm/EnvironmentObject-inl.h"
 #include "vm/Shape-inl.h"
+#include "vm/TypedArrayObject.h"
 
 using namespace js;
 
@@ -1283,8 +1284,7 @@ GetExistingPropertyValue(ExclusiveContext* cx, HandleNativeObject obj, HandleId 
                          Handle<PropertyResult> prop, MutableHandleValue vp)
 {
     if (prop.isDenseOrTypedArrayElement()) {
-        vp.set(obj->getDenseOrTypedArrayElement(JSID_TO_INT(id)));
-        return true;
+        return obj->getDenseOrTypedArrayElement<CanGC>(cx, JSID_TO_INT(id), vp);
     }
     if (!cx->shouldBeJSContext())
         return false;
@@ -1814,7 +1814,9 @@ js::NativeGetOwnPropertyDescriptor(JSContext* cx, HandleNativeObject obj, Handle
         desc.attributesRef() &= ~JSPROP_SHARED;
 
         if (prop.isDenseOrTypedArrayElement()) {
-            desc.value().set(obj->getDenseOrTypedArrayElement(JSID_TO_INT(id)));
+            if (!obj->getDenseOrTypedArrayElement<CanGC>(cx, JSID_TO_INT(id), desc.value())) {
+                return false;
+            }
         } else {
             RootedShape shape(cx, prop.shape());
             if (!NativeGetExistingProperty(cx, obj, obj, shape, desc.value()))
@@ -2110,8 +2112,7 @@ NativeGetPropertyInline(JSContext* cx,
             // Steps 5-8. Special case for dense elements because
             // GetExistingProperty doesn't support those.
             if (prop.isDenseOrTypedArrayElement()) {
-                vp.set(pobj->getDenseOrTypedArrayElement(JSID_TO_INT(id)));
-                return true;
+                return pobj->template getDenseOrTypedArrayElement<allowGC>(cx, JSID_TO_INT(id), vp);
             }
 
             typename MaybeRooted<Shape*, allowGC>::RootType shape(cx, prop.shape());
@@ -2365,38 +2366,6 @@ SetNonexistentProperty(JSContext* cx, HandleId id, HandleValue v, HandleValue re
 }
 
 /*
- * Set an existing own property obj[index] that's a dense element or typed
- * array element.
- */
-static bool
-SetDenseOrTypedArrayElement(JSContext* cx, HandleNativeObject obj, uint32_t index, HandleValue v,
-                            ObjectOpResult& result)
-{
-    if (obj->is<TypedArrayObject>()) {
-        double d;
-        if (!ToNumber(cx, v, &d))
-            return false;
-
-        // Silently do nothing for out-of-bounds sets, for consistency with
-        // current behavior.  (ES6 currently says to throw for this in
-        // strict mode code, so we may eventually need to change.)
-        uint32_t len = obj->as<TypedArrayObject>().length();
-        if (index < len)
-            TypedArrayObject::setElement(obj->as<TypedArrayObject>(), index, d);
-        return result.succeed();
-    }
-
-    if (WouldDefinePastNonwritableLength(obj, index))
-        return result.fail(JSMSG_CANT_DEFINE_PAST_ARRAY_LENGTH);
-
-    if (!obj->maybeCopyElementsForWrite(cx))
-        return false;
-
-    obj->setDenseElementWithType(cx, index, v);
-    return result.succeed();
-}
-
-/*
  * Finish the assignment `receiver[id] = v` when an existing property (shape)
  * has been found on a native object (pobj). This implements ES6 draft rev 32
  * (2015 Feb 2) 9.1.9 steps 5 and 6.
@@ -2416,8 +2385,23 @@ SetExistingProperty(JSContext* cx, HandleNativeObject obj, HandleId id, HandleVa
             return result.fail(JSMSG_READ_ONLY);
 
         // Pure optimization for the common case:
-        if (receiver.isObject() && pobj == &receiver.toObject())
-            return SetDenseOrTypedArrayElement(cx, pobj, JSID_TO_INT(id), v, result);
+        if (receiver.isObject() && pobj == &receiver.toObject()) {
+          uint32_t index = JSID_TO_INT(id);
+
+          if (pobj->is<TypedArrayObject>()) {
+            Rooted<TypedArrayObject*> tobj(cx, &pobj->as<TypedArrayObject>());
+            return SetTypedArrayElement(cx, tobj, index, v, result);
+          }
+
+          if (WouldDefinePastNonwritableLength(pobj, index))
+            return result.fail(JSMSG_CANT_DEFINE_PAST_ARRAY_LENGTH);
+
+          if (!pobj->maybeCopyElementsForWrite(cx))
+            return false;
+ 
+          pobj->setDenseElementWithType(cx, index, v);
+          return result.succeed();
+        }
 
         // Steps 5.b-f.
         return SetPropertyByDefining(cx, id, v, receiver, result);

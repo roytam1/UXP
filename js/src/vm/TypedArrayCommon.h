@@ -112,6 +112,20 @@ ConvertNumber<uint32_t, float>(float src)
     return JS::ToUint32(src);
 }
 
+template <>
+inline int64_t
+ConvertNumber<int64_t, float>(float src)
+{
+    return JS::ToInt64(src);
+}
+
+template <>
+inline uint64_t
+ConvertNumber<uint64_t, float>(float src) 
+{
+    return JS::ToUint64(src);
+}
+
 template<> inline int8_t
 ConvertNumber<int8_t, double>(double src)
 {
@@ -160,6 +174,20 @@ ConvertNumber<uint32_t, double>(double src)
     return JS::ToUint32(src);
 }
 
+template <>
+inline int64_t
+ConvertNumber<int64_t, double>(double src)
+{
+    return JS::ToInt64(src);
+}
+
+template <>
+inline uint64_t
+ConvertNumber<uint64_t, double>(double src)
+{
+    return JS::ToUint64(src);
+}
+
 template<typename To, typename From>
 inline To
 ConvertNumber(From src)
@@ -178,6 +206,8 @@ template<> struct TypeIDOfType<int16_t> { static const Scalar::Type id = Scalar:
 template<> struct TypeIDOfType<uint16_t> { static const Scalar::Type id = Scalar::Uint16; };
 template<> struct TypeIDOfType<int32_t> { static const Scalar::Type id = Scalar::Int32; };
 template<> struct TypeIDOfType<uint32_t> { static const Scalar::Type id = Scalar::Uint32; };
+template<> struct TypeIDOfType<int64_t> { static const Scalar::Type id = Scalar::BigInt64; };
+template<> struct TypeIDOfType<uint64_t> { static const Scalar::Type id = Scalar::BigUint64; };
 template<> struct TypeIDOfType<float> { static const Scalar::Type id = Scalar::Float32; };
 template<> struct TypeIDOfType<double> { static const Scalar::Type id = Scalar::Float64; };
 template<> struct TypeIDOfType<uint8_clamped> { static const Scalar::Type id = Scalar::Uint8Clamped; };
@@ -355,6 +385,18 @@ class ElementSpecific
                 Ops::store(dest++, ConvertNumber<T>(Ops::load(src++)));
             break;
           }
+          case Scalar::BigInt64: {
+            SharedMem<int64_t*> src = data.cast<int64_t*>();
+            for (uint32_t i = 0; i < count; ++i)
+                Ops::store(dest++, ConvertNumber<T>(Ops::load(src++)));
+            break;
+          }
+          case Scalar::BigUint64: {
+            SharedMem<uint64_t*> src = data.cast<uint64_t*>();
+            for (uint32_t i = 0; i < count; ++i)
+                Ops::store(dest++, ConvertNumber<T>(Ops::load(src++)));
+            break;
+          }
           case Scalar::Float32: {
             SharedMem<JS_VOLATILE_ARM float*> src = data.cast<JS_VOLATILE_ARM float*>();
             for (uint32_t i = 0; i < count; ++i)
@@ -399,12 +441,12 @@ class ElementSpecific
             SharedMem<T*> dest =
                 target->template as<TypedArrayObject>().viewDataEither().template cast<T*>() + offset;
 
-            MOZ_ASSERT(!canConvertInfallibly(MagicValue(JS_ELEMENTS_HOLE)),
+            MOZ_ASSERT(!canConvertInfallibly(MagicValue(JS_ELEMENTS_HOLE), target->type()),
                        "the following loop must abort on holes");
 
             const Value* srcValues = source->as<NativeObject>().getDenseElements();
             for (; i < bound; i++) {
-                if (!canConvertInfallibly(srcValues[i]))
+                if (!canConvertInfallibly(srcValues[i], target->type()))
                     break;
                 Ops::store(dest + i, infallibleValueToNative(srcValues[i]));
             }
@@ -459,7 +501,7 @@ class ElementSpecific
 
         const Value* srcValues = source->getDenseElements();
         for (; i < len; i++) {
-            if (!canConvertInfallibly(srcValues[i]))
+            if (!canConvertInfallibly(srcValues[i], target->type()))
                 break;
             Ops::store(dest + i, infallibleValueToNative(srcValues[i]));
         }
@@ -568,6 +610,18 @@ class ElementSpecific
                 Ops::store(dest++, ConvertNumber<T>(*src++));
             break;
           }
+          case Scalar::BigInt64: {
+            int64_t* src = static_cast<int64_t*>(data);
+            for (uint32_t i = 0; i < len; ++i)
+                Ops::store(dest++, ConvertNumber<T>(*src++));
+            break;
+          }
+          case Scalar::BigUint64: {
+            uint64_t* src = static_cast<uint64_t*>(data);
+            for (uint32_t i = 0; i < len; ++i)
+                Ops::store(dest++, ConvertNumber<T>(*src++));
+            break;
+          }
           case Scalar::Float32: {
             float* src = static_cast<float*>(data);
             for (uint32_t i = 0; i < len; ++i)
@@ -589,8 +643,11 @@ class ElementSpecific
     }
 
     static bool
-    canConvertInfallibly(const Value& v)
+    canConvertInfallibly(const Value& v, Scalar::Type type)
     {
+        if (type == Scalar::BigInt64 || type == Scalar::BigUint64) {
+            return false;
+        }
         return v.isNumber() || v.isBoolean() || v.isNull() || v.isUndefined();
     }
 
@@ -615,8 +672,18 @@ class ElementSpecific
     {
         MOZ_ASSERT(!v.isMagic());
 
-        if (MOZ_LIKELY(canConvertInfallibly(v))) {
+        if (MOZ_LIKELY(canConvertInfallibly(v, TypeIDOfType<T>::id))) {
             *result = infallibleValueToNative(v);
+            return true;
+        }
+
+        if (std::is_same<T, int64_t>::value) {
+            JS_TRY_VAR_OR_RETURN_FALSE(cx, *result, ToBigInt64(cx, v));
+            return true;
+        }
+
+        if (std::is_same<T, uint64_t>::value) {
+            JS_TRY_VAR_OR_RETURN_FALSE(cx, *result, ToBigUint64(cx, v));
             return true;
         }
 
@@ -668,6 +735,8 @@ class TypedArrayMethods
     typedef typename SomeTypedArray::template OfType<uint16_t>::Type Uint16ArrayType;
     typedef typename SomeTypedArray::template OfType<int32_t>::Type Int32ArrayType;
     typedef typename SomeTypedArray::template OfType<uint32_t>::Type Uint32ArrayType;
+    typedef typename SomeTypedArray::template OfType<int64_t>::Type BigInt64ArrayType;
+    typedef typename SomeTypedArray::template OfType<uint64_t>::Type BigUint64ArrayType;
     typedef typename SomeTypedArray::template OfType<float>::Type Float32ArrayType;
     typedef typename SomeTypedArray::template OfType<double>::Type Float64ArrayType;
     typedef typename SomeTypedArray::template OfType<uint8_clamped>::Type Uint8ClampedArrayType;
@@ -759,6 +828,14 @@ class TypedArrayMethods
              if (isShared)
                  return ElementSpecific<Uint32ArrayType, SharedOps>::setFromTypedArray(cx, target, source, offset);
              return ElementSpecific<Uint32ArrayType, UnsharedOps>::setFromTypedArray(cx, target, source, offset);
+           case Scalar::BigInt64:
+             if (isShared)
+                 return ElementSpecific<BigInt64ArrayType, SharedOps>::setFromTypedArray(cx, target, source, offset);
+               return ElementSpecific<BigInt64ArrayType, UnsharedOps>::setFromTypedArray(cx, target, source, offset);
+           case Scalar::BigUint64:
+             if (isShared)
+                 return ElementSpecific<BigUint64ArrayType, SharedOps>::setFromTypedArray(cx, target, source, offset);
+               return ElementSpecific<BigUint64ArrayType, UnsharedOps>::setFromTypedArray(cx, target, source, offset);
            case Scalar::Float32:
              if (isShared)
                  return ElementSpecific<Float32ArrayType, SharedOps>::setFromTypedArray(cx, target, source, offset);
@@ -816,6 +893,14 @@ class TypedArrayMethods
             if (isShared)
                 return ElementSpecific<Uint32ArrayType, SharedOps>::setFromNonTypedArray(cx, target, source, len, offset);
             return ElementSpecific<Uint32ArrayType, UnsharedOps>::setFromNonTypedArray(cx, target, source, len, offset);
+          case Scalar::BigInt64:
+            if (isShared)
+                return ElementSpecific<BigInt64ArrayType, SharedOps>::setFromNonTypedArray(cx, target, source, len, offset);
+            return ElementSpecific<BigInt64ArrayType, UnsharedOps>::setFromNonTypedArray(cx, target, source, len, offset);
+          case Scalar::BigUint64:
+            if (isShared)
+                return ElementSpecific<BigUint64ArrayType, SharedOps>::setFromNonTypedArray(cx, target, source, len, offset);
+            return ElementSpecific<BigUint64ArrayType, UnsharedOps>::setFromNonTypedArray(cx, target, source, len, offset);
           case Scalar::Float32:
             if (isShared)
                 return ElementSpecific<Float32ArrayType, SharedOps>::setFromNonTypedArray(cx, target, source, len, offset);
@@ -870,6 +955,14 @@ class TypedArrayMethods
             if (isShared)
                 return ElementSpecific<Uint32ArrayType, SharedOps>::initFromIterablePackedArray(cx, target, source);
             return ElementSpecific<Uint32ArrayType, UnsharedOps>::initFromIterablePackedArray(cx, target, source);
+          case Scalar::BigInt64:
+            if (isShared)
+                return ElementSpecific<BigInt64ArrayType, SharedOps>::initFromIterablePackedArray(cx, target, source);
+            return ElementSpecific<BigInt64ArrayType, UnsharedOps>::initFromIterablePackedArray(cx, target, source);
+          case Scalar::BigUint64:
+            if (isShared)
+                return ElementSpecific<BigUint64ArrayType, SharedOps>::initFromIterablePackedArray(cx, target, source);
+            return ElementSpecific<BigUint64ArrayType, UnsharedOps>::initFromIterablePackedArray(cx, target, source);
           case Scalar::Float32:
             if (isShared)
                 return ElementSpecific<Float32ArrayType, SharedOps>::initFromIterablePackedArray(cx, target, source);

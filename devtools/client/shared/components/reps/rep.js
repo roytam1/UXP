@@ -26,6 +26,7 @@ define(function (require, exports, module) {
 
   // DOM types (grips)
   const { Attribute } = require("./attribute");
+  const { BigInt } = require("./big-int");
   const { DateTime } = require("./date-time");
   const { Document } = require("./document");
   const { Event } = require("./event");
@@ -70,6 +71,7 @@ define(function (require, exports, module) {
     Null,
     StringRep,
     Number,
+    BigInt,
     SymbolRep,
     InfinityRep,
     NaNRep,
@@ -111,10 +113,12 @@ define(function (require, exports, module) {
    */
   function getRep(object, defaultRep = Obj) {
     let type = typeof object;
-    if (type == "object" && object instanceof String) {
-      type = "string";
-    } else if (object && type == "object" && object.type) {
-      type = object.type;
+    if (type == "object") {
+      if (object instanceof String) {
+        type = "string";
+      } else if (["symbol", "BigInt"].includes(object.type)) {
+        type = object.type;
+      }
     }
 
     if (isGrip(object)) {

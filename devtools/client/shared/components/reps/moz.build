@@ -6,6 +6,7 @@
 DevToolsModules(
     'array.js',
     'attribute.js',
+    'big-int.js',
     'caption.js',
     'comment-node.js',
     'date-time.js',
