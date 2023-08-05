@@ -22,7 +22,7 @@ pref("@GUAO_PREF@.addons.mozilla.org","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@)
 // Required for domains that are unresponsive to requests from users (or likely to be)
 pref("@GUAO_PREF@.aol.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Basilisk)");
 pref("@GUAO_PREF@.bing.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Basilisk)");
-pref("@GUAO_PREF@.chase.com","Mozilla/5.0 (%OS_SLICE% rv:79.0) @GK_SLICE@ Firefox/79.0");
+pref("@GUAO_PREF@.chase.com","Mozilla/5.0 (%OS_SLICE% rv:102.0) @GK_SLICE@ Firefox/102.0");
 pref("@GUAO_PREF@.dropbox.com","Mozilla/5.0 (%OS_SLICE% rv:68.9) @GK_SLICE@ Firefox/68.9 (Basilisk)");
 pref("@GUAO_PREF@.instagram.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ Firefox/68.0");
 pref("@GUAO_PREF@.google.com","Mozilla/5.0 (%OS_SLICE% rv:71.0) @GK_SLICE@ Firefox/71.0 @APP_SLICE@");
