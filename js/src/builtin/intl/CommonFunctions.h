@@ -18,6 +18,8 @@
 #include "js/Vector.h"
 #include "vm/String.h"
 
+#include "jscntxt.h"
+
 namespace JS { class Value; }
 
 class JSObject;

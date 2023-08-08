@@ -14,25 +14,25 @@ test(t => {
   var observer = new PerformanceObserver(() => {
   });
 
-  assert_throws({name: "TypeError"}, function() {
+  assert_throws({name: "SyntaxError"}, function() {
     observer.observe();
-  }, "observe() should throw TypeError exception if no option specified.");
+  }, "observe() should throw SyntaxError exception if no option specified.");
 
-  assert_throws({name: "TypeError"}, function() {
+  assert_throws({name: "SyntaxError"}, function() {
     observer.observe({ unsupportedAttribute: "unsupported" });
-  }, "obsrve() should throw TypeError exception if the option has no 'entryTypes' attribute.");
+  }, "observe() should throw SyntaxError exception if the option has no 'entryTypes' attribute.");
 
   assert_throws({name: "TypeError"}, function() {
     observer.observe({ entryTypes: [] });
-  }, "obsrve() should throw TypeError exception if 'entryTypes' attribute is an empty sequence.");
+  }, "observe() should throw TypeError exception if 'entryTypes' attribute is an empty sequence.");
 
   assert_throws({name: "TypeError"}, function() {
     observer.observe({ entryTypes: null });
-  }, "obsrve() should throw TypeError exception if 'entryTypes' attribute is null.");
+  }, "observe() should throw TypeError exception if 'entryTypes' attribute is null.");
 
   assert_throws({name: "TypeError"}, function() {
     observer.observe({ entryTypes: ["invalid"]});
-  }, "obsrve() should throw TypeError exception if 'entryTypes' attribute value is invalid.");
+  }, "observe() should throw TypeError exception if 'entryTypes' attribute value is invalid.");
 }, "Test that PerformanceObserver.observe throws exception");
 
 function promiseObserve(test, options) {
