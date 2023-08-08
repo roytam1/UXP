@@ -59,7 +59,7 @@ pref("@GUAO_PREF@.zoho.com","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@) @GRE_DATE
 pref("@GUAO_PREF@.humblebundle.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
 pref("@GUAO_PREF@.privat24.ua","Mozilla/5.0 (%OS_SLICE% rv:38.0) @GK_SLICE@ Firefox/38.0");
 pref("@GUAO_PREF@.citi.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ Firefox/68.0 SeaMonkey/2.53.12");
-pref("@GUAO_PREF@.chase.com","Mozilla/5.0 (%OS_SLICE% rv:112.0) @GK_SLICE@ Firefox/112.0");
+pref("@GUAO_PREF@.chase.com","Mozilla/5.0 (%OS_SLICE% rv:102.0) @GK_SLICE@ Firefox/102.0");
 pref("@GUAO_PREF@.facebook.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ Firefox/68.0 @PM_SLICE@");
 pref("@GUAO_PREF@.netflix.com","Mozilla/5.0 (Windows NT 6.1; rv:45.9) @GK_SLICE@ Firefox/45.9");
 pref("@GUAO_PREF@.netflximg.net","Mozilla/5.0 (Windows NT 6.1; rv:45.9) @GK_SLICE@ Firefox/45.9");
@@ -71,7 +71,12 @@ pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLI
 pref("@GUAO_PREF@.studio.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @GRE_VERSION_SLICE@ @FX_SLICE@ @PM_SLICE@");
 
 // The following domains do not like the Goanna slice
+pref("@GUAO_PREF@.bab.la","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
+pref("@GUAO_PREF@.babla.gr","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
+pref("@GUAO_PREF@.collinsdictionary.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
+pref("@GUAO_PREF@.dictionary.cambridge.org","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
 pref("@GUAO_PREF@.hitbox.tv","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
+pref("@GUAO_PREF@.ldoceonline.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
 pref("@GUAO_PREF@.yuku.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ @PM_SLICE@");
 
 // ============================================================================

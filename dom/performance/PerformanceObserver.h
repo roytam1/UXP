@@ -55,19 +55,37 @@ public:
 
   void Observe(const PerformanceObserverInit& aOptions,
                mozilla::ErrorResult& aRv);
+  static void GetSupportedEntryTypes(const GlobalObject& aGlobal,
+                                     JS::MutableHandle<JSObject*> aObject);
 
   void Disconnect();
+
+  void TakeRecords(nsTArray<RefPtr<PerformanceEntry>>& aRetval);
 
   void Notify();
   void QueueEntry(PerformanceEntry* aEntry);
 
+  bool ObservesTypeOfEntry(PerformanceEntry* aEntry);
+
 private:
+  void ReportUnsupportedTypesErrorToConsole(bool aIsMainThread,
+                                            const char* msgId,
+                                            const nsString& aInvalidTypes);
   ~PerformanceObserver();
 
   nsCOMPtr<nsISupports> mOwner;
   RefPtr<PerformanceObserverCallback> mCallback;
   RefPtr<Performance> mPerformance;
   nsTArray<nsString> mEntryTypes;
+  nsTArray<PerformanceObserverInit> mOptions;
+  enum {
+    ObserverTypeUndefined,
+    ObserverTypeSingle,
+    ObserverTypeMultiple,
+  } mObserverType;
+  /*
+   * This is also known as registered, in the spec.
+   */
   bool mConnected;
   nsTArray<RefPtr<PerformanceEntry>> mQueuedEntries;
 };
