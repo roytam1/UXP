@@ -788,7 +788,8 @@ ShouldMark<JSObject*>(GCMarker* gcmarker, JSObject* obj)
     // Don't mark things outside a zone if we are in a per-zone GC. It is
     // faster to check our own arena, which we can do since we know that
     // the object is tenured.
-    return obj->asTenured().zone()->shouldMarkInZone();
+    Zone* zone = obj->asTenured().zone();
+    return (zone && zone->shouldMarkInZone());
 }
 
 template <typename T>
