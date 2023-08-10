@@ -877,6 +877,9 @@ js::CurrentThreadCanAccessRuntime(const JSRuntime* rt)
 bool
 js::CurrentThreadCanAccessZone(Zone* zone)
 {
+    if (!zone)
+        return false;
+
     if (CurrentThreadCanAccessRuntime(zone->runtime_))
         return true;
 
