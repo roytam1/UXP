@@ -259,6 +259,9 @@ class RegExpShared : public gc::TenuredCell
     static bool dumpBytecode(JSContext* cx, MutableHandleRegExpShared res, bool match_only,
                              HandleLinearString input);
 #endif
+
+  public:
+    static const JS::TraceKind TraceKind = JS::TraceKind::RegExpShared;
 };
 
 class RegExpCompartment

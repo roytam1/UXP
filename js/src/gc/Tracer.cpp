@@ -344,6 +344,10 @@ JS_GetTraceThingInfo(char* buf, size_t bufsize, JSTracer* trc, void* thing,
         name = "object_group";
         break;
 
+      case JS::TraceKind::RegExpShared:
+        name = "reg_exp_shared";
+        break;
+
       default:
         name = "INVALID";
         break;
