@@ -13,10 +13,21 @@
       }
 
       .flexInnerHoriz {
-        display: flex;
+        height: -moz-fit-content;
+        margin: 0 0 auto 0;
         background: pink;
       }
-
+      .height50pct {
+        height: -moz-fit-content;
+        margin: 0 0 auto 0;
+        background: brown;
+      }
+      .height0pct {
+        height: -moz-fit-content;
+        margin: 0 0 auto 0;
+        background: yellow;
+      }
+      
       .spacer {
         background: lightblue;
         height: 200px;
@@ -28,6 +39,8 @@
     <div class="flexVert">
       <div class="flexIntermediateHoriz">
         <div class="flexInnerHoriz">text</div>
+        <div class="height50pct">fifty</div>
+        <div class="height0pct">zero</div>
         <div class="spacer"></div>
       </div>
     </div>
