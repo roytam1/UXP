@@ -226,6 +226,7 @@ ReflowInput::ReflowInput(
   mFlags.mAssumingHScrollbar = mFlags.mAssumingVScrollbar = false;
   mFlags.mIsColumnBalancing = false;
   mFlags.mIsFlexContainerMeasuringHeight = false;
+  mFlags.mTreatBSizeAsIndefinite = false;
   mFlags.mDummyParentReflowInput = false;
   mFlags.mShrinkWrap = !!(aFlags & COMPUTE_SIZE_SHRINK_WRAP);
   mFlags.mUseAutoBSize = !!(aFlags & COMPUTE_SIZE_USE_AUTO_BSIZE);
@@ -2045,6 +2046,10 @@ ReflowInput::ComputeContainingBlockRectangle(
 
   WritingMode wm = aContainingBlockRI->GetWritingMode();
 
+  if (aContainingBlockRI->mFlags.mTreatBSizeAsIndefinite) {
+    cbSize.BSize(wm) = NS_UNCONSTRAINEDSIZE;
+  }
+
   // mFrameType for abs-pos tables is NS_CSS_FRAME_TYPE_BLOCK, so we need to
   // special case them here.
   if (NS_FRAME_GET_TYPE(mFrameType) == NS_CSS_FRAME_TYPE_ABSOLUTE ||
@@ -2081,12 +2086,13 @@ ReflowInput::ComputeContainingBlockRectangle(
     }
   } else {
     // an element in quirks mode gets a containing block based on looking for a
-    // parent with a non-auto height if the element has a percent height
-    // Note: We don't emulate this quirk for percents in calc() or in
-    // vertical writing modes.
+    // parent with a non-auto height if the element has a percent height.
+    // Note: We don't emulate this quirk for percents in calc(), or in vertical
+    // writing modes, or if the containing block is a flex or grid item.
     if (!wm.IsVertical() &&
         NS_AUTOHEIGHT == cbSize.BSize(wm)) {
       if (eCompatibility_NavQuirks == aPresContext->CompatibilityMode() &&
+          !aContainingBlockRI->mFrame->IsFlexOrGridItem() &&
           mStylePosition->mHeight.GetUnit() == eStyleUnit_Percent) {
         cbSize.BSize(wm) = CalcQuirkContainingBlockHeight(aContainingBlockRI);
       }
@@ -2222,7 +2228,8 @@ ReflowInput::InitConstraints(nsPresContext*     aPresContext,
           // in quirks mode, get the cb height using the special quirk method
           if (!wm.IsVertical() &&
               eCompatibility_NavQuirks == aPresContext->CompatibilityMode()) {
-            if (!IS_TABLE_CELL(fType)) {
+            if (!IS_TABLE_CELL(fType) &&
+                !cbrs->mFrame->IsFlexOrGridItem()) {
               cbSize.BSize(wm) = CalcQuirkContainingBlockHeight(cbrs);
               if (cbSize.BSize(wm) == NS_AUTOHEIGHT) {
                 blockSizeUnit = eStyleUnit_Auto;
