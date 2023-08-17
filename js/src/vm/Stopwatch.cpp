@@ -409,7 +409,8 @@ AutoStopwatch::getCycles(JSRuntime* runtime) const
 cpuid_t inline
 AutoStopwatch::getCPU() const
 {
-#if defined(XP_WIN) && WINVER >= _WIN32_WINNT_VISTA
+// Temporary disable untested code path. Issue #2255
+#if 0 //defined(XP_WIN) && WINVER >= _WIN32_WINNT_VISTA
     PROCESSOR_NUMBER proc;
     GetCurrentProcessorNumberEx(&proc);
 
@@ -423,7 +424,8 @@ AutoStopwatch::getCPU() const
 bool inline
 AutoStopwatch::isSameCPU(const cpuid_t& a, const cpuid_t& b) const
 {
-#if defined(XP_WIN)  && WINVER >= _WIN32_WINNT_VISTA
+// Temporary disable untested code path. Issue #2255
+#if 0 //defined(XP_WIN)  && WINVER >= _WIN32_WINNT_VISTA
     return a.group_ == b.group_ && a.number_ == b.number_;
 #else
     return true;

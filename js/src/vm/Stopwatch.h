@@ -271,7 +271,8 @@ struct PerformanceMonitoring {
     uint64_t highestTimestampCounter_;
 };
 
-#if WINVER >= 0x0600
+// Temporary disable untested code path. Issue #2255
+#if 0 // WINVER >= 0x0600
 struct cpuid_t {
     WORD group_;
     BYTE number_;
