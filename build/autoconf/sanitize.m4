@@ -13,7 +13,7 @@ MOZ_ARG_ENABLE_BOOL(address-sanitizer,
     MOZ_ASAN= )
 if test -n "$MOZ_ASAN"; then
     MOZ_LLVM_HACKS=1
-    if test -n "$CLANG_CL"; then
+    if test "$OS_ARCH" = "WINNT"; then
         # Look for the ASan runtime binary
         if test "$CPU_ARCH" = "x86_64"; then
           MOZ_CLANG_RT_ASAN_LIB=clang_rt.asan_dynamic-x86_64.dll
@@ -27,14 +27,14 @@ if test -n "$MOZ_ASAN"; then
         fi
         AC_SUBST(MOZ_CLANG_RT_ASAN_LIB_PATH)
         # Suppressing errors in recompiled code.
-        if test "$OS_ARCH" = "WINNT"; then
+        if test -n "$CLANG_CL"; then
             CFLAGS="-fsanitize-blacklist=$_topsrcdir/build/sanitizers/asan_blacklist_win.txt $CFLAGS"
             CXXFLAGS="-fsanitize-blacklist=$_topsrcdir/build/sanitizers/asan_blacklist_win.txt $CXXFLAGS"
         fi
     fi
     CFLAGS="-fsanitize=address $CFLAGS"
     CXXFLAGS="-fsanitize=address $CXXFLAGS"
-    if test -z "$CLANG_CL"; then
+    if test "$OS_ARCH" != "WINNT"; then
         LDFLAGS="-fsanitize=address $LDFLAGS"
     fi
     AC_DEFINE(MOZ_ASAN)
@@ -79,6 +79,40 @@ if test -n "$MOZ_TSAN"; then
     MOZ_PATH_PROG(LLVM_SYMBOLIZER, llvm-symbolizer)
 fi
 AC_SUBST(MOZ_TSAN)
+
+dnl ========================================================
+dnl = Use Leak Sanitizer
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(leak-sanitizer,
+[  --enable-leak-sanitizer       Enable Leak Sanitizer (default=no)],
+   MOZ_LSAN=1,
+   MOZ_LSAN= )
+if test -n "$MOZ_LSAN"; then
+    MOZ_LLVM_HACKS=1
+    LDFLAGS="-fsanitize=leak $LDFLAGS"
+    AC_DEFINE(MOZ_LSAN)
+    MOZ_PATH_PROG(LLVM_SYMBOLIZER, llvm-symbolizer)
+fi
+AC_SUBST(MOZ_LSAN)
+
+dnl ========================================================
+dnl = Use Undefined Behavior Sanitizer
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(undefined-sanitizer,
+[  --enable-undefined-sanitizer       Enable Undefined Behavior Sanitizer (default=no)],
+   MOZ_UBSAN=1,
+   MOZ_UBSAN= )
+if test -n "$MOZ_UBSAN"; then
+    MOZ_LLVM_HACKS=1
+    CFLAGS="-fsanitize=undefined $CFLAGS"
+    CXXFLAGS="-fsanitize=undefined $CXXFLAGS"
+    if test -z "$CLANG_CL"; then
+        LDFLAGS="-fsanitize=undefined $LDFLAGS"
+    fi
+    AC_DEFINE(MOZ_UBSAN)
+    MOZ_PATH_PROG(LLVM_SYMBOLIZER, llvm-symbolizer)
+fi
+AC_SUBST(MOZ_UBSAN)
 
 # The LLVM symbolizer is used by all sanitizers
 AC_SUBST(LLVM_SYMBOLIZER)
