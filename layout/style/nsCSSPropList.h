@@ -366,7 +366,7 @@ CSS_PROP_SHORTHAND(
     animation,
     Animation,
     CSS_PROPERTY_PARSE_FUNCTION,
-    "")
+    "layout.css.animation.enabled")
 CSS_PROP_DISPLAY(
     animation-delay,
     animation_delay,
@@ -4277,7 +4277,7 @@ CSS_PROP_SHORTHAND(
     transition,
     Transition,
     CSS_PROPERTY_PARSE_FUNCTION,
-    "")
+    "layout.css.transition.enabled")
 CSS_PROP_DISPLAY(
     transition-delay,
     transition_delay,
