@@ -192,6 +192,7 @@ def old_configure_options(*options):
     '--enable-hardware-aec-ns',
     '--enable-icf',
     '--enable-install-strip',
+    '--enable-int-audio-sample',
     '--enable-ion',
     '--enable-ios-target',
     '--enable-jitspew',
