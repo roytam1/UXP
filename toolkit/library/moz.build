@@ -196,7 +196,7 @@ if CONFIG['MOZ_SYSTEM_JPEG']:
 
 if CONFIG['MOZ_SYSTEM_HUNSPELL']:
     OS_LIBS += CONFIG['MOZ_HUNSPELL_LIBS']
-else:
+elif CONFIG['OS_TARGET'] != 'SunOS':
     USE_LIBS += [ 'hunspell' ]
 
 if not CONFIG['MOZ_TREE_PIXMAN']:
