@@ -19,11 +19,18 @@ SOURCES += [
 
 DEFINES['BUILDING_LIBHUNSPELL'] = True
 
-SharedLibrary('hunspell')
+# Hunspell must be built into libxul on SunOS. See UXP Issue #2290.
+if CONFIG['OS_TARGET'] == 'SunOS':
 
-USE_LIBS += [
-    'mozglue'
-]
+    FINAL_LIBRARY = 'xul'
+
+else:
+
+    SharedLibrary('hunspell')
+
+    USE_LIBS += [
+       'mozglue'
+    ]
 
 LOCAL_INCLUDES += [
     '../glue',
