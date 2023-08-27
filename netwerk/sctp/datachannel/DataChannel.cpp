@@ -173,7 +173,8 @@ GetConnectionFromSocket(struct socket* sock)
 
 // called when the buffer empties to the threshold value
 static int
-threshold_event(struct socket* sock, uint32_t sb_free)
+threshold_event(struct socket* sock, uint32_t sb_free,
+                void* ulp_info)
 {
   DataChannelConnection *connection = GetConnectionFromSocket(sock);
   if (connection) {
