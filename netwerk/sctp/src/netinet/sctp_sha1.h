@@ -1,4 +1,6 @@
 /*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  * Copyright (c) 2001-2007, by Cisco Systems, Inc. All rights reserved.
  * Copyright (c) 2008-2012, by Randall Stewart. All rights reserved.
  * Copyright (c) 2008-2012, by Michael Tuexen. All rights reserved.
@@ -30,7 +32,7 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && !defined(__Userspace__)
 #include <sys/cdefs.h>
 __FBSDID("$FreeBSD$");
 #endif
@@ -41,16 +43,7 @@ __FBSDID("$FreeBSD$");
 
 #include <sys/types.h>
 #if defined(SCTP_USE_NSS_SHA1)
-#if defined(__Userspace_os_Darwin)
-/* The NSS sources require __APPLE__ to be defined.
- * XXX: Remove this ugly hack once the platform defines have been cleaned up.
- */
-#define __APPLE__
-#endif
 #include <pk11pub.h>
-#if defined(__Userspace_os_Darwin)
-#undef __APPLE__
-#endif
 #elif defined(SCTP_USE_OPENSSL_SHA1)
 #include <openssl/sha.h>
 #endif
@@ -81,7 +74,7 @@ struct sctp_sha1_context {
 #endif
 };
 
-#if (defined(__APPLE__) && defined(KERNEL))
+#if (defined(__APPLE__)  && !defined(__Userspace__) && defined(KERNEL))
 #ifndef _KERNEL
 #define _KERNEL
 #endif

@@ -1,4 +1,6 @@
 /*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  * Copyright (c) 2001-2007, by Cisco Systems, Inc. All rights reserved.
  * Copyright (c) 2008-2012, by Randall Stewart. All rights reserved.
  * Copyright (c) 2008-2013, by Michael Tuexen. All rights reserved.
@@ -82,9 +84,9 @@ sctp_sha1_final(unsigned char *digest, struct sctp_sha1_context *ctx)
 #else
 
 #include <string.h>
-#if defined(__Userspace_os_Windows)
+#if defined(_WIN32) && defined(__Userspace__)
 #include <winsock2.h>
-#elif !defined(__Windows__)
+#elif !(defined(_WIN32) && !defined(__Userspace__))
 #include <arpa/inet.h>
 #endif
 
