@@ -55,30 +55,14 @@ for var in ('SCTP_SIMPLE_ALLOCATOR',
 DEFINES['INET6'] = 1
 
 if CONFIG['OS_TARGET'] == 'WINNT':
-    DEFINES['__Userspace_os_Windows'] = 1
     DEFINES['_LIB'] = 1
-else:
-    DEFINES['__Userspace_os_%s' % CONFIG['OS_TARGET']] = 1
 
 if CONFIG['OS_TARGET'] == 'Darwin':
     DEFINES['__APPLE_USE_RFC_2292'] = 1
-    DEFINES['__APPLE__'] = False
 
 if CONFIG['OS_TARGET'] == 'Linux':
     # to make sure that in6_pktinfo gets defined on all distros
     DEFINES['_GNU_SOURCE'] = True
-
-if CONFIG['OS_TARGET'] == 'FreeBSD':
-    DEFINES['__FreeBSD__'] = False
-
-if CONFIG['OS_TARGET'] == 'NetBSD':
-    DEFINES['__NetBSD__'] = False
-
-if CONFIG['OS_TARGET'] == 'OpenBSD':
-    DEFINES['__OpenBSD__'] = False
-
-if CONFIG['OS_TARGET'] == 'DragonFly':
-    DEFINES['__DragonFly__'] = False
 
 NO_PGO = True # Don't PGO
 
