@@ -7754,10 +7754,23 @@ bool
 BytecodeEmitter::emitLeftAssociative(ListNode* node)
 {
     // Left-associative operator chain.
-    if (!emitTree(node->head()))
-        return false;
     JSOp op = node->getOp();
-    ParseNode* nextExpr = node->head()->pn_next;
+    ParseNode* headExpr = node->head();
+    if (op == JSOP_IN && headExpr->isKind(PNK_NAME) && headExpr->as<NameNode>().isPrivateName()) {
+        // {Goanna} The only way a "naked" private name can show up as the leftmost side of an in-chain
+        //          is from an ergonomic brand check (`this.#x in ...` would be a PNK_DOT child node).
+        //          Instead of going through the emitTree machinery, we pretend that this identifier
+        //          reference is actually a string, which allows us to use the JSOP_IN interpreter routines.
+        //          This erroneously doesn't call updateLineNumberNotes, but this is not a big issue:
+        //          the begin pos is correct as we're on the start of the current tree, the end is on the
+        //          same line anyway.
+        if (!emitAtomOp(headExpr->as<NameNode>().atom(), JSOP_STRING))
+            return false;
+    } else {
+        if (!emitTree(headExpr))
+            return false;
+    }
+    ParseNode* nextExpr = headExpr->pn_next;
     do {
         if (!emitTree(nextExpr))
             return false;
