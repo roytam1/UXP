@@ -520,7 +520,7 @@ private:
     ~nsOpenConn() { MOZ_COUNT_DTOR(nsOpenConn); }
 
     nsCString mAddress;
-    WebSocketChannel *mChannel;
+    RefPtr<WebSocketChannel> mChannel;
   };
 
   void ConnectNext(nsCString &hostName)
