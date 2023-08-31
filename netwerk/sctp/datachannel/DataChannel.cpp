@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
-#if !defined(__Userspace_os_Windows)
+#if !defined(_WIN32)
 #include <arpa/inet.h>
 #endif
 // usrsctp.h expects to have errno definitions prior to its inclusion.
@@ -547,7 +547,7 @@ DataChannelConnection::CompleteConnect(TransportFlow *flow, TransportLayer::Stat
   struct sockaddr_conn addr;
   memset(&addr, 0, sizeof(addr));
   addr.sconn_family = AF_CONN;
-#if defined(__Userspace_os_Darwin)
+#if defined(__APPLE__)
   addr.sconn_len = sizeof(addr);
 #endif
   addr.sconn_port = htons(mLocalPort);
@@ -801,7 +801,7 @@ DataChannelConnection::Connect(const char *addr, unsigned short port)
   addr6.sin6_port = htons(port);
   mState = CONNECTING;
 
-#if !defined(__Userspace_os_Windows)
+#if !defined(_WIN32)
   if (inet_pton(AF_INET6, addr, &addr6.sin6_addr) == 1) {
     if (usrsctp_connect(mMasterSocket, reinterpret_cast<struct sockaddr *>(&addr6), sizeof(struct sockaddr_in6)) < 0) {
       LOG(("*** Failed userspace_connect"));
@@ -1555,7 +1555,7 @@ void
 DataChannelConnection::HandlePeerAddressChangeEvent(const struct sctp_paddr_change *spc)
 {
   const char *addr = "";
-#if !defined(__Userspace_os_Windows)
+#if !defined(_WIN32)
   char addr_buf[INET6_ADDRSTRLEN];
   struct sockaddr_in *sin;
   struct sockaddr_in6 *sin6;
@@ -1563,13 +1563,13 @@ DataChannelConnection::HandlePeerAddressChangeEvent(const struct sctp_paddr_chan
 
   switch (spc->spc_aaddr.ss_family) {
   case AF_INET:
-#if !defined(__Userspace_os_Windows)
+#if !defined(_WIN32)
     sin = (struct sockaddr_in *)&spc->spc_aaddr;
     addr = inet_ntop(AF_INET, &sin->sin_addr, addr_buf, INET6_ADDRSTRLEN);
 #endif
     break;
   case AF_INET6:
-#if !defined(__Userspace_os_Windows)
+#if !defined(_WIN32)
     sin6 = (struct sockaddr_in6 *)&spc->spc_aaddr;
     addr = inet_ntop(AF_INET6, &sin6->sin6_addr, addr_buf, INET6_ADDRSTRLEN);
 #endif
