@@ -246,7 +246,9 @@ public:
   // Must be called before Shutdown().
   bool OwnerHasError() const;
 
+#ifdef MOZ_GMP
   already_AddRefed<GMPCrashHelper> GetCrashHelper() override;
+#endif
 
 protected:
   // Updates the media duration. This is called while the media is being

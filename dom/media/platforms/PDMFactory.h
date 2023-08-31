@@ -74,7 +74,9 @@ private:
 
   bool mWMFFailedToLoad = false;
   bool mFFmpegFailedToLoad = false;
+#ifdef MOZ_GMP
   bool mGMPPDMFailedToStartup = false;
+#endif
 
   void EnsureInit() const;
   template<class T> friend class StaticAutoPtr;

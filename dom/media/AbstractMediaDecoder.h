@@ -16,7 +16,9 @@
 #include "nsDataHashtable.h"
 #include "nsThreadUtils.h"
 
+#ifdef MOZ_GMP
 class GMPCrashHelper;
+#endif
 
 namespace mozilla
 {
@@ -112,7 +114,9 @@ public:
   // Set by Reader if the current audio track can be offloaded
   virtual void SetPlatformCanOffloadAudio(bool aCanOffloadAudio) {}
 
+#ifdef MOZ_GMP
   virtual already_AddRefed<GMPCrashHelper> GetCrashHelper() { return nullptr; }
+#endif
 
   // Stack based class to assist in notifying the frame statistics of
   // parsed and decoded frames. Use inside video demux & decode functions

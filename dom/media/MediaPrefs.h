@@ -35,7 +35,9 @@ static StripAtomic<Type> Get##Name##PrefDefault() { return Default; }         \
 PrefTemplate<Type, Get##Name##PrefDefault, Get##Name##PrefName> mPref##Name
 
 // Custom Definitions.
+#ifdef MOZ_GMP
 #define GMP_DEFAULT_ASYNC_SHUTDOWN_TIMEOUT 3000
+#endif
 #define SUSPEND_BACKGROUND_VIDEO_DELAY_MS 10000
 #define TEST_PREFERENCE_FAKE_RECOGNITION_SERVICE "media.webspeech.test.fake_recognition_service"
 
@@ -96,9 +98,13 @@ private:
 
   // PlatformDecoderModule
   DECL_MEDIA_PREF("media.apple.forcevda",                     AppleForceVDA, bool, false);
+#ifdef MOZ_GMP
   DECL_MEDIA_PREF("media.gmp.insecure.allow",                 GMPAllowInsecure, bool, false);
   DECL_MEDIA_PREF("media.gmp.async-shutdown-timeout",         GMPAsyncShutdownTimeout, uint32_t, GMP_DEFAULT_ASYNC_SHUTDOWN_TIMEOUT);
+#endif
+#ifdef MOZ_EME
   DECL_MEDIA_PREF("media.eme.enabled",                        EMEEnabled, bool, false);
+#endif
   DECL_MEDIA_PREF("media.use-blank-decoder",                  PDMUseBlankDecoder, bool, false);
   DECL_MEDIA_PREF("media.gpu-process-decoder",                PDMUseGPUDecoder, bool, false);
 #ifdef MOZ_FFMPEG
@@ -121,9 +127,11 @@ private:
   DECL_MEDIA_PREF("media.decoder.fuzzing.enabled",            PDMFuzzingEnabled, bool, false);
   DECL_MEDIA_PREF("media.decoder.fuzzing.video-output-minimum-interval-ms", PDMFuzzingInterval, uint32_t, 0);
   DECL_MEDIA_PREF("media.decoder.fuzzing.dont-delay-inputexhausted", PDMFuzzingDelayInputExhausted, bool, true);
+#ifdef MOZ_GMP
   DECL_MEDIA_PREF("media.gmp.decoder.enabled",                PDMGMPEnabled, bool, true);
   DECL_MEDIA_PREF("media.gmp.decoder.aac",                    GMPAACPreferred, uint32_t, 0);
   DECL_MEDIA_PREF("media.gmp.decoder.h264",                   GMPH264Preferred, uint32_t, 0);
+#endif
 
   // MediaDecoderStateMachine
   DECL_MEDIA_PREF("media.suspend-bkgnd-video.enabled",        MDSMSuspendBackgroundVideoEnabled, bool, false);

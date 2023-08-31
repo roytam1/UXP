@@ -10,9 +10,6 @@ UNIFIED_SOURCES += [
     'TestAudioMixer.cpp',
     'TestAudioPacketizer.cpp',
     'TestAudioSegment.cpp',
-    'TestGMPCrossOrigin.cpp',
-    'TestGMPRemoveAndDelete.cpp',
-    'TestGMPUtils.cpp',
     'TestIntervalSet.cpp',
     'TestMediaDataDecoder.cpp',
     'TestMediaEventSource.cpp',
@@ -26,6 +23,13 @@ UNIFIED_SOURCES += [
     'TestVPXDecoding.cpp',
     'TestWebMBuffered.cpp',
 ]
+
+if CONFIG['MOZ_GMP']:
+    UNIFIED_SOURCES += [
+        'TestGMPCrossOrigin.cpp',
+        'TestGMPRemoveAndDelete.cpp',
+        'TestGMPUtils.cpp',
+    ]
 
 if CONFIG['MOZ_WEBM_ENCODER']:
     UNIFIED_SOURCES += [
@@ -59,10 +63,14 @@ LOCAL_INCLUDES += [
     '/dom/media',
     '/dom/media/encoder',
     '/dom/media/fmp4',
-    '/dom/media/gmp',
     '/security/certverifier',
     '/security/pkix/include',
 ]
+
+if CONFIG['MOZ_GMP']:
+    LOCAL_INCLUDES += [
+        '/dom/media/gmp',
+    ]
 
 FINAL_LIBRARY = 'xul-gtest'
 

@@ -21,9 +21,6 @@ with Files('GetUserMedia*'):
 DIRS += [
     'encoder',
     'flac',
-    'gmp',
-    'gmp-plugin',
-    'gmp-plugin-openh264',
     'imagecapture',
     'ipc',
     'mediasink',
@@ -49,6 +46,13 @@ if CONFIG['MOZ_WEBRTC']:
 
 if CONFIG['MOZ_EME']:
     DIRS += ['eme']
+
+if CONFIG['MOZ_GMP']:
+    DIRS += [
+        'gmp',
+        'gmp-plugin',
+        'gmp-plugin-openh264',
+    ]
 
 TEST_DIRS += [
     'gtest',

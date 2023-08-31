@@ -1333,12 +1333,14 @@
               this._errorLink.value = gStrings.ext.GetStringFromName("notification.vulnerableNoUpdate.link");
               this._errorLink.href = this.mAddon.blocklistURL;
               this._errorLink.hidden = false;
+#ifdef MOZ_GMP
             } else if (this.mAddon.isGMPlugin && !this.mAddon.isInstalled &&
                        this.mAddon.isActive) {
               this.setAttribute("notification", "warning");
               this._warning.textContent =
                 gStrings.ext.formatStringFromName("notification.gmpPending",
                                                   [this.mAddon.name], 1);
+#endif
             } else {
               this.removeAttribute("notification");
 #ifdef MOZ_PHOENIX_EXTENSIONS
