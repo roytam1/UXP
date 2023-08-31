@@ -29,6 +29,7 @@ from mozbuild.frontend.data import (
     FinalTargetFiles,
     GeneratedEventWebIDLFile,
     GeneratedWebIDLFile,
+    PreprocessedIPDLFile,
     PreprocessedTestWebIDLFile,
     PreprocessedWebIDLFile,
     SharedLibrary,
@@ -215,6 +216,21 @@ class BinariesCollection(object):
         self.shared_libraries = []
         self.programs = []
 
+class IPDLCollection(object):
+    """Collects IPDL files during the build."""
+
+    def __init__(self):
+        self.sources = set()
+        self.preprocessed_sources = set()
+
+    def all_sources(self):
+        return self.sources | self.preprocessed_sources
+
+    def all_regular_sources(self):
+        return self.sources
+
+    def all_preprocessed_sources(self):
+        return self.preprocessed_sources
 
 class CommonBackend(BuildBackend):
     """Holds logic common to all build backends."""
@@ -225,7 +241,7 @@ class CommonBackend(BuildBackend):
         self._webidls = WebIDLCollection()
         self._binaries = BinariesCollection()
         self._configs = set()
-        self._ipdl_sources = set()
+        self._ipdls = IPDLCollection()
 
     def consume_object(self, obj):
         self._configs.add(obj.config)
@@ -290,6 +306,10 @@ class CommonBackend(BuildBackend):
             self._webidls.generated_sources.add(mozpath.join(obj.srcdir,
                 obj.basename))
 
+        elif isinstance(obj, PreprocessedIPDLFile):
+            self._ipdls.preprocessed_sources.add(mozpath.join(
+                obj.srcdir, obj.basename))
+
         elif isinstance(obj, PreprocessedWebIDLFile):
             # WebIDL isn't relevant to artifact builds.
             if self.environment.is_artifact_build:
@@ -310,7 +330,7 @@ class CommonBackend(BuildBackend):
             if self.environment.is_artifact_build:
                 return True
 
-            self._ipdl_sources.add(mozpath.join(obj.srcdir, obj.basename))
+            self._ipdls.sources.add(mozpath.join(obj.srcdir, obj.basename))
 
         elif isinstance(obj, UnifiedSources):
             # Unified sources aren't relevant to artifact builds.
@@ -341,7 +361,9 @@ class CommonBackend(BuildBackend):
 
         self._handle_webidl_collection(self._webidls)
 
-        sorted_ipdl_sources = list(sorted(self._ipdl_sources))
+        sorted_ipdl_sources = list(sorted(self._ipdls.all_sources()))
+        sorted_nonstatic_ipdl_sources = list(sorted(self._ipdls.all_preprocessed_sources()))
+        sorted_static_ipdl_sources = list(sorted(self._ipdls.all_regular_sources()))
 
         def files_from(ipdl):
             base = mozpath.basename(ipdl)
@@ -364,7 +386,8 @@ class CommonBackend(BuildBackend):
                                                           files_per_unified_file=16))
 
         self._write_unified_files(unified_source_mapping, ipdl_dir, poison_windows_h=False)
-        self._handle_ipdl_sources(ipdl_dir, sorted_ipdl_sources, unified_source_mapping)
+        self._handle_ipdl_sources(ipdl_dir, sorted_ipdl_sources, sorted_nonstatic_ipdl_sources,
+                                  sorted_static_ipdl_sources, unified_source_mapping)
 
         for config in self._configs:
             self.backend_input_files.add(config.source)

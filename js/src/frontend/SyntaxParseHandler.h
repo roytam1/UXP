@@ -104,6 +104,9 @@ class SyntaxParseHandler
         // Node representing the "async" name, which may actually be a
         // contextual keyword.
         NodePotentialAsyncKeyword,
+        
+        // Node representing a private name. Handled mostly like NodeUnparenthesizedName. 
+        NodePrivateName,
 
         // Valuable for recognizing potential destructuring patterns.
         NodeUnparenthesizedArray,
@@ -212,6 +215,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
             return NodePotentialAsyncKeyword;
         if (name == cx->names().eval)
             return NodeUnparenthesizedEvalName;
+        if (name->length() >= 1 && name->latin1OrTwoByteChar(0) == '#')
+            return NodePrivateName;
         return NodeUnparenthesizedName;
     }
 
@@ -614,7 +619,8 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return node == NodeUnparenthesizedArgumentsName ||
                node == NodeUnparenthesizedEvalName ||
                node == NodeUnparenthesizedName ||
-               node == NodePotentialAsyncKeyword;
+               node == NodePotentialAsyncKeyword ||
+               node == NodePrivateName;
     }
 
     bool isNameAnyParentheses(Node node) {
@@ -623,6 +629,10 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return node == NodeParenthesizedArgumentsName ||
                node == NodeParenthesizedEvalName ||
                node == NodeParenthesizedName;
+    }
+
+    bool isPrivateName(Node node) {
+        return node == NodePrivateName;
     }
 
     bool isArgumentsAnyParentheses(Node node, ExclusiveContext* cx) {

@@ -94,7 +94,8 @@ SharedSurface_Basic::~SharedSurface_Basic()
         mGL->fDeleteFramebuffers(1, &mFB);
 
     if (mOwnsTex)
-        mGL->fDeleteTextures(1, &mTex);
+        if (mTex)
+            mGL->fDeleteTextures(1, &mTex);
 }
 
 
