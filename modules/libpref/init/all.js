@@ -2486,14 +2486,14 @@ pref("layout.css.mix-blend-mode.enabled", true);
 // Is support for isolation enabled?
 pref("layout.css.isolation.enabled", true);
 
-// Is support for CSS Filters enabled?
-pref("layout.css.filters.enabled", true);
-
-// Is support for CSS Animation enabled?
+// Is support for CSS animation properties enabled?
 pref("layout.css.animation.enabled", true);
 
-// Is support for CSS Transition enabled?
+// Is support for CSS transition properties enabled?
 pref("layout.css.transition.enabled", true);
+
+// Is support for CSS Filters enabled?
+pref("layout.css.filters.enabled", true);
 
 // Is support for scrollbar-width property enabled?
 pref("layout.css.scrollbar-width.enabled", true);

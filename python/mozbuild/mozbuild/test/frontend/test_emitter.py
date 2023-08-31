@@ -30,6 +30,7 @@ from mozbuild.frontend.data import (
     JARManifest,
     LinkageMultipleRustLibrariesError,
     LocalInclude,
+    PreprocessedIPDLFile,
     Program,
     SdkFiles,
     SharedLibrary,
@@ -688,9 +689,12 @@ class TestEmitterBasic(unittest.TestCase):
         objs = self.read_topsrcdir(reader)
 
         ipdls = []
+        nonstatic_ipdls = []
         for o in objs:
             if isinstance(o, IPDLFile):
                 ipdls.append('%s/%s' % (o.relativedir, o.basename))
+            elif isinstance(o, PreprocessedIPDLFile):
+                nonstatic_ipdls.append('%s/%s' % (o.relativedir, o.basename))
 
         expected = [
             'bar/bar.ipdl',
@@ -699,7 +703,12 @@ class TestEmitterBasic(unittest.TestCase):
             'foo/foo2.ipdlh',
         ]
 
-        self.assertEqual(ipdls, expected)
+        expected = [
+            'bar/bar1.ipdl',
+            'foo/foo1.ipdl',
+        ]
+
+        self.assertEqual(nonstatic_ipdls, expected)
 
     def test_local_includes(self):
         """Test that LOCAL_INCLUDES is emitted correctly."""

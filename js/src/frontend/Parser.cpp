@@ -8951,6 +8951,15 @@ Parser<ParseHandler>::orExpr1(InHandling inHandling, YieldHandling yieldHandling
         if (!tokenStream.getToken(&tok))
             return null();
 
+        // Ensure that if we have a private name lhs we are legally constructing a
+        // `#x in obj` expression:
+        if (handler.isPrivateName(pn)) {
+            if (tok != TOK_IN) {
+                error(JSMSG_ILLEGAL_PRIVATE_NAME);
+                return null();
+            }
+        }
+
         ParseNodeKind pnk;
         if (tok == TOK_IN ? inHandling == InAllowed : TokenKindIsBinaryOp(tok)) {
             // We're definitely not in a destructuring context, so report any
@@ -8987,7 +8996,20 @@ Parser<ParseHandler>::orExpr1(InHandling inHandling, YieldHandling yieldHandling
                 // If we have not detected a mixing error at this point, record that
                 // we have an unparenthesized expression, in case we have one later.
                 unparenthesizedExpression = EnforcedParentheses::CoalesceExpr;
-                break;                
+                break;
+              case TOK_IN:
+                // if the LHS is a private name, and the operator is In,
+                // ensure we're construcing an ergonomic brand check of
+                // '#x in y', rather than having a higher precedence operator
+                // like + cause a different reduction, such as
+                // 1 + #x in y.
+                if (handler.isPrivateName(pn)) {
+                    if (depth > 0 && Precedence(kindStack[depth - 1]) >= Precedence(PNK_IN)) {
+                        error(JSMSG_ILLEGAL_PRIVATE_NAME);
+                        return null();
+                    }
+                }
+                break;
               default:
                 // Do nothing in other cases.
                 break;

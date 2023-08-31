@@ -965,6 +965,10 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_AS)
         return node->isKind(PNK_NAME);
     }
 
+    bool isPrivateName(Node node) {
+        return node->isKind(PNK_NAME) && node->as<NameNode>().isPrivateName();
+    }
+
     bool isArgumentsAnyParentheses(Node node, ExclusiveContext* cx) {
         return node->isKind(PNK_NAME) && node->as<NameNode>().atom() == cx->names().arguments;
     }

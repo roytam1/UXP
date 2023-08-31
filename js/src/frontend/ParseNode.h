@@ -953,6 +953,10 @@ class NameNode : public ParseNode
     JSAtom* atom() const {
         return pn_u.name.atom;
     }
+    
+    bool isPrivateName() const {
+        return atom()->asPropertyName()->latin1OrTwoByteChar(0) == '#';
+    }
 
     ParseNode* initializer() const {
         return pn_u.name.initOrStmt;

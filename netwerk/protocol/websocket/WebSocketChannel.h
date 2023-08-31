@@ -18,6 +18,7 @@
 #include "nsIChannelEventSink.h"
 #include "nsIHttpChannelInternal.h"
 #include "nsIStringStream.h"
+#include "mozilla/Mutex.h"
 #include "BaseWebSocketChannel.h"
 
 #include "nsCOMPtr.h"
@@ -288,6 +289,7 @@ private:
   uint32_t                        mHdrOutToSend;
   uint8_t                        *mHdrOut;
   uint8_t                         mOutHeader[kCopyBreak + 16];
+  Mutex                           mCompressorMutex;
   nsAutoPtr<PMCECompression>      mPMCECompressor;
   uint32_t                        mDynamicOutputSize;
   uint8_t                        *mDynamicOutput;
