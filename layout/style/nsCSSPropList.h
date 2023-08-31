@@ -373,7 +373,7 @@ CSS_PROP_DISPLAY(
     AnimationDelay,
     CSS_PROPERTY_PARSE_VALUE_LIST |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.animation.enabled",
     VARIANT_TIME, // used by list parsing
     nullptr,
     CSS_PROP_NO_OFFSET,
@@ -384,7 +384,7 @@ CSS_PROP_DISPLAY(
     AnimationDirection,
     CSS_PROPERTY_PARSE_VALUE_LIST |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.animation.enabled",
     VARIANT_KEYWORD, // used by list parsing
     kAnimationDirectionKTable,
     CSS_PROP_NO_OFFSET,
@@ -395,7 +395,7 @@ CSS_PROP_DISPLAY(
     AnimationDuration,
     CSS_PROPERTY_PARSE_VALUE_LIST |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.animation.enabled",
     VARIANT_TIME | VARIANT_NONNEGATIVE_DIMENSION, // used by list parsing
     nullptr,
     CSS_PROP_NO_OFFSET,
@@ -406,7 +406,7 @@ CSS_PROP_DISPLAY(
     AnimationFillMode,
     CSS_PROPERTY_PARSE_VALUE_LIST |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.animation.enabled",
     VARIANT_KEYWORD, // used by list parsing
     kAnimationFillModeKTable,
     CSS_PROP_NO_OFFSET,
@@ -420,7 +420,7 @@ CSS_PROP_DISPLAY(
         // http://lists.w3.org/Archives/Public/www-style/2011Mar/0355.html
         CSS_PROPERTY_VALUE_NONNEGATIVE |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.animation.enabled",
     VARIANT_KEYWORD | VARIANT_NUMBER, // used by list parsing
     kAnimationIterationCountKTable,
     CSS_PROP_NO_OFFSET,
@@ -431,7 +431,7 @@ CSS_PROP_DISPLAY(
     AnimationName,
     CSS_PROPERTY_PARSE_VALUE_LIST |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.animation.enabled",
     // FIXME: The spec should say something about 'inherit' and 'initial'
     // not being allowed.
     VARIANT_NONE | VARIANT_IDENTIFIER_NO_INHERIT, // used by list parsing
@@ -444,7 +444,7 @@ CSS_PROP_DISPLAY(
     AnimationPlayState,
     CSS_PROPERTY_PARSE_VALUE_LIST |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.animation.enabled",
     VARIANT_KEYWORD, // used by list parsing
     kAnimationPlayStateKTable,
     CSS_PROP_NO_OFFSET,
@@ -455,7 +455,7 @@ CSS_PROP_DISPLAY(
     AnimationTimingFunction,
     CSS_PROPERTY_PARSE_VALUE_LIST |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.animation.enabled",
     VARIANT_KEYWORD | VARIANT_TIMING_FUNCTION, // used by list parsing
     kTransitionTimingFunctionKTable,
     CSS_PROP_NO_OFFSET,
@@ -4284,7 +4284,7 @@ CSS_PROP_DISPLAY(
     TransitionDelay,
     CSS_PROPERTY_PARSE_VALUE_LIST |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.transition.enabled",
     VARIANT_TIME, // used by list parsing
     nullptr,
     CSS_PROP_NO_OFFSET,
@@ -4295,7 +4295,7 @@ CSS_PROP_DISPLAY(
     TransitionDuration,
     CSS_PROPERTY_PARSE_VALUE_LIST |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.transition.enabled",
     VARIANT_TIME | VARIANT_NONNEGATIVE_DIMENSION, // used by list parsing
     nullptr,
     CSS_PROP_NO_OFFSET,
@@ -4306,7 +4306,7 @@ CSS_PROP_DISPLAY(
     TransitionProperty,
     CSS_PROPERTY_PARSE_FUNCTION |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.transition.enabled",
     VARIANT_IDENTIFIER | VARIANT_NONE | VARIANT_ALL, // used only in shorthand
     nullptr,
     CSS_PROP_NO_OFFSET,
@@ -4317,7 +4317,7 @@ CSS_PROP_DISPLAY(
     TransitionTimingFunction,
     CSS_PROPERTY_PARSE_VALUE_LIST |
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
-    "",
+    "layout.css.transition.enabled",
     VARIANT_KEYWORD | VARIANT_TIMING_FUNCTION, // used by list parsing
     kTransitionTimingFunctionKTable,
     CSS_PROP_NO_OFFSET,

@@ -20,6 +20,11 @@ SOURCES += [
 
 FINAL_LIBRARY = 'gkmedias'
 
+DEFINES['HAVE_ALLOCA'] = True
+
+if CONFIG['OS_ARCH'] == 'WINNT':
+    DEFINES['NOMINMAX'] = True
+
 if CONFIG['OS_ARCH'] == 'AIX':
     DEFINES['alloca'] = '__alloca'
 
