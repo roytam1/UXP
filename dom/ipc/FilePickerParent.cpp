@@ -286,7 +286,6 @@ FilePickerParent::RecvOpen(const int16_t& aSelectedType,
     }
   }
 
-  MOZ_ASSERT(!mCallback);
   mCallback = new FilePickerShownCallback(this);
 
   mFilePicker->Open(mCallback);
