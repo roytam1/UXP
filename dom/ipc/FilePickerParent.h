@@ -27,11 +27,7 @@ class FilePickerParent : public PFilePickerParent
   , mMode(aMode)
   {}
 
- private:
   virtual ~FilePickerParent();
-
- public:
-  NS_INLINE_DECL_REFCOUNTING(FilePickerParent)
 
   void Done(int16_t aResult);
 
