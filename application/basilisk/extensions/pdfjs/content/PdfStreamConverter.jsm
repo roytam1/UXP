@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* jshint esnext:true */
 /* globals Components, Services, XPCOMUtils, NetUtil, PrivateBrowsingUtils,
            dump, NetworkManager, PdfjsContentUtils */
 
@@ -29,8 +28,7 @@ const MOZ_CENTRAL = JSON.parse('true');
 const PDFJS_EVENT_ID = 'pdf.js.message';
 const PDF_CONTENT_TYPE = 'application/pdf';
 const PREF_PREFIX = 'pdfjs';
-const PDF_VIEWER_ORIGIN = "resource://pdf.js";
-const PDF_VIEWER_WEB_PAGE = "resource://pdf.js/web/viewer.html";
+const PDF_VIEWER_WEB_PAGE = 'resource://pdf.js/web/viewer.html';
 const MAX_NUMBER_OF_PREFS = 50;
 const MAX_STRING_PREF_LENGTH = 128;
 
@@ -75,6 +73,22 @@ function getFindBar(domWindow) {
   }
 }
 
+function getBoolPref(pref, def) {
+  try {
+    return Services.prefs.getBoolPref(pref);
+  } catch (ex) {
+    return def;
+  }
+}
+
+function getIntPref(pref, def) {
+  try {
+    return Services.prefs.getIntPref(pref);
+  } catch (ex) {
+    return def;
+  }
+}
+
 function getStringPref(pref, def) {
   try {
     return Services.prefs.getComplexValue(pref, Ci.nsISupportsString).data;
@@ -84,7 +98,7 @@ function getStringPref(pref, def) {
 }
 
 function log(aMsg) {
-  if (!Services.prefs.getBoolPref(PREF_PREFIX + '.pdfBugEnabled', false)) {
+  if (!getBoolPref(PREF_PREFIX + '.pdfBugEnabled', false)) {
     return;
   }
   var msg = 'PdfStreamConverter.js: ' + (aMsg.join ? aMsg.join('') : aMsg);
@@ -92,15 +106,11 @@ function log(aMsg) {
   dump(msg + '\n');
 }
 
-function getDOMWindow(aChannel, aPrincipal) {
+function getDOMWindow(aChannel) {
   var requestor = aChannel.notificationCallbacks ?
                   aChannel.notificationCallbacks :
                   aChannel.loadGroup.notificationCallbacks;
   var win = requestor.getInterface(Components.interfaces.nsIDOMWindow);
-  // Ensure the window wasn't navigated to something that is not PDF.js.
-  if (!win.document.nodePrincipal.equals(aPrincipal)) {
-    return null;
-  }
   return win;
 }
 
@@ -134,21 +144,6 @@ function getLocalizedString(strings, id, property) {
   return id;
 }
 
-function createNewChannel(uri, node) {
-  return NetUtil.newChannel({
-    uri: uri,
-    loadUsingSystemPrincipal: true,
-  });
-}
-
-function asyncOpenChannel(channel, listener, context) {
-  return channel.asyncOpen2(listener);
-}
-
-function asyncFetchChannel(channel, callback) {
-  return NetUtil.asyncFetch(channel, callback);
-}
-
 // PDF data storage
 function PdfDataListener(length) {
   this.length = length; // less than 0, if length is unknown
@@ -173,7 +168,7 @@ PdfDataListener.prototype = {
     if (this.length >= 0 && this.length < this.loaded) {
       this.length = -1; // reset the length, server is giving incorrect one
     }
-    this.onprogress(this.loaded, this.length >= 0 ? this.length : void(0));
+    this.onprogress(this.loaded, this.length >= 0 ? this.length : void 0);
   },
   readData: function PdfDataListener_readData() {
     var result = this.buffer;
@@ -235,12 +230,15 @@ ChromeActions.prototype = {
              getService(Ci.nsIExternalHelperAppService);
 
     var docIsPrivate = this.isInPrivateBrowsing();
-    var netChannel = createNewChannel(blobUri, this.domWindow.document);
+    var netChannel = NetUtil.newChannel({
+      uri: blobUri,
+      loadUsingSystemPrincipal: true,
+    });
     if ('nsIPrivateBrowsingChannel' in Ci &&
         netChannel instanceof Ci.nsIPrivateBrowsingChannel) {
       netChannel.setPrivate(docIsPrivate);
     }
-    asyncFetchChannel(netChannel, function(aInputStream, aResult) {
+    NetUtil.asyncFetch(netChannel, function(aInputStream, aResult) {
       if (!Components.isSuccessCode(aResult)) {
         if (sendResponse) {
           sendResponse(true);
@@ -298,7 +296,7 @@ ChromeActions.prototype = {
         }
       };
 
-      asyncOpenChannel(channel, listener, null);
+      channel.asyncOpen2(listener);
     });
   },
   getLocale: function() {
@@ -333,17 +331,17 @@ ChromeActions.prototype = {
     return !!findBar && ('updateControlState' in findBar);
   },
   supportsDocumentFonts: function() {
-    var prefBrowser = Services.prefs.getIntPref('browser.display.use_document_fonts', 1);
-    var prefGfx = Services.prefs.getBoolPref('gfx.downloadable_fonts.enabled', true);
+    var prefBrowser = getIntPref('browser.display.use_document_fonts', 1);
+    var prefGfx = getBoolPref('gfx.downloadable_fonts.enabled', true);
     return (!!prefBrowser && prefGfx);
   },
   supportsDocumentColors: function() {
-    return Services.prefs.getIntPref('browser.display.document_color_use', 0) !== 2;
+    return getIntPref('browser.display.document_color_use', 0) !== 2;
   },
   supportedMouseWheelZoomModifierKeys: function() {
     return {
-      ctrlKey: Services.prefs.getIntPref('mousewheel.with_control.action', 3) === 3,
-      metaKey: Services.prefs.getIntPref('mousewheel.with_meta.action', 1) === 3,
+      ctrlKey: getIntPref('mousewheel.with_control.action', 3) === 3,
+      metaKey: getIntPref('mousewheel.with_meta.action', 1) === 3,
     };
   },
   fallback: function(args, sendResponse) {
@@ -448,10 +446,10 @@ ChromeActions.prototype = {
       prefName = (PREF_PREFIX + '.' + key);
       switch (typeof prefValue) {
         case 'boolean':
-          currentPrefs[key] = Services.prefs.getBoolPref(prefName, prefValue);
+          currentPrefs[key] = getBoolPref(prefName, prefValue);
           break;
         case 'number':
-          currentPrefs[key] = Services.prefs.getIntPref(prefName, prefValue);
+          currentPrefs[key] = getIntPref(prefName, prefValue);
           break;
         case 'string':
           currentPrefs[key] = getStringPref(prefName, prefValue);
@@ -554,7 +552,7 @@ var RangedChromeActions = (function RangedChromeActionsClosure() {
           loaded: loaded,
           total: total,
           chunk: self.dataListener.readData()
-        }, PDF_VIEWER_ORIGIN);
+        }, '*');
       };
       this.dataListener.oncomplete = function () {
         self.dataListener = null;
@@ -568,7 +566,7 @@ var RangedChromeActions = (function RangedChromeActionsClosure() {
       pdfUrl: this.pdfUrl,
       length: this.contentLength,
       data: data
-    }, PDF_VIEWER_ORIGIN);
+    }, '*');
 
     return true;
   };
@@ -590,13 +588,13 @@ var RangedChromeActions = (function RangedChromeActionsClosure() {
           pdfjsLoadAction: 'range',
           begin: args.begin,
           chunk: args.chunk
-        }, PDF_VIEWER_ORIGIN);
+        }, '*');
       },
       onProgress: function RangedChromeActions_onProgress(evt) {
         domWindow.postMessage({
           pdfjsLoadAction: 'rangeProgress',
           loaded: evt.loaded,
-        }, PDF_VIEWER_ORIGIN);
+        }, '*');
       }
     });
   };
@@ -645,7 +643,7 @@ var StandardChromeActions = (function StandardChromeActionsClosure() {
         pdfjsLoadAction: 'progress',
         loaded: loaded,
         total: total
-      }, PDF_VIEWER_ORIGIN);
+      }, '*');
     };
 
     this.dataListener.oncomplete =
@@ -654,7 +652,7 @@ var StandardChromeActions = (function StandardChromeActionsClosure() {
         pdfjsLoadAction: 'complete',
         data: data,
         errorCode: errorCode
-      }, PDF_VIEWER_ORIGIN);
+      }, '*');
 
       self.dataListener = null;
       self.originalRequest = null;
@@ -838,16 +836,16 @@ PdfStreamConverter.prototype = {
       } catch (e) {}
 
       var hash = aRequest.URI.ref;
-      var isPDFBugEnabled = Services.prefs.getBoolPref(PREF_PREFIX + '.pdfBugEnabled', false);
+      var isPDFBugEnabled = getBoolPref(PREF_PREFIX + '.pdfBugEnabled', false);
       rangeRequest = contentEncoding === 'identity' &&
                      acceptRanges === 'bytes' &&
                      aRequest.contentLength >= 0 &&
-                     !Services.prefs.getBoolPref(PREF_PREFIX + '.disableRange', false) &&
+                     !getBoolPref(PREF_PREFIX + '.disableRange', false) &&
                      (!isPDFBugEnabled ||
                       hash.toLowerCase().indexOf('disablerange=true') < 0);
       streamRequest = contentEncoding === 'identity' &&
                       aRequest.contentLength >= 0 &&
-                      !Services.prefs.getBoolPref(PREF_PREFIX + '.disableStream', false) &&
+                      !getBoolPref(PREF_PREFIX + '.disableStream', false) &&
                       (!isPDFBugEnabled ||
                        hash.toLowerCase().indexOf('disablestream=true') < 0);
     }
@@ -880,7 +878,10 @@ PdfStreamConverter.prototype = {
                         .createInstance(Ci.nsIBinaryInputStream);
 
     // Create a new channel that is viewer loaded as a resource.
-    var channel = createNewChannel(PDF_VIEWER_WEB_PAGE, null);
+    var channel = NetUtil.newChannel({
+      uri: PDF_VIEWER_WEB_PAGE,
+      loadUsingSystemPrincipal: true,
+    });
 
     var listener = this.listener;
     var dataListener = this.dataListener;
@@ -896,14 +897,10 @@ PdfStreamConverter.prototype = {
         listener.onDataAvailable(aRequest, aContext, inputStream,
                                  offset, count);
       },
-      onStopRequest(request, context, statusCode) {
-        var domWindow = getDOMWindow(channel, resourcePrincipal);
-        if (!Components.isSuccessCode(statusCode) || !domWindow) {
-          // The request may have been aborted and the document may have been
-          // replaced with something that is not PDF.js, abort attaching.
-          listener.onStopRequest(aRequest, context, statusCode);
-          return;
-        }
+      onStopRequest: function(request, context, statusCode) {
+        // We get the DOM window here instead of before the request since it
+        // may have changed during a redirect.
+        var domWindow = getDOMWindow(channel);
         var actions;
         if (rangeRequest || streamRequest) {
           actions = new RangedChromeActions(
@@ -914,7 +911,7 @@ PdfStreamConverter.prototype = {
             domWindow, contentDispositionFilename, aRequest, dataListener);
         }
         var requestListener = new RequestListener(actions);
-        domWindow.document.addEventListener(PDFJS_EVENT_ID, function(event) {
+        domWindow.addEventListener(PDFJS_EVENT_ID, function(event) {
           requestListener.receive(event);
         }, false, true);
         if (actions.supportsIntegratedFind()) {
@@ -940,12 +937,12 @@ PdfStreamConverter.prototype = {
     // from the request channel to keep isolation consistent.
     var ssm = Cc['@mozilla.org/scriptsecuritymanager;1']
                 .getService(Ci.nsIScriptSecurityManager);
-    var uri = NetUtil.newURI(PDF_VIEWER_WEB_PAGE, null, null);
-    var resourcePrincipal;
-    resourcePrincipal =
+    var uri = NetUtil.newURI(PDF_VIEWER_WEB_PAGE);
+    var resourcePrincipal =
       ssm.createCodebasePrincipal(uri, aRequest.loadInfo.originAttributes);
     aRequest.owner = resourcePrincipal;
-    asyncOpenChannel(channel, proxy, aContext);
+
+    channel.asyncOpen2(proxy);
   },
 
   // nsIRequestObserver::onStopRequest
