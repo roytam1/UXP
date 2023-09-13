@@ -2498,7 +2498,6 @@ CodeGeneratorX86Shared::visitFloat32x4ToUint32x4(LFloat32x4ToUint32x4* ins)
     if (gen->compilingWasm())
         masm.j(Assembler::NotEqual, trap(ins->mir(), wasm::Trap::ImpreciseSimdConversion));
     else
-//        bailoutIf(Assembler::NotEqual, ins->snapshot());
         bailout(ins->snapshot());
     masm.bind(&ok);
 }
