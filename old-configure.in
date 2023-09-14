@@ -2812,24 +2812,6 @@ else
 fi
 
 dnl ========================================================
-dnl = Enable Gecko Media Plugins
-dnl ========================================================
-
-if test -n "$MOZ_EME"; then
-    MOZ_GMP=1
-fi
-
-if test -n "$MOZ_WEBRTC"; then
-    MOZ_GMP=1
-fi
-
-if test -n "$MOZ_GMP"; then
-    AC_DEFINE(MOZ_GMP)
-fi
-
-AC_SUBST(MOZ_GMP)
-
-dnl ========================================================
 dnl = Enable Raw Codecs
 dnl ========================================================
 MOZ_ARG_ENABLE_BOOL(raw,
@@ -2914,6 +2896,24 @@ if test -n "$MOZ_EME"; then
     fi
     AC_DEFINE(MOZ_EME)
 fi
+
+dnl ========================================================
+dnl = Enable Gecko Media Plugins
+dnl ========================================================
+
+if test -n "$MOZ_EME"; then
+    MOZ_GMP=1
+fi
+
+if test -n "$MOZ_WEBRTC"; then
+    MOZ_GMP=1
+fi
+
+if test -n "$MOZ_GMP"; then
+    AC_DEFINE(MOZ_GMP)
+fi
+
+AC_SUBST(MOZ_GMP)
 
 MOZ_LIBVPX_CFLAGS=
 MOZ_LIBVPX_LIBS=
