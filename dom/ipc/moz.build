@@ -73,7 +73,7 @@ SOURCES += [
     'ProcessHangMonitor.cpp',
 ]
 
-IPDL_SOURCES += [
+PREPROCESSED_IPDL_SOURCES += [
     'BlobTypes.ipdlh',
     'DOMTypes.ipdlh',
     'PBlob.ipdl',

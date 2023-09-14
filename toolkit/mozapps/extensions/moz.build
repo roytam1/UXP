@@ -19,20 +19,25 @@ EXTRA_COMPONENTS += [
     'amContentHandler.js',
     'amInstallTrigger.js',
     'amWebInstallListener.js',
+]
+
+EXTRA_PP_COMPONENTS += [
     'extensions.manifest',
 ]
 
 EXTRA_JS_MODULES += [
     'ChromeManifestParser.jsm',
     'DeferredSave.jsm',
-    'GMPUtils.jsm',
     'LightweightThemeManager.jsm',
 ]
 
-EXTRA_PP_JS_MODULES += [
-    'AddonManager.jsm',
-    'GMPInstallManager.jsm',
-]
+EXTRA_PP_JS_MODULES += ['AddonManager.jsm',]
+
+if CONFIG['MOZ_GMP']:
+    EXTRA_PP_JS_MODULES += [
+        'GMPInstallManager.jsm',
+        'GMPUtils.jsm',
+    ]
 
 # Additional debugging info is exposed in debug builds
 if CONFIG['MOZ_EM_DEBUG']:

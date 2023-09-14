@@ -19,12 +19,8 @@ with Files('GetUserMedia*'):
     BUG_COMPONENT = component_av
 
 DIRS += [
-    'eme',
     'encoder',
     'flac',
-    'gmp',
-    'gmp-plugin',
-    'gmp-plugin-openh264',
     'imagecapture',
     'ipc',
     'mediasink',
@@ -47,6 +43,16 @@ if CONFIG['MOZ_FMP4']:
 
 if CONFIG['MOZ_WEBRTC']:
     DIRS += ['bridge']
+
+if CONFIG['MOZ_EME']:
+    DIRS += ['eme']
+
+if CONFIG['MOZ_GMP']:
+    DIRS += [
+        'gmp',
+        'gmp-plugin',
+        'gmp-plugin-openh264',
+    ]
 
 TEST_DIRS += [
     'gtest',

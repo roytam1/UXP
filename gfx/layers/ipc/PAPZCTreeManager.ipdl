@@ -8,6 +8,10 @@ include "ipc/nsGUIEventIPC.h";
 
 include protocol PCompositorBridge;
 
+// Workaround to prevent error if PContentChild.cpp & PAPZCTreeManagerChild.cpp
+// are put into different UnifiedProtocolsXX.cpp files.
+include "mozilla/dom/TabMessageUtils.h";
+
 using CSSRect from "Units.h";
 using LayoutDeviceCoord from "Units.h";
 using LayoutDeviceIntPoint from "Units.h";

@@ -949,6 +949,7 @@ class GTestCommands(MachCommandBase):
         # https://code.google.com/p/googletest/wiki/AdvancedGuide#Running_Test_Programs:_Advanced_Options
         gtest_env = {b'GTEST_FILTER': gtest_filter}
 
+#ifdef MOZ_GMP
         # Note: we must normalize the path here so that gtest on Windows sees
         # a MOZ_GMP_PATH which has only Windows dir seperators, because
         # nsILocalFile cannot open the paths with non-Windows dir seperators.
@@ -958,6 +959,7 @@ class GTestCommands(MachCommandBase):
             os.path.join(xre_path, p, "1.0")
             for p in ('gmp-fake', 'gmp-fakeopenh264')
         )
+#endif
 
         gtest_env[b"MOZ_RUN_GTEST"] = b"True"
 

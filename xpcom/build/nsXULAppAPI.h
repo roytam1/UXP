@@ -18,7 +18,10 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/Vector.h"
 #include "mozilla/TimeStamp.h"
+
+#ifdef MOZ_GMP
 #include "XREChildData.h"
+#endif
 
 /**
  * A directory service key which provides the platform-correct "application
@@ -424,16 +427,24 @@ XRE_API(const char*,
 XRE_API(void,
         XRE_SetProcessType, (const char* aProcessTypeString))
 
+#ifdef MOZ_GMP
 namespace mozilla {
 namespace gmp {
 class GMPLoader;
 } // namespace gmp
 } // namespace mozilla
+#endif
 
+#ifdef MOZ_GMP
 XRE_API(nsresult,
         XRE_InitChildProcess, (int aArgc,
                                char* aArgv[],
                                const XREChildData* aChildData))
+#else
+XRE_API(nsresult,
+        XRE_InitChildProcess, (int aArgc,
+                               char* aArgv[]))
+#endif
 
 XRE_API(GeckoProcessType,
         XRE_GetProcessType, ())
