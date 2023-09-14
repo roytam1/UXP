@@ -128,8 +128,10 @@ this.CrashManager.prototype = Object.freeze({
   // A crash in a plugin process.
   PROCESS_TYPE_PLUGIN: "plugin",
 
+#ifdef MOZ_GMP
   // A crash in a Gecko media plugin process.
   PROCESS_TYPE_GMPLUGIN: "gmplugin",
+#endif
 
   // A crash in the GPU process.
   PROCESS_TYPE_GPU: "gpu",

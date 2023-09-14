@@ -18,12 +18,14 @@ LOCAL_INCLUDES += [
 
 # We link GMPLoader into plugin-container on desktop so that its code is
 # covered by the desktop DRM vendor's voucher.
-SOURCES += [
-    '../../dom/media/gmp/GMPLoader.cpp',
-]
-USE_LIBS += [
-    'rlz',
-]
+if CONFIG['MOZ_GMP']:
+    SOURCES += [
+        '../../dom/media/gmp/GMPLoader.cpp',
+    ]
+
+    USE_LIBS += [
+        'rlz',
+    ]
 
 # DELAYLOAD_DLLS in this block ensures that the DLL blocklist is functional
 if CONFIG['OS_ARCH'] == 'WINNT':

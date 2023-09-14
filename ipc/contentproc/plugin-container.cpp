@@ -19,6 +19,7 @@
 #include <unistd.h>
 #endif
 
+#ifdef MOZ_GMP
 #include "GMPLoader.h"
 
 mozilla::gmp::SandboxStarter*
@@ -26,6 +27,7 @@ MakeSandboxStarter()
 {
     return nullptr;
 }
+#endif
 
 int
 content_process_main(int argc, char* argv[])
@@ -36,7 +38,9 @@ content_process_main(int argc, char* argv[])
       return 3;
     }
 
+#ifdef MOZ_GMP
     XREChildData childData;
+#endif
 
     XRE_SetProcessType(argv[--argc]);
 
@@ -50,15 +54,19 @@ content_process_main(int argc, char* argv[])
     }
 #endif
 #ifdef MOZ_PLUGIN_CONTAINER
+#ifdef MOZ_GMP
     // On desktop, the GMPLoader lives in plugin-container, so that its
     // code can be covered by an EME/GMP vendor's voucher.
     nsAutoPtr<mozilla::gmp::SandboxStarter> starter(MakeSandboxStarter());
     if (XRE_GetProcessType() == GeckoProcessType_GMPlugin) {
         childData.gmpLoader = mozilla::gmp::CreateGMPLoader(starter);
     }
-#endif
     nsresult rv = XRE_InitChildProcess(argc, argv, &childData);
+#else
+    nsresult rv = XRE_InitChildProcess(argc, argv);
+#endif
     NS_ENSURE_SUCCESS(rv, 1);
+#endif
 
     return 0;
 }

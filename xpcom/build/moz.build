@@ -9,9 +9,11 @@ EXPORTS += [
     'nsXPCOMCIDInternal.h',
     'nsXREAppData.h',
     'nsXULAppAPI.h',
-    'XREChildData.h',
     'xrecore.h',
 ]
+
+if CONFIG['MOZ_GMP']:
+    EXPORTS += ['XREChildData.h',]
 
 EXPORTS.mozilla += [
     'FileLocation.h',

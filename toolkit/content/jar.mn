@@ -52,7 +52,7 @@ toolkit.jar:
 #ifdef MOZ_PHOENIX
    content/global/logopage.xhtml
 #endif
-   content/global/process-content.js
+*  content/global/process-content.js
    content/global/resetProfile.css
    content/global/resetProfile.js
    content/global/resetProfile.xul
@@ -122,6 +122,8 @@ toolkit.jar:
    content/global/macWindowMenu.js
 #endif
    content/global/svg/svgBindings.xml          (/layout/svg/resources/content/svgBindings.xml)
+#ifdef MOZ_GMP
    content/global/gmp-sources/eme-adobe.json   (gmp-sources/eme-adobe.json)
    content/global/gmp-sources/openh264.json    (gmp-sources/openh264.json)
    content/global/gmp-sources/widevinecdm.json (gmp-sources/widevinecdm.json)
+#endif

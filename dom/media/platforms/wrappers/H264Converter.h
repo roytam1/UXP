@@ -62,7 +62,9 @@ private:
   MediaDataDecoderCallback* mCallback;
   RefPtr<MediaDataDecoder> mDecoder;
   MozPromiseRequestHolder<InitPromise> mInitPromiseRequest;
+#ifdef MOZ_GMP
   RefPtr<GMPCrashHelper> mGMPCrashHelper;
+#endif
   bool mNeedAVCC;
   nsresult mLastError;
   bool mNeedKeyframe = true;

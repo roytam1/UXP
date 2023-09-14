@@ -49,7 +49,6 @@ const GMP_PLUGINS = [
     homepageURL:     "http://www.openh264.org/",
     optionsURL:      "chrome://mozapps/content/extensions/gmpPrefs.xul"
   },
-/*
   {
     id:              EME_ADOBE_ID,
     name:            "eme-adobe_name",
@@ -59,7 +58,6 @@ const GMP_PLUGINS = [
     optionsURL:      "chrome://mozapps/content/extensions/gmpPrefs.xul",
     isEME:           true
   },
-*/
   {
     id:              WIDEVINE_ID,
     name:            "widevine_description",
