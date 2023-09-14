@@ -12,18 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals Components, Services */
 
 "use strict";
 
 Components.utils.import("resource://gre/modules/Services.jsm");
 
 var EXPORTED_SYMBOLS = ["NetworkManager"];
-
-function log(aMsg) {
-  var msg = "PdfJsNetwork.jsm: " + (aMsg.join ? aMsg.join("") : aMsg);
-  Services.console.logStringMessage(msg);
-}
 
 var NetworkManager = (function NetworkManagerClosure() {
 

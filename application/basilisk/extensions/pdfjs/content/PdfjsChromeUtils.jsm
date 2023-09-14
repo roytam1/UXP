@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals Components, Services, XPCOMUtils */
 
 "use strict";
 
@@ -20,10 +19,9 @@ var EXPORTED_SYMBOLS = ["PdfjsChromeUtils"];
 
 const Cc = Components.classes;
 const Ci = Components.interfaces;
-const Cr = Components.results;
 const Cu = Components.utils;
 
-const PREF_PREFIX = "pdfjs";
+const PREF_PREFIX = "extensions.uriloader@pdf.js";
 const PDF_CONTENT_TYPE = "application/pdf";
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
@@ -34,28 +32,32 @@ XPCOMUtils.defineLazyServiceGetter(Svc, "mime",
                                    "@mozilla.org/mime;1",
                                    "nsIMIMEService");
 
+/* eslint-disable semi */
 var DEFAULT_PREFERENCES =
 {
-  "showPreviousViewOnLoad": true,
+  "cursorToolOnLoad": 0,
   "defaultZoomValue": "",
-  "sidebarViewOnLoad": 0,
-  "enableHandToolOnLoad": false,
+  "disablePageLabels": false,
+  "enablePrintAutoRotate": false,
   "enableWebGL": false,
-  "pdfBugEnabled": false,
-  "disableRange": false,
-  "disableStream": false,
-  "disableAutoFetch": false,
-  "disableFontFace": false,
-  "disableTextLayer": false,
-  "useOnlyCssZoom": false,
+  "eventBusDispatchToDOM": false,
   "externalLinkTarget": 0,
-  "enhanceTextSelection": false,
+  "historyUpdateUrl": false,
+  "pdfBugEnabled": false,
   "renderer": "canvas",
   "renderInteractiveForms": false,
-  "enablePrintAutoRotate": false,
-  "disablePageLabels": false
+  "sidebarViewOnLoad": -1,
+  "scrollModeOnLoad": -1,
+  "spreadModeOnLoad": -1,
+  "textLayerMode": 1,
+  "useOnlyCssZoom": false,
+  "viewOnLoad": 0,
+  "disableAutoFetch": false,
+  "disableFontFace": false,
+  "disableRange": false,
+  "disableStream": false
 }
-
+/* eslint-enable semi */
 
 var PdfjsChromeUtils = {
   // For security purposes when running remote, we restrict preferences
@@ -90,8 +92,18 @@ var PdfjsChromeUtils = {
       this._mmg.addMessageListener("PDFJS:Parent:removeEventListener", this);
       this._mmg.addMessageListener("PDFJS:Parent:updateControlState", this);
 
-      // observer to handle shutdown
-      Services.obs.addObserver(this, "quit-application", false);
+      // The signature of `Services.obs.addObserver` changed in Firefox 55,
+      // see https://bugzilla.mozilla.org/show_bug.cgi?id=1355216.
+      // PLEASE NOTE: While the third parameter is now optional,
+      // omitting it in prior Firefox versions breaks the addon.
+      var ffVersion = parseInt(Services.appinfo.platformVersion);
+      if (ffVersion <= 55) {
+        // eslint-disable-next-line mozilla/no-useless-parameters
+        Services.obs.addObserver(this, "quit-application", false);
+        return;
+      }
+      // Observer to handle shutdown.
+      Services.obs.addObserver(this, "quit-application");
     }
   },
 
@@ -124,7 +136,7 @@ var PdfjsChromeUtils = {
    * instruct the child to refresh its configuration and (possibly)
    * the module's registration.
    */
-  notifyChildOfSettingsChange() {
+  notifyChildOfSettingsChange(enabled) {
     if (Services.appinfo.processType ===
         Services.appinfo.PROCESS_TYPE_DEFAULT && this._ppmm) {
       // XXX kinda bad, we want to get the parent process mm associated
@@ -132,7 +144,8 @@ var PdfjsChromeUtils = {
       // manager, which means this is going to fire to every child process
       // we have open. Unfortunately I can't find a way to get at that
       // process specific mm from js.
-      this._ppmm.broadcastAsyncMessage("PDFJS:Child:refreshSettings", {});
+      this._ppmm.broadcastAsyncMessage("PDFJS:Child:updateSettings",
+                                       { enabled, });
     }
   },
 
@@ -204,7 +217,7 @@ var PdfjsChromeUtils = {
       query: aEvent.detail.query,
       caseSensitive: aEvent.detail.caseSensitive,
       highlightAll: aEvent.detail.highlightAll,
-      findPrevious: aEvent.detail.findPrevious
+      findPrevious: aEvent.detail.findPrevious,
     };
 
     let browser = aEvent.currentTarget.browser;
@@ -261,7 +274,7 @@ var PdfjsChromeUtils = {
   _ensurePreferenceAllowed(aPrefName) {
     let unPrefixedName = aPrefName.split(PREF_PREFIX + ".");
     if (unPrefixedName[0] !== "" ||
-        this._allowedPrefNames.indexOf(unPrefixedName[1]) === -1) {
+        !this._allowedPrefNames.includes(unPrefixedName[1])) {
       let msg = "\"" + aPrefName + "\" " +
                 "can't be accessed from content. See PdfjsChromeUtils.";
       throw new Error(msg);
@@ -290,10 +303,14 @@ var PdfjsChromeUtils = {
 
   _setStringPref(aPrefName, aPrefValue) {
     this._ensurePreferenceAllowed(aPrefName);
-    let str = Cc["@mozilla.org/supports-string;1"]
-                .createInstance(Ci.nsISupportsString);
-    str.data = aPrefValue;
-    Services.prefs.setComplexValue(aPrefName, Ci.nsISupportsString, str);
+    if (!Services.prefs.setStringPref) {
+      let str = Cc["@mozilla.org/supports-string;1"]
+                  .createInstance(Ci.nsISupportsString);
+      str.data = aPrefValue;
+      Services.prefs.setComplexValue(aPrefName, Ci.nsISupportsString, str);
+      return;
+    }
+    Services.prefs.setStringPref(aPrefName, aPrefValue);
   },
 
   /*
@@ -332,7 +349,7 @@ var PdfjsChromeUtils = {
       callback() {
         messageSent = true;
         sendMessage(true);
-      }
+      },
     }];
     notificationBox.appendNotification(data.message, "pdfjs-fallback", null,
                                        notificationBox.PRIORITY_INFO_LOW,
@@ -350,6 +367,6 @@ var PdfjsChromeUtils = {
       }
       sendMessage(false);
     });
-  }
+  },
 };
 
