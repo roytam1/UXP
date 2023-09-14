@@ -13,4 +13,6 @@ contract @mozilla.org/addons/installtrigger;1 {9df8ef2b-94da-45c9-ab9f-132eb55fd
 category JavaScript-global-property InstallTrigger @mozilla.org/addons/installtrigger;1
 
 category addon-provider-module PluginProvider resource://gre/modules/addons/PluginProvider.jsm
+#ifdef MOZ_GMP
 category addon-provider-module GMPProvider resource://gre/modules/addons/GMPProvider.jsm
+#endif

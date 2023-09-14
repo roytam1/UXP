@@ -585,7 +585,9 @@ private:
 
   RefPtr<CDMProxy> mCDMProxy;
 
+#ifdef MOZ_GMP
   RefPtr<GMPCrashHelper> mCrashHelper;
+#endif
 
   void SetBlankDecode(TrackType aTrack, bool aIsBlankDecode);
 

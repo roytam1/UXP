@@ -845,6 +845,7 @@ DecoderDoctorDiagnostics::GetDescription() const
       if (mFFmpegFailedToLoad) {
         s += ", Linux platform decoder failed to load";
       }
+#ifdef MOZ_GMP
       if (mGMPPDMFailedToStartup) {
         s += ", GMP PDM failed to startup";
       } else if (!mGMP.IsEmpty()) {
@@ -852,6 +853,7 @@ DecoderDoctorDiagnostics::GetDescription() const
         s += mGMP;
         s += "'";
       }
+#endif
       break;
     case eMediaKeySystemAccessRequest:
       s = "key system='";
