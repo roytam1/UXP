@@ -233,7 +233,7 @@ ElemOpEmitter::emitIncDec()
 
     MOZ_ASSERT(state_ == State::Get);
 
-    JSOp binOp = isInc() ? JSOP_ADD : JSOP_SUB;
+    JSOp incOp = isInc() ? JSOP_INC : JSOP_DEC;
     if (!bce_->emit1(JSOP_POS)) {                     // ... N
         return false;
     }
@@ -242,10 +242,7 @@ ElemOpEmitter::emitIncDec()
             return false;
         }
     }
-    if (!bce_->emit1(JSOP_ONE)) {                     // ... N? N 1
-        return false;
-    }
-    if (!bce_->emit1(binOp)) {                        // ... N? N+1
+    if (!bce_->emit1(incOp)) {                        // ... N? N+1
         return false;
     }
     if (isPostIncDec()) {

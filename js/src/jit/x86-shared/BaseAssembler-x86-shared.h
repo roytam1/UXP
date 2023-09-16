@@ -4958,7 +4958,7 @@ threeByteOpImmSimd("vblendps", VEX_PD, OP3_BLENDPS_VpsWpsIb, ESCAPE_3A, imm, off
         void twoByteOp8(TwoByteOpcodeID opcode, RegisterID rm, RegisterID reg)
         {
             m_buffer.ensureSpace(MaxInstructionSize);
-            emitRexIf(byteRegRequiresRex(reg)|byteRegRequiresRex(rm), reg, 0, rm);
+            emitRexIf(byteRegRequiresRex(reg)||byteRegRequiresRex(rm), reg, 0, rm);
             m_buffer.putByteUnchecked(OP_2BYTE_ESCAPE);
             m_buffer.putByteUnchecked(opcode);
             registerModRM(rm, reg);
@@ -4967,7 +4967,7 @@ threeByteOpImmSimd("vblendps", VEX_PD, OP3_BLENDPS_VpsWpsIb, ESCAPE_3A, imm, off
         void twoByteOp8(TwoByteOpcodeID opcode, int32_t offset, RegisterID base, RegisterID reg)
         {
             m_buffer.ensureSpace(MaxInstructionSize);
-            emitRexIf(byteRegRequiresRex(reg)|regRequiresRex(base), reg, 0, base);
+            emitRexIf(byteRegRequiresRex(reg)||regRequiresRex(base), reg, 0, base);
             m_buffer.putByteUnchecked(OP_2BYTE_ESCAPE);
             m_buffer.putByteUnchecked(opcode);
             memoryModRM(offset, base, reg);
@@ -4977,7 +4977,7 @@ threeByteOpImmSimd("vblendps", VEX_PD, OP3_BLENDPS_VpsWpsIb, ESCAPE_3A, imm, off
                         int scale, RegisterID reg)
         {
             m_buffer.ensureSpace(MaxInstructionSize);
-            emitRexIf(byteRegRequiresRex(reg)|regRequiresRex(base)|regRequiresRex(index),
+            emitRexIf(byteRegRequiresRex(reg)||regRequiresRex(base)||regRequiresRex(index),
                       reg, index, base);
             m_buffer.putByteUnchecked(OP_2BYTE_ESCAPE);
             m_buffer.putByteUnchecked(opcode);
@@ -4991,7 +4991,7 @@ threeByteOpImmSimd("vblendps", VEX_PD, OP3_BLENDPS_VpsWpsIb, ESCAPE_3A, imm, off
         void twoByteOp8_movx(TwoByteOpcodeID opcode, RegisterID rm, RegisterID reg)
         {
             m_buffer.ensureSpace(MaxInstructionSize);
-            emitRexIf(regRequiresRex(reg)|byteRegRequiresRex(rm), reg, 0, rm);
+            emitRexIf(regRequiresRex(reg)||byteRegRequiresRex(rm), reg, 0, rm);
             m_buffer.putByteUnchecked(OP_2BYTE_ESCAPE);
             m_buffer.putByteUnchecked(opcode);
             registerModRM(rm, reg);

@@ -339,7 +339,7 @@ NameOpEmitter::emitIncDec()
 {
     MOZ_ASSERT(state_ == State::Start);
 
-    JSOp binOp = isInc() ? JSOP_ADD : JSOP_SUB;
+    JSOp incOp = isInc() ? JSOP_INC : JSOP_DEC;
     if (!prepareForRhs()) {                           // ENV? V
         return false;
     }
@@ -351,10 +351,7 @@ NameOpEmitter::emitIncDec()
             return false;
         }
     }
-    if (!bce_->emit1(JSOP_ONE)) {                     // ENV? N? N 1
-        return false;
-    }
-    if (!bce_->emit1(binOp)) {                        // ENV? N? N+1
+    if (!bce_->emit1(incOp)) {                        // ENV? N? N+1
         return false;
     }
     if (isPostIncDec() && emittedBindOp()) {

@@ -692,6 +692,7 @@ class IonBuilder
     MOZ_MUST_USE bool jsop_pow();
     MOZ_MUST_USE bool jsop_pos();
     MOZ_MUST_USE bool jsop_neg();
+    MOZ_MUST_USE bool jsop_inc_or_dec(JSOp op);
     MOZ_MUST_USE bool jsop_tostring();
     MOZ_MUST_USE bool jsop_setarg(uint32_t arg);
     MOZ_MUST_USE bool jsop_defvar(uint32_t index);

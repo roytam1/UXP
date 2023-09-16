@@ -1469,20 +1469,32 @@ DoUnaryArithFallback(JSContext* cx, void* payload, ICUnaryArith_Fallback* stub_,
     JSOp op = JSOp(*pc);
     FallbackICSpew(cx, stub, "UnaryArith(%s)", CodeName[op]);
 
+    // The unary operations take a copied val because the original value is needed
+    // below.
+    RootedValue valCopy(cx, val);
     switch (op) {
       case JSOP_BITNOT: {
-        RootedValue valCopy(cx, val);
         if (!BitNot(cx, &valCopy, res)) {
             return false;
         }
         break;
       }
       case JSOP_NEG: {
-        // We copy val here because the original value is needed below.
-        RootedValue valCopy(cx, val);
-        if (!NegOperation(cx, script, pc, &valCopy, res))
+          if (!NegOperation(cx, script, pc, &valCopy, res))
             return false;
         break;
+      }
+      case JSOP_INC: {
+          if (!IncOperation(cx, &valCopy, res)) {
+            return false;
+          }
+          break;
+      }
+      case JSOP_DEC: {
+          if (!DecOperation(cx, &valCopy, res)) {
+            return false;
+          }
+          break;
       }
       default:
         MOZ_CRASH("Unexpected op");

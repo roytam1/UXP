@@ -1940,6 +1940,18 @@ BaselineCompiler::emit_JSOP_NEG()
 }
 
 bool
+BaselineCompiler::emit_JSOP_INC()
+{
+  return emitUnaryArith();
+}
+
+bool
+BaselineCompiler::emit_JSOP_DEC()
+{
+  return emitUnaryArith();
+}
+
+bool
 BaselineCompiler::emit_JSOP_LT()
 {
     return emitCompare();
