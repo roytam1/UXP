@@ -1322,14 +1322,37 @@ BaselineCompiler::emit_JSOP_POS()
     // Keep top stack value in R0.
     frame.popRegsAndSync(1);
 
-    // Inline path for int32 and double.
+    // Inline path for int32 and double; otherwise call VM.
     Label done;
     masm.branchTestNumber(Assembler::Equal, R0, &done);
 
-    // Call IC.
-    ICToNumber_Fallback::Compiler stubCompiler(cx);
-    if (!emitOpIC(stubCompiler.getStub(&stubSpace_)))
+    prepareVMCall();
+    pushArg(R0);
+    if (!callVM(ToNumberInfo)) {
+      return false;
+    }
+
+    masm.bind(&done);
+    frame.push(R0);
+    return true;
+}
+
+
+bool
+BaselineCompiler::emit_JSOP_TONUMERIC()
+{
+    // Keep top stack value in R0.
+    frame.popRegsAndSync(1);
+
+    // Inline path for int32 and double; otherwise call VM.
+    Label done;
+    masm.branchTestNumber(Assembler::Equal, R0, &done);
+
+    prepareVMCall();
+    pushArg(R0);
+    if (!callVM(ToNumericInfo)) {
         return false;
+    }
 
     masm.bind(&done);
     frame.push(R0);

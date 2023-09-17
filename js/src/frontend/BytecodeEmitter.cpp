@@ -2057,7 +2057,7 @@ BytecodeEmitter::emitCallIncDec(UnaryNode* incDec)
     MOZ_ASSERT(call->isKind(PNK_CALL));
     if (!emitTree(call))                                // CALLRESULT
         return false;
-    if (!emit1(JSOP_POS))                               // N
+    if (!emit1(JSOP_TONUMERIC))                         // N
         return false;
 
     // The increment/decrement has no side effects, so proceed to throw for

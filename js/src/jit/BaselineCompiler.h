@@ -50,6 +50,7 @@ namespace jit {
     _(JSOP_OR)                 \
     _(JSOP_NOT)                \
     _(JSOP_POS)                \
+    _(JSOP_TONUMERIC)          \
     _(JSOP_LOOPHEAD)           \
     _(JSOP_LOOPENTRY)          \
     _(JSOP_VOID)               \

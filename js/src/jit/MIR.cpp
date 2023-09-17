@@ -4173,6 +4173,23 @@ MResumePoint::isRecoverableOperand(MUse* u) const
 }
 
 MDefinition*
+MToNumeric::foldsTo(TempAllocator& alloc)
+{
+    MDefinition* input = getOperand(0);
+
+    if (input->isBox()) {
+        MDefinition* unboxed = input->getOperand(0);
+        if (IsNumericType(unboxed->type())) {
+            // If the argument is an MBox and we can see that it boxes a numeric
+            // value, ToNumeric can be elided.
+            return input;
+        }
+    }
+
+    return this;
+}
+
+MDefinition*
 MToInt32::foldsTo(TempAllocator& alloc)
 {
     MDefinition* input = getOperand(0);

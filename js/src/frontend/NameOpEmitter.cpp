@@ -343,7 +343,7 @@ NameOpEmitter::emitIncDec()
     if (!prepareForRhs()) {                           // ENV? V
         return false;
     }
-    if (!bce_->emit1(JSOP_POS)) {                     // ENV? N
+    if (!bce_->emit1(JSOP_TONUMERIC)) {               // ENV? N
         return false;
     }
     if (isPostIncDec()) {

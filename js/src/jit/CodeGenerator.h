@@ -149,6 +149,7 @@ class CodeGenerator final : public CodeGeneratorSpecific
     void visitGuardReceiverPolymorphic(LGuardReceiverPolymorphic* lir);
     void visitGuardUnboxedExpando(LGuardUnboxedExpando* lir);
     void visitLoadUnboxedExpando(LLoadUnboxedExpando* lir);
+    void visitToNumeric(LToNumeric* lir);
     void visitTypeBarrierV(LTypeBarrierV* lir);
     void visitTypeBarrierO(LTypeBarrierO* lir);
     void visitMonitorTypes(LMonitorTypes* lir);

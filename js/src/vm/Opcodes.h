@@ -2357,7 +2357,7 @@
      *   Operands:
      *   Stack: arg => rval
      */ \
-    macro(JSOP_DYNAMIC_IMPORT, 234, "call-import", NULL, 1,  1,  1,  JOF_BYTE) \
+    macro(JSOP_DYNAMIC_IMPORT, 234, "call-import", NULL, 1, 1, 1, JOF_BYTE) \
     /*
      * Pops the numeric value 'val' from the stack, then pushes 'val + 1'.
      *
@@ -2377,19 +2377,26 @@
      */ \
     macro(JSOP_DEC, 236, "dec", NULL, 1, 1, 1, JOF_BYTE) \
     /*
+     * Pop 'val' from the stack, then push the result of 'ToNumeric(val)'.
+     *   Category: Operators
+     *   Type: Arithmetic Operators
+     *   Operands:
+     *   Stack: val => ToNumeric(val)
+     */ \
+    macro(JSOP_TONUMERIC, 237, "tonumeric", NULL, 1, 1, 1, JOF_BYTE) \
+    /*
      * Pushes a BigInt constant onto the stack.
      *   Category: Literals
      *   Type: Constants
      *   Operands: uint32_t constIndex
      *   Stack: => val
      */ \
-    macro(JSOP_BIGINT, 237, "bigint", NULL,      5, 0, 1, JOF_BIGINT)
+    macro(JSOP_BIGINT, 238, "bigint", NULL, 5, 0, 1, JOF_BIGINT)
 /*
  * In certain circumstances it may be useful to "pad out" the opcode space to
  * a power of two.  Use this macro to do so.
  */
 #define FOR_EACH_TRAILING_UNUSED_OPCODE(macro) \
-    macro(238) \
     macro(239) \
     macro(240) \
     macro(241) \

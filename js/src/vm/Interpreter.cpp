@@ -4196,6 +4196,14 @@ CASE(JSOP_DEC)
 }
 END_CASE(JSOP_DEC)
 
+CASE(JSOP_TONUMERIC)
+{
+    if (!ToNumeric(cx, REGS.stackHandleAt(-1))) {
+        goto error;
+    }
+}
+END_CASE(JSOP_TONUMERIC)
+
 CASE(JSOP_BIGINT)
 {
     PUSH_COPY(script->getConst(GET_UINT32_INDEX(REGS.pc)));
