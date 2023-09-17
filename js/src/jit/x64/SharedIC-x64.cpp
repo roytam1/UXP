@@ -216,6 +216,16 @@ ICUnaryArith_Int32::Compiler::generateStubCode(MacroAssembler& masm)
         masm.branchTest32(Assembler::Zero, R0.valueReg(), Imm32(0x7fffffff), &failure);
         masm.negl(R0.valueReg());
         break;
+      case JSOP_INC: {
+        RegisterOrInt32Constant rval = RegisterOrInt32Constant(R0.valueReg());
+        masm.inc32(&rval);
+        break;
+      }
+      case JSOP_DEC: {
+        RegisterOrInt32Constant rval = RegisterOrInt32Constant(R0.valueReg());
+        masm.dec32(&rval);
+        break;
+      }
       default:
         MOZ_CRASH("Unexpected op");
     }
