@@ -6219,7 +6219,6 @@ class MBinaryArithInstruction
         specialization_ = MIRType::Int32;
         setResultType(MIRType::Int32);
     }
-    void setNumberSpecialization(TempAllocator& alloc, BaselineInspector* inspector, jsbytecode* pc);
 
     virtual void trySpecializeFloat32(TempAllocator& alloc) override;
 

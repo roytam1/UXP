@@ -421,16 +421,19 @@ IncOperation(JSContext* cx,
             MutableHandleValue val,
             MutableHandleValue res)
 {
-    MOZ_ASSERT(val.isNumber(), "+1 only callable on result of JSOP_TONUMERIC");
-
     int32_t i;
     if (val.isInt32() && (i = val.toInt32()) != INT32_MAX) {
       res.setInt32(i + 1);
       return true;
     }
 
-    res.setNumber(val.toNumber() + 1);
-    return true;
+    if (val.isNumber()) {
+      res.setNumber(val.toNumber() + 1);
+      return true;
+    }
+
+    MOZ_ASSERT(val.isBigInt(), "+1 only callable on result of JSOP_TONUMERIC");
+    return BigInt::inc(cx, val, res);
 }
 
 static MOZ_ALWAYS_INLINE bool
@@ -438,16 +441,19 @@ DecOperation(JSContext* cx,
             MutableHandleValue val,
             MutableHandleValue res) 
 {
-    MOZ_ASSERT(val.isNumber(), "-1 only callable on result of JSOP_TONUMERIC");
-
     int32_t i;
     if (val.isInt32() && (i = val.toInt32()) != INT32_MIN) {
       res.setInt32(i - 1);
       return true;
     }
 
-    res.setNumber(val.toNumber() - 1);
-    return true;
+    if (val.isNumber()) {
+      res.setNumber(val.toNumber() - 1);
+      return true;
+    }
+
+    MOZ_ASSERT(val.isBigInt(), "-1 only callable on result of JSOP_TONUMERIC");
+    return BigInt::dec(cx, val, res);
 }
 
 static MOZ_ALWAYS_INLINE bool
