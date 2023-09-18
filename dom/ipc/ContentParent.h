@@ -237,9 +237,7 @@ public:
 
   virtual bool RecvBridgeToChildProcess(const ContentParentId& aCpId) override;
 
-#ifdef MOZ_GMP
   virtual bool RecvCreateGMPService() override;
-#endif
 
   virtual bool RecvLoadPlugin(const uint32_t& aPluginId, nsresult* aRv,
                               uint32_t* aRunID) override;
@@ -672,11 +670,9 @@ private:
                                   TabParent* aTopLevel, const TabId& aTabId,
                                   uint64_t* aId);
 
-#ifdef MOZ_GMP
   PGMPServiceParent*
   AllocPGMPServiceParent(mozilla::ipc::Transport* aTransport,
                          base::ProcessId aOtherProcess) override;
-#endif
 
   PBackgroundParent*
   AllocPBackgroundParent(Transport* aTransport, ProcessId aOtherProcess)

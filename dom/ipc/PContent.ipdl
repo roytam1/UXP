@@ -26,14 +26,10 @@ include protocol PNecko;
 //       bridging PContent and PGMP. As soon as it registers the bridge between
 //       PContent and PPluginModule it seems to think that PContent's parent and
 //       child live in the same process!
-#ifdef MOZ_GMP
 include protocol PGMPContent;
 include protocol PGMPService;
 include protocol PPluginModule;
 include protocol PGMP;
-#else
-include protocol PPluginModule;
-#endif
 include protocol PPrinting;
 include protocol PSendStream;
 include protocol POfflineCacheUpdate;
@@ -215,7 +211,6 @@ struct BlobURLRegistrationData
     Principal principal;
 };
 
-#ifdef MOZ_GMP
 struct GMPAPITags
 {
     nsCString api;
@@ -228,16 +223,13 @@ struct GMPCapabilityData
     nsCString version;
     GMPAPITags[] capabilities;
 };
-#endif
 
 nested(upto inside_cpow) sync protocol PContent
 {
     parent spawns PPluginModule;
 
     parent opens PProcessHangMonitor;
-#ifdef MOZ_GMP
     parent opens PGMPService;
-#endif
     child opens PBackground;
 
     manages PBlob;
@@ -524,9 +516,8 @@ child:
 
     async BlobURLUnregistration(nsCString aURI);
 
-#ifdef MOZ_GMP
+
     async GMPsChanged(GMPCapabilityData[] capabilities);
-#endif
 
 parent:
     /**
@@ -559,9 +550,7 @@ parent:
         returns (ContentParentId cpId, bool isForApp, bool isForBrowser, TabId tabId);
     sync BridgeToChildProcess(ContentParentId cpId);
 
-#ifdef MOZ_GMP
     async CreateGMPService();
-#endif
 
     /**
      * This call connects the content process to a plugin process. While this
