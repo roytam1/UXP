@@ -23,11 +23,7 @@ class BufferDecoder final : public AbstractMediaDecoder
 public:
   // This class holds a weak pointer to MediaResource.  It's the responsibility
   // of the caller to manage the memory of the MediaResource object.
-#ifdef MOZ_GMP
   explicit BufferDecoder(MediaResource* aResource, GMPCrashHelper* aCrashHelper);
-#else
-  explicit BufferDecoder(MediaResource* aResource);
-#endif
 
   NS_DECL_THREADSAFE_ISUPPORTS
 
@@ -43,17 +39,13 @@ public:
 
   MediaDecoderOwner* GetOwner() const final override;
 
-#ifdef MOZ_GMP
   already_AddRefed<GMPCrashHelper> GetCrashHelper() override;
-#endif
 
 private:
   virtual ~BufferDecoder();
   RefPtr<TaskQueue> mTaskQueueIdentity;
   RefPtr<MediaResource> mResource;
-#ifdef MOZ_GMP
   RefPtr<GMPCrashHelper> mCrashHelper;
-#endif
 };
 
 } // namespace mozilla

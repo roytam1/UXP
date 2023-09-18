@@ -29,9 +29,7 @@
 #include "mozilla/dom/VideoTrack.h"
 #include "mozilla/dom/VideoTrackList.h"
 #include "nsPrintfCString.h"
-#ifdef MOZ_GMP
 #include "GMPService.h"
-#endif
 #include "Layers.h"
 #include "mozilla/layers/ShadowLayers.h"
 
@@ -388,9 +386,7 @@ MediaDecoder::MediaDecoder(MediaDecoderOwner* aOwner)
   , mLogicalPosition(0.0)
   , mDuration(std::numeric_limits<double>::quiet_NaN())
   , mResourceCallback(new ResourceCallback())
-#ifdef MOZ_EME
   , mCDMProxyPromise(mCDMProxyPromiseHolder.Ensure(__func__))
-#endif
   , mIgnoreProgressData(false)
   , mInfiniteStream(false)
   , mOwner(aOwner)
@@ -475,9 +471,7 @@ MediaDecoder::Shutdown()
 
   mResourceCallback->Disconnect();
 
-#ifdef MOZ_EME
   mCDMProxyPromiseHolder.RejectIfExists(true, __func__);
-#endif
 
   DiscardOngoingSeekIfExists();
 
@@ -935,7 +929,6 @@ MediaDecoder::OwnerHasError() const
   return mOwner->HasError();
 }
 
-#ifdef MOZ_GMP
 class MediaElementGMPCrashHelper : public GMPCrashHelper
 {
 public:
@@ -963,7 +956,6 @@ MediaDecoder::GetCrashHelper()
   return mOwner->GetMediaElement() ?
     MakeAndAddRef<MediaElementGMPCrashHelper>(mOwner->GetMediaElement()) : nullptr;
 }
-#endif
 
 bool
 MediaDecoder::IsEnded() const
@@ -1551,7 +1543,6 @@ MediaDecoder::CanPlayThrough()
   return GetStatistics().CanPlayThrough();
 }
 
-#ifdef MOZ_EME
 RefPtr<MediaDecoder::CDMProxyPromise>
 MediaDecoder::RequestCDMProxy() const
 {
@@ -1566,7 +1557,6 @@ MediaDecoder::SetCDMProxy(CDMProxy* aProxy)
 
   mCDMProxyPromiseHolder.ResolveIfExists(aProxy, __func__);
 }
-#endif
 
 bool
 MediaDecoder::IsOpusEnabled()

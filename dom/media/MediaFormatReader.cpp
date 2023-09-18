@@ -3,9 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifdef MOZ_EME
 #include "mozilla/CDMProxy.h"
-#endif
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/dom/HTMLMediaElement.h"
 #include "mozilla/Preferences.h"
@@ -367,9 +365,7 @@ MediaFormatReader::DecoderFactory::DoCreateDecoder(TrackType aTrack)
         : *ownerData.mOriginalInfo->GetAsAudioInfo(),
         ownerData.mTaskQueue,
         ownerData.mCallback.get(),
-#ifdef MOZ_GMP
         mOwner->mCrashHelper,
-#endif
         ownerData.mIsBlankDecode,
         &result
       });
@@ -387,9 +383,7 @@ MediaFormatReader::DecoderFactory::DoCreateDecoder(TrackType aTrack)
         ownerData.mCallback.get(),
         mOwner->mKnowsCompositor,
         mOwner->GetImageContainer(),
-#ifdef MOZ_GMP
         mOwner->mCrashHelper,
-#endif
         ownerData.mIsBlankDecode,
         &result
       });
@@ -582,11 +576,9 @@ MediaFormatReader::InitInternal()
   mVideo.mTaskQueue =
     new TaskQueue(GetMediaThreadPool(MediaThreadType::PLATFORM_DECODER));
 
-#ifdef MOZ_GMP
   // Note: GMPCrashHelper must be created on main thread, as it may use
   // weak references, which aren't threadsafe.
   mCrashHelper = mDecoder->GetCrashHelper();
-#endif
 
   return NS_OK;
 }
@@ -619,7 +611,6 @@ private:
 };
 #endif
 
-#ifdef MOZ_EME
 void
 MediaFormatReader::SetCDMProxy(CDMProxy* aProxy)
 {
@@ -631,7 +622,6 @@ MediaFormatReader::SetCDMProxy(CDMProxy* aProxy)
   });
   OwnerThread()->Dispatch(r.forget());
 }
-#endif
 
 bool
 MediaFormatReader::IsWaitingOnCDMResource() {
