@@ -192,9 +192,7 @@ public:
   virtual State GetState() const = 0;
 
   // Event handlers for various events.
-#ifdef MOZ_EME
   virtual void HandleCDMProxyReady() {}
-#endif
   virtual void HandleAudioDecoded(MediaData* aAudio) {}
   virtual void HandleVideoDecoded(MediaData* aVideo, TimeStamp aDecodeStart) {}
   virtual void HandleEndOfStream() {}
@@ -372,9 +370,7 @@ public:
     return DECODER_STATE_WAIT_FOR_CDM;
   }
 
-#ifdef MOZ_EME
   void HandleCDMProxyReady() override;
-#endif
 
   RefPtr<MediaDecoder::SeekPromise> HandleSeek(SeekTarget aTarget) override
   {
@@ -1241,32 +1237,22 @@ DecodeMetadataState::OnMetadataRead(MetadataHolder* aMetadata)
   // feeding in the CDM, which we need to decode the first frame (and
   // thus get the metadata). We could fix this if we could compute the start
   // time by demuxing without necessaring decoding.
-#ifdef MOZ_EME
   bool waitingForCDM = Info().IsEncrypted() && !mMaster->mCDMProxy;
-#endif
 
   mMaster->mNotifyMetadataBeforeFirstFrame =
-    mMaster->mDuration.Ref().isSome()
-#ifdef MOZ_EME
- || waitingForCDM
-#endif
-;
+    mMaster->mDuration.Ref().isSome() || waitingForCDM;
 
   if (mMaster->mNotifyMetadataBeforeFirstFrame) {
     mMaster->EnqueueLoadedMetadataEvent();
   }
 
-#ifdef MOZ_EME
   if (waitingForCDM) {
     // Metadata parsing was successful but we're still waiting for CDM caps
     // to become available so that we can build the correct decryptor/decoder.
     SetState<WaitForCDMState>();
   } else {
-#endif
     SetState<DecodingFirstFrameState>(SeekJob{});
-#ifdef MOZ_EME
   }
-#endif
 }
 
 void
@@ -1275,24 +1261,18 @@ DormantState::HandlePlayStateChanged(MediaDecoder::PlayState aPlayState)
 {
   if (aPlayState == MediaDecoder::PLAY_STATE_PLAYING) {
     // Exit dormant when the user wants to play.
-    MOZ_ASSERT(!Info().IsEncrypted()
-#ifdef MOZ_EME
- || mMaster->mCDMProxy
-#endif
-);
+    MOZ_ASSERT(!Info().IsEncrypted() || mMaster->mCDMProxy);
     MOZ_ASSERT(mMaster->mSentFirstFrameLoadedEvent);
     SetState<SeekingState>(Move(mPendingSeek), EventVisibility::Suppressed);
   }
 }
 
-#ifdef MOZ_EME
 void
 MediaDecoderStateMachine::
 WaitForCDMState::HandleCDMProxyReady()
 {
   SetState<DecodingFirstFrameState>(Move(mPendingSeek));
 }
-#endif
 
 void
 MediaDecoderStateMachine::
@@ -1594,9 +1574,7 @@ ShutdownState::Enter()
   // dispose of the timer.
   master->mVideoDecodeSuspendTimer.Reset();
 
-#ifdef MOZ_EME
   master->mCDMProxyPromise.DisconnectIfExists();
-#endif
 
   if (master->IsPlaying()) {
     master->StopPlayback();
@@ -2150,12 +2128,10 @@ nsresult MediaDecoderStateMachine::Init(MediaDecoder* aDecoder)
 
   mMediaSink = CreateMediaSink(mAudioCaptured);
 
-#ifdef MOZ_EME
   mCDMProxyPromise.Begin(aDecoder->RequestCDMProxy()->Then(
     OwnerThread(), __func__, this,
     &MediaDecoderStateMachine::OnCDMProxyReady,
     &MediaDecoderStateMachine::OnCDMProxyNotReady));
-#endif
 
   nsresult rv = mReader->Init();
   NS_ENSURE_SUCCESS(rv, rv);
@@ -3131,7 +3107,6 @@ void MediaDecoderStateMachine::OnMediaSinkAudioError(nsresult aResult)
   DecodeError(MediaResult(NS_ERROR_DOM_MEDIA_MEDIASINK_ERR, __func__));
 }
 
-#ifdef MOZ_EME
 void
 MediaDecoderStateMachine::OnCDMProxyReady(RefPtr<CDMProxy> aProxy)
 {
@@ -3148,7 +3123,6 @@ MediaDecoderStateMachine::OnCDMProxyNotReady()
   MOZ_ASSERT(OnTaskQueue());
   mCDMProxyPromise.Complete();
 }
-#endif
 
 void
 MediaDecoderStateMachine::SetAudioCaptured(bool aCaptured)
