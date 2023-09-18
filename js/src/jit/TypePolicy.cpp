@@ -582,45 +582,6 @@ template bool NoFloatPolicyAfter<2>::adjustInputs(TempAllocator& alloc, MInstruc
 
 template <unsigned Op>
 bool
-SimdScalarPolicy<Op>::staticAdjustInputs(TempAllocator& alloc, MInstruction* ins)
-{
-    MOZ_ASSERT(IsSimdType(ins->type()));
-    MIRType laneType = SimdTypeToLaneType(ins->type());
-
-    MDefinition* in = ins->getOperand(Op);
-
-    // A vector with boolean lanes requires Int32 inputs that have already been
-    // converted to 0/-1.
-    // We can't insert a MIRType::Boolean lane directly - it requires conversion.
-    if (laneType == MIRType::Boolean) {
-        MOZ_ASSERT(in->type() == MIRType::Int32, "Boolean SIMD vector requires Int32 lanes.");
-        return true;
-    }
-
-    if (in->type() == laneType)
-        return true;
-
-    MInstruction* replace;
-    if (laneType == MIRType::Int32) {
-        replace = MTruncateToInt32::New(alloc, in);
-    } else {
-        MOZ_ASSERT(laneType == MIRType::Float32);
-        replace = MToFloat32::New(alloc, in);
-    }
-
-    ins->block()->insertBefore(ins, replace);
-    ins->replaceOperand(Op, replace);
-
-    return replace->typePolicy()->adjustInputs(alloc, replace);
-}
-
-template bool SimdScalarPolicy<0>::staticAdjustInputs(TempAllocator& alloc, MInstruction* def);
-template bool SimdScalarPolicy<1>::staticAdjustInputs(TempAllocator& alloc, MInstruction* def);
-template bool SimdScalarPolicy<2>::staticAdjustInputs(TempAllocator& alloc, MInstruction* def);
-template bool SimdScalarPolicy<3>::staticAdjustInputs(TempAllocator& alloc, MInstruction* def);
-
-template <unsigned Op>
-bool
 BoxPolicy<Op>::staticAdjustInputs(TempAllocator& alloc, MInstruction* ins)
 {
     MDefinition* in = ins->getOperand(Op);
@@ -802,75 +763,6 @@ template bool ObjectPolicy<1>::staticAdjustInputs(TempAllocator& alloc, MInstruc
 template bool ObjectPolicy<2>::staticAdjustInputs(TempAllocator& alloc, MInstruction* ins);
 template bool ObjectPolicy<3>::staticAdjustInputs(TempAllocator& alloc, MInstruction* ins);
 
-template <unsigned Op>
-bool
-SimdSameAsReturnedTypePolicy<Op>::staticAdjustInputs(TempAllocator& alloc, MInstruction* ins)
-{
-    MOZ_ASSERT(ins->type() == ins->getOperand(Op)->type());
-    return true;
-}
-
-template bool
-SimdSameAsReturnedTypePolicy<0>::staticAdjustInputs(TempAllocator& alloc, MInstruction* ins);
-template bool
-SimdSameAsReturnedTypePolicy<1>::staticAdjustInputs(TempAllocator& alloc, MInstruction* ins);
-
-bool
-SimdAllPolicy::adjustInputs(TempAllocator& alloc, MInstruction* ins)
-{
-    for (unsigned i = 0, e = ins->numOperands(); i < e; i++)
-        MOZ_ASSERT(ins->getOperand(i)->type() == ins->typePolicySpecialization());
-    return true;
-}
-
-template <unsigned Op>
-bool
-SimdPolicy<Op>::adjustInputs(TempAllocator& alloc, MInstruction* ins)
-{
-    MOZ_ASSERT(ins->typePolicySpecialization() == ins->getOperand(Op)->type());
-    return true;
-}
-
-template bool
-SimdPolicy<0>::adjustInputs(TempAllocator& alloc, MInstruction* ins);
-
-bool
-SimdShufflePolicy::adjustInputs(TempAllocator& alloc, MInstruction* ins)
-{
-    MSimdGeneralShuffle* s = ins->toSimdGeneralShuffle();
-
-    for (unsigned i = 0; i < s->numVectors(); i++)
-        MOZ_ASSERT(ins->getOperand(i)->type() == ins->typePolicySpecialization());
-
-    // Next inputs are the lanes, which need to be int32
-    for (unsigned i = 0; i < s->numLanes(); i++) {
-        MDefinition* in = ins->getOperand(s->numVectors() + i);
-        if (in->type() == MIRType::Int32)
-            continue;
-
-        MInstruction* replace = MToInt32::New(alloc, in, MacroAssembler::IntConversion_NumbersOnly);
-        ins->block()->insertBefore(ins, replace);
-        ins->replaceOperand(s->numVectors() + i, replace);
-        if (!replace->typePolicy()->adjustInputs(alloc, replace))
-            return false;
-    }
-
-    return true;
-}
-
-bool
-SimdSelectPolicy::adjustInputs(TempAllocator& alloc, MInstruction* ins)
-{
-    // First input is the mask, which has to be a boolean.
-    MOZ_ASSERT(IsBooleanSimdType(ins->getOperand(0)->type()));
-
-    // Next inputs are the two vectors of a particular type.
-    for (unsigned i = 1; i < 3; i++)
-        MOZ_ASSERT(ins->getOperand(i)->type() == ins->typePolicySpecialization());
-
-    return true;
-}
-
 bool
 CallPolicy::adjustInputs(TempAllocator& alloc, MInstruction* ins)
 {
@@ -928,13 +820,6 @@ StoreUnboxedScalarPolicy::adjustValueInput(TempAllocator& alloc, MInstruction* i
                                            Scalar::Type writeType, MDefinition* value,
                                            int valueOperand)
 {
-    // Storing a SIMD value requires a valueOperand that has already been
-    // SimdUnboxed. See IonBuilder::inlineSimdStore(()
-    if (Scalar::isSimdType(writeType)) {
-        MOZ_ASSERT(IsSimdType(value->type()));
-        return true;
-    }
-
     MDefinition* curValue = value;
     // First, ensure the value is int32, boolean, double or Value.
     // The conversion is based on TypedArrayObjectTemplate::setElementTail.
@@ -1197,9 +1082,6 @@ FilterTypeSetPolicy::adjustInputs(TempAllocator& alloc, MInstruction* ins)
     _(FilterTypeSetPolicy)                      \
     _(InstanceOfPolicy)                         \
     _(PowPolicy)                                \
-    _(SimdAllPolicy)                            \
-    _(SimdSelectPolicy)                         \
-    _(SimdShufflePolicy)                        \
     _(StoreTypedArrayElementStaticPolicy)       \
     _(StoreTypedArrayHolePolicy)                \
     _(StoreUnboxedScalarPolicy)                 \
@@ -1236,7 +1118,6 @@ FilterTypeSetPolicy::adjustInputs(TempAllocator& alloc, MInstruction* ins)
     _(Mix4Policy<ObjectPolicy<0>, IntPolicy<1>, IntPolicy<2>, IntPolicy<3>>) \
     _(Mix4Policy<ObjectPolicy<0>, IntPolicy<1>, TruncateToInt32Policy<2>, TruncateToInt32Policy<3> >) \
     _(Mix3Policy<ObjectPolicy<0>, CacheIdPolicy<1>, NoFloatPolicy<2>>)  \
-    _(Mix4Policy<SimdScalarPolicy<0>, SimdScalarPolicy<1>, SimdScalarPolicy<2>, SimdScalarPolicy<3> >) \
     _(MixPolicy<BoxPolicy<0>, ObjectPolicy<1> >)                        \
     _(MixPolicy<ConvertToStringPolicy<0>, ConvertToStringPolicy<1> >)   \
     _(MixPolicy<ConvertToStringPolicy<0>, ObjectPolicy<1> >)            \
@@ -1254,8 +1135,6 @@ FilterTypeSetPolicy::adjustInputs(TempAllocator& alloc, MInstruction* ins)
     _(MixPolicy<ObjectPolicy<0>, StringPolicy<1> >)                     \
     _(MixPolicy<ObjectPolicy<0>, ConvertToStringPolicy<2> >)            \
     _(MixPolicy<ObjectPolicy<1>, ConvertToStringPolicy<0> >)            \
-    _(MixPolicy<SimdSameAsReturnedTypePolicy<0>, SimdSameAsReturnedTypePolicy<1> >) \
-    _(MixPolicy<SimdSameAsReturnedTypePolicy<0>, SimdScalarPolicy<1> >) \
     _(MixPolicy<StringPolicy<0>, IntPolicy<1> >)                        \
     _(MixPolicy<StringPolicy<0>, StringPolicy<1> >)                     \
     _(MixPolicy<BoxPolicy<0>, BoxPolicy<1> >)                           \
@@ -1265,9 +1144,6 @@ FilterTypeSetPolicy::adjustInputs(TempAllocator& alloc, MInstruction* ins)
     _(ObjectPolicy<0>)                                                  \
     _(ObjectPolicy<1>)                                                  \
     _(ObjectPolicy<3>)                                                  \
-    _(SimdPolicy<0>)                                                    \
-    _(SimdSameAsReturnedTypePolicy<0>)                                  \
-    _(SimdScalarPolicy<0>)                                              \
     _(StringPolicy<0>)
 
 

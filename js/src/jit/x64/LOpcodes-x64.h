@@ -14,8 +14,6 @@
     _(UDivOrModI64)                 \
     _(WasmTruncateToInt64)          \
     _(Int64ToFloatingPoint)         \
-    _(SimdValueInt32x4)             \
-    _(SimdValueFloat32x4)           \
     _(UDivOrMod)                    \
     _(UDivOrModConstant)
 

@@ -9353,11 +9353,6 @@ IonBuilder::getElemTryTypedObject(bool* emitted, MDefinition* obj, MDefinition* 
         return true;
 
     switch (elemPrediction.kind()) {
-      case type::Simd:
-        // FIXME (bug 894105): load into a MIRType::float32x4 etc
-        trackOptimizationOutcome(TrackedOutcome::GenericFailure);
-        return true;
-
       case type::Struct:
       case type::Array:
         return getElemTryComplexElemOfTypedObject(emitted,
@@ -10467,11 +10462,6 @@ IonBuilder::setElemTryTypedObject(bool* emitted, MDefinition* obj,
         return true;
 
     switch (elemPrediction.kind()) {
-      case type::Simd:
-        // FIXME (bug 894105): store a MIRType::float32x4 etc
-        trackOptimizationOutcome(TrackedOutcome::GenericFailure);
-        return true;
-
       case type::Reference:
         return setElemTryReferenceElemOfTypedObject(emitted, obj, index,
                                                     objPrediction, value, elemPrediction);
@@ -12087,10 +12077,6 @@ IonBuilder::getPropTryTypedObject(bool* emitted,
         return true;
 
     switch (fieldPrediction.kind()) {
-      case type::Simd:
-        // FIXME (bug 894104): load into a MIRType::float32x4 etc
-        return true;
-
       case type::Struct:
       case type::Array:
         return getPropTryComplexPropOfTypedObject(emitted,
@@ -13156,10 +13142,6 @@ IonBuilder::setPropTryTypedObject(bool* emitted, MDefinition* obj,
         return true;
 
     switch (fieldPrediction.kind()) {
-      case type::Simd:
-        // FIXME (bug 894104): store into a MIRType::float32x4 etc
-        return true;
-
       case type::Reference:
         return setPropTryReferencePropOfTypedObject(emitted, obj, fieldOffset,
                                                     value, fieldPrediction, name);

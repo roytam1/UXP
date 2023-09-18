@@ -587,34 +587,6 @@ MacroAssembler::wasmLoad(const wasm::MemoryAccessDesc& access, Operand srcAddr, 
       case Scalar::Float64:
         vmovsdWithPatch(srcAddr, out.fpu());
         break;
-      case Scalar::Float32x4:
-        switch (access.numSimdElems()) {
-          // In memory-to-register mode, movss zeroes out the high lanes.
-          case 1: vmovssWithPatch(srcAddr, out.fpu()); break;
-          // See comment above, which also applies to movsd.
-          case 2: vmovsdWithPatch(srcAddr, out.fpu()); break;
-          case 4: vmovupsWithPatch(srcAddr, out.fpu()); break;
-          default: MOZ_CRASH("unexpected size for partial load");
-        }
-        break;
-      case Scalar::Int32x4:
-        switch (access.numSimdElems()) {
-          // In memory-to-register mode, movd zeroes out the high lanes.
-          case 1: vmovdWithPatch(srcAddr, out.fpu()); break;
-          // See comment above, which also applies to movq.
-          case 2: vmovqWithPatch(srcAddr, out.fpu()); break;
-          case 4: vmovdquWithPatch(srcAddr, out.fpu()); break;
-          default: MOZ_CRASH("unexpected size for partial load");
-        }
-        break;
-      case Scalar::Int8x16:
-        MOZ_ASSERT(access.numSimdElems() == 16, "unexpected partial load");
-        vmovdquWithPatch(srcAddr, out.fpu());
-        break;
-      case Scalar::Int16x8:
-        MOZ_ASSERT(access.numSimdElems() == 8, "unexpected partial load");
-        vmovdquWithPatch(srcAddr, out.fpu());
-        break;
       case Scalar::Int64:
       case Scalar::BigInt64:
       case Scalar::BigUint64:
@@ -632,7 +604,6 @@ void
 MacroAssembler::wasmLoadI64(const wasm::MemoryAccessDesc& access, Operand srcAddr, Register64 out)
 {
     MOZ_ASSERT(!access.isAtomic());
-    MOZ_ASSERT(!access.isSimd());
 
     size_t loadOffset = size();
     switch (access.type()) {
@@ -724,10 +695,6 @@ MacroAssembler::wasmLoadI64(const wasm::MemoryAccessDesc& access, Operand srcAdd
         break;
       case Scalar::Float32:
       case Scalar::Float64:
-      case Scalar::Float32x4:
-      case Scalar::Int8x16:
-      case Scalar::Int16x8:
-      case Scalar::Int32x4:
         MOZ_CRASH("non-int64 loads should use load()");
       case Scalar::BigInt64:
       case Scalar::BigUint64:
@@ -763,34 +730,6 @@ MacroAssembler::wasmStore(const wasm::MemoryAccessDesc& access, AnyRegister valu
       case Scalar::Float64:
         vmovsdWithPatch(value.fpu(), dstAddr);
         break;
-      case Scalar::Float32x4:
-        switch (access.numSimdElems()) {
-          // In memory-to-register mode, movss zeroes out the high lanes.
-          case 1: vmovssWithPatch(value.fpu(), dstAddr); break;
-          // See comment above, which also applies to movsd.
-          case 2: vmovsdWithPatch(value.fpu(), dstAddr); break;
-          case 4: vmovupsWithPatch(value.fpu(), dstAddr); break;
-          default: MOZ_CRASH("unexpected size for partial load");
-        }
-        break;
-      case Scalar::Int32x4:
-        switch (access.numSimdElems()) {
-          // In memory-to-register mode, movd zeroes out the high lanes.
-          case 1: vmovdWithPatch(value.fpu(), dstAddr); break;
-          // See comment above, which also applies to movsd.
-          case 2: vmovqWithPatch(value.fpu(), dstAddr); break;
-          case 4: vmovdquWithPatch(value.fpu(), dstAddr); break;
-          default: MOZ_CRASH("unexpected size for partial load");
-        }
-        break;
-      case Scalar::Int8x16:
-        MOZ_ASSERT(access.numSimdElems() == 16, "unexpected partial store");
-        vmovdquWithPatch(value.fpu(), dstAddr);
-        break;
-      case Scalar::Int16x8:
-        MOZ_ASSERT(access.numSimdElems() == 8, "unexpected partial store");
-        vmovdquWithPatch(value.fpu(), dstAddr);
-        break;
       case Scalar::Int64:
         MOZ_CRASH("Should be handled in storeI64.");
       case Scalar::MaxTypedArrayViewType:
@@ -808,7 +747,6 @@ void
 MacroAssembler::wasmStoreI64(const wasm::MemoryAccessDesc& access, Register64 value, Operand dstAddr)
 {
     MOZ_ASSERT(!access.isAtomic());
-    MOZ_ASSERT(!access.isSimd());
 
     size_t storeOffset = size();
     if (dstAddr.kind() == Operand::MEM_ADDRESS32) {

@@ -1,6 +1,7 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  *
  * Copyright 2015 Mozilla Foundation
+ * Copyright 2023 Moonchild Productions
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,11 +84,6 @@ using mozilla::Unused;
 typedef Vector<uint32_t, 0, SystemAllocPolicy> Uint32Vector;
 typedef Vector<uint8_t, 0, SystemAllocPolicy> Bytes;
 
-typedef int8_t I8x16[16];
-typedef int16_t I16x8[8];
-typedef int32_t I32x4[4];
-typedef float F32x4[4];
-
 class Code;
 class CodeRange;
 class Memory;
@@ -151,89 +147,6 @@ struct ShareableBase : RefCounted<T>
 
 // ValType utilities
 
-static inline bool
-IsSimdType(ValType vt)
-{
-    switch (vt) {
-      case ValType::I8x16:
-      case ValType::I16x8:
-      case ValType::I32x4:
-      case ValType::F32x4:
-      case ValType::B8x16:
-      case ValType::B16x8:
-      case ValType::B32x4:
-        return true;
-      default:
-        return false;
-    }
-}
-
-static inline uint32_t
-NumSimdElements(ValType vt)
-{
-    MOZ_ASSERT(IsSimdType(vt));
-    switch (vt) {
-      case ValType::I8x16:
-      case ValType::B8x16:
-        return 16;
-      case ValType::I16x8:
-      case ValType::B16x8:
-        return 8;
-      case ValType::I32x4:
-      case ValType::F32x4:
-      case ValType::B32x4:
-        return 4;
-     default:
-        MOZ_CRASH("Unhandled SIMD type");
-    }
-}
-
-static inline ValType
-SimdElementType(ValType vt)
-{
-    MOZ_ASSERT(IsSimdType(vt));
-    switch (vt) {
-      case ValType::I8x16:
-      case ValType::I16x8:
-      case ValType::I32x4:
-        return ValType::I32;
-      case ValType::F32x4:
-        return ValType::F32;
-      case ValType::B8x16:
-      case ValType::B16x8:
-      case ValType::B32x4:
-        return ValType::I32;
-     default:
-        MOZ_CRASH("Unhandled SIMD type");
-    }
-}
-
-static inline ValType
-SimdBoolType(ValType vt)
-{
-    MOZ_ASSERT(IsSimdType(vt));
-    switch (vt) {
-      case ValType::I8x16:
-      case ValType::B8x16:
-        return ValType::B8x16;
-      case ValType::I16x8:
-      case ValType::B16x8:
-        return ValType::B16x8;
-      case ValType::I32x4:
-      case ValType::F32x4:
-      case ValType::B32x4:
-        return ValType::B32x4;
-     default:
-        MOZ_CRASH("Unhandled SIMD type");
-    }
-}
-
-static inline bool
-IsSimdBoolType(ValType vt)
-{
-    return vt == ValType::B8x16 || vt == ValType::B16x8 || vt == ValType::B32x4;
-}
-
 static inline jit::MIRType
 ToMIRType(ValType vt)
 {
@@ -242,13 +155,6 @@ ToMIRType(ValType vt)
       case ValType::I64: return jit::MIRType::Int64;
       case ValType::F32: return jit::MIRType::Float32;
       case ValType::F64: return jit::MIRType::Double;
-      case ValType::I8x16: return jit::MIRType::Int8x16;
-      case ValType::I16x8: return jit::MIRType::Int16x8;
-      case ValType::I32x4: return jit::MIRType::Int32x4;
-      case ValType::F32x4: return jit::MIRType::Float32x4;
-      case ValType::B8x16: return jit::MIRType::Bool8x16;
-      case ValType::B16x8: return jit::MIRType::Bool16x8;
-      case ValType::B32x4: return jit::MIRType::Bool32x4;
     }
     MOZ_MAKE_COMPILER_ASSUME_IS_UNREACHABLE("bad type");
 }
@@ -266,14 +172,6 @@ enum class ExprType
     I64   = uint8_t(TypeCode::I64),
     F32   = uint8_t(TypeCode::F32),
     F64   = uint8_t(TypeCode::F64),
-
-    I8x16 = uint8_t(TypeCode::I8x16),
-    I16x8 = uint8_t(TypeCode::I16x8),
-    I32x4 = uint8_t(TypeCode::I32x4),
-    F32x4 = uint8_t(TypeCode::F32x4),
-    B8x16 = uint8_t(TypeCode::B8x16),
-    B16x8 = uint8_t(TypeCode::B16x8),
-    B32x4 = uint8_t(TypeCode::B32x4),
 
     Limit = uint8_t(TypeCode::Limit)
 };
@@ -297,12 +195,6 @@ ToExprType(ValType vt)
     return ExprType(vt);
 }
 
-static inline bool
-IsSimdType(ExprType et)
-{
-    return IsVoid(et) ? false : IsSimdType(ValType(et));
-}
-
 static inline jit::MIRType
 ToMIRType(ExprType et)
 {
@@ -318,13 +210,6 @@ ToCString(ExprType type)
       case ExprType::I64:   return "i64";
       case ExprType::F32:   return "f32";
       case ExprType::F64:   return "f64";
-      case ExprType::I8x16: return "i8x16";
-      case ExprType::I16x8: return "i16x8";
-      case ExprType::I32x4: return "i32x4";
-      case ExprType::F32x4: return "f32x4";
-      case ExprType::B8x16: return "b8x16";
-      case ExprType::B16x8: return "b16x8";
-      case ExprType::B32x4: return "b32x4";
       case ExprType::Limit:;
     }
     MOZ_CRASH("bad expression type");
@@ -386,10 +271,6 @@ class Val
         uint64_t i64_;
         RawF32 f32_;
         RawF64 f64_;
-        I8x16 i8x16_;
-        I16x8 i16x8_;
-        I32x4 i32x4_;
-        F32x4 f32x4_;
         U() {}
     } u;
 
@@ -404,46 +285,12 @@ class Val
     MOZ_IMPLICIT Val(float) = delete;
     MOZ_IMPLICIT Val(double) = delete;
 
-    explicit Val(const I8x16& i8x16, ValType type = ValType::I8x16) : type_(type) {
-        MOZ_ASSERT(type_ == ValType::I8x16 || type_ == ValType::B8x16);
-        memcpy(u.i8x16_, i8x16, sizeof(u.i8x16_));
-    }
-    explicit Val(const I16x8& i16x8, ValType type = ValType::I16x8) : type_(type) {
-        MOZ_ASSERT(type_ == ValType::I16x8 || type_ == ValType::B16x8);
-        memcpy(u.i16x8_, i16x8, sizeof(u.i16x8_));
-    }
-    explicit Val(const I32x4& i32x4, ValType type = ValType::I32x4) : type_(type) {
-        MOZ_ASSERT(type_ == ValType::I32x4 || type_ == ValType::B32x4);
-        memcpy(u.i32x4_, i32x4, sizeof(u.i32x4_));
-    }
-    explicit Val(const F32x4& f32x4) : type_(ValType::F32x4) {
-        memcpy(u.f32x4_, f32x4, sizeof(u.f32x4_));
-    }
-
     ValType type() const { return type_; }
-    bool isSimd() const { return IsSimdType(type()); }
 
     uint32_t i32() const { MOZ_ASSERT(type_ == ValType::I32); return u.i32_; }
     uint64_t i64() const { MOZ_ASSERT(type_ == ValType::I64); return u.i64_; }
     RawF32 f32() const { MOZ_ASSERT(type_ == ValType::F32); return u.f32_; }
     RawF64 f64() const { MOZ_ASSERT(type_ == ValType::F64); return u.f64_; }
-
-    const I8x16& i8x16() const {
-        MOZ_ASSERT(type_ == ValType::I8x16 || type_ == ValType::B8x16);
-        return u.i8x16_;
-    }
-    const I16x8& i16x8() const {
-        MOZ_ASSERT(type_ == ValType::I16x8 || type_ == ValType::B16x8);
-        return u.i16x8_;
-    }
-    const I32x4& i32x4() const {
-        MOZ_ASSERT(type_ == ValType::I32x4 || type_ == ValType::B32x4);
-        return u.i32x4_;
-    }
-    const F32x4& f32x4() const {
-        MOZ_ASSERT(type_ == ValType::F32x4);
-        return u.f32x4_;
-    }
 
     void writePayload(uint8_t* dst) const;
 };
@@ -834,16 +681,12 @@ enum class Trap
     InvalidConversionToInteger,
     // Integer division by zero.
     IntegerDivideByZero,
-    // Out of bounds on wasm memory accesses and asm.js SIMD/atomic accesses.
+    // Out of bounds on wasm memory accesses and asm.js atomic accesses.
     OutOfBounds,
     // call_indirect to null.
     IndirectCallToNull,
     // call_indirect signature mismatch.
     IndirectCallBadSig,
-
-    // (asm.js only) SIMD float to int conversion failed because the input
-    // wasn't in bounds.
-    ImpreciseSimdConversion,
 
     // The internal stack space was exhausted. For compatibility, this throws
     // the same over-recursed error as JS.
@@ -1388,7 +1231,7 @@ ComputeMappedSize(uint32_t maxSize);
 
 // Metadata for bounds check instructions that are patched at runtime with the
 // appropriate bounds check limit. On WASM_HUGE_MEMORY platforms for wasm (and
-// SIMD/Atomic) bounds checks, no BoundsCheck is created: the signal handler
+// Atomic) bounds checks, no BoundsCheck is created: the signal handler
 // catches everything. On !WASM_HUGE_MEMORY, a BoundsCheck is created for each
 // memory access (except when statically eliminated by optimizations) so that
 // the length can be patched in as an immediate. This requires that the bounds
@@ -1413,7 +1256,7 @@ class BoundsCheck
 WASM_DECLARE_POD_VECTOR(BoundsCheck, BoundsCheckVector)
 
 // Metadata for memory accesses. On WASM_HUGE_MEMORY platforms, only
-// (non-SIMD/Atomic) asm.js loads and stores create a MemoryAccess so that the
+// (non-Atomic) asm.js loads and stores create a MemoryAccess so that the
 // signal handler can implement the semantically-correct wraparound logic; the
 // rest simply redirect to the out-of-bounds stub in the signal handler. On x86,
 // the base address of memory is baked into each memory access instruction so

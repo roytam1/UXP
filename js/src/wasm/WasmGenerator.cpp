@@ -1,6 +1,7 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  *
  * Copyright 2015 Mozilla Foundation
+ * Copyright 2023 Moonchild Productions
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -664,15 +665,6 @@ ModuleGenerator::allocateGlobal(GlobalDesc* global)
       case ValType::I64:
       case ValType::F64:
         width = 8;
-        break;
-      case ValType::I8x16:
-      case ValType::I16x8:
-      case ValType::I32x4:
-      case ValType::F32x4:
-      case ValType::B8x16:
-      case ValType::B16x8:
-      case ValType::B32x4:
-        width = 16;
         break;
     }
 

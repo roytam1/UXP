@@ -17,44 +17,6 @@
     _(Pointer)                      \
     _(Double)                       \
     _(Float32)                      \
-    _(SimdBox)                      \
-    _(SimdUnbox)                    \
-    _(SimdSplatX16)                 \
-    _(SimdSplatX8)                  \
-    _(SimdSplatX4)                  \
-    _(Simd128Int)                   \
-    _(Simd128Float)                 \
-    _(SimdAllTrue)                  \
-    _(SimdAnyTrue)                  \
-    _(SimdReinterpretCast)          \
-    _(SimdExtractElementI)          \
-    _(SimdExtractElementU2D)        \
-    _(SimdExtractElementB)          \
-    _(SimdExtractElementF)          \
-    _(SimdInsertElementI)           \
-    _(SimdInsertElementF)           \
-    _(SimdGeneralShuffleI)          \
-    _(SimdGeneralShuffleF)          \
-    _(SimdSwizzleI)                 \
-    _(SimdSwizzleF)                 \
-    _(SimdShuffle)                  \
-    _(SimdShuffleX4)                \
-    _(SimdUnaryArithIx16)           \
-    _(SimdUnaryArithIx8)            \
-    _(SimdUnaryArithIx4)            \
-    _(SimdUnaryArithFx4)            \
-    _(SimdBinaryCompIx16)           \
-    _(SimdBinaryCompIx8)            \
-    _(SimdBinaryCompIx4)            \
-    _(SimdBinaryCompFx4)            \
-    _(SimdBinaryArithIx16)          \
-    _(SimdBinaryArithIx8)           \
-    _(SimdBinaryArithIx4)           \
-    _(SimdBinaryArithFx4)           \
-    _(SimdBinarySaturating)         \
-    _(SimdBinaryBitwise)            \
-    _(SimdShift)                    \
-    _(SimdSelect)                   \
     _(Value)                        \
     _(CloneLiteral)                 \
     _(Parameter)                    \
@@ -215,9 +177,6 @@
     _(DoubleToString)               \
     _(ValueToString)                \
     _(ValueToObjectOrNull)          \
-    _(Int32x4ToFloat32x4)           \
-    _(Float32x4ToInt32x4)           \
-    _(Float32x4ToUint32x4)          \
     _(Start)                        \
     _(NaNToZero)                    \
     _(OsrEntry)                     \

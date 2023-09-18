@@ -705,7 +705,6 @@ class MemoryAccessDesc
     uint32_t offset_;
     uint32_t align_;
     Scalar::Type type_;
-    unsigned numSimdElems_;
     jit::MemoryBarrierBits barrierBefore_;
     jit::MemoryBarrierBits barrierAfter_;
     mozilla::Maybe<wasm::TrapOffset> trapOffset_;
@@ -719,32 +718,23 @@ class MemoryAccessDesc
       : offset_(offset),
         align_(align),
         type_(type),
-        numSimdElems_(numSimdElems),
         barrierBefore_(barrierBefore),
         barrierAfter_(barrierAfter),
         trapOffset_(trapOffset)
     {
-        MOZ_ASSERT(Scalar::isSimdType(type) == (numSimdElems > 0));
         MOZ_ASSERT(mozilla::IsPowerOfTwo(align));
-        MOZ_ASSERT_IF(isSimd(), hasTrap());
         MOZ_ASSERT_IF(isAtomic(), hasTrap());
     }
 
     uint32_t offset() const { return offset_; }
     uint32_t align() const { return align_; }
     Scalar::Type type() const { return type_; }
-    unsigned byteSize() const {
-        return Scalar::isSimdType(type())
-               ? Scalar::scalarByteSize(type()) * numSimdElems()
-               : Scalar::byteSize(type());
-    }
-    unsigned numSimdElems() const { MOZ_ASSERT(isSimd()); return numSimdElems_; }
+    unsigned byteSize() const { return Scalar::byteSize(type()); }
     jit::MemoryBarrierBits barrierBefore() const { return barrierBefore_; }
     jit::MemoryBarrierBits barrierAfter() const { return barrierAfter_; }
     bool hasTrap() const { return !!trapOffset_; }
     TrapOffset trapOffset() const { return *trapOffset_; }
     bool isAtomic() const { return (barrierBefore_ | barrierAfter_) != jit::MembarNobits; }
-    bool isSimd() const { return Scalar::isSimdType(type_); }
     bool isPlainAsmJS() const { return !hasTrap(); }
 
     void clearOffset() { offset_ = 0; }

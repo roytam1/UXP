@@ -233,10 +233,6 @@ LIRGeneratorX64::visitWasmStore(MWasmStore* ins)
         break;
       case Scalar::Float32:
       case Scalar::Float64:
-      case Scalar::Float32x4:
-      case Scalar::Int8x16:
-      case Scalar::Int16x8:
-      case Scalar::Int32x4:
         valueAlloc = useRegisterAtStart(value);
         break;
       case Scalar::BigInt64:
@@ -279,10 +275,6 @@ LIRGeneratorX64::visitAsmJSStoreHeap(MAsmJSStoreHeap* ins)
         break;
       case Scalar::Float32:
       case Scalar::Float64:
-      case Scalar::Float32x4:
-      case Scalar::Int8x16:
-      case Scalar::Int16x8:
-      case Scalar::Int32x4:
         lir = new(alloc()) LAsmJSStoreHeap(useRegisterOrZeroAtStart(base),
                                            useRegisterAtStart(ins->value()));
         break;

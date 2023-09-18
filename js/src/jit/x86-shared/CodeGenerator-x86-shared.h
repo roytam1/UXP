@@ -49,31 +49,6 @@ class CodeGeneratorX86Shared : public CodeGeneratorShared
         }
     };
 
-    // Additional bounds check for vector Float to Int conversion, when the
-    // undefined pattern is seen. Might imply a bailout.
-    class OutOfLineSimdFloatToIntCheck : public OutOfLineCodeBase<CodeGeneratorX86Shared>
-    {
-        Register temp_;
-        FloatRegister input_;
-        LInstruction* ins_;
-        wasm::TrapOffset trapOffset_;
-
-      public:
-        OutOfLineSimdFloatToIntCheck(Register temp, FloatRegister input, LInstruction *ins,
-                                     wasm::TrapOffset trapOffset)
-          : temp_(temp), input_(input), ins_(ins), trapOffset_(trapOffset)
-        {}
-
-        Register temp() const { return temp_; }
-        FloatRegister input() const { return input_; }
-        LInstruction* ins() const { return ins_; }
-        wasm::TrapOffset trapOffset() const { return trapOffset_; }
-
-        void accept(CodeGeneratorX86Shared* codegen) {
-            codegen->visitOutOfLineSimdFloatToIntCheck(this);
-        }
-    };
-
   public:
     NonAssertingLabel deoptLabel_;
 
@@ -258,51 +233,6 @@ class CodeGeneratorX86Shared : public CodeGeneratorShared
 
     void visitOutOfLineWasmTruncateCheck(OutOfLineWasmTruncateCheck* ool);
 
-    // SIMD operators
-    void visitSimdValueInt32x4(LSimdValueInt32x4* lir);
-    void visitSimdValueFloat32x4(LSimdValueFloat32x4* lir);
-    void visitSimdSplatX16(LSimdSplatX16* lir);
-    void visitSimdSplatX8(LSimdSplatX8* lir);
-    void visitSimdSplatX4(LSimdSplatX4* lir);
-    void visitSimd128Int(LSimd128Int* ins);
-    void visitSimd128Float(LSimd128Float* ins);
-    void visitInt32x4ToFloat32x4(LInt32x4ToFloat32x4* ins);
-    void visitFloat32x4ToInt32x4(LFloat32x4ToInt32x4* ins);
-    void visitFloat32x4ToUint32x4(LFloat32x4ToUint32x4* ins);
-    void visitSimdReinterpretCast(LSimdReinterpretCast* lir);
-    void visitSimdExtractElementB(LSimdExtractElementB* lir);
-    void visitSimdExtractElementI(LSimdExtractElementI* lir);
-    void visitSimdExtractElementU2D(LSimdExtractElementU2D* lir);
-    void visitSimdExtractElementF(LSimdExtractElementF* lir);
-    void visitSimdInsertElementI(LSimdInsertElementI* lir);
-    void visitSimdInsertElementF(LSimdInsertElementF* lir);
-    void visitSimdSwizzleI(LSimdSwizzleI* lir);
-    void visitSimdSwizzleF(LSimdSwizzleF* lir);
-    void visitSimdShuffleX4(LSimdShuffleX4* lir);
-    void visitSimdShuffle(LSimdShuffle* lir);
-    void visitSimdUnaryArithIx16(LSimdUnaryArithIx16* lir);
-    void visitSimdUnaryArithIx8(LSimdUnaryArithIx8* lir);
-    void visitSimdUnaryArithIx4(LSimdUnaryArithIx4* lir);
-    void visitSimdUnaryArithFx4(LSimdUnaryArithFx4* lir);
-    void visitSimdBinaryCompIx16(LSimdBinaryCompIx16* lir);
-    void visitSimdBinaryCompIx8(LSimdBinaryCompIx8* lir);
-    void visitSimdBinaryCompIx4(LSimdBinaryCompIx4* lir);
-    void visitSimdBinaryCompFx4(LSimdBinaryCompFx4* lir);
-    void visitSimdBinaryArithIx16(LSimdBinaryArithIx16* lir);
-    void visitSimdBinaryArithIx8(LSimdBinaryArithIx8* lir);
-    void visitSimdBinaryArithIx4(LSimdBinaryArithIx4* lir);
-    void visitSimdBinaryArithFx4(LSimdBinaryArithFx4* lir);
-    void visitSimdBinarySaturating(LSimdBinarySaturating* lir);
-    void visitSimdBinaryBitwise(LSimdBinaryBitwise* lir);
-    void visitSimdShift(LSimdShift* lir);
-    void visitSimdSelect(LSimdSelect* ins);
-    void visitSimdAllTrue(LSimdAllTrue* ins);
-    void visitSimdAnyTrue(LSimdAnyTrue* ins);
-
-    template <class T, class Reg> void visitSimdGeneralShuffle(LSimdGeneralShuffleBase* lir, Reg temp);
-    void visitSimdGeneralShuffleI(LSimdGeneralShuffleI* lir);
-    void visitSimdGeneralShuffleF(LSimdGeneralShuffleF* lir);
-
     // Out of line visitors.
     void visitOutOfLineBailout(OutOfLineBailout* ool);
     void visitOutOfLineUndoALUOperation(OutOfLineUndoALUOperation* ool);
@@ -310,7 +240,6 @@ class CodeGeneratorX86Shared : public CodeGeneratorShared
     void visitModOverflowCheck(ModOverflowCheck* ool);
     void visitReturnZero(ReturnZero* ool);
     void visitOutOfLineTableSwitch(OutOfLineTableSwitch* ool);
-    void visitOutOfLineSimdFloatToIntCheck(OutOfLineSimdFloatToIntCheck* ool);
     void generateInvalidateEpilogue();
 
     // Generating a result.

@@ -419,7 +419,6 @@ CodeGeneratorX86::visitAsmJSLoadHeap(LAsmJSLoadHeap* ins)
     AnyRegister out = ToAnyRegister(ins->output());
 
     Scalar::Type accessType = mir->accessType();
-    MOZ_ASSERT(!Scalar::isSimdType(accessType));
 
     OutOfLineLoadTypedArrayOutOfBounds* ool = nullptr;
     if (mir->needsBoundsCheck()) {
@@ -498,7 +497,6 @@ CodeGeneratorX86::visitAsmJSStoreHeap(LAsmJSStoreHeap* ins)
     const LAllocation* value = ins->value();
 
     Scalar::Type accessType = mir->accessType();
-    MOZ_ASSERT(!Scalar::isSimdType(accessType));
     canonicalizeIfDeterministic(accessType, value);
 
     Operand dstAddr = ptr->isBogus()
