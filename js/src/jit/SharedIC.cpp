@@ -1570,12 +1570,8 @@ ICUnaryArith_Double::Compiler::generateStubCode(MacroAssembler& masm)
     Label failure;
     masm.ensureDouble(R0, FloatReg0, &failure);
 
-    MOZ_ASSERT(op == JSOP_NEG || op == JSOP_BITNOT);
-
-    if (op == JSOP_NEG) {
-        masm.negateDouble(FloatReg0);
-        masm.boxDouble(FloatReg0, R0);
-    } else {
+    switch (op) {
+      case JSOP_BITNOT: {
         // Truncate the double to an int32.
         Register scratchReg = R1.scratchReg();
 
@@ -1593,6 +1589,24 @@ ICUnaryArith_Double::Compiler::generateStubCode(MacroAssembler& masm)
         masm.bind(&doneTruncate);
         masm.not32(scratchReg);
         masm.tagValue(JSVAL_TYPE_INT32, scratchReg, R0);
+        break;
+      }
+      case JSOP_NEG:
+        masm.negateDouble(FloatReg0);
+        masm.boxDouble(FloatReg0, R0);
+        break;
+      case JSOP_INC:
+      case JSOP_DEC:
+        masm.loadConstantDouble(1.0, ScratchDoubleReg);
+        if (op == JSOP_INC) {
+            masm.addDouble(ScratchDoubleReg, FloatReg0);
+        } else {
+            masm.subDouble(ScratchDoubleReg, FloatReg0);
+        }
+        masm.boxDouble(FloatReg0, R0);
+        break;
+      default:
+        MOZ_CRASH("Unexpected op");
     }
 
     EmitReturnFromIC(masm);
