@@ -29,9 +29,7 @@
 #include "mozilla/dom/VideoTrack.h"
 #include "mozilla/dom/VideoTrackList.h"
 #include "nsPrintfCString.h"
-#ifdef MOZ_GMP
 #include "GMPService.h"
-#endif
 #include "Layers.h"
 #include "mozilla/layers/ShadowLayers.h"
 
@@ -931,7 +929,6 @@ MediaDecoder::OwnerHasError() const
   return mOwner->HasError();
 }
 
-#ifdef MOZ_GMP
 class MediaElementGMPCrashHelper : public GMPCrashHelper
 {
 public:
@@ -959,7 +956,6 @@ MediaDecoder::GetCrashHelper()
   return mOwner->GetMediaElement() ?
     MakeAndAddRef<MediaElementGMPCrashHelper>(mOwner->GetMediaElement()) : nullptr;
 }
-#endif
 
 bool
 MediaDecoder::IsEnded() const

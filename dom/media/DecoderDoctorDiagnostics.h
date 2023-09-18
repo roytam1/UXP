@@ -78,18 +78,14 @@ public:
   void SetFFmpegFailedToLoad() { mFFmpegFailedToLoad = true; }
   bool DidFFmpegFailToLoad() const { return mFFmpegFailedToLoad; }
 
-#ifdef MOZ_GMP
   void SetGMPPDMFailedToStartup() { mGMPPDMFailedToStartup = true; }
   bool DidGMPPDMFailToStartup() const { return mGMPPDMFailedToStartup; }
-#endif
 
   void SetVideoNotSupported() { mVideoNotSupported = true; }
   void SetAudioNotSupported() { mAudioNotSupported = true; }
 
-#ifdef MOZ_GMP
   void SetGMP(const nsACString& aGMP) { mGMP = aGMP; }
   const nsACString& GMP() const { return mGMP; }
-#endif
 
   const nsAString& KeySystem() const { return mKeySystem; }
   bool IsKeySystemSupported() const { return mIsKeySystemSupported; }
@@ -123,14 +119,10 @@ private:
 
   bool mWMFFailedToLoad = false;
   bool mFFmpegFailedToLoad = false;
-#ifdef MOZ_GMP
   bool mGMPPDMFailedToStartup = false;
-#endif
   bool mVideoNotSupported = false;
   bool mAudioNotSupported = false;
-#ifdef MOZ_GMP
   nsCString mGMP;
-#endif
 
   nsString mKeySystem;
   bool mIsKeySystemSupported = false;

@@ -25,9 +25,7 @@ H264Converter::H264Converter(PlatformDecoderModule* aPDM,
   , mTaskQueue(aParams.mTaskQueue)
   , mCallback(aParams.mCallback)
   , mDecoder(nullptr)
-#ifdef MOZ_GMP
   , mGMPCrashHelper(aParams.mCrashHelper)
-#endif
   , mNeedAVCC(aPDM->DecoderNeedsConversion(aParams.mConfig)
       == PlatformDecoderModule::ConversionRequired::kNeedAVCC)
   , mLastError(NS_OK)
@@ -203,12 +201,8 @@ H264Converter::CreateDecoder(DecoderDoctorDiagnostics* aDiagnostics)
     mCallback,
     aDiagnostics,
     mImageContainer,
-#ifdef MOZ_GMP
     mKnowsCompositor,
     mGMPCrashHelper
-#else
-    mKnowsCompositor
-#endif
   });
 
   if (!mDecoder) {

@@ -365,9 +365,7 @@ MediaFormatReader::DecoderFactory::DoCreateDecoder(TrackType aTrack)
         : *ownerData.mOriginalInfo->GetAsAudioInfo(),
         ownerData.mTaskQueue,
         ownerData.mCallback.get(),
-#ifdef MOZ_GMP
         mOwner->mCrashHelper,
-#endif
         ownerData.mIsBlankDecode,
         &result
       });
@@ -385,9 +383,7 @@ MediaFormatReader::DecoderFactory::DoCreateDecoder(TrackType aTrack)
         ownerData.mCallback.get(),
         mOwner->mKnowsCompositor,
         mOwner->GetImageContainer(),
-#ifdef MOZ_GMP
         mOwner->mCrashHelper,
-#endif
         ownerData.mIsBlankDecode,
         &result
       });
@@ -580,11 +576,9 @@ MediaFormatReader::InitInternal()
   mVideo.mTaskQueue =
     new TaskQueue(GetMediaThreadPool(MediaThreadType::PLATFORM_DECODER));
 
-#ifdef MOZ_GMP
   // Note: GMPCrashHelper must be created on main thread, as it may use
   // weak references, which aren't threadsafe.
   mCrashHelper = mDecoder->GetCrashHelper();
-#endif
 
   return NS_OK;
 }

@@ -84,7 +84,6 @@ this.ForgetAboutSite = {
       throw new Error("Exception thrown while clearning cookies: " + ex);
     }));
 
-#ifdef MOZ_EME
     // EME
     promises.push(Task.spawn(function*() {
       let mps = Cc["@mozilla.org/gecko-media-plugin-service;1"].
@@ -93,7 +92,6 @@ this.ForgetAboutSite = {
     }).catch(ex => {
       throw new Error("Exception thrown while clearing Encrypted Media Extensions: " + ex);
     }));
-#endif
 
     // Plugin data
     const phInterface = Ci.nsIPluginHost;

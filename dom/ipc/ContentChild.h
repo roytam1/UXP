@@ -140,14 +140,12 @@ public:
   AllocPContentBridgeChild(mozilla::ipc::Transport* transport,
                            base::ProcessId otherProcess) override;
 
-#ifdef MOZ_GMP
   PGMPServiceChild*
   AllocPGMPServiceChild(mozilla::ipc::Transport* transport,
                         base::ProcessId otherProcess) override;
 
   bool
   RecvGMPsChanged(nsTArray<GMPCapabilityData>&& capabilities) override;
-#endif
 
   bool
   RecvInitRendering(
