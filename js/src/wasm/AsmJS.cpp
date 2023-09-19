@@ -813,7 +813,6 @@ class NumLit
 
     NumLit(Which w, const Value& v) : which_(w) {
         u.scalar_ = v;
-        MOZ_ASSERT(!isSimd());
     }
 
     Which which() const {
@@ -2117,7 +2116,7 @@ IsFloatLiteral(ModuleValidator& m, ParseNode* pn)
 }
 
 static bool
-IsNumericLiteral(ModuleValidator& m, ParseNode* pn, bool* isSimd = nullptr);
+IsNumericLiteral(ModuleValidator& m, ParseNode* pn);
 
 static NumLit
 ExtractNumericLiteral(ModuleValidator& m, ParseNode* pn);
@@ -2126,7 +2125,7 @@ static inline bool
 IsLiteralInt(ModuleValidator& m, ParseNode* pn, uint32_t* u32);
 
 static bool
-IsNumericLiteral(ModuleValidator& m, ParseNode* pn, bool* isSimd)
+IsNumericLiteral(ModuleValidator& m, ParseNode* pn)
 {
     if (IsNumericNonFloatLiteral(pn) || IsFloatLiteral(m, pn))
         return true;
@@ -2318,10 +2317,6 @@ class MOZ_STACK_CLASS FunctionValidator
     }
 
     /***************************************************** Attributes */
-
-    void setUsesSimd() {
-        fg_.setUsesSimd();
-    }
 
     void setUsesAtomics() {
         fg_.setUsesAtomics();
@@ -3051,12 +3046,8 @@ IsLiteralOrConst(FunctionValidator& f, ParseNode* pn, NumLit* lit)
         return true;
     }
 
-    bool isSimd = false;
-    if (!IsNumericLiteral(f.m(), pn, &isSimd))
+    if (!IsNumericLiteral(f.m(), pn))
         return false;
-
-    if (isSimd)
-        f.setUsesSimd();
 
     *lit = ExtractNumericLiteral(f.m(), pn);
     return true;
@@ -4318,10 +4309,7 @@ CheckCoercedCall(FunctionValidator& f, ParseNode* call, Type ret, Type* type)
 
     JS_CHECK_RECURSION_DONT_REPORT(f.cx(), return f.m().failOverRecursed());
 
-    bool isSimd = false;
-    if (IsNumericLiteral(f.m(), call, &isSimd)) {
-        if (isSimd)
-            f.setUsesSimd();
+    if (IsNumericLiteral(f.m(), call)) {
         NumLit lit = ExtractNumericLiteral(f.m(), call);
         if (!f.writeConstExpr(lit))
             return false;
@@ -4852,10 +4840,7 @@ CheckExpr(FunctionValidator& f, ParseNode* expr, Type* type)
 {
     JS_CHECK_RECURSION_DONT_REPORT(f.cx(), return f.m().failOverRecursed());
 
-    bool isSimd = false;
-    if (IsNumericLiteral(f.m(), expr, &isSimd)) {
-        if (isSimd)
-            f.setUsesSimd();
+    if (IsNumericLiteral(f.m(), expr)) {
         return CheckNumericLiteral(f, expr, type);
     }
 

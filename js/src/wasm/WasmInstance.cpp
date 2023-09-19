@@ -160,7 +160,7 @@ Instance::callImport(JSContext* cx, uint32_t funcImportIndex, unsigned argc, con
             break;
           }
           default: {
-            MOZ_ASSERT("unhandled type in callImport");
+            MOZ_CRASH("unhandled type in callImport");
             return false;
           }
         }
