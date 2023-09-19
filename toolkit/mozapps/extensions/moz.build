@@ -25,13 +25,13 @@ EXTRA_COMPONENTS += [
 EXTRA_JS_MODULES += [
     'ChromeManifestParser.jsm',
     'DeferredSave.jsm',
+    'GMPUtils.jsm',
     'LightweightThemeManager.jsm',
 ]
 
 EXTRA_PP_JS_MODULES += [
     'AddonManager.jsm',
     'GMPInstallManager.jsm',
-    'GMPUtils.jsm',
 ]
 
 # Additional debugging info is exposed in debug builds

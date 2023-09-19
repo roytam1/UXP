@@ -19,6 +19,7 @@ with Files('GetUserMedia*'):
     BUG_COMPONENT = component_av
 
 DIRS += [
+    'eme',
     'encoder',
     'flac',
     'gmp',
@@ -46,9 +47,6 @@ if CONFIG['MOZ_FMP4']:
 
 if CONFIG['MOZ_WEBRTC']:
     DIRS += ['bridge']
-
-if CONFIG['MOZ_EME']:
-    DIRS += ['eme']
 
 TEST_DIRS += [
     'gtest',
