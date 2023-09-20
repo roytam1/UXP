@@ -97,9 +97,11 @@ class BigInt final : public js::gc::TenuredCell {
   static BigInt* createFromDouble(js::ExclusiveContext* cx, double d);
   static BigInt* createFromUint64(js::ExclusiveContext* cx, uint64_t n);
   static BigInt* createFromInt64(js::ExclusiveContext* cx, int64_t n);
+  static BigInt* createFromDigit(js::ExclusiveContext* cx, Digit d, bool isNegative);
   // FIXME: Cache these values.
   static BigInt* zero(js::ExclusiveContext* cx);
   static BigInt* one(js::ExclusiveContext* cx);
+  static BigInt* negativeOne(js::ExclusiveContext* cx);
 
   static BigInt* copy(js::ExclusiveContext* cx, Handle<BigInt*> x);
   static BigInt* add(js::ExclusiveContext* cx, Handle<BigInt*> x, Handle<BigInt*> y);
@@ -109,6 +111,8 @@ class BigInt final : public js::gc::TenuredCell {
   static BigInt* mod(js::ExclusiveContext* cx, Handle<BigInt*> x, Handle<BigInt*> y);
   static BigInt* pow(js::ExclusiveContext* cx, Handle<BigInt*> x, Handle<BigInt*> y);
   static BigInt* neg(js::ExclusiveContext* cx, Handle<BigInt*> x);
+  static BigInt* inc(js::ExclusiveContext* cx, Handle<BigInt*> x);
+  static BigInt* dec(js::ExclusiveContext* cx, Handle<BigInt*> x);
   static BigInt* lsh(js::ExclusiveContext* cx, Handle<BigInt*> x, Handle<BigInt*> y);
   static BigInt* rsh(js::ExclusiveContext* cx, Handle<BigInt*> x, Handle<BigInt*> y);
   static BigInt* bitAnd(js::ExclusiveContext* cx, Handle<BigInt*> x, Handle<BigInt*> y);
@@ -144,6 +148,10 @@ class BigInt final : public js::gc::TenuredCell {
   static bool pow(js::ExclusiveContext* cx, Handle<Value> lhs, Handle<Value> rhs,
                   MutableHandle<Value> res);
   static bool neg(js::ExclusiveContext* cx, Handle<Value> operand,
+                  MutableHandle<Value> res);
+  static bool inc(js::ExclusiveContext* cx, Handle<Value> operand,
+                  MutableHandle<Value> res);
+  static bool dec(js::ExclusiveContext* cx, Handle<Value> operand,
                   MutableHandle<Value> res);
   static bool lsh(js::ExclusiveContext* cx, Handle<Value> lhs, Handle<Value> rhs,
                   MutableHandle<Value> res);
@@ -288,7 +296,7 @@ class BigInt final : public js::gc::TenuredCell {
   // Return `(|x| - 1) * (resultNegative ? -1 : +1)`, with the precondition that
   // |x| != 0.
   static BigInt* absoluteSubOne(js::ExclusiveContext* cx, Handle<BigInt*> x,
-                                unsigned resultLength);
+                                bool resultNegative = false);
 
   // Return `a + b`, incrementing `*carry` if the addition overflows.
   static inline Digit digitAdd(Digit a, Digit b, Digit* carry) {

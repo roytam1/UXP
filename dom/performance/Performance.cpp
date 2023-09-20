@@ -664,7 +664,8 @@ public:
   NS_IMETHOD Run() override
   {
     MOZ_ASSERT(mPerformance);
-    mPerformance->NotifyObservers();
+    RefPtr<Performance> performance(mPerformance);
+    performance->NotifyObservers();
     return NS_OK;
   }
 
@@ -688,7 +689,12 @@ Performance::RunNotificationObserversTask()
 {
   mPendingNotificationObserversTask = true;
   nsCOMPtr<nsIRunnable> task = new NotifyObserversTask(this);
-  nsresult rv = NS_DispatchToCurrentThread(task);
+  nsresult rv;
+  if (NS_IsMainThread()) {
+      rv = NS_DispatchToCurrentThread(task);
+  } else {
+      rv = NS_DispatchToMainThread(task);
+  }
   if (NS_WARN_IF(NS_FAILED(rv))) {
     mPendingNotificationObserversTask = false;
   }

@@ -3110,23 +3110,6 @@ MBinaryArithInstruction::New(TempAllocator& alloc, Opcode op,
     }
 }
 
-void
-MBinaryArithInstruction::setNumberSpecialization(TempAllocator& alloc, BaselineInspector* inspector,
-                                                 jsbytecode* pc)
-{
-    setSpecialization(MIRType::Double);
-
-    // Try to specialize as int32.
-    if (getOperand(0)->type() == MIRType::Int32 && getOperand(1)->type() == MIRType::Int32) {
-        bool seenDouble = inspector->hasSeenDoubleResult(pc);
-
-        // Use int32 specialization if the operation doesn't overflow on its
-        // constant operands and if the operation has never overflowed.
-        if (!seenDouble && !constantDoubleResult(alloc))
-            setInt32Specialization();
-    }
-}
-
 bool
 MBinaryArithInstruction::constantDoubleResult(TempAllocator& alloc)
 {
@@ -4187,6 +4170,23 @@ bool
 MResumePoint::isRecoverableOperand(MUse* u) const
 {
     return block()->info().isRecoverableOperand(indexOf(u));
+}
+
+MDefinition*
+MToNumeric::foldsTo(TempAllocator& alloc)
+{
+    MDefinition* input = getOperand(0);
+
+    if (input->isBox()) {
+        MDefinition* unboxed = input->getOperand(0);
+        if (IsNumericType(unboxed->type())) {
+            // If the argument is an MBox and we can see that it boxes a numeric
+            // value, ToNumeric can be elided.
+            return input;
+        }
+    }
+
+    return this;
 }
 
 MDefinition*
