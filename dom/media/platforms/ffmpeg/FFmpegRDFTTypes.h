@@ -24,4 +24,11 @@ extern "C" {
 
 }
 
+struct FFmpegRDFTFuncs
+{
+    AvRdftInitFn init;
+    AvRdftCalcFn calc;
+    AvRdftEndFn end;
+};
+
 #endif // FFmpegRDFTTypes_h
