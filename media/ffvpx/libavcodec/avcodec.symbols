@@ -61,6 +61,9 @@ av_picture_copy
 av_picture_crop
 av_picture_pad
 av_qsv_alloc_context
+av_rdft_calc
+av_rdft_end
+av_rdft_init
 av_register_bitstream_filter
 av_register_codec_parser
 av_register_hwaccel
