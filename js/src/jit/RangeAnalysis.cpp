@@ -1742,6 +1742,12 @@ MTruncateToInt32::computeRange(TempAllocator& alloc)
 }
 
 void
+MToNumeric::computeRange(TempAllocator& alloc)
+{
+    setRange(new (alloc) Range(getOperand(0)));
+}
+
+void
 MToInt32::computeRange(TempAllocator& alloc)
 {
     // No clamping since this computes the range *before* bailouts.

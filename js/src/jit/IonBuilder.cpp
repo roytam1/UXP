@@ -636,7 +636,7 @@ IonBuilder::analyzeNewLoopTypes(MBasicBlock* entry, jsbytecode* start, jsbytecod
 
         MPhi* phi = entry->getSlot(slot)->toPhi();
 
-        if (*last == JSOP_POS)
+        if (*last == JSOP_POS || *last == JSOP_TONUMERIC)
             last = earlier;
 
         if (CodeSpec[*last].format & JOF_TYPESET) {
@@ -719,6 +719,8 @@ IonBuilder::analyzeNewLoopTypes(MBasicBlock* entry, jsbytecode* start, jsbytecod
               case JSOP_DIV:
               case JSOP_MOD:
               case JSOP_NEG:
+              case JSOP_INC:
+              case JSOP_DEC:
                 type = inspector->expectedResultType(last);
                 break;
               case JSOP_BIGINT:
@@ -1584,6 +1586,7 @@ IonBuilder::traverseBytecode()
                 break;
 
               case JSOP_POS:
+              case JSOP_TONUMERIC:
               case JSOP_TOID:
               case JSOP_TOSTRING:
                 // These ops may leave their input on the stack without setting
@@ -1737,8 +1740,15 @@ IonBuilder::inspectOpcode(JSOp op)
       case JSOP_POS:
         return jsop_pos();
 
+      case JSOP_TONUMERIC:
+        return jsop_tonumeric();
+
       case JSOP_NEG:
         return jsop_neg();
+
+      case JSOP_INC:
+      case JSOP_DEC:
+        return jsop_inc_or_dec(op);
 
       case JSOP_TOSTRING:
         return jsop_tostring();
@@ -4852,7 +4862,7 @@ IonBuilder::jsop_bitop(JSOp op)
 }
 
 MDefinition::Opcode
-JSOpToMDefinition(JSOp op)
+BinaryJSOpToMDefinition(JSOp op)
 {
     switch (op) {
       case JSOP_ADD:
@@ -4953,6 +4963,40 @@ IonBuilder::powTrySpecialized(bool* emitted, MDefinition* base, MDefinition* pow
     return true;
 }
 
+MIRType
+IonBuilder::binaryArithNumberSpecialization(MDefinition* left, MDefinition* right)
+{
+    // Try to specialize as int32.
+    if (left->type() == MIRType::Int32 && right->type() == MIRType::Int32 &&
+        !inspector->hasSeenDoubleResult(pc)) {
+      return MIRType::Int32;
+    }
+    return MIRType::Double;
+}
+
+MBinaryArithInstruction*
+IonBuilder::binaryArithEmitSpecialized(MDefinition::Opcode op, MIRType specialization, 
+                                       MDefinition* left, MDefinition* right)
+{
+    MBinaryArithInstruction* ins = MBinaryArithInstruction::New(alloc(), op, left, right);
+    ins->setSpecialization(specialization);
+
+    if (op == MDefinition::Op_Add || op == MDefinition::Op_Mul) {
+      ins->setCommutative();
+    }
+
+    current->add(ins);
+    current->push(ins);
+
+    MOZ_ASSERT(!ins->isEffectful());
+    
+    if(!maybeInsertResume()) {
+        return nullptr;
+    }
+
+    return ins;
+}
+
 static inline bool
 SimpleArithOperand(MDefinition* op)
 {
@@ -4986,19 +5030,20 @@ IonBuilder::binaryArithTrySpecialized(bool* emitted, JSOp op, MDefinition* left,
         return true;
     }
 
-    MDefinition::Opcode defOp = JSOpToMDefinition(op);
-    MBinaryArithInstruction* ins = MBinaryArithInstruction::New(alloc(), defOp, left, right);
-    ins->setNumberSpecialization(alloc(), inspector, pc);
+    MDefinition::Opcode defOp = BinaryJSOpToMDefinition(op);
+    MIRType specialization = binaryArithNumberSpecialization(left, right);
+    MBinaryArithInstruction* ins = binaryArithEmitSpecialized(defOp, specialization, left, right);
 
-    if (op == JSOP_ADD || op == JSOP_MUL)
-        ins->setCommutative();
-
-    current->add(ins);
-    current->push(ins);
-
-    MOZ_ASSERT(!ins->isEffectful());
-    if (!maybeInsertResume())
+    if(!ins) {
         return false;
+    }
+
+    // Relax int32 to double if, despite the fact that we have int32 operands and
+    // we've never seen a double result, we know the result may overflow or be a
+    // double.
+    if (specialization == MIRType::Int32 && ins->constantDoubleResult(alloc())) {
+        ins->setSpecialization(MIRType::Double);
+    }
 
     trackOptimizationSuccess();
     *emitted = true;
@@ -5022,16 +5067,10 @@ IonBuilder::binaryArithTrySpecializedOnBaselineInspector(bool* emitted, JSOp op,
         return true;
     }
 
-    MDefinition::Opcode def_op = JSOpToMDefinition(op);
-    MBinaryArithInstruction* ins = MBinaryArithInstruction::New(alloc(), def_op, left, right);
-    ins->setSpecialization(specialization);
-
-    current->add(ins);
-    current->push(ins);
-
-    MOZ_ASSERT(!ins->isEffectful());
-    if (!maybeInsertResume())
+    MDefinition::Opcode defOp = BinaryJSOpToMDefinition(op);
+    if(!binaryArithEmitSpecialized(defOp, specialization, left, right)) {
         return false;
+    }
 
     trackOptimizationSuccess();
     *emitted = true;
@@ -5124,8 +5163,8 @@ IonBuilder::jsop_binary_arith(JSOp op, MDefinition* left, MDefinition* right)
     trackOptimizationAttempt(TrackedStrategy::BinaryArith_Call);
     trackOptimizationSuccess();
 
-    MDefinition::Opcode def_op = JSOpToMDefinition(op);
-    MBinaryArithInstruction* ins = MBinaryArithInstruction::New(alloc(), def_op, left, right);
+    MDefinition::Opcode defOp = BinaryJSOpToMDefinition(op);
+    MBinaryArithInstruction* ins = MBinaryArithInstruction::New(alloc(), defOp, left, right);
 
     // Decrease type from 'any type' to 'empty type' when one of the operands
     // is 'empty typed'.
@@ -5200,6 +5239,157 @@ IonBuilder::jsop_neg()
     MDefinition* right = current->pop();
 
     return jsop_binary_arith(JSOP_MUL, negator, right);
+}
+
+MDefinition*
+IonBuilder::unaryArithConvertToBinary(JSOp op, MDefinition::Opcode* defOp)
+{
+    switch (op) {
+      case JSOP_INC: {
+        *defOp = MDefinition::Op_Add;
+        MConstant* right = MConstant::New(alloc(), Int32Value(1));
+        current->add(right);
+        return right;
+      }
+      case JSOP_DEC: {
+        *defOp = MDefinition::Op_Sub;
+        MConstant* right = MConstant::New(alloc(), Int32Value(1));
+        current->add(right);
+        return right;
+      }
+      default:
+        MOZ_CRASH("unexpected unary opcode");
+    }
+}
+
+bool
+IonBuilder::unaryArithTrySpecialized(bool* emitted, JSOp op, MDefinition* value)
+{
+    MOZ_ASSERT(*emitted == false);
+
+    // Try to convert Inc(x) or Dec(x) to Add(x,1) or Sub(x,1) if the operand is a
+    // number.
+
+    trackOptimizationAttempt(TrackedStrategy::UnaryArith_SpecializedTypes);
+
+    if (!IsNumberType(value->type())) {
+      trackOptimizationOutcome(TrackedOutcome::OperandNotNumber);
+      return true;
+    }
+
+    MDefinition::Opcode defOp;
+    MDefinition* rhs = unaryArithConvertToBinary(op, &defOp);
+    MIRType specialization = binaryArithNumberSpecialization(value, rhs);
+    if (!binaryArithEmitSpecialized(defOp, specialization, value, rhs)) {
+        return false;
+    }
+
+    trackOptimizationSuccess();
+    *emitted = true;
+    return true;
+}
+
+bool
+IonBuilder::unaryArithTrySpecializedOnBaselineInspector(bool* emitted, JSOp op, MDefinition* value)
+{
+    MOZ_ASSERT(*emitted == false);
+
+    // Try to emit a specialized binary instruction speculating the
+    // type using the baseline caches.
+
+    trackOptimizationAttempt(TrackedStrategy::UnaryArith_SpecializedOnBaselineTypes);
+
+    MIRType specialization = inspector->expectedBinaryArithSpecialization(pc);
+    if (specialization == MIRType::None) {
+      trackOptimizationOutcome(TrackedOutcome::SpeculationOnInputTypesFailed);
+      return true;
+    }
+
+    MDefinition::Opcode defOp;
+    MDefinition* rhs = unaryArithConvertToBinary(op, &defOp);
+    if (!binaryArithEmitSpecialized(defOp, specialization, value, rhs)) {
+        return false;
+    }
+
+    trackOptimizationSuccess();
+    *emitted = true;
+    return true;
+}
+
+bool
+IonBuilder::jsop_tonumeric()
+{
+    MDefinition* peeked = current->peek(-1);
+
+    if (IsNumericType(peeked->type())) {
+        // Elide the ToNumeric as we already unboxed the value.
+        peeked->setImplicitlyUsedUnchecked();
+        return true;
+    }
+
+    LifoAlloc* lifoAlloc = alloc().lifoAlloc();
+    TemporaryTypeSet* types = lifoAlloc->new_<TemporaryTypeSet>();
+    if (!types) {
+        return false;
+    }
+
+    types->addType(TypeSet::Int32Type(), lifoAlloc);
+    types->addType(TypeSet::DoubleType(), lifoAlloc);
+    types->addType(TypeSet::BigIntType(), lifoAlloc);
+
+    if (peeked->type() == MIRType::Value && peeked->resultTypeSet() &&
+        peeked->resultTypeSet()->isSubset(types)) {
+        // Elide the ToNumeric because the arg is already a boxed numeric.
+        peeked->setImplicitlyUsedUnchecked();
+        return true;
+    }
+
+    // Otherwise, pop the value and add an MToNumeric.
+    MDefinition* popped = current->pop();
+    MToNumeric* ins = MToNumeric::New(alloc(), popped, types);
+    current->add(ins);
+    current->push(ins);
+
+    // toValue() is effectful, so add a resume point.
+    return resumeAfter(ins);
+}
+
+bool
+IonBuilder::jsop_inc_or_dec(JSOp op)
+{
+    bool emitted = false;
+    MDefinition* value = current->pop();
+
+    startTrackingOptimizations();
+
+    trackTypeInfo(TrackedTypeSite::Operand, value->type(), value->resultTypeSet());
+
+    if (!unaryArithTrySpecialized(&emitted, op, value)) {
+        return false;
+    }
+    if (emitted) {
+      return true;
+    }
+
+    if (!unaryArithTrySpecializedOnBaselineInspector(&emitted, op, value)) {
+        return false;
+    }
+    if (emitted) {
+      return true;
+    }
+
+    trackOptimizationAttempt(TrackedStrategy::UnaryArith_InlineCache);
+    trackOptimizationSuccess();
+
+    MInstruction* stub = MUnarySharedStub::New(alloc(), value);
+    current->add(stub);
+    current->push(stub);
+
+    // Decrease type from 'any type' to 'empty type' when one of the operands
+    // is 'empty typed'.
+    maybeMarkEmpty(stub);
+
+    return resumeAfter(stub);
 }
 
 bool

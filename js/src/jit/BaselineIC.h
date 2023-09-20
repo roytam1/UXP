@@ -333,32 +333,6 @@ class ICToBool_Object : public ICStub
     };
 };
 
-// ToNumber
-//     JSOP_POS
-
-class ICToNumber_Fallback : public ICFallbackStub
-{
-    friend class ICStubSpace;
-
-    explicit ICToNumber_Fallback(JitCode* stubCode)
-      : ICFallbackStub(ICStub::ToNumber_Fallback, stubCode) {}
-
-  public:
-    // Compiler for this stub kind.
-    class Compiler : public ICStubCompiler {
-      protected:
-        MOZ_MUST_USE bool generateStubCode(MacroAssembler& masm);
-
-      public:
-        explicit Compiler(JSContext* cx)
-          : ICStubCompiler(cx, ICStub::ToNumber_Fallback, Engine::Baseline) {}
-
-        ICStub* getStub(ICStubSpace* space) {
-            return newStub<ICToNumber_Fallback>(space, getStubCode());
-        }
-    };
-};
-
 // GetElem
 //      JSOP_GETELEM
 

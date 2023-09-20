@@ -185,16 +185,21 @@ BigInt* BigInt::zero(ExclusiveContext* cx) {
   return createUninitialized(cx, 0, false);
 }
 
-BigInt* BigInt::one(ExclusiveContext* cx) {
-  BigInt* ret = createUninitialized(cx, 1, false);
-
-  if (!ret) {
+BigInt* BigInt::createFromDigit(ExclusiveContext* cx, Digit d, bool isNegative) {
+  MOZ_ASSERT(d != 0);
+  BigInt* res = createUninitialized(cx, 1, isNegative);
+  if (!res) {
     return nullptr;
   }
 
-  ret->setDigit(0, 1);
+  res->setDigit(0, d);
+  return res;
+}
 
-  return ret;
+BigInt* BigInt::one(ExclusiveContext* cx) { return createFromDigit(cx, 1, false); }
+
+BigInt* BigInt::negativeOne(ExclusiveContext* cx) {
+  return createFromDigit(cx, 1, true);
 }
 
 BigInt* BigInt::neg(ExclusiveContext* cx, HandleBigInt x) {
@@ -977,21 +982,26 @@ BigInt* BigInt::absoluteAddOne(ExclusiveContext* cx, HandleBigInt x,
   return destructivelyTrimHighZeroDigits(cx, result);
 }
 
-// Like the above, but you can specify that the allocated result should have
-// length `resultLength`, which must be at least as large as `x->digitLength()`.
-// The result will be unsigned.
 BigInt* BigInt::absoluteSubOne(ExclusiveContext* cx, HandleBigInt x,
-                               unsigned resultLength) {
+                               bool resultNegative) {
   MOZ_ASSERT(!x->isZero());
-  MOZ_ASSERT(resultLength >= x->digitLength());
-  bool resultNegative = false;
-  RootedBigInt result(cx,
-                      createUninitialized(cx, resultLength, resultNegative));
+
+   unsigned length = x->digitLength();
+ 
+  if (length == 1) {
+    Digit d = x->digit(0);
+    if (d == 1) {
+      // Ignore resultNegative.
+      return zero(cx);
+    }
+    return createFromDigit(cx, d - 1, resultNegative);
+  }
+
+  RootedBigInt result(cx, createUninitialized(cx, length, resultNegative));
   if (!result) {
     return nullptr;
   }
 
-  unsigned length = x->digitLength();
   Digit borrow = 1;
   for (unsigned i = 0; i < length; i++) {
     Digit newBorrow = 0;
@@ -999,11 +1009,34 @@ BigInt* BigInt::absoluteSubOne(ExclusiveContext* cx, HandleBigInt x,
     borrow = newBorrow;
   }
   MOZ_ASSERT(!borrow);
-  for (unsigned i = length; i < resultLength; i++) {
-    result->setDigit(i, 0);
-  }
 
   return destructivelyTrimHighZeroDigits(cx, result);
+}
+
+BigInt* BigInt::inc(ExclusiveContext* cx, HandleBigInt x) {
+  if (x->isZero()) {
+    return one(cx);
+  }
+
+  bool isNegative = x->isNegative();
+  if (isNegative) {
+    return absoluteSubOne(cx, x, isNegative);
+  }
+
+  return absoluteAddOne(cx, x, isNegative);
+}
+
+BigInt* BigInt::dec(ExclusiveContext* cx, HandleBigInt x) {
+  if (x->isZero()) {
+    return negativeOne(cx);
+  }
+
+  bool isNegative = x->isNegative();
+  if (isNegative) {
+    return absoluteAddOne(cx, x, isNegative);
+  }
+
+  return absoluteSubOne(cx, x, isNegative);
 }
 
 // Lookup table for the maximum number of bits required per character of a
@@ -1569,13 +1602,7 @@ BigInt* BigInt::createFromUint64(ExclusiveContext* cx, uint64_t n) {
     return res;
   }
 
-  BigInt* res = createUninitialized(cx, 1, isNegative);
-  if (!res) {
-    return nullptr;
-  }
-
-  res->setDigit(0, n);
-  return res;
+  return createFromDigit(cx, n, isNegative);
 }
 
 BigInt* BigInt::createFromInt64(ExclusiveContext* cx, int64_t n) {
@@ -1770,12 +1797,7 @@ BigInt* BigInt::mod(ExclusiveContext* cx, HandleBigInt x, HandleBigInt y) {
       return zero(cx);
     }
 
-    BigInt* remainder = createUninitialized(cx, 1, x->isNegative());
-    if (!remainder) {
-      return nullptr;
-    }
-    remainder->setDigit(0, remainderDigit);
-    return remainder;
+    return createFromDigit(cx, remainderDigit, x->isNegative());
   } else {
     RootedBigInt remainder(cx);
     if (!absoluteDivWithBigIntDivisor(cx, x, y, Nothing(), Some(&remainder),
@@ -1930,15 +1952,7 @@ BigInt* BigInt::lshByAbsolute(ExclusiveContext* cx, HandleBigInt x, HandleBigInt
 }
 
 BigInt* BigInt::rshByMaximum(ExclusiveContext* cx, bool isNegative) {
-  if (isNegative) {
-    RootedBigInt negativeOne(cx, createUninitialized(cx, 1, isNegative));
-    if (!negativeOne) {
-      return nullptr;
-    }
-    negativeOne->setDigit(0, 1);
-    return negativeOne;
-  }
-  return zero(cx);
+  return isNegative ? negativeOne(cx) : zero(cx);
 }
 
 BigInt* BigInt::rshByAbsolute(ExclusiveContext* cx, HandleBigInt x, HandleBigInt y) {
@@ -2049,14 +2063,13 @@ BigInt* BigInt::bitAnd(ExclusiveContext* cx, HandleBigInt x, HandleBigInt y) {
   }
 
   if (x->isNegative() && y->isNegative()) {
-    int resultLength = std::max(x->digitLength(), y->digitLength()) + 1;
     // (-x) & (-y) == ~(x-1) & ~(y-1) == ~((x-1) | (y-1))
     // == -(((x-1) | (y-1)) + 1)
-    RootedBigInt x1(cx, absoluteSubOne(cx, x, resultLength));
+    RootedBigInt x1(cx, absoluteSubOne(cx, x));
     if (!x1) {
       return nullptr;
     }
-    RootedBigInt y1(cx, absoluteSubOne(cx, y, y->digitLength()));
+    RootedBigInt y1(cx, absoluteSubOne(cx, y));
     if (!y1) {
       return nullptr;
     }
@@ -2072,7 +2085,7 @@ BigInt* BigInt::bitAnd(ExclusiveContext* cx, HandleBigInt x, HandleBigInt y) {
   HandleBigInt& pos = x->isNegative() ? y : x;
   HandleBigInt& neg = x->isNegative() ? x : y;
 
-  RootedBigInt neg1(cx, absoluteSubOne(cx, neg, neg->digitLength()));
+  RootedBigInt neg1(cx, absoluteSubOne(cx, neg));
   if (!neg1) {
     return nullptr;
   }
@@ -2096,27 +2109,24 @@ BigInt* BigInt::bitXor(ExclusiveContext* cx, HandleBigInt x, HandleBigInt y) {
   }
 
   if (x->isNegative() && y->isNegative()) {
-    int resultLength = std::max(x->digitLength(), y->digitLength());
-
     // (-x) ^ (-y) == ~(x-1) ^ ~(y-1) == (x-1) ^ (y-1)
-    RootedBigInt x1(cx, absoluteSubOne(cx, x, resultLength));
+    RootedBigInt x1(cx, absoluteSubOne(cx, x));
     if (!x1) {
       return nullptr;
     }
-    RootedBigInt y1(cx, absoluteSubOne(cx, y, y->digitLength()));
+    RootedBigInt y1(cx, absoluteSubOne(cx, y));
     if (!y1) {
       return nullptr;
     }
     return absoluteXor(cx, x1, y1);
   }
   MOZ_ASSERT(x->isNegative() != y->isNegative());
-  int resultLength = std::max(x->digitLength(), y->digitLength()) + 1;
 
   HandleBigInt& pos = x->isNegative() ? y : x;
   HandleBigInt& neg = x->isNegative() ? x : y;
 
   // x ^ (-y) == x ^ ~(y-1) == ~(x ^ (y-1)) == -((x ^ (y-1)) + 1)
-  RootedBigInt result(cx, absoluteSubOne(cx, neg, resultLength));
+  RootedBigInt result(cx, absoluteSubOne(cx, neg));
   if (!result) {
     return nullptr;
   }
@@ -2138,7 +2148,6 @@ BigInt* BigInt::bitOr(ExclusiveContext* cx, HandleBigInt x, HandleBigInt y) {
     return x;
   }
 
-  unsigned resultLength = std::max(x->digitLength(), y->digitLength());
   bool resultNegative = x->isNegative() || y->isNegative();
 
   if (!resultNegative) {
@@ -2148,11 +2157,11 @@ BigInt* BigInt::bitOr(ExclusiveContext* cx, HandleBigInt x, HandleBigInt y) {
   if (x->isNegative() && y->isNegative()) {
     // (-x) | (-y) == ~(x-1) | ~(y-1) == ~((x-1) & (y-1))
     // == -(((x-1) & (y-1)) + 1)
-    RootedBigInt result(cx, absoluteSubOne(cx, x, resultLength));
+    RootedBigInt result(cx, absoluteSubOne(cx, x));
     if (!result) {
       return nullptr;
     }
-    RootedBigInt y1(cx, absoluteSubOne(cx, y, y->digitLength()));
+    RootedBigInt y1(cx, absoluteSubOne(cx, y));
     if (!y1) {
       return nullptr;
     }
@@ -2168,7 +2177,7 @@ BigInt* BigInt::bitOr(ExclusiveContext* cx, HandleBigInt x, HandleBigInt y) {
   HandleBigInt& neg = x->isNegative() ? x : y;
 
   // x | (-y) == x | ~(y-1) == ~((y-1) &~ x) == -(((y-1) &~ x) + 1)
-  RootedBigInt result(cx, absoluteSubOne(cx, neg, resultLength));
+  RootedBigInt result(cx, absoluteSubOne(cx, neg));
   if (!result) {
     return nullptr;
   }
@@ -2183,7 +2192,7 @@ BigInt* BigInt::bitOr(ExclusiveContext* cx, HandleBigInt x, HandleBigInt y) {
 BigInt* BigInt::bitNot(ExclusiveContext* cx, HandleBigInt x) {
   if (x->isNegative()) {
     // ~(-x) == ~(~(x-1)) == x-1
-    return absoluteSubOne(cx, x, x->digitLength());
+    return absoluteSubOne(cx, x);
   } else {
     // ~x == -x-1 == -(x+1)
     bool resultNegative = true;
@@ -2528,6 +2537,30 @@ bool BigInt::neg(ExclusiveContext* cx, HandleValue operand, MutableHandleValue r
 
   RootedBigInt operandBigInt(cx, operand.toBigInt());
   BigInt* resBigInt = BigInt::neg(cx, operandBigInt);
+  if (!resBigInt) {
+    return false;
+  }
+  res.setBigInt(resBigInt);
+  return true;
+}
+
+bool BigInt::inc(ExclusiveContext* cx, HandleValue operand, MutableHandleValue res) {
+  MOZ_ASSERT(operand.isBigInt());
+
+  RootedBigInt operandBigInt(cx, operand.toBigInt());
+  BigInt* resBigInt = BigInt::inc(cx, operandBigInt);
+  if (!resBigInt) {
+    return false;
+  }
+  res.setBigInt(resBigInt);
+  return true;
+}
+
+bool BigInt::dec(ExclusiveContext* cx, HandleValue operand, MutableHandleValue res) {
+  MOZ_ASSERT(operand.isBigInt());
+
+  RootedBigInt operandBigInt(cx, operand.toBigInt());
+  BigInt* resBigInt = BigInt::dec(cx, operandBigInt);
   if (!resBigInt) {
     return false;
   }

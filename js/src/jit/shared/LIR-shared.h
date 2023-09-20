@@ -7494,6 +7494,21 @@ class LLoadUnboxedExpando : public LInstructionHelper<1, 1, 0>
     }
 };
 
+// Ensure that a value is numeric, possibly via a VM call-out that invokes
+// valueOf().
+class LToNumeric : public LInstructionHelper<BOX_PIECES, BOX_PIECES, 0> {
+  public:
+    LIR_HEADER(ToNumeric)
+
+    explicit LToNumeric(const LBoxAllocation& input) {
+        setBoxOperand(Input, input);
+    }
+
+    static const size_t Input = 0;
+
+    const MToNumeric* mir() const { return mir_->toToNumeric(); }
+};
+
 // Guard that a value is in a TypeSet.
 class LTypeBarrierV : public LInstructionHelper<0, BOX_PIECES, 1>
 {
