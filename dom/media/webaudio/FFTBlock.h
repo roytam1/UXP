@@ -15,13 +15,8 @@
 #include "AlignedTArray.h"
 #include "AudioNodeEngine.h"
 #if defined(MOZ_LIBAV_FFT)
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "libavcodec/avfft.h"
-#ifdef __cplusplus
-}
-#endif
+#include "FFmpegRDFTTypes.h"
+#include "FFVPXRuntimeLinker.h"
 #else
 #include "kiss_fft/kiss_fftr.h"
 #endif
@@ -45,6 +40,14 @@ class FFTBlock final
   };
 
 public:
+  static void MainThreadInit()
+  {
+#ifdef MOZ_LIBAV_FFT
+    FFVPXRuntimeLinker::Init();
+    FFVPXRuntimeLinker::GetRDFTFuncs(&sRDFTFuncs);
+#endif
+  }
+
   explicit FFTBlock(uint32_t aFFTSize)
 #if defined(MOZ_LIBAV_FFT)
     : mAvRDFT(nullptr)
@@ -76,10 +79,12 @@ public:
   // Transform FFTSize() points of aData and store the result internally.
   void PerformFFT(const float* aData)
   {
-    EnsureFFT();
+    if (!EnsureFFT()) {
+      return;
+    }
 #if defined(MOZ_LIBAV_FFT)
     PodCopy(mOutputBuffer.Elements()->f, aData, mFFTSize);
-    av_rdft_calc(mAvRDFT, mOutputBuffer.Elements()->f);
+    sRDFTFuncs.calc(mAvRDFT, mOutputBuffer.Elements()->f);
     // Recover packed Nyquist.
     mOutputBuffer[mFFTSize / 2].r = mOutputBuffer[0].i;
     mOutputBuffer[0].i = 0.0f;
@@ -106,7 +111,11 @@ public:
   // scaled, then the output will need scaling by 1/FFTSize().
   void GetInverseWithoutScaling(float* aDataOut)
   {
-    EnsureIFFT();
+    if (!EnsureIFFT()) {
+      std::fill_n(aDataOut, mFFTSize, 0.0f);
+      return;
+    };
+
 #if defined(MOZ_LIBAV_FFT)
     {
       // Even though this function doesn't scale, the libav forward transform
@@ -115,7 +124,7 @@ public:
       AudioBufferCopyWithScale(mOutputBuffer.Elements()->f, 2.0f,
                                aDataOut, mFFTSize);
       aDataOut[1] = 2.0f * mOutputBuffer[mFFTSize/2].r; // Packed Nyquist
-      av_rdft_calc(mAvIRDFT, aDataOut);
+      sRDFTFuncs.calc(mAvIRDFT, aDataOut);
     }
 #else
 #ifdef BUILD_ARM_NEON
@@ -215,11 +224,14 @@ private:
   FFTBlock(const FFTBlock& other) = delete;
   void operator=(const FFTBlock& other) = delete;
 
-  void EnsureFFT()
+  bool EnsureFFT()
   {
 #if defined(MOZ_LIBAV_FFT)
     if (!mAvRDFT) {
-      mAvRDFT = av_rdft_init(log((double)mFFTSize)/M_LN2, DFT_R2C);
+      if (!sRDFTFuncs.init) {
+        return false;
+      }
+      mAvRDFT = sRDFTFuncs.init(log((double)mFFTSize)/M_LN2, DFT_R2C);
     }
 #else
 #ifdef BUILD_ARM_NEON
@@ -235,12 +247,17 @@ private:
       }
     }
 #endif
+    return true;
   }
-  void EnsureIFFT()
+ 
+  bool EnsureIFFT()
   {
 #if defined(MOZ_LIBAV_FFT)
     if (!mAvIRDFT) {
-      mAvIRDFT = av_rdft_init(log((double)mFFTSize)/M_LN2, IDFT_C2R);
+      if (!sRDFTFuncs.init) {
+        return false;
+      }
+      mAvIRDFT = sRDFTFuncs.init(log((double)mFFTSize)/M_LN2, IDFT_C2R);
     }
 #else
 #ifdef BUILD_ARM_NEON
@@ -256,6 +273,7 @@ private:
       }
     }
 #endif
+    return true;
   }
 
 #ifdef BUILD_ARM_NEON
@@ -280,9 +298,14 @@ private:
   void Clear()
   {
 #if defined(MOZ_LIBAV_FFT)
-    av_rdft_end(mAvRDFT);
-    av_rdft_end(mAvIRDFT);
-    mAvRDFT = mAvIRDFT = nullptr;
+    if (mAvRDFT) {
+      sRDFTFuncs.end(mAvRDFT);
+      mAvRDFT = nullptr;
+    }
+    if (mAvIRDFT) {
+      sRDFTFuncs.end(mAvIRDFT);
+      mAvIRDFT = nullptr;
+    }
 #else
 #ifdef BUILD_ARM_NEON
     free(mOmxFFT);
@@ -300,6 +323,7 @@ private:
 #if defined(MOZ_LIBAV_FFT)
   RDFTContext *mAvRDFT;
   RDFTContext *mAvIRDFT;
+  static FFmpegRDFTFuncs sRDFTFuncs;
 #else
   kiss_fftr_cfg mKissFFT;
   kiss_fftr_cfg mKissIFFT;
