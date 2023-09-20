@@ -123,6 +123,7 @@ namespace jit {
     _(ToDouble)                                                             \
     _(ToFloat32)                                                            \
     _(ToInt32)                                                              \
+    _(ToNumeric)                                                            \
     _(TruncateToInt32)                                                      \
     _(WrapInt64ToInt32)                                                     \
     _(ExtendInt32ToInt64)                                                   \

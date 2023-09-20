@@ -2378,6 +2378,8 @@ CodeGenerator::visitUnarySharedStub(LUnarySharedStub* lir)
     switch (jsop) {
       case JSOP_BITNOT:
       case JSOP_NEG:
+      case JSOP_INC:
+      case JSOP_DEC:
         emitSharedStub(ICStub::Kind::UnaryArith_Fallback, lir);
         break;
       case JSOP_CALLPROP:
@@ -3411,6 +3413,48 @@ CodeGenerator::visitLoadUnboxedExpando(LLoadUnboxedExpando* lir)
     Register result = ToRegister(lir->getDef(0));
 
     masm.loadPtr(Address(obj, UnboxedPlainObject::offsetOfExpando()), result);
+}
+
+void
+CodeGenerator::visitToNumeric(LToNumeric* lir)
+{
+    ValueOperand operand = ToValue(lir, LToNumeric::Input);
+    ValueOperand output = ToOutValue(lir);
+    bool maybeInt32 = lir->mir()->mightBeType(MIRType::Int32);
+    bool maybeDouble = lir->mir()->mightBeType(MIRType::Double);
+    bool maybeNumber = maybeInt32 || maybeDouble;
+    bool maybeBigInt = lir->mir()->mightBeType(MIRType::BigInt);
+    int checks = int(maybeNumber) + int(maybeBigInt);
+
+    OutOfLineCode* ool = oolCallVM(ToNumericInfo, lir, ArgList(operand), StoreValueTo(output));
+
+    if (checks == 0) {
+        masm.jump(ool->entry());
+    } else {
+        Label done;
+        using Condition = Assembler::Condition;
+        constexpr Condition Equal = Assembler::Equal;
+        constexpr Condition NotEqual = Assembler::NotEqual;
+
+        if (maybeNumber) {
+            checks--;
+            Condition cond = checks ? Equal : NotEqual;
+            Label* target = checks ? &done : ool->entry();
+            masm.branchTestNumber(cond, operand, target);
+        }
+        if (maybeBigInt) {
+            checks--;
+            Condition cond = checks ? Equal : NotEqual;
+            Label* target = checks ? &done : ool->entry();
+            masm.branchTestBigInt(cond, operand, target);
+        }
+
+        MOZ_ASSERT(checks == 0);
+        masm.bind(&done);
+        masm.moveValue(operand, output);
+    }
+
+    masm.bind(ool->rejoin());
 }
 
 void

@@ -57,6 +57,10 @@ namespace JS {
     _(BinaryArith_SharedCache)                          \
     _(BinaryArith_Call)                                 \
                                                         \
+    _(UnaryArith_SpecializedTypes)                      \
+    _(UnaryArith_SpecializedOnBaselineTypes)            \
+    _(UnaryArith_InlineCache)                           \
+                                                        \
     _(InlineCache_OptimizedStub)                        \
                                                         \
     _(Call_Inline)
@@ -112,6 +116,7 @@ namespace JS {
     _(GetElemStringNotCached)                                           \
     _(NonNativeReceiver)                                                \
     _(IndexType)                                                        \
+    _(SpeculationOnInputTypesFailed)                                    \
     _(SetElemNonDenseNonTANotCached)                                    \
     _(NoSimdJitSupport)                                                 \
     _(SimdTypeNotOptimized)                                             \

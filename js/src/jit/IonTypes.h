@@ -644,6 +644,10 @@ IsNumberType(MIRType type)
            type == MIRType::Int64;
 }
 
+static inline bool IsNumericType(MIRType type) {
+    return IsNumberType(type) || type == MIRType::BigInt;
+}
+
 static inline bool
 IsTypeRepresentableAsDouble(MIRType type)
 {

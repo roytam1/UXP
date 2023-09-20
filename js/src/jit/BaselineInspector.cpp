@@ -408,6 +408,11 @@ BaselineInspector::expectedBinaryArithSpecialization(jsbytecode* pc)
     MIRType result;
     ICStub* stubs[2];
 
+    if (JSOp(*pc) == JSOP_POS) {
+      // +x expanding to x*1, but no corresponding IC.
+      return MIRType::None;
+    }
+
     const ICEntry& entry = icEntryFromPC(pc);
     ICStub* stub = entry.fallbackStub();
     if (stub->isBinaryArith_Fallback() &&

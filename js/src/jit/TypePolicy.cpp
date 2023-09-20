@@ -1186,6 +1186,7 @@ FilterTypeSetPolicy::adjustInputs(TempAllocator& alloc, MInstruction* ins)
 
 // Lists of all TypePolicy specializations which are used by MIR Instructions.
 #define TYPE_POLICY_LIST(_)                     \
+    _(AllDoublePolicy)                          \
     _(ArithPolicy)                              \
     _(BitwisePolicy)                            \
     _(BoxInputsPolicy)                          \
@@ -1204,7 +1205,6 @@ FilterTypeSetPolicy::adjustInputs(TempAllocator& alloc, MInstruction* ins)
     _(StoreUnboxedScalarPolicy)                 \
     _(StoreUnboxedObjectOrNullPolicy)           \
     _(TestPolicy)                               \
-    _(AllDoublePolicy)                          \
     _(ToDoublePolicy)                           \
     _(ToInt32Policy)                            \
     _(ToStringPolicy)                           \
