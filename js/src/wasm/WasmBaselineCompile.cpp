@@ -2719,6 +2719,38 @@ class BaseCompiler
         return x0;
     }
 
+    RegI64 popI64ForSignExtendI64() {
+#if defined(JS_CODEGEN_X86)
+        need2xI32(specific_edx, specific_eax);
+        // Low on top, high underneath
+        return popI64ToSpecific(RegI64(Register64(specific_edx.reg, specific_eax.reg)));
+#else
+        return popI64();
+#endif
+    }
+
+    void signExtendI64_8(RegI64 r) {
+#if defined(JS_CODEGEN_X64)
+        masm.movsbq(Operand(r.reg.reg), r.reg.reg);
+#elif defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_ARM)
+        masm.move8SignExtend(r.reg.low, r.reg.low);
+        signExtendI32ToI64(RegI32(r.reg.low), r);
+#else
+        MOZ_CRASH("Basecompiler platform hook: signExtendI64_8");
+#endif
+    }
+
+    void signExtendI64_16(RegI64 r) {
+#if defined(JS_CODEGEN_X64)
+        masm.movswq(Operand(r.reg.reg), r.reg.reg);
+#elif defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_ARM)
+        masm.move16SignExtend(r.reg.low, r.reg.low);
+        signExtendI32ToI64(RegI32(r.reg.low), r);
+#else
+        MOZ_CRASH("Basecompiler platform hook: signExtendI64_16");
+#endif
+    }
+
     void signExtendI32ToI64(RegI32 src, RegI64 dest) {
 #if defined(JS_CODEGEN_X64)
         masm.movslq(src.reg, dest.reg.reg);
@@ -3703,6 +3735,11 @@ class BaseCompiler
     template<bool isUnsigned> MOZ_MUST_USE bool emitTruncateF64ToI64();
 #endif
     void emitWrapI64ToI32();
+    void emitExtendI32_8();
+    void emitExtendI32_16();
+    void emitExtendI64_8();
+    void emitExtendI64_16();
+    void emitExtendI64_32();
     void emitExtendI32ToI64();
     void emitExtendU32ToI64();
     void emitReinterpretF32AsI32();
@@ -4591,6 +4628,48 @@ BaseCompiler::emitWrapI64ToI32()
     wrapI64ToI32(r0, i0);
     freeI64Except(r0, i0);
     pushI32(i0);
+}
+
+void
+BaseCompiler::emitExtendI32_8()
+{
+    RegI32 r = popI32();
+    masm.move8SignExtend(r.reg, r.reg);
+    pushI32(r);
+}
+
+void
+BaseCompiler::emitExtendI32_16()
+{
+    RegI32 r = popI32();
+    masm.move16SignExtend(r.reg, r.reg);
+    pushI32(r);
+}
+
+void
+BaseCompiler::emitExtendI64_8()
+{
+    RegI64 r = popI64ForSignExtendI64();
+    signExtendI64_8(r);
+    pushI64(r);
+}
+
+void
+BaseCompiler::emitExtendI64_16()
+{
+    RegI64 r = popI64ForSignExtendI64();
+    signExtendI64_16(r);
+    pushI64(r);
+}
+
+void
+BaseCompiler::emitExtendI64_32()
+{
+    RegI64 x0 = popI64ForSignExtendI64();
+    RegI32 r0 = RegI32(lowPart(x0));
+    signExtendI32ToI64(r0, x0);
+    pushI64(x0);
+    // Note: no need to free r0, since it is part of x0
 }
 
 void
@@ -7097,6 +7176,18 @@ BaseCompiler::emitBody()
           case uint16_t(Op::I32AtomicsCompareExchange):
           case uint16_t(Op::I32AtomicsExchange):
             MOZ_CRASH("Unimplemented Atomics");
+
+          // Sign extensions
+          case uint16_t(Op::I32Extend8S):
+            CHECK_NEXT(emitConversion(emitExtendI32_8, ValType::I32, ValType::I32));
+         case uint16_t(Op::I32Extend16S):
+            CHECK_NEXT(emitConversion(emitExtendI32_16, ValType::I32, ValType::I32));
+          case uint16_t(Op::I64Extend8S):
+            CHECK_NEXT(emitConversion(emitExtendI64_8, ValType::I64, ValType::I64));
+          case uint16_t(Op::I64Extend16S):
+            CHECK_NEXT(emitConversion(emitExtendI64_16, ValType::I64, ValType::I64));
+          case uint16_t(Op::I64Extend32S):
+            CHECK_NEXT(emitConversion(emitExtendI64_32, ValType::I64, ValType::I64));
 
           // Memory Related
           case uint16_t(Op::GrowMemory):
