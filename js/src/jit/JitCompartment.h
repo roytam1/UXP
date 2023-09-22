@@ -461,38 +461,12 @@ class JitCompartment
     JitCode* regExpSearcherStub_;
     JitCode* regExpTesterStub_;
 
-    mozilla::EnumeratedArray<SimdType, SimdType::Count, ReadBarrieredObject> simdTemplateObjects_;
-
     JitCode* generateStringConcatStub(JSContext* cx);
     JitCode* generateRegExpMatcherStub(JSContext* cx);
     JitCode* generateRegExpSearcherStub(JSContext* cx);
     JitCode* generateRegExpTesterStub(JSContext* cx);
 
   public:
-    JSObject* getSimdTemplateObjectFor(JSContext* cx, Handle<SimdTypeDescr*> descr) {
-        ReadBarrieredObject& tpl = simdTemplateObjects_[descr->type()];
-        if (!tpl)
-            tpl.set(TypedObject::createZeroed(cx, descr, 0, gc::TenuredHeap));
-        return tpl.get();
-    }
-
-    JSObject* maybeGetSimdTemplateObjectFor(SimdType type) const {
-        const ReadBarrieredObject& tpl = simdTemplateObjects_[type];
-
-        // This function is used by Eager Simd Unbox phase, so we cannot use the
-        // read barrier. For more information, see the comment above
-        // CodeGenerator::simdRefreshTemplatesDuringLink_ .
-        return tpl.unbarrieredGet();
-    }
-
-    // This function is used to call the read barrier, to mark the SIMD template
-    // type as used. This function can only be called from the main thread.
-    void registerSimdTemplateObjectFor(SimdType type) {
-        ReadBarrieredObject& tpl = simdTemplateObjects_[type];
-        MOZ_ASSERT(tpl.unbarrieredGet());
-        tpl.get();
-    }
-
     JitCode* getStubCode(uint32_t key) {
         ICStubCodeMap::AddPtr p = stubCodes_->lookupForAdd(key);
         if (p)

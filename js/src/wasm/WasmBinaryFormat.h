@@ -1,6 +1,7 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  *
  * Copyright 2016 Mozilla Foundation
+ * Copyright 2023 Moonchild Productions
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,18 +126,6 @@ class Encoder
     }
     MOZ_MUST_USE bool writeFixedF64(RawF64 d) {
         return write<uint64_t>(d.bits());
-    }
-    MOZ_MUST_USE bool writeFixedI8x16(const I8x16& i8x16) {
-        return write<I8x16>(i8x16);
-    }
-    MOZ_MUST_USE bool writeFixedI16x8(const I16x8& i16x8) {
-        return write<I16x8>(i16x8);
-    }
-    MOZ_MUST_USE bool writeFixedI32x4(const I32x4& i32x4) {
-        return write<I32x4>(i32x4);
-    }
-    MOZ_MUST_USE bool writeFixedF32x4(const F32x4& f32x4) {
-        return write<F32x4>(f32x4);
     }
 
     // Variable-length encodings that all use LEB128.
@@ -375,18 +364,6 @@ class Decoder
         *d = RawF64::fromBits(u);
         return true;
     }
-    MOZ_MUST_USE bool readFixedI8x16(I8x16* i8x16) {
-        return read<I8x16>(i8x16);
-    }
-    MOZ_MUST_USE bool readFixedI16x8(I16x8* i16x8) {
-        return read<I16x8>(i16x8);
-    }
-    MOZ_MUST_USE bool readFixedI32x4(I32x4* i32x4) {
-        return read<I32x4>(i32x4);
-    }
-    MOZ_MUST_USE bool readFixedF32x4(F32x4* f32x4) {
-        return read<F32x4>(f32x4);
-    }
 
     // Variable-length encodings that all use LEB128.
 
@@ -598,26 +575,6 @@ class Decoder
         return u8 != UINT8_MAX
                ? Op(u8)
                : Op(uncheckedReadFixedU8() + UINT8_MAX);
-    }
-    void uncheckedReadFixedI8x16(I8x16* i8x16) {
-        struct T { I8x16 v; };
-        T t = uncheckedRead<T>();
-        memcpy(i8x16, &t, sizeof(t));
-    }
-    void uncheckedReadFixedI16x8(I16x8* i16x8) {
-        struct T { I16x8 v; };
-        T t = uncheckedRead<T>();
-        memcpy(i16x8, &t, sizeof(t));
-    }
-    void uncheckedReadFixedI32x4(I32x4* i32x4) {
-        struct T { I32x4 v; };
-        T t = uncheckedRead<T>();
-        memcpy(i32x4, &t, sizeof(t));
-    }
-    void uncheckedReadFixedF32x4(F32x4* f32x4) {
-        struct T { F32x4 v; };
-        T t = uncheckedRead<T>();
-        memcpy(f32x4, &t, sizeof(t));
     }
 };
 

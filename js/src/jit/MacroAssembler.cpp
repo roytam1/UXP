@@ -240,8 +240,7 @@ template void MacroAssembler::guardTypeSetMightBeIncomplete(const TemporaryTypeS
 
 template<typename S, typename T>
 static void
-StoreToTypedFloatArray(MacroAssembler& masm, int arrayType, const S& value, const T& dest,
-                       unsigned numElems)
+StoreToTypedFloatArray(MacroAssembler& masm, int arrayType, const S& value, const T& dest)
 {
     switch (arrayType) {
       case Scalar::Float32:
@@ -250,48 +249,6 @@ StoreToTypedFloatArray(MacroAssembler& masm, int arrayType, const S& value, cons
       case Scalar::Float64:
         masm.storeDouble(value, dest);
         break;
-      case Scalar::Float32x4:
-        switch (numElems) {
-          case 1:
-            masm.storeFloat32(value, dest);
-            break;
-          case 2:
-            masm.storeDouble(value, dest);
-            break;
-          case 3:
-            masm.storeFloat32x3(value, dest);
-            break;
-          case 4:
-            masm.storeUnalignedSimd128Float(value, dest);
-            break;
-          default: MOZ_CRASH("unexpected number of elements in simd write");
-        }
-        break;
-      case Scalar::Int32x4:
-        switch (numElems) {
-          case 1:
-            masm.storeInt32x1(value, dest);
-            break;
-          case 2:
-            masm.storeInt32x2(value, dest);
-            break;
-          case 3:
-            masm.storeInt32x3(value, dest);
-            break;
-          case 4:
-            masm.storeUnalignedSimd128Int(value, dest);
-            break;
-          default: MOZ_CRASH("unexpected number of elements in simd write");
-        }
-        break;
-      case Scalar::Int8x16:
-        MOZ_ASSERT(numElems == 16, "unexpected partial store");
-        masm.storeUnalignedSimd128Int(value, dest);
-        break;
-      case Scalar::Int16x8:
-        MOZ_ASSERT(numElems == 8, "unexpected partial store");
-        masm.storeUnalignedSimd128Int(value, dest);
-        break;
       default:
         MOZ_CRASH("Invalid typed array type");
     }
@@ -299,21 +256,21 @@ StoreToTypedFloatArray(MacroAssembler& masm, int arrayType, const S& value, cons
 
 void
 MacroAssembler::storeToTypedFloatArray(Scalar::Type arrayType, FloatRegister value,
-                                       const BaseIndex& dest, unsigned numElems)
+                                       const BaseIndex& dest)
 {
-    StoreToTypedFloatArray(*this, arrayType, value, dest, numElems);
+    StoreToTypedFloatArray(*this, arrayType, value, dest);
 }
 void
 MacroAssembler::storeToTypedFloatArray(Scalar::Type arrayType, FloatRegister value,
-                                       const Address& dest, unsigned numElems)
+                                       const Address& dest)
 {
-    StoreToTypedFloatArray(*this, arrayType, value, dest, numElems);
+    StoreToTypedFloatArray(*this, arrayType, value, dest);
 }
 
 template<typename T>
 void
 MacroAssembler::loadFromTypedArray(Scalar::Type arrayType, const T& src, AnyRegister dest, Register temp,
-                                   Label* fail, bool canonicalizeDoubles, unsigned numElems)
+                                   Label* fail, bool canonicalizeDoubles)
 {
     switch (arrayType) {
       case Scalar::Int8:
@@ -359,59 +316,15 @@ MacroAssembler::loadFromTypedArray(Scalar::Type arrayType, const T& src, AnyRegi
         if (canonicalizeDoubles)
             canonicalizeDouble(dest.fpu());
         break;
-      case Scalar::Int32x4:
-        switch (numElems) {
-          case 1:
-            loadInt32x1(src, dest.fpu());
-            break;
-          case 2:
-            loadInt32x2(src, dest.fpu());
-            break;
-          case 3:
-            loadInt32x3(src, dest.fpu());
-            break;
-          case 4:
-            loadUnalignedSimd128Int(src, dest.fpu());
-            break;
-          default: MOZ_CRASH("unexpected number of elements in SIMD load");
-        }
-        break;
-      case Scalar::Float32x4:
-        switch (numElems) {
-          case 1:
-            loadFloat32(src, dest.fpu());
-            break;
-          case 2:
-            loadDouble(src, dest.fpu());
-            break;
-          case 3:
-            loadFloat32x3(src, dest.fpu());
-            break;
-          case 4:
-            loadUnalignedSimd128Float(src, dest.fpu());
-            break;
-          default: MOZ_CRASH("unexpected number of elements in SIMD load");
-        }
-        break;
-      case Scalar::Int8x16:
-        MOZ_ASSERT(numElems == 16, "unexpected partial load");
-        loadUnalignedSimd128Int(src, dest.fpu());
-        break;
-      case Scalar::Int16x8:
-        MOZ_ASSERT(numElems == 8, "unexpected partial load");
-        loadUnalignedSimd128Int(src, dest.fpu());
-        break;
       default:
         MOZ_CRASH("Invalid typed array type");
     }
 }
 
 template void MacroAssembler::loadFromTypedArray(Scalar::Type arrayType, const Address& src, AnyRegister dest,
-                                                 Register temp, Label* fail, bool canonicalizeDoubles,
-                                                 unsigned numElems);
+                                                 Register temp, Label* fail, bool canonicalizeDoubles);
 template void MacroAssembler::loadFromTypedArray(Scalar::Type arrayType, const BaseIndex& src, AnyRegister dest,
-                                                 Register temp, Label* fail, bool canonicalizeDoubles,
-                                                 unsigned numElems);
+                                                 Register temp, Label* fail, bool canonicalizeDoubles);
 
 template<typename T>
 void

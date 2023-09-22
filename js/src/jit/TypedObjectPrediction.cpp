@@ -118,7 +118,6 @@ TypedObjectPrediction::ofArrayKind() const
     switch (kind()) {
       case type::Scalar:
       case type::Reference:
-      case type::Simd:
       case type::Struct:
         return false;
 
@@ -204,12 +203,6 @@ ReferenceTypeDescr::Type
 TypedObjectPrediction::referenceType() const
 {
     return extractType<ReferenceTypeDescr>();
-}
-
-SimdType
-TypedObjectPrediction::simdType() const
-{
-    return descr().as<SimdTypeDescr>().type();
 }
 
 bool

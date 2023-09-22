@@ -65,9 +65,6 @@ class OptimizationInfo
     // Toggles whether native scripts get inlined.
     bool inlineNative_;
 
-    // Toggles whether eager unboxing of SIMD is used.
-    bool eagerSimdUnbox_;
-
     // Toggles whether global value numbering is used.
     bool gvn_;
 
@@ -168,10 +165,6 @@ class OptimizationInfo
     }
 
     uint32_t compilerWarmUpThreshold(JSScript* script, jsbytecode* pc = nullptr) const;
-
-    bool eagerSimdUnboxEnabled() const {
-        return eagerSimdUnbox_ && !JitOptions.disableEagerSimdUnbox;
-    }
 
     bool gvnEnabled() const {
         return gvn_ && !JitOptions.disableGvn;

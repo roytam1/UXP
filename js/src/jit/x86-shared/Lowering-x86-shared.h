@@ -38,10 +38,6 @@ class LIRGeneratorX86Shared : public LIRGeneratorShared
     template<size_t Temps>
     void lowerForFPU(LInstructionHelper<1, 2, Temps>* ins, MDefinition* mir, MDefinition* lhs,
                      MDefinition* rhs);
-    void lowerForCompIx4(LSimdBinaryCompIx4* ins, MSimdBinaryComp* mir,
-                         MDefinition* lhs, MDefinition* rhs);
-    void lowerForCompFx4(LSimdBinaryCompFx4* ins, MSimdBinaryComp* mir,
-                         MDefinition* lhs, MDefinition* rhs);
     void lowerForBitAndAndBranch(LBitAndAndBranch* baab, MInstruction* mir,
                                  MDefinition* lhs, MDefinition* rhs);
     void visitAsmJSNeg(MAsmJSNeg* ins);
@@ -55,16 +51,6 @@ class LIRGeneratorX86Shared : public LIRGeneratorShared
     void lowerUrshD(MUrsh* mir);
     void lowerTruncateDToInt32(MTruncateToInt32* ins);
     void lowerTruncateFToInt32(MTruncateToInt32* ins);
-    void visitSimdInsertElement(MSimdInsertElement* ins);
-    void visitSimdExtractElement(MSimdExtractElement* ins);
-    void visitSimdBinaryArith(MSimdBinaryArith* ins);
-    void visitSimdBinarySaturating(MSimdBinarySaturating* ins);
-    void visitSimdSelect(MSimdSelect* ins);
-    void visitSimdSplat(MSimdSplat* ins);
-    void visitSimdSwizzle(MSimdSwizzle* ins);
-    void visitSimdShuffle(MSimdShuffle* ins);
-    void visitSimdGeneralShuffle(MSimdGeneralShuffle* ins);
-    void visitSimdValueX4(MSimdValueX4* ins);
     void lowerCompareExchangeTypedArrayElement(MCompareExchangeTypedArrayElement* ins,
                                                bool useI386ByteRegisters);
     void lowerAtomicExchangeTypedArrayElement(MAtomicExchangeTypedArrayElement* ins,

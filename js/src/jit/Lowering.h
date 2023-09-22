@@ -304,17 +304,6 @@ class LIRGenerator : public LIRGeneratorSpecific
     void visitGetDOMProperty(MGetDOMProperty* ins);
     void visitGetDOMMember(MGetDOMMember* ins);
     void visitRecompileCheck(MRecompileCheck* ins);
-    void visitSimdBox(MSimdBox* ins);
-    void visitSimdUnbox(MSimdUnbox* ins);
-    void visitSimdUnaryArith(MSimdUnaryArith* ins);
-    void visitSimdBinaryComp(MSimdBinaryComp* ins);
-    void visitSimdBinaryBitwise(MSimdBinaryBitwise* ins);
-    void visitSimdShift(MSimdShift* ins);
-    void visitSimdConstant(MSimdConstant* ins);
-    void visitSimdConvert(MSimdConvert* ins);
-    void visitSimdReinterpretCast(MSimdReinterpretCast* ins);
-    void visitSimdAllTrue(MSimdAllTrue* ins);
-    void visitSimdAnyTrue(MSimdAnyTrue* ins);
     void visitPhi(MPhi* ins);
     void visitBeta(MBeta* ins);
     void visitObjectState(MObjectState* ins);

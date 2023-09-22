@@ -683,34 +683,6 @@ MacroAssembler::wasmLoad(const wasm::MemoryAccessDesc& access, Operand srcAddr, 
       case Scalar::Float64:
         loadDouble(srcAddr, out.fpu());
         break;
-      case Scalar::Float32x4:
-        switch (access.numSimdElems()) {
-          // In memory-to-register mode, movss zeroes out the high lanes.
-          case 1: loadFloat32(srcAddr, out.fpu()); break;
-          // See comment above, which also applies to movsd.
-          case 2: loadDouble(srcAddr, out.fpu()); break;
-          case 4: loadUnalignedSimd128Float(srcAddr, out.fpu()); break;
-          default: MOZ_CRASH("unexpected size for partial load");
-        }
-        break;
-      case Scalar::Int32x4:
-        switch (access.numSimdElems()) {
-          // In memory-to-register mode, movd zeroes out the high lanes.
-          case 1: vmovd(srcAddr, out.fpu()); break;
-          // See comment above, which also applies to movq.
-          case 2: vmovq(srcAddr, out.fpu()); break;
-          case 4: loadUnalignedSimd128Int(srcAddr, out.fpu()); break;
-          default: MOZ_CRASH("unexpected size for partial load");
-        }
-        break;
-      case Scalar::Int8x16:
-        MOZ_ASSERT(access.numSimdElems() == 16, "unexpected partial load");
-        loadUnalignedSimd128Int(srcAddr, out.fpu());
-        break;
-      case Scalar::Int16x8:
-        MOZ_ASSERT(access.numSimdElems() == 8, "unexpected partial load");
-        loadUnalignedSimd128Int(srcAddr, out.fpu());
-        break;
       case Scalar::Int64:
         MOZ_CRASH("int64 loads must use load64");
       case Scalar::BigInt64:
@@ -728,7 +700,6 @@ void
 MacroAssembler::wasmLoadI64(const wasm::MemoryAccessDesc& access, Operand srcAddr, Register64 out)
 {
     MOZ_ASSERT(!access.isAtomic());
-    MOZ_ASSERT(!access.isSimd());
 
     size_t loadOffset = size();
     switch (access.type()) {
@@ -756,10 +727,6 @@ MacroAssembler::wasmLoadI64(const wasm::MemoryAccessDesc& access, Operand srcAdd
         break;
       case Scalar::Float32:
       case Scalar::Float64:
-      case Scalar::Float32x4:
-      case Scalar::Int8x16:
-      case Scalar::Int16x8:
-      case Scalar::Int32x4:
         MOZ_CRASH("non-int64 loads should use load()");
       case Scalar::BigInt64:
       case Scalar::BigUint64:
@@ -797,34 +764,6 @@ MacroAssembler::wasmStore(const wasm::MemoryAccessDesc& access, AnyRegister valu
         break;
       case Scalar::Float64:
         storeUncanonicalizedDouble(value.fpu(), dstAddr);
-        break;
-      case Scalar::Float32x4:
-        switch (access.numSimdElems()) {
-          // In memory-to-register mode, movss zeroes out the high lanes.
-          case 1: storeUncanonicalizedFloat32(value.fpu(), dstAddr); break;
-          // See comment above, which also applies to movsd.
-          case 2: storeUncanonicalizedDouble(value.fpu(), dstAddr); break;
-          case 4: storeUnalignedSimd128Float(value.fpu(), dstAddr); break;
-          default: MOZ_CRASH("unexpected size for partial load");
-        }
-        break;
-      case Scalar::Int32x4:
-        switch (access.numSimdElems()) {
-          // In memory-to-register mode, movd zeroes out the high lanes.
-          case 1: vmovd(value.fpu(), dstAddr); break;
-          // See comment above, which also applies to movq.
-          case 2: vmovq(value.fpu(), dstAddr); break;
-          case 4: storeUnalignedSimd128Int(value.fpu(), dstAddr); break;
-          default: MOZ_CRASH("unexpected size for partial load");
-        }
-        break;
-      case Scalar::Int8x16:
-        MOZ_ASSERT(access.numSimdElems() == 16, "unexpected partial store");
-        storeUnalignedSimd128Int(value.fpu(), dstAddr);
-        break;
-      case Scalar::Int16x8:
-        MOZ_ASSERT(access.numSimdElems() == 8, "unexpected partial store");
-        storeUnalignedSimd128Int(value.fpu(), dstAddr);
         break;
       case Scalar::BigInt64:
       case Scalar::BigUint64:

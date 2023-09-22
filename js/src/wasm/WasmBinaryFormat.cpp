@@ -57,17 +57,6 @@ DecodeValType(Decoder& d, ModuleKind kind, ValType* type)
       case uint8_t(ValType::I64):
         *type = ValType(unchecked);
         return true;
-      case uint8_t(ValType::I8x16):
-      case uint8_t(ValType::I16x8):
-      case uint8_t(ValType::I32x4):
-      case uint8_t(ValType::F32x4):
-      case uint8_t(ValType::B8x16):
-      case uint8_t(ValType::B16x8):
-      case uint8_t(ValType::B32x4):
-        if (kind != ModuleKind::AsmJS)
-            return d.fail("bad type");
-        *type = ValType(unchecked);
-        return true;
       default:
         break;
     }

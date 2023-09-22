@@ -163,7 +163,6 @@ CodeGenerator::CodeGenerator(MIRGenerator* gen, LIRGraph* graph, MacroAssembler*
   : CodeGeneratorSpecific(gen, graph, masm)
   , ionScriptLabels_(gen->alloc())
   , scriptCounts_(nullptr)
-  , simdRefreshTemplatesDuringLink_(0)
 {
 }
 
@@ -5802,128 +5801,6 @@ CodeGenerator::visitNewTypedObject(LNewTypedObject* lir)
     masm.bind(ool->rejoin());
 }
 
-void
-CodeGenerator::visitSimdBox(LSimdBox* lir)
-{
-    FloatRegister in = ToFloatRegister(lir->input());
-    Register object = ToRegister(lir->output());
-    Register temp = ToRegister(lir->temp());
-    InlineTypedObject* templateObject = lir->mir()->templateObject();
-    gc::InitialHeap initialHeap = lir->mir()->initialHeap();
-    MIRType type = lir->mir()->input()->type();
-
-    registerSimdTemplate(lir->mir()->simdType());
-
-    MOZ_ASSERT(lir->safepoint()->liveRegs().has(in), "Save the input register across oolCallVM");
-    OutOfLineCode* ool = oolCallVM(NewTypedObjectInfo, lir,
-                                   ArgList(ImmGCPtr(templateObject), Imm32(initialHeap)),
-                                   StoreRegisterTo(object));
-
-    masm.createGCObject(object, temp, templateObject, initialHeap, ool->entry());
-    masm.bind(ool->rejoin());
-
-    Address objectData(object, InlineTypedObject::offsetOfDataStart());
-    switch (type) {
-      case MIRType::Int8x16:
-      case MIRType::Int16x8:
-      case MIRType::Int32x4:
-      case MIRType::Bool8x16:
-      case MIRType::Bool16x8:
-      case MIRType::Bool32x4:
-        masm.storeUnalignedSimd128Int(in, objectData);
-        break;
-      case MIRType::Float32x4:
-        masm.storeUnalignedSimd128Float(in, objectData);
-        break;
-      default:
-        MOZ_CRASH("Unknown SIMD kind when generating code for SimdBox.");
-    }
-}
-
-void
-CodeGenerator::registerSimdTemplate(SimdType simdType)
-{
-    simdRefreshTemplatesDuringLink_ |= 1 << uint32_t(simdType);
-}
-
-void
-CodeGenerator::captureSimdTemplate(JSContext* cx)
-{
-    JitCompartment* jitCompartment = cx->compartment()->jitCompartment();
-    while (simdRefreshTemplatesDuringLink_) {
-        uint32_t typeIndex = mozilla::CountTrailingZeroes32(simdRefreshTemplatesDuringLink_);
-        simdRefreshTemplatesDuringLink_ ^= 1 << typeIndex;
-        SimdType type = SimdType(typeIndex);
-
-        // Note: the weak-reference on the template object should not have been
-        // garbage collected. It is either registered by IonBuilder, or verified
-        // before using it in the EagerSimdUnbox phase.
-        jitCompartment->registerSimdTemplateObjectFor(type);
-    }
-}
-
-void
-CodeGenerator::visitSimdUnbox(LSimdUnbox* lir)
-{
-    Register object = ToRegister(lir->input());
-    FloatRegister simd = ToFloatRegister(lir->output());
-    Register temp = ToRegister(lir->temp());
-    Label bail;
-
-    // obj->group()
-    masm.loadPtr(Address(object, JSObject::offsetOfGroup()), temp);
-
-    // Guard that the object has the same representation as the one produced for
-    // SIMD value-type.
-    Address clasp(temp, ObjectGroup::offsetOfClasp());
-    static_assert(!SimdTypeDescr::Opaque, "SIMD objects are transparent");
-    masm.branchPtr(Assembler::NotEqual, clasp, ImmPtr(&InlineTransparentTypedObject::class_),
-                   &bail);
-
-    // obj->type()->typeDescr()
-    // The previous class pointer comparison implies that the addendumKind is
-    // Addendum_TypeDescr.
-    masm.loadPtr(Address(temp, ObjectGroup::offsetOfAddendum()), temp);
-
-    // Check for the /Kind/ reserved slot of the TypeDescr.  This is an Int32
-    // Value which is equivalent to the object class check.
-    static_assert(JS_DESCR_SLOT_KIND < NativeObject::MAX_FIXED_SLOTS, "Load from fixed slots");
-    Address typeDescrKind(temp, NativeObject::getFixedSlotOffset(JS_DESCR_SLOT_KIND));
-    masm.assertTestInt32(Assembler::Equal, typeDescrKind,
-      "MOZ_ASSERT(obj->type()->typeDescr()->getReservedSlot(JS_DESCR_SLOT_KIND).isInt32())");
-    masm.branch32(Assembler::NotEqual, masm.ToPayload(typeDescrKind), Imm32(js::type::Simd), &bail);
-
-    SimdType type = lir->mir()->simdType();
-
-    // Check if the SimdTypeDescr /Type/ match the specialization of this
-    // MSimdUnbox instruction.
-    static_assert(JS_DESCR_SLOT_TYPE < NativeObject::MAX_FIXED_SLOTS, "Load from fixed slots");
-    Address typeDescrType(temp, NativeObject::getFixedSlotOffset(JS_DESCR_SLOT_TYPE));
-    masm.assertTestInt32(Assembler::Equal, typeDescrType,
-      "MOZ_ASSERT(obj->type()->typeDescr()->getReservedSlot(JS_DESCR_SLOT_TYPE).isInt32())");
-    masm.branch32(Assembler::NotEqual, masm.ToPayload(typeDescrType), Imm32(int32_t(type)), &bail);
-
-    // Load the value from the data of the InlineTypedObject.
-    Address objectData(object, InlineTypedObject::offsetOfDataStart());
-    switch (lir->mir()->type()) {
-      case MIRType::Int8x16:
-      case MIRType::Int16x8:
-      case MIRType::Int32x4:
-      case MIRType::Bool8x16:
-      case MIRType::Bool16x8:
-      case MIRType::Bool32x4:
-        masm.loadUnalignedSimd128Int(objectData, simd);
-        break;
-      case MIRType::Float32x4:
-        masm.loadUnalignedSimd128Float(objectData, simd);
-        break;
-      default:
-        MOZ_CRASH("The impossible happened!");
-    }
-
-    bailoutFrom(&bail, lir->snapshot());
-}
-
 typedef js::NamedLambdaObject* (*NewNamedLambdaObjectFn)(JSContext*, HandleFunction, gc::InitialHeap);
 static const VMFunction NewNamedLambdaObjectInfo =
     FunctionInfo<NewNamedLambdaObjectFn>(NamedLambdaObject::createTemplateObject,
@@ -9592,12 +9469,6 @@ CodeGenerator::link(JSContext* cx, CompilerConstraintList* constraints)
     RootedScript script(cx, gen->info().script());
     OptimizationLevel optimizationLevel = gen->optimizationInfo().level();
 
-    // Capture the SIMD template objects which are used during the
-    // compilation. This iterates over the template objects, using read-barriers
-    // to let the GC know that the generated code relies on these template
-    // objects.
-    captureSimdTemplate(cx);
-
     // We finished the new IonScript. Invalidate the current active IonScript,
     // so we can replace it with this new (probably higher optimized) version.
     if (script->hasIonScript()) {
@@ -10865,7 +10736,6 @@ CodeGenerator::visitLoadUnboxedScalar(LLoadUnboxedScalar* lir)
     const MLoadUnboxedScalar* mir = lir->mir();
 
     Scalar::Type readType = mir->readType();
-    unsigned numElems = mir->numElems();
 
     int width = Scalar::byteSize(mir->storageType());
     bool canonicalizeDouble = mir->canonicalizeDoubles();
@@ -10873,11 +10743,11 @@ CodeGenerator::visitLoadUnboxedScalar(LLoadUnboxedScalar* lir)
     Label fail;
     if (lir->index()->isConstant()) {
         Address source(elements, ToInt32(lir->index()) * width + mir->offsetAdjustment());
-        masm.loadFromTypedArray(readType, source, out, temp, &fail, canonicalizeDouble, numElems);
+        masm.loadFromTypedArray(readType, source, out, temp, &fail, canonicalizeDouble);
     } else {
         BaseIndex source(elements, ToRegister(lir->index()), ScaleFromElemWidth(width),
                          mir->offsetAdjustment());
-        masm.loadFromTypedArray(readType, source, out, temp, &fail, canonicalizeDouble, numElems);
+        masm.loadFromTypedArray(readType, source, out, temp, &fail, canonicalizeDouble);
     }
 
     if (fail.used())
@@ -10928,13 +10798,12 @@ CodeGenerator::visitLoadTypedArrayElementHole(LLoadTypedArrayElementHole* lir)
 template <typename T>
 static inline void
 StoreToTypedArray(MacroAssembler& masm, Scalar::Type writeType, const LAllocation* value,
-                  const T& dest, unsigned numElems = 0)
+                  const T& dest)
 {
-    if (Scalar::isSimdType(writeType) ||
-        writeType == Scalar::Float32 ||
+    if (writeType == Scalar::Float32 ||
         writeType == Scalar::Float64)
     {
-        masm.storeToTypedFloatArray(writeType, ToFloatRegister(value), dest, numElems);
+        masm.storeToTypedFloatArray(writeType, ToFloatRegister(value), dest);
     } else {
         if (value->isConstant())
             masm.storeToTypedIntArray(writeType, Imm32(ToInt32(value)), dest);
@@ -10952,17 +10821,16 @@ CodeGenerator::visitStoreUnboxedScalar(LStoreUnboxedScalar* lir)
     const MStoreUnboxedScalar* mir = lir->mir();
 
     Scalar::Type writeType = mir->writeType();
-    unsigned numElems = mir->numElems();
 
     int width = Scalar::byteSize(mir->storageType());
 
     if (lir->index()->isConstant()) {
         Address dest(elements, ToInt32(lir->index()) * width + mir->offsetAdjustment());
-        StoreToTypedArray(masm, writeType, value, dest, numElems);
+        StoreToTypedArray(masm, writeType, value, dest);
     } else {
         BaseIndex dest(elements, ToRegister(lir->index()), ScaleFromElemWidth(width),
                        mir->offsetAdjustment());
-        StoreToTypedArray(masm, writeType, value, dest, numElems);
+        StoreToTypedArray(masm, writeType, value, dest);
     }
 }
 
