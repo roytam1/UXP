@@ -11,8 +11,6 @@
 #define LIR_CPU_OPCODE_LIST(_)  \
     _(BoxFloatingPoint)         \
     _(DivOrModConstantI)        \
-    _(SimdValueInt32x4)         \
-    _(SimdValueFloat32x4)       \
     _(UDivOrMod)                \
     _(UDivOrModConstant)        \
     _(UDivOrModI64)             \

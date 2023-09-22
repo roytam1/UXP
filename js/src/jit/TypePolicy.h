@@ -318,61 +318,6 @@ class ObjectPolicy final : public TypePolicy
 // a primitive, we use ValueToNonNullObject.
 typedef ObjectPolicy<0> SingleObjectPolicy;
 
-// Convert an operand to have a type identical to the scalar type of the
-// returned type of the instruction.
-template <unsigned Op>
-class SimdScalarPolicy final : public TypePolicy
-{
-  public:
-    EMPTY_DATA_;
-    static MOZ_MUST_USE bool staticAdjustInputs(TempAllocator& alloc, MInstruction* def);
-    virtual MOZ_MUST_USE bool adjustInputs(TempAllocator& alloc, MInstruction* def) override {
-        return staticAdjustInputs(alloc, def);
-    }
-};
-
-class SimdAllPolicy final : public TypePolicy
-{
-  public:
-    SPECIALIZATION_DATA_;
-    virtual MOZ_MUST_USE bool adjustInputs(TempAllocator& alloc, MInstruction* ins) override;
-};
-
-template <unsigned Op>
-class SimdPolicy final : public TypePolicy
-{
-  public:
-    SPECIALIZATION_DATA_;
-    virtual MOZ_MUST_USE bool adjustInputs(TempAllocator& alloc, MInstruction* ins) override;
-};
-
-class SimdSelectPolicy final : public TypePolicy
-{
-  public:
-    SPECIALIZATION_DATA_;
-    virtual MOZ_MUST_USE bool adjustInputs(TempAllocator& alloc, MInstruction* ins) override;
-};
-
-class SimdShufflePolicy final : public TypePolicy
-{
-  public:
-    SPECIALIZATION_DATA_;
-    virtual MOZ_MUST_USE bool adjustInputs(TempAllocator& alloc, MInstruction* ins) override;
-};
-
-// SIMD value-type policy, use the returned type of the instruction to determine
-// how to unbox its operand.
-template <unsigned Op>
-class SimdSameAsReturnedTypePolicy final : public TypePolicy
-{
-  public:
-    EMPTY_DATA_;
-    static MOZ_MUST_USE bool staticAdjustInputs(TempAllocator& alloc, MInstruction* ins);
-    virtual MOZ_MUST_USE bool adjustInputs(TempAllocator& alloc, MInstruction* ins) override {
-        return staticAdjustInputs(alloc, ins);
-    }
-};
-
 template <unsigned Op>
 class BoxPolicy final : public TypePolicy
 {

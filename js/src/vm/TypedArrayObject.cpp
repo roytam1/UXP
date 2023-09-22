@@ -2741,10 +2741,6 @@ bool TypedArrayObject::getElement<CanGC>(ExclusiveContext* cx, uint32_t index, M
     JS_FOR_EACH_TYPED_ARRAY(GET_ELEMENT)
 #undef GET_ELEMENT
       case Scalar::Int64:
-      case Scalar::Float32x4:
-      case Scalar::Int8x16:
-      case Scalar::Int16x8:
-      case Scalar::Int32x4:
       case Scalar::MaxTypedArrayViewType:
         break;
     }
@@ -2770,10 +2766,6 @@ bool TypedArrayObject::getElementPure(uint32_t index, Value* vp)
     JS_FOR_EACH_TYPED_ARRAY(GET_ELEMENT_PURE)
 #undef GET_ELEMENT
       case Scalar::Int64:
-      case Scalar::Float32x4:
-      case Scalar::Int8x16:
-      case Scalar::Int16x8:
-      case Scalar::Int32x4:
       case Scalar::MaxTypedArrayViewType:
         break;
     }
@@ -2803,10 +2795,6 @@ bool TypedArrayObject::getElements(JSContext* cx, Handle<TypedArrayObject*> tarr
       MOZ_CRASH("Unknown TypedArray type");
     case Scalar::MaxTypedArrayViewType:
     case Scalar::Int64:
-    case Scalar::Float32x4:
-    case Scalar::Int8x16:
-    case Scalar::Int16x8:
-    case Scalar::Int32x4:
       break;
   }
 

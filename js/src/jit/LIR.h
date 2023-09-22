@@ -622,15 +622,6 @@ class LDefinition
           case MIRType::Int64:
             return LDefinition::GENERAL;
 #endif
-          case MIRType::Int8x16:
-          case MIRType::Int16x8:
-          case MIRType::Int32x4:
-          case MIRType::Bool8x16:
-          case MIRType::Bool16x8:
-          case MIRType::Bool32x4:
-            return LDefinition::SIMD128INT;
-          case MIRType::Float32x4:
-            return LDefinition::SIMD128FLOAT;
           default:
             MOZ_CRASH("unexpected type");
         }

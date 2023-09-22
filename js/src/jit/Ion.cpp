@@ -22,7 +22,6 @@
 #include "jit/BaselineInspector.h"
 #include "jit/BaselineJIT.h"
 #include "jit/CodeGenerator.h"
-#include "jit/EagerSimdUnbox.h"
 #include "jit/EdgeCaseAnalysis.h"
 #include "jit/EffectiveAddressAnalysis.h"
 #include "jit/FlowAliasAnalysis.h"
@@ -678,11 +677,6 @@ JitCompartment::sweep(FreeOp* fop, JSCompartment* compartment)
 
     if (regExpTesterStub_ && !IsMarkedUnbarriered(rt, &regExpTesterStub_))
         regExpTesterStub_ = nullptr;
-
-    for (ReadBarrieredObject& obj : simdTemplateObjects_) {
-        if (obj && IsAboutToBeFinalized(&obj))
-            obj.set(nullptr);
-    }
 }
 
 void
@@ -1597,17 +1591,6 @@ OptimizeMIR(MIRGenerator* mir)
         AssertExtendedGraphCoherency(graph);
 
         if (mir->shouldCancel("Apply types"))
-            return false;
-    }
-
-    if (!JitOptions.disableRecoverIns && mir->optimizationInfo().eagerSimdUnboxEnabled()) {
-        AutoTraceLog log(logger, TraceLogger_EagerSimdUnbox);
-        if (!EagerSimdUnbox(mir, graph))
-            return false;
-        gs.spewPass("Eager Simd Unbox");
-        AssertGraphCoherency(graph);
-
-        if (mir->shouldCancel("Eager Simd Unbox"))
             return false;
     }
 

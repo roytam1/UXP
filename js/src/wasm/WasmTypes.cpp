@@ -1,6 +1,7 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  *
  * Copyright 2015 Mozilla Foundation
+ * Copyright 2023 Moonchild Productions
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,15 +52,6 @@ Val::writePayload(uint8_t* dst) const
       case ValType::I64:
       case ValType::F64:
         memcpy(dst, &u.i64_, sizeof(u.i64_));
-        return;
-      case ValType::I8x16:
-      case ValType::I16x8:
-      case ValType::I32x4:
-      case ValType::F32x4:
-      case ValType::B8x16:
-      case ValType::B16x8:
-      case ValType::B32x4:
-        memcpy(dst, &u, jit::Simd128DataSize);
         return;
     }
 }
@@ -124,9 +116,6 @@ WasmReportTrap(int32_t trapIndex)
         break;
       case Trap::IndirectCallBadSig:
         errorNumber = JSMSG_WASM_IND_CALL_BAD_SIG;
-        break;
-      case Trap::ImpreciseSimdConversion:
-        errorNumber = JSMSG_SIMD_FAILED_CONVERSION;
         break;
       case Trap::OutOfBounds:
         errorNumber = JSMSG_WASM_OUT_OF_BOUNDS;
@@ -463,14 +452,6 @@ IsImmediateType(ValType vt)
       case ValType::F32:
       case ValType::F64:
         return true;
-      case ValType::I8x16:
-      case ValType::I16x8:
-      case ValType::I32x4:
-      case ValType::F32x4:
-      case ValType::B8x16:
-      case ValType::B16x8:
-      case ValType::B32x4:
-        return false;
     }
     MOZ_CRASH("bad ValType");
 }
@@ -488,14 +469,6 @@ EncodeImmediateType(ValType vt)
         return 2;
       case ValType::F64:
         return 3;
-      case ValType::I8x16:
-      case ValType::I16x8:
-      case ValType::I32x4:
-      case ValType::F32x4:
-      case ValType::B8x16:
-      case ValType::B16x8:
-      case ValType::B32x4:
-        break;
     }
     MOZ_CRASH("bad ValType");
 }
