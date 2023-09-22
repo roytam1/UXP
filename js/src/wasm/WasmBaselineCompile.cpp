@@ -3160,10 +3160,6 @@ class BaseCompiler
         void generate(MacroAssembler& masm) {
 # if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_ARM)
             switch (viewType) {
-              case Scalar::Float32x4:
-              case Scalar::Int32x4:
-              case Scalar::Int8x16:
-              case Scalar::Int16x8:
               case Scalar::MaxTypedArrayViewType:
                 MOZ_CRASH("unexpected array type");
               case Scalar::Float32:
