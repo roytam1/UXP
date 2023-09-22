@@ -2,6 +2,7 @@
  *
  * ***** BEGIN LICENSE BLOCK *****
  * Copyright (C) 2008 Apple Inc. All rights reserved.
+ * Portions Copyright (C) 2022, 2023 Moonchild Productions.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -3049,6 +3050,11 @@ public:
     void vmovmskps_rr(XMMRegisterID src, RegisterID dst)
     {
         twoByteOpSimdInt32("vmovmskps", VEX_PS, OP2_MOVMSKPD_EdVd, src, dst);
+    }
+
+    void vpmovmskb_rr(XMMRegisterID src, RegisterID dst)
+    {
+        twoByteOpSimdInt32("vpmovmskb", VEX_PD, OP2_PMOVMSKB_EdVd, src, dst);
     }
 
     void vptest_rr(XMMRegisterID rhs, XMMRegisterID lhs) {

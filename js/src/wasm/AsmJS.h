@@ -1,6 +1,7 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  *
  * Copyright 2014 Mozilla Foundation
+ * Copyright 2023 Moonchild Productions
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

@@ -49,7 +49,6 @@ struct DefaultJitOptions
     bool disableInlineBacktracking;
     bool disableAma;
     bool disableEaa;
-    bool disableEagerSimdUnbox;
     bool disableEdgeCaseAnalysis;
     bool disableFlowAA;
     bool disableGvn;

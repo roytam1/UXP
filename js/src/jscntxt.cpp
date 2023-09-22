@@ -40,6 +40,12 @@
 #include "gc/Marking.h"
 #include "jit/Ion.h"
 #include "js/CharacterEncoding.h"
+#ifdef JS_SIMULATOR_ARM64
+# include "jit/arm64/vixl/Simulator-vixl.h"
+#endif
+#ifdef JS_SIMULATOR_ARM
+# include "jit/arm/Simulator-arm.h"
+#endif
 #include "vm/HelperThreads.h"
 #include "vm/Shape.h"
 

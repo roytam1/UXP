@@ -163,11 +163,10 @@ class TypedObjectPrediction {
     //////////////////////////////////////////////////////////////////////
     // Simple operations
     //
-    // Only valid when |kind()| is Scalar, Reference, or Simd (as appropriate).
+    // Only valid when |kind()| is Scalar or Reference (as appropriate).
 
     ScalarTypeDescr::Type scalarType() const;
     ReferenceTypeDescr::Type referenceType() const;
-    SimdType simdType() const;
 
     ///////////////////////////////////////////////////////////////////////////
     // Queries valid only for arrays.

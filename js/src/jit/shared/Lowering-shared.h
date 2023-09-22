@@ -271,22 +271,6 @@ class LIRGeneratorShared : public MDefinitionVisitor
     static bool allowStaticTypedArrayAccesses() {
         return false;
     }
-
-    // Provide NYI default implementations of the SIMD visitor functions.
-    // Many targets don't implement SIMD at all, and we don't want to duplicate
-    // these stubs in the specific sub-classes.
-    // Some SIMD visitors are implemented in LIRGenerator in Lowering.cpp. These
-    // shared implementations are not included here.
-    void visitSimdInsertElement(MSimdInsertElement*) override { MOZ_CRASH("NYI"); }
-    void visitSimdExtractElement(MSimdExtractElement*) override { MOZ_CRASH("NYI"); }
-    void visitSimdBinaryArith(MSimdBinaryArith*) override { MOZ_CRASH("NYI"); }
-    void visitSimdSelect(MSimdSelect*) override { MOZ_CRASH("NYI"); }
-    void visitSimdSplat(MSimdSplat*) override { MOZ_CRASH("NYI"); }
-    void visitSimdValueX4(MSimdValueX4*) override { MOZ_CRASH("NYI"); }
-    void visitSimdBinarySaturating(MSimdBinarySaturating*) override { MOZ_CRASH("NYI"); }
-    void visitSimdSwizzle(MSimdSwizzle*) override { MOZ_CRASH("NYI"); }
-    void visitSimdShuffle(MSimdShuffle*) override { MOZ_CRASH("NYI"); }
-    void visitSimdGeneralShuffle(MSimdGeneralShuffle*) override { MOZ_CRASH("NYI"); }
 };
 
 } // namespace jit

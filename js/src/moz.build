@@ -132,7 +132,6 @@ main_deunified_sources = [
     'builtin/Promise.cpp',
     'builtin/Reflect.cpp',
     'builtin/ReflectParse.cpp',
-    'builtin/SIMD.cpp',
     'builtin/SymbolObject.cpp',
     'builtin/TestingFunctions.cpp',
     'builtin/TypedObject.cpp',
@@ -206,7 +205,6 @@ main_deunified_sources = [
     'jit/CodeGenerator.cpp',
     'jit/CompileWrappers.cpp',
     'jit/Disassembler.cpp',
-    'jit/EagerSimdUnbox.cpp',
     'jit/EdgeCaseAnalysis.cpp',
     'jit/EffectiveAddressAnalysis.cpp',
     'jit/ExecutableAllocator.cpp',
@@ -431,6 +429,7 @@ elif CONFIG['JS_CODEGEN_X86'] or CONFIG['JS_CODEGEN_X64']:
         'jit/x86-shared/CodeGenerator-x86-shared.cpp',
         'jit/x86-shared/Disassembler-x86-shared.cpp',  # using namespace js::jit::X86Encoding;
         'jit/x86-shared/Lowering-x86-shared.cpp',
+        'jit/x86-shared/MacroAssembler-x86-shared-SIMD.cpp',
         'jit/x86-shared/MacroAssembler-x86-shared.cpp',
         'jit/x86-shared/MoveEmitter-x86-shared.cpp',
     ]
