@@ -140,19 +140,16 @@ this.TabCrashHandler = {
       }
 
       case "closeTab": {
-        this.maybeSendCrashReport(message);
         gBrowser.removeTab(tab, { animate: true });
         break;
       }
 
       case "restoreTab": {
-        this.maybeSendCrashReport(message);
         SessionStore.reviveCrashedTab(tab);
         break;
       }
 
       case "restoreAll": {
-        this.maybeSendCrashReport(message);
         SessionStore.reviveAllCrashedTabs();
         break;
       }
@@ -286,15 +283,6 @@ this.TabCrashHandler = {
     tab.setAttribute("crashed", true);
   },
 
-  /**
-   * Submits a crash report from about:tabcrashed, if the crash
-   * reporter is enabled and a crash report can be found.
-   */
-  maybeSendCrashReport(message) {
-    /*** STUB ***/
-    return;
-  },
-
   removeSubmitCheckboxesForSameCrash: function(childID) {
     let enumerator = Services.wm.getEnumerator("navigator:browser");
     while (enumerator.hasMoreElements()) {
@@ -342,34 +330,10 @@ this.TabCrashHandler = {
       this.unseenCrashedChildIDs.splice(index, 1);
     }
 
-    let dumpID = this.getDumpID(browser);
-    if (!dumpID) {
-      message.target.sendAsyncMessage("SetCrashReportAvailable", {
-        hasReport: false,
-      });
-      return;
-    }
-
-    let requestAutoSubmit = !UnsubmittedCrashHandler.autoSubmit;
-    let requestEmail = this.prefs.getBoolPref("requestEmail");
-    let sendReport = this.prefs.getBoolPref("sendReport");
-    let includeURL = this.prefs.getBoolPref("includeURL");
-    let emailMe = this.prefs.getBoolPref("emailMe");
-
-    let data = {
-      hasReport: true,
-      sendReport,
-      includeURL,
-      emailMe,
-      requestAutoSubmit,
-      requestEmail,
-    };
-
-    if (emailMe) {
-      data.email = this.prefs.getCharPref("email", "");
-    }
-
-    message.target.sendAsyncMessage("SetCrashReportAvailable", data);
+    message.target.sendAsyncMessage("SetCrashReportAvailable", {
+      hasReport: false,
+    });
+    return;
   },
 
   onAboutTabCrashedUnload(message) {
@@ -390,15 +354,6 @@ this.TabCrashHandler = {
     let browser = message.target.browser;
     let childID = this.browserMap.get(browser.permanentKey);
 
-  },
-
-  /**
-   * For some <xul:browser>, return a crash report dump ID for that browser
-   * if we have been informed of one. Otherwise, return null.
-   */
-  getDumpID(browser) {
-    /*** STUB ***/
-    return null;
   },
 }
 

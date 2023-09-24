@@ -908,7 +908,6 @@ var SessionStoreInternal = {
         this._crashedBrowsers.delete(browser.permanentKey);
         break;
       case "SessionStore:error":
-        this.reportInternalError(data);
         TabStateFlusher.resolveAll(browser, false, "Received error from the content process");
         break;
       default:
@@ -4415,13 +4414,6 @@ var SessionStoreInternal = {
    */
   resetEpoch(browser) {
     this._browserEpochs.delete(browser.permanentKey);
-  },
-
-  /**
-   * Handle an error report from a content process.
-   */
-  reportInternalError(data) {
-    // STUB, was only reported through Telemetry.
   },
 
   /**

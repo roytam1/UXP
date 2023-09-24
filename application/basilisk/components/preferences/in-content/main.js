@@ -84,11 +84,6 @@ var gMainPane = {
               .notifyObservers(window, "main-pane-loaded", null);
   },
 
-  enableE10SChange: function ()
-  {
-    // **STUB**
-  },
-
   // HOME PAGE
 
   /*

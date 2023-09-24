@@ -8,5 +8,3 @@ This is the nascent documentation of the Firefox front-end code.
    :maxdepth: 1
 
    DirectoryLinksProvider
-   UITelemetry
-   BrowserUsageTelemetry
