@@ -866,7 +866,7 @@ pref("browser.zoom.siteSpecific", true);
 pref("browser.zoom.updateBackgroundTabs", true);
 
 // The breakpad report server to link to in about:crashes
-pref("breakpad.reportURL", "https://crash-stats.mozilla.com/report/index/");
+pref("breakpad.reportURL", "");
 
 // URL for "Learn More" for Crash Reporter
 pref("toolkit.crashreporter.infoURL",
@@ -1232,7 +1232,7 @@ pref("browser.tabs.remote.autostart.2", true);
 #endif
 
 // For the about:tabcrashed page
-pref("browser.tabs.crashReporting.sendReport", true);
+pref("browser.tabs.crashReporting.sendReport", false);
 pref("browser.tabs.crashReporting.includeURL", false);
 pref("browser.tabs.crashReporting.requestEmail", false);
 pref("browser.tabs.crashReporting.emailMe", false);
@@ -1264,13 +1264,7 @@ pref("dom.ipc.cpows.allow-cpows-in-compat-addons", "{b9db16a4-6edc-47ec-a1f4-b86
 // detection).
 pref("dom.ipc.processHangMonitor", true);
 
-#ifdef DEBUG
-// Don't report hangs in DEBUG builds. They're too slow and often a
-// debugger is attached.
 pref("dom.ipc.reportProcessHangs", false);
-#else
-pref("dom.ipc.reportProcessHangs", true);
-#endif
 
 pref("browser.reader.detectedFirstArticle", false);
 // Don't limit how many nodes we care about on desktop:
