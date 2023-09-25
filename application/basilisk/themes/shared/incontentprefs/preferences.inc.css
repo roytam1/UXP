@@ -550,19 +550,12 @@ description > html|a {
   margin-bottom: 27.5px;
 }
 
-.iOSLink {
-  background-image: url("chrome://browser/skin/fxa/ios.png");
-}
-
 #tosPP-small {
   margin-top: 20px;
   margin-bottom: 20px;
 }
 
 @media (min-resolution: 1.1dppx) {
-  .iOSLink {
-    background-image: url("chrome://browser/skin/fxa/ios@2x.png");
-  }
   .fxaSyncIllustration {
     list-style-image: url(chrome://browser/skin/fxa/sync-illustration@2x.png)
   }
