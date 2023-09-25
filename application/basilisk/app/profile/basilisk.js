@@ -1149,11 +1149,6 @@ pref("browser.uiCustomization.debug", false);
 // CustomizableUI state of the browser's user interface
 pref("browser.uiCustomization.state", "");
 
-// URLs for promo links to mobile browsers. Note that consumers are expected to
-// append a value for utm_campaign.
-pref("identity.mobilepromo.android", "https://www.mozilla.org/firefox/android/?utm_source=firefox-browser&utm_medium=firefox-browser&utm_campaign=");
-pref("identity.mobilepromo.ios", "https://www.mozilla.org/firefox/ios/?utm_source=firefox-browser&utm_medium=firefox-browser&utm_campaign=");
-
 // On GTK, we now default to showing the menubar only when alt is pressed:
 #ifdef MOZ_WIDGET_GTK
 pref("ui.key.menuAccessKeyFocuses", true);
