@@ -209,15 +209,6 @@ var gAdvancedPane = {
   // DATA CHOICES TAB
 
   /**
-   * We don't report crashes to any external servers so there is nothing to learn more about.
-   */
-  initSubmitCrashes: function ()
-  {
-    let element = document.getElementById(crashReporterLearnMore);
-    element.setAttribute("hidden", "true");
-  },
-
-  /**
    * Initialize the health report service reference and checkbox.
    */
   initSubmitHealthReport: function () {
