@@ -310,3 +310,8 @@ skip == dynamic--inline-resize-window-width.xhtml    pass.svg # Fails way too mu
 fails random-if(Android) == dynamic--object-svg-unloaded.xhtml     pass.svg
 # == dynamic--object--auto-auto--pct-px.html 
 
+# Note: Other web rendering engines do no not pass the following tests due
+# due to differences in surface calculations.
+== canvas-drawImage-no-width-or-height.html canvas-drawImage-no-width-or-height-ref.html
+== canvas-drawImage-width-with-no-height.html canvas-drawImage-width-with-no-height-ref.html
+== canvas-drawImage-height-with-no-width.html canvas-drawImage-height-with-no-width-ref.html
