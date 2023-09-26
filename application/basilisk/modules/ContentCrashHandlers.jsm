@@ -50,11 +50,6 @@ this.TabCrashHandler = {
   unseenCrashedChildIDs: [],
   crashedBrowserQueues: new Map(),
 
-  get prefs() {
-    delete this.prefs;
-    return this.prefs = Services.prefs.getBranch("browser.tabs.crashReporting.");
-  },
-
   init: function () {
     if (this.initialized)
       return;
