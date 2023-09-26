@@ -157,13 +157,6 @@ SOURCES += [
     'xiph.c'
 ]
 
-if CONFIG['MOZ_LIBAV_FFT']:
-    SOURCES += [
-        'avfft.c',
-        'fft_float.c',
-        'rdft.c',
-    ]
-
 SYMBOLS_FILE = 'avcodec.symbols'
 NO_VISIBILITY_FLAGS = True
 
