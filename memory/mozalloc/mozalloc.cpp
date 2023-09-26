@@ -64,6 +64,7 @@ extern "C" MOZ_MEMORY_API char *strndup_impl(const char *, size_t);
 
 #include <sys/types.h>
 
+#include "mozilla/CheckedInt.h"
 #include "mozilla/Likely.h"
 #include "mozilla/mozalloc.h"
 #include "mozilla/mozalloc_oom.h"  // for mozalloc_handle_oom
@@ -84,7 +85,8 @@ moz_xcalloc(size_t nmemb, size_t size)
 {
     void* ptr = calloc_impl(nmemb, size);
     if (MOZ_UNLIKELY(!ptr && nmemb && size)) {
-        mozalloc_handle_oom(size);
+        mozilla::CheckedInt<size_t> totalSize = mozilla::CheckedInt<size_t>(nmemb) * size;
+        mozalloc_handle_oom(totalSize.isValid() ? totalSize.value() : SIZE_MAX);
         return moz_xcalloc(nmemb, size);
     }
     return ptr;
