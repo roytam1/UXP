@@ -209,27 +209,12 @@ var gAdvancedPane = {
   // DATA CHOICES TAB
 
   /**
-   * Set up or hide the Learn More links for various data collection options
-   */
-  _setupLearnMoreLink: function (pref, element) {
-    // set up the Learn More link with the correct URL
-    let url = Services.prefs.getCharPref(pref);
-    let el = document.getElementById(element);
-
-    if (url) {
-      el.setAttribute("href", url);
-    } else {
-      el.setAttribute("hidden", "true");
-    }
-  },
-
-  /**
-   *
+   * We don't report crashes to any external servers so there is nothing to learn more about.
    */
   initSubmitCrashes: function ()
   {
-    this._setupLearnMoreLink("toolkit.crashreporter.infoURL",
-                             "crashReporterLearnMore");
+    let element = document.getElementById(crashReporterLearnMore);
+    element.setAttribute("hidden", "true");
   },
 
   /**
