@@ -5,6 +5,7 @@
 #ifndef __FFmpegLibWrapper_h__
 #define __FFmpegLibWrapper_h__
 
+#include "FFmpegRDFTTypes.h" // for AvRdftInitFn, etc.
 #include "mozilla/Attributes.h"
 #include "mozilla/Types.h"
 
@@ -74,6 +75,11 @@ struct FFmpegLibWrapper
   // libavcodec v58 and later only
   int (*avcodec_send_packet)(AVCodecContext* avctx, const AVPacket* avpkt);
   int (*avcodec_receive_frame)(AVCodecContext* avctx, AVFrame* frame);
+
+  // libavcodec optional
+  AvRdftInitFn av_rdft_init;
+  AvRdftCalcFn av_rdft_calc;
+  AvRdftEndFn av_rdft_end;
 
   // libavutil
   void (*av_log_set_level)(int level);
