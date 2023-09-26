@@ -467,6 +467,41 @@ class FunctionCompiler
         return ins;
     }
 
+    MDefinition* signExtend(MDefinition* op, uint32_t srcSize, uint32_t targetSize)
+    {
+        if (inDeadCode())
+            return nullptr;
+        MInstruction* ins;
+        switch (targetSize) {
+          case 4: {
+            MSignExtendInt32::Mode mode;
+            switch (srcSize) {
+              case 1:  mode = MSignExtendInt32::Byte; break;
+              case 2:  mode = MSignExtendInt32::Half; break;
+              default: MOZ_CRASH("Bad sign extension");
+            }
+            ins = MSignExtendInt32::New(alloc(), op, mode);
+            break;
+          }
+          case 8: {
+            MSignExtendInt64::Mode mode;
+            switch (srcSize) {
+              case 1:  mode = MSignExtendInt64::Byte; break;
+              case 2:  mode = MSignExtendInt64::Half; break;
+              case 4:  mode = MSignExtendInt64::Word; break;
+              default: MOZ_CRASH("Bad sign extension");
+            }
+            ins = MSignExtendInt64::New(alloc(), op, mode);
+            break;
+          }
+          default: {
+            MOZ_CRASH("Bad sign extension");
+          }
+        }
+        curBlock_->add(ins);
+        return ins;
+    }
+
     MDefinition* convertI64ToFloatingPoint(MDefinition* op, MIRType type, bool isUnsigned)
     {
         if (inDeadCode())
@@ -1946,6 +1981,18 @@ EmitTruncate(FunctionCompiler& f, ValType operandType, ValType resultType,
 }
 
 static bool
+EmitSignExtend(FunctionCompiler& f, uint32_t srcSize, uint32_t targetSize)
+{
+    MDefinition* input;
+    ValType type = targetSize == 4 ? ValType::I32 : ValType::I64;
+    if (!f.iter().readConversion(type, type, &input))
+        return false;
+
+    f.iter().setResult(f.signExtend(input, srcSize, targetSize));
+    return true;
+}
+
+static bool
 EmitExtendI32(FunctionCompiler& f, bool isUnsigned)
 {
     MDefinition* input;
@@ -2758,6 +2805,18 @@ EmitExpr(FunctionCompiler& f)
         return EmitTeeStoreWithCoercion(f, ValType::F64, Scalar::Float32);
       case Op::F64ReinterpretI64:
         return EmitReinterpret(f, ValType::F64, ValType::I64, MIRType::Double);
+
+      // Sign extensions
+      case Op::I32Extend8S:
+        return EmitSignExtend(f, 1, 4);
+      case Op::I32Extend16S:
+        return EmitSignExtend(f, 2, 4);
+      case Op::I64Extend8S:
+        return EmitSignExtend(f, 1, 8);
+      case Op::I64Extend16S:
+        return EmitSignExtend(f, 2, 8);
+      case Op::I64Extend32S:
+        return EmitSignExtend(f, 4, 8);
 
       // Comparisons
       case Op::I32Eq:

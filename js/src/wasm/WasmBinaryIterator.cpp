@@ -193,6 +193,11 @@ wasm::Classify(Op op)
       case Op::F64ConvertUI64:
       case Op::F64ReinterpretI64:
       case Op::F64PromoteF32:
+      case Op::I32Extend8S:
+      case Op::I32Extend16S:
+      case Op::I64Extend8S:
+      case Op::I64Extend16S:
+      case Op::I64Extend32S:
         return OpKind::Conversion;
       case Op::I32Load8S:
       case Op::I32Load8U:
