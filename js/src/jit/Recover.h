@@ -64,7 +64,7 @@ namespace jit {
     _(Lsh)                                      \
     _(Rsh)                                      \
     _(Ursh)                                     \
-    _(SignExtend)                               \
+    _(SignExtendInt32)                          \
     _(Add)                                      \
     _(Sub)                                      \
     _(Mul)                                      \
@@ -246,13 +246,13 @@ class RUrsh final : public RInstruction
     MOZ_MUST_USE bool recover(JSContext* cx, SnapshotIterator& iter) const;
 };
 
-class RSignExtend final : public RInstruction
+class RSignExtendInt32 final : public RInstruction
 {
   private:
     uint8_t mode_;
 
   public:
-    RINSTRUCTION_HEADER_NUM_OP_(SignExtend, 1)
+    RINSTRUCTION_HEADER_NUM_OP_(SignExtendInt32, 1)
 
     MOZ_MUST_USE bool recover(JSContext* cx, SnapshotIterator& iter) const;
 };

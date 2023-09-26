@@ -347,6 +347,13 @@ DecodeFunctionBodyExprs(FunctionDecoder& f)
             CHECK(f.iter().readConversion(ValType::I64, ValType::F64, nullptr));
           case uint16_t(Op::F64PromoteF32):
             CHECK(f.iter().readConversion(ValType::F32, ValType::F64, nullptr));
+          case uint16_t(Op::I32Extend8S):
+          case uint16_t(Op::I32Extend16S):
+            CHECK(f.iter().readConversion(ValType::I32, ValType::I32, nullptr));
+          case uint16_t(Op::I64Extend8S):
+          case uint16_t(Op::I64Extend16S):
+          case uint16_t(Op::I64Extend32S):
+            CHECK(f.iter().readConversion(ValType::I64, ValType::I64, nullptr));
           case uint16_t(Op::I32Load8S):
           case uint16_t(Op::I32Load8U):
             CHECK(f.checkHasMemory() && f.iter().readLoad(ValType::I32, 1, nullptr));

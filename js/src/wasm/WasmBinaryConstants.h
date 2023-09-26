@@ -288,6 +288,13 @@ enum class Op
     F32ReinterpretI32                    = 0xbe,
     F64ReinterpretI64                    = 0xbf,
 
+    // Sign extension
+    I32Extend8S                          = 0xc0,
+    I32Extend16S                         = 0xc1,
+    I64Extend8S                          = 0xc2,
+    I64Extend16S                         = 0xc3,
+    I64Extend32S                         = 0xc4,
+
     // ------------------------------------------------------------------------
     // The rest of these operators are currently only emitted internally when
     // compiling asm.js and are rejected by wasm validation.

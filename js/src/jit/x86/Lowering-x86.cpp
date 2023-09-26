@@ -649,3 +649,14 @@ LIRGeneratorX86::visitExtendInt32ToInt64(MExtendInt32ToInt64* ins)
                                                     LAllocation(AnyRegister(eax))));
     }
 }
+
+void
+LIRGeneratorX86::visitSignExtendInt64(MSignExtendInt64* ins)
+{
+    // Here we'll end up using cdq which requires input and output in (edx,eax).
+    LSignExtendInt64* lir =
+        new(alloc()) LSignExtendInt64(useInt64RegisterAtStart(ins->input()));
+    defineInt64Fixed(lir, ins, LInt64Allocation(LAllocation(AnyRegister(edx)),
+                                                LAllocation(AnyRegister(eax))));
+}
+

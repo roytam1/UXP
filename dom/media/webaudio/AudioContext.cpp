@@ -135,6 +135,8 @@ AudioContext::AudioContext(nsPIDOMWindowInner* aWindow,
   if (mute) {
     Mute();
   }
+
+  FFTBlock::MainThreadInit();
 }
 
 nsresult

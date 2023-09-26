@@ -4,14 +4,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 # The lgpllibs library stores symbols from third-party LGPL licensed libraries,
-# such as libav and libsoundtouch. It fulfills the requirement of dynamically
-# linking these symbols into gecko.
+# such as libsoundtouch. It fulfills the requirement of dynamically linking
+# these symbols into Goanna.
 #
 # Any library added here should also be reflected in the about:license page.
 
 GeckoSharedLibrary('lgpllibs', linkage=None)
 SHARED_LIBRARY_NAME = 'lgpllibs'
-
-if CONFIG['MOZ_LIBAV_FFT']:
-    DIRS += ['/media/libav']
-    DEFFILE = SRCDIR + '/lgpllibs.def'
