@@ -384,6 +384,7 @@ main_deunified_sources = [
 SOURCES += [
     'builtin/BigInt.cpp',
     'builtin/RegExp.cpp',
+    'builtin/Stream.cpp',
     'frontend/Parser.cpp',
     'gc/StoreBuffer.cpp',
     'jsarray.cpp',

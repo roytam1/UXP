@@ -1003,6 +1003,13 @@ static const JSFunctionSpec number_methods[] = {
     JS_FS_END
 };
 
+bool
+js::IsInteger(const Value& val)
+{
+    return val.isInt32() ||
+           (mozilla::IsFinite(val.toDouble()) && JS::ToInteger(val.toDouble()) == val.toDouble());
+}
+
 // ES6 draft ES6 15.7.3.12
 static bool
 Number_isInteger(JSContext* cx, unsigned argc, Value* vp)
@@ -1013,9 +1020,7 @@ Number_isInteger(JSContext* cx, unsigned argc, Value* vp)
         return true;
     }
     Value val = args[0];
-    args.rval().setBoolean(val.isInt32() ||
-                           (mozilla::IsFinite(val.toDouble()) &&
-                            JS::ToInteger(val.toDouble()) == val.toDouble()));
+    args.rval().setBoolean(js::IsInteger(val));
     return true;
 }
 
