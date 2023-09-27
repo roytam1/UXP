@@ -26,5 +26,9 @@
 
 #define NS_INTRINSIC_WIDTH_UNKNOWN nscoord_MIN
 
+// The fallback size of width is 300px and the aspect-ratio is 2:1, based on the
+// spec definition in CSS2 section 10.3.2
+#define REPLACED_ELEM_FALLBACK_PX_WIDTH 300
+#define REPLACED_ELEM_FALLBACK_PX_HEIGHT 150
 
 #endif // LayoutConstants_h___
