@@ -7172,10 +7172,17 @@ nsLayoutUtils::SurfaceFromElement(nsIImageLoadingContent* aElement,
     imgWidth = element->Width();
     imgHeight = element->Height();
   } else {
+    // No size declared by SVG, so use the image container size.
+    // As stated in css-sizing-3 Intrinsic Sizes, use the fallback size
+    // of 300 x 150 for the width and height as-needed.
     rv = imgContainer->GetWidth(&imgWidth);
-    nsresult rv2 = imgContainer->GetHeight(&imgHeight);
-    if (NS_FAILED(rv) || NS_FAILED(rv2))
-      return result;
+    if (NS_FAILED(rv)) {
+      imgWidth = REPLACED_ELEM_FALLBACK_PX_WIDTH;
+    }
+    rv = imgContainer->GetHeight(&imgHeight);
+    if (NS_FAILED(rv)) {
+      imgHeight = REPLACED_ELEM_FALLBACK_PX_HEIGHT;
+    }
   }
   result.mSize = IntSize(imgWidth, imgHeight);
 
