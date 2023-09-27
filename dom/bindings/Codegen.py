@@ -1156,7 +1156,10 @@ class CGHeaders(CGWrapper):
                         # just include their header if we need to have functions
                         # taking references to them declared in that header.
                         headerSet = declareIncludes
-                    headerSet.add("mozilla/dom/TypedArray.h")
+                    if unrolled.isReadableStream():
+                        headerSet.add("mozilla/dom/ReadableStream.h")
+                    else:
+                        headerSet.add("mozilla/dom/TypedArray.h")
                 else:
                     try:
                         typeDesc = config.getDescriptor(unrolled.inner.identifier.name)
@@ -1371,7 +1374,10 @@ def UnionTypes(unionTypes, config):
                 elif f.isInterface():
                     if f.isSpiderMonkeyInterface():
                         headers.add("jsfriendapi.h")
-                        headers.add("mozilla/dom/TypedArray.h")
+                        if f.isReadableStream():
+                            headers.add("mozilla/dom/ReadableStream.h")
+                        else:
+                            headers.add("mozilla/dom/TypedArray.h")
                     else:
                         try:
                             typeDesc = config.getDescriptor(f.inner.identifier.name)
@@ -1457,7 +1463,10 @@ def UnionConversions(unionTypes, config):
                 elif f.isInterface():
                     if f.isSpiderMonkeyInterface():
                         headers.add("jsfriendapi.h")
-                        headers.add("mozilla/dom/TypedArray.h")
+                        if f.isReadableStream():
+                            headers.add("mozilla/dom/ReadableStream.h")
+                        else:
+                            headers.add("mozilla/dom/TypedArray.h")
                     elif f.inner.isExternal():
                         try:
                             typeDesc = config.getDescriptor(f.inner.identifier.name)
@@ -5582,8 +5591,8 @@ def getJSToNativeConversionInfo(type, descriptorProvider, failureCode=None,
     if type.isSpiderMonkeyInterface():
         assert not isEnforceRange and not isClamp
         name = type.unroll().name  # unroll() because it may be nullable
-        arrayType = CGGeneric(name)
-        declType = arrayType
+        interfaceType = CGGeneric(name)
+        declType = interfaceType
         if type.nullable():
             declType = CGTemplatedType("Nullable", declType)
             objRef = "${declName}.SetValue()"
@@ -5607,10 +5616,11 @@ def getJSToNativeConversionInfo(type, descriptorProvider, failureCode=None,
             # This is a bit annoying.  In a union we don't want to have a
             # holder, since unions don't support that.  But if we're optional we
             # want to have a holder, so that the callee doesn't see
-            # Optional<RootedTypedArray<ArrayType> >.  So do a holder if we're
-            # optional and use a RootedTypedArray otherwise.
+            # Optional<RootedSpiderMonkeyInterface<InterfaceType>>.  So do a
+            # holder if we're optional and use a RootedSpiderMonkeyInterface
+            # otherwise.
             if isOptional:
-                holderType = CGTemplatedType("TypedArrayRooter", arrayType)
+                holderType = CGTemplatedType("SpiderMonkeyInterfaceRooter", interfaceType)
                 # If our typed array is nullable, this will set the Nullable to
                 # be not-null, but that's ok because we make an explicit
                 # SetNull() call on it as needed if our JS value is actually
@@ -5622,7 +5632,7 @@ def getJSToNativeConversionInfo(type, descriptorProvider, failureCode=None,
             else:
                 holderType = None
                 holderArgs = None
-                declType = CGTemplatedType("RootedTypedArray", declType)
+                declType = CGTemplatedType("RootedSpiderMonkeyInterface", declType)
                 declArgs = "cx"
         else:
             holderType = None
@@ -6371,7 +6381,7 @@ def getMaybeWrapValueFuncForType(type):
         if type.nullable():
             return "MaybeWrapObjectOrNullValue"
         return "MaybeWrapObjectValue"
-    # Spidermonkey interfaces are never DOM objects.  Neither are sequences or
+    # SpiderMonkey interfaces are never DOM objects.  Neither are sequences or
     # dictionaries, since those are always plain JS objects.
     if type.isSpiderMonkeyInterface() or type.isDictionary() or type.isSequence():
         if type.nullable():
@@ -13679,7 +13689,7 @@ class ForwardDeclarationBuilder:
             except NoSuchDescriptorError:
                 pass
 
-        # Note: Spidermonkey interfaces are typedefs, so can't be
+        # Note: SpiderMonkey interfaces are typedefs, so can't be
         # forward-declared
         elif t.isPromise():
             self.addInMozillaDom("Promise")
