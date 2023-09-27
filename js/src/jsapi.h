@@ -35,6 +35,7 @@
 #include "js/Principals.h"
 #include "js/Realm.h"
 #include "js/RootingAPI.h"
+#include "js/Stream.h"
 #include "js/TracingAPI.h"
 #include "js/UniquePtr.h"
 #include "js/Utility.h"

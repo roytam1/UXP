@@ -655,6 +655,13 @@ struct JSRuntime : public JS::shadow::Runtime,
     JS::FinishAsyncTaskCallback finishAsyncTaskCallback;
     js::ExclusiveData<js::PromiseTaskPtrVector> promiseTasksToDestroy;
 
+    JS::RequestReadableStreamDataCallback readableStreamDataRequestCallback;
+    JS::WriteIntoReadRequestBufferCallback readableStreamWriteIntoReadRequestCallback;
+    JS::CancelReadableStreamCallback readableStreamCancelCallback;
+    JS::ReadableStreamClosedCallback readableStreamClosedCallback;
+    JS::ReadableStreamErroredCallback readableStreamErroredCallback;
+    JS::ReadableStreamFinalizeCallback readableStreamFinalizeCallback;
+
   private:
     /*
      * Lock taken when using per-runtime or per-zone data that could otherwise
