@@ -755,13 +755,14 @@ TransactionObserver::OnDataAvailable(nsIRequest *aRequest, nsISupports *aContext
                                      nsIInputStream *aStream, uint64_t aOffset, uint32_t aCount)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  uint64_t newLen = aCount + mWKResponse.Length();
+  uint64_t oldLen = static_cast<uint64_t>(mWKResponse.Length());
+  uint64_t newLen = static_cast<uint64_t>(aCount) + oldLen;
   if (newLen < MAX_WK) {
-    char *startByte =  reinterpret_cast<char *>(mWKResponse.BeginWriting()) + mWKResponse.Length();
+    char *startByte =  reinterpret_cast<char *>(mWKResponse.BeginWriting()) + oldLen;
     uint32_t amtRead;
     if (NS_SUCCEEDED(aStream->Read(startByte, aCount, &amtRead))) {
-      MOZ_ASSERT(mWKResponse.Length() + amtRead < MAX_WK);
-      mWKResponse.SetLength(mWKResponse.Length() + amtRead);
+      MOZ_ASSERT(oldLen + amtRead < MAX_WK);
+      mWKResponse.SetLength(oldLen + amtRead);
       LOG(("TransactionObserver onDataAvailable %p read %d of .wk [%d]\n",
            this, amtRead, mWKResponse.Length()));
     } else {
