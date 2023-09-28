@@ -746,13 +746,13 @@ ExtractByteStreamFromBody(const OwningArrayBufferOrArrayBufferViewOrBlobOrFormDa
   }
   if (aBodyInit.IsBlob()) {
     Blob& blob = aBodyInit.GetAsBlob();
-    BodyExtractor<Blob> body(&blob);
+    BodyExtractor<nsIXHRSendable> body(&blob);
     return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
                             charset);
   }
   if (aBodyInit.IsFormData()) {
     FormData& formData = aBodyInit.GetAsFormData();
-    BodyExtractor<FormData> body(&formData);
+    BodyExtractor<nsIXHRSendable> body(&formData);
     return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
                             charset);
   }
@@ -763,7 +763,7 @@ ExtractByteStreamFromBody(const OwningArrayBufferOrArrayBufferViewOrBlobOrFormDa
   }
   if (aBodyInit.IsURLSearchParams()) {
     URLSearchParams& usp = aBodyInit.GetAsURLSearchParams();
-    BodyExtractor<URLSearchParams> body(&usp);
+    BodyExtractor<nsIXHRSendable> body(&usp);
     return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
                             charset);
   }
@@ -795,14 +795,12 @@ ExtractByteStreamFromBody(const ArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUS
                             charset);
   }
   if (aBodyInit.IsBlob()) {
-    Blob& blob = aBodyInit.GetAsBlob();
-    BodyExtractor<Blob> body(&blob);
+    BodyExtractor<nsIXHRSendable> body(&aBodyInit.GetAsBlob());
     return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
                             charset);
   }
   if (aBodyInit.IsFormData()) {
-    FormData& formData = aBodyInit.GetAsFormData();
-    BodyExtractor<FormData> body(&formData);
+    BodyExtractor<nsIXHRSendable> body(&aBodyInit.GetAsFormData());
     return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
                             charset);
   }
@@ -812,8 +810,7 @@ ExtractByteStreamFromBody(const ArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUS
                             charset);
   }
   if (aBodyInit.IsURLSearchParams()) {
-    URLSearchParams& usp = aBodyInit.GetAsURLSearchParams();
-    BodyExtractor<URLSearchParams> body(&usp);
+    BodyExtractor<nsIXHRSendable> body(&aBodyInit.GetAsURLSearchParams());
     return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
                             charset);
   }

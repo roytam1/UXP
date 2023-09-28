@@ -36,6 +36,9 @@
 #include "mozilla/dom/MutableBlobStorage.h"
 #include "mozilla/dom/BodyExtractor.h"
 #include "mozilla/dom/TypedArray.h"
+#include "mozilla/dom/File.h"
+#include "mozilla/dom/FormData.h"
+#include "mozilla/dom/URLSearchParams.h"
 #include "mozilla/dom/XMLHttpRequest.h"
 #include "mozilla/dom/XMLHttpRequestBinding.h"
 #include "mozilla/dom/XMLHttpRequestEventTarget.h"
@@ -55,11 +58,8 @@ class nsIJSID;
 namespace mozilla {
 namespace dom {
 
-class Blob;
 class BlobSet;
 class DOMString;
-class FormData;
-class URLSearchParams;
 class XMLHttpRequestUpload;
 struct OriginAttributesDictionary;
 
@@ -325,14 +325,14 @@ public:
   virtual void
   Send(JSContext* /*aCx*/, Blob& aBlob, ErrorResult& aRv) override
   {
-    BodyExtractor<Blob> body(&aBlob);
+    BodyExtractor<nsIXHRSendable> body(&aBlob);
     aRv = SendInternal(&body);
   }
 
   virtual void Send(JSContext* /*aCx*/, URLSearchParams& aURLSearchParams,
                     ErrorResult& aRv) override
   {
-    BodyExtractor<URLSearchParams> body(&aURLSearchParams);
+    BodyExtractor<nsIXHRSendable> body(&aURLSearchParams);
     aRv = SendInternal(&body);
   }
 
@@ -357,7 +357,7 @@ public:
   virtual void
   Send(JSContext* /*aCx*/, FormData& aFormData, ErrorResult& aRv) override
   {
-    BodyExtractor<FormData> body(&aFormData);
+    BodyExtractor<nsIXHRSendable> body(&aFormData);
     aRv = SendInternal(&body);
   }
 
