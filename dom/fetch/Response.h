@@ -144,7 +144,6 @@ public:
 private:
   ~Response();
 
-  nsCOMPtr<nsIGlobalObject> mOwner;
   RefPtr<InternalResponse> mInternalResponse;
 
   // Lazily created

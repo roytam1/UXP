@@ -20,6 +20,7 @@
 #include "mozilla/dom/RequestBinding.h"
 
 class nsIGlobalObject;
+class nsIEventTarget;
 
 namespace mozilla {
 namespace dom {
@@ -208,7 +209,9 @@ public:
   GetSignal() const = 0;
 
 protected:
-  FetchBody();
+  nsCOMPtr<nsIGlobalObject> mOwner;
+
+  explicit FetchBody(nsIGlobalObject* aOwner);
 
   // Always set whenever the FetchBody is created on the worker thread.
   workers::WorkerPrivate* mWorkerPrivate;
@@ -252,6 +255,9 @@ private:
   // Only ever set once, always on target thread.
   bool mBodyUsed;
   nsCString mMimeType;
+
+  // The main-thread event target for runnable dispatching.
+  nsCOMPtr<nsIEventTarget> mMainThreadEventTarget;
 };
 
 } // namespace dom

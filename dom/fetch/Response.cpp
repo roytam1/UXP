@@ -57,8 +57,7 @@ NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(Response)
 NS_INTERFACE_MAP_END
 
 Response::Response(nsIGlobalObject* aGlobal, InternalResponse* aInternalResponse, AbortSignal* aSignal)
-  : FetchBody<Response>()
-  , mOwner(aGlobal)
+  : FetchBody<Response>(aGlobal)
   , mInternalResponse(aInternalResponse)
   , mSignal(aSignal)
 {

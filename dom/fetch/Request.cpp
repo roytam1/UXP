@@ -54,8 +54,7 @@ NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(Request)
 NS_INTERFACE_MAP_END
 
 Request::Request(nsIGlobalObject* aOwner, InternalRequest* aRequest, AbortSignal* aSignal)
-  : FetchBody<Request>()
-  , mOwner(aOwner)
+  : FetchBody<Request>(aOwner)
   , mRequest(aRequest)
   , mSignal(aSignal)
 {

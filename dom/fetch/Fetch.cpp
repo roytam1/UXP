@@ -877,22 +877,27 @@ ExtractByteStreamFromBody(const fetch::ResponseBodyInit& aBodyInit,
 
 
 template <class Derived>
-FetchBody<Derived>::FetchBody()
+FetchBody<Derived>::FetchBody(nsIGlobalObject* aOwner)
   : mWorkerPrivate(nullptr)
+  , mOwner(aOwner)
   , mReadableStreamBody(nullptr)
   , mBodyUsed(false)
 {
+  MOZ_ASSERT(aOwner);
+
   if (!NS_IsMainThread()) {
     mWorkerPrivate = GetCurrentThreadWorkerPrivate();
     MOZ_ASSERT(mWorkerPrivate);
+  } else {
+    mWorkerPrivate = nullptr;
   }
 }
 
 template
-FetchBody<Request>::FetchBody();
+FetchBody<Request>::FetchBody(nsIGlobalObject* aOwner);
 
 template
-FetchBody<Response>::FetchBody();
+FetchBody<Response>::FetchBody(nsIGlobalObject* aOwner);
 
 template <class Derived>
 FetchBody<Derived>::~FetchBody()
