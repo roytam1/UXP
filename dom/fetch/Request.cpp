@@ -580,11 +580,11 @@ Request::Constructor(const GlobalObject& aGlobal,
       const OwningArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUSVStringOrURLSearchParams& bodyInit =
         bodyInitNullable.Value();
       nsCOMPtr<nsIInputStream> stream;
-      nsAutoCString contentType;
+      nsAutoCString contentTypeWithCharset;
       uint64_t contentLengthUnused;
       aRv = ExtractByteStreamFromBody(bodyInit,
                                       getter_AddRefs(stream),
-                                      contentType,
+                                      contentTypeWithCharset,
                                       contentLengthUnused);
       if (NS_WARN_IF(aRv.Failed())) {
         return nullptr;
@@ -592,10 +592,10 @@ Request::Constructor(const GlobalObject& aGlobal,
 
       temporaryBody = stream;
 
-      if (!contentType.IsVoid() &&
+      if (!contentTypeWithCharset.IsVoid() &&
           !requestHeaders->Has(NS_LITERAL_CSTRING("Content-Type"), aRv)) {
         requestHeaders->Append(NS_LITERAL_CSTRING("Content-Type"),
-                               contentType, aRv);
+                               contentTypeWithCharset, aRv);
       }
 
       if (NS_WARN_IF(aRv.Failed())) {

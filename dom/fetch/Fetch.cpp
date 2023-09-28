@@ -12,7 +12,6 @@
 #include "nsIStreamLoader.h"
 #include "nsIThreadRetargetableRequest.h"
 #include "nsIUnicodeDecoder.h"
-#include "nsIUnicodeEncoder.h"
 
 #include "nsDOMString.h"
 #include "nsNetUtil.h"
@@ -24,7 +23,6 @@
 #include "mozilla/ErrorResult.h"
 #include "mozilla/dom/BodyUtil.h"
 #include "mozilla/dom/DOMError.h"
-#include "mozilla/dom/EncodingUtils.h"
 #include "mozilla/dom/Exceptions.h"
 #include "mozilla/dom/FetchDriver.h"
 #include "mozilla/dom/File.h"
@@ -40,6 +38,7 @@
 #include "mozilla/dom/WorkerPrivate.h"
 #include "mozilla/dom/workers/ServiceWorkerManager.h"
 
+#include "BodyExtractor.h"
 #include "FetchObserver.h"
 #include "InternalRequest.h"
 #include "InternalResponse.h"
@@ -725,154 +724,48 @@ WorkerFetchResolver::FlushConsoleReport()
   mReporter->FlushConsoleReports(worker->GetDocument());
 }
 
-namespace {
-
-nsresult
-ExtractFromArrayBuffer(const ArrayBuffer& aBuffer,
-                       nsIInputStream** aStream,
-                       uint64_t& aContentLength)
-{
-  aBuffer.ComputeLengthAndData();
-  aContentLength = aBuffer.Length();
-  //XXXnsm reinterpret_cast<> is used in DOMParser, should be ok.
-  return NS_NewByteInputStream(aStream,
-                               reinterpret_cast<char*>(aBuffer.Data()),
-                               aBuffer.Length(), NS_ASSIGNMENT_COPY);
-}
-
-nsresult
-ExtractFromArrayBufferView(const ArrayBufferView& aBuffer,
-                           nsIInputStream** aStream,
-                           uint64_t& aContentLength)
-{
-  aBuffer.ComputeLengthAndData();
-  aContentLength = aBuffer.Length();
-  //XXXnsm reinterpret_cast<> is used in DOMParser, should be ok.
-  return NS_NewByteInputStream(aStream,
-                               reinterpret_cast<char*>(aBuffer.Data()),
-                               aBuffer.Length(), NS_ASSIGNMENT_COPY);
-}
-
-nsresult
-ExtractFromBlob(const Blob& aBlob,
-                nsIInputStream** aStream,
-                nsCString& aContentType,
-                uint64_t& aContentLength)
-{
-  RefPtr<BlobImpl> impl = aBlob.Impl();
-  ErrorResult rv;
-  aContentLength = impl->GetSize(rv);
-  if (NS_WARN_IF(rv.Failed())) {
-    return rv.StealNSResult();
-  }
-
-  impl->GetInternalStream(aStream, rv);
-  if (NS_WARN_IF(rv.Failed())) {
-    return rv.StealNSResult();
-  }
-
-  nsAutoString type;
-  impl->GetType(type);
-  aContentType = NS_ConvertUTF16toUTF8(type);
-  return NS_OK;
-}
-
-nsresult
-ExtractFromFormData(FormData& aFormData,
-                    nsIInputStream** aStream,
-                    nsCString& aContentType,
-                    uint64_t& aContentLength)
-{
-  nsAutoCString unusedCharset;
-  return aFormData.GetSendInfo(aStream, &aContentLength,
-                               aContentType, unusedCharset);
-}
-
-nsresult
-ExtractFromUSVString(const nsString& aStr,
-                     nsIInputStream** aStream,
-                     nsCString& aContentType,
-                     uint64_t& aContentLength)
-{
-  nsCOMPtr<nsIUnicodeEncoder> encoder = EncodingUtils::EncoderForEncoding("UTF-8");
-  if (!encoder) {
-    return NS_ERROR_OUT_OF_MEMORY;
-  }
-
-  int32_t destBufferLen;
-  nsresult rv = encoder->GetMaxLength(aStr.get(), aStr.Length(), &destBufferLen);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-
-  nsCString encoded;
-  if (!encoded.SetCapacity(destBufferLen, fallible)) {
-    return NS_ERROR_OUT_OF_MEMORY;
-  }
-
-  char* destBuffer = encoded.BeginWriting();
-  int32_t srcLen = (int32_t) aStr.Length();
-  int32_t outLen = destBufferLen;
-  rv = encoder->Convert(aStr.get(), &srcLen, destBuffer, &outLen);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-
-  MOZ_ASSERT(outLen <= destBufferLen);
-  encoded.SetLength(outLen);
-
-  aContentType = NS_LITERAL_CSTRING("text/plain;charset=UTF-8");
-  aContentLength = outLen;
-
-  return NS_NewCStringInputStream(aStream, encoded);
-}
-
-nsresult
-ExtractFromURLSearchParams(const URLSearchParams& aParams,
-                           nsIInputStream** aStream,
-                           nsCString& aContentType,
-                           uint64_t& aContentLength)
-{
-  nsAutoString serialized;
-  aParams.Stringify(serialized);
-  aContentType = NS_LITERAL_CSTRING("application/x-www-form-urlencoded;charset=UTF-8");
-  aContentLength = serialized.Length();
-  return NS_NewCStringInputStream(aStream, NS_ConvertUTF16toUTF8(serialized));
-}
-} // namespace
-
 nsresult
 ExtractByteStreamFromBody(const OwningArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUSVStringOrURLSearchParams& aBodyInit,
                           nsIInputStream** aStream,
-                          nsCString& aContentType,
+                          nsCString& aContentTypeWithCharset,
                           uint64_t& aContentLength)
 {
   MOZ_ASSERT(aStream);
+  nsAutoCString charset;
+  aContentTypeWithCharset.SetIsVoid(true);
 
   if (aBodyInit.IsArrayBuffer()) {
-    const ArrayBuffer& buf = aBodyInit.GetAsArrayBuffer();
-    return ExtractFromArrayBuffer(buf, aStream, aContentLength);
+    BodyExtractor<const ArrayBuffer> body(&aBodyInit.GetAsArrayBuffer());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsArrayBufferView()) {
-    const ArrayBufferView& buf = aBodyInit.GetAsArrayBufferView();
-    return ExtractFromArrayBufferView(buf, aStream, aContentLength);
+    BodyExtractor<const ArrayBufferView> body(&aBodyInit.GetAsArrayBufferView());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsBlob()) {
-    const Blob& blob = aBodyInit.GetAsBlob();
-    return ExtractFromBlob(blob, aStream, aContentType, aContentLength);
+    Blob& blob = aBodyInit.GetAsBlob();
+    BodyExtractor<Blob> body(&blob);
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsFormData()) {
-    FormData& form = aBodyInit.GetAsFormData();
-    return ExtractFromFormData(form, aStream, aContentType, aContentLength);
+    FormData& formData = aBodyInit.GetAsFormData();
+    BodyExtractor<FormData> body(&formData);
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsUSVString()) {
-    nsAutoString str;
-    str.Assign(aBodyInit.GetAsUSVString());
-    return ExtractFromUSVString(str, aStream, aContentType, aContentLength);
+    BodyExtractor<const nsAString> body(&aBodyInit.GetAsUSVString());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsURLSearchParams()) {
-    URLSearchParams& params = aBodyInit.GetAsURLSearchParams();
-    return ExtractFromURLSearchParams(params, aStream, aContentType, aContentLength);
+    URLSearchParams& usp = aBodyInit.GetAsURLSearchParams();
+    BodyExtractor<URLSearchParams> body(&usp);
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
 
   NS_NOTREACHED("Should never reach here");
@@ -882,36 +775,47 @@ ExtractByteStreamFromBody(const OwningArrayBufferOrArrayBufferViewOrBlobOrFormDa
 nsresult
 ExtractByteStreamFromBody(const ArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUSVStringOrURLSearchParams& aBodyInit,
                           nsIInputStream** aStream,
-                          nsCString& aContentType,
+                          nsCString& aContentTypeWithCharset,
                           uint64_t& aContentLength)
 {
   MOZ_ASSERT(aStream);
   MOZ_ASSERT(!*aStream);
 
+  nsAutoCString charset;
+  aContentTypeWithCharset.SetIsVoid(true);
+
   if (aBodyInit.IsArrayBuffer()) {
-    const ArrayBuffer& buf = aBodyInit.GetAsArrayBuffer();
-    return ExtractFromArrayBuffer(buf, aStream, aContentLength);
+    BodyExtractor<const ArrayBuffer> body(&aBodyInit.GetAsArrayBuffer());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsArrayBufferView()) {
-    const ArrayBufferView& buf = aBodyInit.GetAsArrayBufferView();
-    return ExtractFromArrayBufferView(buf, aStream, aContentLength);
+    BodyExtractor<const ArrayBufferView> body(&aBodyInit.GetAsArrayBufferView());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsBlob()) {
-    const Blob& blob = aBodyInit.GetAsBlob();
-    return ExtractFromBlob(blob, aStream, aContentType, aContentLength);
+    Blob& blob = aBodyInit.GetAsBlob();
+    BodyExtractor<Blob> body(&blob);
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsFormData()) {
-    FormData& form = aBodyInit.GetAsFormData();
-    return ExtractFromFormData(form, aStream, aContentType, aContentLength);
+    FormData& formData = aBodyInit.GetAsFormData();
+    BodyExtractor<FormData> body(&formData);
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsUSVString()) {
-    nsAutoString str;
-    str.Assign(aBodyInit.GetAsUSVString());
-    return ExtractFromUSVString(str, aStream, aContentType, aContentLength);
+    BodyExtractor<const nsAString> body(&aBodyInit.GetAsUSVString());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsURLSearchParams()) {
-    URLSearchParams& params = aBodyInit.GetAsURLSearchParams();
-    return ExtractFromURLSearchParams(params, aStream, aContentType, aContentLength);
+    URLSearchParams& usp = aBodyInit.GetAsURLSearchParams();
+    BodyExtractor<URLSearchParams> body(&usp);
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
 
   NS_NOTREACHED("Should never reach here");
