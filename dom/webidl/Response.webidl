@@ -32,6 +32,7 @@ Response implements Body;
 
 // This should be part of Body but we don't want to expose body to request yet.
 partial interface Response {
+  [GetterThrows, Func="nsContentUtils::StreamsEnabled"]
   readonly attribute ReadableStream? body;
 };
 

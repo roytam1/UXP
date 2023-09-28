@@ -4585,6 +4585,9 @@ pref("layout.animated-image-layers.enabled", false);
 // Abort API
 pref("dom.abortController.enabled", true);
 
+// Streams API
+pref("dom.streams.enabled", false);
+
 // Push
 pref("dom.push.enabled", false);
 pref("dom.push.loglevel", "error");

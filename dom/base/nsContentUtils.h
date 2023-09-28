@@ -2679,6 +2679,8 @@ public:
   static mozilla::net::ReferrerPolicy GetReferrerPolicyFromHeader(const nsAString& aHeader);
 
   static bool PushEnabled(JSContext* aCx, JSObject* aObj);
+  
+  static bool StreamsEnabled(JSContext* aCx, JSObject* aObj);
 
   static bool IsNonSubresourceRequest(nsIChannel* aChannel);
 
