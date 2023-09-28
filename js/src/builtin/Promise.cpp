@@ -537,8 +537,12 @@ JSObject*
 PromiseObject::resolutionSite()
 {
     auto debugInfo = PromiseDebugInfo::FromPromise(this);
-    if (debugInfo)
-        return debugInfo->resolutionSite();
+    if (debugInfo) {
+        JSObject* site = debugInfo->resolutionSite();
+        if (site && !JS_IsDeadWrapper(site)) {
+            return site;
+        }
+    }
     return nullptr;
 }
 
