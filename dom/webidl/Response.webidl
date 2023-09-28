@@ -30,6 +30,11 @@ interface Response {
 };
 Response implements Body;
 
+// This should be part of Body but we don't want to expose body to request yet.
+partial interface Response {
+  readonly attribute ReadableStream? body;
+};
+
 dictionary ResponseInit {
   unsigned short status = 200;
   ByteString statusText = "OK";
