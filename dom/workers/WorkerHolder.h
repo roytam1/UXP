@@ -73,13 +73,20 @@ class WorkerHolder
 public:
   NS_DECL_OWNINGTHREAD
 
-  WorkerHolder();
+  enum Behavior {
+    AllowIdleShutdownStart,
+    PreventIdleShutdownStart,
+  };
+
+  explicit WorkerHolder(Behavior aBehavior = PreventIdleShutdownStart);
   virtual ~WorkerHolder();
 
   bool HoldWorker(WorkerPrivate* aWorkerPrivate, Status aFailStatus);
   void ReleaseWorker();
 
   virtual bool Notify(Status aStatus) = 0;
+
+  Behavior GetBehavior() const;
 
 protected:
   void ReleaseWorkerInternal();
@@ -88,6 +95,8 @@ protected:
 
 private:
   void AssertIsOwningThread() const;
+
+  const Behavior mBehavior;
 };
 
 END_WORKERS_NAMESPACE
