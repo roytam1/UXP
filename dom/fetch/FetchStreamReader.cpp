@@ -7,6 +7,9 @@
 #include "FetchStreamReader.h"
 #include "InternalResponse.h"
 #include "mozilla/dom/PromiseBinding.h"
+#include "nsContentUtils.h"
+#include "nsIScriptError.h"
+#include "nsPIDOMWindow.h"
 
 namespace mozilla {
 namespace dom {
@@ -296,7 +299,55 @@ void
 FetchStreamReader::RejectedCallback(JSContext* aCx,
                                     JS::Handle<JS::Value> aValue)
 {
+  ReportErrorToConsole(aCx, aValue);
   CloseAndRelease(NS_ERROR_FAILURE);
+}
+
+void
+FetchStreamReader::ReportErrorToConsole(JSContext* aCx,
+                                        JS::Handle<JS::Value> aValue)
+{
+  nsCString sourceSpec;
+  uint32_t line = 0;
+  uint32_t column = 0;
+  nsString valueString;
+
+  nsContentUtils::ExtractErrorValues(aCx, aValue, sourceSpec, &line,
+                                     &column, valueString);
+
+  nsTArray<nsString> params;
+  params.AppendElement(valueString);
+
+  RefPtr<ConsoleReportCollector> reporter = new ConsoleReportCollector();
+  reporter->AddConsoleReport(nsIScriptError::errorFlag,
+                             NS_LITERAL_CSTRING("ReadableStreamReader.read"),
+                             nsContentUtils::eDOM_PROPERTIES,
+                             sourceSpec, line, column,
+                             NS_LITERAL_CSTRING("ReadableStreamReadingFailed"),
+                             params);
+
+  uint64_t innerWindowId = 0;
+
+  if (NS_IsMainThread()) {
+    nsCOMPtr<nsPIDOMWindowInner> window = do_QueryInterface(mGlobal);
+    if (window) {
+      innerWindowId = window->WindowID();
+    }
+    reporter->FlushReportsByWindowId(innerWindowId);
+    return;
+  }
+
+  WorkerPrivate* workerPrivate = GetWorkerPrivateFromContext(aCx);
+  if (workerPrivate) {
+    innerWindowId = workerPrivate->WindowID();
+  }
+
+  RefPtr<Runnable> r = NS_NewRunnableFunction(
+    [reporter, innerWindowId] () {
+      reporter->FlushReportsByWindowId(innerWindowId);
+    });
+
+  workerPrivate->DispatchToMainThread(r.forget());
 }
 
 } // dom namespace
