@@ -43,10 +43,10 @@ public:
 
   // webidl interface methods
   already_AddRefed<Promise>
-  Match(const RequestOrUSVString& aRequest, const CacheQueryOptions& aOptions,
-        ErrorResult& aRv);
+  Match(JSContext* aCx, const RequestOrUSVString& aRequest,
+        const CacheQueryOptions& aOptions, ErrorResult& aRv);
   already_AddRefed<Promise>
-  MatchAll(const Optional<RequestOrUSVString>& aRequest,
+  MatchAll(JSContext* aCx, const Optional<RequestOrUSVString>& aRequest,
            const CacheQueryOptions& aOptions, ErrorResult& aRv);
   already_AddRefed<Promise>
   Add(JSContext* aContext, const RequestOrUSVString& aRequest,
@@ -55,13 +55,13 @@ public:
   AddAll(JSContext* aContext,
          const Sequence<OwningRequestOrUSVString>& aRequests, ErrorResult& aRv);
   already_AddRefed<Promise>
-  Put(const RequestOrUSVString& aRequest, Response& aResponse,
+  Put(JSContext* aCx, const RequestOrUSVString& aRequest, Response& aResponse,
       ErrorResult& aRv);
   already_AddRefed<Promise>
-  Delete(const RequestOrUSVString& aRequest, const CacheQueryOptions& aOptions,
-         ErrorResult& aRv);
+  Delete(JSContext* aCx, const RequestOrUSVString& aRequest,
+         const CacheQueryOptions& aOptions, ErrorResult& aRv);
   already_AddRefed<Promise>
-  Keys(const Optional<RequestOrUSVString>& aRequest,
+  Keys(JSContext* aCx, const Optional<RequestOrUSVString>& aRequest,
        const CacheQueryOptions& aParams, ErrorResult& aRv);
 
   // binding methods
@@ -100,7 +100,7 @@ private:
          ErrorResult& aRv);
 
   already_AddRefed<Promise>
-  PutAll(const nsTArray<RefPtr<Request>>& aRequestList,
+  PutAll(JSContext* aCx, const nsTArray<RefPtr<Request>>& aRequestList,
          const nsTArray<RefPtr<Response>>& aResponseList,
          ErrorResult& aRv);
 

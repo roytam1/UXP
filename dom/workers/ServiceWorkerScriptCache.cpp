@@ -395,7 +395,7 @@ public:
         return;
       }
 
-      WriteToCache(cache);
+      WriteToCache(aCx, cache);
       return;
     }
 
@@ -528,7 +528,7 @@ private:
   }
 
   void
-  WriteToCache(Cache* aCache)
+  WriteToCache(JSContext* aCx, Cache* aCache)
   {
     AssertIsOnMainThread();
     MOZ_ASSERT(aCache);
@@ -561,8 +561,10 @@ private:
     // For now we have to wait until the Put Promise is fulfilled before we can
     // continue since Cache does not yet support starting a read that is being
     // written to.
-    RefPtr<Promise> cachePromise = aCache->Put(request, *response, result);
+    RefPtr<Promise> cachePromise = aCache->Put(aCx, request, *response, result);
     if (NS_WARN_IF(result.Failed())) {
+      // No exception here because there are no ReadableStreams involved here.
+      MOZ_ASSERT(!result.IsJSException());
       MOZ_ASSERT(!result.IsErrorWithMessage());
       Fail(result.StealNSResult());
       return;
@@ -903,7 +905,7 @@ CompareCache::ManageCacheResult(JSContext* aCx, JS::Handle<JS::Value> aValue)
   request.SetAsUSVString().Rebind(mURL.Data(), mURL.Length());
   ErrorResult error;
   CacheQueryOptions params;
-  RefPtr<Promise> promise = cache->Match(request, params, error);
+  RefPtr<Promise> promise = cache->Match(aCx, request, params, error);
   if (NS_WARN_IF(error.Failed())) {
     mManager->CacheFinished(error.StealNSResult(), false);
     return;
