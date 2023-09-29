@@ -922,10 +922,9 @@ FetchBody<Derived>::BodyUsed() const
   // If this object is disturbed or locked, return false.
   if (mReadableStreamBody) {
     AutoJSAPI jsapi;
-    // If we start tracking ownership, we need something like this.
-    //if (!jsapi.Init(mOwner)) {
-    //  return true;
-    //}
+    if (!jsapi.Init(mOwner)) {
+      return true;
+    }
 
     JSContext* cx = jsapi.cx();
 
