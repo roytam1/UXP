@@ -952,7 +952,6 @@ void
 FetchBody<Derived>::SetBodyUsed(JSContext* aCx, ErrorResult& aRv)
 {
   MOZ_ASSERT(aCx);
-  MOZ_ASSERT(mOwner->EventTargetFor(TaskCategory::Other)->IsOnCurrentThread());
 
   if (mBodyUsed) {
     return;
