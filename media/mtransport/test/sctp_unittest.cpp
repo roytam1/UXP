@@ -97,7 +97,7 @@ class TransportTestPeer : public sigslot::has_slots<> {
 
     memset(&local_addr_, 0, sizeof(local_addr_));
     local_addr_.sconn_family = AF_CONN;
-#if !defined(__Userspace_os_Linux) && !defined(__Userspace_os_Windows) && !defined(__Userspace_os_Android)
+#if !defined(__linux__) && !defined(_WIN32) && !defined(__ANDROID__)
     local_addr_.sconn_len = sizeof(struct sockaddr_conn);
 #endif
     local_addr_.sconn_port = htons(local_port);
@@ -106,7 +106,7 @@ class TransportTestPeer : public sigslot::has_slots<> {
 
     memset(&remote_addr_, 0, sizeof(remote_addr_));
     remote_addr_.sconn_family = AF_CONN;
-#if !defined(__Userspace_os_Linux) && !defined(__Userspace_os_Windows) && !defined(__Userspace_os_Android)
+#if !defined(__linux__) && !defined(_WIN32) && !defined(__ANDROID__)
     remote_addr_.sconn_len = sizeof(struct sockaddr_conn);
 #endif
     remote_addr_.sconn_port = htons(remote_port);
