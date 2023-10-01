@@ -1963,6 +1963,7 @@ struct WorkerPrivate::TimeoutInfo
   , mNestingLevel(0)
   , mIsInterval(false)
   , mCanceled(false)
+  , mOnChromeWorker(false)
   {
     MOZ_COUNT_CTOR(mozilla::dom::workers::WorkerPrivate::TimeoutInfo);
   }
@@ -1992,7 +1993,8 @@ struct WorkerPrivate::TimeoutInfo
 
   void CalculateTargetTime() {
     auto target = mInterval;
-    if (mNestingLevel >= kClampTimeoutNestingLevel) {
+    // Clamp timeout for workers, except chrome workers
+    if (mNestingLevel >= kClampTimeoutNestingLevel && !mOnChromeWorker) {
       target = TimeDuration::Max(
           mInterval,
           TimeDuration::FromMilliseconds(Preferences::GetInt("dom.min_timeout_value")));
@@ -2007,6 +2009,7 @@ struct WorkerPrivate::TimeoutInfo
   uint32_t mNestingLevel;
   bool mIsInterval;
   bool mCanceled;
+  bool mOnChromeWorker;
 };
 
 class WorkerJSContextStats final : public JS::RuntimeStats
@@ -6100,6 +6103,7 @@ WorkerPrivate::SetTimeout(JSContext* aCx,
   }
 
   nsAutoPtr<TimeoutInfo> newInfo(new TimeoutInfo());
+  newInfo->mOnChromeWorker = mIsChromeWorker;
   newInfo->mIsInterval = aIsInterval;
   newInfo->mId = timerId;
   newInfo->AccumulateNestingLevel(this->mCurrentTimerNestingLevel);

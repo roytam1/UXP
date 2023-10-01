@@ -213,6 +213,9 @@ protected:
   RefPtr<EventTarget> mEventTarget;
   nsTArray<RefPtr<WorkerRunnable>> mPreStartRunnables;
 
+  // True if the worker is used in the UI
+  bool mIsChromeWorker;
+
 private:
   WorkerPrivate* mParent;
   nsString mScriptURL;
@@ -242,7 +245,6 @@ private:
   uint32_t mParentWindowPausedDepth;
   Status mParentStatus;
   bool mParentFrozen;
-  bool mIsChromeWorker;
   bool mMainThreadObjectsForgotten;
   // mIsSecureContext is set once in our constructor; after that it can be read
   // from various threads.  We could make this const if we were OK with setting
