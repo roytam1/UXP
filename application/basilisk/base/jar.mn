@@ -14,9 +14,11 @@ browser.jar:
 %  overlay chrome://global/content/viewSource.xul chrome://browser/content/viewSourceOverlay.xul
 %  overlay chrome://global/content/viewPartialSource.xul chrome://browser/content/viewSourceOverlay.xul
 
+#ifdef MOZ_UPDATER 
         content/browser/aboutDialog-appUpdater.js     (content/aboutDialog-appUpdater.js)
+#endif
 *       content/browser/aboutDialog.xul               (content/aboutDialog.xul)
-        content/browser/aboutDialog.js                (content/aboutDialog.js)
+*       content/browser/aboutDialog.js                (content/aboutDialog.js)
         content/browser/aboutDialog.css               (content/aboutDialog.css)
 *       content/browser/abouthome/aboutHome.xhtml     (content/abouthome/aboutHome.xhtml)
         content/browser/abouthome/aboutHome.js        (content/abouthome/aboutHome.js)
