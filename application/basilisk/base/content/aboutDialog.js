@@ -69,6 +69,13 @@ function init(aEvent)
   let arch = bundle.GetStringFromName(archResource);
   versionField.textContent += ` (${arch})`;
 
+  // TODO: when we get rid of appconstants make this check for Unix and not MacOS
+  if (AppConstants.platform == "linux") {
+    // If Linux append the toolkit "(GTK2)" or "(GTK3)"
+    let toolkit = Components.classes["@mozilla.org/xre/app-info;1"].getService(Components.interfaces.nsIXULRuntime).widgetToolkit.toUpperCase();
+    versionField.textContent += ` (${toolkit})`;
+  }
+
   // Get Release Notes URL from Preferences
   let releaseNotesURL = Services.prefs.getCharPref("app.releaseNotesURL");
   document.getElementById("releasenotes").setAttribute("href", releaseNotesURL);
