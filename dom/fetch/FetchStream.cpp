@@ -403,7 +403,9 @@ FetchStream::FetchStream(nsIGlobalObject* aGlobal,
   , mGlobal(aGlobal)
   , mStreamHolder(aStreamHolder)
   , mOriginalInputStream(aInputStream)
-  , mOwningEventTarget(nullptr)
+  // TODO: Replace with mGlobal->EventTargetFor(TaskCategory::Other)
+  // When we have the Dispatcher API in the tree, see Issue #1442
+  , mOwningEventTarget(NS_GetCurrentThread())
 {
   MOZ_DIAGNOSTIC_ASSERT(aInputStream);
   MOZ_DIAGNOSTIC_ASSERT(aStreamHolder);
