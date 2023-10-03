@@ -17,6 +17,7 @@
 
 #include "mozilla/Assertions.h"
 #include "mozilla/Attributes.h"
+#include "mozilla/AutoRestore.h"
 #include "mozilla/CondVar.h"
 #include "mozilla/ConsoleReportCollector.h"
 #include "mozilla/DOMEventTargetHelper.h"
@@ -212,6 +213,9 @@ protected:
   RefPtr<EventTarget> mEventTarget;
   nsTArray<RefPtr<WorkerRunnable>> mPreStartRunnables;
 
+  // True if the worker is used in the UI
+  bool mIsChromeWorker;
+
 private:
   WorkerPrivate* mParent;
   nsString mScriptURL;
@@ -241,7 +245,6 @@ private:
   uint32_t mParentWindowPausedDepth;
   Status mParentStatus;
   bool mParentFrozen;
-  bool mIsChromeWorker;
   bool mMainThreadObjectsForgotten;
   // mIsSecureContext is set once in our constructor; after that it can be read
   // from various threads.  We could make this const if we were OK with setting
@@ -1016,6 +1019,20 @@ class WorkerPrivate : public WorkerPrivateParent<WorkerPrivate>
   uint32_t mErrorHandlerRecursionCount;
   uint32_t mNextTimeoutId;
   Status mStatus;
+
+  // Tracks the current setTimeout/setInterval nesting level.
+  // When there isn't a TimeoutHandler on the stack, this will be 0.
+  // Whenever setTimeout/setInterval are called, a new TimeoutInfo will be
+  // created with a nesting level one more than the current nesting level,
+  // saturating at the kClampTimeoutNestingLevel.
+  //
+  // When RunExpiredTimeouts is run, it sets this value to the
+  // TimeoutInfo::mNestingLevel for the duration of
+  // the WorkerScriptTimeoutHandler::Call which will explicitly trigger a
+  // microtask checkpoint so that any immediately-resolved promises will
+  // still see the nesting level.
+  uint32_t mCurrentTimerNestingLevel;
+
   bool mFrozen;
   bool mTimerRunning;
   bool mRunningExpiredTimeouts;
