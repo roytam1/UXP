@@ -2974,8 +2974,8 @@ ValidateRect(double& aX, double& aY, double& aWidth, double& aHeight, bool aIsZe
   // The values of canvas API input are in double precision, but Moz2D APIs are
   // using float precision. Bypass canvas API calls when the input is out of
   // float precision to avoid precision problem
-  if (!std::isfinite((float)aX) | !std::isfinite((float)aY) |
-      !std::isfinite((float)aWidth) | !std::isfinite((float)aHeight)) {
+  if (!std::isfinite((float)aX) || !std::isfinite((float)aY) ||
+      !std::isfinite((float)aWidth) || !std::isfinite((float)aHeight)) {
     return false;
   }
 
@@ -5973,7 +5973,7 @@ void
 CanvasRenderingContext2D::PutImageData(ImageData& aImageData, double aDx,
                                        double aDy, ErrorResult& aError)
 {
-  RootedTypedArray<Uint8ClampedArray> arr(RootingCx());
+  RootedSpiderMonkeyInterface<Uint8ClampedArray> arr(RootingCx());
   DebugOnly<bool> inited = arr.Init(aImageData.GetDataObject());
   MOZ_ASSERT(inited);
 
@@ -5989,7 +5989,7 @@ CanvasRenderingContext2D::PutImageData(ImageData& aImageData, double aDx,
                                        double aDirtyHeight,
                                        ErrorResult& aError)
 {
-  RootedTypedArray<Uint8ClampedArray> arr(RootingCx());
+  RootedSpiderMonkeyInterface<Uint8ClampedArray> arr(RootingCx());
   DebugOnly<bool> inited = arr.Init(aImageData.GetDataObject());
   MOZ_ASSERT(inited);
 

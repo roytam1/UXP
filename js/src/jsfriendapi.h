@@ -1787,6 +1787,9 @@ UnwrapArrayBufferView(JSObject* obj);
 extern JS_FRIEND_API(JSObject*)
 UnwrapSharedArrayBuffer(JSObject* obj);
 
+extern JS_FRIEND_API(JSObject*)
+UnwrapReadableStream(JSObject* obj);
+
 
 namespace detail {
 
@@ -2004,6 +2007,12 @@ JS_IsArrayBufferViewObject(JSObject* obj);
  */
 extern JS_FRIEND_API(uint32_t)
 JS_GetArrayBufferViewByteLength(JSObject* obj);
+
+/**
+ * More generic name for JS_GetTypedArrayByteOffset to cover DataViews as well
+ */
+extern JS_FRIEND_API(uint32_t)
+JS_GetArrayBufferViewByteOffset(JSObject* obj);
 
 /*
  * Return a pointer to the start of the data referenced by a typed array. The

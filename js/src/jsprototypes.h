@@ -108,6 +108,17 @@ IF_SAB(real,imaginary)(Atomics, InitAtomicsClass, OCLASP(Atomics)) \
     imaginary(WasmMemory,       dummy,                  dummy) \
     imaginary(WasmTable,        dummy,                  dummy) \
     real(Promise,               InitViaClassSpec,       OCLASP(Promise)) \
+    real(ReadableStream,        InitViaClassSpec,       &js::ReadableStream::class_) \
+    real(ReadableStreamDefaultReader,         InitViaClassSpec, &js::ReadableStreamDefaultReader::class_) \
+    real(ReadableStreamBYOBReader,            InitViaClassSpec, &js::ReadableStreamBYOBReader::class_) \
+    real(ReadableStreamDefaultController,     InitViaClassSpec, &js::ReadableStreamDefaultController::class_) \
+    real(ReadableByteStreamController,        InitViaClassSpec, &js::ReadableByteStreamController::class_) \
+    real(ReadableStreamBYOBRequest,           InitViaClassSpec, &js::ReadableStreamBYOBRequest::class_) \
+    imaginary(WritableStream,   dummy,                  dummy) \
+    imaginary(WritableStreamDefaultWriter,    dummy,    dummy) \
+    imaginary(WritableStreamDefaultController,dummy,    dummy) \
+    real(ByteLengthQueuingStrategy,           InitViaClassSpec, &js::ByteLengthQueuingStrategy::class_) \
+    real(CountQueuingStrategy,  InitViaClassSpec,       &js::CountQueuingStrategy::class_) \
 
 #define JS_FOR_EACH_PROTOTYPE(macro) JS_FOR_PROTOTYPES(macro,macro)
 

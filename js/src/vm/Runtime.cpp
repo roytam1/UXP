@@ -156,6 +156,12 @@ JSRuntime::JSRuntime(JSRuntime* parentRuntime)
     startAsyncTaskCallback(nullptr),
     finishAsyncTaskCallback(nullptr),
     promiseTasksToDestroy(mutexid::PromiseTaskPtrVector),
+    readableStreamDataRequestCallback(nullptr),
+    readableStreamWriteIntoReadRequestCallback(nullptr),
+    readableStreamCancelCallback(nullptr),
+    readableStreamClosedCallback(nullptr),
+    readableStreamErroredCallback(nullptr),
+    readableStreamFinalizeCallback(nullptr),
     exclusiveAccessLock(mutexid::RuntimeExclusiveAccess),
 #ifdef DEBUG
     mainThreadHasExclusiveAccess(false),

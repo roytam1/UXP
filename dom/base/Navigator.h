@@ -7,6 +7,7 @@
 #define mozilla_dom_Navigator_h
 
 #include "mozilla/MemoryReporting.h"
+#include "mozilla/dom/Fetch.h"
 #include "mozilla/dom/Nullable.h"
 #include "mozilla/ErrorResult.h"
 #include "nsIDOMNavigator.h"
@@ -30,12 +31,13 @@ class nsIURI;
 
 namespace mozilla {
 namespace dom {
+class BodyExtractorBase;
 class Geolocation;
 class systemMessageCallback;
 class MediaDevices;
 struct MediaStreamConstraints;
 class WakeLock;
-class ArrayBufferViewOrBlobOrStringOrFormData;
+class ArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUSVStringOrURLSearchParams;
 class ServiceWorkerContainer;
 class DOMRequest;
 } // namespace dom
@@ -196,7 +198,7 @@ public:
 #endif // MOZ_AUDIO_CHANNEL_MANAGER
 
   bool SendBeacon(const nsAString& aUrl,
-                  const Nullable<ArrayBufferViewOrBlobOrStringOrFormData>& aData,
+                  const Nullable<fetch::BodyInit>& aData,
                   ErrorResult& aRv);
 
   void MozGetUserMedia(const MediaStreamConstraints& aConstraints,
@@ -254,6 +256,19 @@ private:
 
   bool CheckPermission(const char* type);
   static bool CheckPermission(nsPIDOMWindowInner* aWindow, const char* aType);
+
+  // This enum helps SendBeaconInternal to apply different behaviors to body
+  // types.
+  enum BeaconType {
+    eBeaconTypeBlob,
+    eBeaconTypeArrayBuffer,
+    eBeaconTypeOther
+  };
+
+  bool SendBeaconInternal(const nsAString& aUrl,
+                          BodyExtractorBase* aBody,
+                          BeaconType aType,
+                          ErrorResult& aRv);
 
   RefPtr<nsMimeTypeArray> mMimeTypes;
   RefPtr<nsPluginArray> mPlugins;

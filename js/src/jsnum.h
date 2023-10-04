@@ -72,6 +72,10 @@ Int32ToString(ExclusiveContext* cx, int32_t i);
 extern JSAtom*
 Int32ToAtom(ExclusiveContext* cx, int32_t si);
 
+// ES6 15.7.3.12
+extern bool
+IsInteger(const Value& val);
+
 /*
  * Convert an integer or double (contained in the given value) to a string and
  * append to the given buffer.
