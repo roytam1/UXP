@@ -1010,6 +1010,10 @@ public:
 
   static bool PrefetchEnabled(nsIDocShell* aDocShell);
 
+  static void ExtractErrorValues(JSContext* aCx, JS::Handle<JS::Value> aValue,
+                                 nsACString& aSourceSpecOut, uint32_t *aLineOut,
+                                 uint32_t *aColumnOut, nsString& aMessageOut);
+
   static nsresult CalculateBufferSizeForImage(const uint32_t& aStride,
                                               const mozilla::gfx::IntSize& aImageSize,
                                               const mozilla::gfx::SurfaceFormat& aFormat,
@@ -2679,6 +2683,8 @@ public:
   static mozilla::net::ReferrerPolicy GetReferrerPolicyFromHeader(const nsAString& aHeader);
 
   static bool PushEnabled(JSContext* aCx, JSObject* aObj);
+  
+  static bool StreamsEnabled(JSContext* aCx, JSObject* aObj);
 
   static bool IsNonSubresourceRequest(nsIChannel* aChannel);
 

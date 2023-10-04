@@ -204,7 +204,8 @@ CacheStorage::CreateOnWorker(Namespace aNamespace, nsIGlobalObject* aGlobal,
   }
 
   RefPtr<CacheWorkerHolder> workerHolder =
-    CacheWorkerHolder::Create(aWorkerPrivate);
+    CacheWorkerHolder::Create(aWorkerPrivate,
+                              CacheWorkerHolder::AllowIdleShutdownStart);
   if (!workerHolder) {
     NS_WARNING("Worker thread is shutting down.");
     aRv.Throw(NS_ERROR_FAILURE);
@@ -315,7 +316,7 @@ CacheStorage::CacheStorage(nsresult aFailureResult)
 }
 
 already_AddRefed<Promise>
-CacheStorage::Match(const RequestOrUSVString& aRequest,
+CacheStorage::Match(JSContext* aCx, const RequestOrUSVString& aRequest,
                     const CacheQueryOptions& aOptions, ErrorResult& aRv)
 {
   NS_ASSERT_OWNINGTHREAD(CacheStorage);
@@ -325,8 +326,8 @@ CacheStorage::Match(const RequestOrUSVString& aRequest,
     return nullptr;
   }
 
-  RefPtr<InternalRequest> request = ToInternalRequest(aRequest, IgnoreBody,
-                                                        aRv);
+  RefPtr<InternalRequest> request =
+    ToInternalRequest(aCx, aRequest, IgnoreBody, aRv);
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
   }

@@ -398,7 +398,7 @@ FormData::Constructor(const GlobalObject& aGlobal,
 
 NS_IMETHODIMP
 FormData::GetSendInfo(nsIInputStream** aBody, uint64_t* aContentLength,
-                      nsACString& aContentType, nsACString& aCharset)
+                      nsACString& aContentTypeWithCharset, nsACString& aCharset)
 {
   FSMultipartFormData fs(NS_LITERAL_CSTRING("UTF-8"), nullptr);
 
@@ -419,7 +419,7 @@ FormData::GetSendInfo(nsIInputStream** aBody, uint64_t* aContentLength,
     }
   }
 
-  fs.GetContentType(aContentType);
+  fs.GetContentType(aContentTypeWithCharset);
   aCharset.Truncate();
   *aContentLength = 0;
   NS_ADDREF(*aBody = fs.GetSubmissionBody(aContentLength));

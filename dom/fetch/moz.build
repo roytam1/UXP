@@ -4,11 +4,13 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 EXPORTS.mozilla.dom += [
+    'BodyExtractor.h',
     'ChannelInfo.h',
     'Fetch.h',
     'FetchDriver.h',
     'FetchIPCTypes.h',
     'FetchObserver.h',
+    'FetchStreamReader.h',
     'FetchUtil.h',
     'Headers.h',
     'InternalHeaders.h',
@@ -19,11 +21,14 @@ EXPORTS.mozilla.dom += [
 ]
 
 UNIFIED_SOURCES += [
+    'BodyExtractor.cpp',
     'ChannelInfo.cpp',
     'Fetch.cpp',
     'FetchConsumer.cpp',
     'FetchDriver.cpp',
     'FetchObserver.cpp',
+    'FetchStream.cpp',
+    'FetchStreamReader.cpp',
     'FetchUtil.cpp',
     'Headers.cpp',
     'InternalHeaders.cpp',

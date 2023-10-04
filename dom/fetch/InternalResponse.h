@@ -46,7 +46,13 @@ public:
         M* aManager,
         UniquePtr<mozilla::ipc::AutoIPCStream>& aAutoStream);
 
-  already_AddRefed<InternalResponse> Clone();
+  enum CloneType
+  {
+    eCloneInputStream,
+    eDontCloneInputStream,
+  };
+
+  already_AddRefed<InternalResponse> Clone(CloneType eCloneType);
 
   static already_AddRefed<InternalResponse>
   NetworkError()

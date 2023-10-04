@@ -5,13 +5,13 @@
 
 #include "Fetch.h"
 #include "FetchConsumer.h"
+#include "FetchStream.h"
 
 #include "nsIDocument.h"
 #include "nsIGlobalObject.h"
 #include "nsIStreamLoader.h"
 #include "nsIThreadRetargetableRequest.h"
 #include "nsIUnicodeDecoder.h"
-#include "nsIUnicodeEncoder.h"
 
 #include "nsDOMString.h"
 #include "nsNetUtil.h"
@@ -22,7 +22,7 @@
 
 #include "mozilla/ErrorResult.h"
 #include "mozilla/dom/BodyUtil.h"
-#include "mozilla/dom/EncodingUtils.h"
+#include "mozilla/dom/DOMError.h"
 #include "mozilla/dom/Exceptions.h"
 #include "mozilla/dom/FetchDriver.h"
 #include "mozilla/dom/File.h"
@@ -35,8 +35,10 @@
 #include "mozilla/dom/Response.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/URLSearchParams.h"
+#include "mozilla/dom/WorkerPrivate.h"
 #include "mozilla/dom/workers/ServiceWorkerManager.h"
 
+#include "BodyExtractor.h"
 #include "FetchObserver.h"
 #include "InternalRequest.h"
 #include "InternalResponse.h"
@@ -722,154 +724,48 @@ WorkerFetchResolver::FlushConsoleReport()
   mReporter->FlushConsoleReports(worker->GetDocument());
 }
 
-namespace {
-
 nsresult
-ExtractFromArrayBuffer(const ArrayBuffer& aBuffer,
-                       nsIInputStream** aStream,
-                       uint64_t& aContentLength)
-{
-  aBuffer.ComputeLengthAndData();
-  aContentLength = aBuffer.Length();
-  //XXXnsm reinterpret_cast<> is used in DOMParser, should be ok.
-  return NS_NewByteInputStream(aStream,
-                               reinterpret_cast<char*>(aBuffer.Data()),
-                               aBuffer.Length(), NS_ASSIGNMENT_COPY);
-}
-
-nsresult
-ExtractFromArrayBufferView(const ArrayBufferView& aBuffer,
-                           nsIInputStream** aStream,
-                           uint64_t& aContentLength)
-{
-  aBuffer.ComputeLengthAndData();
-  aContentLength = aBuffer.Length();
-  //XXXnsm reinterpret_cast<> is used in DOMParser, should be ok.
-  return NS_NewByteInputStream(aStream,
-                               reinterpret_cast<char*>(aBuffer.Data()),
-                               aBuffer.Length(), NS_ASSIGNMENT_COPY);
-}
-
-nsresult
-ExtractFromBlob(const Blob& aBlob,
-                nsIInputStream** aStream,
-                nsCString& aContentType,
-                uint64_t& aContentLength)
-{
-  RefPtr<BlobImpl> impl = aBlob.Impl();
-  ErrorResult rv;
-  aContentLength = impl->GetSize(rv);
-  if (NS_WARN_IF(rv.Failed())) {
-    return rv.StealNSResult();
-  }
-
-  impl->GetInternalStream(aStream, rv);
-  if (NS_WARN_IF(rv.Failed())) {
-    return rv.StealNSResult();
-  }
-
-  nsAutoString type;
-  impl->GetType(type);
-  aContentType = NS_ConvertUTF16toUTF8(type);
-  return NS_OK;
-}
-
-nsresult
-ExtractFromFormData(FormData& aFormData,
-                    nsIInputStream** aStream,
-                    nsCString& aContentType,
-                    uint64_t& aContentLength)
-{
-  nsAutoCString unusedCharset;
-  return aFormData.GetSendInfo(aStream, &aContentLength,
-                               aContentType, unusedCharset);
-}
-
-nsresult
-ExtractFromUSVString(const nsString& aStr,
-                     nsIInputStream** aStream,
-                     nsCString& aContentType,
-                     uint64_t& aContentLength)
-{
-  nsCOMPtr<nsIUnicodeEncoder> encoder = EncodingUtils::EncoderForEncoding("UTF-8");
-  if (!encoder) {
-    return NS_ERROR_OUT_OF_MEMORY;
-  }
-
-  int32_t destBufferLen;
-  nsresult rv = encoder->GetMaxLength(aStr.get(), aStr.Length(), &destBufferLen);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-
-  nsCString encoded;
-  if (!encoded.SetCapacity(destBufferLen, fallible)) {
-    return NS_ERROR_OUT_OF_MEMORY;
-  }
-
-  char* destBuffer = encoded.BeginWriting();
-  int32_t srcLen = (int32_t) aStr.Length();
-  int32_t outLen = destBufferLen;
-  rv = encoder->Convert(aStr.get(), &srcLen, destBuffer, &outLen);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-
-  MOZ_ASSERT(outLen <= destBufferLen);
-  encoded.SetLength(outLen);
-
-  aContentType = NS_LITERAL_CSTRING("text/plain;charset=UTF-8");
-  aContentLength = outLen;
-
-  return NS_NewCStringInputStream(aStream, encoded);
-}
-
-nsresult
-ExtractFromURLSearchParams(const URLSearchParams& aParams,
-                           nsIInputStream** aStream,
-                           nsCString& aContentType,
-                           uint64_t& aContentLength)
-{
-  nsAutoString serialized;
-  aParams.Stringify(serialized);
-  aContentType = NS_LITERAL_CSTRING("application/x-www-form-urlencoded;charset=UTF-8");
-  aContentLength = serialized.Length();
-  return NS_NewCStringInputStream(aStream, NS_ConvertUTF16toUTF8(serialized));
-}
-} // namespace
-
-nsresult
-ExtractByteStreamFromBody(const OwningArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUSVStringOrURLSearchParams& aBodyInit,
+ExtractByteStreamFromBody(const fetch::OwningBodyInit& aBodyInit,
                           nsIInputStream** aStream,
-                          nsCString& aContentType,
+                          nsCString& aContentTypeWithCharset,
                           uint64_t& aContentLength)
 {
   MOZ_ASSERT(aStream);
+  nsAutoCString charset;
+  aContentTypeWithCharset.SetIsVoid(true);
 
   if (aBodyInit.IsArrayBuffer()) {
-    const ArrayBuffer& buf = aBodyInit.GetAsArrayBuffer();
-    return ExtractFromArrayBuffer(buf, aStream, aContentLength);
+    BodyExtractor<const ArrayBuffer> body(&aBodyInit.GetAsArrayBuffer());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsArrayBufferView()) {
-    const ArrayBufferView& buf = aBodyInit.GetAsArrayBufferView();
-    return ExtractFromArrayBufferView(buf, aStream, aContentLength);
+    BodyExtractor<const ArrayBufferView> body(&aBodyInit.GetAsArrayBufferView());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsBlob()) {
-    const Blob& blob = aBodyInit.GetAsBlob();
-    return ExtractFromBlob(blob, aStream, aContentType, aContentLength);
+    Blob& blob = aBodyInit.GetAsBlob();
+    BodyExtractor<nsIXHRSendable> body(&blob);
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsFormData()) {
-    FormData& form = aBodyInit.GetAsFormData();
-    return ExtractFromFormData(form, aStream, aContentType, aContentLength);
+    FormData& formData = aBodyInit.GetAsFormData();
+    BodyExtractor<nsIXHRSendable> body(&formData);
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsUSVString()) {
-    nsAutoString str;
-    str.Assign(aBodyInit.GetAsUSVString());
-    return ExtractFromUSVString(str, aStream, aContentType, aContentLength);
+    BodyExtractor<const nsAString> body(&aBodyInit.GetAsUSVString());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsURLSearchParams()) {
-    URLSearchParams& params = aBodyInit.GetAsURLSearchParams();
-    return ExtractFromURLSearchParams(params, aStream, aContentType, aContentLength);
+    URLSearchParams& usp = aBodyInit.GetAsURLSearchParams();
+    BodyExtractor<nsIXHRSendable> body(&usp);
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
 
   NS_NOTREACHED("Should never reach here");
@@ -877,69 +773,228 @@ ExtractByteStreamFromBody(const OwningArrayBufferOrArrayBufferViewOrBlobOrFormDa
 }
 
 nsresult
-ExtractByteStreamFromBody(const ArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUSVStringOrURLSearchParams& aBodyInit,
+ExtractByteStreamFromBody(const fetch::BodyInit& aBodyInit,
                           nsIInputStream** aStream,
-                          nsCString& aContentType,
+                          nsCString& aContentTypeWithCharset,
                           uint64_t& aContentLength)
 {
   MOZ_ASSERT(aStream);
   MOZ_ASSERT(!*aStream);
 
+  nsAutoCString charset;
+  aContentTypeWithCharset.SetIsVoid(true);
+
   if (aBodyInit.IsArrayBuffer()) {
-    const ArrayBuffer& buf = aBodyInit.GetAsArrayBuffer();
-    return ExtractFromArrayBuffer(buf, aStream, aContentLength);
+    BodyExtractor<const ArrayBuffer> body(&aBodyInit.GetAsArrayBuffer());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsArrayBufferView()) {
-    const ArrayBufferView& buf = aBodyInit.GetAsArrayBufferView();
-    return ExtractFromArrayBufferView(buf, aStream, aContentLength);
+    BodyExtractor<const ArrayBufferView> body(&aBodyInit.GetAsArrayBufferView());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsBlob()) {
-    const Blob& blob = aBodyInit.GetAsBlob();
-    return ExtractFromBlob(blob, aStream, aContentType, aContentLength);
+    BodyExtractor<nsIXHRSendable> body(&aBodyInit.GetAsBlob());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsFormData()) {
-    FormData& form = aBodyInit.GetAsFormData();
-    return ExtractFromFormData(form, aStream, aContentType, aContentLength);
+    BodyExtractor<nsIXHRSendable> body(&aBodyInit.GetAsFormData());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsUSVString()) {
-    nsAutoString str;
-    str.Assign(aBodyInit.GetAsUSVString());
-    return ExtractFromUSVString(str, aStream, aContentType, aContentLength);
+    BodyExtractor<const nsAString> body(&aBodyInit.GetAsUSVString());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
   if (aBodyInit.IsURLSearchParams()) {
-    URLSearchParams& params = aBodyInit.GetAsURLSearchParams();
-    return ExtractFromURLSearchParams(params, aStream, aContentType, aContentLength);
+    BodyExtractor<nsIXHRSendable> body(&aBodyInit.GetAsURLSearchParams());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
   }
 
   NS_NOTREACHED("Should never reach here");
   return NS_ERROR_FAILURE;
 }
 
+nsresult
+ExtractByteStreamFromBody(const fetch::ResponseBodyInit& aBodyInit,
+                          nsIInputStream** aStream,
+                          nsCString& aContentTypeWithCharset,
+                          uint64_t& aContentLength)
+{
+  MOZ_ASSERT(aStream);
+  MOZ_ASSERT(!*aStream);
+
+  // ReadableStreams should be handled by
+  // BodyExtractorReadableStream::GetAsStream.
+  MOZ_ASSERT(!aBodyInit.IsReadableStream());
+
+  nsAutoCString charset;
+  aContentTypeWithCharset.SetIsVoid(true);
+
+  if (aBodyInit.IsArrayBuffer()) {
+    BodyExtractor<const ArrayBuffer> body(&aBodyInit.GetAsArrayBuffer());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
+  }
+
+  if (aBodyInit.IsArrayBufferView()) {
+    BodyExtractor<const ArrayBufferView> body(&aBodyInit.GetAsArrayBufferView());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
+  }
+
+  if (aBodyInit.IsBlob()) {
+    BodyExtractor<nsIXHRSendable> body(&aBodyInit.GetAsBlob());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
+  }
+
+  if (aBodyInit.IsFormData()) {
+    BodyExtractor<nsIXHRSendable> body(&aBodyInit.GetAsFormData());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
+  }
+
+  if (aBodyInit.IsUSVString()) {
+    BodyExtractor<const nsAString> body(&aBodyInit.GetAsUSVString());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
+  }
+
+  if (aBodyInit.IsURLSearchParams()) {
+    BodyExtractor<nsIXHRSendable> body(&aBodyInit.GetAsURLSearchParams());
+    return body.GetAsStream(aStream, &aContentLength, aContentTypeWithCharset,
+                            charset);
+  }
+
+  NS_NOTREACHED("Should never reach here");
+  return NS_ERROR_FAILURE;
+}
+
+
 template <class Derived>
-FetchBody<Derived>::FetchBody()
+FetchBody<Derived>::FetchBody(nsIGlobalObject* aOwner)
   : mWorkerPrivate(nullptr)
+  , mOwner(aOwner)
+  , mReadableStreamBody(nullptr)
+  , mReadableStreamReader(nullptr)
   , mBodyUsed(false)
 {
+  MOZ_ASSERT(aOwner);
+
   if (!NS_IsMainThread()) {
     mWorkerPrivate = GetCurrentThreadWorkerPrivate();
     MOZ_ASSERT(mWorkerPrivate);
+  } else {
+    mWorkerPrivate = nullptr;
   }
 }
 
 template
-FetchBody<Request>::FetchBody();
+FetchBody<Request>::FetchBody(nsIGlobalObject* aOwner);
 
 template
-FetchBody<Response>::FetchBody();
+FetchBody<Response>::FetchBody(nsIGlobalObject* aOwner);
 
 template <class Derived>
 FetchBody<Derived>::~FetchBody()
 {
 }
 
+template
+FetchBody<Request>::~FetchBody();
+
+template
+FetchBody<Response>::~FetchBody();
+
+template <class Derived>
+bool
+FetchBody<Derived>::BodyUsed() const
+{
+  if (mBodyUsed) {
+    return true;
+  }
+
+  // If this object is disturbed or locked, return false.
+  if (mReadableStreamBody) {
+    AutoJSAPI jsapi;
+    if (!jsapi.Init(mOwner)) {
+      return true;
+    }
+
+    JSContext* cx = jsapi.cx();
+
+    JS::Rooted<JSObject*> body(cx, mReadableStreamBody);
+    if (JS::ReadableStreamIsDisturbed(body) ||
+        JS::ReadableStreamIsLocked(body) ||
+        !JS::ReadableStreamIsReadable(body)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+template
+bool
+FetchBody<Request>::BodyUsed() const;
+
+template
+bool
+FetchBody<Response>::BodyUsed() const;
+
+template <class Derived>
+void
+FetchBody<Derived>::SetBodyUsed(JSContext* aCx, ErrorResult& aRv)
+{
+  MOZ_ASSERT(aCx);
+
+  if (mBodyUsed) {
+    return;
+  }
+
+  mBodyUsed = true;
+
+  // If we already have a ReadableStreamBody and it has been created by DOM, we
+  // have to lock it now because it can have been shared with other objects.
+  if (mReadableStreamBody) {
+    JS::Rooted<JSObject*> readableStreamObj(aCx, mReadableStreamBody);
+    if (JS::ReadableStreamGetMode(readableStreamObj) ==
+          JS::ReadableStreamMode::ExternalSource) {
+      LockStream(aCx, readableStreamObj, aRv);
+      if (NS_WARN_IF(aRv.Failed())) {
+        return;
+      }
+    } else {
+      // If this is not a native ReadableStream, let's activate the
+      // FetchStreamReader.
+      MOZ_ASSERT(mFetchStreamReader);
+      JS::Rooted<JSObject*> reader(aCx);
+      mFetchStreamReader->StartConsuming(aCx, readableStreamObj, &reader, aRv);
+      if (NS_WARN_IF(aRv.Failed())) {
+        return;
+      }
+
+      mReadableStreamReader = reader;
+    }
+  }
+}
+
+template
+void
+FetchBody<Request>::SetBodyUsed(JSContext* aCx, ErrorResult& aRv);
+
+template
+void
+FetchBody<Response>::SetBodyUsed(JSContext* aCx, ErrorResult& aRv);
+
 template <class Derived>
 already_AddRefed<Promise>
-FetchBody<Derived>::ConsumeBody(FetchConsumeType aType, ErrorResult& aRv)
+FetchBody<Derived>::ConsumeBody(JSContext* aCx, FetchConsumeType aType, ErrorResult& aRv)
 {
   RefPtr<AbortSignal> signal = DerivedClass()->GetSignal();
   if (signal && signal->Aborted()) {
@@ -952,11 +1007,15 @@ FetchBody<Derived>::ConsumeBody(FetchConsumeType aType, ErrorResult& aRv)
     return nullptr;
   }
 
-  SetBodyUsed();
+  SetBodyUsed(aCx, aRv);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return nullptr;
+  }
+
+  nsCOMPtr<nsIGlobalObject> global = DerivedClass()->GetParentObject();
 
   RefPtr<Promise> promise =
-    FetchBodyConsumer<Derived>::Create(DerivedClass()->GetParentObject(),
-                                       this, signal, aType, aRv);
+    FetchBodyConsumer<Derived>::Create(global, this, signal, aType, aRv);
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
   }
@@ -966,11 +1025,11 @@ FetchBody<Derived>::ConsumeBody(FetchConsumeType aType, ErrorResult& aRv)
 
 template
 already_AddRefed<Promise>
-FetchBody<Request>::ConsumeBody(FetchConsumeType aType, ErrorResult& aRv);
+FetchBody<Request>::ConsumeBody(JSContext* aCx, FetchConsumeType aType, ErrorResult& aRv);
 
 template
 already_AddRefed<Promise>
-FetchBody<Response>::ConsumeBody(FetchConsumeType aType, ErrorResult& aRv);
+FetchBody<Response>::ConsumeBody(JSContext* aCx, FetchConsumeType aType, ErrorResult& aRv);
 
 template <class Derived>
 void
@@ -999,6 +1058,171 @@ FetchBody<Request>::SetMimeType();
 template
 void
 FetchBody<Response>::SetMimeType();
+
+template <class Derived>
+void
+FetchBody<Derived>::SetReadableStreamBody(JSObject* aBody)
+{
+  MOZ_ASSERT(!mReadableStreamBody);
+  MOZ_ASSERT(aBody);
+  mReadableStreamBody = aBody;
+}
+
+template
+void
+FetchBody<Request>::SetReadableStreamBody(JSObject* aBody);
+
+template
+void
+FetchBody<Response>::SetReadableStreamBody(JSObject* aBody);
+
+template <class Derived>
+void
+FetchBody<Derived>::GetBody(JSContext* aCx,
+                            JS::MutableHandle<JSObject*> aBodyOut,
+                            ErrorResult& aRv)
+{
+  if (mReadableStreamBody) {
+    aBodyOut.set(mReadableStreamBody);
+    return;
+  }
+
+  nsCOMPtr<nsIInputStream> inputStream;
+  DerivedClass()->GetBody(getter_AddRefs(inputStream));
+
+  if (!inputStream) {
+    aBodyOut.set(nullptr);
+    return;
+  }
+
+  JS::Rooted<JSObject*> body(aCx);
+  FetchStream::Create(aCx, this, DerivedClass()->GetParentObject(),
+                      inputStream, &body, aRv);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+
+  MOZ_ASSERT(body);
+
+  // If the body has been already consumed, we lock the stream.
+  if (BodyUsed()) {
+    LockStream(aCx, body, aRv);
+    if (NS_WARN_IF(aRv.Failed())) {
+      return;
+    }
+  }
+
+  mReadableStreamBody = body;
+  aBodyOut.set(mReadableStreamBody);
+}
+
+template
+void
+FetchBody<Request>::GetBody(JSContext* aCx,
+                            JS::MutableHandle<JSObject*> aMessage,
+                            ErrorResult& aRv);
+
+template
+void
+FetchBody<Response>::GetBody(JSContext* aCx,
+                             JS::MutableHandle<JSObject*> aMessage,
+                             ErrorResult& aRv);
+
+template <class Derived>
+void
+FetchBody<Derived>::LockStream(JSContext* aCx,
+                               JS::HandleObject aStream,
+                               ErrorResult& aRv)
+{
+  MOZ_ASSERT(JS::ReadableStreamGetMode(aStream) ==
+               JS::ReadableStreamMode::ExternalSource);
+
+  // This is native stream, creating a reader will not execute any JS code.
+  JS::Rooted<JSObject*> reader(aCx,
+                               JS::ReadableStreamGetReader(aCx, aStream,
+                                                           JS::ReadableStreamReaderMode::Default));
+  if (!reader) {
+    aRv.StealExceptionFromJSContext(aCx);
+    return;
+  }
+
+  mReadableStreamReader = reader;
+}
+
+template
+void
+FetchBody<Request>::LockStream(JSContext* aCx,
+                               JS::HandleObject aStream,
+                               ErrorResult& aRv);
+
+template
+void
+FetchBody<Response>::LockStream(JSContext* aCx,
+                                JS::HandleObject aStream,
+                                ErrorResult& aRv);
+
+template <class Derived>
+void
+FetchBody<Derived>::MaybeTeeReadableStreamBody(JSContext* aCx,
+                                               JS::MutableHandle<JSObject*> aBodyOut,
+                                               FetchStreamReader** aStreamReader,
+                                               nsIInputStream** aInputStream,
+                                               ErrorResult& aRv)
+{
+  MOZ_DIAGNOSTIC_ASSERT(aStreamReader);
+  MOZ_DIAGNOSTIC_ASSERT(aInputStream);
+  MOZ_DIAGNOSTIC_ASSERT(!BodyUsed());
+
+  aBodyOut.set(nullptr);
+  *aStreamReader = nullptr;
+  *aInputStream = nullptr;
+
+  if (!mReadableStreamBody) {
+    return;
+  }
+
+  JS::Rooted<JSObject*> stream(aCx, mReadableStreamBody);
+
+  // If this is a ReadableStream with an external source, this has been
+  // generated by a Fetch. In this case, Fetch will be able to recreate it
+  // again when GetBody() is called.
+  if (JS::ReadableStreamGetMode(stream) == JS::ReadableStreamMode::ExternalSource) {
+    aBodyOut.set(nullptr);
+    return;
+  }
+
+  JS::Rooted<JSObject*> branch1(aCx);
+  JS::Rooted<JSObject*> branch2(aCx);
+
+  if (!JS::ReadableStreamTee(aCx, stream, &branch1, &branch2)) {
+    aRv.StealExceptionFromJSContext(aCx);
+    return;
+  }
+
+  mReadableStreamBody = branch1;
+  aBodyOut.set(branch2);
+
+  aRv = FetchStreamReader::Create(aCx, mOwner, aStreamReader, aInputStream);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+}
+
+template
+void
+FetchBody<Request>::MaybeTeeReadableStreamBody(JSContext* aCx,
+                                               JS::MutableHandle<JSObject*> aMessage,
+                                               FetchStreamReader** aStreamReader,
+                                               nsIInputStream** aInputStream,
+                                               ErrorResult& aRv);
+
+template
+void
+FetchBody<Response>::MaybeTeeReadableStreamBody(JSContext* aCx,
+                                                JS::MutableHandle<JSObject*> aMessage,
+                                                FetchStreamReader** aStreamReader,
+                                                nsIInputStream** aInputStream,
+                                                ErrorResult& aRv);
 
 } // namespace dom
 } // namespace mozilla
