@@ -25,7 +25,11 @@ class CacheWorkerHolder final : public workers::WorkerHolder
 {
 public:
   static already_AddRefed<CacheWorkerHolder>
-  Create(workers::WorkerPrivate* aWorkerPrivate);
+  Create(workers::WorkerPrivate* aWorkerPrivate,
+         Behavior aBehavior);
+
+  static already_AddRefed<CacheWorkerHolder>
+  PreferBehavior(CacheWorkerHolder* aCurrentHolder, Behavior aBehavior);
 
   void AddActor(ActorChild* aActor);
   void RemoveActor(ActorChild* aActor);
@@ -36,7 +40,7 @@ public:
   virtual bool Notify(workers::Status aStatus) override;
 
 private:
-  CacheWorkerHolder();
+  explicit CacheWorkerHolder(Behavior aBehavior);
   ~CacheWorkerHolder();
 
   nsTArray<ActorChild*> mActorList;

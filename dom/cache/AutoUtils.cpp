@@ -289,9 +289,9 @@ MatchInPutList(InternalRequest* aRequest,
 } // namespace
 
 void
-AutoChildOpArgs::Add(InternalRequest* aRequest, BodyAction aBodyAction,
-                     SchemeAction aSchemeAction, Response& aResponse,
-                     ErrorResult& aRv)
+AutoChildOpArgs::Add(JSContext* aCx, InternalRequest* aRequest,
+                     BodyAction aBodyAction, SchemeAction aSchemeAction,
+                     Response& aResponse, ErrorResult& aRv)
 {
   MOZ_DIAGNOSTIC_ASSERT(!mSent);
 
@@ -329,7 +329,7 @@ AutoChildOpArgs::Add(InternalRequest* aRequest, BodyAction aBodyAction,
       mTypeUtils->ToCacheRequest(pair.request(), aRequest, aBodyAction,
                                  aSchemeAction, mStreamCleanupList, aRv);
       if (!aRv.Failed()) {
-        mTypeUtils->ToCacheResponse(pair.response(), aResponse,
+        mTypeUtils->ToCacheResponse(aCx, pair.response(), aResponse,
                                     mStreamCleanupList, aRv);
       }
 

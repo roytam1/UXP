@@ -74,7 +74,11 @@ CacheOpChild::CacheOpChild(CacheWorkerHolder* aWorkerHolder,
   MOZ_DIAGNOSTIC_ASSERT(mPromise);
 
   MOZ_ASSERT_IF(!NS_IsMainThread(), aWorkerHolder);
-  SetWorkerHolder(aWorkerHolder);
+  RefPtr<CacheWorkerHolder> workerHolder =
+    CacheWorkerHolder::PreferBehavior(aWorkerHolder,
+                                      CacheWorkerHolder::PreventIdleShutdownStart);
+
+  SetWorkerHolder(workerHolder);
 }
 
 CacheOpChild::~CacheOpChild()
@@ -165,7 +169,11 @@ CacheOpChild::Recv__delete__(const ErrorResult& aRv,
         break;
       }
 
-      actor->SetWorkerHolder(GetWorkerHolder());
+      RefPtr<CacheWorkerHolder> workerHolder =
+        CacheWorkerHolder::PreferBehavior(GetWorkerHolder(),
+                                          CacheWorkerHolder::AllowIdleShutdownStart);
+
+      actor->SetWorkerHolder(workerHolder);
       RefPtr<Cache> cache = new Cache(mGlobal, actor);
       mPromise->MaybeResolve(cache);
       break;

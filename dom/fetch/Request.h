@@ -128,6 +128,8 @@ public:
   void
   GetBody(nsIInputStream** aStream) { return mRequest->GetBody(aStream); }
 
+  using FetchBody::GetBody;
+
   void
   SetBody(nsIInputStream* aStream) { return mRequest->SetBody(aStream); }
 
@@ -162,7 +164,6 @@ public:
 private:
   ~Request();
 
-  nsCOMPtr<nsIGlobalObject> mOwner;
   RefPtr<InternalRequest> mRequest;
   
   // Lazily created.

@@ -92,6 +92,7 @@ EXPORTS.js += [
     '../public/Result.h',
     '../public/RootingAPI.h',
     '../public/SliceBudget.h',
+    '../public/Stream.h',
     '../public/StructuredClone.h',
     '../public/SweepingAPI.h',
     '../public/TraceKind.h',
@@ -384,6 +385,7 @@ main_deunified_sources = [
 SOURCES += [
     'builtin/BigInt.cpp',
     'builtin/RegExp.cpp',
+    'builtin/Stream.cpp',
     'frontend/Parser.cpp',
     'gc/StoreBuffer.cpp',
     'jsarray.cpp',
