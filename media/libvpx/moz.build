@@ -73,6 +73,9 @@ else:
     ASFLAGS += [ '-I%s/media/libvpx/config/generic/' % TOPSRCDIR ]
     CFLAGS += [ '-I%s/media/libvpx/config/generic/' % TOPSRCDIR ]
 
+if CONFIG['GKMEDIAS_SHARED_LIBRARY']:
+    NO_VISIBILITY_FLAGS = True
+
 # We allow warnings for third-party code that can be updated from upstream.
 ALLOW_COMPILER_WARNINGS = True
 
