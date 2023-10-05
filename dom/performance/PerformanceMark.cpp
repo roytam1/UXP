@@ -7,6 +7,7 @@
 #include "MainThreadUtils.h"
 #include "mozilla/dom/PerformanceMarkBinding.h"
 #include "mozilla/dom/MessagePortBinding.h"
+#include "mozilla/ErrorResult.h"
 
 using mozilla::dom::StructuredSerializeOptions;
 using namespace mozilla::dom;
