@@ -6,7 +6,6 @@
 
 // Services = object with smart getters for common XPCOM services
 Components.utils.import("resource://gre/modules/Services.jsm");
-Components.utils.import("resource://gre/modules/AppConstants.jsm");
 
 function init(aEvent)
 {
@@ -69,23 +68,29 @@ function init(aEvent)
   let arch = bundle.GetStringFromName(archResource);
   versionField.textContent += ` (${arch})`;
 
+#ifdef MOZ_WIDGET_GTK
+  // If Linux append the toolkit "(GTK2)" or "(GTK3)"
+  let toolkit = Components.classes["@mozilla.org/xre/app-info;1"].getService(Components.interfaces.nsIXULRuntime).widgetToolkit.toUpperCase();
+  versionField.textContent += ` (${toolkit})`;
+#endif
+
   // Get Release Notes URL from Preferences
   let releaseNotesURL = Services.prefs.getCharPref("app.releaseNotesURL");
   document.getElementById("releasenotes").setAttribute("href", releaseNotesURL);
 
-  if (AppConstants.MOZ_UPDATER) {
-    gAppUpdater = new appUpdater();
+#ifdef MOZ_UPDATER
+  gAppUpdater = new appUpdater();
 
-    let channelLabel = document.getElementById("currentChannel");
-    let currentChannelText = document.getElementById("currentChannelText");
-    channelLabel.value = UpdateUtils.UpdateChannel;
-    if (/^release($|\-)/.test(channelLabel.value))
-        currentChannelText.hidden = true;
-  }
+  let channelLabel = document.getElementById("currentChannel");
+  let currentChannelText = document.getElementById("currentChannelText");
+  channelLabel.value = UpdateUtils.UpdateChannel;
+  if (/^release($|\-)/.test(channelLabel.value))
+      currentChannelText.hidden = true;
+#endif
 
-  if (AppConstants.platform == "macosx") {
-    // it may not be sized at this point, and we need its width to calculate its position
-    window.sizeToContent();
-    window.moveTo((screen.availWidth / 2) - (window.outerWidth / 2), screen.availHeight / 5);
-  }
+#ifdef XP_MACOSX
+  // it may not be sized at this point, and we need its width to calculate its position
+  window.sizeToContent();
+  window.moveTo((screen.availWidth / 2) - (window.outerWidth / 2), screen.availHeight / 5);
+#endif
 }

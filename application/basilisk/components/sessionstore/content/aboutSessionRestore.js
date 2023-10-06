@@ -8,8 +8,6 @@ var {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
-  "resource://gre/modules/AppConstants.jsm");
 
 var gStateObject;
 var gTreeData;
@@ -195,9 +193,11 @@ function onListClick(aEvent) {
   if (cell.col) {
     // Restore this specific tab in the same window for middle/double/accel clicking
     // on a tab's title.
-    let accelKey = AppConstants.platform == "macosx" ?
-                   aEvent.metaKey :
-                   aEvent.ctrlKey;
+#ifdef XP_MACOSX
+    let accelKey = aEvent.metaKey;
+#else
+    let accelKey = aEvent.ctrlKey;
+#endif
     if ((aEvent.button == 1 || aEvent.button == 0 && aEvent.detail == 2 || accelKey) &&
         cell.col.id == "title" &&
         !treeView.isContainer(cell.row)) {

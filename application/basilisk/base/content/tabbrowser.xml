@@ -4123,7 +4123,7 @@
             },
 
             /*
-             * Telemetry and Profiler related helpers for recording tab switch
+             * Profiler related helpers for recording tab switch
              * timing.
              */
 

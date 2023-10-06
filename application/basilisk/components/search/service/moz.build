@@ -8,12 +8,12 @@ DIST_SUBDIR = ''
 DEFINES['HAVE_SIDEBAR'] = True
 
 EXTRA_COMPONENTS += [
+    'nsSearchService.js',
     'nsSearchSuggestions.js',
     'nsSidebar.js',
 ]
 
 EXTRA_PP_COMPONENTS += [
-    'nsSearchService.js',
     'toolkitsearch.manifest',
 ]
 

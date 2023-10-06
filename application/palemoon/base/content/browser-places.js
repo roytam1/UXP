@@ -767,17 +767,46 @@ HistoryMenu.prototype = {
  * Functions for handling events in the Bookmarks Toolbar and menu.
  */
 var BookmarksEventHandler = {
+
+  /**
+   * Handler for mouseUp event for an item in the bookmarks toolbar or menu.
+   * When items are middle-clicked (or clicked with modifier), check if the
+   * menu should remain open.
+   * @param aEvent
+   *        DOMEvent for the click
+   */
+
+  onMouseUp(aEvent) {
+    // Handles left-click with modifier if not browser.bookmarks.openInTabClosesMenu.
+    if (aEvent.button != 0 ||
+        Services.prefs.getBoolPref("browser.bookmarks.openInTabClosesMenu", true))
+      return;
+    let target = aEvent.originalTarget;
+    if (target.tagName != "menuitem")
+      return;
+#ifdef XP_MACOSX
+    var modifKey = aEvent.metaKey;
+#else
+    var modifKey = aEvent.ctrlKey;
+#endif
+    // Don't keep menu open for 'Open all in Tabs'.
+    if (modifKey && !target.classList.contains("openintabs-menuitem")) {
+      target.setAttribute("closemenu", "none");
+    }
+  },
+
   /**
    * Handler for click event for an item in the bookmarks toolbar or menu.
    * Menus and submenus from the folder buttons bubble up to this handler.
    * Left-click is handled in the onCommand function.
    * When items are middle-clicked (or clicked with modifier), open in tabs.
-   * If the click came through a menu, close the menu.
+   * If the click came through a menu, close the menu unless preffed otherwise.
    * @param aEvent
    *        DOMEvent for the click
    * @param aView
    *        The places view which aEvent should be associated with.
    */
+
   onClick: function(aEvent, aView) {
     // Only handle middle-click or left-click with modifiers.
     var modifKey = aEvent.ctrlKey || aEvent.shiftKey;
@@ -786,19 +815,23 @@ var BookmarksEventHandler = {
     }
 
     var target = aEvent.originalTarget;
-    // If this event bubbled up from a menu or menuitem, close the menus.
-    // Do this before opening tabs, to avoid hiding the open tabs confirm-dialog.
-    if (target.localName == "menu" || target.localName == "menuitem") {
-      for (node = target.parentNode; node; node = node.parentNode) {
-        if (node.localName == "menupopup") {
-          node.hidePopup();
-        } else if (node.localName != "menu" &&
-                   node.localName != "splitmenu" &&
-                   node.localName != "hbox" &&
-                   node.localName != "vbox" ) {
-          break;
-        }
-      }
+    // If this event bubbled up from a menu or menuitem,
+    // close the menus if browser.bookmarks.openInTabClosesMenu.
+    if ((Services.prefs.getBoolPref("browser.bookmarks.openInTabClosesMenu", true) &&
+         target.tagName == "menuitem") ||
+        target.tagName == "menu" ||
+        target.classList.contains("openintabs-menuitem")) {
+      closeMenus(aEvent.target);
+    }
+    // Command already precesssed so remove any closemenu attr set in onMouseUp.
+    if (aEvent.button == 0 &&
+        target.tagName == "menuitem" &&
+        target.getAttribute("closemenu") == "none") {
+      // On Mac we need to extend when we remove the flag, to avoid any pre-close
+      // animations.
+      setTimeout(() => {
+        target.removeAttribute("closemenu");
+      }, 500);
     }
 
     if (target._placesNode && PlacesUtils.nodeIsContainer(target._placesNode)) {

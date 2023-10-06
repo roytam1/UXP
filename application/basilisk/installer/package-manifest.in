@@ -74,7 +74,9 @@
 @BINPATH@/@DLL_PREFIX@gkmedias@DLL_SUFFIX@
 #endif
 #ifndef MOZ_SYSTEM_HUNSPELL
+#ifndef XP_SOLARIS
 @BINPATH@/@DLL_PREFIX@hunspell@DLL_SUFFIX@
+#endif
 #endif
 #ifndef MOZ_SYSTEM_NSPR
 #ifndef MOZ_FOLD_LIBS
