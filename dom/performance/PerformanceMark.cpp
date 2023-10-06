@@ -10,6 +10,7 @@
 #include "mozilla/dom/PerformanceBinding.h"
 #include "mozilla/dom/PerformanceMarkBinding.h"
 #include "mozilla/dom/MessagePortBinding.h"
+#include "mozilla/ErrorResult.h"
 #include "nsContentUtils.h"
 
 using mozilla::ErrorResult;

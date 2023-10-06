@@ -13,7 +13,6 @@ var gPluginHandler = {
     "PluginContent:HideNotificationBar",
     "PluginContent:InstallSinglePlugin",
     "PluginContent:ShowPluginCrashedNotification",
-    "PluginContent:SubmitReport",
     "PluginContent:LinkClickCallback",
   ],
 
@@ -62,9 +61,6 @@ var gPluginHandler = {
         this.showPluginCrashedNotification(msg.target, msg.data.messageString,
                                            msg.data.pluginID);
         break;
-      case "PluginContent:SubmitReport":
-        // Nothing to do here
-        break;
       case "PluginContent:LinkClickCallback":
         switch (msg.data.name) {
           case "managePlugins":
@@ -93,11 +89,6 @@ var gPluginHandler = {
       url = Services.blocklist.getPluginBlocklistURL(pluginTag);
     }
     openUILinkIn(url, "tab");
-  },
-
-  submitReport: function(runID, keyVals, submitURLOptIn) {
-    /*** STUB ***/
-    return;
   },
 
   // Callback for user clicking a "reload page" link

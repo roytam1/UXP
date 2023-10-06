@@ -38,7 +38,6 @@
 <!ENTITY crashReporterDesc2.label         "Crash reports help &vendorShortName; fix problems and make your browser more stable and secure">
 <!ENTITY alwaysSubmitCrashReports.label   "Allow &brandShortName; to send backlogged crash reports on your behalf">
 <!ENTITY alwaysSubmitCrashReports.accesskey "c">
-<!ENTITY crashReporterLearnMore.label     "Learn More">
 
 <!ENTITY networkTab.label                "Network">
 

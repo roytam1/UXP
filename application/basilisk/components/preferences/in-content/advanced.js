@@ -209,30 +209,6 @@ var gAdvancedPane = {
   // DATA CHOICES TAB
 
   /**
-   * Set up or hide the Learn More links for various data collection options
-   */
-  _setupLearnMoreLink: function (pref, element) {
-    // set up the Learn More link with the correct URL
-    let url = Services.prefs.getCharPref(pref);
-    let el = document.getElementById(element);
-
-    if (url) {
-      el.setAttribute("href", url);
-    } else {
-      el.setAttribute("hidden", "true");
-    }
-  },
-
-  /**
-   *
-   */
-  initSubmitCrashes: function ()
-  {
-    this._setupLearnMoreLink("toolkit.crashreporter.infoURL",
-                             "crashReporterLearnMore");
-  },
-
-  /**
    * Initialize the health report service reference and checkbox.
    */
   initSubmitHealthReport: function () {
