@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* globals Components, Services, XPCOMUtils, NetUtil, PrivateBrowsingUtils,
+           dump, NetworkManager, PdfjsContentUtils */
 
 "use strict";
 
@@ -23,17 +25,15 @@ const Cr = Components.results;
 const Cu = Components.utils;
 
 const PDFJS_EVENT_ID = "pdf.js.message";
-const PREF_PREFIX = "extensions.uriloader@pdf.js";
-const PDF_VIEWER_ORIGIN = "resource://pdf.js";
+const PDF_CONTENT_TYPE = "application/pdf";
+const PREF_PREFIX = "pdfjs";
 const PDF_VIEWER_WEB_PAGE = "resource://pdf.js/web/viewer.html";
 const MAX_NUMBER_OF_PREFS = 50;
 const MAX_STRING_PREF_LENGTH = 128;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
-
-XPCOMUtils.defineLazyModuleGetter(this, "NetUtil",
-  "resource://gre/modules/NetUtil.jsm");
+Cu.import("resource://gre/modules/NetUtil.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "NetworkManager",
   "resource://pdf.js/PdfJsNetwork.jsm");
@@ -57,7 +57,7 @@ function getContainingBrowser(domWindow) {
 }
 
 function getFindBar(domWindow) {
-  if (Services.appinfo.processType === Services.appinfo.PROCESS_TYPE_CONTENT) {
+  if (PdfjsContentUtils.isRemote) {
     throw new Error("FindBar is not accessible from the content process.");
   }
   try {
@@ -90,10 +90,7 @@ function getIntPref(pref, def) {
 
 function getStringPref(pref, def) {
   try {
-    if (!Services.prefs.getStringPref) {
-      return Services.prefs.getComplexValue(pref, Ci.nsISupportsString).data;
-    }
-    return Services.prefs.getStringPref(pref);
+    return Services.prefs.getComplexValue(pref, Ci.nsISupportsString).data;
   } catch (ex) {
     return def;
   }
@@ -108,21 +105,18 @@ function log(aMsg) {
   dump(msg + "\n");
 }
 
-function getDOMWindow(aChannel, aPrincipal) {
+function getDOMWindow(aChannel) {
   var requestor = aChannel.notificationCallbacks ?
                   aChannel.notificationCallbacks :
                   aChannel.loadGroup.notificationCallbacks;
   var win = requestor.getInterface(Components.interfaces.nsIDOMWindow);
-  // Ensure the window wasn't navigated to something that is not PDF.js.
-  if (!win.document.nodePrincipal.equals(aPrincipal)) {
-    return null;
-  }
   return win;
 }
 
 function getLocalizedStrings(path) {
-  var stringBundle =
-    Services.strings.createBundle("chrome://pdf.js/locale/" + path);
+  var stringBundle = Cc["@mozilla.org/intl/stringbundle;1"].
+      getService(Ci.nsIStringBundleService).
+      createBundle("chrome://pdf.js/locale/" + path);
 
   var map = {};
   var enumerator = stringBundle.getSimpleEnumeration();
@@ -152,7 +146,7 @@ function getLocalizedString(strings, id, property) {
 // PDF data storage
 function PdfDataListener(length) {
   this.length = length; // less than 0, if length is unknown
-  this.buffers = [];
+  this.buffer = null;
   this.loaded = 0;
 }
 
@@ -160,7 +154,15 @@ PdfDataListener.prototype = {
   append: function PdfDataListener_append(chunk) {
     // In most of the cases we will pass data as we receive it, but at the
     // beginning of the loading we may accumulate some data.
-    this.buffers.push(chunk);
+    if (!this.buffer) {
+      this.buffer = new Uint8Array(chunk);
+    } else {
+      var buffer = this.buffer;
+      var newBuffer = new Uint8Array(buffer.length + chunk.length);
+      newBuffer.set(buffer);
+      newBuffer.set(chunk, buffer.length);
+      this.buffer = newBuffer;
+    }
     this.loaded += chunk.length;
     if (this.length >= 0 && this.length < this.loaded) {
       this.length = -1; // reset the length, server is giving incorrect one
@@ -168,26 +170,9 @@ PdfDataListener.prototype = {
     this.onprogress(this.loaded, this.length >= 0 ? this.length : void 0);
   },
   readData: function PdfDataListener_readData() {
-    if (this.buffers.length === 0) {
-      return null;
-    }
-    if (this.buffers.length === 1) {
-      return this.buffers.pop();
-    }
-    // There are multiple buffers that need to be combined into a single
-    // buffer.
-    let combinedLength = 0;
-    for (let buffer of this.buffers) {
-      combinedLength += buffer.length;
-    }
-    let combinedArray = new Uint8Array(combinedLength);
-    let writeOffset = 0;
-    while (this.buffers.length) {
-      let buffer = this.buffers.shift();
-      combinedArray.set(buffer, writeOffset);
-      writeOffset += buffer.length;
-    }
-    return combinedArray;
+    var result = this.buffer;
+    this.buffer = null;
+    return result;
   },
   finish: function PdfDataListener_finish() {
     this.isDataReady = true;
@@ -213,7 +198,7 @@ PdfDataListener.prototype = {
     if (this.errorCode) {
       value(null, this.errorCode);
     }
-  },
+  }
 };
 
 /**
@@ -309,7 +294,7 @@ class ChromeActions {
         onDataAvailable(aRequest, aContext, aDataInputStream, aOffset, aCount) {
           this.extListener.onDataAvailable(aRequest, aContext, aDataInputStream,
                                            aOffset, aCount);
-        },
+        }
       };
 
       channel.asyncOpen2(listener);
@@ -317,10 +302,7 @@ class ChromeActions {
   }
 
   getLocale() {
-    if (!Services.locale.getRequestedLocale) {
-      return getStringPref("general.useragent.locale", "en-US");
-    }
-    return Services.locale.getRequestedLocale() || "en-US";
+    return getStringPref("general.useragent.locale", "en-US");
   }
 
   getStrings(data) {
@@ -344,7 +326,7 @@ class ChromeActions {
     }
 
     // ... and we are in a child process
-    if (Services.appinfo.processType === Services.appinfo.PROCESS_TYPE_CONTENT) {
+    if (PdfjsContentUtils.isRemote) {
       return true;
     }
 
@@ -523,7 +505,7 @@ class RangedChromeActions extends ChromeActions {
           return;
         }
         this.headers[aHeader] = aValue;
-      },
+      }
     };
     if (originalRequest.visitRequestHeaders) {
       originalRequest.visitRequestHeaders(httpHeaderVisitor);
@@ -577,7 +559,7 @@ class RangedChromeActions extends ChromeActions {
           loaded,
           total,
           chunk: this.dataListener.readData(),
-        }, PDF_VIEWER_ORIGIN);
+        }, "*");
       };
       this.dataListener.oncomplete = () => {
         this.dataListener = null;
@@ -591,7 +573,7 @@ class RangedChromeActions extends ChromeActions {
       pdfUrl: this.pdfUrl,
       length: this.contentLength,
       data,
-    }, PDF_VIEWER_ORIGIN);
+    }, "*");
 
     return true;
   }
@@ -613,14 +595,14 @@ class RangedChromeActions extends ChromeActions {
           pdfjsLoadAction: "range",
           begin: aArgs.begin,
           chunk: aArgs.chunk,
-        }, PDF_VIEWER_ORIGIN);
+        }, "*");
       },
       onProgress: function RangedChromeActions_onProgress(evt) {
         domWindow.postMessage({
           pdfjsLoadAction: "rangeProgress",
           loaded: evt.loaded,
-        }, PDF_VIEWER_ORIGIN);
-      },
+        }, "*");
+      }
     });
   }
 
@@ -655,7 +637,7 @@ class StandardChromeActions extends ChromeActions {
         pdfjsLoadAction: "progress",
         loaded,
         total,
-      }, PDF_VIEWER_ORIGIN);
+      }, "*");
     };
 
     this.dataListener.oncomplete = (data, errorCode) => {
@@ -663,7 +645,7 @@ class StandardChromeActions extends ChromeActions {
         pdfjsLoadAction: "complete",
         data,
         errorCode,
-      }, PDF_VIEWER_ORIGIN);
+      }, "*");
 
       this.dataListener = null;
       this.originalRequest = null;
@@ -713,8 +695,7 @@ class RequestListener {
         response = function sendResponse(aResponse) {
           try {
             var listener = doc.createEvent("CustomEvent");
-            let detail = Cu.cloneInto({ response: aResponse, },
-                                      doc.defaultView);
+            let detail = Cu.cloneInto({ response: aResponse }, doc.defaultView);
             listener.initCustomEvent("pdf.js.response", true, false, detail);
             return message.dispatchEvent(listener);
           } catch (e) {
@@ -743,10 +724,10 @@ class FindEventManager {
   }
 
   bind() {
-    var unload = (evt) => {
+    var unload = function(e) {
       this.unbind();
-      this.contentWindow.removeEventListener(evt.type, unload);
-    };
+      this.contentWindow.removeEventListener(e.type, unload);
+    }.bind(this);
     this.contentWindow.addEventListener("unload", unload);
 
     // We cannot directly attach listeners to for the find events
@@ -779,11 +760,11 @@ function PdfStreamConverter() {
 PdfStreamConverter.prototype = {
 
   // properties required for XPCOM registration:
-  classID: Components.ID("{6457a96b-2d68-439a-bcfa-44465fbcdbb1}"),
+  classID: Components.ID("{d0c5195d-e798-49d4-b1d3-9324328b2291}"),
   classDescription: "pdf.js Component",
   contractID: "@mozilla.org/streamconv;1?from=application/pdf&to=*/*",
 
-  classID2: Components.ID("{6457a96b-2d68-439a-bcfa-44465fbcdbb2}"),
+  classID2: Components.ID("{d0c5195d-e798-49d4-b1d3-9324328b2292}"),
   contractID2: "@mozilla.org/streamconv;1?from=application/pdf&to=text/html",
 
   QueryInterface: XPCOMUtils.generateQI([
@@ -828,9 +809,8 @@ PdfStreamConverter.prototype = {
 
     var binaryStream = this.binaryStream;
     binaryStream.setInputStream(aInputStream);
-    let chunk = new ArrayBuffer(aCount);
-    binaryStream.readArrayBuffer(aCount, chunk);
-    this.dataListener.append(new Uint8Array(chunk));
+    var chunk = binaryStream.readByteArray(aCount);
+    this.dataListener.append(chunk);
   },
 
   // nsIRequestObserver::onStartRequest
@@ -862,15 +842,17 @@ PdfStreamConverter.prototype = {
                      aRequest.contentLength >= 0 &&
                      !getBoolPref(PREF_PREFIX + ".disableRange", false) &&
                      (!isPDFBugEnabled ||
-                      !hash.toLowerCase().includes("disablerange=true"));
+                      hash.toLowerCase().indexOf("disablerange=true") < 0);
       streamRequest = contentEncoding === "identity" &&
                       aRequest.contentLength >= 0 &&
                       !getBoolPref(PREF_PREFIX + ".disableStream", false) &&
                       (!isPDFBugEnabled ||
-                       !hash.toLowerCase().includes("disablestream=true"));
+                       hash.toLowerCase().indexOf("disablestream=true") < 0);
     }
 
     aRequest.QueryInterface(Ci.nsIChannel);
+
+    aRequest.QueryInterface(Ci.nsIWritablePropertyBag);
 
     var contentDispositionFilename;
     try {
@@ -878,6 +860,7 @@ PdfStreamConverter.prototype = {
     } catch (e) {}
 
     // Change the content type so we don't get stuck in a loop.
+    aRequest.setProperty("contentType", aRequest.contentType);
     aRequest.contentType = "text/html";
     if (isHttpRequest) {
       // We trust PDF viewer, using no CSP
@@ -915,13 +898,9 @@ PdfStreamConverter.prototype = {
                                  offset, count);
       },
       onStopRequest(request, context, statusCode) {
-        var domWindow = getDOMWindow(channel, resourcePrincipal);
-        if (!Components.isSuccessCode(statusCode) || !domWindow) {
-          // The request may have been aborted and the document may have been
-          // replaced with something that is not PDF.js, abort attaching.
-          listener.onStopRequest(aRequest, context, statusCode);
-          return;
-        }
+        // We get the DOM window here instead of before the request since it
+        // may have changed during a redirect.
+        var domWindow = getDOMWindow(channel);
         var actions;
         if (rangeRequest || streamRequest) {
           actions = new RangedChromeActions(
@@ -932,7 +911,7 @@ PdfStreamConverter.prototype = {
             domWindow, contentDispositionFilename, aRequest, dataListener);
         }
         var requestListener = new RequestListener(actions);
-        domWindow.document.addEventListener(PDFJS_EVENT_ID, function(event) {
+        domWindow.addEventListener(PDFJS_EVENT_ID, function(event) {
           requestListener.receive(event);
         }, false, true);
         if (actions.supportsIntegratedFind()) {
@@ -945,7 +924,7 @@ PdfStreamConverter.prototype = {
           var isObjectEmbed = domWindow.frameElement.tagName !== "IFRAME" ||
             domWindow.frameElement.className === "previewPluginContentFrame";
         }
-      },
+      }
     };
 
     // Keep the URL the same so the browser sees it as the same.
@@ -956,10 +935,11 @@ PdfStreamConverter.prototype = {
     // We can use the resource principal when data is fetched by the chrome,
     // e.g. useful for NoScript. Make make sure we reuse the origin attributes
     // from the request channel to keep isolation consistent.
+    var ssm = Cc["@mozilla.org/scriptsecuritymanager;1"]
+                .getService(Ci.nsIScriptSecurityManager);
     var uri = NetUtil.newURI(PDF_VIEWER_WEB_PAGE);
     var resourcePrincipal =
-      Services.scriptSecurityManager.createCodebasePrincipal(uri,
-        aRequest.loadInfo.originAttributes);
+      ssm.createCodebasePrincipal(uri, aRequest.loadInfo.originAttributes);
     aRequest.owner = resourcePrincipal;
 
     channel.asyncOpen2(proxy);
@@ -979,5 +959,6 @@ PdfStreamConverter.prototype = {
     }
     delete this.dataListener;
     delete this.binaryStream;
-  },
+  }
 };
+

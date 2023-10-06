@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* globals Components, Services, XPCOMUtils */
 
 "use strict";
 
@@ -19,6 +20,7 @@ var EXPORTED_SYMBOLS = ["PdfjsContentUtils"];
 
 const Cc = Components.classes;
 const Ci = Components.interfaces;
+const Cr = Components.results;
 const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
@@ -42,25 +44,14 @@ var PdfjsContentUtils = {
     if (!this._mm) {
       this._mm = Cc["@mozilla.org/childprocessmessagemanager;1"].
         getService(Ci.nsISyncMessageSender);
-      this._mm.addMessageListener("PDFJS:Child:updateSettings", this);
-
-      // The signature of `Services.obs.addObserver` changed in Firefox 55,
-      // see https://bugzilla.mozilla.org/show_bug.cgi?id=1355216.
-      // PLEASE NOTE: While the third parameter is now optional,
-      // omitting it in prior Firefox versions breaks the addon.
-      var ffVersion = parseInt(Services.appinfo.platformVersion);
-      if (ffVersion <= 55) {
-        // eslint-disable-next-line mozilla/no-useless-parameters
-        Services.obs.addObserver(this, "quit-application", false);
-        return;
-      }
-      Services.obs.addObserver(this, "quit-application");
+      this._mm.addMessageListener("PDFJS:Child:refreshSettings", this);
+      Services.obs.addObserver(this, "quit-application", false);
     }
   },
 
   uninit() {
     if (this._mm) {
-      this._mm.removeMessageListener("PDFJS:Child:updateSettings", this);
+      this._mm.removeMessageListener("PDFJS:Child:refreshSettings", this);
       Services.obs.removeObserver(this, "quit-application");
     }
     this._mm = null;
@@ -74,36 +65,44 @@ var PdfjsContentUtils = {
 
   clearUserPref(aPrefName) {
     this._mm.sendSyncMessage("PDFJS:Parent:clearUserPref", {
-      name: aPrefName,
+      name: aPrefName
     });
   },
 
   setIntPref(aPrefName, aPrefValue) {
     this._mm.sendSyncMessage("PDFJS:Parent:setIntPref", {
       name: aPrefName,
-      value: aPrefValue,
+      value: aPrefValue
     });
   },
 
   setBoolPref(aPrefName, aPrefValue) {
     this._mm.sendSyncMessage("PDFJS:Parent:setBoolPref", {
       name: aPrefName,
-      value: aPrefValue,
+      value: aPrefValue
     });
   },
 
   setCharPref(aPrefName, aPrefValue) {
     this._mm.sendSyncMessage("PDFJS:Parent:setCharPref", {
       name: aPrefName,
-      value: aPrefValue,
+      value: aPrefValue
     });
   },
 
   setStringPref(aPrefName, aPrefValue) {
     this._mm.sendSyncMessage("PDFJS:Parent:setStringPref", {
       name: aPrefName,
-      value: aPrefValue,
+      value: aPrefValue
     });
+  },
+
+  /*
+   * Forwards default app query to the parent where we check various
+   * handler app settings only available in the parent process.
+   */
+  isDefaultHandlerApp() {
+    return this._mm.sendSyncMessage("PDFJS:Parent:isDefaultHandlerApp")[0];
   },
 
   /*
@@ -135,20 +134,16 @@ var PdfjsContentUtils = {
 
   receiveMessage(aMsg) {
     switch (aMsg.name) {
-      case "PDFJS:Child:updateSettings":
+      case "PDFJS:Child:refreshSettings":
         // Only react to this if we are remote.
         if (Services.appinfo.processType ===
             Services.appinfo.PROCESS_TYPE_CONTENT) {
           let jsm = "resource://pdf.js/PdfJs.jsm";
           let pdfjs = Components.utils.import(jsm, {}).PdfJs;
-          if (aMsg.data.enabled) {
-            pdfjs.ensureRegistered();
-          } else {
-            pdfjs.ensureUnregistered();
-          }
+          pdfjs.updateRegistration();
         }
         break;
     }
-  },
+  }
 };
 

@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* globals Components, Services, XPCOMUtils, PdfjsChromeUtils,
+           PdfjsContentUtils, PdfStreamConverter */
 
 "use strict";
 
@@ -19,6 +21,7 @@ var EXPORTED_SYMBOLS = ["PdfJs"];
 
 const Cc = Components.classes;
 const Ci = Components.interfaces;
+const Cr = Components.results;
 const Cm = Components.manager;
 const Cu = Components.utils;
 
@@ -29,10 +32,6 @@ const PREF_PREVIOUS_ACTION = PREF_PREFIX + ".previousHandler.preferredAction";
 const PREF_PREVIOUS_ASK = PREF_PREFIX +
                           ".previousHandler.alwaysAskBeforeHandling";
 const PREF_DISABLED_PLUGIN_TYPES = "plugin.disable_full_page_plugin_for_types";
-const PREF_ENABLED_CACHE_STATE = PREF_PREFIX + ".enabledCache.state";
-const PREF_ENABLED_CACHE_INITIALIZED = PREF_PREFIX +
-                                       ".enabledCache.initialized";
-const PREF_APP_UPDATE_POSTUPDATE = "app.update.postupdate";
 const TOPIC_PDFJS_HANDLER_CHANGED = "pdfjs:handlerChanged";
 const TOPIC_PLUGINS_LIST_UPDATED = "plugins-list-updated";
 const TOPIC_PLUGIN_INFO_UPDATED = "plugin-info-updated";
@@ -49,9 +48,9 @@ XPCOMUtils.defineLazyServiceGetter(Svc, "pluginHost",
                                    "@mozilla.org/plugin/host;1",
                                    "nsIPluginHost");
 XPCOMUtils.defineLazyModuleGetter(this, "PdfjsChromeUtils",
-                               "resource://pdf.js/PdfjsChromeUtils.jsm");
+                                  "resource://pdf.js/PdfjsChromeUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PdfjsContentUtils",
-                               "resource://pdf.js/PdfjsContentUtils.jsm");
+                                  "resource://pdf.js/PdfjsContentUtils.jsm");
 
 function getBoolPref(aPref, aDefaultValue) {
   try {
@@ -70,38 +69,35 @@ function getIntPref(aPref, aDefaultValue) {
 }
 
 function isDefaultHandler() {
-  if (Services.appinfo.processType !== Services.appinfo.PROCESS_TYPE_DEFAULT) {
-    throw new Error("isDefaultHandler should only get called in the parent " +
-                    "process.");
-  }
-  return PdfjsChromeUtils.isDefaultHandlerApp();
+ if (Services.appinfo.processType === Services.appinfo.PROCESS_TYPE_CONTENT) {
+   return PdfjsContentUtils.isDefaultHandlerApp();
+ }
+ return PdfjsChromeUtils.isDefaultHandlerApp();
 }
 
 function initializeDefaultPreferences() {
-  /* eslint-disable semi */
   var DEFAULT_PREFERENCES =
 {
   "showPreviousViewOnLoad": true,
   "defaultZoomValue": "",
   "sidebarViewOnLoad": 0,
-  "cursorToolOnLoad": 0,
+  "enableHandToolOnLoad": false,
   "enableWebGL": false,
   "pdfBugEnabled": false,
   "disableRange": false,
   "disableStream": false,
   "disableAutoFetch": false,
   "disableFontFace": false,
-  "textLayerMode": 1,
+  "disableTextLayer": false,
   "useOnlyCssZoom": false,
   "externalLinkTarget": 0,
+  "enhanceTextSelection": false,
   "renderer": "canvas",
   "renderInteractiveForms": false,
   "enablePrintAutoRotate": false,
-  "disablePageMode": false,
   "disablePageLabels": false
 }
 
-  /* eslint-enable semi */
 
   var defaultBranch = Services.prefs.getDefaultBranch(PREF_PREFIX + ".");
   var defaultValue;
@@ -149,7 +145,7 @@ Factory.prototype = {
       registrar.unregisterFactory(this._classID2, this._factory);
     }
     this._factory = null;
-  },
+  }
 };
 
 var PdfJs = {
@@ -193,10 +189,10 @@ var PdfJs = {
   },
 
   updateRegistration: function updateRegistration() {
-    if (this.checkEnabled()) {
-      this.ensureRegistered();
+    if (this.enabled) {
+      this._ensureRegistered();
     } else {
-      this.ensureUnregistered();
+      this._ensureUnregistered();
     }
   },
 
@@ -209,7 +205,7 @@ var PdfJs = {
       Services.obs.removeObserver(this, TOPIC_PLUGIN_INFO_UPDATED);
       this._initialized = false;
     }
-    this.ensureUnregistered();
+    this._ensureUnregistered();
   },
 
   _migrate: function migrate() {
@@ -259,7 +255,7 @@ var PdfJs = {
       types = stringTypes.split(",");
     }
 
-    if (!types.includes(PDF_CONTENT_TYPE)) {
+    if (types.indexOf(PDF_CONTENT_TYPE) === -1) {
       types.push(PDF_CONTENT_TYPE);
     }
     prefs.setCharPref(PREF_DISABLED_PLUGIN_TYPES, types.join(","));
@@ -272,7 +268,23 @@ var PdfJs = {
                                         false);
   },
 
-  _isEnabled: function _isEnabled() {
+  // nsIObserver
+  observe: function observe(aSubject, aTopic, aData) {
+    this.updateRegistration();
+    if (Services.appinfo.processType ===
+        Services.appinfo.PROCESS_TYPE_DEFAULT) {
+      let jsm = "resource://pdf.js/PdfjsChromeUtils.jsm";
+      let PdfjsChromeUtils = Components.utils.import(jsm, {}).PdfjsChromeUtils;
+      PdfjsChromeUtils.notifyChildOfSettingsChange();
+    }
+  },
+
+  /**
+   * pdf.js is only enabled if it is both selected as the pdf viewer and if the
+   * global switch enabling it is true.
+   * @return {boolean} Whether or not it's enabled.
+   */
+  get enabled() {
     var disabled = getBoolPref(PREF_DISABLED, true);
     if (disabled) {
       return false;
@@ -287,7 +299,7 @@ var PdfJs = {
     if (Services.prefs.prefHasUserValue(PREF_DISABLED_PLUGIN_TYPES)) {
       let disabledPluginTypes =
         Services.prefs.getCharPref(PREF_DISABLED_PLUGIN_TYPES).split(",");
-      if (disabledPluginTypes.includes(PDF_CONTENT_TYPE)) {
+      if (disabledPluginTypes.indexOf(PDF_CONTENT_TYPE) >= 0) {
         return true;
       }
     }
@@ -312,52 +324,7 @@ var PdfJs = {
     return !enabledPluginFound;
   },
 
-  checkEnabled: function checkEnabled() {
-    let isEnabled = this._isEnabled();
-    // This will be updated any time we observe a dependency changing, since
-    // updateRegistration internally calls enabled.
-    Services.prefs.setBoolPref(PREF_ENABLED_CACHE_STATE, isEnabled);
-    return isEnabled;
-  },
-
-  // nsIObserver
-  observe: function observe(aSubject, aTopic, aData) {
-    if (Services.appinfo.processType !==
-        Services.appinfo.PROCESS_TYPE_DEFAULT) {
-      throw new Error("Only the parent process should be observing PDF " +
-                      "handler changes.");
-    }
-
-    this.updateRegistration();
-    let jsm = "resource://pdf.js/PdfjsChromeUtils.jsm";
-    let PdfjsChromeUtils = Cu.import(jsm, {}).PdfjsChromeUtils;
-    PdfjsChromeUtils.notifyChildOfSettingsChange(this.enabled);
-  },
-
-  /**
-   * pdf.js is only enabled if it is both selected as the pdf viewer and if the
-   * global switch enabling it is true.
-   * @return {boolean} Whether or not it's enabled.
-   */
-  get enabled() {
-    /*if (!Services.policies.isAllowed("PDF.js")) {
-      return false;
-    }*/
-
-    if (!Services.prefs.getBoolPref(PREF_ENABLED_CACHE_INITIALIZED, false)) {
-      // If we just updated, and the cache hasn't been initialized, then we
-      // can't assume a default state, and need to synchronously initialize
-      // PdfJs
-      if (Services.prefs.prefHasUserValue(PREF_APP_UPDATE_POSTUPDATE)) {
-        this.checkEnabled();
-      }
-
-      Services.prefs.setBoolPref(PREF_ENABLED_CACHE_INITIALIZED, true);
-    }
-    return Services.prefs.getBoolPref(PREF_ENABLED_CACHE_STATE, true);
-  },
-
-  ensureRegistered: function ensureRegistered() {
+  _ensureRegistered: function _ensureRegistered() {
     if (this._registered) {
       return;
     }
@@ -368,7 +335,7 @@ var PdfJs = {
     this._registered = true;
   },
 
-  ensureUnregistered: function ensureUnregistered() {
+  _ensureUnregistered: function _ensureUnregistered() {
     if (!this._registered) {
       return;
     }
@@ -377,5 +344,6 @@ var PdfJs = {
     delete this._pdfStreamConverterFactory;
 
     this._registered = false;
-  },
+  }
 };
+
