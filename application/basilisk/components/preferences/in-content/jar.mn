@@ -8,7 +8,7 @@ browser.jar:
    content/browser/preferences/in-content/subdialogs.js
 
    content/browser/preferences/in-content/main.js
-   content/browser/preferences/in-content/privacy.js
+*  content/browser/preferences/in-content/privacy.js
    content/browser/preferences/in-content/containers.js
    content/browser/preferences/in-content/advanced.js
    content/browser/preferences/in-content/applications.js
@@ -16,5 +16,5 @@ browser.jar:
 #ifdef MOZ_SERVICES_SYNC
    content/browser/preferences/in-content/sync.js
 #endif
-   content/browser/preferences/in-content/security.js
+*  content/browser/preferences/in-content/security.js
    content/browser/preferences/in-content/search.js
