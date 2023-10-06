@@ -12,87 +12,109 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* jshint esnext:true */
-/* globals Components, Services, XPCOMUtils, PdfjsChromeUtils,
-           PdfjsContentUtils, PdfStreamConverter */
 
-'use strict';
+"use strict";
 
-var EXPORTED_SYMBOLS = ['PdfJs'];
+var EXPORTED_SYMBOLS = ["PdfJs"];
 
 const Cc = Components.classes;
 const Ci = Components.interfaces;
-const Cr = Components.results;
 const Cm = Components.manager;
 const Cu = Components.utils;
 
-const PREF_PREFIX = 'pdfjs';
-const PREF_DISABLED = PREF_PREFIX + '.disabled';
-const PREF_MIGRATION_VERSION = PREF_PREFIX + '.migrationVersion';
-const PREF_PREVIOUS_ACTION = PREF_PREFIX + '.previousHandler.preferredAction';
+const PREF_PREFIX = "pdfjs";
+const PREF_DISABLED = PREF_PREFIX + ".disabled";
+const PREF_MIGRATION_VERSION = PREF_PREFIX + ".migrationVersion";
+const PREF_PREVIOUS_ACTION = PREF_PREFIX + ".previousHandler.preferredAction";
 const PREF_PREVIOUS_ASK = PREF_PREFIX +
-                          '.previousHandler.alwaysAskBeforeHandling';
-const PREF_DISABLED_PLUGIN_TYPES = 'plugin.disable_full_page_plugin_for_types';
-const TOPIC_PDFJS_HANDLER_CHANGED = 'pdfjs:handlerChanged';
-const TOPIC_PLUGINS_LIST_UPDATED = 'plugins-list-updated';
-const TOPIC_PLUGIN_INFO_UPDATED = 'plugin-info-updated';
-const PDF_CONTENT_TYPE = 'application/pdf';
+                          ".previousHandler.alwaysAskBeforeHandling";
+const PREF_DISABLED_PLUGIN_TYPES = "plugin.disable_full_page_plugin_for_types";
+const PREF_ENABLED_CACHE_STATE = PREF_PREFIX + ".enabledCache.state";
+const PREF_ENABLED_CACHE_INITIALIZED = PREF_PREFIX +
+                                       ".enabledCache.initialized";
+const PREF_APP_UPDATE_POSTUPDATE = "app.update.postupdate";
+const TOPIC_PDFJS_HANDLER_CHANGED = "pdfjs:handlerChanged";
+const TOPIC_PLUGINS_LIST_UPDATED = "plugins-list-updated";
+const TOPIC_PLUGIN_INFO_UPDATED = "plugin-info-updated";
+const PDF_CONTENT_TYPE = "application/pdf";
 
-Cu.import('resource://gre/modules/XPCOMUtils.jsm');
-Cu.import('resource://gre/modules/Services.jsm');
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/Services.jsm");
 
 var Svc = {};
-XPCOMUtils.defineLazyServiceGetter(Svc, 'mime',
-                                   '@mozilla.org/mime;1',
-                                   'nsIMIMEService');
-XPCOMUtils.defineLazyServiceGetter(Svc, 'pluginHost',
-                                   '@mozilla.org/plugin/host;1',
-                                   'nsIPluginHost');
-XPCOMUtils.defineLazyModuleGetter(this, 'PdfjsChromeUtils',
-                                  'resource://pdf.js/PdfjsChromeUtils.jsm');
-XPCOMUtils.defineLazyModuleGetter(this, 'PdfjsContentUtils',
-                                  'resource://pdf.js/PdfjsContentUtils.jsm');
+XPCOMUtils.defineLazyServiceGetter(Svc, "mime",
+                                   "@mozilla.org/mime;1",
+                                   "nsIMIMEService");
+XPCOMUtils.defineLazyServiceGetter(Svc, "pluginHost",
+                                   "@mozilla.org/plugin/host;1",
+                                   "nsIPluginHost");
+XPCOMUtils.defineLazyModuleGetter(this, "PdfjsChromeUtils",
+                               "resource://pdf.js/PdfjsChromeUtils.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "PdfjsContentUtils",
+                               "resource://pdf.js/PdfjsContentUtils.jsm");
+
+function getBoolPref(aPref, aDefaultValue) {
+  try {
+    return Services.prefs.getBoolPref(aPref);
+  } catch (ex) {
+    return aDefaultValue;
+  }
+}
+
+function getIntPref(aPref, aDefaultValue) {
+  try {
+    return Services.prefs.getIntPref(aPref);
+  } catch (ex) {
+    return aDefaultValue;
+  }
+}
+
 function isDefaultHandler() {
- if (Services.appinfo.processType === Services.appinfo.PROCESS_TYPE_CONTENT) {
-   return PdfjsContentUtils.isDefaultHandlerApp();
- }
- return PdfjsChromeUtils.isDefaultHandlerApp();
+  if (Services.appinfo.processType !== Services.appinfo.PROCESS_TYPE_DEFAULT) {
+    throw new Error("isDefaultHandler should only get called in the parent " +
+                    "process.");
+  }
+  return PdfjsChromeUtils.isDefaultHandlerApp();
 }
 
 function initializeDefaultPreferences() {
+  /* eslint-disable semi */
   var DEFAULT_PREFERENCES =
 {
   "showPreviousViewOnLoad": true,
   "defaultZoomValue": "",
   "sidebarViewOnLoad": 0,
-  "enableHandToolOnLoad": false,
+  "cursorToolOnLoad": 0,
   "enableWebGL": false,
   "pdfBugEnabled": false,
   "disableRange": false,
   "disableStream": false,
   "disableAutoFetch": false,
   "disableFontFace": false,
-  "disableTextLayer": false,
+  "textLayerMode": 1,
   "useOnlyCssZoom": false,
   "externalLinkTarget": 0,
-  "enhanceTextSelection": false,
+  "renderer": "canvas",
   "renderInteractiveForms": false,
+  "enablePrintAutoRotate": false,
+  "disablePageMode": false,
   "disablePageLabels": false
 }
 
+  /* eslint-enable semi */
 
-  var defaultBranch = Services.prefs.getDefaultBranch(PREF_PREFIX + '.');
+  var defaultBranch = Services.prefs.getDefaultBranch(PREF_PREFIX + ".");
   var defaultValue;
   for (var key in DEFAULT_PREFERENCES) {
     defaultValue = DEFAULT_PREFERENCES[key];
     switch (typeof defaultValue) {
-      case 'boolean':
+      case "boolean":
         defaultBranch.setBoolPref(key, defaultValue);
         break;
-      case 'number':
+      case "number":
         defaultBranch.setIntPref(key, defaultValue);
         break;
-      case 'string':
+      case "string":
         defaultBranch.setCharPref(key, defaultValue);
         break;
     }
@@ -127,7 +149,7 @@ Factory.prototype = {
       registrar.unregisterFactory(this._classID2, this._factory);
     }
     this._factory = null;
-  }
+  },
 };
 
 var PdfJs = {
@@ -138,8 +160,8 @@ var PdfJs = {
   init: function init(remote) {
     if (Services.appinfo.processType !==
         Services.appinfo.PROCESS_TYPE_DEFAULT) {
-      throw new Error('PdfJs.init should only get called ' +
-                      'in the parent process.');
+      throw new Error("PdfJs.init should only get called " +
+                      "in the parent process.");
     }
     PdfjsChromeUtils.init();
     if (!remote) {
@@ -155,7 +177,7 @@ var PdfJs = {
     }
     this._initialized = true;
 
-    if (!Services.prefs.getBoolPref(PREF_DISABLED, true)) {
+    if (!getBoolPref(PREF_DISABLED, true)) {
       this._migrate();
     }
 
@@ -171,28 +193,28 @@ var PdfJs = {
   },
 
   updateRegistration: function updateRegistration() {
-    if (this.enabled) {
-      this._ensureRegistered();
+    if (this.checkEnabled()) {
+      this.ensureRegistered();
     } else {
-      this._ensureUnregistered();
+      this.ensureUnregistered();
     }
   },
 
   uninit: function uninit() {
     if (this._initialized) {
-      Services.prefs.removeObserver(PREF_DISABLED, this, false);
-      Services.prefs.removeObserver(PREF_DISABLED_PLUGIN_TYPES, this, false);
-      Services.obs.removeObserver(this, TOPIC_PDFJS_HANDLER_CHANGED, false);
-      Services.obs.removeObserver(this, TOPIC_PLUGINS_LIST_UPDATED, false);
-      Services.obs.removeObserver(this, TOPIC_PLUGIN_INFO_UPDATED, false);
+      Services.prefs.removeObserver(PREF_DISABLED, this);
+      Services.prefs.removeObserver(PREF_DISABLED_PLUGIN_TYPES, this);
+      Services.obs.removeObserver(this, TOPIC_PDFJS_HANDLER_CHANGED);
+      Services.obs.removeObserver(this, TOPIC_PLUGINS_LIST_UPDATED);
+      Services.obs.removeObserver(this, TOPIC_PLUGIN_INFO_UPDATED);
       this._initialized = false;
     }
-    this._ensureUnregistered();
+    this.ensureUnregistered();
   },
 
   _migrate: function migrate() {
     const VERSION = 2;
-    var currentVersion = Services.prefs.getIntPref(PREF_MIGRATION_VERSION, 0);
+    var currentVersion = getIntPref(PREF_MIGRATION_VERSION, 0);
     if (currentVersion >= VERSION) {
       return;
     }
@@ -202,13 +224,13 @@ var PdfJs = {
     }
     if (currentVersion < 2) {
       // cleaning up of unused database preference (see #3994)
-      Services.prefs.clearUserPref(PREF_PREFIX + '.database');
+      Services.prefs.clearUserPref(PREF_PREFIX + ".database");
     }
     Services.prefs.setIntPref(PREF_MIGRATION_VERSION, VERSION);
   },
 
   _becomeHandler: function _becomeHandler() {
-    let handlerInfo = Svc.mime.getFromTypeAndExtension(PDF_CONTENT_TYPE, 'pdf');
+    let handlerInfo = Svc.mime.getFromTypeAndExtension(PDF_CONTENT_TYPE, "pdf");
     let prefs = Services.prefs;
     if (handlerInfo.preferredAction !== Ci.nsIHandlerInfo.handleInternally &&
         handlerInfo.preferredAction !== false) {
@@ -219,7 +241,7 @@ var PdfJs = {
       prefs.setBoolPref(PREF_PREVIOUS_ASK, handlerInfo.alwaysAskBeforeHandling);
     }
 
-    let handlerService = Cc['@mozilla.org/uriloader/handler-service;1'].
+    let handlerService = Cc["@mozilla.org/uriloader/handler-service;1"].
                          getService(Ci.nsIHandlerService);
 
     // Change and save mime handler settings.
@@ -228,46 +250,30 @@ var PdfJs = {
     handlerService.store(handlerInfo);
 
     // Also disable any plugins for pdfs.
-    var stringTypes = '';
+    var stringTypes = "";
     var types = [];
     if (prefs.prefHasUserValue(PREF_DISABLED_PLUGIN_TYPES)) {
       stringTypes = prefs.getCharPref(PREF_DISABLED_PLUGIN_TYPES);
     }
-    if (stringTypes !== '') {
-      types = stringTypes.split(',');
+    if (stringTypes !== "") {
+      types = stringTypes.split(",");
     }
 
-    if (types.indexOf(PDF_CONTENT_TYPE) === -1) {
+    if (!types.includes(PDF_CONTENT_TYPE)) {
       types.push(PDF_CONTENT_TYPE);
     }
-    prefs.setCharPref(PREF_DISABLED_PLUGIN_TYPES, types.join(','));
+    prefs.setCharPref(PREF_DISABLED_PLUGIN_TYPES, types.join(","));
 
     // Update the category manager in case the plugins are already loaded.
-    let categoryManager = Cc['@mozilla.org/categorymanager;1'];
+    let categoryManager = Cc["@mozilla.org/categorymanager;1"];
     categoryManager.getService(Ci.nsICategoryManager).
-                    deleteCategoryEntry('Gecko-Content-Viewers',
+                    deleteCategoryEntry("Gecko-Content-Viewers",
                                         PDF_CONTENT_TYPE,
                                         false);
   },
 
-  // nsIObserver
-  observe: function observe(aSubject, aTopic, aData) {
-    this.updateRegistration();
-    if (Services.appinfo.processType ===
-        Services.appinfo.PROCESS_TYPE_DEFAULT) {
-      let jsm = 'resource://pdf.js/PdfjsChromeUtils.jsm';
-      let PdfjsChromeUtils = Components.utils.import(jsm, {}).PdfjsChromeUtils;
-      PdfjsChromeUtils.notifyChildOfSettingsChange();
-    }
-  },
-
-  /**
-   * pdf.js is only enabled if it is both selected as the pdf viewer and if the
-   * global switch enabling it is true.
-   * @return {boolean} Whether or not it's enabled.
-   */
-  get enabled() {
-    var disabled = Services.prefs.getBoolPref(PREF_DISABLED, true);
+  _isEnabled: function _isEnabled() {
+    var disabled = getBoolPref(PREF_DISABLED, true);
     if (disabled) {
       return false;
     }
@@ -280,8 +286,8 @@ var PdfJs = {
     // Check if we have disabled plugin handling of 'application/pdf' in prefs
     if (Services.prefs.prefHasUserValue(PREF_DISABLED_PLUGIN_TYPES)) {
       let disabledPluginTypes =
-        Services.prefs.getCharPref(PREF_DISABLED_PLUGIN_TYPES).split(',');
-      if (disabledPluginTypes.indexOf(PDF_CONTENT_TYPE) >= 0) {
+        Services.prefs.getCharPref(PREF_DISABLED_PLUGIN_TYPES).split(",");
+      if (disabledPluginTypes.includes(PDF_CONTENT_TYPE)) {
         return true;
       }
     }
@@ -289,7 +295,7 @@ var PdfJs = {
     // Check if there is an enabled pdf plugin.
     // Note: this check is performed last because getPluginTags() triggers
     // costly plugin list initialization (bug 881575)
-    let tags = Cc['@mozilla.org/plugin/host;1'].
+    let tags = Cc["@mozilla.org/plugin/host;1"].
                   getService(Ci.nsIPluginHost).
                   getPluginTags();
     let enabledPluginFound = tags.some(function(tag) {
@@ -306,26 +312,70 @@ var PdfJs = {
     return !enabledPluginFound;
   },
 
-  _ensureRegistered: function _ensureRegistered() {
+  checkEnabled: function checkEnabled() {
+    let isEnabled = this._isEnabled();
+    // This will be updated any time we observe a dependency changing, since
+    // updateRegistration internally calls enabled.
+    Services.prefs.setBoolPref(PREF_ENABLED_CACHE_STATE, isEnabled);
+    return isEnabled;
+  },
+
+  // nsIObserver
+  observe: function observe(aSubject, aTopic, aData) {
+    if (Services.appinfo.processType !==
+        Services.appinfo.PROCESS_TYPE_DEFAULT) {
+      throw new Error("Only the parent process should be observing PDF " +
+                      "handler changes.");
+    }
+
+    this.updateRegistration();
+    let jsm = "resource://pdf.js/PdfjsChromeUtils.jsm";
+    let PdfjsChromeUtils = Cu.import(jsm, {}).PdfjsChromeUtils;
+    PdfjsChromeUtils.notifyChildOfSettingsChange(this.enabled);
+  },
+
+  /**
+   * pdf.js is only enabled if it is both selected as the pdf viewer and if the
+   * global switch enabling it is true.
+   * @return {boolean} Whether or not it's enabled.
+   */
+  get enabled() {
+    if (!Services.policies.isAllowed("PDF.js")) {
+      return false;
+    }
+
+    if (!Services.prefs.getBoolPref(PREF_ENABLED_CACHE_INITIALIZED, false)) {
+      // If we just updated, and the cache hasn't been initialized, then we
+      // can't assume a default state, and need to synchronously initialize
+      // PdfJs
+      if (Services.prefs.prefHasUserValue(PREF_APP_UPDATE_POSTUPDATE)) {
+        this.checkEnabled();
+      }
+
+      Services.prefs.setBoolPref(PREF_ENABLED_CACHE_INITIALIZED, true);
+    }
+    return Services.prefs.getBoolPref(PREF_ENABLED_CACHE_STATE, true);
+  },
+
+  ensureRegistered: function ensureRegistered() {
     if (this._registered) {
       return;
     }
     this._pdfStreamConverterFactory = new Factory();
-    Cu.import('resource://pdf.js/PdfStreamConverter.jsm');
+    Cu.import("resource://pdf.js/PdfStreamConverter.jsm");
     this._pdfStreamConverterFactory.register(PdfStreamConverter);
 
     this._registered = true;
   },
 
-  _ensureUnregistered: function _ensureUnregistered() {
+  ensureUnregistered: function ensureUnregistered() {
     if (!this._registered) {
       return;
     }
     this._pdfStreamConverterFactory.unregister();
-    Cu.unload('resource://pdf.js/PdfStreamConverter.jsm');
+    Cu.unload("resource://pdf.js/PdfStreamConverter.jsm");
     delete this._pdfStreamConverterFactory;
 
     this._registered = false;
-  }
+  },
 };
-

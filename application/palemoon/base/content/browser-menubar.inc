@@ -371,6 +371,7 @@
                placespopup="true"
                context="placesContext"
                openInTabs="children"
+               onmouseup="BookmarksEventHandler.onMouseUp(event);"
                oncommand="BookmarksEventHandler.onCommand(event, this.parentNode._placesView);"
                onclick="BookmarksEventHandler.onClick(event, this.parentNode._placesView);"
                onpopupshowing="PlacesCommandHook.updateBookmarkAllTabsCommand();

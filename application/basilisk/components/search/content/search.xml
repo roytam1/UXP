@@ -1832,7 +1832,6 @@
           return false;
         ]]></body>
       </method>
-
     </implementation>
 
     <handlers>
