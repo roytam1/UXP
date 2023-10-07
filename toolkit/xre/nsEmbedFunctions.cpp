@@ -471,11 +471,9 @@ XRE_InitChildProcess(int aArgc,
       // Content processes need the XPCOM/chromium frankenventloop
       uiLoopType = MessageLoop::TYPE_MOZILLA_CHILD;
       break;
-#ifdef MOZ_GMP
   case GeckoProcessType_GMPlugin:
       uiLoopType = MessageLoop::TYPE_DEFAULT;
       break;
-#endif
   default:
       uiLoopType = MessageLoop::TYPE_UI;
       break;
@@ -537,11 +535,13 @@ XRE_InitChildProcess(int aArgc,
 #endif
         break;
 
-#ifdef MOZ_GMP
       case GeckoProcessType_GMPlugin:
+#ifdef MOZ_GMP
         process = new gmp::GMPProcessChild(parentPID);
-        break;
+#else
+        NS_RUNTIMEABORT("rebuild with Gecko Media Plugins enabled");
 #endif
+        break;
 
       case GeckoProcessType_GPU:
         process = new gfx::GPUProcessImpl(parentPID);
