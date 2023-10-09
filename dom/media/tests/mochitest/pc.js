@@ -334,7 +334,7 @@ PeerConnectionTest.prototype.createOffer = function(peer) {
  *
  * @param {PeerConnectionWrapper} peer
           The peer connection wrapper to run the command on
- * @param {RTCSessionDescription} desc
+ * @param {RTCSessionDescriptionInit} desc
  *        Session description for the local description request
  */
 PeerConnectionTest.prototype.setLocalDescription =
@@ -403,7 +403,7 @@ PeerConnectionTest.prototype.setOfferOptions = function(options) {
  *
  * @param {PeerConnectionWrapper} peer
           The peer connection wrapper to run the command on
- * @param {RTCSessionDescription} desc
+ * @param {RTCSessionDescriptionInit} desc
  *        Session description for the remote description request
  */
 PeerConnectionTest.prototype.setRemoteDescription =
@@ -1064,7 +1064,7 @@ PeerConnectionWrapper.prototype = {
    * Sets the local description and automatically handles the failure case.
    *
    * @param {object} desc
-   *        RTCSessionDescription for the local description request
+   *        RTCSessionDescriptionInit for the local description request
    */
   setLocalDescription : function(desc) {
     this.observedNegotiationNeeded = undefined;
@@ -1078,7 +1078,7 @@ PeerConnectionWrapper.prototype = {
    * causes the test case to fail if the call succeeds.
    *
    * @param {object} desc
-   *        RTCSessionDescription for the local description request
+   *        RTCSessionDescriptionInit for the local description request
    * @returns {Promise}
    *        A promise that resolves to the expected error
    */
@@ -1095,7 +1095,7 @@ PeerConnectionWrapper.prototype = {
    * Sets the remote description and automatically handles the failure case.
    *
    * @param {object} desc
-   *        RTCSessionDescription for the remote description request
+   *        RTCSessionDescriptionInit for the remote description request
    */
   setRemoteDescription : function(desc) {
     this.observedNegotiationNeeded = undefined;
@@ -1115,7 +1115,7 @@ PeerConnectionWrapper.prototype = {
    * causes the test case to fail if the call succeeds.
    *
    * @param {object} desc
-   *        RTCSessionDescription for the remote description request
+   *        RTCSessionDescriptionInit for the remote description request
    * @returns {Promise}
    *        a promise that resolve to the returned error
    */
