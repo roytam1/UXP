@@ -462,6 +462,11 @@ pref("dom.disable_window_flip",                   true);
 // tracking/profiling.
 pref("dom.enable_performance_navigation_timing", false);
 
+// This pref controls whether PerformanceObserver is enabled or not.
+// We enable it by default, unlike UXP and Pale Moon because several sites are
+// beginning to expect this to be present.
+pref("dom.enable_performance_observer", true);
+
 // popups.policy 1=allow,2=reject
 pref("privacy.popups.policy",               1);
 pref("privacy.popups.usecustom",            true);
