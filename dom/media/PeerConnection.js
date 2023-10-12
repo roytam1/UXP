@@ -38,6 +38,16 @@ const PC_RECEIVER_CID = Components.ID("{d974b814-8fde-411c-8c45-b86791b81030}");
 const PC_COREQUEST_CID = Components.ID("{74b2122d-65a8-4824-aa9e-3d664cb75dc2}");
 const PC_DTMF_SENDER_CID = Components.ID("{3610C242-654E-11E6-8EC0-6D1BE389A607}");
 
+function logMsg(msg, file, line, flag, winID) {
+  let scriptErrorClass = Cc["@mozilla.org/scripterror;1"];
+  let scriptError = scriptErrorClass.createInstance(Ci.nsIScriptError);
+  scriptError.initWithWindowID(msg, file, null, line, 0, flag,
+                               "content javascript", winID);
+  let console = Cc["@mozilla.org/consoleservice;1"].
+  getService(Ci.nsIConsoleService);
+  console.logMessage(scriptError);
+};
+
 // Global list of PeerConnection objects, so they can be cleaned up when
 // a page is torn down. (Maps inner window ID to an array of PC objects).
 function GlobalPCList() {
@@ -217,9 +227,7 @@ GlobalPCList.prototype = {
 };
 var _globalPCList = new GlobalPCList();
 
-function RTCIceCandidate() {
-  this.candidate = this.sdpMid = this.sdpMLineIndex = null;
-}
+function RTCIceCandidate() {}
 RTCIceCandidate.prototype = {
   classDescription: "RTCIceCandidate",
   classID: PC_ICE_CID,
@@ -230,15 +238,11 @@ RTCIceCandidate.prototype = {
   init: function(win) { this._win = win; },
 
   __init: function(dict) {
-    this.candidate = dict.candidate;
-    this.sdpMid = dict.sdpMid;
-    this.sdpMLineIndex = ("sdpMLineIndex" in dict)? dict.sdpMLineIndex : null;
+    Object.assign(this, dict);
   }
 };
 
-function RTCSessionDescription() {
-  this.type = this.sdp = null;
-}
+function RTCSessionDescription() {}
 RTCSessionDescription.prototype = {
   classDescription: "RTCSessionDescription",
   classID: PC_SESSION_CID,
@@ -246,11 +250,41 @@ RTCSessionDescription.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsISupports,
                                          Ci.nsIDOMGlobalPropertyInitializer]),
 
-  init: function(win) { this._win = win; },
+  init: function(win) {
+    this._win = win;
+    this._winID = this._win.QueryInterface(Ci.nsIInterfaceRequestor)
+    .getInterface(Ci.nsIDOMWindowUtils).currentInnerWindowID;
+  },
 
-  __init: function(dict) {
-    this.type = dict.type;
-    this.sdp  = dict.sdp;
+  __init: function({ type, sdp }) {
+    Object.assign(this, { _type: type, _sdp: sdp });
+  },
+
+  get type() { return this._type; },
+  set type(type) {
+    this.warn();
+    this._type = type;
+  },
+
+  get sdp() { return this._sdp; },
+  set sdp(sdp) {
+    this.warn();
+    this._sdp = sdp;
+  },
+
+  warn: function() {
+    if (!this._warned) {
+      // Warn once per RTCSessionDescription about deprecated writable usage.
+      this.logWarning("RTCSessionDescription's members are readonly! " +
+                      "Writing to them is deprecated and will break soon!");
+      this._warned = true;
+    }
+  },
+
+  logWarning: function(msg) {
+    let err = this._win.Error();
+    logMsg(msg, err.fileName, err.lineNumber, Ci.nsIScriptError.warningFlag,
+           this._winID);
   }
 };
 
@@ -645,13 +679,7 @@ RTCPeerConnection.prototype = {
   },
 
   logMsg: function(msg, file, line, flag) {
-    let scriptErrorClass = Cc["@mozilla.org/scripterror;1"];
-    let scriptError = scriptErrorClass.createInstance(Ci.nsIScriptError);
-    scriptError.initWithWindowID(msg, file, null, line, 0, flag,
-                                 "content javascript", this._winID);
-    let console = Cc["@mozilla.org/consoleservice;1"].
-      getService(Ci.nsIConsoleService);
-    console.logMessage(scriptError);
+    return logMsg(msg, file, line, flag, this._winID);
   },
 
   getEH: function(type) {
@@ -711,8 +739,7 @@ RTCPeerConnection.prototype = {
             this._impl.createOffer(options);
           }));
         p = this._addIdentityAssertion(p, origin);
-        return p.then(
-          sdp => new this._win.RTCSessionDescription({ type: "offer", sdp: sdp }));
+        return p.then(sdp => Cu.cloneInto({ type: "offer", sdp: sdp }, this._win));
       });
     });
   },
@@ -746,9 +773,7 @@ RTCPeerConnection.prototype = {
             this._impl.createAnswer();
           }));
         p = this._addIdentityAssertion(p, origin);
-        return p.then(sdp => {
-          return new this._win.RTCSessionDescription({ type: "answer", sdp: sdp });
-        });
+        return p.then(sdp => Cu.cloneInto({ type: "answer", sdp: sdp }, this._win));
       });
     });
   },
@@ -957,12 +982,15 @@ RTCPeerConnection.prototype = {
       containsTrickle(topSection) || sections.every(containsTrickle);
   },
 
-
   addIceCandidate: function(c, onSuccess, onError) {
     return this._legacyCatchAndCloseGuard(onSuccess, onError, () => {
-      if (!c.candidate && !c.sdpMLineIndex) {
-        throw new this._win.DOMException("Invalid candidate passed to addIceCandidate!",
-                                         "InvalidParameterError");
+      if (!c) {
+        // TODO: Implement processing for end-of-candidates (bug 1318167)
+        return Promise.resolve();
+      }
+      if (c.sdpMid === null && c.sdpMLineIndex === null) {
+        throw new this._win.DOMException("Invalid candidate (both sdpMid and sdpMLineIndex are null).",
+                                         "TypeError");
       }
       return this._chain(() => new this._win.Promise((resolve, reject) => {
         this._onAddIceCandidateSuccess = resolve;
@@ -1106,8 +1134,7 @@ RTCPeerConnection.prototype = {
       return null;
     }
 
-    return new this._win.RTCSessionDescription({ type: this._localType,
-                                                    sdp: sdp });
+    return new this._win.RTCSessionDescription({ type: this._localType, sdp });
   },
 
   get remoteDescription() {
@@ -1116,8 +1143,7 @@ RTCPeerConnection.prototype = {
     if (sdp.length == 0) {
       return null;
     }
-    return new this._win.RTCSessionDescription({ type: this._remoteType,
-                                                    sdp: sdp });
+    return new this._win.RTCSessionDescription({ type: this._remoteType, sdp });
   },
 
   get peerIdentity() { return this._peerIdentity; },
