@@ -34,8 +34,12 @@ callback ResizeObserverCallback = void (sequence<ResizeObserverEntry> entries, R
 interface ResizeObserverEntry {
     readonly attribute Element target;
     readonly attribute DOMRectReadOnly? contentRect;
-    readonly attribute ResizeObserverSize borderBoxSize;
-    readonly attribute ResizeObserverSize contentBoxSize;
+    // We are using a [Pure, Cached, Frozen] sequence since `FrozenArray` is not implemented in webidl.
+    // This is functionally similar enough. As of #2340 Mozilla has not implemented this yet, either.
+    [Frozen, Cached, Pure]
+    readonly attribute sequence<ResizeObserverSize> borderBoxSize;
+    [Frozen, Cached, Pure]
+    readonly attribute sequence<ResizeObserverSize> contentBoxSize;
 };
 
 [Pref="layout.css.resizeobserver.enabled"]
