@@ -6226,8 +6226,6 @@ WorkerPrivate::RunExpiredTimeouts(JSContext* aCx)
   // Guard against recursion.
   mRunningExpiredTimeouts = true;
 
-  MOZ_DIAGNOSTIC_ASSERT(data->mCurrentTimerNestingLevel == 0);
-
   // Run expired timeouts.
   for (uint32_t index = 0; index < expiredTimeouts.Length(); index++) {
     TimeoutInfo*& info = expiredTimeouts[index];

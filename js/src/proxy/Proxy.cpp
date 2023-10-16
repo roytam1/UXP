@@ -666,24 +666,6 @@ js::proxy_HasInstance(JSContext* cx, HandleObject proxy, MutableHandleValue v, b
 }
 
 bool
-js::proxy_Call(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-    RootedObject proxy(cx, &args.callee());
-    MOZ_ASSERT(proxy->is<ProxyObject>());
-    return Proxy::call(cx, proxy, args);
-}
-
-bool
-js::proxy_Construct(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-    RootedObject proxy(cx, &args.callee());
-    MOZ_ASSERT(proxy->is<ProxyObject>());
-    return Proxy::construct(cx, proxy, args);
-}
-
-bool
 js::proxy_GetElements(JSContext* cx, HandleObject proxy, uint32_t begin, uint32_t end,
                       ElementAdder* adder)
 {
