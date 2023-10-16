@@ -163,14 +163,10 @@ public:
 
   /**
    * Returns target's logical border-box size and content-box size as
-   * ResizeObserverSize.
+   * a ResizeObserverSize array.
    */
-  ResizeObserverSize* BorderBoxSize() const { 
-    return mBorderBoxSize;
-  }
-  ResizeObserverSize* ContentBoxSize() const { 
-    return mContentBoxSize;
-  }
+  void GetBorderBoxSize(nsTArray<RefPtr<ResizeObserverSize>>& aRetVal) const;
+  void GetContentBoxSize(nsTArray<RefPtr<ResizeObserverSize>>& aRetVal) const;
 
   // Set borderBoxSize.
   void SetBorderBoxSize(const nsSize& aSize);
