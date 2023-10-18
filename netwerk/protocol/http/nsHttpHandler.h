@@ -515,8 +515,8 @@ private:
     // Persistent HTTPS caching flag
     bool           mEnablePersistentHttpsCaching;
 
-    // For broadcasting tracking preference
-    bool           mDoNotTrackEnabled;
+    // For broadcasting Global Privacy Control preference
+    bool           mGPCEnabled;
 
     // for broadcasting safe hint;
     bool           mSafeHintEnabled;

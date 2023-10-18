@@ -2432,9 +2432,9 @@ public:
   static bool DOMWindowDumpEnabled();
 
   /**
-   * Returns true if the privacy.donottrackheader.enabled pref is set.
+   * Returns true if the privacy.GPCheader.enabled pref is set.
    */
-  static bool DoNotTrackEnabled();
+  static bool GPCEnabled();
 
   /**
    * Returns a LogModule that dump calls from content script are logged to.
@@ -2971,7 +2971,7 @@ private:
 #if !(defined(DEBUG) || defined(MOZ_ENABLE_JS_DUMP))
   static bool sDOMWindowDumpEnabled;
 #endif
-  static bool sDoNotTrackEnabled;
+  static bool sGPCEnabled;
   static mozilla::LazyLogModule sDOMDumpLog;
 };
 

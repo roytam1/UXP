@@ -632,22 +632,10 @@ Navigator::GetBuildID(nsAString& aBuildID)
   return NS_OK;
 }
 
-NS_IMETHODIMP
-Navigator::GetDoNotTrack(nsAString &aResult)
+bool
+Navigator::GlobalPrivacyControl()
 {
-  bool doNotTrack = nsContentUtils::DoNotTrackEnabled();
-  if (!doNotTrack) {
-    nsCOMPtr<nsILoadContext> loadContext = do_GetInterface(mWindow);
-    doNotTrack = loadContext && loadContext->UseTrackingProtection();
-  }
-
-  if (doNotTrack) {
-    aResult.AssignLiteral("1");
-  } else {
-    aResult.AssignLiteral("unspecified");
-  }
-
-  return NS_OK;
+  return nsContentUtils::GPCEnabled();
 }
 
 bool

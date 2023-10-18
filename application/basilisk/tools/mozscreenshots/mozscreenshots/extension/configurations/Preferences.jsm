@@ -22,7 +22,6 @@ this.Preferences = {
       ["paneContent", null],
       ["paneApplications", null],
       ["panePrivacy", null],
-      ["panePrivacy", null, DNTDialog],
       ["panePrivacy", null, clearRecentHistoryDialog],
       ["paneSecurity", null],
       ["paneSync", null],
@@ -93,12 +92,6 @@ function paintPromise(browserWindow) {
       browserWindow.removeEventListener("MozAfterPaint", onPaint);
       resolve();
     });
-  });
-}
-
-function* DNTDialog(aBrowser) {
-  yield ContentTask.spawn(aBrowser, null, function* () {
-    content.document.getElementById("doNotTrackSettings").click();
   });
 }
 

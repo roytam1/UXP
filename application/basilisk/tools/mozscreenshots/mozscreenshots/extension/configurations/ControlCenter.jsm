@@ -183,40 +183,6 @@ this.ControlCenter = {
       }),
     },
 
-    trackingProtectionNoElements: {
-      applyConfig: Task.async(function* () {
-        Services.prefs.setBoolPref("privacy.trackingprotection.enabled", true);
-
-        yield loadPage(HTTP_PAGE);
-        yield openIdentityPopup();
-      }),
-    },
-
-    trackingProtectionEnabled: {
-      applyConfig: Task.async(function* () {
-        Services.prefs.setBoolPref("privacy.trackingprotection.enabled", true);
-        yield UrlClassifierTestUtils.addTestTrackers();
-
-        yield loadPage(TRACKING_PAGE);
-        yield openIdentityPopup();
-      }),
-    },
-
-    trackingProtectionDisabled: {
-      applyConfig: Task.async(function* () {
-        let browserWindow = Services.wm.getMostRecentWindow("navigator:browser");
-        let gBrowser = browserWindow.gBrowser;
-        Services.prefs.setBoolPref("privacy.trackingprotection.enabled", true);
-        yield UrlClassifierTestUtils.addTestTrackers();
-
-        yield loadPage(TRACKING_PAGE);
-        yield openIdentityPopup();
-        // unblock the page
-        gBrowser.ownerGlobal.document.querySelector("#tracking-action-unblock").click();
-        yield BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser, false, TRACKING_PAGE);
-        yield openIdentityPopup();
-      }),
-    },
   },
 };
 

@@ -1284,7 +1284,7 @@ BrowserGlue.prototype = {
   },
 
   _migrateUI: function() {
-    const UI_VERSION = 24;
+    const UI_VERSION = 26;
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul#";
     let currentUIVersion = 0;
     try {
@@ -1558,6 +1558,14 @@ BrowserGlue.prototype = {
       Services.prefs.clearUserPref("dom.abortController.enabled");
     }
 
+    if (currentUIVersion < 26) {
+      // DoNotTrack is now GPC. Carry across user preference.
+      if (Services.prefs.prefHasUserValue("privacy.donottrackheader.enabled")) {
+        let DNTEnabled = Services.prefs.getBoolPref("privacy.donottrackheader.enabled");
+        Services.prefs.setBoolPref("privacy.GPCheader.enabled", DNTEnabled);
+        Services.prefs.clearUserPref("privacy.donottrackheader.enabled");
+      }
+    }
     
     // Clear out dirty storage
     if (this._dirty) {

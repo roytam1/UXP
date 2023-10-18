@@ -21,31 +21,6 @@
               name="xpinstall.whitelist.required"
               type="bool"/>
 
-#ifdef MOZ_SAFE_BROWSING
-  <!-- Malware, phishing -->
-  <preference id="browser.safebrowsing.malware.enabled"
-              name="browser.safebrowsing.malware.enabled"
-              type="bool"/>
-  <preference id="browser.safebrowsing.phishing.enabled"
-              name="browser.safebrowsing.phishing.enabled"
-              type="bool"/>
-
-  <preference id="browser.safebrowsing.downloads.enabled"
-              name="browser.safebrowsing.downloads.enabled"
-              type="bool"/>
-
-  <preference id="urlclassifier.malwareTable"
-              name="urlclassifier.malwareTable"
-              type="string"/>
-
-  <preference id="browser.safebrowsing.downloads.remote.block_potentially_unwanted"
-              name="browser.safebrowsing.downloads.remote.block_potentially_unwanted"
-              type="bool"/>
-  <preference id="browser.safebrowsing.downloads.remote.block_uncommon"
-              name="browser.safebrowsing.downloads.remote.block_uncommon"
-              type="bool"/>
-#endif
-
   <!-- Passwords -->
   <preference id="signon.rememberSignons" name="signon.rememberSignons" type="bool"/>
   <preference id="signon.autofillForms"   name="signon.autofillForms"   type="bool"/>
@@ -76,23 +51,6 @@
             accesskey="&addonExceptions.accesskey;"/>
   </hbox>
 
-#ifdef MOZ_SAFE_BROWSING
-<!-- Safebrowsing (phishing) UI -->
-  <separator class="thin"/>
-  <vbox align="start">
-    <checkbox id="enableSafeBrowsing"
-              label="&enableSafeBrowsing.label;"
-              accesskey="&enableSafeBrowsing.accesskey;" />
-    <vbox class="indent">
-      <checkbox id="blockDownloads"
-                label="&blockDownloads.label;"
-                accesskey="&blockDownloads.accesskey;" />
-      <checkbox id="blockUncommonUnwanted"
-                label="&blockUncommonUnwanted.label;"
-                accesskey="&blockUncommonUnwanted.accesskey;" />
-    </vbox>
-  </vbox>
-#endif
 </groupbox>
 
 <!-- Passwords -->

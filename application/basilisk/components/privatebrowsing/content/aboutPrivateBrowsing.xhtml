@@ -35,9 +35,6 @@
     <div class="showPrivate about-content-container">
       <h1 class="title">
         <span id="title">&privateBrowsing.title;</span>
-#ifdef MOZ_SAFE_BROWSING
-        <span id="titleTracking">&privateBrowsing.title.tracking;</span>
-#endif
       </h1>
       <section class="section-main">
         <p>&aboutPrivateBrowsing.info.notsaved.before;<strong>&aboutPrivateBrowsing.info.notsaved.emphasize;</strong>&aboutPrivateBrowsing.info.notsaved.after;</p>
@@ -62,18 +59,6 @@
           &aboutPrivateBrowsing.note.after;
         </p>
       </section>
-
-#ifdef MOZ_SAFE_BROWSING
-      <h2 id="tpSubHeader" class="about-subheader">
-        <span class="tpTitle">&trackingProtection.title;</span>
-        <input id="tpToggle" class="toggle toggle-input" type="checkbox"/>
-        <span id="tpButton" class="toggle-btn"></span>
-      </h2>
-
-      <section class="section-main">
-        <p>&trackingProtection.description2;</p>
-      </section>
-#endif
 
       <section class="section-main">
         <p class="about-info">&aboutPrivateBrowsing.learnMore2;
