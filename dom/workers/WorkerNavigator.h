@@ -8,6 +8,7 @@
 
 #include "Workers.h"
 #include "RuntimeService.h"
+#include "nsContentUtils.h"
 #include "nsString.h"
 #include "nsWrapperCache.h"
 #include "mozilla/dom/StorageManager.h"
@@ -98,6 +99,11 @@ public:
   void SetOnLine(bool aOnline)
   {
     mOnline = aOnline;
+  }
+
+  bool GlobalPrivacyControl() const
+  {
+    return nsContentUtils::GPCEnabled();
   }
 
   void SetLanguages(const nsTArray<nsString>& aLanguages);
