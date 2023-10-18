@@ -278,22 +278,9 @@ CallJSNativeConstructor(JSContext* cx, Native native, const CallArgs& args)
      * constructor to return the callee, the assertion can be removed or
      * (another) conjunct can be added to the antecedent.
      *
-     * Exceptions:
-     *
-     * - Proxies are exceptions to both rules: they can return primitives and
-     *   they allow content to return the callee.
-     *
-     * - CallOrConstructBoundFunction is an exception as well because we might
-     *   have used bind on a proxy function.
-     *
-     * - new Iterator(x) is user-hookable; it returns x.__iterator__() which
-     *   could be any object.
-     *
-     * - (new Object(Object)) returns the callee.
+     * Exception: (new Object(Object)) returns the callee.
      */
-    MOZ_ASSERT_IF(native != js::proxy_Construct &&
-                  native != js::IteratorConstructor &&
-                  (!callee->is<JSFunction>() || callee->as<JSFunction>().native() != obj_construct),
+    MOZ_ASSERT_IF((!callee->is<JSFunction>() || callee->as<JSFunction>().native() != obj_construct),
                   args.rval().isObject() && callee != &args.rval().toObject());
 
     return true;

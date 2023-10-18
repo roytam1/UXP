@@ -2790,7 +2790,7 @@ ReadableStreamControllerCallPullIfNeeded(JSContext* cx, HandleNativeObject contr
     } else {
         pullPromise = PromiseInvokeOrNoop(cx, underlyingSource, cx->names().pull, controllerVal);
     }
-    if (!pullPromise)
+    if (!pullPromise || !pullPromise->is<PromiseObject>())
         return false;
 
     RootedObject onPullFulfilled(cx, NewHandler(cx, ControllerPullHandler, controller));
