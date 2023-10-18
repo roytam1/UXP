@@ -12,3 +12,4 @@ WorkerNavigator implements NavigatorLanguage;
 WorkerNavigator implements NavigatorOnLine;
 WorkerNavigator implements NavigatorConcurrentHardware;
 WorkerNavigator implements NavigatorStorage;
+WorkerNavigator implements NavigatorGlobalPrivacyControl;

@@ -22,9 +22,9 @@
 
     <preferences id="privacyPreferences">
 
-      <!-- Tracking -->
-      <preference id="privacy.donottrackheader.enabled"
-                  name="privacy.donottrackheader.enabled"
+      <!-- Global Privacy Control -->
+      <preference id="privacy.GPCheader.enabled"
+                  name="privacy.GPCheader.enabled"
                   type="bool"/>
 
       <!-- XXX button prefs -->
@@ -216,18 +216,18 @@
 
       </groupbox>
         
-      <!-- Tracking -->
-      <groupbox id="trackingPanel">
-        <caption>&tracking.label;</caption>
+      <!-- Global Privacy Control -->
+      <groupbox id="dataPrivacyPanel">
+        <caption>&dataPrivacy.label;</caption>
         <hbox align="center">
-          <checkbox id="privacyDoNotTrackCheckbox"
-                    label="&dntTrackingNotOkay.label2;"
-                    accesskey="&dntTrackingNotOkay.accesskey;"
-                    preference="privacy.donottrackheader.enabled"/>
+          <checkbox id="privacyGPCCheckbox"
+                    label="&sendGPCheader.label;"
+                    accesskey="&sendGPCheader.accesskey;"
+                    preference="privacy.GPCheader.enabled"/>
           <separator class="thin"/>
-          <label class="text-link" id="doNotTrackInfo"
-                 href="https://www.palemoon.org/support/do-not-track"
-                 value="&doNotTrackInfo.label;"/>
+          <label class="text-link" id="GPCInfo"
+                 href="https://www.palemoon.org/support/global-privacy-control"
+                 value="&GPCInfo.label;"/>
 
         </hbox>
       </groupbox>

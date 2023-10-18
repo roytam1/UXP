@@ -234,6 +234,7 @@ nsHttpHeaderArray::IsSingletonHeader(nsHttpAtom header)
            header == nsHttp::From                        ||
            header == nsHttp::Location                    ||
            header == nsHttp::Max_Forwards                ||
+           header == nsHttp::GlobalPrivacyControl        ||
            // Ignore-multiple-headers are singletons in the sense that they
            // shouldn't be merged.
            IsIgnoreMultipleHeader(header);

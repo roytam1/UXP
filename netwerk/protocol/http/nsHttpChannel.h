@@ -453,7 +453,7 @@ private:
     void SetPushedStream(Http2PushedStreamWrapper *stream);
 
     void SetOriginHeader();
-    void SetDoNotTrack();
+    void SetGPC();
 
 private:
     nsCOMPtr<nsICancelable>           mProxyRequest;

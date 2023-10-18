@@ -941,10 +941,6 @@ pref("services.sync.prefs.sync.browser.link.open_newwindow", true);
 pref("services.sync.prefs.sync.browser.newtabpage.enabled", true);
 pref("services.sync.prefs.sync.browser.newtabpage.pinned", true);
 pref("services.sync.prefs.sync.browser.offline-apps.notify", true);
-#ifdef MOZ_SAFE_BROWSING
-pref("services.sync.prefs.sync.browser.safebrowsing.phishing.enabled", true);
-pref("services.sync.prefs.sync.browser.safebrowsing.malware.enabled", true);
-#endif
 pref("services.sync.prefs.sync.browser.search.update", true);
 pref("services.sync.prefs.sync.browser.sessionstore.restore_on_demand", true);
 pref("services.sync.prefs.sync.browser.startup.homepage", true);
@@ -988,9 +984,8 @@ pref("services.sync.prefs.sync.privacy.clearOnShutdown.offlineApps", true);
 pref("services.sync.prefs.sync.privacy.clearOnShutdown.sessions", true);
 pref("services.sync.prefs.sync.privacy.clearOnShutdown.siteSettings", true);
 pref("services.sync.prefs.sync.privacy.donottrackheader.enabled", true);
+pref("services.sync.prefs.sync.privacy.GPCheader.enabled", true);
 pref("services.sync.prefs.sync.privacy.sanitize.sanitizeOnShutdown", true);
-pref("services.sync.prefs.sync.privacy.trackingprotection.enabled", true);
-pref("services.sync.prefs.sync.privacy.trackingprotection.pbmode.enabled", true);
 pref("services.sync.prefs.sync.security.OCSP.enabled", true);
 pref("services.sync.prefs.sync.security.OCSP.require", true);
 pref("services.sync.prefs.sync.security.default_personal_cert", true);
@@ -1200,12 +1195,6 @@ pref("browser.cache.frecency_experiment", -1);
 
 // Enable GMP support in the addon manager.
 pref("media.gmp-provider.enabled", true);
-
-#ifdef NIGHTLY_BUILD
-pref("privacy.trackingprotection.ui.enabled", true);
-#else
-pref("privacy.trackingprotection.ui.enabled", false);
-#endif
 
 // Enable Contextual Identity Containers
 #ifdef NIGHTLY_BUILD

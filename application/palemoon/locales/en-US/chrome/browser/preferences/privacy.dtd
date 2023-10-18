@@ -2,11 +2,11 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<!ENTITY tracking.label                 "Tracking">
+<!ENTITY  dataPrivacy.label             "Data Privacy">
 
-<!ENTITY dntTrackingNotOkay.label2      "Tell sites that I do not want to be tracked">
-<!ENTITY dntTrackingNotOkay.accesskey   "n">
-<!ENTITY doNotTrackInfo.label           "Learn More">
+<!ENTITY  sendGPCheader.label           "Tell sites not to share or sell my data">
+<!ENTITY  sendGPCheader.accesskey       "n">
+<!ENTITY  GPCInfo.label                 "Learn More">
 
 <!ENTITY  history.label                 "History">
 

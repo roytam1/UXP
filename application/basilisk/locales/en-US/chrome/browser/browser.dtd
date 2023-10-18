@@ -726,33 +726,6 @@ you can use these alternative items. Otherwise, their values should be empty.  -
 <!ENTITY getUserMedia.audioCapture.label "Audio from the tab will be shared.">
 <!ENTITY getUserMedia.allWindowsShared.message "All visible windows on your screen will be shared.">
 
-<!ENTITY trackingProtection.title "Tracking Protection">
-<!ENTITY trackingProtection.detectedBlocked3 "&brandShortName; is blocking parts of the page that may track your browsing.">
-<!ENTITY trackingProtection.detectedNotBlocked3 "This site includes elements that may track your browsing. You have disabled protection.">
-<!ENTITY trackingProtection.notDetected3 "No tracking elements detected on this page.">
-<!-- LOCALIZATION NOTE (trackingProtection.unblock.label, trackingProtection.unblock.accesskey):
-     The associated button with this label and accesskey is only shown when opening the control
-     center while looking at a site with trackers in NON-private browsing mode. -->
-<!ENTITY trackingProtection.unblock.label "Disable protection for this site">
-<!ENTITY trackingProtection.unblock.accesskey "D">
-<!-- LOCALIZATION NOTE (trackingProtection.unblockPrivate.label, trackingProtection.unblockPrivate.accesskey):
-     The associated button with this label and accesskey is only shown when opening the control
-     center while looking at a site with trackers in PRIVATE browsing mode. -->
-<!ENTITY trackingProtection.unblockPrivate.label "Disable protection for this session">
-<!ENTITY trackingProtection.unblockPrivate.accesskey "D">
-<!ENTITY trackingProtection.block2.label "Enable protection">
-<!ENTITY trackingProtection.block2.accesskey "E">
-
-<!ENTITY trackingContentBlocked.message "Tracking">
-<!ENTITY trackingContentBlocked.moreinfo "Parts of the page that track your online activity have been blocked.">
-<!ENTITY trackingContentBlocked.learnMore "Learn More">
-<!ENTITY trackingContentBlocked.options "Options">
-<!ENTITY trackingContentBlocked.unblock2.label "Disable protection for this site">
-<!ENTITY trackingContentBlocked.unblock2.accesskey "D">
-<!ENTITY trackingContentBlocked.block.label "Enable protection">
-<!ENTITY trackingContentBlocked.block.accesskey "E">
-<!ENTITY trackingContentBlocked.disabled.message "Tracking protection is disabled">
-
 <!ENTITY pluginNotification.showAll.label "Show All">
 <!ENTITY pluginNotification.showAll.accesskey "S">
 
