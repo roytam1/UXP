@@ -53,8 +53,12 @@ function resolvePluralRulesInternals(lazyPluralRulesData) {
 
     // Step 9.
     internalProps.minimumIntegerDigits = lazyPluralRulesData.minimumIntegerDigits;
-    internalProps.minimumFractionDigits = lazyPluralRulesData.minimumFractionDigits;
-    internalProps.maximumFractionDigits = lazyPluralRulesData.maximumFractionDigits;
+
+    if ("minimumFractionDigits" in lazyPluralRulesData) {
+        assert("maximumFractionDigits" in lazyPluralRulesData, "min/max frac digits mismatch");
+        internalProps.minimumFractionDigits = lazyPluralRulesData.minimumFractionDigits;
+        internalProps.maximumFractionDigits = lazyPluralRulesData.maximumFractionDigits;
+    }
 
     if ("minimumSignificantDigits" in lazyPluralRulesData) {
         assert("maximumSignificantDigits" in lazyPluralRulesData, "min/max sig digits mismatch");
@@ -149,14 +153,8 @@ function InitializePluralRules(pluralRules, locales, options) {
     const type = GetOption(options, "type", "string", ["cardinal", "ordinal"], "cardinal");
     lazyPluralRulesData.type = type;
 
-    // Step 9.
-    SetNumberFormatDigitOptions(lazyPluralRulesData, options, 0);
-
-    // Step 12.
-    if (lazyPluralRulesData.maximumFractionDigits === undefined) {
-        lazyPluralRulesData.maximumFractionDigits =
-           std_Math_max(lazyPluralRulesData.minimumFractionDigits, 3);
-    }
+    // Steps 11-12.
+    SetNumberFormatDigitOptions(lazyPluralRulesData, options, 0, 3);
 
     // Step 15.
     //
@@ -246,11 +244,19 @@ function Intl_PluralRules_resolvedOptions() {
         type: internals.type,
         pluralCategories: callFunction(std_Array_slice, internals.pluralCategories, 0),
         minimumIntegerDigits: internals.minimumIntegerDigits,
-        minimumFractionDigits: internals.minimumFractionDigits,
-        maximumFractionDigits: internals.maximumFractionDigits,
     };
 
-    // Min/Max significant digits are either both present or not at all.
+    // Min/Max fraction digits are either both present or not present at all.
+    assert(hasOwn("minimumFractionDigits", internals) ===
+           hasOwn("maximumFractionDigits", internals),
+           "minimumFractionDigits is present iff maximumFractionDigits is present");
+
+    if (hasOwn("minimumFractionDigits", internals)) {
+        _DefineDataProperty(result, "minimumFractionDigits", internals.minimumFractionDigits);
+        _DefineDataProperty(result, "maximumFractionDigits", internals.maximumFractionDigits);
+    }
+
+    // Min/Max significant digits are either both present or not present at all.
     assert(hasOwn("minimumSignificantDigits", internals) ===
            hasOwn("maximumSignificantDigits", internals),
            "minimumSignificantDigits is present iff maximumSignificantDigits is present");

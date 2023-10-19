@@ -698,28 +698,12 @@ function DefaultNumberOption(value, minimum, maximum, fallback) {
  * Number value, checks whether it is in the allowed range, and fills in a
  * fallback value if necessary.
  *
- * Spec: ECMAScript Internationalization API Specification, 9.2.10.
+ * Spec: ECMAScript Internationalization API Specification, 9.2.12.
  */
 function GetNumberOption(options, property, minimum, maximum, fallback) {
-    assert(typeof minimum === "number", "GetNumberOption");
-    assert(typeof maximum === "number", "GetNumberOption");
-    assert(fallback === undefined || (fallback >= minimum && fallback <= maximum), "GetNumberOption");
-
-    // Step 1.
-    var value = options[property];
-
-    // Step 2.
-    if (value !== undefined) {
-        value = ToNumber(value);
-        if (Number_isNaN(value) || value < minimum || value > maximum)
-            ThrowRangeError(JSMSG_INVALID_DIGITS_VALUE, value);
-        return std_Math_floor(value);
-    }
-
-    // Step 3.
-    return fallback;
+    // Steps 1-3.
+    return DefaultNumberOption(options[property], minimum, maximum, fallback);
 }
-
 
 // Symbols in the self-hosting compartment can't be cloned, use a separate
 // object to hold the actual symbol value.
