@@ -124,6 +124,8 @@ public:
     return false;
   }
 
+  virtual void QueueNavigationTimingEntry() = 0;
+
 protected:
   Performance();
   explicit Performance(nsPIDOMWindowInner* aWindow);
