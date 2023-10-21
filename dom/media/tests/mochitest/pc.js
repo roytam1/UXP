@@ -1415,62 +1415,26 @@ PeerConnectionWrapper.prototype = {
    *        A promise that resolves when media is flowing.
    */
   waitForRtpFlow(track) {
-    var hasFlow = (stats, retries) => {
-      info("Checking for stats in " + JSON.stringify(stats) + " for " + track.kind
-        + " track " + track.id + ", retry number " + retries);
-      var rtp = stats.get([...Object.keys(stats)].find(key =>
-        !stats.get(key).isRemote && stats.get(key).type.endsWith("boundrtp")));
+    var hasFlow = stats => {
+      var rtp = stats.get([...stats.keys()].find(key =>
+        !stats.get(key).isRemote && stats.get(key).type.endsWith("bound-rtp")));
+      ok(rtp, "Should have RTP stats for track " + track.id);
       if (!rtp) {
-
         return false;
       }
-      info("Should have RTP stats for track " + track.id);
-      info("RTP stats: "+JSON.stringify(rtp));
-      var nrPackets = rtp[rtp.type == "outboundrtp" ? "packetsSent"
+      var nrPackets = rtp[rtp.type == "outbound-rtp" ? "packetsSent"
                                                     : "packetsReceived"];
       info("Track " + track.id + " has " + nrPackets + " " +
            rtp.type + " RTP packets.");
       return nrPackets > 0;
     };
 
-    // Time between stats checks
-    var retryInterval = 500;
-    // Timeout in ms
-    var timeoutInterval = 30000;
-    // Check hasFlow at a reasonable interval
-    var checkStats = new Promise((resolve, reject)=>{
-      var retries = 0;
-      var timer = setInterval(()=>{
-        this._pc.getStats(track).then(stats=>{
-          if (hasFlow(stats, retries)) {
-            clearInterval(timer);
-            ok(true, "RTP flowing for " + track.kind + " track " + track.id);
-            resolve();
-          }
-          retries = retries + 1;
-          // This is not accurate but it will tear down
-          // the timer eventually and probably not
-          // before timeoutInterval has elapsed.
-          if ((retries * retryInterval) > timeoutInterval) {
-            clearInterval(timer);
-          }
-        });
-      }, retryInterval);
-    });
-
     info("Checking RTP packet flow for track " + track.id);
-    var retry = Promise.race([checkStats.then(new Promise((resolve, reject)=>{
-        info("checkStats completed for " + track.kind + " track " + track.id);
-        resolve();
-      })),
-      new Promise((accept,reject)=>wait(timeoutInterval).then(()=>{
-        info("Timeout checking for stats for track " + track.id + " after " + timeoutInterval + "ms");
-        reject("Timeout checking for stats for " + track.kind
-          + " track " + track.id + " after " + timeoutInterval + "ms");
-      })
-    )]);
 
-    return retry;
+    var retry = (delay) => this._pc.getStats(track)
+      .then(stats => hasFlow(stats)? ok(true, "RTP flowing for track " + track.id) :
+            wait(delay).then(retry(1000)));
+    return retry(200);
   },
 
   /**
@@ -1572,9 +1536,7 @@ PeerConnectionWrapper.prototype = {
       var minimum = this.whenCreated - 1000; // on Windows XP (Bug 979649)
       if (isWinXP) {
         todo(false, "Can't reliably test rtcp timestamps on WinXP (Bug 979649)");
-
-      } else if (false) { // Bug 1325430 - timestamps aren't working properly in update 49
-	// else if (!twoMachines) {
+      } else if (!twoMachines) {
         // Bug 1225729: On android, sometimes the first RTCP of the first
         // test run gets this value, likely because no RTP has been sent yet.
         if (res.timestamp != 2085978496000) {
@@ -1597,15 +1559,15 @@ PeerConnectionWrapper.prototype = {
       counters[res.type] = (counters[res.type] || 0) + 1;
 
       switch (res.type) {
-        case "inboundrtp":
-        case "outboundrtp": {
+        case "inbound-rtp":
+        case "outbound-rtp": {
           // ssrc is a 32 bit number returned as a string by spec
           ok(res.ssrc.length > 0, "Ssrc has length");
           ok(res.ssrc.length < 11, "Ssrc not lengthy");
           ok(!/[^0-9]/.test(res.ssrc), "Ssrc numeric");
           ok(parseInt(res.ssrc) < Math.pow(2,32), "Ssrc within limits");
 
-          if (res.type == "outboundrtp") {
+          if (res.type == "outbound-rtp") {
             ok(res.packetsSent !== undefined, "Rtp packetsSent");
             // We assume minimum payload to be 1 byte (guess from RFC 3550)
             ok(res.bytesSent >= res.packetsSent, "Rtp bytesSent");
@@ -1614,25 +1576,16 @@ PeerConnectionWrapper.prototype = {
             ok(res.bytesReceived >= res.packetsReceived, "Rtp bytesReceived");
           }
           if (res.remoteId) {
-            var rem = stats[res.remoteId];
+            var rem = stats.get(res.remoteId);
             ok(rem.isRemote, "Remote is rtcp");
             ok(rem.remoteId == res.id, "Remote backlink match");
-            if(res.type == "outboundrtp") {
-              ok(rem.type == "inboundrtp", "Rtcp is inbound");
+            if(res.type == "outbound-rtp") {
+              ok(rem.type == "inbound-rtp", "Rtcp is inbound");
               ok(rem.packetsReceived !== undefined, "Rtcp packetsReceived");
               ok(rem.packetsLost !== undefined, "Rtcp packetsLost");
               ok(rem.bytesReceived >= rem.packetsReceived, "Rtcp bytesReceived");
-	       if (false) { // Bug 1325430 if (!this.disableRtpCountChecking) {
-	       // no guarantee which one is newer!
-	       // Note: this must change when we add a timestamp field to remote RTCP reports
-	       // and make rem.timestamp be the reception time
-		if (res.timestamp >= rem.timestamp) {
-                 ok(rem.packetsReceived <= res.packetsSent, "No more than sent packets");
-		 } else {
-                  info("REVERSED timestamps: rec:" +
-		     rem.packetsReceived + " time:" + rem.timestamp + " sent:" + res.packetsSent + " time:" + res.timestamp);
-		 }
-		// Else we may have received more than outdated Rtcp packetsSent
+              if (!this.disableRtpCountChecking) {
+                ok(rem.packetsReceived <= res.packetsSent, "No more than sent packets");
                 ok(rem.bytesReceived <= res.bytesSent, "No more than sent bytes");
               }
               ok(rem.jitter !== undefined, "Rtcp jitter");
@@ -1640,7 +1593,7 @@ PeerConnectionWrapper.prototype = {
               ok(rem.mozRtt >= 0, "Rtcp rtt " + rem.mozRtt + " >= 0");
               ok(rem.mozRtt < 60000, "Rtcp rtt " + rem.mozRtt + " < 1 min");
             } else {
-              ok(rem.type == "outboundrtp", "Rtcp is outbound");
+              ok(rem.type == "outbound-rtp", "Rtcp is outbound");
               ok(rem.packetsSent !== undefined, "Rtcp packetsSent");
               // We may have received more than outdated Rtcp packetsSent
               ok(rem.bytesSent >= rem.packetsSent, "Rtcp bytesSent");
@@ -1654,6 +1607,13 @@ PeerConnectionWrapper.prototype = {
       }
     }
 
+    var legacyToSpecMapping = {
+      'inboundrtp':'inbound-rtp',
+      'outboundrtp':'outbound-rtp',
+      'candidatepair':'candidate-pair',
+      'localcandidate':'local-candidate',
+      'remotecandidate':'remote-candidate'
+    };
     // Use legacy way of enumerating stats
     var counters2 = {};
     for (let key in stats) {
@@ -1661,8 +1621,9 @@ PeerConnectionWrapper.prototype = {
         continue;
       }
       var res = stats[key];
+      var type = legacyToSpecMapping[res.type] || res.type;
       if (!res.isRemote) {
-        counters2[res.type] = (counters2[res.type] || 0) + 1;
+        counters2[type] = (counters2[type] || 0) + 1;
       }
     }
     is(JSON.stringify(counters), JSON.stringify(counters2),
@@ -1671,21 +1632,21 @@ PeerConnectionWrapper.prototype = {
     var nout = Object.keys(this.expectedLocalTrackInfoById).length;
     var ndata = this.dataChannels.length;
 
-    // TODO(Bug 957145): Restore stronger inboundrtp test once Bug 948249 is fixed
-    //is((counters["inboundrtp"] || 0), nin, "Have " + nin + " inboundrtp stat(s)");
-    ok((counters.inboundrtp || 0) >= nin, "Have at least " + nin + " inboundrtp stat(s) *");
+    // TODO(Bug 957145): Restore stronger inbound-rtp test once Bug 948249 is fixed
+    //is((counters["inbound-rtp"] || 0), nin, "Have " + nin + " inbound-rtp stat(s)");
+    ok((counters["inbound-rtp"] || 0) >= nin, "Have at least " + nin + " inbound-rtp stat(s) *");
 
-    is(counters.outboundrtp || 0, nout, "Have " + nout + " outboundrtp stat(s)");
+    is(counters["outbound-rtp"] || 0, nout, "Have " + nout + " outbound-rtp stat(s)");
 
-    var numLocalCandidates  = counters.localcandidate || 0;
-    var numRemoteCandidates = counters.remotecandidate || 0;
+    var numLocalCandidates  = counters["local-candidate"] || 0;
+    var numRemoteCandidates = counters["remote-candidate"] || 0;
     // If there are no tracks, there will be no stats either.
     if (nin + nout + ndata > 0) {
-      ok(numLocalCandidates, "Have localcandidate stat(s)");
-      ok(numRemoteCandidates, "Have remotecandidate stat(s)");
+      ok(numLocalCandidates, "Have local-candidate stat(s)");
+      ok(numRemoteCandidates, "Have remote-candidate stat(s)");
     } else {
-      is(numLocalCandidates, 0, "Have no localcandidate stats");
-      is(numRemoteCandidates, 0, "Have no remotecandidate stats");
+      is(numLocalCandidates, 0, "Have no local-candidate stats");
+      is(numRemoteCandidates, 0, "Have no remote-candidate stats");
     }
   },
 
@@ -1700,7 +1661,7 @@ PeerConnectionWrapper.prototype = {
     let lId;
     let rId;
     for (let stat of stats.values()) {
-      if (stat.type == "candidatepair" && stat.selected) {
+      if (stat.type == "candidate-pair" && stat.selected) {
         lId = stat.localCandidateId;
         rId = stat.remoteCandidateId;
         break;
@@ -1751,8 +1712,8 @@ PeerConnectionWrapper.prototype = {
   checkStatsIceConnections : function(stats,
       offerConstraintsList, offerOptions, testOptions) {
     var numIceConnections = 0;
-    Object.keys(stats).forEach(key => {
-      if ((stats[key].type === "candidatepair") && stats[key].selected) {
+    stats.forEach(stat => {
+      if ((stat.type === "candidate-pair") && stat.selected) {
         numIceConnections += 1;
       }
     });

@@ -224,11 +224,6 @@ NewUNumberFormatForPluralRules(JSContext* cx, Handle<PluralRulesObject*> pluralR
             return nullptr;
         uMaximumSignificantDigits = value.toInt32();
     } else {
-        if (!GetProperty(cx, internals, internals, cx->names().minimumIntegerDigits,
-                         &value))
-            return nullptr;
-        uMinimumIntegerDigits = AssertedCast<uint32_t>(value.toInt32());
-
         if (!GetProperty(cx, internals, internals, cx->names().minimumFractionDigits,
                          &value))
             return nullptr;
@@ -239,6 +234,11 @@ NewUNumberFormatForPluralRules(JSContext* cx, Handle<PluralRulesObject*> pluralR
             return nullptr;
         uMaximumFractionDigits = AssertedCast<uint32_t>(value.toInt32());
     }
+
+    if (!GetProperty(cx, internals, internals, cx->names().minimumIntegerDigits,
+                     &value))
+        return nullptr;
+    uMinimumIntegerDigits = AssertedCast<uint32_t>(value.toInt32());
 
     UErrorCode status = U_ZERO_ERROR;
     UNumberFormat* nf = unum_open(UNUM_DECIMAL, nullptr, 0, IcuLocale(locale.ptr()), nullptr, &status);
