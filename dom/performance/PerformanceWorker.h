@@ -62,6 +62,11 @@ public:
     return nullptr;
   }
 
+  void QueueNavigationTimingEntry() override
+  {
+    MOZ_CRASH("This should not be called on workers.");
+  }
+
 protected:
   ~PerformanceWorker();
 

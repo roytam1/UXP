@@ -19,34 +19,39 @@ PerformanceTiming::PerformanceTiming(Performance* aPerformance,
                                      nsITimedChannel* aChannel,
                                      nsIHttpChannel* aHttpChannel,
                                      DOMHighResTimeStamp aZeroTime)
-  : mPerformance(aPerformance),
-    mFetchStart(0.0),
-    mZeroTime(TimerClamping::ReduceMsTimeValue(aZeroTime)),
-    mRedirectCount(0),
-    mTimingAllowed(true),
-    mAllRedirectsSameOrigin(true),
-    mInitialized(!!aChannel),
-    mReportCrossOriginRedirect(true)
+  : mPerformance(aPerformance)
 {
   MOZ_ASSERT(aPerformance, "Parent performance object should be provided");
+
+  mTimingData.reset(new PerformanceTimingData(aChannel, aHttpChannel,
+                                              aZeroTime));
+}
+
+// Copy the timing info from the channel so we don't need to keep the channel
+// alive just to get the timestamps.
+PerformanceTimingData::PerformanceTimingData(nsITimedChannel* aChannel,
+                                             nsIHttpChannel* aHttpChannel,
+                                             DOMHighResTimeStamp aZeroTime)
+  : mZeroTime(0.0)
+  , mFetchStart(0.0)
+  , mEncodedBodySize(0)
+  , mTransferSize(0)
+  , mDecodedBodySize(0)
+  , mRedirectCount(0)
+  , mAllRedirectsSameOrigin(true)
+  , mReportCrossOriginRedirect(true)
+  , mSecureConnection(false)
+  , mTimingAllowed(true)
+  , mInitialized(false)
+{
+  mInitialized = !!aChannel;
+
+  mZeroTime = TimerClamping::ReduceMsTimeValue(aZeroTime);
 
   if (!nsContentUtils::IsPerformanceTimingEnabled()) {
     mZeroTime = 0;
   }
 
-  // The aHttpChannel argument is null if this PerformanceTiming object is
-  // being used for navigation timing (which is only relevant for documents).
-  // It has a non-null value if this PerformanceTiming object is being used
-  // for resource timing, which can include document loads, both toplevel and
-  // in subframes, and resources linked from a document.
-  if (aHttpChannel) {
-    mTimingAllowed = CheckAllowedOrigin(aHttpChannel, aChannel);
-    bool redirectsPassCheck = false;
-    aChannel->GetAllRedirectsPassTimingAllowCheck(&redirectsPassCheck);
-    mReportCrossOriginRedirect = mTimingAllowed && redirectsPassCheck;
-  }
-
-  mSecureConnection = false;
   nsCOMPtr<nsIURI> uri;
   if (aHttpChannel) {
     aHttpChannel->GetURI(getter_AddRefs(uri));
@@ -63,14 +68,7 @@ PerformanceTiming::PerformanceTiming(Performance* aPerformance,
       mSecureConnection = false;
     }
   }
-  InitializeTimingInfo(aChannel);
-}
 
-// Copy the timing info from the channel so we don't need to keep the channel
-// alive just to get the timestamps.
-void
-PerformanceTiming::InitializeTimingInfo(nsITimedChannel* aChannel)
-{
   if (aChannel) {
     aChannel->GetAsyncOpen(&mAsyncOpen);
     aChannel->GetDispatchFetchEventStart(&mWorkerStart);
@@ -90,11 +88,11 @@ PerformanceTiming::InitializeTimingInfo(nsITimedChannel* aChannel)
     aChannel->GetCacheReadEnd(&mCacheReadEnd);
 
     // The performance timing api essentially requires that the event timestamps
-    // have a strict relation with each other. The truth, however, is the browser
-    // engages in a number of speculative activities that sometimes mean connections
-    // and lookups begin at different times. Workaround that here by clamping
-    // these values to what we expect FetchStart to be.  This means the later of
-    // AsyncOpen or WorkerStart times.
+    // have a strict relation with each other. The truth, however, is the
+    // browser engages in a number of speculative activities that sometimes mean
+    // connections and lookups begin at different times. Workaround that here by
+    // clamping these values to what we expect FetchStart to be.  This means the
+    // later of AsyncOpen or WorkerStart times.
     if (!mAsyncOpen.IsNull()) {
       // We want to clamp to the expected FetchStart value.  This is later of
       // the AsyncOpen and WorkerStart values.
@@ -125,6 +123,43 @@ PerformanceTiming::InitializeTimingInfo(nsITimedChannel* aChannel)
       }
     }
   }
+
+  // The aHttpChannel argument is null if this PerformanceTiming object is
+  // being used for navigation timing (which is only relevant for documents).
+  // It has a non-null value if this PerformanceTiming object is being used
+  // for resource timing, which can include document loads, both toplevel and
+  // in subframes, and resources linked from a document.
+  if (aHttpChannel) {
+    mTimingAllowed = CheckAllowedOrigin(aHttpChannel, aChannel);
+    bool redirectsPassCheck = false;
+    aChannel->GetAllRedirectsPassTimingAllowCheck(&redirectsPassCheck);
+    mReportCrossOriginRedirect = mTimingAllowed && redirectsPassCheck;
+
+    SetPropertiesFromHttpChannel(aHttpChannel, aChannel);
+  }
+}
+
+void
+PerformanceTimingData::SetPropertiesFromHttpChannel(nsIHttpChannel* aHttpChannel,
+                                                    nsITimedChannel* aChannel)
+{
+  MOZ_ASSERT(aHttpChannel);
+
+  nsAutoCString protocol;
+  Unused << aHttpChannel->GetProtocolVersion(protocol);
+  mNextHopProtocol = NS_ConvertUTF8toUTF16(protocol);
+ 
+  Unused << aHttpChannel->GetEncodedBodySize(&mEncodedBodySize);
+  Unused << aHttpChannel->GetTransferSize(&mTransferSize);
+  Unused << aHttpChannel->GetDecodedBodySize(&mDecodedBodySize);
+  if (mDecodedBodySize == 0) {
+    mDecodedBodySize = mEncodedBodySize;
+  }
+
+  mTimingAllowed = CheckAllowedOrigin(aHttpChannel, aChannel);
+  bool redirectsPassCheck = false;
+  aChannel->GetAllRedirectsPassTimingAllowCheck(&redirectsPassCheck);
+  mReportCrossOriginRedirect = mTimingAllowed && redirectsPassCheck;
 }
 
 PerformanceTiming::~PerformanceTiming()
@@ -132,8 +167,10 @@ PerformanceTiming::~PerformanceTiming()
 }
 
 DOMHighResTimeStamp
-PerformanceTiming::FetchStartHighRes()
+PerformanceTimingData::FetchStartHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!mFetchStart) {
     if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
       return mZeroTime;
@@ -142,9 +179,9 @@ PerformanceTiming::FetchStartHighRes()
         "valid if the performance timing is enabled");
     if (!mAsyncOpen.IsNull()) {
       if (!mWorkerStart.IsNull() && mWorkerStart > mAsyncOpen) {
-        mFetchStart = TimeStampToDOMHighRes(mWorkerStart);
+        mFetchStart = TimeStampToDOMHighRes(aPerformance, mWorkerRequestStart);
       } else {
-        mFetchStart = TimeStampToDOMHighRes(mAsyncOpen);
+        mFetchStart = TimeStampToDOMHighRes(aPerformance, mAsyncOpen);
       }
     }
   }
@@ -154,12 +191,12 @@ PerformanceTiming::FetchStartHighRes()
 DOMTimeMilliSec
 PerformanceTiming::FetchStart()
 {
-  return static_cast<int64_t>(FetchStartHighRes());
+  return static_cast<int64_t>(mTimingData->FetchStartHighRes(mPerformance));
 }
 
 bool
-PerformanceTiming::CheckAllowedOrigin(nsIHttpChannel* aResourceChannel,
-                                      nsITimedChannel* aChannel)
+PerformanceTimingData::CheckAllowedOrigin(nsIHttpChannel* aResourceChannel,
+                                          nsITimedChannel* aChannel)
 {
   if (!IsInitialized()) {
     return false;
@@ -187,14 +224,8 @@ PerformanceTiming::CheckAllowedOrigin(nsIHttpChannel* aResourceChannel,
   return aChannel->TimingAllowCheck(principal);
 }
 
-bool
-PerformanceTiming::TimingAllowed() const
-{
-  return mTimingAllowed;
-}
-
 uint8_t
-PerformanceTiming::GetRedirectCount() const
+PerformanceTimingData::GetRedirectCount() const
 {
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return 0;
@@ -206,7 +237,7 @@ PerformanceTiming::GetRedirectCount() const
 }
 
 bool
-PerformanceTiming::ShouldReportCrossOriginRedirect() const
+PerformanceTimingData::ShouldReportCrossOriginRedirect() const
 {
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return false;
@@ -219,23 +250,27 @@ PerformanceTiming::ShouldReportCrossOriginRedirect() const
 }
 
 DOMHighResTimeStamp
-PerformanceTiming::AsyncOpenHighRes()
+PerformanceTimingData::AsyncOpenHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized() ||
       mAsyncOpen.IsNull()) {
     return mZeroTime;
   }
-  return TimeStampToReducedDOMHighResOrFetchStart(mAsyncOpen);
+  return TimerClamping::ReduceMsTimeValue(TimeStampToDOMHighRes(aPerformance, mAsyncOpen));
 }
 
 DOMHighResTimeStamp
-PerformanceTiming::WorkerStartHighRes()
+PerformanceTimingData::WorkerStartHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized() ||
       mWorkerStart.IsNull()) {
     return mZeroTime;
   }
-  return TimeStampToReducedDOMHighResOrFetchStart(mWorkerStart);
+  return TimerClamping::ReduceMsTimeValue(TimeStampToDOMHighRes(aPerformance, mWorkerStart));
 }
 
 /**
@@ -249,24 +284,27 @@ PerformanceTiming::WorkerStartHighRes()
  * @return a valid timing if the Performance Timing is enabled
  */
 DOMHighResTimeStamp
-PerformanceTiming::RedirectStartHighRes()
+PerformanceTimingData::RedirectStartHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
-  return TimeStampToReducedDOMHighResOrFetchStart(mRedirectStart);
+  return TimeStampToReducedDOMHighResOrFetchStart(aPerformance, mRedirectStart);
 }
 
 DOMTimeMilliSec
 PerformanceTiming::RedirectStart()
 {
-  if (!IsInitialized()) {
+  if (!mTimingData->IsInitialized()) {
     return 0;
   }
   // We have to check if all the redirect URIs had the same origin (since there
   // is no check in RedirectStartHighRes())
-  if (mAllRedirectsSameOrigin && mRedirectCount) {
-    return static_cast<int64_t>(RedirectStartHighRes());
+  if (mTimingData->AllRedirectsSameOrigin() &&
+      mTimingData->RedirectCountReal()) {
+    return static_cast<int64_t>(mTimingData->RedirectStartHighRes(mPerformance));
   }
   return 0;
 }
@@ -282,130 +320,155 @@ PerformanceTiming::RedirectStart()
  * @return a valid timing if the Performance Timing is enabled
  */
 DOMHighResTimeStamp
-PerformanceTiming::RedirectEndHighRes()
+PerformanceTimingData::RedirectEndHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
-  return TimeStampToReducedDOMHighResOrFetchStart(mRedirectEnd);
+  return TimeStampToReducedDOMHighResOrFetchStart(aPerformance, mRedirectEnd);
 }
 
 DOMTimeMilliSec
 PerformanceTiming::RedirectEnd()
 {
-  if (!IsInitialized()) {
+  if (!mTimingData->IsInitialized()) {
     return 0;
   }
   // We have to check if all the redirect URIs had the same origin (since there
   // is no check in RedirectEndHighRes())
-  if (mAllRedirectsSameOrigin && mRedirectCount) {
-    return static_cast<int64_t>(RedirectEndHighRes());
+  if (mTimingData->AllRedirectsSameOrigin() &&
+      mTimingData->RedirectCountReal()) {
+    return static_cast<int64_t>(mTimingData->RedirectEndHighRes(mPerformance));
   }
   return 0;
 }
 
 DOMHighResTimeStamp
-PerformanceTiming::DomainLookupStartHighRes()
+PerformanceTimingData::DomainLookupStartHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
-  return TimeStampToReducedDOMHighResOrFetchStart(mDomainLookupStart);
+  return TimeStampToReducedDOMHighResOrFetchStart(aPerformance,
+                                                  mDomainLookupStart);
 }
 
 DOMTimeMilliSec
 PerformanceTiming::DomainLookupStart()
 {
-  return static_cast<int64_t>(DomainLookupStartHighRes());
+  return static_cast<int64_t>(mTimingData->DomainLookupStartHighRes(mPerformance));
 }
 
 DOMHighResTimeStamp
-PerformanceTiming::DomainLookupEndHighRes()
+PerformanceTimingData::DomainLookupEndHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
-  // Bug 1155008 - nsHttpTransaction is racy. Return DomainLookupStart when null
-  return mDomainLookupEnd.IsNull() ? DomainLookupStartHighRes()
-                                   : TimerClamping::ReduceMsTimeValue(TimeStampToDOMHighRes(mDomainLookupEnd));
+  return mDomainLookupEnd.IsNull()
+          ? DomainLookupStartHighRes(aPerformance)
+          : TimerClamping::ReduceMsTimeValue(
+              TimeStampToDOMHighRes(aPerformance, mDomainLookupEnd));
 }
 
 DOMTimeMilliSec
 PerformanceTiming::DomainLookupEnd()
 {
-  return static_cast<int64_t>(DomainLookupEndHighRes());
+  return static_cast<int64_t>(mTimingData->DomainLookupEndHighRes(mPerformance));
 }
 
 DOMHighResTimeStamp
-PerformanceTiming::ConnectStartHighRes()
+PerformanceTimingData::ConnectStartHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
-  return mConnectStart.IsNull() ? DomainLookupEndHighRes()
-                                : TimerClamping::ReduceMsTimeValue(TimeStampToDOMHighRes(mConnectStart));
+  return mConnectStart.IsNull()
+           ? DomainLookupEndHighRes(aPerformance)
+           : TimerClamping::ReduceMsTimeValue(
+               TimeStampToDOMHighRes(aPerformance, mConnectStart));
 }
 
 DOMTimeMilliSec
 PerformanceTiming::ConnectStart()
 {
-  return static_cast<int64_t>(ConnectStartHighRes());
+  return static_cast<int64_t>(mTimingData->ConnectStartHighRes(mPerformance));
 }
 
 DOMHighResTimeStamp
-PerformanceTiming::SecureConnectionStartHighRes()
+PerformanceTimingData::SecureConnectionStartHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
   return !mSecureConnection
     ? 0 // We use 0 here, because mZeroTime is sometimes set to the navigation
         // start time.
-    : (mSecureConnectionStart.IsNull() ? mZeroTime
-                                       : TimerClamping::ReduceMsTimeValue(TimeStampToDOMHighRes(mSecureConnectionStart)));
+    : (mSecureConnectionStart.IsNull()
+        ? mZeroTime
+        : TimerClamping::ReduceMsTimeValue(
+            TimeStampToDOMHighRes(aPerformance, mSecureConnectionStart)));
 }
 
 DOMTimeMilliSec
 PerformanceTiming::SecureConnectionStart()
 {
-  return static_cast<int64_t>(SecureConnectionStartHighRes());
+  return static_cast<int64_t>(mTimingData->SecureConnectionStartHighRes(mPerformance));
 }
 
 DOMHighResTimeStamp
-PerformanceTiming::ConnectEndHighRes()
+PerformanceTimingData::ConnectEndHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
   // Bug 1155008 - nsHttpTransaction is racy. Return ConnectStart when null
-  return mConnectEnd.IsNull() ? ConnectStartHighRes()
-                              : TimerClamping::ReduceMsTimeValue(TimeStampToDOMHighRes(mConnectEnd));
+  return mConnectEnd.IsNull()
+           ? ConnectStartHighRes(aPerformance)
+           : TimerClamping::ReduceMsTimeValue(
+               TimeStampToDOMHighRes(aPerformance, mConnectEnd));
 }
 
 DOMTimeMilliSec
 PerformanceTiming::ConnectEnd()
 {
-  return static_cast<int64_t>(ConnectEndHighRes());
+  return static_cast<int64_t>(mTimingData->ConnectEndHighRes(mPerformance));
 }
 
 DOMHighResTimeStamp
-PerformanceTiming::RequestStartHighRes()
+PerformanceTimingData::RequestStartHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
-  return TimeStampToReducedDOMHighResOrFetchStart(mRequestStart);
+  return TimeStampToReducedDOMHighResOrFetchStart(aPerformance, mRequestStart);
 }
 
 DOMTimeMilliSec
 PerformanceTiming::RequestStart()
 {
-  return static_cast<int64_t>(RequestStartHighRes());
+  return static_cast<int64_t>(mTimingData->RequestStartHighRes(mPerformance));
 }
 
 DOMHighResTimeStamp
-PerformanceTiming::ResponseStartHighRes()
+PerformanceTimingData::ResponseStartHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
@@ -413,18 +476,20 @@ PerformanceTiming::ResponseStartHighRes()
      (!mCacheReadStart.IsNull() && mCacheReadStart < mResponseStart)) {
     mResponseStart = mCacheReadStart;
   }
-  return TimeStampToReducedDOMHighResOrFetchStart(mResponseStart);
+  return TimeStampToReducedDOMHighResOrFetchStart(aPerformance, mResponseStart);
 }
 
 DOMTimeMilliSec
 PerformanceTiming::ResponseStart()
 {
-  return static_cast<int64_t>(ResponseStartHighRes());
+  return static_cast<int64_t>(mTimingData->ResponseStartHighRes(mPerformance));
 }
 
 DOMHighResTimeStamp
-PerformanceTiming::ResponseEndHighRes()
+PerformanceTimingData::ResponseEndHighRes(Performance* aPerformance)
 {
+  MOZ_ASSERT(aPerformance);
+
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
@@ -433,20 +498,16 @@ PerformanceTiming::ResponseEndHighRes()
     mResponseEnd = mCacheReadEnd;
   }
   // Bug 1155008 - nsHttpTransaction is racy. Return ResponseStart when null
-  return mResponseEnd.IsNull() ? ResponseStartHighRes()
-                               : TimerClamping::ReduceMsTimeValue(TimeStampToDOMHighRes(mResponseEnd));
+  return mResponseEnd.IsNull()
+           ? ResponseStartHighRes(aPerformance)
+           : TimerClamping::ReduceMsTimeValue(
+               TimeStampToDOMHighRes(aPerformance, mResponseEnd));
 }
 
 DOMTimeMilliSec
 PerformanceTiming::ResponseEnd()
 {
-  return static_cast<int64_t>(ResponseEndHighRes());
-}
-
-bool
-PerformanceTiming::IsInitialized() const
-{
-  return mInitialized;
+  return static_cast<int64_t>(mTimingData->ResponseEndHighRes(mPerformance));
 }
 
 JSObject*
