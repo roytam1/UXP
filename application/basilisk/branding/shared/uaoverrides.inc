@@ -56,7 +56,6 @@ pref("@GUAO_PREF@.firefox.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_D
 pref("@GUAO_PREF@.mozilla.org","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
 pref("@GUAO_PREF@.mozilla.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
 pref("@GUAO_PREF@.github.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
-pref("@GUAO_PREF@.spotify.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
 pref("@GUAO_PREF@.twitter.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
 pref("@GUAO_PREF@.zoho.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
 
@@ -66,6 +65,7 @@ pref("@GUAO_PREF@.privat24.ua","Mozilla/5.0 (%OS_SLICE% rv:38.0) @GK_SLICE@ Fire
 pref("@GUAO_PREF@.citi.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ Firefox/68.0 SeaMonkey/2.53.12");
 pref("@GUAO_PREF@.facebook.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ Firefox/68.0 @APP_SLICE@");
 pref("@GUAO_PREF@.mewe.com", "Mozilla/5.0 (%OS_SLICE% rv:102.0) Gecko/20100101 Firefox/102.0");
+pref("@GUAO_PREF@.spotify.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
 
 // UA-sniffing domains that are "app/vendor-specific" and do not like Basilisk
 pref("@GUAO_PREF@.web.whatsapp.com","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36");
