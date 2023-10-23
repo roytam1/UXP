@@ -9,7 +9,7 @@
 #define GK_SLICE Gecko/20100101
 #define FX_SLICE Firefox/@GK_VERSION@
 
-#define PALE_MOON_VERSION 32.0.1
+#define PALE_MOON_VERSION 32.4.1
 #define PALE_MOON_SLICE PaleMoon/@PALE_MOON_VERSION@
 
 // %OS_SLICE% macro is resolved at runtime, see MoonchildProductions/UXP/issues/1473
