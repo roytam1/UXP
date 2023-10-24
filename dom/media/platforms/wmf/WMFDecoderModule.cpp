@@ -83,6 +83,14 @@ WMFDecoderModule::Startup()
 already_AddRefed<MediaDataDecoder>
 WMFDecoderModule::CreateVideoDecoder(const CreateDecoderParams& aParams)
 {
+  // Temporary - forces use of VPXDecoder when alpha is present.
+  // Bug 1263836 will handle alpha scenario once implemented. It will shift
+  // the check for alpha to PDMFactory but not itself remove the need for a
+  // check.
+  if (aParams.VideoConfig().HasAlpha()) {
+    return nullptr;
+  }
+
   nsAutoPtr<WMFVideoMFTManager> manager(
     new WMFVideoMFTManager(aParams.VideoConfig(),
                            aParams.mKnowsCompositor,
