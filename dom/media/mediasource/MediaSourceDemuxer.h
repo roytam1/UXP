@@ -45,8 +45,8 @@ public:
   void NotifyDataArrived() override;
 
   /* interface for TrackBuffersManager */
-  void AttachSourceBuffer(TrackBuffersManager* aSourceBuffer);
-  void DetachSourceBuffer(TrackBuffersManager* aSourceBuffer);
+  void AttachSourceBuffer(RefPtr<TrackBuffersManager>& aSourceBuffer);
+  void DetachSourceBuffer(RefPtr<TrackBuffersManager>& aSourceBuffer);
   AutoTaskQueue* GetTaskQueue() { return mTaskQueue; }
 
   // Returns a string describing the state of the MediaSource internal
@@ -64,10 +64,10 @@ private:
   // Scan source buffers and update information.
   bool ScanSourceBuffersForContent();
   RefPtr<InitPromise> AttemptInit();
-  TrackBuffersManager* GetManager(TrackInfo::TrackType aType);
+  RefPtr<TrackBuffersManager> GetManager(TrackInfo::TrackType aType);
   TrackInfo* GetTrackInfo(TrackInfo::TrackType);
-  void DoAttachSourceBuffer(TrackBuffersManager* aSourceBuffer);
-  void DoDetachSourceBuffer(TrackBuffersManager* aSourceBuffer);
+  void DoAttachSourceBuffer(RefPtr<TrackBuffersManager>&& aSourceBuffer);
+  void DoDetachSourceBuffer(const RefPtr<TrackBuffersManager>& aSourceBuffer);
   bool OnTaskQueue()
   {
     return !GetTaskQueue() || GetTaskQueue()->IsCurrentThreadIn();
