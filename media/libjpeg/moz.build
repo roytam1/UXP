@@ -91,6 +91,7 @@ if CONFIG['LIBJPEG_TURBO_ASFLAGS']:
             'simd/arm/jidctred-neon.c',
             'simd/arm/jquanti-neon.c',
         ]
+        CFLAGS += ['-mfpu=neon']
     elif CONFIG['CPU_ARCH'] == 'aarch64':
         SOURCES += [
             'simd/jsimd_arm64.c',

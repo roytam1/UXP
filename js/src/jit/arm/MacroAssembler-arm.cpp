@@ -3013,7 +3013,7 @@ MacroAssemblerARMCompat::testInt32(Condition cond, const BaseIndex& src)
     return cond;
 }
 
-+Assembler::Condition
+Assembler::Condition
 MacroAssemblerARMCompat::testBigInt(Condition cond,const BaseIndex& src)
 {
     MOZ_ASSERT(cond == Equal || cond == NotEqual);
@@ -3766,7 +3766,7 @@ MacroAssemblerARMCompat::testStringTruthy(bool truthy, const ValueOperand& value
     return truthy ? Assembler::NotEqual : Assembler::Equal;
 }
 
-+Assembler::Condition
+Assembler::Condition
 MacroAssemblerARMCompat::testBigIntTruthy(bool truthy, const ValueOperand& value)
 {
     Register bi = value.payloadReg();

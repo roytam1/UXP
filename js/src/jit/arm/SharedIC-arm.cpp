@@ -201,6 +201,17 @@ ICUnaryArith_Int32::Compiler::generateStubCode(MacroAssembler& masm)
         // Compile -x as 0 - x.
         masm.as_rsb(R0.payloadReg(), R0.payloadReg(), Imm8(0));
         break;
+      case JSOP_INC: {
+        RegisterOrInt32Constant rval = RegisterOrInt32Constant(R0.payloadReg());
+        masm.inc32(&rval);
+        break;
+      }
+      case JSOP_DEC: {
+        RegisterOrInt32Constant rval = RegisterOrInt32Constant(R0.payloadReg());
+        masm.dec32(&rval);
+        break;
+      }
+
       default:
         MOZ_CRASH("Unexpected op");
     }
