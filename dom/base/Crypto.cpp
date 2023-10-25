@@ -115,6 +115,27 @@ Crypto::GetRandomValues(JSContext* aCx, const ArrayBufferView& aArray,
   aRetval.set(view);
 }
 
+void Crypto::RandomUUID(nsAString& aRetVal)
+{
+  // NSID_LENGTH == 39 == 36 UUID chars + 2 curly braces + 1 NUL byte
+  static_assert(NSID_LENGTH == 39);
+
+  nsCOMPtr<nsIUUIDGenerator> uuidgen =
+    do_GetService("@mozilla.org/uuid-generator;1");
+
+  nsID uuid;
+
+  nsresult rv = uuidgen->GenerateUUIDInPlace(&uuid);
+
+  char uuidBuffer[NSID_LENGTH]; 
+  uuid.ToProvidedString(uuidBuffer);
+
+  nsCString asciiString(uuidBuffer);
+
+  // Convert UUID chars to UTF-16 retval, omitting the curly braces and NUL
+  CopyASCIItoUTF16(Substring(asciiString, 1, NSID_LENGTH - 3), aRetVal);
+}
+
 SubtleCrypto*
 Crypto::Subtle()
 {
