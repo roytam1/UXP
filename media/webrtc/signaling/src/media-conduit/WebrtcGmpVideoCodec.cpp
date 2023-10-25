@@ -527,10 +527,16 @@ WebrtcGmpVideoEncoder::Terminated()
 {
   LOGD(("GMP Encoder Terminated: %p", (void *)this));
 
-  mGMP->Close();
+  GMPVideoEncoderProxy* gmp(mGMP);
   mGMP = nullptr;
   mHost = nullptr;
   mInitting = false;
+
+  if (gmp) {
+    // Do this last, since this could cause us to be destroyed
+    gmp->Close();
+  }
+
   // Could now notify that it's dead
 }
 
