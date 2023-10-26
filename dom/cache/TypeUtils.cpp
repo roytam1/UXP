@@ -190,7 +190,7 @@ TypeUtils::ToCacheResponseWithoutBody(CacheResponse& aOut,
   aOut.statusText() = aIn.GetUnfilteredStatusText();
   RefPtr<InternalHeaders> headers = aIn.UnfilteredHeaders();
   MOZ_DIAGNOSTIC_ASSERT(headers);
-  if (HasVaryStar(headers)) {
+  if (aIn.Type() != ResponseType::Opaque && HasVaryStar(headers)) {
     aRv.ThrowTypeError<MSG_RESPONSE_HAS_VARY_STAR>();
     return;
   }

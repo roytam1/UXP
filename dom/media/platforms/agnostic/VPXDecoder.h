@@ -57,6 +57,8 @@ private:
   void ProcessDecode(MediaRawData* aSample);
   MediaResult DoDecode(MediaRawData* aSample);
   void ProcessDrain();
+  MediaResult DecodeAlpha(vpx_image_t** aImgAlpha,
+                          MediaRawData* aSample);
 
   const RefPtr<ImageContainer> mImageContainer;
   const RefPtr<TaskQueue> mTaskQueue;
@@ -65,6 +67,9 @@ private:
 
   // VPx decoder state
   vpx_codec_ctx_t mVPX;
+
+  // VPx alpha decoder state
+  vpx_codec_ctx_t mVPXAlpha;
 
   const VideoInfo& mInfo;
 

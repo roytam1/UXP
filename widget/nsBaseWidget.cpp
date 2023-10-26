@@ -2133,6 +2133,16 @@ nsBaseWidget::UpdateSynthesizedTouchState(MultiTouchInput* aState,
   return inputToDispatch;
 }
 
+nsresult
+nsBaseWidget::AsyncEnableDragDrop(bool aEnable)
+{
+  RefPtr<nsBaseWidget> kungFuDeathGrip = this;
+  return NS_IdleDispatchToCurrentThread(
+    NS_NewRunnableFunction([this, aEnable, kungFuDeathGrip]() {
+                             EnableDragDrop(aEnable);
+                           }));
+}
+
 void
 nsBaseWidget::RegisterPluginWindowForRemoteUpdates()
 {
