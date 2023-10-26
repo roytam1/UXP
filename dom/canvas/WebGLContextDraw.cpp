@@ -607,6 +607,12 @@ WebGLContext::DrawArraysInstanced(GLenum mode, GLint first, GLsizei vertCount,
         return;
 
     MakeContextCurrent();
+    
+    if (vertCount > mMaxVertIdsPerDraw) {
+      ErrorOutOfMemory(
+          "Context's max vertCount is %u, but %u requested. [webgl.max-vert-ids-per-draw]", mMaxVertIdsPerDraw, vertCount);
+      return;
+    }
 
     bool error = false;
     ScopedResolveTexturesForDraw scopedResolve(this, funcName, &error);
@@ -849,6 +855,12 @@ WebGLContext::DrawElementsInstanced(GLenum mode, GLsizei vertCount, GLenum type,
         return;
 
     MakeContextCurrent();
+
+    if (vertCount > mMaxVertIdsPerDraw) {
+      ErrorOutOfMemory(
+        "Context's max vertCount is %u, but %u requested. [webgl.max-vert-ids-per-draw]", mMaxVertIdsPerDraw, vertCount);
+      return;
+    }
 
     bool error = false;
     ScopedResolveTexturesForDraw scopedResolve(this, funcName, &error);

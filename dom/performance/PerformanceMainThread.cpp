@@ -15,6 +15,34 @@
 namespace mozilla {
 namespace dom {
 
+namespace {
+
+void
+GetURLSpecFromChannel(nsITimedChannel* aChannel, nsAString& aSpec)
+{
+  aSpec.AssignLiteral("document");
+
+  nsCOMPtr<nsIChannel> channel = do_QueryInterface(aChannel);
+  if (!channel) {
+    return;
+  }
+
+  nsCOMPtr<nsIURI> uri;
+  nsresult rv = channel->GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(NS_FAILED(rv)) || !uri) {
+    return;
+  }
+
+  nsAutoCString spec;
+  rv = uri->GetSpec(spec);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return;
+  }
+
+  aSpec = NS_ConvertUTF8toUTF16(spec);
+}
+
+} // anonymous
 
 NS_IMPL_CYCLE_COLLECTION_CLASS(PerformanceMainThread)
 
@@ -60,6 +88,7 @@ PerformanceMainThread::PerformanceMainThread(nsPIDOMWindowInner* aWindow,
   , mChannel(aChannel)
 {
   MOZ_ASSERT(aWindow, "Parent window object should be provided");
+  CreateNavigationTimingEntry();
 }
 
 PerformanceMainThread::~PerformanceMainThread()
@@ -159,14 +188,14 @@ PerformanceMainThread::AddEntry(nsIHttpChannel* channel,
     // The last argument is the "zero time" (offset). Since we don't want
     // any offset for the resource timing, this will be set to "0" - the
     // resource timing returns a relative timing (no offset).
-    RefPtr<PerformanceTiming> performanceTiming =
-        new PerformanceTiming(this, timedChannel, channel,
-            0);
+    UniquePtr<PerformanceTimingData> performanceTimingData(
+        new PerformanceTimingData(timedChannel, channel, 0));
 
     // The PerformanceResourceTiming object will use the PerformanceTiming
     // object to get all the required timings.
     RefPtr<PerformanceResourceTiming> performanceEntry =
-      new PerformanceResourceTiming(performanceTiming, this, entryName, channel);
+      new PerformanceResourceTiming(std::move(performanceTimingData), this, entryName);
+
     // If the initiator type had no valid value, then set it to the default
     // ("other") value.
     if (initiatorType.IsEmpty()) {
@@ -299,17 +328,31 @@ PerformanceMainThread::CreationTime() const
 }
 
 void
-PerformanceMainThread::EnsureDocEntry()
+PerformanceMainThread::CreateNavigationTimingEntry()
 {
-  if (!mDocEntry && nsContentUtils::IsPerformanceNavigationTimingEnabled()) {
-    nsCOMPtr<nsIHttpChannel> httpChannel = do_QueryInterface(mChannel);
-    RefPtr<PerformanceTiming> timing =
-      new PerformanceTiming(this, mChannel, nullptr, 0);
-    mDocEntry = new PerformanceNavigationTiming(timing, this,
-                                                httpChannel);
+  MOZ_ASSERT(!mDocEntry, "mDocEntry should be null.");
+
+  nsAutoString name;
+  GetURLSpecFromChannel(mChannel, name);
+
+  UniquePtr<PerformanceTimingData> timing(
+    new PerformanceTimingData(mChannel, nullptr, 0));
+
+  nsCOMPtr<nsIHttpChannel> httpChannel = do_QueryInterface(mChannel);
+  if (httpChannel) {
+    timing->SetPropertiesFromHttpChannel(httpChannel, mChannel);
   }
+
+  mDocEntry = new PerformanceNavigationTiming(std::move(timing), this, name);
 }
 
+void
+PerformanceMainThread::QueueNavigationTimingEntry()
+{
+  if (mDocEntry) {
+    QueueEntry(mDocEntry);
+  }
+}
 
 void
 PerformanceMainThread::GetEntries(nsTArray<RefPtr<PerformanceEntry>>& aRetval)
@@ -317,7 +360,6 @@ PerformanceMainThread::GetEntries(nsTArray<RefPtr<PerformanceEntry>>& aRetval)
   aRetval = mResourceEntries;
   aRetval.AppendElements(mUserEntries);
 
-  EnsureDocEntry();
   if (mDocEntry) {
     aRetval.AppendElement(mDocEntry);
   }
@@ -331,7 +373,7 @@ PerformanceMainThread::GetEntriesByType(const nsAString& aEntryType,
 {
   if (aEntryType.EqualsLiteral("navigation")) {
     aRetval.Clear();
-    EnsureDocEntry();
+
     if (mDocEntry) {
       aRetval.AppendElement(mDocEntry);
     }
@@ -348,7 +390,7 @@ PerformanceMainThread::GetEntriesByName(const nsAString& aName,
 {
   if (aName.EqualsLiteral("document")) {
     aRetval.Clear();
-    EnsureDocEntry();
+
     if (mDocEntry) {
       aRetval.AppendElement(mDocEntry);
     }

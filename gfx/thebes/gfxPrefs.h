@@ -600,7 +600,8 @@ private:
   DECL_GFX_PREF(Once, "webgl.force-layers-readback",           WebGLForceLayersReadback, bool, false);
   DECL_GFX_PREF(Live, "webgl.lose-context-on-memory-pressure", WebGLLoseContextOnMemoryPressure, bool, false);
   DECL_GFX_PREF(Live, "webgl.max-warnings-per-context",        WebGLMaxWarningsPerContext, uint32_t, 32);
-  DECL_GFX_PREF(Live, "webgl.max-size-per-texture-mb",         WebGLMaxSizePerTextureMB, uint32_t, 1024); 
+  DECL_GFX_PREF(Live, "webgl.max-size-per-texture-mb",         WebGLMaxSizePerTextureMB, uint32_t, 1024);
+  DECL_GFX_PREF(Live, "webgl.max-vert-ids-per-draw",           WebglMaxVertIDsPerDraw, uint32_t, 30*1000*1000); 
   DECL_GFX_PREF(Live, "webgl.min_capability_mode",             WebGLMinCapabilityMode, bool, false);
   DECL_GFX_PREF(Live, "webgl.msaa-force",                      WebGLForceMSAA, bool, false);
   DECL_GFX_PREF(Live, "webgl.prefer-16bpp",                    WebGLPrefer16bpp, bool, false);

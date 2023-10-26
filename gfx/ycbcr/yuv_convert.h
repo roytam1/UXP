@@ -106,6 +106,18 @@ void ScaleYCbCrToRGB32_deprecated(const uint8_t* yplane,
                                   Rotate view_rotate,
                                   ScaleFilter filter);
 
+void ConvertYCbCrAToARGB32(const uint8_t* yplane,
+                           const uint8_t* uplane,
+                           const uint8_t* vplane,
+                           const uint8_t* aplane,
+                           uint8_t* argbframe,
+                           int pic_width,
+                           int pic_height,
+                           int yastride,
+                           int uvstride,
+                           int argbstride);
+
+
 } // namespace gfx
 } // namespace mozilla
  

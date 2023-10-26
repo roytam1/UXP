@@ -8,6 +8,7 @@
 
 #include <stdarg.h>
 
+#include "gfxPrefs.h"
 #include "GLContextTypes.h"
 #include "GLDefs.h"
 #include "mozilla/Attributes.h"
@@ -1397,6 +1398,7 @@ protected:
     CheckedUint32 mGeneration;
 
     WebGLContextOptions mOptions;
+    const uint32_t mMaxVertIdsPerDraw = gfxPrefs::WebglMaxVertIDsPerDraw();
 
     bool mInvalidated;
     bool mCapturedFrameInvalidated;

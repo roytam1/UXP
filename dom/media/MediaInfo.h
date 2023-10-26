@@ -215,6 +215,7 @@ public:
     , mRotation(aOther.mRotation)
     , mBitDepth(aOther.mBitDepth)
     , mImageRect(aOther.mImageRect)
+    , mAlphaPresent(aOther.mAlphaPresent)
   {
   }
 
@@ -236,6 +237,16 @@ public:
   UniquePtr<TrackInfo> Clone() const override
   {
     return MakeUnique<VideoInfo>(*this);
+  }
+
+  void SetAlpha(bool aAlphaPresent)
+  {
+    mAlphaPresent = aAlphaPresent;
+  }
+
+  bool HasAlpha() const
+  {
+    return mAlphaPresent;
   }
 
   nsIntRect ImageRect() const
@@ -312,6 +323,9 @@ private:
   // mImage may be cropped; currently only used with the WebM container.
   // A negative width or height indicate that no cropping is to occur.
   nsIntRect mImageRect;
+
+  // Indicates whether or not frames may contain alpha information.
+  bool mAlphaPresent = false;
 };
 
 class AudioInfo : public TrackInfo {
