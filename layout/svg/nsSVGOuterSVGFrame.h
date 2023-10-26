@@ -101,13 +101,9 @@ public:
     return PrincipalChildList().FirstChild()->GetContentInsertionFrame();
   }
 
-  virtual bool IsSVGTransformed(Matrix *aOwnTransform,
-                                Matrix *aFromParentTransform) const override {
-    // Our anonymous wrapper performs the transforms. We simply
-    // return whether we are transformed here but don't apply the transforms
-    // themselves.
-    return PrincipalChildList().FirstChild()->IsSVGTransformed();
-  }
+  // Applies only to our own frame, see implementation note.
+  bool IsSVGTransformed(Matrix* aOwnTransform,
+                        Matrix* aFromParentTransform) const override;
 
   // nsISVGSVGFrame interface:
   virtual void NotifyViewportOrTransformChanged(uint32_t aFlags) override;

@@ -721,6 +721,32 @@ nsSVGOuterSVGFrame::AttributeChanged(int32_t  aNameSpaceID,
   return NS_OK;
 }
 
+bool
+nsSVGOuterSVGFrame::IsSVGTransformed(Matrix* aOwnTransform,
+                                     Matrix* aFromParentTransform) const
+{
+  // The HasChildrenOnlyTransform() implementation of our anonymous child makes sure
+  // our transforms are applied to our children as-appropriate. So, we only care
+  // about self-transforms on our own frame, here.
+
+  bool hasTransform = false;
+
+  SVGSVGElement* content = static_cast<SVGSVGElement*>(mContent);
+  nsSVGAnimatedTransformList* animatedTransformList = content->GetAnimatedTransformList();
+  if ((animatedTransformList && animatedTransformList->HasTransform()) ||
+      content->GetAnimateMotionTransform()) {
+    if (aOwnTransform) {
+      // Apply transform
+      *aOwnTransform = gfx::ToMatrix(
+                         content->PrependLocalTransformsTo(
+                           gfxMatrix(), eUserSpaceToParent));
+    }
+    hasTransform = true;
+  }
+
+  return hasTransform;
+}
+
 //----------------------------------------------------------------------
 // painting
 

@@ -1072,6 +1072,11 @@ nsDocumentViewer::LoadComplete(nsresult aStatus)
       if (timing) {
         timing->NotifyLoadEventEnd();
       }
+
+      nsPIDOMWindowInner* innerWindow = window->GetCurrentInnerWindow();
+      if (innerWindow) {
+        innerWindow->QueuePerformanceNavigationTiming();
+      }
     }
   } else {
     // XXX: Should fire error event to the document...

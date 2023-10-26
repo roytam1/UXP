@@ -727,6 +727,8 @@ public:
 
   mozilla::dom::Performance* GetPerformance();
 
+  void QueuePerformanceNavigationTiming();
+
   bool HasMutationListeners(uint32_t aMutationEventType) const
   {
     if (!mOuterWindow) {

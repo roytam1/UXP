@@ -1240,7 +1240,16 @@ JSStructuredCloneWriter::traverseObject(HandleObject obj)
     ESClass cls;
     if (!GetBuiltinClass(context(), obj, &cls))
         return false;
-    return out.writePair(cls == ESClass::Array ? SCTAG_ARRAY_OBJECT : SCTAG_OBJECT_OBJECT, 0);
+
+    if (cls == ESClass::Array) {
+        uint32_t length = 0;
+        if (!JS_GetArrayLength(context(), obj, &length))
+            return false;
+
+        return out.writePair(SCTAG_ARRAY_OBJECT, NativeEndian::swapToLittleEndian(length));
+    }
+
+    return out.writePair(SCTAG_OBJECT_OBJECT, 0);
 }
 
 bool
@@ -2037,6 +2046,7 @@ bool
 JSStructuredCloneReader::startRead(MutableHandleValue vp)
 {
     uint32_t tag, data;
+    bool alreadAppended = false;
 
     if (!in.readPair(&tag, &data))
         return false;
@@ -2143,7 +2153,7 @@ JSStructuredCloneReader::startRead(MutableHandleValue vp)
       case SCTAG_ARRAY_OBJECT:
       case SCTAG_OBJECT_OBJECT: {
         JSObject* obj = (tag == SCTAG_ARRAY_OBJECT)
-                        ? (JSObject*) NewDenseEmptyArray(context())
+                        ? (JSObject*) NewDenseUnallocatedArray(context(), NativeEndian::swapFromLittleEndian(data))
                         : (JSObject*) NewBuiltinClassInstance<PlainObject>(context());
         if (!obj || !objs.append(ObjectValue(*obj)))
             return false;
@@ -2237,15 +2247,29 @@ JSStructuredCloneReader::startRead(MutableHandleValue vp)
                                       "unsupported type");
             return false;
         }
+
+        // callbacks->read() might read other objects from the buffer.
+        // In startWrite we always write the object itself before calling
+        // the custom function. We should do the same here to keep
+        // indexing consistent.
+        uint32_t placeholderIndex = allObjs.length();
+        Value dummy = UndefinedValue();
+        if (!allObjs.append(dummy)) {
+            return false;
+        }
+
         JSObject* obj = callbacks->read(context(), this, tag, data, closure);
         if (!obj)
             return false;
         vp.setObject(*obj);
+        allObjs[placeholderIndex].set(vp);
+        alreadAppended = true;
       }
     }
 
-    if (vp.isObject() && !allObjs.append(vp))
+    if (!alreadAppended && vp.isObject() && !allObjs.append(vp)) {
         return false;
+    }
 
     return true;
 }
@@ -2819,7 +2843,20 @@ JS_WriteTypedArray(JSStructuredCloneWriter* w, HandleValue v)
     MOZ_ASSERT(v.isObject());
     assertSameCompartment(w->context(), v);
     RootedObject obj(w->context(), &v.toObject());
-    return w->writeTypedArray(obj);
+
+    // startWrite can write everything, thus we should check here
+    // and report error if the user passes a wrong type.
+    if (!JS_IsTypedArrayObject(obj)) {
+        JS_ReportErrorNumberASCII(w->context(), GetErrorMessage, nullptr,
+                                  JSMSG_SC_BAD_SERIALIZED_DATA,
+                                  "expected type array");
+        return false;
+    }
+
+    // We should use startWrite instead of writeTypedArray, because
+    // typed array is an object, we should add it to the |memory|
+    // (allObjs) list. Directly calling writeTypedArray won't add it.
+    return w->startWrite(v);
 }
 
 JS_PUBLIC_API(bool)
