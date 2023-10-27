@@ -118,7 +118,7 @@ Crypto::GetRandomValues(JSContext* aCx, const ArrayBufferView& aArray,
 void Crypto::RandomUUID(nsAString& aRetVal)
 {
   // NSID_LENGTH == 39 == 36 UUID chars + 2 curly braces + 1 NUL byte
-  static_assert(NSID_LENGTH == 39);
+  static_assert(NSID_LENGTH == 39, "Crypto:RandomUUID: NSID_LENGTH must be 39");
 
   nsCOMPtr<nsIUUIDGenerator> uuidgen =
     do_GetService("@mozilla.org/uuid-generator;1");
