@@ -411,6 +411,10 @@ EXTRA_DSO_LDOPTS += -Wl,--version-script,$(SYMBOLS_FILE)
 else
 ifeq ($(OS_TARGET),Darwin)
 EXTRA_DSO_LDOPTS += -Wl,-exported_symbols_list,$(SYMBOLS_FILE)
+else
+ifeq ($(OS_TARGET),SunOS)
+EXTRA_DSO_LDOPTS += -Wl,-M,$(SYMBOLS_FILE)
+endif
 endif
 endif
 endif
