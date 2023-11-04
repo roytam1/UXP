@@ -1299,7 +1299,7 @@ var defaultOptions = {
   // be either 3, or 5, or 6. This influences support for strict
   // mode, the set of reserved words, support for getters and
   // setters and other features.
-  ecmaVersion: 5,
+  ecmaVersion: 6,
   // Source type ("script" or "module") for different semantics
   sourceType: "script",
   // `onInsertedSemicolon` can be a callback that will be called
