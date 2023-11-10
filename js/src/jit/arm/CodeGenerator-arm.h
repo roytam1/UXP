@@ -288,24 +288,6 @@ class CodeGeneratorARM : public CodeGeneratorShared
     void visitUDiv(LUDiv* ins);
     void visitUMod(LUMod* ins);
     void visitSoftUDivOrMod(LSoftUDivOrMod* ins);
-
-  public:
-    // Unimplemented SIMD instructions
-    void visitSimdSplatX4(LSimdSplatX4* lir) { MOZ_CRASH("NYI"); }
-    void visitSimd128Int(LSimd128Int* ins) { MOZ_CRASH("NYI"); }
-    void visitSimd128Float(LSimd128Float* ins) { MOZ_CRASH("NYI"); }
-    void visitSimdReinterpretCast(LSimdReinterpretCast* ins) { MOZ_CRASH("NYI"); }
-    void visitSimdExtractElementI(LSimdExtractElementI* ins) { MOZ_CRASH("NYI"); }
-    void visitSimdExtractElementF(LSimdExtractElementF* ins) { MOZ_CRASH("NYI"); }
-    void visitSimdGeneralShuffleI(LSimdGeneralShuffleI* lir) { MOZ_CRASH("NYI"); }
-    void visitSimdGeneralShuffleF(LSimdGeneralShuffleF* lir) { MOZ_CRASH("NYI"); }
-    void visitSimdSwizzleI(LSimdSwizzleI* lir) { MOZ_CRASH("NYI"); }
-    void visitSimdSwizzleF(LSimdSwizzleF* lir) { MOZ_CRASH("NYI"); }
-    void visitSimdBinaryCompIx4(LSimdBinaryCompIx4* lir) { MOZ_CRASH("NYI"); }
-    void visitSimdBinaryCompFx4(LSimdBinaryCompFx4* lir) { MOZ_CRASH("NYI"); }
-    void visitSimdBinaryArithIx4(LSimdBinaryArithIx4* lir) { MOZ_CRASH("NYI"); }
-    void visitSimdBinaryArithFx4(LSimdBinaryArithFx4* lir) { MOZ_CRASH("NYI"); }
-    void visitSimdBinaryBitwise(LSimdBinaryBitwise* lir) { MOZ_CRASH("NYI"); }
 };
 
 typedef CodeGeneratorARM CodeGeneratorSpecific;

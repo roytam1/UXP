@@ -1068,7 +1068,7 @@ var Debugger =
 	    // be either 3, or 5, or 6. This influences support for strict
 	    // mode, the set of reserved words, support for getters and
 	    // setters and other features.
-	    ecmaVersion: 5,
+	    ecmaVersion: 6,
 	    // Turn on `strictSemicolons` to prevent the parser from doing
 	    // automatic semicolon insertion.
 	    strictSemicolons: false,

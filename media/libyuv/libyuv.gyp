@@ -64,7 +64,7 @@
           'defines': [
             'LIBYUV_NEON',
           ],
-          'cflags!': [
+          'cflags_mozilla!': [
             '-mfpu=vfp',
             '-mfpu=vfpv3',
             '-mfpu=vfpv3-d16',
@@ -73,14 +73,14 @@
           'conditions': [
             # Disable LTO in libyuv_neon target due to gcc 4.9 compiler bug.
             ['clang == 0 and use_lto == 1', {
-              'cflags!': [
+              'cflags_mozilla!': [
                 '-flto',
                 '-ffat-lto-objects',
               ],
             }],
             # arm64 does not need -mfpu=neon option as neon is not optional
             ['target_arch != "arm64"', {
-              'cflags': [
+              'cflags_mozilla': [
                 '-mfpu=neon',
                 # '-marm',  # arm32 not thumb
               ],
