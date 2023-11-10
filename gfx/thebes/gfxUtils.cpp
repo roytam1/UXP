@@ -692,7 +692,7 @@ gfxUtils::ClipToRegion(DrawTarget* aTarget, const nsIntRegion& aRegion)
 }
 
 /*static*/ gfxFloat
-gfxUtils::ClampToScaleFactor(gfxFloat aVal)
+gfxUtils::ClampToScaleFactor(gfxFloat aVal, bool aRoundDown)
 {
   // Arbitary scale factor limitation. We can increase this
   // for better scaling performance at the cost of worse
@@ -713,14 +713,17 @@ gfxUtils::ClampToScaleFactor(gfxFloat aVal)
 
   gfxFloat power = log(aVal)/log(kScaleResolution);
 
-  // If power is within 1e-5 of an integer, round to nearest to
-  // prevent floating point errors, otherwise round up to the
-  // next integer value.
   if (fabs(power - NS_round(power)) < 1e-5) {
+    // If power is within 1e-5 of an integer, round to nearest to
+    // prevent floating point errors.
     power = NS_round(power);
-  } else if (inverse) {
+  } else if (inverse != aRoundDown) {
+    // Use floor when we are either inverted or rounding down, but
+    // not both.
     power = floor(power);
   } else {
+    // Otherwise, ceil when we are not inverted and not rounding
+    // down, or we are inverted and rounding down.
     power = ceil(power);
   }
 

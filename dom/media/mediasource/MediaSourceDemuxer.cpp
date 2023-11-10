@@ -207,7 +207,7 @@ MediaSourceDemuxer::DoDetachSourceBuffer(
 {
   MOZ_ASSERT(OnTaskQueue());
   mSourceBuffers.RemoveElementsBy(
-    [&aSourceBuffer](const RefPtr<TrackBuffersManager> aLinkedSourceBuffer) {
+    [&aSourceBuffer](const RefPtr<TrackBuffersManager>& aLinkedSourceBuffer) {
       return aLinkedSourceBuffer == aSourceBuffer;
     });
   if (aSourceBuffer == mAudioTrack) {

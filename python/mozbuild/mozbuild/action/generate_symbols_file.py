@@ -83,6 +83,20 @@ def generate_symbols_file(output, *args):
         # };
         output.write('{\nglobal:\n  %s;\nlocal:\n  *;\n};'
                      % ';\n  '.join(symbols))
+    elif buildconfig.substs['OS_TARGET'] == 'SunOS':
+        # A linker version script is generated for Sun LD that looks like the
+        # following:
+        # $mapfile_version 2
+        # SYMBOL_VERSION SUNW_1.1 {
+        # global:
+        #   symbol1;
+        #   symbol2;
+        #   ...
+        # local:
+        #   *;
+        # };
+        output.write('$mapfile_version 2\nSYMBOL_VERSION SUNW_1.1 {\nglobal:\n  %s;\nlocal:\n  *;\n};'
+                     % ';\n  '.join(symbols))
     elif buildconfig.substs['OS_TARGET'] == 'Darwin':
         # A list of symbols is generated for Apple ld that simply lists all
         # symbols, with an underscore prefix.
