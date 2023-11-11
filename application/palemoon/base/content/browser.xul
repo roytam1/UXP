@@ -548,7 +548,6 @@
                    placespopup="true"
                    context="placesContext"
                    openInTabs="children"
-                   onmouseup="BookmarksEventHandler.onMouseUp(event);"
                    oncommand="BookmarksEventHandler.onCommand(event, this.parentNode._placesView);"
                    onclick="event.stopPropagation();
                             BookmarksEventHandler.onClick(event, this.parentNode._placesView);"
@@ -705,7 +704,6 @@
         <hbox flex="1"
               id="PlacesToolbar"
               context="placesContext"
-              onmouseup="BookmarksEventHandler.onMouseUp(event);"
               onclick="BookmarksEventHandler.onClick(event, this._placesView);"
               oncommand="BookmarksEventHandler.onCommand(event, this._placesView);"
               tooltip="bhTooltip"
