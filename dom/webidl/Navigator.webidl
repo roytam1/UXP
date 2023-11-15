@@ -324,3 +324,9 @@ partial interface Navigator {
 interface NavigatorConcurrentHardware {
   readonly attribute unsigned long long hardwareConcurrency;
 };
+
+// https://www.w3.org/TR/clipboard-apis/#navigator-interface
+partial interface Navigator {
+  [Pref="dom.events.asyncClipboard", SecureContext, SameObject]
+  readonly attribute Clipboard clipboard;
+};
