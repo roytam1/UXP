@@ -43,46 +43,9 @@ Clipboard::ReadHelper(JSContext* aCx, nsIPrincipal& aSubjectPrincipal,
   }
 
   // We always reject reading from clipboard for sec reasons.
-  // below code kept in place in case we change our minds on that but will require
-  // permissions.
-  // e.g. if(!nsContentUtils::IsCallerChrome()) would allow add-ons...
-  if (true) {
-    MOZ_LOG(GetClipboardLog(), LogLevel::Debug, ("Clipboard, ReadHelper, "
-            "Don't have permissions for reading\n"));
-    p->MaybeRejectWithUndefined();
-    return p.forget();
-  }
-
-  // Want isExternal = true in order to use the data transfer object to perform a read
-  RefPtr<DataTransfer> dataTransfer = new DataTransfer(this, ePaste, /* is external */ true,
-                                                       nsIClipboard::kGlobalClipboard);
-
-  // Create a new runnable
-  RefPtr<nsIRunnable> r = NS_NewRunnableFunction(
-    [p, dataTransfer, &aSubjectPrincipal, aClipboardReadType]() {
-      IgnoredErrorResult ier;
-      switch (aClipboardReadType) {
-        case eRead:
-          MOZ_LOG(GetClipboardLog(), LogLevel::Debug,
-                  ("Clipboard, ReadHelper, read case\n"));
-          dataTransfer->FillAllExternalData();
-          // If there are items on the clipboard, data transfer will contain those,
-          // else, data transfer will be empty and we will be resolving with an empty data transfer
-          p->MaybeResolve(dataTransfer);
-          break;
-        case eReadText:
-          MOZ_LOG(GetClipboardLog(), LogLevel::Debug,
-                  ("Clipboard, ReadHelper, read text case\n"));
-          nsAutoString str;
-          dataTransfer->GetData(NS_LITERAL_STRING(kTextMime), str, aSubjectPrincipal, ier);
-          // Either resolve with a string extracted from data transfer item
-          // or resolve with an empty string if nothing was found
-          p->MaybeResolve(str);
-          break;
-      }
-    });
-  // Dispatch the runnable
-  NS_DispatchToCurrentThread(r.forget());
+  MOZ_LOG(GetClipboardLog(), LogLevel::Debug, ("Clipboard, ReadHelper, "
+          "Don't have permissions for reading\n"));
+  p->MaybeRejectWithUndefined();
   return p.forget();
 }
 
@@ -162,7 +125,8 @@ Clipboard::WriteText(JSContext* aCx, const nsAString& aData,
                      nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv)
 {
   // We create a data transfer with text/plain format so that
-  //  we can reuse Clipboard::Write(...) member function
+  // we can reuse the Clipboard::Write(...) member function
+  // We want isExternal = true in order to use the data transfer object to perform a write
   RefPtr<DataTransfer> dataTransfer = new DataTransfer(this, eCopy,
                                                       /* is external */ true,
                                                       /* clipboard type */ -1);
