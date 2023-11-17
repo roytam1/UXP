@@ -50,6 +50,23 @@ def dependentlibs_mingw_objdump(lib):
     proc.wait()
     return deps
 
+def dependentlibs_elfdump(lib):
+    '''Returns the list of dependencies declared in the given ELF .so'''
+    proc = subprocess.Popen(['elfdump', '-N', '.dynamic', lib], stdout = subprocess.PIPE)
+    deps = []
+    for line in proc.stdout:
+        # Each line has the following format:
+        # index  TYPE            tag             value
+        tmp = line
+        if len(tmp) > 3 and 'NEEDED' in tmp:
+            # NEEDED lines look like:
+            # [1] NEEDED            0x0000001            libname
+            match = re.search(r'(lib\w+.so.*)', tmp)
+            if match:
+                deps.append(match.group(1))
+    proc.wait()
+    return deps
+
 def dependentlibs_readelf(lib):
     '''Returns the list of dependencies declared in the given ELF .so'''
     proc = subprocess.Popen([substs.get('TOOLCHAIN_PREFIX', '') + 'readelf', '-d', lib], stdout = subprocess.PIPE)
@@ -118,7 +135,10 @@ def dependentlibs(lib, libpaths, func):
 def gen_list(output, lib):
     libpaths = [os.path.join(substs['DIST'], 'bin')]
     binary_type = get_type(lib)
-    if binary_type == ELF:
+    if substs['OS_ARCH'] == 'SunOS':
+    # If we're on SunOS, we're using ELF, but can't rely on readelf.
+        func = dependentlibs_elfdump
+    elif binary_type == ELF:
         func = dependentlibs_readelf
     elif binary_type == MACHO:
         func = dependentlibs_otool
