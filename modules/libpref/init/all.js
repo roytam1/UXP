@@ -5281,7 +5281,6 @@ pref("media.sourceErrorDetails.enabled", false);
 #endif
 
 // Whether Navigator.Clipboard methods are a thing.
-pref("dom.events.asyncClipboard", false);
+pref("dom.events.asyncClipboard", true);
 // Whether arbitrary data transfer methods (not plaintext) are allowed.
-pref("dom.events.asyncClipboard.dataTransfer", false);
-
+pref("dom.events.asyncClipboard.dataTransfer", true);
