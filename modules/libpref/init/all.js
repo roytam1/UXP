@@ -4338,6 +4338,13 @@ pref("webgl.dxgl.enabled", true);
 pref("webgl.dxgl.needs-finish", false);
 #endif
 
+// Disable ANGLE's validation layer?
+#ifdef XP_WIN
+pref("webgl.gl_khr_no_validation", true);
+#else
+pref("webgl.gl_khr_no_validation", false);
+#endif
+
 pref("gfx.offscreencanvas.enabled", false);
 
 // Stagefright prefs
