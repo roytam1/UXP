@@ -729,10 +729,10 @@ nsMixedContentBlocker::ShouldLoad(bool aHadInsecureImageRedirect,
   docShell->GetSameTypeRootTreeItem(getter_AddRefs(sameTypeRoot));
   NS_ASSERTION(sameTypeRoot, "No root tree item from docshell!");
 
-  // When navigating an iframe, the iframe may be https
-  // but its parents may not be.  Check the parents to see if any of them are https.
-  // If none of the parents are https, allow the load.
-  if (aContentType == TYPE_SUBDOCUMENT && !rootHasSecureConnection) {
+  // When navigating an iframe, the iframe may be https but its parents may not
+  // be. Check the parents to see if any of them are https. If none of the
+  // parents are https, allow the load.
+  if (aContentType == TYPE_SUBDOCUMENT && !rootHasSecureConnection && !parentIsHttps) {
 
     bool httpsParentExists = false;
 
