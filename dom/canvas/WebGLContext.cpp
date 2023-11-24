@@ -676,9 +676,11 @@ WebGLContext::CreateAndInitGL(bool forceEnabled,
                               std::vector<FailureReason>* const out_failReasons)
 {
     const gl::SurfaceCaps baseCaps = BaseCaps(mOptions, this);
-    gl::CreateContextFlags flags = gl::CreateContextFlags::NO_VALIDATION;
-    bool tryNativeGL = true;
-    bool tryANGLE = false;
+    gl::CreateContextFlags flags = gl::CreateContextFlags::NONE;
+    
+    if (Preferences::GetBool("webgl.gl_khr_no_validation", false)) {
+        flags |= gl::CreateContextFlags::NO_VALIDATION;
+    }
 
     if (forceEnabled) {
         flags |= gl::CreateContextFlags::FORCE_ENABLE_HARDWARE;
@@ -693,6 +695,9 @@ WebGLContext::CreateAndInitGL(bool forceEnabled,
     //////
 
     const bool useEGL = PR_GetEnv("MOZ_WEBGL_FORCE_EGL");
+
+    bool tryNativeGL = true;
+    bool tryANGLE = false;
 
 #ifdef XP_WIN
     tryNativeGL = false;
