@@ -296,6 +296,11 @@ MessagePort::MessagePort(nsIGlobalObject* aGlobal)
 MessagePort::~MessagePort()
 {
   CloseForced();
+  MOZ_ASSERT(!mActor);
+  if (mActor) {
+    mActor->SetPort(nullptr);
+    mActor = nullptr;
+  }
   MOZ_ASSERT(!mWorkerHolder);
 }
 
@@ -370,6 +375,7 @@ MessagePort::Initialize(const nsID& aUUID,
 
     nsAutoPtr<WorkerHolder> workerHolder(new MessagePortWorkerHolder(this));
     if (NS_WARN_IF(!workerHolder->HoldWorker(workerPrivate, Closing))) {
+      CloseForced();
       aRv.Throw(NS_ERROR_FAILURE);
       return;
     }
