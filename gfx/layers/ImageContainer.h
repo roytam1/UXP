@@ -153,6 +153,9 @@ class PlanarYCbCrImage;
 class TextureClient;
 class KnowsCompositor;
 class NVImage;
+#ifdef XP_WIN
+class D3D11YCbCrRecycleAllocator;
+#endif
 
 struct ImageBackendData
 {
@@ -173,14 +176,14 @@ class MacIOSurfaceImage;
 /**
  * A class representing a buffer of pixel data. The data can be in one
  * of various formats including YCbCr.
- * 
+ *
  * Create an image using an ImageContainer. Fill the image with data, and
  * then call ImageContainer::SetImage to display it. An image must not be
  * modified after calling SetImage. Image implementations do not need to
  * perform locking; when filling an Image, the Image client is responsible
  * for ensuring only one thread accesses the Image at a time, and after
  * SetImage the image is immutable.
- * 
+ *
  * When resampling an Image, only pixels within the buffer should be
  * sampled. For example, cairo images should be sampled in EXTEND_PAD mode.
  */
@@ -254,7 +257,7 @@ protected:
 
 /**
  * A RecycleBin is owned by an ImageContainer. We store buffers in it that we
- * want to recycle from one image to the next.It's a separate object from 
+ * want to recycle from one image to the next.It's a separate object from
  * ImageContainer because images need to store a strong ref to their RecycleBin
  * and we must avoid creating a reference loop between an ImageContainer and
  * its active image.
@@ -319,7 +322,7 @@ protected:
     const gfx::IntSize& aScaleHint,
     BufferRecycleBin *aRecycleBin);
 };
- 
+
 /**
  * A class that manages Images for an ImageLayer. The only reason
  * we need a separate class here is that ImageLayers aren't threadsafe
@@ -399,7 +402,7 @@ public:
    * mProducerID is a unique ID for the stream of images. A change in the
    * mProducerID means changing to a new mFrameID namespace. All frames in
    * aImages must have the same mProducerID.
-   * 
+   *
    * The Image data must not be modified after this method is called!
    * Note that this must not be called if ENABLE_ASYNC has not been set.
    *
@@ -435,11 +438,11 @@ public:
    * Set an Image as the current image to display. The Image must have
    * been created by this ImageContainer.
    * Must be called on the main thread, within a layers transaction.
-   * 
+   *
    * This method takes mReentrantMonitor
    * when accessing thread-shared state.
    * aImage can be null. While it's null, nothing will be painted.
-   * 
+   *
    * The Image data must not be modified after this method is called!
    * Note that this must not be called if ENABLE_ASYNC been set.
    *
@@ -521,6 +524,11 @@ public:
     return mImageFactory;
   }
 
+#ifdef XP_WIN
+  D3D11YCbCrRecycleAllocator* GetD3D11YCbCrRecycleAllocator(
+    KnowsCompositor* aAllocator);
+#endif
+
   /**
    * Returns the delay between the last composited image's presentation
    * timestamp and when it was first composited. It's possible for the delay
@@ -586,6 +594,10 @@ private:
   // ReentrantMonitor to protect thread safe access to the "current
   // image", and any other state which is shared between threads.
   ReentrantMonitor mReentrantMonitor;
+
+#ifdef XP_WIN
+  RefPtr<D3D11YCbCrRecycleAllocator> mD3D11YCbCrRecycleAllocator;
+#endif
 
   nsTArray<OwningImage> mCurrentImages;
 
@@ -703,7 +715,7 @@ struct PlanarYCbCrData {
  *
  * The color format is detected based on the height/width ratios
  * defined above.
- * 
+ *
  * The Image that is rendered is the picture region defined by
  * mPicX, mPicY and mPicSize. The size of the rendered image is
  * mPicSize, not mYSize or mCbCrSize.
