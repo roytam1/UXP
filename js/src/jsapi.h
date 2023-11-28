@@ -4432,24 +4432,18 @@ extern JS_PUBLIC_API(JS::Value)
 GetScriptedCallerPrivate(JSContext* cx);
 
 /**
- * A hook that's called whenever a script or module which has a private value
- * set with SetScriptPrivate() or SetModulePrivate() is finalized. This can be
- * used to clean up the private state. The private value is passed as an
- * argument.
+ * Hooks called when references to a script private value are created or
+ * destroyed. This allows use of a reference counted object as the
+ * script private.
  */
-using ScriptPrivateFinalizeHook = void (*)(JSFreeOp*, const JS::Value&);
-
-/**
- * Get the script private finalize hook for the runtime.
- */
-extern JS_PUBLIC_API(ScriptPrivateFinalizeHook)
-GetScriptPrivateFinalizeHook(JSContext* cx);
+using ScriptPrivateReferenceHook = void (*)(const JS::Value&);
 
 /**
  * Set the script private finalize hook for the runtime to the given function.
  */
 extern JS_PUBLIC_API(void)
-SetScriptPrivateFinalizeHook(JSContext* cx, ScriptPrivateFinalizeHook func);
+SetScriptPrivateReferenceHooks(JSContext* cx, ScriptPrivateReferenceHook addRefHook,
+                               ScriptPrivateReferenceHook releaseHook);
 
 /*
  * Perform the ModuleInstantiate operation on the given source text module
