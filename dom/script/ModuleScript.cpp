@@ -53,13 +53,12 @@ LoadedScript::LoadedScript(ScriptKind aKind,
 LoadedScript::~LoadedScript() { DropJSObjects(this); }
 
 void LoadedScript::AssociateWithScript(JSScript* aScript) {
-  // Set a JSScript's private value to point to this object and
-  // increment our reference count. This is decremented by
-  // HostFinalizeTopLevelScript() below when the JSScript dies.
+  // Set a JSScript's private value to point to this object. The JS engine will
+  // increment our reference count by calling HostAddRefTopLevelScript(). This
+  // is decremented by HostReleaseTopLevelScript() below when the JSScript dies.
 
   MOZ_ASSERT(JS::GetScriptPrivate(aScript).isUndefined());
   JS::SetScriptPrivate(aScript, JS::PrivateValue(this));
-  AddRef();
 }
 
 inline void CheckModuleScriptPrivate(LoadedScript* script,
@@ -163,9 +162,10 @@ ModuleScript::SetModuleRecord(JS::Handle<JSObject*> aModuleRecord)
 
   mModuleRecord = aModuleRecord;
 
-  // Make module's host defined field point to this object and
-  // increment our reference count. This is decremented by
-  // UnlinkModuleRecord() above.
+  // Make module's host defined field point to this object. The JS engine will
+  // increment our reference count by calling HostAddRefTopLevelScript(). This
+  // is decremented when the field is cleared in UnlinkModuleRecord() above or
+  // when the module record dies.
   MOZ_ASSERT(JS::GetModulePrivate(mModuleRecord).isUndefined());
   JS::SetModulePrivate(mModuleRecord, JS::PrivateValue(this));
   HoldJSObjects(this);
