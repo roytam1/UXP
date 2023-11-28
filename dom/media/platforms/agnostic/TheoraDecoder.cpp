@@ -38,7 +38,8 @@ ogg_packet InitTheoraPacket(const unsigned char* aData, size_t aLength,
 }
 
 TheoraDecoder::TheoraDecoder(const CreateDecoderParams& aParams)
-  : mImageContainer(aParams.mImageContainer)
+  : mImageAllocator(aParams.mKnowsCompositor)
+  , mImageContainer(aParams.mImageContainer)
   , mTaskQueue(aParams.mTaskQueue)
   , mCallback(aParams.mCallback)
   , mIsFlushing(false)
@@ -176,7 +177,8 @@ TheoraDecoder::DoDecode(MediaRawData* aSample)
                                    aSample->mKeyframe,
                                    aSample->mTimecode,
                                    mInfo.ScaledImageRect(mTheoraInfo.frame_width,
-                                                         mTheoraInfo.frame_height));
+                                                         mTheoraInfo.frame_height),
+                                   mImageAllocator);
     if (!v) {
       LOG("Image allocation error source %ldx%ld display %ldx%ld picture %ldx%ld",
           mTheoraInfo.frame_width, mTheoraInfo.frame_height, mInfo.mDisplay.width, mInfo.mDisplay.height,
