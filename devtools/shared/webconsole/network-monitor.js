@@ -1338,13 +1338,13 @@ NetworkMonitor.prototype = {
     try {
       response.remoteAddress = httpActivity.channel.remoteAddress;
     } catch (e) {
-      Cu.reportError(e);
+      if (e.result != Cr.NS_ERROR_NOT_AVAILABLE) Cu.reportError(e);
     }
     response.remotePort = null;
     try {
       response.remotePort = httpActivity.channel.remotePort;
     } catch (e) {
-      Cu.reportError(e);
+      if (e.result != Cr.NS_ERROR_NOT_AVAILABLE) Cu.reportError(e);
     }
     response.status = statusLineArray.shift();
     response.statusText = statusLineArray.join(" ");
