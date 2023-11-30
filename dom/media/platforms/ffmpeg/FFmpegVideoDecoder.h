@@ -24,11 +24,13 @@ class FFmpegVideoDecoder<LIBAV_VER> : public FFmpegDataDecoder<LIBAV_VER>
 {
   typedef mozilla::layers::Image Image;
   typedef mozilla::layers::ImageContainer ImageContainer;
+  typedef mozilla::layers::KnowsCompositor KnowsCompositor;
 
 public:
   FFmpegVideoDecoder(FFmpegLibWrapper* aLib, TaskQueue* aTaskQueue,
                      MediaDataDecoderCallback* aCallback,
                      const VideoInfo& aConfig,
+                     KnowsCompositor* aAllocator,
                      ImageContainer* aImageContainer);
   virtual ~FFmpegVideoDecoder();
 
@@ -62,6 +64,7 @@ private:
   int AllocateYUV420PVideoBuffer(AVCodecContext* aCodecContext,
                                  AVFrame* aFrame);
 
+  RefPtr<KnowsCompositor> mImageAllocator;
   RefPtr<ImageContainer> mImageContainer;
   VideoInfo mInfo;
 

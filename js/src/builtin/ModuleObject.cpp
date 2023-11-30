@@ -1607,7 +1607,10 @@ js::StartDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, Hand
 
     JS::ModuleDynamicImportHook importHook = cx->runtime()->moduleDynamicImportHook;
     MOZ_ASSERT(importHook);
+    cx->runtime()->addRefScriptPrivate(referencingPrivate);
     if (!importHook(cx, referencingPrivate, specifier, promise)) {
+        cx->runtime()->releaseScriptPrivate(referencingPrivate);
+
         if (!RejectPromiseWithPendingError(cx, promise))
             return nullptr;
         return promise;
@@ -1621,6 +1624,9 @@ js::FinishDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, Han
                               HandleObject promiseArg)
 {
     Handle<PromiseObject*> promise = promiseArg.as<PromiseObject>();
+
+    auto releasePrivate = mozilla::MakeScopeExit(
+        [&] { cx->runtime()->releaseScriptPrivate(referencingPrivate); });
 
     if (cx->isExceptionPending()) {
         return RejectPromiseWithPendingError(cx, promise);

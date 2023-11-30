@@ -69,6 +69,7 @@ InitContext(vpx_codec_ctx_t* aCtx,
 
 VPXDecoder::VPXDecoder(const CreateDecoderParams& aParams)
   : mImageContainer(aParams.mImageContainer)
+  , mImageAllocator(aParams.mKnowsCompositor)
   , mTaskQueue(aParams.mTaskQueue)
   , mCallback(aParams.mCallback)
   , mIsFlushing(false)
@@ -149,7 +150,7 @@ VPXDecoder::DoDecode(MediaRawData* aSample)
                  "WebM image format not I420 or I444");
     NS_ASSERTION(!alpha_decoded,
                  "Multiple frames per packet that contains alpha");
- 
+
     if (aSample->AlphaSize() > 0) {
       if(!alpha_decoded){
         MediaResult rv = DecodeAlpha(&img_alpha, aSample);
@@ -221,7 +222,8 @@ VPXDecoder::DoDecode(MediaRawData* aSample)
                                        aSample->mKeyframe,
                                        aSample->mTimecode,
                                        mInfo.ScaledImageRect(img->d_w,
-                                                             img->d_h));
+                                                             img->d_h),
+                                       mImageAllocator);
     } else {
       VideoData::YCbCrBuffer::Plane alpha_plane;
       alpha_plane.mData = img_alpha->planes[0];

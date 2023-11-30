@@ -426,17 +426,6 @@ SVGUseElement::LookupHref()
   nsCOMPtr<nsIURI> targetURI;
   nsContentUtils::NewURIWithDocumentCharset(getter_AddRefs(targetURI), href,
                                             GetComposedDoc(), baseURI);
-  
-  // Do not allow 'data:' schemes in <use> elements.
-  // See spec update: https://github.com/w3c/svgwg/pull/901
-  if (targetURI) {
-    bool isData;
-    mozilla::Unused << targetURI->SchemeIs("data", &isData);
-    if (isData) {
-      return;
-    }
-  }
-  
   mSource.Reset(this, targetURI);
 }
 
