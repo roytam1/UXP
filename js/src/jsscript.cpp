@@ -1419,15 +1419,8 @@ ScriptSourceObject::finalize(FreeOp* fop, JSObject* obj)
     sso->source()->decref();
     sso->setReservedSlot(SOURCE_SLOT, PrivateValue(nullptr));
 
-    Value value = sso->canonicalPrivate();
-    if (!value.isUndefined()) {
-        // The embedding may need to dispose of its private data.
-        JS::AutoSuppressGCAnalysis suppressGC;
-        if (JS::ScriptPrivateFinalizeHook hook =
-            fop->runtime()->scriptPrivateFinalizeHook) {
-                hook(fop, value);
-            }
-    }
+    // Clear the private value, calling the release hook if necessary.
+    sso->setPrivate(fop->runtime(), UndefinedValue());
 }
 
 static const ClassOps ScriptSourceObjectClassOps = {
@@ -1530,6 +1523,25 @@ ScriptSourceObject::initFromOptions(JSContext* cx, HandleScriptSource source,
     }
 
     return true;
+}
+
+void ScriptSourceObject::setPrivate(JSRuntime* rt, const Value& value)
+{
+  // Update the private value, calling addRef/release hooks if necessary
+  // to allow the embedding to maintain a reference count for the
+  // private data.
+  Value prevValue = getReservedSlot(PRIVATE_SLOT);
+  if (!prevValue.isUndefined()) {
+    if (auto releaseHook = rt->scriptPrivateReleaseHook) {
+      releaseHook(prevValue);
+    }
+  }
+  setReservedSlot(PRIVATE_SLOT, value);
+  if (!value.isUndefined()) {
+    if (auto addRefHook = rt->scriptPrivateAddRefHook) {
+      addRefHook(value);
+    }
+  }
 }
 
 /* static */ bool

@@ -376,6 +376,7 @@ private:
   DECL_GFX_PREF(Once, "gfx.direct2d.disabled",                 Direct2DDisabled, bool, false);
   DECL_GFX_PREF(Once, "gfx.direct2d.force-enabled",            Direct2DForceEnabled, bool, false);
   DECL_GFX_PREF(Live, "gfx.direct3d11.reuse-decoder-device",   Direct3D11ReuseDecoderDevice, int32_t, -1);
+  DECL_GFX_PREF(Live, "gfx.direct3d11.allow-intel-mutex",      Direct3D11AllowIntelMutex, bool, true);
   DECL_GFX_PREF(Live, "gfx.draw-color-bars",                   CompositorDrawColorBars, bool, false);
   DECL_GFX_PREF(Once, "gfx.e10s.hide-plugins-for-scroll",      HidePluginsForScroll, bool, true);
   DECL_GFX_PREF(Live, "gfx.gralloc.fence-with-readpixels",     GrallocFenceWithReadPixels, bool, false);
@@ -601,7 +602,7 @@ private:
   DECL_GFX_PREF(Live, "webgl.lose-context-on-memory-pressure", WebGLLoseContextOnMemoryPressure, bool, false);
   DECL_GFX_PREF(Live, "webgl.max-warnings-per-context",        WebGLMaxWarningsPerContext, uint32_t, 32);
   DECL_GFX_PREF(Live, "webgl.max-size-per-texture-mb",         WebGLMaxSizePerTextureMB, uint32_t, 1024);
-  DECL_GFX_PREF(Live, "webgl.max-vert-ids-per-draw",           WebglMaxVertIDsPerDraw, uint32_t, 30*1000*1000); 
+  DECL_GFX_PREF(Live, "webgl.max-vert-ids-per-draw",           WebglMaxVertIDsPerDraw, uint32_t, 30*1000*1000);
   DECL_GFX_PREF(Live, "webgl.min_capability_mode",             WebGLMinCapabilityMode, bool, false);
   DECL_GFX_PREF(Live, "webgl.msaa-force",                      WebGLForceMSAA, bool, false);
   DECL_GFX_PREF(Live, "webgl.prefer-16bpp",                    WebGLPrefer16bpp, bool, false);

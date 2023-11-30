@@ -1316,8 +1316,21 @@ struct JSRuntime : public JS::shadow::Runtime,
     // HostImportModuleDynamically.
     JS::ModuleDynamicImportHook moduleDynamicImportHook;
 
-    // A hook called on script finalization.
-    JS::ScriptPrivateFinalizeHook scriptPrivateFinalizeHook;
+    // Hooks called when script private references are created and destroyed.
+    JS::ScriptPrivateReferenceHook scriptPrivateAddRefHook;
+    JS::ScriptPrivateReferenceHook scriptPrivateReleaseHook;
+
+    void addRefScriptPrivate(const JS::Value& value) {
+      if (!value.isUndefined() && scriptPrivateAddRefHook) {
+        scriptPrivateAddRefHook(value);
+      }
+    }
+
+    void releaseScriptPrivate(const JS::Value& value) {
+      if (!value.isUndefined() && scriptPrivateReleaseHook) {
+        scriptPrivateReleaseHook(value);
+      }
+    }
 };
 
 namespace js {

@@ -44,6 +44,7 @@ public:
                                 aParams.mTaskQueue,
                                 aParams.mCallback,
                                 aParams.VideoConfig(),
+                                aParams.mKnowsCompositor,
                                 aParams.mImageContainer);
     return decoder.forget();
   }
