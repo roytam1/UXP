@@ -675,9 +675,7 @@ class ScriptSourceObject : public NativeObject
         return static_cast<JSScript*>(untyped);
     }
 
-    void setPrivate(const Value& value) {
-        setReservedSlot(PRIVATE_SLOT, value);
-    }
+    void setPrivate(JSRuntime* rt, const Value& value);
 
     Value getPrivate() const {
         return getReservedSlot(PRIVATE_SLOT);

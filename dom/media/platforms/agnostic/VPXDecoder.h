@@ -61,6 +61,7 @@ private:
                           MediaRawData* aSample);
 
   const RefPtr<ImageContainer> mImageContainer;
+  RefPtr<layers::KnowsCompositor> mImageAllocator;
   const RefPtr<TaskQueue> mTaskQueue;
   MediaDataDecoderCallback* mCallback;
   Atomic<bool> mIsFlushing;

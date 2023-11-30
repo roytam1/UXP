@@ -18,7 +18,8 @@ namespace dom {
 
 class ScriptLoader;
 
-void HostFinalizeTopLevelScript(JSFreeOp* aFop, const JS::Value& aPrivate);
+void HostAddRefTopLevelScript(const JS::Value& aPrivate);
+void HostReleaseTopLevelScript(const JS::Value& aPrivate);
 
 class ClassicScript;
 class ModuleScript;
@@ -63,7 +64,6 @@ class ClassicScript final : public LoadedScript
 
 class ModuleScript final : public LoadedScript
 {
-  JS::Heap<JSObject*> mModuleRecord;
   JS::Heap<JS::Value> mParseError;
   JS::Heap<JS::Value> mErrorToRethrow;
 
@@ -73,6 +73,8 @@ public:
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS_INHERITED(ModuleScript,
                                                          LoadedScript)
+
+  JS::Heap<JSObject*> mModuleRecord;
 
   ModuleScript(ScriptFetchOptions* aFetchOptions, nsIURI* aBaseURL);
 
@@ -89,7 +91,7 @@ public:
 
   void UnlinkModuleRecord();
 
-  friend void HostFinalizeTopLevelScript(JSFreeOp*, const JS::Value&);
+  friend void CheckModuleScriptPrivate(LoadedScript*, const JS::Value&);
 };
 
 ClassicScript* LoadedScript::AsClassicScript() {

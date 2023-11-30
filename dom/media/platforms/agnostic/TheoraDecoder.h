@@ -43,6 +43,7 @@ private:
   MediaResult DoDecode(MediaRawData* aSample);
   void ProcessDrain();
 
+  RefPtr<KnowsCompositor> mImageAllocator;
   RefPtr<ImageContainer> mImageContainer;
   RefPtr<TaskQueue> mTaskQueue;
   MediaDataDecoderCallback* mCallback;

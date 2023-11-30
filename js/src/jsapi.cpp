@@ -4729,7 +4729,8 @@ JS::CompileModule(JSContext* cx, const ReadOnlyCompileOptions& options,
 JS_PUBLIC_API(void)
 JS::SetModulePrivate(JSObject* module, const JS::Value& value)
 {
-    module->as<ModuleObject>().scriptSourceObject()->setPrivate(value);
+    JSRuntime* rt = module->compartment()->runtimeFromMainThread();
+    module->as<ModuleObject>().scriptSourceObject()->setPrivate(rt, value);
 }
 
 JS_PUBLIC_API(JS::Value)
@@ -4741,7 +4742,8 @@ JS::GetModulePrivate(JSObject* module)
 JS_PUBLIC_API(void)
 JS::SetScriptPrivate(JSScript* script, const JS::Value& value)
 {
-    script->scriptSourceUnwrap().setPrivate(value);
+    JSRuntime* rt = script->compartment()->runtimeFromMainThread();
+    script->scriptSourceUnwrap().setPrivate(rt, value);
 }
 
 JS_PUBLIC_API(JS::Value)
@@ -4764,18 +4766,13 @@ JS::GetScriptedCallerPrivate(JSContext* cx)
   return FindScriptOrModulePrivateForScript(iter.script());
 }
 
-JS_PUBLIC_API(JS::ScriptPrivateFinalizeHook)
-JS::GetScriptPrivateFinalizeHook(JSContext* cx) 
-{
-  AssertHeapIsIdle(cx);
-  return cx->runtime()->scriptPrivateFinalizeHook;
-}
-
 JS_PUBLIC_API(void)
-JS::SetScriptPrivateFinalizeHook(JSContext* cx, JS::ScriptPrivateFinalizeHook func)
+JS::SetScriptPrivateReferenceHooks(JSContext* cx, JS::ScriptPrivateReferenceHook addRefHook,
+                                   JS::ScriptPrivateReferenceHook releaseHook)
 {
   AssertHeapIsIdle(cx);
-  cx->runtime()->scriptPrivateFinalizeHook = func;
+  cx->runtime()->scriptPrivateAddRefHook = addRefHook;
+  cx->runtime()->scriptPrivateReleaseHook = releaseHook;
 }
 
 JS_PUBLIC_API(bool)
