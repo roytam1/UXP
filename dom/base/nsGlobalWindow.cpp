@@ -3544,7 +3544,10 @@ nsGlobalWindow::GetEventTargetParent(EventChainPreVisitor& aVisitor)
   EventMessage msg = aVisitor.mEvent->mMessage;
 
   aVisitor.mCanHandle = true;
-  aVisitor.mForceContentDispatch = true; //FIXME! Bug 329119
+  // Middle/right click shouldn't dispatch click event, use auxclick to instead.
+  if (mDoc->IsXULDocument()) {
+    aVisitor.mForceContentDispatch = true; //FIXME! Bug 329119
+  }
   if (msg == eResize && aVisitor.mEvent->IsTrusted()) {
     // QIing to window so that we can keep the old behavior also in case
     // a child window is handling resize.
