@@ -183,8 +183,7 @@ IMFYCbCrImage::GetD3D9TextureClient(KnowsCompositor* aForwarder)
   }
 
   mTextureClient = TextureClient::CreateWithData(
-    DXGIYCbCrTextureData::Create(TextureFlags::DEFAULT,
-                                 textureY, textureCb, textureCr,
+    DXGIYCbCrTextureData::Create(textureY, textureCb, textureCr,
                                  shareHandleY, shareHandleCb, shareHandleCr,
                                  GetSize(), mData.mYSize, mData.mCbCrSize),
     TextureFlags::DEFAULT,
