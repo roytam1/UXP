@@ -310,7 +310,7 @@ NetworkResponseListener.prototype = {
     }
     try {
       let impl = this._wrappedNotificationCallbacks.getInterface(iid);
-      impl[method].apply(impl, args);
+      if(impl) impl[method].apply(impl, args);
     } catch (e) {
       if (e.result != Cr.NS_ERROR_NO_INTERFACE) {
         throw e;
