@@ -42,13 +42,13 @@
 #ifndef _LDAP_STANDARD_H
 #define _LDAP_STANDARD_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "ldap-platform.h"
 
 #include "lber.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define LDAP_PORT       	389
 #define LDAPS_PORT      	636
