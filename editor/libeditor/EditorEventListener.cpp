@@ -458,7 +458,7 @@ EditorEventListener::HandleEvent(nsIDOMEvent* aEvent)
       if (widgetMouseEvent->button != WidgetMouseEvent::eLeftButton) {
         return NS_OK;
       }
-      [[fallthrough]];
+      MOZ_FALLTHROUGH;
     }
     // auxclick
     case eMouseAuxClick: {
