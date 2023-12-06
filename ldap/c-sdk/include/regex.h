@@ -52,11 +52,12 @@
  * 13 August 1993 Mark C Smith
  */
 
+#include "ldap.h" 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "ldap.h" 
 
 #if !defined( NEEDPROTOS ) && defined( __STDC__ )
 #define NEEDPROTOS
