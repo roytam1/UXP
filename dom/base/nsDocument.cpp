@@ -7318,9 +7318,13 @@ nsresult
 nsDocument::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   aVisitor.mCanHandle = true;
-   // FIXME! This is a hack to make middle mouse paste working also in Editor.
-   // Bug 329119
-  aVisitor.mForceContentDispatch = true;
+  // Middle/right click shouldn't dispatch click event, use auxclick to instead.
+  Element* docElement = GetRootElement();
+  if (docElement && docElement->IsXULElement()) {
+    // FIXME! This is a hack to make middle mouse paste working also in Editor.
+    // Bug 329119
+    aVisitor.mForceContentDispatch = true;
+  }
 
   // Load events must not propagate to |window| object, see bug 335251.
   if (aVisitor.mEvent->mMessage != eLoad) {

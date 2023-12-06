@@ -40,10 +40,6 @@
 #ifndef _LDAP_PLATFORM_H
 #define _LDAP_PLATFORM_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if defined (WIN32) || defined (_WIN32) || defined( _CONSOLE ) 
 #include <windows.h>
 #  if defined( _WINDOWS )
@@ -73,6 +69,10 @@ extern "C" {
 #ifdef XP_OS2
 #include <sys/select.h>
 #endif /* XP_OS2 */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * LDAP_API macro definition:
