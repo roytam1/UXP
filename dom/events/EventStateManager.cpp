@@ -4682,6 +4682,7 @@ EventStateManager::InitAndDispatchClickEvent(WidgetMouseEvent* aMouseUpEvent,
   event.buttons = aMouseUpEvent->buttons;
   event.mTime = aMouseUpEvent->mTime;
   event.mTimeStamp = aMouseUpEvent->mTimeStamp;
+  event.mFlags.mOnlyChromeDispatch = aNoContentDispatch;
   event.mFlags.mNoContentDispatch = aNoContentDispatch;
   event.button = aMouseUpEvent->button;
   event.inputSource = aMouseUpEvent->inputSource;
@@ -4764,8 +4765,16 @@ EventStateManager::DispatchClickEvents(nsIPresShell* aPresShell,
     return ret;
   }
 
+  // Fire auxclick even if necessary.
+  if (fireAuxClick && aClickTarget && aClickTarget->IsInComposedDoc()) {
+    ret = InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseAuxClick,
+                                    aPresShell, aClickTarget, currentTarget,
+                                    false);
+    NS_WARNING_ASSERTION(NS_SUCCEEDED(ret), "Failed to dispatch eMouseAuxClick");
+  }
+
   // Fire double click event if click count is 2.
-  if (aMouseUpEvent->mClickCount == 2 &&
+  if (aMouseUpEvent->mClickCount == 2 && !fireAuxClick &&
       aClickTarget && aClickTarget->IsInComposedDoc()) {
     ret = InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseDoubleClick,
                                     aPresShell, aClickTarget, currentTarget,
@@ -4773,15 +4782,6 @@ EventStateManager::DispatchClickEvents(nsIPresShell* aPresShell,
     if (NS_WARN_IF(NS_FAILED(ret))) {
       return ret;
     }
-  }
-
-  // Fire auxclick even if necessary.
-  if (fireAuxClick &&
-      aClickTarget && aClickTarget->IsInComposedDoc()) {
-    ret = InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseAuxClick,
-                                    aPresShell, aClickTarget, currentTarget,
-                                    false);
-    NS_WARNING_ASSERTION(NS_SUCCEEDED(ret), "Failed to dispatch eMouseAuxClick");
   }
 
   return ret;

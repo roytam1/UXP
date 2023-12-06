@@ -189,6 +189,9 @@ EditorEventListener::InstallToEditor()
   elmP->AddEventListenerByType(this,
                                NS_LITERAL_STRING("click"),
                                TrustedEventsAtCapture());
+  elmP->AddEventListenerByType(this,
+                               NS_LITERAL_STRING("auxclick"),
+                               TrustedEventsAtSystemGroupCapture());
 // Focus event doesn't bubble so adding the listener to capturing phase.
 // Make sure this works after bug 235441 gets fixed.
   elmP->AddEventListenerByType(this,
@@ -282,6 +285,9 @@ EditorEventListener::UninstallFromEditor()
   elmP->RemoveEventListenerByType(this,
                                   NS_LITERAL_STRING("click"),
                                   TrustedEventsAtCapture());
+  elmP->RemoveEventListenerByType(this,
+                                  NS_LITERAL_STRING("auxclick"),
+                                  TrustedEventsAtSystemGroupCapture());
   elmP->RemoveEventListenerByType(this,
                                   NS_LITERAL_STRING("blur"),
                                   TrustedEventsAtCapture());
@@ -447,6 +453,15 @@ EditorEventListener::HandleEvent(nsIDOMEvent* aEvent)
     }
     // click
     case eMouseClick: {
+      WidgetMouseEvent* widgetMouseEvent = internalEvent->AsMouseEvent();
+      // Don't handle non-primary click events
+      if (widgetMouseEvent->button != WidgetMouseEvent::eLeftButton) {
+        return NS_OK;
+      }
+      [[fallthrough]];
+    }
+    // auxclick
+    case eMouseAuxClick: {
       nsCOMPtr<nsIDOMMouseEvent> mouseEvent = do_QueryInterface(aEvent);
       NS_ENSURE_TRUE(mouseEvent, NS_OK);
       // If the preceding mousedown event or mouseup event was consumed,

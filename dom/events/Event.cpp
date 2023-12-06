@@ -812,37 +812,48 @@ Event::GetEventPopupControlState(WidgetEvent* aEvent, nsIDOMEvent* aDOMEvent)
     }
     break;
   case eMouseEventClass:
-    if (aEvent->IsTrusted() &&
-        aEvent->AsMouseEvent()->button == WidgetMouseEvent::eLeftButton) {
-      switch(aEvent->mMessage) {
-      case eMouseUp:
-        if (PopupAllowedForEvent("mouseup")) {
+    if (aEvent->IsTrusted()) {
+      if(aEvent->AsMouseEvent()->button == WidgetMouseEvent::eLeftButton) {
+        switch(aEvent->mMessage) {
+        case eMouseUp:
+          if (PopupAllowedForEvent("mouseup")) {
+            abuse = openControlled;
+          }
+          break;
+        case eMouseDown:
+          if (PopupAllowedForEvent("mousedown")) {
+            abuse = openControlled;
+          }
+          break;
+        case eMouseClick:
+          /* Click events get special treatment because of their
+             historical status as a more legitimate event handler. If
+             click popups are enabled in the prefs, clear the popup
+             status completely. */
+          if (PopupAllowedForEvent("click")) {
+            abuse = openAllowed;
+          }
+          break;
+        case eMouseDoubleClick:
+          if (PopupAllowedForEvent("dblclick")) {
+            abuse = openControlled;
+          }
+          break;
+        default:
+          break;
+        }
+      } else if (aEvent->mMessage == eMouseAuxClick) {
+        // Not eLeftButton
+        // There's not a strong reason to ignore other events (eg eMouseUp)
+        // for non-primary clicks as far as we know, so we could add them if
+        // it becomes a compat issue
+        if (PopupAllowedForEvent("auxclick")) {
           abuse = openControlled;
-        }
-        break;
-      case eMouseDown:
-        if (PopupAllowedForEvent("mousedown")) {
-          abuse = openControlled;
-        }
-        break;
-      case eMouseClick:
-        /* Click events get special treatment because of their
-           historical status as a more legitimate event handler. If
-           click popups are enabled in the prefs, clear the popup
-           status completely. */
-        if (PopupAllowedForEvent("click")) {
-          abuse = openAllowed;
-        }
-        break;
-      case eMouseDoubleClick:
-        if (PopupAllowedForEvent("dblclick")) {
-          abuse = openControlled;
-        }
-        break;
-      default:
-        break;
-      }
-    }
+        } else {
+          abuse = openOverridden;
+        }        
+      }      
+    }  // IsTrusted()
     break;
   case ePointerEventClass:
     if (aEvent->IsTrusted() &&

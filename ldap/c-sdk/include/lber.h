@@ -38,11 +38,22 @@
 #ifndef _LBER_H
 #define _LBER_H
 
+#include <stdlib.h>	/* to pick up size_t typedef */
+
+#ifndef macintosh
+#if defined( _WINDOWS ) || defined( _WIN32) || defined( _CONSOLE )
+#include <winsock.h> /* for SOCKET */
+typedef SOCKET LBER_SOCKET;
+#else
+typedef long LBER_SOCKET;
+#endif /* _WINDOWS */
+#else /* macintosh */
+typedef void *LBER_SOCKET;
+#endif /* macintosh */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdlib.h>	/* to pick up size_t typedef */
 
 /*
  * Note that LBER_ERROR and LBER_DEFAULT are values that can never appear
@@ -130,16 +141,6 @@ typedef struct berelement BerElement;
 typedef struct sockbuf Sockbuf;
 typedef int (*BERTranslateProc)( char **bufp, ber_uint_t *buflenp,
 	int free_input );
-#ifndef macintosh
-#if defined( _WINDOWS ) || defined( _WIN32) || defined( _CONSOLE )
-#include <winsock.h> /* for SOCKET */
-typedef SOCKET LBER_SOCKET;
-#else
-typedef long LBER_SOCKET;
-#endif /* _WINDOWS */
-#else /* macintosh */
-typedef void *LBER_SOCKET;
-#endif /* macintosh */
 
 /* calling conventions used by library */
 #ifndef LDAP_CALL

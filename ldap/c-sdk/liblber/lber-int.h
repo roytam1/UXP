@@ -51,10 +51,6 @@
 #ifndef _LBERINT_H
 #define _LBERINT_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdio.h>
 #include <ctype.h>
 #include <stdarg.h>
@@ -114,6 +110,10 @@ extern "C" {
 #endif
 
 #include "lber.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef macintosh
 #define NSLDAPI_LBER_SOCKET_IS_PTR
