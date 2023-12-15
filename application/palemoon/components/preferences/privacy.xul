@@ -22,11 +22,6 @@
 
     <preferences id="privacyPreferences">
 
-      <!-- Global Privacy Control -->
-      <preference id="privacy.GPCheader.enabled"
-                  name="privacy.GPCheader.enabled"
-                  type="bool"/>
-
       <!-- XXX button prefs -->
       <preference id="pref.privacy.disable_button.cookie_exceptions"
                   name="pref.privacy.disable_button.cookie_exceptions"
@@ -77,11 +72,41 @@
                   onchange="gPrivacyPane.updatePrivacyMicroControls();"
                   type="bool"/>
 
+      <!-- Global Privacy Control -->
+      <preference id="privacy.GPCheader.enabled"
+                  name="privacy.GPCheader.enabled"
+                  type="bool"/>
+
+      <!-- Fingerprinting -->
+      <preference id="canvas.poisondata"
+                  name="canvas.poisondata"
+                  type="bool"/>
+      
+      <!-- Scripting -->
+      <preference id="dom.enable_performance_observer"
+                  name="dom.enable_performance_observer"
+                  type="bool"/>
+      <preference id="dom.enable_performance_navigation_timing"
+                  name="dom.enable_performance_navigation_timing"
+                  type="bool"/>
+      
     </preferences>
     
     <stringbundle id="bundlePreferences" src="chrome://browser/locale/preferences/preferences.properties"/>
     
     <script type="application/javascript" src="chrome://browser/content/preferences/privacy.js"/>
+
+    <tabbox id="privacyPrefs" flex="1">
+
+      <tabs id="tabsElement">
+        <tab id="generalTab" label="&generalTab.label;" helpTopic="prefs-privacy"/>
+        <tab id="trackingTab" label="&trackingTab.label;" helpTopic="prefs-privacy"/>
+      </tabs>
+
+      <tabpanels flex="1">
+
+        <!-- General -->
+        <tabpanel id="generalPanel" orient="vertical">
 
     <!-- History -->
     <groupbox id="historyPanel">
@@ -216,22 +241,6 @@
 
       </groupbox>
         
-      <!-- Global Privacy Control -->
-      <groupbox id="dataPrivacyPanel">
-        <caption>&dataPrivacy.label;</caption>
-        <hbox align="center">
-          <checkbox id="privacyGPCCheckbox"
-                    label="&sendGPCheader.label;"
-                    accesskey="&sendGPCheader.accesskey;"
-                    preference="privacy.GPCheader.enabled"/>
-          <separator class="thin"/>
-          <label class="text-link" id="GPCInfo"
-                 href="https://www.palemoon.org/support/global-privacy-control"
-                 value="&GPCInfo.label;"/>
-
-        </hbox>
-      </groupbox>
-        
       <!-- Location Bar -->
       <groupbox id="locatioBarPanel">
         <caption>&locationBar.label;</caption>
@@ -250,6 +259,53 @@
         </hbox>
       
       </groupbox>
+
+        </tabpanel>
+        
+        <!-- Tracking -->
+        <tabpanel id="trackingPanel" orient="vertical">
+
+      <!-- Global Privacy Control -->
+      <groupbox id="dataPrivacyPanel">
+        <caption>&dataPrivacy.label;</caption>
+        <hbox align="center">
+          <checkbox id="privacyGPCCheckbox"
+                    label="&sendGPCheader.label;"
+                    accesskey="&sendGPCheader.accesskey;"
+                    preference="privacy.GPCheader.enabled"/>
+          <separator class="thin"/>
+          <label class="text-link" id="GPCInfo"
+                 href="https://www.palemoon.org/support/global-privacy-control"
+                 value="&GPCInfo.label;"/>
+
+        </hbox>
+      </groupbox>
+
+              <!-- Fingerprinting -->
+      <groupbox id="fingerprintingPanel">
+        <caption>&fingerprinting.label;</caption>
+        <checkbox id="canvasPoisonCheckbox"
+                  label="&canvasPoisonData.label;"
+                  accesskey="&canvasPoisonData.accesskey;"
+                  preference="canvas.poisondata"/>
+      </groupbox>
+
+              <!-- Scripting privacy -->
+      <groupbox id="scriptingPanel">
+        <caption>&scripting.label;</caption>
+        <checkbox id="perfObserverCheckbox"
+                  label="&perfObserver.label;"
+                  accesskey="&perfObserver.accesskey;"
+                  preference="dom.enable_performance_observer"/>
+        <checkbox id="perfNavTimingCheckbox"
+                  label="&perfNavTiming.label;"
+                  accesskey="&perfNavTiming.accesskey;"
+                  preference="dom.enable_performance_navigation_timing"/>
+      </groupbox>
+        
+        </tabpanel>
+      </tabpanels>
+    </tabbox>
 
   </prefpane>
 

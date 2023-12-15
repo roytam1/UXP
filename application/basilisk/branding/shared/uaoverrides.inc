@@ -9,7 +9,7 @@
 #define GK_SLICE Gecko/20100101
 #define FX_SLICE Firefox/@GK_VERSION@
 
-#define PALE_MOON_VERSION 32.0.1
+#define PALE_MOON_VERSION 32.4.1
 #define PALE_MOON_SLICE PaleMoon/@PALE_MOON_VERSION@
 
 // %OS_SLICE% macro is resolved at runtime, see MoonchildProductions/UXP/issues/1473
@@ -56,7 +56,6 @@ pref("@GUAO_PREF@.firefox.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_D
 pref("@GUAO_PREF@.mozilla.org","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
 pref("@GUAO_PREF@.mozilla.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
 pref("@GUAO_PREF@.github.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
-pref("@GUAO_PREF@.spotify.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
 pref("@GUAO_PREF@.twitter.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
 pref("@GUAO_PREF@.zoho.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
 
@@ -65,9 +64,8 @@ pref("@GUAO_PREF@.humblebundle.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @G
 pref("@GUAO_PREF@.privat24.ua","Mozilla/5.0 (%OS_SLICE% rv:38.0) @GK_SLICE@ Firefox/38.0");
 pref("@GUAO_PREF@.citi.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ Firefox/68.0 SeaMonkey/2.53.12");
 pref("@GUAO_PREF@.facebook.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ Firefox/68.0 @APP_SLICE@");
-pref("@GUAO_PREF@.netflix.com","Mozilla/5.0 (Windows NT 6.1; rv:45.9) @GK_SLICE@ Firefox/45.9");
-pref("@GUAO_PREF@.netflximg.net","Mozilla/5.0 (Windows NT 6.1; rv:45.9) @GK_SLICE@ Firefox/45.9");
 pref("@GUAO_PREF@.mewe.com", "Mozilla/5.0 (%OS_SLICE% rv:102.0) Gecko/20100101 Firefox/102.0");
+pref("@GUAO_PREF@.spotify.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
 
 // UA-sniffing domains that are "app/vendor-specific" and do not like Basilisk
 pref("@GUAO_PREF@.web.whatsapp.com","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36");
@@ -85,7 +83,7 @@ pref("@GUAO_PREF@.ldoceonline.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK
 pref("@GUAO_PREF@.yuku.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ @APP_SLICE@");
 
 // Domains Basilisk overrides that are not in the Pale Moon overrides
-pref("@GUAO_PREF@.slack.com","Mozilla/5.0 (%OS_SLICE% rv:100.0) @GK_SLICE@ Firefox/100.0 @APP_SLICE@");
+pref("@GUAO_PREF@.slack.com","Mozilla/5.0 (%OS_SLICE% rv:120.0) @GK_SLICE@ Firefox/120.0 @APP_SLICE@");
 // There are multiple addons on the Pale Moon addons site that work with Basilisk that are not listed on the Basilisk addons site.
 pref("@GUAO_PREF@.addons.palemoon.org","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @UXP_VERSION_SLICE@ @FX_SLICE@ @PALE_MOON_SLICE@");
 

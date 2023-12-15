@@ -2,11 +2,7 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<!ENTITY  dataPrivacy.label             "Data Privacy">
-
-<!ENTITY  sendGPCheader.label           "Tell sites not to share or sell my data">
-<!ENTITY  sendGPCheader.accesskey       "n">
-<!ENTITY  GPCInfo.label                 "Learn More">
+<!ENTITY  generalTab.label              "General">
 
 <!ENTITY  history.label                 "History">
 
@@ -81,3 +77,24 @@
 
 <!ENTITY  clearOnCloseSettings.label     "Settings…">
 <!ENTITY  clearOnCloseSettings.accesskey "t">
+
+
+<!ENTITY  trackingTab.label "Tracking">
+
+<!ENTITY  dataPrivacy.label             "Data Privacy">
+
+<!ENTITY  sendGPCheader.label           "Tell sites not to share or sell my data">
+<!ENTITY  sendGPCheader.accesskey       "n">
+<!ENTITY  GPCInfo.label                 "Learn More">
+
+<!ENTITY  fingerprinting.label          "Fingerprinting">
+
+<!ENTITY  canvasPoisonData.label        "Poison canvas data">
+<!ENTITY  canvasPoisonData.accesskey    "P">
+
+<!ENTITY  scripting.label               "Scripting">
+
+<!ENTITY  perfObserver.label            "Enable Performance Observers">
+<!ENTITY  perfObserver.accesskey        "O">
+<!ENTITY  perfNavTiming.label           "Enable Performance Navigation Timing">
+<!ENTITY  perfNavTiming.accesskey       "N">
