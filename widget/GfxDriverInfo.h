@@ -165,7 +165,7 @@ struct GfxDriverInfo
   static GfxDeviceFamily* mDeviceFamilies[DeviceFamilyMax];
 
   static const nsAString& GetDeviceVendor(DeviceVendor id);
-  static nsAString* mDeviceVendors[DeviceVendorMax];
+  static nsString* mDeviceVendors[DeviceVendorMax];
 
   nsString mModel, mHardware, mProduct, mManufacturer;
 

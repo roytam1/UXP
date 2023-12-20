@@ -15,7 +15,7 @@ uint64_t GfxDriverInfo::allDriverVersions = ~(uint64_t(0));
 GfxDeviceFamily* const GfxDriverInfo::allDevices = nullptr;
 
 GfxDeviceFamily* GfxDriverInfo::mDeviceFamilies[DeviceFamilyMax];
-nsAString* GfxDriverInfo::mDeviceVendors[DeviceVendorMax];
+nsString* GfxDriverInfo::mDeviceVendors[DeviceVendorMax];
 
 GfxDriverInfo::GfxDriverInfo()
   : mOperatingSystem(OperatingSystem::Unknown),
