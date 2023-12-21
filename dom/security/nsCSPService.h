@@ -14,8 +14,8 @@
 
 #define CSPSERVICE_CONTRACTID "@mozilla.org/cspservice;1"
 #define CSPSERVICE_CID \
-  { 0x8d2f40b2, 0x4875, 0x4c95, \
-    { 0x97, 0xd9, 0x3f, 0x7d, 0xca, 0x2c, 0xb4, 0x60 } }
+  { 0x83d284d6, 0xf280, 0x48ae, \
+    { 0xa5, 0x6b, 0x0f, 0x28, 0x11, 0x29, 0x83, 0x1b } }
 class CSPService : public nsIContentPolicy,
                    public nsIChannelEventSink
 {
@@ -26,6 +26,7 @@ public:
 
   CSPService();
   static bool sCSPEnabled;
+  static bool sCSPReportingEnabled;
 
 protected:
   virtual ~CSPService();

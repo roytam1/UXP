@@ -2548,16 +2548,22 @@ WebSocket::Close(const Optional<uint16_t>& aCode,
     return;
   }
 
-  // If the webSocket is not closed we MUST have a mImpl.
-  MOZ_ASSERT(mImpl);
+  // If we don't have mImpl, we are in a shutting down worker where we are still
+  // in CONNECTING state, but already disconnected internally.
+  if (!mImpl) {
+    MOZ_ASSERT(readyState == CONNECTING);
+    SetReadyState(CLOSING);
+    return;
+  }
 
+  RefPtr<WebSocketImpl> impl = mImpl;
   if (readyState == CONNECTING) {
-    mImpl->FailConnection(closeCode, closeReason);
+    impl->FailConnection(closeCode, closeReason);
     return;
   }
 
   MOZ_ASSERT(readyState == OPEN);
-  mImpl->CloseConnection(closeCode, closeReason);
+  impl->CloseConnection(closeCode, closeReason);
 }
 
 //-----------------------------------------------------------------------------
