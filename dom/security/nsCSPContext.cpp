@@ -827,6 +827,16 @@ nsCSPContext::SendReports(nsISupports* aBlockedContentSource,
 {
   NS_ENSURE_ARG_MAX(aViolatedPolicyIndex, mPolicies.Length() - 1);
 
+  if (!CSPService::sCSPReportingEnabled) {
+    // Reporting is pref-disabled. Don't do any actual work and return success.
+    nsContentUtils::ReportToConsoleNonLocalized(
+        NS_LITERAL_STRING("CSP violation report not sent: reports have been disabled contrary to spec."),
+        nsIScriptError::warningFlag,
+        NS_LITERAL_CSTRING("Content Security Policy"),
+        nullptr);
+    return NS_OK;
+  }
+  
   dom::CSPReport report;
   nsresult rv;
 
