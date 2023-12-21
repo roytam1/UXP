@@ -711,7 +711,11 @@ GlyphObserver::NotifyGlyphsChanged()
 
 int32_t nsTextFrame::GetContentEnd() const {
   nsTextFrame* next = static_cast<nsTextFrame*>(GetNextContinuation());
-  return next ? next->GetContentOffset() : mContent->GetText()->GetLength();
+  // In case of allocation failure when setting/modifying the textfragment,
+  // it's possible our text might be missing. So we check the fragment length,
+  // in addition to the offset of the next continuation (if any).  
+  int32_t fragLen = mContent->GetText()->GetLength();
+  return next ? std::min(fragLen, next->GetContentOffset()) : fragLen;
 }
 
 struct FlowLengthProperty {
@@ -1078,8 +1082,8 @@ public:
     nsIFrame*    mAncestorControllingInitialBreak;
     
     int32_t GetContentEnd() {
-      return mEndFrame ? mEndFrame->GetContentOffset()
-          : mStartFrame->GetContent()->GetText()->GetLength();
+      int32_t fragLen = mStartFrame->GetContent()->GetText()->GetLength();
+      return mEndFrame ? std::min(fragLen, mEndFrame->GetContentOffset()) : fragLen;
     }
   };
 
