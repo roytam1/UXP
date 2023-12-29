@@ -4564,8 +4564,9 @@ pref("full-screen-api.enabled", false);
 pref("full-screen-api.unprefix.enabled", true);
 pref("full-screen-api.allow-trusted-requests-only", true);
 pref("full-screen-api.pointer-lock.enabled", true);
-// whether to prevent the top level widget from going fullscreen
-pref("full-screen-api.ignore-widgets", false);
+// Whether to restrict the full-screen API to the existing window size
+// If true, this effectively make fullscreen "fill window" instead.
+pref("full-screen-api.restrict-to-window", false);
 
 // transition duration of fade-to-black and fade-from-black, unit: ms
 pref("full-screen-api.transition-duration.enter", "0 0");
