@@ -578,14 +578,14 @@ WINDOW_EVENT(popstate,
              ePopState,
              EventNameType_XUL | EventNameType_HTMLBodyOrFramesetOnly,
              eBasicEventClass)
-// Not supported yet
-// WINDOW_EVENT(redo)
+WINDOW_EVENT(rejectionhandled, eRejectionHandled,
+             EventNameType_HTMLBodyOrFramesetOnly, eBasicEventClass)
 WINDOW_EVENT(storage,
              eStorage,
              EventNameType_HTMLBodyOrFramesetOnly,
              eBasicEventClass)
-// Not supported yet
-// WINDOW_EVENT(undo)
+WINDOW_EVENT(unhandledrejection, eUnhandledRejection,
+             EventNameType_HTMLBodyOrFramesetOnly, eBasicEventClass)
 WINDOW_EVENT(unload,
              eUnload,
              (EventNameType_XUL | EventNameType_SVGSVG |

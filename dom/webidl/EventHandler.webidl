@@ -160,7 +160,9 @@ interface WindowEventHandlers {
            attribute EventHandler onpagehide;
            attribute EventHandler onpageshow;
            attribute EventHandler onpopstate;
+           attribute EventHandler onrejectionhandled;
            attribute EventHandler onstorage;
+           attribute EventHandler onunhandledrejection;
            attribute EventHandler onunload;
 };
 
