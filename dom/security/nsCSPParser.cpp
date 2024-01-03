@@ -1115,6 +1115,10 @@ nsCSPParser::directive()
     return;
   }
 
+  if (CSP_IsEmptyDirective(mCurValue, mCurToken)) {
+    return;
+  }
+
   // Try to create a new CSPDirective
   nsCSPDirective* cspDir = directiveName();
   if (!cspDir) {

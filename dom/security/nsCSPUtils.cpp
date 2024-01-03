@@ -293,6 +293,13 @@ CSP_CreateHostSrcFromSelfURI(nsIURI* aSelfURI)
 }
 
 bool
+CSP_IsEmptyDirective(const nsAString& aValue, const nsAString& aDir)
+{
+  return (aDir.Length() == 0 &&
+          aValue.Length() == 0);
+}
+
+bool
 CSP_IsValidDirective(const nsAString& aDir)
 {
   uint32_t numDirs = (sizeof(CSPStrDirectives) / sizeof(CSPStrDirectives[0]));
