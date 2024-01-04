@@ -1005,17 +1005,24 @@ CycleCollectedJSContext::PromiseRejectionTrackerCallback(JSContext* aCx,
   // TODO: Bug 1549351 - Promise rejection event should not be sent for
   // cross-origin scripts
 
+
+  // See HTML 8.1.6.3 HostPromiseRejectionTracker
+
   PromiseArray& aboutToBeNotified = self->mAboutToBeNotifiedRejectedPromises;
-  PromiseHashtable& unhandled = self->mPendingUnhandledRejections;
+  PromiseHashtable& outstanding = self->mOutstandingRejections;
   uint64_t promiseID = JS::GetPromiseID(aPromise);
 
   if (state == PromiseRejectionHandlingState::Unhandled) {
-    PromiseDebugging::AddUncaughtRejection(aPromise);
+    // Step 5.
+    // Unhandled Promises first go to the about-to-be-notified queue, processed
+    // after Microtasks as NotifyUnhandledRejections
     RefPtr<Promise> promise = Promise::CreateFromExisting(xpc::NativeGlobal(aPromise), aPromise);
     aboutToBeNotified.AppendElement(promise);
-    unhandled.Put(promiseID, promise);
   } else {
-    PromiseDebugging::AddConsumedRejection(aPromise);
+    // Unhandled-then-handled Promises (ie.e Promises where the unhandledrejection event
+    // handler attached a handler) may fire the rejectionhandled event.
+
+    // Step 6.1.
     for (size_t i = 0; i < aboutToBeNotified.Length(); i++) {
       if (aboutToBeNotified[i] &&
           aboutToBeNotified[i]->PromiseObj() == aPromise) {
@@ -1023,16 +1030,19 @@ CycleCollectedJSContext::PromiseRejectionTrackerCallback(JSContext* aCx,
         // here. Instead, we filter out nullptrs when iterating over the
         // vector later.
         aboutToBeNotified[i] = nullptr;
-        MOZ_ASSERT(unhandled.Get(promiseID, nullptr));
-        unhandled.Remove(promiseID);
+        MOZ_ASSERT(!outstanding.Get(promiseID, nullptr));
         return;
       }
     }
+    // Step 6.2. and 6.3.
     RefPtr<Promise> promise;
-    unhandled.Remove(promiseID, getter_AddRefs(promise));
-    if (!promise) {
+    if (outstanding.Remove(promiseID, getter_AddRefs(promise))) {
+      // Step 6.4.
       nsIGlobalObject* global = xpc::NativeGlobal(aPromise);
       if (nsCOMPtr<EventTarget> owner = do_QueryInterface(global)) {
+        // Step 6.5.
+        // The spec says to do this in a global task, but we're just queuing an event,
+        // which will execute in the next event loop either way.
         PromiseRejectionEventInit init;
         init.mPromise = Promise::CreateFromExisting(global, aPromise);
         init.mReason = JS::GetPromiseResult(aPromise);
@@ -1044,6 +1054,9 @@ CycleCollectedJSContext::PromiseRejectionTrackerCallback(JSContext* aCx,
         asyncDispatcher->PostDOMEvent();
       }
     }
+
+    // Finally, notifiy debug observers
+    PromiseDebugging::AddConsumedRejection(aPromise);
   }
 }
 
@@ -1833,7 +1846,11 @@ CycleCollectedJSContext::PerformDebuggerMicroTaskCheckpoint()
 NS_IMETHODIMP
 CycleCollectedJSContext::NotifyUnhandledRejections::Run()
 {
+  // See HTML 8.1.4.7 Unhandled promise rejections
+  // with 'mUnhandledRejections' == copy of 'about-to-be-notified rejected'
+
   for (size_t i = 0; i < mUnhandledRejections.Length(); ++i) {
+    // Step 5.1.
     RefPtr<Promise>& promise = mUnhandledRejections[i];
     if (!promise)
       continue;
@@ -1841,35 +1858,40 @@ CycleCollectedJSContext::NotifyUnhandledRejections::Run()
     JS::RootedObject promiseObj(mCx->RootingCx(), promise->PromiseObj());
     MOZ_ASSERT(JS::IsPromiseObject(promiseObj));
 
-    // Only fire unhandledrejection if the promise is still not handled;
+    // Step 5.1.1.
+    if (JS::GetPromiseIsHandled(promiseObj))
+      continue;
+
     uint64_t promiseID = JS::GetPromiseID(promiseObj);
-    if (!JS::GetPromiseIsHandled(promiseObj)) {
-      if (nsCOMPtr<EventTarget> target =
-              do_QueryInterface(promise->GetParentObject())) {
-        PromiseRejectionEventInit init;
-        init.mPromise = promise;
-        init.mReason = JS::GetPromiseResult(promiseObj);
-        init.mCancelable = true;
 
-        RefPtr<PromiseRejectionEvent> event =
-            PromiseRejectionEvent::Constructor(
-                target, NS_LITERAL_STRING("unhandledrejection"), init);
-        // We don't use the result of dispatching event here to check whether to
-        // report the Promise to console.
-        bool dummy = true;
-        target->DispatchEvent(event, &dummy);
-      }
+    // Step 5.1.2.
+    bool raiseError = true;
+    if (nsCOMPtr<EventTarget> target =
+            do_QueryInterface(promise->GetParentObject())) {
+      PromiseRejectionEventInit init;
+      init.mPromise = promise;
+      init.mReason = JS::GetPromiseResult(promiseObj);
+      init.mCancelable = true;
+
+      RefPtr<PromiseRejectionEvent> event =
+          PromiseRejectionEvent::Constructor(
+              target, NS_LITERAL_STRING("unhandledrejection"), init);
+
+      // Step 5.1.4. (reordered)
+      // In contrast to the letter of the spec, this must be done before
+      // the event handler is called or the PromiseRejectionTrackerCallback
+      // will not see the correct state.
+      PromiseDebugging::AddUncaughtRejection(promiseObj);
+      target->DispatchEvent(event, &raiseError);
     }
 
-    if (!JS::GetPromiseIsHandled(promiseObj)) {
-      MOZ_ASSERT(mCx->mPendingUnhandledRejections.Get(promiseID, nullptr));
-      mCx->mPendingUnhandledRejections.Remove(promiseID);
+    // Step 5.1.3. (implied)
+    // If the Promise became handled, PromiseRejectionTrackerCallback will have marked it.
+    // If not, keep it in the "uncaught" list for PromiseDebugging, and set the flag if
+    // preventDefault indicated we don't want it reported to console.
+    if (!JS::GetPromiseIsHandled(promiseObj) && !raiseError) {
+      JS::MarkPromiseRejectionReported(promiseObj);
     }
-
-    // If a rejected promise is being handled in "unhandledrejection" event
-    // handler, it should be removed from the table in
-    // PromiseRejectionTrackerCallback.
-    MOZ_ASSERT(!mCx->mPendingUnhandledRejections.Get(promiseID, nullptr));
   }
   return NS_OK;
 }
@@ -1883,7 +1905,7 @@ CycleCollectedJSContext::NotifyUnhandledRejections::Cancel()
       continue;
 
     JS::RootedObject promiseObj(mCx->RootingCx(), promise->PromiseObj());
-    mCx->mPendingUnhandledRejections.Remove(JS::GetPromiseID(promiseObj));
+    mCx->mOutstandingRejections.Remove(JS::GetPromiseID(promiseObj));
   }
   return NS_OK;
 }

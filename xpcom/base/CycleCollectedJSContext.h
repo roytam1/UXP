@@ -430,6 +430,12 @@ public:
   // in the last turn of the event loop.
   JS::PersistentRooted<JS::GCVector<JSObject*, 0, js::SystemAllocPolicy>> mConsumedRejections;
 
+  // This is for the "outstanding rejected promises weak set" in the spec,
+  // https://html.spec.whatwg.org/multipage/webappapis.html#outstanding-rejected-promises-weak-set
+  typedef nsRefPtrHashtable<nsUint64HashKey, dom::Promise> PromiseHashtable;
+  PromiseHashtable mOutstandingRejections;
+
+
   nsTArray<nsCOMPtr<nsISupports /* UncaughtRejectionObserver */ >> mUncaughtRejectionObservers;
 
 private:
@@ -479,25 +485,6 @@ private:
   // https://html.spec.whatwg.org/multipage/webappapis.html#about-to-be-notified-rejected-promises-list
   typedef nsTArray<RefPtr<dom::Promise>> PromiseArray;
   PromiseArray mAboutToBeNotifiedRejectedPromises;
-
-  // This is for the "outstanding rejected promises weak set" in the spec,
-  // https://html.spec.whatwg.org/multipage/webappapis.html#outstanding-rejected-promises-weak-set
-  // We use different data structure and opposite logic here to achieve the same
-  // effect. Basically this is used for tracking the rejected promise that does
-  // NOT need firing a rejectionhandled event. We will check the table to see if
-  // firing rejectionhandled event is required when a rejected promise is being
-  // handled.
-  //
-  // The rejected promise will be stored in the table if
-  // - it is unhandled, and
-  // - The unhandledrejection is not yet fired.
-  //
-  // And be removed when
-  // - it is handled, or
-  // - A unhandledrejection is fired and it isn't being handled in event
-  // handler.
-  typedef nsRefPtrHashtable<nsUint64HashKey, dom::Promise> PromiseHashtable;
-  PromiseHashtable mPendingUnhandledRejections;
 
   class NotifyUnhandledRejections final : public CancelableRunnable {
    public:

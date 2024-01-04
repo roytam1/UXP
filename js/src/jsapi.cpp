@@ -4962,6 +4962,18 @@ JS::GetPromiseAllocationSite(JS::HandleObject promise)
     return promise->as<PromiseObject>().allocationSite();
 }
 
+JS_PUBLIC_API(bool)
+JS::GetPromiseIsReported(JS::HandleObject promise)
+{
+    return promise->as<PromiseObject>().isReported();
+}
+
+JS_PUBLIC_API(void)
+JS::MarkPromiseRejectionReported(JS::HandleObject promise)
+{
+    return promise->as<PromiseObject>().markAsReported();
+}
+
 JS_PUBLIC_API(JSObject*)
 JS::GetPromiseResolutionSite(JS::HandleObject promise)
 {

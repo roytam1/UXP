@@ -4621,6 +4621,18 @@ extern JS_PUBLIC_API(bool)
 GetPromiseIsHandled(JS::HandleObject promise);
 
 /**
+ * Returns whether the given promise's rejection is reported or not.
+ */
+extern JS_PUBLIC_API(bool)
+GetPromiseIsReported(JS::HandleObject promise);
+
+/**
+ * Mark the given promise's rejection as already reported.
+ */
+extern JS_PUBLIC_API(void)
+MarkPromiseRejectionReported(JS::HandleObject promise);
+
+/**
  * Returns a js::SavedFrame linked list of the stack that lead to the given
  * Promise's allocation.
  */
