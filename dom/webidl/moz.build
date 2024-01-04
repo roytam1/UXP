@@ -698,6 +698,7 @@ GENERATED_EVENTS_WEBIDL_FILES = [
     'PromiseRejectionEvent.webidl',
     'RecordErrorEvent.webidl',
     'ScrollViewChangeEvent.webidl',
+    'SecurityPolicyViolationEvent.webidl',
     'ServiceWorkerMessageEvent.webidl',
     'StyleRuleChangeEvent.webidl',
     'StyleSheetApplicableStateChangeEvent.webidl',
