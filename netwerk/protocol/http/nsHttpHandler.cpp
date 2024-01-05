@@ -1362,10 +1362,10 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
     }
 
     if (PREF_CHANGED(HTTP_PREF("spdy.chunk-size"))) {
-        // keep this within http/2 ranges of 1 to 2^14-1
+        // keep this within http/2 ranges of 1 to 2^24-1
         rv = prefs->GetIntPref(HTTP_PREF("spdy.chunk-size"), &val);
         if (NS_SUCCEEDED(rv))
-            mSpdySendingChunkSize = (uint32_t) clamped(val, 1, 0x3fff);
+            mSpdySendingChunkSize = (uint32_t) clamped(val, 1, 0xffffff);
     }
 
     // The amount of idle seconds on a spdy connection before initiating a
@@ -1437,8 +1437,12 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
     // closing the session.
     if (PREF_CHANGED(HTTP_PREF("spdy.send-buffer-size"))) {
         rv = prefs->GetIntPref(HTTP_PREF("spdy.send-buffer-size"), &val);
-        if (NS_SUCCEEDED(rv))
-            mSpdySendBufferSize = (uint32_t) clamped(val, 1500, 0x7fffffff);
+        if (NS_SUCCEEDED(rv)) {
+            if (val != 0)
+                mSpdySendBufferSize = (uint32_t) clamped(val, 1500, 0x7fffffff);
+            else
+                mSpdySendBufferSize = 0;
+        }
     }
 
     // The maximum amount of time to wait for socket transport to be
