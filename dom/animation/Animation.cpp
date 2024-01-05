@@ -11,7 +11,6 @@
 #include "mozilla/AnimationTarget.h"
 #include "mozilla/AutoRestore.h"
 #include "mozilla/AsyncEventDispatcher.h" // For AsyncEventDispatcher
-#include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/Maybe.h" // For Maybe
 #include "nsAnimationManager.h" // For CSSAnimation
 #include "nsDOMMutationObserver.h" // For nsAutoAnimationMutationBatch
@@ -1384,6 +1383,30 @@ Animation::GetRenderedDocument() const
   return mEffect->AsKeyframeEffect()->GetRenderedDocument();
 }
 
+class AsyncFinishNotification : public MicroTaskRunnable
+{
+public:
+  explicit AsyncFinishNotification(Animation* aAnimation)
+  : MicroTaskRunnable()
+  , mAnimation(aAnimation)
+  {}
+
+  virtual void Run(AutoSlowOperation& aAso) override
+  {
+    mAnimation->DoFinishNotificationImmediately(this);
+    mAnimation = nullptr;
+  }
+
+  virtual bool Suppressed() override
+  {
+    nsIGlobalObject* global = mAnimation->GetOwnerGlobal();
+    return global && global->IsInSyncOperation();
+  }
+
+private:
+  RefPtr<Animation> mAnimation;
+};
+
 void
 Animation::DoFinishNotification(SyncNotifyFlag aSyncNotifyFlag)
 {
@@ -1391,9 +1414,8 @@ Animation::DoFinishNotification(SyncNotifyFlag aSyncNotifyFlag)
 
   if (aSyncNotifyFlag == SyncNotifyFlag::Sync) {
     DoFinishNotificationImmediately();
-  } else if (!mFinishNotificationTask.IsPending()) {
-    RefPtr<nsRunnableMethod<Animation>> runnable =
-      NewRunnableMethod(this, &Animation::DoFinishNotificationImmediately);
+  } else if (!mFinishNotificationTask) {
+    RefPtr<MicroTaskRunnable> runnable = new AsyncFinishNotification(this);
     context->DispatchToMicroTask(do_AddRef(runnable));
     mFinishNotificationTask = runnable.forget();
   }
@@ -1416,9 +1438,13 @@ Animation::MaybeResolveFinishedPromise()
 }
 
 void
-Animation::DoFinishNotificationImmediately()
+Animation::DoFinishNotificationImmediately(MicroTaskRunnable* aAsync)
 {
-  mFinishNotificationTask.Revoke();
+  if (aAsync && aAsync != mFinishNotificationTask) {
+    return;
+  }
+
+  mFinishNotificationTask = nullptr;
 
   if (PlayState() != AnimationPlayState::Finished) {
     return;

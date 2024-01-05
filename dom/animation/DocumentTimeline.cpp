@@ -155,6 +155,13 @@ DocumentTimeline::WillRefresh(mozilla::TimeStamp aTime)
   bool needsTicks = false;
   nsTArray<Animation*> animationsToRemove(mAnimations.Count());
 
+  // https://drafts.csswg.org/web-animations-1/#update-animations-and-send-events,
+  // step2.
+  // Note that this should be done before nsAutoAnimationMutationBatch.  If
+  // PerformMicroTaskCheckpoint was called before nsAutoAnimationMutationBatch
+  // is destroyed, some mutation records might not be delivered in this
+  // checkpoint.
+  nsAutoMicroTask mt;
   nsAutoAnimationMutationBatch mb(mDocument);
 
   for (Animation* animation = mAnimationOrder.getFirst(); animation;
