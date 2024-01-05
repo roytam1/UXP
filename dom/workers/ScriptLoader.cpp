@@ -1202,7 +1202,7 @@ private:
       // load group's appId and browser element flag.
       MOZ_ASSERT(NS_LoadGroupMatchesPrincipal(channelLoadGroup, channelPrincipal));
 
-      mWorkerPrivate->SetPrincipal(channelPrincipal, channelLoadGroup);
+      mWorkerPrivate->SetPrincipalOnMainThread(channelPrincipal, channelLoadGroup);
 
       // We did inherit CSP in bug 1223647. If we do not already have a CSP, we
       // should get it from the HTTP headers on the worker script.
@@ -1290,7 +1290,14 @@ private:
 #endif
 
       mWorkerPrivate->InitChannelInfo(aChannelInfo);
-      mWorkerPrivate->SetPrincipal(responsePrincipal, loadGroup);
+
+      // Override the principal on the WorkerPrivate.  We just asserted that
+      // this is the same as our current WorkerPrivate principal, so this is
+      // almost a no-op.  We must do, it though, in order to avoid accidentally
+      // propagating the CSP object back to the ServiceWorkerRegistration
+      // principal.  If bug 965637 is fixed then this can be removed.
+      rv = mWorkerPrivate->SetPrincipalOnMainThread(responsePrincipal, loadGroup);
+      MOZ_DIAGNOSTIC_ASSERT(NS_SUCCEEDED(rv));
 
       rv = mWorkerPrivate->SetCSPFromHeaderValues(aCSPHeaderValue,
                                                   aCSPReportOnlyHeaderValue);
