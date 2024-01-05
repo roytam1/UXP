@@ -693,6 +693,7 @@ private:
     }
 
     ir->SetPrincipalInfo(Move(principalInfo));
+    ir->Headers()->FillResponseHeaders(loadInfo.mChannel);
 
     RefPtr<mozilla::dom::Response> response =
       new mozilla::dom::Response(mCacheCreator->Global(), ir, nullptr);
