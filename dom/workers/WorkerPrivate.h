@@ -701,6 +701,10 @@ public:
     mLoadInfo.mCSP = aCSP;
   }
 
+  nsresult
+  SetCSPFromHeaderValues(const nsACString& aCSPHeaderValue,
+                         const nsACString& aCSPReportOnlyHeaderValue);
+
   net::ReferrerPolicy
   GetReferrerPolicy() const
   {
