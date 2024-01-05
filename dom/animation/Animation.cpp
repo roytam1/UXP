@@ -11,6 +11,7 @@
 #include "mozilla/AnimationTarget.h"
 #include "mozilla/AutoRestore.h"
 #include "mozilla/AsyncEventDispatcher.h" // For AsyncEventDispatcher
+#include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/Maybe.h" // For Maybe
 #include "nsAnimationManager.h" // For CSSAnimation
 #include "nsDOMMutationObserver.h" // For nsAutoAnimationMutationBatch
