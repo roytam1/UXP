@@ -2320,6 +2320,10 @@ WebSocketChannel::CleanupConnection()
 {
   LOG(("WebSocketChannel::CleanupConnection() %p", this));
 
+  if(!mSocketThread) { // freed elsewhere, give up here
+    return;
+  }
+
   // This should run on the Socket Thread to prevent potential races.
   bool onSocketThread;
   nsresult rv = mSocketThread->IsOnCurrentThread(&onSocketThread);

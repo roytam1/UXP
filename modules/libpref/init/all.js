@@ -1604,7 +1604,7 @@ pref("network.http.spdy.coalesce-hostnames", true);
 pref("network.http.spdy.persistent-settings", false);
 pref("network.http.spdy.ping-threshold", 58);
 pref("network.http.spdy.ping-timeout", 8);
-pref("network.http.spdy.send-buffer-size", 131072);
+pref("network.http.spdy.send-buffer-size", 0); // 0 - Auto (managed by OS)
 pref("network.http.spdy.allow-push", true);
 pref("network.http.spdy.push-allowance", 131072);   // 128KB
 pref("network.http.spdy.pull-allowance", 12582912); // 12MB
@@ -2759,8 +2759,11 @@ pref("editor.resizing.preserve_ratio",       true);
 pref("editor.positioning.offset",            0);
 
 pref("dom.use_watchdog", true);
-pref("dom.max_chrome_script_run_time", 90);
-pref("dom.max_script_run_time", 20);
+pref("dom.max_chrome_script_run_time", 30);
+pref("dom.max_script_run_time", 15);
+
+// Automatically terminate non-responsive scripts if script_run_time expires.
+pref("dom.always_stop_slow_scripts", false);
 
 // Stop all scripts in a compartment when the "stop script" dialog is used.
 pref("dom.global_stop_script", true);
@@ -4571,8 +4574,9 @@ pref("full-screen-api.enabled", false);
 pref("full-screen-api.unprefix.enabled", true);
 pref("full-screen-api.allow-trusted-requests-only", true);
 pref("full-screen-api.pointer-lock.enabled", true);
-// whether to prevent the top level widget from going fullscreen
-pref("full-screen-api.ignore-widgets", false);
+// Whether to restrict the full-screen API to the existing window size
+// If true, this effectively make fullscreen "fill window" instead.
+pref("full-screen-api.restrict-to-window", false);
 
 // transition duration of fade-to-black and fade-from-black, unit: ms
 pref("full-screen-api.transition-duration.enter", "0 0");
