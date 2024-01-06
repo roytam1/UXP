@@ -67,6 +67,7 @@ static const char *kTypeString[] = {
                                     "", // TYPE_INTERNAL_STYLESHEET_PRELOAD
                                     "", // TYPE_INTERNAL_IMAGE_FAVICON
                                     "saveas_download",
+                                    "", // TYPE_INTERNAL_WORKERS_IMPORT_SCRIPTS
 };
 
 #define NUMBER_OF_TYPES MOZ_ARRAY_LENGTH(kTypeString)
