@@ -61,9 +61,8 @@ class nsCSPContext : public nsIContentSecurityPolicy
     /**
      * Construct SecurityPolicyViolationEventInit structure.
      *
-     * @param aBlockedContentSource
-     *        Either a CSP Source (like 'self', as string) or nsIURI: the source
-     *        of the violation.
+     * @param aBlockedURI
+     *        A nsIURI: the source of the violation.
      * @param aOriginalUri
      *        The original URI if the blocked content is a redirect, else null
      * @param aViolatedDirective
@@ -78,7 +77,8 @@ class nsCSPContext : public nsIContentSecurityPolicy
      *        The output
      */
     nsresult GatherSecurityPolicyViolationEventData(
-      nsISupports* aBlockedContentSource,
+      nsIURI* aBlockedURI,
+      const nsACString& aBlockedString,
       nsIURI* aOriginalURI,
       nsAString& aViolatedDirective,
       uint32_t aViolatedPolicyIndex,
