@@ -59,6 +59,7 @@
 #include "mozilla/dom/ScriptLoader.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/SRILogHelper.h"
+#include "mozilla/dom/workers/ServiceWorkerManager.h"
 #include "mozilla/UniquePtr.h"
 #include "Principal.h"
 #include "WorkerHolder.h"
@@ -663,6 +664,34 @@ private:
     ScriptLoadInfo& loadInfo = mLoadInfos[aIndex];
 
     nsCOMPtr<nsIChannel> channel = do_QueryInterface(aRequest);
+
+    // Checking the MIME type is only required for ServiceWorkers'
+    // importScripts, per step 10 of https://w3c.github.io/ServiceWorker/#importscripts
+    //
+    // "Extract a MIME type from the response’s header list. If this MIME type
+    // (ignoring parameters) is not a JavaScript MIME type, return a network error."
+    if (mWorkerPrivate->IsServiceWorker()) {
+      nsAutoCString mimeType;
+      channel->GetContentType(mimeType);
+
+      if (!nsContentUtils::IsJavascriptMIMEType(NS_ConvertUTF8toUTF16(mimeType))) {
+        const nsCString& scope =
+          mWorkerPrivate->ServiceWorkerScope();
+
+        ServiceWorkerManager::LocalizeAndReportToAllClients(
+          scope, "ServiceWorkerRegisterMimeTypeError2",
+          nsTArray<nsString> {
+            NS_ConvertUTF8toUTF16(scope),
+            NS_ConvertUTF8toUTF16(mimeType),
+            loadInfo.mURL
+          }
+        );
+
+        channel->Cancel(NS_ERROR_DOM_NETWORK_ERR);
+        return NS_ERROR_DOM_NETWORK_ERR;
+      }
+    }
+
     MOZ_ASSERT(channel == loadInfo.mChannel);
 
     // We synthesize the result code, but its never exposed to content.

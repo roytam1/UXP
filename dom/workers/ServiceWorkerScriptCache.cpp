@@ -801,12 +801,11 @@ CompareNetwork::OnStreamComplete(nsIStreamLoader* aLoader, nsISupports* aContext
     return rv;
   }
 
-  if (!mimeType.LowerCaseEqualsLiteral("text/javascript") &&
-      !mimeType.LowerCaseEqualsLiteral("application/x-javascript") &&
-      !mimeType.LowerCaseEqualsLiteral("application/javascript")) {
+  if (mimeType.IsEmpty() ||
+      !nsContentUtils::IsJavascriptMIMEType(NS_ConvertUTF8toUTF16(mimeType))) {
     RefPtr<ServiceWorkerRegistrationInfo> registration = mManager->GetRegistration();
     ServiceWorkerManager::LocalizeAndReportToAllClients(
-      registration->mScope, "ServiceWorkerRegisterMimeTypeError",
+      registration->mScope, "ServiceWorkerRegisterMimeTypeError2",
       nsTArray<nsString> { NS_ConvertUTF8toUTF16(registration->mScope),
         NS_ConvertUTF8toUTF16(mimeType), mManager->URL() });
     mManager->NetworkFinished(NS_ERROR_DOM_SECURITY_ERR);
