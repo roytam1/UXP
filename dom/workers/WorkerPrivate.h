@@ -535,6 +535,13 @@ public:
     return mLoadInfo.mServiceWorkerID;
   }
 
+  const nsCString&
+  ServiceWorkerScope() const
+  {
+    MOZ_DIAGNOSTIC_ASSERT(IsServiceWorker());
+    return mWorkerName;
+  }
+
   nsIURI*
   GetBaseURI() const
   {
@@ -831,7 +838,7 @@ public:
   const nsCString&
   WorkerName() const
   {
-    MOZ_ASSERT(IsServiceWorker() || IsSharedWorker());
+    MOZ_ASSERT(IsSharedWorker());
     return mWorkerName;
   }
 
