@@ -6,7 +6,7 @@
 #ifndef mozilla_dom_workers_queue_h__
 #define mozilla_dom_workers_queue_h__
 
-#include "Workers.h"
+#include "mozilla/dom/workers/Workers.h"
 
 #include "mozilla/Mutex.h"
 #include "nsTArray.h"

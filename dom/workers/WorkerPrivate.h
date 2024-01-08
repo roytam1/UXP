@@ -6,7 +6,7 @@
 #ifndef mozilla_dom_workers_workerprivate_h__
 #define mozilla_dom_workers_workerprivate_h__
 
-#include "Workers.h"
+#include "mozilla/dom/workers/Workers.h"
 
 #include "js/CharacterEncoding.h"
 #include "nsIContentPolicy.h"
@@ -34,8 +34,8 @@
 #include "nsThreadUtils.h"
 #include "nsTObserverArray.h"
 
-#include "Queue.h"
-#include "WorkerHolder.h"
+#include "mozilla/dom/workerinternals/Queue.h"
+#include "mozilla/dom/workers/bindings/WorkerHolder.h"
 
 #ifdef XP_WIN
 #undef PostMessage
