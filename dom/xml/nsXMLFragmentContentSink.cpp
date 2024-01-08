@@ -83,7 +83,8 @@ protected:
                                nsIAtom* aTagName,
                                nsIContent* aContent) override;
   virtual nsresult CreateElement(const char16_t** aAtts, uint32_t aAttsCount,
-                                 mozilla::dom::NodeInfo* aNodeInfo, uint32_t aLineNumber,
+                                 mozilla::dom::NodeInfo* aNodeInfo,
+                                 uint32_t aLineNumber, uint32_t aColumnNumber,
                                  nsIContent** aResult, bool* aAppendContent,
                                  mozilla::dom::FromParser aFromParser) override;
   virtual nsresult CloseElement(nsIContent* aContent) override;
@@ -199,7 +200,8 @@ nsXMLFragmentContentSink::SetDocElement(int32_t aNameSpaceID,
 
 nsresult
 nsXMLFragmentContentSink::CreateElement(const char16_t** aAtts, uint32_t aAttsCount,
-                                        mozilla::dom::NodeInfo* aNodeInfo, uint32_t aLineNumber,
+                                        mozilla::dom::NodeInfo* aNodeInfo,
+                                        uint32_t aLineNumber, uint32_t aColumnNumber,
                                         nsIContent** aResult, bool* aAppendContent,
                                         FromParser /*aFromParser*/)
 {
@@ -207,6 +209,7 @@ nsXMLFragmentContentSink::CreateElement(const char16_t** aAtts, uint32_t aAttsCo
   // fancy CloseElement stuff.
   nsresult rv = nsXMLContentSink::CreateElement(aAtts, aAttsCount,
                                                 aNodeInfo, aLineNumber,
+                                                aColumnNumber,
                                                 aResult, aAppendContent,
                                                 NOT_FROM_PARSER);
 

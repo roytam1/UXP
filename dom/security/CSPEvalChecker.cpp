@@ -46,7 +46,7 @@ CheckInternal(nsIContentSecurityPolicy* aCSP,
   if (reportViolation) {
     aCSP->LogViolationDetails(nsIContentSecurityPolicy::VIOLATION_TYPE_EVAL,
                               aFileNameString, aExpression, aLineNum,
-                              EmptyString(), EmptyString());
+                              aColumnNum, EmptyString(), EmptyString());
   }
 
   return NS_OK;
