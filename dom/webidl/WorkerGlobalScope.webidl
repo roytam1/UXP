@@ -25,6 +25,8 @@ interface WorkerGlobalScope : EventTarget {
 
   attribute EventHandler onoffline;
   attribute EventHandler ononline;
+  attribute EventHandler onrejectionhandled;
+  attribute EventHandler onunhandledrejection;
   // also has additional members in a partial interface
 };
 

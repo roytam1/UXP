@@ -18,10 +18,11 @@
 #include "nsIObserverService.h"
 #include "nsPIDOMWindow.h"
 #include "nsThreadUtils.h"
+#include "mozilla/ClearOnShutdown.h"
+#include "mozilla/CycleCollectedJSContext.h"
+#include "mozilla/Preferences.h"
 #include "mozilla/Services.h"
 #include "mozilla/Unused.h"
-#include "mozilla/Preferences.h"
-#include "mozilla/ClearOnShutdown.h"
 #include "mozilla/WeakPtr.h"
 #include "mozilla/dom/PermissionMessageUtils.h"
 

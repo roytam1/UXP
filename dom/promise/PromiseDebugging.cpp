@@ -217,8 +217,16 @@ PromiseDebugging::RemoveUncaughtRejectionObserver(GlobalObject&,
 /* static */ void
 PromiseDebugging::AddUncaughtRejection(JS::HandleObject aPromise)
 {
+  CycleCollectedJSContext* storage = CycleCollectedJSContext::Get();
+  auto& uncaught = storage->mUncaughtRejections;
+  auto& outstanding = storage->mOutstandingRejections;
+
+  // See 8.1.4.7 Unhandled promise rejections, Step 5.1.4.
+  RefPtr<Promise> promise = Promise::CreateFromExisting(xpc::NativeGlobal(aPromise), aPromise);
+  uint64_t promiseID = JS::GetPromiseID(aPromise);
+  outstanding.Put(promiseID, promise);
   // This might OOM, but won't set a pending exception, so we'll just ignore it.
-  if (CycleCollectedJSContext::Get()->mUncaughtRejections.append(aPromise)) {
+  if (uncaught.append(aPromise)) {
     FlushRejections::DispatchNeeded();
   }
 }
@@ -226,15 +234,20 @@ PromiseDebugging::AddUncaughtRejection(JS::HandleObject aPromise)
 /* void */ void
 PromiseDebugging::AddConsumedRejection(JS::HandleObject aPromise)
 {
+  CycleCollectedJSContext* storage = CycleCollectedJSContext::Get();
+  auto& uncaught = storage->mUncaughtRejections;
+  auto& outstanding = storage->mOutstandingRejections;
+
   // If the promise is in our list of uncaught rejections, we haven't yet
   // reported it as unhandled. In that case, just remove it from the list
   // and don't add it to the list of consumed rejections.
-  auto& uncaughtRejections = CycleCollectedJSContext::Get()->mUncaughtRejections;
-  for (size_t i = 0; i < uncaughtRejections.length(); i++) {
-    if (uncaughtRejections[i] == aPromise) {
+  uint64_t promiseID = JS::GetPromiseID(aPromise);
+  outstanding.Remove(promiseID);
+  for (size_t i = 0; i < uncaught.length(); i++) {
+    if (uncaught[i] == aPromise) {
       // To avoid large amounts of memmoves, we don't shrink the vector here.
       // Instead, we filter out nullptrs when iterating over the vector later.
-      uncaughtRejections[i].set(nullptr);
+      uncaught[i].set(nullptr);
       return;
     }
   }
@@ -251,6 +264,7 @@ PromiseDebugging::FlushUncaughtRejectionsInternal()
 
   auto& uncaught = storage->mUncaughtRejections;
   auto& consumed = storage->mConsumedRejections;
+  auto& outstanding = storage->mOutstandingRejections;
 
   AutoJSAPI jsapi;
   jsapi.Init();
@@ -267,6 +281,10 @@ PromiseDebugging::FlushUncaughtRejectionsInternal()
       continue;
     }
 
+    // Clean up outstanding rejected promises weak set
+    uint64_t promiseID = JS::GetPromiseID(promise);
+    outstanding.Remove(promiseID);
+
     for (size_t j = 0; j < observers.Length(); ++j) {
       RefPtr<UncaughtRejectionObserver> obs =
         static_cast<UncaughtRejectionObserver*>(observers[j].get());
@@ -274,8 +292,12 @@ PromiseDebugging::FlushUncaughtRejectionsInternal()
       IgnoredErrorResult err;
       obs->OnLeftUncaught(promise, err);
     }
-    JSAutoCompartment ac(cx, promise);
-    Promise::ReportRejectedPromise(cx, promise);
+    // report error to console, unless marked by unhandledrejection event
+    bool reportError = !JS::GetPromiseIsReported(promise);
+    if (reportError) {
+      JSAutoCompartment ac(cx, promise);
+      Promise::ReportRejectedPromise(cx, promise);
+    }
   }
   storage->mUncaughtRejections.clear();
 
