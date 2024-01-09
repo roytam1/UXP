@@ -5,7 +5,6 @@
 
 #include "mozilla/dom/CustomElementRegistry.h"
 
-#include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/dom/CustomElementRegistryBinding.h"
 #include "mozilla/dom/HTMLElementBinding.h"
 #include "mozilla/dom/WebComponentsBinding.h"
@@ -1153,7 +1152,7 @@ CustomElementReactionsStack::Enqueue(Element* aElement,
 
   CycleCollectedJSContext* context = CycleCollectedJSContext::Get();
   RefPtr<BackupQueueMicroTask> bqmt = new BackupQueueMicroTask(this);
-  context->DispatchMicroTaskRunnable(bqmt.forget());
+  context->DispatchToMicroTask(bqmt.forget());
 }
 
 void

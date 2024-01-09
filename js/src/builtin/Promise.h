@@ -100,6 +100,10 @@ class PromiseObject : public NativeObject
         int32_t flags = getFixedSlot(PromiseSlot_Flags).toInt32();
         setFixedSlot(PromiseSlot_Flags, Int32Value(flags | PROMISE_FLAG_REPORTED));
     }
+    bool isReported() {
+        MOZ_ASSERT(isUnhandled());
+        return flags() & PROMISE_FLAG_REPORTED;
+    }
 };
 
 /**
