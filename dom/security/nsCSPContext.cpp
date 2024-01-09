@@ -1041,6 +1041,11 @@ nsCSPContext::SendReports(
     report.mCsp_report.mLine_number.Value() = aViolationEventInit.mLineNumber;
   }
 
+  if (aViolationEventInit.mColumnNumber != 0) {
+    report.mCsp_report.mColumn_number.Construct();
+    report.mCsp_report.mColumn_number.Value() = aViolationEventInit.mColumnNumber;
+  }
+
   nsString csp_report;
   if (!report.ToJSON(csp_report)) {
     return NS_ERROR_FAILURE;
