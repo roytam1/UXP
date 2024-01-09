@@ -339,6 +339,13 @@ public:
   static nsINode* GetCommonAncestor(nsINode* aNode1, nsINode* aNode2);
 
   /**
+   * Returns the common flattened tree ancestor, if any, for two given content
+   * nodes.
+   */
+  static nsIContent* GetCommonFlattenedTreeAncestor(nsIContent* aContent1,
+                                                    nsIContent* aContent2);
+ 
+  /**
    * Returns the common ancestor under interactive content, if any.
    * If neither one has interactive content as ancestor, common ancestor will be
    * returned. If only one has interactive content as ancestor, null will be
