@@ -22,6 +22,7 @@
 #include "nsPluginStreamListenerPeer.h"
 #include "nsIServiceManager.h"
 #include "nsThreadUtils.h"
+#include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/Preferences.h"
 #include "nsPluginInstanceOwner.h"
 

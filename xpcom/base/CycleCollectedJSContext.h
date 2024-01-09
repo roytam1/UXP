@@ -12,6 +12,7 @@
 #include "mozilla/mozalloc.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/SegmentedVector.h"
+#include "mozilla/dom/Promise.h"
 #include "jsapi.h"
 #include "jsfriendapi.h"
 
@@ -170,9 +171,6 @@ protected:
   virtual void CustomOutOfMemoryCallback() {}
   virtual void CustomLargeAllocationFailureCallback() {}
 
-  std::queue<nsCOMPtr<nsIRunnable>> mPromiseMicroTaskQueue;
-  std::queue<nsCOMPtr<nsIRunnable>> mDebuggerPromiseMicroTaskQueue;
-
 private:
   void
   DescribeGCThing(bool aIsMarked, JS::GCCellPtr aThing,
@@ -243,11 +241,11 @@ private:
   virtual void TraceNativeBlackRoots(JSTracer* aTracer) { };
   void TraceNativeGrayRoots(JSTracer* aTracer);
 
-  void AfterProcessMicrotask(uint32_t aRecursionDepth);
+  void AfterProcessMicrotasks();
 public:
   void ProcessStableStateQueue();
 private:
-  void ProcessMetastableStateQueue(uint32_t aRecursionDepth);
+  void CleanupIDBTransactions(uint32_t aRecursionDepth);
 
 public:
   enum DeferredFinalizeType {
@@ -306,8 +304,8 @@ public:
   already_AddRefed<nsIException> GetPendingException() const;
   void SetPendingException(nsIException* aException);
 
-  std::queue<nsCOMPtr<nsIRunnable>>& GetPromiseMicroTaskQueue();
-  std::queue<nsCOMPtr<nsIRunnable>>& GetDebuggerPromiseMicroTaskQueue();
+  std::queue<RefPtr<MicroTaskRunnable>>& GetMicroTaskQueue();
+  std::queue<RefPtr<MicroTaskRunnable>>& GetDebuggerMicroTaskQueue();
 
   nsCycleCollectionParticipant* GCThingParticipant();
   nsCycleCollectionParticipant* ZoneParticipant();
@@ -346,53 +344,25 @@ public:
     return JS::RootingContext::get(mJSContext);
   }
 
-  bool MicroTaskCheckpointDisabled() const
+  void SetTargetedMicroTaskRecursionDepth(uint32_t aDepth)
   {
-    return mDisableMicroTaskCheckpoint;
+    mTargetedMicroTaskRecursionDepth = aDepth;
   }
-
-  void DisableMicroTaskCheckpoint(bool aDisable)
-  {
-    mDisableMicroTaskCheckpoint = aDisable;
-  }
-
-  class MOZ_RAII AutoDisableMicroTaskCheckpoint
-  {
-    public:
-    AutoDisableMicroTaskCheckpoint()
-    : mCCJSCX(CycleCollectedJSContext::Get())
-    {
-      mOldValue = mCCJSCX->MicroTaskCheckpointDisabled();
-      mCCJSCX->DisableMicroTaskCheckpoint(true);
-    }
-
-    ~AutoDisableMicroTaskCheckpoint()
-    {
-      mCCJSCX->DisableMicroTaskCheckpoint(mOldValue);
-    }
-
-    CycleCollectedJSContext* mCCJSCX;
-    bool mOldValue;
-  };
 
 protected:
   JSContext* MaybeContext() const { return mJSContext; }
 
 public:
   // nsThread entrypoints
-  virtual void BeforeProcessTask(bool aMightBlock) { };
+  virtual void BeforeProcessTask(bool aMightBlock);
   virtual void AfterProcessTask(uint32_t aRecursionDepth);
-
-  // microtask processor entry point
-  void AfterProcessMicrotask();
 
   uint32_t RecursionDepth();
 
   // Run in stable state (call through nsContentUtils)
   void RunInStableState(already_AddRefed<nsIRunnable>&& aRunnable);
-  // This isn't in the spec at all yet, but this gets the behavior we want for IDB.
-  // Runs after the current microtask completes.
-  void RunInMetastableState(already_AddRefed<nsIRunnable>&& aRunnable);
+
+  void AddPendingIDBTransaction(already_AddRefed<nsIRunnable>&& aTransaction);
 
   // Get the current thread's CycleCollectedJSContext.  Returns null if there
   // isn't one.
@@ -411,7 +381,7 @@ public:
   void PrepareWaitingZonesForGC();
 
   // Queue an async microtask to the current main or worker thread.
-  virtual void DispatchToMicroTask(already_AddRefed<nsIRunnable> aRunnable);
+  virtual void DispatchToMicroTask(already_AddRefed<MicroTaskRunnable> aRunnable);
 
   // Call EnterMicroTask when you're entering JS execution.
   // Usually the best way to do this is to use nsAutoMicroTask.
@@ -442,9 +412,9 @@ public:
     mMicroTaskLevel = aLevel;
   }
 
-  void PerformMicroTaskCheckPoint();
+  bool PerformMicroTaskCheckPoint();
 
-  void DispatchMicroTaskRunnable(already_AddRefed<MicroTaskRunnable> aRunnable);
+  void PerformDebuggerMicroTaskCheckpoint();
 
   // Storage for watching rejected promises waiting for some client to
   // consume their rejection.
@@ -459,6 +429,12 @@ public:
   // (because they were in the above list), but the rejection was handled
   // in the last turn of the event loop.
   JS::PersistentRooted<JS::GCVector<JSObject*, 0, js::SystemAllocPolicy>> mConsumedRejections;
+
+  // This is for the "outstanding rejected promises weak set" in the spec,
+  // https://html.spec.whatwg.org/multipage/webappapis.html#outstanding-rejected-promises-weak-set
+  typedef nsRefPtrHashtable<nsUint64HashKey, dom::Promise> PromiseHashtable;
+  PromiseHashtable mOutstandingRejections;
+
 
   nsTArray<nsCOMPtr<nsISupports /* UncaughtRejectionObserver */ >> mUncaughtRejectionObservers;
 
@@ -483,23 +459,49 @@ private:
   nsCOMPtr<nsIException> mPendingException;
   nsThread* mOwningThread; // Manual refcounting to avoid include hell.
 
-  struct RunInMetastableStateData
+  struct PendingIDBTransactionData
   {
-    nsCOMPtr<nsIRunnable> mRunnable;
+    nsCOMPtr<nsIRunnable> mTransaction;
     uint32_t mRecursionDepth;
   };
 
   nsTArray<nsCOMPtr<nsIRunnable>> mStableStateEvents;
-  nsTArray<RunInMetastableStateData> mMetastableStateEvents;
+  nsTArray<PendingIDBTransactionData> mPendingIDBTransactions;
   uint32_t mBaseRecursionDepth;
   bool mDoingStableStates;
 
-  bool mDisableMicroTaskCheckpoint;
+  // If set to none 0, microtasks will be processed only when recursion depth
+  // is the set value.
+  uint32_t mTargetedMicroTaskRecursionDepth;
 
   uint32_t mMicroTaskLevel;
+
   std::queue<RefPtr<MicroTaskRunnable>> mPendingMicroTaskRunnables;
+  std::queue<RefPtr<MicroTaskRunnable>> mDebuggerMicroTaskQueue;
 
   uint32_t mMicroTaskRecursionDepth;
+
+  // This implements about-to-be-notified rejected promises list in the spec.
+  // https://html.spec.whatwg.org/multipage/webappapis.html#about-to-be-notified-rejected-promises-list
+  typedef nsTArray<RefPtr<dom::Promise>> PromiseArray;
+  PromiseArray mAboutToBeNotifiedRejectedPromises;
+
+  class NotifyUnhandledRejections final : public CancelableRunnable {
+   public:
+    NotifyUnhandledRejections(CycleCollectedJSContext* aCx,
+                              PromiseArray&& aPromises)
+        : CancelableRunnable(),
+          mCx(aCx),
+          mUnhandledRejections(std::move(aPromises)) {}
+
+    NS_IMETHOD Run() final;
+
+    nsresult Cancel() final;
+
+   private:
+    CycleCollectedJSContext* mCx;
+    PromiseArray mUnhandledRejections;
+  };
 
   OOMState mOutOfMemoryState;
   OOMState mLargeAllocationFailureState;

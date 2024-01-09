@@ -52,6 +52,7 @@
 #include "ImportManager.h"
 #include "mozilla/dom/EncodingUtils.h"
 #include "mozilla/ConsoleReportCollector.h"
+#include "mozilla/CycleCollectedJSContext.h"
 
 #include "mozilla/Attributes.h"
 #include "mozilla/Unused.h"
