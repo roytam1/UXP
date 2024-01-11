@@ -235,6 +235,7 @@ nsresult CSP_AppendCSPFromHeader(nsIContentSecurityPolicy* aCsp,
 class nsCSPHostSrc;
 
 nsCSPHostSrc* CSP_CreateHostSrcFromSelfURI(nsIURI* aSelfURI);
+bool CSP_IsEmptyDirective(const nsAString& aValue, const nsAString& aDir);
 bool CSP_IsValidDirective(const nsAString& aDir);
 bool CSP_IsDirective(const nsAString& aValue, CSPDirective aDir);
 bool CSP_IsKeyword(const nsAString& aValue, enum CSPKeyword aKey);
@@ -493,6 +494,8 @@ class nsCSPDirective {
 
     bool visitSrcs(nsCSPSrcVisitor* aVisitor) const;
 
+    virtual void getDirName(nsAString& outStr) const;
+
   protected:
     CSPDirective            mDirective;
     nsTArray<nsCSPBaseSrc*> mSrcs;
@@ -571,6 +574,8 @@ class nsBlockAllMixedContentDirective : public nsCSPDirective {
 
     void addSrcs(const nsTArray<nsCSPBaseSrc*>& aSrcs)
       {  MOZ_ASSERT(false, "block-all-mixed-content does not hold any srcs"); }
+
+    void getDirName(nsAString& outStr) const override;
 };
 
 /* =============== nsUpgradeInsecureDirective === */
@@ -624,6 +629,8 @@ class nsUpgradeInsecureDirective : public nsCSPDirective {
 
     void addSrcs(const nsTArray<nsCSPBaseSrc*>& aSrcs)
       {  MOZ_ASSERT(false, "upgrade-insecure-requests does not hold any srcs"); }
+
+    void getDirName(nsAString& outStr) const override;
 };
 
 /* ===== nsRequireSRIForDirective ========================= */
@@ -641,6 +648,7 @@ class nsRequireSRIForDirective : public nsCSPDirective {
     bool restrictsContentType(nsContentPolicyType aType) const;
     bool allows(enum CSPKeyword aKeyword, const nsAString& aHashOrNonce,
                 bool aParserCreated) const;
+    void getDirName(nsAString& outStr) const override;
 
   private:
     nsTArray<nsContentPolicyType> mTypes;

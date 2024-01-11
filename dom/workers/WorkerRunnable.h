@@ -6,14 +6,14 @@
 #ifndef mozilla_dom_workers_workerrunnable_h__
 #define mozilla_dom_workers_workerrunnable_h__
 
-#include "Workers.h"
+#include "mozilla/dom/workers/Workers.h"
 
 #include "nsICancelableRunnable.h"
 
 #include "mozilla/Atomics.h"
 #include "nsISupportsImpl.h"
 #include "nsThreadUtils.h" /* nsRunnable */
-#include "WorkerHolder.h"
+#include "mozilla/dom/workers/bindings/WorkerHolder.h"
 
 struct JSContext;
 class nsIEventTarget;

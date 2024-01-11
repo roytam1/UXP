@@ -7,6 +7,7 @@
 #define nsCSPContext_h___
 
 #include "mozilla/dom/nsCSPUtils.h"
+#include "mozilla/dom/SecurityPolicyViolationEvent.h"
 #include "nsDataHashtable.h"
 #include "nsIChannel.h"
 #include "nsIChannelEventSink.h"
@@ -56,13 +57,43 @@ class nsCSPContext : public nsIContentSecurityPolicy
                       uint32_t aColumnNumber,
                       uint32_t aSeverityFlag);
 
-    nsresult SendReports(nsISupports* aBlockedContentSource,
-                         nsIURI* aOriginalURI,
-                         nsAString& aViolatedDirective,
-                         uint32_t aViolatedPolicyIndex,
-                         nsAString& aSourceFile,
-                         nsAString& aScriptSample,
-                         uint32_t aLineNum);
+
+    /**
+     * Construct SecurityPolicyViolationEventInit structure.
+     *
+     * @param aBlockedURI
+     *        A nsIURI: the source of the violation.
+     * @param aOriginalUri
+     *        The original URI if the blocked content is a redirect, else null
+     * @param aViolatedDirective
+     *        the directive that was violated (string).
+     * @param aSourceFile
+     *        name of the file containing the inline script violation
+     * @param aScriptSample
+     *        a sample of the violating inline script
+     * @param aLineNum
+     *        source line number of the violation (if available)
+     * @param aViolationEventInit
+     *        The output
+     */
+    nsresult GatherSecurityPolicyViolationEventData(
+      nsIURI* aBlockedURI,
+      const nsACString& aBlockedString,
+      nsIURI* aOriginalURI,
+      nsAString& aViolatedDirective,
+      uint32_t aViolatedPolicyIndex,
+      nsAString& aSourceFile,
+      nsAString& aScriptSample,
+      uint32_t aLineNum,
+      uint32_t aColumnNum,
+      mozilla::dom::SecurityPolicyViolationEventInit& aViolationEventInit);
+
+    nsresult SendReports(
+      const mozilla::dom::SecurityPolicyViolationEventInit& aViolationEventInit,
+      uint32_t aViolatedPolicyIndex);
+
+    nsresult FireViolationEvent(
+      const mozilla::dom::SecurityPolicyViolationEventInit& aViolationEventInit);
 
     nsresult AsyncReportViolation(nsISupports* aBlockedContentSource,
                                   nsIURI* aOriginalURI,
@@ -71,7 +102,8 @@ class nsCSPContext : public nsIContentSecurityPolicy
                                   const nsAString& aObserverSubject,
                                   const nsAString& aSourceFile,
                                   const nsAString& aScriptSample,
-                                  uint32_t aLineNum);
+                                  uint32_t aLineNum,
+                                  uint32_t aColumnNum);
 
     // Hands off! Don't call this method unless you know what you
     // are doing. It's only supposed to be called from within
@@ -80,8 +112,12 @@ class nsCSPContext : public nsIContentSecurityPolicy
       mLoadingPrincipal = nullptr;
     }
 
-    nsWeakPtr GetLoadingContext(){
+    nsWeakPtr GetLoadingContext() {
       return mLoadingContext;
+    }
+
+    static uint32_t ScriptSampleMaxLength() {
+        return std::max(sScriptSampleMaxLength, 0);
     }
 
   private:
@@ -102,7 +138,10 @@ class nsCSPContext : public nsIContentSecurityPolicy
                                const nsAString& aContent,
                                const nsAString& aViolatedDirective,
                                uint32_t aViolatedPolicyIndex,
-                               uint32_t aLineNumber);
+                               uint32_t aLineNumber,
+                               uint32_t aColumnNumber);
+
+    static int32_t sScriptSampleMaxLength;
 
     nsString                                   mReferrer;
     uint64_t                                   mInnerWindowID; // used for web console logging

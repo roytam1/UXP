@@ -69,7 +69,8 @@ public:
   NS_IMETHOD HandleStartElement(const char16_t *aName, 
                                 const char16_t **aAtts, 
                                 uint32_t aAttsCount, 
-                                uint32_t aLineNumber) override;
+                                uint32_t aLineNumber,
+                                uint32_t aColumnNumber) override;
 
   NS_IMETHOD HandleEndElement(const char16_t *aName) override;
   
@@ -89,7 +90,8 @@ protected:
     bool NotifyForDocElement() override { return false; }
 
     nsresult CreateElement(const char16_t** aAtts, uint32_t aAttsCount,
-                           mozilla::dom::NodeInfo* aNodeInfo, uint32_t aLineNumber,
+                           mozilla::dom::NodeInfo* aNodeInfo,
+                           uint32_t aLineNumber, uint32_t aColumnNumber,
                            nsIContent** aResult, bool* aAppendContent,
                            mozilla::dom::FromParser aFromParser) override;
     
