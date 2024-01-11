@@ -394,7 +394,8 @@ nsExpatDriver::HandleStartElement(const char16_t *aValue,
 
     nsresult rv = mSink->
       HandleStartElement(aValue, aAtts, attrArrayLength,
-                         XML_GetCurrentLineNumber(mExpatParser));
+                         XML_GetCurrentLineNumber(mExpatParser),
+                         XML_GetCurrentColumnNumber(mExpatParser));
     MaybeStopParser(rv);
   }
 }

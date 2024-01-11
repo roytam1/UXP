@@ -1056,14 +1056,10 @@ nsCSPParser::directiveName()
     return new nsUpgradeInsecureDirective(CSP_StringToCSPDirective(mCurToken));
   }
 
-  // child-src by itself is deprecatd but will be enforced
-  //   * for workers (if worker-src is not explicitly specified)
-  //   * for frames  (if frame-src is not explicitly specified)
+  // if we have a child-src, cache it as a fallback for
+  //   * workers (if worker-src is not explicitly specified)
+  //   * frames  (if frame-src is not explicitly specified)
   if (CSP_IsDirective(mCurToken, nsIContentSecurityPolicy::CHILD_SRC_DIRECTIVE)) {
-    const char16_t* params[] = { mCurToken.get() };
-    logWarningErrorToConsole(nsIScriptError::warningFlag,
-                             "deprecatedChildSrcDirective",
-                             params, ArrayLength(params));
     mChildSrc = new nsCSPChildSrcDirective(CSP_StringToCSPDirective(mCurToken));
     return mChildSrc;
   }
@@ -1112,6 +1108,10 @@ nsCSPParser::directive()
     const char16_t* params[] = { u"directive missing" };
     logWarningErrorToConsole(nsIScriptError::warningFlag, "failedToParseUnrecognizedSource",
                              params, ArrayLength(params));
+    return;
+  }
+
+  if (CSP_IsEmptyDirective(mCurValue, mCurToken)) {
     return;
   }
 

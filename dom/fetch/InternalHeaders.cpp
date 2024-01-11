@@ -11,6 +11,7 @@
 
 #include "nsCharSeparatedTokenizer.h"
 #include "nsContentUtils.h"
+#include "nsIHttpHeaderVisitor.h"
 #include "nsNetUtil.h"
 #include "nsReadableUtils.h"
 
@@ -476,6 +477,48 @@ InternalHeaders::Fill(const Record<nsCString, nsCString>& aInit, ErrorResult& aR
       return;
     }
   }
+}
+
+namespace {
+
+class FillHeaders final : public nsIHttpHeaderVisitor
+{
+  RefPtr<InternalHeaders> mInternalHeaders;
+
+  ~FillHeaders() = default;
+
+public:
+  NS_DECL_ISUPPORTS
+
+  explicit FillHeaders(InternalHeaders* aInternalHeaders)
+    : mInternalHeaders(aInternalHeaders)
+  {
+    MOZ_DIAGNOSTIC_ASSERT(mInternalHeaders);
+  }
+
+  NS_IMETHOD
+  VisitHeader(const nsACString& aHeader, const nsACString& aValue) override
+  {
+    IgnoredErrorResult result;
+    mInternalHeaders->Append(aHeader, aValue, result);
+    return NS_OK;
+  }
+};
+
+NS_IMPL_ISUPPORTS(FillHeaders, nsIHttpHeaderVisitor)
+
+} // namespace
+
+void
+InternalHeaders::FillResponseHeaders(nsIRequest* aRequest)
+{
+  nsCOMPtr<nsIHttpChannel> httpChannel = do_QueryInterface(aRequest);
+  if (!httpChannel) {
+    return;
+  }
+
+  RefPtr<FillHeaders> visitor = new FillHeaders(this);
+  httpChannel->VisitResponseHeaders(visitor);
 }
 
 bool

@@ -1474,6 +1474,7 @@ CSPAllowsInlineScript(nsIScriptElement *aElement, nsIDocument *aDocument)
   rv = csp->GetAllowsInline(nsIContentPolicy::TYPE_SCRIPT,
                             nonce, parserCreated, scriptText,
                             aElement->GetScriptLineNumber(),
+                            aElement->GetScriptColumnNumber(),
                             &allowInlineScript);
   return allowInlineScript;
 }
@@ -2695,10 +2696,11 @@ ScriptLoader::VerifySRI(ScriptLoadRequest* aRequest,
       nsAutoCString violationURISpec;
       mDocument->GetDocumentURI()->GetAsciiSpec(violationURISpec);
       uint32_t lineNo = aRequest->Element() ? aRequest->Element()->GetScriptLineNumber() : 0;
+      uint32_t columnNo = aRequest->Element() ? aRequest->Element()->GetScriptColumnNumber() : 0;
       csp->LogViolationDetails(
         nsIContentSecurityPolicy::VIOLATION_TYPE_REQUIRE_SRI_FOR_SCRIPT,
         NS_ConvertUTF8toUTF16(violationURISpec),
-        EmptyString(), lineNo, EmptyString(), EmptyString());
+        EmptyString(), lineNo, columnNo, EmptyString(), EmptyString());
       rv = NS_ERROR_SRI_CORRUPT;
     }
   }

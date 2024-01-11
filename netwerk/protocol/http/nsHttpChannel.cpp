@@ -1160,35 +1160,42 @@ EnsureMIMEOfScript(nsIURI* aURI, nsHttpResponseHead* aResponseHead, nsILoadInfo*
 
     if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("text/plain"))) {
         // script load has type text/plain
-        return NS_OK;
-    }
-
-    if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("text/xml"))) {
+    } else if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("text/xml"))) {
         // script load has type text/xml
-        return NS_OK;
-    }
-
-    if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("application/octet-stream"))) {
+    } else if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("application/octet-stream"))) {
         // script load has type application/octet-stream
-        return NS_OK;
-    }
-
-    if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("application/xml"))) {
+    } else if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("application/xml"))) {
         // script load has type application/xml
-        return NS_OK;
-    }
-
-    if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("text/html"))) {
+    } else if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("text/html"))) {
         // script load has type text/html
-        return NS_OK;
-    }
-
-    if (contentType.IsEmpty()) {
+    } else if (contentType.IsEmpty()) {
         // script load has no type
-        return NS_OK;
+    } else {
+        // script load has unknown type
+        // We restrict importScripts() in worker code to JavaScript MIME types.
+        if (aLoadInfo->InternalContentPolicyType() ==
+            nsIContentPolicy::TYPE_INTERNAL_WORKER_IMPORT_SCRIPTS) {
+              // Instead of consulting Preferences::GetBool() all the time we
+              // can cache the result to speed things up.
+             static bool sCachedBlockImportScriptsWithWrongMime = false;
+             static bool sIsInited = false;
+             if (!sIsInited) {
+               sIsInited = true;
+               Preferences::AddBoolVarCache(
+                   &sCachedBlockImportScriptsWithWrongMime,
+                   "security.block_importScripts_with_wrong_mime");
+             }
+         
+            // Do not block the load if the feature is not enabled.
+            if (!sCachedBlockImportScriptsWithWrongMime) {
+               return NS_OK;
+            }
+    
+            ReportTypeBlocking(aURI, aLoadInfo, "BlockImportScriptsWithWrongMimeType");
+            return NS_ERROR_CORRUPTED_CONTENT;
+        }
     }
 
-    // script load has unknown type
     return NS_OK;
 }
 

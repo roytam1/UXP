@@ -803,7 +803,8 @@ class GlobalObject : public NativeObject
     template<typename T>
     inline Value createArrayFromBuffer() const;
 
-    static bool isRuntimeCodeGenEnabled(JSContext* cx, Handle<GlobalObject*> global);
+    static bool isRuntimeCodeGenEnabled(JSContext* cx, HandleValue code,
+                                        Handle<GlobalObject*> global);
 
     // Warn about use of the deprecated watch/unwatch functions in the global
     // in which |obj| was created, if no prior warning was given.
