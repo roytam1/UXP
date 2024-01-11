@@ -7,6 +7,8 @@
 #include "mozilla/LinkedList.h"
 
 #include "nsCORSListenerProxy.h"
+
+#include "nsQueryObject.h"
 #include "nsIChannel.h"
 #include "nsIHttpChannel.h"
 #include "HttpChannelChild.h"
@@ -1507,6 +1509,9 @@ nsCORSListenerProxy::StartCORSPreflight(nsIChannel* aRequestChannel,
                      method, false);
   NS_ENSURE_SUCCESS(rv, rv);
 
+  RefPtr<nsIHttpChannel> reqCh = do_QueryObject(aRequestChannel);
+  RefPtr<nsIHttpChannel> preCh = do_QueryObject(preHttp);
+
   nsTArray<nsCString> preflightHeaders;
   if (!aUnsafeHeaders.IsEmpty()) {
     for (uint32_t i = 0; i < aUnsafeHeaders.Length(); ++i) {
@@ -1534,6 +1539,23 @@ nsCORSListenerProxy::StartCORSPreflight(nsIChannel* aRequestChannel,
 
   rv = preflightChannel->SetNotificationCallbacks(preflightListener);
   NS_ENSURE_SUCCESS(rv, rv);
+
+  if (reqCh && preCh) {
+    // Per https://fetch.spec.whatwg.org/#cors-preflight-fetch step 1, the
+    // request's referrer and referrer policy should match the original request.
+    // Note that RFC 9110 says we SHOULD NOT send referrers on insecure requests
+    // which CORS preflights by definition are, so there's a conflict here, but
+    // since this is expected behaviour in mainstream implementations, we get and
+    // send the referrer on CORS preflights here. See issue #2451
+    uint32_t referrerPolicy = nsIHttpChannel::REFERRER_POLICY_UNSET;
+    rv = reqCh->GetReferrerPolicy(&referrerPolicy);
+    NS_ENSURE_SUCCESS(rv, rv);
+    nsCOMPtr<nsIURI> requestReferrerURI;
+    rv = reqCh->GetReferrer(getter_AddRefs(requestReferrerURI));
+    NS_ENSURE_SUCCESS(rv, rv);
+    rv = preCh->SetReferrerWithPolicy(requestReferrerURI, referrerPolicy);
+    NS_ENSURE_SUCCESS(rv, rv);
+  }
 
   // Start preflight
   rv = preflightChannel->AsyncOpen2(preflightListener);
