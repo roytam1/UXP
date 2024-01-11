@@ -191,7 +191,7 @@ nsStyledElement::ParseStyleAttribute(const nsAString& aValue,
 
   if (!isNativeAnon &&
       !nsStyleUtil::CSPAllowsInlineStyle(nullptr, NodePrincipal(),
-                                         doc->GetDocumentURI(), 0, aValue,
+                                         doc->GetDocumentURI(), 0, 0, aValue,
                                          nullptr))
     return;
 

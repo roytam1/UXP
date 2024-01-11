@@ -6,7 +6,7 @@
 #ifndef mozilla_dom_workers_workerprivate_h__
 #define mozilla_dom_workers_workerprivate_h__
 
-#include "Workers.h"
+#include "mozilla/dom/workers/Workers.h"
 
 #include "js/CharacterEncoding.h"
 #include "nsIContentPolicy.h"
@@ -34,8 +34,8 @@
 #include "nsThreadUtils.h"
 #include "nsTObserverArray.h"
 
-#include "Queue.h"
-#include "WorkerHolder.h"
+#include "mozilla/dom/workerinternals/Queue.h"
+#include "mozilla/dom/workers/bindings/WorkerHolder.h"
 
 #ifdef XP_WIN
 #undef PostMessage
@@ -535,6 +535,13 @@ public:
     return mLoadInfo.mServiceWorkerID;
   }
 
+  const nsCString&
+  ServiceWorkerScope() const
+  {
+    MOZ_DIAGNOSTIC_ASSERT(IsServiceWorker());
+    return mWorkerName;
+  }
+
   nsIURI*
   GetBaseURI() const
   {
@@ -656,8 +663,8 @@ public:
       return mLoadInfo.mPrincipal;
   }
 
-  void
-  SetPrincipal(nsIPrincipal* aPrincipal, nsILoadGroup* aLoadGroup);
+  nsresult
+  SetPrincipalOnMainThread(nsIPrincipal* aPrincipal, nsILoadGroup* aLoadGroup);
 
   bool
   UsesSystemPrincipal() const
@@ -700,6 +707,10 @@ public:
     AssertIsOnMainThread();
     mLoadInfo.mCSP = aCSP;
   }
+
+  nsresult
+  SetCSPFromHeaderValues(const nsACString& aCSPHeaderValue,
+                         const nsACString& aCSPReportOnlyHeaderValue);
 
   net::ReferrerPolicy
   GetReferrerPolicy() const
@@ -827,7 +838,7 @@ public:
   const nsCString&
   WorkerName() const
   {
-    MOZ_ASSERT(IsServiceWorker() || IsSharedWorker());
+    MOZ_ASSERT(IsSharedWorker());
     return mWorkerName;
   }
 

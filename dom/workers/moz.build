@@ -19,6 +19,11 @@ EXPORTS.mozilla.dom += [
     'WorkerScope.h',
 ]
 
+# Private stuff.
+EXPORTS.mozilla.dom.workerinternals += [
+    'Queue.h',
+]
+
 EXPORTS.mozilla.dom.workers += [
     'RuntimeService.h',
     'ServiceWorkerCommon.h',

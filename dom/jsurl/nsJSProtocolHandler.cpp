@@ -185,6 +185,7 @@ nsresult nsJSThunk::EvaluateScript(nsIChannel *aChannel,
                                   true,         // aParserCreated
                                   EmptyString(), // aContent
                                   0,             // aLineNumber
+                                  0,             // aColumnNumber
                                   &allowsInlineScript);
 
         //return early if inline scripts are not allowed

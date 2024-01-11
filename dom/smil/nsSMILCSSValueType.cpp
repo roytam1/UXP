@@ -405,7 +405,7 @@ nsSMILCSSValueType::ValueFromString(nsCSSPropertyID aPropID,
   if (doc && !nsStyleUtil::CSPAllowsInlineStyle(nullptr,
                                                 doc->NodePrincipal(),
                                                 doc->GetDocumentURI(),
-                                                0, aString, nullptr)) {
+                                                0, 0, aString, nullptr)) {
     return;
   }
 
