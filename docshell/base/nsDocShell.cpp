@@ -9040,6 +9040,12 @@ nsDocShell::CreateContentViewer(const nsACString& aContentType,
 {
   *aContentHandler = nullptr;
 
+  if (!mTreeOwner) {
+    // If we don't have a tree owner, then we're in the process of being
+    // destroyed. Rather than continue trying to load something, just give up.
+    return NS_ERROR_DOCSHELL_DYING;
+  }
+
   // Can we check the content type of the current content viewer
   // and reuse it without destroying it and re-creating it?
 
