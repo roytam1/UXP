@@ -693,6 +693,12 @@ EventDispatcher::Dispatch(nsISupports* aTarget,
   NS_ENSURE_TRUE(aEvent->mMessage || !aDOMEvent || aTargets,
                  NS_ERROR_DOM_INVALID_STATE_ERR);
 
+  // Events shall not be fired while we are in stable state to prevent anything
+  // visible from the scripts.
+  MOZ_ASSERT(!nsContentUtils::IsInStableOrMetaStableState());
+  NS_ENSURE_TRUE(!nsContentUtils::IsInStableOrMetaStableState(),
+                 NS_ERROR_DOM_INVALID_STATE_ERR);
+
 #ifdef MOZ_TASK_TRACER
   {
     if (aDOMEvent) {

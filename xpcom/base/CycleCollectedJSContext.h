@@ -416,6 +416,11 @@ public:
 
   void PerformDebuggerMicroTaskCheckpoint();
 
+  bool IsInStableOrMetaStableState()
+  {
+    return mDoingStableStates;
+  }
+
   // Storage for watching rejected promises waiting for some client to
   // consume their rejection.
 

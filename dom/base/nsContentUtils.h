@@ -1779,6 +1779,11 @@ public:
    */
   static void AddPendingIDBTransaction(already_AddRefed<nsIRunnable> aTransaction);
 
+  /**
+   * Returns true if we are doing StableState/MetastableState.
+   */
+  static bool IsInStableOrMetaStableState();
+
   /* Process viewport META data. This gives us information for the scale
    * and zoom of a page on mobile devices. We stick the information in
    * the document header and use it later on after rendering.
