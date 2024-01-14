@@ -457,8 +457,6 @@ MediaDecoder::MediaDecoder(MediaDecoderOwner* aOwner)
   mWatchManager.Watch(mLogicallySeeking, &MediaDecoder::SeekingChanged);
 
   mWatchManager.Watch(mIsAudioDataAudible, &MediaDecoder::NotifyAudibleStateChanged);
-
-  MediaShutdownManager::InitStatics();
 }
 
 #undef INIT_MIRROR
