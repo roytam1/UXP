@@ -1999,18 +1999,13 @@ struct WorkerPrivate::TimeoutInfo
     auto target = mInterval;
     int32_t minTimeoutValue;
     
-    if (NS_IsMainThread()) {
-      // We can get the pref value directly.
-      minTimeoutValue = Preferences::GetInt("dom.min_timeout_value");
+    // We're on a worker thread; go through WorkerPrivate for the pref.
+    WorkerPrivate* workerPrivate = GetWorkerPrivateFromContext(aCx);
+    if (workerPrivate) {
+      minTimeoutValue = workerPrivate->DOMMinTimeoutValue();
     } else {
-      // We're on a worker thread; go through WorkerPrivate.
-      WorkerPrivate* workerPrivate = GetWorkerPrivateFromContext(aCx);
-      if (workerPrivate) {
-        minTimeoutValue = workerPrivate->DOMMinTimoutValue();
-      } else {
-        // fall back to default 4 ms
-        minTimeoutValue = 4;
-      }
+      // fall back to default 4 ms
+      minTimeoutValue = 4;
     }
       
     // Clamp timeout for workers, except chrome workers
