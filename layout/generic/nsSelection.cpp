@@ -6415,19 +6415,16 @@ Selection::NotifySelectionListeners()
         MOZ_ASSERT(!newEditingHost->IsInNativeAnonymousSubtree());
         nsCOMPtr<nsIDOMElement> domElementToFocus =
           do_QueryInterface(newEditingHost->AsDOMNode());
-        // Note that don't steal focus from focused window if the window doesn't
-        // have focus.
-        fm->SetFocus(domElementToFocus, nsIFocusManager::FLAG_NOSWITCHFRAME);
+        // Note that don't steal focus from focused window if the window
+        // doesn't have focus.  Additionally, when an element gets focus,
+        // we usually scroll to the element, but in this case we shouldn't
+        // do that because Blink&Gecko don't do this.
+        fm->SetFocus(domElementToFocus, nsIFocusManager::FLAG_NOSWITCHFRAME |
+                                        nsIFocusManager::FLAG_NOSCROLL);
       }
-      // Otherwise, if current focused element is an editing host, it should
-      // be blurred if there is no common editing host of the selected ranges.
-      else if (!newEditingHost && focusedElement &&
-               focusedElement == focusedElement->GetEditingHost()) {
-        IgnoredErrorResult err;
-        focusedElement->Blur(err);
-        NS_WARNING_ASSERTION(!err.Failed(),
-                             "Failed to blur focused element");
-      }
+      // Otherwise, we shouldn't move focus since Blink&Gecko don't move
+      // focus; only the selection range is updated. This is a bit weird but
+      // it is what it is and we should act the same for parity.
     }
   }
 
