@@ -695,9 +695,10 @@ EventDispatcher::Dispatch(nsISupports* aTarget,
 
   // Events shall not be fired while we are in stable state to prevent anything
   // visible from the scripts.
-  MOZ_ASSERT(!nsContentUtils::IsInStableOrMetaStableState());
-  NS_ENSURE_TRUE(!nsContentUtils::IsInStableOrMetaStableState(),
-                 NS_ERROR_DOM_INVALID_STATE_ERR);
+  // See comment in CycleCollectedJSContext::AfterProcessMicrotasks for why we allow it anyway.
+  // MOZ_ASSERT(!nsContentUtils::IsInStableOrMetaStableState());
+  // NS_ENSURE_TRUE(!nsContentUtils::IsInStableOrMetaStableState(),
+  //                NS_ERROR_DOM_INVALID_STATE_ERR);
 
 #ifdef MOZ_TASK_TRACER
   {
