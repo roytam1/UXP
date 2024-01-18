@@ -5444,6 +5444,14 @@ nsContentUtils::AddPendingIDBTransaction(already_AddRefed<nsIRunnable> aTransact
   CycleCollectedJSContext::Get()->AddPendingIDBTransaction(Move(aTransaction));
 }
 
+/* static */
+bool
+nsContentUtils::IsInStableOrMetaStableState()
+{
+  MOZ_ASSERT(CycleCollectedJSContext::Get(), "Must be on a script thread!");
+  return CycleCollectedJSContext::Get()->IsInStableOrMetaStableState();
+}
+
 /*
  * Helper function for nsContentUtils::ProcessViewportInfo.
  *

@@ -17,17 +17,17 @@ interface Selection {
   readonly attribute unsigned long focusOffset;
 
   readonly attribute boolean isCollapsed;
-  [Throws]
+  [Throws, BinaryName="collapseJS"]
   void               collapse(Node node, unsigned long offset);
-  [Throws]
+  [Throws, BinaryName="collapseToStartJS"]
   void               collapseToStart();
-  [Throws]
+  [Throws, BinaryName="collapseToEndJS"]
   void               collapseToEnd();
 
-  [Throws]
+  [Throws, BinaryName="extendJS"]
   void               extend(Node node, unsigned long offset);
 
-  [Throws]
+  [Throws, BinaryName="selectAllChildrenJS"]
   void               selectAllChildren(Node node);
   [Throws]
   void               deleteFromDocument();
@@ -36,7 +36,7 @@ interface Selection {
   readonly attribute DOMString     type;
   [Throws]
   Range              getRangeAt(unsigned long index);
-  [Throws]
+  [Throws, BinaryName="addRangeJS"]
   void               addRange(Range range);
   [Throws]
   void               removeRange(Range range);
@@ -46,7 +46,7 @@ interface Selection {
   [Throws]
   boolean            containsNode(Node node, boolean allowPartialContainment);
 
-  [Throws]
+  [Throws, BinaryName="setBaseAndExtentJS"]
   void               setBaseAndExtent(Node anchorNode,
                                       unsigned long anchorOffset,
                                       Node focusNode,
