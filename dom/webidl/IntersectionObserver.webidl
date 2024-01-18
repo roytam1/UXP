@@ -30,7 +30,7 @@ interface IntersectionObserverEntry {
  Pref="dom.intersectionObserver.enabled"]
 interface IntersectionObserver {
   [Constant]
-  readonly attribute Element? root;
+  readonly attribute Node? root;
   [Constant]
   readonly attribute DOMString rootMargin;
   [Constant,Cached]
@@ -56,7 +56,7 @@ dictionary IntersectionObserverEntryInit {
 };
 
 dictionary IntersectionObserverInit {
-  Element?  root = null;
+  (Element or Document)?  root = null;
   DOMString rootMargin = "0px";
   (double or sequence<double>) threshold = 0;
 };

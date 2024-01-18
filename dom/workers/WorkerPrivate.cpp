@@ -1995,13 +1995,22 @@ struct WorkerPrivate::TimeoutInfo
     mNestingLevel = kClampTimeoutNestingLevel;
   }
 
-  void CalculateTargetTime() {
+  void CalculateTargetTime(JSContext* aCx) {
     auto target = mInterval;
+    int32_t minTimeoutValue;
+    
+    // We're on a worker thread; go through WorkerPrivate for the pref.
+    WorkerPrivate* workerPrivate = GetWorkerPrivateFromContext(aCx);
+    if (workerPrivate) {
+      minTimeoutValue = workerPrivate->DOMMinTimeoutValue();
+    } else {
+      // fall back to default 4 ms
+      minTimeoutValue = 4;
+    }
+      
     // Clamp timeout for workers, except chrome workers
     if (mNestingLevel >= kClampTimeoutNestingLevel && !mOnChromeWorker) {
-      target = TimeDuration::Max(
-          mInterval,
-          TimeDuration::FromMilliseconds(Preferences::GetInt("dom.min_timeout_value")));
+      target = TimeDuration::Max(mInterval,TimeDuration::FromMilliseconds(minTimeoutValue));
     }
     mTargetTime = TimeStamp::Now() + target;
   }
@@ -6387,7 +6396,7 @@ WorkerPrivate::RunExpiredTimeouts(JSContext* aCx)
         // Reschedule intervals.
         // Reschedule a timeout and, if needed, increase the nesting level.
         info->AccumulateNestingLevel(info->mNestingLevel);
-        info->CalculateTargetTime();
+        info->CalculateTargetTime(aCx);
         // Don't re-sort the list here, we'll do that at the end.
         ++index;
       }

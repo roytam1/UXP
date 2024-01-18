@@ -264,14 +264,16 @@ void
 HTMLTrackElement::DispatchLoadResource()
 {
   if (!mLoadResourceDispatched) {
-    RefPtr<Runnable> r = NewRunnableMethod(this, &HTMLTrackElement::LoadResource);
+    RefPtr<WebVTTListener> listener = new WebVTTListener(this);
+    RefPtr<Runnable> r = NewRunnableMethod<RefPtr<WebVTTListener>>(this,
+        &HTMLTrackElement::LoadResource, std::move(listener));
     nsContentUtils::RunInStableState(r.forget());
     mLoadResourceDispatched = true;
   }
 }
 
 void
-HTMLTrackElement::LoadResource()
+HTMLTrackElement::LoadResource(RefPtr<WebVTTListener>&& aWebVTTListener)
 {
   mLoadResourceDispatched = false;
 
@@ -317,33 +319,46 @@ HTMLTrackElement::LoadResource()
     }
   }
 
-  nsCOMPtr<nsIChannel> channel;
-  nsCOMPtr<nsILoadGroup> loadGroup = OwnerDoc()->GetDocumentLoadGroup();
-  rv = NS_NewChannel(getter_AddRefs(channel),
-                     uri,
-                     static_cast<Element*>(this),
-                     secFlags,
-                     nsIContentPolicy::TYPE_INTERNAL_TRACK,
-                     loadGroup,
-                     nullptr,   // aCallbacks
-                     nsIRequest::LOAD_NORMAL | nsIChannel::LOAD_CLASSIFY_URI);
-
-  NS_ENSURE_TRUE_VOID(NS_SUCCEEDED(rv));
-
-  mListener = new WebVTTListener(this);
+  mListener = std::move(aWebVTTListener);
+  // This will do 6. Set the text track readiness state to loading.
   rv = mListener->LoadResource();
   NS_ENSURE_TRUE_VOID(NS_SUCCEEDED(rv));
-  channel->SetNotificationCallbacks(mListener);
 
-  LOG(LogLevel::Debug, ("opening webvtt channel"));
-  rv = channel->AsyncOpen2(mListener);
-
-  if (NS_FAILED(rv)) {
-    SetReadyState(TextTrackReadyState::FailedToLoad);
+  nsIDocument* doc = OwnerDoc();
+  if (!doc) {
     return;
   }
 
-  mChannel = channel;
+  // 9. End the synchronous section, continuing the remaining steps in parallel.
+  NS_DispatchToMainThread(NS_NewRunnableFunction(
+      [ self = RefPtr<HTMLTrackElement>(this), uri, secFlags ]() {
+        if (!self->mListener) {
+          // Shutdown got called, abort.
+          return;
+        }
+        nsCOMPtr<nsIChannel> channel;
+        nsCOMPtr<nsILoadGroup> loadGroup = self->OwnerDoc()->GetDocumentLoadGroup();
+        nsresult rv = NS_NewChannel(getter_AddRefs(channel),
+                           uri,
+                           static_cast<Element*>(self),
+                           secFlags,
+                           nsIContentPolicy::TYPE_INTERNAL_TRACK,
+                           loadGroup,
+                           nullptr,   // aCallbacks
+                           nsIRequest::LOAD_NORMAL | nsIChannel::LOAD_CLASSIFY_URI);
+        NS_ENSURE_TRUE_VOID(NS_SUCCEEDED(rv));
+
+        channel->SetNotificationCallbacks(self->mListener);
+
+        LOG(LogLevel::Debug, ("opening webvtt channel"));
+        rv = channel->AsyncOpen2(self->mListener);
+
+        if (NS_FAILED(rv)) {
+          self->SetReadyState(TextTrackReadyState::FailedToLoad);
+          return;
+        }
+        self->mChannel = channel;
+      }));
 }
 
 nsresult

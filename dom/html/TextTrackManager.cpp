@@ -602,6 +602,17 @@ void
 TextTrackManager::TimeMarchesOn()
 {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
+  CycleCollectedJSContext* context = CycleCollectedJSContext::Get();
+  if (context && context->IsInStableOrMetaStableState()) {
+    // FireTimeUpdate can be called while at stable state following a
+    // current position change which triggered a state watcher in MediaDecoder
+    // (see bug 1443429).
+    // TimeMarchesOn() will modify JS attributes which is forbidden while in
+    // stable state. So we dispatch a task to perform such operation later
+    // instead.
+    DispatchTimeMarchesOn();
+    return;
+  }
   WEBVTT_LOG("TimeMarchesOn");
   mTimeMarchesOnDispatched = false;
 

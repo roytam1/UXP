@@ -1394,6 +1394,8 @@ CycleCollectedJSContext::ProcessStableStateQueue()
   MOZ_RELEASE_ASSERT(!mDoingStableStates);
   mDoingStableStates = true;
 
+  // When run, one event can add another event to the mStableStateEvents, as
+  // such you can't use iterators here.
   for (uint32_t i = 0; i < mStableStateEvents.Length(); ++i) {
     nsCOMPtr<nsIRunnable> event = mStableStateEvents[i].forget();
     event->Run();
@@ -1477,11 +1479,33 @@ CycleCollectedJSContext::AfterProcessMicrotasks()
   }
   // Cleanup Indexed Database transactions:
   // https://html.spec.whatwg.org/multipage/webappapis.html#perform-a-microtask-checkpoint
-  CleanupIDBTransactions(RecursionDepth());
+
+  // We should only ever get here from PerformMicroTaskCheckPoint after a task or other 
+  // checkpoint-able state, never from within ProcessStableStateQueue (mDoingStableStates==false).
+  // However, some buggy XUL addons may dispatch JS Events from runnables in the StableState queue,
+  // which then perform a checkpoint at their end, ending up here while ProcessStableStateQueue is
+  // on the stack.
+  // Specifically catch that here and add the call to CleanupIDBTransactions to the outer queue, to
+  // be performed when we know we're in a "regular" stable state again.
+  if (!mDoingStableStates) {
+    CleanupIDBTransactions(RecursionDepth());
+  } else {
+    // Don't need a RefPtr to this here as we know this->ProcessStableStateQueue is on the stack
+    nsCOMPtr<nsIRunnable> cleanupRunnable = NS_NewRunnableFunction(
+      [this, rec = RecursionDepth()] {
+        MOZ_ASSERT(mDoingStableStates);
+        // As this is called from ProcessStableStateQueue, mDoingStableStates == true.
+        // Switch the flag while CleanupIDBTransactions executes.
+        mDoingStableStates = false;
+        CleanupIDBTransactions(rec);
+        mDoingStableStates = true;
+      });
+    RunInStableState(cleanupRunnable.forget());
+  };
 }
 
 uint32_t
-CycleCollectedJSContext::RecursionDepth()
+CycleCollectedJSContext::RecursionDepth() const
 {
   return mOwningThread->RecursionDepth();
 }

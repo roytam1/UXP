@@ -80,7 +80,14 @@ DOMIntersectionObserver::Constructor(const mozilla::dom::GlobalObject& aGlobal,
   RefPtr<DOMIntersectionObserver> observer =
     new DOMIntersectionObserver(window.forget(), aCb);
 
-  observer->mRoot = aOptions.mRoot;
+  if (!aOptions.mRoot.IsNull()) {
+    if (aOptions.mRoot.Value().IsElement()) {
+      observer->mRoot = aOptions.mRoot.Value().GetAsElement();
+    } else {
+      MOZ_ASSERT(aOptions.mRoot.Value().IsDocument());
+      observer->mRoot = aOptions.mRoot.Value().GetAsDocument();
+    }
+  }
 
   if (!observer->SetRootMargin(aOptions.mRootMargin)) {
     aRv.ThrowDOMException(NS_ERROR_DOM_SYNTAX_ERR,
@@ -258,6 +265,30 @@ EdgeInclusiveIntersection(const nsRect& aRect, const nsRect& aOtherRect)
   return Some(nsRect(left, top, right - left, bottom - top));
 }
 
+// NOTE: This returns nullptr if |aDocument| is in a cross process.
+static nsIDocument* GetTopLevelDocument(const nsIDocument& aDocument) {
+  nsCOMPtr<nsIPresShell> presShell = aDocument.GetShell();
+
+  if (presShell) {
+    nsIFrame* rootFrame = presShell->GetRootScrollFrame();
+    if (rootFrame) {
+      nsPresContext* presContext = rootFrame->PresContext();
+      while (!presContext->IsRootContentDocument()) {
+        // Walk up the tree
+        presContext = presContext->GetParentPresContext();
+        if (!presContext) {
+          break;
+        }
+      }
+      if(presContext && presContext->IsRootContentDocument()) {
+          return presContext->Document();
+      }
+    }
+  }
+
+  return nullptr;
+}
+
 enum class BrowsingContextInfo {
   SimilarOriginBrowsingContext,
   DifferentOriginBrowsingContext,
@@ -267,14 +298,12 @@ enum class BrowsingContextInfo {
 void
 DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time)
 {
-  Element* root = nullptr;
+  nsINode* root = mRoot;
   nsIFrame* rootFrame = nullptr;
   nsRect rootRect;
 
-  if (mRoot) {
-    root = mRoot;
-    rootFrame = root->GetPrimaryFrame();
-    if (rootFrame) {
+  if (mRoot && mRoot->IsElement()) {
+    if ((rootFrame = mRoot->AsElement()->GetPrimaryFrame())) {
       nsRect rootRectRelativeToRootFrame;
       if (rootFrame->GetType() == nsGkAtoms::scrollFrame) {
         // rootRectRelativeToRootFrame should be the content rect of rootFrame, not including the scrollbars.
@@ -292,30 +321,18 @@ DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time
                                                     containingBlock);
     }
   } else {
-    nsCOMPtr<nsIPresShell> presShell = aDocument->GetShell();
-    if (presShell) {
-      rootFrame = presShell->GetRootScrollFrame();
-      if (rootFrame) {
-        nsPresContext* presContext = rootFrame->PresContext();
-        while (!presContext->IsRootContentDocument()) {
-          // Walk up the tree
-          presContext = presContext->GetParentPresContext();
-          if (!presContext) {
-            break;
+    MOZ_ASSERT(!mRoot || mRoot->IsInUncomposedDoc());
+    nsIDocument* rootDocument =
+        mRoot ? mRoot->GetUncomposedDoc() : GetTopLevelDocument(*aDocument);
+    if (rootDocument) {
+      if (nsIPresShell* presShell = rootDocument->GetShell()) {
+        rootFrame = presShell->GetRootScrollFrame();
+        if (rootFrame) {
+          root = rootFrame->GetContent()->AsElement();
+          nsIScrollableFrame* scrollFrame = do_QueryFrame(rootFrame);
+          if (scrollFrame) {
+            rootRect = scrollFrame->GetScrollPortRect();
           }
-          nsIFrame* rootScrollFrame = presContext->PresShell()->GetRootScrollFrame();
-          if (rootScrollFrame) {
-            rootFrame = rootScrollFrame;
-          } else {
-            break;
-          }
-        }
-        root = rootFrame->GetContent()->AsElement();
-        nsIScrollableFrame* scrollFrame = do_QueryFrame(rootFrame);
-        // If we end up with a null root frame for some reason, we'll proceed
-        // with an empty root intersection rect.
-        if (scrollFrame) {
-          rootRect = scrollFrame->GetScrollPortRect();
         }
       }
     }

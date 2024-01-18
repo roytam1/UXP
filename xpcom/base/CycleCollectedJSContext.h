@@ -357,7 +357,7 @@ public:
   virtual void BeforeProcessTask(bool aMightBlock);
   virtual void AfterProcessTask(uint32_t aRecursionDepth);
 
-  uint32_t RecursionDepth();
+  uint32_t RecursionDepth() const;
 
   // Run in stable state (call through nsContentUtils)
   void RunInStableState(already_AddRefed<nsIRunnable>&& aRunnable);
@@ -397,12 +397,12 @@ public:
     }
   }
 
-  bool IsInMicroTask()
+  bool IsInMicroTask() const
   {
     return mMicroTaskLevel != 0;
   }
 
-  uint32_t MicroTaskLevel()
+  uint32_t MicroTaskLevel() const
   {
     return mMicroTaskLevel;
   }
@@ -415,6 +415,11 @@ public:
   bool PerformMicroTaskCheckPoint();
 
   void PerformDebuggerMicroTaskCheckpoint();
+
+  bool IsInStableOrMetaStableState() const
+  {
+    return mDoingStableStates;
+  }
 
   // Storage for watching rejected promises waiting for some client to
   // consume their rejection.

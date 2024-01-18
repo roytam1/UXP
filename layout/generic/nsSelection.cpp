@@ -10,6 +10,7 @@
 #include "mozilla/dom/Selection.h"
 
 #include "mozilla/Attributes.h"
+#include "mozilla/AutoRestore.h"
 #include "mozilla/EventStates.h"
 
 #include "nsCOMPtr.h"
@@ -84,6 +85,7 @@ static NS_DEFINE_CID(kFrameTraversalCID, NS_FRAMETRAVERSAL_CID);
 #include "nsIEditor.h"
 #include "nsIHTMLEditor.h"
 #include "nsFocusManager.h"
+#include "nsPIDOMWindow.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -1199,7 +1201,7 @@ Selection::ToString(nsAString& aReturn)
     aReturn.Truncate();
     return NS_OK;
   }
-  shell->FlushPendingNotifications(Flush_Style);
+  shell->FlushPendingNotifications(Flush_Frames);
 
   return ToStringWithFormat("text/plain",
                             nsIDocumentEncoder::SkipInvisibleContent,
@@ -1876,6 +1878,7 @@ printf(" * TakeFocus - moving into new cell\n");
   // Don't notify selection listeners if batching is on:
   if (GetBatching())
     return NS_OK;
+  // Be aware, the Selection instance may be destroyed after this call.
   return NotifySelectionListeners(SelectionType::eNormal);
 }
 
@@ -1916,6 +1919,7 @@ nsFrameSelection::SetDragState(bool aState)
     mDragSelectingCells = false;
     // Notify that reason is mouse up.
     PostReason(nsISelectionListener::MOUSEUP_REASON);
+    // Be aware, the Selection instance may be destroyed after this call.
     NotifySelectionListeners(SelectionType::eNormal);
   }
 }
@@ -2410,6 +2414,7 @@ nsFrameSelection::EndBatchChanges(int16_t aReason)
     int16_t postReason = PopReason() | aReason;
     PostReason(postReason);
     mChangesDuringBatching = false;
+    // Be aware, the Selection instance may be destroyed after this call.
     NotifySelectionListeners(SelectionType::eNormal);
   }
 }
@@ -2421,7 +2426,8 @@ nsFrameSelection::NotifySelectionListeners(SelectionType aSelectionType)
   int8_t index = GetIndexFromSelectionType(aSelectionType);
   if (index >=0 && mDomSelections[index])
   {
-    return mDomSelections[index]->NotifySelectionListeners();
+    RefPtr<Selection> selection = mDomSelections[index];
+    return selection->NotifySelectionListeners();
   }
   return NS_ERROR_FAILURE;
 }
@@ -3473,6 +3479,7 @@ Selection::Selection()
   , mDirection(eDirNext)
   , mSelectionType(SelectionType::eNormal)
   , mUserInitiated(false)
+  , mCalledByJS(false)
   , mSelectionChangeBlockerCount(0)
 {
 }
@@ -3483,6 +3490,7 @@ Selection::Selection(nsFrameSelection* aList)
   , mDirection(eDirNext)
   , mSelectionType(SelectionType::eNormal)
   , mUserInitiated(false)
+  , mCalledByJS(false)
   , mSelectionChangeBlockerCount(0)
 {
 }
@@ -4943,7 +4951,10 @@ Selection::RemoveAllRanges(ErrorResult& aRv)
   RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
   frameSelection->ClearTableCellSelection();
 
+  // Be aware, this instance may be destroyed after this call.
+  // XXX Why doesn't this call Selection::NotifySelectionListener() directly?
   result = frameSelection->NotifySelectionListeners(GetType());
+
   // Also need to notify the frames!
   // PresShell::CharacterDataChanged should do that on DocumentChanged
   if (NS_FAILED(result)) {
@@ -4964,6 +4975,14 @@ Selection::AddRange(nsIDOMRange* aDOMRange)
   ErrorResult result;
   AddRange(*range, result);
   return result.StealNSResult();
+}
+
+void
+Selection::AddRangeJS(nsRange& aRange, ErrorResult& aRv)
+{
+  AutoRestore<bool> calledFromJSRestorer(mCalledByJS);
+  mCalledByJS = true;
+  AddRange(aRange, aRv);
 }
 
 void
@@ -5020,6 +5039,8 @@ Selection::AddRangeInternal(nsRange& aRange, nsIDocument* aDocument,
   if (!mFrameSelection)
     return;//nothing to do
 
+  // Be aware, this instance may be destroyed after this call.
+  // XXX Why doesn't this call Selection::NotifySelectionListener() directly?
   RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
   result = frameSelection->NotifySelectionListeners(GetType());
   if (NS_FAILED(result)) {
@@ -5115,6 +5136,9 @@ Selection::RemoveRange(nsRange& aRange, ErrorResult& aRv)
 
   if (!mFrameSelection)
     return;//nothing to do
+
+  // Be aware, this instance may be destroyed after this call.
+  // XXX Why doesn't this call Selection::NotifySelectionListener() directly?
   RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
   rv = frameSelection->NotifySelectionListeners(GetType());
   if (NS_FAILED(rv)) {
@@ -5138,6 +5162,14 @@ NS_IMETHODIMP
 Selection::CollapseNative(nsINode* aParentNode, int32_t aOffset)
 {
   return Collapse(aParentNode, aOffset);
+}
+
+void
+Selection::CollapseJS(nsINode& aNode, uint32_t aOffset, ErrorResult& aRv)
+{
+  AutoRestore<bool> calledFromJSRestorer(mCalledByJS);
+  mCalledByJS = true;
+  Collapse(aNode, aOffset, aRv);
 }
 
 nsresult
@@ -5222,6 +5254,9 @@ Selection::Collapse(nsINode& aParentNode, uint32_t aOffset, ErrorResult& aRv)
   }
   setAnchorFocusRange(0);
   selectFrames(presContext, range, true);
+
+  // Be aware, this instance may be destroyed after this call.
+  // XXX Why doesn't this call Selection::NotifySelectionListener() directly?
   result = frameSelection->NotifySelectionListeners(GetType());
   if (NS_FAILED(result)) {
     aRv.Throw(result);
@@ -5238,6 +5273,14 @@ Selection::CollapseToStart()
   ErrorResult result;
   CollapseToStart(result);
   return result.StealNSResult();
+}
+
+void
+Selection::CollapseToStartJS(ErrorResult& aRv)
+{
+  AutoRestore<bool> calledFromJSRestorer(mCalledByJS);
+  mCalledByJS = true;
+  CollapseToStart(aRv);
 }
 
 void
@@ -5279,6 +5322,14 @@ Selection::CollapseToEnd()
   ErrorResult result;
   CollapseToEnd(result);
   return result.StealNSResult();
+}
+
+void
+Selection::CollapseToEndJS(ErrorResult& aRv)
+{
+  AutoRestore<bool> calledFromJSRestorer(mCalledByJS);
+  mCalledByJS = true;
+  CollapseToEnd(aRv);
 }
 
 void
@@ -5493,6 +5544,14 @@ NS_IMETHODIMP
 Selection::ExtendNative(nsINode* aParentNode, int32_t aOffset)
 {
   return Extend(aParentNode, aOffset);
+}
+
+void
+Selection::ExtendJS(nsINode& aNode, uint32_t aOffset, ErrorResult& aRv)
+{
+  AutoRestore<bool> calledFromJSRestorer(mCalledByJS);
+  mCalledByJS = true;
+  Extend(aNode, aOffset, aRv);
 }
 
 nsresult
@@ -5773,6 +5832,9 @@ Selection::Extend(nsINode& aParentNode, uint32_t aOffset, ErrorResult& aRv)
   printf ("Sel. Extend to %p %s %d\n", content.get(),
           nsAtomCString(content->NodeInfo()->NameAtom()).get(), aOffset);
 #endif
+
+  // Be aware, this instance may be destroyed after this call.
+  // XXX Why doesn't this call Selection::NotifySelectionListener() directly?
   RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
   res = frameSelection->NotifySelectionListeners(GetType());
   if (NS_FAILED(res)) {
@@ -5788,6 +5850,14 @@ Selection::SelectAllChildren(nsIDOMNode* aParentNode)
   NS_ENSURE_TRUE(node, NS_ERROR_INVALID_ARG);
   SelectAllChildren(*node, result);
   return result.StealNSResult();
+}
+
+void
+Selection::SelectAllChildrenJS(nsINode& aNode, ErrorResult& aRv)
+{
+  AutoRestore<bool> calledFromJSRestorer(mCalledByJS);
+  mCalledByJS = true;
+  SelectAllChildren(aNode, aRv);
 }
 
 void
@@ -5936,6 +6006,30 @@ Selection::GetPresShell() const
     return nullptr;//nothing to do
 
   return mFrameSelection->GetShell();
+}
+
+nsIDocument*
+Selection::GetDocument() const
+{
+  nsIPresShell* presShell = GetPresShell();
+  return presShell ? presShell->GetDocument() : nullptr;
+}
+
+nsPIDOMWindowOuter*
+Selection::GetWindow() const
+{
+  nsIDocument* document = GetDocument();
+  return document ? document->GetWindow() : nullptr;
+}
+
+nsIEditor*
+Selection::GetEditor() const
+{
+  nsPresContext* presContext = GetPresContext();
+  if (!presContext) {
+    return nullptr;
+  }
+  return nsContentUtils::GetHTMLEditor(presContext);
 }
 
 nsIFrame *
@@ -6239,11 +6333,100 @@ Selection::RemoveSelectionListener(nsISelectionListener* aListenerToRemove,
   }
 }
 
+Element*
+Selection::GetCommonEditingHostForAllRanges()
+{
+  Element* editingHost = nullptr;
+  for (RangeData& rangeData : mRanges) {
+    nsRange* range = rangeData.mRange;
+    MOZ_ASSERT(range);
+    nsINode* commonAncestorNode = range->GetCommonAncestor();
+    if (!commonAncestorNode || !commonAncestorNode->IsContent()) {
+      return nullptr;
+    }
+    nsIContent* commonAncestor = commonAncestorNode->AsContent();
+    Element* foundEditingHost = commonAncestor->GetEditingHost();
+    // Even when common ancestor is a non-editable element in a contenteditable
+    // element, we don't need to move focus to the contenteditable element
+    // because Chromium doesn't set focus to it.
+    if (!foundEditingHost) {
+      return nullptr;
+    }
+    if (!editingHost) {
+      editingHost = foundEditingHost;
+      continue;
+    }
+    if (editingHost == foundEditingHost) {
+      continue;
+    }
+    if (nsContentUtils::ContentIsDescendantOf(foundEditingHost, editingHost)) {
+      continue;
+    }
+    if (nsContentUtils::ContentIsDescendantOf(editingHost, foundEditingHost)) {
+      editingHost = foundEditingHost;
+      continue;
+    }
+    // editingHost and foundEditingHost are not a descendant of the other.
+    // So, there is no common editing host.
+    return nullptr;
+  }
+  return editingHost;
+}
+
+nsresult
+Selection::NotifySelectionListeners(bool aCalledByJS)
+{
+  AutoRestore<bool> calledFromJSRestorer(mCalledByJS);
+  mCalledByJS = aCalledByJS;
+  return NotifySelectionListeners();
+}
+
 nsresult
 Selection::NotifySelectionListeners()
 {
   if (!mFrameSelection)
     return NS_OK;//nothing to do
+
+  // Our internal code should not move focus with using this class while
+  // this moves focus nor from selection listeners.
+  AutoRestore<bool> calledByJSRestorer(mCalledByJS);
+  mCalledByJS = false;
+
+  // When normal selection is changed by Selection API, we need to move focus
+  // if common ancestor of all ranges are in an editing host. Note that we
+  // don't need to move focus *to* the other focusable node, because other
+  // browsers don't do this, either.
+  if (mSelectionType == SelectionType::eNormal &&
+      calledByJSRestorer.SavedValue()) {
+    nsPIDOMWindowOuter* window = GetWindow();
+    nsIDocument* document = GetDocument();
+    // If the document is in design mode or doesn't have contenteditable
+    // element, we don't need to move focus.
+    if (window && document && !document->HasFlag(NODE_IS_EDITABLE) &&
+        GetEditor()) {
+      RefPtr<Element> newEditingHost = GetCommonEditingHostForAllRanges();
+      nsFocusManager* fm = nsFocusManager::GetFocusManager();
+      nsCOMPtr<nsPIDOMWindowOuter> focusedWindow;
+      nsIContent* focusedContent =
+        fm->GetFocusedDescendant(window, false, getter_AddRefs(focusedWindow));
+      nsCOMPtr<Element> focusedElement = do_QueryInterface(focusedContent);
+      // When all selected ranges are in an editing host, it should take focus.
+      if (newEditingHost && newEditingHost != focusedElement) {
+        MOZ_ASSERT(!newEditingHost->IsInNativeAnonymousSubtree());
+        nsCOMPtr<nsIDOMElement> domElementToFocus =
+          do_QueryInterface(newEditingHost->AsDOMNode());
+        // Note that don't steal focus from focused window if the window
+        // doesn't have focus.  Additionally, when an element gets focus,
+        // we usually scroll to the element, but in this case we shouldn't
+        // do that because Blink&Gecko don't do this.
+        fm->SetFocus(domElementToFocus, nsIFocusManager::FLAG_NOSWITCHFRAME |
+                                        nsIFocusManager::FLAG_NOSCROLL);
+      }
+      // Otherwise, we shouldn't move focus since Blink&Gecko don't move
+      // focus; only the selection range is updated. This is a bit weird but
+      // it is what it is and we should act the same for parity.
+    }
+  }
 
   RefPtr<nsFrameSelection> frameSelection = mFrameSelection;
   if (frameSelection->GetBatching()) {
@@ -6452,6 +6635,19 @@ Selection::Modify(const nsAString& aAlter, const nsAString& aDirection,
       return;
     shell->CompleteMove(forward, extend);
   }
+}
+
+void
+Selection::SetBaseAndExtentJS(nsINode& aAnchorNode,
+                              uint32_t aAnchorOffset,
+                              nsINode& aFocusNode,
+                              uint32_t aFocusOffset,
+                              ErrorResult& aRv)
+{
+  AutoRestore<bool> calledFromJSRestorer(mCalledByJS);
+  mCalledByJS = true;
+  SetBaseAndExtent(aAnchorNode, aAnchorOffset,
+                   aFocusNode, aFocusOffset, aRv);
 }
 
 void
