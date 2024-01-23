@@ -255,14 +255,6 @@ ResponsiveUI.prototype = {
     yield this.connectToServer();
     this.userAgentInput.hidden = false;
 
-    // Hook to display promotional Developer Edition doorhanger.
-    // Only displayed once.
-    showDoorhanger({
-      window: this.mainWindow,
-      type: "deveditionpromo",
-      anchor: this.chromeDoc.querySelector("#content")
-    });
-
     // Notify that responsive mode is on.
     this._telemetry.toolOpened("responsive");
     ResponsiveUIManager.emit("on", { tab: this.tab });
