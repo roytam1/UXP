@@ -39,9 +39,8 @@ function ConverterObserver() {
 
 ConverterObserver.prototype = {
   initialize: function () {
-    // Only the DevEdition has this feature available by default.
     // Users need to manually flip 'devtools.jsonview.enabled' preference
-    // to have it available in other distributions.
+    // to have it available.
     if (this.isEnabled()) {
       this.register();
     }
