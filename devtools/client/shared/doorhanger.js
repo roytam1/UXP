@@ -12,40 +12,13 @@ const defer = require("devtools/shared/defer");
 const { getMostRecentBrowserWindow } = require("sdk/window/utils");
 
 const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-const DEV_EDITION_PROMO_URL = "chrome://devtools/content/framework/dev-edition-promo/dev-edition-promo.xul";
-const DEV_EDITION_PROMO_ENABLED_PREF = "devtools.devedition.promo.enabled";
-const DEV_EDITION_PROMO_SHOWN_PREF = "devtools.devedition.promo.shown";
-const DEV_EDITION_PROMO_URL_PREF = "devtools.devedition.promo.url";
 const LOCALE = Cc["@mozilla.org/chrome/chrome-registry;1"]
                .getService(Ci.nsIXULChromeRegistry)
                .getSelectedLocale("global");
 
-/**
- * Only show Dev Edition promo if it's enabled (beta channel),
- * if it has not been shown before, and it's a locale build
- * for `en-US`
- */
-function shouldDevEditionPromoShow() {
-  return Services.prefs.getBoolPref(DEV_EDITION_PROMO_ENABLED_PREF) &&
-         !Services.prefs.getBoolPref(DEV_EDITION_PROMO_SHOWN_PREF) &&
-         LOCALE === "en-US";
-}
-
 var TYPES = {
-  // The Developer Edition promo doorhanger, called by
-  // opening the toolbox, browser console, WebIDE, or responsive design mode
-  // in Beta releases. Only displayed once per profile.
-  deveditionpromo: {
-    predicate: shouldDevEditionPromoShow,
-    success: () => {
-      return Services.prefs.setBoolPref(DEV_EDITION_PROMO_SHOWN_PREF, true);
-    },
-    action: () => {
-      let url = Services.prefs.getCharPref(DEV_EDITION_PROMO_URL_PREF);
-      getGBrowser().selectedTab = getGBrowser().addTab(url);
-    },
-    url: DEV_EDITION_PROMO_URL
-  }
+  // We don't support any doorhanger types at the moment.
+  // This is vestigial from the FF dev edition promo.
 };
 
 var panelAttrs = {

@@ -165,6 +165,7 @@ this.PopupNotifications = function PopupNotifications(tabbrowser, panel, iconBox
   this.buttonDelay = Services.prefs.getIntPref(PREF_SECURITY_DELAY);
 
   this.panel.addEventListener("popuphidden", this, true);
+  this.panel.addEventListener("popuppositioned", this, true);
 
   this.window.addEventListener("activate", this, true);
   if (this.tabbrowser.tabContainer)
@@ -475,6 +476,7 @@ PopupNotifications.prototype = {
         this._onPopupHidden(aEvent);
         break;
       case "activate":
+      case "popuppositioned":
       case "TabSelect":
         let self = this;
         // setTimeout(..., 0) needed, otherwise openPopup from "activate" event
