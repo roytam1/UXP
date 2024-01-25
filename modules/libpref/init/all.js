@@ -1338,6 +1338,9 @@ pref("javascript.options.streams", true);
 pref("advanced.mailftp",                    false);
 pref("image.animation_mode",                "normal");
 
+// Same-origin policy for all URIs.
+pref("security.same_origin_policy.enabled", true);
+
 // Same-origin policy for file URIs, "false" is traditional
 pref("security.fileuri.strict_origin_policy", true);
 

@@ -152,6 +152,7 @@ private:
     }
 
     static bool sStrictFileOriginPolicy;
+    static bool sSameOriginPolicy;
 
     static nsIIOService    *sIOService;
     static nsIStringBundle *sStrBundle;
