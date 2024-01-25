@@ -658,8 +658,11 @@ nsSiteSecurityService::IsSecureHost(uint32_t aType, const char* aHost,
           *aCached = true;
         }
         if (siteState.mHSTSState == SecurityPropertySet) {
-          *aResult = siteState.mHSTSIncludeSubdomains;
-          break;
+          // We do not break here, and continue to walk up the domain in case
+          // any parent domain has HSTS set with included subdomains in which
+          // case it will take precedence. See RFC 6797.
+          // We latch the result with an or-assignment.
+          *aResult |= siteState.mHSTSIncludeSubdomains;
         } else if (siteState.mHSTSState == SecurityPropertyNegative) {
           *aResult = false;
           break;
@@ -675,7 +678,6 @@ nsSiteSecurityService::IsSecureHost(uint32_t aType, const char* aHost,
     SSSLOG(("no HSTS data for %s found, walking up domain", subdomain));
   }
 
-  // Use whatever we ended up with, which defaults to false.
   return NS_OK;
 }
 
