@@ -230,7 +230,7 @@ nsHtml5TreeBuilder::createElement(int32_t aNamespace,
                 mSpeculativeLoadQueue.AppendElement()->InitPreconnect(
                   url, crossOrigin);
               }
-            } else if (rel.LowerCaseEqualsASCII("preload")) {
+            } else if (rel.LowerCaseEqualsASCII("preload") && nsContentUtils::IsPreloadEnabled()) {
               nsHtml5String url =
                 aAttributes->getValue(nsHtml5AttributeName::ATTR_HREF);
               if (url) {
