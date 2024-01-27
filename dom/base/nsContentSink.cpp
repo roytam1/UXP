@@ -48,6 +48,7 @@
 #include "nsIObserverService.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/dom/ScriptLoader.h"
+#include "mozilla/dom/Link.h"
 #include "nsParserConstants.h"
 #include "nsSandboxFlags.h"
 
@@ -724,18 +725,21 @@ nsContentSink::ProcessLink(const nsSubstring& aAnchor, const nsSubstring& aHref,
     return NS_OK;
   }
 
-  bool hasPrefetch = linkTypes & nsStyleLinkElement::ePREFETCH;
   // prefetch href if relation is "next" or "prefetch"
-  if (hasPrefetch || (linkTypes & nsStyleLinkElement::eNEXT)) {
-    PrefetchHref(aHref, mDocument, hasPrefetch);
+  if ((linkTypes & nsStyleLinkElement::eNEXT) ||
+      (linkTypes & nsStyleLinkElement::ePREFETCH) ||
+      (linkTypes & nsStyleLinkElement::ePRELOAD)) {
+    PrefetchOrPreloadHref(aHref, mDocument, linkTypes, aDestination, aType, aMedia);
   }
 
-  if (!aHref.IsEmpty() && (linkTypes & nsStyleLinkElement::eDNS_PREFETCH)) {
-    PrefetchDNS(aHref);
-  }
+  if (!aHref.IsEmpty()) {
+    if (linkTypes & nsStyleLinkElement::eDNS_PREFETCH) {
+      PrefetchDNS(aHref);
+    }
 
-  if (!aHref.IsEmpty() && (linkTypes & nsStyleLinkElement::ePRECONNECT)) {
-    Preconnect(aHref, aCrossOrigin);
+    if (linkTypes & nsStyleLinkElement::ePRECONNECT) {
+      Preconnect(aHref, aCrossOrigin);
+    }
   }
 
   // is it a stylesheet link?
@@ -855,9 +859,12 @@ nsContentSink::ProcessMETATag(nsIContent* aContent)
 
 
 void
-nsContentSink::PrefetchHref(const nsAString &aHref,
-                            nsINode *aSource,
-                            bool aExplicit)
+nsContentSink::PrefetchOrPreloadHref(const nsAString &aHref,
+                                     nsINode *aSource,
+                                     uint32_t aLinkTypes,
+                                     const nsAString& aDestination,
+                                     const nsAString& aType,
+                                     const nsAString& aMedia)
 {
   nsCOMPtr<nsIPrefetchService> prefetchService(do_GetService(NS_PREFETCHSERVICE_CONTRACTID));
   if (prefetchService) {
@@ -869,7 +876,25 @@ nsContentSink::PrefetchHref(const nsAString &aHref,
               mDocument->GetDocBaseURI());
     if (uri) {
       nsCOMPtr<nsIDOMNode> domNode = do_QueryInterface(aSource);
-      prefetchService->PrefetchURI(uri, mDocumentURI, domNode, aExplicit);
+      if (aLinkTypes & nsStyleLinkElement::ePRELOAD) {
+        nsContentPolicyType policyType;
+        bool isPreloadValid = Link::CheckPreloadAttrs(policyType,
+                                                      aDestination,
+                                                      aType,
+                                                      aMedia,
+                                                      mDocument);
+        if (!isPreloadValid) {
+          // XXX: WPTs expect that we timeout on invalid preloads including
+          // those with valid destinations instead of firing an error event.
+          return;
+        }
+        nsContentUtils::DispatchEventForPreloadURI(domNode, policyType);
+      } else {
+        prefetchService->PrefetchURI(uri,
+                                     mDocumentURI,
+                                     domNode,
+                                     aLinkTypes & nsStyleLinkElement::ePREFETCH);
+      }
     }
   }
 }
