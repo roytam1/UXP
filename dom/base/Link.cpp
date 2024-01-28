@@ -15,6 +15,7 @@
 #include "nsCPrefetchService.h"
 #include "nsStyleLinkElement.h"
 
+#include "nsAttrValueInlines.h"
 #include "nsEscape.h"
 #include "nsGkAtoms.h"
 #include "nsHTMLDNSPrefetch.h"
