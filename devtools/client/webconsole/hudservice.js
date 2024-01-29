@@ -675,7 +675,6 @@ BrowserConsole.prototype = extend(WebConsole.prototype, {
     // instance.
     let onClose = () => {
       window.removeEventListener("unload", onClose);
-      window.removeEventListener("focus", onFocus);
       this.destroy();
     };
     window.addEventListener("unload", onClose);

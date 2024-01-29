@@ -1178,6 +1178,16 @@ public:
   static void MaybeFireNodeRemoved(nsINode* aChild, nsINode* aParent,
                                    nsIDocument* aOwnerDoc);
 
+
+  /**
+   * This method creates and dispatches either a "load" or "error" event
+   * to the provided node (a preload link).
+   * @param aNode          The node to fire the event at.
+   * @param aPolicyType    The resulting content policy from the preload.
+   */
+  static void DispatchEventForPreloadURI(nsIDOMNode* aNode,
+                                         nsContentPolicyType& aPolicyType);
+
   /**
    * This method creates and dispatches a trusted event.
    * Works only with events which can be created by calling
@@ -2140,6 +2150,11 @@ public:
   }
 
   /**
+   * Returns true if the preload service is enabled.
+   */
+  static bool IsPreloadEnabled();
+
+  /**
    * Return true if this doc is controlled by a ServiceWorker.
    */
   static bool IsControlledByServiceWorker(nsIDocument* aDocument);
@@ -2382,6 +2397,10 @@ public:
   static JSVersion ParseJavascriptVersion(const nsAString& aVersionStr);
 
   static bool IsJavascriptMIMEType(const nsAString& aMIMEType);
+
+  static bool IsJSONMIMEType(const nsAString& aMIMEType);
+
+  static bool IsFontMIMEType(const nsAString& aMIMEType);
 
   static void SplitMimeType(const nsAString& aValue, nsString& aType,
                             nsString& aParams);
@@ -2955,6 +2974,7 @@ private:
   static bool sPrivacyResistFingerprinting;
   static bool sSendPerformanceTimingNotifications;
   static bool sUseActivityCursor;
+  static bool sPreloadEnabled;
   static uint32_t sCookiesLifetimePolicy;
   static uint32_t sCookiesBehavior;
 
