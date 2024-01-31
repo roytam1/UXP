@@ -1908,6 +1908,9 @@ pref("network.ftp.idleConnectionTimeout", 300);
 // all other values are treated like 2
 pref("network.dir.format", 2);
 
+// enables the preload service (i.e., preloading of <link rel="preload"> URLs).
+pref("network.preload", true);
+
 // enables the prefetch service (i.e., prefetching of <link rel="next"> URLs).
 pref("network.prefetch-next", true);
 

@@ -655,6 +655,7 @@ class nsHtml5AttributeName
     static nsHtml5AttributeName* ATTR_ONDRAGLEAVE;
     static nsHtml5AttributeName* ATTR_STARTOFFSET;
     static nsHtml5AttributeName* ATTR_START;
+    static nsHtml5AttributeName* ATTR_AS;
     static nsHtml5AttributeName* ATTR_AXIS;
     static nsHtml5AttributeName* ATTR_BIAS;
     static nsHtml5AttributeName* ATTR_COLSPAN;

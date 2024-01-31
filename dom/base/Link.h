@@ -116,8 +116,25 @@ public:
                          nsWrapperCache::FlagsType aRequestedFlag);
 
   // This is called by HTMLLinkElement.
-  void TryDNSPrefetchPreconnectOrPrefetch();
+  void TrySpeculativeLoadFeature();
+  void UpdatePreload(nsIAtom* aName,
+                     const nsAttrValue* aValue,
+                     const nsAttrValue* aOldValue);
   void CancelPrefetch();
+
+  static void ParseDestinationValue(const nsAString& aValue, nsAttrValue& aResult);
+  static bool CheckPreloadAttrs(nsContentPolicyType& aPolicyType,
+                                Element* aElement);
+  static bool CheckPreloadAttrs(nsContentPolicyType& aPolicyType,
+                                nsIAtom* aName,
+                                const nsAString& aValue,
+                                Element* aElement);
+  static bool CheckPreloadAttrs(nsContentPolicyType& aPolicyType,
+                                const nsAString& aAs,
+                                const nsAString& aType,
+                                const nsAString& aMedia,
+                                nsIDocument* aDocument);
+  static nsContentPolicyType DestinationToContentPolicy(const nsAttrValue& aValue);
 
 protected:
   virtual ~Link();

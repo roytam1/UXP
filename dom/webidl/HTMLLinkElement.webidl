@@ -59,3 +59,9 @@ partial interface HTMLLinkElement {
   [CEReactions, SetterThrows]
   attribute DOMString integrity;
 };
+
+//https://w3c.github.io/preload/
+partial interface HTMLLinkElement {
+  [SetterThrows, Pure]
+  attribute DOMString as;
+};

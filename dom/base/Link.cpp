@@ -15,6 +15,7 @@
 #include "nsCPrefetchService.h"
 #include "nsStyleLinkElement.h"
 
+#include "nsAttrValueInlines.h"
 #include "nsEscape.h"
 #include "nsGkAtoms.h"
 #include "nsHTMLDNSPrefetch.h"
@@ -23,8 +24,56 @@
 
 #include "mozilla/Services.h"
 
+#include "nsIContentPolicy.h"
+#include "nsCSSParser.h"
+#include "nsMimeTypes.h"
+#include "nsIMediaList.h"
+#include "DecoderTraits.h"
+#include "imgLoader.h"
+
 namespace mozilla {
 namespace dom {
+
+enum Destination : uint8_t
+{
+  DESTINATION_INVALID,
+  DESTINATION_AUDIO,
+  DESTINATION_AUDIOWORKLET,
+  DESTINATION_DOCUMENT,
+  DESTINATION_EMBED,
+  DESTINATION_FONT,
+  DESTINATION_FRAME,
+  DESTINATION_IFRAME,
+  DESTINATION_IMAGE,
+  DESTINATION_JSON,
+  DESTINATION_MANIFEST,
+  DESTINATION_OBJECT,
+  DESTINATION_REPORT,
+  DESTINATION_SCRIPT,
+  DESTINATION_SERVICEWORKER,
+  DESTINATION_SHAREDWORKER,
+  DESTINATION_STYLE,
+  DESTINATION_TRACK,
+  DESTINATION_VIDEO,
+  DESTINATION_WEBIDENTITY,
+  DESTINATION_WORKER,
+  DESTINATION_XSLT,
+  DESTINATION_FETCH
+};
+
+static const nsAttrValue::EnumTable kDestinationAttributeTable[] = {
+  { "",              DESTINATION_INVALID       },
+  { "audio",         DESTINATION_AUDIO         },
+  { "font",          DESTINATION_FONT          },
+  { "image",         DESTINATION_IMAGE         },
+  { "script",        DESTINATION_SCRIPT        },
+  { "style",         DESTINATION_STYLE         },
+  { "track",         DESTINATION_TRACK         },
+  { "video",         DESTINATION_VIDEO         },
+  { "fetch",         DESTINATION_FETCH         },
+  { "json",          DESTINATION_JSON          },
+  { nullptr,         0 }
+};
 
 Link::Link(Element *aElement)
   : mElement(aElement)
@@ -75,7 +124,7 @@ Link::CancelDNSPrefetch(nsWrapperCache::FlagsType aDeferredFlag,
 }
 
 void
-Link::TryDNSPrefetchPreconnectOrPrefetch()
+Link::TrySpeculativeLoadFeature()
 {
   MOZ_ASSERT(mElement->IsInComposedDoc());
   if (!ElementHasHref()) {
@@ -95,15 +144,28 @@ Link::TryDNSPrefetchPreconnectOrPrefetch()
                          mElement->NodePrincipal());
 
   if ((linkTypes & nsStyleLinkElement::ePREFETCH) ||
-      (linkTypes & nsStyleLinkElement::eNEXT)){
+      (linkTypes & nsStyleLinkElement::eNEXT) ||
+      (linkTypes & nsStyleLinkElement::ePRELOAD)) {
     nsCOMPtr<nsIPrefetchService> prefetchService(do_GetService(NS_PREFETCHSERVICE_CONTRACTID));
     if (prefetchService) {
       nsCOMPtr<nsIURI> uri(GetURI());
       if (uri) {
         nsCOMPtr<nsIDOMNode> domNode = GetAsDOMNode(mElement);
-        prefetchService->PrefetchURI(uri,
-                                     mElement->OwnerDoc()->GetDocumentURI(),
-                                     domNode, linkTypes & nsStyleLinkElement::ePREFETCH);
+        if (linkTypes & nsStyleLinkElement::ePRELOAD) {
+          nsContentPolicyType policyType;
+          bool isPreloadValid = CheckPreloadAttrs(policyType, mElement);
+          if (!isPreloadValid) {
+            // XXX: WPTs expect that we timeout on invalid preloads including
+            // those with valid destinations instead of firing an error event.
+            return;
+          }
+          nsContentUtils::DispatchEventForPreloadURI(domNode, policyType);
+        } else {
+          prefetchService->PrefetchURI(uri,
+                                       mElement->OwnerDoc()->GetDocumentURI(),
+                                       domNode,
+                                       linkTypes & nsStyleLinkElement::ePREFETCH);
+        }
         return;
       }
     }
@@ -122,6 +184,95 @@ Link::TryDNSPrefetchPreconnectOrPrefetch()
     if (nsHTMLDNSPrefetch::IsAllowed(mElement->OwnerDoc())) {
       nsHTMLDNSPrefetch::PrefetchLow(this);
     }
+  }
+}
+
+void
+Link::UpdatePreload(nsIAtom* aName,
+                    const nsAttrValue* aValue,
+                    const nsAttrValue* aOldValue)
+{
+  MOZ_ASSERT(mElement->IsInComposedDoc());
+
+  if (!ElementHasHref()) {
+    return;
+  }
+
+  nsAutoString rel;
+  if (!mElement->GetAttr(kNameSpaceID_None, nsGkAtoms::rel, rel)) {
+    return;
+  }
+
+  if (!nsContentUtils::PrefetchEnabled(mElement->OwnerDoc()->GetDocShell()) ||
+      !nsContentUtils::IsPreloadEnabled()) {
+    return;
+  }
+
+  uint32_t linkTypes = nsStyleLinkElement::ParseLinkTypes(rel,
+                         mElement->NodePrincipal());
+
+  if (!(linkTypes & nsStyleLinkElement::ePRELOAD)) {
+    return;
+  }
+
+  nsCOMPtr<nsIURI> uri(GetURI());
+  if (!uri) {
+    return;
+  }
+
+  nsCOMPtr<nsIDOMNode> domNode = GetAsDOMNode(mElement);
+
+  nsContentPolicyType policyType;
+  bool isPreloadValid = CheckPreloadAttrs(policyType, mElement);
+  if (!isPreloadValid) {
+    // XXX: WPTs expect that we timeout on invalid preloads including
+    // those with valid destinations instead of firing an error event.
+    return;
+  }
+
+  if (aName == nsGkAtoms::crossorigin) {
+    CORSMode corsMode = Element::AttrValueToCORSMode(aValue);
+    CORSMode oldCorsMode = Element::AttrValueToCORSMode(aOldValue);
+    if (corsMode != oldCorsMode) {
+      nsContentUtils::DispatchEventForPreloadURI(domNode, policyType);
+    }
+    return;
+  }
+
+  nsAutoString oldValue;
+  if (aOldValue) {
+    aOldValue->ToString(oldValue);
+  } else {
+    oldValue = EmptyString();
+  }
+  nsContentPolicyType oldPolicyType = nsIContentPolicy::TYPE_INVALID;
+
+  if (aName == nsGkAtoms::as) {
+    if (aOldValue) {
+      CheckPreloadAttrs(oldPolicyType, aName, oldValue, mElement);
+    }
+  } else if (aName == nsGkAtoms::type) {
+    if (CheckPreloadAttrs(oldPolicyType, aName, oldValue, mElement)) {
+      oldPolicyType = policyType;
+    } else {
+      oldPolicyType = nsIContentPolicy::TYPE_INVALID;
+    }
+  } else if (aName == nsGkAtoms::media) {
+    if (CheckPreloadAttrs(oldPolicyType, aName, oldValue, mElement)) {
+      oldPolicyType = policyType;
+    } else {
+      oldPolicyType = nsIContentPolicy::TYPE_INVALID;
+    }
+  }
+
+  // Return early for invalid preloads since we shouldn't trigger a new fetch.
+  if (policyType == nsIContentPolicy::TYPE_INVALID) {
+    return;
+  }
+
+  // Fire the associated event if the policy type has changed.
+  if (policyType != oldPolicyType) {
+    nsContentUtils::DispatchEventForPreloadURI(domNode, policyType);
   }
 }
 
@@ -633,6 +784,156 @@ Link::SetHrefAttribute(nsIURI *aURI)
   (void)aURI->GetSpec(href);
   (void)mElement->SetAttr(kNameSpaceID_None, nsGkAtoms::href,
                           NS_ConvertUTF8toUTF16(href), true);
+}
+
+bool
+Link::CheckPreloadAttrs(nsContentPolicyType& aPolicyType,
+                        const nsAString& aDestination,
+                        const nsAString& aType,
+                        const nsAString& aMedia,
+                        nsIDocument* aDocument)
+{
+  nsString mimeType;
+  nsString params;
+  nsContentUtils::SplitMimeType(aType, mimeType, params);
+  ToLowerCase(mimeType);
+
+  nsAttrValue destinationAttr;
+  ParseDestinationValue(aDestination, destinationAttr);
+
+  aPolicyType = DestinationToContentPolicy(destinationAttr);
+  if (aPolicyType == nsIContentPolicy::TYPE_INVALID) {
+    return false;
+  }
+
+  // Check if media attribute is valid.
+  if (!aMedia.IsEmpty()) {
+    nsCSSParser cssParser;
+    RefPtr<nsMediaList> mediaList = new nsMediaList();
+    cssParser.ParseMediaList(aMedia, nullptr, 0, mediaList, false);
+
+    nsIPresShell* shell = aDocument->GetShell();
+    if (!shell) {
+      return false;
+    }
+
+    nsPresContext* presContext = shell->GetPresContext();
+    if (!presContext) {
+      return false;
+    }
+    if (!mediaList->Matches(presContext, nullptr)) {
+      return false;
+    }
+  }
+
+  if (mimeType.IsEmpty()) {
+    return true;
+  }
+
+  switch (aPolicyType) {
+  case nsIContentPolicy::TYPE_OTHER:
+    if (destinationAttr.GetEnumValue() == DESTINATION_JSON) {
+      return nsContentUtils::IsJSONMIMEType(mimeType);
+    }
+    return true;
+  case nsIContentPolicy::TYPE_MEDIA:
+    if (destinationAttr.GetEnumValue() == DESTINATION_TRACK) {
+      return mimeType.EqualsASCII(TEXT_VTT);
+    }
+    return DecoderTraits::IsSupportedInVideoDocument(NS_ConvertUTF16toUTF8(mimeType));
+  case nsIContentPolicy::TYPE_FONT:
+    return nsContentUtils::IsFontMIMEType(mimeType);
+  case nsIContentPolicy::TYPE_IMAGE:
+    return imgLoader::SupportImageWithMimeType(NS_ConvertUTF16toUTF8(mimeType).get(),
+                                               AcceptedMimeTypes::IMAGES_AND_DOCUMENTS);
+  case nsIContentPolicy::TYPE_SCRIPT:
+    return nsContentUtils::IsJavascriptMIMEType(mimeType);
+  case nsIContentPolicy::TYPE_STYLESHEET:
+    return mimeType.EqualsASCII(TEXT_CSS);
+  default:
+    return false;
+  }
+}
+
+bool
+Link::CheckPreloadAttrs(nsContentPolicyType& aPolicyType,
+                        nsIAtom* aName,
+                        const nsAString& aValue,
+                        Element* aElement)
+{
+  nsAutoString destination;
+  if (aName == nsGkAtoms::as) {
+    destination = aValue;
+  } else {
+    aElement->GetAttr(kNameSpaceID_None, nsGkAtoms::as, destination);
+  }
+
+  nsAutoString type;
+  if (aName == nsGkAtoms::type) {
+    type = aValue;
+  } else {
+    aElement->GetAttr(kNameSpaceID_None, nsGkAtoms::type, type);
+  }
+
+  nsAutoString media;
+  if (aName == nsGkAtoms::media) {
+    media = aValue;
+  } else {
+    aElement->GetAttr(kNameSpaceID_None, nsGkAtoms::media, media);
+  }
+
+  return CheckPreloadAttrs(aPolicyType,
+                           destination,
+                           type,
+                           media,
+                           aElement->OwnerDoc());
+}
+
+bool
+Link::CheckPreloadAttrs(nsContentPolicyType& aPolicyType,
+                        Element* aElement)
+{
+  nsAutoString unused;
+  return CheckPreloadAttrs(aPolicyType,
+                           nullptr,
+                           unused,
+                           aElement);
+}
+
+/* static */ void
+Link::ParseDestinationValue(const nsAString& aValue,
+                            nsAttrValue& aResult)
+{
+  // Invalid values are treated as an empty string.
+  aResult.ParseEnumValue(aValue,
+                         kDestinationAttributeTable,
+                         false,
+                         &kDestinationAttributeTable[0]);
+}
+
+/* static */ nsContentPolicyType
+Link::DestinationToContentPolicy(const nsAttrValue& aValue)
+{
+  switch (aValue.GetEnumValue()) {
+  case DESTINATION_AUDIO:
+  case DESTINATION_TRACK:
+  case DESTINATION_VIDEO:
+    return nsIContentPolicy::TYPE_MEDIA;
+  case DESTINATION_FONT:
+    return nsIContentPolicy::TYPE_FONT;
+  case DESTINATION_IMAGE:
+    return nsIContentPolicy::TYPE_IMAGE;
+  case DESTINATION_SCRIPT:
+    return nsIContentPolicy::TYPE_SCRIPT;
+  case DESTINATION_STYLE:
+    return nsIContentPolicy::TYPE_STYLESHEET;
+  case DESTINATION_JSON:
+  case DESTINATION_FETCH:
+    return nsIContentPolicy::TYPE_OTHER;
+  case DESTINATION_INVALID:
+  default:
+    return nsIContentPolicy::TYPE_INVALID;
+  }
 }
 
 size_t
