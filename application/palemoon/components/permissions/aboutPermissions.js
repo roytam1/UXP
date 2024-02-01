@@ -566,6 +566,11 @@ var AboutPermissions = {
         if ((mimeType == gFlash.type) && (plugin.name != gFlash.name)) {
           continue;
         }
+        // XXX: Guard against plug-ins that include an empty MIME type
+        // in their list of handled MIME types (e.g. latest Java SE 8 plug-in).
+        if (mimeType.length == 0) {
+          continue;
+        }
         let permString = pluginHost.getPermissionStringForType(mimeType);
         if (!permissionMap.has(permString)) {
           let permissionEntry = document.createElementNS(XUL_NS, "box");
