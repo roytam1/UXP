@@ -39,8 +39,6 @@ pref("@GUAO_PREF@.web.de","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @
 pref("@GUAO_PREF@.yahoo.com","Mozilla/5.0 (%OS_SLICE% rv:99.9) @GK_SLICE@ Firefox/99.9");
 pref("@GUAO_PREF@.calendar.yahoo.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Basilisk)");
 
-// For Amazon Prime videos
-pref("@GUAO_PREF@.www.amazon.com","Mozilla/5.0 (%OS_SLICE% rv:45.9) @GK_SLICE@ Firefox/45.9 (Basilisk)");
 // Soundcloud uses Firefox-exclusive combinations of code. Never pass Firefox slice.
 pref("@GUAO_PREF@.soundcloud.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
 pref("@GUAO_PREF@.players.brightcove.net","Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko");
