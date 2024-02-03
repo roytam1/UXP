@@ -774,7 +774,7 @@ nsStyleUtil::CSPAllowsInlineStyle(nsIContent* aContent,
   }
 
   bool allowInlineStyle = true;
-  rv = csp->GetAllowsInline(nsIContentPolicy::TYPE_STYLESHEET,
+  rv = csp->GetAllowsInline(nsIContentSecurityPolicy::STYLE_SRC_DIRECTIVE,
                             nonce,
                             false, // aParserCreated only applies to scripts
                             aStyleText, aLineNumber, aColumnNumber,

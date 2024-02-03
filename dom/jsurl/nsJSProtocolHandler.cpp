@@ -180,7 +180,7 @@ nsresult nsJSThunk::EvaluateScript(nsIChannel *aChannel,
     NS_ENSURE_SUCCESS(rv, rv);
     if (csp) {
         bool allowsInlineScript = true;
-        rv = csp->GetAllowsInline(nsIContentPolicy::TYPE_SCRIPT,
+        rv = csp->GetAllowsInline(nsIContentSecurityPolicy::SCRIPT_SRC_DIRECTIVE,
                                   EmptyString(), // aNonce
                                   true,         // aParserCreated
                                   EmptyString(), // aContent

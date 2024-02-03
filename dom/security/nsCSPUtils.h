@@ -483,8 +483,6 @@ class nsCSPDirective {
     virtual void addSrcs(const nsTArray<nsCSPBaseSrc*>& aSrcs)
       { mSrcs = aSrcs; }
 
-    virtual bool restrictsContentType(nsContentPolicyType aContentType) const;
-
     inline bool isDefaultDirective() const
      { return mDirective == nsIContentSecurityPolicy::DEFAULT_SRC_DIRECTIVE; }
 
@@ -520,8 +518,6 @@ class nsCSPChildSrcDirective : public nsCSPDirective {
     void setRestrictWorkers()
       { mRestrictWorkers = true; }
 
-    virtual bool restrictsContentType(nsContentPolicyType aContentType) const;
-
     virtual bool equals(CSPDirective aDirective) const;
 
   private:
@@ -543,8 +539,6 @@ class nsCSPScriptSrcDirective : public nsCSPDirective {
 
     void setRestrictWorkers()
       { mRestrictWorkers = true; }
-
-    virtual bool restrictsContentType(nsContentPolicyType aContentType) const;
 
     virtual bool equals(CSPDirective aDirective) const;
 
@@ -668,15 +662,10 @@ class nsCSPPolicy {
                  bool aSpecific,
                  bool aParserCreated,
                  nsAString& outViolatedDirective) const;
-    bool permits(CSPDirective aDir,
-                 nsIURI* aUri,
-                 bool aSpecific) const;
-    bool allows(nsContentPolicyType aContentType,
+    bool allows(CSPDirective aDirective,
                 enum CSPKeyword aKeyword,
                 const nsAString& aHashOrNonce,
                 bool aParserCreated) const;
-    bool allows(nsContentPolicyType aContentType,
-                enum CSPKeyword aKeyword) const;
     void toString(nsAString& outStr) const;
     void toDomCSPStruct(mozilla::dom::CSP& outCSP) const;
 
@@ -708,7 +697,7 @@ class nsCSPPolicy {
 
     void getReportURIs(nsTArray<nsString> &outReportURIs) const;
 
-    void getDirectiveStringForContentType(nsContentPolicyType aContentType,
+    void getDirectiveStringForContentType(CSPDirective aDirective,
                                           nsAString& outDirective) const;
 
     void getDirectiveAsString(CSPDirective aDir, nsAString& outDirective) const;

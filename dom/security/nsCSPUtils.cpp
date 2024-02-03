@@ -1225,16 +1225,6 @@ nsCSPDirective::toDomCSPStruct(mozilla::dom::CSP& outCSP) const
 }
 
 
-bool
-nsCSPDirective::restrictsContentType(nsContentPolicyType aContentType) const
-{
-  // make sure we do not check for the default src before any other sources
-  if (isDefaultDirective()) {
-    return false;
-  }
-  return mDirective == CSP_ContentTypeToDirective(aContentType);
-}
-
 void
 nsCSPDirective::getReportURIs(nsTArray<nsString> &outReportURIs) const
 {
@@ -1284,19 +1274,6 @@ nsCSPChildSrcDirective::~nsCSPChildSrcDirective()
 {
 }
 
-bool nsCSPChildSrcDirective::restrictsContentType(nsContentPolicyType aContentType) const
-{
-  if (aContentType == nsIContentPolicy::TYPE_SUBDOCUMENT) {
-    return mRestrictFrames;
-  }
-  if (aContentType == nsIContentPolicy::TYPE_INTERNAL_WORKER ||
-      aContentType == nsIContentPolicy::TYPE_INTERNAL_SHARED_WORKER ||
-      aContentType == nsIContentPolicy::TYPE_INTERNAL_SERVICE_WORKER) {
-    return mRestrictWorkers;
-  }
-  return false;
-}
-
 bool nsCSPChildSrcDirective::equals(CSPDirective aDirective) const
 {
   if (aDirective == nsIContentSecurityPolicy::FRAME_SRC_DIRECTIVE) {
@@ -1318,16 +1295,6 @@ nsCSPScriptSrcDirective::nsCSPScriptSrcDirective(CSPDirective aDirective)
 
 nsCSPScriptSrcDirective::~nsCSPScriptSrcDirective()
 {
-}
-
-bool nsCSPScriptSrcDirective::restrictsContentType(nsContentPolicyType aContentType) const
-{
-  if (aContentType == nsIContentPolicy::TYPE_INTERNAL_WORKER ||
-      aContentType == nsIContentPolicy::TYPE_INTERNAL_SHARED_WORKER ||
-      aContentType == nsIContentPolicy::TYPE_INTERNAL_SERVICE_WORKER) {
-    return mRestrictWorkers;
-  }
-  return mDirective == CSP_ContentTypeToDirective(aContentType);
 }
 
 bool nsCSPScriptSrcDirective::equals(CSPDirective aDirective) const
@@ -1467,15 +1434,6 @@ nsCSPPolicy::~nsCSPPolicy()
 bool
 nsCSPPolicy::permits(CSPDirective aDir,
                      nsIURI* aUri,
-                     bool aSpecific) const
-{
-  nsString outp;
-  return this->permits(aDir, aUri, EmptyString(), false, aSpecific, false, outp);
-}
-
-bool
-nsCSPPolicy::permits(CSPDirective aDir,
-                     nsIURI* aUri,
                      const nsAString& aNonce,
                      bool aWasRedirected,
                      bool aSpecific,
@@ -1526,7 +1484,7 @@ nsCSPPolicy::permits(CSPDirective aDir,
 }
 
 bool
-nsCSPPolicy::allows(nsContentPolicyType aContentType,
+nsCSPPolicy::allows(CSPDirective aDirective,
                     enum CSPKeyword aKeyword,
                     const nsAString& aHashOrNonce,
                     bool aParserCreated) const
@@ -1538,14 +1496,15 @@ nsCSPPolicy::allows(nsContentPolicyType aContentType,
 
   // Try to find a matching directive
   for (uint32_t i = 0; i < mDirectives.Length(); i++) {
-    if (mDirectives[i]->restrictsContentType(aContentType)) {
+    if (mDirectives[i]->isDefaultDirective()) {
+      defaultDir = mDirectives[i];
+      continue;
+    }
+    if (mDirectives[i]->equals(aDirective)) {
       if (mDirectives[i]->allows(aKeyword, aHashOrNonce, aParserCreated)) {
         return true;
       }
       return false;
-    }
-    if (mDirectives[i]->isDefaultDirective()) {
-      defaultDir = mDirectives[i];
     }
   }
 
@@ -1571,13 +1530,6 @@ nsCSPPolicy::allows(nsContentPolicyType aContentType,
   // b) inline styles should only be blocked
   //    if there is a [style-src] or [default-src]
   return true;
-}
-
-bool
-nsCSPPolicy::allows(nsContentPolicyType aContentType,
-                    enum CSPKeyword aKeyword) const
-{
-  return allows(aContentType, aKeyword, NS_LITERAL_STRING(""), false);
 }
 
 void
@@ -1634,17 +1586,18 @@ nsCSPPolicy::hasDirective(CSPDirective aDir) const
  * for the ::permits() function family.
  */
 void
-nsCSPPolicy::getDirectiveStringForContentType(nsContentPolicyType aContentType,
+nsCSPPolicy::getDirectiveStringForContentType(CSPDirective aDirective,
                                               nsAString& outDirective) const
 {
   nsCSPDirective* defaultDir = nullptr;
   for (uint32_t i = 0; i < mDirectives.Length(); i++) {
-    if (mDirectives[i]->restrictsContentType(aContentType)) {
-      mDirectives[i]->getDirName(outDirective);
-      return;
-    }
     if (mDirectives[i]->isDefaultDirective()) {
       defaultDir = mDirectives[i];
+      continue;
+    }
+    if (mDirectives[i]->equals(aDirective)) {
+      mDirectives[i]->getDirName(outDirective);
+      return;
     }
   }
   // if we haven't found a matching directive yet,

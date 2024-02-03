@@ -133,7 +133,7 @@ class nsCSPContext : public nsIContentSecurityPolicy
                          bool aParserCreated);
 
     // helper to report inline script/style violations
-    void reportInlineViolation(nsContentPolicyType aContentType,
+    void reportInlineViolation(CSPDirective aDirective,
                                const nsAString& aNonce,
                                const nsAString& aContent,
                                const nsAString& aViolatedDirective,
