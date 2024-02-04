@@ -224,7 +224,7 @@ CSP_ContentTypeToDirective(nsContentPolicyType aType)
       return nsIContentSecurityPolicy::SCRIPT_SRC_ELEM_DIRECTIVE;
 
     case nsIContentPolicy::TYPE_STYLESHEET:
-      return nsIContentSecurityPolicy::STYLE_SRC_DIRECTIVE;
+      return nsIContentSecurityPolicy::STYLE_SRC_ELEM_DIRECTIVE;
 
     case nsIContentPolicy::TYPE_FONT:
       return nsIContentSecurityPolicy::FONT_SRC_DIRECTIVE;
@@ -1313,12 +1313,9 @@ nsCSPScriptSrcDirective::nsCSPScriptSrcDirective(CSPDirective aDirective)
 {
 }
 
-nsCSPScriptSrcDirective::~nsCSPScriptSrcDirective()
-{
-}
+nsCSPScriptSrcDirective::~nsCSPScriptSrcDirective() = default;
 
-bool nsCSPScriptSrcDirective::equals(CSPDirective aDirective) const
-{
+bool nsCSPScriptSrcDirective::equals(CSPDirective aDirective) const {
   if (aDirective == nsIContentSecurityPolicy::WORKER_SRC_DIRECTIVE) {
     return mRestrictWorkers;
   }
@@ -1327,6 +1324,27 @@ bool nsCSPScriptSrcDirective::equals(CSPDirective aDirective) const
   }
   if (aDirective == nsIContentSecurityPolicy::SCRIPT_SRC_ATTR_DIRECTIVE) {
     return mRestrictScriptAttr;
+  }
+  return (mDirective == aDirective);
+}
+
+/* =============== nsCSPStyleSrcDirective ============= */
+
+nsCSPStyleSrcDirective::nsCSPStyleSrcDirective(CSPDirective aDirective)
+    : nsCSPDirective(aDirective)
+    , mRestrictStyleElem(false)
+    , mRestrictStyleAttr(false)
+{
+}
+
+nsCSPStyleSrcDirective::~nsCSPStyleSrcDirective() = default;
+
+bool nsCSPStyleSrcDirective::equals(CSPDirective aDirective) const {
+  if (aDirective == nsIContentSecurityPolicy::STYLE_SRC_ELEM_DIRECTIVE) {
+    return mRestrictStyleElem;
+  }
+  if (aDirective == nsIContentSecurityPolicy::STYLE_SRC_ATTR_DIRECTIVE) {
+    return mRestrictStyleAttr;
   }
   return (mDirective == aDirective);
 }

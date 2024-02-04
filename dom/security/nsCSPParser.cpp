@@ -115,6 +115,7 @@ nsCSPParser::nsCSPParser(cspTokens& aTokens,
  , mFrameSrc(nullptr)
  , mWorkerSrc(nullptr)
  , mScriptSrc(nullptr)
+ , mStyleSrc(nullptr)
  , mParsingFrameAncestorsDir(false)
  , mTokens(aTokens)
  , mSelfURI(aSelfURI)
@@ -1087,6 +1088,13 @@ nsCSPParser::directiveName()
     mScriptSrc = new nsCSPScriptSrcDirective(CSP_StringToCSPDirective(mCurToken));
     return mScriptSrc;
   }
+  
+  // If we have a style-src, cache it as a fallback for style-src-elem and
+  // style-src-attr.
+  if (CSP_IsDirective(mCurToken, nsIContentSecurityPolicy::STYLE_SRC_DIRECTIVE)) {
+    mStyleSrc = new nsCSPStyleSrcDirective(CSP_StringToCSPDirective(mCurToken));
+    return mStyleSrc;
+  }
 
   if (CSP_IsDirective(mCurToken, nsIContentSecurityPolicy::REQUIRE_SRI_FOR)) {
     return new nsRequireSRIForDirective(CSP_StringToCSPDirective(mCurToken));
@@ -1312,6 +1320,18 @@ nsCSPParser::policy()
   // script-src has to govern script attr (event handlers).
   if (mScriptSrc && !mPolicy->hasDirective(nsIContentSecurityPolicy::SCRIPT_SRC_ATTR_DIRECTIVE)) {
     mScriptSrc->setRestrictScriptAttr();
+  }
+
+  // If style-src is specified and style-src-elem is not specified, then
+  // style-src serves as a fallback.
+  if (mStyleSrc && !mPolicy->hasDirective(nsIContentSecurityPolicy::STYLE_SRC_ELEM_DIRECTIVE)) {
+    mStyleSrc->setRestrictStyleElem();
+  }
+
+  // If style-src is specified and style-src-attr is not specified, then
+  // style-src serves as a fallback.
+  if (mStyleSrc && !mPolicy->hasDirective(nsIContentSecurityPolicy::STYLE_SRC_ATTR_DIRECTIVE)) {
+    mStyleSrc->setRestrictStyleAttr();
   }
 
   return mPolicy;

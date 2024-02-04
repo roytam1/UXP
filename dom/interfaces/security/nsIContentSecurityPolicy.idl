@@ -62,6 +62,8 @@ interface nsIContentSecurityPolicy : nsISerializable
   const unsigned short WORKER_SRC_DIRECTIVE           = 22;
   const unsigned short SCRIPT_SRC_ELEM_DIRECTIVE      = 23;
   const unsigned short SCRIPT_SRC_ATTR_DIRECTIVE      = 24;
+  const unsigned short STYLE_SRC_ELEM_DIRECTIVE       = 25;
+  const unsigned short STYLE_SRC_ATTR_DIRECTIVE       = 26;
 
   /**
    * Accessor method for a read-only string version of the policy at a given

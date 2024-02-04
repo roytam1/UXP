@@ -255,6 +255,7 @@ class nsCSPParser {
     nsCSPDirective*          mFrameSrc;
     nsCSPDirective*          mWorkerSrc;
     nsCSPScriptSrcDirective* mScriptSrc;
+    nsCSPStyleSrcDirective*  mStyleSrc;
 
     // cache variable to let nsCSPHostSrc know that it's within
     // the frame-ancestors directive.

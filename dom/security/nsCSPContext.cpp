@@ -569,9 +569,9 @@ nsCSPContext::GetAllowsInline(CSPDirective aDirective,
 
   if (aDirective != SCRIPT_SRC_ELEM_DIRECTIVE &&
       aDirective != SCRIPT_SRC_ATTR_DIRECTIVE &&
-      aDirective != STYLE_SRC_DIRECTIVE) {
-    MOZ_ASSERT(false,
-               "can only allow inline for script-src-(attr/elem) or style");
+      aDirective != STYLE_SRC_ELEM_DIRECTIVE &&
+      aDirective != STYLE_SRC_ATTR_DIRECTIVE) {
+    MOZ_ASSERT(false, "can only allow inline for (script/style)-src-(attr/elem) or style");
     return NS_OK;
   }
 
