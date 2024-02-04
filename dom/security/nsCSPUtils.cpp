@@ -199,6 +199,10 @@ CSP_LogLocalizedStr(const char16_t* aName,
 }
 
 /* ===== Helpers ============================ */
+// This implements
+// https://w3c.github.io/webappsec-csp/#effective-directive-for-a-request.
+// However the spec doesn't currently cover all request destinations, which
+// we roughly represent using nsContentPolicyType.
 CSPDirective
 CSP_ContentTypeToDirective(nsContentPolicyType aType)
 {
@@ -213,7 +217,11 @@ CSP_ContentTypeToDirective(nsContentPolicyType aType)
     case nsIContentPolicy::TYPE_INTERNAL_SCRIPT:
     case nsIContentPolicy::TYPE_INTERNAL_SCRIPT_PRELOAD:
     case nsIContentPolicy::TYPE_INTERNAL_WORKER_IMPORT_SCRIPTS:
-      return nsIContentSecurityPolicy::SCRIPT_SRC_DIRECTIVE;
+      // (https://github.com/w3c/webappsec-csp/issues/554)
+      // Some of these types are not explicitly defined in the spec.
+      //
+      // Chrome seems to use script-src-elem for worklet!
+      return nsIContentSecurityPolicy::SCRIPT_SRC_ELEM_DIRECTIVE;
 
     case nsIContentPolicy::TYPE_STYLESHEET:
       return nsIContentSecurityPolicy::STYLE_SRC_DIRECTIVE;
@@ -1217,6 +1225,16 @@ nsCSPDirective::toDomCSPStruct(mozilla::dom::CSP& outCSP) const
       outCSP.mWorker_src.Value() = mozilla::Move(srcs);
       return;
 
+    case nsIContentSecurityPolicy::SCRIPT_SRC_ELEM_DIRECTIVE:
+      outCSP.mScript_src_elem.Construct();
+      outCSP.mScript_src_elem.Value() = mozilla::Move(srcs);
+      return;
+
+    case nsIContentSecurityPolicy::SCRIPT_SRC_ATTR_DIRECTIVE:
+      outCSP.mScript_src_attr.Construct();
+      outCSP.mScript_src_attr.Value() = mozilla::Move(srcs);
+      return;
+
     // REFERRER_DIRECTIVE and REQUIRE_SRI_FOR are handled in nsCSPPolicy::toDomCSPStruct()
 
     default:
@@ -1290,6 +1308,8 @@ bool nsCSPChildSrcDirective::equals(CSPDirective aDirective) const
 nsCSPScriptSrcDirective::nsCSPScriptSrcDirective(CSPDirective aDirective)
   : nsCSPDirective(aDirective)
   , mRestrictWorkers(false)
+  , mRestrictScriptElem(false)
+  , mRestrictScriptAttr(false)
 {
 }
 
@@ -1301,6 +1321,12 @@ bool nsCSPScriptSrcDirective::equals(CSPDirective aDirective) const
 {
   if (aDirective == nsIContentSecurityPolicy::WORKER_SRC_DIRECTIVE) {
     return mRestrictWorkers;
+  }
+  if (aDirective == nsIContentSecurityPolicy::SCRIPT_SRC_ELEM_DIRECTIVE) {
+    return mRestrictScriptElem;
+  }
+  if (aDirective == nsIContentSecurityPolicy::SCRIPT_SRC_ATTR_DIRECTIVE) {
+    return mRestrictScriptAttr;
   }
   return (mDirective == aDirective);
 }

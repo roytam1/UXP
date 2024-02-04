@@ -499,12 +499,14 @@ nsCSPContext::reportInlineViolation(CSPDirective aDirective,
   // let's report the hash error; no need to report the unsafe-inline error
   // anymore.
   if (!aNonce.IsEmpty()) {
-    observerSubject = (aDirective == SCRIPT_SRC_DIRECTIVE)
+    observerSubject = (aDirective == SCRIPT_SRC_ELEM_DIRECTIVE ||
+                       aDirective == SCRIPT_SRC_ATTR_DIRECTIVE)
                       ? NS_LITERAL_STRING(SCRIPT_NONCE_VIOLATION_OBSERVER_TOPIC)
                       : NS_LITERAL_STRING(STYLE_NONCE_VIOLATION_OBSERVER_TOPIC);
   }
   else {
-    observerSubject = (aDirective == SCRIPT_SRC_DIRECTIVE)
+    observerSubject = (aDirective == SCRIPT_SRC_ELEM_DIRECTIVE ||
+                       aDirective == SCRIPT_SRC_ATTR_DIRECTIVE)
                       ? NS_LITERAL_STRING(SCRIPT_HASH_VIOLATION_OBSERVER_TOPIC)
                       : NS_LITERAL_STRING(STYLE_HASH_VIOLATION_OBSERVER_TOPIC);
   }
@@ -565,8 +567,11 @@ nsCSPContext::GetAllowsInline(CSPDirective aDirective,
 {
   *outAllowsInline = true;
 
-  if (aDirective != SCRIPT_SRC_DIRECTIVE && aDirective != STYLE_SRC_DIRECTIVE) {
-    MOZ_ASSERT(false, "can only allow inline for script or style");
+  if (aDirective != SCRIPT_SRC_ELEM_DIRECTIVE &&
+      aDirective != SCRIPT_SRC_ATTR_DIRECTIVE &&
+      aDirective != STYLE_SRC_DIRECTIVE) {
+    MOZ_ASSERT(false,
+               "can only allow inline for script-src-(attr/elem) or style");
     return NS_OK;
   }
 

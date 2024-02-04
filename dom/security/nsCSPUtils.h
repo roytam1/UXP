@@ -141,7 +141,9 @@ static const char* CSPStrDirectives[] = {
   "block-all-mixed-content",   // BLOCK_ALL_MIXED_CONTENT
   "require-sri-for",           // REQUIRE_SRI_FOR
   "sandbox",                   // SANDBOX_DIRECTIVE
-  "worker-src"                 // WORKER_SRC_DIRECTIVE
+  "worker-src",                // WORKER_SRC_DIRECTIVE
+  "script-src-elem",           // SCRIPT_SRC_ELEM_DIRECTIVE
+  "script-src-attr"            // SCRIPT_SRC_ATTR_DIRECTIVE
 };
 
 inline const char* CSP_CSPDirectiveToString(CSPDirective aDir)
@@ -537,13 +539,16 @@ class nsCSPScriptSrcDirective : public nsCSPDirective {
     explicit nsCSPScriptSrcDirective(CSPDirective aDirective);
     virtual ~nsCSPScriptSrcDirective();
 
-    void setRestrictWorkers()
-      { mRestrictWorkers = true; }
+    void setRestrictWorkers()    { mRestrictWorkers = true; }
+    void setRestrictScriptElem() { mRestrictScriptElem = true; }
+    void setRestrictScriptAttr() { mRestrictScriptAttr = true; }
 
     virtual bool equals(CSPDirective aDirective) const;
 
   private:
     bool mRestrictWorkers;
+    bool mRestrictScriptElem;
+    bool mRestrictScriptAttr;
 };
 
 /* =============== nsBlockAllMixedContentDirective === */

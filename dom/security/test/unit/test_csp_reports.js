@@ -215,7 +215,7 @@ function run_test() {
     function(csp) {
       var uri = NetUtil
       // shouldLoad creates and sends out the report here.
-      csp.shouldLoad(Ci.nsIContentSecurityPolicy.SCRIPT_SRC_DIRECTIVE,
+      csp.shouldLoad(Ci.nsIContentSecurityPolicy.SCRIPT_SRC_ELEM_DIRECTIVE,
                      NetUtil.newURI(selfSpec + "#bar"),
                      null, null, null, null);
       });
@@ -224,7 +224,7 @@ function run_test() {
   makeTest(8, {"blocked-uri": "ftp://blocked.test"}, false,
     function(csp) {
       // shouldLoad creates and sends out the report here.
-      csp.shouldLoad(Ci.nsIContentSecurityPolicy.SCRIPT_SRC_DIRECTIVE,
+      csp.shouldLoad(Ci.nsIContentSecurityPolicy.SCRIPT_SRC_ELEM_DIRECTIVE,
                     NetUtil.newURI("ftp://blocked.test/profile.png"),
                     null, null, null, null);
     });
