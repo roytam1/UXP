@@ -646,8 +646,6 @@ nsCSPContext::GetAllowsInline(CSPDirective aDirective,
                               keyword, observerTopic)                          \
   case nsIContentSecurityPolicy::VIOLATION_TYPE_ ## violationType :            \
     PR_BEGIN_MACRO                                                             \
-    static_assert(directive##_SRC_DIRECTIVE == SCRIPT_SRC_DIRECTIVE ||         \
-                  directive##_SRC_DIRECTIVE == STYLE_SRC_DIRECTIVE);           \
     if (!mPolicies[p]->allows(directive##_SRC_DIRECTIVE, keyword, nonceOrHash, \
                               false)) {                                        \
       nsAutoString violatedDirective;                                          \
