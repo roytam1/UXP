@@ -767,14 +767,16 @@ nsStyleUtil::CSPAllowsInlineStyle(nsIContent* aContent,
     return true;
   }
 
+  CSPDirective directive = nsIContentSecurityPolicy::STYLE_SRC_ATTR_DIRECTIVE;
   // query the nonce
   nsAutoString nonce;
   if (aContent) {
+    directive = nsIContentSecurityPolicy::STYLE_SRC_ELEM_DIRECTIVE;
     aContent->GetAttr(kNameSpaceID_None, nsGkAtoms::nonce, nonce);
   }
 
   bool allowInlineStyle = true;
-  rv = csp->GetAllowsInline(nsIContentPolicy::TYPE_STYLESHEET,
+  rv = csp->GetAllowsInline(directive,
                             nonce,
                             false, // aParserCreated only applies to scripts
                             aStyleText, aLineNumber, aColumnNumber,

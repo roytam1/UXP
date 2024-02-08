@@ -141,7 +141,11 @@ static const char* CSPStrDirectives[] = {
   "block-all-mixed-content",   // BLOCK_ALL_MIXED_CONTENT
   "require-sri-for",           // REQUIRE_SRI_FOR
   "sandbox",                   // SANDBOX_DIRECTIVE
-  "worker-src"                 // WORKER_SRC_DIRECTIVE
+  "worker-src",                // WORKER_SRC_DIRECTIVE
+  "script-src-elem",           // SCRIPT_SRC_ELEM_DIRECTIVE
+  "script-src-attr",           // SCRIPT_SRC_ATTR_DIRECTIVE
+  "style-src-elem",            // STYLE_SRC_ELEM_DIRECTIVE
+  "style-src-attr"             // STYLE_SRC_ATTR_DIRECTIVE
 };
 
 inline const char* CSP_CSPDirectiveToString(CSPDirective aDir)
@@ -483,8 +487,6 @@ class nsCSPDirective {
     virtual void addSrcs(const nsTArray<nsCSPBaseSrc*>& aSrcs)
       { mSrcs = aSrcs; }
 
-    virtual bool restrictsContentType(nsContentPolicyType aContentType) const;
-
     inline bool isDefaultDirective() const
      { return mDirective == nsIContentSecurityPolicy::DEFAULT_SRC_DIRECTIVE; }
 
@@ -520,8 +522,6 @@ class nsCSPChildSrcDirective : public nsCSPDirective {
     void setRestrictWorkers()
       { mRestrictWorkers = true; }
 
-    virtual bool restrictsContentType(nsContentPolicyType aContentType) const;
-
     virtual bool equals(CSPDirective aDirective) const;
 
   private:
@@ -541,15 +541,37 @@ class nsCSPScriptSrcDirective : public nsCSPDirective {
     explicit nsCSPScriptSrcDirective(CSPDirective aDirective);
     virtual ~nsCSPScriptSrcDirective();
 
-    void setRestrictWorkers()
-      { mRestrictWorkers = true; }
-
-    virtual bool restrictsContentType(nsContentPolicyType aContentType) const;
+    void setRestrictWorkers()    { mRestrictWorkers = true; }
+    void setRestrictScriptElem() { mRestrictScriptElem = true; }
+    void setRestrictScriptAttr() { mRestrictScriptAttr = true; }
 
     virtual bool equals(CSPDirective aDirective) const;
 
   private:
     bool mRestrictWorkers;
+    bool mRestrictScriptElem;
+    bool mRestrictScriptAttr;
+};
+
+/* =============== nsCSPStyleSrcDirective ============= */
+
+/*
+ * In CSP 3, style-src is used as a fallback for style-src-elem and
+ * style-src-attr in case they aren't defined.
+ */
+class nsCSPStyleSrcDirective : public nsCSPDirective {
+  public:
+    explicit nsCSPStyleSrcDirective(CSPDirective aDirective);
+    virtual ~nsCSPStyleSrcDirective();
+
+    void setRestrictStyleElem() { mRestrictStyleElem = true; }
+    void setRestrictStyleAttr() { mRestrictStyleAttr = true; }
+
+    virtual bool equals(CSPDirective aDirective) const;
+
+  private:
+    bool mRestrictStyleElem;
+    bool mRestrictStyleAttr;
 };
 
 /* =============== nsBlockAllMixedContentDirective === */
@@ -668,15 +690,10 @@ class nsCSPPolicy {
                  bool aSpecific,
                  bool aParserCreated,
                  nsAString& outViolatedDirective) const;
-    bool permits(CSPDirective aDir,
-                 nsIURI* aUri,
-                 bool aSpecific) const;
-    bool allows(nsContentPolicyType aContentType,
+    bool allows(CSPDirective aDirective,
                 enum CSPKeyword aKeyword,
                 const nsAString& aHashOrNonce,
                 bool aParserCreated) const;
-    bool allows(nsContentPolicyType aContentType,
-                enum CSPKeyword aKeyword) const;
     void toString(nsAString& outStr) const;
     void toDomCSPStruct(mozilla::dom::CSP& outCSP) const;
 
@@ -708,7 +725,7 @@ class nsCSPPolicy {
 
     void getReportURIs(nsTArray<nsString> &outReportURIs) const;
 
-    void getDirectiveStringForContentType(nsContentPolicyType aContentType,
+    void getDirectiveStringForContentType(CSPDirective aDirective,
                                           nsAString& outDirective) const;
 
     void getDirectiveAsString(CSPDirective aDir, nsAString& outDirective) const;
