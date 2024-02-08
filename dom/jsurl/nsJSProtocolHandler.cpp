@@ -179,8 +179,10 @@ nsresult nsJSThunk::EvaluateScript(nsIChannel *aChannel,
     rv = principal->GetCsp(getter_AddRefs(csp));
     NS_ENSURE_SUCCESS(rv, rv);
     if (csp) {
+        // javascript: is a "navigation" type, so script-src-elem applies.
+        // https://w3c.github.io/webappsec-csp/#effective-directive-for-inline-check
         bool allowsInlineScript = true;
-        rv = csp->GetAllowsInline(nsIContentPolicy::TYPE_SCRIPT,
+        rv = csp->GetAllowsInline(nsIContentSecurityPolicy::SCRIPT_SRC_ELEM_DIRECTIVE,
                                   EmptyString(), // aNonce
                                   true,         // aParserCreated
                                   EmptyString(), // aContent
