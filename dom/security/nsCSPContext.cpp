@@ -469,7 +469,7 @@ nsCSPContext::GetAllowsEval(bool* outShouldReportViolation,
   *outAllowsEval = true;
 
   for (uint32_t i = 0; i < mPolicies.Length(); i++) {
-    if (!mPolicies[i]->allows(nsIContentPolicy::TYPE_SCRIPT,
+    if (!mPolicies[i]->allows(SCRIPT_SRC_DIRECTIVE,
                               CSP_UNSAFE_EVAL,
                               EmptyString(),
                               false)) {
@@ -486,7 +486,7 @@ nsCSPContext::GetAllowsEval(bool* outShouldReportViolation,
 
 // Helper function to report inline violations
 void
-nsCSPContext::reportInlineViolation(nsContentPolicyType aContentType,
+nsCSPContext::reportInlineViolation(CSPDirective aDirective,
                                     const nsAString& aNonce,
                                     const nsAString& aContent,
                                     const nsAString& aViolatedDirective,
@@ -499,12 +499,14 @@ nsCSPContext::reportInlineViolation(nsContentPolicyType aContentType,
   // let's report the hash error; no need to report the unsafe-inline error
   // anymore.
   if (!aNonce.IsEmpty()) {
-    observerSubject = (aContentType == nsIContentPolicy::TYPE_SCRIPT)
+    observerSubject = (aDirective == SCRIPT_SRC_ELEM_DIRECTIVE ||
+                       aDirective == SCRIPT_SRC_ATTR_DIRECTIVE)
                       ? NS_LITERAL_STRING(SCRIPT_NONCE_VIOLATION_OBSERVER_TOPIC)
                       : NS_LITERAL_STRING(STYLE_NONCE_VIOLATION_OBSERVER_TOPIC);
   }
   else {
-    observerSubject = (aContentType == nsIContentPolicy::TYPE_SCRIPT)
+    observerSubject = (aDirective == SCRIPT_SRC_ELEM_DIRECTIVE ||
+                       aDirective == SCRIPT_SRC_ATTR_DIRECTIVE)
                       ? NS_LITERAL_STRING(SCRIPT_HASH_VIOLATION_OBSERVER_TOPIC)
                       : NS_LITERAL_STRING(STYLE_HASH_VIOLATION_OBSERVER_TOPIC);
   }
@@ -555,7 +557,7 @@ nsCSPContext::reportInlineViolation(nsContentPolicyType aContentType,
 }
 
 NS_IMETHODIMP
-nsCSPContext::GetAllowsInline(nsContentPolicyType aContentType,
+nsCSPContext::GetAllowsInline(CSPDirective aDirective,
                               const nsAString& aNonce,
                               bool aParserCreated,
                               const nsAString& aContent,
@@ -565,20 +567,19 @@ nsCSPContext::GetAllowsInline(nsContentPolicyType aContentType,
 {
   *outAllowsInline = true;
 
-  MOZ_ASSERT(aContentType == nsContentUtils::InternalContentPolicyTypeToExternal(aContentType),
-             "We should only see external content policy types here.");
-
-  if (aContentType != nsIContentPolicy::TYPE_SCRIPT &&
-      aContentType != nsIContentPolicy::TYPE_STYLESHEET) {
-    MOZ_ASSERT(false, "can only allow inline for script or style");
+  if (aDirective != SCRIPT_SRC_ELEM_DIRECTIVE &&
+      aDirective != SCRIPT_SRC_ATTR_DIRECTIVE &&
+      aDirective != STYLE_SRC_ELEM_DIRECTIVE &&
+      aDirective != STYLE_SRC_ATTR_DIRECTIVE) {
+    MOZ_ASSERT(false, "can only allow inline for (script/style)-src-(attr/elem) or style");
     return NS_OK;
   }
 
   // always iterate all policies, otherwise we might not send out all reports
   for (uint32_t i = 0; i < mPolicies.Length(); i++) {
     bool allowed =
-      mPolicies[i]->allows(aContentType, CSP_UNSAFE_INLINE, EmptyString(), aParserCreated) ||
-      mPolicies[i]->allows(aContentType, CSP_NONCE, aNonce, aParserCreated);
+      mPolicies[i]->allows(aDirective, CSP_UNSAFE_INLINE, EmptyString(), aParserCreated) ||
+      mPolicies[i]->allows(aDirective, CSP_NONCE, aNonce, aParserCreated);
       
     // If the inlined script or style is allowed by either unsafe-inline or the
     // nonce, go ahead and shortcut this loop.
@@ -589,7 +590,7 @@ nsCSPContext::GetAllowsInline(nsContentPolicyType aContentType,
     // Check if the csp-hash matches against the hash of the script.
     // If we don't have any content to check, block the script.
     if (!aContent.IsEmpty()) {
-      allowed = mPolicies[i]->allows(aContentType, CSP_HASH, aContent, aParserCreated);
+      allowed = mPolicies[i]->allows(aDirective, CSP_HASH, aContent, aParserCreated);
     }
 
     if (!allowed) {
@@ -599,8 +600,8 @@ nsCSPContext::GetAllowsInline(nsContentPolicyType aContentType,
         *outAllowsInline = false;
       }
       nsAutoString violatedDirective;
-      mPolicies[i]->getDirectiveStringForContentType(aContentType, violatedDirective);
-      reportInlineViolation(aContentType,
+      mPolicies[i]->getDirectiveStringForContentType(aDirective, violatedDirective);
+      reportInlineViolation(aDirective,
                             aNonce,
                             aContent,
                             violatedDirective,
@@ -641,17 +642,17 @@ nsCSPContext::GetAllowsInline(nsContentPolicyType aContentType,
  * GetAllowsInline() and do not call this macro, hence we can pass 'false'
  * as the argument _aParserCreated_ to allows().
  */
-#define CASE_CHECK_AND_REPORT(violationType, contentPolicyType, nonceOrHash,   \
+#define CASE_CHECK_AND_REPORT(violationType, directive, nonceOrHash,           \
                               keyword, observerTopic)                          \
   case nsIContentSecurityPolicy::VIOLATION_TYPE_ ## violationType :            \
     PR_BEGIN_MACRO                                                             \
-    if (!mPolicies[p]->allows(nsIContentPolicy::TYPE_ ## contentPolicyType,    \
-                              keyword, nonceOrHash, false))                    \
-    {                                                                          \
+    static_assert(directive##_SRC_DIRECTIVE == SCRIPT_SRC_DIRECTIVE ||         \
+                  directive##_SRC_DIRECTIVE == STYLE_SRC_DIRECTIVE);           \
+    if (!mPolicies[p]->allows(directive##_SRC_DIRECTIVE, keyword, nonceOrHash, \
+                              false)) {                                        \
       nsAutoString violatedDirective;                                          \
       mPolicies[p]->getDirectiveStringForContentType(                          \
-                        nsIContentPolicy::TYPE_ ## contentPolicyType,          \
-                        violatedDirective);                                    \
+          directive##_SRC_DIRECTIVE, violatedDirective);                       \
       this->AsyncReportViolation(selfISupports, nullptr, violatedDirective, p, \
                                  NS_LITERAL_STRING(observerTopic), aSourceFile,\
                                  aScriptSample, aLineNum, aColumnNum);         \
@@ -711,19 +712,19 @@ nsCSPContext::LogViolationDetails(uint16_t aViolationType,
     switch (aViolationType) {
       CASE_CHECK_AND_REPORT(EVAL,              SCRIPT,     NS_LITERAL_STRING(""),
                             CSP_UNSAFE_EVAL,   EVAL_VIOLATION_OBSERVER_TOPIC);
-      CASE_CHECK_AND_REPORT(INLINE_STYLE,      STYLESHEET, NS_LITERAL_STRING(""),
+      CASE_CHECK_AND_REPORT(INLINE_STYLE,      STYLE,      NS_LITERAL_STRING(""),
                             CSP_UNSAFE_INLINE, INLINE_STYLE_VIOLATION_OBSERVER_TOPIC);
       CASE_CHECK_AND_REPORT(INLINE_SCRIPT,     SCRIPT,     NS_LITERAL_STRING(""),
                             CSP_UNSAFE_INLINE, INLINE_SCRIPT_VIOLATION_OBSERVER_TOPIC);
       CASE_CHECK_AND_REPORT(NONCE_SCRIPT,      SCRIPT,     aNonce,
                             CSP_UNSAFE_INLINE, SCRIPT_NONCE_VIOLATION_OBSERVER_TOPIC);
-      CASE_CHECK_AND_REPORT(NONCE_STYLE,       STYLESHEET, aNonce,
+      CASE_CHECK_AND_REPORT(NONCE_STYLE,       STYLE,      aNonce,
                             CSP_UNSAFE_INLINE, STYLE_NONCE_VIOLATION_OBSERVER_TOPIC);
       CASE_CHECK_AND_REPORT(HASH_SCRIPT,       SCRIPT,     aContent,
                             CSP_UNSAFE_INLINE, SCRIPT_HASH_VIOLATION_OBSERVER_TOPIC);
-      CASE_CHECK_AND_REPORT(HASH_STYLE,        STYLESHEET, aContent,
+      CASE_CHECK_AND_REPORT(HASH_STYLE,        STYLE,      aContent,
                             CSP_UNSAFE_INLINE, STYLE_HASH_VIOLATION_OBSERVER_TOPIC);
-      CASE_CHECK_AND_REPORT(REQUIRE_SRI_FOR_STYLE,   STYLESHEET, NS_LITERAL_STRING(""),
+      CASE_CHECK_AND_REPORT(REQUIRE_SRI_FOR_STYLE,   STYLE, NS_LITERAL_STRING(""),
                             CSP_REQUIRE_SRI_FOR, REQUIRE_SRI_STYLE_VIOLATION_OBSERVER_TOPIC);
       CASE_CHECK_AND_REPORT(REQUIRE_SRI_FOR_SCRIPT,   SCRIPT, NS_LITERAL_STRING(""),
                             CSP_REQUIRE_SRI_FOR, REQUIRE_SRI_SCRIPT_VIOLATION_OBSERVER_TOPIC);

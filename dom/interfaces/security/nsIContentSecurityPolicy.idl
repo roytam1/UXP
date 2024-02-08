@@ -60,6 +60,10 @@ interface nsIContentSecurityPolicy : nsISerializable
   const unsigned short REQUIRE_SRI_FOR                = 20;
   const unsigned short SANDBOX_DIRECTIVE              = 21;
   const unsigned short WORKER_SRC_DIRECTIVE           = 22;
+  const unsigned short SCRIPT_SRC_ELEM_DIRECTIVE      = 23;
+  const unsigned short SCRIPT_SRC_ATTR_DIRECTIVE      = 24;
+  const unsigned short STYLE_SRC_ELEM_DIRECTIVE       = 25;
+  const unsigned short STYLE_SRC_ATTR_DIRECTIVE       = 26;
 
   /**
    * Accessor method for a read-only string version of the policy at a given
@@ -146,7 +150,7 @@ interface nsIContentSecurityPolicy : nsISerializable
    *     Whether or not the effects of the inline style should be allowed
    *     (block the rules if false).
    */
-  boolean getAllowsInline(in nsContentPolicyType aContentPolicyType,
+  boolean getAllowsInline(in CSPDirective aContentPolicyType,
                           in AString aNonce,
                           in boolean aParserCreated,
                           in AString aContent,

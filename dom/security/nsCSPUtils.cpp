@@ -199,6 +199,10 @@ CSP_LogLocalizedStr(const char16_t* aName,
 }
 
 /* ===== Helpers ============================ */
+// This implements
+// https://w3c.github.io/webappsec-csp/#effective-directive-for-a-request.
+// However the spec doesn't currently cover all request destinations, which
+// we roughly represent using nsContentPolicyType.
 CSPDirective
 CSP_ContentTypeToDirective(nsContentPolicyType aType)
 {
@@ -213,10 +217,14 @@ CSP_ContentTypeToDirective(nsContentPolicyType aType)
     case nsIContentPolicy::TYPE_INTERNAL_SCRIPT:
     case nsIContentPolicy::TYPE_INTERNAL_SCRIPT_PRELOAD:
     case nsIContentPolicy::TYPE_INTERNAL_WORKER_IMPORT_SCRIPTS:
-      return nsIContentSecurityPolicy::SCRIPT_SRC_DIRECTIVE;
+      // (https://github.com/w3c/webappsec-csp/issues/554)
+      // Some of these types are not explicitly defined in the spec.
+      //
+      // Chrome seems to use script-src-elem for worklet!
+      return nsIContentSecurityPolicy::SCRIPT_SRC_ELEM_DIRECTIVE;
 
     case nsIContentPolicy::TYPE_STYLESHEET:
-      return nsIContentSecurityPolicy::STYLE_SRC_DIRECTIVE;
+      return nsIContentSecurityPolicy::STYLE_SRC_ELEM_DIRECTIVE;
 
     case nsIContentPolicy::TYPE_FONT:
       return nsIContentSecurityPolicy::FONT_SRC_DIRECTIVE;
@@ -1217,6 +1225,16 @@ nsCSPDirective::toDomCSPStruct(mozilla::dom::CSP& outCSP) const
       outCSP.mWorker_src.Value() = mozilla::Move(srcs);
       return;
 
+    case nsIContentSecurityPolicy::SCRIPT_SRC_ELEM_DIRECTIVE:
+      outCSP.mScript_src_elem.Construct();
+      outCSP.mScript_src_elem.Value() = mozilla::Move(srcs);
+      return;
+
+    case nsIContentSecurityPolicy::SCRIPT_SRC_ATTR_DIRECTIVE:
+      outCSP.mScript_src_attr.Construct();
+      outCSP.mScript_src_attr.Value() = mozilla::Move(srcs);
+      return;
+
     // REFERRER_DIRECTIVE and REQUIRE_SRI_FOR are handled in nsCSPPolicy::toDomCSPStruct()
 
     default:
@@ -1224,16 +1242,6 @@ nsCSPDirective::toDomCSPStruct(mozilla::dom::CSP& outCSP) const
   }
 }
 
-
-bool
-nsCSPDirective::restrictsContentType(nsContentPolicyType aContentType) const
-{
-  // make sure we do not check for the default src before any other sources
-  if (isDefaultDirective()) {
-    return false;
-  }
-  return mDirective == CSP_ContentTypeToDirective(aContentType);
-}
 
 void
 nsCSPDirective::getReportURIs(nsTArray<nsString> &outReportURIs) const
@@ -1284,19 +1292,6 @@ nsCSPChildSrcDirective::~nsCSPChildSrcDirective()
 {
 }
 
-bool nsCSPChildSrcDirective::restrictsContentType(nsContentPolicyType aContentType) const
-{
-  if (aContentType == nsIContentPolicy::TYPE_SUBDOCUMENT) {
-    return mRestrictFrames;
-  }
-  if (aContentType == nsIContentPolicy::TYPE_INTERNAL_WORKER ||
-      aContentType == nsIContentPolicy::TYPE_INTERNAL_SHARED_WORKER ||
-      aContentType == nsIContentPolicy::TYPE_INTERNAL_SERVICE_WORKER) {
-    return mRestrictWorkers;
-  }
-  return false;
-}
-
 bool nsCSPChildSrcDirective::equals(CSPDirective aDirective) const
 {
   if (aDirective == nsIContentSecurityPolicy::FRAME_SRC_DIRECTIVE) {
@@ -1313,27 +1308,43 @@ bool nsCSPChildSrcDirective::equals(CSPDirective aDirective) const
 nsCSPScriptSrcDirective::nsCSPScriptSrcDirective(CSPDirective aDirective)
   : nsCSPDirective(aDirective)
   , mRestrictWorkers(false)
+  , mRestrictScriptElem(false)
+  , mRestrictScriptAttr(false)
 {
 }
 
-nsCSPScriptSrcDirective::~nsCSPScriptSrcDirective()
-{
-}
+nsCSPScriptSrcDirective::~nsCSPScriptSrcDirective() = default;
 
-bool nsCSPScriptSrcDirective::restrictsContentType(nsContentPolicyType aContentType) const
-{
-  if (aContentType == nsIContentPolicy::TYPE_INTERNAL_WORKER ||
-      aContentType == nsIContentPolicy::TYPE_INTERNAL_SHARED_WORKER ||
-      aContentType == nsIContentPolicy::TYPE_INTERNAL_SERVICE_WORKER) {
-    return mRestrictWorkers;
-  }
-  return mDirective == CSP_ContentTypeToDirective(aContentType);
-}
-
-bool nsCSPScriptSrcDirective::equals(CSPDirective aDirective) const
-{
+bool nsCSPScriptSrcDirective::equals(CSPDirective aDirective) const {
   if (aDirective == nsIContentSecurityPolicy::WORKER_SRC_DIRECTIVE) {
     return mRestrictWorkers;
+  }
+  if (aDirective == nsIContentSecurityPolicy::SCRIPT_SRC_ELEM_DIRECTIVE) {
+    return mRestrictScriptElem;
+  }
+  if (aDirective == nsIContentSecurityPolicy::SCRIPT_SRC_ATTR_DIRECTIVE) {
+    return mRestrictScriptAttr;
+  }
+  return (mDirective == aDirective);
+}
+
+/* =============== nsCSPStyleSrcDirective ============= */
+
+nsCSPStyleSrcDirective::nsCSPStyleSrcDirective(CSPDirective aDirective)
+    : nsCSPDirective(aDirective)
+    , mRestrictStyleElem(false)
+    , mRestrictStyleAttr(false)
+{
+}
+
+nsCSPStyleSrcDirective::~nsCSPStyleSrcDirective() = default;
+
+bool nsCSPStyleSrcDirective::equals(CSPDirective aDirective) const {
+  if (aDirective == nsIContentSecurityPolicy::STYLE_SRC_ELEM_DIRECTIVE) {
+    return mRestrictStyleElem;
+  }
+  if (aDirective == nsIContentSecurityPolicy::STYLE_SRC_ATTR_DIRECTIVE) {
+    return mRestrictStyleAttr;
   }
   return (mDirective == aDirective);
 }
@@ -1467,15 +1478,6 @@ nsCSPPolicy::~nsCSPPolicy()
 bool
 nsCSPPolicy::permits(CSPDirective aDir,
                      nsIURI* aUri,
-                     bool aSpecific) const
-{
-  nsString outp;
-  return this->permits(aDir, aUri, EmptyString(), false, aSpecific, false, outp);
-}
-
-bool
-nsCSPPolicy::permits(CSPDirective aDir,
-                     nsIURI* aUri,
                      const nsAString& aNonce,
                      bool aWasRedirected,
                      bool aSpecific,
@@ -1526,7 +1528,7 @@ nsCSPPolicy::permits(CSPDirective aDir,
 }
 
 bool
-nsCSPPolicy::allows(nsContentPolicyType aContentType,
+nsCSPPolicy::allows(CSPDirective aDirective,
                     enum CSPKeyword aKeyword,
                     const nsAString& aHashOrNonce,
                     bool aParserCreated) const
@@ -1538,14 +1540,15 @@ nsCSPPolicy::allows(nsContentPolicyType aContentType,
 
   // Try to find a matching directive
   for (uint32_t i = 0; i < mDirectives.Length(); i++) {
-    if (mDirectives[i]->restrictsContentType(aContentType)) {
+    if (mDirectives[i]->isDefaultDirective()) {
+      defaultDir = mDirectives[i];
+      continue;
+    }
+    if (mDirectives[i]->equals(aDirective)) {
       if (mDirectives[i]->allows(aKeyword, aHashOrNonce, aParserCreated)) {
         return true;
       }
       return false;
-    }
-    if (mDirectives[i]->isDefaultDirective()) {
-      defaultDir = mDirectives[i];
     }
   }
 
@@ -1571,13 +1574,6 @@ nsCSPPolicy::allows(nsContentPolicyType aContentType,
   // b) inline styles should only be blocked
   //    if there is a [style-src] or [default-src]
   return true;
-}
-
-bool
-nsCSPPolicy::allows(nsContentPolicyType aContentType,
-                    enum CSPKeyword aKeyword) const
-{
-  return allows(aContentType, aKeyword, NS_LITERAL_STRING(""), false);
 }
 
 void
@@ -1634,17 +1630,18 @@ nsCSPPolicy::hasDirective(CSPDirective aDir) const
  * for the ::permits() function family.
  */
 void
-nsCSPPolicy::getDirectiveStringForContentType(nsContentPolicyType aContentType,
+nsCSPPolicy::getDirectiveStringForContentType(CSPDirective aDirective,
                                               nsAString& outDirective) const
 {
   nsCSPDirective* defaultDir = nullptr;
   for (uint32_t i = 0; i < mDirectives.Length(); i++) {
-    if (mDirectives[i]->restrictsContentType(aContentType)) {
-      mDirectives[i]->getDirName(outDirective);
-      return;
-    }
     if (mDirectives[i]->isDefaultDirective()) {
       defaultDir = mDirectives[i];
+      continue;
+    }
+    if (mDirectives[i]->equals(aDirective)) {
+      mDirectives[i]->getDirName(outDirective);
+      return;
     }
   }
   // if we haven't found a matching directive yet,
