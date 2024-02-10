@@ -171,6 +171,8 @@ const nsIID kDEBUGWorkerEventTargetIID = {
 
 // The number of nested timeouts before we start clamping. HTML says 5.
 const uint32_t kClampTimeoutNestingLevel = 5u;
+// The minimum interval we clamp timers in workers to. HTML says 4ms.
+const uint32_t kClampTimeoutInterval = 4u;
 
 template <class T>
 class AutoPtrComparator
@@ -1997,20 +1999,10 @@ struct WorkerPrivate::TimeoutInfo
 
   void CalculateTargetTime(JSContext* aCx) {
     auto target = mInterval;
-    int32_t minTimeoutValue;
-    
-    // We're on a worker thread; go through WorkerPrivate for the pref.
-    WorkerPrivate* workerPrivate = GetWorkerPrivateFromContext(aCx);
-    if (workerPrivate) {
-      minTimeoutValue = workerPrivate->DOMMinTimeoutValue();
-    } else {
-      // fall back to default 4 ms
-      minTimeoutValue = 4;
-    }
-      
+
     // Clamp timeout for workers, except chrome workers
     if (mNestingLevel >= kClampTimeoutNestingLevel && !mOnChromeWorker) {
-      target = TimeDuration::Max(mInterval,TimeDuration::FromMilliseconds(minTimeoutValue));
+      target = TimeDuration::Max(mInterval, TimeDuration::FromMilliseconds(kClampTimeoutInterval));
     }
     mTargetTime = TimeStamp::Now() + target;
   }
