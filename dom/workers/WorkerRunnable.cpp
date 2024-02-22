@@ -11,6 +11,7 @@
 #include "nsIRunnable.h"
 #include "nsThreadUtils.h"
 
+#include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/Unused.h"
@@ -230,6 +231,19 @@ WorkerRunnable::Run()
 {
   bool targetIsWorkerThread = mBehavior == WorkerThreadModifyBusyCount ||
                               mBehavior == WorkerThreadUnchangedBusyCount;
+
+  if (targetIsWorkerThread) {
+    // On a worker thread, a WorkerRunnable should only run when there is an
+    // underlying WorkerThreadPrimaryRunnable active, which means we should
+    // find a CycleCollectedJSContext.
+    if (!CycleCollectedJSContext::Get()) {
+      MOZ_DIAGNOSTIC_ASSERT(false,
+                            "A WorkerRunnable was executed after "
+                            "WorkerThreadPrimaryRunnable ended.");
+
+      return NS_OK;
+    }
+  }
 
 #ifdef DEBUG
   MOZ_ASSERT_IF(mCallingCancelWithinRun, targetIsWorkerThread);
