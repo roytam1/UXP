@@ -467,6 +467,11 @@ pref("dom.enable_performance_navigation_timing", false);
 // beginning to expect this to be present.
 pref("dom.enable_performance_observer", true);
 
+// Controls Whether <dialog> element support is enabled or not.
+// GitHub is broken without this enabled so we set this to true.
+// See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
+pref("dom.dialog_element.enabled", true);
+
 // popups.policy 1=allow,2=reject
 pref("privacy.popups.policy",               1);
 pref("privacy.popups.usecustom",            true);
