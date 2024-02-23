@@ -8,7 +8,6 @@ const Cu = Components.utils;
 
 var {loader, require} = Cu.import("resource://devtools/shared/Loader.jsm", {});
 var Telemetry = require("devtools/client/shared/telemetry");
-var {showDoorhanger} = require("devtools/client/shared/doorhanger");
 var {TouchEventSimulator} = require("devtools/shared/touch/simulator");
 var {Task} = require("devtools/shared/task");
 var promise = require("promise");

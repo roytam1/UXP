@@ -1018,11 +1018,14 @@ nsMultiMixedConv::ParseHeaders(nsIChannel *aChannel, char *&aPtr,
             } else if (headerStr.LowerCaseEqualsLiteral("content-disposition")) {
                 mContentDisposition = headerVal;
             } else if (headerStr.LowerCaseEqualsLiteral("set-cookie")) {
+                // Do not allow cookies to be set from multipart/mixed content parts
+                // as a mitigation to CVE-2024-1551
+                /*
                 nsCOMPtr<nsIHttpChannelInternal> httpInternal =
                     do_QueryInterface(aChannel);
                 if (httpInternal) {
                     httpInternal->SetCookie(headerVal.get());
-                }
+                }*/
             } else if (headerStr.LowerCaseEqualsLiteral("content-range") || 
                        headerStr.LowerCaseEqualsLiteral("range") ) {
                 // something like: Content-range: bytes 7000-7999/8000
