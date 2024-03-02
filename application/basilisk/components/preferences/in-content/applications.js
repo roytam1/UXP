@@ -1076,11 +1076,26 @@ var gApplicationsPane = {
       if (mimeType.type in this._handledTypes) {
         handlerInfoWrapper = this._handledTypes[mimeType.type];
       } else {
-        let wrappedHandlerInfo =
+        if (mimeType.type == '') {
+          // If an incorrect empty MIME type is present, don't break.
+          continue;
+        }
+        try {
+          let wrappedHandlerInfo =
               this._mimeSvc.getFromTypeAndExtension(mimeType.type, null);
-        handlerInfoWrapper = new HandlerInfoWrapper(mimeType.type, wrappedHandlerInfo);
-        handlerInfoWrapper.handledOnlyByPlugin = true;
-        this._handledTypes[mimeType.type] = handlerInfoWrapper;
+          handlerInfoWrapper = new HandlerInfoWrapper(mimeType.type, wrappedHandlerInfo);
+          handlerInfoWrapper.handledOnlyByPlugin = true;
+          this._handledTypes[mimeType.type] = handlerInfoWrapper;
+          #ifdef DEBUG
+          console.log("Enumerate MIME type: " + mimeType.type);
+          #endif
+        } catch(e) {
+          #ifdef DEBUG
+          console.log("Error fetching MIME type info for " + mimeType.type);
+          console.log(e);
+          #endif
+          continue;
+        }
       }
       handlerInfoWrapper.pluginName = mimeType.enabledPlugin.name;
     }
