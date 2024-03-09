@@ -789,7 +789,6 @@
         ]]>
       </handler>
 #endif // XP_MACOSX
-
       <handler event="keydown" keycode="VK_ESCAPE">
         <![CDATA[
           if (this._editingColumn) {
@@ -1497,12 +1496,13 @@
             var refChild = aPopup.firstChild;
 
             var tree = this.parentNode.parentNode;
-            for (var currCol = tree.columns.getFirstColumn(); currCol;
-                 currCol = currCol.getNext()) {
-              // Construct an entry for each column in the row, unless
-              // it is not being shown.
-              var currElement = currCol.element;
-              if (!currElement.hasAttribute("ignoreincolumnpicker")) {
+            if (tree.columns)
+              for (var currCol = tree.columns.getFirstColumn(); currCol = currCol.getNext(); ) {
+                // Construct an entry for each column in the row, unless
+                // it is not being shown.
+                var currElement = currCol.element;
+                if (currElement.hasAttribute("ignoreincolumnpicker"))
+                  continue;
                 var popupChild = document.createElement("menuitem");
                 popupChild.setAttribute("type", "checkbox");
                 var columnName = currElement.getAttribute("display") ||
@@ -1515,6 +1515,30 @@
                   popupChild.setAttribute("disabled", "true");
                 aPopup.insertBefore(popupChild, refChild);
               }
+            else {
+              if (!tree.firstChild || tree.firstChild.nodeName != "treecols")
+                return;
+              var columns = [];
+              tree.firstChild.childNodes.forEach(function (currElement) {
+                if (currElement.nodeName != "treecol" ||
+                    currElement.hasAttribute("ignoreincolumnpicker"))
+                  return;
+                var popupChild = document.createElement("menuitem");
+                popupChild.setAttribute("type", "checkbox");
+                var columnName = currElement.getAttribute("display") ||
+                                 currElement.getAttribute("label");
+                popupChild.setAttribute("label", columnName);
+                if (currElement.getAttribute("hidden") != "true")
+                  popupChild.setAttribute("checked", "true");
+                if (currElement.getAttribute("primary") == "true")
+                  popupChild.setAttribute("disabled", "true");
+                columns[currElement.getAttribute("ordinal")] = popupChild;
+              });
+              columns.filter(function () { return true; })
+                     .forEach(function (e, i) {
+                        e.setAttribute("colindex", i);
+                        aPopup.insertBefore(e, refChild);
+                      });
             }
 
             var hidden = !tree.enableColumnDrag;
