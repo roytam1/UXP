@@ -80,6 +80,7 @@
 #include "mozilla/CheckedInt.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/dom/ContentParent.h"
+#include "mozilla/dom/DOMMatrix.h"
 #include "mozilla/dom/ImageBitmap.h"
 #include "mozilla/dom/ImageData.h"
 #include "mozilla/dom/PBrowserParent.h"
@@ -6579,19 +6580,28 @@ CanvasPath::BezierTo(const gfx::Point& aCP1,
 }
 
 void
-CanvasPath::AddPath(CanvasPath& aCanvasPath, const Optional<NonNull<SVGMatrix>>& aMatrix)
+CanvasPath::AddPath(CanvasPath& aCanvasPath, const DOMMatrix2DInit& aInit,
+                    ErrorResult& aError)
+
 {
   RefPtr<gfx::Path> tempPath = aCanvasPath.GetPath(CanvasWindingRule::Nonzero,
                                                    gfxPlatform::GetPlatform()->ScreenReferenceDrawTarget());
 
-  if (aMatrix.WasPassed()) {
-    const SVGMatrix& m = aMatrix.Value();
-    Matrix transform(m.A(), m.B(), m.C(), m.D(), m.E(), m.F());
+  RefPtr<DOMMatrixReadOnly> matrix =
+      DOMMatrixReadOnly::FromMatrix(GetParentObject(), aInit, aError);
+  if (aError.Failed()) {
+    return;
+  }
 
-    if (!transform.IsIdentity()) {
-      RefPtr<PathBuilder> tempBuilder = tempPath->TransformedCopyToBuilder(transform, FillRule::FILL_WINDING);
-      tempPath = tempBuilder->Finish();
-    }
+  Matrix transform(*(matrix->GetInternal2D()));
+
+  if (!transform.IsFinite()) {
+    return;
+  }
+
+  if (!transform.IsIdentity()) {
+    RefPtr<PathBuilder> tempBuilder = tempPath->TransformedCopyToBuilder(transform, FillRule::FILL_WINDING);
+    tempPath = tempBuilder->Finish();
   }
 
   EnsurePathBuilder(); // in case a path is added to itself
