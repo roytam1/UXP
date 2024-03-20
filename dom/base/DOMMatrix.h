@@ -26,6 +26,7 @@ class DOMPoint;
 class StringOrUnrestrictedDoubleSequence;
 struct DOMPointInit;
 struct DOMMatrixInit;
+struct DOMMatrix2DInit;
 
 class DOMMatrixReadOnly : public nsWrapperCache
 {
@@ -56,6 +57,12 @@ public:
 
   nsISupports* GetParentObject() const { return mParent; }
   virtual JSObject* WrapObject(JSContext* cx, JS::Handle<JSObject*> aGivenProto) override;
+
+  static already_AddRefed<DOMMatrixReadOnly>
+  FromMatrix(nsISupports* aParent, const DOMMatrix2DInit& aMatrixInit, ErrorResult& aRv);
+
+  static already_AddRefed<DOMMatrixReadOnly>
+  FromMatrix(nsISupports* aParent, const DOMMatrixInit& aMatrixInit, ErrorResult& aRv);
 
   static already_AddRefed<DOMMatrixReadOnly>
   FromMatrix(const GlobalObject& aGlobal, const DOMMatrixInit& aMatrixInit, ErrorResult& aRv);
@@ -207,6 +214,12 @@ public:
                                              ErrorResult& aRv) const;
   void                        Stringify(nsAString& aResult);
   bool                        WriteStructuredClone(JSStructuredCloneWriter* aWriter) const;
+  const gfx::Matrix* GetInternal2D() const {
+    if (Is2D()) {
+      return mMatrix2D;
+    }
+    return nullptr;
+  }
 
 protected:
   nsCOMPtr<nsISupports>     mParent;
@@ -220,6 +233,7 @@ protected:
    * where all of its members are properly defined.
    * The init dictionary's dimension must match the matrix one.
    */
+  void SetDataFromMatrix2DInit(const DOMMatrix2DInit& aMatrixInit);
   void SetDataFromMatrixInit(DOMMatrixInit& aMatrixInit);
 
   DOMMatrixReadOnly* SetMatrixValue(const nsAString& aTransformList, ErrorResult& aRv);
