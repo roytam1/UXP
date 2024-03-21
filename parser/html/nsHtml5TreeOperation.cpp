@@ -330,6 +330,8 @@ nsHtml5TreeOperation::AddAttributes(nsIContent* aNode,
                                     nsHtml5HtmlAttributes* aAttributes,
                                     nsHtml5DocumentBuilder* aBuilder)
 {
+  MOZ_ASSERT(aNode->IsAnyOfHTMLElements(nsGkAtoms::body, nsGkAtoms::html));
+
   dom::Element* node = aNode->AsElement();
   nsHtml5OtherDocUpdate update(node->OwnerDoc(),
                                aBuilder->GetDocument());
@@ -342,7 +344,8 @@ nsHtml5TreeOperation::AddAttributes(nsIContent* aNode,
     nsCOMPtr<nsIAtom> localName =
       Reget(aAttributes->getLocalNameNoBoundsCheck(i));
     int32_t nsuri = aAttributes->getURINoBoundsCheck(i);
-    if (!node->HasAttr(nsuri, localName)) {
+    if (!node->HasAttr(nsuri, localName) &&
+        !(nsuri == kNameSpaceID_None && localName == nsGkAtoms::nonce)) {
       // prefix doesn't need regetting. it is always null or a static atom
       // local name is never null
       nsString value; // Not Auto, because using it to hold nsStringBuffer*

@@ -737,6 +737,7 @@
       </handler>
       <handler event="MozSwipeGesture" preventdefault="true">
         <![CDATA[
+          if (!this.view) return;
           // Figure out which row to show
           let targetRow = 0;
 
@@ -756,6 +757,7 @@
       <handler event="focus">
         <![CDATA[
           this.treeBoxObject.focused = true;
+          if (!this.view) return;
           if (this.currentIndex == -1 && this.view.rowCount > 0) {
             this.currentIndex = this.treeBoxObject.getFirstVisibleRow();
           }
@@ -778,7 +780,7 @@
       <!-- Use F2 key to enter text editing. -->
       <handler event="keydown" keycode="VK_F2">
         <![CDATA[
-          if (!this._cellSelType)
+          if (!this.view || !this._cellSelType)
             return;
           var row = this.currentIndex;
           var column = this.view.selection.currentColumn;
@@ -900,112 +902,112 @@
       </handler>
       <handler event="keydown" keycode="VK_UP" modifiers="accel any">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveByOffset(-1, 0, event);
         ]]>
       </handler>
       <handler event="keydown" keycode="VK_DOWN" modifiers="accel any">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveByOffset(1, this.view.rowCount - 1, event);
         ]]>
       </handler>
       <handler event="keydown" keycode="VK_UP" modifiers="accel any, shift">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveByOffsetShift(-1, 0, event);
         ]]>
       </handler>
       <handler event="keydown" keycode="VK_DOWN" modifiers="accel any, shift">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveByOffsetShift(1, this.view.rowCount - 1, event);
         ]]>
       </handler>
       <handler event="keydown" keycode="VK_PAGE_UP" modifiers="accel any">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveByPage(-1, 0, event);
         ]]>
       </handler>
       <handler event="keydown" keycode="VK_PAGE_DOWN" modifiers="accel any">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveByPage(1, this.view.rowCount - 1, event);
         ]]>
       </handler>
       <handler event="keydown" keycode="VK_PAGE_UP" modifiers="accel any, shift">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveByPageShift(-1, 0, event);
         ]]>
       </handler>
       <handler event="keydown" keycode="VK_PAGE_DOWN" modifiers="accel any, shift">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveByPageShift(1, this.view.rowCount - 1, event);
         ]]>
       </handler>
       <handler event="keydown" keycode="VK_HOME" modifiers="accel any">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveToEdge(0, event);
         ]]>
       </handler>
       <handler event="keydown" keycode="VK_END" modifiers="accel any">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveToEdge(this.view.rowCount - 1, event);
         ]]>
       </handler>
       <handler event="keydown" keycode="VK_HOME" modifiers="accel any, shift">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveToEdgeShift(0, event);
         ]]>
       </handler>
       <handler event="keydown" keycode="VK_END" modifiers="accel any, shift">
         <![CDATA[
-          if (this._editingColumn)
+          if (!this.view || this._editingColumn)
             return;
           _moveToEdgeShift(this.view.rowCount - 1, event);
         ]]>
       </handler>
       <handler event="keypress">
         <![CDATA[
-         if (this._editingColumn)
-           return;
+          if (!this.view || this._editingColumn)
+            return;
 
-         if (event.charCode == ' '.charCodeAt(0)) {
-           var c = this.currentIndex;
-           if (!this.view.selection.isSelected(c) ||
-               (!this.view.selection.single && this._isAccelPressed(event))) {
-             this.view.selection.toggleSelect(c);
-             event.preventDefault();
-           }
-         }
-         else if (!this.disableKeyNavigation && event.charCode > 0 &&
-                  !event.altKey && !this._isAccelPressed(event) &&
-                  !event.metaKey && !event.ctrlKey) {
-           var l = this._keyNavigate(event);
-           if (l >= 0) {
-             this.view.selection.timedSelect(l, this._selectDelay);
-             this.treeBoxObject.ensureRowIsVisible(l);
-           }
-           event.preventDefault();
-         }
-         ]]>
+          if (event.charCode == ' '.charCodeAt(0)) {
+            var c = this.currentIndex;
+            if (!this.view.selection.isSelected(c) ||
+                (!this.view.selection.single && this._isAccelPressed(event))) {
+              this.view.selection.toggleSelect(c);
+              event.preventDefault();
+            }
+          }
+          else if (!this.disableKeyNavigation && event.charCode > 0 &&
+                   !event.altKey && !this._isAccelPressed(event) &&
+                   !event.metaKey && !event.ctrlKey) {
+            var l = this._keyNavigate(event);
+            if (l >= 0) {
+              this.view.selection.timedSelect(l, this._selectDelay);
+              this.treeBoxObject.ensureRowIsVisible(l);
+            }
+            event.preventDefault();
+          }
+          ]]>
       </handler>
     </handlers>
   </binding>
@@ -1495,12 +1497,13 @@
             var refChild = aPopup.firstChild;
 
             var tree = this.parentNode.parentNode;
-            for (var currCol = tree.columns.getFirstColumn(); currCol;
-                 currCol = currCol.getNext()) {
-              // Construct an entry for each column in the row, unless
-              // it is not being shown.
-              var currElement = currCol.element;
-              if (!currElement.hasAttribute("ignoreincolumnpicker")) {
+            if (tree.columns)
+              for (var currCol = tree.columns.getFirstColumn(); currCol = currCol.getNext(); ) {
+                // Construct an entry for each column in the row, unless
+                // it is not being shown.
+                var currElement = currCol.element;
+                if (currElement.hasAttribute("ignoreincolumnpicker"))
+                  continue;
                 var popupChild = document.createElement("menuitem");
                 popupChild.setAttribute("type", "checkbox");
                 var columnName = currElement.getAttribute("display") ||
@@ -1513,6 +1516,30 @@
                   popupChild.setAttribute("disabled", "true");
                 aPopup.insertBefore(popupChild, refChild);
               }
+            else {
+              if (!tree.firstChild || tree.firstChild.nodeName != "treecols")
+                return;
+              var columns = [];
+              tree.firstChild.childNodes.forEach(function (currElement) {
+                if (currElement.nodeName != "treecol" ||
+                    currElement.hasAttribute("ignoreincolumnpicker"))
+                  return;
+                var popupChild = document.createElement("menuitem");
+                popupChild.setAttribute("type", "checkbox");
+                var columnName = currElement.getAttribute("display") ||
+                                 currElement.getAttribute("label");
+                popupChild.setAttribute("label", columnName);
+                if (currElement.getAttribute("hidden") != "true")
+                  popupChild.setAttribute("checked", "true");
+                if (currElement.getAttribute("primary") == "true")
+                  popupChild.setAttribute("disabled", "true");
+                columns[currElement.getAttribute("ordinal")] = popupChild;
+              });
+              columns.filter(function (e, i) {
+                        e.setAttribute("colindex", i);
+                        aPopup.insertBefore(e, refChild);
+                        return false;
+                      });
             }
 
             var hidden = !tree.enableColumnDrag;
