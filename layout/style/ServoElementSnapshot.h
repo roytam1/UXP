@@ -77,10 +77,6 @@ public:
    */
   void AddState(EventStates aState)
   {
-    if (!HasAny(Flags::State)) {
-      mState = aState.ServoValue();
-      mContains |= Flags::State;
-    }
   }
 
   /**
@@ -90,12 +86,10 @@ public:
 
   void AddExplicitChangeHint(nsChangeHint aMinChangeHint)
   {
-    mExplicitChangeHint |= aMinChangeHint;
   }
 
   void AddExplicitRestyleHint(nsRestyleHint aRestyleHint)
   {
-    mExplicitRestyleHint |= aRestyleHint;
   }
 
   nsRestyleHint ExplicitRestyleHint() { return mExplicitRestyleHint; }
@@ -107,10 +101,7 @@ public:
    */
   BorrowedAttrInfo GetAttrInfoAt(uint32_t aIndex) const
   {
-    if (aIndex >= mAttrs.Length()) {
-      return BorrowedAttrInfo(nullptr, nullptr);
-    }
-    return BorrowedAttrInfo(&mAttrs[aIndex].mName, &mAttrs[aIndex].mValue);
+    return BorrowedAttrInfo(nullptr, nullptr);
   }
 
   const nsAttrValue* GetParsedAttr(nsIAtom* aLocalName) const
@@ -121,33 +112,18 @@ public:
   const nsAttrValue* GetParsedAttr(nsIAtom* aLocalName,
                                    int32_t aNamespaceID) const
   {
-    uint32_t i, len = mAttrs.Length();
-    if (aNamespaceID == kNameSpaceID_None) {
-      // This should be the common case so lets make an optimized loop
-      for (i = 0; i < len; ++i) {
-        if (mAttrs[i].mName.Equals(aLocalName)) {
-          return &mAttrs[i].mValue;
-        }
-      }
-
-      return nullptr;
-    }
-
-    for (i = 0; i < len; ++i) {
-      if (mAttrs[i].mName.Equals(aLocalName, aNamespaceID)) {
-        return &mAttrs[i].mValue;
-      }
-    }
-
     return nullptr;
   }
 
   bool IsInChromeDocument() const
   {
-    return mIsInChromeDocument;
+    return false;
   }
 
-  bool HasAny(Flags aFlags) { return bool(mContains & aFlags); }
+  bool HasAny(Flags aFlags)
+  {
+    return false;
+  }
 
 private:
   // TODO: Profile, a 1 or 2 element AutoTArray could be worth it, given we know

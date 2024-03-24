@@ -23,44 +23,29 @@ ServoStyleSheet::ServoStyleSheet(css::SheetParsingMode aParsingMode,
 
 ServoStyleSheet::~ServoStyleSheet()
 {
-  DropSheet();
 }
 
 bool
 ServoStyleSheet::HasRules() const
 {
-  return mSheet && Servo_StyleSheet_HasRules(mSheet);
+  return false;
 }
 
 void
 ServoStyleSheet::SetAssociatedDocument(nsIDocument* aDocument,
                                        DocumentAssociationMode aAssociationMode)
 {
-  MOZ_ASSERT_IF(!aDocument, aAssociationMode == NotOwnedByDocument);
-
-  // XXXheycam: Traverse to child ServoStyleSheets to set this, like
-  // CSSStyleSheet::SetAssociatedDocument does.
-
-  mDocument = aDocument;
-  mDocumentAssociationMode = aAssociationMode;
 }
 
 ServoStyleSheet*
 ServoStyleSheet::GetParentSheet() const
 {
-  // XXXheycam: When we implement support for child sheets, we'll have
-  // to fix SetAssociatedDocument to propagate the associated document down
-  // to the children.
-  MOZ_CRASH("stylo: not implemented");
+  return nullptr;
 }
 
 void
 ServoStyleSheet::AppendStyleSheet(ServoStyleSheet* aSheet)
 {
-  // XXXheycam: When we implement support for child sheets, we'll have
-  // to fix SetOwningDocument to propagate the owning document down
-  // to the children.
-  MOZ_CRASH("stylo: not implemented");
 }
 
 nsresult
@@ -70,40 +55,23 @@ ServoStyleSheet::ParseSheet(const nsAString& aInput,
                             nsIPrincipal* aSheetPrincipal,
                             uint32_t aLineNumber)
 {
-  DropSheet();
-
-  RefPtr<ThreadSafeURIHolder> base = new ThreadSafeURIHolder(aBaseURI);
-  RefPtr<ThreadSafeURIHolder> referrer = new ThreadSafeURIHolder(aSheetURI);
-  RefPtr<ThreadSafePrincipalHolder> principal =
-    new ThreadSafePrincipalHolder(aSheetPrincipal);
-
-  nsCString baseString;
-  nsresult rv = aBaseURI->GetSpec(baseString);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  NS_ConvertUTF16toUTF8 input(aInput);
-  mSheet = Servo_StyleSheet_FromUTF8Bytes(&input, mParsingMode, &baseString,
-                                          base, referrer, principal).Consume();
-
   return NS_OK;
 }
 
 void
 ServoStyleSheet::LoadFailed()
 {
-  mSheet = Servo_StyleSheet_Empty(mParsingMode).Consume();
 }
 
 void
 ServoStyleSheet::DropSheet()
 {
-  mSheet = nullptr;
 }
 
 size_t
 ServoStyleSheet::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
 {
-  MOZ_CRASH("stylo: not implemented");
+  return 0;
 }
 
 #ifdef DEBUG
@@ -129,7 +97,6 @@ ServoStyleSheet::GetDOMOwnerRule() const
 CSSRuleList*
 ServoStyleSheet::GetCssRulesInternal(ErrorResult& aRv)
 {
-  aRv.Throw(NS_ERROR_NOT_IMPLEMENTED);
   return nullptr;
 }
 
@@ -137,14 +104,12 @@ uint32_t
 ServoStyleSheet::InsertRuleInternal(const nsAString& aRule,
                                     uint32_t aIndex, ErrorResult& aRv)
 {
-  aRv.Throw(NS_ERROR_NOT_IMPLEMENTED);
   return 0;
 }
 
 void
 ServoStyleSheet::DeleteRuleInternal(uint32_t aIndex, ErrorResult& aRv)
 {
-  aRv.Throw(NS_ERROR_NOT_IMPLEMENTED);
 }
 
 } // namespace mozilla

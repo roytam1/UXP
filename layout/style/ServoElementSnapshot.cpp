@@ -16,30 +16,11 @@ ServoElementSnapshot::ServoElementSnapshot(Element* aElement)
   , mExplicitRestyleHint(nsRestyleHint(0))
   , mExplicitChangeHint(nsChangeHint(0))
 {
-  mIsHTMLElementInHTMLDocument =
-    aElement->IsHTMLElement() && aElement->IsInHTMLDocument();
-  mIsInChromeDocument =
-    nsContentUtils::IsChromeDoc(aElement->OwnerDoc());
 }
 
 void
 ServoElementSnapshot::AddAttrs(Element* aElement)
 {
-  MOZ_ASSERT(aElement);
-
-  if (HasAny(Flags::Attributes)) {
-    return;
-  }
-
-  uint32_t attrCount = aElement->GetAttrCount();
-  const nsAttrName* attrName;
-  for (uint32_t i = 0; i < attrCount; ++i) {
-    attrName = aElement->GetAttrNameAt(i);
-    const nsAttrValue* attrValue =
-      aElement->GetParsedAttr(attrName->LocalName(), attrName->NamespaceID());
-    mAttrs.AppendElement(ServoAttrSnapshot(*attrName, *attrValue));
-  }
-  mContains |= Flags::Attributes;
 }
 
 } // namespace mozilla
