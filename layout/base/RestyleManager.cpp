@@ -1417,7 +1417,6 @@ ElementRestyler::ElementRestyler(nsPresContext* aPresContext,
   , mLoggingDepth(aRestyleTracker.LoggingDepth() + 1)
 #endif
 {
-  MOZ_ASSERT_IF(mContent, !mContent->IsStyledByServo());
 }
 
 ElementRestyler::ElementRestyler(const ElementRestyler& aParentRestyler,
@@ -1452,7 +1451,6 @@ ElementRestyler::ElementRestyler(const ElementRestyler& aParentRestyler,
   , mLoggingDepth(aParentRestyler.mLoggingDepth + 1)
 #endif
 {
-  MOZ_ASSERT_IF(mContent, !mContent->IsStyledByServo());
   if (aConstructorFlags & FOR_OUT_OF_FLOW_CHILD) {
     // Note that the out-of-flow may not be a geometric descendant of
     // the frame where we started the reresolve.  Therefore, even if
@@ -1501,7 +1499,6 @@ ElementRestyler::ElementRestyler(ParentContextFromChildFrame,
   , mLoggingDepth(aParentRestyler.mLoggingDepth + 1)
 #endif
 {
-  MOZ_ASSERT_IF(mContent, !mContent->IsStyledByServo());
 }
 
 ElementRestyler::ElementRestyler(nsPresContext* aPresContext,
@@ -1715,7 +1712,6 @@ ElementRestyler::ConditionallyRestyleChildren(nsIFrame* aFrame,
 {
   MOZ_ASSERT(aFrame->GetContent());
   MOZ_ASSERT(aFrame->GetContent()->IsElement());
-  MOZ_ASSERT(!aFrame->GetContent()->IsStyledByServo());
 
   ConditionallyRestyleUndisplayedDescendants(aFrame, aRestyleRoot);
   ConditionallyRestyleContentChildren(aFrame, aRestyleRoot);
@@ -1729,7 +1725,6 @@ ElementRestyler::ConditionallyRestyleContentChildren(nsIFrame* aFrame,
 {
   MOZ_ASSERT(aFrame->GetContent());
   MOZ_ASSERT(aFrame->GetContent()->IsElement());
-  MOZ_ASSERT(!aFrame->GetContent()->IsStyledByServo());
 
   if (aFrame->GetContent()->HasFlag(mRestyleTracker.RootBit())) {
     aRestyleRoot = aFrame->GetContent()->AsElement();
@@ -1821,7 +1816,6 @@ ElementRestyler::ConditionallyRestyleUndisplayedNodes(
   if (aUndisplayedParent &&
       aUndisplayedParent->IsElement() &&
       aUndisplayedParent->HasFlag(mRestyleTracker.RootBit())) {
-    MOZ_ASSERT(!aUndisplayedParent->IsStyledByServo());
     aRestyleRoot = aUndisplayedParent->AsElement();
   }
 
@@ -1848,7 +1842,6 @@ void
 ElementRestyler::ConditionallyRestyleContentDescendants(Element* aElement,
                                                         Element* aRestyleRoot)
 {
-  MOZ_ASSERT(!aElement->IsStyledByServo());
   if (aElement->HasFlag(mRestyleTracker.RootBit())) {
     aRestyleRoot = aElement;
   }
@@ -1879,7 +1872,6 @@ ElementRestyler::ConditionallyRestyle(nsIFrame* aFrame, Element* aRestyleRoot)
 bool
 ElementRestyler::ConditionallyRestyle(Element* aElement, Element* aRestyleRoot)
 {
-  MOZ_ASSERT(!aElement->IsStyledByServo());
   LOG_RESTYLE("considering element %s for eRestyle_SomeDescendants",
               ElementTagToString(aElement).get());
   LOG_RESTYLE_INDENT();

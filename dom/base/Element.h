@@ -1662,9 +1662,9 @@ inline const mozilla::dom::Element* nsINode::AsElement() const
   return static_cast<const mozilla::dom::Element*>(this);
 }
 
-inline void nsINode::UnsetRestyleFlagsIfGecko()
+inline void nsINode::UnsetRestyleFlags()
 {
-  if (IsElement() && !IsStyledByServo()) {
+  if (IsElement()) {
     UnsetFlags(ELEMENT_ALL_RESTYLE_FLAGS);
   }
 }

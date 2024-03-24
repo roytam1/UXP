@@ -1615,7 +1615,7 @@ Element::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
                // And clear the lazy frame construction bits.
                NODE_NEEDS_FRAME | NODE_DESCENDANTS_NEED_FRAMES);
     // And the restyle bits
-    UnsetRestyleFlagsIfGecko();
+    UnsetRestyleFlags();
   } else if (IsInShadowTree()) {
     // We're not in a document, but we did get inserted into a shadow tree.
     // Since we won't have any restyle data in the document's restyle trackers,
@@ -1625,7 +1625,7 @@ Element::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
     // inserted into a document.
     UnsetFlags(NODE_FORCE_XBL_BINDINGS |
                NODE_NEEDS_FRAME | NODE_DESCENDANTS_NEED_FRAMES);
-    UnsetRestyleFlagsIfGecko();
+    UnsetRestyleFlags();
   } else {
     // If we're not in the doc and not in a shadow tree,
     // update our subtree pointer.
@@ -1766,18 +1766,6 @@ Element::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
     }
   }
 
-  // It would be cleanest to mark nodes as dirty when (a) they're created and
-  // (b) they're unbound from a tree. However, we can't easily do (a) right now,
-  // because IsStyledByServo() is not always easy to check at node creation time,
-  // and the bits have different meaning in the non-IsStyledByServo case.
-  //
-  // So for now, we just mark nodes as dirty when they're inserted into a
-  // document or shadow tree.
-  if (IsStyledByServo() && IsInComposedDoc()) {
-    MOZ_ASSERT(!HasServoData());
-    SetIsDirtyForServo();
-  }
-
   // XXXbz script execution during binding can trigger some of these
   // postcondition asserts....  But we do want that, since things will
   // generally be quite broken when that happens.
@@ -1903,12 +1891,6 @@ Element::UnbindFromTree(bool aDeep, bool aNullParent)
   }
 
   ClearInDocument();
-
-  // Computed styled data isn't useful for detached nodes, and we'll need to
-  // recomputed it anyway if we ever insert the nodes back into a document.
-  if (IsStyledByServo()) {
-    ClearServoData();
-  }
 
   // Editable descendant count only counts descendants that
   // are in the uncomposed document.

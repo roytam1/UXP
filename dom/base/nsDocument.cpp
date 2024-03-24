@@ -2277,11 +2277,6 @@ nsDocument::IsWebComponentsEnabled(JSContext* aCx, JSObject* aObject)
     do_QueryInterface(nsJSUtils::GetStaticScriptGlobal(global));
 
   nsIDocument* doc = window ? window->GetExtantDoc() : nullptr;
-  if (doc && doc->IsStyledByServo()) {
-    NS_WARNING("stylo: Web Components not supported yet");
-    return false;
-  }
-
   return true;
 }
 
