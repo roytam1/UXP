@@ -115,14 +115,6 @@ protected:
     return PresContext()->FrameConstructor();
   }
 
-  inline bool IsGecko() const {
-    return !IsServo();
-  }
-
-  inline bool IsServo() const {
-    return false;
-  }
-
 private:
   nsPresContext* mPresContext; // weak, can be null after Disconnect().
   uint32_t mRestyleGeneration;

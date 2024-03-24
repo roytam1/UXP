@@ -7,28 +7,21 @@
 #define mozilla_StyleSheetInlines_h
 
 #include "mozilla/StyleSheetInfo.h"
-#include "mozilla/ServoStyleSheet.h"
 #include "mozilla/CSSStyleSheet.h"
 
 namespace mozilla {
 
-MOZ_DEFINE_STYLO_METHODS(StyleSheet, CSSStyleSheet, ServoStyleSheet)
+MOZ_DEFINE_STYLO_METHODS(StyleSheet, CSSStyleSheet)
 
 StyleSheetInfo&
 StyleSheet::SheetInfo()
 {
-  if (IsServo()) {
-    return AsServo()->mSheetInfo;
-  }
   return *AsGecko()->mInner;
 }
 
 const StyleSheetInfo&
 StyleSheet::SheetInfo() const
 {
-  if (IsServo()) {
-    return AsServo()->mSheetInfo;
-  }
   return *AsGecko()->mInner;
 }
 
@@ -78,7 +71,7 @@ StyleSheet::IsApplicable() const
 bool
 StyleSheet::HasRules() const
 {
-  MOZ_STYLO_FORWARD(HasRules, ())
+  return AsGecko()->HasRules();
 }
 
 void
@@ -86,19 +79,19 @@ StyleSheet::SetAssociatedDocument(nsIDocument* aDocument,
                                   DocumentAssociationMode aAssociationMode)
 {
   MOZ_ASSERT(aDocument);
-  MOZ_STYLO_FORWARD(SetAssociatedDocument, (aDocument, aAssociationMode))
+  AsGecko()->SetAssociatedDocument(aDocument, aAssociationMode);
 }
 
 void
 StyleSheet::ClearAssociatedDocument()
 {
-  MOZ_STYLO_FORWARD(SetAssociatedDocument, (nullptr, NotOwnedByDocument));
+  AsGecko()->SetAssociatedDocument(nullptr, NotOwnedByDocument);
 }
 
 StyleSheet*
 StyleSheet::GetParentSheet() const
 {
-  MOZ_STYLO_FORWARD(GetParentSheet, ())
+  return AsGecko()->GetParentSheet();
 }
 
 StyleSheet*
@@ -119,8 +112,7 @@ StyleSheet::GetParentObject() const
 void
 StyleSheet::AppendStyleSheet(StyleSheet* aSheet)
 {
-  MOZ_STYLO_FORWARD_CONCRETE(AppendStyleSheet,
-                             (aSheet->AsGecko()), (aSheet->AsServo()))
+  AsGecko()->AppendStyleSheet(aSheet->AsGecko());
 }
 
 nsIPrincipal*
@@ -163,19 +155,19 @@ StyleSheet::GetIntegrity(dom::SRIMetadata& aResult) const
 size_t
 StyleSheet::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
 {
-  MOZ_STYLO_FORWARD(SizeOfIncludingThis, (aMallocSizeOf))
+  return AsGecko()->SizeOfIncludingThis(aMallocSizeOf);
 }
 
 #ifdef DEBUG
 void
 StyleSheet::List(FILE* aOut, int32_t aIndex) const
 {
-  MOZ_STYLO_FORWARD(List, (aOut, aIndex))
+  AsGecko()->List(aOut, aIndex);
 }
 #endif
 
-void StyleSheet::WillDirty() { MOZ_STYLO_FORWARD(WillDirty, ()) }
-void StyleSheet::DidDirty() { MOZ_STYLO_FORWARD(DidDirty, ()) }
+void StyleSheet::WillDirty() { AsGecko()->WillDirty(); }
+void StyleSheet::DidDirty() { AsGecko()->DidDirty(); }
 
 
 }

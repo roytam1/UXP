@@ -37,7 +37,7 @@ protected:
     : DeclarationBlock(aCopy.mType) {}
 
 public:
-  MOZ_DECL_STYLO_METHODS(css::Declaration, ServoDeclarationBlock)
+  MOZ_DECL_STYLO_METHODS(css::Declaration)
 
   inline MozExternalRefCountType AddRef();
   inline MozExternalRefCountType Release();

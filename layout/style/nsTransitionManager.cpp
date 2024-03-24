@@ -501,9 +501,6 @@ nsTransitionManager::StyleContextChanged(dom::Element *aElement,
     return;
   }
 
-  MOZ_ASSERT(mPresContext->RestyleManager()->IsGecko(),
-             "ServoRestyleManager should not use nsTransitionManager "
-             "for transitions");
   if (collection &&
       collection->mCheckGeneration ==
         mPresContext->RestyleManager()->AsGecko()->GetAnimationGeneration()) {
@@ -533,9 +530,6 @@ nsTransitionManager::StyleContextChanged(dom::Element *aElement,
   // not stopping or starting right now.
   RefPtr<nsStyleContext> afterChangeStyle;
   if (collection) {
-    MOZ_ASSERT(mPresContext->StyleSet()->IsGecko(),
-               "ServoStyleSets should not use nsTransitionManager "
-               "for transitions");
     nsStyleSet* styleSet = mPresContext->StyleSet()->AsGecko();
     afterChangeStyle =
       styleSet->ResolveStyleWithoutAnimation(aElement, newStyleContext,
@@ -913,10 +907,6 @@ nsTransitionManager::ConsiderInitiatingTransition(
   pt->SetKeyframes(GetTransitionKeyframes(aNewStyleContext, aProperty,
                                           Move(startValue), Move(endValue), tf),
                    aNewStyleContext);
-
-  MOZ_ASSERT(mPresContext->RestyleManager()->IsGecko(),
-             "ServoRestyleManager should not use nsTransitionManager "
-             "for transitions");
 
   RefPtr<CSSTransition> animation =
     new CSSTransition(mPresContext->Document()->GetScopeObject());

@@ -458,9 +458,6 @@ public:
 
 private:
   inline nsStyleSet* StyleSet() const {
-    MOZ_ASSERT(PresContext()->StyleSet()->IsGecko(),
-               "RestyleManager should only be used with a Gecko-flavored "
-               "style backend");
     return PresContext()->StyleSet()->AsGecko();
   }
 

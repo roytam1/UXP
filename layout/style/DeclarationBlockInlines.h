@@ -7,33 +7,28 @@
 #define mozilla_DeclarationBlockInlines_h
 
 #include "mozilla/css/Declaration.h"
-#include "mozilla/ServoDeclarationBlock.h"
 
 namespace mozilla {
 
-MOZ_DEFINE_STYLO_METHODS(DeclarationBlock, css::Declaration, ServoDeclarationBlock)
+MOZ_DEFINE_STYLO_METHODS(DeclarationBlock, css::Declaration)
 
 MozExternalRefCountType
 DeclarationBlock::AddRef()
 {
-  MOZ_STYLO_FORWARD(AddRef, ())
+  return AsGecko()->AddRef();
 }
 
 MozExternalRefCountType
 DeclarationBlock::Release()
 {
-  MOZ_STYLO_FORWARD(Release, ())
+  return AsGecko()->Release();
 }
 
 already_AddRefed<DeclarationBlock>
 DeclarationBlock::Clone() const
 {
   RefPtr<DeclarationBlock> result;
-  if (IsGecko()) {
-    result = new css::Declaration(*AsGecko());
-  } else {
-    result = new ServoDeclarationBlock(*AsServo());
-  }
+  result = new css::Declaration(*AsGecko());
   return result.forget();
 }
 
@@ -41,9 +36,7 @@ already_AddRefed<DeclarationBlock>
 DeclarationBlock::EnsureMutable()
 {
 #ifdef DEBUG
-  if (IsGecko()) {
-    AsGecko()->AssertNotExpanded();
-  }
+  AsGecko()->AssertNotExpanded();
 #endif
   if (!IsMutable()) {
     return Clone();
@@ -54,58 +47,58 @@ DeclarationBlock::EnsureMutable()
 void
 DeclarationBlock::ToString(nsAString& aString) const
 {
-  MOZ_STYLO_FORWARD(ToString, (aString))
+  AsGecko()->ToString(aString);
 }
 
 uint32_t
 DeclarationBlock::Count() const
 {
-  MOZ_STYLO_FORWARD(Count, ())
+  return AsGecko()->Count();
 }
 
 bool
 DeclarationBlock::GetNthProperty(uint32_t aIndex, nsAString& aReturn) const
 {
-  MOZ_STYLO_FORWARD(GetNthProperty, (aIndex, aReturn))
+  return AsGecko()->GetNthProperty(aIndex, aReturn);
 }
 
 void
 DeclarationBlock::GetPropertyValue(const nsAString& aProperty,
                                    nsAString& aValue) const
 {
-  MOZ_STYLO_FORWARD(GetPropertyValue, (aProperty, aValue))
+  AsGecko()->GetPropertyValue(aProperty, aValue);
 }
 
 void
 DeclarationBlock::GetPropertyValueByID(nsCSSPropertyID aPropID,
                                        nsAString& aValue) const
 {
-  MOZ_STYLO_FORWARD(GetPropertyValueByID, (aPropID, aValue))
+  AsGecko()->GetPropertyValueByID(aPropID, aValue);
 }
 
 void
 DeclarationBlock::GetAuthoredPropertyValue(const nsAString& aProperty,
                                            nsAString& aValue) const
 {
-  MOZ_STYLO_FORWARD(GetAuthoredPropertyValue, (aProperty, aValue))
+  AsGecko()->GetAuthoredPropertyValue(aProperty, aValue);
 }
 
 bool
 DeclarationBlock::GetPropertyIsImportant(const nsAString& aProperty) const
 {
-  MOZ_STYLO_FORWARD(GetPropertyIsImportant, (aProperty))
+  return AsGecko()->GetPropertyIsImportant(aProperty);
 }
 
 void
 DeclarationBlock::RemoveProperty(const nsAString& aProperty)
 {
-  MOZ_STYLO_FORWARD(RemoveProperty, (aProperty))
+  AsGecko()->RemoveProperty(aProperty);
 }
 
 void
 DeclarationBlock::RemovePropertyByID(nsCSSPropertyID aProperty)
 {
-  MOZ_STYLO_FORWARD(RemovePropertyByID, (aProperty))
+  AsGecko()->RemovePropertyByID(aProperty);
 }
 
 } // namespace mozilla

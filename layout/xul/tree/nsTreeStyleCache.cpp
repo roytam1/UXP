@@ -78,10 +78,6 @@ nsTreeStyleCache::GetStyleContext(nsICSSPseudoComparator* aComparator,
   }
   if (!result) {
     // We missed the cache. Resolve this pseudo-style.
-    // XXXheycam ServoStyleSets do not support XUL tree styles.
-    if (aPresContext->StyleSet()->IsServo()) {
-      MOZ_CRASH("stylo: ServoStyleSets should not support XUL tree styles yet");
-    }
     RefPtr<nsStyleContext> newResult = aPresContext->StyleSet()->AsGecko()->
       ResolveXULTreePseudoStyle(aContent->AsElement(), aPseudoElement,
                                 aContext, aComparator);

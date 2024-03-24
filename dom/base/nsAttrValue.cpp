@@ -1749,14 +1749,10 @@ nsAttrValue::ParseStyleAttribute(const nsAString& aString,
   }
 
   RefPtr<DeclarationBlock> decl;
-  if (ownerDoc->GetStyleBackendType() == StyleBackendType::Servo) {
-    decl = ServoDeclarationBlock::FromCssText(aString);
-  } else {
-    css::Loader* cssLoader = ownerDoc->CSSLoader();
-    nsCSSParser cssParser(cssLoader);
-    decl = cssParser.ParseStyleAttribute(aString, docURI, baseURI,
-                                         aElement->NodePrincipal());
-  }
+  css::Loader* cssLoader = ownerDoc->CSSLoader();
+  nsCSSParser cssParser(cssLoader);
+  decl = cssParser.ParseStyleAttribute(aString, docURI, baseURI,
+                                       aElement->NodePrincipal());
   if (!decl) {
     return false;
   }

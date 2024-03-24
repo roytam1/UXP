@@ -453,7 +453,6 @@ void
 nsStyleBorder::FinishStyle(nsPresContext* aPresContext)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aPresContext->StyleSet()->IsServo());
 
   mBorderImageSource.ResolveImage(aPresContext);
 }
@@ -676,7 +675,6 @@ void
 nsStyleList::FinishStyle(nsPresContext* aPresContext)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aPresContext->StyleSet()->IsServo());
 
   if (mListStyleImage && !mListStyleImage->IsResolved()) {
     mListStyleImage->Resolve(aPresContext);
@@ -1208,7 +1206,6 @@ void
 nsStyleSVGReset::FinishStyle(nsPresContext* aPresContext)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aPresContext->StyleSet()->IsServo());
 
   mMask.ResolveImages(aPresContext);
 }
@@ -2945,7 +2942,6 @@ void
 nsStyleBackground::FinishStyle(nsPresContext* aPresContext)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aPresContext->StyleSet()->IsServo());
 
   mImage.ResolveImages(aPresContext);
 }

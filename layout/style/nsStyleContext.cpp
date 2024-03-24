@@ -160,9 +160,7 @@ nsStyleContext::FinishConstruction(bool aSkipParentDisplayBasedStyleFixup)
   }
 
   SetStyleBits();
-  if (!mSource.IsServoComputedValues()) {
-    ApplyStyleFixups(aSkipParentDisplayBasedStyleFixup);
-  }
+  ApplyStyleFixups(aSkipParentDisplayBasedStyleFixup);
 
   #define eStyleStruct_LastItem (nsStyleStructID_Length - 1)
   NS_ASSERTION(NS_STYLE_INHERIT_MASK & NS_STYLE_INHERIT_BIT(LastItem),
@@ -450,43 +448,11 @@ const void* nsStyleContext::StyleData(nsStyleStructID aSID)
     return cachedData; // We have computed data stored on this node in the context tree.
   // Our style source will take care of it for us.
   const void* newData;
-  if (mSource.IsGeckoRuleNode()) {
-    newData = mSource.AsGeckoRuleNode()->GetStyleData(aSID, this, true);
-    if (!nsCachedStyleData::IsReset(aSID)) {
-      // always cache inherited data on the style context; the rule
-      // node set the bit in mBits for us if needed.
-      mCachedInheritedData.mStyleStructs[aSID] = const_cast<void*>(newData);
-    }
-  } else {
-    newData = StyleStructFromServoComputedValues(aSID);
-
-    // perform any remaining main thread work on the struct
-    switch (aSID) {
-#define STYLE_STRUCT(name_, checkdata_cb_)                                    \
-      case eStyleStruct_##name_: {                                            \
-        auto data = static_cast<const nsStyle##name_*>(newData);              \
-        const_cast<nsStyle##name_*>(data)->FinishStyle(PresContext());        \
-        break;                                                                \
-      }
-#include "nsStyleStructList.h"
-#undef STYLE_STRUCT
-      default:
-        MOZ_ASSERT_UNREACHABLE("unexpected nsStyleStructID value");
-        break;
-    }
-
-    // The Servo-backed StyleContextSource owns the struct.
-    AddStyleBit(nsCachedStyleData::GetBitForSID(aSID));
-
-    // XXXbholley: Unconditionally caching reset structs here defeats the memory
-    // optimization where we lazily allocate mCachedResetData, so that we can avoid
-    // performing an FFI call each time we want to get the style structs. We should
-    // measure the tradeoffs at some point. If the FFI overhead is low and the memory
-    // win significant, we should consider _always_ grabbing the struct over FFI, and
-    // potentially giving mCachedInheritedData the same treatment.
-    //
-    // Note that there is a similar comment in the struct getters in nsStyleContext.h.
-    SetStyle(aSID, const_cast<void*>(newData));
+  newData = mSource.AsGeckoRuleNode()->GetStyleData(aSID, this, true);
+  if (!nsCachedStyleData::IsReset(aSID)) {
+    // always cache inherited data on the style context; the rule
+    // node set the bit in mBits for us if needed.
+    mCachedInheritedData.mStyleStructs[aSID] = const_cast<void*>(newData);
   }
   return newData;
 }
@@ -497,9 +463,6 @@ const void* nsStyleContext::StyleData(nsStyleStructID aSID)
 void*
 nsStyleContext::GetUniqueStyleData(const nsStyleStructID& aSID)
 {
-  MOZ_ASSERT(!mSource.IsServoComputedValues(),
-             "Can't COW-mutate servo values from Gecko!");
-
   // If we already own the struct and no kids could depend on it, then
   // just return it.  (We leak in this case if there are kids -- and this
   // function really shouldn't be called for style contexts that could
@@ -715,9 +678,6 @@ nsStyleContext::SetStyleBits()
 void
 nsStyleContext::ApplyStyleFixups(bool aSkipParentDisplayBasedStyleFixup)
 {
-  MOZ_ASSERT(!mSource.IsServoComputedValues(),
-             "Can't do Gecko style fixups on Servo values");
-
 #define GET_UNIQUE_STYLE_DATA(name_) \
   static_cast<nsStyle##name_*>(GetUniqueStyleData(eStyleStruct_##name_))
 
@@ -1351,9 +1311,7 @@ void nsStyleContext::List(FILE* out, int32_t aIndent, bool aListDescendants)
     str.Append(' ');
   }
 
-  if (mSource.IsServoComputedValues()) {
-    fprintf_stderr(out, "%s{ServoComputedValues}\n", str.get());
-  } else if (mSource.IsGeckoRuleNode()) {
+  if (mSource.AsGeckoRuleNode()) {
     fprintf_stderr(out, "%s{\n", str.get());
     str.Truncate();
     nsRuleNode* ruleNode = mSource.AsGeckoRuleNode();

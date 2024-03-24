@@ -420,15 +420,6 @@ nsXBLBinding::GenerateAnonymousContent()
     if (mContent)
       mContent->UnsetAttr(namespaceID, name, false);
   }
-
-  // Now that we've finished shuffling the tree around, go ahead and restyle it
-  // since frame construction is about to happen.
-  nsIPresShell* presShell = mBoundElement->OwnerDoc()->GetShell();
-  ServoStyleSet* servoSet = presShell->StyleSet()->GetAsServo();
-  if (servoSet) {
-    mBoundElement->SetHasDirtyDescendantsForServo();
-    servoSet->StyleNewChildren(mBoundElement);
-  }
 }
 
 nsIURI*

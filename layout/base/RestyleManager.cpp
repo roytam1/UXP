@@ -3877,9 +3877,6 @@ RestyleManager::ComputeAndProcessStyleChange(nsStyleContext*        aNewContext,
 nsStyleSet*
 ElementRestyler::StyleSet() const
 {
-  MOZ_ASSERT(mPresContext->StyleSet()->IsGecko(),
-             "ElementRestyler should only be used with a Gecko-flavored "
-             "style backend");
   return mPresContext->StyleSet()->AsGecko();
 }
 

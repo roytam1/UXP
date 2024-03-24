@@ -5,7 +5,6 @@
 
 /* container for a document and its presentation */
 
-#include "mozilla/ServoStyleSet.h"
 #include "nsAutoPtr.h"
 #include "nscore.h"
 #include "nsCOMPtr.h"
@@ -2279,12 +2278,7 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
 
   StyleBackendType backendType = aDocument->GetStyleBackendType();
 
-  StyleSetHandle styleSet;
-  if (backendType == StyleBackendType::Gecko) {
-    styleSet = new nsStyleSet();
-  } else {
-    styleSet = new ServoStyleSet();
-  }
+  StyleSetHandle styleSet = new nsStyleSet();
 
   styleSet->BeginUpdate();
   
@@ -2440,19 +2434,14 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
     }
   }
 
-  if (styleSet->IsGecko()) {
-    nsStyleSheetService* sheetService = nsStyleSheetService::GetInstance();
-    if (sheetService) {
-      for (StyleSheet* sheet : *sheetService->AgentStyleSheets()) {
-        styleSet->AppendStyleSheet(SheetType::Agent, sheet);
-      }
-      for (StyleSheet* sheet : Reversed(*sheetService->UserStyleSheets())) {
-        styleSet->PrependStyleSheet(SheetType::User, sheet);
-      }
+  nsStyleSheetService* sheetService = nsStyleSheetService::GetInstance();
+  if (sheetService) {
+    for (StyleSheet* sheet : *sheetService->AgentStyleSheets()) {
+      styleSet->AppendStyleSheet(SheetType::Agent, sheet);
     }
-  } else {
-    NS_WARNING("stylo: Not yet checking nsStyleSheetService for Servo-backed "
-               "documents. See bug 1290224");
+    for (StyleSheet* sheet : Reversed(*sheetService->UserStyleSheets())) {
+      styleSet->PrependStyleSheet(SheetType::User, sheet);
+    }
   }
 
   // Caller will handle calling EndUpdate, per contract.

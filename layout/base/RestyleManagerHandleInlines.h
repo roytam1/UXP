@@ -7,35 +7,25 @@
 #define mozilla_RestyleManagerHandleInlines_h
 
 #include "mozilla/RestyleManager.h"
-#include "mozilla/ServoRestyleManager.h"
-
-#define FORWARD_CONCRETE(method_, geckoargs_, servoargs_) \
-  if (IsGecko()) { \
-    return AsGecko()->method_ geckoargs_; \
-  } else { \
-    return AsServo()->method_ servoargs_; \
-  }
-
-#define FORWARD(method_, args_) FORWARD_CONCRETE(method_, args_, args_)
 
 namespace mozilla {
 
 MozExternalRefCountType
 RestyleManagerHandle::Ptr::AddRef()
 {
-  FORWARD(AddRef, ());
+  return AsGecko()->AddRef();
 }
 
 MozExternalRefCountType
 RestyleManagerHandle::Ptr::Release()
 {
-  FORWARD(Release, ());
+  return AsGecko()->Release();
 }
 
 void
 RestyleManagerHandle::Ptr::Disconnect()
 {
-  FORWARD(Disconnect, ());
+  AsGecko()->Disconnect();
 }
 
 void
@@ -43,20 +33,20 @@ RestyleManagerHandle::Ptr::PostRestyleEvent(dom::Element* aElement,
                                             nsRestyleHint aRestyleHint,
                                             nsChangeHint aMinChangeHint)
 {
-  FORWARD(PostRestyleEvent, (aElement, aRestyleHint, aMinChangeHint));
+  AsGecko()->PostRestyleEvent(aElement, aRestyleHint, aMinChangeHint);
 }
 
 void
 RestyleManagerHandle::Ptr::PostRestyleEventForLazyConstruction()
 {
-  FORWARD(PostRestyleEventForLazyConstruction, ());
+  AsGecko()->PostRestyleEventForLazyConstruction();
 }
 
 void
 RestyleManagerHandle::Ptr::RebuildAllStyleData(nsChangeHint aExtraHint,
                                                nsRestyleHint aRestyleHint)
 {
-  FORWARD(RebuildAllStyleData, (aExtraHint, aRestyleHint));
+  AsGecko()->RebuildAllStyleData(aExtraHint, aRestyleHint);
 }
 
 void
@@ -64,39 +54,39 @@ RestyleManagerHandle::Ptr::PostRebuildAllStyleDataEvent(
     nsChangeHint aExtraHint,
     nsRestyleHint aRestyleHint)
 {
-  FORWARD(PostRebuildAllStyleDataEvent, (aExtraHint, aRestyleHint));
+  AsGecko()->PostRebuildAllStyleDataEvent(aExtraHint, aRestyleHint);
 }
 
 void
 RestyleManagerHandle::Ptr::ProcessPendingRestyles()
 {
-  FORWARD(ProcessPendingRestyles, ());
+  AsGecko()->ProcessPendingRestyles();
 }
 
 nsresult
 RestyleManagerHandle::Ptr::ProcessRestyledFrames(nsStyleChangeList& aChangeList)
 {
-  FORWARD(ProcessRestyledFrames, (aChangeList));
+  return AsGecko()->ProcessRestyledFrames(aChangeList);
 }
 
 void
 RestyleManagerHandle::Ptr::FlushOverflowChangedTracker()
 {
-  FORWARD(FlushOverflowChangedTracker, ());
+  AsGecko()->FlushOverflowChangedTracker();
 }
 
 void
 RestyleManagerHandle::Ptr::ContentInserted(nsINode* aContainer,
                                            nsIContent* aChild)
 {
-  FORWARD(ContentInserted, (aContainer, aChild));
+  AsGecko()->ContentInserted(aContainer, aChild);
 }
 
 void
 RestyleManagerHandle::Ptr::ContentAppended(nsIContent* aContainer,
                                            nsIContent* aFirstNewContent)
 {
-  FORWARD(ContentAppended, (aContainer, aFirstNewContent));
+  AsGecko()->ContentAppended(aContainer, aFirstNewContent);
 }
 
 void
@@ -104,28 +94,28 @@ RestyleManagerHandle::Ptr::ContentRemoved(nsINode* aContainer,
                                           nsIContent* aOldChild,
                                           nsIContent* aFollowingSibling)
 {
-  FORWARD(ContentRemoved, (aContainer, aOldChild, aFollowingSibling));
+  AsGecko()->ContentRemoved(aContainer, aOldChild, aFollowingSibling);
 }
 
 void
 RestyleManagerHandle::Ptr::RestyleForInsertOrChange(nsINode* aContainer,
                                                     nsIContent* aChild)
 {
-  FORWARD(RestyleForInsertOrChange, (aContainer, aChild));
+  AsGecko()->RestyleForInsertOrChange(aContainer, aChild);
 }
 
 void
 RestyleManagerHandle::Ptr::RestyleForAppend(nsIContent* aContainer,
                                             nsIContent* aFirstNewContent)
 {
-  FORWARD(RestyleForAppend, (aContainer, aFirstNewContent));
+  AsGecko()->RestyleForAppend(aContainer, aFirstNewContent);
 }
 
 void
 RestyleManagerHandle::Ptr::ContentStateChanged(nsIContent* aContent,
                                           EventStates aStateMask)
 {
-  FORWARD(ContentStateChanged, (aContent, aStateMask));
+  AsGecko()->ContentStateChanged(aContent, aStateMask);
 }
 
 void
@@ -135,8 +125,8 @@ RestyleManagerHandle::Ptr::AttributeWillChange(dom::Element* aElement,
                                                int32_t aModType,
                                                const nsAttrValue* aNewValue)
 {
-  FORWARD(AttributeWillChange, (aElement, aNameSpaceID, aAttribute, aModType,
-                                aNewValue));
+  AsGecko()->AttributeWillChange(aElement, aNameSpaceID, aAttribute, aModType,
+                                 aNewValue);
 }
 
 void
@@ -146,49 +136,46 @@ RestyleManagerHandle::Ptr::AttributeChanged(dom::Element* aElement,
                                             int32_t aModType,
                                             const nsAttrValue* aOldValue)
 {
-  FORWARD(AttributeChanged, (aElement, aNameSpaceID, aAttribute, aModType,
-                             aOldValue));
+  AsGecko()->AttributeChanged(aElement, aNameSpaceID, aAttribute, aModType,
+                              aOldValue);
 }
 
 nsresult
 RestyleManagerHandle::Ptr::ReparentStyleContext(nsIFrame* aFrame)
 {
-  FORWARD(ReparentStyleContext, (aFrame));
+  return AsGecko()->ReparentStyleContext(aFrame);
 }
 
 bool
 RestyleManagerHandle::Ptr::HasPendingRestyles()
 {
-  FORWARD(HasPendingRestyles, ());
+  return AsGecko()->HasPendingRestyles();
 }
 
 uint64_t
 RestyleManagerHandle::Ptr::GetRestyleGeneration() const
 {
-  FORWARD(GetRestyleGeneration, ());
+  return AsGecko()->GetRestyleGeneration();
 }
 
 uint32_t
 RestyleManagerHandle::Ptr::GetHoverGeneration() const
 {
-  FORWARD(GetHoverGeneration, ());
+  return AsGecko()->GetHoverGeneration();
 }
 
 void
 RestyleManagerHandle::Ptr::SetObservingRefreshDriver(bool aObserving)
 {
-  FORWARD(SetObservingRefreshDriver, (aObserving));
+  AsGecko()->SetObservingRefreshDriver(aObserving);
 }
 
 void
 RestyleManagerHandle::Ptr::NotifyDestroyingFrame(nsIFrame* aFrame)
 {
-  FORWARD(NotifyDestroyingFrame, (aFrame));
+  AsGecko()->NotifyDestroyingFrame(aFrame);
 }
 
 } // namespace mozilla
-
-#undef FORWARD
-#undef FORWARD_CONCRETE
 
 #endif // mozilla_RestyleManagerHandleInlines_h

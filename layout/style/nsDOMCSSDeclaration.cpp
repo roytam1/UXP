@@ -131,21 +131,17 @@ nsDOMCSSDeclaration::SetCssText(const nsAString& aCssText)
   mozAutoDocConditionalContentUpdateBatch autoUpdate(DocToUpdate(), true);
 
   RefPtr<DeclarationBlock> newdecl;
-  if (olddecl->IsServo()) {
-    newdecl = ServoDeclarationBlock::FromCssText(aCssText);
-  } else {
-    RefPtr<css::Declaration> decl(new css::Declaration());
-    decl->InitializeEmpty();
-    nsCSSParser cssParser(env.mCSSLoader);
-    bool changed;
-    nsresult result = cssParser.ParseDeclarations(aCssText, env.mSheetURI,
-                                                  env.mBaseURI, env.mPrincipal,
-                                                  decl, &changed);
-    if (NS_FAILED(result) || !changed) {
-      return result;
-    }
-    newdecl = decl.forget();
+  RefPtr<css::Declaration> decl(new css::Declaration());
+  decl->InitializeEmpty();
+  nsCSSParser cssParser(env.mCSSLoader);
+  bool changed;
+  nsresult result = cssParser.ParseDeclarations(aCssText, env.mSheetURI,
+                                                env.mBaseURI, env.mPrincipal,
+                                                decl, &changed);
+  if (NS_FAILED(result) || !changed) {
+    return result;
   }
+  newdecl = decl.forget();
 
   return SetCSSDeclaration(newdecl);
 }
@@ -300,17 +296,10 @@ nsDOMCSSDeclaration::ParsePropertyValue(const nsCSSPropertyID aPropID,
   RefPtr<DeclarationBlock> decl = olddecl->EnsureMutable();
 
   bool changed;
-  if (decl->IsGecko()) {
-    nsCSSParser cssParser(env.mCSSLoader);
-    cssParser.ParseProperty(aPropID, aPropValue,
-                            env.mSheetURI, env.mBaseURI, env.mPrincipal,
-                            decl->AsGecko(), &changed, aIsImportant);
-  } else {
-    nsIAtom* atom = nsCSSProps::AtomForProperty(aPropID);
-    NS_ConvertUTF16toUTF8 value(aPropValue);
-    changed = Servo_DeclarationBlock_SetProperty(
-      decl->AsServo()->Raw(), atom, false, &value, aIsImportant);
-  }
+  nsCSSParser cssParser(env.mCSSLoader);
+  cssParser.ParseProperty(aPropID, aPropValue,
+                          env.mSheetURI, env.mBaseURI, env.mPrincipal,
+                          decl->AsGecko(), &changed, aIsImportant);
   if (!changed) {
     // Parsing failed -- but we don't throw an exception for that.
     return NS_OK;
@@ -347,17 +336,10 @@ nsDOMCSSDeclaration::ParseCustomPropertyValue(const nsAString& aPropertyName,
 
   bool changed;
   auto propName = Substring(aPropertyName, CSS_CUSTOM_NAME_PREFIX_LENGTH);
-  if (decl->IsGecko()) {
-    nsCSSParser cssParser(env.mCSSLoader);
-    cssParser.ParseVariable(propName, aPropValue, env.mSheetURI,
-                            env.mBaseURI, env.mPrincipal, decl->AsGecko(),
-                            &changed, aIsImportant);
-  } else {
-    RefPtr<nsIAtom> atom = NS_Atomize(propName);
-    NS_ConvertUTF16toUTF8 value(aPropValue);
-    changed = Servo_DeclarationBlock_SetProperty(
-      decl->AsServo()->Raw(), atom, true, &value, aIsImportant);
-  }
+  nsCSSParser cssParser(env.mCSSLoader);
+  cssParser.ParseVariable(propName, aPropValue, env.mSheetURI,
+                          env.mBaseURI, env.mPrincipal, decl->AsGecko(),
+                          &changed, aIsImportant);
   if (!changed) {
     // Parsing failed -- but we don't throw an exception for that.
     return NS_OK;

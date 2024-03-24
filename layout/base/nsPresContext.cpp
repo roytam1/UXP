@@ -894,14 +894,10 @@ nsPresContext::AttachShell(nsIPresShell* aShell, StyleBackendType aBackendType)
   MOZ_ASSERT(!mShell);
   mShell = aShell;
 
-  if (aBackendType == StyleBackendType::Servo) {
-    mRestyleManager = new ServoRestyleManager(this);
-  } else {
-    // Since RestyleManager is also the name of a method of nsPresContext,
-    // it is necessary to prefix the class with the mozilla namespace
-    // here.
-    mRestyleManager = new mozilla::RestyleManager(this);
-  }
+  // Since RestyleManager is also the name of a method of nsPresContext,
+  // it is necessary to prefix the class with the mozilla namespace
+  // here.
+  mRestyleManager = new mozilla::RestyleManager(this);
 
   // Since CounterStyleManager is also the name of a method of
   // nsPresContext, it is necessary to prefix the class with the mozilla
@@ -1886,15 +1882,8 @@ nsPresContext::MediaFeatureValuesChanged(nsRestyleHint aRestyleHint,
 
   // MediumFeaturesChanged updates the applied rules, so it always gets called.
   if (mShell) {
-    // XXXheycam ServoStyleSets don't support responding to medium
-    // changes yet.
-    if (mShell->StyleSet()->IsGecko()) {
-      if (mShell->StyleSet()->AsGecko()->MediumFeaturesChanged()) {
-        aRestyleHint |= eRestyle_Subtree;
-      }
-    } else {
-      NS_WARNING("stylo: ServoStyleSets don't support responding to medium "
-                 "changes yet. See bug 1290228.");
+    if (mShell->StyleSet()->AsGecko()->MediumFeaturesChanged()) {
+      aRestyleHint |= eRestyle_Subtree;
     }
   }
 

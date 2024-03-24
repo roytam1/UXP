@@ -2698,13 +2698,7 @@ nsCSSFrameConstructor::ConstructRootFrame()
 
   // Set up our style rule observer.
   // XXXbz wouldn't this make more sense as part of presshell init?
-  if (styleSet->IsGecko()) {
-    // XXXheycam We don't support XBL bindings providing style to
-    // ServoStyleSets yet.
-    styleSet->AsGecko()->SetBindingManager(mDocument->BindingManager());
-  } else {
-    NS_WARNING("stylo: cannot get ServoStyleSheets from XBL bindings yet. See bug 1290276.");
-  }
+  styleSet->AsGecko()->SetBindingManager(mDocument->BindingManager());
 
   // --------- BUILD VIEWPORT -----------
   RefPtr<nsStyleContext> viewportPseudoStyle =
@@ -4243,15 +4237,6 @@ nsCSSFrameConstructor::GetAnonymousContent(nsIContent* aParent,
     if (NS_FAILED(rv)) {
       content->UnbindFromTree();
       return rv;
-    }
-  }
-
-  if (ServoStyleSet* styleSet = mPresShell->StyleSet()->GetAsServo()) {
-    // Eagerly compute styles for the anonymous content tree.
-    for (auto& info : aContent) {
-      if (info.mContent->IsElement()) {
-        styleSet->StyleNewSubtree(info.mContent);
-      }
     }
   }
 
@@ -10536,11 +10521,6 @@ nsCSSFrameConstructor::AddFCItemsForAnonymousContent(
     RefPtr<nsStyleContext> styleContext;
     TreeMatchContext::AutoParentDisplayBasedStyleFixupSkipper
       parentDisplayBasedStyleFixupSkipper(aState.mTreeMatchContext);
-
-    // Make sure we eagerly performed the servo cascade when the anonymous
-    // nodes were created.
-    MOZ_ASSERT_IF(content->IsStyledByServo() && content->IsElement(),
-                  content->AsElement()->HasServoData());
 
     // Determine whether this NAC is pseudo-implementing.
     nsIAtom* pseudo = nullptr;

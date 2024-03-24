@@ -319,14 +319,9 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
     return NS_OK;
   }
 
-  // XXXheycam ServoStyleSheets do not support <style scoped>.
   Element* oldScopeElement = nullptr;
   if (mStyleSheet) {
-    if (mStyleSheet->IsServo()) {
-      NS_WARNING("stylo: ServoStyleSheets don't support <style scoped>");
-    } else {
-      oldScopeElement = mStyleSheet->AsGecko()->GetScopeElement();
-    }
+    oldScopeElement = mStyleSheet->AsGecko()->GetScopeElement();
   }
 
   if (mStyleSheet && (aOldDocument || aOldShadowRoot)) {
@@ -485,12 +480,6 @@ void
 nsStyleLinkElement::UpdateStyleSheetScopedness(bool aIsNowScoped)
 {
   if (!mStyleSheet) {
-    return;
-  }
-
-  if (mStyleSheet->IsServo()) {
-    // XXXheycam ServoStyleSheets don't support <style scoped>.
-    NS_ERROR("stylo: ServoStyleSheets don't support <style scoped>");
     return;
   }
 

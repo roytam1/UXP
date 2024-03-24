@@ -929,9 +929,6 @@ nsSVGElement::WalkAnimatedContentStyleRules(nsRuleWalker* aRuleWalker)
   // apply the SMILOverrideStyle.)
   RestyleManagerHandle restyleManager =
     aRuleWalker->PresContext()->RestyleManager();
-  MOZ_ASSERT(restyleManager->IsGecko(),
-             "stylo: Servo-backed style system should not be calling "
-             "WalkAnimatedContentStyleRules");
   if (!restyleManager->AsGecko()->SkipAnimationRules()) {
     // update/walk the animated content style rule.
     css::StyleRule* animContentStyleRule = GetAnimatedContentStyleRule();

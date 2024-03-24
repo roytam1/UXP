@@ -7,17 +7,7 @@
 #define mozilla_StyleSetHandleInlines_h
 
 #include "mozilla/StyleSheetInlines.h"
-#include "mozilla/ServoStyleSet.h"
 #include "nsStyleSet.h"
-
-#define FORWARD_CONCRETE(method_, geckoargs_, servoargs_) \
-  if (IsGecko()) { \
-    return AsGecko()->method_ geckoargs_; \
-  } else { \
-    return AsServo()->method_ servoargs_; \
-  }
-
-#define FORWARD(method_, args_) FORWARD_CONCRETE(method_, args_, args_)
 
 namespace mozilla {
 
@@ -25,54 +15,50 @@ void
 StyleSetHandle::Ptr::Delete()
 {
   if (mValue) {
-    if (IsGecko()) {
-      delete AsGecko();
-    } else {
-      delete AsServo();
-    }
+    delete AsGecko();
   }
 }
 
 void
 StyleSetHandle::Ptr::Init(nsPresContext* aPresContext)
 {
-  FORWARD(Init, (aPresContext));
+  AsGecko()->Init(aPresContext);
 }
 
 void
 StyleSetHandle::Ptr::BeginShutdown()
 {
-  FORWARD(BeginShutdown, ());
+  AsGecko()->BeginShutdown();
 }
 
 void
 StyleSetHandle::Ptr::Shutdown()
 {
-  FORWARD(Shutdown, ());
+  AsGecko()->Shutdown();
 }
 
 bool
 StyleSetHandle::Ptr::GetAuthorStyleDisabled() const
 {
-  FORWARD(GetAuthorStyleDisabled, ());
+  return AsGecko()->GetAuthorStyleDisabled();
 }
 
 nsresult
 StyleSetHandle::Ptr::SetAuthorStyleDisabled(bool aStyleDisabled)
 {
-  FORWARD(SetAuthorStyleDisabled, (aStyleDisabled));
+  return AsGecko()->SetAuthorStyleDisabled(aStyleDisabled);
 }
 
 void
 StyleSetHandle::Ptr::BeginUpdate()
 {
-  FORWARD(BeginUpdate, ());
+  AsGecko()->BeginUpdate();
 }
 
 nsresult
 StyleSetHandle::Ptr::EndUpdate()
 {
-  FORWARD(EndUpdate, ());
+  return AsGecko()->EndUpdate();
 }
 
 // resolve a style context
@@ -80,7 +66,7 @@ already_AddRefed<nsStyleContext>
 StyleSetHandle::Ptr::ResolveStyleFor(dom::Element* aElement,
                                      nsStyleContext* aParentContext)
 {
-  FORWARD(ResolveStyleFor, (aElement, aParentContext));
+  return AsGecko()->ResolveStyleFor(aElement, aParentContext);
 }
 
 already_AddRefed<nsStyleContext>
@@ -88,20 +74,20 @@ StyleSetHandle::Ptr::ResolveStyleFor(dom::Element* aElement,
                                      nsStyleContext* aParentContext,
                                      TreeMatchContext& aTreeMatchContext)
 {
-  FORWARD(ResolveStyleFor, (aElement, aParentContext, aTreeMatchContext));
+  return AsGecko()->ResolveStyleFor(aElement, aParentContext, aTreeMatchContext);
 }
 
 already_AddRefed<nsStyleContext>
 StyleSetHandle::Ptr::ResolveStyleForText(nsIContent* aTextNode,
                                          nsStyleContext* aParentContext)
 {
-  FORWARD(ResolveStyleForText, (aTextNode, aParentContext));
+  return AsGecko()->ResolveStyleForText(aTextNode, aParentContext);
 }
 
 already_AddRefed<nsStyleContext>
 StyleSetHandle::Ptr::ResolveStyleForOtherNonElement(nsStyleContext* aParentContext)
 {
-  FORWARD(ResolveStyleForOtherNonElement, (aParentContext));
+  return AsGecko()->ResolveStyleForOtherNonElement(aParentContext);
 }
 
 already_AddRefed<nsStyleContext>
@@ -110,8 +96,8 @@ StyleSetHandle::Ptr::ResolvePseudoElementStyle(dom::Element* aParentElement,
                                                nsStyleContext* aParentContext,
                                                dom::Element* aPseudoElement)
 {
-  FORWARD(ResolvePseudoElementStyle, (aParentElement, aType, aParentContext,
-                                      aPseudoElement));
+  return AsGecko()->ResolvePseudoElementStyle(
+    aParentElement, aType, aParentContext, aPseudoElement);
 }
 
 // aFlags is an nsStyleSet flags bitfield
@@ -120,48 +106,37 @@ StyleSetHandle::Ptr::ResolveAnonymousBoxStyle(nsIAtom* aPseudoTag,
                                               nsStyleContext* aParentContext,
                                               uint32_t aFlags)
 {
-  FORWARD(ResolveAnonymousBoxStyle, (aPseudoTag, aParentContext, aFlags));
+  return AsGecko()->ResolveAnonymousBoxStyle(aPseudoTag, aParentContext, aFlags);
 }
 
 // manage the set of style sheets in the style set
 nsresult
 StyleSetHandle::Ptr::AppendStyleSheet(SheetType aType, StyleSheet* aSheet)
 {
-  FORWARD_CONCRETE(AppendStyleSheet, (aType, aSheet->AsGecko()),
-                                     (aType, aSheet->AsServo()));
+  return AsGecko()->AppendStyleSheet(aType, aSheet->AsGecko());
 }
 
 nsresult
 StyleSetHandle::Ptr::PrependStyleSheet(SheetType aType, StyleSheet* aSheet)
 {
-  FORWARD_CONCRETE(PrependStyleSheet, (aType, aSheet->AsGecko()),
-                                      (aType, aSheet->AsServo()));
+  return AsGecko()->PrependStyleSheet(aType, aSheet->AsGecko());
 }
 
 nsresult
 StyleSetHandle::Ptr::RemoveStyleSheet(SheetType aType, StyleSheet* aSheet)
 {
-  FORWARD_CONCRETE(RemoveStyleSheet, (aType, aSheet->AsGecko()),
-                                     (aType, aSheet->AsServo()));
+  return AsGecko()->RemoveStyleSheet(aType, aSheet->AsGecko());
 }
 
 nsresult
 StyleSetHandle::Ptr::ReplaceSheets(SheetType aType,
                        const nsTArray<RefPtr<StyleSheet>>& aNewSheets)
 {
-  if (IsGecko()) {
-    nsTArray<RefPtr<CSSStyleSheet>> newSheets(aNewSheets.Length());
-    for (auto& sheet : aNewSheets) {
-      newSheets.AppendElement(sheet->AsGecko());
-    }
-    return AsGecko()->ReplaceSheets(aType, newSheets);
-  } else {
-    nsTArray<RefPtr<ServoStyleSheet>> newSheets(aNewSheets.Length());
-    for (auto& sheet : aNewSheets) {
-      newSheets.AppendElement(sheet->AsServo());
-    }
-    return AsServo()->ReplaceSheets(aType, newSheets);
+  nsTArray<RefPtr<CSSStyleSheet>> newSheets(aNewSheets.Length());
+  for (auto& sheet : aNewSheets) {
+    newSheets.AppendElement(sheet->AsGecko());
   }
+  return AsGecko()->ReplaceSheets(aType, newSheets);
 }
 
 nsresult
@@ -169,37 +144,33 @@ StyleSetHandle::Ptr::InsertStyleSheetBefore(SheetType aType,
                                 StyleSheet* aNewSheet,
                                 StyleSheet* aReferenceSheet)
 {
-  FORWARD_CONCRETE(
-    InsertStyleSheetBefore,
-    (aType, aNewSheet->AsGecko(), aReferenceSheet->AsGecko()),
-    (aType, aReferenceSheet->AsServo(), aReferenceSheet->AsServo()));
+  return AsGecko()->InsertStyleSheetBefore(
+    aType, aNewSheet->AsGecko(), aReferenceSheet->AsGecko());
 }
 
 int32_t
 StyleSetHandle::Ptr::SheetCount(SheetType aType) const
 {
-  FORWARD(SheetCount, (aType));
+  return AsGecko()->SheetCount(aType);
 }
 
 StyleSheet*
 StyleSetHandle::Ptr::StyleSheetAt(SheetType aType, int32_t aIndex) const
 {
-  FORWARD(StyleSheetAt, (aType, aIndex));
+  return AsGecko()->StyleSheetAt(aType, aIndex);
 }
 
 nsresult
 StyleSetHandle::Ptr::RemoveDocStyleSheet(StyleSheet* aSheet)
 {
-  FORWARD_CONCRETE(RemoveDocStyleSheet, (aSheet->AsGecko()),
-                                        (aSheet->AsServo()));
+  return AsGecko()->RemoveDocStyleSheet(aSheet->AsGecko());
 }
 
 nsresult
 StyleSetHandle::Ptr::AddDocStyleSheet(StyleSheet* aSheet,
                                       nsIDocument* aDocument)
 {
-  FORWARD_CONCRETE(AddDocStyleSheet, (aSheet->AsGecko(), aDocument),
-                                     (aSheet->AsServo(), aDocument));
+  return AsGecko()->AddDocStyleSheet(aSheet->AsGecko(), aDocument);
 }
 
 // check whether there is ::before/::after style for an element
@@ -208,7 +179,7 @@ StyleSetHandle::Ptr::ProbePseudoElementStyle(dom::Element* aParentElement,
                                              CSSPseudoElementType aType,
                                              nsStyleContext* aParentContext)
 {
-  FORWARD(ProbePseudoElementStyle, (aParentElement, aType, aParentContext));
+  return AsGecko()->ProbePseudoElementStyle(aParentElement, aType, aParentContext);
 }
 
 already_AddRefed<nsStyleContext>
@@ -218,15 +189,15 @@ StyleSetHandle::Ptr::ProbePseudoElementStyle(dom::Element* aParentElement,
                                              TreeMatchContext& aTreeMatchContext,
                                              dom::Element* aPseudoElement)
 {
-  FORWARD(ProbePseudoElementStyle, (aParentElement, aType, aParentContext,
-                                    aTreeMatchContext, aPseudoElement));
+  return AsGecko()->ProbePseudoElementStyle(
+    aParentElement, aType, aParentContext, aTreeMatchContext, aPseudoElement);
 }
 
 nsRestyleHint
 StyleSetHandle::Ptr::HasStateDependentStyle(dom::Element* aElement,
                                             EventStates aStateMask)
 {
-  FORWARD(HasStateDependentStyle, (aElement, aStateMask));
+  return AsGecko()->HasStateDependentStyle(aElement, aStateMask);
 }
 
 nsRestyleHint
@@ -235,32 +206,21 @@ StyleSetHandle::Ptr::HasStateDependentStyle(dom::Element* aElement,
                                             dom::Element* aPseudoElement,
                                             EventStates aStateMask)
 {
-  FORWARD(HasStateDependentStyle, (aElement, aPseudoType, aPseudoElement,
-                                   aStateMask));
+  return AsGecko()->HasStateDependentStyle(aElement, aPseudoType, aPseudoElement, aStateMask);
 }
 
 void
 StyleSetHandle::Ptr::RootStyleContextAdded()
 {
-  if (IsGecko()) {
-    AsGecko()->RootStyleContextAdded();
-  } else {
-    // Not needed.
-  }
+  AsGecko()->RootStyleContextAdded();
 }
 
 void
 StyleSetHandle::Ptr::RootStyleContextRemoved()
 {
-  if (IsGecko()) {
-    RootStyleContextAdded();
-  } else {
-    // Not needed.
-  }
+  RootStyleContextAdded();
 }
 
 } // namespace mozilla
-
-#undef FORWARD
 
 #endif // mozilla_StyleSetHandleInlines_h

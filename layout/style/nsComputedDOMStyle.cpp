@@ -523,11 +523,6 @@ nsComputedDOMStyle::GetStyleContextForElementNoFlush(Element* aElement,
   }
 
   if (aStyleType == eDefaultOnly) {
-    if (styleSet->IsServo()) {
-      NS_ERROR("stylo: ServoStyleSets cannot supply UA-only styles yet");
-      return nullptr;
-    }
-
     // We really only want the user and UA rules.  Filter out the other ones.
     nsTArray< nsCOMPtr<nsIStyleRule> > rules;
     for (nsRuleNode* ruleNode = sc->RuleNode();
@@ -653,10 +648,7 @@ MustReresolveStyle(const nsStyleContext* aContext)
   MOZ_ASSERT(aContext);
 
   if (aContext->HasPseudoElementData()) {
-    if (!aContext->GetPseudo() ||
-        aContext->StyleSource().IsServoComputedValues()) {
-      // TODO(emilio): When ::first-line is supported in Servo, we may want to
-      // fix this to avoid re-resolving pseudo-element styles.
+    if (!aContext->GetPseudo()) {
       return true;
     }
 

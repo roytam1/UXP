@@ -82,7 +82,7 @@ StyleSheet::IsComplete() const
 void
 StyleSheet::SetComplete()
 {
-  NS_ASSERTION(!IsGecko() || !AsGecko()->mDirty,
+  NS_ASSERTION(!AsGecko()->mDirty,
                "Can't set a dirty sheet complete!");
   SheetInfo().mComplete = true;
   if (mDocument && !mDisabled) {
@@ -138,11 +138,7 @@ StyleSheet::SetDisabled(bool aDisabled)
 {
   // DOM method, so handle BeginUpdate/EndUpdate
   MOZ_AUTO_DOC_UPDATE(mDocument, UPDATE_STYLE, true);
-  if (IsGecko()) {
-    AsGecko()->SetEnabled(!aDisabled);
-  } else {
-    MOZ_CRASH("stylo: unimplemented SetEnabled");
-  }
+  AsGecko()->SetEnabled(!aDisabled);
   return NS_OK;
 }
 
@@ -229,12 +225,6 @@ StyleSheet::DeleteRule(uint32_t aIndex)
 
 // WebIDL CSSStyleSheet API
 
-#define FORWARD_INTERNAL(method_, args_) \
-  if (IsServo()) { \
-    return AsServo()->method_ args_; \
-  } \
-  return AsGecko()->method_ args_;
-
 dom::CSSRuleList*
 StyleSheet::GetCssRules(nsIPrincipal& aSubjectPrincipal,
                         ErrorResult& aRv)
@@ -242,7 +232,7 @@ StyleSheet::GetCssRules(nsIPrincipal& aSubjectPrincipal,
   if (!AreRulesAvailable(aSubjectPrincipal, aRv)) {
     return nullptr;
   }
-  FORWARD_INTERNAL(GetCssRulesInternal, (aRv))
+  return AsGecko()->GetCssRulesInternal(aRv);
 }
 
 uint32_t
@@ -253,7 +243,7 @@ StyleSheet::InsertRule(const nsAString& aRule, uint32_t aIndex,
   if (!AreRulesAvailable(aSubjectPrincipal, aRv)) {
     return 0;
   }
-  FORWARD_INTERNAL(InsertRuleInternal, (aRule, aIndex, aRv))
+  return AsGecko()->InsertRuleInternal(aRule, aIndex, aRv);
 }
 
 void
@@ -264,7 +254,7 @@ StyleSheet::DeleteRule(uint32_t aIndex,
   if (!AreRulesAvailable(aSubjectPrincipal, aRv)) {
     return;
   }
-  FORWARD_INTERNAL(DeleteRuleInternal, (aIndex, aRv))
+  AsGecko()->DeleteRuleInternal(aIndex, aRv);
 }
 
 int32_t
@@ -288,12 +278,10 @@ StyleSheet::AddRule(const nsAString& aSelector, const nsAString& aBlock,
   auto index =
       aIndex.WasPassed() ? aIndex.Value() : GetCssRules(aSubjectPrincipal, aRv)->Length();
 
-  FORWARD_INTERNAL(InsertRuleInternal, (rule, index, aRv));
+  return AsGecko()->InsertRuleInternal(rule, index, aRv);
   // As per Microsoft documentation, always return -1.
   return -1;
 }
-
-#undef FORWARD_INTERNAL
 
 void
 StyleSheet::SubjectSubsumesInnerPrincipal(nsIPrincipal& aSubjectPrincipal,

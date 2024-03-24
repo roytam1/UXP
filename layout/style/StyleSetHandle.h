@@ -17,7 +17,6 @@
 
 namespace mozilla {
 class CSSStyleSheet;
-class ServoStyleSet;
 namespace dom {
 class Element;
 } // namespace dom
@@ -32,11 +31,8 @@ struct TreeMatchContext;
 
 namespace mozilla {
 
-#define SERVO_BIT 0x1
-
 /**
- * Smart pointer class that can hold a pointer to either an nsStyleSet
- * or a ServoStyleSet.
+ * Smart pointer class that can hold a pointer to an nsStyleSet.
  */
 class StyleSetHandle
 {
@@ -50,55 +46,32 @@ public:
   public:
     friend class ::mozilla::StyleSetHandle;
 
-    bool IsGecko() const { return !IsServo(); }
-    bool IsServo() const
-    {
-      MOZ_ASSERT(mValue, "StyleSetHandle null pointer dereference");
-      return false;
-    }
-
     StyleBackendType BackendType() const
     {
-      return IsGecko() ? StyleBackendType::Gecko :
-                         StyleBackendType::Servo;
+      return StyleBackendType::Gecko;
     }
 
     nsStyleSet* AsGecko()
     {
-      MOZ_ASSERT(IsGecko());
       return reinterpret_cast<nsStyleSet*>(mValue);
     }
 
-    ServoStyleSet* AsServo()
-    {
-      MOZ_ASSERT(IsServo());
-      return reinterpret_cast<ServoStyleSet*>(mValue & ~SERVO_BIT);
-    }
-
-    nsStyleSet* GetAsGecko() { return IsGecko() ? AsGecko() : nullptr; }
-    ServoStyleSet* GetAsServo() { return IsServo() ? AsServo() : nullptr; }
+    nsStyleSet* GetAsGecko() { return AsGecko(); }
 
     const nsStyleSet* AsGecko() const
     {
       return const_cast<Ptr*>(this)->AsGecko();
     }
 
-    const ServoStyleSet* AsServo() const
-    {
-      MOZ_ASSERT(IsServo());
-      return const_cast<Ptr*>(this)->AsServo();
-    }
-
-    const nsStyleSet* GetAsGecko() const { return IsGecko() ? AsGecko() : nullptr; }
-    const ServoStyleSet* GetAsServo() const { return IsServo() ? AsServo() : nullptr; }
+    const nsStyleSet* GetAsGecko() const { return AsGecko(); }
 
     // These inline methods are defined in StyleSetHandleInlines.h.
     inline void Delete();
 
     // Style set interface.  These inline methods are defined in
     // StyleSetHandleInlines.h and just forward to the underlying
-    // nsStyleSet or ServoStyleSet.  See corresponding comments in
-    // nsStyleSet.h for descriptions of these methods.
+    // nsStyleSet.  See corresponding comments in nsStyleSet.h for
+    // descriptions of these methods.
 
     inline void Init(nsPresContext* aPresContext);
     inline void BeginShutdown();
@@ -161,7 +134,7 @@ public:
     inline void RootStyleContextRemoved();
 
   private:
-    // Stores a pointer to an nsStyleSet or a ServoStyleSet.  The least
+    // Stores a pointer to an nsStyleSet.  The least
     // significant bit is 0 for the former, 1 for the latter.  This is
     // valid as the least significant bit will never be used for a pointer
     // value on platforms we care about.
@@ -171,20 +144,11 @@ public:
   StyleSetHandle() { mPtr.mValue = 0; }
   StyleSetHandle(const StyleSetHandle& aOth) { mPtr.mValue = aOth.mPtr.mValue; }
   MOZ_IMPLICIT StyleSetHandle(nsStyleSet* aSet) { *this = aSet; }
-  MOZ_IMPLICIT StyleSetHandle(ServoStyleSet* aSet) { *this = aSet; }
 
   StyleSetHandle& operator=(nsStyleSet* aStyleSet)
   {
-    MOZ_ASSERT(!(reinterpret_cast<uintptr_t>(aStyleSet) & SERVO_BIT),
-               "least significant bit shouldn't be set; we use it for state");
     mPtr.mValue = reinterpret_cast<uintptr_t>(aStyleSet);
     return *this;
-  }
-
-  StyleSetHandle& operator=(ServoStyleSet* aStyleSet)
-  {
-    MOZ_CRASH("should not have a ServoStyleSet object when MOZ_STYLO is "
-              "disabled");
   }
 
   // Make StyleSetHandle usable in boolean contexts.
@@ -198,8 +162,6 @@ public:
 private:
   Ptr mPtr;
 };
-
-#undef SERVO_BIT
 
 } // namespace mozilla
 
