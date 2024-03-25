@@ -109,7 +109,6 @@ ShadowRoot::CloneInternalDataFrom(ShadowRoot* aOther)
   for (size_t i = 0; i < sheetCount; ++i) {
     StyleSheet* sheet = aOther->SheetAt(i);
     if (sheet && sheet->IsApplicable()) {
-      // TODO: Remove AsGecko() call once Stylo is removed.
       RefPtr<CSSStyleSheet> clonedSheet =
         sheet->AsGecko()->Clone(nullptr, nullptr, nullptr, nullptr);
       if (clonedSheet) {
