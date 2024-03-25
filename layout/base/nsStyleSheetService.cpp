@@ -226,9 +226,7 @@ nsStyleSheetService::LoadAndRegisterSheetInternal(nsIURI *aSheetURI,
       return NS_ERROR_INVALID_ARG;
   }
 
-  // XXXheycam We'll need to load and register both a Gecko- and Servo-backed
-  // style sheet.
-  RefPtr<css::Loader> loader = new css::Loader(StyleBackendType::Gecko);
+  RefPtr<css::Loader> loader = new css::Loader();
 
   RefPtr<StyleSheet> sheet;
   nsresult rv = loader->LoadSheetSync(aSheetURI, parsingMode, true, &sheet);
@@ -279,10 +277,7 @@ nsStyleSheetService::PreloadSheet(nsIURI *aSheetURI, uint32_t aSheetType,
       return NS_ERROR_INVALID_ARG;
   }
 
-  // XXXheycam PreloadSheet can't support ServoStyleSheets until they implement
-  // nsIDOMStyleSheet.
-
-  RefPtr<css::Loader> loader = new css::Loader(StyleBackendType::Gecko);
+  RefPtr<css::Loader> loader = new css::Loader();
 
   RefPtr<StyleSheet> sheet;
   nsresult rv = loader->LoadSheetSync(aSheetURI, parsingMode, true, &sheet);

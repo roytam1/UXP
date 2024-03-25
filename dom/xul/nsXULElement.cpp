@@ -825,7 +825,7 @@ nsXULElement::BindToTree(nsIDocument* aDocument,
     // can be moved from the document that creates them to another document.
 
     if (!XULElementsRulesInMinimalXULSheet(NodeInfo()->NameAtom())) {
-      auto cache = nsLayoutStylesheetCache::For(doc->GetStyleBackendType());
+      auto cache = nsLayoutStylesheetCache::Get();
       doc->EnsureOnDemandBuiltInUASheet(cache->XULSheet());
       // To keep memory usage down it is important that we try and avoid
       // pulling xul.css into non-XUL documents. That should be very rare, and

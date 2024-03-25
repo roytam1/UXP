@@ -2276,8 +2276,6 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
   // this should eventually get expanded to allow for creating
   // different sets for different media
 
-  StyleBackendType backendType = aDocument->GetStyleBackendType();
-
   StyleSetHandle styleSet = new nsStyleSet();
 
   styleSet->BeginUpdate();
@@ -2298,7 +2296,7 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
     return styleSet;
   }
 
-  auto cache = nsLayoutStylesheetCache::For(backendType);
+  auto cache = nsLayoutStylesheetCache::Get();
 
   // Handle the user sheets.
   StyleSheet* sheet = nullptr;
@@ -2332,8 +2330,7 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
       nsAutoString sheets;
       elt->GetAttribute(NS_LITERAL_STRING("usechromesheets"), sheets);
       if (!sheets.IsEmpty() && baseURI) {
-        RefPtr<mozilla::css::Loader> cssLoader =
-          new mozilla::css::Loader(backendType);
+        RefPtr<mozilla::css::Loader> cssLoader = new mozilla::css::Loader();
 
         char *str = ToNewCString(sheets);
         char *newStr = str;

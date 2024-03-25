@@ -4065,7 +4065,7 @@ nsDocument::LoadAdditionalStyleSheet(additionalSheetType aType,
     return NS_ERROR_INVALID_ARG;
 
   // Loading the sheet sync.
-  RefPtr<css::Loader> loader = new css::Loader(GetStyleBackendType());
+  RefPtr<css::Loader> loader = new css::Loader();
 
   css::SheetParsingMode parsingMode;
   switch (aType) {

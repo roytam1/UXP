@@ -1388,7 +1388,7 @@ PresShell::UpdatePreferenceStyles()
   // matter which pres context we pass in when it does need to be recreated.
   // (See nsPresContext::GetDocumentColorPreferences for how whether we
   // are a chrome origin image affects some pref styling information.)
-  auto cache = nsLayoutStylesheetCache::For(mStyleSet->BackendType());
+  auto cache = nsLayoutStylesheetCache::Get();
   RefPtr<StyleSheet> newPrefSheet =
     mPresContext->IsChromeOriginImage() ?
       cache->ChromePreferenceSheet(mPresContext) :
