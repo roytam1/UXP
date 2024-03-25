@@ -11,15 +11,13 @@
 #ifndef mozilla_DeclarationBlock_h
 #define mozilla_DeclarationBlock_h
 
-#include "mozilla/ServoUtils.h"
+#include "mozilla/DeprecatedUtils.h"
 
 #include "nsCSSPropertyID.h"
 
 class nsHTMLCSSStyleSheet;
 
 namespace mozilla {
-
-class ServoDeclarationBlock;
 
 namespace css {
 class Declaration;
@@ -36,7 +34,7 @@ protected:
     : DeclarationBlock() {}
 
 public:
-  MOZ_DECL_STYLO_METHODS(css::Declaration)
+  MOZ_DECL_DEPRECATED_METHODS(css::Declaration)
 
   inline MozExternalRefCountType AddRef();
   inline MozExternalRefCountType Release();

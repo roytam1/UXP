@@ -8,7 +8,6 @@
 #include "mozilla/dom/BindingDeclarations.h" // for Optional<>
 #include "mozilla/dom/CSSRuleList.h"
 #include "mozilla/dom/ShadowRoot.h"
-#include "mozilla/ServoStyleSheet.h"
 #include "mozilla/StyleSheetInlines.h"
 #include "mozilla/CSSStyleSheet.h"
 

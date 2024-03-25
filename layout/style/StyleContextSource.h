@@ -6,12 +6,12 @@
 #ifndef mozilla_StyleContextSource_h
 #define mozilla_StyleContextSource_h
 
-#include "mozilla/ServoBindingTypes.h"
 #include "nsRuleNode.h"
 
 namespace mozilla {
 
-// Tagged union between Gecko Rule Nodes and Servo Computed Values.
+// Temporary holder of Gecko Rule Nodes.
+// TODO: This struct is marked for removal.
 //
 // The rule node is the node in the lexicographic tree of rule nodes
 // (the "rule tree") that indicates which style rules are used to
@@ -19,21 +19,14 @@ namespace mozilla {
 // specific rule matched is the one whose rule node is a child of the
 // root of the rule tree, and the most specific rule matched is the
 // |mRule| member of the rule node.
-//
-// In the Servo case, we hold an atomically-refcounted handle to a
-// Servo ComputedValues struct, which is more or less the Servo equivalent
-// of an nsStyleContext.
 
 // Underlying pointer without any strong ownership semantics.
 struct NonOwningStyleContextSource
 {
   MOZ_IMPLICIT NonOwningStyleContextSource(nsRuleNode* aRuleNode)
     : mBits(reinterpret_cast<uintptr_t>(aRuleNode)) {}
-  explicit NonOwningStyleContextSource(const ServoComputedValues* aComputedValues)
-    : mBits(reinterpret_cast<uintptr_t>(aComputedValues) | 1) {}
 
   bool operator==(const NonOwningStyleContextSource& aOther) const {
-    // TODO: remove this servo-specific function.
     return mBits == aOther.mBits;
   }
   bool operator!=(const NonOwningStyleContextSource& aOther) const {
@@ -64,13 +57,6 @@ struct OwningStyleContextSource
     MOZ_COUNT_CTOR(OwningStyleContextSource);
     MOZ_ASSERT(!mRaw.IsNull());
   };
-
-  explicit OwningStyleContextSource(already_AddRefed<ServoComputedValues> aComputedValues)
-    : mRaw(aComputedValues.take())
-  {
-    MOZ_COUNT_CTOR(OwningStyleContextSource);
-    MOZ_ASSERT(!mRaw.IsNull());
-  }
 
   OwningStyleContextSource(OwningStyleContextSource&& aOther)
     : mRaw(aOther.mRaw)

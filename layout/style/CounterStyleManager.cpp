@@ -2028,7 +2028,6 @@ CounterStyleManager::BuildCounterStyle(const nsSubstring& aName)
 
   // It is intentional that the predefined names are case-insensitive
   // but the user-defined names case-sensitive.
-  // XXXheycam ServoStyleSets do not support custom counter styles yet.
   StyleSetHandle styleSet = mPresContext->StyleSet();
   nsCSSCounterStyleRule* rule =
     styleSet->AsGecko()->CounterStyleRuleForName(aName);
@@ -2071,7 +2070,6 @@ CounterStyleManager::NotifyRuleChanged()
     RefPtr<CounterStyle>& style = iter.Data();
     bool toBeUpdated = false;
     bool toBeRemoved = false;
-    // XXXheycam ServoStyleSets do not support custom counter styles yet.
     StyleSetHandle styleSet = mPresContext->StyleSet();
     nsCSSCounterStyleRule* newRule =
         styleSet->AsGecko()->CounterStyleRuleForName(iter.Key());

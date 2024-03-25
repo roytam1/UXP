@@ -43,9 +43,7 @@ ShouldExposeChildWindow(nsString& aNameBeingResolved, nsPIDOMWindowOuter* aChild
   //
   // This is problematic because it allows possibly-malicious and unrelated
   // cross-origin subframes to pollute the global namespace of their parent in
-  // unpredictable ways (see bug 860494). This is also problematic for browser
-  // engines like Servo that want to run cross-origin script on different
-  // threads.
+  // unpredictable ways (see bug 860494).
   //
   // The naive solution here would be to filter out any cross-origin subframes
   // obtained when doing named lookup in global scope. But that is unlikely to

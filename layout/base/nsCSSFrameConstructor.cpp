@@ -1884,9 +1884,6 @@ nsCSSFrameConstructor::CreateGeneratedContentItem(nsFrameConstructorState& aStat
     return;
   }
 
-  // stylo: ServoRestyleManager does not handle transitions yet, and when it
-  // does it probably won't need to track reframed style contexts to start
-  // transitions correctly.
   if (mozilla::RestyleManager* geckoRM = RestyleManager()->GetAsGecko()) {
     RestyleManager::ReframingStyleContexts* rsc =
       geckoRM->GetReframingStyleContexts();
@@ -5060,9 +5057,6 @@ nsCSSFrameConstructor::ResolveStyleContext(nsStyleContext* aParentStyleContext,
     result = styleSet->ResolveStyleForText(aContent, aParentStyleContext);
   }
 
-  // ServoRestyleManager does not handle transitions yet, and when it does
-  // it probably won't need to track reframed style contexts to start
-  // transitions correctly.
   if (mozilla::RestyleManager* geckoRM = RestyleManager()->GetAsGecko()) {
     RestyleManager::ReframingStyleContexts* rsc =
       geckoRM->GetReframingStyleContexts();

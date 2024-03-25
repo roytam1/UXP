@@ -15,7 +15,6 @@
 #include "mozilla/FloatingPoint.h" // For IsFinite
 #include "mozilla/LookAndFeel.h" // For LookAndFeel::GetInt
 #include "mozilla/KeyframeUtils.h"
-#include "mozilla/ServoBindings.h"
 #include "mozilla/StyleAnimationValue.h"
 #include "Layers.h" // For Layer
 #include "nsComputedDOMStyle.h" // nsComputedDOMStyle::GetStyleContextForElement
@@ -32,17 +31,7 @@ namespace mozilla {
 bool
 PropertyValuePair::operator==(const PropertyValuePair& aOther) const
 {
-  if (mProperty != aOther.mProperty || mValue != aOther.mValue) {
-    return false;
-  }
-  if (mServoDeclarationBlock == aOther.mServoDeclarationBlock) {
-    return true;
-  }
-  if (!mServoDeclarationBlock || !aOther.mServoDeclarationBlock) {
-    return false;
-  }
-  return Servo_DeclarationBlock_Equals(mServoDeclarationBlock,
-                                       aOther.mServoDeclarationBlock);
+  return mProperty == aOther.mProperty && mValue == aOther.mValue;
 }
 
 namespace dom {
@@ -933,13 +922,8 @@ KeyframeEffectReadOnly::GetKeyframes(JSContext*& aCx,
         : propertyValue.mProperty;
 
       nsAutoString stringValue;
-      if (propertyValue.mServoDeclarationBlock) {
-        Servo_DeclarationBlock_SerializeOneValue(
-          propertyValue.mServoDeclarationBlock, &stringValue);
-      } else {
-        propertyValue.mValue.AppendToString(
-          propertyForSerializing, stringValue, nsCSSValue::eNormalized);
-      }
+      propertyValue.mValue.AppendToString(
+        propertyForSerializing, stringValue, nsCSSValue::eNormalized);
 
       JS::Rooted<JS::Value> value(aCx);
       if (!ToJSValue(aCx, stringValue, &value) ||

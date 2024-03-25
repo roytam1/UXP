@@ -16,7 +16,6 @@
 #include "nsIAtom.h"
 #include "nsUnicharUtils.h"
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/ServoBindingTypes.h"
 #include "mozilla/DeclarationBlockInlines.h"
 #include "nsContentUtils.h"
 #include "nsReadableUtils.h"
@@ -1984,8 +1983,6 @@ nsAttrValue::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const
       if (Type() == eCSSDeclaration && container->mValue.mCSSDeclaration) {
         // TODO: mCSSDeclaration might be owned by another object which
         //       would make us count them twice, bug 677493.
-        // Bug 1281964: For ServoDeclarationBlock if we do measure we'll
-        // need a way to call the Servo heap_size_of function.
         //n += container->mCSSDeclaration->SizeOfIncludingThis(aMallocSizeOf);
       } else if (Type() == eAtomArray && container->mValue.mAtomArray) {
         // Don't measure each nsIAtom, they are measured separatly.

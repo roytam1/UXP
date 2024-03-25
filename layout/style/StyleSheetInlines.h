@@ -11,7 +11,7 @@
 
 namespace mozilla {
 
-MOZ_DEFINE_STYLO_METHODS(StyleSheet, CSSStyleSheet)
+MOZ_DEFINE_DEPRECATED_METHODS(StyleSheet, CSSStyleSheet)
 
 StyleSheetInfo&
 StyleSheet::SheetInfo()

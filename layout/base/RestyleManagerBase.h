@@ -18,15 +18,13 @@ namespace mozilla {
 
 class EventStates;
 class RestyleManager;
-class ServoRestyleManager;
 
 namespace dom {
 class Element;
 }
 
 /**
- * Class for sharing data and logic common to both RestyleManager and
- * ServoRestyleManager.
+ * Class for sharing data and logic common to RestyleManager.
  */
 class RestyleManagerBase
 {

@@ -1152,7 +1152,6 @@ nsDOMStyleSheetSetList::EnsureFresh()
   for (size_t index = 0; index < count; index++) {
     StyleSheet* sheet = mDocument->SheetAt(index);
     NS_ASSERTION(sheet, "Null sheet in sheet list!");
-    // XXXheycam ServoStyleSheets don't expose their title yet.
     sheet->AsGecko()->GetTitle(title);
     if (!title.IsEmpty() && !mNames.Contains(title) && !Add(title)) {
       return;

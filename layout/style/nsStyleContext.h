@@ -21,15 +21,6 @@ namespace mozilla {
 enum class CSSPseudoElementType : uint8_t;
 } // namespace mozilla
 
-extern "C" {
-#define STYLE_STRUCT(name_, checkdata_cb_)     \
-  struct nsStyle##name_;                       \
-  const nsStyle##name_* Servo_GetStyle##name_( \
-    ServoComputedValuesBorrowedOrNull computed_values);
-#include "nsStyleStructList.h"
-#undef STYLE_STRUCT
-}
-
 /**
  * An nsStyleContext represents the computed style data for an element.
  * The computed style data are stored in a set of structs (see
@@ -80,15 +71,6 @@ public:
   nsStyleContext(nsStyleContext* aParent, nsIAtom* aPseudoTag,
                  mozilla::CSSPseudoElementType aPseudoType,
                  already_AddRefed<nsRuleNode> aRuleNode,
-                 bool aSkipParentDisplayBasedStyleFixup);
-
-  // Version of the above that takes a ServoComputedValues instead of a Gecko
-  // nsRuleNode.
-  nsStyleContext(nsStyleContext* aParent,
-                 nsPresContext* aPresContext,
-                 nsIAtom* aPseudoTag,
-                 mozilla::CSSPseudoElementType aPseudoType,
-                 already_AddRefed<ServoComputedValues> aComputedValues,
                  bool aSkipParentDisplayBasedStyleFixup);
 
   void* operator new(size_t sz, nsPresContext* aPresContext);
@@ -383,15 +365,6 @@ public:
                                    uint32_t* aEqualStructs,
                                    uint32_t* aSamePointerStructs);
 
-  /**
-   * Like the above, but allows comparing ServoComputedValues instead of needing
-   * a full-fledged style context.
-   */
-  nsChangeHint CalcStyleDifference(const ServoComputedValues* aNewComputedValues,
-                                   nsChangeHint aParentHintsNotHandledForDescendants,
-                                   uint32_t* aEqualStructs,
-                                   uint32_t* aSamePointerStructs);
-
 private:
   template<class StyleContextLike>
   nsChangeHint CalcStyleDifferenceInternal(StyleContextLike* aNewContext,
@@ -643,8 +616,8 @@ private:
   // the relevant atom.
   nsCOMPtr<nsIAtom> mPseudoTag;
 
-  // The source for our style data, either a Gecko nsRuleNode or a Servo
-  // ComputedValues struct. This never changes after construction, except
+  // The source for our style data, a nsRuleNode struct.
+  // This never changes after construction, except
   // when it's released and nulled out during teardown.
   const mozilla::OwningStyleContextSource mSource;
 
@@ -692,14 +665,6 @@ NS_NewStyleContext(nsStyleContext* aParentContext,
                    nsIAtom* aPseudoTag,
                    mozilla::CSSPseudoElementType aPseudoType,
                    nsRuleNode* aRuleNode,
-                   bool aSkipParentDisplayBasedStyleFixup);
-
-already_AddRefed<nsStyleContext>
-NS_NewStyleContext(nsStyleContext* aParentContext,
-                   nsPresContext* aPresContext,
-                   nsIAtom* aPseudoTag,
-                   mozilla::CSSPseudoElementType aPseudoType,
-                   already_AddRefed<ServoComputedValues> aComputedValues,
                    bool aSkipParentDisplayBasedStyleFixup);
 
 #endif

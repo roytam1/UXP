@@ -7,7 +7,6 @@
 #define nsINode_h___
 
 #include "mozilla/Likely.h"
-#include "mozilla/ServoTypes.h"
 #include "mozilla/UniquePtr.h"
 #include "nsCOMPtr.h"               // for member, local
 #include "nsGkAtoms.h"              // for nsGkAtoms::baseURIProperty
@@ -2085,12 +2084,6 @@ public:
 #undef DOCUMENT_ONLY_EVENT
 #undef TOUCH_EVENT
 #undef EVENT
-
-  bool HasServoData() {
-    MOZ_CRASH("Accessing servo node data in non-stylo build");
-  }
-
-  void ClearServoData();
 
 protected:
   static bool Traverse(nsINode *tmp, nsCycleCollectionTraversalCallback &cb);

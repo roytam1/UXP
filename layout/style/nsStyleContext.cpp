@@ -39,10 +39,6 @@
 #include "nsCoord.h"
 #include "nsFontMetrics.h"
 
-// Ensure the binding function declarations in nsStyleContext.h matches
-// those in ServoBindings.h.
-#include "mozilla/ServoBindings.h"
-
 using namespace mozilla;
 
 //----------------------------------------------------------------------
@@ -121,18 +117,6 @@ nsStyleContext::nsStyleContext(nsStyleContext* aParent,
   }
 
   mSource.AsGeckoRuleNode()->SetUsedDirectly(); // before ApplyStyleFixups()!
-  FinishConstruction(aSkipParentDisplayBasedStyleFixup);
-}
-
-nsStyleContext::nsStyleContext(nsStyleContext* aParent,
-                               nsPresContext* aPresContext,
-                               nsIAtom* aPseudoTag,
-                               CSSPseudoElementType aPseudoType,
-                               already_AddRefed<ServoComputedValues> aComputedValues,
-                               bool aSkipParentDisplayBasedStyleFixup)
-  : nsStyleContext(aParent, OwningStyleContextSource(Move(aComputedValues)),
-                   aPseudoTag, aPseudoType)
-{
   FinishConstruction(aSkipParentDisplayBasedStyleFixup);
 }
 
@@ -644,14 +628,6 @@ ShouldBlockifyChildren(const nsStyleDisplay* aStyleDisp)
 void
 nsStyleContext::SetStyleBits()
 {
-  // XXXbholley: We should get this information directly from the
-  // ServoComputedValues rather than computing it here. This setup for
-  // ServoComputedValues-backed nsStyleContexts is probably not something
-  // we should ship.
-  //
-  // For example, NS_STYLE_IS_TEXT_COMBINED is still set in ApplyStyleFixups,
-  // which isn't called for ServoComputedValues.
-
   // See if we have any text decorations.
   // First see if our parent has text decorations.  If our parent does, then we inherit the bit.
   if (mParent && mParent->HasTextDecorationLines()) {
@@ -1255,44 +1231,6 @@ nsStyleContext::CalcStyleDifference(nsStyleContext* aNewContext,
                                      aEqualStructs, aSamePointerStructs);
 }
 
-class MOZ_STACK_CLASS FakeStyleContext
-{
-public:
-  explicit FakeStyleContext(const ServoComputedValues* aComputedValues)
-    : mComputedValues(aComputedValues) {}
-
-  mozilla::NonOwningStyleContextSource StyleSource() const {
-    return mozilla::NonOwningStyleContextSource(mComputedValues);
-  }
-
-  nsStyleContext* GetStyleIfVisited() {
-    // XXXbholley: This is wrong. Need to implement to get visited handling
-    // corrrect!
-    return nullptr;
-  }
-
-  #define STYLE_STRUCT(name_, checkdata_cb_)                                  \
-  const nsStyle##name_ * Style##name_() {                                     \
-    return Servo_GetStyle##name_(mComputedValues);                            \
-  }
-  #include "nsStyleStructList.h"
-  #undef STYLE_STRUCT
-
-private:
-  const ServoComputedValues* MOZ_NON_OWNING_REF mComputedValues;
-};
-
-nsChangeHint
-nsStyleContext::CalcStyleDifference(const ServoComputedValues* aNewComputedValues,
-                                    nsChangeHint aParentHintsNotHandledForDescendants,
-                                    uint32_t* aEqualStructs,
-                                    uint32_t* aSamePointerStructs)
-{
-  FakeStyleContext newContext(aNewComputedValues);
-  return CalcStyleDifferenceInternal(&newContext, aParentHintsNotHandledForDescendants,
-                                     aEqualStructs, aSamePointerStructs);
-}
-
 #ifdef DEBUG
 void nsStyleContext::List(FILE* out, int32_t aIndent, bool aListDescendants)
 {
@@ -1389,21 +1327,6 @@ NS_NewStyleContext(nsStyleContext* aParentContext,
     new (aRuleNode->PresContext())
     nsStyleContext(aParentContext, aPseudoTag, aPseudoType, node.forget(),
                    aSkipParentDisplayBasedStyleFixup);
-  return context.forget();
-}
-
-already_AddRefed<nsStyleContext>
-NS_NewStyleContext(nsStyleContext* aParentContext,
-                   nsPresContext* aPresContext,
-                   nsIAtom* aPseudoTag,
-                   CSSPseudoElementType aPseudoType,
-                   already_AddRefed<ServoComputedValues> aComputedValues,
-                   bool aSkipParentDisplayBasedStyleFixup)
-{
-  RefPtr<nsStyleContext> context =
-    new (aPresContext)
-    nsStyleContext(aParentContext, aPresContext, aPseudoTag, aPseudoType,
-                   Move(aComputedValues), aSkipParentDisplayBasedStyleFixup);
   return context.forget();
 }
 

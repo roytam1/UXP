@@ -2672,9 +2672,6 @@ GetFontParentStyleContext(Element* aElement, nsIPresShell* aPresShell,
 
   nsStyleSet* styleSet = aPresShell->StyleSet()->GetAsGecko();
   if (!styleSet) {
-    // XXXheycam ServoStyleSets do not support resolving style from a list of
-    // rules yet.
-    NS_ERROR("stylo: cannot resolve style for canvas from a ServoStyleSet yet");
     aError.Throw(NS_ERROR_FAILURE);
     return nullptr;
   }
@@ -2716,9 +2713,6 @@ GetFontStyleContext(Element* aElement, const nsAString& aFont,
 {
   nsStyleSet* styleSet = aPresShell->StyleSet()->GetAsGecko();
   if (!styleSet) {
-    // XXXheycam ServoStyleSets do not support resolving style from a list of
-    // rules yet.
-    NS_ERROR("stylo: cannot resolve style for canvas from a ServoStyleSet yet");
     aError.Throw(NS_ERROR_FAILURE);
     return nullptr;
   }
@@ -2793,9 +2787,6 @@ ResolveStyleForFilter(const nsAString& aFilterString,
 {
   nsStyleSet* styleSet = aPresShell->StyleSet()->GetAsGecko();
   if (!styleSet) {
-    // XXXheycam ServoStyleSets do not support resolving style from a list of
-    // rules yet.
-    NS_ERROR("stylo: cannot resolve style for canvas from a ServoStyleSet yet");
     aError.Throw(NS_ERROR_FAILURE);
     return nullptr;
   }

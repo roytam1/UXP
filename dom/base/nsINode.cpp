@@ -19,7 +19,6 @@
 #include "mozilla/InternalMutationEvent.h"
 #include "mozilla/Likely.h"
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/ServoBindings.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/css/StyleRule.h"
 #include "mozilla/dom/Element.h"
@@ -1438,11 +1437,6 @@ nsINode::UnoptimizableCCNode() const
          // For strange cases like xbl:content/xbl:children
          (IsElement() &&
           AsElement()->IsInNamespace(kNameSpaceID_XBL));
-}
-
-void
-nsINode::ClearServoData() {
-  MOZ_CRASH("Accessing servo node data in non-stylo build");
 }
 
 /* static */

@@ -18,7 +18,6 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/Services.h"
-#include "mozilla/ServoBindings.h"
 
 #include "nsAppRunner.h"
 #include "mozilla/AppData.h"

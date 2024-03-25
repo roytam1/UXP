@@ -10,7 +10,7 @@
 
 namespace mozilla {
 
-MOZ_DEFINE_STYLO_METHODS(DeclarationBlock, css::Declaration)
+MOZ_DEFINE_DEPRECATED_METHODS(DeclarationBlock, css::Declaration)
 
 MozExternalRefCountType
 DeclarationBlock::AddRef()

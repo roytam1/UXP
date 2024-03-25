@@ -748,9 +748,6 @@ void
 nsStyleSet::AppendAllXBLStyleSheets(nsTArray<mozilla::CSSStyleSheet*>& aArray) const
 {
   if (mBindingManager) {
-    // XXXheycam stylo: AppendAllSheets will need to be able to return either
-    // CSSStyleSheets or ServoStyleSheets, on request (and then here requesting
-    // CSSStyleSheets).
     AutoTArray<StyleSheet*, 32> sheets;
     mBindingManager->AppendAllSheets(sheets);
     for (StyleSheet* handle : sheets) {
@@ -2468,9 +2465,6 @@ nsStyleSet::EnsureUniqueInnerOnCSSSheets()
 
   if (mBindingManager) {
     AutoTArray<StyleSheet*, 32> sheets;
-    // XXXheycam stylo: AppendAllSheets will need to be able to return either
-    // CSSStyleSheets or ServoStyleSheets, on request (and then here requesting
-    // CSSStyleSheets).
     mBindingManager->AppendAllSheets(sheets);
     for (StyleSheet* sheet : sheets) {
       queue.AppendElement(sheet->AsGecko());

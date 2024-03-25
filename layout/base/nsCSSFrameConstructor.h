@@ -56,7 +56,6 @@ public:
 
   friend class mozilla::RestyleManager;
   friend class mozilla::RestyleManagerBase;
-  friend class mozilla::ServoRestyleManager;
 
   nsCSSFrameConstructor(nsIDocument* aDocument, nsIPresShell* aPresShell);
   ~nsCSSFrameConstructor(void) {

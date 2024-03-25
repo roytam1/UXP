@@ -407,8 +407,6 @@ void
 nsTextControlFrame::AppendAnonymousContentTo(nsTArray<nsIContent*>& aElements,
                                              uint32_t aFilter)
 {
-  // This can be called off-main-thread during Servo traversal, so we take care
-  // to avoid QI-ing the DOM node.
   nsITextControlElement* txtCtrl = nullptr;
   nsIContent* content = GetContent();
   if (content->IsHTMLElement(nsGkAtoms::input)) {

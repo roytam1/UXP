@@ -8972,8 +8972,6 @@ GetCorrectedParent(const nsIFrame* aFrame)
   // It would be nice to put it in CorrectStyleParentFrame and therefore share
   // it, but that would lose the information of whether the _child_ is NAC,
   // since CorrectStyleParentFrame only knows about the prospective _parent_.
-  // This duplication and complexity will go away when we fully switch to the
-  // Servo style system, where all this can be handled much more naturally.
   //
   // We need to take special care not to disrupt the style inheritance of frames
   // whose content is NAC but who implement a pseudo (like an anonymous
