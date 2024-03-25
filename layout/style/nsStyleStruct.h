@@ -18,7 +18,6 @@
 #include "mozilla/SheetType.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/StyleComplexColor.h"
-#include "mozilla/StyleStructContext.h"
 #include "mozilla/UniquePtr.h"
 #include "nsColor.h"
 #include "nsCoord.h"
@@ -154,9 +153,9 @@ struct Position {
 // The lifetime of these objects is managed by the presshell's arena.
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleFont
 {
-  nsStyleFont(const nsFont& aFont, StyleStructContext aContext);
+  nsStyleFont(const nsFont& aFont, nsPresContext* aContext);
   nsStyleFont(const nsStyleFont& aStyleFont);
-  explicit nsStyleFont(StyleStructContext aContext);
+  explicit nsStyleFont(nsPresContext* aContext);
   ~nsStyleFont() {
     MOZ_COUNT_DTOR(nsStyleFont);
   }
@@ -179,14 +178,14 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleFont
    * aSize is allowed to be negative, but the caller is expected to deal with
    * negative results.  The result is clamped to nscoord_MIN .. nscoord_MAX.
    */
-  static nscoord ZoomText(StyleStructContext aContext, nscoord aSize);
+  static nscoord ZoomText(nsPresContext* aContext, nscoord aSize);
   /**
    * Return aSize divided by the current text zoom factor (in aPresContext).
    * aSize is allowed to be negative, but the caller is expected to deal with
    * negative results.  The result is clamped to nscoord_MIN .. nscoord_MAX.
    */
   static nscoord UnZoomText(nsPresContext* aPresContext, nscoord aSize);
-  static already_AddRefed<nsIAtom> GetLanguage(StyleStructContext aPresContext);
+  static already_AddRefed<nsIAtom> GetLanguage(nsPresContext* aPresContext);
 
   void* operator new(size_t sz, nsStyleFont* aSelf) { return aSelf; }
   void* operator new(size_t sz, nsPresContext* aContext) {
@@ -523,7 +522,7 @@ private:
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleColor
 {
-  explicit nsStyleColor(StyleStructContext aContext);
+  explicit nsStyleColor(nsPresContext* aContext);
   nsStyleColor(const nsStyleColor& aOther);
   ~nsStyleColor() {
     MOZ_COUNT_DTOR(nsStyleColor);
@@ -862,7 +861,7 @@ struct nsStyleImageLayers {
 };
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleBackground {
-  explicit nsStyleBackground(StyleStructContext aContext);
+  explicit nsStyleBackground(nsPresContext* aContext);
   nsStyleBackground(const nsStyleBackground& aOther);
   ~nsStyleBackground();
 
@@ -912,7 +911,7 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleBackground {
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleMargin
 {
-  explicit nsStyleMargin(StyleStructContext aContext);
+  explicit nsStyleMargin(nsPresContext* aContext);
   nsStyleMargin(const nsStyleMargin& aMargin);
   ~nsStyleMargin() {
     MOZ_COUNT_DTOR(nsStyleMargin);
@@ -959,7 +958,7 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleMargin
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStylePadding
 {
-  explicit nsStylePadding(StyleStructContext aContext);
+  explicit nsStylePadding(nsPresContext* aContext);
   nsStylePadding(const nsStylePadding& aPadding);
   ~nsStylePadding() {
     MOZ_COUNT_DTOR(nsStylePadding);
@@ -1171,7 +1170,7 @@ static bool IsVisibleBorderStyle(uint8_t aStyle)
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleBorder
 {
-  explicit nsStyleBorder(StyleStructContext aContext);
+  explicit nsStyleBorder(nsPresContext* aContext);
   nsStyleBorder(const nsStyleBorder& aBorder);
   ~nsStyleBorder();
 
@@ -1385,7 +1384,7 @@ ASSERT_BORDER_COLOR_FIELD(Left);
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleOutline
 {
-  explicit nsStyleOutline(StyleStructContext aContext);
+  explicit nsStyleOutline(nsPresContext* aContext);
   nsStyleOutline(const nsStyleOutline& aOutline);
   ~nsStyleOutline() {
     MOZ_COUNT_DTOR(nsStyleOutline);
@@ -1460,7 +1459,7 @@ private:
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleList
 {
-  explicit nsStyleList(StyleStructContext aContext);
+  explicit nsStyleList(nsPresContext* aContext);
   nsStyleList(const nsStyleList& aStyleList);
   ~nsStyleList();
 
@@ -1684,7 +1683,7 @@ struct nsStyleGridTemplate
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStylePosition
 {
-  explicit nsStylePosition(StyleStructContext aContext);
+  explicit nsStylePosition(nsPresContext* aContext);
   nsStylePosition(const nsStylePosition& aOther);
   ~nsStylePosition();
 
@@ -1921,7 +1920,7 @@ struct nsStyleTextOverflow
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleTextReset
 {
-  explicit nsStyleTextReset(StyleStructContext aContext);
+  explicit nsStyleTextReset(nsPresContext* aContext);
   nsStyleTextReset(const nsStyleTextReset& aOther);
   ~nsStyleTextReset();
 
@@ -1969,7 +1968,7 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleTextReset
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleText
 {
-  explicit nsStyleText(StyleStructContext aContext);
+  explicit nsStyleText(nsPresContext* aContext);
   nsStyleText(const nsStyleText& aOther);
   ~nsStyleText();
 
@@ -2194,7 +2193,7 @@ protected:
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleVisibility
 {
-  explicit nsStyleVisibility(StyleStructContext aContext);
+  explicit nsStyleVisibility(nsPresContext* aContext);
   nsStyleVisibility(const nsStyleVisibility& aVisibility);
   ~nsStyleVisibility() {
     MOZ_COUNT_DTOR(nsStyleVisibility);
@@ -2701,7 +2700,7 @@ using StyleShapeOutside = StyleShapeSource<StyleShapeOutsideShapeBox>;
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay
 {
-  explicit nsStyleDisplay(StyleStructContext aContext);
+  explicit nsStyleDisplay(nsPresContext* aContext);
   nsStyleDisplay(const nsStyleDisplay& aOther);
   ~nsStyleDisplay() {
     MOZ_COUNT_DTOR(nsStyleDisplay);
@@ -3016,7 +3015,7 @@ public:
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleTable
 {
-  explicit nsStyleTable(StyleStructContext aContext);
+  explicit nsStyleTable(nsPresContext* aContext);
   nsStyleTable(const nsStyleTable& aOther);
   ~nsStyleTable();
 
@@ -3047,7 +3046,7 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleTable
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleTableBorder
 {
-  explicit nsStyleTableBorder(StyleStructContext aContext);
+  explicit nsStyleTableBorder(nsPresContext* aContext);
   nsStyleTableBorder(const nsStyleTableBorder& aOther);
   ~nsStyleTableBorder();
 
@@ -3155,7 +3154,7 @@ struct nsStyleCounterData
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleContent
 {
-  explicit nsStyleContent(StyleStructContext aContext);
+  explicit nsStyleContent(nsPresContext* aContext);
   nsStyleContent(const nsStyleContent& aContent);
   ~nsStyleContent();
 
@@ -3235,7 +3234,7 @@ protected:
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleUIReset
 {
-  explicit nsStyleUIReset(StyleStructContext aContext);
+  explicit nsStyleUIReset(nsPresContext* aContext);
   nsStyleUIReset(const nsStyleUIReset& aOther);
   ~nsStyleUIReset();
 
@@ -3307,7 +3306,7 @@ private:
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleUserInterface
 {
-  explicit nsStyleUserInterface(StyleStructContext aContext);
+  explicit nsStyleUserInterface(nsPresContext* aContext);
   nsStyleUserInterface(const nsStyleUserInterface& aOther);
   ~nsStyleUserInterface();
 
@@ -3352,7 +3351,7 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleUserInterface
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleXUL
 {
-  explicit nsStyleXUL(StyleStructContext aContext);
+  explicit nsStyleXUL(nsPresContext* aContext);
   nsStyleXUL(const nsStyleXUL& aSource);
   ~nsStyleXUL();
 
@@ -3391,7 +3390,7 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleXUL
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleColumn
 {
-  explicit nsStyleColumn(StyleStructContext aContext);
+  explicit nsStyleColumn(nsPresContext* aContext);
   nsStyleColumn(const nsStyleColumn& aSource);
   ~nsStyleColumn();
 
@@ -3514,7 +3513,7 @@ private:
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleSVG
 {
-  explicit nsStyleSVG(StyleStructContext aContext);
+  explicit nsStyleSVG(nsPresContext* aContext);
   nsStyleSVG(const nsStyleSVG& aSource);
   ~nsStyleSVG();
 
@@ -3703,7 +3702,7 @@ struct nsTArray_CopyChooser<nsStyleFilter>
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleSVGReset
 {
-  explicit nsStyleSVGReset(StyleStructContext aContext);
+  explicit nsStyleSVGReset(nsPresContext* aContext);
   nsStyleSVGReset(const nsStyleSVGReset& aSource);
   ~nsStyleSVGReset();
 
@@ -3755,7 +3754,7 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleSVGReset
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleVariables
 {
-  explicit nsStyleVariables(StyleStructContext aContext);
+  explicit nsStyleVariables(nsPresContext* aContext);
   nsStyleVariables(const nsStyleVariables& aSource);
   ~nsStyleVariables();
 
@@ -3785,7 +3784,7 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleVariables
 
 struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleEffects
 {
-  explicit nsStyleEffects(StyleStructContext aContext);
+  explicit nsStyleEffects(nsPresContext* aContext);
   nsStyleEffects(const nsStyleEffects& aSource);
   ~nsStyleEffects();
 
