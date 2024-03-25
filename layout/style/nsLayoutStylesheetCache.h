@@ -97,14 +97,12 @@ private:
   void LoadSheet(nsIURI* aURI, RefPtr<mozilla::StyleSheet>* aSheet,
                  mozilla::css::SheetParsingMode aParsingMode,
                  mozilla::css::FailureAction aFailureAction);
-  static void InvalidateSheet(RefPtr<mozilla::StyleSheet>* aGeckoSheet,
-                              RefPtr<mozilla::StyleSheet>* aServoSheet);
+  static void InvalidateSheet(RefPtr<mozilla::StyleSheet>* aSheet);
   static void DependentPrefChanged(const char* aPref, void* aData);
   void BuildPreferenceSheet(RefPtr<mozilla::StyleSheet>* aSheet,
                             nsPresContext* aPresContext);
 
-  static mozilla::StaticRefPtr<nsLayoutStylesheetCache> gStyleCache_Gecko;
-  static mozilla::StaticRefPtr<nsLayoutStylesheetCache> gStyleCache_Servo;
+  static mozilla::StaticRefPtr<nsLayoutStylesheetCache> gStyleCache;
   static mozilla::StaticRefPtr<mozilla::css::Loader> gCSSLoader;
   static mozilla::StaticRefPtr<nsIURI> gUserContentSheetURL;
   RefPtr<mozilla::StyleSheet> mChromePreferenceSheet;
