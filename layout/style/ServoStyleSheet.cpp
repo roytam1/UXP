@@ -5,7 +5,6 @@
 
 #include "ServoBindings.h"
 #include "mozilla/ServoStyleSheet.h"
-#include "mozilla/StyleBackendType.h"
 #include "CSSRuleList.h"
 
 using namespace mozilla::dom;
@@ -16,7 +15,7 @@ ServoStyleSheet::ServoStyleSheet(css::SheetParsingMode aParsingMode,
                                  CORSMode aCORSMode,
                                  net::ReferrerPolicy aReferrerPolicy,
                                  const dom::SRIMetadata& aIntegrity)
-  : StyleSheet(StyleBackendType::Servo, aParsingMode)
+  : StyleSheet(aParsingMode)
   , mSheetInfo(aCORSMode, aReferrerPolicy, aIntegrity)
 {
 }

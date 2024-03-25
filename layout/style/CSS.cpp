@@ -24,7 +24,6 @@ struct SupportsParsingInfo
   nsIURI* mDocURI;
   nsIURI* mBaseURI;
   nsIPrincipal* mPrincipal;
-  StyleBackendType mStyleBackendType;
 };
 
 static nsresult
@@ -44,7 +43,6 @@ GetParsingInfo(const GlobalObject& aGlobal,
   aInfo.mDocURI = nsCOMPtr<nsIURI>(doc->GetDocumentURI()).get();
   aInfo.mBaseURI = nsCOMPtr<nsIURI>(doc->GetBaseURI()).get();
   aInfo.mPrincipal = win->GetPrincipal();
-  aInfo.mStyleBackendType = doc->GetStyleBackendType();
   return NS_OK;
 }
 

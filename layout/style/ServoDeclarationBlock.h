@@ -59,7 +59,7 @@ public:
 protected:
   explicit ServoDeclarationBlock(
     already_AddRefed<RawServoDeclarationBlock> aRaw)
-    : DeclarationBlock(StyleBackendType::Servo), mRaw(aRaw) {}
+    : DeclarationBlock(), mRaw(aRaw) {}
 
 private:
   ~ServoDeclarationBlock() {}

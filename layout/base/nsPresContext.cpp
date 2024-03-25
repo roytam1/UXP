@@ -889,7 +889,7 @@ nsPresContext::Init(nsDeviceContext* aDeviceContext)
 // Note: We don't hold a reference on the shell; it has a reference to
 // us
 void
-nsPresContext::AttachShell(nsIPresShell* aShell, StyleBackendType aBackendType)
+nsPresContext::AttachShell(nsIPresShell* aShell)
 {
   MOZ_ASSERT(!mShell);
   mShell = aShell;

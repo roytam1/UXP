@@ -10,7 +10,6 @@
 #include "mozilla/EventStates.h"
 #include "mozilla/HandleRefPtr.h"
 #include "mozilla/RefCountType.h"
-#include "mozilla/StyleBackendType.h"
 #include "nsChangeHint.h"
 
 namespace mozilla {
@@ -47,11 +46,6 @@ public:
   {
   public:
     friend class ::mozilla::RestyleManagerHandle;
-
-    StyleBackendType BackendType() const
-    {
-      return StyleBackendType::Gecko;
-    }
 
     RestyleManager* AsGecko()
     {

@@ -318,7 +318,7 @@ public:
 // ------------------------------------------------------------------
 
 inline bool
-IsInvalidValuePair(const PropertyValuePair& aPair, StyleBackendType aBackend)
+IsInvalidValuePair(const PropertyValuePair& aPair)
 {
   // There are three types of values we store as token streams:
   //
@@ -595,8 +595,6 @@ KeyframeUtils::GetComputedKeyframeValues(const nsTArray<Keyframe>& aKeyframes,
   MOZ_ASSERT(aStyleContext);
   MOZ_ASSERT(aElement);
 
-  StyleBackendType styleBackend = aElement->OwnerDoc()->GetStyleBackendType();
-
   const size_t len = aKeyframes.Length();
   nsTArray<ComputedKeyframeValues> result(len);
 
@@ -605,7 +603,7 @@ KeyframeUtils::GetComputedKeyframeValues(const nsTArray<Keyframe>& aKeyframes,
     ComputedKeyframeValues* computedValues = result.AppendElement();
     for (const PropertyValuePair& pair :
            PropertyPriorityIterator(frame.mPropertyValues)) {
-      if (IsInvalidValuePair(pair, styleBackend)) {
+      if (IsInvalidValuePair(pair)) {
         continue;
       }
 
@@ -1363,8 +1361,6 @@ HasImplicitKeyframeValues(const nsTArray<Keyframe>& aKeyframes,
     }
   };
 
-  StyleBackendType styleBackend = aDocument->GetStyleBackendType();
-
   for (size_t i = 0, len = aKeyframes.Length(); i < len; i++) {
     const Keyframe& frame = aKeyframes[i];
 
@@ -1380,7 +1376,7 @@ HasImplicitKeyframeValues(const nsTArray<Keyframe>& aKeyframes,
                          : computedOffset;
 
     for (const PropertyValuePair& pair : frame.mPropertyValues) {
-      if (IsInvalidValuePair(pair, styleBackend)) {
+      if (IsInvalidValuePair(pair)) {
         continue;
       }
 
