@@ -10,9 +10,9 @@
 
 #include "mozilla/Assertions.h"
 #include "mozilla/RestyleLogging.h"
-#include "mozilla/StyleContextSource.h"
 #include "nsCSSAnonBoxes.h"
 #include "nsStyleSet.h"
+#include "nsRuleNode.h"
 
 class nsIAtom;
 class nsPresContext;
@@ -70,7 +70,7 @@ public:
    */
   nsStyleContext(nsStyleContext* aParent, nsIAtom* aPseudoTag,
                  mozilla::CSSPseudoElementType aPseudoType,
-                 already_AddRefed<nsRuleNode> aRuleNode,
+                 nsRuleNode* aRuleNode,
                  bool aSkipParentDisplayBasedStyleFixup);
 
   void* operator new(size_t sz, nsPresContext* aPresContext);
@@ -135,9 +135,7 @@ public:
     return mRefCnt == 1;
   }
 
-  nsPresContext* PresContext() const {
-    return mSource.AsGeckoRuleNode()->PresContext();
-  }
+  nsPresContext* PresContext() const { return mRuleNode->PresContext(); }
 
   nsStyleContext* GetParent() const { return mParent; }
 
@@ -156,14 +154,14 @@ public:
   // Find, if it already exists *and is easily findable* (i.e., near the
   // start of the child list), a style context whose:
   //  * GetPseudo() matches aPseudoTag
-  //  * mSource matches aSource
-  //  * !!GetStyleIfVisited() == !!aSourceIfVisited, and, if they're
-  //    non-null, GetStyleIfVisited()->mSource == aSourceIfVisited
+  //  * RuleNode() matches aRules
+  //  * !GetStyleIfVisited() == !aRulesIfVisited, and, if they're
+  //    non-null, GetStyleIfVisited()->RuleNode() == aRulesIfVisited
   //  * RelevantLinkVisited() == aRelevantLinkVisited
   already_AddRefed<nsStyleContext>
   FindChildWithRules(const nsIAtom* aPseudoTag,
-                     mozilla::NonOwningStyleContextSource aSource,
-                     mozilla::NonOwningStyleContextSource aSourceIfVisited,
+                     nsRuleNode* aRules,
+                     nsRuleNode* aRulesIfVisited,
                      bool aRelevantLinkVisited);
 
   // Does this style context or any of its ancestors have text
@@ -289,9 +287,7 @@ public:
     return mBits & nsCachedStyleData::GetBitForSID(aSID);
   }
 
-  nsRuleNode* RuleNode() {
-    return mSource.AsGeckoRuleNode();
-  }
+  nsRuleNode* RuleNode() { return mRuleNode; }
 
   void AddStyleBit(const uint64_t& aBit) { mBits |= aBit; }
 
@@ -478,20 +474,9 @@ public:
     return cachedData;
   }
 
-  mozilla::NonOwningStyleContextSource StyleSource() const { return mSource.AsRaw(); }
-
 private:
   // Private destructor, to discourage deletion outside of Release():
   ~nsStyleContext();
-
-  // Delegated Helper constructor.
-  nsStyleContext(nsStyleContext* aParent,
-                 mozilla::OwningStyleContextSource&& aSource,
-                 nsIAtom* aPseudoTag,
-                 mozilla::CSSPseudoElementType aPseudoType);
-
-  // Helper post-contruct hook.
-  void FinishConstruction(bool aSkipParentDisplayBasedStyleFixup);
 
   void AddChild(nsStyleContext* aChild);
   void RemoveChild(nsStyleContext* aChild);
@@ -547,9 +532,8 @@ private:
       }                                                                 \
       /* Have the rulenode deal */                                      \
       AUTO_CHECK_DEPENDENCY(eStyleStruct_##name_);                      \
-      const nsStyle##name_ * newData;                                   \
-      newData = mSource.AsGeckoRuleNode()->                             \
-        GetStyle##name_<aComputeData>(this, mBits);                     \
+      const nsStyle##name_ * newData =                                  \
+        mRuleNode->GetStyle##name_<aComputeData>(this, mBits);          \
       /* always cache inherited data on the style context; the rule */  \
       /* node set the bit in mBits for us if needed. */                 \
       mCachedInheritedData.mStyleStructs[eStyleStruct_##name_] =        \
@@ -568,9 +552,8 @@ private:
       }                                                                 \
       /* Have the rulenode deal */                                      \
       AUTO_CHECK_DEPENDENCY(eStyleStruct_##name_);                      \
-      const nsStyle##name_ * newData;                                   \
-      newData = mSource.AsGeckoRuleNode()->                             \
-        GetStyle##name_<aComputeData>(this);                            \
+      const nsStyle##name_ * newData =                                  \
+        mRuleNode->GetStyle##name_<aComputeData>(this);                 \
       return newData;                                                   \
     }
   #include "nsStyleStructList.h"
@@ -616,10 +599,13 @@ private:
   // the relevant atom.
   nsCOMPtr<nsIAtom> mPseudoTag;
 
-  // The source for our style data, a nsRuleNode struct.
-  // This never changes after construction, except
-  // when it's released and nulled out during teardown.
-  const mozilla::OwningStyleContextSource mSource;
+  // The rule node is the node in the lexicographic tree of rule nodes
+  // (the "rule tree") that indicates which style rules are used to
+  // compute the style data, and in what cascading order.  The least
+  // specific rule matched is the one whose rule node is a child of the
+  // root of the rule tree, and the most specific rule matched is the
+  // |mRule| member of |mRuleNode|.
+  const RefPtr<nsRuleNode> mRuleNode;
 
   // mCachedInheritedData and mCachedResetData point to both structs that
   // are owned by this style context and structs that are owned by one of
