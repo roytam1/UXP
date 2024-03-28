@@ -190,8 +190,6 @@
 #include "mozilla/layers/InputAPZContext.h"
 #include "mozilla/layers/ScrollInputMethods.h"
 #include "nsStyleSet.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
 #include "mozilla/StyleSheet.h"
 #include "mozilla/StyleSheetInlines.h"
 #include "mozilla/dom/ImageTracker.h"
@@ -848,7 +846,7 @@ PresShell::~PresShell()
 
   MOZ_ASSERT(mAllocatedPointers.IsEmpty(), "Some pres arena objects were not freed");
 
-  mStyleSet->Delete();
+  delete mStyleSet;
   delete mFrameConstructor;
 
   mCurrentEventContent = nullptr;
@@ -864,7 +862,7 @@ void
 PresShell::Init(nsIDocument* aDocument,
                 nsPresContext* aPresContext,
                 nsViewManager* aViewManager,
-                StyleSetHandle aStyleSet)
+                nsStyleSet* aStyleSet)
 {
   NS_PRECONDITION(aDocument, "null ptr");
   NS_PRECONDITION(aPresContext, "null ptr");
@@ -1400,7 +1398,7 @@ PresShell::UpdatePreferenceStyles()
 
   RemovePreferenceStyles();
 
-  mStyleSet->AppendStyleSheet(SheetType::User, newPrefSheet);
+  mStyleSet->AppendStyleSheet(SheetType::User, newPrefSheet->AsGecko());
   mPrefStyleSheet = newPrefSheet;
 
   mStyleSet->EndUpdate();
@@ -1410,7 +1408,7 @@ void
 PresShell::RemovePreferenceStyles()
 {
   if (mPrefStyleSheet) {
-    mStyleSet->RemoveStyleSheet(SheetType::User, mPrefStyleSheet);
+    mStyleSet->RemoveStyleSheet(SheetType::User, mPrefStyleSheet->AsGecko());
     mPrefStyleSheet = nullptr;
   }
 }
@@ -1433,13 +1431,13 @@ PresShell::AddUserSheet(nsISupports* aSheet)
   // Iterate forwards when removing so the searches for RemoveStyleSheet are as
   // short as possible.
   for (StyleSheet* sheet : userSheets) {
-    mStyleSet->RemoveStyleSheet(SheetType::User, sheet);
+    mStyleSet->RemoveStyleSheet(SheetType::User, sheet->AsGecko());
   }
 
   // Now iterate backwards, so that the order of userSheets will be the same as
   // the order of sheets from it in the style set.
   for (StyleSheet* sheet : Reversed(userSheets)) {
-    mStyleSet->PrependStyleSheet(SheetType::User, sheet);
+    mStyleSet->PrependStyleSheet(SheetType::User, sheet->AsGecko());
   }
 
   mStyleSet->EndUpdate();
@@ -1457,7 +1455,7 @@ PresShell::AddAgentSheet(nsISupports* aSheet)
     return;
   }
 
-  mStyleSet->AppendStyleSheet(SheetType::Agent, sheet);
+  mStyleSet->AppendStyleSheet(SheetType::Agent, sheet->AsGecko());
   RestyleForCSSRuleChanges();
 }
 
@@ -1474,9 +1472,9 @@ PresShell::AddAuthorSheet(nsISupports* aSheet)
   StyleSheet* firstAuthorSheet =
     mDocument->GetFirstAdditionalAuthorSheet();
   if (firstAuthorSheet) {
-    mStyleSet->InsertStyleSheetBefore(SheetType::Doc, sheet, firstAuthorSheet);
+    mStyleSet->InsertStyleSheetBefore(SheetType::Doc, sheet->AsGecko(), firstAuthorSheet->AsGecko());
   } else {
-    mStyleSet->AppendStyleSheet(SheetType::Doc, sheet);
+    mStyleSet->AppendStyleSheet(SheetType::Doc, sheet->AsGecko());
   }
 
   RestyleForCSSRuleChanges();
@@ -1490,7 +1488,7 @@ PresShell::RemoveSheet(SheetType aType, nsISupports* aSheet)
     return;
   }
 
-  mStyleSet->RemoveStyleSheet(aType, sheet);
+  mStyleSet->RemoveStyleSheet(aType, sheet->AsGecko());
   RestyleForCSSRuleChanges();
 }
 
@@ -4168,7 +4166,7 @@ PresShell::DocumentStatesChanged(nsIDocument* aDocument,
   NS_PRECONDITION(!mIsDocumentGone, "Unexpected DocumentStatesChanged");
   NS_PRECONDITION(aDocument == mDocument, "Unexpected aDocument");
 
-  nsStyleSet* styleSet = mStyleSet->GetAsGecko();
+  nsStyleSet* styleSet = mStyleSet;
   if (!styleSet) {
     return;
   }
@@ -8772,19 +8770,23 @@ PresShell::GetAgentStyleSheets(nsTArray<RefPtr<StyleSheet>>& aSheets)
 nsresult
 PresShell::SetAgentStyleSheets(const nsTArray<RefPtr<StyleSheet>>& aSheets)
 {
-  return mStyleSet->ReplaceSheets(SheetType::Agent, aSheets);
+  nsTArray<RefPtr<CSSStyleSheet>> newSheets(aSheets.Length());
+  for (auto& sheet : aSheets) {
+    newSheets.AppendElement(sheet->AsGecko());
+  }
+  return mStyleSet->ReplaceSheets(SheetType::Agent, newSheets);
 }
 
 nsresult
 PresShell::AddOverrideStyleSheet(StyleSheet* aSheet)
 {
-  return mStyleSet->PrependStyleSheet(SheetType::Override, aSheet);
+  return mStyleSet->PrependStyleSheet(SheetType::Override, aSheet->AsGecko());
 }
 
 nsresult
 PresShell::RemoveOverrideStyleSheet(StyleSheet* aSheet)
 {
-  return mStyleSet->RemoveStyleSheet(SheetType::Override, aSheet);
+  return mStyleSet->RemoveStyleSheet(SheetType::Override, aSheet->AsGecko());
 }
 
 static void
@@ -9957,7 +9959,7 @@ PresShell::VerifyIncrementalReflow()
 
   // Create a new presentation shell to view the document. Use the
   // exact same style information that this document has.
-  nsAutoPtr<nsStyleSet> newSet(CloneStyleSet(mStyleSet->AsGecko()));
+  nsAutoPtr<nsStyleSet> newSet(CloneStyleSet(mStyleSet));
   nsCOMPtr<nsIPresShell> sh = mDocument->CreateShell(cx, vm, newSet.get());
   NS_ENSURE_TRUE(sh, false);
   newSet.forget();
@@ -10802,7 +10804,7 @@ PresShell::AddSizeOfIncludingThis(MallocSizeOf aMallocSizeOf,
   *aPresShellSize += mFramesToDirty.ShallowSizeOfExcludingThis(aMallocSizeOf);
   *aPresShellSize += aArenaObjectsSize->mOther;
 
-  if (nsStyleSet* styleSet = StyleSet()->GetAsGecko()) {
+  if (nsStyleSet* styleSet = StyleSet()) {
     *aStyleSetsSize += styleSet->SizeOfIncludingThis(aMallocSizeOf);
   }
 
@@ -11010,7 +11012,7 @@ nsIPresShell::HasRuleProcessorUsedByMultipleStyleSets(uint32_t aSheetType,
   }
 
   *aRetVal = false;
-  if (nsStyleSet* styleSet = mStyleSet->GetAsGecko()) {
+  if (nsStyleSet* styleSet = mStyleSet) {
     *aRetVal = styleSet->HasRuleProcessorUsedByMultipleStyleSets(type);
   }
   return NS_OK;

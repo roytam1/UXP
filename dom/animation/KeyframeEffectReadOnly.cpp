@@ -1268,7 +1268,7 @@ CreateStyleContextForAnimationValue(nsCSSPropertyID aProperty,
   rules.AppendObject(styleRule);
 
   nsStyleSet* styleSet =
-    aBaseStyleContext->PresContext()->StyleSet()->AsGecko();
+    aBaseStyleContext->PresContext()->StyleSet();
 
   RefPtr<nsStyleContext> styleContext =
     styleSet->ResolveStyleByAddingRules(aBaseStyleContext, rules);

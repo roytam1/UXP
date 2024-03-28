@@ -458,7 +458,7 @@ public:
 
 private:
   inline nsStyleSet* StyleSet() const {
-    return PresContext()->StyleSet()->AsGecko();
+    return PresContext()->StyleSet();
   }
 
   /* aMinHint is the minimal change that should be made to the element */

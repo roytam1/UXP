@@ -35,8 +35,7 @@
 #include "nsIDocument.h"
 
 #include "nsCSSPseudoElements.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 #include "imgIRequest.h"
 #include "nsLayoutUtils.h"
 #include "nsCSSKeywords.h"
@@ -504,7 +503,7 @@ nsComputedDOMStyle::GetStyleContextForElementNoFlush(Element* aElement,
   if (!presContext)
     return nullptr;
 
-  StyleSetHandle styleSet = presShell->StyleSet();
+  nsStyleSet* styleSet = presShell->StyleSet();
 
   RefPtr<nsStyleContext> sc;
   if (aPseudo) {
@@ -543,7 +542,7 @@ nsComputedDOMStyle::GetStyleContextForElementNoFlush(Element* aElement,
       rules[i].swap(rules[length - i - 1]);
     }
 
-    sc = styleSet->AsGecko()->ResolveStyleForRules(parentContext, rules);
+    sc = styleSet->ResolveStyleForRules(parentContext, rules);
   }
 
   return sc.forget();

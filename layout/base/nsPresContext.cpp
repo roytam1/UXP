@@ -18,8 +18,7 @@
 #include "nsDocShell.h"
 #include "nsIContentViewer.h"
 #include "nsPIDOMWindow.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 #include "nsIContent.h"
 #include "nsIFrame.h"
 #include "nsIDocument.h"
@@ -1142,18 +1141,18 @@ nsPresContext::CompatibilityModeChanged()
     return;
   }
 
-  StyleSetHandle styleSet = mShell->StyleSet();
+  nsStyleSet* styleSet = mShell->StyleSet();
   auto cache = nsLayoutStylesheetCache::Get();
   StyleSheet* sheet = cache->QuirkSheet();
 
   if (needsQuirkSheet) {
     // quirk.css needs to come after html.css; we just keep it at the end.
     DebugOnly<nsresult> rv =
-      styleSet->AppendStyleSheet(SheetType::Agent, sheet);
+      styleSet->AppendStyleSheet(SheetType::Agent, sheet->AsGecko());
     NS_WARNING_ASSERTION(NS_SUCCEEDED(rv), "failed to insert quirk.css");
   } else {
     DebugOnly<nsresult> rv =
-      styleSet->RemoveStyleSheet(SheetType::Agent, sheet);
+      styleSet->RemoveStyleSheet(SheetType::Agent, sheet->AsGecko());
     NS_WARNING_ASSERTION(NS_SUCCEEDED(rv), "failed to remove quirk.css");
   }
 
@@ -1375,7 +1374,7 @@ GetPropagatedScrollStylesForViewport(nsPresContext* aPresContext,
   }
 
   // Check the style on the document root element
-  StyleSetHandle styleSet = aPresContext->StyleSet();
+  nsStyleSet* styleSet = aPresContext->StyleSet();
   RefPtr<nsStyleContext> rootStyle;
   rootStyle = styleSet->ResolveStyleFor(docElement, nullptr);
   if (CheckOverflow(rootStyle->StyleDisplay(), aStyles)) {
@@ -1882,7 +1881,7 @@ nsPresContext::MediaFeatureValuesChanged(nsRestyleHint aRestyleHint,
 
   // MediumFeaturesChanged updates the applied rules, so it always gets called.
   if (mShell) {
-    if (mShell->StyleSet()->AsGecko()->MediumFeaturesChanged()) {
+    if (mShell->StyleSet()->MediumFeaturesChanged()) {
       aRestyleHint |= eRestyle_Subtree;
     }
   }
@@ -2135,7 +2134,7 @@ nsPresContext::NotifyMissingFonts()
 void
 nsPresContext::EnsureSafeToHandOutCSSRules()
 {
-  nsStyleSet* styleSet = mShell->StyleSet()->GetAsGecko();
+  nsStyleSet* styleSet = mShell->StyleSet();
   if (!styleSet) {
     return;
   }
@@ -2475,7 +2474,7 @@ nsPresContext::HasCachedStyleData()
     return false;
   }
 
-  nsStyleSet* styleSet = mShell->StyleSet()->GetAsGecko();
+  nsStyleSet* styleSet = mShell->StyleSet();
   if (!styleSet) {
     return mShell->DidInitialize();
   }

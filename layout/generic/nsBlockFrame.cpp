@@ -53,8 +53,7 @@
 #include "nsISelection.h"
 #include "mozilla/dom/HTMLDetailsElement.h"
 #include "mozilla/dom/HTMLSummaryElement.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 
 #include "nsBidiPresUtils.h"
 

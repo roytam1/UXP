@@ -125,8 +125,7 @@ static const char kPrintingPromptService[] = "@mozilla.org/embedcomp/printingpro
 #include "nsIChannel.h"
 #include "xpcpublic.h"
 #include "nsVariant.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -2239,12 +2238,12 @@ nsPrintEngine::ReflowPrintObject(nsPrintObject * aPO)
   rv = aPO->mViewManager->Init(printData->mPrintDC);
   NS_ENSURE_SUCCESS(rv,rv);
 
-  StyleSetHandle styleSet = mDocViewerPrint->CreateStyleSet(aPO->mDocument);
+  nsStyleSet* styleSet = mDocViewerPrint->CreateStyleSet(aPO->mDocument);
 
   aPO->mPresShell = aPO->mDocument->CreateShell(aPO->mPresContext,
                                                 aPO->mViewManager, styleSet);
   if (!aPO->mPresShell) {
-    styleSet->Delete();
+    delete styleSet;
     return NS_ERROR_FAILURE;
   }
 

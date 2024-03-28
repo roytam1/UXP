@@ -19,8 +19,7 @@
 #include "nsIDocument.h"
 #include "nsPresContext.h"
 #include "nsIPresShell.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 #include "nsIFrame.h"
 #include "nsIWritablePropertyBag2.h"
 #include "nsSubDocumentFrame.h"
@@ -679,12 +678,12 @@ nsDocumentViewer::InitPresentationStuff(bool aDoInitialReflow)
                "Someone should have destroyed the presshell!");
 
   // Create the style set...
-  StyleSetHandle styleSet = CreateStyleSet(mDocument);
+  nsStyleSet* styleSet = CreateStyleSet(mDocument);
 
   // Now make the shell for the document
   mPresShell = mDocument->CreateShell(mPresContext, mViewManager, styleSet);
   if (!mPresShell) {
-    styleSet->Delete();
+    delete styleSet;
     return NS_ERROR_FAILURE;
   }
 
@@ -2268,7 +2267,7 @@ nsDocumentViewer::RequestWindowClose(bool* aCanClose)
   return NS_OK;
 }
 
-StyleSetHandle
+nsStyleSet*
 nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
 {
   // Make sure this does the same thing as PresShell::AddSheet wrt ordering.
@@ -2276,7 +2275,7 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
   // this should eventually get expanded to allow for creating
   // different sets for different media
 
-  StyleSetHandle styleSet = new nsStyleSet();
+  nsStyleSet* styleSet = new nsStyleSet();
 
   styleSet->BeginUpdate();
   
@@ -2307,7 +2306,7 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
   }
 
   if (sheet)
-    styleSet->AppendStyleSheet(SheetType::User, sheet);
+    styleSet->AppendStyleSheet(SheetType::User, sheet->AsGecko());
 
   // Append chrome sheets (scrollbars + forms).
   bool shouldOverride = false;
@@ -2343,7 +2342,7 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
           cssLoader->LoadSheetSync(uri, &chromeSheet);
           if (!chromeSheet) continue;
 
-          styleSet->PrependStyleSheet(SheetType::Agent, chromeSheet);
+          styleSet->PrependStyleSheet(SheetType::Agent, chromeSheet->AsGecko());
           shouldOverride = true;
         }
         free(str);
@@ -2354,7 +2353,7 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
   if (!shouldOverride) {
     sheet = cache->ScrollbarsSheet();
     if (sheet) {
-      styleSet->PrependStyleSheet(SheetType::Agent, sheet);
+      styleSet->PrependStyleSheet(SheetType::Agent, sheet->AsGecko());
     }
   }
 
@@ -2370,12 +2369,12 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
 
     sheet = cache->NumberControlSheet();
     if (sheet) {
-      styleSet->PrependStyleSheet(SheetType::Agent, sheet);
+      styleSet->PrependStyleSheet(SheetType::Agent, sheet->AsGecko());
     }
 
     sheet = cache->FormsSheet();
     if (sheet) {
-      styleSet->PrependStyleSheet(SheetType::Agent, sheet);
+      styleSet->PrependStyleSheet(SheetType::Agent, sheet->AsGecko());
     }
 
     if (aDocument->LoadsFullXULStyleSheetUpFront()) {
@@ -2383,7 +2382,7 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
       // up-front here.
       sheet = cache->XULSheet();
       if (sheet) {
-        styleSet->PrependStyleSheet(SheetType::Agent, sheet);
+        styleSet->PrependStyleSheet(SheetType::Agent, sheet->AsGecko());
       }
     }
 
@@ -2391,25 +2390,25 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
     if (sheet) {
       // Load the minimal XUL rules for scrollbars and a few other XUL things
       // that non-XUL (typically HTML) documents commonly use.
-      styleSet->PrependStyleSheet(SheetType::Agent, sheet);
+      styleSet->PrependStyleSheet(SheetType::Agent, sheet->AsGecko());
     }
 
     sheet = cache->CounterStylesSheet();
     if (sheet) {
-      styleSet->PrependStyleSheet(SheetType::Agent, sheet);
+      styleSet->PrependStyleSheet(SheetType::Agent, sheet->AsGecko());
     }
 
     if (nsLayoutUtils::ShouldUseNoScriptSheet(aDocument)) {
       sheet = cache->NoScriptSheet();
       if (sheet) {
-        styleSet->PrependStyleSheet(SheetType::Agent, sheet);
+        styleSet->PrependStyleSheet(SheetType::Agent, sheet->AsGecko());
       }
     }
 
     if (nsLayoutUtils::ShouldUseNoFramesSheet(aDocument)) {
       sheet = cache->NoFramesSheet();
       if (sheet) {
-        styleSet->PrependStyleSheet(SheetType::Agent, sheet);
+        styleSet->PrependStyleSheet(SheetType::Agent, sheet->AsGecko());
       }
     }
 
@@ -2418,26 +2417,26 @@ nsDocumentViewer::CreateStyleSet(nsIDocument* aDocument)
 
     sheet = cache->HTMLSheet();
     if (sheet) {
-      styleSet->PrependStyleSheet(SheetType::Agent, sheet);
+      styleSet->PrependStyleSheet(SheetType::Agent, sheet->AsGecko());
     }
 
     styleSet->PrependStyleSheet(SheetType::Agent,
-                                cache->UASheet());
+                                cache->UASheet()->AsGecko());
   } else {
     // SVG documents may have scrollbars and need the scrollbar styling.
     sheet = cache->MinimalXULSheet();
     if (sheet) {
-      styleSet->PrependStyleSheet(SheetType::Agent, sheet);
+      styleSet->PrependStyleSheet(SheetType::Agent, sheet->AsGecko());
     }
   }
 
   nsStyleSheetService* sheetService = nsStyleSheetService::GetInstance();
   if (sheetService) {
     for (StyleSheet* sheet : *sheetService->AgentStyleSheets()) {
-      styleSet->AppendStyleSheet(SheetType::Agent, sheet);
+      styleSet->AppendStyleSheet(SheetType::Agent, sheet->AsGecko());
     }
     for (StyleSheet* sheet : Reversed(*sheetService->UserStyleSheets())) {
-      styleSet->PrependStyleSheet(SheetType::User, sheet);
+      styleSet->PrependStyleSheet(SheetType::User, sheet->AsGecko());
     }
   }
 

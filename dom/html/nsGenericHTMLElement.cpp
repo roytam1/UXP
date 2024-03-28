@@ -103,8 +103,7 @@
 #include "mozilla/dom/HTMLBodyElement.h"
 #include "imgIContainer.h"
 #include "nsComputedDOMStyle.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 #include "ReferrerPolicy.h"
 #include "mozilla/dom/HTMLLabelElement.h"
 
@@ -3019,7 +3018,7 @@ IsOrHasAncestorWithDisplayNone(Element* aElement, nsIPresShell* aPresShell)
     return false;
   }
 
-  StyleSetHandle styleSet = aPresShell->StyleSet();
+  nsStyleSet* styleSet = aPresShell->StyleSet();
   RefPtr<nsStyleContext> sc;
   for (int32_t i = elementsToCheck.Length() - 1; i >= 0; --i) {
     if (sc) {

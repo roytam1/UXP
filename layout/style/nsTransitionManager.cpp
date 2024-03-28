@@ -530,7 +530,7 @@ nsTransitionManager::StyleContextChanged(dom::Element *aElement,
   // not stopping or starting right now.
   RefPtr<nsStyleContext> afterChangeStyle;
   if (collection) {
-    nsStyleSet* styleSet = mPresContext->StyleSet()->AsGecko();
+    nsStyleSet* styleSet = mPresContext->StyleSet();
     afterChangeStyle =
       styleSet->ResolveStyleWithoutAnimation(aElement, newStyleContext,
                                              eRestyle_CSSTransitions);

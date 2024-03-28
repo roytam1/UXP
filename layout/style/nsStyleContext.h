@@ -11,15 +11,12 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/RestyleLogging.h"
 #include "nsCSSAnonBoxes.h"
+#include "nsCSSPseudoElements.h"
 #include "nsStyleSet.h"
 #include "nsRuleNode.h"
 
 class nsIAtom;
 class nsPresContext;
-
-namespace mozilla {
-enum class CSSPseudoElementType : uint8_t;
-} // namespace mozilla
 
 /**
  * An nsStyleContext represents the computed style data for an element.

@@ -18,7 +18,8 @@
 #include "nsWrapperCacheInlines.h"
 #include "nsIFrame.h"
 #include "ActiveLayerTracker.h"
-#include "StyleSetHandle.h"
+
+class nsStyleSet;
 
 using namespace mozilla;
 using namespace mozilla::dom;

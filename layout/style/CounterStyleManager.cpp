@@ -17,8 +17,7 @@
 #include "nsTArray.h"
 #include "nsTHashtable.h"
 #include "nsUnicodeProperties.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 
 namespace mozilla {
 
@@ -2028,9 +2027,9 @@ CounterStyleManager::BuildCounterStyle(const nsSubstring& aName)
 
   // It is intentional that the predefined names are case-insensitive
   // but the user-defined names case-sensitive.
-  StyleSetHandle styleSet = mPresContext->StyleSet();
+  nsStyleSet* styleSet = mPresContext->StyleSet();
   nsCSSCounterStyleRule* rule =
-    styleSet->AsGecko()->CounterStyleRuleForName(aName);
+    styleSet->CounterStyleRuleForName(aName);
   if (rule) {
     data = new (mPresContext) CustomCounterStyle(aName, this, rule);
   } else {
@@ -2070,9 +2069,9 @@ CounterStyleManager::NotifyRuleChanged()
     RefPtr<CounterStyle>& style = iter.Data();
     bool toBeUpdated = false;
     bool toBeRemoved = false;
-    StyleSetHandle styleSet = mPresContext->StyleSet();
+    nsStyleSet* styleSet = mPresContext->StyleSet();
     nsCSSCounterStyleRule* newRule =
-        styleSet->AsGecko()->CounterStyleRuleForName(iter.Key());
+        styleSet->CounterStyleRuleForName(iter.Key());
     if (!newRule) {
       if (style->IsCustomStyle()) {
         toBeRemoved = true;

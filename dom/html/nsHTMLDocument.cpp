@@ -273,7 +273,7 @@ nsHTMLDocument::ResetToURI(nsIURI *aURI, nsILoadGroup *aLoadGroup,
 already_AddRefed<nsIPresShell>
 nsHTMLDocument::CreateShell(nsPresContext* aContext,
                             nsViewManager* aViewManager,
-                            StyleSetHandle aStyleSet)
+                            nsStyleSet* aStyleSet)
 {
   return doCreateShell(aContext, aViewManager, aStyleSet);
 }

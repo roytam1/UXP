@@ -3261,7 +3261,7 @@ ComputeValuesFromStyleRule(nsCSSPropertyID aProperty,
     return false;
   }
 
-  nsStyleSet* styleSet = aStyleContext->PresContext()->StyleSet()->AsGecko();
+  nsStyleSet* styleSet = aStyleContext->PresContext()->StyleSet();
 
   RefPtr<nsStyleContext> tmpStyleContext;
   if (aIsContextSensitive) {

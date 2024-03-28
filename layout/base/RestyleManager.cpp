@@ -3869,7 +3869,7 @@ RestyleManager::ComputeAndProcessStyleChange(nsStyleContext*        aNewContext,
 nsStyleSet*
 ElementRestyler::StyleSet() const
 {
-  return mPresContext->StyleSet()->AsGecko();
+  return mPresContext->StyleSet();
 }
 
 AutoDisplayContentsAncestorPusher::AutoDisplayContentsAncestorPusher(

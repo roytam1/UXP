@@ -121,8 +121,7 @@
 #include "nsFontMetrics.h"
 #include "Units.h"
 #include "CanvasUtils.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 #include "mozilla/layers/CanvasClient.h"
 
 #undef free // apparently defined by some windows header, clashing with a free()
@@ -2670,7 +2669,7 @@ GetFontParentStyleContext(Element* aElement, nsIPresShell* aPresShell,
 
   // otherwise inherit from default (10px sans-serif)
 
-  nsStyleSet* styleSet = aPresShell->StyleSet()->GetAsGecko();
+  nsStyleSet* styleSet = aPresShell->StyleSet();
   if (!styleSet) {
     aError.Throw(NS_ERROR_FAILURE);
     return nullptr;
@@ -2711,7 +2710,7 @@ GetFontStyleContext(Element* aElement, const nsAString& aFont,
                     nsAString& aOutUsedFont,
                     ErrorResult& aError)
 {
-  nsStyleSet* styleSet = aPresShell->StyleSet()->GetAsGecko();
+  nsStyleSet* styleSet = aPresShell->StyleSet();
   if (!styleSet) {
     aError.Throw(NS_ERROR_FAILURE);
     return nullptr;
@@ -2785,7 +2784,7 @@ ResolveStyleForFilter(const nsAString& aFilterString,
                       nsStyleContext* aParentContext,
                       ErrorResult& aError)
 {
-  nsStyleSet* styleSet = aPresShell->StyleSet()->GetAsGecko();
+  nsStyleSet* styleSet = aPresShell->StyleSet();
   if (!styleSet) {
     aError.Throw(NS_ERROR_FAILURE);
     return nullptr;
