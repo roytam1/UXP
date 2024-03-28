@@ -160,10 +160,10 @@ nsStyleContext::~nsStyleContext()
 #endif
 
   nsPresContext *presContext = PresContext();
-  DebugOnly<nsStyleSet*> geckoStyleSet = presContext->PresShell()->StyleSet()->GetAsGecko();
-  NS_ASSERTION(!geckoStyleSet ||
-               geckoStyleSet->GetRuleTree() == mSource.AsGeckoRuleNode()->RuleTree() ||
-               geckoStyleSet->IsInRuleTreeReconstruct(),
+  DebugOnly<nsStyleSet*> styleSet = presContext->PresShell()->StyleSet()->GetAsGecko();
+  NS_ASSERTION(!styleSet ||
+               styleSet->GetRuleTree() == mRuleNode->RuleTree() ||
+               styleSet->IsInRuleTreeReconstruct(),
                "destroying style context from old rule tree too late");
 
   if (mParent) {
