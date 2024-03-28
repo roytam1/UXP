@@ -1485,6 +1485,27 @@ Element::GetElementsByClassName(const nsAString& aClassNames,
   return NS_OK;
 }
 
+CSSPseudoElementType
+Element::GetPseudoElementType() const {
+  if (!HasProperties()) {
+    return CSSPseudoElementType::NotPseudo;
+  }
+  nsresult rv = NS_OK;
+  auto raw = GetProperty(nsGkAtoms::pseudoProperty, &rv);
+  if (rv == NS_PROPTABLE_PROP_NOT_THERE) {
+    return CSSPseudoElementType::NotPseudo;
+  }
+  return CSSPseudoElementType(reinterpret_cast<uintptr_t>(raw));
+}
+
+void
+Element::SetPseudoElementType(CSSPseudoElementType aPseudo) {
+  static_assert(sizeof(CSSPseudoElementType) <= sizeof(uintptr_t),
+                "Need to be able to store this in a void*");
+  MOZ_ASSERT(aPseudo != CSSPseudoElementType::NotPseudo);
+  SetProperty(nsGkAtoms::pseudoProperty, reinterpret_cast<void*>(aPseudo));
+}
+
 /**
  * Returns the count of descendants (inclusive of aContent) in
  * the uncomposed document that are explicitly set as editable.
