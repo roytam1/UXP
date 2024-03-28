@@ -30,7 +30,7 @@ struct MiscContainer final
         nscolor mColor;
         uint32_t mEnumValue;
         int32_t mPercent;
-        mozilla::DeclarationBlock* mCSSDeclaration;
+        mozilla::css::Declaration* mCSSDeclaration;
         mozilla::css::URLValue* mURL;
         mozilla::css::ImageValue* mImage;
         nsAttrValue::AtomArray* mAtomArray;
@@ -145,7 +145,7 @@ nsAttrValue::GetAtomArrayValue() const
   return GetMiscContainer()->mValue.mAtomArray;
 }
 
-inline mozilla::DeclarationBlock*
+inline mozilla::css::Declaration*
 nsAttrValue::GetCSSDeclarationValue() const
 {
   NS_PRECONDITION(Type() == eCSSDeclaration, "wrong type");

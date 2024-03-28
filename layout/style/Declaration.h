@@ -18,7 +18,6 @@
 #endif
 
 #include "mozilla/Attributes.h"
-#include "mozilla/DeclarationBlock.h"
 #include "mozilla/MemoryReporting.h"
 #include "CSSVariableDeclarations.h"
 #include "nsCSSDataBlock.h"
@@ -83,8 +82,7 @@ private:
 // be copied before it can be modified, which is taken care of by
 // |EnsureMutable|.
 
-class Declaration final : public DeclarationBlock
-                        , public nsIStyleRule
+class Declaration final : public nsIStyleRule
 {
 public:
   /**
@@ -92,7 +90,7 @@ public:
    * |mData|) and cannot be used until its |CompressFrom| method or
    * |InitializeEmpty| method is called.
    */
-  Declaration() : DeclarationBlock() {}
+  Declaration();
 
   Declaration(const Declaration& aCopy);
 
@@ -104,6 +102,63 @@ private:
   ~Declaration();
 
 public:
+  /**
+   * Return whether |this| may be modified.
+   */
+  bool IsMutable() const {
+    return !mImmutable;
+  }
+
+  /**
+   * Crash if |this| cannot be modified.
+   */
+  void AssertMutable() const {
+    MOZ_ASSERT(IsMutable(), "someone forgot to call EnsureMutable");
+  }
+
+  /**
+   * Mark this declaration as unmodifiable.  It's 'const' so it can
+   * be called from ToString.
+   */
+  void SetImmutable() const { mImmutable = true; }
+
+  /**
+   * Copy |this|, if necessary to ensure that it can be modified.
+   */
+  already_AddRefed<Declaration> EnsureMutable();
+
+  void SetOwningRule(css::Rule* aRule) {
+    MOZ_ASSERT(!mContainer.mOwningRule || !aRule,
+               "should never overwrite one rule with another");
+    mContainer.mOwningRule = aRule;
+  }
+
+  css::Rule* GetOwningRule() const {
+    if (mContainer.mRaw & 0x1) {
+      return nullptr;
+    }
+    return mContainer.mOwningRule;
+  }
+
+  void SetHTMLCSSStyleSheet(nsHTMLCSSStyleSheet* aHTMLCSSStyleSheet) {
+    MOZ_ASSERT(!mContainer.mHTMLCSSStyleSheet || !aHTMLCSSStyleSheet,
+               "should never overwrite one sheet with another");
+    mContainer.mHTMLCSSStyleSheet = aHTMLCSSStyleSheet;
+    if (aHTMLCSSStyleSheet) {
+      mContainer.mRaw |= uintptr_t(1);
+    }
+  }
+
+  nsHTMLCSSStyleSheet* GetHTMLCSSStyleSheet() const {
+    if (!(mContainer.mRaw & 0x1)) {
+      return nullptr;
+    }
+    auto c = mContainer;
+    c.mRaw &= ~uintptr_t(1);
+    return c.mHTMLCSSStyleSheet;
+  }
+
+  already_AddRefed<Declaration> Clone() const;
 
   // nsIStyleRule implementation
   virtual void MapRuleInfoInto(nsRuleData *aRuleData) override;
@@ -367,6 +422,27 @@ public:
   size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
 private:
+  union {
+    // We only ever have one of these since we have an
+    // nsHTMLCSSStyleSheet only for style attributes, and style
+    // attributes never have an owning rule.
+
+    // It's an nsHTMLCSSStyleSheet if the low bit is set.
+
+    uintptr_t mRaw;
+
+    // The style rule that owns this declaration.  May be null.
+    css::Rule* mOwningRule;
+
+    // The nsHTMLCSSStyleSheet that is responsible for this declaration.
+    // Only non-null for style attributes.
+    nsHTMLCSSStyleSheet* mHTMLCSSStyleSheet;
+  } mContainer;
+
+  // set when declaration put in the rule tree;
+  // also by ToString (hence the 'mutable').
+  mutable bool mImmutable;
+
   // The order of properties in this declaration.  Longhand properties are
   // represented by their nsCSSPropertyID value, and each custom property (--*)
   // is represented by a value that begins at eCSSProperty_COUNT.

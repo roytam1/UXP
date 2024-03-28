@@ -360,8 +360,8 @@ public:
 
   NS_IMETHOD GetParentRule(nsIDOMCSSRule **aParent) override;
   void DropReference() { mRule = nullptr; }
-  virtual mozilla::DeclarationBlock* GetCSSDeclaration(Operation aOperation) override;
-  virtual nsresult SetCSSDeclaration(mozilla::DeclarationBlock* aDecl) override;
+  virtual mozilla::css::Declaration* GetCSSDeclaration(Operation aOperation) override;
+  virtual nsresult SetCSSDeclaration(mozilla::css::Declaration* aDecl) override;
   virtual void GetCSSParsingEnvironment(CSSParsingEnvironment& aCSSParseEnv) override;
   virtual nsIDocument* DocToUpdate() override;
 
@@ -491,8 +491,8 @@ public:
 
   NS_IMETHOD GetParentRule(nsIDOMCSSRule **aParent) override;
   void DropReference() { mRule = nullptr; }
-  virtual mozilla::DeclarationBlock* GetCSSDeclaration(Operation aOperation) override;
-  virtual nsresult SetCSSDeclaration(mozilla::DeclarationBlock* aDecl) override;
+  virtual mozilla::css::Declaration* GetCSSDeclaration(Operation aOperation) override;
+  virtual nsresult SetCSSDeclaration(mozilla::css::Declaration* aDecl) override;
   virtual void GetCSSParsingEnvironment(CSSParsingEnvironment& aCSSParseEnv) override;
   virtual nsIDocument* DocToUpdate() override;
 

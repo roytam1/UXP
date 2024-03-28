@@ -56,7 +56,6 @@
 #include "mozilla/AnimationComparator.h"
 #include "mozilla/AsyncEventDispatcher.h"
 #include "mozilla/ContentEvents.h"
-#include "mozilla/DeclarationBlockInlines.h"
 #include "mozilla/EffectSet.h"
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/EventListenerManager.h"
@@ -108,6 +107,7 @@
 #include "nsViewManager.h"
 #include "nsIScrollableFrame.h"
 #include "mozilla/css/StyleRule.h" /* For nsCSSSelectorList */
+#include "mozilla/css/Declaration.h"
 #include "nsCSSRuleProcessor.h"
 #include "nsRuleProcessorData.h"
 #include "nsTextNode.h"
@@ -2024,7 +2024,7 @@ Element::GetSMILOverrideStyle()
   return slots->mSMILOverrideStyle;
 }
 
-DeclarationBlock*
+css::Declaration*
 Element::GetSMILOverrideStyleDeclaration()
 {
   Element::nsExtendedDOMSlots* slots = GetExistingExtendedDOMSlots();
@@ -2032,7 +2032,7 @@ Element::GetSMILOverrideStyleDeclaration()
 }
 
 nsresult
-Element::SetSMILOverrideStyleDeclaration(DeclarationBlock* aDeclaration,
+Element::SetSMILOverrideStyleDeclaration(css::Declaration* aDeclaration,
                                          bool aNotify)
 {
   Element::nsExtendedDOMSlots* slots = ExtendedDOMSlots();
@@ -2072,14 +2072,14 @@ Element::IsInteractiveHTMLContent(bool aIgnoreTabindex) const
   return false;
 }
 
-DeclarationBlock*
+css::Declaration*
 Element::GetInlineStyleDeclaration()
 {
   return nullptr;
 }
 
 nsresult
-Element::SetInlineStyleDeclaration(DeclarationBlock* aDeclaration,
+Element::SetInlineStyleDeclaration(css::Declaration* aDeclaration,
                                    const nsAString* aSerialized,
                                    bool aNotify)
 {
