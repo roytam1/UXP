@@ -1188,6 +1188,7 @@ protected:
   // Reused utility parsing routines
   void AppendValue(nsCSSPropertyID aPropID, const nsCSSValue& aValue);
   bool ParseBoxProperties(const nsCSSPropertyID aPropIDs[]);
+  bool ParseBoxPairProperties(nsCSSPropertyID aStart, nsCSSPropertyID aEnd);
   bool ParseGroupedBoxProperty(int32_t aVariantMask,
                                nsCSSValue& aValue,
                                uint32_t aRestrictions);
@@ -10107,25 +10108,8 @@ CSSParserImpl::ParseGridArea()
 bool
 CSSParserImpl::ParseGap()
 {
-  nsCSSValue first;
-  if (ParseSingleTokenVariant(first, VARIANT_INHERIT, nullptr)) {
-    AppendValue(eCSSProperty_row_gap, first);
-    AppendValue(eCSSProperty_column_gap, first);
-    return true;
-  }
-  if (ParseNonNegativeVariant(first, VARIANT_LPCALC, nullptr) !=
-        CSSParseResult::Ok) {
-    return false;
-  }
-  nsCSSValue second;
-  auto result = ParseNonNegativeVariant(second, VARIANT_LPCALC, nullptr);
-  if (result == CSSParseResult::Error) {
-    return false;
-  }
-  AppendValue(eCSSProperty_row_gap, first);
-  AppendValue(eCSSProperty_column_gap,
-              result == CSSParseResult::NotFound ? first : second);
-  return true;
+  return ParseBoxPairProperties(eCSSProperty_row_gap,
+                                eCSSProperty_column_gap);
 }
 
 // normal | [<number> <integer>?]
@@ -11445,6 +11429,30 @@ CSSParserImpl::ParseBoxProperties(const nsCSSPropertyID aPropIDs[])
   NS_FOR_CSS_SIDES (index) {
     AppendValue(aPropIDs[index], result.*(nsCSSRect::sides[index]));
   }
+  return true;
+}
+
+bool
+CSSParserImpl::ParseBoxPairProperties(nsCSSPropertyID aStart, nsCSSPropertyID aEnd)
+{
+  nsCSSValue first;
+  if (ParseSingleTokenVariant(first, VARIANT_INHERIT, nullptr)) {
+    AppendValue(aStart, first);
+    AppendValue(aEnd, first);
+    return true;
+  }
+  if (ParseNonNegativeVariant(first, VARIANT_LPCALC, nullptr) !=
+        CSSParseResult::Ok) {
+    return false;
+  }
+  nsCSSValue second;
+  auto result = ParseNonNegativeVariant(second, VARIANT_LPCALC, nullptr);
+  if (result == CSSParseResult::Error) {
+    return false;
+  }
+  AppendValue(aStart, first);
+  AppendValue(aEnd,
+              result == CSSParseResult::NotFound ? first : second);
   return true;
 }
 
