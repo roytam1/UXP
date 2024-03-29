@@ -7758,6 +7758,18 @@ const UnitInfo UnitData[] = {
   { STR_WITH_LEN("vh"), eCSSUnit_ViewportHeight, VARIANT_LENGTH },
   { STR_WITH_LEN("vmin"), eCSSUnit_ViewportMin, VARIANT_LENGTH },
   { STR_WITH_LEN("vmax"), eCSSUnit_ViewportMax, VARIANT_LENGTH },
+  { STR_WITH_LEN("svw"), eCSSUnit_SmallViewportWidth, VARIANT_LENGTH },
+  { STR_WITH_LEN("svh"), eCSSUnit_SmallViewportHeight, VARIANT_LENGTH },
+  { STR_WITH_LEN("svmin"), eCSSUnit_SmallViewportMin, VARIANT_LENGTH },
+  { STR_WITH_LEN("svmax"), eCSSUnit_SmallViewportMax, VARIANT_LENGTH },
+  { STR_WITH_LEN("lvw"), eCSSUnit_LargeViewportWidth, VARIANT_LENGTH },
+  { STR_WITH_LEN("lvh"), eCSSUnit_LargeViewportHeight, VARIANT_LENGTH },
+  { STR_WITH_LEN("lvmin"), eCSSUnit_LargeViewportMin, VARIANT_LENGTH },
+  { STR_WITH_LEN("lvmax"), eCSSUnit_LargeViewportMax, VARIANT_LENGTH },
+  { STR_WITH_LEN("dvw"), eCSSUnit_DynamicViewportWidth, VARIANT_LENGTH },
+  { STR_WITH_LEN("dvh"), eCSSUnit_DynamicViewportHeight, VARIANT_LENGTH },
+  { STR_WITH_LEN("dvmin"), eCSSUnit_DynamicViewportMin, VARIANT_LENGTH },
+  { STR_WITH_LEN("dvmax"), eCSSUnit_DynamicViewportMax, VARIANT_LENGTH },
   { STR_WITH_LEN("pc"), eCSSUnit_Pica, VARIANT_LENGTH },
   { STR_WITH_LEN("q"), eCSSUnit_Quarter, VARIANT_LENGTH },
   { STR_WITH_LEN("deg"), eCSSUnit_Degree, VARIANT_ANGLE },
@@ -7797,10 +7809,22 @@ CSSParserImpl::TranslateDimension(nsCSSValue& aValue,
     }
 
     if (!mViewportUnitsEnabled &&
-        (eCSSUnit_ViewportWidth == units  ||
+        (eCSSUnit_ViewportWidth == units ||
          eCSSUnit_ViewportHeight == units ||
-         eCSSUnit_ViewportMin == units    ||
-         eCSSUnit_ViewportMax == units)) {
+         eCSSUnit_ViewportMin == units ||
+         eCSSUnit_ViewportMax == units ||
+         eCSSUnit_SmallViewportWidth == units ||
+         eCSSUnit_SmallViewportHeight == units ||
+         eCSSUnit_SmallViewportMin == units ||
+         eCSSUnit_SmallViewportMax == units ||
+         eCSSUnit_LargeViewportWidth == units ||
+         eCSSUnit_LargeViewportHeight == units ||
+         eCSSUnit_LargeViewportMin == units ||
+         eCSSUnit_LargeViewportMax == units ||
+         eCSSUnit_DynamicViewportWidth == units ||
+         eCSSUnit_DynamicViewportHeight == units ||
+         eCSSUnit_DynamicViewportMin == units ||
+         eCSSUnit_DynamicViewportMax == units)) {
       // Viewport units aren't allowed right now, probably because we're
       // inside an @page declaration. Fail.
       return false;

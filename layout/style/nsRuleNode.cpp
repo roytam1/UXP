@@ -511,20 +511,32 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
     // and allows us not to need an additional code path, in exchange
     // for an increased cost to dynamic changes to the viewport size
     // when viewport units are in use.
-    case eCSSUnit_ViewportWidth: {
+    case eCSSUnit_ViewportWidth:
+    case eCSSUnit_SmallViewportWidth:
+    case eCSSUnit_LargeViewportWidth:
+    case eCSSUnit_DynamicViewportWidth: {
       nscoord viewportWidth = CalcViewportUnitsScale(aPresContext).width;
       return ScaleViewportCoordTrunc(aValue, viewportWidth);
     }
-    case eCSSUnit_ViewportHeight: {
+    case eCSSUnit_ViewportHeight:
+    case eCSSUnit_SmallViewportHeight:
+    case eCSSUnit_LargeViewportHeight:
+    case eCSSUnit_DynamicViewportHeight: {
       nscoord viewportHeight = CalcViewportUnitsScale(aPresContext).height;
       return ScaleViewportCoordTrunc(aValue, viewportHeight);
     }
-    case eCSSUnit_ViewportMin: {
+    case eCSSUnit_ViewportMin:
+    case eCSSUnit_SmallViewportMin:
+    case eCSSUnit_LargeViewportMin:
+    case eCSSUnit_DynamicViewportMin: {
       nsSize vuScale(CalcViewportUnitsScale(aPresContext));
       nscoord viewportMin = min(vuScale.width, vuScale.height);
       return ScaleViewportCoordTrunc(aValue, viewportMin);
     }
-    case eCSSUnit_ViewportMax: {
+    case eCSSUnit_ViewportMax:
+    case eCSSUnit_SmallViewportMax:
+    case eCSSUnit_LargeViewportMax:
+    case eCSSUnit_DynamicViewportMax: {
       nsSize vuScale(CalcViewportUnitsScale(aPresContext));
       nscoord viewportMax = max(vuScale.width, vuScale.height);
       return ScaleViewportCoordTrunc(aValue, viewportMax);
