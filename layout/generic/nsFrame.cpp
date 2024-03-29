@@ -42,8 +42,6 @@
 #include "nsLayoutUtils.h"
 #include "LayoutLogging.h"
 #include "mozilla/RestyleManager.h"
-#include "mozilla/RestyleManagerHandle.h"
-#include "mozilla/RestyleManagerHandleInlines.h"
 
 #include "nsIDOMNode.h"
 #include "nsISelection.h"
@@ -677,7 +675,7 @@ nsFrame::DestroyFrom(nsIFrame* aDestructRoot)
     // because what matters is whether the new style (not the old)
     // specifies CSS transitions.
     RestyleManager::ReframingStyleContexts* rsc =
-      presContext->RestyleManager()->AsGecko()->GetReframingStyleContexts();
+      presContext->RestyleManager()->GetReframingStyleContexts();
     if (rsc) {
       rsc->Put(mContent, mStyleContext);
     }
@@ -688,7 +686,7 @@ nsFrame::DestroyFrom(nsIFrame* aDestructRoot)
     // If no new frame for this element is created by the end of the
     // restyling process, stop animations and transitions for this frame
     RestyleManager::AnimationsWithDestroyedFrame* adf =
-      presContext->RestyleManager()->AsGecko()->GetAnimationsWithDestroyedFrame();
+      presContext->RestyleManager()->GetAnimationsWithDestroyedFrame();
     // AnimationsWithDestroyedFrame only lives during the restyling process.
     if (adf) {
       adf->Put(mContent, mStyleContext);

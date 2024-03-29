@@ -112,8 +112,6 @@ EXPORTS.mozilla += [
     'RestyleLogging.h',
     'RestyleManager.h',
     'RestyleManagerBase.h',
-    'RestyleManagerHandle.h',
-    'RestyleManagerHandleInlines.h',
     'StaticPresData.h',
 ]
 
