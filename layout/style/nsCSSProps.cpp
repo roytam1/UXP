@@ -2927,6 +2927,17 @@ static const nsCSSPropertyID gMarginSubpropTable[] = {
   eCSSProperty_UNKNOWN
 };
 
+static const nsCSSPropertyID gMarginBlockSubpropTable[] = {
+  eCSSProperty_margin_block_start,
+  eCSSProperty_margin_block_end,
+  eCSSProperty_UNKNOWN
+};
+
+static const nsCSSPropertyID gMarginInlineSubpropTable[] = {
+  eCSSProperty_margin_inline_start,
+  eCSSProperty_margin_inline_end,
+  eCSSProperty_UNKNOWN
+};
 
 static const nsCSSPropertyID gOutlineSubpropTable[] = {
   // nsCSSDeclaration.cpp outputs the subproperties in this order.
@@ -3020,6 +3031,18 @@ static const nsCSSPropertyID gPaddingSubpropTable[] = {
   eCSSProperty_padding_right,
   eCSSProperty_padding_bottom,
   eCSSProperty_padding_left,
+  eCSSProperty_UNKNOWN
+};
+
+static const nsCSSPropertyID gPaddingBlockSubpropTable[] = {
+  eCSSProperty_padding_block_start,
+  eCSSProperty_padding_block_end,
+  eCSSProperty_UNKNOWN
+};
+
+static const nsCSSPropertyID gPaddingInlineSubpropTable[] = {
+  eCSSProperty_padding_inline_start,
+  eCSSProperty_padding_inline_end,
   eCSSProperty_UNKNOWN
 };
 

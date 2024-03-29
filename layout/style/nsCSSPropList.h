@@ -2494,6 +2494,13 @@ CSS_PROP_SHORTHAND(
         CSS_PROPERTY_UNITLESS_LENGTH_QUIRK |
         CSS_PROPERTY_APPLIES_TO_PAGE_RULE,
     "")
+CSS_PROP_SHORTHAND(
+    margin-block,
+    margin_block,
+    MarginBlock,
+    CSS_PROPERTY_PARSE_FUNCTION |
+        CSS_PROPERTY_APPLIES_TO_PAGE_RULE,
+    "")
 CSS_PROP_LOGICAL(
     margin-block-end,
     margin_block_end,
@@ -2546,6 +2553,13 @@ CSS_PROP_MARGIN(
     nullptr,
     offsetof(nsStyleMargin, mMargin),
     eStyleAnimType_Sides_Bottom)
+CSS_PROP_SHORTHAND(
+    margin-inline,
+    margin_inline,
+    MarginInline,
+    CSS_PROPERTY_PARSE_FUNCTION |
+        CSS_PROPERTY_APPLIES_TO_PAGE_RULE,
+    "")
 CSS_PROP_LOGICAL(
     margin-inline-end,
     margin_inline_end,
@@ -3245,6 +3259,12 @@ CSS_PROP_SHORTHAND(
     CSS_PROPERTY_PARSE_FUNCTION |
         CSS_PROPERTY_UNITLESS_LENGTH_QUIRK,
     "")
+CSS_PROP_SHORTHAND(
+    padding-block,
+    padding_block,
+    PaddingBlock,
+    CSS_PROPERTY_PARSE_FUNCTION,
+    "")
 CSS_PROP_LOGICAL(
     padding-block-end,
     padding_block_end,
@@ -3303,6 +3323,12 @@ CSS_PROP_PADDING(
     nullptr,
     offsetof(nsStylePadding, mPadding),
     eStyleAnimType_Sides_Bottom)
+CSS_PROP_SHORTHAND(
+    padding-inline,
+    padding_inline,
+    PaddingInline,
+    CSS_PROPERTY_PARSE_FUNCTION,
+    "")
 CSS_PROP_LOGICAL(
     padding-inline-end,
     padding_inline_end,
