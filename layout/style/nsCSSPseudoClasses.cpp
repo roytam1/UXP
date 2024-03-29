@@ -7,6 +7,7 @@
 
 #include "mozilla/ArrayUtils.h"
 
+#include "nsCSSPseudoElements.h"
 #include "nsCSSPseudoClasses.h"
 #include "nsStaticAtom.h"
 #include "mozilla/Preferences.h"
