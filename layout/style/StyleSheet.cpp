@@ -79,7 +79,7 @@ StyleSheet::IsComplete() const
 void
 StyleSheet::SetComplete()
 {
-  NS_ASSERTION(!AsGecko()->mDirty,
+  NS_ASSERTION(!AsConcrete()->mDirty,
                "Can't set a dirty sheet complete!");
   SheetInfo().mComplete = true;
   if (mDocument && !mDisabled) {
@@ -135,7 +135,7 @@ StyleSheet::SetDisabled(bool aDisabled)
 {
   // DOM method, so handle BeginUpdate/EndUpdate
   MOZ_AUTO_DOC_UPDATE(mDocument, UPDATE_STYLE, true);
-  AsGecko()->SetEnabled(!aDisabled);
+  AsConcrete()->SetEnabled(!aDisabled);
   return NS_OK;
 }
 
@@ -229,7 +229,7 @@ StyleSheet::GetCssRules(nsIPrincipal& aSubjectPrincipal,
   if (!AreRulesAvailable(aSubjectPrincipal, aRv)) {
     return nullptr;
   }
-  return AsGecko()->GetCssRulesInternal(aRv);
+  return AsConcrete()->GetCssRulesInternal(aRv);
 }
 
 uint32_t
@@ -240,7 +240,7 @@ StyleSheet::InsertRule(const nsAString& aRule, uint32_t aIndex,
   if (!AreRulesAvailable(aSubjectPrincipal, aRv)) {
     return 0;
   }
-  return AsGecko()->InsertRuleInternal(aRule, aIndex, aRv);
+  return AsConcrete()->InsertRuleInternal(aRule, aIndex, aRv);
 }
 
 void
@@ -251,7 +251,7 @@ StyleSheet::DeleteRule(uint32_t aIndex,
   if (!AreRulesAvailable(aSubjectPrincipal, aRv)) {
     return;
   }
-  AsGecko()->DeleteRuleInternal(aIndex, aRv);
+  AsConcrete()->DeleteRuleInternal(aIndex, aRv);
 }
 
 int32_t
@@ -275,7 +275,7 @@ StyleSheet::AddRule(const nsAString& aSelector, const nsAString& aBlock,
   auto index =
       aIndex.WasPassed() ? aIndex.Value() : GetCssRules(aSubjectPrincipal, aRv)->Length();
 
-  return AsGecko()->InsertRuleInternal(rule, index, aRv);
+  return AsConcrete()->InsertRuleInternal(rule, index, aRv);
   // As per Microsoft documentation, always return -1.
   return -1;
 }

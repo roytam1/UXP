@@ -750,7 +750,7 @@ nsStyleSet::AppendAllXBLStyleSheets(nsTArray<mozilla::CSSStyleSheet*>& aArray) c
     AutoTArray<StyleSheet*, 32> sheets;
     mBindingManager->AppendAllSheets(sheets);
     for (StyleSheet* handle : sheets) {
-      aArray.AppendElement(handle->AsGecko());
+      aArray.AppendElement(handle->AsConcrete());
     }
   }
 }
@@ -2466,7 +2466,7 @@ nsStyleSet::EnsureUniqueInnerOnCSSSheets()
     AutoTArray<StyleSheet*, 32> sheets;
     mBindingManager->AppendAllSheets(sheets);
     for (StyleSheet* sheet : sheets) {
-      queue.AppendElement(sheet->AsGecko());
+      queue.AppendElement(sheet->AsConcrete());
     }
   }
 

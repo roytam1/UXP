@@ -491,7 +491,6 @@ nsLayoutStylesheetCache::InvalidateSheet(RefPtr<StyleSheet>* aSheet)
 {
   MOZ_ASSERT(gCSSLoader, "pref changed before we loaded a sheet?");
 
-  // TODO: this redundant check goes away once we get rid of AsGecko.
   const bool hasSheet = aSheet && *aSheet;
   if (hasSheet && gCSSLoader) {
     nsIURI* uri = (*aSheet)->GetSheetURI();
@@ -628,7 +627,7 @@ nsLayoutStylesheetCache::BuildPreferenceSheet(RefPtr<StyleSheet>* aSheet,
                "kPreallocSize should be big enough to build preference style "
                "sheet without reallocation");
 
-  sheet->AsGecko()->ReparseSheet(sheetText);
+  sheet->AsConcrete()->ReparseSheet(sheetText);
 
 #undef NS_GET_R_G_B
 }

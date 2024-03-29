@@ -1130,11 +1130,11 @@ Loader::CreateSheet(nsIURI* aURI,
     if (sheet) {
       // This sheet came from the XUL cache or our per-document hashtable; it
       // better be a complete sheet.
-      NS_ASSERTION(sheet->AsGecko()->IsComplete(),
+      NS_ASSERTION(sheet->AsConcrete()->IsComplete(),
                    "Sheet thinks it's not complete while we think it is");
 
       // Make sure it hasn't been modified; if it has, we can't use it
-      if (sheet->AsGecko()->IsModified()) {
+      if (sheet->AsConcrete()->IsModified()) {
         LOG(("  Not cloning completed sheet %p because it's been modified",
              sheet.get()));
         sheet = nullptr;
@@ -1187,25 +1187,25 @@ Loader::CreateSheet(nsIURI* aURI,
 
     if (sheet) {
       // The sheet we have now should be either incomplete or unmodified
-      NS_ASSERTION(!sheet->AsGecko()->IsModified() ||
-                   !sheet->AsGecko()->IsComplete(),
+      NS_ASSERTION(!sheet->AsConcrete()->IsModified() ||
+                   !sheet->AsConcrete()->IsComplete(),
                    "Unexpected modified complete sheet");
-      NS_ASSERTION(sheet->AsGecko()->IsComplete() ||
+      NS_ASSERTION(sheet->AsConcrete()->IsComplete() ||
                    aSheetState != eSheetComplete,
                    "Sheet thinks it's not complete while we think it is");
 
       RefPtr<CSSStyleSheet> clonedSheet =
-        sheet->AsGecko()->Clone(nullptr, nullptr, nullptr, nullptr);
+        sheet->AsConcrete()->Clone(nullptr, nullptr, nullptr, nullptr);
       *aSheet = Move(clonedSheet);
       if (*aSheet && fromCompleteSheets &&
-          !sheet->AsGecko()->GetOwnerNode() &&
-          !sheet->AsGecko()->GetParentSheet()) {
+          !sheet->AsConcrete()->GetOwnerNode() &&
+          !sheet->AsConcrete()->GetParentSheet()) {
         // The sheet we're cloning isn't actually referenced by
         // anyone.  Replace it in the cache, so that if our CSSOM is
         // later modified we don't end up with two copies of our inner
         // hanging around.
         URIPrincipalReferrerPolicyAndCORSModeHashKey key(aURI, aLoaderPrincipal, aCORSMode, aReferrerPolicy);
-        NS_ASSERTION((*aSheet)->AsGecko()->IsComplete(),
+        NS_ASSERTION((*aSheet)->AsConcrete()->IsComplete(),
                      "Should only be caching complete sheets");
         mSheets->mCompleteSheets.Put(&key, *aSheet);
       }
@@ -1270,7 +1270,7 @@ Loader::PrepareSheet(StyleSheet* aSheet,
 {
   NS_PRECONDITION(aSheet, "Must have a sheet!");
 
-  CSSStyleSheet* sheet = aSheet->AsGecko();
+  CSSStyleSheet* sheet = aSheet->AsConcrete();
 
   RefPtr<nsMediaList> mediaList(aMediaList);
 
@@ -1397,10 +1397,10 @@ Loader::InsertChildSheet(StyleSheet* aSheet,
 
   // child sheets should always start out enabled, even if they got
   // cloned off of top-level sheets which were disabled
-  aSheet->AsGecko()->SetEnabled(true);
+  aSheet->AsConcrete()->SetEnabled(true);
 
   aParentSheet->AppendStyleSheet(aSheet);
-  aParentRule->SetSheet(aSheet->AsGecko()); // This sets the ownerRule on the sheet
+  aParentRule->SetSheet(aSheet->AsConcrete()); // This sets the ownerRule on the sheet
 
   LOG(("  Inserting into parent sheet"));
   //  LOG(("  Inserting into parent sheet at position %d", insertionPoint));
@@ -1741,7 +1741,7 @@ Loader::ParseSheet(const nsAString& aInput,
 
   nsresult rv;
 
-  nsCSSParser parser(this, aLoadData->mSheet->AsGecko());
+  nsCSSParser parser(this, aLoadData->mSheet->AsConcrete());
   rv = parser.ParseSheet(aInput, sheetURI, baseURI,
                          aLoadData->mSheet->Principal(),
                          aLoadData->mLineNumber);
@@ -1857,7 +1857,7 @@ Loader::DoSheetComplete(SheetLoadData* aLoadData, nsresult aStatus,
       // If mSheetAlreadyComplete, then the sheet could well be modified between
       // when we posted the async call to SheetComplete and now, since the sheet
       // was page-accessible during that whole time.
-      MOZ_ASSERT(!data->mSheet->AsGecko()->IsModified(),
+      MOZ_ASSERT(!data->mSheet->AsConcrete()->IsModified(),
                  "should not get marked modified during parsing");
       data->mSheet->SetComplete();
       data->ScheduleLoadEventIfNeeded(aStatus);
@@ -1899,10 +1899,10 @@ Loader::DoSheetComplete(SheetLoadData* aLoadData, nsresult aStatus,
     // parent sheet anyway, so that if someone then accesses it via
     // CSSOM we won't have extra clones of the inner lying around.
     data = aLoadData;
-    CSSStyleSheet* sheet = aLoadData->mSheet->AsGecko();
+    CSSStyleSheet* sheet = aLoadData->mSheet->AsConcrete();
     while (data) {
       if (data->mSheet->GetParentSheet() || data->mSheet->GetOwnerNode()) {
-        sheet = data->mSheet->AsGecko();
+        sheet = data->mSheet->AsConcrete();
         break;
       }
       data = data->mNext;
@@ -2216,7 +2216,7 @@ Loader::LoadChildSheet(StyleSheet* aParentSheet,
     LOG(("  No parent load; must be CSSOM"));
     // No parent load data, so the sheet will need to be notified when
     // we finish, if it can be, if we do the load asynchronously.
-    observer = aParentSheet->AsGecko();
+    observer = aParentSheet->AsConcrete();
   }
 
   // Now that we know it's safe to load this (passes security check and not a
@@ -2583,7 +2583,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Loader)
          !iter.Done();
          iter.Next()) {
       NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(cb, "Sheet cache nsCSSLoader");
-      CSSStyleSheet* sheet = iter.UserData()->AsGecko();
+      CSSStyleSheet* sheet = iter.UserData()->AsConcrete();
       cb.NoteXPCOMChild(NS_ISUPPORTS_CAST(nsIDOMCSSStyleSheet*, sheet));
     }
   }

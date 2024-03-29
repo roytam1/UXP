@@ -110,7 +110,7 @@ ShadowRoot::CloneInternalDataFrom(ShadowRoot* aOther)
     StyleSheet* sheet = aOther->SheetAt(i);
     if (sheet && sheet->IsApplicable()) {
       RefPtr<CSSStyleSheet> clonedSheet =
-        sheet->AsGecko()->Clone(nullptr, nullptr, nullptr, nullptr);
+        sheet->AsConcrete()->Clone(nullptr, nullptr, nullptr, nullptr);
       if (clonedSheet) {
         AppendStyleSheet(*clonedSheet);
       }

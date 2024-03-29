@@ -1929,7 +1929,7 @@ CSSStyleSheet::StyleSheetLoaded(StyleSheet* aSheet,
                                 bool aWasAlternate,
                                 nsresult aStatus)
 {
-  CSSStyleSheet* sheet = aSheet->AsGecko();
+  CSSStyleSheet* sheet = aSheet->AsConcrete();
 
   if (sheet->GetParentSheet() == nullptr) {
     return NS_OK; // ignore if sheet has been detached already (see parseSheet)

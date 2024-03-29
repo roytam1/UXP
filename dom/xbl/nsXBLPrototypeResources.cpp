@@ -147,7 +147,7 @@ nsXBLPrototypeResources::GatherRuleProcessor()
 {
   nsTArray<RefPtr<CSSStyleSheet>> sheets(mStyleSheetList.Length());
   for (StyleSheet* sheet : mStyleSheetList) {
-    sheets.AppendElement(sheet->AsGecko());
+    sheets.AppendElement(sheet->AsConcrete());
   }
   mRuleProcessor = new nsCSSRuleProcessor(Move(sheets),
                                           SheetType::Doc,
