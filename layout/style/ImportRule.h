@@ -57,11 +57,12 @@ public:
 
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
-  // nsIDOMCSSRule interface
-  NS_DECL_NSIDOMCSSRULE
-
   // nsIDOMCSSImportRule interface
   NS_DECL_NSIDOMCSSIMPORTRULE
+
+  // WebIDL interface
+  uint16_t Type() const override;
+  void GetCssTextImpl(nsAString& aCssText) const override;
 
 private:
   nsString  mURLSpec;
