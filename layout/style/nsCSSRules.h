@@ -93,6 +93,9 @@ public:
   virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf)
     const override MOZ_MUST_OVERRIDE;
 
+  virtual JSObject* WrapObject(JSContext* aCx,
+                               JS::Handle<JSObject*> aGivenProto) override;
+
 protected:
   void AppendConditionText(nsAString& aOutput);
 
@@ -167,6 +170,9 @@ public:
   virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf)
     const override MOZ_MUST_OVERRIDE;
 
+  virtual JSObject* WrapObject(JSContext* aCx,
+                               JS::Handle<JSObject*> aGivenProto) override;
+
 protected:
   void AppendConditionText(nsAString& aOutput);
 
@@ -234,11 +240,18 @@ class nsCSSFontFaceRule final : public mozilla::css::Rule,
 {
 public:
   nsCSSFontFaceRule(uint32_t aLineNumber, uint32_t aColumnNumber)
-    : mozilla::css::Rule(aLineNumber, aColumnNumber) {}
+    : mozilla::css::Rule(aLineNumber, aColumnNumber)
+  {
+    SetIsNotDOMBinding();
+  }
 
   nsCSSFontFaceRule(const nsCSSFontFaceRule& aCopy)
     // copy everything except our reference count
-    : mozilla::css::Rule(aCopy), mDecl(aCopy.mDecl) {}
+    : mozilla::css::Rule(aCopy)
+    , mDecl(aCopy.mDecl)
+  {
+    SetIsNotDOMBinding();
+  }
 
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS_INHERITED(nsCSSFontFaceRule, mozilla::css::Rule)
@@ -262,6 +275,9 @@ public:
   void GetDesc(nsCSSFontDesc aDescID, nsCSSValue & aValue);
 
   virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const override;
+
+  virtual JSObject* WrapObject(JSContext* aCx,
+                               JS::Handle<JSObject*> aGivenProto) override;
 
   void GetDescriptors(mozilla::CSSFontFaceDescriptors& aDescriptors) const
     { aDescriptors = mDecl.mDescriptors; }
@@ -299,13 +315,19 @@ class nsCSSFontFeatureValuesRule final : public mozilla::css::Rule,
 {
 public:
   nsCSSFontFeatureValuesRule(uint32_t aLineNumber, uint32_t aColumnNumber)
-    : mozilla::css::Rule(aLineNumber, aColumnNumber) {}
+    : mozilla::css::Rule(aLineNumber, aColumnNumber)
+  {
+    SetIsNotDOMBinding();
+  }
 
   nsCSSFontFeatureValuesRule(const nsCSSFontFeatureValuesRule& aCopy)
     // copy everything except our reference count
-    : mozilla::css::Rule(aCopy),
-      mFamilyList(aCopy.mFamilyList),
-      mFeatureValues(aCopy.mFeatureValues) {}
+    : mozilla::css::Rule(aCopy)
+    , mFamilyList(aCopy.mFamilyList)
+    , mFeatureValues(aCopy.mFeatureValues)
+  {
+    SetIsNotDOMBinding();
+  }
 
   NS_DECL_ISUPPORTS_INHERITED
   virtual bool IsCCLeaf() const override;
@@ -336,6 +358,8 @@ public:
   }
 
   virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const override;
+
+  virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
 protected:
   ~nsCSSFontFeatureValuesRule() {}
@@ -385,6 +409,7 @@ public:
     , mKeys(mozilla::Move(aKeys))
     , mDeclaration(mozilla::Move(aDeclaration))
   {
+    SetIsNotDOMBinding();
     mDeclaration->SetOwningRule(this);
   }
 private:
@@ -416,6 +441,8 @@ public:
 
   virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const override;
 
+  virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
+
   void DoGetKeyText(nsAString &aKeyText) const;
 
 private:
@@ -434,6 +461,7 @@ public:
     : mozilla::css::GroupRule(aLineNumber, aColumnNumber)
     , mName(aName)
   {
+    SetIsNotDOMBinding();
   }
 private:
   nsCSSKeyframesRule(const nsCSSKeyframesRule& aCopy);
@@ -465,6 +493,8 @@ public:
   const nsString& GetName() { return mName; }
 
   virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const override;
+
+  virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
 private:
   uint32_t FindRuleIndexForKey(const nsAString& aKey);
@@ -510,6 +540,7 @@ public:
     : mozilla::css::Rule(aLineNumber, aColumnNumber)
     , mDeclaration(aDeclaration)
   {
+    SetIsNotDOMBinding();
     mDeclaration->SetOwningRule(this);
   }
 private:
@@ -539,6 +570,9 @@ public:
   void ChangeDeclaration(mozilla::css::Declaration* aDeclaration);
 
   virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const override;
+
+  virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
+
 private:
   RefPtr<mozilla::css::Declaration>     mDeclaration;
   // lazily created when needed:
@@ -547,8 +581,8 @@ private:
 
 namespace mozilla {
 
-class CSSSupportsRule : public css::GroupRule,
-                        public nsIDOMCSSSupportsRule
+class CSSSupportsRule final : public css::GroupRule,
+                              public nsIDOMCSSSupportsRule
 {
 public:
   CSSSupportsRule(bool aConditionMet, const nsString& aCondition,
@@ -584,6 +618,8 @@ public:
 
   virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const override;
 
+  virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
+
 protected:
   virtual ~CSSSupportsRule();
 
@@ -603,6 +639,7 @@ public:
     , mName(aName)
     , mGeneration(0)
   {
+    SetIsNotDOMBinding();
   }
 
 private:
@@ -650,6 +687,8 @@ public:
   void SetDesc(nsCSSCounterDesc aDescID, const nsCSSValue& aValue);
 
   virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const override;
+
+  virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
 private:
   typedef NS_STDCALL_FUNCPROTO(nsresult, Getter, nsCSSCounterStyleRule,
