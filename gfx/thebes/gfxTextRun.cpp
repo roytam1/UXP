@@ -3113,10 +3113,11 @@ gfxFontGroup::WhichPrefFontSupportsChar(uint32_t aCh, uint32_t aNextCh)
     gfxPlatformFontList* pfl = gfxPlatformFontList::PlatformFontList();
 
     EmojiPresentation emoji = GetEmojiPresentation(aCh);
-    if ((emoji != EmojiPresentation::TextOnly &&
-         (aNextCh == kVariationSelector16 ||
-          (emoji == EmojiPresentation::EmojiDefault &&
-           aNextCh != kVariationSelector15)))) {
+    EmojiPresentation eNext = GetEmojiPresentation(aNextCh);
+    if (aNextCh != kVariationSelector15 &&
+        emoji != EmojiPresentation::TextOnly &&
+        (emoji != EmojiPresentation::TextDefault ||
+         eNext == EmojiPresentation::EmojiComponent)) {
         charLang = eFontPrefLang_Emoji;
     } else {
         // get the pref font list if it hasn't been set up already

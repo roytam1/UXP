@@ -212,13 +212,12 @@ gfxPlatformGtk::GetCommonFallbackFonts(uint32_t aCh, uint32_t aNextCh,
                                        nsTArray<const char*>& aFontList)
 {
     EmojiPresentation emoji = GetEmojiPresentation(aCh);
-    if (emoji != EmojiPresentation::TextOnly) {
-        if (aNextCh == kVariationSelector16 ||
-           (aNextCh != kVariationSelector15 &&
-            emoji == EmojiPresentation::EmojiDefault)) {
-            // if char is followed by VS16, try for a color emoji glyph
-            aFontList.AppendElement(kFontTwemojiMozilla);
-        }
+    EmojiPresentation eNext = GetEmojiPresentation(aNextCh);
+    if (aNextCh != kVariationSelector15 &&
+        emoji != EmojiPresentation::TextOnly &&
+        (emoji != EmojiPresentation::TextDefault ||
+         eNext == EmojiPresentation::EmojiComponent)) {
+        aFontList.AppendElement(kFontTwemojiMozilla);
     }
 
     aFontList.AppendElement(kFontDejaVuSerif);
