@@ -38,8 +38,6 @@ public:
   NS_DECL_ISUPPORTS_INHERITED
   virtual bool IsCCLeaf() const override;
 
-  DECL_STYLE_RULE_INHERIT
-
 #ifdef HAVE_CPP_AMBIGUITY_RESOLVING_USING
   using Rule::GetStyleSheet; // unhide since nsIDOMCSSImportRule has its own GetStyleSheet
 #endif
