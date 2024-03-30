@@ -19,7 +19,6 @@
 #include "nsIAtom.h"
 #include "nsString.h"
 #include "nsStyleUtil.h"
-#include "nsICSSStyleRuleDOMWrapper.h"
 #include "nsDOMCSSDeclaration.h"
 #include "nsNameSpaceManager.h"
 #include "nsXMLNameSpaceMap.h"
@@ -1096,30 +1095,26 @@ nsCSSSelectorList::SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) cons
 
 // --------------------------------------------------------
 
-namespace mozilla {
-namespace css {
-class DOMCSSStyleRule;
-} // namespace css
-} // namespace mozilla
-
 class DOMCSSDeclarationImpl : public nsDOMCSSDeclaration
 {
 protected:
+  // Needs to be protected so we can use NS_IMPL_ADDREF_USING_AGGREGATOR.
   virtual ~DOMCSSDeclarationImpl(void);
+
+  // But we need to allow UniquePtr to delete us.
+  friend class mozilla::DefaultDelete<DOMCSSDeclarationImpl>;
 
 public:
   explicit DOMCSSDeclarationImpl(css::StyleRule *aRule);
 
   NS_IMETHOD GetParentRule(nsIDOMCSSRule **aParent) override;
-  void DropReference(void);
   virtual css::Declaration* GetCSSDeclaration(Operation aOperation) override;
   virtual nsresult SetCSSDeclaration(css::Declaration* aDecl) override;
   virtual void GetCSSParsingEnvironment(CSSParsingEnvironment& aCSSParseEnv) override;
   virtual nsIDocument* DocToUpdate() override;
 
-  // Override |AddRef| and |Release| for being a member of
-  // |DOMCSSStyleRule|.  Also, we need to forward QI for cycle
-  // collection things to DOMCSSStyleRule.
+  // Override |AddRef| and |Release| for being owned by StyleRule.  Also, we
+  // need to forward QI for cycle collection things to StyleRule.
   NS_DECL_ISUPPORTS_INHERITED
 
   virtual nsINode *GetParentObject() override
@@ -1137,54 +1132,11 @@ public:
     return document ? document->GetDocGroup() : nullptr;
   }
 
-  friend class css::DOMCSSStyleRule;
-
 protected:
-  // This reference is not reference-counted. The rule object tells us
-  // when it's about to go away.
+  // This reference is not reference-counted. The rule object owns us and we go
+  // away when it does.
   css::StyleRule *mRule;
-
-  inline css::DOMCSSStyleRule* DomRule();
-
-private:
-  // NOT TO BE IMPLEMENTED
-  // This object cannot be allocated on its own.  It must be a member of
-  // DOMCSSStyleRule.
-  void* operator new(size_t size) CPP_THROW_NEW;
 };
-
-namespace mozilla {
-namespace css {
-
-class DOMCSSStyleRule : public nsICSSStyleRuleDOMWrapper
-{
-public:
-  explicit DOMCSSStyleRule(StyleRule *aRule);
-
-  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(DOMCSSStyleRule)
-  NS_DECL_NSIDOMCSSRULE
-  NS_DECL_NSIDOMCSSSTYLERULE
-
-  // nsICSSStyleRuleDOMWrapper
-  NS_IMETHOD GetCSSStyleRule(StyleRule **aResult) override;
-
-  DOMCSSDeclarationImpl* DOMDeclaration() { return &mDOMDeclaration; }
-
-  friend class ::DOMCSSDeclarationImpl;
-
-protected:
-  virtual ~DOMCSSStyleRule();
-
-  DOMCSSDeclarationImpl mDOMDeclaration;
-
-  StyleRule* Rule() {
-    return mDOMDeclaration.mRule;
-  }
-};
-
-} // namespace css
-} // namespace mozilla
 
 DOMCSSDeclarationImpl::DOMCSSDeclarationImpl(css::StyleRule *aRule)
   : mRule(aRule)
@@ -1194,52 +1146,33 @@ DOMCSSDeclarationImpl::DOMCSSDeclarationImpl(css::StyleRule *aRule)
 
 DOMCSSDeclarationImpl::~DOMCSSDeclarationImpl(void)
 {
-  NS_ASSERTION(!mRule, "DropReference not called.");
-
   MOZ_COUNT_DTOR(DOMCSSDeclarationImpl);
 }
 
-inline css::DOMCSSStyleRule* DOMCSSDeclarationImpl::DomRule()
-{
-  return reinterpret_cast<css::DOMCSSStyleRule*>
-                         (reinterpret_cast<char*>(this) -
-           offsetof(css::DOMCSSStyleRule, mDOMDeclaration));
-}
-
-NS_IMPL_ADDREF_USING_AGGREGATOR(DOMCSSDeclarationImpl, DomRule())
-NS_IMPL_RELEASE_USING_AGGREGATOR(DOMCSSDeclarationImpl, DomRule())
+NS_IMPL_ADDREF_USING_AGGREGATOR(DOMCSSDeclarationImpl, mRule)
+NS_IMPL_RELEASE_USING_AGGREGATOR(DOMCSSDeclarationImpl, mRule)
 
 NS_INTERFACE_MAP_BEGIN(DOMCSSDeclarationImpl)
   NS_WRAPPERCACHE_INTERFACE_MAP_ENTRY
-  // We forward the cycle collection interfaces to DomRule(), which is
-  // never null (in fact, we're part of that object!)
+  // We forward the cycle collection interfaces to mRule, which is
+  // never null.
   if (aIID.Equals(NS_GET_IID(nsCycleCollectionISupports)) ||
       aIID.Equals(NS_GET_IID(nsXPCOMCycleCollectionParticipant))) {
-    return DomRule()->QueryInterface(aIID, aInstancePtr);
+    return mRule->QueryInterface(aIID, aInstancePtr);
   }
   else
 NS_IMPL_QUERY_TAIL_INHERITING(nsDOMCSSDeclaration)
 
-void
-DOMCSSDeclarationImpl::DropReference(void)
-{
-  mRule = nullptr;
-}
-
 css::Declaration*
 DOMCSSDeclarationImpl::GetCSSDeclaration(Operation aOperation)
 {
-  if (mRule) {
-    if (aOperation != eOperation_Read) {
-      RefPtr<CSSStyleSheet> sheet = mRule->GetStyleSheet();
-      if (sheet) {
-        sheet->WillDirty();
-      }
+  if (aOperation != eOperation_Read) {
+    RefPtr<CSSStyleSheet> sheet = mRule->GetStyleSheet();
+    if (sheet) {
+      sheet->WillDirty();
     }
-    return mRule->GetDeclaration();
-  } else {
-    return nullptr;
   }
+  return mRule->GetDeclaration();
 }
 
 void
@@ -1252,11 +1185,6 @@ NS_IMETHODIMP
 DOMCSSDeclarationImpl::GetParentRule(nsIDOMCSSRule **aParent)
 {
   NS_ENSURE_ARG_POINTER(aParent);
-
-  if (!mRule) {
-    *aParent = nullptr;
-    return NS_OK;
-  }
 
   NS_IF_ADDREF(*aParent = mRule->GetDOMRule());
   return NS_OK;
@@ -1294,50 +1222,13 @@ DOMCSSDeclarationImpl::DocToUpdate()
   return nullptr;
 }
 
+// -- StyleRule ------------------------------------
+
 namespace mozilla {
 namespace css {
 
-DOMCSSStyleRule::DOMCSSStyleRule(StyleRule* aRule)
-  : mDOMDeclaration(aRule)
-{
-}
-
-DOMCSSStyleRule::~DOMCSSStyleRule()
-{
-}
-
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(DOMCSSStyleRule)
-  NS_INTERFACE_MAP_ENTRY(nsICSSStyleRuleDOMWrapper)
-  NS_INTERFACE_MAP_ENTRY(nsIDOMCSSStyleRule)
-  NS_INTERFACE_MAP_ENTRY(nsIDOMCSSRule)
-  NS_INTERFACE_MAP_ENTRY(nsISupports)
-  NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(CSSStyleRule)
-NS_INTERFACE_MAP_END
-
-NS_IMPL_CYCLE_COLLECTING_ADDREF(DOMCSSStyleRule)
-NS_IMPL_CYCLE_COLLECTING_RELEASE(DOMCSSStyleRule)
-
-NS_IMPL_CYCLE_COLLECTION_CLASS(DOMCSSStyleRule)
-
-NS_IMPL_CYCLE_COLLECTION_TRACE_BEGIN(DOMCSSStyleRule)
-  // Trace the wrapper for our declaration.  This just expands out
-  // NS_IMPL_CYCLE_COLLECTION_TRACE_PRESERVED_WRAPPER which we can't use
-  // directly because the wrapper is on the declaration, not on us.
-  tmp->DOMDeclaration()->TraceWrapper(aCallbacks, aClosure);
-NS_IMPL_CYCLE_COLLECTION_TRACE_END
-
-NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(DOMCSSStyleRule)
-  // Unlink the wrapper for our declaraton.  This just expands out
-  // NS_IMPL_CYCLE_COLLECTION_UNLINK_PRESERVED_WRAPPER which we can't use
-  // directly because the wrapper is on the declaration, not on us.
-  tmp->DOMDeclaration()->ReleaseWrapper(static_cast<nsISupports*>(p));
-NS_IMPL_CYCLE_COLLECTION_UNLINK_END
-
-NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(DOMCSSStyleRule)
-NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
-
 NS_IMETHODIMP
-DOMCSSStyleRule::GetType(uint16_t* aType)
+StyleRule::GetType(uint16_t* aType)
 {
   *aType = nsIDOMCSSRule::STYLE_RULE;
   
@@ -1345,94 +1236,41 @@ DOMCSSStyleRule::GetType(uint16_t* aType)
 }
 
 NS_IMETHODIMP
-DOMCSSStyleRule::GetCssText(nsAString& aCssText)
+StyleRule::GetParentStyleSheet(nsIDOMCSSStyleSheet** aSheet)
 {
-  if (!Rule()) {
-    aCssText.Truncate();
-  } else {
-    Rule()->GetCssText(aCssText);
-  }
-  return NS_OK;
+  return Rule::GetParentStyleSheet(aSheet);
 }
 
 NS_IMETHODIMP
-DOMCSSStyleRule::SetCssText(const nsAString& aCssText)
+StyleRule::GetParentRule(nsIDOMCSSRule** aParentRule)
 {
-  if (Rule()) {
-    Rule()->SetCssText(aCssText);
-  }
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-DOMCSSStyleRule::GetParentStyleSheet(nsIDOMCSSStyleSheet** aSheet)
-{
-  if (!Rule()) {
-    *aSheet = nullptr;
-    return NS_OK;
-  }
-  return Rule()->GetParentStyleSheet(aSheet);
-}
-
-NS_IMETHODIMP
-DOMCSSStyleRule::GetParentRule(nsIDOMCSSRule** aParentRule)
-{
-  if (!Rule()) {
-    *aParentRule = nullptr;
-    return NS_OK;
-  }
-  return Rule()->GetParentRule(aParentRule);
+  return Rule::GetParentRule(aParentRule);
 }
 
 css::Rule*
-DOMCSSStyleRule::GetCSSRule()
+StyleRule::GetCSSRule()
 {
-  return Rule();
+  return this;
 }
 
 NS_IMETHODIMP
-DOMCSSStyleRule::GetSelectorText(nsAString& aSelectorText)
+StyleRule::GetStyle(nsIDOMCSSStyleDeclaration** aStyle)
 {
-  if (!Rule()) {
-    aSelectorText.Truncate();
-  } else {
-    Rule()->GetSelectorText(aSelectorText);
+  if (!mDOMDeclaration) {
+    mDOMDeclaration.reset(new DOMCSSDeclarationImpl(this));
   }
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-DOMCSSStyleRule::SetSelectorText(const nsAString& aSelectorText)
-{
-  if (Rule()) {
-    Rule()->SetSelectorText(aSelectorText);
-  }
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-DOMCSSStyleRule::GetStyle(nsIDOMCSSStyleDeclaration** aStyle)
-{
-  *aStyle = &mDOMDeclaration;
+  *aStyle = mDOMDeclaration.get();
   NS_ADDREF(*aStyle);
   return NS_OK;
 }
 
 NS_IMETHODIMP
-DOMCSSStyleRule::GetCSSStyleRule(StyleRule **aResult)
+StyleRule::GetCSSStyleRule(StyleRule **aResult)
 {
-  *aResult = Rule();
-  NS_IF_ADDREF(*aResult);
+  *aResult = this;
+  NS_ADDREF(*aResult);
   return NS_OK;
 }
-
-} // namespace css
-} // namespace mozilla
-
-// -- StyleRule ------------------------------------
-
-namespace mozilla {
-namespace css {
 
 StyleRule::StyleRule(nsCSSSelectorList* aSelector,
                      Declaration* aDeclaration,
@@ -1468,11 +1306,6 @@ StyleRule::~StyleRule()
 void
 StyleRule::DropReferences()
 {
-  if (mDOMRule) {
-    mDOMRule->DOMDeclaration()->DropReference();
-    mDOMRule = nullptr;
-  }
-
   if (mDeclaration) {
     mDeclaration->SetOwningRule(nullptr);
   }
@@ -1486,18 +1319,38 @@ NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(StyleRule)
     return NS_OK;
   }
   else
+  NS_INTERFACE_MAP_ENTRY(nsICSSStyleRuleDOMWrapper)
+  NS_INTERFACE_MAP_ENTRY(nsIDOMCSSStyleRule)
+  NS_INTERFACE_MAP_ENTRY(nsIDOMCSSRule)
+  NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(CSSStyleRule)
 NS_INTERFACE_MAP_END_INHERITING(Rule)
 
 NS_IMPL_ADDREF_INHERITED(StyleRule, Rule)
 NS_IMPL_RELEASE_INHERITED(StyleRule, Rule)
 
 NS_IMPL_CYCLE_COLLECTION_CLASS(StyleRule)
+
+NS_IMPL_CYCLE_COLLECTION_TRACE_BEGIN_INHERITED(StyleRule, Rule)
+  // Keep this in sync with IsCCLeaf.
+  // Trace the wrapper for our declaration. This just expands out
+  // NS_IMPL_CYCLE_COLLECTION_TRACE_PRESERVED_WRAPPER which we can't use
+  // directly because the wrapper is on the declaration, not on us.
+  if (tmp->mDOMDeclaration) {
+    tmp->mDOMDeclaration->TraceWrapper(aCallbacks, aClosure);
+  }
+NS_IMPL_CYCLE_COLLECTION_TRACE_END
+
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(StyleRule, Rule)
+  // Unlink the wrapper for our declaraton. This just expands out
+  // NS_IMPL_CYCLE_COLLECTION_UNLINK_PRESERVED_WRAPPER which we can't use
+  // directly because the wrapper is on the declaration, not on us.
+  if (tmp->mDOMDeclaration) {
+    tmp->mDOMDeclaration->ReleaseWrapper(static_cast<nsISupports*>(p));
+  }
   tmp->DropReferences();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(StyleRule, Rule)
   // Keep this in sync with IsCCLeaf.
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDOMRule)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 bool
@@ -1507,7 +1360,7 @@ StyleRule::IsCCLeaf() const
     return false;
   }
 
-  return !mDOMRule || !mDOMRule->DOMDeclaration()->PreservingWrapper();
+  return !mDOMDeclaration || !mDOMDeclaration->PreservingWrapper();
 }
 
 /* virtual */ int32_t
@@ -1526,16 +1379,7 @@ StyleRule::Clone() const
 /* virtual */ nsIDOMCSSRule*
 StyleRule::GetDOMRule()
 {
-  if (!mDOMRule) {
-    if (!GetStyleSheet()) {
-      // Inline style rules aren't supposed to have a DOM rule object, only
-      // a declaration.  But if we do have one already, from a style sheet
-      // rule that used to be in a document, we still want to return it.
-      return nullptr;
-    }
-    mDOMRule = new DOMCSSStyleRule(this);
-  }
-  return mDOMRule;
+  return this;
 }
 
 void
@@ -1592,7 +1436,7 @@ StyleRule::List(FILE* out, int32_t aIndent) const
 }
 #endif
 
-void
+NS_IMETHODIMP
 StyleRule::GetCssText(nsAString& aCssText)
 {
   if (mSelector) {
@@ -1609,24 +1453,27 @@ StyleRule::GetCssText(nsAString& aCssText)
   }
   aCssText.Append(char16_t(' '));
   aCssText.Append(char16_t('}'));
+  return NS_OK;
 }
 
-void
+NS_IMETHODIMP
 StyleRule::SetCssText(const nsAString& aCssText)
 {
   // XXX TBI - need to re-parse rule & declaration
+  return NS_OK;
 }
 
-void
+NS_IMETHODIMP
 StyleRule::GetSelectorText(nsAString& aSelectorText)
 {
   if (mSelector)
     mSelector->ToString(aSelectorText, GetStyleSheet());
   else
     aSelectorText.Truncate();
+  return NS_OK;
 }
 
-void
+NS_IMETHODIMP
 StyleRule::SetSelectorText(const nsAString& aSelectorText)
 {
   CSSStyleSheet* sheet = GetStyleSheet();
@@ -1653,7 +1500,7 @@ StyleRule::SetSelectorText(const nsAString& aSelectorText)
     aSelectorText, sheet->GetSheetURI(), 0, &selectorList);
   if (NS_FAILED(result)) {
     // Ignore parsing errors and continue to use the previous value.
-    return;
+    return NS_OK;
   }
 
   // Replace selector.
@@ -1666,6 +1513,8 @@ StyleRule::SetSelectorText(const nsAString& aSelectorText)
     mozAutoDocUpdate updateBatch(doc, UPDATE_STYLE, true);
     doc->StyleRuleChanged(sheet, this);
   }
+  
+  return NS_OK;
 }
 
 /* virtual */ size_t
