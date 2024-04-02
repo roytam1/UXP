@@ -7,29 +7,32 @@
 #define mozilla_StyleSheetInlines_h
 
 #include "mozilla/StyleSheetInfo.h"
-#include "mozilla/ServoStyleSheet.h"
 #include "mozilla/CSSStyleSheet.h"
 
 namespace mozilla {
 
-MOZ_DEFINE_STYLO_METHODS(StyleSheet, CSSStyleSheet, ServoStyleSheet)
+CSSStyleSheet*
+StyleSheet::AsConcrete()
+{
+  return static_cast<CSSStyleSheet*>(this);
+}
+
+const CSSStyleSheet*
+StyleSheet::AsConcrete() const
+{
+  return static_cast<const CSSStyleSheet*>(this);
+}
 
 StyleSheetInfo&
 StyleSheet::SheetInfo()
 {
-  if (IsServo()) {
-    return AsServo()->mSheetInfo;
-  }
-  return *AsGecko()->mInner;
+  return *AsConcrete()->mInner;
 }
 
 const StyleSheetInfo&
 StyleSheet::SheetInfo() const
 {
-  if (IsServo()) {
-    return AsServo()->mSheetInfo;
-  }
-  return *AsGecko()->mInner;
+  return *AsConcrete()->mInner;
 }
 
 bool
@@ -78,7 +81,7 @@ StyleSheet::IsApplicable() const
 bool
 StyleSheet::HasRules() const
 {
-  MOZ_STYLO_FORWARD(HasRules, ())
+  return AsConcrete()->HasRules();
 }
 
 void
@@ -86,19 +89,19 @@ StyleSheet::SetAssociatedDocument(nsIDocument* aDocument,
                                   DocumentAssociationMode aAssociationMode)
 {
   MOZ_ASSERT(aDocument);
-  MOZ_STYLO_FORWARD(SetAssociatedDocument, (aDocument, aAssociationMode))
+  AsConcrete()->SetAssociatedDocument(aDocument, aAssociationMode);
 }
 
 void
 StyleSheet::ClearAssociatedDocument()
 {
-  MOZ_STYLO_FORWARD(SetAssociatedDocument, (nullptr, NotOwnedByDocument));
+  AsConcrete()->SetAssociatedDocument(nullptr, NotOwnedByDocument);
 }
 
 StyleSheet*
 StyleSheet::GetParentSheet() const
 {
-  MOZ_STYLO_FORWARD(GetParentSheet, ())
+  return AsConcrete()->GetParentSheet();
 }
 
 StyleSheet*
@@ -119,8 +122,7 @@ StyleSheet::GetParentObject() const
 void
 StyleSheet::AppendStyleSheet(StyleSheet* aSheet)
 {
-  MOZ_STYLO_FORWARD_CONCRETE(AppendStyleSheet,
-                             (aSheet->AsGecko()), (aSheet->AsServo()))
+  AsConcrete()->AppendStyleSheet(aSheet->AsConcrete());
 }
 
 nsIPrincipal*
@@ -163,19 +165,19 @@ StyleSheet::GetIntegrity(dom::SRIMetadata& aResult) const
 size_t
 StyleSheet::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
 {
-  MOZ_STYLO_FORWARD(SizeOfIncludingThis, (aMallocSizeOf))
+  return AsConcrete()->SizeOfIncludingThis(aMallocSizeOf);
 }
 
 #ifdef DEBUG
 void
 StyleSheet::List(FILE* aOut, int32_t aIndex) const
 {
-  MOZ_STYLO_FORWARD(List, (aOut, aIndex))
+  AsConcrete()->List(aOut, aIndex);
 }
 #endif
 
-void StyleSheet::WillDirty() { MOZ_STYLO_FORWARD(WillDirty, ()) }
-void StyleSheet::DidDirty() { MOZ_STYLO_FORWARD(DidDirty, ()) }
+void StyleSheet::WillDirty() { AsConcrete()->WillDirty(); }
+void StyleSheet::DidDirty() { AsConcrete()->DidDirty(); }
 
 
 }

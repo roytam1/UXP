@@ -176,16 +176,10 @@ nsStyleSheetService::LoadAndRegisterSheet(nsIURI *aSheetURI,
       // We're guaranteed that the new sheet is the last sheet in
       // mSheets[aSheetType]
 
-      // XXXheycam Once the nsStyleSheetService can hold ServoStyleSheets too,
-      // we'll need to include them in the notification.
       StyleSheet* sheet = mSheets[aSheetType].LastElement();
-      if (sheet->IsGecko()) {
-        CSSStyleSheet* cssSheet = sheet->AsGecko();
-        serv->NotifyObservers(NS_ISUPPORTS_CAST(nsIDOMCSSStyleSheet*, cssSheet),
-                              message, nullptr);
-      } else {
-        NS_ERROR("stylo: can't notify observers of ServoStyleSheets");
-      }
+      CSSStyleSheet* cssSheet = sheet->AsConcrete();
+      serv->NotifyObservers(NS_ISUPPORTS_CAST(nsIDOMCSSStyleSheet*, cssSheet),
+                            message, nullptr);
     }
 
     if (XRE_IsParentProcess()) {
@@ -232,9 +226,7 @@ nsStyleSheetService::LoadAndRegisterSheetInternal(nsIURI *aSheetURI,
       return NS_ERROR_INVALID_ARG;
   }
 
-  // XXXheycam We'll need to load and register both a Gecko- and Servo-backed
-  // style sheet.
-  RefPtr<css::Loader> loader = new css::Loader(StyleBackendType::Gecko);
+  RefPtr<css::Loader> loader = new css::Loader();
 
   RefPtr<StyleSheet> sheet;
   nsresult rv = loader->LoadSheetSync(aSheetURI, parsingMode, true, &sheet);
@@ -285,19 +277,13 @@ nsStyleSheetService::PreloadSheet(nsIURI *aSheetURI, uint32_t aSheetType,
       return NS_ERROR_INVALID_ARG;
   }
 
-  // XXXheycam PreloadSheet can't support ServoStyleSheets until they implement
-  // nsIDOMStyleSheet.
-
-  RefPtr<css::Loader> loader = new css::Loader(StyleBackendType::Gecko);
+  RefPtr<css::Loader> loader = new css::Loader();
 
   RefPtr<StyleSheet> sheet;
   nsresult rv = loader->LoadSheetSync(aSheetURI, parsingMode, true, &sheet);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  MOZ_ASSERT(sheet->IsGecko(),
-             "stylo: didn't expect Loader to create a ServoStyleSheet");
-
-  RefPtr<CSSStyleSheet> cssSheet = sheet->AsGecko();
+  RefPtr<CSSStyleSheet> cssSheet = sheet->AsConcrete();
   cssSheet.forget(aSheet);
 
   return NS_OK;
@@ -331,15 +317,9 @@ nsStyleSheetService::UnregisterSheet(nsIURI *aSheetURI, uint32_t aSheetType)
 
   nsCOMPtr<nsIObserverService> serv = services::GetObserverService();
   if (serv) {
-    // XXXheycam Once the nsStyleSheetService can hold ServoStyleSheets too,
-    // we'll need to include them in the notification.
-    if (sheet->IsGecko()) {
-      CSSStyleSheet* cssSheet = sheet->AsGecko();
-      serv->NotifyObservers(NS_ISUPPORTS_CAST(nsIDOMCSSStyleSheet*, cssSheet),
-                            message, nullptr);
-    } else {
-      NS_ERROR("stylo: can't notify observers of ServoStyleSheets");
-    }
+    CSSStyleSheet* cssSheet = sheet->AsConcrete();
+    serv->NotifyObservers(NS_ISUPPORTS_CAST(nsIDOMCSSStyleSheet*, cssSheet),
+                          message, nullptr);
   }
 
   if (XRE_IsParentProcess()) {

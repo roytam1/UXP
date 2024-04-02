@@ -29,7 +29,7 @@
 #include "nsContentUtils.h"
 #include "nsError.h"
 #include "nsStyleUtil.h"
-#include "mozilla/DeclarationBlockInlines.h"
+#include "mozilla/css/Declaration.h"
 #include "nsCSSParser.h"
 #include "nsDOMClassInfoID.h"
 #include "mozilla/dom/CSSStyleDeclarationBinding.h"
@@ -1953,7 +1953,7 @@ NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(nsCSSKeyframeStyleDeclaration)
   NS_WRAPPERCACHE_INTERFACE_MAP_ENTRY
 NS_INTERFACE_MAP_END_INHERITING(nsDOMCSSDeclaration)
 
-DeclarationBlock*
+css::Declaration*
 nsCSSKeyframeStyleDeclaration::GetCSSDeclaration(Operation aOperation)
 {
   if (mRule) {
@@ -1979,10 +1979,10 @@ nsCSSKeyframeStyleDeclaration::GetParentRule(nsIDOMCSSRule **aParent)
 }
 
 nsresult
-nsCSSKeyframeStyleDeclaration::SetCSSDeclaration(DeclarationBlock* aDecl)
+nsCSSKeyframeStyleDeclaration::SetCSSDeclaration(css::Declaration* aDecl)
 {
   MOZ_ASSERT(aDecl, "must be non-null");
-  mRule->ChangeDeclaration(aDecl->AsGecko());
+  mRule->ChangeDeclaration(aDecl);
   return NS_OK;
 }
 
@@ -2511,7 +2511,7 @@ NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(nsCSSPageStyleDeclaration)
   NS_WRAPPERCACHE_INTERFACE_MAP_ENTRY
 NS_INTERFACE_MAP_END_INHERITING(nsDOMCSSDeclaration)
 
-DeclarationBlock*
+css::Declaration*
 nsCSSPageStyleDeclaration::GetCSSDeclaration(Operation aOperation)
 {
   if (mRule) {
@@ -2537,10 +2537,10 @@ nsCSSPageStyleDeclaration::GetParentRule(nsIDOMCSSRule** aParent)
 }
 
 nsresult
-nsCSSPageStyleDeclaration::SetCSSDeclaration(DeclarationBlock* aDecl)
+nsCSSPageStyleDeclaration::SetCSSDeclaration(css::Declaration* aDecl)
 {
   MOZ_ASSERT(aDecl, "must be non-null");
-  mRule->ChangeDeclaration(aDecl->AsGecko());
+  mRule->ChangeDeclaration(aDecl);
   return NS_OK;
 }
 

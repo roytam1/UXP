@@ -14,7 +14,6 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/LinkedList.h"
 #include "mozilla/RestyleManagerBase.h"
-#include "mozilla/RestyleManagerHandle.h"
 
 #include "nsCOMPtr.h"
 #include "nsILayoutHistoryState.h"
@@ -41,6 +40,8 @@ class nsFrameConstructorState;
 
 namespace mozilla {
 
+class RestyleManager;
+
 namespace dom {
 
 class FlattenedChildIterator;
@@ -56,7 +57,6 @@ public:
 
   friend class mozilla::RestyleManager;
   friend class mozilla::RestyleManagerBase;
-  friend class mozilla::ServoRestyleManager;
 
   nsCSSFrameConstructor(nsIDocument* aDocument, nsIPresShell* aPresShell);
   ~nsCSSFrameConstructor(void) {
@@ -73,7 +73,7 @@ private:
   nsCSSFrameConstructor& operator=(const nsCSSFrameConstructor& aCopy) = delete;
 
 public:
-  mozilla::RestyleManagerHandle RestyleManager() const
+  mozilla::RestyleManager* RestyleManager() const
     { return mPresShell->GetPresContext()->RestyleManager(); }
 
   nsIFrame* ConstructRootFrame();

@@ -2084,10 +2084,7 @@ static void
 PreloadSlowThings()
 {
   // This fetches and creates all the built-in stylesheets.
-  //
-  // XXXheycam In the future we might want to preload the Servo-flavoured
-  // UA sheets too, but for now that will be a waste of time.
-  nsLayoutStylesheetCache::For(StyleBackendType::Gecko)->UserContentSheet();
+  nsLayoutStylesheetCache::Get()->UserContentSheet();
 
   TabChild::PreloadSlowThings();
 

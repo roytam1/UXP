@@ -23,7 +23,6 @@
 #include "mozilla/StyleSheetInlines.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/StyleBackendType.h"
 #include "mozilla/StyleSheet.h"
 #include "mozilla/net/ReferrerPolicy.h"
 
@@ -191,7 +190,7 @@ class Loader final {
   typedef mozilla::net::ReferrerPolicy ReferrerPolicy;
 
 public:
-  explicit Loader(StyleBackendType aType);
+  explicit Loader();
   explicit Loader(nsIDocument*);
 
  private:
@@ -548,8 +547,6 @@ private:
   void DoSheetComplete(SheetLoadData* aLoadData, nsresult aStatus,
                        LoadDataArray& aDatasToNotify);
 
-  StyleBackendType GetStyleBackendType() const;
-
   struct Sheets {
     nsBaseHashtable<URIPrincipalReferrerPolicyAndCORSModeHashKey,
                     RefPtr<StyleSheet>,
@@ -585,10 +582,6 @@ private:
 
   nsCompatibility   mCompatMode;
   nsString          mPreferredSheet;  // title of preferred sheet
-
-  // Set explicitly when the Loader(StyleBackendType) constructor is used, or
-  // taken from the document when the Loader(nsIDocument*) constructor is used.
-  mozilla::Maybe<StyleBackendType> mStyleBackendType;
 
   bool              mEnabled; // is enabled to load new styles
 

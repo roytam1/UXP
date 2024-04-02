@@ -113,8 +113,8 @@ public:
   // nsDOMCSSDeclaration abstract methods which should never be called
   // on a nsComputedDOMStyle object, but must be defined to avoid
   // compile errors.
-  virtual mozilla::DeclarationBlock* GetCSSDeclaration(Operation) override;
-  virtual nsresult SetCSSDeclaration(mozilla::DeclarationBlock*) override;
+  virtual mozilla::css::Declaration* GetCSSDeclaration(Operation) override;
+  virtual nsresult SetCSSDeclaration(mozilla::css::Declaration*) override;
   virtual nsIDocument* DocToUpdate() override;
   virtual void GetCSSParsingEnvironment(CSSParsingEnvironment& aCSSParseEnv) override;
 

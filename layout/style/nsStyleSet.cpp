@@ -40,8 +40,7 @@
 #include "nsCSSRules.h"
 #include "nsPrintfCString.h"
 #include "nsIFrame.h"
-#include "mozilla/RestyleManagerHandle.h"
-#include "mozilla/RestyleManagerHandleInlines.h"
+#include "mozilla/RestyleManager.h"
 #include "nsQueryObject.h"
 
 #include <inttypes.h>
@@ -748,15 +747,10 @@ void
 nsStyleSet::AppendAllXBLStyleSheets(nsTArray<mozilla::CSSStyleSheet*>& aArray) const
 {
   if (mBindingManager) {
-    // XXXheycam stylo: AppendAllSheets will need to be able to return either
-    // CSSStyleSheets or ServoStyleSheets, on request (and then here requesting
-    // CSSStyleSheets).
     AutoTArray<StyleSheet*, 32> sheets;
     mBindingManager->AppendAllSheets(sheets);
     for (StyleSheet* handle : sheets) {
-      MOZ_ASSERT(handle->IsGecko(), "stylo: AppendAllSheets shouldn't give us "
-                                    "ServoStyleSheets yet");
-      aArray.AppendElement(handle->AsGecko());
+      aArray.AppendElement(handle->AsConcrete());
     }
   }
 }
@@ -1760,10 +1754,7 @@ nsStyleSet::ResolveStyleWithoutAnimation(dom::Element* aTarget,
              pseudoType == CSSPseudoElementType::before ||
              pseudoType == CSSPseudoElementType::after,
              "unexpected type for animations");
-  MOZ_ASSERT(PresContext()->RestyleManager()->IsGecko(),
-             "stylo: the style set and restyle manager must have the same "
-             "StyleBackendType");
-  RestyleManager* restyleManager = PresContext()->RestyleManager()->AsGecko();
+  RestyleManager* restyleManager = PresContext()->RestyleManager();
 
   bool oldSkipAnimationRules = restyleManager->SkipAnimationRules();
   restyleManager->SetSkipAnimationRules(true);
@@ -2243,10 +2234,7 @@ nsStyleSet::ReparentStyleContext(nsStyleContext* aStyleContext,
   CSSPseudoElementType pseudoType = aStyleContext->GetPseudoType();
   nsRuleNode* ruleNode = aStyleContext->RuleNode();
 
-  MOZ_ASSERT(PresContext()->RestyleManager()->IsGecko(),
-             "stylo: the style set and restyle manager must have the same "
-             "StyleBackendType");
-  NS_ASSERTION(!PresContext()->RestyleManager()->AsGecko()->SkipAnimationRules(),
+  NS_ASSERTION(!PresContext()->RestyleManager()->SkipAnimationRules(),
                "we no longer handle SkipAnimationRules()");
 
   nsRuleNode* visitedRuleNode = nullptr;
@@ -2476,14 +2464,9 @@ nsStyleSet::EnsureUniqueInnerOnCSSSheets()
 
   if (mBindingManager) {
     AutoTArray<StyleSheet*, 32> sheets;
-    // XXXheycam stylo: AppendAllSheets will need to be able to return either
-    // CSSStyleSheets or ServoStyleSheets, on request (and then here requesting
-    // CSSStyleSheets).
     mBindingManager->AppendAllSheets(sheets);
     for (StyleSheet* sheet : sheets) {
-      MOZ_ASSERT(sheet->IsGecko(), "stylo: AppendAllSheets shouldn't give us "
-                                   "ServoStyleSheets yet");
-      queue.AppendElement(sheet->AsGecko());
+      queue.AppendElement(sheet->AsConcrete());
     }
   }
 
@@ -2531,8 +2514,5 @@ nsStyleSet::ClearSelectors()
   if (!mRuleTree) {
     return;
   }
-  MOZ_ASSERT(PresContext()->RestyleManager()->IsGecko(),
-             "stylo: the style set and restyle manager must have the same "
-             "StyleBackendType");
-  PresContext()->RestyleManager()->AsGecko()->ClearSelectors();
+  PresContext()->RestyleManager()->ClearSelectors();
 }

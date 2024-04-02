@@ -42,8 +42,6 @@
 #include "nsLayoutUtils.h"
 #include "LayoutLogging.h"
 #include "mozilla/RestyleManager.h"
-#include "mozilla/RestyleManagerHandle.h"
-#include "mozilla/RestyleManagerHandleInlines.h"
 
 #include "nsIDOMNode.h"
 #include "nsISelection.h"
@@ -676,15 +674,10 @@ nsFrame::DestroyFrom(nsIFrame* aDestructRoot)
     // and not only those whose current style involves CSS transitions,
     // because what matters is whether the new style (not the old)
     // specifies CSS transitions.
-    if (presContext->RestyleManager()->IsGecko()) {
-      // stylo: ServoRestyleManager does not handle transitions yet, and when
-      // it does it probably won't need to track reframed style contexts to
-      // initiate transitions correctly.
-      RestyleManager::ReframingStyleContexts* rsc =
-        presContext->RestyleManager()->AsGecko()->GetReframingStyleContexts();
-      if (rsc) {
-        rsc->Put(mContent, mStyleContext);
-      }
+    RestyleManager::ReframingStyleContexts* rsc =
+      presContext->RestyleManager()->GetReframingStyleContexts();
+    if (rsc) {
+      rsc->Put(mContent, mStyleContext);
     }
   }
 
@@ -692,15 +685,11 @@ nsFrame::DestroyFrom(nsIFrame* aDestructRoot)
       EffectSet::GetEffectSet(this)) {
     // If no new frame for this element is created by the end of the
     // restyling process, stop animations and transitions for this frame
-    if (presContext->RestyleManager()->IsGecko()) {
-      RestyleManager::AnimationsWithDestroyedFrame* adf =
-        presContext->RestyleManager()->AsGecko()->GetAnimationsWithDestroyedFrame();
-      // AnimationsWithDestroyedFrame only lives during the restyling process.
-      if (adf) {
-        adf->Put(mContent, mStyleContext);
-      }
-    } else {
-      NS_ERROR("stylo: ServoRestyleManager does not support animations yet");
+    RestyleManager::AnimationsWithDestroyedFrame* adf =
+      presContext->RestyleManager()->GetAnimationsWithDestroyedFrame();
+    // AnimationsWithDestroyedFrame only lives during the restyling process.
+    if (adf) {
+      adf->Put(mContent, mStyleContext);
     }
   }
 
@@ -8981,8 +8970,6 @@ GetCorrectedParent(const nsIFrame* aFrame)
   // It would be nice to put it in CorrectStyleParentFrame and therefore share
   // it, but that would lose the information of whether the _child_ is NAC,
   // since CorrectStyleParentFrame only knows about the prospective _parent_.
-  // This duplication and complexity will go away when we fully switch to the
-  // Servo style system, where all this can be handled much more naturally.
   //
   // We need to take special care not to disrupt the style inheritance of frames
   // whose content is NAC but who implement a pseudo (like an anonymous

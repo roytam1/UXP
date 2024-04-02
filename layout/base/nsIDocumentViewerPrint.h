@@ -8,10 +8,8 @@
 #include "nsISupports.h"
 
 class nsIDocument;
-namespace mozilla {
-class StyleSetHandle;
-} // namespace mozilla
 class nsIPresShell;
+class nsStyleSet;
 class nsPresContext;
 class nsViewManager;
 
@@ -38,7 +36,7 @@ public:
   // The style set returned by CreateStyleSet is in the middle of an
   // update batch so that the caller can add sheets to it if needed.
   // Callers should call EndUpdate() on it when ready to use.
-  virtual mozilla::StyleSetHandle CreateStyleSet(nsIDocument* aDocument) = 0;
+  virtual nsStyleSet* CreateStyleSet(nsIDocument* aDocument) = 0;
 
   virtual void IncrementDestroyRefCount() = 0;
   virtual void DecrementDestroyRefCount() = 0;
@@ -74,7 +72,7 @@ NS_DEFINE_STATIC_IID_ACCESSOR(nsIDocumentViewerPrint,
   bool GetIsPrinting() override; \
   void SetIsPrintPreview(bool aIsPrintPreview) override; \
   bool GetIsPrintPreview() override; \
-  mozilla::StyleSetHandle CreateStyleSet(nsIDocument* aDocument) override; \
+  nsStyleSet* CreateStyleSet(nsIDocument* aDocument) override; \
   void IncrementDestroyRefCount() override; \
   void DecrementDestroyRefCount() override; \
   void ReturnToGalleyPresentation() override; \

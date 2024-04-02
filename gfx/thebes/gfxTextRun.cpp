@@ -2672,8 +2672,9 @@ gfxFontGroup::FindFontForChar(uint32_t aCh, uint32_t aPrevCh, uint32_t aNextCh,
     bool isJoinControl = gfxFontUtils::IsJoinControl(aCh);
     bool wasJoinCauser = gfxFontUtils::IsJoinCauser(aPrevCh);
     bool isVarSelector = gfxFontUtils::IsVarSelector(aCh);
+    bool willEmoji = (aNextCh == gfxFontUtils::kUnicodeVS16 || aNextCh == 0x20E3);
 
-    if (!isJoinControl && !wasJoinCauser && !isVarSelector) {
+    if (!isJoinControl && !wasJoinCauser && !isVarSelector && !willEmoji) {
         RefPtr<gfxFont> firstFont = GetFontAt(0, aCh);
         if (firstFont) {
             if (firstFont->HasCharacter(aCh)) {
@@ -2744,93 +2745,95 @@ gfxFontGroup::FindFontForChar(uint32_t aCh, uint32_t aPrevCh, uint32_t aNextCh,
     }
 
     // 1. check remaining fonts in the font group
-    uint32_t fontListLength = mFonts.Length();
-    for (uint32_t i = nextIndex; i < fontListLength; i++) {
-        FamilyFace& ff = mFonts[i];
-        if (ff.IsInvalid() || ff.IsLoading()) {
-            continue;
-        }
-
-        // if available, use already made gfxFont and check for character
-        RefPtr<gfxFont> font = ff.Font();
-        if (font) {
-            if (font->HasCharacter(aCh)) {
-                return font.forget();
-            }
-            continue;
-        }
-
-        // don't have a gfxFont yet, test before building
-        gfxFontEntry *fe = ff.FontEntry();
-        if (fe->mIsUserFontContainer) {
-            // for userfonts, need to test both the unicode range map and
-            // the cmap of the platform font entry
-            gfxUserFontEntry* ufe = static_cast<gfxUserFontEntry*>(fe);
-
-            // never match a character outside the defined unicode range
-            if (!ufe->CharacterInUnicodeRange(aCh)) {
+    if (!willEmoji) {
+        uint32_t fontListLength = mFonts.Length();
+        for (uint32_t i = nextIndex; i < fontListLength; i++) {
+            FamilyFace& ff = mFonts[i];
+            if (ff.IsInvalid() || ff.IsLoading()) {
                 continue;
             }
 
-            // load if not already loaded but only if no other font in similar
-            // range within family is loading
-            if (ufe->LoadState() == gfxUserFontEntry::STATUS_NOT_LOADED &&
-                !FontLoadingForFamily(ff.Family(), aCh)) {
-                ufe->Load();
-                ff.CheckState(mSkipDrawing);
+            // if available, use already made gfxFont and check for character
+            RefPtr<gfxFont> font = ff.Font();
+            if (font) {
+                if (font->HasCharacter(aCh)) {
+                    return font.forget();
+                }
+                continue;
             }
-            gfxFontEntry* pfe = ufe->GetPlatformFontEntry();
-            if (pfe && pfe->HasCharacter(aCh)) {
+
+            // don't have a gfxFont yet, test before building
+            gfxFontEntry *fe = ff.FontEntry();
+            if (fe->mIsUserFontContainer) {
+                // for userfonts, need to test both the unicode range map and
+                // the cmap of the platform font entry
+                gfxUserFontEntry* ufe = static_cast<gfxUserFontEntry*>(fe);
+
+                // never match a character outside the defined unicode range
+                if (!ufe->CharacterInUnicodeRange(aCh)) {
+                    continue;
+                }
+
+                // load if not already loaded but only if no other font in similar
+                // range within family is loading
+                if (ufe->LoadState() == gfxUserFontEntry::STATUS_NOT_LOADED &&
+                    !FontLoadingForFamily(ff.Family(), aCh)) {
+                    ufe->Load();
+                    ff.CheckState(mSkipDrawing);
+                }
+                gfxFontEntry* pfe = ufe->GetPlatformFontEntry();
+                if (pfe && pfe->HasCharacter(aCh)) {
+                    font = GetFontAt(i, aCh);
+                    if (font) {
+                        *aMatchType = gfxTextRange::kFontGroup;
+                        return font.forget();
+                    }
+                }
+            } else if (fe->HasCharacter(aCh)) {
+                // for normal platform fonts, after checking the cmap
+                // build the font via GetFontAt
                 font = GetFontAt(i, aCh);
                 if (font) {
                     *aMatchType = gfxTextRange::kFontGroup;
                     return font.forget();
                 }
             }
-        } else if (fe->HasCharacter(aCh)) {
-            // for normal platform fonts, after checking the cmap
-            // build the font via GetFontAt
-            font = GetFontAt(i, aCh);
-            if (font) {
-                *aMatchType = gfxTextRange::kFontGroup;
-                return font.forget();
-            }
-        }
 
-        // check other family faces if needed
-        if (ff.CheckForFallbackFaces()) {
-            NS_ASSERTION(i == 0 ? true :
-                         !mFonts[i-1].CheckForFallbackFaces() ||
-                         !mFonts[i-1].Family()->Name().Equals(ff.Family()->Name()),
-                         "should only do fallback once per font family");
-            font = FindFallbackFaceForChar(ff.Family(), aCh, aRunScript);
-            if (font) {
-                *aMatchType = gfxTextRange::kFontGroup;
-                return font.forget();
-            }
-        } else {
-            // For platform fonts, but not user fonts, consider intra-family
-            // fallback to handle styles with reduced character sets (see
-            // also above).
-            fe = ff.FontEntry();
-            if (!fe->mIsUserFontContainer && !fe->IsUserFont() &&
-                (!fe->IsUpright() ||
-                 fe->Weight() != NS_FONT_WEIGHT_NORMAL ||
-                 fe->Stretch() != NS_FONT_STRETCH_NORMAL)) {
+            // check other family faces if needed
+            if (ff.CheckForFallbackFaces()) {
+                NS_ASSERTION(i == 0 ? true :
+                             !mFonts[i-1].CheckForFallbackFaces() ||
+                             !mFonts[i-1].Family()->Name().Equals(ff.Family()->Name()),
+                             "should only do fallback once per font family");
                 font = FindFallbackFaceForChar(ff.Family(), aCh, aRunScript);
                 if (font) {
                     *aMatchType = gfxTextRange::kFontGroup;
                     return font.forget();
                 }
+            } else {
+                // For platform fonts, but not user fonts, consider intra-family
+                // fallback to handle styles with reduced character sets (see
+                // also above).
+                fe = ff.FontEntry();
+                if (!fe->mIsUserFontContainer && !fe->IsUserFont() &&
+                    (!fe->IsUpright() ||
+                     fe->Weight() != NS_FONT_WEIGHT_NORMAL ||
+                     fe->Stretch() != NS_FONT_STRETCH_NORMAL)) {
+                    font = FindFallbackFaceForChar(ff.Family(), aCh, aRunScript);
+                    if (font) {
+                        *aMatchType = gfxTextRange::kFontGroup;
+                        return font.forget();
+                    }
+                }
             }
         }
-    }
 
-    if (fontListLength == 0) {
-        RefPtr<gfxFont> defaultFont = GetDefaultFont();
-        if (defaultFont->HasCharacter(aCh)) {
-            *aMatchType = gfxTextRange::kFontGroup;
-            return defaultFont.forget();
+        if (fontListLength == 0) {
+            RefPtr<gfxFont> defaultFont = GetDefaultFont();
+            if (defaultFont->HasCharacter(aCh)) {
+                *aMatchType = gfxTextRange::kFontGroup;
+                return defaultFont.forget();
+            }
         }
     }
 
@@ -3113,10 +3116,11 @@ gfxFontGroup::WhichPrefFontSupportsChar(uint32_t aCh, uint32_t aNextCh)
     gfxPlatformFontList* pfl = gfxPlatformFontList::PlatformFontList();
 
     EmojiPresentation emoji = GetEmojiPresentation(aCh);
-    if ((emoji != EmojiPresentation::TextOnly &&
-         (aNextCh == kVariationSelector16 ||
-          (emoji == EmojiPresentation::EmojiDefault &&
-           aNextCh != kVariationSelector15)))) {
+    EmojiPresentation eNext = GetEmojiPresentation(aNextCh);
+    if (aNextCh != kVariationSelector15 &&
+        emoji != EmojiPresentation::TextOnly &&
+        (emoji != EmojiPresentation::TextDefault ||
+         eNext == EmojiPresentation::EmojiComponent)) {
         charLang = eFontPrefLang_Emoji;
     } else {
         // get the pref font list if it hasn't been set up already

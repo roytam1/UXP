@@ -38,8 +38,6 @@
  * automatically defined to CSS_PSEUDO_CLASS.
  */
 
-#include "nsCSSPseudoElements.h"
-
 // OUTPUT_CLASS=nsCSSPseudoClasses
 // MACRO_NAME=CSS_PSEUDO_CLASS
 

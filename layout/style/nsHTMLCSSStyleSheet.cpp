@@ -10,7 +10,7 @@
 #include "nsHTMLCSSStyleSheet.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/css/StyleRule.h"
-#include "mozilla/DeclarationBlockInlines.h"
+#include "mozilla/css/Declaration.h"
 #include "nsIStyleRuleProcessor.h"
 #include "nsPresContext.h"
 #include "nsRuleWalker.h"
@@ -19,8 +19,7 @@
 #include "nsAttrValue.h"
 #include "nsAttrValueInlines.h"
 #include "nsCSSPseudoElements.h"
-#include "mozilla/RestyleManagerHandle.h"
-#include "mozilla/RestyleManagerHandleInlines.h"
+#include "mozilla/RestyleManager.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -39,7 +38,7 @@ nsHTMLCSSStyleSheet::~nsHTMLCSSStyleSheet()
     // Ideally we'd just call MiscContainer::Evict, but we can't do that since
     // we're iterating the hashtable.
     if (value->mType == nsAttrValue::eCSSDeclaration) {
-      DeclarationBlock* declaration = value->mValue.mCSSDeclaration;
+      css::Declaration* declaration = value->mValue.mCSSDeclaration;
       declaration->SetHTMLCSSStyleSheet(nullptr);
     } else {
       MOZ_ASSERT_UNREACHABLE("unexpected cached nsAttrValue type");
@@ -65,23 +64,20 @@ nsHTMLCSSStyleSheet::ElementRulesMatching(nsPresContext* aPresContext,
                                           nsRuleWalker* aRuleWalker)
 {
   // just get the one and only style rule from the content's STYLE attribute
-  DeclarationBlock* declaration = aElement->GetInlineStyleDeclaration();
+  css::Declaration* declaration = aElement->GetInlineStyleDeclaration();
   if (declaration) {
     declaration->SetImmutable();
-    aRuleWalker->Forward(declaration->AsGecko());
+    aRuleWalker->Forward(declaration);
   }
 
   declaration = aElement->GetSMILOverrideStyleDeclaration();
   if (declaration) {
-    MOZ_ASSERT(aPresContext->RestyleManager()->IsGecko(),
-               "stylo: ElementRulesMatching must not be called when we have "
-               "a Servo-backed style system");
-    RestyleManager* restyleManager = aPresContext->RestyleManager()->AsGecko();
+    RestyleManager* restyleManager = aPresContext->RestyleManager();
     if (!restyleManager->SkipAnimationRules()) {
       // Animation restyle (or non-restyle traversal of rules)
       // Now we can walk SMIL overrride style, without triggering transitions.
       declaration->SetImmutable();
-      aRuleWalker->Forward(declaration->AsGecko());
+      aRuleWalker->Forward(declaration);
     }
   }
 }
@@ -97,10 +93,10 @@ nsHTMLCSSStyleSheet::PseudoElementRulesMatching(Element* aPseudoElement,
   MOZ_ASSERT(aPseudoElement);
 
   // just get the one and only style rule from the content's STYLE attribute
-  DeclarationBlock* declaration = aPseudoElement->GetInlineStyleDeclaration();
+  css::Declaration* declaration = aPseudoElement->GetInlineStyleDeclaration();
   if (declaration) {
     declaration->SetImmutable();
-    aRuleWalker->Forward(declaration->AsGecko());
+    aRuleWalker->Forward(declaration);
   }
 }
 

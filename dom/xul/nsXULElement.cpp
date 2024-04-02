@@ -38,7 +38,6 @@
 #include "mozilla/EventListenerManager.h"
 #include "mozilla/EventStateManager.h"
 #include "mozilla/EventStates.h"
-#include "mozilla/DeclarationBlockInlines.h"
 #include "nsFocusManager.h"
 #include "nsHTMLStyleSheet.h"
 #include "nsNameSpaceManager.h"
@@ -54,6 +53,7 @@
 #include "nsIScriptSecurityManager.h"
 #include "nsIServiceManager.h"
 #include "mozilla/css/StyleRule.h"
+#include "mozilla/css/Declaration.h"
 #include "nsIURL.h"
 #include "nsViewManager.h"
 #include "nsIWidget.h"
@@ -348,9 +348,9 @@ nsXULElement::Clone(mozilla::dom::NodeInfo *aNodeInfo, nsINode **aResult) const
 
         // Style rules need to be cloned.
         if (originalValue->Type() == nsAttrValue::eCSSDeclaration) {
-            DeclarationBlock* decl = originalValue->GetCSSDeclarationValue();
+            css::Declaration* decl = originalValue->GetCSSDeclarationValue();
             RefPtr<css::Declaration>
-              declClone = new css::Declaration(*decl->AsGecko());
+              declClone = new css::Declaration(*decl);
 
             nsString stringValue;
             originalValue->ToString(stringValue);
@@ -825,7 +825,7 @@ nsXULElement::BindToTree(nsIDocument* aDocument,
     // can be moved from the document that creates them to another document.
 
     if (!XULElementsRulesInMinimalXULSheet(NodeInfo()->NameAtom())) {
-      auto cache = nsLayoutStylesheetCache::For(doc->GetStyleBackendType());
+      auto cache = nsLayoutStylesheetCache::Get();
       doc->EnsureOnDemandBuiltInUASheet(cache->XULSheet());
       // To keep memory usage down it is important that we try and avoid
       // pulling xul.css into non-XUL documents. That should be very rare, and
@@ -1900,9 +1900,9 @@ nsXULElement::MakeHeavyweight(nsXULPrototypeElement* aPrototype)
 
         // Style rules need to be cloned.
         if (protoattr->mValue.Type() == nsAttrValue::eCSSDeclaration) {
-            DeclarationBlock* decl = protoattr->mValue.GetCSSDeclarationValue();
+            css::Declaration* decl = protoattr->mValue.GetCSSDeclarationValue();
             RefPtr<css::Declaration>
-              declClone = new css::Declaration(*decl->AsGecko());
+              declClone = new css::Declaration(*decl);
 
             nsString stringValue;
             protoattr->mValue.ToString(stringValue);

@@ -29,8 +29,7 @@
 #include "nsIDOMMutationEvent.h"
 #include "nsNameSpaceManager.h"
 #include "nsCSSAnonBoxes.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 #include "mozilla/dom/Element.h"
 #include "nsDisplayList.h"
 #include "nsNodeUtils.h"
@@ -281,7 +280,7 @@ nsHTMLFramesetFrame::Init(nsIContent*       aContent,
       for (uint32_t i = childX; i < numChildren; i++) {
         nsIContent *child = mContent->GetChildAt(i);
         child->UnsetFlags(NODE_DESCENDANTS_NEED_FRAMES | NODE_NEEDS_FRAME);
-        child->UnsetRestyleFlagsIfGecko();
+        child->UnsetRestyleFlags();
       }
       break;
     }
@@ -289,7 +288,7 @@ nsHTMLFramesetFrame::Init(nsIContent*       aContent,
     child->UnsetFlags(NODE_DESCENDANTS_NEED_FRAMES | NODE_NEEDS_FRAME);
     // Also clear the restyle flags in the child like
     // nsCSSFrameConstructor::ProcessChildren does.
-    child->UnsetRestyleFlagsIfGecko();
+    child->UnsetRestyleFlags();
 
     // IMPORTANT: This must match the conditions in
     // nsCSSFrameConstructor::ContentAppended/Inserted/Removed
@@ -802,7 +801,7 @@ nsHTMLFramesetFrame::Reflow(nsPresContext*           aPresContext,
   DO_GLOBAL_REFLOW_COUNT("nsHTMLFramesetFrame");
   DISPLAY_REFLOW(aPresContext, this, aReflowInput, aDesiredSize, aStatus);
   nsIPresShell *shell = aPresContext->PresShell();
-  StyleSetHandle styleSet = shell->StyleSet();
+  nsStyleSet* styleSet = shell->StyleSet();
 
   GetParent()->AddStateBits(NS_FRAME_CONTAINS_RELATIVE_BSIZE);
 

@@ -474,10 +474,7 @@ IsNativeAnonymousImplementationOfPseudoElement(nsIContent* aContent)
   // Unlike regular nodes, native anonymous content (NAC) gets created during
   // frame construction, which happens after the main style traversal. This
   // means that we have to manually resolve style for those nodes shortly after
-  // they're created, either by (a) invoking ResolvePseudoElementStyle (for PE
-  // NAC), or (b) handing the subtree off to Servo for a mini-traversal (for
-  // non-PE NAC). We have assertions in nsCSSFrameConstructor that we don't do
-  // both.
+  // they're created by invoking ResolvePseudoElementStyle (for PE NAC).
   //
   // Once that happens, the NAC has a frame. So if we have no frame here,
   // we're either not NAC, or in the process of doing (b). Either way, this

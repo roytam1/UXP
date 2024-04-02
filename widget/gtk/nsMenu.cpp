@@ -9,7 +9,6 @@
 #include "mozilla/GuardObjects.h"
 #include "mozilla/MouseEvents.h"
 #include "mozilla/Move.h"
-#include "mozilla/StyleSetHandleInlines.h"
 #include "nsAutoPtr.h"
 #include "nsBindingManager.h"
 #include "nsComponentManagerUtils.h"
@@ -115,8 +114,7 @@ AttachXBLBindings(nsIContent* aContent) {
     }
 
     RefPtr<nsStyleContext> sc =
-        shell->StyleSet()->AsGecko()->ResolveStyleFor(aContent->AsElement(),
-                                                      nullptr);
+        shell->StyleSet()->ResolveStyleFor(aContent->AsElement(), nullptr);
     if (!sc) {
         return;
     }

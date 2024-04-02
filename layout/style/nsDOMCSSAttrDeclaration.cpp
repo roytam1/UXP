@@ -18,9 +18,8 @@
 #include "nsWrapperCacheInlines.h"
 #include "nsIFrame.h"
 #include "ActiveLayerTracker.h"
-#include "ServoDeclarationBlock.h"
-#include "StyleSetHandle.h"
-#include "DeclarationBlockInlines.h"
+
+class nsStyleSet;
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -74,7 +73,7 @@ NS_IMPL_CYCLE_COLLECTING_ADDREF(nsDOMCSSAttributeDeclaration)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(nsDOMCSSAttributeDeclaration)
 
 nsresult
-nsDOMCSSAttributeDeclaration::SetCSSDeclaration(DeclarationBlock* aDecl)
+nsDOMCSSAttributeDeclaration::SetCSSDeclaration(css::Declaration* aDecl)
 {
   NS_ASSERTION(mElement, "Must have Element to set the declaration!");
   return mIsSMILOverride
@@ -90,13 +89,13 @@ nsDOMCSSAttributeDeclaration::DocToUpdate()
   return mElement->OwnerDoc();
 }
 
-DeclarationBlock*
+css::Declaration*
 nsDOMCSSAttributeDeclaration::GetCSSDeclaration(Operation aOperation)
 {
   if (!mElement)
     return nullptr;
 
-  DeclarationBlock* declaration;
+  css::Declaration* declaration;
   if (mIsSMILOverride) {
     declaration = mElement->GetSMILOverrideStyleDeclaration();
   } else {
@@ -133,13 +132,9 @@ nsDOMCSSAttributeDeclaration::GetCSSDeclaration(Operation aOperation)
   }
 
   // cannot fail
-  RefPtr<DeclarationBlock> decl;
-  if (mElement->IsStyledByServo()) {
-    decl = new ServoDeclarationBlock();
-  } else {
-    decl = new css::Declaration();
-    decl->AsGecko()->InitializeEmpty();
-  }
+  RefPtr<css::Declaration> decl;
+  decl = new css::Declaration();
+  decl->InitializeEmpty();
 
   // this *can* fail (inside SetAttrAndNotify, at least).
   nsresult rv;

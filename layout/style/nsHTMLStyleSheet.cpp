@@ -34,8 +34,7 @@
 #include "mozilla/dom/Element.h"
 #include "nsHashKeys.h"
 #include "mozilla/OperatorNewExtensions.h"
-#include "mozilla/RestyleManagerHandle.h"
-#include "mozilla/RestyleManagerHandleInlines.h"
+#include "mozilla/RestyleManager.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;

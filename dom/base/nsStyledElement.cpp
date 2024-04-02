@@ -14,9 +14,9 @@
 #include "nsDOMCSSAttrDeclaration.h"
 #include "nsServiceManagerUtils.h"
 #include "nsIDocument.h"
-#include "mozilla/DeclarationBlockInlines.h"
 #include "nsCSSParser.h"
 #include "mozilla/css/Loader.h"
+#include "mozilla/css/Declaration.h"
 #include "nsIDOMMutationEvent.h"
 #include "nsXULElement.h"
 #include "nsContentUtils.h"
@@ -64,7 +64,7 @@ nsStyledElement::BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
 }
 
 nsresult
-nsStyledElement::SetInlineStyleDeclaration(DeclarationBlock* aDeclaration,
+nsStyledElement::SetInlineStyleDeclaration(css::Declaration* aDeclaration,
                                            const nsAString* aSerialized,
                                            bool aNotify)
 {
@@ -113,7 +113,7 @@ nsStyledElement::SetInlineStyleDeclaration(DeclarationBlock* aDeclaration,
                           document, updateBatch);
 }
 
-DeclarationBlock*
+css::Declaration*
 nsStyledElement::GetInlineStyleDeclaration()
 {
   if (!MayHaveStyle()) {
