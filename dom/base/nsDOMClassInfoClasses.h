@@ -36,8 +36,6 @@ DOMCI_CLASS(CSSKeyframesRule)
 // @counter-style in CSS
 DOMCI_CLASS(CSSCounterStyleRule)
 
-DOMCI_CLASS(CSSPageRule)
-
 DOMCI_CLASS(CSSFontFeatureValuesRule)
 
 DOMCI_CLASS(XULControlElement)
