@@ -7,9 +7,6 @@
 DOMCI_CLASS(DOMPrototype)
 DOMCI_CLASS(DOMConstructor)
 
-// CSS classes
-DOMCI_CLASS(CSSMediaRule)
-
 // XUL classes
 #ifdef MOZ_XUL
 DOMCI_CLASS(XULCommandDispatcher)
@@ -24,9 +21,6 @@ DOMCI_CLASS(TreeContentView)
 DOMCI_CLASS(XULTemplateBuilder)
 DOMCI_CLASS(XULTreeBuilder)
 #endif
-
-DOMCI_CLASS(CSSMozDocumentRule)
-DOMCI_CLASS(CSSSupportsRule)
 
 // @font-face in CSS
 DOMCI_CLASS(CSSFontFaceRule)
