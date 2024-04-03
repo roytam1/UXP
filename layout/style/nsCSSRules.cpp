@@ -33,6 +33,7 @@
 #include "nsCSSParser.h"
 #include "nsDOMClassInfoID.h"
 #include "mozilla/dom/CSSStyleDeclarationBinding.h"
+#include "mozilla/dom/CSSNamespaceRuleBinding.h"
 #include "StyleRule.h"
 #include "nsFont.h"
 #include "nsIURI.h"
@@ -1109,7 +1110,6 @@ NameSpaceRule::NameSpaceRule(nsIAtom* aPrefix, const nsString& aURLSpec,
     mPrefix(aPrefix),
     mURLSpec(aURLSpec)
 {
-  SetIsNotDOMBinding();
 }
 
 NameSpaceRule::NameSpaceRule(const NameSpaceRule& aCopy)
@@ -1117,7 +1117,6 @@ NameSpaceRule::NameSpaceRule(const NameSpaceRule& aCopy)
     mPrefix(aCopy.mPrefix),
     mURLSpec(aCopy.mURLSpec)
 {
-  SetIsNotDOMBinding();
 }
 
 NameSpaceRule::~NameSpaceRule()
@@ -1137,7 +1136,6 @@ NS_INTERFACE_MAP_BEGIN(NameSpaceRule)
     return NS_OK;
   }
   else
-  NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(CSSNameSpaceRule)
 NS_INTERFACE_MAP_END_INHERITING(Rule)
 
 bool
@@ -1218,8 +1216,7 @@ NameSpaceRule::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
 NameSpaceRule::WrapObject(JSContext* aCx,
                           JS::Handle<JSObject*> aGivenProto)
 {
-  NS_NOTREACHED("We called SetIsNotDOMBinding() in our constructor");
-  return nullptr;
+  return CSSNamespaceRuleBinding::Wrap(aCx, this, aGivenProto);
 }
 
 } // namespace css

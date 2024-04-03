@@ -11,7 +11,6 @@ DOMCI_CLASS(DOMConstructor)
 DOMCI_CLASS(CSSStyleRule)
 DOMCI_CLASS(CSSImportRule)
 DOMCI_CLASS(CSSMediaRule)
-DOMCI_CLASS(CSSNameSpaceRule)
 
 // XUL classes
 #ifdef MOZ_XUL
