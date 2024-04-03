@@ -8,7 +8,6 @@ DOMCI_CLASS(DOMPrototype)
 DOMCI_CLASS(DOMConstructor)
 
 // CSS classes
-DOMCI_CLASS(CSSStyleRule)
 DOMCI_CLASS(CSSMediaRule)
 
 // XUL classes
