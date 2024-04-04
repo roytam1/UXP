@@ -19,11 +19,6 @@ struct nsRuleData;
 template<class T> struct already_AddRefed;
 class nsHTMLCSSStyleSheet;
 
-// Temporary IID for the nsIDOMCSSRule interface {ebb427f1-a935-480b-bd9b-bb0e3bd387a9}
-#define NS_IDOM_CSSRULE_IID     \
-{ 0xebb427f1, 0xa935, 0x480b,   \
- { 0xbd, 0x9b, 0xbb, 0x0e, 0x3b, 0xd3, 0x87, 0xa9 } }
-
 namespace mozilla {
 namespace css {
 class GroupRule;
@@ -51,8 +46,6 @@ protected:
   virtual ~Rule() {}
 
 public:
-  NS_DECLARE_STATIC_IID_ACCESSOR(NS_IDOM_CSSRULE_IID)
-
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
   NS_DECL_CYCLE_COLLECTION_SKIPPABLE_SCRIPT_HOLDER_CLASS(Rule)
   // Return true if this rule is known to be a cycle collection leaf, in the
@@ -144,8 +137,6 @@ protected:
   uint32_t          mLineNumber;
   uint32_t          mColumnNumber;
 };
-
-NS_DEFINE_STATIC_IID_ACCESSOR(Rule, NS_IDOM_CSSRULE_IID)
 
 } // namespace css
 } // namespace mozilla
