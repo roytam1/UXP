@@ -27,9 +27,6 @@ DOMCI_CLASS(ContentProcessMessageManager)
 DOMCI_CLASS(ChromeMessageBroadcaster)
 DOMCI_CLASS(ChromeMessageSender)
 
-// @counter-style in CSS
-DOMCI_CLASS(CSSCounterStyleRule)
-
 DOMCI_CLASS(XULControlElement)
 DOMCI_CLASS(XULLabeledControlElement)
 DOMCI_CLASS(XULButtonElement)
