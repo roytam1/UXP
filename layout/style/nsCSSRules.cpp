@@ -39,6 +39,7 @@
 #include "mozilla/dom/CSSSupportsRuleBinding.h"
 #include "mozilla/dom/CSSMozDocumentRuleBinding.h"
 #include "mozilla/dom/CSSPageRuleBinding.h"
+#include "mozilla/dom/CSSFontFaceRuleBinding.h"
 #include "StyleRule.h"
 #include "nsFont.h"
 #include "nsIURI.h"
@@ -1668,7 +1669,6 @@ nsCSSFontFaceRule::IsCCLeaf() const
 // QueryInterface implementation for nsCSSFontFaceRule
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(nsCSSFontFaceRule)
   NS_INTERFACE_MAP_ENTRY(nsIDOMCSSFontFaceRule)
-  NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(CSSFontFaceRule)
 NS_INTERFACE_MAP_END_INHERITING(Rule)
 
 #ifdef DEBUG
@@ -1724,6 +1724,12 @@ nsCSSFontFaceRule::GetCssTextImpl(nsAString& aCssText) const
   aCssText.Append('}');
 }
 
+nsICSSDeclaration*
+nsCSSFontFaceRule::Style()
+{
+  return &mDecl;
+}
+
 NS_IMETHODIMP
 nsCSSFontFaceRule::GetStyle(nsIDOMCSSStyleDeclaration** aStyle)
 {
@@ -1768,8 +1774,7 @@ nsCSSFontFaceRule::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
 nsCSSFontFaceRule::WrapObject(JSContext* aCx,
                               JS::Handle<JSObject*> aGivenProto)
 {
-  NS_NOTREACHED("We called SetIsNotDOMBinding() in our constructor");
-  return nullptr;
+  return CSSFontFaceRuleBinding::Wrap(aCx, this, aGivenProto);
 }
 
 // -----------------------------------
