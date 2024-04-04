@@ -41,6 +41,7 @@
 #include "mozilla/dom/CSSPageRuleBinding.h"
 #include "mozilla/dom/CSSFontFaceRuleBinding.h"
 #include "mozilla/dom/CSSFontFeatureValuesRuleBinding.h"
+#include "mozilla/dom/CSSKeyframeRuleBinding.h"
 #include "StyleRule.h"
 #include "nsFont.h"
 #include "nsIURI.h"
@@ -2103,7 +2104,6 @@ nsCSSKeyframeRule::nsCSSKeyframeRule(const nsCSSKeyframeRule& aCopy)
   , mKeys(aCopy.mKeys)
   , mDeclaration(new css::Declaration(*aCopy.mDeclaration))
 {
-  SetIsNotDOMBinding();
   mDeclaration->SetOwningRule(this);
 }
 
@@ -2148,7 +2148,6 @@ nsCSSKeyframeRule::IsCCLeaf() const
 // QueryInterface implementation for nsCSSKeyframeRule
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(nsCSSKeyframeRule)
   NS_INTERFACE_MAP_ENTRY(nsIDOMCSSKeyframeRule)
-  NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(CSSKeyframeRule)
 NS_INTERFACE_MAP_END_INHERITING(mozilla::css::Rule)
 
 #ifdef DEBUG
@@ -2249,11 +2248,17 @@ nsCSSKeyframeRule::SetKeyText(const nsAString& aKeyText)
 NS_IMETHODIMP
 nsCSSKeyframeRule::GetStyle(nsIDOMCSSStyleDeclaration** aStyle)
 {
+  NS_ADDREF(*aStyle = Style());
+  return NS_OK;
+}
+
+nsICSSDeclaration*
+nsCSSKeyframeRule::Style()
+{
   if (!mDOMDeclaration) {
     mDOMDeclaration = new nsCSSKeyframeStyleDeclaration(this);
   }
-  NS_ADDREF(*aStyle = mDOMDeclaration);
-  return NS_OK;
+  return mDOMDeclaration;
 }
 
 void
@@ -2297,8 +2302,7 @@ nsCSSKeyframeRule::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
 nsCSSKeyframeRule::WrapObject(JSContext* aCx,
                               JS::Handle<JSObject*> aGivenProto)
 {
-  NS_NOTREACHED("We called SetIsNotDOMBinding() in our constructor");
-  return nullptr;
+  return CSSKeyframeRuleBinding::Wrap(aCx, this, aGivenProto);
 }
 
 // -------------------------------------------
