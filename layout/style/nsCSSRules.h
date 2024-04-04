@@ -322,7 +322,6 @@ public:
   nsCSSFontFeatureValuesRule(uint32_t aLineNumber, uint32_t aColumnNumber)
     : mozilla::css::Rule(aLineNumber, aColumnNumber)
   {
-    SetIsNotDOMBinding();
   }
 
   nsCSSFontFeatureValuesRule(const nsCSSFontFeatureValuesRule& aCopy)
@@ -331,7 +330,6 @@ public:
     , mFamilyList(aCopy.mFamilyList)
     , mFeatureValues(aCopy.mFeatureValues)
   {
-    SetIsNotDOMBinding();
   }
 
   NS_DECL_ISUPPORTS_INHERITED
@@ -350,6 +348,10 @@ public:
   // WebIDL interface
   uint16_t Type() const override;
   void GetCssTextImpl(nsAString& aCssText) const override;
+  // Our XPCOM GetFontFamily is OK
+  void SetFontFamily(const nsAString& aFamily, mozilla::ErrorResult& aRv);
+  // Our XPCOM GetValueText is OK
+  void SetValueText(const nsAString& aFamily, mozilla::ErrorResult& aRv);
 
   const mozilla::FontFamilyList& GetFamilyList() { return mFamilyList; }
   void SetFamilyList(const mozilla::FontFamilyList& aFamilyList);
