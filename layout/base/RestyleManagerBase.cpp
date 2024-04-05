@@ -5,8 +5,7 @@
 
 #include "mozilla/RestyleManagerBase.h"
 #include "mozilla/RestyleManager.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h" // for Ptr::HasStateDependentStyle
+#include "nsStyleSet.h" // for HasStateDependentStyle
 #include "ActiveLayerTracker.h"
 #include "nsCSSFrameConstructor.h"
 #include "nsCSSRendering.h"
@@ -52,7 +51,7 @@ RestyleManagerBase::ContentStateChangedInternal(Element* aElement,
   MOZ_ASSERT(aOutChangeHint);
   MOZ_ASSERT(aOutRestyleHint);
 
-  StyleSetHandle styleSet = PresContext()->StyleSet();
+  nsStyleSet* styleSet = PresContext()->StyleSet();
   NS_ASSERTION(styleSet, "couldn't get style set");
 
   *aOutChangeHint = nsChangeHint(0);

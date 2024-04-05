@@ -17,7 +17,6 @@
 #include "mozilla/dom/FragmentOrElement.h"
 
 #include "mozilla/AsyncEventDispatcher.h"
-#include "mozilla/DeclarationBlockInlines.h"
 #include "mozilla/EffectSet.h"
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/EventListenerManager.h"
@@ -99,6 +98,7 @@
 #include "nsIScrollableFrame.h"
 #include "ChildIterator.h"
 #include "mozilla/css/StyleRule.h" /* For nsCSSSelectorList */
+#include "mozilla/css/Declaration.h"
 #include "nsRuleProcessorData.h"
 #include "nsTextNode.h"
 #include "mozilla/dom/NodeListBinding.h"
@@ -2529,53 +2529,5 @@ FragmentOrElement::SetIsElementInStyleScopeFlagOnShadowTree(bool aInStyleScope)
   ShadowRoot* shadowRoot = GetShadowRoot();
   if (shadowRoot) {
     shadowRoot->SetIsElementInStyleScopeFlagOnSubtree(aInStyleScope);
-  }
-}
-
-#ifdef DEBUG
-static void
-AssertDirtyDescendantsBitPropagated(nsINode* aNode)
-{
-  MOZ_ASSERT(aNode->HasDirtyDescendantsForServo());
-  nsINode* parent = aNode->GetFlattenedTreeParentNode();
-  if (!parent->IsContent()) {
-    MOZ_ASSERT(parent == aNode->OwnerDoc());
-    MOZ_ASSERT(parent->HasDirtyDescendantsForServo());
-  } else {
-    AssertDirtyDescendantsBitPropagated(parent);
-  }
-}
-#else
-static void AssertDirtyDescendantsBitPropagated(nsINode* aNode) {}
-#endif
-
-void
-nsIContent::MarkAncestorsAsHavingDirtyDescendantsForServo()
-{
-  MOZ_ASSERT(IsInComposedDoc());
-
-  // Get the parent in the flattened tree.
-  nsINode* parent = GetFlattenedTreeParentNode();
-
-  // Loop until we hit a base case.
-  while (true) {
-
-    // Base case: the document.
-    if (!parent->IsContent()) {
-      MOZ_ASSERT(parent == OwnerDoc());
-      parent->SetHasDirtyDescendantsForServo();
-      return;
-    }
-
-    // Base case: the parent is already marked, and therefore
-    // so are all its ancestors.
-    if (parent->HasDirtyDescendantsForServo()) {
-      AssertDirtyDescendantsBitPropagated(parent);
-      return;
-    }
-
-    // Mark the parent and iterate.
-    parent->SetHasDirtyDescendantsForServo();
-    parent = parent->GetFlattenedTreeParentNode();
   }
 }

@@ -18,15 +18,13 @@ namespace mozilla {
 
 class EventStates;
 class RestyleManager;
-class ServoRestyleManager;
 
 namespace dom {
 class Element;
 }
 
 /**
- * Class for sharing data and logic common to both RestyleManager and
- * ServoRestyleManager.
+ * Class for sharing data and logic common to RestyleManager.
  */
 class RestyleManagerBase
 {
@@ -113,18 +111,6 @@ protected:
 
   nsCSSFrameConstructor* FrameConstructor() const {
     return PresContext()->FrameConstructor();
-  }
-
-  inline bool IsGecko() const {
-    return !IsServo();
-  }
-
-  inline bool IsServo() const {
-#ifdef MOZ_STYLO
-    return PresContext()->StyleSet()->IsServo();
-#else
-    return false;
-#endif
   }
 
 private:

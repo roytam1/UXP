@@ -55,7 +55,7 @@ public:
   virtual already_AddRefed<nsIPresShell> CreateShell(
       nsPresContext* aContext,
       nsViewManager* aViewManager,
-      mozilla::StyleSetHandle aStyleSet) override;
+      nsStyleSet* aStyleSet) override;
 
   virtual nsresult StartDocumentLoad(const char* aCommand,
                                      nsIChannel* aChannel,

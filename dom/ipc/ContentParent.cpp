@@ -2659,7 +2659,7 @@ ContentParent::RecvGetXPCOMProcessAttributes(bool* aIsOffline,
 
   // Content processes have no permission to access profile directory, so we
   // send the file URL instead.
-  StyleSheet* ucs = nsLayoutStylesheetCache::For(StyleBackendType::Gecko)->UserContentSheet();
+  StyleSheet* ucs = nsLayoutStylesheetCache::Get()->UserContentSheet();
   if (ucs) {
     SerializeURI(ucs->GetSheetURI(), *aUserContentCSSURL);
   } else {

@@ -120,7 +120,6 @@
 #include "MediaDecoder.h"
 #include "MediaManager.h"
 #include "MediaPrefs.h"
-#include "mozilla/ServoBindings.h"
 #include "mozilla/StaticPresData.h"
 #include "mozilla/dom/WebIDLGlobalNameHash.h"
 
@@ -310,10 +309,6 @@ nsLayoutStatics::Initialize()
   PromiseDebugging::Init();
 
   mozilla::dom::WebCryptoThreadPool::Initialize();
-
-  // NB: We initialize servo in nsAppRunner.cpp, because we need to do it after
-  // creating the hidden DOM window to support some current stylo hacks. We
-  // should move initialization back here once those go away.
 
   MediaPrefs::GetSingleton();
 

@@ -1659,9 +1659,7 @@ nsRuleNode::nsRuleNode(nsPresContext* aContext, nsRuleNode* aParent,
 
   NS_ASSERTION(IsRoot() || GetLevel() == aLevel, "not enough bits");
   NS_ASSERTION(IsRoot() || IsImportantRule() == aIsImportant, "yikes");
-  MOZ_ASSERT(aContext->StyleSet()->IsGecko(),
-             "ServoStyleSets should not have rule nodes");
-  aContext->StyleSet()->AsGecko()->RuleNodeUnused(this, /* aMayGC = */ false);
+  aContext->StyleSet()->RuleNodeUnused(this, /* aMayGC = */ false);
 
   // nsStyleSet::GetContext depends on there being only one animation
   // rule.
@@ -3904,10 +3902,8 @@ nsRuleNode::SetFont(nsPresContext* aPresContext, nsStyleContext* aContext,
 
     if (variantAlternates & NS_FONT_VARIANT_ALTERNATES_FUNCTIONAL_MASK) {
       // fetch the feature lookup object from the styleset
-      MOZ_ASSERT(aPresContext->StyleSet()->IsGecko(),
-                 "ServoStyleSets should not have rule nodes");
       aFont->mFont.featureValueLookup =
-        aPresContext->StyleSet()->AsGecko()->GetFontFeatureValuesLookup();
+        aPresContext->StyleSet()->GetFontFeatureValuesLookup();
 
       NS_ASSERTION(variantAlternatesValue->GetPairValue().mYValue.GetUnit() ==
                    eCSSUnit_List, "function list not a list value");
@@ -7404,8 +7400,8 @@ FillImageLayerPositionCoordList(
 
 /* static */
 void
-nsRuleNode::FillAllBackgroundLists(nsStyleImageLayers& aImage,
-                                   uint32_t aMaxItemCount)
+nsRuleNode::FillAllMaskLists(nsStyleImageLayers& aImage,
+                             uint32_t aMaxItemCount)
 {
   // Delete any extra items.  We need to keep layers in which any
   // property was specified.
@@ -7560,7 +7556,7 @@ nsRuleNode::ComputeBackgroundData(void* aStartStruct,
                         conditions);
 
   if (rebuild) {
-    FillAllBackgroundLists(bg->mImage, maxItemCount);
+    FillAllMaskLists(bg->mImage, maxItemCount);
   }
 
   COMPUTE_END_RESET(Background, bg)
@@ -9479,50 +9475,6 @@ SetSVGOpacity(const nsCSSValue& aValue,
   }
 }
 
-/* static */
-void
-nsRuleNode::FillAllMaskLists(nsStyleImageLayers& aMask,
-                             uint32_t aMaxItemCount)
-{
-
-  // Delete any extra items.  We need to keep layers in which any
-  // property was specified.
-  aMask.mLayers.TruncateLengthNonZero(aMaxItemCount);
-
-  uint32_t fillCount = aMask.mImageCount;
-
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mImage,
-                     aMask.mImageCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mSourceURI,
-                     aMask.mImageCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mRepeat,
-                     aMask.mRepeatCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mClip,
-                     aMask.mClipCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mOrigin,
-                     aMask.mOriginCount, fillCount);
-  FillImageLayerPositionCoordList(aMask.mLayers,
-                                  &Position::mXPosition,
-                                  aMask.mPositionXCount, fillCount);
-  FillImageLayerPositionCoordList(aMask.mLayers,
-                                  &Position::mYPosition,
-                                  aMask.mPositionYCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mSize,
-                     aMask.mSizeCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mMaskMode,
-                     aMask.mMaskModeCount, fillCount);
-  FillImageLayerList(aMask.mLayers,
-                     &nsStyleImageLayers::Layer::mComposite,
-                     aMask.mCompositeCount, fillCount);
-}
-
 const void*
 nsRuleNode::ComputeSVGData(void* aStartStruct,
                            const nsRuleData* aRuleData,
@@ -10257,7 +10209,7 @@ nsRuleNode::ComputeSVGResetData(void* aStartStruct,
                     svgReset->mMask.mCompositeCount, maxItemCount, rebuild, conditions);
 
   if (rebuild) {
-    FillAllBackgroundLists(svgReset->mMask, maxItemCount);
+    FillAllMaskLists(svgReset->mMask, maxItemCount);
   }
 
   COMPUTE_END_RESET(SVGReset, svgReset)
@@ -10507,13 +10459,6 @@ nsRuleNode::HasAuthorSpecifiedRules(nsStyleContext* aStyleContext,
                                     uint32_t ruleTypeMask,
                                     bool aAuthorColorsAllowed)
 {
-#ifdef MOZ_STYLO
-  if (aStyleContext->StyleSource().IsServoComputedValues()) {
-    NS_WARNING("stylo: nsRuleNode::HasAuthorSpecifiedRules not implemented");
-    return true;
-  }
-#endif
-
   uint32_t inheritBits = 0;
   if (ruleTypeMask & NS_AUTHOR_SPECIFIED_BACKGROUND) {
     inheritBits |= NS_STYLE_INHERIT_BIT(Background);

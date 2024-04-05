@@ -2379,17 +2379,6 @@ public:
     return sTextCombineUprightDigitsEnabled;
   }
 
-  // Stylo (the Servo backend for Gecko's style system) is generally enabled
-  // or disabled at compile-time. However, we provide the additional capability
-  // to disable it dynamically in stylo-enabled builds via a pref.
-  static bool StyloEnabled() {
-#ifdef MOZ_STYLO
-    return sStyloEnabled;
-#else
-    return false;
-#endif
-  }
-
   static uint32_t IdlePeriodDeadlineLimit() {
     return sIdlePeriodDeadlineLimit;
   }
@@ -2818,14 +2807,6 @@ public:
   static CSSPoint GetCumulativeApzCallbackTransform(nsIFrame* aFrame);
 
   /*
-   * Returns whether the given document supports being rendered with a
-   * Servo-backed style system.  This checks whether Stylo is enabled
-   * globally, that the document is an HTML document, and that it is
-   * being presented in a content docshell.
-   */
-  static bool SupportsServoStyleBackend(nsIDocument* aDocument);
-
-  /*
    * Checks whether a node is an invisible break.
    * If not, returns the first frame on the next line if such a next line exists.
    *
@@ -2910,9 +2891,6 @@ private:
   static bool sInterruptibleReflowEnabled;
   static bool sSVGTransformBoxEnabled;
   static bool sTextCombineUprightDigitsEnabled;
-#ifdef MOZ_STYLO
-  static bool sStyloEnabled;
-#endif
   static uint32_t sIdlePeriodDeadlineLimit;
   static uint32_t sQuiescentFramesBeforeIdlePeriod;
 
