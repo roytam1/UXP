@@ -35,8 +35,7 @@
 #include "nsIDocument.h"
 
 #include "nsCSSPseudoElements.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 #include "imgIRequest.h"
 #include "nsLayoutUtils.h"
 #include "nsCSSKeywords.h"
@@ -504,7 +503,7 @@ nsComputedDOMStyle::GetStyleContextForElementNoFlush(Element* aElement,
   if (!presContext)
     return nullptr;
 
-  StyleSetHandle styleSet = presShell->StyleSet();
+  nsStyleSet* styleSet = presShell->StyleSet();
 
   RefPtr<nsStyleContext> sc;
   if (aPseudo) {
@@ -523,11 +522,6 @@ nsComputedDOMStyle::GetStyleContextForElementNoFlush(Element* aElement,
   }
 
   if (aStyleType == eDefaultOnly) {
-    if (styleSet->IsServo()) {
-      NS_ERROR("stylo: ServoStyleSets cannot supply UA-only styles yet");
-      return nullptr;
-    }
-
     // We really only want the user and UA rules.  Filter out the other ones.
     nsTArray< nsCOMPtr<nsIStyleRule> > rules;
     for (nsRuleNode* ruleNode = sc->RuleNode();
@@ -548,7 +542,7 @@ nsComputedDOMStyle::GetStyleContextForElementNoFlush(Element* aElement,
       rules[i].swap(rules[length - i - 1]);
     }
 
-    sc = styleSet->AsGecko()->ResolveStyleForRules(parentContext, rules);
+    sc = styleSet->ResolveStyleForRules(parentContext, rules);
   }
 
   return sc.forget();
@@ -583,7 +577,7 @@ nsComputedDOMStyle::GetPresShellForContent(nsIContent* aContent)
 // nsDOMCSSDeclaration abstract methods which should never be called
 // on a nsComputedDOMStyle object, but must be defined to avoid
 // compile errors.
-DeclarationBlock*
+mozilla::css::Declaration*
 nsComputedDOMStyle::GetCSSDeclaration(Operation)
 {
   NS_RUNTIMEABORT("called nsComputedDOMStyle::GetCSSDeclaration");
@@ -591,7 +585,7 @@ nsComputedDOMStyle::GetCSSDeclaration(Operation)
 }
 
 nsresult
-nsComputedDOMStyle::SetCSSDeclaration(DeclarationBlock*)
+nsComputedDOMStyle::SetCSSDeclaration(mozilla::css::Declaration*)
 {
   NS_RUNTIMEABORT("called nsComputedDOMStyle::SetCSSDeclaration");
   return NS_ERROR_FAILURE;
@@ -653,10 +647,7 @@ MustReresolveStyle(const nsStyleContext* aContext)
   MOZ_ASSERT(aContext);
 
   if (aContext->HasPseudoElementData()) {
-    if (!aContext->GetPseudo() ||
-        aContext->StyleSource().IsServoComputedValues()) {
-      // TODO(emilio): When ::first-line is supported in Servo, we may want to
-      // fix this to avoid re-resolving pseudo-element styles.
+    if (!aContext->GetPseudo()) {
       return true;
     }
 

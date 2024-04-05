@@ -112,9 +112,6 @@ EXPORTS.mozilla += [
     'RestyleLogging.h',
     'RestyleManager.h',
     'RestyleManagerBase.h',
-    'RestyleManagerHandle.h',
-    'RestyleManagerHandleInlines.h',
-    'ServoRestyleManager.h',
     'StaticPresData.h',
 ]
 
@@ -161,7 +158,6 @@ UNIFIED_SOURCES += [
     'RestyleManagerBase.cpp',
     'RestyleTracker.cpp',
     'ScrollStyles.cpp',
-    'ServoRestyleManager.cpp',
     'StackArena.cpp',
     'StaticPresData.cpp',
     'TouchManager.cpp',

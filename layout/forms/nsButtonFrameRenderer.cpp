@@ -8,8 +8,7 @@
 #include "nsGkAtoms.h"
 #include "nsCSSPseudoElements.h"
 #include "nsNameSpaceManager.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 #include "nsDisplayList.h"
 #include "nsITheme.h"
 #include "nsFrame.h"
@@ -376,7 +375,7 @@ nsButtonFrameRenderer::ReResolveStyles(nsPresContext* aPresContext)
 {
   // get all the styles
   nsStyleContext* context = mFrame->StyleContext();
-  StyleSetHandle styleSet = aPresContext->StyleSet();
+  nsStyleSet* styleSet = aPresContext->StyleSet();
 
 #ifdef DEBUG
   if (mInnerFocusStyle) {

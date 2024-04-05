@@ -80,6 +80,7 @@
 #include "mozilla/CheckedInt.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/dom/ContentParent.h"
+#include "mozilla/dom/DOMMatrix.h"
 #include "mozilla/dom/ImageBitmap.h"
 #include "mozilla/dom/ImageData.h"
 #include "mozilla/dom/PBrowserParent.h"
@@ -120,8 +121,7 @@
 #include "nsFontMetrics.h"
 #include "Units.h"
 #include "CanvasUtils.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 #include "mozilla/layers/CanvasClient.h"
 
 #undef free // apparently defined by some windows header, clashing with a free()
@@ -2669,11 +2669,8 @@ GetFontParentStyleContext(Element* aElement, nsIPresShell* aPresShell,
 
   // otherwise inherit from default (10px sans-serif)
 
-  nsStyleSet* styleSet = aPresShell->StyleSet()->GetAsGecko();
+  nsStyleSet* styleSet = aPresShell->StyleSet();
   if (!styleSet) {
-    // XXXheycam ServoStyleSets do not support resolving style from a list of
-    // rules yet.
-    NS_ERROR("stylo: cannot resolve style for canvas from a ServoStyleSet yet");
     aError.Throw(NS_ERROR_FAILURE);
     return nullptr;
   }
@@ -2713,11 +2710,8 @@ GetFontStyleContext(Element* aElement, const nsAString& aFont,
                     nsAString& aOutUsedFont,
                     ErrorResult& aError)
 {
-  nsStyleSet* styleSet = aPresShell->StyleSet()->GetAsGecko();
+  nsStyleSet* styleSet = aPresShell->StyleSet();
   if (!styleSet) {
-    // XXXheycam ServoStyleSets do not support resolving style from a list of
-    // rules yet.
-    NS_ERROR("stylo: cannot resolve style for canvas from a ServoStyleSet yet");
     aError.Throw(NS_ERROR_FAILURE);
     return nullptr;
   }
@@ -2790,11 +2784,8 @@ ResolveStyleForFilter(const nsAString& aFilterString,
                       nsStyleContext* aParentContext,
                       ErrorResult& aError)
 {
-  nsStyleSet* styleSet = aPresShell->StyleSet()->GetAsGecko();
+  nsStyleSet* styleSet = aPresShell->StyleSet();
   if (!styleSet) {
-    // XXXheycam ServoStyleSets do not support resolving style from a list of
-    // rules yet.
-    NS_ERROR("stylo: cannot resolve style for canvas from a ServoStyleSet yet");
     aError.Throw(NS_ERROR_FAILURE);
     return nullptr;
   }
@@ -6591,19 +6582,28 @@ CanvasPath::BezierTo(const gfx::Point& aCP1,
 }
 
 void
-CanvasPath::AddPath(CanvasPath& aCanvasPath, const Optional<NonNull<SVGMatrix>>& aMatrix)
+CanvasPath::AddPath(CanvasPath& aCanvasPath, const DOMMatrix2DInit& aInit,
+                    ErrorResult& aError)
+
 {
   RefPtr<gfx::Path> tempPath = aCanvasPath.GetPath(CanvasWindingRule::Nonzero,
                                                    gfxPlatform::GetPlatform()->ScreenReferenceDrawTarget());
 
-  if (aMatrix.WasPassed()) {
-    const SVGMatrix& m = aMatrix.Value();
-    Matrix transform(m.A(), m.B(), m.C(), m.D(), m.E(), m.F());
+  RefPtr<DOMMatrixReadOnly> matrix =
+      DOMMatrixReadOnly::FromMatrix(GetParentObject(), aInit, aError);
+  if (aError.Failed()) {
+    return;
+  }
 
-    if (!transform.IsIdentity()) {
-      RefPtr<PathBuilder> tempBuilder = tempPath->TransformedCopyToBuilder(transform, FillRule::FILL_WINDING);
-      tempPath = tempBuilder->Finish();
-    }
+  Matrix transform(*(matrix->GetInternal2D()));
+
+  if (!transform.IsFinite()) {
+    return;
+  }
+
+  if (!transform.IsIdentity()) {
+    RefPtr<PathBuilder> tempBuilder = tempPath->TransformedCopyToBuilder(transform, FillRule::FILL_WINDING);
+    tempPath = tempBuilder->Finish();
   }
 
   EnsurePathBuilder(); // in case a path is added to itself

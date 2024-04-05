@@ -46,8 +46,6 @@
 #include "mozilla/dom/Performance.h"
 #include "mozilla/dom/WindowBinding.h"
 #include "mozilla/RestyleManager.h"
-#include "mozilla/RestyleManagerHandle.h"
-#include "mozilla/RestyleManagerHandleInlines.h"
 #include "Layers.h"
 #include "imgIContainer.h"
 #include "mozilla/dom/ScriptSettings.h"
@@ -1790,7 +1788,7 @@ nsRefreshDriver::Tick(int64_t aNowEpoch, TimeStamp aNowTime)
 
           nsCOMPtr<nsIPresShell> shellKungFuDeathGrip(shell);
           mStyleFlushObservers.RemoveElement(shell);
-          RestyleManagerHandle restyleManager =
+          RestyleManager* restyleManager =
             shell->GetPresContext()->RestyleManager();
           restyleManager->SetObservingRefreshDriver(false);
           shell->FlushPendingNotifications(ChangesToFlush(Flush_Style, false));

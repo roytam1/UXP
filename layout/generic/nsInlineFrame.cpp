@@ -14,13 +14,11 @@
 #include "nsPresContext.h"
 #include "nsRenderingContext.h"
 #include "nsCSSAnonBoxes.h"
-#include "mozilla/RestyleManagerHandle.h"
-#include "mozilla/RestyleManagerHandleInlines.h"
+#include "mozilla/RestyleManager.h"
 #include "nsDisplayList.h"
 #include "mozilla/Likely.h"
 #include "SVGTextFrame.h"
-#include "mozilla/StyleSetHandle.h"
-#include "mozilla/StyleSetHandleInlines.h"
+#include "nsStyleSet.h"
 
 #ifdef DEBUG
 #undef NOISY_PUSHING
@@ -347,7 +345,7 @@ ReparentChildListStyle(nsPresContext* aPresContext,
                        const nsFrameList::Slice& aFrames,
                        nsIFrame* aParentFrame)
 {
-  RestyleManagerHandle restyleManager = aPresContext->RestyleManager();
+  RestyleManager* restyleManager = aPresContext->RestyleManager();
 
   for (nsFrameList::Enumerator e(aFrames); !e.AtEnd(); e.Next()) {
     NS_ASSERTION(e.get()->GetParent() == aParentFrame, "Bogus parentage");
@@ -494,7 +492,7 @@ nsInlineFrame::DrainSelfOverflowListInternal(DrainFlags aFlags)
     if (!(aFlags & eDontReparentFrames)) {
       nsIFrame* firstChild = overflowFrames->FirstChild();
       const bool doReparentSC = (aFlags & eInFirstLine);
-      RestyleManagerHandle restyleManager = PresContext()->RestyleManager();
+      RestyleManager* restyleManager = PresContext()->RestyleManager();
       for (nsIFrame* f = firstChild; f; f = f->GetNextSibling()) {
         f->SetParent(this);
         if (doReparentSC) {
@@ -561,7 +559,7 @@ nsInlineFrame::ReflowFrames(nsPresContext* aPresContext,
 
   nsLineLayout* lineLayout = aReflowInput.mLineLayout;
   bool inFirstLine = aReflowInput.mLineLayout->GetInFirstLine();
-  RestyleManagerHandle restyleManager = aPresContext->RestyleManager();
+  RestyleManager* restyleManager = aPresContext->RestyleManager();
   WritingMode frameWM = aReflowInput.GetWritingMode();
   WritingMode lineWM = aReflowInput.mLineLayout->mRootSpan->mWritingMode;
   LogicalMargin framePadding = aReflowInput.ComputedLogicalBorderPadding();

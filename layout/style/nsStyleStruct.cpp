@@ -116,28 +116,12 @@ safe_strcmp(const char16_t* a, const char16_t* b)
   return NS_strcmp(a, b);
 }
 
-int32_t
-StyleStructContext::AppUnitsPerDevPixel()
-{
-  return DeviceContext()->AppUnitsPerDevPixel();
-}
-
-nsDeviceContext*
-StyleStructContext::HackilyFindSomeDeviceContext()
-{
-  nsCOMPtr<nsIAppShellService> appShell(do_GetService("@mozilla.org/appshell/appShellService;1"));
-  MOZ_ASSERT(appShell);
-  nsCOMPtr<mozIDOMWindowProxy> win;
-  appShell->GetHiddenDOMWindow(getter_AddRefs(win));
-  return nsLayoutUtils::GetDeviceContextForScreenInfo(static_cast<nsPIDOMWindowOuter*>(win.get()));
-}
-
 static bool AreShadowArraysEqual(nsCSSShadowArray* lhs, nsCSSShadowArray* rhs);
 
 // --------------------
 // nsStyleFont
 //
-nsStyleFont::nsStyleFont(const nsFont& aFont, StyleStructContext aContext)
+nsStyleFont::nsStyleFont(const nsFont& aFont, nsPresContext* aContext)
   : mFont(aFont)
   , mSize(nsStyleFont::ZoomText(aContext, mFont.size))
   , mGenericID(kGenericFont_NONE)
@@ -175,9 +159,9 @@ nsStyleFont::nsStyleFont(const nsStyleFont& aSrc)
   MOZ_COUNT_CTOR(nsStyleFont);
 }
 
-nsStyleFont::nsStyleFont(StyleStructContext aContext)
-  : nsStyleFont(*aContext.GetDefaultFont(kPresContext_DefaultVariableFont_ID),
-                aContext)
+nsStyleFont::nsStyleFont(nsPresContext* aContext)
+  : nsStyleFont(*(aContext->GetDefaultFont(
+      kPresContext_DefaultVariableFont_ID, nullptr)), aContext)
 {
 }
 
@@ -236,11 +220,11 @@ nsStyleFont::CalcDifference(const nsStyleFont& aNewData) const
 }
 
 /* static */ nscoord
-nsStyleFont::ZoomText(StyleStructContext aContext, nscoord aSize)
+nsStyleFont::ZoomText(nsPresContext* aContext, nscoord aSize)
 {
   // aSize can be negative (e.g.: calc(-1px)) so we can't assert that here.
   // The caller is expected deal with that.
-  return NSToCoordTruncClamped(float(aSize) * aContext.TextZoom());
+  return NSToCoordTruncClamped(float(aSize) * aContext->TextZoom());
 }
 
 /* static */ nscoord
@@ -252,16 +236,16 @@ nsStyleFont::UnZoomText(nsPresContext *aPresContext, nscoord aSize)
 }
 
 /* static */ already_AddRefed<nsIAtom>
-nsStyleFont::GetLanguage(StyleStructContext aContext)
+nsStyleFont::GetLanguage(nsPresContext* aContext)
 {
-  RefPtr<nsIAtom> language = aContext.GetContentLanguage();
+  RefPtr<nsIAtom> language = aContext->GetContentLanguage();
   if (!language) {
     // we didn't find a (usable) Content-Language, so we fall back
     // to whatever the presContext guessed from the charset
     // NOTE this should not be used elsewhere, because we want websites
     // to use UTF-8 with proper language tag, instead of relying on
     // deriving language from charset. See bug 1040668 comment 67.
-    language = aContext.GetLanguageFromCharset();
+    language = aContext->GetLanguageFromCharset();
   }
   return language.forget();
 }
@@ -282,7 +266,7 @@ CalcCoord(const nsStyleCoord& aCoord, const nscoord* aEnumTable, int32_t aNumEnu
   return nsRuleNode::ComputeCoordPercentCalc(aCoord, 0);
 }
 
-nsStyleMargin::nsStyleMargin(StyleStructContext aContext)
+nsStyleMargin::nsStyleMargin(nsPresContext* aContext)
 {
   MOZ_COUNT_CTOR(nsStyleMargin);
   nsStyleCoord zero(0, nsStyleCoord::CoordConstructor);
@@ -317,7 +301,7 @@ nsStyleMargin::CalcDifference(const nsStyleMargin& aNewData) const
          nsChangeHint_ClearAncestorIntrinsics;
 }
 
-nsStylePadding::nsStylePadding(StyleStructContext aContext)
+nsStylePadding::nsStylePadding(nsPresContext* aContext)
 {
   MOZ_COUNT_CTOR(nsStylePadding);
   nsStyleCoord zero(0, nsStyleCoord::CoordConstructor);
@@ -356,7 +340,7 @@ nsStylePadding::CalcDifference(const nsStylePadding& aNewData) const
   return NS_STYLE_HINT_REFLOW & ~nsChangeHint_ClearDescendantIntrinsics;
 }
 
-nsStyleBorder::nsStyleBorder(StyleStructContext aContext)
+nsStyleBorder::nsStyleBorder(nsPresContext* aContext)
   : mBorderColors(nullptr)
   , mBorderImageFill(NS_STYLE_BORDER_IMAGE_SLICE_NOFILL)
   , mBorderImageRepeatH(NS_STYLE_BORDER_IMAGE_REPEAT_STRETCH)
@@ -383,7 +367,7 @@ nsStyleBorder::nsStyleBorder(StyleStructContext aContext)
     mBorderColor[side] = StyleComplexColor::CurrentColor();
   }
 
-  mTwipsPerPixel = aContext.DevPixelsToAppUnits(1);
+  mTwipsPerPixel = aContext->DevPixelsToAppUnits(1);
 }
 
 nsBorderColors::~nsBorderColors()
@@ -447,15 +431,6 @@ nsStyleBorder::~nsStyleBorder()
     }
     delete [] mBorderColors;
   }
-}
-
-void
-nsStyleBorder::FinishStyle(nsPresContext* aPresContext)
-{
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aPresContext->StyleSet()->IsServo());
-
-  mBorderImageSource.ResolveImage(aPresContext);
 }
 
 nsMargin
@@ -573,13 +548,13 @@ nsStyleBorder::CalcDifference(const nsStyleBorder& aNewData) const
   return nsChangeHint(0);
 }
 
-nsStyleOutline::nsStyleOutline(StyleStructContext aContext)
+nsStyleOutline::nsStyleOutline(nsPresContext* aContext)
   : mOutlineWidth(NS_STYLE_BORDER_WIDTH_MEDIUM, eStyleUnit_Enumerated)
   , mOutlineOffset(0)
   , mOutlineColor(StyleComplexColor::CurrentColor())
   , mOutlineStyle(NS_STYLE_BORDER_STYLE_NONE)
   , mActualOutlineWidth(0)
-  , mTwipsPerPixel(aContext.DevPixelsToAppUnits(1))
+  , mTwipsPerPixel(aContext->DevPixelsToAppUnits(1))
 {
   MOZ_COUNT_CTOR(nsStyleOutline);
   // spacing values not inherited
@@ -649,9 +624,10 @@ nsStyleOutline::CalcDifference(const nsStyleOutline& aNewData) const
 // --------------------
 // nsStyleList
 //
-nsStyleList::nsStyleList(StyleStructContext aContext)
+nsStyleList::nsStyleList(nsPresContext* aContext)
   : mListStylePosition(NS_STYLE_LIST_STYLE_POSITION_OUTSIDE)
-  , mCounterStyle(aContext.BuildCounterStyle(NS_LITERAL_STRING("disc")))
+  , mCounterStyle(aContext->CounterStyleManager()->
+                  BuildCounterStyle(NS_LITERAL_STRING("disc")))
 {
   MOZ_COUNT_CTOR(nsStyleList);
   SetQuotesInitial();
@@ -670,17 +646,6 @@ nsStyleList::nsStyleList(const nsStyleList& aSource)
   , mImageRegion(aSource.mImageRegion)
 {
   MOZ_COUNT_CTOR(nsStyleList);
-}
-
-void
-nsStyleList::FinishStyle(nsPresContext* aPresContext)
-{
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aPresContext->StyleSet()->IsServo());
-
-  if (mListStyleImage && !mListStyleImage->IsResolved()) {
-    mListStyleImage->Resolve(aPresContext);
-  }
 }
 
 void
@@ -770,7 +735,7 @@ nsStyleList::sNoneQuotes;
 // --------------------
 // nsStyleXUL
 //
-nsStyleXUL::nsStyleXUL(StyleStructContext aContext)
+nsStyleXUL::nsStyleXUL(nsPresContext* aContext)
   : mBoxFlex(0.0f)
   , mBoxOrdinal(1)
   , mBoxAlign(StyleBoxAlign::Stretch)
@@ -822,7 +787,7 @@ nsStyleXUL::CalcDifference(const nsStyleXUL& aNewData) const
 //
 /* static */ const uint32_t nsStyleColumn::kMaxColumnCount;
 
-nsStyleColumn::nsStyleColumn(StyleStructContext aContext)
+nsStyleColumn::nsStyleColumn(nsPresContext* aContext)
   : mColumnCount(NS_STYLE_COLUMN_COUNT_AUTO)
   , mColumnWidth(eStyleUnit_Auto)
   , mColumnRuleColor(StyleComplexColor::CurrentColor())
@@ -830,7 +795,7 @@ nsStyleColumn::nsStyleColumn(StyleStructContext aContext)
   , mColumnFill(NS_STYLE_COLUMN_FILL_BALANCE)
   , mColumnRuleWidth((StaticPresData::Get()
                         ->GetBorderWidthTable())[NS_STYLE_BORDER_WIDTH_MEDIUM])
-  , mTwipsPerPixel(aContext.AppUnitsPerDevPixel())
+  , mTwipsPerPixel(aContext->AppUnitsPerDevPixel())
 {
   MOZ_COUNT_CTOR(nsStyleColumn);
 }
@@ -888,7 +853,7 @@ nsStyleColumn::CalcDifference(const nsStyleColumn& aNewData) const
 // --------------------
 // nsStyleSVG
 //
-nsStyleSVG::nsStyleSVG(StyleStructContext aContext)
+nsStyleSVG::nsStyleSVG(nsPresContext* aContext)
   : mFill(eStyleSVGPaintType_Color) // Will be initialized to NS_RGB(0, 0, 0)
   , mStroke(eStyleSVGPaintType_None)
   , mStrokeDashoffset(0, nsStyleCoord::CoordConstructor)
@@ -1162,7 +1127,7 @@ nsStyleFilter::SetDropShadow(nsCSSShadowArray* aDropShadow)
 // --------------------
 // nsStyleSVGReset
 //
-nsStyleSVGReset::nsStyleSVGReset(StyleStructContext aContext)
+nsStyleSVGReset::nsStyleSVGReset(nsPresContext* aContext)
   : mMask(nsStyleImageLayers::LayerType::Mask)
   , mStopColor(NS_RGB(0, 0, 0))
   , mFloodColor(NS_RGB(0, 0, 0))
@@ -1204,14 +1169,6 @@ nsStyleSVGReset::Destroy(nsPresContext* aContext)
     FreeByObjectID(mozilla::eArenaObjectID_nsStyleSVGReset, this);
 }
 
-void
-nsStyleSVGReset::FinishStyle(nsPresContext* aPresContext)
-{
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aPresContext->StyleSet()->IsServo());
-
-  mMask.ResolveImages(aPresContext);
-}
 
 nsChangeHint
 nsStyleSVGReset::CalcDifference(const nsStyleSVGReset& aNewData) const
@@ -1392,7 +1349,7 @@ bool nsStyleSVGPaint::operator==(const nsStyleSVGPaint& aOther) const
 // --------------------
 // nsStylePosition
 //
-nsStylePosition::nsStylePosition(StyleStructContext aContext)
+nsStylePosition::nsStylePosition(nsPresContext* aContext)
   : mWidth(eStyleUnit_Auto)
   , mMinWidth(eStyleUnit_Auto)
   , mMaxWidth(eStyleUnit_None)
@@ -1723,7 +1680,7 @@ nsStylePosition::UsedJustifySelf(nsStyleContext* aParent) const
 // nsStyleTable
 //
 
-nsStyleTable::nsStyleTable(StyleStructContext aContext)
+nsStyleTable::nsStyleTable(nsPresContext* aContext)
   : mLayoutStrategy(NS_STYLE_TABLE_LAYOUT_AUTO)
   , mSpan(1)
 {
@@ -1755,7 +1712,7 @@ nsStyleTable::CalcDifference(const nsStyleTable& aNewData) const
 // -----------------------
 // nsStyleTableBorder
 
-nsStyleTableBorder::nsStyleTableBorder(StyleStructContext aContext)
+nsStyleTableBorder::nsStyleTableBorder(nsPresContext* aContext)
   : mBorderSpacingCol(0)
   , mBorderSpacingRow(0)
   , mBorderCollapse(NS_STYLE_BORDER_SEPARATE)
@@ -1807,8 +1764,8 @@ nsStyleTableBorder::CalcDifference(const nsStyleTableBorder& aNewData) const
 // nsStyleColor
 //
 
-nsStyleColor::nsStyleColor(StyleStructContext aContext)
-  : mColor(aContext.DefaultColor())
+nsStyleColor::nsStyleColor(nsPresContext* aContext)
+  : mColor(aContext->DefaultColor())
 {
   MOZ_COUNT_CTOR(nsStyleColor);
 }
@@ -1968,7 +1925,6 @@ nsStyleImageRequest::nsStyleImageRequest(Mode aModeFlags,
   , mImageValue(aImageValue)
   , mImageTracker(aImageTracker)
   , mModeFlags(aModeFlags)
-  , mResolved(true)
 {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(aRequestProxy);
@@ -1976,19 +1932,6 @@ nsStyleImageRequest::nsStyleImageRequest(Mode aModeFlags,
   MOZ_ASSERT(!!(aModeFlags & Mode::Track) == !!aImageTracker);
 
   MaybeTrackAndLock();
-}
-
-nsStyleImageRequest::nsStyleImageRequest(
-    Mode aModeFlags,
-    nsStringBuffer* aURLBuffer,
-    already_AddRefed<PtrHolder<nsIURI>> aBaseURI,
-    already_AddRefed<PtrHolder<nsIURI>> aReferrer,
-    already_AddRefed<PtrHolder<nsIPrincipal>> aPrincipal)
-  : mModeFlags(aModeFlags)
-  , mResolved(false)
-{
-  mImageValue = new css::ImageValue(aURLBuffer, Move(aBaseURI),
-                                    Move(aReferrer), Move(aPrincipal));
 }
 
 nsStyleImageRequest::~nsStyleImageRequest()
@@ -2014,43 +1957,10 @@ nsStyleImageRequest::~nsStyleImageRequest()
   MOZ_ASSERT(!mImageTracker);
 }
 
-bool
-nsStyleImageRequest::Resolve(nsPresContext* aPresContext)
-{
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(!IsResolved(), "already resolved");
-
-  mResolved = true;
-
-  // For now, just have unique nsCSSValue/ImageValue objects.  We should
-  // really store the ImageValue on the Servo specified value, so that we can
-  // share imgRequestProxys that come from the same rule in the same
-  // document.
-  mImageValue->Initialize(aPresContext->Document());
-
-  nsCSSValue value;
-  value.SetImageValue(mImageValue);
-  mRequestProxy = value.GetPossiblyStaticImageValue(aPresContext->Document(),
-                                                    aPresContext);
-
-  if (!mRequestProxy) {
-    // The URL resolution or image load failed.
-    return false;
-  }
-
-  if (mModeFlags & Mode::Track) {
-    mImageTracker = aPresContext->Document()->ImageTracker();
-  }
-
-  MaybeTrackAndLock();
-  return true;
-}
-
 void
 nsStyleImageRequest::MaybeTrackAndLock()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(IsResolved());
   MOZ_ASSERT(mRequestProxy);
 
   if (mModeFlags & Mode::Track) {
@@ -2914,7 +2824,7 @@ nsStyleImageLayers::Layer::CalcDifference(const nsStyleImageLayers::Layer& aNewL
 // nsStyleBackground
 //
 
-nsStyleBackground::nsStyleBackground(StyleStructContext aContext)
+nsStyleBackground::nsStyleBackground(nsPresContext* aContext)
   : mImage(nsStyleImageLayers::LayerType::Background)
   , mBackgroundColor(NS_RGBA(0, 0, 0, 0))
 {
@@ -2939,15 +2849,6 @@ nsStyleBackground::Destroy(nsPresContext* aContext)
   this->~nsStyleBackground();
   aContext->PresShell()->
     FreeByObjectID(eArenaObjectID_nsStyleBackground, this);
-}
-
-void
-nsStyleBackground::FinishStyle(nsPresContext* aPresContext)
-{
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aPresContext->StyleSet()->IsServo());
-
-  mImage.ResolveImages(aPresContext);
 }
 
 nsChangeHint
@@ -3117,7 +3018,7 @@ StyleAnimation::operator==(const StyleAnimation& aOther) const
 // --------------------
 // nsStyleDisplay
 //
-nsStyleDisplay::nsStyleDisplay(StyleStructContext aContext)
+nsStyleDisplay::nsStyleDisplay(nsPresContext* aContext)
   : mDisplay(StyleDisplay::Inline)
   , mOriginalDisplay(StyleDisplay::Inline)
   , mContain(NS_STYLE_CONTAIN_NONE)
@@ -3467,8 +3368,8 @@ nsStyleDisplay::CalcDifference(const nsStyleDisplay& aNewData) const
 // nsStyleVisibility
 //
 
-nsStyleVisibility::nsStyleVisibility(StyleStructContext aContext)
-  : mDirection(aContext.GetBidi() == IBMBIDI_TEXTDIRECTION_RTL
+nsStyleVisibility::nsStyleVisibility(nsPresContext* aContext)
+  : mDirection(aContext->GetBidi() == IBMBIDI_TEXTDIRECTION_RTL
                  ? NS_STYLE_DIRECTION_RTL
                  : NS_STYLE_DIRECTION_LTR)
   , mVisible(NS_STYLE_VISIBILITY_VISIBLE)
@@ -3644,7 +3545,7 @@ nsStyleContentData::UntrackImage(ImageTracker* aImageTracker)
 // nsStyleContent
 //
 
-nsStyleContent::nsStyleContent(StyleStructContext aContext)
+nsStyleContent::nsStyleContent(nsPresContext* aContext)
 {
   MOZ_COUNT_CTOR(nsStyleContent);
 }
@@ -3707,7 +3608,7 @@ nsStyleContent::CalcDifference(const nsStyleContent& aNewData) const
 // nsStyleTextReset
 //
 
-nsStyleTextReset::nsStyleTextReset(StyleStructContext aContext)
+nsStyleTextReset::nsStyleTextReset(nsPresContext* aContext)
   : mTextDecorationLine(NS_STYLE_TEXT_DECORATION_LINE_NONE)
   , mTextDecorationStyle(NS_STYLE_TEXT_DECORATION_STYLE_SOLID)
   , mUnicodeBidi(NS_STYLE_UNICODE_BIDI_NORMAL)
@@ -3785,7 +3686,7 @@ AreShadowArraysEqual(nsCSSShadowArray* lhs,
 // nsStyleText
 //
 
-nsStyleText::nsStyleText(StyleStructContext aContext)
+nsStyleText::nsStyleText(nsPresContext* aContext)
   : mTextAlign(NS_STYLE_TEXT_ALIGN_START)
   , mTextAlignLast(NS_STYLE_TEXT_ALIGN_AUTO)
   , mTextAlignTrue(false)
@@ -3815,7 +3716,7 @@ nsStyleText::nsStyleText(StyleStructContext aContext)
   , mTextShadow(nullptr)
 {
   MOZ_COUNT_CTOR(nsStyleText);
-  nsCOMPtr<nsIAtom> language = aContext.GetContentLanguage();
+  nsCOMPtr<nsIAtom> language = aContext->GetContentLanguage();
   mTextEmphasisPosition = language &&
     nsStyleUtil::MatchesLanguagePrefix(language, u"zh") ?
     NS_STYLE_TEXT_EMPHASIS_POSITION_DEFAULT_ZH :
@@ -4014,7 +3915,7 @@ nsCursorImage::operator==(const nsCursorImage& aOther) const
          EqualImages(mImage, aOther.mImage);
 }
 
-nsStyleUserInterface::nsStyleUserInterface(StyleStructContext aContext)
+nsStyleUserInterface::nsStyleUserInterface(nsPresContext* aContext)
   : mUserInput(StyleUserInput::Auto)
   , mUserModify(StyleUserModify::ReadOnly)
   , mUserFocus(StyleUserFocus::None)
@@ -4101,7 +4002,7 @@ nsStyleUserInterface::CalcDifference(const nsStyleUserInterface& aNewData) const
 // nsStyleUIReset
 //
 
-nsStyleUIReset::nsStyleUIReset(StyleStructContext aContext)
+nsStyleUIReset::nsStyleUIReset(nsPresContext* aContext)
   : mUserSelect(StyleUserSelect::Auto)
   , mForceBrokenImageIcon(0)
   , mIMEMode(NS_STYLE_IME_MODE_AUTO)
@@ -4154,7 +4055,7 @@ nsStyleUIReset::CalcDifference(const nsStyleUIReset& aNewData) const
 // nsStyleVariables
 //
 
-nsStyleVariables::nsStyleVariables(StyleStructContext aContext)
+nsStyleVariables::nsStyleVariables(nsPresContext* aContext)
 {
   MOZ_COUNT_CTOR(nsStyleVariables);
 }
@@ -4180,7 +4081,7 @@ nsStyleVariables::CalcDifference(const nsStyleVariables& aNewData) const
 // nsStyleEffects
 //
 
-nsStyleEffects::nsStyleEffects(StyleStructContext aContext)
+nsStyleEffects::nsStyleEffects(nsPresContext* aContext)
   : mBoxShadow(nullptr)
   , mClip(0, 0, 0, 0)
   , mOpacity(1.0f)

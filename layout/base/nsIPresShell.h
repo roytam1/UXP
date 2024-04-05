@@ -24,7 +24,6 @@
 #include "mozilla/EventForwards.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/StaticPtr.h"
-#include "mozilla/StyleSetHandle.h"
 #include "mozilla/StyleSheet.h"
 #include "mozilla/WeakPtr.h"
 #include "gfxPoint.h"
@@ -62,6 +61,7 @@ class nsIPageSequenceFrame;
 class nsCanvasFrame;
 class nsAString;
 class nsCaret;
+class nsStyleSet;
 namespace mozilla {
 class AccessibleCaretEventHub;
 class CSSStyleSheet;
@@ -323,7 +323,7 @@ public:
 #endif
 
 #ifdef MOZILLA_INTERNAL_API
-  mozilla::StyleSetHandle StyleSet() const { return mStyleSet; }
+  nsStyleSet* StyleSet() const { return mStyleSet; }
 
   nsCSSFrameConstructor* FrameConstructor() const { return mFrameConstructor; }
 
@@ -1722,7 +1722,7 @@ protected:
   // we must share ownership.
   nsCOMPtr<nsIDocument>     mDocument;
   RefPtr<nsPresContext>   mPresContext;
-  mozilla::StyleSetHandle   mStyleSet;      // [OWNS]
+  nsStyleSet*               mStyleSet;      // [OWNS]
   nsCSSFrameConstructor*    mFrameConstructor; // [OWNS]
   nsViewManager*           mViewManager;   // [WEAK] docViewer owns it so I don't have to
   nsPresArena               mFrameArena;

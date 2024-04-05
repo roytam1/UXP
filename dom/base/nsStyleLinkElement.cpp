@@ -319,14 +319,9 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
     return NS_OK;
   }
 
-  // XXXheycam ServoStyleSheets do not support <style scoped>.
   Element* oldScopeElement = nullptr;
   if (mStyleSheet) {
-    if (mStyleSheet->IsServo()) {
-      NS_WARNING("stylo: ServoStyleSheets don't support <style scoped>");
-    } else {
-      oldScopeElement = mStyleSheet->AsGecko()->GetScopeElement();
-    }
+    oldScopeElement = mStyleSheet->AsConcrete()->GetScopeElement();
   }
 
   if (mStyleSheet && (aOldDocument || aOldShadowRoot)) {
@@ -488,13 +483,7 @@ nsStyleLinkElement::UpdateStyleSheetScopedness(bool aIsNowScoped)
     return;
   }
 
-  if (mStyleSheet->IsServo()) {
-    // XXXheycam ServoStyleSheets don't support <style scoped>.
-    NS_ERROR("stylo: ServoStyleSheets don't support <style scoped>");
-    return;
-  }
-
-  CSSStyleSheet* sheet = mStyleSheet->AsGecko();
+  CSSStyleSheet* sheet = mStyleSheet->AsConcrete();
 
   nsCOMPtr<nsIContent> thisContent;
   CallQueryInterface(this, getter_AddRefs(thisContent));

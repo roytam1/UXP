@@ -35,7 +35,9 @@ class nsDOMStringMap;
 class nsIURI;
 
 namespace mozilla {
-class DeclarationBlock;
+namespace css {
+class Declaration;
+}
 namespace dom {
 struct CustomElementData;
 class DOMIntersectionObserver;
@@ -265,7 +267,7 @@ public:
     /**
      * Holds any SMIL override style declaration for this element.
      */
-    RefPtr<mozilla::DeclarationBlock> mSMILOverrideStyleDeclaration;
+    RefPtr<mozilla::css::Declaration> mSMILOverrideStyleDeclaration;
 
     /**
     * The nearest enclosing content node with a binding that created us.

@@ -24,6 +24,7 @@
 
 class nsIFrame;
 class nsIPresShell;
+class nsStyleSet;
 
 class nsFrameManagerBase
 {

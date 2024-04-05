@@ -11,8 +11,6 @@
 
 namespace mozilla {
 
-#define NS_EVENT_STATE_HIGHEST_SERVO_BIT 6
-
 /**
  * EventStates is the class used to represent the event states of nsIContent
  * instances. These states are calculated by IntrinsicState() and
@@ -24,7 +22,6 @@ class EventStates
 {
 public:
   typedef uint64_t InternalType;
-  typedef uint8_t ServoType;
 
   EventStates()
     : mStates(0)
@@ -157,14 +154,6 @@ public:
     return mStates;
   }
 
-  /**
-   * Method used to get the appropriate state representation for Servo.
-   */
-  ServoType ServoValue() const
-  {
-    return mStates & ((1 << (NS_EVENT_STATE_HIGHEST_SERVO_BIT + 1)) - 1);
-  }
-
 private:
   InternalType mStates;
 };
@@ -182,19 +171,6 @@ private:
 #define NS_DEFINE_EVENT_STATE_MACRO(_val)               \
   (mozilla::EventStates(mozilla::EventStates::InternalType(1) << _val))
 
-/*
- * In order to efficiently convert Gecko EventState values into Servo
- * ElementState values [1], we maintain the invariant that the low bits of
- * EventState can be masked off to form an ElementState (this works so
- * long as Servo never supports a state that Gecko doesn't).
- *
- * This is unfortunately rather fragile for now, but we should soon have
- * the infrastructure to statically-assert that these match up. If you
- * need to change these, please notify somebody involved with Stylo.
- *
- * [1] https://github.com/servo/servo/blob/master/components/style/element_state.rs
- */
-
 // Mouse is down on content.
 #define NS_EVENT_STATE_ACTIVE        NS_DEFINE_EVENT_STATE_MACRO(0)
 // Content has focus.
@@ -209,14 +185,6 @@ private:
 #define NS_EVENT_STATE_CHECKED       NS_DEFINE_EVENT_STATE_MACRO(5)
 // Content is in the indeterminate state.
 #define NS_EVENT_STATE_INDETERMINATE NS_DEFINE_EVENT_STATE_MACRO(6)
-
-/*
- * Bits below here do not have Servo-related ordering constraints.
- *
- * Remember to change NS_EVENT_STATE_HIGHEST_SERVO_BIT at the top of the file if
- * this changes!
- */
-
 // Drag is hovering over content.
 #define NS_EVENT_STATE_DRAGOVER      NS_DEFINE_EVENT_STATE_MACRO(7)
 // Content is URL's target (ref).
@@ -285,10 +253,14 @@ private:
 #define NS_EVENT_STATE_VULNERABLE_UPDATABLE NS_DEFINE_EVENT_STATE_MACRO(39)
 // Handler for click to play plugin (vulnerable w/no update)
 #define NS_EVENT_STATE_VULNERABLE_NO_UPDATE NS_DEFINE_EVENT_STATE_MACRO(40)
+// This bit is currently free.
+// #define NS_EVENT_STATE_?????????? NS_DEFINE_EVENT_STATE_MACRO(41)
 // Element is ltr (for :dir pseudo-class)
 #define NS_EVENT_STATE_LTR NS_DEFINE_EVENT_STATE_MACRO(42)
 // Element is rtl (for :dir pseudo-class)
 #define NS_EVENT_STATE_RTL NS_DEFINE_EVENT_STATE_MACRO(43)
+// This bit is currently free.
+// #define NS_EVENT_STATE_?????????? NS_DEFINE_EVENT_STATE_MACRO(44)
 // Element is highlighted (devtools inspector)
 #define NS_EVENT_STATE_DEVTOOLS_HIGHLIGHTED NS_DEFINE_EVENT_STATE_MACRO(45)
 // States for tracking the state of the "dir" attribute for HTML elements.  We

@@ -1067,9 +1067,6 @@ public:
 
   // Fill unspecified layers by cycling through their values
   // till they all are of length aMaxItemCount
-  static void FillAllBackgroundLists(nsStyleImageLayers& aLayers,
-                                     uint32_t aMaxItemCount);
-
   static void FillAllMaskLists(nsStyleImageLayers& aLayers,
                                uint32_t aMaxItemCount);
 

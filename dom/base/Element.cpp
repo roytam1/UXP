@@ -56,7 +56,6 @@
 #include "mozilla/AnimationComparator.h"
 #include "mozilla/AsyncEventDispatcher.h"
 #include "mozilla/ContentEvents.h"
-#include "mozilla/DeclarationBlockInlines.h"
 #include "mozilla/EffectSet.h"
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/EventListenerManager.h"
@@ -108,6 +107,7 @@
 #include "nsViewManager.h"
 #include "nsIScrollableFrame.h"
 #include "mozilla/css/StyleRule.h" /* For nsCSSSelectorList */
+#include "mozilla/css/Declaration.h"
 #include "nsCSSRuleProcessor.h"
 #include "nsRuleProcessorData.h"
 #include "nsTextNode.h"
@@ -1485,6 +1485,27 @@ Element::GetElementsByClassName(const nsAString& aClassNames,
   return NS_OK;
 }
 
+CSSPseudoElementType
+Element::GetPseudoElementType() const {
+  if (!HasProperties()) {
+    return CSSPseudoElementType::NotPseudo;
+  }
+  nsresult rv = NS_OK;
+  auto raw = GetProperty(nsGkAtoms::pseudoProperty, &rv);
+  if (rv == NS_PROPTABLE_PROP_NOT_THERE) {
+    return CSSPseudoElementType::NotPseudo;
+  }
+  return CSSPseudoElementType(reinterpret_cast<uintptr_t>(raw));
+}
+
+void
+Element::SetPseudoElementType(CSSPseudoElementType aPseudo) {
+  static_assert(sizeof(CSSPseudoElementType) <= sizeof(uintptr_t),
+                "Need to be able to store this in a void*");
+  MOZ_ASSERT(aPseudo != CSSPseudoElementType::NotPseudo);
+  SetProperty(nsGkAtoms::pseudoProperty, reinterpret_cast<void*>(aPseudo));
+}
+
 /**
  * Returns the count of descendants (inclusive of aContent) in
  * the uncomposed document that are explicitly set as editable.
@@ -1615,7 +1636,7 @@ Element::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
                // And clear the lazy frame construction bits.
                NODE_NEEDS_FRAME | NODE_DESCENDANTS_NEED_FRAMES);
     // And the restyle bits
-    UnsetRestyleFlagsIfGecko();
+    UnsetRestyleFlags();
   } else if (IsInShadowTree()) {
     // We're not in a document, but we did get inserted into a shadow tree.
     // Since we won't have any restyle data in the document's restyle trackers,
@@ -1625,7 +1646,7 @@ Element::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
     // inserted into a document.
     UnsetFlags(NODE_FORCE_XBL_BINDINGS |
                NODE_NEEDS_FRAME | NODE_DESCENDANTS_NEED_FRAMES);
-    UnsetRestyleFlagsIfGecko();
+    UnsetRestyleFlags();
   } else {
     // If we're not in the doc and not in a shadow tree,
     // update our subtree pointer.
@@ -1766,18 +1787,6 @@ Element::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
     }
   }
 
-  // It would be cleanest to mark nodes as dirty when (a) they're created and
-  // (b) they're unbound from a tree. However, we can't easily do (a) right now,
-  // because IsStyledByServo() is not always easy to check at node creation time,
-  // and the bits have different meaning in the non-IsStyledByServo case.
-  //
-  // So for now, we just mark nodes as dirty when they're inserted into a
-  // document or shadow tree.
-  if (IsStyledByServo() && IsInComposedDoc()) {
-    MOZ_ASSERT(!HasServoData());
-    SetIsDirtyForServo();
-  }
-
   // XXXbz script execution during binding can trigger some of these
   // postcondition asserts....  But we do want that, since things will
   // generally be quite broken when that happens.
@@ -1904,16 +1913,6 @@ Element::UnbindFromTree(bool aDeep, bool aNullParent)
 
   ClearInDocument();
 
-  // Computed styled data isn't useful for detached nodes, and we'll need to
-  // recomputed it anyway if we ever insert the nodes back into a document.
-  if (IsStyledByServo()) {
-    ClearServoData();
-  } else {
-#ifdef MOZ_STYLO
-    MOZ_ASSERT(!HasServoData());
-#endif
-  }
-
   // Editable descendant count only counts descendants that
   // are in the uncomposed document.
   ResetEditableDescendantCount();
@@ -2025,7 +2024,7 @@ Element::GetSMILOverrideStyle()
   return slots->mSMILOverrideStyle;
 }
 
-DeclarationBlock*
+css::Declaration*
 Element::GetSMILOverrideStyleDeclaration()
 {
   Element::nsExtendedDOMSlots* slots = GetExistingExtendedDOMSlots();
@@ -2033,7 +2032,7 @@ Element::GetSMILOverrideStyleDeclaration()
 }
 
 nsresult
-Element::SetSMILOverrideStyleDeclaration(DeclarationBlock* aDeclaration,
+Element::SetSMILOverrideStyleDeclaration(css::Declaration* aDeclaration,
                                          bool aNotify)
 {
   Element::nsExtendedDOMSlots* slots = ExtendedDOMSlots();
@@ -2073,14 +2072,14 @@ Element::IsInteractiveHTMLContent(bool aIgnoreTabindex) const
   return false;
 }
 
-DeclarationBlock*
+css::Declaration*
 Element::GetInlineStyleDeclaration()
 {
   return nullptr;
 }
 
 nsresult
-Element::SetInlineStyleDeclaration(DeclarationBlock* aDeclaration,
+Element::SetInlineStyleDeclaration(css::Declaration* aDeclaration,
                                    const nsAString* aSerialized,
                                    bool aNotify)
 {

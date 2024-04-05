@@ -8,7 +8,6 @@
 #include "CSS.h"
 
 #include "mozilla/dom/BindingDeclarations.h"
-#include "mozilla/ServoBindings.h"
 #include "nsCSSParser.h"
 #include "nsGlobalWindow.h"
 #include "nsIDocument.h"
@@ -24,7 +23,6 @@ struct SupportsParsingInfo
   nsIURI* mDocURI;
   nsIURI* mBaseURI;
   nsIPrincipal* mPrincipal;
-  StyleBackendType mStyleBackendType;
 };
 
 static nsresult
@@ -44,7 +42,6 @@ GetParsingInfo(const GlobalObject& aGlobal,
   aInfo.mDocURI = nsCOMPtr<nsIURI>(doc->GetDocumentURI()).get();
   aInfo.mBaseURI = nsCOMPtr<nsIURI>(doc->GetBaseURI()).get();
   aInfo.mPrincipal = win->GetPrincipal();
-  aInfo.mStyleBackendType = doc->GetStyleBackendType();
   return NS_OK;
 }
 
@@ -60,12 +57,6 @@ CSS::Supports(const GlobalObject& aGlobal,
   if (NS_FAILED(rv)) {
     aRv.Throw(rv);
     return false;
-  }
-
-  if (info.mStyleBackendType == StyleBackendType::Servo) {
-    NS_ConvertUTF16toUTF8 property(aProperty);
-    NS_ConvertUTF16toUTF8 value(aValue);
-    return Servo_CSSSupports(&property, &value);
   }
 
   nsCSSParser parser;
@@ -84,10 +75,6 @@ CSS::Supports(const GlobalObject& aGlobal,
   if (NS_FAILED(rv)) {
     aRv.Throw(rv);
     return false;
-  }
-
-  if (info.mStyleBackendType == StyleBackendType::Servo) {
-    MOZ_CRASH("stylo: CSS.supports() with arguments is not yet implemented");
   }
 
   nsCSSParser parser;

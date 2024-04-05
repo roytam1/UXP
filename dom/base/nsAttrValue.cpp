@@ -16,8 +16,7 @@
 #include "nsIAtom.h"
 #include "nsUnicharUtils.h"
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/ServoBindingTypes.h"
-#include "mozilla/DeclarationBlockInlines.h"
+#include "mozilla/css/Declaration.h"
 #include "nsContentUtils.h"
 #include "nsReadableUtils.h"
 #include "prprf.h"
@@ -150,7 +149,7 @@ nsAttrValue::nsAttrValue(nsIAtom* aValue)
   SetTo(aValue);
 }
 
-nsAttrValue::nsAttrValue(already_AddRefed<DeclarationBlock> aValue,
+nsAttrValue::nsAttrValue(already_AddRefed<css::Declaration> aValue,
                          const nsAString* aSerialized)
     : mBits(0)
 {
@@ -420,7 +419,7 @@ nsAttrValue::SetTo(double aValue, const nsAString* aSerialized)
 }
 
 void
-nsAttrValue::SetTo(already_AddRefed<DeclarationBlock> aValue,
+nsAttrValue::SetTo(already_AddRefed<css::Declaration> aValue,
                    const nsAString* aSerialized)
 {
   MiscContainer* cont = EnsureEmptyMiscContainer();
@@ -643,7 +642,7 @@ nsAttrValue::ToString(nsAString& aResult) const
     {
       aResult.Truncate();
       MiscContainer *container = GetMiscContainer();
-      if (DeclarationBlock* decl = container->mValue.mCSSDeclaration) {
+      if (css::Declaration* decl = container->mValue.mCSSDeclaration) {
         decl->ToString(aResult);
       }
       const_cast<nsAttrValue*>(this)->SetMiscAtomOrString(&aResult);
@@ -1748,15 +1747,11 @@ nsAttrValue::ParseStyleAttribute(const nsAString& aString,
     }
   }
 
-  RefPtr<DeclarationBlock> decl;
-  if (ownerDoc->GetStyleBackendType() == StyleBackendType::Servo) {
-    decl = ServoDeclarationBlock::FromCssText(aString);
-  } else {
-    css::Loader* cssLoader = ownerDoc->CSSLoader();
-    nsCSSParser cssParser(cssLoader);
-    decl = cssParser.ParseStyleAttribute(aString, docURI, baseURI,
-                                         aElement->NodePrincipal());
-  }
+  RefPtr<css::Declaration> decl;
+  css::Loader* cssLoader = ownerDoc->CSSLoader();
+  nsCSSParser cssParser(cssLoader);
+  decl = cssParser.ParseStyleAttribute(aString, docURI, baseURI,
+                                       aElement->NodePrincipal());
   if (!decl) {
     return false;
   }
@@ -1988,8 +1983,6 @@ nsAttrValue::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const
       if (Type() == eCSSDeclaration && container->mValue.mCSSDeclaration) {
         // TODO: mCSSDeclaration might be owned by another object which
         //       would make us count them twice, bug 677493.
-        // Bug 1281964: For ServoDeclarationBlock if we do measure we'll
-        // need a way to call the Servo heap_size_of function.
         //n += container->mCSSDeclaration->SizeOfIncludingThis(aMallocSizeOf);
       } else if (Type() == eAtomArray && container->mValue.mAtomArray) {
         // Don't measure each nsIAtom, they are measured separatly.
