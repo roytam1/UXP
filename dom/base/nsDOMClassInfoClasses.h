@@ -7,12 +7,6 @@
 DOMCI_CLASS(DOMPrototype)
 DOMCI_CLASS(DOMConstructor)
 
-// CSS classes
-DOMCI_CLASS(CSSStyleRule)
-DOMCI_CLASS(CSSImportRule)
-DOMCI_CLASS(CSSMediaRule)
-DOMCI_CLASS(CSSNameSpaceRule)
-
 // XUL classes
 #ifdef MOZ_XUL
 DOMCI_CLASS(XULCommandDispatcher)
@@ -28,26 +22,10 @@ DOMCI_CLASS(XULTemplateBuilder)
 DOMCI_CLASS(XULTreeBuilder)
 #endif
 
-DOMCI_CLASS(CSSMozDocumentRule)
-DOMCI_CLASS(CSSSupportsRule)
-
-// @font-face in CSS
-DOMCI_CLASS(CSSFontFaceRule)
-
 DOMCI_CLASS(ContentFrameMessageManager)
 DOMCI_CLASS(ContentProcessMessageManager)
 DOMCI_CLASS(ChromeMessageBroadcaster)
 DOMCI_CLASS(ChromeMessageSender)
-
-DOMCI_CLASS(CSSKeyframeRule)
-DOMCI_CLASS(CSSKeyframesRule)
-
-// @counter-style in CSS
-DOMCI_CLASS(CSSCounterStyleRule)
-
-DOMCI_CLASS(CSSPageRule)
-
-DOMCI_CLASS(CSSFontFeatureValuesRule)
 
 DOMCI_CLASS(XULControlElement)
 DOMCI_CLASS(XULLabeledControlElement)
