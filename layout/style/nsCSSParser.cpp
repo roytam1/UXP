@@ -1192,7 +1192,10 @@ protected:
   // Reused utility parsing routines
   void AppendValue(nsCSSPropertyID aPropID, const nsCSSValue& aValue);
   bool ParseBoxProperties(const nsCSSPropertyID aPropIDs[]);
-  bool ParseBoxPairProperties(nsCSSPropertyID aStart, nsCSSPropertyID aEnd);
+  bool ParseBoxPairProperties(int32_t aSingleVariantMask,
+                              int32_t aPairVariantMask,
+                              nsCSSPropertyID aStart,
+                              nsCSSPropertyID aEnd);
   bool ParseGroupedBoxProperty(int32_t aVariantMask,
                                nsCSSValue& aValue,
                                uint32_t aRestrictions);
@@ -10112,7 +10115,9 @@ CSSParserImpl::ParseGridArea()
 bool
 CSSParserImpl::ParseGap()
 {
-  return ParseBoxPairProperties(eCSSProperty_row_gap,
+  return ParseBoxPairProperties(VARIANT_INHERIT,
+                                VARIANT_LPCALC,
+                                eCSSProperty_row_gap,
                                 eCSSProperty_column_gap);
 }
 
@@ -11437,20 +11442,23 @@ CSSParserImpl::ParseBoxProperties(const nsCSSPropertyID aPropIDs[])
 }
 
 bool
-CSSParserImpl::ParseBoxPairProperties(nsCSSPropertyID aStart, nsCSSPropertyID aEnd)
+CSSParserImpl::ParseBoxPairProperties(int32_t aSingleVariantMask,
+                                      int32_t aPairVariantMask,
+                                      nsCSSPropertyID aStart,
+                                      nsCSSPropertyID aEnd)
 {
   nsCSSValue first;
-  if (ParseSingleTokenVariant(first, VARIANT_INHERIT, nullptr)) {
+  if (ParseSingleTokenVariant(first, aSingleVariantMask, nullptr)) {
     AppendValue(aStart, first);
     AppendValue(aEnd, first);
     return true;
   }
-  if (ParseNonNegativeVariant(first, VARIANT_LPCALC, nullptr) !=
+  if (ParseNonNegativeVariant(first, aPairVariantMask, nullptr) !=
         CSSParseResult::Ok) {
     return false;
   }
   nsCSSValue second;
-  auto result = ParseNonNegativeVariant(second, VARIANT_LPCALC, nullptr);
+  auto result = ParseNonNegativeVariant(second, aPairVariantMask, nullptr);
   if (result == CSSParseResult::Error) {
     return false;
   }
@@ -15526,14 +15534,18 @@ CSSParserImpl::ParseMargin()
 bool
 CSSParserImpl::ParseMarginBlock()
 {
-  return ParseBoxPairProperties(eCSSProperty_margin_block_start,
+  return ParseBoxPairProperties(VARIANT_AUTO | VARIANT_INHERIT,
+                                VARIANT_AUTO | VARIANT_LPCALC,
+                                eCSSProperty_margin_block_start,
                                 eCSSProperty_margin_block_end);
 }
 
 bool
 CSSParserImpl::ParseMarginInline()
 {
-  return ParseBoxPairProperties(eCSSProperty_margin_inline_start,
+  return ParseBoxPairProperties(VARIANT_AUTO | VARIANT_INHERIT,
+                                VARIANT_AUTO | VARIANT_LPCALC,
+                                eCSSProperty_margin_inline_start,
                                 eCSSProperty_margin_inline_end);
 }
 
@@ -15626,14 +15638,18 @@ CSSParserImpl::ParsePadding()
 bool
 CSSParserImpl::ParsePaddingBlock()
 {
-  return ParseBoxPairProperties(eCSSProperty_padding_block_start,
+  return ParseBoxPairProperties(VARIANT_AUTO | VARIANT_INHERIT,
+                                VARIANT_AUTO | VARIANT_LPCALC,
+                                eCSSProperty_padding_block_start,
                                 eCSSProperty_padding_block_end);
 }
 
 bool
 CSSParserImpl::ParsePaddingInline()
 {
-  return ParseBoxPairProperties(eCSSProperty_padding_inline_start,
+  return ParseBoxPairProperties(VARIANT_AUTO | VARIANT_INHERIT,
+                                VARIANT_AUTO | VARIANT_LPCALC,
+                                eCSSProperty_padding_inline_start,
                                 eCSSProperty_padding_inline_end);
 }
 
