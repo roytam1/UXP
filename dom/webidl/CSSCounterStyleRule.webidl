@@ -1,13 +1,14 @@
 /* -*- Mode: IDL; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * The origin of this IDL file is
+ * https://drafts.csswg.org/css-counter-styles-3/#the-csscounterstylerule-interface
+ */
 
-#include "nsISupports.idl"
-
-[scriptable, uuid(9b5e48ce-d84c-4e31-aff5-34e9f4141313)]
-interface nsIDOMCSSCounterStyleRule : nsISupports
-{
+// https://drafts.csswg.org/css-counter-styles-3/#the-csscounterstylerule-interface
+interface CSSCounterStyleRule : CSSRule {
   attribute DOMString name;
   attribute DOMString system;
   attribute DOMString symbols;

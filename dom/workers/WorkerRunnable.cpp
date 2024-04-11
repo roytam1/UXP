@@ -231,8 +231,13 @@ WorkerRunnable::Run()
 {
   bool targetIsWorkerThread = mBehavior == WorkerThreadModifyBusyCount ||
                               mBehavior == WorkerThreadUnchangedBusyCount;
+  bool alreadyCanceled = IsCanceled() && !mCallingCancelWithinRun;
+  bool shouldCancelWorker = targetIsWorkerThread &&
+                            mWorkerPrivate->AllPendingRunnablesShouldBeCanceled() &&
+                            !IsCanceled() && !mCallingCancelWithinRun;
+  bool runnableWillRun = !alreadyCanceled && !shouldCancelWorker;
 
-  if (targetIsWorkerThread) {
+  if (targetIsWorkerThread && runnableWillRun) {
     // On a worker thread, a WorkerRunnable should only run when there is an
     // underlying WorkerThreadPrimaryRunnable active, which means we should
     // find a CycleCollectedJSContext.
@@ -256,14 +261,11 @@ WorkerRunnable::Run()
   }
 #endif
 
-  if (IsCanceled() && !mCallingCancelWithinRun) {
+  if (alreadyCanceled) {
     return NS_OK;
   }
 
-  if (targetIsWorkerThread &&
-      mWorkerPrivate->AllPendingRunnablesShouldBeCanceled() &&
-      !IsCanceled() && !mCallingCancelWithinRun) {
-
+  if (shouldCancelWorker) {
     // Prevent recursion.
     mCallingCancelWithinRun = true;
 

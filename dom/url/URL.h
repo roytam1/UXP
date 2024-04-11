@@ -55,6 +55,14 @@ public:
   Constructor(const GlobalObject& aGlobal, const nsAString& aURL,
               const Optional<nsAString>& aBase, ErrorResult& aRv);
 
+  // Helper for window.URL constructor
+  static already_AddRefed<URL>
+  WebkitURL(const GlobalObject& aGlobal, const nsAString& aURL,
+            const Optional<nsAString>& aBase, ErrorResult& aRv)
+  {
+    return Constructor(aGlobal, aURL, aBase, aRv);
+  }
+
   // Helper for Fetch API
   static already_AddRefed<URL>
   WorkerConstructor(const GlobalObject& aGlobal, const nsAString& aURL,

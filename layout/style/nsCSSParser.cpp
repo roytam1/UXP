@@ -1084,12 +1084,16 @@ protected:
   bool ParseListStyle();
   bool ParseListStyleType(nsCSSValue& aValue);
   bool ParseMargin();
+  bool ParseMarginBlock();
+  bool ParseMarginInline();
   bool ParseClipPath(nsCSSValue& aValue);
   bool ParseTransform(bool aIsPrefixed, bool aDisallowRelativeValues = false);
   bool ParseObjectPosition();
   bool ParseOutline();
   bool ParseOverflow();
   bool ParsePadding();
+  bool ParsePaddingBlock();
+  bool ParsePaddingInline();
   bool ParseQuotes();
   bool ParseTextAlign(nsCSSValue& aValue,
                       const KTableEntry aTable[]);
@@ -1188,6 +1192,10 @@ protected:
   // Reused utility parsing routines
   void AppendValue(nsCSSPropertyID aPropID, const nsCSSValue& aValue);
   bool ParseBoxProperties(const nsCSSPropertyID aPropIDs[]);
+  bool ParseBoxPairProperties(int32_t aSingleVariantMask,
+                              int32_t aPairVariantMask,
+                              nsCSSPropertyID aStart,
+                              nsCSSPropertyID aEnd);
   bool ParseGroupedBoxProperty(int32_t aVariantMask,
                                nsCSSValue& aValue,
                                uint32_t aRestrictions);
@@ -10107,25 +10115,10 @@ CSSParserImpl::ParseGridArea()
 bool
 CSSParserImpl::ParseGap()
 {
-  nsCSSValue first;
-  if (ParseSingleTokenVariant(first, VARIANT_INHERIT, nullptr)) {
-    AppendValue(eCSSProperty_row_gap, first);
-    AppendValue(eCSSProperty_column_gap, first);
-    return true;
-  }
-  if (ParseNonNegativeVariant(first, VARIANT_LPCALC, nullptr) !=
-        CSSParseResult::Ok) {
-    return false;
-  }
-  nsCSSValue second;
-  auto result = ParseNonNegativeVariant(second, VARIANT_LPCALC, nullptr);
-  if (result == CSSParseResult::Error) {
-    return false;
-  }
-  AppendValue(eCSSProperty_row_gap, first);
-  AppendValue(eCSSProperty_column_gap,
-              result == CSSParseResult::NotFound ? first : second);
-  return true;
+  return ParseBoxPairProperties(VARIANT_INHERIT,
+                                VARIANT_LPCALC,
+                                eCSSProperty_row_gap,
+                                eCSSProperty_column_gap);
 }
 
 // normal | [<number> <integer>?]
@@ -11448,6 +11441,33 @@ CSSParserImpl::ParseBoxProperties(const nsCSSPropertyID aPropIDs[])
   return true;
 }
 
+bool
+CSSParserImpl::ParseBoxPairProperties(int32_t aSingleVariantMask,
+                                      int32_t aPairVariantMask,
+                                      nsCSSPropertyID aStart,
+                                      nsCSSPropertyID aEnd)
+{
+  nsCSSValue first;
+  if (ParseSingleTokenVariant(first, aSingleVariantMask, nullptr)) {
+    AppendValue(aStart, first);
+    AppendValue(aEnd, first);
+    return true;
+  }
+  if (ParseNonNegativeVariant(first, aPairVariantMask, nullptr) !=
+        CSSParseResult::Ok) {
+    return false;
+  }
+  nsCSSValue second;
+  auto result = ParseNonNegativeVariant(second, aPairVariantMask, nullptr);
+  if (result == CSSParseResult::Error) {
+    return false;
+  }
+  AppendValue(aStart, first);
+  AppendValue(aEnd,
+              result == CSSParseResult::NotFound ? first : second);
+  return true;
+}
+
 // Similar to ParseBoxProperties, except there is only one property
 // with the result as its value, not four.
 bool
@@ -12045,6 +12065,10 @@ CSSParserImpl::ParsePropertyByFunction(nsCSSPropertyID aPropID)
     return ParseListStyle();
   case eCSSProperty_margin:
     return ParseMargin();
+  case eCSSProperty_margin_block:
+    return ParseMarginBlock();
+  case eCSSProperty_margin_inline:
+    return ParseMarginInline();
   case eCSSProperty_object_position:
     return ParseObjectPosition();
   case eCSSProperty_outline:
@@ -12053,6 +12077,10 @@ CSSParserImpl::ParsePropertyByFunction(nsCSSPropertyID aPropID)
     return ParseOverflow();
   case eCSSProperty_padding:
     return ParsePadding();
+  case eCSSProperty_padding_block:
+    return ParsePaddingBlock();
+  case eCSSProperty_padding_inline:
+    return ParsePaddingInline();
   case eCSSProperty_quotes:
     return ParseQuotes();
   case eCSSProperty_text_decoration:
@@ -15504,6 +15532,24 @@ CSSParserImpl::ParseMargin()
 }
 
 bool
+CSSParserImpl::ParseMarginBlock()
+{
+  return ParseBoxPairProperties(VARIANT_AUTO | VARIANT_INHERIT,
+                                VARIANT_AUTO | VARIANT_LPCALC,
+                                eCSSProperty_margin_block_start,
+                                eCSSProperty_margin_block_end);
+}
+
+bool
+CSSParserImpl::ParseMarginInline()
+{
+  return ParseBoxPairProperties(VARIANT_AUTO | VARIANT_INHERIT,
+                                VARIANT_AUTO | VARIANT_LPCALC,
+                                eCSSProperty_margin_inline_start,
+                                eCSSProperty_margin_inline_end);
+}
+
+bool
 CSSParserImpl::ParseObjectPosition()
 {
   nsCSSValue value;
@@ -15587,6 +15633,24 @@ CSSParserImpl::ParsePadding()
   };
 
   return ParseBoxProperties(kPaddingSideIDs);
+}
+
+bool
+CSSParserImpl::ParsePaddingBlock()
+{
+  return ParseBoxPairProperties(VARIANT_AUTO | VARIANT_INHERIT,
+                                VARIANT_AUTO | VARIANT_LPCALC,
+                                eCSSProperty_padding_block_start,
+                                eCSSProperty_padding_block_end);
+}
+
+bool
+CSSParserImpl::ParsePaddingInline()
+{
+  return ParseBoxPairProperties(VARIANT_AUTO | VARIANT_INHERIT,
+                                VARIANT_AUTO | VARIANT_LPCALC,
+                                eCSSProperty_padding_inline_start,
+                                eCSSProperty_padding_inline_end);
 }
 
 bool
