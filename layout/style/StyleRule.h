@@ -13,12 +13,14 @@
 
 #include "mozilla/Attributes.h"
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/css/Rule.h"
+#include "mozilla/UniquePtr.h"
+#include "mozilla/BindingStyleRule.h"
 
 #include "nsString.h"
 #include "nsCOMPtr.h"
 #include "nsCSSPseudoElements.h"
 #include "nsIStyleRule.h"
+#include "nsICSSStyleRuleDOMWrapper.h"
 
 class nsIAtom;
 struct nsCSSSelectorList;
@@ -316,13 +318,15 @@ private:
 { 0x464bab7a, 0x2fce, 0x4f30, \
   { 0xab, 0x44, 0xb7, 0xa5, 0xf3, 0xaa, 0xe5, 0x7d } }
 
+class DOMCSSDeclarationImpl;
+
 namespace mozilla {
 namespace css {
 
 class Declaration;
-class DOMCSSStyleRule;
 
-class StyleRule final : public Rule
+class StyleRule final : public BindingStyleRule
+                      , public nsICSSStyleRuleDOMWrapper
 {
  public:
   StyleRule(nsCSSSelectorList* aSelector,
@@ -334,7 +338,19 @@ private:
 public:
   NS_DECLARE_STATIC_IID_ACCESSOR(NS_CSS_STYLE_RULE_IMPL_CID)
 
-  NS_DECL_ISUPPORTS
+  NS_DECL_ISUPPORTS_INHERITED
+  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS_INHERITED(StyleRule, Rule)
+  virtual bool IsCCLeaf() const override;
+
+  NS_DECL_NSIDOMCSSSTYLERULE
+
+  // nsICSSStyleRuleDOMWrapper
+  NS_IMETHOD GetCSSStyleRule(StyleRule **aResult) override;
+
+  // WebIDL interface
+  uint16_t Type() const override;
+  void GetCssTextImpl(nsAString& aCssText) const override;
+  virtual nsICSSDeclaration* Style() override;
 
   // null for style attribute
   nsCSSSelectorList* Selector() { return mSelector; }
@@ -343,19 +359,10 @@ public:
 
   void SetDeclaration(Declaration* aDecl);
 
-  // hooks for DOM rule
-  void GetCssText(nsAString& aCssText);
-  void SetCssText(const nsAString& aCssText);
-  void GetSelectorText(nsAString& aSelectorText);
-  void SetSelectorText(const nsAString& aSelectorText);
-
   virtual int32_t GetType() const override;
+  using Rule::GetType;
 
   virtual already_AddRefed<Rule> Clone() const override;
-
-  virtual nsIDOMCSSRule* GetDOMRule() override;
-
-  virtual nsIDOMCSSRule* GetExistingDOMRule() override;
 
 #ifdef DEBUG
   virtual void List(FILE* out = stdout, int32_t aIndent = 0) const override;
@@ -366,10 +373,16 @@ public:
 private:
   ~StyleRule();
 
+  // Drop our references to mDeclaration and mRule, and let them know we're
+  // doing that.
+  void DropReferences();
+
 private:
   nsCSSSelectorList*      mSelector; // null for style attribute
   RefPtr<Declaration>     mDeclaration;
-  RefPtr<DOMCSSStyleRule> mDOMRule;
+
+  // We own it, and it aggregates its refcount with us.
+  UniquePtr<DOMCSSDeclarationImpl> mDOMDeclaration;
 
 private:
   StyleRule& operator=(const StyleRule& aCopy) = delete;

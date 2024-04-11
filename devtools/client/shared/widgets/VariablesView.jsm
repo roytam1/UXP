@@ -908,6 +908,10 @@ VariablesView.prototype = {
       // Copy current selection to clipboard.
       if (e.ctrlKey || e.metaKey) {
         let item = this.getFocusedItem();
+        if (!item) {
+          // No item is selected; do nothing.
+          return;
+        }
         clipboardHelper.copyString(
           item._nameString + item.separatorStr + item._valueString
         );

@@ -19,6 +19,7 @@ class TabChildGlobal;
 class ProcessGlobal;
 } // namespace dom
 } // namespace mozilla
+
 class SandboxPrivate;
 class nsInProcessTabChildGlobal;
 class nsWindowRoot;
@@ -144,7 +145,7 @@ public:
     }
   }
 
-  bool PreservingWrapper()
+  bool PreservingWrapper() const
   {
     return HasWrapperFlag(WRAPPER_BIT_PRESERVED);
   }
@@ -163,7 +164,7 @@ public:
   /**
    * Returns true if the object has a non-gray wrapper.
    */
-  bool IsBlack();
+  bool IsBlack() const; 
 
   /**
    * Returns true if the object has a black wrapper,
@@ -271,11 +272,15 @@ protected:
   }
 
 private:
+  // Friend declarations for things that need to be able to call
+  // SetIsNotDOMBinding().  The goal is to get rid of all of these, and
+  // SetIsNotDOMBinding() too.
   friend class mozilla::dom::TabChildGlobal;
   friend class mozilla::dom::ProcessGlobal;
   friend class SandboxPrivate;
   friend class nsInProcessTabChildGlobal;
   friend class nsWindowRoot;
+
   void SetIsNotDOMBinding()
   {
     MOZ_ASSERT(!mWrapper && !(GetWrapperFlags() & ~WRAPPER_IS_NOT_DOM_BINDING),
