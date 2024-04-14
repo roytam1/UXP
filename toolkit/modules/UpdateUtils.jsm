@@ -81,7 +81,10 @@ this.UpdateUtils = {
       [/%PLATFORM_VERSION%/g,       Services.appinfo.platformVersion],
       [/%DISTRIBUTION%/g,           distribution],
       [/%DISTRIBUTION_VERSION%/g,   distributionVersion],
-      [/%LOCALE%/g,                 this.Locale]     
+      [/%LOCALE%/g,                 this.Locale],
+      [/%CPU_SSE2%/g,               navigator.cpuHasSSE2],
+      [/%CPU_AVX%/g,                navigator.cpuHasAVX],
+      [/%CPU_AVX2%/g,               navigator.cpuHasAVX2]
     ];
 
     substs.forEach(([_subst, _value]) => aUpdateURL = aUpdateURL.replace(_subst, _value));
