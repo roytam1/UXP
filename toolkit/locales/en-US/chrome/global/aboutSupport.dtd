@@ -47,6 +47,7 @@ Windows/Mac use the term "Folder" instead of "Directory" -->
 <!ENTITY aboutSupport.appBasicsBuildConfig "Build Configuration">
 <!ENTITY aboutSupport.appBasicsUserAgent "User Agent">
 <!ENTITY aboutSupport.appBasicsOS "OS">
+<!ENTITY aboutSupport.appBasicsCPUCaps "CPU Capabilities">
 <!ENTITY aboutSupport.appBasicsMemoryUse "Memory Use">
 <!ENTITY aboutSupport.appBasicsPerformance "Performance">
 
