@@ -211,6 +211,10 @@ partial interface Navigator {
    */
   [ChromeOnly]
   readonly attribute boolean cpuHasSSE2;
+  [ChromeOnly]
+  readonly attribute boolean cpuHasAVX;
+  [ChromeOnly]
+  readonly attribute boolean cpuHasAVX2;
 };
 
 // nsIDOMNavigatorDesktopNotification
