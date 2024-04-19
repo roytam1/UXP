@@ -246,7 +246,11 @@ DoesTextureSharingWorkInternal(ID3D11Device *device, DXGI_FORMAT format, UINT bi
   }
 
   RefPtr<IDXGIKeyedMutex> sourceSharedMutex;
-  texture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)getter_AddRefs(sourceSharedMutex));
+  HRESULT hr = texture->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)getter_AddRefs(sourceSharedMutex));
+  if (FAILED(hr) || !sourceSharedMutex) {
+    gfxCriticalNote << "Failed to acquire IDXGIKeyedMutex; texture sharing disabled.";
+    return false;
+  }
   if (FAILED(sourceSharedMutex->AcquireSync(0, 30*1000))) {
     gfxCriticalError() << "DoesD3D11TextureSharingWork_SourceMutexTimeout";
     // only wait for 30 seconds
@@ -306,9 +310,12 @@ DoesTextureSharingWorkInternal(ID3D11Device *device, DXGI_FORMAT format, UINT bi
   }
 
   RefPtr<IDXGIKeyedMutex> sharedMutex;
-  sharedResource->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)getter_AddRefs(sharedMutex));
-  {
-    HRESULT hr;
+  hr = sharedResource->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)getter_AddRefs(sharedMutex));
+  if (FAILED(hr) || !sharedMutex) {
+    gfxCriticalNote << "Failed to acquire IDXGIKeyedMutex; texture sharing disabled.";
+    return false;
+  }
+  { // Scope for mutex lock.
     AutoTextureLock lock(sharedMutex, hr, 30*1000);
     if (FAILED(hr)) {
       gfxCriticalError() << "DoesD3D11TextureSharingWork_AcquireSyncTimeout";

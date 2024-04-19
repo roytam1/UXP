@@ -678,6 +678,18 @@ Navigator::CpuHasSSE2()
   return mozilla::supports_sse2();
 }
 
+bool
+Navigator::CpuHasAVX()
+{
+  return mozilla::supports_avx();
+}
+
+bool
+Navigator::CpuHasAVX2()
+{
+  return mozilla::supports_avx2();
+}
+
 void
 Navigator::RefreshMIMEArray()
 {
