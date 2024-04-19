@@ -1049,31 +1049,31 @@ MarkThisAndArguments(JSTracer* trc, const JitFrameIterator& frame)
     if (!CalleeTokenIsFunction(layout->calleeToken()))
         return;
 
-    size_t nargs = layout->numActualArgs();
-    size_t nformals = 0;
-
     JSFunction* fun = CalleeTokenToFunction(layout->calleeToken());
-    if (!frame.isExitFrameLayout<LazyLinkExitFrameLayout>() &&
-        !fun->nonLazyScript()->mayReadFrameArgsDirectly())
-    {
-        nformals = fun->nargs();
-    }
+    size_t numFormals = fun->nargs();
+    size_t numArgs = Max(layout->numActualArgs(), numFormals);
+    size_t firstArg = 0;
 
-    size_t newTargetOffset = Max(nargs, fun->nargs());
+    if (!frame.isExitFrameLayout<LazyLinkExitFrameLayout>() &&
+        !fun->nonLazyScript()->mayReadFrameArgsDirectly()) {
+        firstArg = numFormals;
+    }
 
     Value* argv = layout->argv();
 
     // Trace |this|.
     TraceRoot(trc, argv, "ion-thisv");
 
-    // Trace actual arguments beyond the formals. Note + 1 for thisv.
-    for (size_t i = nformals + 1; i < nargs + 1; i++)
-        TraceRoot(trc, &argv[i], "ion-argv");
+    // Trace arguments. Note + 1 for thisv.
+    for (size_t i = firstArg; i < numArgs; i++) {
+        TraceRoot(trc, &argv[i + 1], "ion-argv");
+    }
 
     // Always mark the new.target from the frame. It's not in the snapshots.
     // +1 to pass |this|
-    if (CalleeTokenIsConstructing(layout->calleeToken()))
-        TraceRoot(trc, &argv[1 + newTargetOffset], "ion-newTarget");
+    if (CalleeTokenIsConstructing(layout->calleeToken())) {
+        TraceRoot(trc, &argv[1 + numArgs], "ion-newTarget");
+    }
 }
 
 #ifdef JS_NUNBOX32

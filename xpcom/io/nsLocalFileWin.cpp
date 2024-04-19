@@ -3095,7 +3095,8 @@ nsLocalFile::IsExecutable(bool* aResult)
       "wsc",
       "wsf",
       "wsh",
-      "xll"          // MS Excel dynamic link library
+      "xll",         // MS Excel dynamic link library
+      "xrm-ms"
     };
     nsDependentSubstring ext = Substring(path, dotIdx + 1);
     for (size_t i = 0; i < ArrayLength(executableExts); ++i) {
