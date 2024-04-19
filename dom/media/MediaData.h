@@ -106,8 +106,16 @@ public:
 
   AlignedBuffer& operator=(AlignedBuffer&& aOther)
   {
-    this->~AlignedBuffer();
-    new (this) AlignedBuffer(Move(aOther));
+    if (&aOther == this) {
+      return *this;
+    }
+    mData = aOther.mData;
+    mLength = aOther.mLength;
+    mBuffer = Move(aOther.mBuffer);
+    mCapacity = aOther.mCapacity;
+    aOther.mData = nullptr;
+    aOther.mLength = 0;
+    aOther.mCapacity = 0;
     return *this;
   }
 
