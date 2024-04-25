@@ -1,5 +1,7 @@
-commit 51ebdd3f0f5a774050e3ebc745b5fbea2f87f26b
-Author: yumaoka <y.umaoka@gmail.com>
-Date:   Tue Nov 1 10:29:13 2022 -0400
+commit d1fb41be7efac9b692b1a7c1c43b23a244de309d
+Author: Steven R. Loomis <srl295@gmail.com>
+Date:   Tue Feb 27 12:32:46 2024 -0600
 
-    ICU-22196 TZ Database 2022f updates (icu-data)
+    ICU-22677 chore: update README.md / LICENSE (#40)
+    
+    - https://github.com/unicode-org/.github/issues/15
