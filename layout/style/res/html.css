@@ -811,19 +811,29 @@ dialog {
   position: absolute;
   inset-inline-start: 0;
   inset-inline-end: 0;
-  color: black;
   margin: auto;
   border-width: initial;
   border-style: solid;
-  border-color: initial;
+  border-color: dimgrey;
   border-image: initial;
+  border-radius: 5px;
   padding: 1em;
-  background: white;
+  color: #222; /*CanvasText*/
+  background: snow; /*Canvas*/
   width: -moz-fit-content;
 }
 
 dialog:not([open]) {
   display: none;
+}
+
+dialog:-moz-modal-dialog {
+  -moz-top-layer: top !important;
+}
+
+/* https://html.spec.whatwg.org/#flow-content-3 */
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 /* emulation of non-standard HTML <marquee> tag */

@@ -190,6 +190,12 @@ CSS_STATE_PSEUDO_CLASS(fullscreen, ":fullscreen",
                        NS_EVENT_STATE_FULL_SCREEN)
 CSS_STATE_PSEUDO_CLASS(mozFullScreen, ":-moz-full-screen", 0, "", NS_EVENT_STATE_FULL_SCREEN)
 
+// Matches if a <dialog> element is modal
+CSS_STATE_PSEUDO_CLASS(mozModalDialog, ":-moz-modal-dialog",
+                       CSS_PSEUDO_CLASS_ENABLED_IN_UA_SHEETS,
+                       "",
+                       NS_EVENT_STATE_MODAL_DIALOG)
+
 // Matches if the element is focused and should show a focus ring
 CSS_STATE_PSEUDO_CLASS(mozFocusRing, ":-moz-focusring", 0, "", NS_EVENT_STATE_FOCUSRING)
 
