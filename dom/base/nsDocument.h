@@ -904,11 +904,11 @@ public:
   void CleanupFullscreenState();
 
   // Pushes aElement onto the top layer
-  bool TopLayerPush(Element* aElement);
+  bool TopLayerPush(Element* aElement) override;
 
   // Removes the topmost element which have aPredicate return true from the top
   // layer. The removed element, if any, is returned.
-  Element* TopLayerPop(FunctionRef<bool(Element*)> aPredicateFunc);
+  Element* TopLayerPop(FunctionRef<bool(Element*)> aPredicateFunc) override;
 
   // Pops the fullscreen element from the top layer and clears its
   // fullscreen flag.
