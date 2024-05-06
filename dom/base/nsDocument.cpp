@@ -159,6 +159,7 @@
 #include "nsEscape.h"
 #include "nsObjectLoadingContent.h"
 #include "nsHtml5TreeOpExecutor.h"
+#include "mozilla/dom/HTMLDialogElement.h"
 #include "mozilla/dom/HTMLLinkElement.h"
 #include "mozilla/dom/HTMLMediaElement.h"
 #include "mozilla/dom/HTMLIFrameElement.h"
@@ -10136,6 +10137,18 @@ nsDocument::MozCancelFullScreen()
 {
   nsIDocument::ExitFullscreen();
   return NS_OK;
+}
+
+void nsDocument::TryCancelDialog() {
+  // Check if the document is blocked by modal dialog
+  for (const nsWeakPtr& weakPtr : Reversed(mTopLayer)) {
+    nsCOMPtr<Element> element(do_QueryReferent(weakPtr));
+    if (HTMLDialogElement* dialog =
+            HTMLDialogElement::FromContentOrNull(element)) {
+      dialog->CancelDialog();
+      break;
+    }
+  }
 }
 
 void

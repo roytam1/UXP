@@ -918,6 +918,9 @@ public:
   // flag.
   bool SetFullscreenElement(Element* aElement);
 
+  // Cancel the dialog element if the document is blocked by the dialog
+  void TryCancelDialog();
+
   // Returns the top element from the full-screen stack.
   Element* GetTopLayerTop() override;
   // Return the fullscreen element in the top layer

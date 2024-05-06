@@ -111,6 +111,27 @@ HTMLDialogElement::ShowModal(ErrorResult& aError)
   aError.SuppressException();
 }
 
+void HTMLDialogElement::CancelDialog() {
+  // 1) Let close be the result of firing an event named cancel at dialog, with
+  // the cancelable attribute initialized to true.
+  bool defaultAction = true;
+  nsContentUtils::DispatchTrustedEvent(
+      OwnerDoc(),
+      static_cast<nsIContent*>(this),
+      NS_LITERAL_STRING("cancel"),
+      false, /* can bubble */
+      true, /* can cancel */
+      &defaultAction);
+
+  // 2) If close is true and dialog has an open attribute, then close the dialog
+  // with no return value.
+  if (defaultAction) {
+    Optional<nsAString> retValue;
+    Close(retValue);
+  }
+}
+
+
 JSObject*
 HTMLDialogElement::WrapNode(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
