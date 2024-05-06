@@ -179,7 +179,7 @@ GetISizeInfo(nsRenderingContext *aRenderingContext,
         if (!aIsCell || maxISize.GetIntValue() == NS_STYLE_WIDTH_AVAILABLE) {
             maxISize.SetNoneValue();
         } else if (maxISize.GetIntValue() == NS_STYLE_WIDTH_FIT_CONTENT) {
-            // for 'max-inline-size', '-moz-fit-content' is like
+            // for 'max-inline-size', 'fit-content' is like
             // 'max-content'
             maxISize.SetIntValue(NS_STYLE_WIDTH_MAX_CONTENT,
                                  eStyleUnit_Enumerated);
@@ -206,7 +206,7 @@ GetISizeInfo(nsRenderingContext *aRenderingContext,
         if (!aIsCell || minISize.GetIntValue() == NS_STYLE_WIDTH_AVAILABLE) {
             minISize.SetCoordValue(0);
         } else if (minISize.GetIntValue() == NS_STYLE_WIDTH_FIT_CONTENT) {
-            // for 'min-inline-size', '-moz-fit-content' is like
+            // for 'min-inline-size', 'fit-content' is like
             // 'min-content'
             minISize.SetIntValue(NS_STYLE_WIDTH_MIN_CONTENT,
                                  eStyleUnit_Enumerated);

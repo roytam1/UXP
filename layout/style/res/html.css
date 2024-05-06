@@ -820,7 +820,7 @@ dialog {
   padding: 1em;
   color: #222; /*CanvasText*/
   background: snow; /*Canvas*/
-  width: -moz-fit-content;
+  width: fit-content;
 }
 
 dialog:not([open]) {
