@@ -20,7 +20,14 @@
 
 #ifdef XP_MACOSX
 #include "mozilla/gfx/QuartzSupport.h"
+// Some defines will conflict with OSX SDK
+#define TextRange _TextRange
+#define TextRangeArray _TextRangeArray
+#define Comment _Comment
 #include <ApplicationServices/ApplicationServices.h>
+#undef TextRange
+#undef TextRangeArray
+#undef Comment
 #endif
 
 class nsIInputStream;
