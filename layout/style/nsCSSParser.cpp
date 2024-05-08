@@ -10931,7 +10931,7 @@ CSSParserImpl::ParseWebkitGradientRadius(float& aRadius)
 //   (either a percentage or a number between 0 and 1.0), and a color (any
 //   valid CSS color). In addition the shorthand functions from and to are
 //   supported. These functions only require a color argument and are
-//   equivalent to color-stop(0, ...) and color-stop(1.0, ?? respectively.
+//   equivalent to color-stop(0, ...) and color-stop(1.0, ...) respectively.
 bool
 CSSParserImpl::ParseWebkitGradientColorStop(nsCSSValueGradient* aGradient)
 {
