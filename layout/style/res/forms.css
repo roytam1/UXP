@@ -55,7 +55,7 @@
 fieldset > legend {
   padding-inline-start: 2px;
   padding-inline-end: 2px;
-  inline-size: -moz-fit-content;
+  inline-size: fit-content;
 }
 
 legend {

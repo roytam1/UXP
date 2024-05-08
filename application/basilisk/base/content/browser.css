@@ -20,7 +20,7 @@
 }
 
 #main-window[customize-entered] {
-  min-width: -moz-fit-content;
+  min-width: fit-content;
 }
 
 searchbar {
