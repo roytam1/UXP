@@ -34,7 +34,14 @@
 #endif
 
 #if defined(XP_MACOSX)
+// Some defines will conflict with OSX SDK
+#define TextRange _TextRange
+#define TextRangeArray _TextRangeArray
+#define Comment _Comment
 #include <ApplicationServices/ApplicationServices.h>
+#undef TextRange
+#undef TextRangeArray
+#undef Comment
 #include <OpenGL/OpenGL.h>
 #ifndef NP_NO_CARBON
 #include <Carbon/Carbon.h>

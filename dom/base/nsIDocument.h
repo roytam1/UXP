@@ -33,6 +33,7 @@
 #include "mozilla/UniquePtr.h"
 #include "mozilla/CORSMode.h"
 #include "mozilla/dom/DocumentOrShadowRoot.h"
+#include "mozilla/FunctionRef.h"
 #include "mozilla/LinkedList.h"
 #include "mozilla/StyleSheet.h"
 #include "mozilla/TimeStamp.h"
@@ -98,6 +99,8 @@ class nsViewportInfo;
 class nsIGlobalObject;
 class nsStyleSet;
 struct nsCSSSelectorList;
+
+using mozilla::FunctionRef;
 
 namespace mozilla {
 class CSSStyleSheet;
@@ -1273,9 +1276,9 @@ public:
   virtual void RemoveFromNameTable(Element* aElement, nsIAtom* aName) = 0;
 
   /**
-   * Returns all elements in the fullscreen stack in the insertion order.
+   * Returns all elements in the top layer in the insertion order.
    */
-  virtual nsTArray<Element*> GetFullscreenStack() const = 0;
+  virtual nsTArray<Element*> GetTopLayer() const = 0;
 
   /**
    * Asynchronously requests that the document make aElement the fullscreen
@@ -1331,12 +1334,26 @@ public:
    */
   virtual nsIDocument* GetFullscreenRoot() = 0;
 
+  virtual size_t CountFullscreenElements() const = 0;
+
   /**
    * Sets the fullscreen root to aRoot. This stores a weak reference to aRoot
    * in this document.
    */
   virtual void SetFullscreenRoot(nsIDocument* aRoot) = 0;
+  
+  /**
+   * Push elements to and pop elements from the top layer.
+   * Currently in use for fullscreen and modal version of <dialog>.
+   */
+  virtual bool TopLayerPush(Element* aElement) = 0;
+  virtual Element* TopLayerPop(FunctionRef<bool(Element*)> aPredicateFunc) = 0;
 
+  /**
+   * Cancel the dialog element if the document is blocked by the dialog.
+   */
+  virtual void TryCancelDialog() = 0;
+  
   /**
    * Synchronously cleans up the fullscreen state on the given document.
    *
@@ -2607,7 +2624,8 @@ public:
   nsIURI* GetDocumentURIObject() const;
   // Not const because all the full-screen goop is not const
   virtual bool FullscreenEnabled() = 0;
-  virtual Element* FullScreenStackTop() = 0;
+  virtual Element* GetTopLayerTop() = 0;
+  virtual Element* GetUnretargetedFullScreenElement() = 0;
   bool Fullscreen()
   {
     return !!GetFullscreenElement();

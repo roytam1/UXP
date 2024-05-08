@@ -2260,7 +2260,7 @@ const KTableEntry nsCSSProps::kWhitespaceKTable[] = {
 const KTableEntry nsCSSProps::kWidthKTable[] = {
   { eCSSKeyword_max_content, NS_STYLE_WIDTH_MAX_CONTENT },
   { eCSSKeyword_min_content, NS_STYLE_WIDTH_MIN_CONTENT },
-  { eCSSKeyword__moz_fit_content, NS_STYLE_WIDTH_FIT_CONTENT },
+  { eCSSKeyword_fit_content, NS_STYLE_WIDTH_FIT_CONTENT },
   { eCSSKeyword__moz_available, NS_STYLE_WIDTH_AVAILABLE },
   { eCSSKeyword_UNKNOWN, -1 }
 };
@@ -2269,7 +2269,7 @@ const KTableEntry nsCSSProps::kWidthKTable[] = {
 const KTableEntry nsCSSProps::kFlexBasisKTable[] = {
   { eCSSKeyword_max_content, NS_STYLE_WIDTH_MAX_CONTENT },
   { eCSSKeyword_min_content, NS_STYLE_WIDTH_MIN_CONTENT },
-  { eCSSKeyword__moz_fit_content, NS_STYLE_WIDTH_FIT_CONTENT },
+  { eCSSKeyword_fit_content, NS_STYLE_WIDTH_FIT_CONTENT },
   { eCSSKeyword__moz_available, NS_STYLE_WIDTH_AVAILABLE },
   { eCSSKeyword_content, NS_STYLE_FLEX_BASIS_CONTENT },
   { eCSSKeyword_UNKNOWN, -1 }

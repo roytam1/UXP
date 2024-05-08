@@ -4726,8 +4726,8 @@ GetDefiniteSizeTakenByBoxSizing(StyleBoxSizing aBoxSizing,
 }
 
 // Handles only max-content and min-content, and
-// -moz-fit-content for min-width and max-width, since the others
-// (-moz-fit-content for width, and -moz-available) have no effect on
+// fit-content for min-width and max-width, since the others
+// (fit-content for width, and -moz-available) have no effect on
 // intrinsic widths.
 enum eWidthProperty { PROP_WIDTH, PROP_MAX_WIDTH, PROP_MIN_WIDTH };
 static bool
@@ -5038,7 +5038,7 @@ nsLayoutUtils::IntrinsicForAxis(PhysicalAxis              aAxis,
   if (styleISize.GetUnit() == eStyleUnit_Enumerated &&
       (styleISize.GetIntValue() == NS_STYLE_WIDTH_MAX_CONTENT ||
        styleISize.GetIntValue() == NS_STYLE_WIDTH_MIN_CONTENT)) {
-    // -moz-fit-content and -moz-available enumerated widths compute intrinsic
+    // fit-content and -moz-available enumerated widths compute intrinsic
     // widths just like auto.
     // For max-content and min-content, we handle them like
     // specified widths, but ignore box-sizing.
@@ -5054,7 +5054,7 @@ nsLayoutUtils::IntrinsicForAxis(PhysicalAxis              aAxis,
     ++gNoiseIndent;
 #endif
     if (aType != MIN_ISIZE) {
-      // At this point, |styleISize| is auto/-moz-fit-content/-moz-available or
+      // At this point, |styleISize| is auto/fit-content/-moz-available or
       // has a percentage.  The intrinisic size for those under a max-content
       // constraint is the max-content contribution which we shouldn't clamp.
       aMarginBoxMinSizeClamp = NS_MAXSIZE;
