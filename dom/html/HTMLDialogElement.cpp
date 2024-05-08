@@ -56,6 +56,9 @@ HTMLDialogElement::Close(const mozilla::dom::Optional<nsAString>& aReturnValue)
   ErrorResult ignored;
   SetOpen(false, ignored);
   ignored.SuppressException();
+  
+  RemoveFromTopLayerIfNeeded();
+  
   RefPtr<AsyncEventDispatcher> eventDispatcher =
     new AsyncEventDispatcher(this, NS_LITERAL_STRING("close"), false);
   eventDispatcher->PostDOMEvent();
@@ -72,6 +75,26 @@ HTMLDialogElement::Show()
   ignored.SuppressException();
 }
 
+bool HTMLDialogElement::IsInTopLayer() const {
+  return State().HasState(NS_EVENT_STATE_MODAL_DIALOG);
+}
+
+void HTMLDialogElement::RemoveFromTopLayerIfNeeded() {
+  if (!IsInTopLayer()) {
+    return;
+  }
+  auto predictFunc = [&](Element* element) { return element == this; };
+
+  DebugOnly<Element*> removedElement = OwnerDoc()->TopLayerPop(predictFunc);
+  MOZ_ASSERT(removedElement == this);
+  RemoveStates(NS_EVENT_STATE_MODAL_DIALOG);
+}
+
+void HTMLDialogElement::UnbindFromTree(bool aNullParent) {
+  RemoveFromTopLayerIfNeeded();
+  nsGenericHTMLElement::UnbindFromTree(aNullParent);
+}
+
 void
 HTMLDialogElement::ShowModal(ErrorResult& aError)
 {
@@ -79,10 +102,35 @@ HTMLDialogElement::ShowModal(ErrorResult& aError)
    aError.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
    return;
   }
+  
+  if (!IsInTopLayer() && OwnerDoc()->TopLayerPush(this)) {
+    AddStates(NS_EVENT_STATE_MODAL_DIALOG);
+  }
 
   SetOpen(true, aError);
   aError.SuppressException();
 }
+
+void HTMLDialogElement::CancelDialog() {
+  // 1) Let close be the result of firing an event named cancel at dialog, with
+  // the cancelable attribute initialized to true.
+  bool defaultAction = true;
+  nsContentUtils::DispatchTrustedEvent(
+      OwnerDoc(),
+      static_cast<nsIContent*>(this),
+      NS_LITERAL_STRING("cancel"),
+      false, /* can bubble */
+      true, /* can cancel */
+      &defaultAction);
+
+  // 2) If close is true and dialog has an open attribute, then close the dialog
+  // with no return value.
+  if (defaultAction) {
+    Optional<nsAString> retValue;
+    Close(retValue);
+  }
+}
+
 
 JSObject*
 HTMLDialogElement::WrapNode(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
