@@ -1086,14 +1086,14 @@ var gApplicationsPane = {
           handlerInfoWrapper = new HandlerInfoWrapper(mimeType.type, wrappedHandlerInfo);
           handlerInfoWrapper.handledOnlyByPlugin = true;
           this._handledTypes[mimeType.type] = handlerInfoWrapper;
-          #ifdef DEBUG
+#ifdef DEBUG
           console.log("Enumerate MIME type: " + mimeType.type);
-          #endif
+#endif
         } catch(e) {
-          #ifdef DEBUG
+#ifdef DEBUG
           console.log("Error fetching MIME type info for " + mimeType.type);
           console.log(e);
-          #endif
+#endif
           continue;
         }
       }
