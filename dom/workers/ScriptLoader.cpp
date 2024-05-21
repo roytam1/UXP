@@ -2243,9 +2243,10 @@ void ReportLoadError(ErrorResult& aRv, nsresult aLoadResult,
   MOZ_ASSERT(!aRv.Failed());
 
   switch (aLoadResult) {
-    case NS_ERROR_FILE_NOT_FOUND:
-    case NS_ERROR_NOT_AVAILABLE:
-      aLoadResult = NS_ERROR_DOM_NETWORK_ERR;
+    case NS_ERROR_DOM_SECURITY_ERR:
+    case NS_ERROR_DOM_SYNTAX_ERR:
+    case NS_ERROR_DOM_NETWORK_ERR:
+      // These are OK, pass them through immediately.
       break;
 
     case NS_ERROR_MALFORMED_URI:
@@ -2261,10 +2262,6 @@ void ReportLoadError(ErrorResult& aRv, nsresult aLoadResult,
       // for this case, because that will make it impossible for consumers to
       // realize that our error was NS_BINDING_ABORTED.
       aRv.Throw(aLoadResult);
-      return;
-
-    case NS_ERROR_DOM_SECURITY_ERR:
-    case NS_ERROR_DOM_SYNTAX_ERR:
       break;
 
     case NS_ERROR_DOM_BAD_URI:
@@ -2272,19 +2269,15 @@ void ReportLoadError(ErrorResult& aRv, nsresult aLoadResult,
       aLoadResult = NS_ERROR_DOM_SECURITY_ERR;
       break;
 
+    case NS_ERROR_FILE_NOT_FOUND:
+    case NS_ERROR_NOT_AVAILABLE:
     case NS_ERROR_CORRUPTED_CONTENT:
+    // For lack of anything better, go ahead and throw a NetworkError here.
+    // We don't want to throw a JS exception, because for toplevel script
+    // loads that would get squelched.
+    default:
       aLoadResult = NS_ERROR_DOM_NETWORK_ERR;
       break;
-
-    default:
-      // For lack of anything better, go ahead and throw a NetworkError here.
-      // We don't want to throw a JS exception, because for toplevel script
-      // loads that would get squelched.
-      aRv.ThrowDOMException(NS_ERROR_DOM_NETWORK_ERR,
-        nsPrintfCString("Failed to load worker script at %s (nsresult = 0x%x)",
-                        NS_ConvertUTF16toUTF8(aScriptURL).get(),
-                        aLoadResult));
-      return;
   }
 
   aRv.ThrowDOMException(aLoadResult,
