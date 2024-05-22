@@ -7,6 +7,7 @@
 // HttpLog.h should generally be included first
 #include "HttpLog.h"
 
+#include "mozilla/Preferences.h"
 #include "mozilla/Sprintf.h"
 
 #include "nsHttp.h"
@@ -20,6 +21,7 @@
 #include "nsCRT.h"
 #include "nsICryptoHash.h"
 #include "nsComponentManagerUtils.h"
+#include "pk11pub.h"
 
 namespace mozilla {
 namespace net {
@@ -302,9 +304,16 @@ nsHttpDigestAuth::GenerateCredentials(nsIHttpAuthenticableChannel *authChannel,
   // returned Authentication-Info header). also used for session info.
   //
   nsAutoCString cnonce;
-  static const char hexChar[] = "0123456789abcdef";
-  for (int i=0; i<16; ++i) {
-    cnonce.Append(hexChar[(int)(15.0 * rand()/(RAND_MAX + 1.0))]);
+  nsTArray<uint8_t> cnonceBuf;
+  int cnonceLength = Preferences::GetInt("network.http.digest_auth_cnonce_length", 16);
+  if (cnonceLength < 4 || cnonceLength > 256) {
+    cnonceLength = 16;
+  }
+  cnonceBuf.SetLength(cnonceLength / 2);
+  PK11_GenerateRandom(reinterpret_cast<unsigned char*>(cnonceBuf.Elements()),
+                      cnonceBuf.Length());
+  for (auto byte : cnonceBuf) {
+    cnonce.AppendPrintf("%02x", byte);
   }
   LOG(("   cnonce=%s\n", cnonce.get()));
 
