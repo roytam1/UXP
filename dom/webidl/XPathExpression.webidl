@@ -6,17 +6,20 @@
 
 interface XPathExpression {
   // The result specifies a specific result object which may be reused and
-  // returned by this method. If this is specified as null or it's not an
+  // returned by this method. If this is omitted, specified as null, or it's not an
   // XPathResult object, a new result object will be constructed and returned.
   [Throws]
-  XPathResult evaluate(Node contextNode, unsigned short type, object? result);
+  XPathResult evaluate(Node contextNode,
+                       optional unsigned short type = 0  /* XPathResult.ANY_TYPE */,
+                       optional object? result = null);
 
   // The result specifies a specific result object which may be reused and
-  // returned by this method. If this is specified as null or it's not an
+  // returned by this method. If this is omitted, specified as null, or it's not an
   // XPathResult object, a new result object will be constructed and returned.
   [Throws, ChromeOnly]
   XPathResult evaluateWithContext(Node contextNode,
                                   unsigned long contextPosition,
                                   unsigned long contextSize,
-                                  unsigned short type, object? result);
+                                  optional unsigned short type = 0  /* XPathResult.ANY_TYPE */,
+                                  optional object? result = null);
 };
