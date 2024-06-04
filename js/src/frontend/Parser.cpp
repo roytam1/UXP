@@ -2288,8 +2288,7 @@ Parser<FullParseHandler>::moduleBody(ModuleSharedContext* modulesc)
             if (!str.encodeLatin1(context, name))
                 return null();
 
-            JS_ReportErrorNumberLatin1(context->asJSContext(), GetErrorMessage, nullptr,
-                                       JSMSG_MISSING_EXPORT, str.ptr());
+            error(JSMSG_MISSING_EXPORT, str.ptr());
             return null();
         }
 
