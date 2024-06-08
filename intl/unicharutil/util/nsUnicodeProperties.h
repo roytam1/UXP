@@ -180,17 +180,14 @@ IsDefaultIgnorable(uint32_t aCh)
 inline EmojiPresentation
 GetEmojiPresentation(uint32_t aCh)
 {
-  if (u_hasBinaryProperty(aCh, UCHAR_EMOJI_COMPONENT)) {
-    return EmojiComponent;
+  if (!u_hasBinaryProperty(aCh, UCHAR_EMOJI)) {
+    return TextOnly;
   }
-  if (u_hasBinaryProperty(aCh, UCHAR_EMOJI) &&
-     !u_hasBinaryProperty(aCh, UCHAR_EMOJI_PRESENTATION)) {
-    return TextDefault;
-  }
-  if (u_hasBinaryProperty(aCh, UCHAR_EXTENDED_PICTOGRAPHIC)) {
+
+  if (u_hasBinaryProperty(aCh, UCHAR_EMOJI_PRESENTATION)) {
     return EmojiDefault;
   }
-  return TextOnly;
+  return TextDefault;
 }
 
 // returns the simplified Gen Category as defined in nsIUGenCategory
@@ -217,6 +214,12 @@ bool IsClusterExtender(uint32_t aCh, uint8_t aCategory);
 
 inline bool IsClusterExtender(uint32_t aCh) {
   return IsClusterExtender(aCh, GetGeneralCategory(aCh));
+}
+
+bool IsClusterExtenderExcludingJoiners(uint32_t aCh, uint8_t aCategory);
+
+inline bool IsClusterExtenderExcludingJoiners(uint32_t aCh) {
+  return IsClusterExtenderExcludingJoiners(aCh, GetGeneralCategory(aCh));
 }
 
 // A simple iterator for a string of char16_t codepoints that advances

@@ -152,10 +152,21 @@ IsClusterExtender(uint32_t aCh, uint8_t aCategory)
 {
     return ((aCategory >= HB_UNICODE_GENERAL_CATEGORY_SPACING_MARK &&
              aCategory <= HB_UNICODE_GENERAL_CATEGORY_NON_SPACING_MARK) ||
-            (GetEmojiPresentation(aCh) == EmojiComponent) ||
-            (aCh == 0x200c) || // ZWNJ
-            (aCh >= 0xff9e && aCh <= 0xff9f));  // katakana sound marks
+            (aCh >= 0x200c && aCh <= 0x200d) || // ZWJ, ZWNJ
+            (aCh >= 0xff9e && aCh <= 0xff9f) || // katakana sound marks
+            (aCh >= 0x1F3FB && aCh <= 0x1F3FF) || // fitzpatrick skin tone modifiers
+            (aCh >= 0xe0020 && aCh <= 0xe007f)); // emoji (flag) tag characters
 }
+
+bool IsClusterExtenderExcludingJoiners(uint32_t aCh, uint8_t aCategory)
+{
+    return ((aCategory >= HB_UNICODE_GENERAL_CATEGORY_SPACING_MARK &&
+             aCategory <= HB_UNICODE_GENERAL_CATEGORY_NON_SPACING_MARK) ||
+            (aCh >= 0xff9e && aCh <= 0xff9f) || // katakana sound marks
+            (aCh >= 0x1F3FB && aCh <= 0x1F3FF) || // fitzpatrick skin tone modifiers
+            (aCh >= 0xe0020 && aCh <= 0xe007f)); // emoji (flag) tag characters
+}
+
 
 enum HSType {
     HST_NONE = U_HST_NOT_APPLICABLE,
@@ -225,20 +236,20 @@ ClusterIterator::Next()
         }
     }
 
+    const uint32_t kVS16 = 0xfe0f;
     const uint32_t kZWJ = 0x200d;
-    uint32_t aNextCh = 0;
-    if (mPos + 1 < mLimit) {
-        aNextCh = *mPos;
-        uint32_t aLowCh = *(mPos + 1);
-        if (NS_IS_HIGH_SURROGATE(aNextCh) && NS_IS_LOW_SURROGATE(aLowCh)) {
-            aNextCh = SURROGATE_TO_UCS4(aNextCh, aLowCh);
-        }
-    }
+    // UTF-16 surrogate values for Fitzpatrick type modifiers
+    const uint32_t kFitzpatrickHigh = 0xD83C;
+    const uint32_t kFitzpatrickLowFirst = 0xDFFB;
+    const uint32_t kFitzpatrickLowLast = 0xDFFF;
 
     bool baseIsEmoji = (GetEmojiPresentation(ch) == EmojiDefault) ||
-                       (GetEmojiPresentation(ch) == EmojiComponent) ||
                        (GetEmojiPresentation(ch) == TextDefault &&
-                        GetEmojiPresentation(aNextCh) == EmojiComponent);
+                        ((mPos < mLimit && *mPos == kVS16) ||
+                         (mPos + 1 < mLimit &&
+                          *mPos == kFitzpatrickHigh &&
+                          *(mPos + 1) >= kFitzpatrickLowFirst &&
+                          *(mPos + 1) <= kFitzpatrickLowLast)));
     bool prevWasZwj = false;
 
     while (mPos < mLimit) {
@@ -254,21 +265,12 @@ ClusterIterator::Next()
             chLen = 2;
         }
 
-        uint32_t aExtCh = 0;
-        if (mPos + chLen < mLimit) {
-            aExtCh = *(mPos + chLen);
-            uint32_t aLowCh = *(mPos + chLen + 1);
-            if (NS_IS_HIGH_SURROGATE(aExtCh) && NS_IS_LOW_SURROGATE(aLowCh)) {
-                aExtCh = SURROGATE_TO_UCS4(aExtCh, aLowCh);
-            }
-        }
-        bool extendCluster =
-            IsClusterExtender(ch) ||
+        bool extendCluster = IsClusterExtender(ch) ||
             (baseIsEmoji && prevWasZwj &&
-             ((GetEmojiPresentation(ch) == EmojiDefault) ||
-              (GetEmojiPresentation(ch) == EmojiComponent) ||
-              (GetEmojiPresentation(ch) == TextDefault &&
-               GetEmojiPresentation(aExtCh) == EmojiComponent)));
+                ((GetEmojiPresentation(ch) == EmojiDefault) ||
+                 (GetEmojiPresentation(ch) == TextDefault &&
+                  mPos + chLen < mLimit &&
+                  *(mPos + chLen) == kVS16)));
         if (!extendCluster) {
             break;
         }
