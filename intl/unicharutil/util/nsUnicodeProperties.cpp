@@ -152,8 +152,7 @@ IsClusterExtender(uint32_t aCh, uint8_t aCategory)
 {
     return ((aCategory >= HB_UNICODE_GENERAL_CATEGORY_SPACING_MARK &&
              aCategory <= HB_UNICODE_GENERAL_CATEGORY_NON_SPACING_MARK) ||
-            (GetEmojiPresentation(aCh) == EmojiComponent) ||
-            (aCh == 0x200c) || // ZWNJ
+            (aCh >= 0x200c && aCh <= 0x200d) || // ZWJ, ZWNJ
             (aCh >= 0xff9e && aCh <= 0xff9f));  // katakana sound marks
 }
 
@@ -225,25 +224,8 @@ ClusterIterator::Next()
         }
     }
 
-    const uint32_t kZWJ = 0x200d;
-    uint32_t aNextCh = 0;
-    if (mPos + 1 < mLimit) {
-        aNextCh = *mPos;
-        uint32_t aLowCh = *(mPos + 1);
-        if (NS_IS_HIGH_SURROGATE(aNextCh) && NS_IS_LOW_SURROGATE(aLowCh)) {
-            aNextCh = SURROGATE_TO_UCS4(aNextCh, aLowCh);
-        }
-    }
-
-    bool baseIsEmoji = (GetEmojiPresentation(ch) == EmojiDefault) ||
-                       (GetEmojiPresentation(ch) == EmojiComponent) ||
-                       (GetEmojiPresentation(ch) == TextDefault &&
-                        GetEmojiPresentation(aNextCh) == EmojiComponent);
-    bool prevWasZwj = false;
-
     while (mPos < mLimit) {
         ch = *mPos;
-        size_t chLen = 1;
 
         // Check for surrogate pairs; note that isolated surrogates will just
         // be treated as generic (non-cluster-extending) characters here,
@@ -251,30 +233,16 @@ ClusterIterator::Next()
         if (NS_IS_HIGH_SURROGATE(ch) && mPos < mLimit - 1 &&
             NS_IS_LOW_SURROGATE(*(mPos + 1))) {
             ch = SURROGATE_TO_UCS4(ch, *(mPos + 1));
-            chLen = 2;
         }
 
-        uint32_t aExtCh = 0;
-        if (mPos + chLen < mLimit) {
-            aExtCh = *(mPos + chLen);
-            uint32_t aLowCh = *(mPos + chLen + 1);
-            if (NS_IS_HIGH_SURROGATE(aExtCh) && NS_IS_LOW_SURROGATE(aLowCh)) {
-                aExtCh = SURROGATE_TO_UCS4(aExtCh, aLowCh);
-            }
-        }
-        bool extendCluster =
-            IsClusterExtender(ch) ||
-            (baseIsEmoji && prevWasZwj &&
-             ((GetEmojiPresentation(ch) == EmojiDefault) ||
-              (GetEmojiPresentation(ch) == EmojiComponent) ||
-              (GetEmojiPresentation(ch) == TextDefault &&
-               GetEmojiPresentation(aExtCh) == EmojiComponent)));
-        if (!extendCluster) {
+        if (!IsClusterExtender(ch)) {
             break;
         }
 
-        prevWasZwj = (ch == kZWJ);
-        mPos += chLen;
+        mPos++;
+        if (!IS_IN_BMP(ch)) {
+            mPos++;
+        }
     }
 
     NS_ASSERTION(mText < mPos && mPos <= mLimit,
