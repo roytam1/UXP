@@ -7770,6 +7770,14 @@ const UnitInfo UnitData[] = {
   { STR_WITH_LEN("dvh"), eCSSUnit_DynamicViewportHeight, VARIANT_LENGTH },
   { STR_WITH_LEN("dvmin"), eCSSUnit_DynamicViewportMin, VARIANT_LENGTH },
   { STR_WITH_LEN("dvmax"), eCSSUnit_DynamicViewportMax, VARIANT_LENGTH },
+  { STR_WITH_LEN("vb"), eCSSUnit_ViewportBlock, VARIANT_LENGTH },
+  { STR_WITH_LEN("vi"), eCSSUnit_ViewportInline, VARIANT_LENGTH },
+  { STR_WITH_LEN("svb"), eCSSUnit_SmallViewportBlock, VARIANT_LENGTH },
+  { STR_WITH_LEN("svi"), eCSSUnit_SmallViewportInline, VARIANT_LENGTH },
+  { STR_WITH_LEN("lvb"), eCSSUnit_LargeViewportBlock, VARIANT_LENGTH },
+  { STR_WITH_LEN("lvi"), eCSSUnit_LargeViewportInline, VARIANT_LENGTH },
+  { STR_WITH_LEN("dvb"), eCSSUnit_DynamicViewportBlock, VARIANT_LENGTH },
+  { STR_WITH_LEN("dvi"), eCSSUnit_DynamicViewportInline, VARIANT_LENGTH },
   { STR_WITH_LEN("pc"), eCSSUnit_Pica, VARIANT_LENGTH },
   { STR_WITH_LEN("q"), eCSSUnit_Quarter, VARIANT_LENGTH },
   { STR_WITH_LEN("deg"), eCSSUnit_Degree, VARIANT_ANGLE },
@@ -7824,7 +7832,15 @@ CSSParserImpl::TranslateDimension(nsCSSValue& aValue,
          eCSSUnit_DynamicViewportWidth == units ||
          eCSSUnit_DynamicViewportHeight == units ||
          eCSSUnit_DynamicViewportMin == units ||
-         eCSSUnit_DynamicViewportMax == units)) {
+         eCSSUnit_DynamicViewportMax == units ||
+         eCSSUnit_ViewportBlock == units ||
+         eCSSUnit_ViewportInline == units ||
+         eCSSUnit_SmallViewportInline == units ||
+         eCSSUnit_SmallViewportBlock == units ||
+         eCSSUnit_LargeViewportBlock == units ||
+         eCSSUnit_LargeViewportInline == units ||
+         eCSSUnit_DynamicViewportBlock == units ||
+         eCSSUnit_DynamicViewportInline == units )) {
       // Viewport units aren't allowed right now, probably because we're
       // inside an @page declaration. Fail.
       return false;

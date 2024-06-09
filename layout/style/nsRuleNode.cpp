@@ -541,6 +541,40 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
       nscoord viewportMax = max(vuScale.width, vuScale.height);
       return ScaleViewportCoordTrunc(aValue, viewportMax);
     }
+    case eCSSUnit_ViewportBlock:
+    case eCSSUnit_SmallViewportBlock:
+    case eCSSUnit_LargeViewportBlock:
+    case eCSSUnit_DynamicViewportBlock: {
+      // Assume non-vertical writing mode if the style context is unavailable.
+      if (aStyleContext) {
+        WritingMode wm(aStyleContext);
+        bool vertical = wm.IsVertical();
+        aConditions.SetWritingModeDependency(wm.GetBits());
+        if (vertical) {
+          nscoord viewportWidth = CalcViewportUnitsScale(aPresContext).width;
+          return ScaleViewportCoordTrunc(aValue, viewportWidth);
+        }
+      }
+      nscoord viewportHeight = CalcViewportUnitsScale(aPresContext).height;
+      return ScaleViewportCoordTrunc(aValue, viewportHeight);
+    }
+    case eCSSUnit_ViewportInline:
+    case eCSSUnit_SmallViewportInline:
+    case eCSSUnit_LargeViewportInline:
+    case eCSSUnit_DynamicViewportInline: {
+      // Assume non-vertical writing mode if the style context is unavailable.
+      if (aStyleContext) {
+        WritingMode wm(aStyleContext);
+        bool vertical = wm.IsVertical();
+        aConditions.SetWritingModeDependency(wm.GetBits());
+        if (vertical) {
+          nscoord viewportHeight = CalcViewportUnitsScale(aPresContext).height;
+          return ScaleViewportCoordTrunc(aValue, viewportHeight);
+        }
+      }
+      nscoord viewportWidth = CalcViewportUnitsScale(aPresContext).width;
+      return ScaleViewportCoordTrunc(aValue, viewportWidth);
+    }
     // While we could deal with 'rem' units correctly by simply not
     // caching any data that uses them in the rule tree, it's valuable
     // to store them in the rule tree (for faster dynamic changes of

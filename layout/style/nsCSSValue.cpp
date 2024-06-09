@@ -2015,6 +2015,15 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     case eCSSUnit_DynamicViewportMin:    aResult.AppendLiteral("dvmin"); break;
     case eCSSUnit_DynamicViewportMax:    aResult.AppendLiteral("dvmax"); break;
 
+    case eCSSUnit_ViewportBlock:         aResult.AppendLiteral("vb");  break;
+    case eCSSUnit_ViewportInline:        aResult.AppendLiteral("vi");  break;
+    case eCSSUnit_SmallViewportBlock:    aResult.AppendLiteral("svb"); break;
+    case eCSSUnit_SmallViewportInline:   aResult.AppendLiteral("svi"); break;
+    case eCSSUnit_LargeViewportBlock:    aResult.AppendLiteral("lvb"); break;
+    case eCSSUnit_LargeViewportInline:   aResult.AppendLiteral("lvi"); break;
+    case eCSSUnit_DynamicViewportBlock:  aResult.AppendLiteral("dvb"); break;
+    case eCSSUnit_DynamicViewportInline: aResult.AppendLiteral("dvi"); break;
+
     case eCSSUnit_EM:           aResult.AppendLiteral("em");   break;
     case eCSSUnit_XHeight:      aResult.AppendLiteral("ex");   break;
     case eCSSUnit_Char:         aResult.AppendLiteral("ch");   break;
@@ -2200,6 +2209,14 @@ nsCSSValue::SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
     case eCSSUnit_DynamicViewportHeight:
     case eCSSUnit_DynamicViewportMin:
     case eCSSUnit_DynamicViewportMax:
+    case eCSSUnit_ViewportBlock:
+    case eCSSUnit_ViewportInline:
+    case eCSSUnit_SmallViewportBlock:
+    case eCSSUnit_SmallViewportInline:
+    case eCSSUnit_LargeViewportBlock:
+    case eCSSUnit_LargeViewportInline:
+    case eCSSUnit_DynamicViewportBlock:
+    case eCSSUnit_DynamicViewportInline:
     case eCSSUnit_EM:
     case eCSSUnit_XHeight:
     case eCSSUnit_Char:
