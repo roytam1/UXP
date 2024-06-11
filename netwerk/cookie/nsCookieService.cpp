@@ -3346,7 +3346,7 @@ nsCookieService::SetCookieInternal(nsIURI                        *aHostURI,
     return newCookie;
   }
   if (!CheckHiddenPrefix(cookieAttributes)) {
-    COOKIE_LOGFAILURE(SET_COOKIE, aHostURI, savedCookieHeader, "failed the CheckHiddenPrefix tests");
+    COOKIE_LOGFAILURE(SET_COOKIE, aHostURI, savedCookieHeader, "failed the hidden prefix tests");
     return newCookie;
   }
   // magic prefix checks. MUST be run after CheckDomain() and CheckPath()
@@ -4159,8 +4159,9 @@ nsCookieService::CheckHiddenPrefix(nsCookieAttributes &aCookie) {
   static const int kSecureLen = sizeof( kSecure ) - 1;
   static const int kHostLen   = sizeof( kHost ) - 1;
 
-  bool isSecure = strncmp( aCookie.value.get(), kSecure, kSecureLen ) == 0;
-  bool isHost   = strncmp( aCookie.value.get(), kHost, kHostLen ) == 0;
+  // As of RFC 6265 bis-11 draft, this should be a case *in*sensitive match.
+  bool isSecure = nsCRT::strncasecmp(aCookie.value.get(), kSecure, kSecureLen) == 0;
+  bool isHost   = nsCRT::strncasecmp(aCookie.value.get(), kHost, kHostLen) == 0;
   
   if (isSecure || isHost) {
     return false;
@@ -4186,8 +4187,9 @@ nsCookieService::CheckPrefixes(nsCookieAttributes &aCookie,
   static const int kSecureLen = sizeof( kSecure ) - 1;
   static const int kHostLen   = sizeof( kHost ) - 1;
 
-  bool isSecure = strncmp( aCookie.value.get(), kSecure, kSecureLen ) == 0;
-  bool isHost   = strncmp( aCookie.value.get(), kHost, kHostLen ) == 0;
+  // As of RFC 6265 bis-11 draft, this should be a case *in*sensitive match.
+  bool isSecure = nsCRT::strncasecmp(aCookie.value.get(), kSecure, kSecureLen) == 0;
+  bool isHost   = nsCRT::strncasecmp(aCookie.value.get(), kHost, kHostLen) == 0;
 
   if ( !isSecure && !isHost ) {
     // not one of the magic prefixes: carry on
