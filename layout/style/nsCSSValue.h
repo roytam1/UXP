@@ -534,6 +534,29 @@ enum nsCSSUnit {
   eCSSUnit_ViewportMin    = 702,    // (float) smaller of ViewportWidth and ViewportHeight
   eCSSUnit_ViewportMax    = 703,    // (float) larger of ViewportWidth and ViewportHeight
 
+  eCSSUnit_SmallViewportWidth    = 704,    // (float) 1% of the width of the small viewport
+  eCSSUnit_SmallViewportHeight   = 705,    // (float) 1% of the height of the small viewport
+  eCSSUnit_SmallViewportMin      = 706,    // (float) smaller of SmallViewportWidth and SmallViewportHeight
+  eCSSUnit_SmallViewportMax      = 707,    // (float) larger of SmallViewportWidth and SmallViewportHeight
+  eCSSUnit_LargeViewportWidth    = 708,    // (float) 1% of the width of the large viewport
+  eCSSUnit_LargeViewportHeight   = 709,    // (float) 1% of the height of the large viewport
+  eCSSUnit_LargeViewportMin      = 710,    // (float) smaller of LargeViewportWidth and LargeViewportHeight
+  eCSSUnit_LargeViewportMax      = 711,    // (float) larger of LargeViewportWidth and LargeViewportHeight
+  eCSSUnit_DynamicViewportWidth  = 712,    // (float) 1% of the width of the dynamic viewport
+  eCSSUnit_DynamicViewportHeight = 713,    // (float) 1% of the height of the dynamic viewport
+  eCSSUnit_DynamicViewportMin    = 714,    // (float) smaller of DynamicViewportWidth and DynamicViewportHeight
+  eCSSUnit_DynamicViewportMax    = 715,    // (float) larger of DynamicViewportWidth and DynamicViewportHeight
+
+  // Logical viewport units
+  eCSSUnit_ViewportBlock         = 716,    // (float) 1% of the size of the initial containing block in the box's block axis
+  eCSSUnit_ViewportInline        = 717,    // (float) 1% of the size of the initial containing block in the box's inline axis
+  eCSSUnit_SmallViewportBlock    = 718,    // (float) 1% of the size of the small viewport in the box's block axis
+  eCSSUnit_SmallViewportInline   = 719,    // (float) 1% of the size of the small viewport in the box's inline axis
+  eCSSUnit_LargeViewportBlock    = 720,    // (float) 1% of the size of the large viewport in the box's block axis
+  eCSSUnit_LargeViewportInline   = 721,    // (float) 1% of the size of the small viewport in the box's inline axis
+  eCSSUnit_DynamicViewportBlock  = 722,    // (float) 1% of the size of the dynamic viewport in the box's block axis
+  eCSSUnit_DynamicViewportInline = 723,    // (float) 1% of the size of the small viewport in the box's inline axis
+
   // Font relative measure
   eCSSUnit_EM           = 800,    // (float) == current font size
   eCSSUnit_XHeight      = 801,    // (float) distance from top of lower case x to baseline
