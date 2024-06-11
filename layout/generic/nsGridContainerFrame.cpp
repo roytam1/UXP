@@ -4848,8 +4848,8 @@ nsGridContainerFrame::Tracks::StretchFlexibleTracks(
       applyMinMax = false;
       // https://drafts.csswg.org/css-grid/#algo-flex-tracks
       // "If using this flex fraction would cause the grid to be smaller than
-      // the grid container’s min-width/height (or larger than the grid
-      // container’s max-width/height), then redo this step, treating the free
+      // the grid container's min-width/height (or larger than the grid
+      // container's max-width/height), then redo this step, treating the free
       // space as definite [...]"
       nscoord newSize = 0;
       for (auto& sz : mSizes) {
