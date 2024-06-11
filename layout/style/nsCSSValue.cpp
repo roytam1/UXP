@@ -2002,6 +2002,28 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     case eCSSUnit_ViewportMin:    aResult.AppendLiteral("vmin"); break;
     case eCSSUnit_ViewportMax:    aResult.AppendLiteral("vmax"); break;
 
+    case eCSSUnit_SmallViewportWidth:    aResult.AppendLiteral("svw");   break;
+    case eCSSUnit_SmallViewportHeight:   aResult.AppendLiteral("svh");   break;
+    case eCSSUnit_SmallViewportMin:      aResult.AppendLiteral("svmin"); break;
+    case eCSSUnit_SmallViewportMax:      aResult.AppendLiteral("svmax"); break;
+    case eCSSUnit_LargeViewportWidth:    aResult.AppendLiteral("lvw");   break;
+    case eCSSUnit_LargeViewportHeight:   aResult.AppendLiteral("lvh");   break;
+    case eCSSUnit_LargeViewportMin:      aResult.AppendLiteral("lvmin"); break;
+    case eCSSUnit_LargeViewportMax:      aResult.AppendLiteral("lvmax"); break;
+    case eCSSUnit_DynamicViewportWidth:  aResult.AppendLiteral("dvw");   break;
+    case eCSSUnit_DynamicViewportHeight: aResult.AppendLiteral("dvh");   break;
+    case eCSSUnit_DynamicViewportMin:    aResult.AppendLiteral("dvmin"); break;
+    case eCSSUnit_DynamicViewportMax:    aResult.AppendLiteral("dvmax"); break;
+
+    case eCSSUnit_ViewportBlock:         aResult.AppendLiteral("vb");  break;
+    case eCSSUnit_ViewportInline:        aResult.AppendLiteral("vi");  break;
+    case eCSSUnit_SmallViewportBlock:    aResult.AppendLiteral("svb"); break;
+    case eCSSUnit_SmallViewportInline:   aResult.AppendLiteral("svi"); break;
+    case eCSSUnit_LargeViewportBlock:    aResult.AppendLiteral("lvb"); break;
+    case eCSSUnit_LargeViewportInline:   aResult.AppendLiteral("lvi"); break;
+    case eCSSUnit_DynamicViewportBlock:  aResult.AppendLiteral("dvb"); break;
+    case eCSSUnit_DynamicViewportInline: aResult.AppendLiteral("dvi"); break;
+
     case eCSSUnit_EM:           aResult.AppendLiteral("em");   break;
     case eCSSUnit_XHeight:      aResult.AppendLiteral("ex");   break;
     case eCSSUnit_Char:         aResult.AppendLiteral("ch");   break;
@@ -2175,6 +2197,26 @@ nsCSSValue::SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
     case eCSSUnit_ViewportHeight:
     case eCSSUnit_ViewportMin:
     case eCSSUnit_ViewportMax:
+    case eCSSUnit_SmallViewportWidth:
+    case eCSSUnit_SmallViewportHeight:
+    case eCSSUnit_SmallViewportMin:
+    case eCSSUnit_SmallViewportMax:
+    case eCSSUnit_LargeViewportWidth:
+    case eCSSUnit_LargeViewportHeight:
+    case eCSSUnit_LargeViewportMin:
+    case eCSSUnit_LargeViewportMax:
+    case eCSSUnit_DynamicViewportWidth:
+    case eCSSUnit_DynamicViewportHeight:
+    case eCSSUnit_DynamicViewportMin:
+    case eCSSUnit_DynamicViewportMax:
+    case eCSSUnit_ViewportBlock:
+    case eCSSUnit_ViewportInline:
+    case eCSSUnit_SmallViewportBlock:
+    case eCSSUnit_SmallViewportInline:
+    case eCSSUnit_LargeViewportBlock:
+    case eCSSUnit_LargeViewportInline:
+    case eCSSUnit_DynamicViewportBlock:
+    case eCSSUnit_DynamicViewportInline:
     case eCSSUnit_EM:
     case eCSSUnit_XHeight:
     case eCSSUnit_Char:

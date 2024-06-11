@@ -2094,7 +2094,10 @@ CanvasRenderingContext2D::GetInputStream(const char* aMimeType,
 
   bool PoisonData = Preferences::GetBool("canvas.poisondata",false);
   if (PoisonData) {
-    srand(time(NULL));
+    int PoisonInterval = Preferences::GetInt("canvas.poisondata.interval", 300);
+    PoisonInterval = (PoisonInterval < 1) ? 1 : (PoisonInterval > 28800) ? 28800 : PoisonInterval;
+    unsigned int epoch = time(nullptr);
+    srand(epoch / PoisonInterval);
     // Image buffer is always a packed BGRA array (BGRX -> BGR[FF])
     // so always 4-byte pixels.
     // GetImageBuffer => SurfaceToPackedBGRA [=> ConvertBGRXToBGRA]
@@ -5787,9 +5790,13 @@ CanvasRenderingContext2D::GetImageDataArray(JSContext* aCx,
 
   MOZ_ASSERT(aWidth && aHeight);
 
-  bool PoisonData = Preferences::GetBool("canvas.poisondata",false);
-  if (PoisonData)
-    srand(time(NULL));
+  bool PoisonData = Preferences::GetBool("canvas.poisondata", false);
+  if (PoisonData) {
+    int PoisonInterval = Preferences::GetInt("canvas.poisondata.interval", 300);
+    PoisonInterval = (PoisonInterval < 1) ? 1 : (PoisonInterval > 28800) ? 28800 : PoisonInterval;
+    unsigned int epoch = time(nullptr);
+    srand(epoch / PoisonInterval);
+  }
 
   CheckedInt<uint32_t> len = CheckedInt<uint32_t>(aWidth) * aHeight * 4;
   if (!len.isValid() || len.value() > INT32_MAX) {
