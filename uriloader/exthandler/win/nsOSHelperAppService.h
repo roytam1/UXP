@@ -19,7 +19,7 @@
 #ifdef _WIN32_WINNT
 #undef _WIN32_WINNT
 #endif
-#define _WIN32_WINNT 0x0600
+#define _WIN32_WINNT 0x0601
 #include <shlobj.h>
 
 class nsMIMEInfoWin;
@@ -32,7 +32,6 @@ public:
 
   // override nsIExternalProtocolService methods
   nsresult OSProtocolHandlerExists(const char * aProtocolScheme, bool * aHandlerExists);
-  nsresult LoadUriInternal(nsIURI * aURL);
   NS_IMETHOD GetApplicationDescription(const nsACString& aScheme, nsAString& _retval);
 
   // method overrides for windows registry look up steps....

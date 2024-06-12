@@ -537,6 +537,7 @@ function newChannelForURL(url, { policy, window, principal }) {
     // scheme to see if it helps.
     uri = Services.io.newURI("file://" + url, null, null);
   }
+
   let channelOptions = {
     contentPolicyType: policy,
     securityFlags: securityFlags,
@@ -557,15 +558,7 @@ function newChannelForURL(url, { policy, window, principal }) {
   }
   channelOptions.loadingPrincipal = prin;
 
-  try {
-    return NetUtil.newChannel(channelOptions);
-  } catch (e) {
-    // In xpcshell tests on Windows, nsExternalProtocolHandler::NewChannel()
-    // can throw NS_ERROR_UNKNOWN_PROTOCOL if the external protocol isn't
-    // supported by Windows, so we also need to handle the exception here if
-    // parsing the URL above doesn't throw.
-    return newChannelForURL("file://" + url, { policy, window, principal });
-  }
+  return NetUtil.newChannel(channelOptions);
 }
 
 // Fetch is defined differently depending on whether we are on the main thread
