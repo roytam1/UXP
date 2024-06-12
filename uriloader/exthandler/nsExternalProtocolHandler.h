@@ -30,8 +30,7 @@ protected:
   ~nsExternalProtocolHandler();
 
   // helper function
-  bool HaveExternalProtocolHandler(nsIURI * aURI);
-	nsCString	m_schemeName;
+  nsCString m_schemeName;
 };
 
 #endif // nsExternalProtocolHandler_h___
