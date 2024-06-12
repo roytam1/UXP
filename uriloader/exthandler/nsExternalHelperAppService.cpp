@@ -1202,10 +1202,11 @@ nsExternalAppHandler::nsExternalAppHandler(nsIMIMEInfo * aMIMEInfo,
 
   // Replace platform specific path separator and illegal characters to avoid any confusion
   mSuggestedFileName.ReplaceChar(KNOWN_PATH_SEPARATORS, '_');
-  mSuggestedFileName.ReplaceChar(FILE_ILLEGAL_CHARACTERS, ' ');
-  mSuggestedFileName.ReplaceChar(char16_t(0), '_');
+  mSuggestedFileName.ReplaceChar(FILE_ILLEGAL_CHARACTERS, '_');
+  mSuggestedFileName.ReplaceChar("%", '_');
+  mSuggestedFileName.StripChar(char16_t(0));
   mTempFileExtension.ReplaceChar(KNOWN_PATH_SEPARATORS, '_');
-  mTempFileExtension.ReplaceChar(FILE_ILLEGAL_CHARACTERS, ' ');
+  mTempFileExtension.ReplaceChar(FILE_ILLEGAL_CHARACTERS, '_');
 
   // Remove unsafe bidi characters which might have spoofing implications (bug 511521).
   const char16_t unsafeBidiCharacters[] = {
