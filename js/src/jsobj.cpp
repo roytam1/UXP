@@ -1505,6 +1505,10 @@ JSObject::swap(JSContext* cx, HandleObject a, HandleObject b)
     if (!JSObject::getGroup(cx, b))
         oomUnsafe.crash("JSObject::swap");
 
+    // Don't allow a GC which may observe intermediate states or run before we
+    // execute all necessary barriers.
+    AutoSuppressGC suppress(cx);
+
     /*
      * Neither object may be in the nursery, but ensure we update any embedded
      * nursery pointers in either object.
@@ -1545,10 +1549,6 @@ JSObject::swap(JSContext* cx, HandleObject a, HandleObject b)
         a->fixDictionaryShapeAfterSwap();
         b->fixDictionaryShapeAfterSwap();
     } else {
-        // Avoid GC in here to avoid confusing the tracing code with our
-        // intermediate state.
-        AutoSuppressGC suppress(cx);
-
         // When the objects have different sizes, they will have different
         // numbers of fixed slots before and after the swap, so the slots for
         // native objects will need to be rearranged.
