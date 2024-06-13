@@ -210,13 +210,25 @@ public:
     , mDisplay(aOther.mDisplay)
     , mStereoMode(aOther.mStereoMode)
     , mImage(aOther.mImage)
-    , mCodecSpecificConfig(aOther.mCodecSpecificConfig)
-    , mExtraData(aOther.mExtraData)
+    , mCodecSpecificConfig(nullptr)
+    , mExtraData(nullptr)
     , mRotation(aOther.mRotation)
     , mBitDepth(aOther.mBitDepth)
     , mImageRect(aOther.mImageRect)
     , mAlphaPresent(aOther.mAlphaPresent)
   {
+    if (aOther.mCodecSpecificConfig) {
+      mCodecSpecificConfig = new MediaByteBuffer();
+      mCodecSpecificConfig->AppendElements(
+          reinterpret_cast<uint8_t*>(aOther.mCodecSpecificConfig->Elements()),
+          aOther.mCodecSpecificConfig->Length());
+    }
+    if (aOther.mExtraData) {
+      mExtraData = new MediaByteBuffer();
+      mExtraData->AppendElements(
+          reinterpret_cast<uint8_t*>(aOther.mExtraData->Elements()),
+          aOther.mExtraData->Length());
+    }
   }
 
   bool IsValid() const override
