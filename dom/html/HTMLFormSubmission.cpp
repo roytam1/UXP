@@ -944,6 +944,30 @@ HTMLFormSubmission::GetFromForm(nsGenericHTMLElement* aForm,
     charset.AssignLiteral("UTF-8");
   }
 
+  if (method == NS_FORM_METHOD_DIALOG) {
+    HTMLDialogElement* dialog = nullptr;
+    for (nsIContent* parent = aForm->GetParent(); parent;
+         parent = parent->GetParent()) {
+      dialog = HTMLDialogElement::FromContentOrNull(parent);
+      if (dialog) {
+        break;
+      }
+    }
+
+    // If there isn't one, or if it does not have an open attribute, do
+    // nothing.
+    if (!dialog || !dialog->Open()) {
+      return NS_OK;
+    }
+
+    nsAutoString result;
+    if (aOriginatingElement) {
+      aOriginatingElement->ResultForDialogSubmit(result);
+    }
+    *aFormSubmission = new DialogFormSubmission(result, charset, aOriginatingElement, dialog);
+    return NS_OK;
+  }
+
   // Choose encoder
   if (method == NS_FORM_METHOD_POST &&
       enctype == NS_FORM_ENCTYPE_MULTIPART) {

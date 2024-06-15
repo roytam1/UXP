@@ -321,6 +321,9 @@ HTMLFormElement::ParseAttribute(int32_t aNamespaceID,
 {
   if (aNamespaceID == kNameSpaceID_None) {
     if (aAttribute == nsGkAtoms::method) {
+      if (Preferences::GetBool("dom.dialog_element.enabled", false)) {
+        return aResult.ParseEnumValue(aValue, kFormMethodTableDialogEnabled, false);
+      }
       return aResult.ParseEnumValue(aValue, kFormMethodTable, false);
     }
     if (aAttribute == nsGkAtoms::enctype) {
@@ -686,6 +689,26 @@ HTMLFormElement::DoSubmit(WidgetEvent* aEvent)
   //
   // perform the submission
   //
+  if (!submission) {
+    mIsSubmitting = false;
+#ifdef DEBUG
+    HTMLDialogElement* dialog = nullptr;
+    for (nsIContent* parent = GetParent(); parent;
+         parent = parent->GetParent()) {
+      dialog = HTMLDialogElement::FromContentOrNull(parent);
+      if (dialog) {
+        break;
+      }
+    }
+    MOZ_ASSERT(!dialog || !dialog->Open());
+#endif
+    return NS_OK;
+  }
+
+  if (DialogFormSubmission* dialogSubmission =
+          submission->GetAsDialogSubmission()) {
+    return SubmitDialog(dialogSubmission);
+  }
   return SubmitSubmission(submission);
 }
 
@@ -722,8 +745,10 @@ HTMLFormElement::BuildSubmission(HTMLFormSubmission** aFormSubmission,
   //
   // Dump the data into the submission object
   //
-  rv = WalkFormElements(*aFormSubmission);
-  NS_ENSURE_SUBMIT_SUCCESS(rv);
+  if (!(*aFormSubmission)->GetAsDialogSubmission()) {
+    rv = WalkFormElements(*aFormSubmission);
+    NS_ENSURE_SUBMIT_SUCCESS(rv);
+  }
 
   return NS_OK;
 }
@@ -860,6 +885,22 @@ HTMLFormElement::SubmitSubmission(HTMLFormSubmission* aFormSubmission)
   }
 
   return rv;
+}
+
+// https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#submit-dialog
+nsresult HTMLFormElement::SubmitDialog(DialogFormSubmission* aFormSubmission) {
+  mIsSubmitting = false;
+
+  // Close the dialog subject. If there is a result, let that be the return
+  // value.
+  HTMLDialogElement* dialog = aFormSubmission->DialogElement();
+  MOZ_ASSERT(dialog);
+
+  Optional<nsAString> retValue;
+  retValue = &aFormSubmission->ReturnValue();
+  dialog->Close(retValue);
+
+  return NS_OK;
 }
 
 nsresult

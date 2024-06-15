@@ -484,6 +484,12 @@ protected:
   nsresult SubmitSubmission(HTMLFormSubmission* aFormSubmission);
 
   /**
+   * Submit a form[method=dialog]
+   * @param aFormSubmission the submission object
+   */
+  nsresult SubmitDialog(DialogFormSubmission* aFormSubmission);
+
+  /**
    * Notify any submit observers of the submit.
    *
    * @param aActionURL the URL being submitted to

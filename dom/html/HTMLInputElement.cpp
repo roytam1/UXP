@@ -1482,6 +1482,26 @@ NS_IMPL_STRING_ATTR(HTMLInputElement, Placeholder, placeholder)
 NS_IMPL_ENUM_ATTR_DEFAULT_VALUE(HTMLInputElement, Type, type,
                                 kInputDefaultType->tag)
 
+void HTMLInputElement::ResultForDialogSubmit(nsAString& aResult) {
+  if (mType == NS_FORM_INPUT_IMAGE) {
+    // Get a property set by the frame to find out where it was clicked.
+    nsIntPoint* lastClickedPoint =
+        static_cast<nsIntPoint*>(GetProperty(nsGkAtoms::imageClickedPoint));
+    int32_t x, y;
+    if (lastClickedPoint) {
+      x = lastClickedPoint->x;
+      y = lastClickedPoint->y;
+    } else {
+      x = y = 0;
+    }
+    aResult.AppendInt(x);
+    aResult.AppendLiteral(",");
+    aResult.AppendInt(y);
+  } else {
+    GetAttr(kNameSpaceID_None, nsGkAtoms::value, aResult);
+  }
+}
+
 NS_IMETHODIMP
 HTMLInputElement::GetAutocomplete(nsAString& aValue)
 {
@@ -5916,6 +5936,9 @@ HTMLInputElement::ParseAttribute(int32_t aNamespaceID,
       return aResult.ParseEnumValue(aValue, kFormMethodTable, false);
     }
     if (aAttribute == nsGkAtoms::formenctype) {
+      if (Preferences::GetBool("dom.dialog_element.enabled", false)) {
+        return aResult.ParseEnumValue(aValue, kFormMethodTableDialogEnabled, false);
+      }
       return aResult.ParseEnumValue(aValue, kFormEnctypeTable, false);
     }
     if (aAttribute == nsGkAtoms::autocomplete) {
