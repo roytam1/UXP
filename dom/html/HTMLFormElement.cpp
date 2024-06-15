@@ -321,7 +321,7 @@ HTMLFormElement::ParseAttribute(int32_t aNamespaceID,
 {
   if (aNamespaceID == kNameSpaceID_None) {
     if (aAttribute == nsGkAtoms::method) {
-      if (Preferences::GetBool("dom.dialog_element.enabled", false)) {
+      if (Preferences::GetBool("dom.dialog_element.enabled", true)) {
         return aResult.ParseEnumValue(aValue, kFormMethodTableDialogEnabled, false);
       }
       return aResult.ParseEnumValue(aValue, kFormMethodTable, false);

@@ -5936,7 +5936,7 @@ HTMLInputElement::ParseAttribute(int32_t aNamespaceID,
       return aResult.ParseEnumValue(aValue, kFormMethodTable, false);
     }
     if (aAttribute == nsGkAtoms::formenctype) {
-      if (Preferences::GetBool("dom.dialog_element.enabled", false)) {
+      if (Preferences::GetBool("dom.dialog_element.enabled", true)) {
         return aResult.ParseEnumValue(aValue, kFormMethodTableDialogEnabled, false);
       }
       return aResult.ParseEnumValue(aValue, kFormEnctypeTable, false);
