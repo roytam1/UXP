@@ -2236,11 +2236,20 @@ nsListControlFrame::KeyDown(nsIDOMEvent* aKeyEvent)
         return NS_OK;
       }
 
+      // We don't want to preventDefault for escape key if the dropdown
+      // popup is not shown.
+      // Need to do the check before AboutToRollup because AboutToRollup
+      // may update the dropdown flags.
+      bool doPreventDefault =
+          !mComboboxFrame || mComboboxFrame->IsDroppedDownOrHasParentPopup();
+
       AboutToRollup();
-      // If the select element is a dropdown style, Enter key should be
+      // If the select element is a dropdown style, Escape key should be
       // consumed everytime since Escape key may be pressed accidentally after
       // the dropdown is closed by Escepe key.
-      aKeyEvent->PreventDefault();
+      if (doPreventDefault) {
+        aKeyEvent->PreventDefault();
+      }
       return NS_OK;
     }
     case NS_VK_PAGE_UP: {
