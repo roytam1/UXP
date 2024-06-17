@@ -5259,6 +5259,9 @@ pref("media.seekToNextFrame.enabled", true);
 // return the maximum number of cores that navigator.hardwareConcurrency returns
 pref("dom.maxHardwareConcurrency", 16);
 
+// Exposes the navigator.webdriver attribute.
+pref("dom.webdriver.enabled", true);
+
 // Shutdown the async osfile worker if it's no longer needed.
 pref("osfile.reset_worker_delay", 30000);
 

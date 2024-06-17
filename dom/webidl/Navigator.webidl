@@ -12,6 +12,7 @@
  * https://dvcs.w3.org/hg/gamepad/raw-file/default/gamepad.html#navigator-interface-extension
  * http://www.w3.org/TR/beacon/#sec-beacon-method
  * https://html.spec.whatwg.org/#navigatorconcurrenthardware
+ * https://w3c.github.io/webdriver/webdriver-spec.html#interface
  *
  * © Copyright 2004-2020 Apple Computer, Inc., Mozilla Foundation,
  * Opera Software ASA and Moonchild Productions. You are granted a license to use,
@@ -31,6 +32,7 @@ Navigator implements NavigatorStorageUtils;
 Navigator implements NavigatorConcurrentHardware;
 Navigator implements NavigatorStorage;
 Navigator implements NavigatorGlobalPrivacyControl;
+Navigator implements NavigatorAutomationInformation;
 
 [NoInterfaceObject, Exposed=(Window,Worker)]
 interface NavigatorID {
@@ -333,4 +335,11 @@ interface NavigatorConcurrentHardware {
 partial interface Navigator {
   [Pref="dom.events.asyncClipboard", SecureContext, SameObject]
   readonly attribute Clipboard clipboard;
+};
+
+// https://w3c.github.io/webdriver/webdriver-spec.html#interface
+[NoInterfaceObject, Exposed=Window]
+interface NavigatorAutomationInformation {
+  [Pref="dom.webdriver.enabled"]
+  readonly attribute boolean webdriver;
 };
