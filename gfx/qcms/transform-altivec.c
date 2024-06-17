@@ -29,7 +29,7 @@
 static const ALIGN float floatScaleX4 = FLOATSCALE;
 static const ALIGN float clampMaxValueX4 = CLAMPMAXVAL;
 
-inline vector float load_aligned_float(float *dataPtr)
+static inline vector float load_aligned_float(float *dataPtr)
 {
 	vector float data = vec_lde(0, dataPtr);
 	vector unsigned char moveToStart = vec_lvsl(0, dataPtr);
