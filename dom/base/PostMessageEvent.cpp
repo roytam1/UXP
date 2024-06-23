@@ -32,16 +32,14 @@ PostMessageEvent::PostMessageEvent(nsGlobalWindow* aSource,
                                    const nsAString& aCallerOrigin,
                                    nsGlobalWindow* aTargetWindow,
                                    nsIPrincipal* aProvidedPrincipal,
-                                   nsIDocument* aSourceDocument,
-                                   bool aTrustedCaller)
-: StructuredCloneHolder(CloningSupported, TransferringSupported,
-                        StructuredCloneScope::SameProcessSameThread),
-  mSource(aSource),
-  mCallerOrigin(aCallerOrigin),
-  mTargetWindow(aTargetWindow),
-  mProvidedPrincipal(aProvidedPrincipal),
-  mSourceDocument(aSourceDocument),
-  mTrustedCaller(aTrustedCaller)
+                                   nsIDocument* aSourceDocument)
+  : StructuredCloneHolder(CloningSupported, TransferringSupported,
+                          StructuredCloneScope::SameProcessSameThread)
+  , mSource(aSource)
+  , mCallerOrigin(aCallerOrigin)
+  , mTargetWindow(aTargetWindow)
+  , mProvidedPrincipal(aProvidedPrincipal)
+  , mSourceDocument(aSourceDocument)
 {
   MOZ_COUNT_CTOR(PostMessageEvent);
 }
@@ -169,7 +167,7 @@ PostMessageEvent::Run()
   if (shell)
     presContext = shell->GetPresContext();
 
-  event->SetTrusted(mTrustedCaller);
+  event->SetTrusted(true);
   WidgetEvent* internalEvent = event->WidgetEventPtr();
 
   nsEventStatus status = nsEventStatus_eIgnore;
