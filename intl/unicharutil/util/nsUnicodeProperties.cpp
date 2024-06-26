@@ -156,6 +156,15 @@ IsClusterExtender(uint32_t aCh, uint8_t aCategory)
             (aCh >= 0xff9e && aCh <= 0xff9f));  // katakana sound marks
 }
 
+bool
+IsEmojiClusterExtender(uint32_t aCh)
+{
+    return ((aCh == 0x200d) || (aCh == 0xfe0f) || // ZWJ, VS16
+            (aCh >= 0x1f3fb && aCh <= 0x1f3ff) || // fitzpatrick skin tones
+            (aCh >= 0x1f9b0 && aCh <= 0x1f9b3) || // hair colors
+            (aCh >= 0xe0020 && aCh <= 0xe007f));  // TAGs
+}
+
 enum HSType {
     HST_NONE = U_HST_NOT_APPLICABLE,
     HST_L    = U_HST_LEADING_JAMO,
@@ -263,6 +272,7 @@ ClusterIterator::Next()
         }
         bool extendCluster =
             IsClusterExtender(ch) ||
+            IsEmojiClusterExtender(ch) ||
             (baseIsEmoji && prevWasZwj &&
              ((GetEmojiPresentation(ch) == EmojiDefault) ||
               (GetEmojiPresentation(ch) == EmojiComponent) ||
@@ -297,7 +307,8 @@ ClusterReverseIterator::Next()
             ch = SURROGATE_TO_UCS4(*--mPos, ch);
         }
 
-        if (!IsClusterExtender(ch)) {
+        // TODO: Full extendCluster support.
+        if (!(IsClusterExtender(ch) || IsEmojiClusterExtender(ch))) {
             break;
         }
     } while (mPos > mLimit);

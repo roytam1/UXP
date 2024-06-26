@@ -219,6 +219,8 @@ inline bool IsClusterExtender(uint32_t aCh) {
   return IsClusterExtender(aCh, GetGeneralCategory(aCh));
 }
 
+bool IsEmojiClusterExtender(uint32_t aCh);
+
 // A simple iterator for a string of char16_t codepoints that advances
 // by Unicode grapheme clusters
 class ClusterIterator
