@@ -61,13 +61,19 @@ function generateCssProperties() {
     }
 
     // Don't send colors over RDP, these will be re-attached by the front.
-    let values = DOMUtils.getCSSValuesForProperty(name);
+    let values = "";
+    try {
+      values = DOMUtils.getCSSValuesForProperty(name);
+    } catch(e) {}
     if (values.includes("aliceblue")) {
       values = values.filter(x => !colors.includes(x));
       values.unshift("COLOR");
     }
 
-    let subproperties = DOMUtils.getSubpropertiesForCSSProperty(name);
+    let subproperties = [];
+    try {
+      subproperties = DOMUtils.getSubpropertiesForCSSProperty(name);
+    } catch(e) {}
 
     // In order to maintain any backwards compatible changes when debugging older
     // clients, take the definition from the static CSS properties database, and fill it
