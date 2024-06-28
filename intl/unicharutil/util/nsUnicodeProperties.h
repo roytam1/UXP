@@ -180,14 +180,17 @@ IsDefaultIgnorable(uint32_t aCh)
 inline EmojiPresentation
 GetEmojiPresentation(uint32_t aCh)
 {
-  if (!u_hasBinaryProperty(aCh, UCHAR_EMOJI)) {
-    return TextOnly;
+  if (u_hasBinaryProperty(aCh, UCHAR_EMOJI_COMPONENT)) {
+    return EmojiComponent;
   }
-
-  if (u_hasBinaryProperty(aCh, UCHAR_EMOJI_PRESENTATION)) {
+  if (u_hasBinaryProperty(aCh, UCHAR_EMOJI) &&
+     !u_hasBinaryProperty(aCh, UCHAR_EMOJI_PRESENTATION)) {
+    return TextDefault;
+  }
+  if (u_hasBinaryProperty(aCh, UCHAR_EXTENDED_PICTOGRAPHIC)) {
     return EmojiDefault;
   }
-  return TextDefault;
+  return TextOnly;
 }
 
 // returns the simplified Gen Category as defined in nsIUGenCategory
