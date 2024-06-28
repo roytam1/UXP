@@ -152,9 +152,17 @@ IsClusterExtender(uint32_t aCh, uint8_t aCategory)
 {
     return ((aCategory >= HB_UNICODE_GENERAL_CATEGORY_SPACING_MARK &&
              aCategory <= HB_UNICODE_GENERAL_CATEGORY_NON_SPACING_MARK) ||
-            (GetEmojiPresentation(aCh) == EmojiComponent) ||
-            (aCh == 0x200c) || // ZWNJ
+            (aCh >= 0x200c && aCh <= 0x200d) || // ZWJ, ZWNJ
             (aCh >= 0xff9e && aCh <= 0xff9f));  // katakana sound marks
+}
+
+bool
+IsEmojiClusterExtender(uint32_t aCh)
+{
+    return ((aCh == 0x200d) || (aCh == 0xfe0f) || // ZWJ, VS16
+            (aCh >= 0x1f3fb && aCh <= 0x1f3ff) || // fitzpatrick skin tones
+            (aCh >= 0x1f9b0 && aCh <= 0x1f9b3) || // hair colors
+            (aCh >= 0xe0020 && aCh <= 0xe007f));  // TAGs
 }
 
 enum HSType {
@@ -171,6 +179,8 @@ GetHangulSyllableType(uint32_t aCh)
 {
     return HSType(u_getIntPropertyValue(aCh, UCHAR_HANGUL_SYLLABLE_TYPE));
 }
+
+static const uint32_t kZWJ = 0x200d;
 
 void
 ClusterIterator::Next()
@@ -225,7 +235,6 @@ ClusterIterator::Next()
         }
     }
 
-    const uint32_t kZWJ = 0x200d;
     uint32_t aNextCh = 0;
     if (mPos + 1 < mLimit) {
         aNextCh = *mPos;
@@ -264,6 +273,7 @@ ClusterIterator::Next()
         }
         bool extendCluster =
             IsClusterExtender(ch) ||
+            IsEmojiClusterExtender(ch) ||
             (baseIsEmoji && prevWasZwj &&
              ((GetEmojiPresentation(ch) == EmojiDefault) ||
               (GetEmojiPresentation(ch) == EmojiComponent) ||
@@ -290,18 +300,55 @@ ClusterReverseIterator::Next()
     }
 
     uint32_t ch;
-    do {
-        ch = *--mPos;
 
-        if (NS_IS_LOW_SURROGATE(ch) && mPos > mLimit &&
-            NS_IS_HIGH_SURROGATE(*(mPos - 1))) {
-            ch = SURROGATE_TO_UCS4(*--mPos, ch);
+    bool nextWasComponent = false;
+    size_t tRel = 0;
+    size_t tPos = 0;
+    size_t chLen = 0;
+
+    do {
+        tRel++;
+        ch = *(mPos - tRel);
+
+        if (NS_IS_LOW_SURROGATE(ch) && (mPos - tRel) > mLimit &&
+            NS_IS_HIGH_SURROGATE(*(mPos - (tRel + 1)))) {
+            tRel++;
+            ch = SURROGATE_TO_UCS4(*(mPos - tRel), ch);
+            if (chLen == 0) {
+                chLen = 2;
+            }
+        } else if (chLen == 0) {
+            chLen = 1;
         }
 
-        if (!IsClusterExtender(ch)) {
+        bool prevWillBeZwj = false;
+        bool validEmoji = 
+            (GetEmojiPresentation(ch) == EmojiDefault) ||
+            (GetEmojiPresentation(ch) == EmojiComponent) ||
+            ((GetEmojiPresentation(ch) == TextDefault) && nextWasComponent);
+        if (validEmoji) {
+            tPos = tRel;
+
+            uint32_t aPrevCh = *(mPos - (tRel + 1));
+            if (NS_IS_LOW_SURROGATE(aPrevCh) && (mPos - (tRel + 1)) > mLimit) {
+                uint32_t aHighCh = *(mPos - (tRel + 2));
+                if (NS_IS_HIGH_SURROGATE(aHighCh)) {
+                    aPrevCh = SURROGATE_TO_UCS4(aHighCh, aPrevCh);
+                }
+            }
+            prevWillBeZwj = (aPrevCh == kZWJ);
+        }
+        if (!(IsClusterExtender(ch) ||
+            IsEmojiClusterExtender(ch) ||
+            prevWillBeZwj)) {
+            if (tPos == 0) {
+                tPos = chLen;
+            }
             break;
         }
-    } while (mPos > mLimit);
+        nextWasComponent = (GetEmojiPresentation(ch) == EmojiComponent);
+    } while ((mPos - tRel) > mLimit);
+    mPos -= tPos;
 
     // XXX May need to handle conjoining Jamo
 

@@ -760,11 +760,10 @@ var LoginManagerContent = {
     }
 
     if (!usernameField) {
-      // Locate the username field in the form by searching backwards
-      // from the first password field, assume the first text field is the
-      // username. We might not find a username field if the user is
+      // Locate the username field in the form by searching.
+      // We might not find a username field if the user is
       // already logged in to the site.
-      for (var i = pwFields[0].index - 1; i >= 0; i--) {
+      for (var i = 0; i < form.elements.length; i++) {
         var element = form.elements[i];
         if (!LoginHelper.isUsernameFieldType(element)) {
           continue;
