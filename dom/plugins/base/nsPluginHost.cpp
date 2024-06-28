@@ -1136,6 +1136,15 @@ nsPluginHost::GetPlugins(nsTArray<nsCOMPtr<nsIInternalPluginTag>>& aPluginArray,
     }
     plugin = plugin->mNext;
   }
+
+  // Durstenfeld shuffle
+  size_t pluginCount = aPluginArray.Length();
+  if (pluginCount >= 2) {
+    for (size_t i = pluginCount - 1; i > 0; i--) {
+      size_t j = rand() % (i + 1);
+      std::swap(aPluginArray[i],aPluginArray[j]);
+    }
+  }
 }
 
 // FIXME-jsplugins Check users for order of fake v non-fake
