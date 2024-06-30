@@ -2799,8 +2799,10 @@ nsComputedDOMStyle::GetGridTemplateColumnsRows(
             AppendGridLineNames(valueList, lineNames);
           }
         } else {
-          const nsTArray<nsString>& lineNames = aTrackList.mLineNameLists[i];
-          AppendGridLineNames(valueList, lineNames);
+          if (aTrackList.mLineNameLists.Length() > 0) {
+            const nsTArray<nsString>& lineNames = aTrackList.mLineNameLists[i];
+            AppendGridLineNames(valueList, lineNames);
+          }
         }
         if (uint32_t(i) == numExplicitTracks) {
           break;
