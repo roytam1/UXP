@@ -1,9 +1,10 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /****************************************************************
  *
- * The author of this software is David M. Gay.
+ * The original author of this software is David M. Gay.
  *
  * Copyright (c) 1991, 2000, 2001 by Lucent Technologies.
+ * Copyright (c) 2024 by Moonchild Productions.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose without fee is hereby granted, provided that this entire notice
@@ -2958,7 +2959,7 @@ dtoa
 				  }
 #endif
 				dval(d) += dval(d);
-				if (dval(d) > ds || (dval(d) == ds && L & 1)) {
+				if (dval(d) >= ds) {
  bump_up:
 					while(*--s == '9')
 						if (s == s0) {
