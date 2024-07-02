@@ -393,10 +393,10 @@ bool nsMixedContentBlocker::IsPotentiallyTrustworthyOrigin(nsIURI* aURI) {
   }
 
   nsAdoptingCString whitelist = Preferences::GetCString("dom.securecontext.whitelist");
-  if (NS_SUCCEEDED(rv)) {
+  if (whitelist) {
     nsCCharSeparatedTokenizer tokenizer(whitelist, ',');
     while (tokenizer.hasMoreTokens()) {
-      const nsACString& allowedHost = tokenizer.nextToken();
+      const nsCSubstring& allowedHost = tokenizer.nextToken();
       if (host.Equals(allowedHost)) {
         return true;
       }
