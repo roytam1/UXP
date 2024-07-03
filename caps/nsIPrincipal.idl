@@ -224,6 +224,12 @@ interface nsIPrincipal : nsISerializable
     readonly attribute AUTF8String originSuffix;
 
     /**
+     * Uses NS_Security Compare to determine if the
+     * other URI is same-origin as the uri of the Principal
+     */
+    bool IsSameOrigin(in nsIURI otherURI, in bool aIsPrivateWin);
+
+    /**
      * The base domain of the codebase URI to which this principal pertains
      * (generally the document URI), handling null principals and
      * non-hierarchical schemes correctly.
