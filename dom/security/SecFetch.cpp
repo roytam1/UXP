@@ -282,7 +282,7 @@ void SecFetch::AddSecFetchUser(nsIHttpChannel* aHTTPChannel) {
 
 void SecFetch::AddSecFetchHeader(nsIHttpChannel* aHTTPChannel) {
   // if sec-fetch-* is prefed off, then there is nothing to do
-  if (Preferences::GetBool("network.http.secfetch.enabled",false)) {
+  if (!Preferences::GetBool("network.http.secfetch.enabled",false)) {
     return;
   }
 
