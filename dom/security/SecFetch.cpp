@@ -105,33 +105,26 @@ bool IsSameOrigin(nsIHttpChannel* aHTTPChannel) {
   nsCOMPtr<nsILoadInfo> loadInfo = aHTTPChannel->GetLoadInfo();
   bool isPrivateWin = loadInfo->GetOriginAttributes().mPrivateBrowsingId > 0;
   
+  bool isSameOrigin = false;
+  nsresult rv = loadInfo->TriggeringPrincipal()->IsSameOrigin(
+      channelURI, isPrivateWin, &isSameOrigin);
+  Unused << NS_WARN_IF(NS_FAILED(rv));
+
   // if the initial request is not same-origin, we can return here
   // because we already know it's not a same-origin request
-  nsAutoCString triggeringOrigin, loadingOrigin, redirectOrigin;
-  
-  nsresult rv = loadInfo->TriggeringPrincipal()->GetOrigin(triggeringOrigin);
-  if NS_FAILED(rv) {
-    // Assume same origin
-    return true;
-  }
-  rv = loadInfo->LoadingPrincipal()->GetOrigin(loadingOrigin);
-  if NS_FAILED(rv) {
-    // Assume same origin
-    return true;
-  }
-  
-  if (triggeringOrigin != loadingOrigin) {
+  if (!isSameOrigin) {
     return false;
   }
 
   // let's further check all the hoops in the redirectChain to
   // ensure all involved redirects are same-origin
+  nsCOMPtr<nsIPrincipal> redirectPrincipal;
   for (nsIPrincipal* principal : loadInfo->RedirectChain()) {
     if (principal) {
-      rv = principal->GetOrigin(redirectOrigin);
-      if NS_FAILED(rv)
-        continue;
-      if (loadingOrigin != redirectOrigin) {
+      rv = redirectPrincipal->IsSameOrigin(channelURI, isPrivateWin,
+                                           &isSameOrigin);
+      Unused << NS_WARN_IF(NS_FAILED(rv));
+      if (!isSameOrigin) {
         return false;
       }
     }
@@ -165,6 +158,7 @@ bool IsSameSite(nsIChannel* aHTTPChannel) {
   // return here because we already know it's not a same-site request
   bool usingHttps = false;
   rv = channelURI->SchemeIs("https", &usingHttps);
+  Unused << NS_WARN_IF(NS_FAILED(rv));
   if (!hostDomain.Equals(channelDomain) || !usingHttps) {
     return false;
   }
