@@ -186,6 +186,12 @@ bool IsUserTriggeredForSecFetchSite(nsIHttpChannel* aHTTPChannel) {
   nsCOMPtr<nsILoadInfo> loadInfo = aHTTPChannel->GetLoadInfo();
   nsContentPolicyType contentType = loadInfo->InternalContentPolicyType();
 
+  // A request issued by the browser is always user initiated.
+  if (nsContentUtils::IsSystemPrincipal(loadInfo->TriggeringPrincipal()) &&
+      contentType == nsIContentPolicy::TYPE_OTHER) {
+    return true;
+  }
+
   // only requests wich result in type "document" are subject to
   // user initiated actions in the context of SecFetch.
   if (contentType != nsIContentPolicy::TYPE_DOCUMENT &&
