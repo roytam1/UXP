@@ -271,12 +271,22 @@ void SecFetch::AddSecFetchSite(nsIHttpChannel* aHTTPChannel) {
 }
 
 void SecFetch::AddSecFetchUser(nsIHttpChannel* aHTTPChannel) {
-  // TODO: Bug 1621987: Implement Sec-Fetch-User
+  bool userInitiated = false;
+  
+  nsCOMPtr<nsILoadInfo> loadInfo = aHTTPChannel->GetLoadInfo();
+  // A request issued by the browser is always assumed user-initiated.
+  if (nsContentUtils::IsSystemPrincipal(loadInfo->TriggeringPrincipal())) {
+    userInitiated = true;
+  }
 
-  // nsAutoCString user("?1");
-  // nsresult rv = aHTTPChannel->SetRequestHeader(
-  //     NS_LITERAL_CSTRING("Sec-Fetch-User"), user, false);
-  // Unused << NS_WARN_IF(NS_FAILED(rv));
+  // TODO: Implement content interaction
+
+  nsAutoCString user("?1");
+  
+  if (userInitiated) {
+    nsresult rv = aHTTPChannel->SetRequestHeader(NS_LITERAL_CSTRING("Sec-Fetch-User"), user, false);
+    Unused << NS_WARN_IF(NS_FAILED(rv));
+  }
 }
 
 void SecFetch::AddSecFetchHeader(nsIHttpChannel* aHTTPChannel) {
