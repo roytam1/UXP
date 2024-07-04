@@ -118,11 +118,10 @@ bool IsSameOrigin(nsIHttpChannel* aHTTPChannel) {
 
   // let's further check all the hoops in the redirectChain to
   // ensure all involved redirects are same-origin
-  nsCOMPtr<nsIPrincipal> redirectPrincipal;
-  for (nsIPrincipal* principal : loadInfo->RedirectChain()) {
+  for (nsCOMPtr<nsIPrincipal> principal : loadInfo->RedirectChain()) {
     if (principal) {
-      rv = redirectPrincipal->IsSameOrigin(channelURI, isPrivateWin,
-                                           &isSameOrigin);
+      rv = principal->IsSameOrigin(channelURI, isPrivateWin,
+                                   &isSameOrigin);
       Unused << NS_WARN_IF(NS_FAILED(rv));
       if (!isSameOrigin) {
         return false;
