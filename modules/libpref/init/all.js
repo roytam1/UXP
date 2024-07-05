@@ -1617,7 +1617,7 @@ pref("network.http.altsvc.oe", false);
 // Send upgrade-insecure-requests HTTP header?
 pref("network.http.upgrade-insecure-requests", false);
 // Send Sec-Fetch-* headers?
-pref("network.http.secfetch.enabled", false);
+pref("network.http.secfetch.enabled", true);
 
 pref("network.http.diagnostics", false);
 
