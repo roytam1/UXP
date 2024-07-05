@@ -10,7 +10,7 @@
 class nsIHttpChannel;
 
 namespace mozilla {
-namespace dom {
+namespace net {
 
 class SecFetch final {
  public:

@@ -6,9 +6,16 @@
 
 #include "SecFetch.h"
 #include "nsIHttpChannel.h"
+#include "nsIURI.h"
 #include "mozIThirdPartyUtil.h"
+#include "nsContentUtils.h"
 #include "nsMixedContentBlocker.h"
 #include "nsNetUtil.h"
+#include "mozilla/Preferences.h"
+#include "mozilla/Unused.h"
+
+using namespace mozilla;
+using namespace mozilla::net;
 
 // Helper function which maps an internal content policy type
 // to the corresponding destination for the context of SecFetch.
