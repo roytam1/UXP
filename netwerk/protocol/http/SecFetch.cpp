@@ -286,8 +286,6 @@ void SecFetch::AddSecFetchUser(nsIHttpChannel* aHTTPChannel) {
     userInitiated = true;
   }
 
-  // TODO: Implement content interaction
-
   nsAutoCString user("?1");
   
   if (userInitiated) {
