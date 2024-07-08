@@ -1867,25 +1867,5 @@ ImageBitmap::MapDataInto(JSContext* aCx,
   return promise.forget();
 }
 
-/*static*/ already_AddRefed<Promise>
-ImageBitmap::Create(nsIGlobalObject* aGlobal,
-                    const ImageBitmapSource& aBuffer,
-                    int32_t aOffset, int32_t aLength,
-                    mozilla::dom::ImageBitmapFormat aFormat,
-                    const Sequence<ChannelPixelLayout>& aLayout,
-                    ErrorResult& aRv)
-{
-  MOZ_ASSERT(aGlobal);
-
-  RefPtr<Promise> promise = Promise::Create(aGlobal, aRv);
-
-  if (NS_WARN_IF(aRv.Failed())) {
-    return nullptr;
-  }
-
-  aRv.Throw(NS_ERROR_NOT_IMPLEMENTED);
-  return promise.forget();
-}
-
 } // namespace dom
 } // namespace mozilla

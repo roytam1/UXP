@@ -461,25 +461,6 @@ WorkerGlobalScope::CreateImageBitmap(const ImageBitmapSource& aImage,
   return ImageBitmap::Create(this, aImage, Some(gfx::IntRect(aSx, aSy, aSw, aSh)), aRv);
 }
 
-already_AddRefed<mozilla::dom::Promise>
-WorkerGlobalScope::CreateImageBitmap(const ImageBitmapSource& aImage,
-                                     int32_t aOffset, int32_t aLength,
-                                     ImageBitmapFormat aFormat,
-                                     const Sequence<ChannelPixelLayout>& aLayout,
-                                     ErrorResult& aRv)
-{
-  JSContext* cx = GetCurrentThreadJSContext();
-  MOZ_ASSERT(cx);
-
-  if (!ImageBitmap::ExtensionsEnabled(cx, nullptr)) {
-    aRv.Throw(NS_ERROR_TYPE_ERR);
-    return nullptr;
-  }
-
-  aRv.Throw(NS_ERROR_TYPE_ERR);
-  return nullptr;
-}
-
 // https://html.spec.whatwg.org/#structured-cloning
 void WorkerGlobalScope::StructuredClone(JSContext* aCx,
                                         JS::Handle<JS::Value> aValue,
