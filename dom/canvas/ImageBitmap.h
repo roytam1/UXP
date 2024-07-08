@@ -55,7 +55,6 @@ class HTMLVideoElement;
 enum class ImageBitmapFormat : uint32_t;
 class ImageData;
 class ImageUtils;
-template<typename T> class MapDataIntoBufferSource;
 class Promise;
 class PostMessageEvent; // For StructuredClone between windows.
 
@@ -64,7 +63,6 @@ struct ImageBitmapCloneData final
   RefPtr<gfx::DataSourceSurface> mSurface;
   gfx::IntRect mPictureRect;
   bool mIsPremultipliedAlpha;
-  bool mIsCroppingAreaOutSideOfSourceImage;
   bool mWriteOnly;
 };
 
@@ -151,9 +149,6 @@ public:
   friend CreateImageBitmapFromBlobTask;
   friend CreateImageBitmapFromBlobWorkerTask;
 
-  template<typename T>
-  friend class MapDataIntoBufferSource;
-
   bool IsWriteOnly() const {
     return mWriteOnly;
   }
@@ -165,12 +160,6 @@ public:
 
   int32_t
   MappedDataLength(ImageBitmapFormat aFormat, ErrorResult& aRv);
-
-  already_AddRefed<Promise>
-  MapDataInto(JSContext* aCx,
-              ImageBitmapFormat aFormat,
-              const ArrayBufferViewOrArrayBuffer& aBuffer,
-              int32_t aOffset, ErrorResult& aRv);
 
 protected:
 
@@ -200,9 +189,6 @@ protected:
   virtual ~ImageBitmap();
 
   void SetPictureRect(const gfx::IntRect& aRect, ErrorResult& aRv);
-
-  void SetIsCroppingAreaOutSideOfSourceImage(const gfx::IntSize& aSourceSize,
-                                             const Maybe<gfx::IntRect>& aCroppingRect);
 
   static already_AddRefed<ImageBitmap>
   CreateInternal(nsIGlobalObject* aGlobal, HTMLImageElement& aImageEl,
@@ -268,15 +254,6 @@ protected:
   gfx::IntRect mPictureRect;
 
   const bool mIsPremultipliedAlpha;
-
-  /*
-   * Set mIsCroppingAreaOutSideOfSourceImage if image bitmap was cropped to the
-   * source rectangle so that it contains any transparent black pixels (cropping
-   * area is outside of the source image).
-   * This is used in mapDataInto() to check if we should reject promise with
-   * IndexSizeError.
-   */
-  bool mIsCroppingAreaOutSideOfSourceImage;
 
   /*
    * Write-Only flag is set to true if this image has been generated from a
