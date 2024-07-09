@@ -353,14 +353,14 @@ nsHttpHandler::Init()
       if (mCompatPlatformEnabled) {
         mProductSub.Assign(mCompatPlatformVersion);
       } else {
-        if (mCompatPlatformEnabled) {
-          mProductSub.Assign(mCompatPlatformVersion);
-        } else {
-          mProductSub.Assign(mAppBuildID);
-        }
+        mProductSub.AssignLiteral(MOZILLA_UAVERSION);
       }
     } else {
-      mProductSub.Assign(mAppBuildID);
+      if (mCompatPlatformEnabled) {
+        mProductSub.Assign(mCompatPlatformVersion);
+      } else {
+        mProductSub.Assign(mAppBuildID);
+      }
     }
     // In case MOZILLA_UAVERSION is empty for some odd reason...
     if (mProductSub.IsEmpty()) {
