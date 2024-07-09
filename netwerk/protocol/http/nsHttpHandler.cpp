@@ -177,6 +177,8 @@ nsHttpHandler::nsHttpHandler()
     , mAppBuildID("20200101")
     , mCompatFirefoxEnabled(false)
     , mCompatFirefoxVersion("68.9")
+    , mCompatPlatformEnabled(false)
+    , mCompatPlatformVersion("6.6")
     , mUserAgentIsDirty(true)
     , mAcceptLanguagesIsDirty(true)
     , mPromptTempRedirect(true)
@@ -297,7 +299,11 @@ nsHttpHandler::Init()
     if (mCompatGeckoEnabled) {
       mMisc += mCompatFirefoxVersion;
     } else {
-      mMisc += MOZILLA_UAVERSION;
+      if (mCompatPlatformEnabled) {
+        mMisc += mCompatPlatformVersion;
+      } else {
+        mMisc += MOZILLA_UAVERSION;
+      }
     }
 
     mCompatGecko.AssignLiteral("Gecko/20100101");
@@ -344,7 +350,11 @@ nsHttpHandler::Init()
 
     // Goanna slice version
     if (mCompatGeckoEnabled) {
-      mProductSub.AssignLiteral(MOZILLA_UAVERSION);
+      if (mCompatPlatformEnabled) {
+        mProductSub.Assign(mCompatPlatformVersion);
+      } else {
+        mProductSub.AssignLiteral(MOZILLA_UAVERSION);
+      }
     } else {
       mProductSub.Assign(mAppBuildID);
     }
@@ -929,6 +939,40 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
         mUserAgentIsDirty = true;
     }
 
+    // general.useragent.change_platform_version
+    if (PREF_CHANGED(UA_PREF("change_platform_version"))) {
+        rv = prefs->GetBoolPref(UA_PREF("change_platform_version"), &cVar);
+        mCompatPlatformEnabled = (NS_SUCCEEDED(rv) && cVar);
+        
+        // Rebuild application version string.
+        BuildAppVersion();
+
+        mUserAgentIsDirty = true;
+    }
+    // general.useragent.platform_version
+    // This is the version number used in rv: for Gecko compatibility
+    // and in the Firefox/nn.nn slice when compatMode.firefox is enabled.
+    if (PREF_CHANGED(UA_PREF("platform_version"))) {
+        prefs->GetCharPref(UA_PREF("platform_version"),
+                           getter_Copies(mCompatPlatformVersion));
+        
+        // rebuild mMisc and compatMode slice
+        mMisc.AssignLiteral("rv:");
+        if (mCompatGeckoEnabled) {
+          mMisc += mCompatFirefoxVersion;
+        } else {
+          if (mCompatPlatformEnabled) {
+            mMisc += mCompatPlatformVersion;
+          } else {
+            mMisc += MOZILLA_UAVERSION;
+          }
+        }
+        mCompatFirefox.AssignLiteral("Firefox/");
+        mCompatFirefox += mCompatFirefoxVersion;
+        
+        mUserAgentIsDirty = true;
+    }
+
     if (PREF_CHANGED(UA_PREF("compatMode.gecko"))) {
         rv = prefs->GetBoolPref(UA_PREF("compatMode.gecko"), &cVar);
         mCompatGeckoEnabled = (NS_SUCCEEDED(rv) && cVar);
@@ -938,7 +982,11 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
         if (mCompatGeckoEnabled) {
           mMisc += mCompatFirefoxVersion;
         } else {
-          mMisc += MOZILLA_UAVERSION;
+          if (mCompatPlatformEnabled) {
+            mMisc += mCompatPlatformVersion;
+          } else {
+            mMisc += MOZILLA_UAVERSION;
+          }
         }
         
         if (mCompatGeckoEnabled) {
