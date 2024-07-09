@@ -353,11 +353,7 @@ nsHttpHandler::Init()
       if (mCompatPlatformEnabled) {
         mProductSub.Assign(mCompatPlatformVersion);
       } else {
-        if (mCompatPlatformEnabled) {
-          mProductSub.Assign(mCompatPlatformVersion);
-        } else {
-          mProductSub.Assign(mAppBuildID);
-        }
+        mProductSub.AssignLiteral(MOZILLA_UAVERSION);
       }
     } else {
       mProductSub.Assign(mAppBuildID);
@@ -994,17 +990,9 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
         }
         
         if (mCompatGeckoEnabled) {
-          if (mCompatPlatformEnabled) {
-            mProductSub.Assign(mCompatPlatformVersion);
-          } else {
-            mProductSub.AssignLiteral(MOZILLA_UAVERSION);
-          }
+          mProductSub.AssignLiteral(MOZILLA_UAVERSION);
         } else {
-          if (mCompatPlatformEnabled) {
-            mProductSub.Assign(mCompatPlatformVersion);
-          } else {
-            mProductSub.Assign(mAppBuildID);
-          }
+          mProductSub.Assign(mAppBuildID);
         }
         // In case MOZILLA_UAVERSION is empty for some odd reason...
         if (mProductSub.IsEmpty()) {
@@ -1031,11 +1019,7 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
         if (mCompatGeckoEnabled) {
           mMisc += mCompatFirefoxVersion;
         } else {
-          if (mCompatPlatformEnabled) {
-            mMisc += mCompatPlatformVersion;
-          } else {
-            mMisc += MOZILLA_UAVERSION;
-          }
+          mMisc += MOZILLA_UAVERSION;
         }
         mCompatFirefox.AssignLiteral("Firefox/");
         mCompatFirefox += mCompatFirefoxVersion;
