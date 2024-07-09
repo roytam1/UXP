@@ -80,6 +80,9 @@ pref("services.sync.APILevel", 1); // FSyncMS doesn't support 'info/configuratio
 // Make sure we shortcut out of a11y to save walking unnecessary code
 pref("accessibility.force_disabled", 1);
 
+pref("general.useragent.change_app_version", true);
+pref("general.useragent.app_version", "33.2");
+
 // ============================================================================
 
 // ===| DevTools |=============================================================
