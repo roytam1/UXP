@@ -28,6 +28,7 @@ pref("general.useragent.compatMode.firefox", false);
 pref("general.useragent.compatMode.version", "102.0");
 pref("general.useragent.appVersionIsBuildID", false);
 pref("general.useragent.change_platform_version", true);
+pref("general.useragent.platform_version", "6.6");
 
 // In order to disable all overrides by default, don't initialize
 // UserAgentOverrides.jsm.
