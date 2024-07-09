@@ -179,6 +179,8 @@ nsHttpHandler::nsHttpHandler()
     , mCompatFirefoxVersion("68.9")
     , mCompatPlatformEnabled(false)
     , mCompatPlatformVersion("6.6")
+    , mCompatAppEnabled(false)
+    , mCompatAppVersion("52.9")
     , mUserAgentIsDirty(true)
     , mAcceptLanguagesIsDirty(true)
     , mPromptTempRedirect(true)
@@ -665,7 +667,9 @@ nsHttpHandler::BuildAppVersion()
 {
     nsCOMPtr<nsIXULAppInfo> appInfo = do_GetService("@mozilla.org/xre/app-info;1");
 
-    if (mAppVersionIsBuildID) {
+    if (mCompatAppEnabled) {
+      mAppVersion.Assign(mCompatAppVersion);
+    } else if (mAppVersionIsBuildID) {
       // Override with BuildID
       mAppVersion.Assign(mAppBuildID);
     } else if (appInfo) {
@@ -936,7 +940,29 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
     if (PREF_CHANGED(UA_PREF("appVersionIsBuildID"))) {
         rv = prefs->GetBoolPref(UA_PREF("appVersionIsBuildID"), &cVar);
         mAppVersionIsBuildID = (NS_SUCCEEDED(rv) && cVar);
-        
+
+        // Rebuild application version string.
+        BuildAppVersion();
+
+        mUserAgentIsDirty = true;
+    }
+
+    // general.useragent.change_app_version
+    if (PREF_CHANGED(UA_PREF("change_app_version"))) {
+        rv = prefs->GetBoolPref(UA_PREF("change_app_version"), &cVar);
+        mCompatAppEnabled = (NS_SUCCEEDED(rv) && cVar);
+
+        // Rebuild application version string.
+        BuildAppVersion();
+
+        mUserAgentIsDirty = true;
+    }
+    // general.useragent.app_version
+    // This is the version number used in rv: for Gecko compatibility
+    if (PREF_CHANGED(UA_PREF("app_version"))) {
+        prefs->GetCharPref(UA_PREF("app_version"),
+                           getter_Copies(mCompatAppVersion));
+
         // Rebuild application version string.
         BuildAppVersion();
 
@@ -947,7 +973,7 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
     if (PREF_CHANGED(UA_PREF("change_platform_version"))) {
         rv = prefs->GetBoolPref(UA_PREF("change_platform_version"), &cVar);
         mCompatPlatformEnabled = (NS_SUCCEEDED(rv) && cVar);
-        
+
         // Rebuild rv: and Goanna slice version
         mMisc.AssignLiteral("rv:");
         if (mCompatGeckoEnabled) {
@@ -959,7 +985,7 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
             mMisc += MOZILLA_UAVERSION;
           }
         }
-        
+
         if (mCompatGeckoEnabled) {
           if (mCompatPlatformEnabled) {
             mProductSub.Assign(mCompatPlatformVersion);
@@ -981,7 +1007,6 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
     }
     // general.useragent.platform_version
     // This is the version number used in rv: for Gecko compatibility
-    // and in the Firefox/nn.nn slice when compatMode.firefox is enabled.
     if (PREF_CHANGED(UA_PREF("platform_version"))) {
         prefs->GetCharPref(UA_PREF("platform_version"),
                            getter_Copies(mCompatPlatformVersion));
