@@ -151,6 +151,8 @@ CookieServiceChild::SetCookieStringInternal(nsIURI *aHostURI,
   NS_ENSURE_ARG(aHostURI);
   NS_ENSURE_ARG_POINTER(aCookieString);
 
+  nsCOMPtr<nsILoadInfo> loadInfo = aChannel->GetLoadInfo();
+
   // Fast past: don't bother sending IPC messages about nullprincipal'd
   // documents.
   nsAutoCString scheme;
@@ -162,6 +164,19 @@ CookieServiceChild::SetCookieStringInternal(nsIURI *aHostURI,
   bool isForeign = true;
   if (RequireThirdPartyCheck())
     mThirdPartyUtil->IsThirdPartyChannel(aChannel, aHostURI, &isForeign);
+
+  // include sub-document navigations from cross-site to same-site
+  // wrt top-level in our check for thirdparty-ness
+  if (!isForeign &&
+      loadInfo->GetExternalContentPolicyType() == nsIContentPolicy::TYPE_SUBDOCUMENT) {
+    bool triggeringPrincipalIsThirdParty = false;
+    nsCOMPtr<nsIURI> trigURI;
+    loadInfo->TriggeringPrincipal()->GetURI(getter_AddRefs(trigURI));
+    mThirdPartyUtil->IsThirdPartyURI(trigURI,
+                                     aHostURI,
+                                     &triggeringPrincipalIsThirdParty);
+    isForeign |= triggeringPrincipalIsThirdParty;
+  }
 
   nsDependentCString cookieString(aCookieString);
   nsDependentCString serverTime;
