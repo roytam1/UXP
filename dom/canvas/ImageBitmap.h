@@ -153,14 +153,6 @@ public:
     return mWriteOnly;
   }
 
-  // Mozilla Extensions
-  ImageBitmapFormat
-  FindOptimalFormat(const Optional<Sequence<ImageBitmapFormat>>& aPossibleFormats,
-                    ErrorResult& aRv);
-
-  int32_t
-  MappedDataLength(ImageBitmapFormat aFormat, ErrorResult& aRv);
-
 protected:
 
   /*

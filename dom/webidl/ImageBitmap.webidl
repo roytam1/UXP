@@ -394,9 +394,3 @@ dictionary ChannelPixelLayout {
 
 typedef sequence<ChannelPixelLayout> ImagePixelLayout;
 
-partial interface ImageBitmap {
-    [Throws, Func="mozilla::dom::ImageBitmap::ExtensionsEnabled"]
-    ImageBitmapFormat               findOptimalFormat (optional sequence<ImageBitmapFormat> aPossibleFormats);
-    [Throws, Func="mozilla::dom::ImageBitmap::ExtensionsEnabled"]
-    long                            mappedDataLength (ImageBitmapFormat aFormat);
-};

@@ -1561,43 +1561,5 @@ ImageBitmap::ExtensionsEnabled(JSContext* aCx, JSObject*)
   }
 }
 
-// ImageBitmap extensions.
-ImageBitmapFormat
-ImageBitmap::FindOptimalFormat(const Optional<Sequence<ImageBitmapFormat>>& aPossibleFormats,
-                               ErrorResult& aRv)
-{
-  MOZ_ASSERT(mDataWrapper, "No ImageBitmapFormatUtils functionalities.");
-
-  ImageBitmapFormat platformFormat = mDataWrapper->GetFormat();
-
-  if (!aPossibleFormats.WasPassed() ||
-      aPossibleFormats.Value().Contains(platformFormat)) {
-    return platformFormat;
-  } else {
-    // If no matching is found, FindBestMatchingFromat() returns
-    // ImageBitmapFormat::EndGuard_ and we throw an exception.
-    ImageBitmapFormat optimalFormat =
-      FindBestMatchingFromat(platformFormat, aPossibleFormats.Value());
-
-    if (optimalFormat == ImageBitmapFormat::EndGuard_) {
-      aRv.Throw(NS_ERROR_NOT_IMPLEMENTED);
-    }
-
-    return optimalFormat;
-  }
-}
-
-int32_t
-ImageBitmap::MappedDataLength(ImageBitmapFormat aFormat, ErrorResult& aRv)
-{
-  MOZ_ASSERT(mDataWrapper, "No ImageBitmapFormatUtils functionalities.");
-
-  if (aFormat == mDataWrapper->GetFormat()) {
-    return mDataWrapper->GetBufferLength();
-  } else {
-    return CalculateImageBufferSize(aFormat, Width(), Height());
-  }
-}
-
 } // namespace dom
 } // namespace mozilla
