@@ -948,9 +948,35 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
         rv = prefs->GetBoolPref(UA_PREF("change_platform_version"), &cVar);
         mCompatPlatformEnabled = (NS_SUCCEEDED(rv) && cVar);
         
-        // Rebuild application version string.
-        BuildAppVersion();
-
+        // Rebuild rv: and Goanna slice version
+        mMisc.AssignLiteral("rv:");
+        if (mCompatGeckoEnabled) {
+          mMisc += mCompatFirefoxVersion;
+        } else {
+          if (mCompatPlatformEnabled) {
+            mMisc += mCompatPlatformVersion;
+          } else {
+            mMisc += MOZILLA_UAVERSION;
+          }
+        }
+        
+        if (mCompatGeckoEnabled) {
+          if (mCompatPlatformEnabled) {
+            mProductSub.Assign(mCompatPlatformVersion);
+          } else {
+            mProductSub.AssignLiteral(MOZILLA_UAVERSION);
+          }
+        } else {
+          if (mCompatPlatformEnabled) {
+            mProductSub.Assign(mCompatPlatformVersion);
+          } else {
+            mProductSub.Assign(mAppBuildID);
+          }
+        }
+        // In case MOZILLA_UAVERSION is empty for some odd reason...
+        if (mProductSub.IsEmpty()) {
+          mProductSub.Assign(mAppBuildID);
+        }
         mUserAgentIsDirty = true;
     }
     // general.useragent.platform_version
