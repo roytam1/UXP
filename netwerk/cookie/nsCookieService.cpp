@@ -1967,9 +1967,24 @@ nsCookieService::SetCookieStringCommon(nsIURI *aHostURI,
   NS_ENSURE_ARG(aHostURI);
   NS_ENSURE_ARG(aCookieHeader);
 
+  nsCOMPtr<nsILoadInfo> loadInfo = aChannel->GetLoadInfo();
+
   // Determine whether the request is foreign. Failure is acceptable.
   bool isForeign = true;
   mThirdPartyUtil->IsThirdPartyChannel(aChannel, aHostURI, &isForeign);
+  
+  // include sub-document navigations from cross-site to same-site
+  // wrt top-level in our check for thirdparty-ness
+  if (!isForeign &&
+      loadInfo->GetExternalContentPolicyType() == nsIContentPolicy::TYPE_SUBDOCUMENT) {
+    bool triggeringPrincipalIsThirdParty = false;
+    nsCOMPtr<nsIURI> trigURI;
+    loadInfo->TriggeringPrincipal()->GetURI(getter_AddRefs(trigURI));
+    mThirdPartyUtil->IsThirdPartyURI(trigURI,
+                                     aHostURI,
+                                     &triggeringPrincipalIsThirdParty);
+    isForeign |= triggeringPrincipalIsThirdParty;
+  }
 
   // Get originAttributes.
   NeckoOriginAttributes attrs;

@@ -90,15 +90,14 @@ class SyncWaiter : public WaitableEvent::Waiter {
   }
 
   bool Fire(WaitableEvent *signaling_event) {
-    lock_->Acquire();
-      const bool previous_value = fired_;
-      fired_ = true;
-      if (!previous_value)
-        signaling_event_ = signaling_event;
-    lock_->Release();
+    AutoLock locked(*lock_);
 
-    if (previous_value)
+    if (fired_) {
       return false;
+    }
+
+    fired_ = true;
+    signaling_event_ = signaling_event;
 
     cv_->Broadcast();
 

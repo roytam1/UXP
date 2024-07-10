@@ -334,6 +334,78 @@ nsMixedContentBlocker::AsyncOnChannelRedirect(nsIChannel* aOldChannel,
   return NS_OK;
 }
 
+bool nsMixedContentBlocker::IsPotentiallyTrustworthyLoopbackURL(nsIURI* aURL) {
+  nsAutoCString host;
+  nsresult rv = aURL->GetHost(host);
+  NS_ENSURE_SUCCESS(rv, false);
+
+  return host.EqualsLiteral("127.0.0.1") || host.EqualsLiteral("::1") ||
+         host.EqualsLiteral("localhost");
+}
+
+bool nsMixedContentBlocker::IsPotentiallyTrustworthyOrigin(nsIURI* aURI) {
+  // The following implements:
+  // https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy
+
+  nsAutoCString scheme;
+  nsresult rv = aURI->GetScheme(scheme);
+  if (NS_FAILED(rv)) {
+    return false;
+  }
+
+  // Blobs are expected to inherit their principal so we don't expect to have
+  // a codebase principal with scheme 'blob' here.  We can't assert that though
+  // since someone could mess with a non-blob URI to give it that scheme.
+  NS_WARNING_ASSERTION(!scheme.EqualsLiteral("blob"),
+                       "IsPotentiallyTrustworthyOrigin ignoring blob scheme");
+
+  // According to the specification, the user agent may choose to extend the
+  // trust to other, vendor-specific URL schemes. We use this for "resource:",
+  // which is technically a substituting protocol handler that is not limited to
+  // local resource mapping, but in practice is never mapped remotely as this
+  // would violate assumptions a lot of code makes.
+  if (scheme.EqualsLiteral("https") ||
+      scheme.EqualsLiteral("file") ||
+      scheme.EqualsLiteral("resource") ||
+      scheme.EqualsLiteral("app") ||
+      scheme.EqualsLiteral("moz-extension") ||
+      scheme.EqualsLiteral("wss")) {
+    return true;
+  }
+
+  nsAutoCString host;
+  rv = aURI->GetHost(host);
+  if (NS_FAILED(rv)) {
+    return false;
+  }
+
+  if (IsPotentiallyTrustworthyLoopbackURL(aURI)) {
+    return true;
+  }
+
+  // If a host is not considered secure according to the default algorithm, then
+  // check to see if it has been whitelisted by the user.  We only apply this
+  // whitelist for network resources, i.e., those with scheme "http" or "ws".
+  // The pref should contain a comma-separated list of hostnames.
+
+  if (!scheme.EqualsLiteral("http") && !scheme.EqualsLiteral("ws")) {
+    return false;
+  }
+
+  nsAdoptingCString whitelist = Preferences::GetCString("dom.securecontext.whitelist");
+  if (whitelist) {
+    nsCCharSeparatedTokenizer tokenizer(whitelist, ',');
+    while (tokenizer.hasMoreTokens()) {
+      const nsCSubstring& allowedHost = tokenizer.nextToken();
+      if (host.Equals(allowedHost)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 /* This version of ShouldLoad() is non-static and called by the Content Policy
  * API and AsyncOnChannelRedirect().  See nsIContentPolicy::ShouldLoad()
  * for detailed description of the parameters.
@@ -667,6 +739,16 @@ nsMixedContentBlocker::ShouldLoad(bool aHadInsecureImageRedirect,
     return NS_OK;
   }
 
+  bool isHttpScheme = false;
+  rv = innerContentLocation->SchemeIs("http", &isHttpScheme);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  // Allow http requests for trusted origins (e.g. localhost or explicitly trusted contexts)
+  if (isHttpScheme && IsPotentiallyTrustworthyOrigin(innerContentLocation)) {
+    *aDecision = ACCEPT;
+    return NS_OK;
+  }
+
   // The page might have set the CSP directive 'upgrade-insecure-requests'. In such
   // a case allow the http: load to succeed with the promise that the channel will
   // get upgraded to https before fetching any data from the netwerk.
@@ -678,9 +760,6 @@ nsMixedContentBlocker::ShouldLoad(bool aHadInsecureImageRedirect,
   // we only have to check against http: here. Skip mixed content blocking if the
   // subresource load uses http: and the CSP directive 'upgrade-insecure-requests'
   // is present on the page.
-  bool isHttpScheme = false;
-  rv = innerContentLocation->SchemeIs("http", &isHttpScheme);
-  NS_ENSURE_SUCCESS(rv, rv);
   nsIDocument* document = docShell->GetDocument();
   MOZ_ASSERT(document, "Expected a document");
   if (isHttpScheme && document->GetUpgradeInsecureRequests(isPreload)) {
