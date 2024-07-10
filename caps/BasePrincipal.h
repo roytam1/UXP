@@ -282,6 +282,7 @@ public:
   NS_IMETHOD GetUnknownAppId(bool* aUnknownAppId) final;
   NS_IMETHOD GetUserContextId(uint32_t* aUserContextId) final;
   NS_IMETHOD GetPrivateBrowsingId(uint32_t* aPrivateBrowsingId) final;
+  NS_IMETHOD IsSameOrigin(nsIURI* aURI, bool aIsPrivateWin, bool* aRes) override;
 
   bool EqualsIgnoringAddonId(nsIPrincipal *aOther);
 
