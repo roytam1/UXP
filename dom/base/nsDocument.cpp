@@ -2802,20 +2802,9 @@ nsDocument::GetPrincipal()
   return NodePrincipal();
 }
 
-extern bool sDisablePrefetchHTTPSPref;
-
 void
 nsDocument::SetPrincipal(nsIPrincipal *aNewPrincipal)
 {
-  if (aNewPrincipal && mAllowDNSPrefetch && sDisablePrefetchHTTPSPref) {
-    nsCOMPtr<nsIURI> uri;
-    aNewPrincipal->GetURI(getter_AddRefs(uri));
-    bool isHTTPS;
-    if (!uri || NS_FAILED(uri->SchemeIs("https", &isHTTPS)) ||
-        isHTTPS) {
-      mAllowDNSPrefetch = false;
-    }
-  }
   mNodeInfoManager->SetDocumentPrincipal(aNewPrincipal);
 
 #ifdef DEBUG

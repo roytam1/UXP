@@ -37,7 +37,6 @@ using namespace mozilla::dom;
 using namespace mozilla::net;
 
 static NS_DEFINE_CID(kDNSServiceCID, NS_DNSSERVICE_CID);
-bool sDisablePrefetchHTTPSPref;
 static bool sInitialized = false;
 static nsIDNSService *sDNSService = nullptr;
 static nsHTMLDNSPrefetch::nsDeferrals *sPrefetches = nullptr;
@@ -59,13 +58,6 @@ nsHTMLDNSPrefetch::Initialize()
 
   sPrefetches->Activate();
 
-  Preferences::AddBoolVarCache(&sDisablePrefetchHTTPSPref,
-                               "network.dns.disablePrefetchFromHTTPS");
-  
-  // Default is false, so we need an explicit call to prime the cache.
-  sDisablePrefetchHTTPSPref = 
-    Preferences::GetBool("network.dns.disablePrefetchFromHTTPS", true);
-  
   NS_IF_RELEASE(sDNSService);
   nsresult rv;
   rv = CallGetService(kDNSServiceCID, &sDNSService);
