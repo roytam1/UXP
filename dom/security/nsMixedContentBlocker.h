@@ -42,6 +42,11 @@ public:
 
   nsMixedContentBlocker();
 
+  // See:
+  // https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy
+  static bool IsPotentiallyTrustworthyLoopbackURL(nsIURI* aURL);
+  static bool IsPotentiallyTrustworthyOrigin(nsIURI* aURI);
+
   /* Static version of ShouldLoad() that contains all the Mixed Content Blocker
    * logic.  Called from non-static ShouldLoad().
    * Called directly from imageLib when an insecure redirect exists in a cached

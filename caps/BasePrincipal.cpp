@@ -561,6 +561,23 @@ BasePrincipal::GetCspJSON(nsAString& outCSPinJSON)
 }
 
 NS_IMETHODIMP
+BasePrincipal::IsSameOrigin(nsIURI* aURI, bool aIsPrivateWin, bool* aRes) {
+  *aRes = false;
+  nsCOMPtr<nsIURI> prinURI;
+  nsresult rv = GetURI(getter_AddRefs(prinURI));
+  if (NS_FAILED(rv) || !prinURI) {
+    return NS_OK;
+  }
+  nsIScriptSecurityManager* ssm = nsContentUtils::GetSecurityManager();
+  if (!ssm) {
+    return NS_ERROR_UNEXPECTED;
+    ;
+  }
+  *aRes = NS_SUCCEEDED(ssm->CheckSameOriginURI(prinURI, aURI, aIsPrivateWin));
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 BasePrincipal::GetIsNullPrincipal(bool* aResult)
 {
   *aResult = Kind() == eNullPrincipal;

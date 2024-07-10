@@ -99,6 +99,7 @@
 #include "CacheControlParser.h"
 #include "nsMixedContentBlocker.h"
 #include "CacheStorageService.h"
+#include "mozilla/net/SecFetch.h"
 
 namespace mozilla { namespace net {
 
@@ -380,6 +381,8 @@ nsHttpChannel::Connect()
                               NS_LITERAL_CSTRING("1"), false);
         NS_ENSURE_SUCCESS(rv, rv);
     }
+    
+    mozilla::net::SecFetch::AddSecFetchHeader(this);
 
     bool isHttps = false;
     rv = mURI->SchemeIs("https", &isHttps);
