@@ -94,8 +94,15 @@ nsHTMLDNSPrefetch::Shutdown()
 }
 
 bool
-nsHTMLDNSPrefetch::IsAllowed (nsIDocument *aDocument)
+nsHTMLDNSPrefetch::IsAllowed(nsIDocument *aDocument)
 {
+  // Do not use prefetch if the document's node principal is the system
+  // principal.
+  nsCOMPtr<nsIPrincipal> principal = aDocument->NodePrincipal();
+  if (nsContentUtils::IsSystemPrincipal(principal)) {
+    return false;
+  }
+
   // There is no need to do prefetch on non UI scenarios such as XMLHttpRequest.
   return aDocument->IsDNSPrefetchAllowed() && aDocument->GetWindow();
 }
