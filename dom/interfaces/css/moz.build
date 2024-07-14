@@ -13,6 +13,8 @@ XPIDL_SOURCES += [
     'nsIDOMCSSImportRule.idl',
     'nsIDOMCSSKeyframeRule.idl',
     'nsIDOMCSSKeyframesRule.idl',
+    'nsIDOMCSSLayerBlockRule.idl',
+    'nsIDOMCSSLayerStatementRule.idl',
     'nsIDOMCSSMediaRule.idl',
     'nsIDOMCSSMozDocumentRule.idl',
     'nsIDOMCSSPageRule.idl',

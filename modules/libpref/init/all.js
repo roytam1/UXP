@@ -2675,6 +2675,9 @@ pref("layout.css.control-characters.visible", false);
 // Is support for ResizeObservers enabled?
 pref("layout.css.resizeobserver.enabled", true);
 
+// Is support for cascade layers enabled?
+pref("layout.css.cascade-layers.enabled", true);
+
 // pref for which side vertical scrollbars should be on
 // 0 = end-side in UI direction
 // 1 = end-side in document/content direction

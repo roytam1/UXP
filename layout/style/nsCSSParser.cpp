@@ -705,6 +705,7 @@ protected:
   bool ParseMediaQueryExpression(nsMediaQuery* aQuery);
   void ProcessImport(const nsString& aURLSpec,
                      nsMediaList* aMedia,
+                     const nsString& aLayerName,
                      RuleAppendFunc aAppendFunc,
                      void* aProcessData,
                      uint32_t aLineNumber,
@@ -3885,19 +3886,24 @@ CSSParserImpl::ParseImportRule(RuleAppendFunc aAppendFunc, void* aData)
     NS_ASSERTION(media->Length() != 0, "media list must be nonempty");
   }
 
-  ProcessImport(url, media, aAppendFunc, aData, linenum, colnum);
+  // FIXME: Layer functions inside @import declarations are treated as an error.
+  nsAutoString layerName;
+
+  ProcessImport(url, media, layerName, aAppendFunc, aData, linenum, colnum);
   return true;
 }
 
 void
 CSSParserImpl::ProcessImport(const nsString& aURLSpec,
                              nsMediaList* aMedia,
+                             const nsString& aLayerName,
                              RuleAppendFunc aAppendFunc,
                              void* aData,
                              uint32_t aLineNumber,
                              uint32_t aColumnNumber)
 {
   RefPtr<css::ImportRule> rule = new css::ImportRule(aMedia, aURLSpec,
+                                                       aLayerName,
                                                        aLineNumber,
                                                        aColumnNumber);
   (*aAppendFunc)(rule, aData);
