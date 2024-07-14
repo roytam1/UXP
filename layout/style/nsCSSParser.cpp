@@ -68,6 +68,7 @@ static bool sWebkitDevicePixelRatioEnabled;
 static bool sMozGradientsEnabled;
 static bool sControlCharVisibility;
 static bool sLegacyNegationPseudoClassEnabled;
+static bool sCascadeLayersEnabled;
 
 const uint32_t
 nsCSSProps::kParserVariantTable[eCSSProperty_COUNT_no_shorthands] = {
@@ -752,6 +753,8 @@ protected:
   bool ParseCounterDescriptorValue(nsCSSCounterDesc aDescID,
                                    nsCSSValue& aValue);
   bool ParseCounterRange(nsCSSValuePair& aPair);
+
+  bool ParseLayerRule(RuleAppendFunc aAppendFunc, void* aProcessData);
 
   /**
    * Parses the current input stream for a CSS token stream value and resolves
@@ -3453,6 +3456,11 @@ CSSParserImpl::ParseAtRule(RuleAppendFunc aAppendFunc,
     parseFunc = &CSSParserImpl::ParseSupportsRule;
     newSection = eCSSSection_General;
 
+  } else if (mToken.mIdent.LowerCaseEqualsLiteral("layer") &&
+             sCascadeLayersEnabled) {
+    parseFunc = &CSSParserImpl::ParseLayerRule;
+    newSection = eCSSSection_General;
+
   } else if (mToken.mIdent.LowerCaseEqualsLiteral("counter-style")) {
     parseFunc = &CSSParserImpl::ParseCounterStyleRule;
     newSection = eCSSSection_General;
@@ -4933,6 +4941,82 @@ CSSParserImpl::ParseSupportsConditionTermsAfterOperator(
       return true;
     }
   }
+}
+
+bool
+CSSParserImpl::ParseLayerRule(RuleAppendFunc aAppendFunc, void* aProcessData)
+{
+  nsString layerName;
+
+  uint32_t linenum, colnum;
+  if (!GetNextTokenLocation(true, &linenum, &colnum)) {
+    return false;
+  }
+
+  nsCSSToken* tk = &mToken;
+  if (!GetToken(true)) {
+    return false;
+  }
+
+  // Parse the layer name or name list if we aren't immediately
+  // followed by a "{", which indicates an anonymous layer.
+  if (tk->mType == eCSSToken_Ident) {
+    nsTArray<nsString>* nameList = new nsTArray<nsString>();
+    nameList->AppendElement(tk->mIdent);
+
+    bool parsing = true;
+    bool expectIdent = false;
+    while (parsing) {
+      if (!GetToken(true)) {
+        return false;
+      }
+
+      switch (tk->mType) {
+        case eCSSToken_Symbol: {
+          if (',' == tk->mSymbol) {
+            if (expectIdent) {
+              return false;
+            }
+            expectIdent = true;
+            continue;
+          } else if (';' == tk->mSymbol) {
+            if (expectIdent) {
+              return false;
+            }
+            RefPtr<CSSLayerStatementRule> rule =
+              new CSSLayerStatementRule(*nameList, linenum, colnum);
+            return true;
+          } else if ('{' == tk->mSymbol) {
+            if (expectIdent) {
+              return false;
+            }
+            uint32_t nameListLength = nameList->Length();
+            if (nameListLength == 0 || nameListLength > 1) {
+              return false;
+            }
+            layerName.Assign(nameList->ElementAt(0));
+            UngetToken();
+            parsing = false;
+            break;
+          }
+        }
+        case eCSSToken_Ident: {
+          nameList->AppendElement(tk->mIdent);
+          expectIdent = false;
+          break;
+        }
+        default: {
+          return false;
+        }
+      }
+    }
+  } else if (tk->mType == eCSSToken_Symbol && '{' != tk->mSymbol) {
+    return false;
+  }
+
+  RefPtr<css::GroupRule> rule =
+    new CSSLayerBlockRule(layerName, linenum, colnum);
+  return ParseGroupRule(rule, aAppendFunc, aProcessData);
 }
 
 bool
@@ -18185,6 +18269,8 @@ nsCSSParser::Startup()
                                "layout.css.control-characters.visible");
   Preferences::AddBoolVarCache(&sLegacyNegationPseudoClassEnabled,
                                "layout.css.legacy-negation-pseudo.enabled");
+  Preferences::AddBoolVarCache(&sCascadeLayersEnabled,
+                               "layout.css.cascade-layers.enabled");
 }
 
 nsCSSParser::nsCSSParser(mozilla::css::Loader* aLoader,

@@ -1896,6 +1896,8 @@ CSSStyleSheet::InsertRuleIntoGroup(const nsAString & aRule,
     case css::Rule::COUNTER_STYLE_RULE:
     case css::Rule::DOCUMENT_RULE:
     case css::Rule::SUPPORTS_RULE:
+    case css::Rule::LAYER_BLOCK_RULE:
+    case css::Rule::LAYER_STATEMENT_RULE:
       // these types are OK to insert into a group
       break;
     case css::Rule::CHARSET_RULE:
