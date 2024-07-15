@@ -3445,9 +3445,8 @@ CSSLayerStatementRule::GetCssTextImpl(nsAString& aCssText) const
   aCssText.AssignLiteral("@layer ");
   for (uint32_t i = 0, i_end = mNameList.Length(); i != i_end; ++i) {
     aCssText.Append(mNameList[i]);
-    aCssText.Append(',');
     if (i != i_end - 1) {
-      aCssText.Append(' ');
+      aCssText.AppendLiteral(", ");
     }
   }
   aCssText.Append(';');
