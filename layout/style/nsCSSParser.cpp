@@ -4947,6 +4947,7 @@ bool
 CSSParserImpl::ParseLayerRule(RuleAppendFunc aAppendFunc, void* aProcessData)
 {
   nsString layerName;
+  nsTArray<nsString>* nameList = new nsTArray<nsString>();
 
   uint32_t linenum, colnum;
   if (!GetNextTokenLocation(true, &linenum, &colnum)) {
@@ -4960,8 +4961,8 @@ CSSParserImpl::ParseLayerRule(RuleAppendFunc aAppendFunc, void* aProcessData)
 
   // Parse the layer name or name list if we aren't immediately
   // followed by a "{", which indicates an anonymous layer.
+  bool isStatement = false;
   if (tk->mType == eCSSToken_Ident) {
-    nsTArray<nsString>* nameList = new nsTArray<nsString>();
     nameList->AppendElement(tk->mIdent);
 
     bool parsing = true;
@@ -4975,27 +4976,29 @@ CSSParserImpl::ParseLayerRule(RuleAppendFunc aAppendFunc, void* aProcessData)
         case eCSSToken_Symbol: {
           if (',' == tk->mSymbol) {
             if (expectIdent) {
-              return false;
+              parsing = false;
+              break;
             }
             expectIdent = true;
             continue;
           } else if (';' == tk->mSymbol) {
             if (expectIdent) {
-              return false;
+              parsing = false;
+              break;
             }
-            RefPtr<CSSLayerStatementRule> rule =
-              new CSSLayerStatementRule(*nameList, linenum, colnum);
-            return true;
+            isStatement = true;
+            parsing = false;
+            break;
           } else if ('{' == tk->mSymbol) {
             if (expectIdent) {
-              return false;
+              parsing = false;
+              break;
             }
             uint32_t nameListLength = nameList->Length();
             if (nameListLength == 0 || nameListLength > 1) {
               return false;
             }
             layerName.Assign(nameList->ElementAt(0));
-            UngetToken();
             parsing = false;
             break;
           }
@@ -5010,10 +5013,23 @@ CSSParserImpl::ParseLayerRule(RuleAppendFunc aAppendFunc, void* aProcessData)
         }
       }
     }
+
+    if (expectIdent) {
+      UngetToken();
+      return false;
+    }    
   } else if (tk->mType == eCSSToken_Symbol && '{' != tk->mSymbol) {
     return false;
   }
 
+  if (isStatement) {
+    RefPtr<CSSLayerStatementRule> rule =
+      new CSSLayerStatementRule(*nameList, linenum, colnum);
+    (*aAppendFunc)(rule, aProcessData);
+    return true;
+  }
+
+  UngetToken();
   RefPtr<css::GroupRule> rule =
     new CSSLayerBlockRule(layerName, linenum, colnum);
   return ParseGroupRule(rule, aAppendFunc, aProcessData);
