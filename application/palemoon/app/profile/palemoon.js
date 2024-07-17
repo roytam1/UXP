@@ -570,8 +570,8 @@ pref("network.http.pipelining.ssl", true);
 pref("network.predictor.enabled", false);
 pref("network.prefetch-next", false);
 
-// Disable DNS prefetching
-pref("network.dns.disablePrefetch", true);
+// Enable DNS prefetching
+pref("network.dns.disablePrefetch", false);
 
 // Tune DNS lookups
 pref("network.dnsCacheEntries", 800);
