@@ -26,6 +26,8 @@
 #include "nsIDOMCSSFontFaceRule.h"
 #include "nsIDOMCSSFontFeatureValuesRule.h"
 #include "nsIDOMCSSGroupingRule.h"
+#include "nsIDOMCSSLayerBlockRule.h"
+#include "nsIDOMCSSLayerStatementRule.h"
 #include "nsIDOMCSSMediaRule.h"
 #include "nsIDOMCSSMozDocumentRule.h"
 #include "nsIDOMCSSPageRule.h"
@@ -736,5 +738,88 @@ private:
   nsCSSValue mValues[eCSSCounterDesc_COUNT];
   uint32_t   mGeneration;
 };
+
+namespace mozilla {
+
+class CSSLayerStatementRule final : public css::Rule,
+                                    public nsIDOMCSSLayerStatementRule
+{
+public:
+  CSSLayerStatementRule(const nsTArray<nsString>& aNameList,
+                        uint32_t aLineNumber, uint32_t aColumnNumber);
+  CSSLayerStatementRule(const CSSLayerStatementRule& aCopy);
+
+  // Rule methods
+#ifdef DEBUG
+  virtual void List(FILE* out = stdout, int32_t aIndent = 0) const override;
+#endif
+  virtual int32_t GetType() const override;
+  using Rule::GetType;
+  virtual already_AddRefed<mozilla::css::Rule> Clone() const override;
+
+  NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(CSSLayerStatementRule, Rule)
+  NS_DECL_ISUPPORTS_INHERITED
+  virtual bool IsCCLeaf() const override;
+
+  // nsIDOMCSSLayerStatementRule interface
+  NS_DECL_NSIDOMCSSLAYERSTATEMENTRULE
+
+  // WebIDL interface
+  uint16_t Type() const override;
+  void GetCssTextImpl(nsAString& aCssText) const override;
+  void GetNameList(nsTArray<nsString>& aResult);
+
+  virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const override;
+
+  virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
+
+protected:
+  virtual ~CSSLayerStatementRule();
+
+  nsTArray<nsString> mNameList;
+};
+
+class CSSLayerBlockRule final : public css::GroupRule,
+                                public nsIDOMCSSLayerBlockRule
+{
+public:
+  CSSLayerBlockRule(const nsString& aName,
+                    uint32_t aLineNumber, uint32_t aColumnNumber);
+  CSSLayerBlockRule(const CSSLayerBlockRule& aCopy);
+
+  // Rule methods
+#ifdef DEBUG
+  virtual void List(FILE* out = stdout, int32_t aIndent = 0) const override;
+#endif
+  virtual int32_t GetType() const override;
+  using Rule::GetType;
+  virtual already_AddRefed<mozilla::css::Rule> Clone() const override;
+  virtual bool UseForPresentation(nsPresContext* aPresContext,
+                                  nsMediaQueryResultCacheKey& aKey) override;
+
+  NS_DECL_ISUPPORTS_INHERITED
+
+  // nsIDOMCSSGroupingRule interface
+  NS_DECL_NSIDOMCSSGROUPINGRULE
+
+  // nsIDOMCSSLayerBlockRule interface
+  NS_DECL_NSIDOMCSSLAYERBLOCKRULE
+
+  // WebIDL interface
+  uint16_t Type() const override;
+  void GetCssTextImpl(nsAString& aCssText) const override;
+  // Our XPCOM GetName is OK
+
+  virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const override;
+
+  virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
+
+protected:
+  virtual ~CSSLayerBlockRule();
+
+  nsString mName;
+};
+
+} // namespace mozilla
 
 #endif /* !defined(nsCSSRules_h_) */
