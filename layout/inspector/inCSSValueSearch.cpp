@@ -18,6 +18,8 @@
 #include "nsIDOMCSSImportRule.h"
 #include "nsIDOMCSSMediaRule.h"
 #include "nsIDOMCSSSupportsRule.h"
+#include "nsIDOMCSSLayerBlockRule.h"
+#include "nsIDOMCSSLayerStatementRule.h"
 #include "nsIDOMCSSRule.h"
 #include "nsIURI.h"
 #include "nsIDocument.h"
@@ -320,6 +322,12 @@ inCSSValueSearch::SearchRuleList(nsIDOMCSSRuleList* aRuleList, nsIURI* aBaseURL)
         nsCOMPtr<nsIDOMCSSSupportsRule> supportsRule = do_QueryInterface(rule);
         nsCOMPtr<nsIDOMCSSRuleList> childRules;
         supportsRule->GetCssRules(getter_AddRefs(childRules));
+        SearchRuleList(childRules, aBaseURL);
+      } break;
+      case nsIDOMCSSRule::LAYER_BLOCK_RULE: {
+        nsCOMPtr<nsIDOMCSSLayerBlockRule> layerBlockRule = do_QueryInterface(rule);
+        nsCOMPtr<nsIDOMCSSRuleList> childRules;
+        layerBlockRule->GetCssRules(getter_AddRefs(childRules));
         SearchRuleList(childRules, aBaseURL);
       } break;
       default:
