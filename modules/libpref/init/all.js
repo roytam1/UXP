@@ -28,7 +28,7 @@ pref("general.useragent.compatMode.firefox", false);
 pref("general.useragent.compatMode.version", "102.0");
 pref("general.useragent.appVersionIsBuildID", false);
 pref("general.useragent.change_platform_version", true);
-pref("general.useragent.platform_version", "6.6");
+pref("general.useragent.platform_version", "6.7");
 
 // In order to disable all overrides by default, don't initialize
 // UserAgentOverrides.jsm.
@@ -2683,6 +2683,9 @@ pref("layout.css.control-characters.visible", false);
 
 // Is support for ResizeObservers enabled?
 pref("layout.css.resizeobserver.enabled", true);
+
+// Is support for cascade layers enabled?
+pref("layout.css.cascade-layers.enabled", true);
 
 // pref for which side vertical scrollbars should be on
 // 0 = end-side in UI direction

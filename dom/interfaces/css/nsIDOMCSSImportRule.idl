@@ -14,4 +14,5 @@ interface nsIDOMCSSImportRule : nsISupports
   readonly attribute DOMString           href;
   readonly attribute nsIDOMMediaList     media;
   readonly attribute nsIDOMCSSStyleSheet styleSheet;
+  readonly attribute DOMString           layerName;
 };

@@ -29,6 +29,7 @@ class ImportRule final : public Rule,
 {
 public:
   ImportRule(nsMediaList* aMedia, const nsString& aURLSpec,
+             const nsString& aLayerName,
              uint32_t aLineNumber, uint32_t aColumnNumber);
 private:
   // for |Clone|
@@ -65,9 +66,11 @@ public:
   // The XPCOM GetHref is fine, since it never fails.
   nsMediaList* Media() const { return mMedia; }
   StyleSheet* GetStyleSheet() const;
+  // The XPCOM GetLayerName is OK
 
 private:
   nsString  mURLSpec;
+  nsString  mLayerName;
   RefPtr<nsMediaList> mMedia;
   RefPtr<CSSStyleSheet> mChildSheet;
 };
