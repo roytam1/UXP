@@ -240,6 +240,9 @@ Spectrum.prototype = {
   },
 
   onElementClick: function (e) {
+    if (e.button != 0) {
+      return;
+    }
     e.stopPropagation();
   },
 
