@@ -272,13 +272,13 @@ public:
   bool           operator==(const nsStyleSides& aOther) const;
   bool           operator!=(const nsStyleSides& aOther) const;
 
-  inline nsStyleUnit GetUnit(mozilla::css::Side aSide) const;
+  inline nsStyleUnit GetUnit(mozilla::Side aSide) const;
   inline nsStyleUnit GetLeftUnit() const;
   inline nsStyleUnit GetTopUnit() const;
   inline nsStyleUnit GetRightUnit() const;
   inline nsStyleUnit GetBottomUnit() const;
 
-  inline nsStyleCoord Get(mozilla::css::Side aSide) const;
+  inline nsStyleCoord Get(mozilla::Side aSide) const;
   inline nsStyleCoord GetLeft() const;
   inline nsStyleCoord GetTop() const;
   inline nsStyleCoord GetRight() const;
@@ -311,13 +311,13 @@ public:
   // constructors).
   void Reset();
 
-  inline void Set(mozilla::css::Side aSide, const nsStyleCoord& aCoord);
+  inline void Set(mozilla::Side aSide, const nsStyleCoord& aCoord);
   inline void SetLeft(const nsStyleCoord& aCoord);
   inline void SetTop(const nsStyleCoord& aCoord);
   inline void SetRight(const nsStyleCoord& aCoord);
   inline void SetBottom(const nsStyleCoord& aCoord);
 
-  nscoord ToLength(mozilla::css::Side aSide) const {
+  nscoord ToLength(mozilla::Side aSide) const {
     return nsStyleCoord::ToLength(mUnits[aSide], mValues[aSide]);
   }
 
@@ -545,7 +545,7 @@ inline bool nsStyleSides::operator!=(const nsStyleSides& aOther) const
   return !((*this) == aOther);
 }
 
-inline nsStyleUnit nsStyleSides::GetUnit(mozilla::css::Side aSide) const
+inline nsStyleUnit nsStyleSides::GetUnit(mozilla::Side aSide) const
 {
   return (nsStyleUnit)mUnits[aSide];
 }
@@ -570,7 +570,7 @@ inline nsStyleUnit nsStyleSides::GetBottomUnit() const
   return GetUnit(NS_SIDE_BOTTOM);
 }
 
-inline nsStyleCoord nsStyleSides::Get(mozilla::css::Side aSide) const
+inline nsStyleCoord nsStyleSides::Get(mozilla::Side aSide) const
 {
   return nsStyleCoord(mValues[aSide], nsStyleUnit(mUnits[aSide]));
 }
@@ -595,7 +595,7 @@ inline nsStyleCoord nsStyleSides::GetBottom() const
   return Get(NS_SIDE_BOTTOM);
 }
 
-inline void nsStyleSides::Set(mozilla::css::Side aSide, const nsStyleCoord& aCoord)
+inline void nsStyleSides::Set(mozilla::Side aSide, const nsStyleCoord& aCoord)
 {
   nsStyleCoord::SetValue(mUnits[aSide], mValues[aSide], aCoord);
 }

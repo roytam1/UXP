@@ -436,7 +436,7 @@ static DrawResult DrawBorderImage(nsPresContext* aPresContext,
                                   Sides aSkipSides,
                                   PaintBorderFlags aFlags);
 
-static nscolor MakeBevelColor(mozilla::css::Side whichSide, uint8_t style,
+static nscolor MakeBevelColor(mozilla::Side whichSide, uint8_t style,
                               nscolor aBackgroundColor,
                               nscolor aBorderColor);
 
@@ -460,7 +460,7 @@ void nsCSSRendering::Shutdown()
  * Make a bevel color
  */
 static nscolor
-MakeBevelColor(mozilla::css::Side whichSide, uint8_t style,
+MakeBevelColor(mozilla::Side whichSide, uint8_t style,
                nscolor aBackgroundColor, nscolor aBorderColor)
 {
 
@@ -1738,7 +1738,7 @@ nsCSSRendering::PaintBackground(const PaintBGParams& aParams)
 }
 
 static bool
-IsOpaqueBorderEdge(const nsStyleBorder& aBorder, mozilla::css::Side aSide)
+IsOpaqueBorderEdge(const nsStyleBorder& aBorder, mozilla::Side aSide)
 {
   if (aBorder.GetComputedBorder().Side(aSide) == 0)
     return true;
@@ -4425,7 +4425,7 @@ nsCSSRendering::DrawTableBorderSegment(DrawTarget&              aDrawTarget,
                             ? RoundFloatToPixel(0.5f * (float)aStartBevelOffset, twipsPerPixel, true) : 0;
       nscoord endBevel =   (aEndBevelOffset > 0)
                             ? RoundFloatToPixel(0.5f * (float)aEndBevelOffset, twipsPerPixel, true) : 0;
-      mozilla::css::Side ridgeGrooveSide = (horizontal) ? NS_SIDE_TOP : NS_SIDE_LEFT;
+      mozilla::Side ridgeGrooveSide = (horizontal) ? NS_SIDE_TOP : NS_SIDE_LEFT;
       // FIXME: In theory, this should use the visited-dependent
       // background color, but I don't care.
       nscolor bevelColor = MakeBevelColor(ridgeGrooveSide, ridgeGroove,
