@@ -107,10 +107,10 @@ IsZeroSize(const Size& sz) {
 
 static bool
 AllCornersZeroSize(const RectCornerRadii& corners) {
-  return IsZeroSize(corners[NS_CORNER_TOP_LEFT]) &&
-    IsZeroSize(corners[NS_CORNER_TOP_RIGHT]) &&
-    IsZeroSize(corners[NS_CORNER_BOTTOM_RIGHT]) &&
-    IsZeroSize(corners[NS_CORNER_BOTTOM_LEFT]);
+  return IsZeroSize(corners[eCornerTopLeft]) &&
+    IsZeroSize(corners[eCornerTopRight]) &&
+    IsZeroSize(corners[eCornerBottomRight]) &&
+    IsZeroSize(corners[eCornerBottomLeft]);
 }
 
 static mozilla::Side
@@ -340,11 +340,11 @@ nsCSSBorderRenderer::IsSolidCornerStyle(uint8_t aStyle, mozilla::Corner aCorner)
 
     case NS_STYLE_BORDER_STYLE_INSET:
     case NS_STYLE_BORDER_STYLE_OUTSET:
-      return (aCorner == NS_CORNER_TOP_LEFT || aCorner == NS_CORNER_BOTTOM_RIGHT);
+      return (aCorner == eCornerTopLeft || aCorner == eCornerBottomRight);
 
     case NS_STYLE_BORDER_STYLE_GROOVE:
     case NS_STYLE_BORDER_STYLE_RIDGE:
-      return mOneUnitBorder && (aCorner == NS_CORNER_TOP_LEFT || aCorner == NS_CORNER_BOTTOM_RIGHT);
+      return mOneUnitBorder && (aCorner == eCornerTopLeft || aCorner == eCornerBottomRight);
 
     case NS_STYLE_BORDER_STYLE_DOUBLE:
       return mOneUnitBorder;
@@ -416,17 +416,17 @@ nsCSSBorderRenderer::BorderColorStyleForSolidCorner(uint8_t aStyle, mozilla::Cor
 
     case NS_STYLE_BORDER_STYLE_INSET:
     case NS_STYLE_BORDER_STYLE_GROOVE:
-      if (aCorner == NS_CORNER_TOP_LEFT)
+      if (aCorner == eCornerTopLeft)
         return BorderColorStyleDark;
-      else if (aCorner == NS_CORNER_BOTTOM_RIGHT)
+      else if (aCorner == eCornerBottomRight)
         return BorderColorStyleLight;
       break;
 
     case NS_STYLE_BORDER_STYLE_OUTSET:
     case NS_STYLE_BORDER_STYLE_RIDGE:
-      if (aCorner == NS_CORNER_TOP_LEFT)
+      if (aCorner == eCornerTopLeft)
         return BorderColorStyleLight;
-      else if (aCorner == NS_CORNER_BOTTOM_RIGHT)
+      else if (aCorner == eCornerBottomRight)
         return BorderColorStyleDark;
       break;
   }
@@ -3392,7 +3392,7 @@ nsCSSBorderRenderer::DrawBorders()
         continue;
 
       if (mBorderWidths[sides[0]] == 1.0 && mBorderWidths[sides[1]] == 1.0) {
-        if (corner == NS_CORNER_TOP_LEFT || corner == NS_CORNER_TOP_RIGHT)
+        if (corner == eCornerTopLeft || corner == eCornerTopRight)
           mBorderCornerDimensions[corner].width = 0.0;
         else
           mBorderCornerDimensions[corner].height = 0.0;
