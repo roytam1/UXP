@@ -459,6 +459,11 @@ static inline mozilla::HalfCorner operator++(mozilla::HalfCorner& aHalfCorner) {
   return aHalfCorner;
 }
 
+constexpr bool HalfCornerIsX(HalfCorner aHalfCorner)
+{
+  return !(aHalfCorner % 2);
+}
+
 } // namespace mozilla
 
 #endif /* MOZILLA_GFX_TYPES_H_ */

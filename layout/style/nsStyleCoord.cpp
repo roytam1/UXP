@@ -328,9 +328,9 @@ void nsStyleCorners::Reset()
   }
 }
 
-// Validation of NS_SIDE_IS_VERTICAL and NS_HALF_CORNER_IS_X.
+// Validation of NS_SIDE_IS_VERTICAL.
 #define CASE(side, result)                                                    \
-  static_assert(NS_SIDE_IS_VERTICAL(side) == result,                      \
+  static_assert(NS_SIDE_IS_VERTICAL(side) == result,                          \
                 "NS_SIDE_IS_VERTICAL is wrong")
 CASE(eSideTop,    false);
 CASE(eSideRight,  true);
@@ -338,9 +338,10 @@ CASE(eSideBottom, false);
 CASE(eSideLeft,   true);
 #undef CASE
 
+// Validation of HalfCornerIsX.
 #define CASE(corner, result)                                                  \
-  static_assert(NS_HALF_CORNER_IS_X(corner) == result,                    \
-                "NS_HALF_CORNER_IS_X is wrong")
+  static_assert(HalfCornerIsX(corner) == result,                              \
+                "HalfCornerIsX is wrong")
 CASE(eCornerTopLeftX,     true);
 CASE(eCornerTopLeftY,     false);
 CASE(eCornerTopRightX,    true);
@@ -353,7 +354,7 @@ CASE(eCornerBottomLeftY,  false);
 
 // Validation of NS_HALF_TO_FULL_CORNER.
 #define CASE(corner, result)                                                  \
-  static_assert(NS_HALF_TO_FULL_CORNER(corner) == result,                 \
+  static_assert(NS_HALF_TO_FULL_CORNER(corner) == result,                     \
                 "NS_HALF_TO_FULL_CORNER is wrong")
 CASE(eCornerTopLeftX,     eCornerTopLeft);
 CASE(eCornerTopLeftY,     eCornerTopLeft);
