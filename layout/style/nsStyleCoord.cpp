@@ -354,7 +354,7 @@ CASE(eCornerBottomLeftY,  false);
 
 // Validation of HalfToFullCorner.
 #define CASE(corner, result)                                                  \
-  static_assert(HalfToFullCorner(corner) == result,                     \
+  static_assert(HalfToFullCorner(corner) == result,                           \
                 "HalfToFullCorner is wrong")
 CASE(eCornerTopLeftX,     eCornerTopLeft);
 CASE(eCornerTopLeftY,     eCornerTopLeft);
@@ -366,10 +366,10 @@ CASE(eCornerBottomLeftX,  eCornerBottomLeft);
 CASE(eCornerBottomLeftY,  eCornerBottomLeft);
 #undef CASE
 
-// Validation of NS_FULL_TO_HALF_CORNER.
+// Validation of FullToHalfCorner.
 #define CASE(corner, vert, result)                                            \
-  static_assert(NS_FULL_TO_HALF_CORNER(corner, vert) == result,           \
-                "NS_FULL_TO_HALF_CORNER is wrong")
+  static_assert(FullToHalfCorner(corner, vert) == result,                     \
+                "FullToHalfCorner is wrong")
 CASE(eCornerTopLeft,     false, eCornerTopLeftX);
 CASE(eCornerTopLeft,     true,  eCornerTopLeftY);
 CASE(eCornerTopRight,    false, eCornerTopRightX);
@@ -382,7 +382,7 @@ CASE(eCornerBottomLeft,  true,  eCornerBottomLeftY);
 
 // Validation of NS_SIDE_TO_{FULL,HALF}_CORNER.
 #define CASE(side, second, result)                                            \
-  static_assert(NS_SIDE_TO_FULL_CORNER(side, second) == result,           \
+  static_assert(NS_SIDE_TO_FULL_CORNER(side, second) == result,               \
                 "NS_SIDE_TO_FULL_CORNER is wrong")
 CASE(eSideTop,    false, eCornerTopLeft);
 CASE(eSideTop,    true,  eCornerTopRight);
@@ -398,7 +398,7 @@ CASE(eSideLeft,   true,  eCornerTopLeft);
 #undef CASE
 
 #define CASE(side, second, parallel, result)                                  \
-  static_assert(NS_SIDE_TO_HALF_CORNER(side, second, parallel) == result, \
+  static_assert(NS_SIDE_TO_HALF_CORNER(side, second, parallel) == result,     \
                 "NS_SIDE_TO_HALF_CORNER is wrong")
 CASE(eSideTop,    false, true,  eCornerTopLeftX);
 CASE(eSideTop,    false, false, eCornerTopLeftY);
