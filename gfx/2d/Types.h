@@ -430,6 +430,19 @@ static inline mozilla::Corner operator++(mozilla::Corner& aCorner) {
   return aCorner;
 }
 
+// Indices into "half corner" arrays (e.g. nsStyleCorners)
+enum HalfCorner {
+  // This order is important!
+  eCornerTopLeftX = 0,
+  eCornerTopLeftY = 1,
+  eCornerTopRightX = 2,
+  eCornerTopRightY = 3,
+  eCornerBottomRightX = 4,
+  eCornerBottomRightY = 5,
+  eCornerBottomLeftX = 6,
+  eCornerBottomLeftY = 7
+};
+
 } // namespace mozilla
 
 #endif /* MOZILLA_GFX_TYPES_H_ */
