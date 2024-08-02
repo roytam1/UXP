@@ -459,6 +459,9 @@ static inline mozilla::HalfCorner operator++(mozilla::HalfCorner& aHalfCorner) {
   return aHalfCorner;
 }
 
+// The result of the conversion functions below are exhaustively checked in
+// nsStyleCoord.cpp, which also serves as usage examples.
+
 constexpr bool HalfCornerIsX(HalfCorner aHalfCorner)
 {
   return !(aHalfCorner % 2);
@@ -487,6 +490,23 @@ constexpr bool SideIsVertical(Side aSide)
 constexpr Corner SideToFullCorner(Side aSide, bool aIsSecond)
 {
   return Corner((aSide + aIsSecond) % 4);
+}
+
+/* @param aIsSecond: when true, return the clockwise second of the two
+ * corners associated with aSide. For example, with aSide = eSideBottom the
+ * result is eCornerBottomRight when aIsSecond is false, and
+ * eCornerBottomLeft when aIsSecond is true.
+ * @param aIsParallel: return the half-corner that is parallel with aSide
+ * when aIsParallel is true. For example with aSide=eSideTop, aIsSecond=true
+ * the result is eCornerTopRightX when aIsParallel is true, and
+ * eCornerTopRightY when aIsParallel is false (because "X" is parallel with
+ * eSideTop/eSideBottom, similarly "Y" is parallel with eSideLeft/eSideRight)
+ */
+constexpr HalfCorner SideToHalfCorner(Side aSide,
+                                      bool aIsSecond,
+                                      bool aIsParallel)
+{
+  return HalfCorner(((aSide + aIsSecond) * 2 + (aSide + !aIsParallel) % 2) % 8);
 }
 
 } // namespace mozilla
