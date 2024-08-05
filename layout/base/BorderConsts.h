@@ -10,17 +10,10 @@
 #define DOT_LENGTH  1           // square
 #define DASH_LENGTH 3           // 3 times longer than dot
 
-// some shorthand for side bits
-#define SIDE_BIT_TOP (1 << NS_SIDE_TOP)
-#define SIDE_BIT_RIGHT (1 << NS_SIDE_RIGHT)
-#define SIDE_BIT_BOTTOM (1 << NS_SIDE_BOTTOM)
-#define SIDE_BIT_LEFT (1 << NS_SIDE_LEFT)
-#define SIDE_BITS_ALL (SIDE_BIT_TOP|SIDE_BIT_RIGHT|SIDE_BIT_BOTTOM|SIDE_BIT_LEFT)
-
-#define C_TL NS_CORNER_TOP_LEFT
-#define C_TR NS_CORNER_TOP_RIGHT
-#define C_BR NS_CORNER_BOTTOM_RIGHT
-#define C_BL NS_CORNER_BOTTOM_LEFT
+#define C_TL mozilla::eCornerTopLeft
+#define C_TR mozilla::eCornerTopRight
+#define C_BR mozilla::eCornerBottomRight
+#define C_BL mozilla::eCornerBottomLeft
 
 #define BORDER_SEGMENT_COUNT_MAX 100
 #define BORDER_DOTTED_CORNER_MAX_RADIUS 100000

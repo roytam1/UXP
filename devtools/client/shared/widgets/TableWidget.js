@@ -1480,6 +1480,9 @@ Column.prototype = {
    * for sorting.
    */
   onClick: function (event) {
+    if (event.button != 0) {
+      return;
+    }
     let target = event.originalTarget;
 
     if (target.nodeType !== target.ELEMENT_NODE || target == this.column) {

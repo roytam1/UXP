@@ -118,7 +118,6 @@ public:
     : EventChainVisitor(aPresContext, aEvent, aDOMEvent, aEventStatus)
     , mCanHandle(true)
     , mAutomaticChromeDispatch(true)
-    , mForceContentDispatch(false)
     , mRelatedTargetIsInAnon(false)
     , mOriginalTargetIsInAnon(aIsInAnon)
     , mWantsWillHandleEvent(false)
@@ -143,7 +142,6 @@ public:
     mItemData = nullptr;
     mCanHandle = true;
     mAutomaticChromeDispatch = true;
-    mForceContentDispatch = false;
     mWantsWillHandleEvent = false;
     mMayHaveListenerManager = true;
     mWantsPreHandleEvent = false;
@@ -194,13 +192,6 @@ public:
    * event will not be dispatched to the chrome event handler.
    */
   bool                  mAutomaticChromeDispatch;
-
-  /**
-   * If mForceContentDispatch is set to true,
-   * content dispatching is not disabled for this event target.
-   * FIXME! This is here for backward compatibility. Bug 329119
-   */
-  bool                  mForceContentDispatch;
 
   /**
    * true if it is known that related target is or is a descendant of an

@@ -209,6 +209,9 @@ SplitView.prototype = {
     this._nav.appendChild(aSummary);
 
     aSummary.addEventListener("click", (aEvent) => {
+      if (aEvent.button != 0) {
+        return;
+      }
       aEvent.stopPropagation();
       this.activeSummary = aSummary;
     }, false);
