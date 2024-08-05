@@ -142,22 +142,22 @@ private:
   bool AreBorderSideFinalStylesSame(uint8_t aSides);
 
   // For the given style, is the given corner a solid color?
-  bool IsSolidCornerStyle(uint8_t aStyle, mozilla::css::Corner aCorner);
+  bool IsSolidCornerStyle(uint8_t aStyle, mozilla::Corner aCorner);
 
   // For the given corner, is the given corner mergeable into one dot?
-  bool IsCornerMergeable(mozilla::css::Corner aCorner);
+  bool IsCornerMergeable(mozilla::Corner aCorner);
 
   // For the given solid corner, what color style should be used?
-  BorderColorStyle BorderColorStyleForSolidCorner(uint8_t aStyle, mozilla::css::Corner aCorner);
+  BorderColorStyle BorderColorStyleForSolidCorner(uint8_t aStyle, mozilla::Corner aCorner);
 
   //
   // Path generation functions
   //
 
   // Get the Rect for drawing the given corner
-  Rect GetCornerRect(mozilla::css::Corner aCorner);
+  Rect GetCornerRect(mozilla::Corner aCorner);
   // add the path for drawing the given side without any adjacent corners to the context
-  Rect GetSideClipWithoutCornersRect(mozilla::css::Side aSide);
+  Rect GetSideClipWithoutCornersRect(mozilla::Side aSide);
 
   // Create a clip path for the wedge that this side of
   // the border should take up.  This is only called
@@ -167,11 +167,11 @@ private:
   // This code needs to make sure that the individual pieces
   // don't ever (mathematically) overlap; the pixel overlap
   // is taken care of by the ADD compositing.
-  already_AddRefed<Path> GetSideClipSubPath(mozilla::css::Side aSide);
+  already_AddRefed<Path> GetSideClipSubPath(mozilla::Side aSide);
 
   // Return start or end point for dashed/dotted side
-  Point GetStraightBorderPoint(mozilla::css::Side aSide,
-                               mozilla::css::Corner aCorner,
+  Point GetStraightBorderPoint(mozilla::Side aSide,
+                               mozilla::Corner aCorner,
                                bool* aIsUnfilled,
                                Float aDotOffset = 0.0f);
 
@@ -179,7 +179,7 @@ private:
   // corner
   void GetOuterAndInnerBezier(Bezier* aOuterBezier,
                               Bezier* aInnerBezier,
-                              mozilla::css::Corner aCorner);
+                              mozilla::Corner aCorner);
 
   // Given a set of sides to fill and a color, do so in the fastest way.
   //
@@ -213,30 +213,30 @@ private:
 
   // Setup the stroke options for the given dashed/dotted side
   void SetupDashedOptions(StrokeOptions* aStrokeOptions,
-                          Float aDash[2], mozilla::css::Side aSide,
+                          Float aDash[2], mozilla::Side aSide,
                           Float aBorderLength, bool isCorner);
 
   // Draw the given dashed/dotte side
-  void DrawDashedOrDottedSide(mozilla::css::Side aSide);
+  void DrawDashedOrDottedSide(mozilla::Side aSide);
 
   // Draw the given dotted side, each dot separately
-  void DrawDottedSideSlow(mozilla::css::Side aSide);
+  void DrawDottedSideSlow(mozilla::Side aSide);
 
   // Draw the given dashed/dotted corner
-  void DrawDashedOrDottedCorner(mozilla::css::Side aSide,
-                                mozilla::css::Corner aCorner);
+  void DrawDashedOrDottedCorner(mozilla::Side aSide,
+                                mozilla::Corner aCorner);
 
   // Draw the given dotted corner, each segment separately
-  void DrawDottedCornerSlow(mozilla::css::Side aSide,
-                            mozilla::css::Corner aCorner);
+  void DrawDottedCornerSlow(mozilla::Side aSide,
+                            mozilla::Corner aCorner);
 
   // Draw the given dashed corner, each dot separately
-  void DrawDashedCornerSlow(mozilla::css::Side aSide,
-                            mozilla::css::Corner aCorner);
+  void DrawDashedCornerSlow(mozilla::Side aSide,
+                            mozilla::Corner aCorner);
 
   // Draw the given dashed/dotted corner with solid style
-  void DrawFallbackSolidCorner(mozilla::css::Side aSide,
-                               mozilla::css::Corner aCorner);
+  void DrawFallbackSolidCorner(mozilla::Side aSide,
+                               mozilla::Corner aCorner);
 
   // Analyze if all border sides have the same width.
   bool AllBordersSameWidth();

@@ -2,18 +2,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * This Original Code has been modified by IBM Corporation.
- * Modifications made by IBM described herein are
- * Copyright (c) International Business Machines
- * Corporation, 2000
- *
- * Modifications to Mozilla code or documentation
- * identified per MPL Section 3.3
- *
- * Date         Modified by     Description of modification
- * 03/27/2000   IBM Corp.       Added PR_CALLBACK for Optlink
- *                               use in OS2
  */
 
 #include "nsCOMPtr.h"
@@ -1299,7 +1287,6 @@ nsXULElement::DispatchXULCommand(const EventChainVisitor& aVisitor,
 nsresult
 nsXULElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
-    aVisitor.mForceContentDispatch = true; //FIXME! Bug 329119
     if (IsEventStoppedFromAnonymousScrollbar(aVisitor.mEvent->mMessage)) {
         // Don't propagate these events from native anonymous scrollbar.
         aVisitor.mCanHandle = true;

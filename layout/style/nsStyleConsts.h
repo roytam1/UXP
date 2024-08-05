@@ -10,61 +10,11 @@
 
 #include "gfxRect.h"
 #include "nsFont.h"
-#include "mozilla/MacroArgs.h" // for MOZ_CONCAT
 #include "X11UndefineNone.h"
 
 // XXX fold this into nsStyleContext and group by nsStyleXXX struct
 
 namespace mozilla {
-namespace css {
-typedef mozilla::Side Side;
-} // namespace css
-
-// Creates a for loop that walks over the four mozilla::css::Side values.
-// We use an int32_t helper variable (instead of a Side) for our loop counter,
-// to avoid triggering undefined behavior just before we exit the loop (at
-// which point the counter is incremented beyond the largest valid Side value).
-#define NS_FOR_CSS_SIDES(var_)                                           \
-  int32_t MOZ_CONCAT(var_,__LINE__) = NS_SIDE_TOP;                       \
-  for (mozilla::css::Side var_;                                          \
-       MOZ_CONCAT(var_,__LINE__) <= NS_SIDE_LEFT &&                      \
-         ((var_ = mozilla::css::Side(MOZ_CONCAT(var_,__LINE__))), true); \
-       MOZ_CONCAT(var_,__LINE__)++)
-
-static inline css::Side operator++(css::Side& side, int) {
-    NS_PRECONDITION(side >= NS_SIDE_TOP &&
-                    side <= NS_SIDE_LEFT, "Out of range side");
-    side = css::Side(side + 1);
-    return side;
-}
-
-#define NS_FOR_CSS_FULL_CORNERS(var_) for (int32_t var_ = 0; var_ < 4; ++var_)
-
-// Indices into "half corner" arrays (nsStyleCorners e.g.)
-#define NS_CORNER_TOP_LEFT_X      0
-#define NS_CORNER_TOP_LEFT_Y      1
-#define NS_CORNER_TOP_RIGHT_X     2
-#define NS_CORNER_TOP_RIGHT_Y     3
-#define NS_CORNER_BOTTOM_RIGHT_X  4
-#define NS_CORNER_BOTTOM_RIGHT_Y  5
-#define NS_CORNER_BOTTOM_LEFT_X   6
-#define NS_CORNER_BOTTOM_LEFT_Y   7
-
-#define NS_FOR_CSS_HALF_CORNERS(var_) for (int32_t var_ = 0; var_ < 8; ++var_)
-
-// The results of these conversion macros are exhaustively checked in
-// nsStyleCoord.cpp.
-// Arguments must not have side effects.
-
-#define NS_HALF_CORNER_IS_X(var_) (!((var_)%2))
-#define NS_HALF_TO_FULL_CORNER(var_) ((var_)/2)
-#define NS_FULL_TO_HALF_CORNER(var_, vert_) ((var_)*2 + !!(vert_))
-
-#define NS_SIDE_IS_VERTICAL(side_) ((side_) % 2)
-#define NS_SIDE_TO_FULL_CORNER(side_, second_) \
-  (((side_) + !!(second_)) % 4)
-#define NS_SIDE_TO_HALF_CORNER(side_, second_, parallel_) \
-  ((((side_) + !!(second_))*2 + ((side_) + !(parallel_))%2) % 8)
 
 // Basic shapes
 enum class StyleBasicShapeType : uint8_t {

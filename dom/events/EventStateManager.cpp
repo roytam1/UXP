@@ -4668,7 +4668,7 @@ EventStateManager::InitAndDispatchClickEvent(WidgetMouseEvent* aMouseUpEvent,
                                              nsIPresShell* aPresShell,
                                              nsIContent* aMouseUpContent,
                                              nsWeakFrame aCurrentTarget,
-                                             bool aNoContentDispatch)
+                                             bool aOnlyChromeDispatch)
 {
   MOZ_ASSERT(aMouseUpEvent);
   MOZ_ASSERT(EventCausesClickEvents(*aMouseUpEvent));
@@ -4682,8 +4682,7 @@ EventStateManager::InitAndDispatchClickEvent(WidgetMouseEvent* aMouseUpEvent,
   event.buttons = aMouseUpEvent->buttons;
   event.mTime = aMouseUpEvent->mTime;
   event.mTimeStamp = aMouseUpEvent->mTimeStamp;
-  event.mFlags.mOnlyChromeDispatch = aNoContentDispatch;
-  event.mFlags.mNoContentDispatch = aNoContentDispatch;
+  event.mFlags.mOnlyChromeDispatch = aOnlyChromeDispatch;
   event.button = aMouseUpEvent->button;
   event.inputSource = aMouseUpEvent->inputSource;
 
@@ -4750,41 +4749,41 @@ EventStateManager::DispatchClickEvents(nsIPresShell* aPresShell,
   MOZ_ASSERT(aStatus);
   MOZ_ASSERT(aClickTarget);
 
-  bool notDispatchToContents =
+  bool onlyDispatchInChrome =
    (aMouseUpEvent->button == WidgetMouseEvent::eMiddleButton ||
     aMouseUpEvent->button == WidgetMouseEvent::eRightButton);
 
-  bool fireAuxClick = notDispatchToContents;
+  bool fireAuxClick = onlyDispatchInChrome;
 
   nsWeakFrame currentTarget = aClickTarget->GetPrimaryFrame();
-  nsresult ret =
+  nsresult rv =
     InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseClick,
                               aPresShell, aClickTarget, currentTarget,
-                              notDispatchToContents);
-  if (NS_WARN_IF(NS_FAILED(ret))) {
-    return ret;
+                              onlyDispatchInChrome);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
   }
 
   // Fire auxclick even if necessary.
   if (fireAuxClick && aClickTarget && aClickTarget->IsInComposedDoc()) {
-    ret = InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseAuxClick,
+    rv = InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseAuxClick,
                                     aPresShell, aClickTarget, currentTarget,
                                     false);
-    NS_WARNING_ASSERTION(NS_SUCCEEDED(ret), "Failed to dispatch eMouseAuxClick");
+    NS_WARNING_ASSERTION(NS_SUCCEEDED(rv), "Failed to dispatch eMouseAuxClick");
   }
 
   // Fire double click event if click count is 2.
   if (aMouseUpEvent->mClickCount == 2 && !fireAuxClick &&
       aClickTarget && aClickTarget->IsInComposedDoc()) {
-    ret = InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseDoubleClick,
+    rv = InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseDoubleClick,
                                     aPresShell, aClickTarget, currentTarget,
-                                    notDispatchToContents);
-    if (NS_WARN_IF(NS_FAILED(ret))) {
-      return ret;
+                                    onlyDispatchInChrome);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
     }
   }
 
-  return ret;
+  return rv;
 }
 
 nsIFrame*

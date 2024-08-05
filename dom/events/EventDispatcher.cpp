@@ -214,16 +214,6 @@ public:
     mRetargetedRelatedTarget = aTarget;
   }
 
-  void SetForceContentDispatch(bool aForce)
-  {
-    mFlags.mForceContentDispatch = aForce;
-  }
-
-  bool ForceContentDispatch()
-  {
-    return mFlags.mForceContentDispatch;
-  }
-
   void SetWantsWillHandleEvent(bool aWants)
   {
     mFlags.mWantsWillHandleEvent = aWants;
@@ -387,7 +377,6 @@ private:
     // Cached flags for each EventTargetChainItem which are set when calling
     // GetEventTargetParent to create event target chain. They are used to
     // manage or speedup event dispatching.
-    bool mForceContentDispatch : 1;
     bool mWantsWillHandleEvent : 1;
     bool mMayHaveManager : 1;
     bool mChechedIfChrome : 1;
@@ -439,7 +428,6 @@ EventTargetChainItem::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   aVisitor.Reset();
   Unused << mTarget->GetEventTargetParent(aVisitor);
-  SetForceContentDispatch(aVisitor.mForceContentDispatch);
   SetWantsWillHandleEvent(aVisitor.mWantsWillHandleEvent);
   SetMayHaveListenerManager(aVisitor.mMayHaveListenerManager);
   SetWantsPreHandleEvent(aVisitor.mWantsPreHandleEvent);
@@ -492,9 +480,7 @@ EventTargetChainItem::HandleEventTargetChain(
     if (item.PreHandleEventOnly()) {
       continue;
     }
-    if ((!aVisitor.mEvent->mFlags.mNoContentDispatch ||
-         item.ForceContentDispatch()) &&
-        !aVisitor.mEvent->PropagationStopped()) {
+    if (!aVisitor.mEvent->PropagationStopped()) {
       item.HandleEvent(aVisitor, aCd);
     }
 
@@ -538,9 +524,7 @@ EventTargetChainItem::HandleEventTargetChain(
   // Target
   aVisitor.mEvent->mFlags.mInBubblingPhase = true;
   EventTargetChainItem& targetItem = aChain[firstCanHandleEventTargetIdx];
-  if (!aVisitor.mEvent->PropagationStopped() &&
-      (!aVisitor.mEvent->mFlags.mNoContentDispatch ||
-       targetItem.ForceContentDispatch())) {
+  if (!aVisitor.mEvent->PropagationStopped()) {
     targetItem.HandleEvent(aVisitor, aCd);
   }
   if (aVisitor.mEvent->mFlags.mInSystemGroup) {
@@ -570,9 +554,7 @@ EventTargetChainItem::HandleEventTargetChain(
     }
 
     if (aVisitor.mEvent->mFlags.mBubbles || newTarget) {
-      if ((!aVisitor.mEvent->mFlags.mNoContentDispatch ||
-           item.ForceContentDispatch()) &&
-          !aVisitor.mEvent->PropagationStopped()) {
+      if (!aVisitor.mEvent->PropagationStopped()) {
         item.HandleEvent(aVisitor, aCd);
       }
       if (aVisitor.mEvent->mFlags.mInSystemGroup) {

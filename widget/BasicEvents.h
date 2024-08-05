@@ -100,16 +100,6 @@ public:
   // If mNoCrossProcessBoundaryForwarding is true, the event is not allowed to
   // cross process boundary.
   bool    mNoCrossProcessBoundaryForwarding : 1;
-  // If mNoContentDispatch is true, the event is never dispatched to the
-  // event handlers which are added to the contents, onfoo attributes and
-  // properties.  Note that this flag is ignored when
-  // EventChainPreVisitor::mForceContentDispatch is set true.  For exapmle,
-  // window and document object sets it true.  Therefore, web applications
-  // can handle the event if they add event listeners to the window or the
-  // document.
-  // XXX This is an ancient and broken feature, don't use this for new bug
-  //     as far as possible.
-  bool    mNoContentDispatch : 1;
   // If mOnlyChromeDispatch is true, the event is dispatched to only chrome.
   bool    mOnlyChromeDispatch : 1;
   // If mOnlySystemGroupDispatchInContent is true, event listeners added to
