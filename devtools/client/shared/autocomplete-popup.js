@@ -97,6 +97,9 @@ AutocompletePopup.prototype = {
   },
 
   onClick: function (e) {
+    if (e.button != 0) {
+      return;
+    }
     let item = e.target.closest(".autocomplete-item");
     if (item && typeof item.dataset.index !== "undefined") {
       this.selectedIndex = parseInt(item.dataset.index, 10);

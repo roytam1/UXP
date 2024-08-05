@@ -2565,8 +2565,8 @@ nsCSSRect_heap::SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
   return n;
 }
 
-static_assert(NS_SIDE_TOP == 0 && NS_SIDE_RIGHT == 1 &&
-              NS_SIDE_BOTTOM == 2 && NS_SIDE_LEFT == 3,
+static_assert(eSideTop == 0 && eSideRight == 1 &&
+              eSideBottom == 2 && eSideLeft == 3,
               "box side constants not top/right/bottom/left == 0/1/2/3");
 
 /* static */ const nsCSSRect::side_type nsCSSRect::sides[4] = {
@@ -3253,8 +3253,8 @@ nsCSSCornerSizes::Reset()
   }
 }
 
-static_assert(NS_CORNER_TOP_LEFT == 0 && NS_CORNER_TOP_RIGHT == 1 &&
-              NS_CORNER_BOTTOM_RIGHT == 2 && NS_CORNER_BOTTOM_LEFT == 3,
+static_assert(eCornerTopLeft == 0 && eCornerTopRight == 1 &&
+              eCornerBottomRight == 2 && eCornerBottomLeft == 3,
               "box corner constants not tl/tr/br/bl == 0/1/2/3");
 
 /* static */ const nsCSSCornerSizes::corner_type
