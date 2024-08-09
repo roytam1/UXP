@@ -702,7 +702,7 @@ nsDNSService::PreprocessHostname(bool              aLocalDomain,
         return NS_ERROR_UNKNOWN_HOST;
     }
 
-    // Enforce RFC 7686
+    // Block access to the "this machine" address.
     if (mBlockQuad0 &&
         aInput.EqualsASCII("0.0.0.0")) {
         return NS_ERROR_UNKNOWN_HOST;
