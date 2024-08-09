@@ -463,7 +463,7 @@ private:
   inline void SetPtrValueAndType(void* aValue, ValueBaseType aType);
   void SetIntValueAndType(int32_t aValue, ValueType aType,
                           const nsAString* aStringValue);
-  void SetColorValue(nscolor aColor, const nsAString& aString);
+  bool SetColorValue(nscolor aColor, const nsAString& aString);
   void SetMiscAtomOrString(const nsAString* aValue);
   void ResetMiscAtomOrString();
   void SetSVGType(ValueType aType, const void* aValue,
