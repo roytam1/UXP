@@ -704,7 +704,9 @@ nsDNSService::PreprocessHostname(bool              aLocalDomain,
 
     // Block access to the "this machine" address.
     if (mBlockQuad0 &&
-        aInput.EqualsASCII("0.0.0.0")) {
+        (aInput.EqualsLiteral("0.0.0.0") ||
+         aInput.EqualsLiteral("::") ||
+         aInput.EqualsLiteral("::0.0.0.0"))) {
         return NS_ERROR_UNKNOWN_HOST;
     }
 
