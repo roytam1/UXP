@@ -1889,6 +1889,16 @@ pref("network.dns.disablePrefetch", false);
 // rejected before being given to DNS. RFC 7686
 pref("network.dns.blockDotOnion", true);
 
+// This preference controls whether to block access to 0.0.0.0
+// to mitigate local access issues in *NIX network stacks.
+#if defined(XP_WIN)
+// Windows is not affected, so don't block it there.
+// XXX: any other OSes not having this issue?
+pref("network.dns.blockQuad0", false);
+#else
+pref("network.dns.blockQuad0", true);
+#endif
+
 // These domains are treated as localhost equivalent
 pref("network.dns.localDomains", "");
 
