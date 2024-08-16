@@ -4888,6 +4888,16 @@ class IDLMethod(IDLInterfaceMember, IDLScope):
             raise WebIDLError("StaticClassOverride can be applied to static"
                               " methods on JS-implemented classes only.",
                               [self.location])
+        if self.getExtendedAttribute("LenientFloat"):
+            assert len(self.signatures()) >= 1
+            found = False
+            for sig in self.signatures():
+                if any(arg.type.includesRestrictedFloat() for arg in sig[1]):
+                    found = True
+            if not found:
+                raise WebIDLError("[LenientFloat] used on an operation with no "
+                                  "restricted float type arguments",
+                                  [self.location])
 
     def overloadsForArgCount(self, argc):
         return [overload for overload in self._overloads if
@@ -4965,10 +4975,6 @@ class IDLMethod(IDLInterfaceMember, IDLScope):
             sig = self.signatures()[0]
             if not sig[0].isVoid():
                 raise WebIDLError("[LenientFloat] used on a non-void method",
-                                  [attr.location, self.location])
-            if not any(arg.type.includesRestrictedFloat() for arg in sig[1]):
-                raise WebIDLError("[LenientFloat] used on an operation with no "
-                                  "restricted float type arguments",
                                   [attr.location, self.location])
         elif identifier == "Exposed":
             convertExposedAttrToGlobalNameSet(attr, self._exposureGlobalNames)
