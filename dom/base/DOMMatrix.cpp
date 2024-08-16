@@ -129,17 +129,12 @@ DOMMatrixReadOnly::SetDataFromMatrix2DInit(const DOMMatrix2DInit& aMatrixInit) {
 }
 
 void
-DOMMatrixReadOnly::SetDataFromMatrixInit(DOMMatrixInit& aMatrixInit)
+DOMMatrixReadOnly::SetDataFromMatrixInit(const DOMMatrixInit& aMatrixInit)
 {
   const bool is2D = aMatrixInit.mIs2D.Value();
   MOZ_ASSERT(is2D == Is2D());
   if (is2D) {
-    mMatrix2D->_11 = aMatrixInit.mM11.Value();
-    mMatrix2D->_12 = aMatrixInit.mM12.Value();
-    mMatrix2D->_21 = aMatrixInit.mM21.Value();
-    mMatrix2D->_22 = aMatrixInit.mM22.Value();
-    mMatrix2D->_31 = aMatrixInit.mM41.Value();
-    mMatrix2D->_32 = aMatrixInit.mM42.Value();
+    SetDataFromMatrix2DInit(aMatrixInit);
   } else {
     mMatrix3D->_11 = aMatrixInit.mM11.Value();
     mMatrix3D->_12 = aMatrixInit.mM12.Value();

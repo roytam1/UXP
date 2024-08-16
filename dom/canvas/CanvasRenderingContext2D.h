@@ -57,6 +57,10 @@ class CanvasRenderingContext2DUserData;
 class CanvasDrawObserver;
 class CanvasShutdownObserver;
 
+class DOMMatrix;
+class DOMMatrixReadOnly;
+struct DOMMatrix2DInit;
+
 /**
  ** CanvasRenderingContext2D
  **/
@@ -88,8 +92,10 @@ public:
   void Translate(double aX, double aY, mozilla::ErrorResult& aError);
   void Transform(double aM11, double aM12, double aM21, double aM22, double aDx,
                  double aDy, mozilla::ErrorResult& aError);
+  already_AddRefed<DOMMatrix> GetTransform(mozilla::ErrorResult& aError);
   void SetTransform(double aM11, double aM12, double aM21, double aM22, double aDx,
                     double aDy, mozilla::ErrorResult& aError);
+  void SetTransform(const DOMMatrix2DInit& aInit, mozilla::ErrorResult& aError);
   void ResetTransform(mozilla::ErrorResult& aError);
 
   double GlobalAlpha()
