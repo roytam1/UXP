@@ -54,8 +54,13 @@ interface CanvasRenderingContext2D {
   void translate(double x, double y);
   [Throws, LenientFloat]
   void transform(double a, double b, double c, double d, double e, double f);
+
+  [NewObject, Throws]
+  DOMMatrix getTransform();
   [Throws, LenientFloat]
   void setTransform(double a, double b, double c, double d, double e, double f);
+  [Throws, LenientFloat]
+  void setTransform(optional DOMMatrix2DInit transform);
   [Throws]
   void resetTransform();
 
