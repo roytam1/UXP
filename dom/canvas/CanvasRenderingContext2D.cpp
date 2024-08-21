@@ -2229,6 +2229,18 @@ CanvasRenderingContext2D::Transform(double aM11, double aM12, double aM21,
   SetTransformInternal(newMatrix);
 }
 
+already_AddRefed<DOMMatrix>
+CanvasRenderingContext2D::GetTransform(ErrorResult& aError) {
+  EnsureTarget();
+  if (!IsTargetValid()) {
+    aError.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
+  RefPtr<DOMMatrix> matrix =
+      new DOMMatrix(GetParentObject(), mTarget->GetTransform());
+  return matrix.forget();
+}
+
 void
 CanvasRenderingContext2D::SetTransform(double aM11, double aM12,
                                        double aM21, double aM22,
@@ -2242,6 +2254,22 @@ CanvasRenderingContext2D::SetTransform(double aM11, double aM12,
   }
 
   SetTransformInternal(Matrix(aM11, aM12, aM21, aM22, aDx, aDy));
+}
+
+void
+CanvasRenderingContext2D::SetTransform(const DOMMatrix2DInit& aInit,
+                                       ErrorResult& aError) {
+  TransformWillUpdate();
+  if (!IsTargetValid()) {
+    aError.Throw(NS_ERROR_FAILURE);
+    return;
+  }
+
+  RefPtr<DOMMatrixReadOnly> matrix =
+      DOMMatrixReadOnly::FromMatrix(GetParentObject(), aInit, aError);
+  if (!aError.Failed()) {
+    SetTransformInternal(Matrix(*(matrix->GetInternal2D())));
+  }
 }
 
 void

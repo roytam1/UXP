@@ -52,6 +52,11 @@ public:
     mMatrix3D = new gfx::Matrix4x4(aMatrix);
   }
 
+  DOMMatrixReadOnly(nsISupports* aParent, const gfx::Matrix& aMatrix)
+    : mParent(aParent) {
+    mMatrix2D = new gfx::Matrix(aMatrix);
+  }
+
   NS_INLINE_DECL_CYCLE_COLLECTING_NATIVE_REFCOUNTING(DOMMatrixReadOnly)
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_NATIVE_CLASS(DOMMatrixReadOnly)
 
@@ -234,7 +239,7 @@ protected:
    * The init dictionary's dimension must match the matrix one.
    */
   void SetDataFromMatrix2DInit(const DOMMatrix2DInit& aMatrixInit);
-  void SetDataFromMatrixInit(DOMMatrixInit& aMatrixInit);
+  void SetDataFromMatrixInit(const DOMMatrixInit& aMatrixInit);
 
   DOMMatrixReadOnly* SetMatrixValue(const nsAString& aTransformList, ErrorResult& aRv);
   void Ensure3DMatrix();
@@ -265,6 +270,10 @@ public:
   {}
 
   DOMMatrix(nsISupports* aParent, const gfx::Matrix4x4& aMatrix)
+    : DOMMatrixReadOnly(aParent, aMatrix)
+  {}
+
+  DOMMatrix(nsISupports* aParent, const gfx::Matrix& aMatrix)
     : DOMMatrixReadOnly(aParent, aMatrix)
   {}
 
