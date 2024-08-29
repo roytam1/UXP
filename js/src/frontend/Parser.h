@@ -470,6 +470,12 @@ class ParseContext : public Nestable<ParseContext>
         return atBodyLevel() && sc_->isModuleContext();
     }
 
+    // True if we are at the topmost level of an entire script or module.  For
+    // example, in the comment on |atBodyLevel()| above, we would encounter |f1|
+    // and the outermost |if (cond)| at top level, and everything else would not
+    // be at top level.
+    bool atTopLevel() { return atBodyLevel() && sc_->isTopLevelContext(); }
+
     void setIsStandaloneFunctionBody() {
         isStandaloneFunctionBody_ = true;
     }

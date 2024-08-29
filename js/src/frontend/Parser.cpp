@@ -4141,8 +4141,15 @@ Parser<ParseHandler>::statementList(YieldHandling yieldHandling)
         return null();
 
     bool canHaveDirectives = pc->atBodyLevel();
-    if (canHaveDirectives)
+    if (canHaveDirectives) {
         tokenStream.clearSawOctalEscape();
+    }
+
+    bool canHaveHashbangComment = pc->atTopLevel();
+    if (canHaveHashbangComment) {
+        tokenStream.consumeOptionalHashbangComment();
+    }
+
     bool afterReturn = false;
     bool warnedAboutStatementsAfterReturn = false;
     uint32_t statementBegin = 0;

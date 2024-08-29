@@ -428,6 +428,13 @@ class MOZ_STACK_CLASS TokenStream
     // asm.js reporter
     void reportAsmJSError(uint32_t offset, unsigned errorNumber, ...);
 
+    /**
+     * Consume any hashbang comment at the start of a Script or Module, if one is
+     * present.  Stops consuming just before any terminating LineTerminator or
+     * before an encoding error is encountered.
+     */
+    void consumeOptionalHashbangComment();
+
     JSAtom* getRawTemplateStringAtom() {
         MOZ_ASSERT(currentToken().type == TOK_TEMPLATE_HEAD ||
                    currentToken().type == TOK_NO_SUBS_TEMPLATE);
