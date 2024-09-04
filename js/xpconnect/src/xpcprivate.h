@@ -3111,7 +3111,7 @@ nsresult
 GetSandboxMetadata(JSContext* cx, JS::HandleObject sandboxArg,
                    JS::MutableHandleValue rval);
 
-nsresult
+[[nodiscard]] nsresult
 SetSandboxMetadata(JSContext* cx, JS::HandleObject sandboxArg,
                    JS::HandleValue metadata);
 
