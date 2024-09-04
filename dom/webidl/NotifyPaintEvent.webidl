@@ -6,13 +6,18 @@
  * For more information about this interface see nsIDOMNotifyPaintEvent.idl
  */
 
+[ChromeOnly]
 interface NotifyPaintEvent : Event
 {
+  [ChromeOnly]
   readonly attribute DOMRectList clientRects;
 
+  [ChromeOnly]
   readonly attribute DOMRect boundingClientRect;
 
+  [ChromeOnly]
   readonly attribute PaintRequestList paintRequests;
 
+  [ChromeOnly]
   readonly attribute unsigned long long transactionId;
 };
