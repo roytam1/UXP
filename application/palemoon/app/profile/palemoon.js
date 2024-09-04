@@ -625,7 +625,7 @@ pref("browser.xul.error_pages.expert_bad_cert", false);
 // Work Offline is best manually managed by the user.
 pref("network.manage-offline-status", false);
 
-// We want to make sure mail URLs are handled externally...
+// We want to make sure known external protocol URLs are handled externally.
 pref("network.protocol-handler.external.mailto", true); // for mail
 pref("network.protocol-handler.external.news", true);   // for news
 pref("network.protocol-handler.external.snews", true);  // for secure news
@@ -634,11 +634,11 @@ pref("network.protocol-handler.external.nntp", true);   // also news
 pref("network.protocol-handler.external.ms-windows-store", true);
 #endif
 
-// ...without warning dialogs
+// Configure external handler warning dialogs.
 pref("network.protocol-handler.warn-external.mailto", false);
-pref("network.protocol-handler.warn-external.news", false);
-pref("network.protocol-handler.warn-external.snews", false);
-pref("network.protocol-handler.warn-external.nntp", false);
+pref("network.protocol-handler.warn-external.news", true);
+pref("network.protocol-handler.warn-external.snews", true);
+pref("network.protocol-handler.warn-external.nntp", true);
 #ifdef XP_WIN
 pref("network.protocol-handler.warn-external.ms-windows-store", false);
 #endif
