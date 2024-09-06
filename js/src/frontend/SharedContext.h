@@ -289,6 +289,16 @@ class SharedContext
     bool isEvalContext() { return kind_ == Kind::Eval; }
     inline EvalSharedContext* asEvalContext();
 
+    bool isTopLevelContext() const {
+      switch (kind_) {
+        case Kind::Module:
+        case Kind::Global:
+        case Kind::Eval:
+          return true;
+      }
+      return false;
+    }
+
     ThisBinding thisBinding()          const { return thisBinding_; }
 
     bool hasModuleGoal()               const { return hasModuleGoal_; }
