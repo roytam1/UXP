@@ -1300,6 +1300,21 @@ TokenStream::putIdentInTokenbuf(const char16_t* identStart)
     return true;
 }
 
+void
+TokenStream::consumeOptionalHashbangComment() {
+  int c = userbuf.getRawChar();
+  if (c == '#') {
+    if (matchChar('!')) {
+      // Hashbang; ignore rest of line as comment.
+      while ((c = getChar()) != EOF && c != '\n')
+          continue;
+    }
+  }
+  ungetChar(c);
+  cursor = (cursor - 1) & ntokensMask;
+}
+  
+
 enum FirstCharKind {
     // A char16_t has the 'OneChar' kind if it, by itself, constitutes a valid
     // token that cannot also be a prefix of a longer token.  E.g. ';' has the
