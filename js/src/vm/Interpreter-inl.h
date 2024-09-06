@@ -188,21 +188,19 @@ FetchName(JSContext* cx, HandleObject obj, HandleObject obj2, HandlePropertyName
     }
 
     /* Take the slow path if shape was not found in a native object. */
-    if (!obj->isNative() || !obj2->isNative()) {
+    if (!obj->isNative() || !obj2->isNative() ||
+        obj->is<WithEnvironmentObject>()) {
         Rooted<jsid> id(cx, NameToId(name));
         if (!GetProperty(cx, obj, obj, id, vp))
             return false;
     } else {
         RootedShape shape(cx, prop.shape());
-        RootedObject normalized(cx, obj);
-        if (normalized->is<WithEnvironmentObject>() && !shape->hasDefaultGetter())
-            normalized = &normalized->as<WithEnvironmentObject>().object();
         if (shape->isDataDescriptor() && shape->hasDefaultGetter()) {
             /* Fast path for Object instance properties. */
             MOZ_ASSERT(shape->hasSlot());
             vp.set(obj2->as<NativeObject>().getSlot(shape->slot()));
         } else {
-            if (!NativeGetExistingProperty(cx, normalized, obj2.as<NativeObject>(), shape, vp))
+            if (!NativeGetExistingProperty(cx, obj, obj2.as<NativeObject>(), shape, vp))
                 return false;
         }
     }
