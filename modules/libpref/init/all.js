@@ -1222,6 +1222,12 @@ pref("dom.cycle_collector.incremental", false);
 pref("content.sink.pending_event_mode", 0);
 #endif
 
+// Is support for CORS enabled?
+pref("content.cors.disable", false);
+
+// Should preflight requests be bypassed when CORS is disabled?
+pref("content.cors.bypass_preflight_request", false);
+
 // Disable popups from plugins by default
 //   0 = openAllowed
 //   1 = openControlled
