@@ -2656,7 +2656,7 @@ if test -n "$MOZ_MAILNEWS"; then
     MOZ_MORK=1
     MOZ_LDAP_XPCOM=1
 
-    if test "$OS_ARCH" == "WINNT"; then
+    if test "$OS_ARCH" = "WINNT"; then
         MOZ_MAPI_SUPPORT=1
     else
       MOZ_MOVEMAIL=1
