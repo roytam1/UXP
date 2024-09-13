@@ -1221,6 +1221,12 @@ pref("dom.cycle_collector.incremental", false);
 pref("content.sink.pending_event_mode", 0);
 #endif
 
+// Is support for CORS enabled?
+pref("content.cors.disable", false);
+
+// Should preflight requests be bypassed when CORS is disabled?
+pref("content.cors.bypass_preflight_request", false);
+
 // Disable popups from plugins by default
 //   0 = openAllowed
 //   1 = openControlled
@@ -1336,6 +1342,9 @@ pref("javascript.options.streams", true);
 // advanced prefs
 pref("advanced.mailftp",                    false);
 pref("image.animation_mode",                "normal");
+
+// Same-origin policy for all URIs.
+pref("security.same_origin_policy.enabled", true);
 
 // Same-origin policy for file URIs, "false" is traditional
 pref("security.fileuri.strict_origin_policy", true);
