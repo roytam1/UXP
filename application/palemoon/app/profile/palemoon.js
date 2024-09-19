@@ -501,6 +501,9 @@ pref("javascript.options.showInConsole",          true);
 pref("general.warnOnAboutConfig",                 false);
 #endif
 
+// Enable unlinking of ghost windows so they can be garbage collected.
+pref("browser.ghostbuster.enabled",               true);
+
 // This is the pref to control the location bar, change this to true to 
 // force this - this makes the origin of popup windows more obvious to avoid
 // spoofing. We would rather not do it by default because it affects UE for web

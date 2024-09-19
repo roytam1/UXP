@@ -62,6 +62,10 @@ const BOOKMARKS_BACKUP_INTERVAL = 86400 * 1000;
 // Maximum number of backups to create.  Old ones will be purged.
 const BOOKMARKS_BACKUP_MAX_BACKUPS = 10;
 
+// Use users' idle time to unlink ghost windows and clean up memory.
+// Trigger this by default every 5 minutes.
+const GHOSTBUSTER_INTERVAL = 5 * 60;
+
 // Factory object
 const BrowserGlueServiceFactory = {
   _instance: null,
@@ -79,6 +83,10 @@ const BrowserGlueServiceFactory = {
 
 function BrowserGlue() {
   XPCOMUtils.defineLazyServiceGetter(this, "_idleService",
+                                     "@mozilla.org/widget/idleservice;1",
+                                     "nsIIdleService");
+
+  XPCOMUtils.defineLazyServiceGetter(this, "_ghostBusterService",
                                      "@mozilla.org/widget/idleservice;1",
                                      "nsIIdleService");
 
@@ -109,6 +117,7 @@ BrowserGlue.prototype = {
   _isPlacesShutdownObserver: false,
   _isPlacesDatabaseLocked: false,
   _migrationImportsDefaultBookmarks: false,
+  _isGhostBusterObserver: false,
 
   _setPrefToSaveSession: function(aForce) {
     if (!this._saveSession && !aForce) {
@@ -240,6 +249,15 @@ BrowserGlue.prototype = {
       case "idle":
         if (this._idleService.idleTime > BOOKMARKS_BACKUP_IDLE_TIME * 1000) {
           this._backupBookmarks();
+        }
+        if (this._ghostBusterService.idleTime > GHOSTBUSTER_INTERVAL * 1000) {
+          if (Services.prefs.getBoolPref("browser.ghostbuster.enabled", true)) {
+            Cu.unlinkGhostWindows();
+            Cu.forceGC();
+#ifdef DEBUG
+            dump("Unlinking ghost windows + GC has run on idle.\n");
+#endif
+          }
         }
         break;
       case "distribution-customization-complete":
@@ -623,6 +641,13 @@ BrowserGlue.prototype = {
     DateTimePickerHelper.init();
 
     this._trackSlowStartup();
+
+    // Initialize ghost window idle observer.
+    if (!this._isGhostBusterObserver) {
+      this._ghostBusterService.addIdleObserver(this, GHOSTBUSTER_INTERVAL);
+      // Prevent re-entry.
+      this._isGhostBusterObserver = true;
+    }
   },
 
   /**
@@ -639,6 +664,14 @@ BrowserGlue.prototype = {
     FormValidationHandler.uninit();
     AutoCompletePopup.uninit();
     this._dispose();
+
+    // Shut down ghost window idle observer.
+    if (this._isGhostBusterObserver) {
+      this._ghostBusterService.removeIdleObserver(this, GHOSTBUSTER_INTERVAL);
+      this._isGhostBusterObserver = false;
+    }
+    // Do one final unlink to combat shutdown issues.
+    Cu.unlinkGhostWindows();
   },
 
   // All initial windows have opened.

@@ -2134,6 +2134,13 @@
             var browser = this.getBrowserForTab(aTab);
             this._outerWindowIDBrowserMap.delete(browser.outerWindowID);
 
+            if (Services.prefs.getBoolPref("browser.ghostbuster.enabled", true)) {
+              Cu.unlinkGhostWindows();
+#ifdef DEBUG
+              dump("Unlinking ghost windows has run on tab close.\n");
+#endif
+            }
+
             // Because of the way XBL works (fields just set JS
             // properties on the element) and the code we have in place
             // to preserve the JS objects for any elements that have
