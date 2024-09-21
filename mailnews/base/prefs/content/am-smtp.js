@@ -5,6 +5,9 @@
 
 Components.utils.import("resource://gre/modules/Services.jsm");
 Components.utils.import("resource:///modules/mailServices.js");
+#ifdef MOZ_MAILNEWS_OAUTH2
+Components.utils.import("resource:///modules/OAuth2Providers.js");
+#endif
 
 var gSmtpServerListWindow =
 {
@@ -155,9 +158,19 @@ var gSmtpServerListWindow =
         Components.utils.reportError("Warning: unknown value for smtpserver... authMethod: " +
           aServer.authMethod);
     }
-    if (authStr)
+    if (authStr) {
+#ifdef MOZ_MAILNEWS_OAUTH2
+      let details = OAuth2Providers.getHostnameDetails(aServer.hostname);
+      if (!details) {
+        document
+          .getElementById("authMethod-oauth2")
+          .toggleAttribute("disabled", true);
+      }
+#endif
+
       document.getElementById("authMethodValue").value =
           this.mBundle.getString(authStr);
+    }
   },
 
   refreshServerList: function(aServerKeyToSelect, aFocusList)

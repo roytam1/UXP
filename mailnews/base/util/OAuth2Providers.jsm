@@ -13,16 +13,20 @@ var {classes: Cc, interfaces: Ci, results: Cr, utils: Cu} = Components;
 var kHostnames = new Map([
   ["imap.googlemail.com", ["accounts.google.com", "https://mail.google.com/"]],
   ["smtp.googlemail.com", ["accounts.google.com", "https://mail.google.com/"]],
+  ["pop.googlemail.com", ["accounts.google.com", "https://mail.google.com/"]],
   ["imap.gmail.com", ["accounts.google.com", "https://mail.google.com/"]],
   ["smtp.gmail.com", ["accounts.google.com", "https://mail.google.com/"]],
+  ["pop.gmail.com", ["accounts.google.com", "https://mail.google.com/"]],
 
   ["imap.mail.ru", ["o2.mail.ru", "mail.imap"]],
   ["smtp.mail.ru", ["o2.mail.ru", "mail.imap"]],
 
   ["imap.mail.yahoo.com", ["login.yahoo.com", "mail-w"]],
+  ["pop.mail.yahoo.com", ["login.yahoo.com", "mail-w"]],
   ["smtp.mail.yahoo.com", ["login.yahoo.com", "mail-w"]],
 
   ["imap.aol.com", ["login.aol.com", "mail-w"]],
+  ["pop.aol.com", ["login.aol.com", "mail-w"]],
   ["smtp.aol.com", ["login.aol.com", "mail-w"]],
 
   ["outlook.office365.com", [

@@ -22,6 +22,9 @@
 #include "nsIAuthModule.h"
 #include "nsITimer.h"
 #include "nsIMsgAsyncPrompter.h"
+#ifdef MOZ_MAILNEWS_OAUTH2
+#include "msgIOAuth2Module.h"
+#endif
 
 #include "prerror.h"
 #include "plhash.h"
@@ -53,11 +56,6 @@ and change the POP3_QUIT_RESPONSE state to flush the newly committed deletes. */
 
 #define OUTPUT_BUFFER_SIZE 8192 // maximum size of command string
 
-/* structure to hold data pertaining to the active state of
- * a transfer in progress.
- *
- */
-
 enum Pop3CapabilityEnum {
     POP3_CAPABILITY_UNDEFINED   = 0x00000000,
     POP3_HAS_XSENDER            = 0x00000001,
@@ -80,7 +78,8 @@ enum Pop3CapabilityEnum {
     POP3_HAS_RESP_CODES         = 0x00020000,
     POP3_HAS_AUTH_RESP_CODE     = 0x00040000,
     POP3_HAS_STLS               = 0x00080000,
-    POP3_HAS_AUTH_GSSAPI        = 0x00100000
+    POP3_HAS_AUTH_GSSAPI        = 0x00100000,
+    POP3_HAS_AUTH_XOAUTH2       = 0x00200000
 };
 
 // TODO use value > 0?
@@ -153,7 +152,10 @@ enum Pop3StatesEnum {
     POP3_OBTAIN_PASSWORD_BEFORE_USERNAME,       // 47
     POP3_FINISH_OBTAIN_PASSWORD_BEFORE_USERNAME,// 48
     POP3_OBTAIN_PASSWORD_BEFORE_PASSWORD,       // 49
-    POP3_FINISH_OBTAIN_PASSWORD_BEFORE_PASSWORD // 50
+    POP3_FINISH_OBTAIN_PASSWORD_BEFORE_PASSWORD,// 50
+
+    POP3_SUSPENDED,                             // 51
+    POP3_AUTH_OAUTH2_RESPONSE,                  // 52
 };
 
 
@@ -251,12 +253,18 @@ typedef struct _Pop3ConData {
 
 class nsPop3Protocol : public nsMsgProtocol,
                        public nsIPop3Protocol,
+#ifdef MOZ_MAILNEWS_OAUTH2
+                       public msgIOAuth2ModuleListener,
+#endif
                        public nsIMsgAsyncPromptListener
 {
 public:
   explicit nsPop3Protocol(nsIURI* aURL);
 
   NS_DECL_ISUPPORTS_INHERITED
+#ifdef MOZ_MAILNEWS_OAUTH2
+  NS_DECL_MSGIOAUTH2MODULELISTENER
+#endif
   NS_DECL_NSIPOP3PROTOCOL
   NS_DECL_NSIMSGASYNCPROMPTLISTENER
 
@@ -365,6 +373,9 @@ private:
   int32_t NextAuthStep();
   int32_t AuthLogin();
   int32_t AuthLoginResponse();
+#ifdef MOZ_MAILNEWS_OAUTH2
+  int32_t AuthOAuth2Response();
+#endif
   int32_t AuthNtlm();
   int32_t AuthNtlmResponse();
   int32_t AuthGSSAPI();
@@ -397,6 +408,12 @@ private:
 
   Pop3StatesEnum GetNextPasswordObtainState();
   nsresult RerunUrl();
+
+#ifdef MOZ_MAILNEWS_OAUTH2
+  // The support module for OAuth2 logon, only present if OAuth2 is enabled
+  // and working.
+  nsCOMPtr<msgIOAuth2Module> mOAuth2Support;
+#endif
 };
 
 #endif /* nsPop3Protocol_h__ */
