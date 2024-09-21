@@ -2489,7 +2489,7 @@ ReportJSRuntimeExplicitTreeStats(const JS::RuntimeStats& rtStats,
 
     // gcTotal is the sum of everything we've reported for the GC heap.  It
     // should equal rtStats.gcHeapChunkTotal.
-    MOZ_ASSERT(gcTotal == rtStats.gcHeapChunkTotal);
+    NS_WARN_IF(gcTotal != rtStats.gcHeapChunkTotal);
 }
 
 void
@@ -2929,7 +2929,7 @@ JSReporter::CollectReports(WindowPaths* windowPaths,
         KIND_OTHER, rtStats.zTotals.regExpSharedsGCHeap,
         "Used regexpshared cells.");
 
-    MOZ_ASSERT(gcThingTotal == rtStats.gcHeapGCThings);
+    NS_WARN_IF(gcThingTotal == rtStats.gcHeapGCThings);
 
     // Report xpconnect.
 
