@@ -2127,9 +2127,10 @@
             // We're going to remove the tab and the browser now.
             
             // Interrupt all tab activity to aid in cleaning up detached window objects.
-            // Using the "superstop" should halt all animations, fetches, network activity
-            // etc. to come to a clean state for removal and unlinking (if enabled).
-            BrowserStop();
+            // Using the "STOP_ALL" flag should halt all animations, fetches, network
+            // activity, etc. to come to a clean state for removal and unlinking (if enabled).
+            var browser = this.getBrowserForTab(aTab);
+            browser.webNavigation.stop(nsIWebNavigation.STOP_ALL);
             
             // Clean up mTabFilters and mTabListeners now rather than in
             // _beginRemoveTab, so that their size is always in sync with the
@@ -2137,7 +2138,6 @@
             this.mTabFilters.splice(aTab._tPos, 1);
             this.mTabListeners.splice(aTab._tPos, 1);
 
-            var browser = this.getBrowserForTab(aTab);
             this._outerWindowIDBrowserMap.delete(browser.outerWindowID);
 
             if (Services.prefs.getBoolPref("browser.ghostbuster.enabled", true)) {
