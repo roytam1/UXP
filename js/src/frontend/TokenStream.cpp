@@ -362,10 +362,7 @@ TokenStream::SourceCoords::add(uint32_t lineNum, uint32_t lineStartOffset)
 
         lineStartOffsets_[lineIndex] = lineStartOffset;
     } else {
-        // We have seen this newline before (and ungot it).  Do nothing (other
-        // than checking it hasn't mysteriously changed).
-        // This path can be executed after hitting OOM, so check lineIndex.
-        MOZ_ASSERT_IF(lineIndex < sentinelIndex, lineStartOffsets_[lineIndex] == lineStartOffset);
+        // We have seen this newline before (and ungot it).  Do nothing.
     }
     return true;
 }
@@ -615,7 +612,6 @@ TokenStream::ungetChar(int32_t c)
         if (!userbuf.atStart())
             userbuf.matchRawCharBackwards('\r');
 
-        MOZ_ASSERT(prevLinebase != size_t(-1));    // we should never get more than one EOL char
         linebase = prevLinebase;
         prevLinebase = size_t(-1);
         lineno--;

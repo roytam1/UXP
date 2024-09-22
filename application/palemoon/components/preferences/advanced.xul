@@ -52,6 +52,9 @@
       <preference id="pref.general.captiveportal" name="network.captive-portal-service.enabled" type="bool"/>
 
       <!-- Network tab -->
+      <preference id="network.dns.prefetch"            name="network.dns.disablePrefetch"     type="bool"   inverted="true"/>
+      
+      <!-- Cache tab -->
       <preference id="browser.cache.disk.capacity"     name="browser.cache.disk.capacity"     type="int"/>
 
       <preference id="browser.cache.disk.smart_size.enabled"
@@ -124,6 +127,7 @@
       <tabs id="tabsElement">
         <tab id="generalTab" label="&generalTab.label;" helpTopic="prefs-advanced-general"/>
         <tab id="networkTab" label="&networkTab.label;" helpTopic="prefs-advanced-network"/>
+        <tab id="cacheTab" label="&cacheTab.label;" helpTopic="prefs-advanced-cache"/>
         <tab id="updateTab" label="&updateTab.label;"  helpTopic="prefs-advanced-update"/>
         <tab id="encryptionTab" label="&certificateTab.label;" helpTopic="prefs-advanced-encryption"/>
         <tab id="scrollparamTab" label="&scrollparamTab.label;" helpTopic="prefs-advanced-scrollparams"/>      
@@ -221,7 +225,6 @@
 
         <!-- Network -->
         <tabpanel id="networkPanel" orient="vertical">
-
           <!-- Connection -->
           <groupbox id="connectionGroup">
             <caption label="&connection.label;"/>
@@ -233,8 +236,20 @@
                       oncommand="gAdvancedPane.showConnections();"/>
             </hbox>
           </groupbox>
+          
+          <!-- DNS settings -->
+          <groupbox id="DNSGroup">
+            <caption label="&DNS.label;"/>
+            <checkbox id="enableDNSPrefetch"
+                      label="&enableDNSPrefetch.label;"
+                      accesskey="&enableDNSPrefetch.accesskey;"
+                      preference="network.dns.prefetch"/>
+          </groupbox>
+        </tabpanel>
 
-          <!-- Cache -->
+        <!-- Cache -->
+        <tabpanel id="cachePanel" orient="vertical">
+
           <groupbox id="cacheGroup">
             <caption label="&httpCache.label;"/>
 

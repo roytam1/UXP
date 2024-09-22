@@ -304,6 +304,9 @@ function onLoad()
                  "collection followed by a cycle collection, and causes the " +
                  "process to reduce memory usage in other ways, e.g. by " +
                  "flushing various caches.";
+  const UGDesc = "Unlink any known ghost windows, to enable investigating " +
+                 "what caused them. This is only for debugging leaks, and " +
+                 "can cause bad things to happen if called.";
 
   const GCAndCCLogDesc = "Save garbage collection log and concise cycle " +
                          "collection log.\n" +
@@ -357,6 +360,7 @@ function onLoad()
   appendButton(row3, GCDesc, doGC,  "GC");
   appendButton(row3, CCDesc, doCC,  "CC");
   appendButton(row3, MMDesc, doMMU, "Minimize memory usage");
+  appendButton(row3, UGDesc, doUGW, "Unlink ghost windows");
 
   let row4 = appendElement(ops, "div", "opsRow");
 
@@ -427,6 +431,12 @@ function doMMU()
   Services.obs.notifyObservers(null, "child-mmu-request", null);
   gMgr.minimizeMemoryUsage(
     () => updateMainAndFooter("Memory minimization completed", HIDE_FOOTER));
+}
+
+function doUGW()
+{
+  Cu.unlinkGhostWindows();
+  updateMainAndFooter("Unlink ghost windows completed", HIDE_FOOTER);
 }
 
 function doMeasure()

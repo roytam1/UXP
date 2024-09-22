@@ -2664,12 +2664,8 @@ nsXPCComponents_Utils::SchedulePreciseShrinkingGC(ScheduledGCCallback* aCallback
 NS_IMETHODIMP
 nsXPCComponents_Utils::UnlinkGhostWindows()
 {
-#ifdef DEBUG
     nsWindowMemoryReporter::UnlinkGhostWindows();
     return NS_OK;
-#else
-    return NS_ERROR_NOT_IMPLEMENTED;
-#endif
 }
 
 NS_IMETHODIMP
