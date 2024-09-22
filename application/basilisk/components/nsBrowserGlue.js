@@ -81,6 +81,10 @@ const BOOKMARKS_BACKUP_MIN_INTERVAL_DAYS = 1;
 // days we will try to create a new one more aggressively.
 const BOOKMARKS_BACKUP_MAX_INTERVAL_DAYS = 3;
 
+// Use users' idle time to unlink ghost windows and clean up memory.
+// Trigger this by default every 5 minutes.
+const GHOSTBUSTER_INTERVAL = 5 * 60;
+
 // Factory object
 const BrowserGlueServiceFactory = {
   _instance: null,
@@ -96,6 +100,10 @@ const BrowserGlueServiceFactory = {
 
 function BrowserGlue() {
   XPCOMUtils.defineLazyServiceGetter(this, "_idleService",
+                                     "@mozilla.org/widget/idleservice;1",
+                                     "nsIIdleService");
+
+  XPCOMUtils.defineLazyServiceGetter(this, "_ghostBusterService",
                                      "@mozilla.org/widget/idleservice;1",
                                      "nsIIdleService");
 
@@ -127,6 +135,7 @@ BrowserGlue.prototype = {
   _isPlacesShutdownObserver: false,
   _isPlacesDatabaseLocked: false,
   _migrationImportsDefaultBookmarks: false,
+  _isGhostBusterObserver: false,
 
   _setPrefToSaveSession: function(aForce) {
     if (!this._saveSession && !aForce)
@@ -241,6 +250,15 @@ BrowserGlue.prototype = {
         break;
       case "idle":
         this._backupBookmarks();
+        if (this._ghostBusterService.idleTime > GHOSTBUSTER_INTERVAL * 1000) {
+          if (Services.prefs.getBoolPref("browser.ghostbuster.enabled", true)) {
+            Cu.unlinkGhostWindows();
+            Cu.forceGC();
+#ifdef DEBUG
+            dump("Unlinking ghost windows + GC has run on idle.\n");
+#endif
+          }
+        }
         break;
       case "distribution-customization-complete":
         Services.obs.removeObserver(this, "distribution-customization-complete");
@@ -843,6 +861,13 @@ BrowserGlue.prototype = {
 
     this._trackSlowStartup();
 
+    // Initialize ghost window idle observer.
+    if (!this._isGhostBusterObserver) {
+      this._ghostBusterService.addIdleObserver(this, GHOSTBUSTER_INTERVAL);
+      // Prevent re-entry.
+      this._isGhostBusterObserver = true;
+    }
+
     // Offer to reset a user's profile if it hasn't been used for 60 days.
     const OFFER_PROFILE_RESET_INTERVAL_MS = 60 * 24 * 60 * 60 * 1000;
     let lastUse = Services.appinfo.replacedLockTime;
@@ -914,6 +939,13 @@ BrowserGlue.prototype = {
     if (AppConstants.NIGHTLY_BUILD) {
       AddonWatcher.uninit();
     }
+    // Shut down ghost window idle observer.
+    if (this._isGhostBusterObserver) {
+      this._ghostBusterService.removeIdleObserver(this, GHOSTBUSTER_INTERVAL);
+      this._isGhostBusterObserver = false;
+    }
+    // Do one final unlink to combat shutdown issues.
+    Cu.unlinkGhostWindows();
   },
 
   // All initial windows have opened.
