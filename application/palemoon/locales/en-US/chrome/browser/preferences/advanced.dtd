@@ -61,6 +61,12 @@
 <!ENTITY connectionSettings.label        "Settings…">
 <!ENTITY connectionSettings.accesskey    "e">
 
+<!ENTITY DNS.label                       "DNS">
+<!ENTITY enableDNSPrefetch.label         "Prefetch DNS lookups">
+<!ENTITY enableDNSPrefetch.accesskey     "P">
+
+<!ENTITY cacheTab.label                  "Cache">
+
 <!ENTITY httpCache.label                 "Cached Web Content">
 
 <!ENTITY offlineStorage2.label           "Offline Web Content and User Data">

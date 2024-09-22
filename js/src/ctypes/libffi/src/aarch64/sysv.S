@@ -100,8 +100,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #define ffi_call_SYSV_FS (8 * 4)
 
-        .cfi_startproc
 CNAME(ffi_call_SYSV):
+        .cfi_startproc
         stp     x29, x30, [sp, #-16]!
 	cfi_adjust_cfa_offset (16)
         cfi_rel_offset (x29, 0)
@@ -247,8 +247,8 @@ CNAME(ffi_call_SYSV):
 #ifdef __APPLE__
         .align 2
 #endif
-        .cfi_startproc
 CNAME(ffi_closure_SYSV):
+        .cfi_startproc
         stp     x29, x30, [sp, #-16]!
 	cfi_adjust_cfa_offset (16)
         cfi_rel_offset (x29, 0)

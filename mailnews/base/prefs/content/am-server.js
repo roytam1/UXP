@@ -30,10 +30,12 @@ function onInit(aPageId, aServerId)
   if (serverType == "imap")
     setupImapDeleteUI(aServerId);
 
-  // TLS Cert (External) and OAuth2 are only supported on IMAP.
 #ifdef MOZ_MAILNEWS_OAUTH2
-  document.getElementById("authMethod-oauth2").hidden = (serverType != "imap");
+  // OAuth2 are only supported on IMAP and POP.
+  document.getElementById("authMethod-oauth2").hidden =
+    serverType != "imap" && serverType != "pop3";
 #endif
+  // TLS Cert (External) and OAuth2 are only supported on IMAP.
   document.getElementById("authMethod-external").hidden = (serverType != "imap");
 
   // "STARTTLS, if available" is vulnerable to MITM attacks so we shouldn't
