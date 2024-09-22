@@ -2645,11 +2645,23 @@
             }
 
             // We're going to remove the tab and the browser now.
+
+            // Using the "STOP_ALL" flag should halt all animations, fetches, network
+            // activity, etc. to come to a clean state for removal and unlinking (if enabled).
+            var browser = this.getBrowserForTab(aTab);
+            browser.webNavigation.stop(nsIWebNavigation.STOP_ALL);
+
             this._tabFilters.delete(aTab);
             this._tabListeners.delete(aTab);
 
-            var browser = this.getBrowserForTab(aTab);
             this._outerWindowIDBrowserMap.delete(browser.outerWindowID);
+
+            if (Services.prefs.getBoolPref("browser.ghostbuster.enabled", true)) {
+              Cu.unlinkGhostWindows();
+#ifdef DEBUG
+              dump("Unlinking ghost windows has run on tab close.\n");
+#endif
+            }
 
             // Because of the way XBL works (fields just set JS
             // properties on the element) and the code we have in place
