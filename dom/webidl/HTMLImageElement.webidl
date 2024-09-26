@@ -55,7 +55,7 @@ partial interface HTMLImageElement {
            [CEReactions, SetterThrows]
            attribute DOMString longDesc;
 
-  [CEReactions, TreatNullAs=EmptyString,SetterThrows] attribute DOMString border;
+  [CEReactions, SetterThrows] attribute [TreatNullAs=EmptyString] DOMString border;
 };
 
 // [Update me: not in whatwg spec yet]
@@ -107,4 +107,4 @@ interface mixin MozImageLoadingContent {
   void forceImageState(boolean aForce, unsigned long long aState);
 };
 
-HTMLImageElement implements MozImageLoadingContent;
+HTMLImageElement includes MozImageLoadingContent;

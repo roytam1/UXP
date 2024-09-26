@@ -110,8 +110,8 @@ partial interface Navigator {
 };
 
 // https://globalprivacycontrol.github.io/gpc-spec/
-[NoInterfaceObject, Exposed=(Window,Worker)]
-interface NavigatorGlobalPrivacyControl {
+[Exposed=(Window,Worker)]
+interface mixin NavigatorGlobalPrivacyControl {
   readonly attribute boolean globalPrivacyControl;
 };
 

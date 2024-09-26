@@ -27,8 +27,8 @@ interface Blob {
   //slice Blob into byte-ranged chunks
 
   [Throws]
-  Blob slice([Clamp] optional long long start,
-             [Clamp] optional long long end,
+  Blob slice(optional [Clamp] long long start,
+             optional [Clamp] long long end,
              optional DOMString contentType = "");
 
   // void close(); TODO bug 1048325

@@ -35,7 +35,7 @@ public:
   // Implementation of nsISupports is inherited from MathMLElementBase
   NS_DECL_ISUPPORTS_INHERITED
 
-  NS_IMPL_FROMNODE(MathMLElement, kNameSpaceID_MathML)
+  NS_IMPL_FROMCONTENT(MathMLElement, kNameSpaceID_MathML)
 
   // Forward implementations of parent interfaces of MathMLElement to 
   // our base class
@@ -98,14 +98,14 @@ public:
   virtual nsIDOMNode* AsDOMNode() override { return this; }
 
   void RecompileScriptEventListeners() final;
-  bool IsEventAttributeNameInternal(nsAtom* aName) final;
+  bool IsEventAttributeNameInternal(nsIAtom* aName) final;
 
 protected:
   virtual ~MathMLElement() {}
 
   virtual JSObject* WrapNode(JSContext *aCx, JS::Handle<JSObject*> aGivenProto) override;
 
-  nsresult BeforeSetAttr(int32_t aNamespaceID, nsAtom* aName,
+  nsresult BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
                          const nsAttrValueOrString* aValue, bool aNotify) final;
   virtual nsresult AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,

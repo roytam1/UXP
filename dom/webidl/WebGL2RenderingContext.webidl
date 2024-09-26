@@ -692,7 +692,7 @@ interface mixin WebGL2RenderingContextBase
     void bindVertexArray(WebGLVertexArrayObject? array);
 };
 
-WebGL2RenderingContextBase includes WebGLRenderingContextBase;
+WebGL2RenderingContext includes WebGLRenderingContextBase;
 WebGL2RenderingContext includes WebGL2RenderingContextBase;
 
 [NoInterfaceObject]

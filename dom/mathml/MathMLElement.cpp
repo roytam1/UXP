@@ -28,7 +28,7 @@
 
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/EventStates.h"
-#include "mozilla/dom/ElementBinding.h"
+#include "mozilla/dom/MathMLElementBinding.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -1140,7 +1140,7 @@ MathMLElement::RecompileScriptEventListeners() {
       continue;
     }
 
-    nsAtom* attr = name->Atom();
+    nsIAtom* attr = name->Atom();
     if (!IsEventAttributeName(attr)) {
       continue;
     }
@@ -1152,14 +1152,14 @@ MathMLElement::RecompileScriptEventListeners() {
 }
 
 bool
-MathMLElement::IsEventAttributeNameInternal(nsAtom* aName) {
+MathMLElement::IsEventAttributeNameInternal(nsIAtom* aName) {
   // The intent is to align MathML event attributes on HTML5, so the flag
   // EventNameType_HTML is used here.
   return nsContentUtils::IsEventAttributeName(aName, EventNameType_HTML);
 }
 
 nsresult
-MathMLElement::BeforeSetAttr(int32_t aNamespaceID, nsAtom* aName,
+MathMLElement::BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
                              const nsAttrValueOrString* aValue,
                              bool aNotify) {
   if (aNamespaceID == kNameSpaceID_None) {

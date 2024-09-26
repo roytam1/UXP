@@ -51,7 +51,7 @@ interface mixin BrowserElementCommon {
   void removeNextPaintListener(BrowserElementNextPaintEventCallback listener);
 };
 
-interface mixin BrowserElement {
+interface BrowserElement {
   [Throws,
    Pref="dom.mozBrowserFramesEnabled",
    ChromeOnly]
