@@ -20,7 +20,6 @@ interface MessagePort : EventTarget {
   // event handlers
   attribute EventHandler onmessage;
 };
-// MessagePort implements Transferable;
 
 // Used to declare which objects should be transferred.
 dictionary StructuredSerializeOptions {

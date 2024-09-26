@@ -30,5 +30,5 @@ interface SVGAnimationElement : SVGElement {
   void endElementAt(float offset);
 };
 
-SVGAnimationElement implements SVGTests;
+SVGAnimationElement includes SVGTests;
 

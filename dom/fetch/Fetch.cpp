@@ -21,6 +21,7 @@
 #include "nsProxyRelease.h"
 
 #include "mozilla/ErrorResult.h"
+#include "mozilla/dom/BindingDeclarations.h"
 #include "mozilla/dom/BodyUtil.h"
 #include "mozilla/dom/DOMError.h"
 #include "mozilla/dom/Exceptions.h"
@@ -317,7 +318,7 @@ public:
 
 already_AddRefed<Promise>
 FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
-             const RequestInit& aInit, ErrorResult& aRv)
+             const RequestInit& aInit, CallerType aCallerType, ErrorResult& aRv)
 {
   RefPtr<Promise> p = Promise::Create(aGlobal, aRv);
   if (NS_WARN_IF(aRv.Failed())) {
@@ -325,12 +326,10 @@ FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
   }
 
   // Double check that we have chrome privileges if the Request's content
-  // policy type has been overridden.  Note, we must do this before
-  // entering the global below.  Otherwise the IsCallerChrome() will
-  // always fail.
+  // policy type has been overridden.
   MOZ_ASSERT_IF(aInput.IsRequest() &&
                 aInput.GetAsRequest().IsContentPolicyTypeOverridden(),
-                nsContentUtils::IsCallerChrome());
+                aCallerType == CallerType::System);
 
   AutoJSAPI jsapi;
   if (!jsapi.Init(aGlobal)) {

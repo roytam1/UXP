@@ -77,8 +77,7 @@ partial interface HTMLImageElement {
   readonly attribute long y;
 };
 
-[NoInterfaceObject]
-interface MozImageLoadingContent {
+interface mixin MozImageLoadingContent {
   // Mirrored chrome-only nsIImageLoadingContent methods.  Please make sure
   // to update this list if nsIImageLoadingContent changes.
   [ChromeOnly]

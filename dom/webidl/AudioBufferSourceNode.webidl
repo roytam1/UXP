@@ -42,4 +42,4 @@ interface AudioBufferSourceNode : AudioNode {
 };
 
 // Mozilla extensions
-AudioBufferSourceNode implements AudioNodePassThrough;
+AudioBufferSourceNode includes AudioNodePassThrough;

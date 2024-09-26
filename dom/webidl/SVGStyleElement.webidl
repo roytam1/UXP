@@ -22,5 +22,5 @@ interface SVGStyleElement : SVGElement {
   [SetterThrows]
   attribute boolean scoped;
 };
-SVGStyleElement implements LinkStyle;
+SVGStyleElement includes LinkStyle;
 

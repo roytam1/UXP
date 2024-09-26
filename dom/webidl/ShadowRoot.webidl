@@ -33,3 +33,4 @@ interface ShadowRoot : DocumentFragment
   attribute DOMString innerHTML;
 };
 
+ShadowRoot includes DocumentOrShadowRoot;

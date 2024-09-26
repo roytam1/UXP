@@ -322,7 +322,7 @@ class IDLScope(IDLObject):
                                                      newObject.location)
 
         raise WebIDLError(
-            "Multiple unresolvable definitions of identifier '%s' in scope '%s%s"
+            "Multiple unresolvable definitions of identifier '%s' in scope '%s'%s"
             % (identifier.name, str(self), conflictdesc), [])
 
     def _lookupIdentifier(self, identifier):
@@ -601,6 +601,33 @@ class IDLExternalInterface(IDLObjectWithIdentifier, IDLExposureMixins):
     def _getDependentObjects(self):
         return set()
 
+class IDLPartialDictionary(IDLObject):
+    def __init__(self, location, name, members, nonPartialDictionary):
+        assert isinstance(name, IDLUnresolvedIdentifier)
+
+        IDLObject.__init__(self, location)
+        self.identifier = name
+        self.members = members
+        self._nonPartialDictionary = nonPartialDictionary
+        self._finished = False
+        nonPartialDictionary.addPartialDictionary(self)
+
+    def addExtendedAttributes(self, attrs):
+        pass
+
+    def finish(self, scope):
+        if self._finished:
+            return
+        self._finished = True
+
+        # Need to make sure our non-partial dictionary gets
+        # finished so it can report cases when we only have partial
+        # dictionaries.
+        self._nonPartialDictionary.finish(scope)
+
+    def validate(self):
+        pass
+
 
 class IDLPartialInterfaceOrNamespace(IDLObject):
     def __init__(self, location, name, members, nonPartialInterfaceOrNamespace):
@@ -615,7 +642,7 @@ class IDLPartialInterfaceOrNamespace(IDLObject):
         self._haveSecureContextExtendedAttribute = False
         self._nonPartialInterfaceOrNamespace = nonPartialInterfaceOrNamespace
         self._finished = False
-        nonPartialInterfaceOrNamespace.addPartialInterface(self)
+        nonPartialInterfaceOrNamespace.addPartial(self)
 
     def addExtendedAttributes(self, attrs):
         for attr in attrs:
@@ -687,28 +714,211 @@ def globalNameSetToExposureSet(globalScope, nameSet, exposureSet):
         exposureSet.update(globalScope.globalNameMapping[name])
 
 
-class IDLInterfaceOrNamespace(IDLObjectWithScope, IDLExposureMixins):
-    def __init__(self, location, parentScope, name, parent, members,
-                 isKnownNonPartial):
+class IDLInterfaceOrInterfaceMixinOrNamespace(IDLObjectWithScope, IDLExposureMixins):
+    def __init__(self, location, parentScope, name):
         assert isinstance(parentScope, IDLScope)
         assert isinstance(name, IDLUnresolvedIdentifier)
+
+        self._finished = False
+        self.members = []
+        self._partials = []
+        self._extendedAttrDict = {}
+        self._isKnownNonPartial = False
+
+        IDLObjectWithScope.__init__(self, location, parentScope, name)
+        IDLExposureMixins.__init__(self, location)
+
+    def finish(self, scope):
+        if not self._isKnownNonPartial:
+            raise WebIDLError("%s does not have a non-partial declaration" %
+                              str(self), [self.location])
+
+        IDLExposureMixins.finish(self, scope)
+
+        # Now go ahead and merge in our partials.
+        for partial in self._partials:
+            partial.finish(scope)
+            self.addExtendedAttributes(partial.propagatedExtendedAttrs)
+            self.members.extend(partial.members)
+
+    def resolveIdentifierConflict(self, scope, identifier, originalObject, newObject):
+        assert isinstance(scope, IDLScope)
+        assert isinstance(originalObject, IDLInterfaceMember)
+        assert isinstance(newObject, IDLInterfaceMember)
+
+        retval = IDLScope.resolveIdentifierConflict(self, scope, identifier,
+                                                    originalObject, newObject)
+
+        # Might be a ctor, which isn't in self.members
+        if newObject in self.members:
+            self.members.remove(newObject)
+        return retval
+
+    def typeName(self):
+        if self.isInterface():
+            return "interface"
+        if self.isNamespace():
+            return "namespace"
+        return "interface mixin"
+
+    def getExtendedAttribute(self, name):
+        return self._extendedAttrDict.get(name, None)
+
+    def setNonPartial(self, location, members):
+        if self._isKnownNonPartial:
+            raise WebIDLError("Two non-partial definitions for the "
+                              "same %s" % self.typeName(),
+                              [location, self.location])
+        self._isKnownNonPartial = True
+        # Now make it look like we were parsed at this new location, since
+        # that's the place where the interface is "really" defined
+        self.location = location
+        # Put the new members at the beginning
+        self.members = members + self.members
+    
+    def addPartial(self, partial):
+        assert self.identifier.name == partial.identifier.name
+        self._partials.append(partial)
+
+    def getPartials(self):
+        # Don't let people mutate our guts.
+        return list(self._partials)
+
+    def finishMembers(self, scope):
+        # Assuming we've merged in our partials, set the _exposureGlobalNames on
+        # any members that don't have it set yet.  Note that any partial
+        # interfaces that had [Exposed] set have already set up
+        # _exposureGlobalNames on all the members coming from them, so this is
+        # just implementing the "members default to interface or interface mixin
+        # that defined them" and "partial interfaces or interface mixins default
+        # to interface or interface mixin they're a partial for" rules from the
+        # spec.
+        for m in self.members:
+            # If m, or the partial m came from, had [Exposed]
+            # specified, it already has a nonempty exposure global names set.
+            if len(m._exposureGlobalNames) == 0:
+                m._exposureGlobalNames.update(self._exposureGlobalNames)
+
+        # resolve() will modify self.members, so we need to iterate
+        # over a copy of the member list here.
+        for member in list(self.members):
+            member.resolve(self)
+
+        for member in self.members:
+            member.finish(scope)
+
+        # Now that we've finished our members, which has updated their exposure
+        # sets, make sure they aren't exposed in places where we are not.
+        for member in self.members:
+            if not member.exposureSet.issubset(self.exposureSet):
+                raise WebIDLError("Interface or interface mixin member has "
+                                  "larger exposure set than its container",
+                                  [member.location, self.location])
+
+
+class IDLInterfaceMixin(IDLInterfaceOrInterfaceMixinOrNamespace):
+    def __init__(self, location, parentScope, name, members, isKnownNonPartial):
+        self.actualExposureGlobalNames = set()
+
+        assert isKnownNonPartial or len(members) == 0
+        IDLInterfaceOrInterfaceMixinOrNamespace.__init__(self, location, parentScope, name)
+
+        if isKnownNonPartial:
+            self.setNonPartial(location, members)
+
+    def __str__(self):
+        return "Interface mixin '%s'" % self.identifier.name
+    
+    def finish(self, scope):
+        if self._finished:
+            return
+        self._finished = True
+
+        # Expose to the globals of interfaces that includes this mixin if this
+        # mixin has no explicit [Exposed] so that its members can be exposed
+        # based on the base interface exposure set.
+        # Make sure this is done before IDLExposureMixins.finish call to
+        # prevent exposing to PrimaryGlobal by default.
+        hasImplicitExposure = len(self._exposureGlobalNames) == 0
+        if hasImplicitExposure:
+            self._exposureGlobalNames.update(self.actualExposureGlobalNames)
+
+        IDLInterfaceOrInterfaceMixinOrNamespace.finish(self, scope)
+
+        self.finishMembers(scope)
+
+    def validate(self):
+        for member in self.members:
+
+            if member.isAttr():
+                if member.inherit:
+                    raise WebIDLError("Interface mixin member cannot include "
+                                      "an inherited attribute",
+                                      [member.location, self.location])
+                if member.isStatic():
+                    raise WebIDLError("Interface mixin member cannot include "
+                                      "a static member",
+                                      [member.location, self.location])
+
+            if member.isMethod():
+                if member.isStatic():
+                    raise WebIDLError("Interface mixin member cannot include "
+                                      "a static operation",
+                                      [member.location, self.location])
+                if (member.isGetter() or
+                    member.isSetter() or
+                    member.isDeleter() or
+                    member.isLegacycaller()):
+                    raise WebIDLError("Interface mixin member cannot include a "
+                                      "special operation",
+                                      [member.location, self.location])
+
+    def addExtendedAttributes(self, attrs):
+        for attr in attrs:
+            identifier = attr.identifier()
+
+            if identifier == "SecureContext":
+                if not attr.noArguments():
+                    raise WebIDLError("[%s] must take no arguments" % identifier,
+                                      [attr.location])
+                # This gets propagated to all our members.
+                for member in self.members:
+                    if member.getExtendedAttribute("SecureContext"):
+                        raise WebIDLError("[SecureContext] specified on both "
+                                          "an interface mixin member and on"
+                                          "the interface mixin itself",
+                                          [member.location, attr.location])
+                    member.addExtendedAttributes([attr])
+            elif identifier == "Exposed":
+                convertExposedAttrToGlobalNameSet(attr,
+                                                  self._exposureGlobalNames)
+            else:
+                raise WebIDLError("Unknown extended attribute %s on interface" % identifier,
+                                  [attr.location])
+
+            attrlist = attr.listValue()
+            self._extendedAttrDict[identifier] = attrlist if len(attrlist) else True
+
+    def _getDependentObjects(self):
+        return set(self.members)
+
+
+class IDLInterfaceOrNamespace(IDLInterfaceOrInterfaceMixinOrNamespace):
+    def __init__(self, location, parentScope, name, parent, members,
+                 isKnownNonPartial):
         assert isKnownNonPartial or not parent
         assert isKnownNonPartial or len(members) == 0
 
         self.parent = None
         self._callback = False
-        self._finished = False
-        self.members = []
         self.maplikeOrSetlikeOrIterable = None
-        self._partialInterfaces = []
-        self._extendedAttrDict = {}
         # namedConstructors needs deterministic ordering because bindings code
         # outputs the constructs in the order that namedConstructors enumerates
         # them.
         self.namedConstructors = list()
         self.implementedInterfaces = set()
+        self.includedMixins = set()
         self._consequential = False
-        self._isKnownNonPartial = False
         # self.interfacesBasedOnSelf is the set of interfaces that inherit from
         # self or have self as a consequential interface, including self itself.
         # Used for distinguishability checking.
@@ -727,8 +937,7 @@ class IDLInterfaceOrNamespace(IDLObjectWithScope, IDLExposureMixins):
         # interface we're iterating for in order to get its nativeType.
         self.iterableInterface = None
 
-        IDLObjectWithScope.__init__(self, location, parentScope, name)
-        IDLExposureMixins.__init__(self, location)
+        IDLInterfaceOrInterfaceMixinOrNamespace.__init__(self, location, parentScope, name)
 
         if isKnownNonPartial:
             self.setNonPartial(location, parent, members)
@@ -748,37 +957,13 @@ class IDLInterfaceOrNamespace(IDLObjectWithScope, IDLExposureMixins):
     def isIteratorInterface(self):
         return self.iterableInterface is not None
 
-    def resolveIdentifierConflict(self, scope, identifier, originalObject, newObject):
-        assert isinstance(scope, IDLScope)
-        assert isinstance(originalObject, IDLInterfaceMember)
-        assert isinstance(newObject, IDLInterfaceMember)
-
-        retval = IDLScope.resolveIdentifierConflict(self, scope, identifier,
-                                                    originalObject, newObject)
-
-        # Might be a ctor, which isn't in self.members
-        if newObject in self.members:
-            self.members.remove(newObject)
-        return retval
-
     def finish(self, scope):
         if self._finished:
             return
 
         self._finished = True
 
-        if not self._isKnownNonPartial:
-            raise WebIDLError("Interface %s does not have a non-partial "
-                              "declaration" % self.identifier.name,
-                              [self.location])
-
-        IDLExposureMixins.finish(self, scope)
-
-        # Now go ahead and merge in our partial interfaces.
-        for partial in self._partialInterfaces:
-            partial.finish(scope)
-            self.addExtendedAttributes(partial.propagatedExtendedAttrs)
-            self.members.extend(partial.members)
+        IDLInterfaceOrInterfaceMixinOrNamespace.finish(self, scope)
 
         # Generate maplike/setlike interface members. Since generated members
         # need to be treated like regular interface members, do this before
@@ -800,19 +985,6 @@ class IDLInterfaceOrNamespace(IDLObjectWithScope, IDLExposureMixins):
                 # If we've got a maplike or setlike declaration, we'll be building all of
                 # our required methods in Codegen. Generate members now.
                 self.maplikeOrSetlikeOrIterable.expand(self.members, self.isJSImplemented())
-
-        # Now that we've merged in our partial interfaces, set the
-        # _exposureGlobalNames on any members that don't have it set yet.  Note
-        # that any partial interfaces that had [Exposed] set have already set up
-        # _exposureGlobalNames on all the members coming from them, so this is
-        # just implementing the "members default to interface that defined them"
-        # and "partial interfaces default to interface they're a partial for"
-        # rules from the spec.
-        for m in self.members:
-            # If m, or the partial interface m came from, had [Exposed]
-            # specified, it already has a nonempty exposure global names set.
-            if len(m._exposureGlobalNames) == 0:
-                m._exposureGlobalNames.update(self._exposureGlobalNames)
 
         assert not self.parent or isinstance(self.parent, IDLIdentifierPlaceholder)
         parent = self.parent.finish(scope) if self.parent else None
@@ -909,6 +1081,8 @@ class IDLInterfaceOrNamespace(IDLObjectWithScope, IDLExposureMixins):
 
         for iface in self.implementedInterfaces:
             iface.finish(scope)
+        for mixin in self.includedMixins:
+            mixin.finish(scope)
 
         cycleInGraph = self.findInterfaceLoopPoint(self)
         if cycleInGraph:
@@ -923,24 +1097,7 @@ class IDLInterfaceOrNamespace(IDLObjectWithScope, IDLExposureMixins):
             # And that we're not consequential.
             assert not self.isConsequential()
 
-        # Now resolve() and finish() our members before importing the
-        # ones from our implemented interfaces.
-
-        # resolve() will modify self.members, so we need to iterate
-        # over a copy of the member list here.
-        for member in list(self.members):
-            member.resolve(self)
-
-        for member in self.members:
-            member.finish(scope)
-
-        # Now that we've finished our members, which has updated their exposure
-        # sets, make sure they aren't exposed in places where we are not.
-        for member in self.members:
-            if not member.exposureSet.issubset(self.exposureSet):
-                raise WebIDLError("Interface member has larger exposure set "
-                                  "than the interface itself",
-                                  [member.location, self.location])
+        self.finishMembers(scope)
 
         ctor = self.ctor()
         if ctor is not None:
@@ -993,6 +1150,10 @@ class IDLInterfaceOrNamespace(IDLObjectWithScope, IDLExposureMixins):
                             [additionalMember.location, member.location])
             self.members.extend(additionalMembers)
             iface.interfacesImplementingSelf.add(self)
+
+        for mixin in sorted(self.includedMixins,
+                            key=lambda x: x.identifier.name):
+            self.members.extend(mixin.members)
 
         for ancestor in self.getInheritedInterfaces():
             ancestor.interfacesBasedOnSelf.add(self)
@@ -1407,6 +1568,10 @@ class IDLInterfaceOrNamespace(IDLObjectWithScope, IDLExposureMixins):
         assert(isinstance(implementedInterface, IDLInterface))
         self.implementedInterfaces.add(implementedInterface)
 
+    def addIncludedMixin(self, includedMixin):
+        assert(isinstance(includedMixin, IDLInterfaceMixin))
+        self.includedMixins.add(includedMixin)
+
     def getInheritedInterfaces(self):
         """
         Returns a list of the interfaces this interface inherits from
@@ -1456,29 +1621,11 @@ class IDLInterfaceOrNamespace(IDLObjectWithScope, IDLExposureMixins):
                 return loopPoint
         return None
 
-    def getExtendedAttribute(self, name):
-        return self._extendedAttrDict.get(name, None)
-
     def setNonPartial(self, location, parent, members):
         assert not parent or isinstance(parent, IDLIdentifierPlaceholder)
-        if self._isKnownNonPartial:
-            raise WebIDLError("Two non-partial definitions for the "
-                              "same %s" %
-                              ("interface" if self.isInterface()
-                               else "namespace"),
-                              [location, self.location])
-        self._isKnownNonPartial = True
-        # Now make it look like we were parsed at this new location, since
-        # that's the place where the interface is "really" defined
-        self.location = location
+        IDLInterfaceOrInterfaceMixinOrNamespace.setNonPartial(self, location, members)
         assert not self.parent
         self.parent = parent
-        # Put the new members at the beginning
-        self.members = members + self.members
-
-    def addPartialInterface(self, partial):
-        assert self.identifier.name == partial.identifier.name
-        self._partialInterfaces.append(partial)
 
     def getJSImplementation(self):
         classId = self.getExtendedAttribute("JSImplementation")
@@ -1541,6 +1688,7 @@ class IDLInterfaceOrNamespace(IDLObjectWithScope, IDLExposureMixins):
     def _getDependentObjects(self):
         deps = set(self.members)
         deps.update(self.implementedInterfaces)
+        deps.update(self.includedMixins)
         if self.parent:
             deps.add(self.parent)
         return deps
@@ -1798,6 +1946,7 @@ class IDLDictionary(IDLObjectWithScope):
         self.parent = parent
         self._finished = False
         self.members = list(members)
+        self._partialDictionaries = []
 
         IDLObjectWithScope.__init__(self, location, parentScope, name)
 
@@ -1833,6 +1982,11 @@ class IDLDictionary(IDLObjectWithScope):
             # Make sure the parent resolves all its members before we start
             # looking at them.
             self.parent.finish(scope)
+
+        # Now go ahead and merge in our partial dictionaries.
+        for partial in self._partialDictionaries:
+            partial.finish(scope)
+            self.members.extend(partial.members)
 
         for member in self.members:
             member.resolve(self)
@@ -1935,6 +2089,9 @@ class IDLDictionary(IDLObjectWithScope):
             deps.add(self.parent)
         return deps
 
+    def addPartialDictionary(self, partial):
+        assert self.identifier.name == partial.identifier.name
+        self._partialDictionaries.append(partial)
 
 class IDLEnum(IDLObjectWithIdentifier):
     def __init__(self, location, parentScope, name, values):
@@ -4888,16 +5045,6 @@ class IDLMethod(IDLInterfaceMember, IDLScope):
             raise WebIDLError("StaticClassOverride can be applied to static"
                               " methods on JS-implemented classes only.",
                               [self.location])
-        if self.getExtendedAttribute("LenientFloat"):
-            assert len(self.signatures()) >= 1
-            found = False
-            for sig in self.signatures():
-                if any(arg.type.includesRestrictedFloat() for arg in sig[1]):
-                    found = True
-            if not found:
-                raise WebIDLError("[LenientFloat] used on an operation with no "
-                                  "restricted float type arguments",
-                                  [self.location])
 
     def overloadsForArgCount(self, argc):
         return [overload for overload in self._overloads if
@@ -4975,6 +5122,10 @@ class IDLMethod(IDLInterfaceMember, IDLScope):
             sig = self.signatures()[0]
             if not sig[0].isVoid():
                 raise WebIDLError("[LenientFloat] used on a non-void method",
+                                  [attr.location, self.location])
+            if not any(arg.type.includesRestrictedFloat() for arg in sig[1]):
+                raise WebIDLError("[LenientFloat] used on an operation with no "
+                                  "restricted float type arguments",
                                   [attr.location, self.location])
         elif identifier == "Exposed":
             convertExposedAttrToGlobalNameSet(attr, self._exposureGlobalNames)
@@ -5097,6 +5248,49 @@ class IDLImplementsStatement(IDLObject):
     def addExtendedAttributes(self, attrs):
         assert len(attrs) == 0
 
+class IDLIncludesStatement(IDLObject):
+    def __init__(self, location, interface, mixin):
+        IDLObject.__init__(self, location)
+        self.interface = interface
+        self.mixin = mixin
+        self._finished = False
+
+    def finish(self, scope):
+        if self._finished:
+            return
+        self._finished = True
+        assert(isinstance(self.interface, IDLIdentifierPlaceholder))
+        assert(isinstance(self.mixin, IDLIdentifierPlaceholder))
+        interface = self.interface.finish(scope)
+        mixin = self.mixin.finish(scope)
+        # NOTE: we depend on not setting self.interface and
+        # self.mixin here to keep track of the original
+        # locations.
+        if not isinstance(interface, IDLInterface):
+            raise WebIDLError("Left-hand side of 'includes' is not an "
+                              "interface",
+                              [self.interface.location, interface.location])
+        if interface.isCallback():
+            raise WebIDLError("Left-hand side of 'includes' is a callback "
+                              "interface",
+                              [self.interface.location, interface.location])
+        if not isinstance(mixin, IDLInterfaceMixin):
+            raise WebIDLError("Right-hand side of 'includes' is not an "
+                              "interface mixin",
+                              [self.mixin.location, mixin.location])
+        mixin.actualExposureGlobalNames.update(interface._exposureGlobalNames)
+        interface.addIncludedMixin(mixin)
+        self.interface = interface
+        self.mixin = mixin
+
+    def validate(self):
+        pass
+
+    def addExtendedAttributes(self, attrs):
+        if len(attrs) != 0:
+            raise WebIDLError("There are no extended attributes that are "
+                              "allowed on includes statements",
+                              [attrs[0].location, self.location])
 
 class IDLExtendedAttribute(IDLObject):
     """
@@ -5193,12 +5387,14 @@ class Tokenizer(object):
         "module": "MODULE",
         "interface": "INTERFACE",
         "partial": "PARTIAL",
+        "mixin": "MIXIN",
         "dictionary": "DICTIONARY",
         "exception": "EXCEPTION",
         "enum": "ENUM",
         "callback": "CALLBACK",
         "typedef": "TYPEDEF",
         "implements": "IMPLEMENTS",
+        "includes": "INCLUDES",
         "const": "CONST",
         "null": "NULL",
         "true": "TRUE",
@@ -5354,7 +5550,7 @@ class Parser(Tokenizer):
 
     def p_Definition(self, p):
         """
-            Definition : CallbackOrInterface
+            Definition : CallbackOrInterfaceOrMixin
                        | Namespace
                        | Partial
                        | Dictionary
@@ -5362,13 +5558,14 @@ class Parser(Tokenizer):
                        | Enum
                        | Typedef
                        | ImplementsStatement
+                       | IncludesStatement
         """
         p[0] = p[1]
         assert p[1]  # We might not have implemented something ...
 
-    def p_CallbackOrInterfaceCallback(self, p):
+    def p_CallbackOrInterfaceOrMixinCallback(self, p):
         """
-            CallbackOrInterface : CALLBACK CallbackRestOrInterface
+            CallbackOrInterfaceOrMixin : CALLBACK CallbackRestOrInterface
         """
         if p[2].isInterface():
             assert isinstance(p[2], IDLInterface)
@@ -5376,16 +5573,16 @@ class Parser(Tokenizer):
 
         p[0] = p[2]
 
-    def p_CallbackOrInterfaceInterface(self, p):
+    def p_CallbackOrInterfaceOrMixinInterfaceOrMixin(self, p):
         """
-            CallbackOrInterface : Interface
+            CallbackOrInterfaceOrMixin : INTERFACE InterfaceOrMixin
         """
-        p[0] = p[1]
+        p[0] = p[2]
 
     def p_CallbackRestOrInterface(self, p):
         """
             CallbackRestOrInterface : CallbackRest
-                                    | Interface
+                                    | CallbackInterface
         """
         assert p[1]
         p[0] = p[1]
@@ -5393,9 +5590,10 @@ class Parser(Tokenizer):
     def handleNonPartialObject(self, location, identifier, constructor,
                                constructorArgs, nonPartialArgs):
         """
-        This handles non-partial objects (interfaces and namespaces) by
-        checking for an existing partial object, and promoting it to
-        non-partial as needed.  The return value is the non-partial object.
+        This handles non-partial objects (interfaces, namespaces and
+        dictionaries) by checking for an existing partial object, and promoting
+        it to non-partial as needed.  The return value is the non-partial
+        object.
 
         constructorArgs are all the args for the constructor except the last
         one: isKnownNonPartial.
@@ -5425,14 +5623,27 @@ class Parser(Tokenizer):
         # True for isKnownNonPartial
         return constructor(*(constructorArgs + [True]))
 
-    def p_Interface(self, p):
+    def p_InterfaceOrMixin(self, p):
         """
-            Interface : INTERFACE IDENTIFIER Inheritance LBRACE InterfaceMembers RBRACE SEMICOLON
+            InterfaceOrMixin : InterfaceRest
+                             | MixinRest
+        """
+        p[0] = p[1]
+
+    def p_CallbackInterface(self, p):
+        """
+            CallbackInterface : INTERFACE InterfaceRest
+        """
+        p[0] = p[2]
+
+    def p_InterfaceRest(self, p):
+        """
+            InterfaceRest : IDENTIFIER Inheritance LBRACE InterfaceMembers RBRACE SEMICOLON
         """
         location = self.getLocation(p, 1)
-        identifier = IDLUnresolvedIdentifier(self.getLocation(p, 2), p[2])
-        members = p[5]
-        parent = p[3]
+        identifier = IDLUnresolvedIdentifier(location, p[1])
+        members = p[4]
+        parent = p[2]
 
         p[0] = self.handleNonPartialObject(
             location, identifier, IDLInterface,
@@ -5441,10 +5652,10 @@ class Parser(Tokenizer):
 
     def p_InterfaceForwardDecl(self, p):
         """
-            Interface : INTERFACE IDENTIFIER SEMICOLON
+            InterfaceRest : IDENTIFIER SEMICOLON
         """
         location = self.getLocation(p, 1)
-        identifier = IDLUnresolvedIdentifier(self.getLocation(p, 2), p[2])
+        identifier = IDLUnresolvedIdentifier(location, p[1])
 
         try:
             if self.globalScope()._lookupIdentifier(identifier):
@@ -5461,6 +5672,19 @@ class Parser(Tokenizer):
             pass
 
         p[0] = IDLExternalInterface(location, self.globalScope(), identifier)
+
+    def p_MixinRest(self, p):
+        """
+            MixinRest : MIXIN IDENTIFIER LBRACE MixinMembers RBRACE SEMICOLON
+        """
+        location = self.getLocation(p, 1)
+        identifier = IDLUnresolvedIdentifier(self.getLocation(p, 2), p[2])
+        members = p[4]
+
+        p[0] = self.handleNonPartialObject(
+            location, identifier, IDLInterfaceMixin,
+            [location, self.globalScope(), identifier, members],
+            [location, members])
 
     def p_Namespace(self, p):
         """
@@ -5481,10 +5705,16 @@ class Parser(Tokenizer):
         """
         p[0] = p[2]
 
+    def p_PartialDefinitionInterface(self, p):
+        """
+            PartialDefinition : INTERFACE PartialInterfaceOrPartialMixin
+        """
+        p[0] = p[2]
+
     def p_PartialDefinition(self, p):
         """
-            PartialDefinition : PartialInterface
-                              | PartialNamespace
+            PartialDefinition : PartialNamespace
+                              | PartialDictionary
         """
         p[0] = p[1]
 
@@ -5492,17 +5722,17 @@ class Parser(Tokenizer):
                             nonPartialConstructorArgs,
                             partialConstructorArgs):
         """
-        This handles partial objects (interfaces and namespaces) by checking for
-        an existing non-partial object, and adding ourselves to it as needed.
-        The return value is our partial object.  For now we just use
-        IDLPartialInterfaceOrNamespace for partial objects.
+        This handles partial objects (interfaces, namespaces and dictionaries)
+        by checking for an existing non-partial object, and adding ourselves to
+        it as needed.  The return value is our partial object.  We use
+        IDLPartialInterfaceOrNamespace for partial interfaces or namespaces,
+        and IDLPartialDictionary for partial dictionaries.
 
         nonPartialConstructorArgs are all the args for the non-partial
         constructor except the last two: members and isKnownNonPartial.
 
-        partialConstructorArgs are the arguments for the
-        IDLPartialInterfaceOrNamespace constructor, except the last one (the
-        non-partial object).
+        partialConstructorArgs are the arguments for the partial object
+        constructor, except the last one (the non-partial object).
         """
         # The name of the class starts with "IDL", so strip that off.
         # Also, starts with a capital letter after that, so nix that
@@ -5526,22 +5756,53 @@ class Parser(Tokenizer):
         if not nonPartialObject:
             nonPartialObject = nonPartialConstructor(
                 # No members, False for isKnownNonPartial
-                *(nonPartialConstructorArgs + [[], False]))
-        partialInterface = IDLPartialInterfaceOrNamespace(
-            *(partialConstructorArgs + [nonPartialObject]))
-        return partialInterface
+                *(nonPartialConstructorArgs), members=[], isKnownNonPartial=False)
 
-    def p_PartialInterface(self, p):
+        partialObject = None
+        if isinstance(nonPartialObject, IDLDictionary):
+            partialObject = IDLPartialDictionary(
+                *(partialConstructorArgs + [nonPartialObject]))
+        elif isinstance(nonPartialObject, (IDLInterface, IDLNamespace)):
+            partialObject = IDLPartialInterfaceOrNamespace(
+                *(partialConstructorArgs + [nonPartialObject]))
+        else:
+            raise WebIDLError("Unknown partial object type %s" %
+                    type(partialObject),
+                    [location])
+
+        return partialObject
+
+    def p_PartialInterfaceOrPartialMixin(self, p):
         """
-            PartialInterface : INTERFACE IDENTIFIER LBRACE InterfaceMembers RBRACE SEMICOLON
+            PartialInterfaceOrPartialMixin : PartialInterfaceRest
+                                           | PartialMixinRest
+        """
+        p[0] = p[1]
+
+    def p_PartialInterfaceRest(self, p):
+        """
+            PartialInterfaceRest : IDENTIFIER LBRACE InterfaceMembers RBRACE SEMICOLON
+        """
+        location = self.getLocation(p, 1)
+        identifier = IDLUnresolvedIdentifier(location, p[1])
+        members = p[3]
+
+        p[0] = self.handlePartialObject(
+            location, identifier, IDLInterface,
+            [location, self.globalScope(), identifier, None],
+            [location, identifier, members])
+
+    def p_PartialMixinRest(self, p):
+        """
+            PartialMixinRest : MIXIN IDENTIFIER LBRACE MixinMembers RBRACE SEMICOLON
         """
         location = self.getLocation(p, 1)
         identifier = IDLUnresolvedIdentifier(self.getLocation(p, 2), p[2])
         members = p[4]
 
         p[0] = self.handlePartialObject(
-            location, identifier, IDLInterface,
-            [location, self.globalScope(), identifier, None],
+            location, identifier, IDLInterfaceMixin,
+            [location, self.globalScope(), identifier],
             [location, identifier, members])
 
     def p_PartialNamespace(self, p):
@@ -5554,6 +5815,19 @@ class Parser(Tokenizer):
 
         p[0] = self.handlePartialObject(
             location, identifier, IDLNamespace,
+            [location, self.globalScope(), identifier],
+            [location, identifier, members])
+
+    def p_PartialDictionary(self, p):
+        """
+            PartialDictionary : DICTIONARY IDENTIFIER LBRACE DictionaryMembers RBRACE SEMICOLON
+        """
+        location = self.getLocation(p, 1)
+        identifier = IDLUnresolvedIdentifier(self.getLocation(p, 2), p[2])
+        members = p[4]
+
+        p[0] = self.handlePartialObject(
+            location, identifier, IDLDictionary,
             [location, self.globalScope(), identifier],
             [location, identifier, members])
 
@@ -5573,7 +5847,7 @@ class Parser(Tokenizer):
         """
             InterfaceMembers : ExtendedAttributeList InterfaceMember InterfaceMembers
         """
-        p[0] = [p[2]] if p[2] else []
+        p[0] = [p[2]]
 
         assert not p[1] or p[2]
         p[2].addExtendedAttributes(p[1])
@@ -5590,6 +5864,31 @@ class Parser(Tokenizer):
         """
             InterfaceMember : Const
                             | AttributeOrOperationOrMaplikeOrSetlikeOrIterable
+        """
+        p[0] = p[1]
+
+    def p_MixinMembersEmpty(self, p):
+        """
+            MixinMembers :
+        """
+        p[0] = []
+
+    def p_MixinMembers(self, p):
+        """
+            MixinMembers : ExtendedAttributeList MixinMember MixinMembers
+        """
+        p[0] = [p[2]]
+
+        assert not p[1] or p[2]
+        p[2].addExtendedAttributes(p[1])
+
+        p[0].extend(p[3])
+
+    def p_MixinMember(self, p):
+        """
+            MixinMember : Const
+                        | Attribute
+                        | Operation
         """
         p[0] = p[1]
 
@@ -5738,6 +6037,15 @@ class Parser(Tokenizer):
         implementee = IDLIdentifierPlaceholder(self.getLocation(p, 3), p[3])
         p[0] = IDLImplementsStatement(self.getLocation(p, 1), implementor,
                                       implementee)
+
+    def p_IncludesStatement(self, p):
+        """
+            IncludesStatement : ScopedName INCLUDES ScopedName SEMICOLON
+        """
+        assert(p[2] == "includes")
+        interface = IDLIdentifierPlaceholder(self.getLocation(p, 1), p[1])
+        mixin = IDLIdentifierPlaceholder(self.getLocation(p, 3), p[3])
+        p[0] = IDLIncludesStatement(self.getLocation(p, 1), interface, mixin)
 
     def p_Const(self, p):
         """
@@ -6906,9 +7214,16 @@ class Parser(Tokenizer):
         # XXX khuey hates this bit and wants to nuke it from orbit.
         implementsStatements = [p for p in self._productions if
                                 isinstance(p, IDLImplementsStatement)]
+        # Make sure we finish IDLIncludesStatements before we finish the
+        # IDLInterfaces.
+        includesStatements = [p for p in self._productions if
+                                isinstance(p, IDLIncludesStatement)]
         otherStatements = [p for p in self._productions if
-                           not isinstance(p, IDLImplementsStatement)]
+                           not isinstance(p, (IDLImplementsStatement,
+                                              IDLIncludesStatement))]
         for production in implementsStatements:
+            production.finish(self.globalScope())
+        for production in includesStatements:
             production.finish(self.globalScope())
         for production in otherStatements:
             production.finish(self.globalScope())

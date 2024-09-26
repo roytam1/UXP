@@ -14,7 +14,7 @@
 #include "nsRenderingContext.h"
 #include "nsDisplayList.h"
 #include "gfxContext.h"
-#include "nsMathMLElement.h"
+#include "mozilla/dom/MathMLElement.h"
 #include <algorithm>
 #include "gfxMathTable.h"
 
@@ -135,7 +135,7 @@ nsMathMLmfracFrame::CalcLineThickness(nsPresContext*  aPresContext,
       // length value
       lineThickness = defaultThickness;
       ParseNumericValue(aThicknessAttribute, &lineThickness,
-                        nsMathMLElement::PARSE_ALLOW_UNITLESS,
+                        dom::MathMLElement::PARSE_ALLOW_UNITLESS,
                         aPresContext, aStyleContext, aFontSizeInflation);
     }
   }

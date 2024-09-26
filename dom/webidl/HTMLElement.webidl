@@ -62,10 +62,6 @@ interface HTMLElement : Element {
   //readonly attribute boolean? commandDisabled;
   //readonly attribute boolean? commandChecked;
 
-  // styling
-  [PutForwards=cssText, Constant]
-  readonly attribute CSSStyleDeclaration style;
-
   // Mozilla specific stuff
            attribute EventHandler oncopy;
            attribute EventHandler oncut;
@@ -89,8 +85,7 @@ partial interface HTMLElement {
            attribute boolean scrollgrab;
 };
 
-[NoInterfaceObject]
-interface TouchEventHandlers {
+interface mixin TouchEventHandlers {
   [Func="nsGenericHTMLElement::TouchEventsEnabled"]
            attribute EventHandler ontouchstart;
   [Func="nsGenericHTMLElement::TouchEventsEnabled"]
@@ -101,8 +96,9 @@ interface TouchEventHandlers {
            attribute EventHandler ontouchcancel;
 };
 
-HTMLElement implements GlobalEventHandlers;
-HTMLElement implements TouchEventHandlers;
-HTMLElement implements OnErrorEventHandlerForNodes;
+HTMLElement includes GlobalEventHandlers;
+HTMLElement includes DocumentAndElementEventHandlers;
+HTMLElement includes TouchEventHandlers;
+HTMLElement includes OnErrorEventHandlerForNodes;
 
 interface HTMLUnknownElement : HTMLElement {};

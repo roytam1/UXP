@@ -7337,6 +7337,17 @@ nsContentUtils::HasDistributedChildren(nsIContent* aContent)
 }
 
 // static
+bool nsContentUtils::IsNodeInEditableRegion(nsINode* aNode) {
+  while (aNode) {
+    if (aNode->IsEditable()) {
+      return true;
+    }
+    aNode = aNode->GetParent();
+  }
+  return false;
+}
+
+// static
 bool
 nsContentUtils::IsForbiddenRequestHeader(const nsACString& aHeader,
                                          const nsACString& aValue)

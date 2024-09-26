@@ -470,10 +470,10 @@ ExtractSpacingValues(const nsAString&   aString,
       } else {
         newValue = aDefaultValue0;
       }
-      nsMathMLFrame::ParseNumericValue(valueString, &newValue,
-                                       nsMathMLElement::PARSE_ALLOW_UNITLESS,
-                                       presContext, styleContext,
-                                       aFontSizeInflation);
+      dom::MathMLFrame::ParseNumericValue(valueString, &newValue,
+                                          dom::MathMLElement::PARSE_ALLOW_UNITLESS,
+                                          presContext, styleContext,
+                                          aFontSizeInflation);
       aSpacingArray.AppendElement(newValue);
 
       startIndex += count;

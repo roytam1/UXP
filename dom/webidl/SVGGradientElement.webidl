@@ -26,5 +26,5 @@ interface SVGGradientElement : SVGElement {
   readonly attribute SVGAnimatedEnumeration spreadMethod;
 };
 
-SVGGradientElement implements SVGURIReference;
-SVGGradientElement implements SVGUnitTypeValues;
+SVGGradientElement includes SVGURIReference;
+SVGGradientElement includes SVGUnitTypeValues;

@@ -59,9 +59,9 @@ partial interface HTMLIFrameElement {
 
 partial interface HTMLIFrameElement {
   // nsIDOMMozBrowserFrame
-  [ChromeOnly,SetterThrows]
+  [ChromeOnly, SetterThrows]
            attribute boolean mozbrowser;
 };
 
-HTMLIFrameElement implements MozFrameLoaderOwner;
-HTMLIFrameElement implements BrowserElement;
+HTMLIFrameElement includes MozFrameLoaderOwner;
+HTMLIFrameElement includes BrowserElement;
