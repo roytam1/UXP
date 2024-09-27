@@ -182,7 +182,7 @@ WebMDemuxer::WebMDemuxer(MediaResource* aResource,
   if (aIsMediaSource && aFrameEndTimeBeforeRecreateDemuxer) {
     mVideoFrameEndTimeBeforeReset = aFrameEndTimeBeforeRecreateDemuxer;
     WEBM_DEBUG("Set mVideoFrameEndTimeBeforeReset=%" PRId64,
-               mVideoFrameEndTimeBeforeReset);
+               mVideoFrameEndTimeBeforeReset.value());
   }
 }
 
@@ -648,7 +648,7 @@ WebMDemuxer::GetNextPacket(TrackInfo::TrackType aType, MediaRawDataQueue *aSampl
       next_tstamp += tstamp - mLastVideoFrameTime.refOr(0);
     } else if (mVideoFrameEndTimeBeforeReset) {
       WEBM_DEBUG("Setting next timestamp to be %" PRId64 " us",
-                 mVideoFrameEndTimeBeforeReset);
+                 mVideoFrameEndTimeBeforeReset.value());
       next_tstamp = mVideoFrameEndTimeBeforeReset.ref();
     } else {
       PushVideoPacket(holder);
