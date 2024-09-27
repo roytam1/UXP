@@ -2257,6 +2257,31 @@ nsContentUtils::IsCallerContentXBL()
     return xpc::IsContentXBLScope(c);
 }
 
+bool
+nsContentUtils::IsSystemCaller(JSContext* aCx)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  // This is similar to what SubjectPrincipal() does, except we do in fact
+  // assume that we're in a compartment here; anyone who calls this function in
+  // situations where that's not the case is doing it wrong.
+  JSCompartment *compartment = js::GetContextCompartment(aCx);
+  MOZ_ASSERT(compartment);
+
+  JSPrincipals *principals = JS_GetCompartmentPrincipals(compartment);
+  return nsJSPrincipals::get(principals) == sSystemPrincipal;
+}
+
+bool
+nsContentUtils::ThreadsafeIsSystemCaller(JSContext* aCx)
+{
+  if (NS_IsMainThread()) {
+    return IsSystemCaller(aCx);
+  }
+
+  return workers::GetWorkerPrivateFromContext(aCx)->UsesSystemPrincipal();
+}
+
 // static
 bool
 nsContentUtils::LookupBindingMember(JSContext* aCx, nsIContent *aContent,

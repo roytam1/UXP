@@ -28,6 +28,7 @@
 
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/EventStates.h"
+#include "mozilla/EventListenerManager.h" // for EventListenerManager
 #include "mozilla/dom/MathMLElementBinding.h"
 
 using namespace mozilla;
@@ -434,7 +435,7 @@ MathMLElement::ParseNumericValue(const nsString& aString,
     number.Append(c);
   }
 
-  if (StaticPrefs::mathml_legacy_number_syntax_disabled() && gotDot &&
+  if (/*StaticPrefs::mathml_legacy_number_syntax_disabled() &&*/ gotDot &&
       str[i - 1] == '.') {
     if (!(aFlags & PARSE_SUPPRESS_WARNINGS)) {
       ReportLengthParseError(aString, aDocument);
@@ -945,7 +946,7 @@ MathMLElement::PostHandleEvent(EventChainPostVisitor& aVisitor)
   return PostHandleEventForLinks(aVisitor);
 }
 
-NS_IMPL_ELEMENT_CLONE(nsMathMLElement)
+NS_IMPL_ELEMENT_CLONE(MathMLElement)
 
 EventStates
 MathMLElement::IntrinsicState() const
@@ -975,7 +976,7 @@ MathMLElement::SetIncrementScriptLevel(bool aIncrementScriptLevel,
 }
 
 int32_t
-MathMLElement::TabIndexDefault() {
+MathMLElement::TabIndexDefault()
 {
   nsCOMPtr<nsIURI> uri;
   return IsLink(getter_AddRefs(uri)) ? 0 : -1;
@@ -983,8 +984,9 @@ MathMLElement::TabIndexDefault() {
 
 // XXX Bug 1586011: Share logic with other element classes.
 bool
-MathMLElement::IsFocusableInternal(int32_t* aTabIndex, bool aWithMouse) {
-  Document* doc = GetComposedDoc();
+MathMLElement::IsFocusableInternal(int32_t* aTabIndex, bool aWithMouse)
+{
+  nsIDocument* doc = GetComposedDoc();
   if (!doc || doc->HasFlag(NODE_IS_EDITABLE)) {
     // In designMode documents we only allow focusing the document.
     if (aTabIndex) {
@@ -1001,11 +1003,7 @@ MathMLElement::IsFocusableInternal(int32_t* aTabIndex, bool aWithMouse) {
   nsCOMPtr<nsIURI> uri;
   if (!IsLink(getter_AddRefs(uri))) {
     // If a tabindex is specified at all we're focusable
-    return HasAttr(nsGkAtoms::tabindex);
-  }
-
-  if (!OwnerDoc()->LinkHandlingEnabled()) {
-    return false;
+    return HasAttr(kNameSpaceID_None, nsGkAtoms::tabindex);
   }
 
   // Links that are in an editable region should never be focusable, even if
@@ -1131,9 +1129,9 @@ MathMLElement::GetHrefURI() const
 // XXX Bug 1586014: Share logic with other element classes.
 void
 MathMLElement::RecompileScriptEventListeners() {
-  int32_t i, count = mAttrs.AttrCount();
+  int32_t i, count = mAttrsAndChildren.AttrCount();
   for (i = 0; i < count; ++i) {
-    const nsAttrName* name = mAttrs.AttrNameAt(i);
+    const nsAttrName* name = mAttrsAndChildren.AttrNameAt(i);
 
     // Eventlistenener-attributes are always in the null namespace
     if (!name->IsAtom()) {
@@ -1165,7 +1163,7 @@ MathMLElement::BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
   if (aNamespaceID == kNameSpaceID_None) {
     if (!aValue && IsEventAttributeName(aName)) {
       if (EventListenerManager* manager = GetExistingListenerManager()) {
-        manager->RemoveEventHandler(aName);
+        manager->RemoveEventHandler(aName, EmptyString());
       }
     }
   }
@@ -1212,5 +1210,5 @@ MathMLElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
 JSObject*
 MathMLElement::WrapNode(JSContext *aCx, JS::Handle<JSObject*> aGivenProto)
 {
-  return MathMLElement_Binding::Wrap(aCx, this, aGivenProto);
+  return MathMLElementBinding::Wrap(aCx, this, aGivenProto);
 }

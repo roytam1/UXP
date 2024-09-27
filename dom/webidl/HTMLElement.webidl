@@ -61,11 +61,6 @@ interface HTMLElement : Element {
   //readonly attribute boolean? commandHidden;
   //readonly attribute boolean? commandDisabled;
   //readonly attribute boolean? commandChecked;
-
-  // Mozilla specific stuff
-           attribute EventHandler oncopy;
-           attribute EventHandler oncut;
-           attribute EventHandler onpaste;
 };
 
 // http://dev.w3.org/csswg/cssom-view/#extensions-to-the-htmlelement-interface

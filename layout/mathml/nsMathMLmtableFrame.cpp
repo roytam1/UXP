@@ -10,7 +10,7 @@
 #include "nsNameSpaceManager.h"
 #include "nsRenderingContext.h"
 #include "nsCSSRendering.h"
-#include "nsMathMLElement.h"
+#include "mozilla/dom/MathMLElement.h"
 
 #include "nsTArray.h"
 #include "nsTableFrame.h"
@@ -470,10 +470,10 @@ ExtractSpacingValues(const nsAString&   aString,
       } else {
         newValue = aDefaultValue0;
       }
-      dom::MathMLFrame::ParseNumericValue(valueString, &newValue,
-                                          dom::MathMLElement::PARSE_ALLOW_UNITLESS,
-                                          presContext, styleContext,
-                                          aFontSizeInflation);
+      nsMathMLFrame::ParseNumericValue(valueString, &newValue,
+                                       mozilla::dom::MathMLElement::PARSE_ALLOW_UNITLESS,
+                                       presContext, styleContext,
+                                       aFontSizeInflation);
       aSpacingArray.AppendElement(newValue);
 
       startIndex += count;

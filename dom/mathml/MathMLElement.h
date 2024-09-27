@@ -26,6 +26,7 @@ typedef nsMappedAttributeElement MathMLElementBase;
  * The base class for MathML elements.
  */
 class MathMLElement final : public MathMLElementBase,
+                            public nsIDOMElement,
                             public mozilla::dom::Link
 {
 public:
@@ -97,8 +98,8 @@ public:
 
   virtual nsIDOMNode* AsDOMNode() override { return this; }
 
-  void RecompileScriptEventListeners() final;
-  bool IsEventAttributeNameInternal(nsIAtom* aName) final;
+  void RecompileScriptEventListeners() override;
+  bool IsEventAttributeNameInternal(nsIAtom* aName);
 
 protected:
   virtual ~MathMLElement() {}
@@ -106,7 +107,7 @@ protected:
   virtual JSObject* WrapNode(JSContext *aCx, JS::Handle<JSObject*> aGivenProto) override;
 
   nsresult BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
-                         const nsAttrValueOrString* aValue, bool aNotify) final;
+                         const nsAttrValueOrString* aValue, bool aNotify) override;
   virtual nsresult AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
                                 const nsAttrValue* aOldValue,

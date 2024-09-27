@@ -51,6 +51,7 @@ interface mixin BrowserElementCommon {
   void removeNextPaintListener(BrowserElementNextPaintEventCallback listener);
 };
 
+[NoInterfaceObject]
 interface BrowserElement {
   [Throws,
    Pref="dom.mozBrowserFramesEnabled",
