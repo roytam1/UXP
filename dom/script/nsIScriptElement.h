@@ -16,6 +16,7 @@
 #include "nsContentCreatorFunctions.h"
 #include "nsIDOMHTMLScriptElement.h"
 #include "mozilla/CORSMode.h"
+#include "mozilla/net/ReferrerPolicy.h"
 
 #define NS_ISCRIPTELEMENT_IID \
 { 0xe60fca9b, 0x1b96, 0x4e4e, \
@@ -261,6 +262,14 @@ public:
   {
     /* Default to no CORS */
     return mozilla::CORS_NONE;
+  }
+
+  /**
+   * Get referrer policy of the script element
+   */
+  virtual mozilla::net::ReferrerPolicy GetReferrerPolicy()
+  {
+    return mozilla::net::RP_Unset;
   }
 
   /**

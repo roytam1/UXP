@@ -1563,7 +1563,7 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
   // Step 15. and later in the HTML5 spec
   nsresult rv = NS_OK;
   RefPtr<ScriptLoadRequest> request;
-  mozilla::net::ReferrerPolicy ourRefPolicy = mDocument->GetReferrerPolicy();
+  mozilla::net::ReferrerPolicy referrerPolicy = GetReferrerPolicy(aElement);
   if (aElement->GetScriptExternal()) {
     // external script
     nsCOMPtr<nsIURI> scriptURI = aElement->GetScriptURI();
@@ -1593,7 +1593,7 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
       aElement->GetScriptCharset(elementCharset);
       if (elementCharset.Equals(preloadCharset) &&
           ourCORSMode == request->CORSMode() &&
-          ourRefPolicy == request->ReferrerPolicy() &&
+          referrerPolicy == request->ReferrerPolicy() &&
           scriptKind == request->mKind) {
         rv = CheckContentPolicy(mDocument, aElement, request->mURI, type, false);
         if (NS_FAILED(rv)) {
@@ -1639,7 +1639,7 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
       nsCOMPtr<nsIPrincipal> principal = scriptContent->NodePrincipal();
 
       request = CreateLoadRequest(scriptKind, scriptURI, aElement, principal,
-                                  ourCORSMode, sriMetadata, ourRefPolicy);
+                                  ourCORSMode, sriMetadata, referrerPolicy);
       request->mIsInline = false;
       request->SetScriptMode(aElement->GetScriptDeferred(),
                              aElement->GetScriptAsync());
@@ -1760,7 +1760,7 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
                               mDocument->NodePrincipal(),
                               CORS_NONE,
                               SRIMetadata(), // SRI doesn't apply
-                              ourRefPolicy);
+                              referrerPolicy);
   request->mIsInline = true;
   request->mLineNo = aElement->GetScriptLineNumber();
 
@@ -1824,6 +1824,17 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
   NS_ASSERTION(nsContentUtils::IsSafeToRunScript(),
       "Not safe to run a parser-inserted script?");
   return ProcessRequest(request) == NS_ERROR_HTMLPARSER_BLOCK;
+}
+
+mozilla::net::ReferrerPolicy
+ScriptLoader::GetReferrerPolicy(nsIScriptElement* aElement)
+{
+  mozilla::net::ReferrerPolicy scriptReferrerPolicy =
+    aElement->GetReferrerPolicy();
+  if (scriptReferrerPolicy != mozilla::net::RP_Unset) {
+    return scriptReferrerPolicy;
+  }
+  return mDocument->GetReferrerPolicy();
 }
 
 namespace {
