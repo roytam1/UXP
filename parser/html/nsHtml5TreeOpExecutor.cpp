@@ -914,12 +914,23 @@ nsHtml5TreeOpExecutor::ShouldPreloadURI(nsIURI *aURI)
   return true;
 }
 
+net::ReferrerPolicy
+nsHtml5TreeOpExecutor::GetPreloadReferrerPolicy(
+  const nsAString& aReferrerPolicy)
+{
+  net::ReferrerPolicy referrerPolicy =
+    net::AttributeReferrerPolicyFromString(aReferrerPolicy);
+ return referrerPolicy != net::RP_Unset ? referrerPolicy :
+                                          mSpeculationReferrerPolicy;
+}
+
 void
 nsHtml5TreeOpExecutor::PreloadScript(const nsAString& aURL,
                                      const nsAString& aCharset,
                                      const nsAString& aType,
                                      const nsAString& aCrossOrigin,
                                      const nsAString& aIntegrity,
+                                     net::ReferrerPolicy aReferrerPolicy,
                                      bool aScriptFromHead,
                                      bool aAsync,
                                      bool aDefer,
@@ -929,10 +940,19 @@ nsHtml5TreeOpExecutor::PreloadScript(const nsAString& aURL,
   if (!uri) {
     return;
   }
-  mDocument->ScriptLoader()->PreloadURI(uri, aCharset, aType, aCrossOrigin,
-                                        aIntegrity, aScriptFromHead, aAsync,
-                                        aDefer, aNoModule,
-                                        mSpeculationReferrerPolicy);
+  net::ReferrerPolicy referrerPolicy = aReferrerPolicy != net::RP_Unset ?
+    aReferrerPolicy : mSpeculationReferrerPolicy;
+  mDocument->ScriptLoader()
+           ->PreloadURI(uri,
+                        aCharset,
+                        aType,
+                        aCrossOrigin,
+                        aIntegrity,
+                        aScriptFromHead,
+                        aAsync,
+                        aDefer,
+                        aNoModule,
+                        referrerPolicy);
 }
 
 void
@@ -947,14 +967,7 @@ nsHtml5TreeOpExecutor::PreloadStyle(const nsAString& aURL,
     return;
   }
 
-  mozilla::net::ReferrerPolicy referrerPolicy = mSpeculationReferrerPolicy;
-  mozilla::net::ReferrerPolicy styleReferrerPolicy =
-    mozilla::net::AttributeReferrerPolicyFromString(aReferrerPolicy);
-  if (styleReferrerPolicy != mozilla::net::RP_Unset) {
-    referrerPolicy = styleReferrerPolicy;
-  }
-
-  mDocument->PreloadStyle(uri, aCharset, aCrossOrigin, referrerPolicy,
+  mDocument->PreloadStyle(uri, aCharset, aCrossOrigin, GetPreloadReferrerPolicy(aReferrerPolicy),
                           aIntegrity);
 }
 
@@ -971,18 +984,10 @@ nsHtml5TreeOpExecutor::PreloadImage(const nsAString& aURL,
                                                         aSizes, &isImgSet);
   if (uri && ShouldPreloadURI(uri)) {
     // use document wide referrer policy
-    mozilla::net::ReferrerPolicy referrerPolicy = mSpeculationReferrerPolicy;
-    // if enabled in preferences, use the referrer attribute from the image, if provided
-    bool referrerAttributeEnabled = Preferences::GetBool("network.http.enablePerElementReferrer", true);
-    if (referrerAttributeEnabled) {
-      mozilla::net::ReferrerPolicy imageReferrerPolicy =
-        mozilla::net::AttributeReferrerPolicyFromString(aImageReferrerPolicy);
-      if (imageReferrerPolicy != mozilla::net::RP_Unset) {
-        referrerPolicy = imageReferrerPolicy;
-      }
-    }
-
-    mDocument->MaybePreLoadImage(uri, aCrossOrigin, referrerPolicy, isImgSet);
+    mDocument->MaybePreLoadImage(uri,
+                                 aCrossOrigin,
+                                 GetPreloadReferrerPolicy(aImageReferrerPolicy),
+                                 isImgSet);
   }
 }
 

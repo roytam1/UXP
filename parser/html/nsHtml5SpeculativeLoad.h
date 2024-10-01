@@ -7,6 +7,7 @@
 
 #include "nsString.h"
 #include "nsContentUtils.h"
+#include "mozilla/net/ReferrerPolicy.h"
 
 class nsHtml5TreeOpExecutor;
 
@@ -131,6 +132,7 @@ class nsHtml5SpeculativeLoad {
                            nsHtml5String aType,
                            nsHtml5String aCrossOrigin,
                            nsHtml5String aIntegrity,
+                           nsHtml5String aReferrerPolicy,
                            bool aParserInHead,
                            bool aAsync,
                            bool aDefer,
@@ -150,6 +152,14 @@ class nsHtml5SpeculativeLoad {
       aType.ToString(mTypeOrCharsetSourceOrDocumentModeOrMetaCSPOrSizesOrIntegrity);
       aCrossOrigin.ToString(mCrossOriginOrMedia);
       aIntegrity.ToString(mReferrerPolicyOrIntegrity);
+      nsAutoString referrerPolicy;
+      aReferrerPolicy.ToString(referrerPolicy);
+      referrerPolicy =
+        nsContentUtils::TrimWhitespace<
+        nsContentUtils::IsHTMLWhitespace>(referrerPolicy);
+      mScriptReferrerPolicy =
+        mozilla::net::AttributeReferrerPolicyFromString(referrerPolicy);
+
       mIsAsync = aAsync;
       mIsDefer = aDefer;
     }
@@ -166,7 +176,12 @@ class nsHtml5SpeculativeLoad {
       aUrl.ToString(mUrlOrSizes);
       aCharset.ToString(mCharsetOrSrcset);
       aCrossOrigin.ToString(mCrossOriginOrMedia);
-      aReferrerPolicy.ToString(mReferrerPolicyOrIntegrity);
+      nsString
+        referrerPolicy; // Not Auto, because using it to hold nsStringBuffer*
+      aReferrerPolicy.ToString(referrerPolicy);
+      mReferrerPolicyOrIntegrity.Assign(
+        nsContentUtils::TrimWhitespace<nsContentUtils::IsHTMLWhitespace>(
+          referrerPolicy));
       aIntegrity.ToString(mTypeOrCharsetSourceOrDocumentModeOrMetaCSPOrSizesOrIntegrity);
     }
 
@@ -287,6 +302,12 @@ class nsHtml5SpeculativeLoad {
      * "media" attribute.  If the attribute is not set, this will be a void string.
      */
     nsString mCrossOriginOrMedia;
+    /**
+     * If mOpCode is eSpeculativeLoadScript[FromHead] this represents the value
+     * of the "referrerpolicy" attribute. This field holds one of the values
+     * (REFERRER_POLICY_*) defined in nsIHttpChannel.
+     */
+    mozilla::net::ReferrerPolicy mScriptReferrerPolicy;
 };
 
 #endif // nsHtml5SpeculativeLoad_h
