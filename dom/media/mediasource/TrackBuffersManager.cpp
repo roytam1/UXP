@@ -31,6 +31,7 @@ mozilla::LogModule* GetMediaSourceSamplesLog()
   return sLogModule;
 }
 #define SAMPLE_DEBUG(arg, ...) MOZ_LOG(GetMediaSourceSamplesLog(), mozilla::LogLevel::Debug, ("TrackBuffersManager(%p)::%s: " arg, this, __func__, ##__VA_ARGS__))
+#define SAMPLE_DEBUGV(arg, ...) MOZ_LOG(GetMediaSourceSamplesLog(), mozilla::LogLevel::Verbose, ("TrackBuffersManager(%p)::%s: " arg, this, __func__, ##__VA_ARGS__))
 
 namespace mozilla {
 
@@ -708,7 +709,11 @@ TrackBuffersManager::SegmentParserLoop()
       if (mNewMediaSegmentStarted) {
         if (NS_SUCCEEDED(newData) && mLastParsedEndTime.isSome() &&
             start < mLastParsedEndTime.ref().ToMicroseconds()) {
-          MSE_DEBUG("Re-creating demuxer");
+          MSE_DEBUG("Re-creating demuxer, new start (%" PRId64
+                    ") is smaller than last parsed end time (%" PRId64 ")",
+                    start,
+                    mLastParsedEndTime.value());
+          mFrameEndTimeBeforeRecreateDemuxer = Some(end);
           ResetDemuxingState();
           return;
         }
@@ -817,7 +822,15 @@ TrackBuffersManager::CreateDemuxerforMIMEType()
       mType.LowerCaseEqualsLiteral("video/x-matroska") ||
       mType.LowerCaseEqualsLiteral("audio/x-matroska") ||
       mType.LowerCaseEqualsLiteral("audio/webm")) {
-    mInputDemuxer = new WebMDemuxer(mCurrentInputBuffer, true /* IsMediaSource*/ );
+    if (mFrameEndTimeBeforeRecreateDemuxer) {
+      MSE_DEBUG(
+          "CreateDemuxerFromMimeType: "
+          "mFrameEndTimeBeforeRecreateDemuxer=%" PRId64,
+          mFrameEndTimeBeforeRecreateDemuxer.value());
+    }
+    mInputDemuxer = new WebMDemuxer(mCurrentInputBuffer, true /* IsMediaSource*/,
+                                    mFrameEndTimeBeforeRecreateDemuxer);
+    mFrameEndTimeBeforeRecreateDemuxer.reset();
     return;
   }
 
@@ -825,6 +838,7 @@ TrackBuffersManager::CreateDemuxerforMIMEType()
   if (mType.LowerCaseEqualsLiteral("video/mp4") ||
       mType.LowerCaseEqualsLiteral("audio/mp4")) {
     mInputDemuxer = new MP4Demuxer(mCurrentInputBuffer);
+    mFrameEndTimeBeforeRecreateDemuxer.reset();
     return;
   }
 #endif
@@ -1229,9 +1243,11 @@ void
 TrackBuffersManager::OnVideoDemuxCompleted(RefPtr<MediaTrackDemuxer::SamplesHolder> aSamples)
 {
   MOZ_ASSERT(OnTaskQueue());
-  MSE_DEBUG("%d video samples demuxed", aSamples->mSamples.Length());
   mVideoTracks.mDemuxRequest.Complete();
   mVideoTracks.mQueuedSamples.AppendElements(aSamples->mSamples);
+  MSE_DEBUG("%zu video samples demuxed, queued-sz=%zu",
+            aSamples->mSamples.Length(),
+            mVideoTracks.mQueuedSamples.Length());
   DoDemuxAudio();
 }
 
@@ -1472,6 +1488,9 @@ TrackBuffersManager::ProcessFrames(TrackBuffer& aSamples, TrackData& aTrackData)
     if (trackBuffer.mNeedRandomAccessPoint) {
       // 1. If the coded frame is not a random access point, then drop the coded frame and jump to the top of the loop to start processing the next coded frame.
       if (!sample->mKeyframe) {
+        SAMPLE_DEBUGV("skipping sample [%" PRId64 ",%" PRId64 "]",
+                      sample->mTime,
+                      sample->GetEndTime());
         continue;
       }
       // 2. Set the need random access point flag on track buffer to false.
@@ -1532,6 +1551,7 @@ TrackBuffersManager::ProcessFrames(TrackBuffer& aSamples, TrackData& aTrackData)
         // 3. Unset the last frame duration on all track buffers.
         // 4. Unset the highest end timestamp on all track buffers.
         // 5. Set the need random access point flag on all track buffers to true.
+        MSE_DEBUG("Resetting append state");
         track->ResetAppendState();
       }
       // 6. Jump to the Loop Top step above to restart processing of the current coded frame.
@@ -1930,10 +1950,12 @@ TrackBuffersManager::RecreateParser(bool aReuseInitData)
   // we can optimize this part. TODO
   mParser = ContainerParser::CreateForMIMEType(mType);
   if (aReuseInitData && mInitData) {
+    MSE_DEBUG("Using existing init data to reset parser");
     int64_t start, end;
     mParser->ParseStartAndEndTimestamps(mInitData, start, end);
     mProcessedInput = mInitData->Length();
   } else {
+    MSE_DEBUG("Resetting parser, not reusing init data");
     mProcessedInput = 0;
   }
 }

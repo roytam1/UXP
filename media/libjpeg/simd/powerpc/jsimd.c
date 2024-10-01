@@ -38,6 +38,9 @@
 #elif defined(__FreeBSD__)
 #include <machine/cpu.h>
 #include <sys/auxv.h>
+#elif defined(__NetBSD__)
+#include <sys/param.h>
+#include <sys/sysctl.h>
 #endif
 
 static unsigned int simd_support = ~0;
@@ -127,6 +130,9 @@ init_simd(void)
   size_t len = sizeof(altivec);
 #elif defined(__FreeBSD__)
   unsigned long cpufeatures = 0;
+#elif defined(__NetBSD__)
+  int ret, av;
+  size_t len;
 #endif
 
   if (simd_support != ~0U)
@@ -148,6 +154,11 @@ init_simd(void)
     simd_support |= JSIMD_ALTIVEC;
 #elif defined(__OpenBSD__)
   if (sysctl(mib, 2, &altivec, &len, NULL, 0) == 0 && altivec != 0)
+    simd_support |= JSIMD_ALTIVEC;
+#elif defined(__NetBSD__)
+  len = sizeof(av);
+  ret = sysctlbyname("machdep.altivec", &av, &len, NULL, 0);
+  if (!ret && av)
     simd_support |= JSIMD_ALTIVEC;
 #elif defined(__FreeBSD__)
   elf_aux_info(AT_HWCAP, &cpufeatures, sizeof(cpufeatures));

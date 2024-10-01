@@ -245,7 +245,7 @@ elif CONFIG['CPU_ARCH'].startswith('ppc'):
         'simd/powerpc/jsimd.c',
     ]
     for srcfile in ppc_vmx_sources:
-        SOURCES[srcfile].flags += CONFIG['PPC_VMX_FLAGS']
+        SOURCES[srcfile].flags += ['-maltivec']
 else: # No SIMD support?
     SOURCES += [
         'jsimd_none.c',
