@@ -25,6 +25,8 @@ interface HTMLScriptElement : HTMLElement {
   [CEReactions, SetterThrows]
   attribute DOMString? crossOrigin;
   [CEReactions, SetterThrows]
+  attribute DOMString referrerPolicy;
+  [CEReactions, SetterThrows]
   attribute DOMString text;
   [CEReactions, SetterThrows, Pure]
   attribute DOMString nonce;

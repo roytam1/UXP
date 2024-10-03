@@ -27,6 +27,7 @@ nestegg_track_codec_data_count
 nestegg_track_codec_id
 nestegg_track_content_enc_key_id
 nestegg_track_count
+nestegg_track_default_duration
 nestegg_get_cue_point
 nestegg_track_seek
 nestegg_track_type

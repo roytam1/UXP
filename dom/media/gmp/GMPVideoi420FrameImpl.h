@@ -65,6 +65,9 @@ public:
   void ResetSize() override;
 
 private:
+  bool CheckDimensions(int32_t aWidth, int32_t aHeight, int32_t aStride_y,
+                       int32_t aStride_u, int32_t aStride_v, int32_t aSize_y,
+                       int32_t aSize_u, int32_t aSize_v);
   bool CheckDimensions(int32_t aWidth, int32_t aHeight,
                        int32_t aStride_y, int32_t aStride_u, int32_t aStride_v);
 

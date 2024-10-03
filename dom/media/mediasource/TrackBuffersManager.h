@@ -492,6 +492,8 @@ private:
   media::TimeIntervals mAudioBufferedRanges;
   // MediaInfo of the first init segment read.
   MediaInfo mInfo;
+  
+  Maybe<int64_t> mFrameEndTimeBeforeRecreateDemuxer;
 };
 
 } // namespace mozilla

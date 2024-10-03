@@ -249,6 +249,7 @@ class nsHtml5TreeOpExecutor final : public nsHtml5DocumentBuilder,
                        const nsAString& aType,
                        const nsAString& aCrossOrigin,
                        const nsAString& aIntegrity,
+                       ReferrerPolicy aReferrerPolicy,
                        bool aScriptFromHead,
                        bool aAsync,
                        bool aDefer,
@@ -256,6 +257,7 @@ class nsHtml5TreeOpExecutor final : public nsHtml5DocumentBuilder,
 
     void PreloadStyle(const nsAString& aURL, const nsAString& aCharset,
                       const nsAString& aCrossOrigin,
+                      const nsAString& aReferrerPolicy,
                       const nsAString& aIntegrity);
 
     void PreloadImage(const nsAString& aURL,
@@ -304,6 +306,8 @@ class nsHtml5TreeOpExecutor final : public nsHtml5DocumentBuilder,
      * list of preloaded URIs
      */
     bool ShouldPreloadURI(nsIURI *aURI);
+
+    ReferrerPolicy GetPreloadReferrerPolicy(const nsAString& aReferrerPolicy);
 };
 
 #endif // nsHtml5TreeOpExecutor_h
