@@ -22,10 +22,11 @@ public:
     : mPacket(nullptr)
     , mOffset(-1)
     , mTimestamp(-1)
+    , mDefaultDuration(-1)
     , mDuration(-1)
     , mIsKeyframe(false) {}
 
-  bool Init(nestegg_packet* aPacket, int64_t aOffset, unsigned aTrack, bool aIsKeyframe)
+  bool Init(nestegg_packet* aPacket, nestegg* aContext, int64_t aOffset, unsigned aTrack, bool aIsKeyframe)
   {
     uint64_t timestamp_ns;
     if (nestegg_packet_tstamp(aPacket, &timestamp_ns) == -1) {
@@ -44,6 +45,9 @@ public:
     if (!nestegg_packet_duration(aPacket, &duration_ns)) {
       mDuration = duration_ns / 1000;
     }
+    if (!nestegg_track_default_duration(aContext, mTrack, &duration_ns)) {
+      mDefaultDuration = duration_ns / 1000;
+    }
     return true;
   }
 
@@ -51,6 +55,7 @@ public:
   int64_t Offset() { MOZ_ASSERT(IsInitialized()); return mOffset; }
   int64_t Timestamp() { MOZ_ASSERT(IsInitialized()); return mTimestamp; }
   int64_t Duration() { MOZ_ASSERT(IsInitialized()); return mDuration; }
+  int64_t DefaultDuration() const { MOZ_ASSERT(IsInitialized()); return mDefaultDuration; }
   unsigned Track() { MOZ_ASSERT(IsInitialized()); return mTrack; }
   bool IsKeyframe() { MOZ_ASSERT(IsInitialized()); return mIsKeyframe; }
 
@@ -60,7 +65,7 @@ private:
     nestegg_free_packet(mPacket);
   }
 
-  bool IsInitialized() { return mOffset >= 0; }
+  bool IsInitialized() const { return mOffset >= 0; }
 
   nestegg_packet* mPacket;
 
@@ -72,7 +77,12 @@ private:
   int64_t mTimestamp;
 
   // Packet duration in microseconds; -1 if unknown or retrieval failed.
+  // https://www.webmproject.org/docs/container/#BlockDuration
   int64_t mDuration;
+
+  // Default duration in microseconds; -1 if unknown or retrieval failed.
+  // https://www.webmproject.org/docs/container/#Duration
+  int64_t mDefaultDuration;
 
   // Track ID.
   unsigned mTrack;

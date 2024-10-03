@@ -92,7 +92,9 @@ public:
   explicit WebMDemuxer(MediaResource* aResource);
   // Indicate if the WebMDemuxer is to be used with MediaSource. In which
   // case the demuxer will stop reads to the last known complete block.
-  WebMDemuxer(MediaResource* aResource, bool aIsMediaSource);
+  WebMDemuxer(MediaResource* aResource,
+              bool aIsMediaSource,
+              Maybe<int64_t> aFrameEndTimeBeforeRecreateDemuxer = Nothing());
   
   RefPtr<InitPromise> Init() override;
 
@@ -226,6 +228,8 @@ private:
   // previous frame's timestamp.  In NS.
   Maybe<int64_t> mLastAudioFrameTime;
   Maybe<int64_t> mLastVideoFrameTime;
+
+  Maybe<int64_t> mVideoFrameEndTimeBeforeReset;
 
   // Codec ID of audio track
   int mAudioCodec;

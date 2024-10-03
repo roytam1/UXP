@@ -411,6 +411,16 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
 
   bool doneLoading = false;
   nsresult rv = NS_OK;
+
+  // Load the link's referrerpolicy attribute. If the link does not provide a
+  // referrerpolicy attribute, ignore this and use the document's referrer
+  // policy
+
+  net::ReferrerPolicy referrerPolicy = GetLinkReferrerPolicy();
+  if (referrerPolicy == net::RP_Unset) {
+    referrerPolicy = doc->GetReferrerPolicy();
+  }
+
   if (isInline) {
     nsAutoString text;
     if (!nsContentUtils::GetNodeTextContent(thisContent, false, text, fallible)) {
@@ -429,7 +439,7 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
 
     // Parse the style sheet.
     rv = doc->CSSLoader()->
-      LoadInlineStyle(thisContent, text, mLineNumber, title, media,
+      LoadInlineStyle(thisContent, text, mLineNumber, title, media, referrerPolicy,
                       scopeElement, aObserver, &doneLoading, &isAlternate, &isExplicitlyEnabled);
   } else {
     nsAutoString integrity;
@@ -438,15 +448,6 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
       MOZ_LOG(SRILogHelper::GetSriLog(), mozilla::LogLevel::Debug,
               ("nsStyleLinkElement::DoUpdateStyleSheet, integrity=%s",
                NS_ConvertUTF16toUTF8(integrity).get()));
-    }
-
-    // if referrer attributes are enabled in preferences, load the link's referrer
-    // attribute. If the link does not provide a referrer attribute, ignore this
-    // and use the document's referrer policy
-
-    net::ReferrerPolicy referrerPolicy = GetLinkReferrerPolicy();
-    if (referrerPolicy == net::RP_Unset) {
-      referrerPolicy = doc->GetReferrerPolicy();
     }
 
     // XXXbz clone the URI here to work around content policies modifying URIs.
