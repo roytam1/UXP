@@ -49,7 +49,7 @@ OAuth2.prototype = {
     consumerSecret: null,
     completionURI: "http://localhost",
     requestWindowURI: "chrome://messenger/content/browserRequest.xul",
-    requestWindowFeatures: "chrome,private,centerscreen,width=980,height=600",
+    requestWindowFeatures: "chrome,non-private,centerscreen,width=980,height=600",
     requestWindowTitle: "",
     scope: null,
 
