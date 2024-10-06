@@ -2649,7 +2649,7 @@
             // Using the "STOP_ALL" flag should halt all animations, fetches, network
             // activity, etc. to come to a clean state for removal and unlinking (if enabled).
             var browser = this.getBrowserForTab(aTab);
-            browser.webNavigation.stop(nsIWebNavigation.STOP_ALL);
+            browser.webNavigation.stop(Ci.nsIWebNavigation.STOP_ALL);
 
             this._tabFilters.delete(aTab);
             this._tabListeners.delete(aTab);
