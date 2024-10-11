@@ -42,6 +42,7 @@ SOURCES += [
     'jidctred.c',
     'jmemmgr.c',
     'jmemnobs.c',
+    'jpeg_nbits.c',
     'jquant1.c',
     'jquant2.c',
     'jutils.c',

@@ -1,15 +1,25 @@
 /* libjpeg-turbo build number */
 #define BUILD "20220624"
 
+/* How to hide global symbols. */
+#define HIDDEN  __attribute__((visibility("hidden")))
+
 /* Need to use Mozilla-specific function inlining. */
 #include "mozilla/Attributes.h"
 #define INLINE MOZ_ALWAYS_INLINE
+
+/* How to obtain thread-local storage */
+#if defined(_MSC_VER)
+#define THREAD_LOCAL __declspec(thread)
+#else
+#define THREAD_LOCAL __thread
+#endif
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "libjpeg-turbo"
 
 /* Version number of package */
-#define VERSION "2.1.3"
+#define VERSION "2.1.5.1"
 
 /* The size of `size_t', as computed by sizeof. */
 #ifdef HAVE_64BIT_BUILD
