@@ -10,7 +10,7 @@
 
 /* How to obtain thread-local storage */
 #if defined(_MSC_VER)
-#define THREAD_LOCAL __declspec(thread)
+#define THREAD_LOCAL
 #else
 #define THREAD_LOCAL __thread
 #endif
