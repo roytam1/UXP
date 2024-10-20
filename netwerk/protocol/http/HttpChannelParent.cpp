@@ -733,6 +733,8 @@ bool
 HttpChannelParent::RecvRedirect2Verify(const nsresult& result,
                                        const RequestHeaderTuples& changedHeaders,
                                        const uint32_t& loadFlags,
+                                       const uint32_t& referrerPolicy,
+                                       const OptionalURIParams& aReferrerURI,
                                        const OptionalURIParams& aAPIRedirectURI,
                                        const OptionalCorsPreflightArgs& aCorsPreflightArgs,
                                        const bool& aChooseAppcache)
@@ -772,6 +774,9 @@ HttpChannelParent::RecvRedirect2Verify(const nsresult& result,
         const CorsPreflightArgs& args = aCorsPreflightArgs.get_CorsPreflightArgs();
         newInternalChannel->SetCorsPreflightParameters(args.unsafeHeaders());
       }
+
+      nsCOMPtr<nsIURI> referrerUri = DeserializeURI(aReferrerURI);
+      newHttpChannel->SetReferrerWithPolicy(referrerUri, referrerPolicy);
 
       nsCOMPtr<nsIApplicationCacheChannel> appCacheChannel =
         do_QueryInterface(newHttpChannel);
