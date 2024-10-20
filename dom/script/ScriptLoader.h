@@ -620,6 +620,12 @@ private:
 
 
   /**
+   * Given a script element, get the referrer policy that should be applied to
+   * load requests.
+   */
+  mozilla::net::ReferrerPolicy GetReferrerPolicy(nsIScriptElement* aElement);
+
+  /**
    * Helper function to check the content policy for a given request.
    */
   static nsresult CheckContentPolicy(nsIDocument* aDocument,

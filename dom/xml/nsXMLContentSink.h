@@ -150,7 +150,8 @@ protected:
                                     bool aAlternate,
                                     const nsSubstring& aTitle,
                                     const nsSubstring& aType,
-                                    const nsSubstring& aMedia) override;
+                                    const nsSubstring& aMedia,
+                                    const nsSubstring& aReferrerPolicy) override;
 
   nsresult LoadXSLStyleSheet(nsIURI* aUrl);
 
