@@ -1871,8 +1871,11 @@ class JSScript : public js::gc::TenuredCell
     }
 
     js::PropertyName* getName(jsbytecode* pc) const {
-        MOZ_ASSERT(containsPC(pc) && containsPC(pc + sizeof(uint32_t)));
-        return getAtom(GET_UINT32_INDEX(pc))->asPropertyName();
+        if (containsPC(pc) && containsPC(pc + sizeof(uint32_t))) {
+            return getAtom(GET_UINT32_INDEX(pc))->asPropertyName();
+        } else {
+            return nullptr;
+        }
     }
 
     JSObject* getObject(size_t index) {
