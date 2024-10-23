@@ -1960,8 +1960,13 @@ CASE(JSOP_RETRVAL)
 
         /* Resume execution in the calling frame. */
         if (MOZ_LIKELY(interpReturnOK)) {
-            TypeScript::Monitor(cx, script, REGS.pc, REGS.sp[-1]);
+            
+            if (JSOp(*REGS.pc) == JSOP_RESUME) {
+                ADVANCE_AND_DISPATCH(JSOP_RESUME_LENGTH);
+            }
 
+            TypeScript::Monitor(cx, script, REGS.pc, REGS.sp[-1]);
+            MOZ_ASSERT(CodeSpec[*REGS.pc].length == JSOP_CALL_LENGTH);            
             ADVANCE_AND_DISPATCH(JSOP_CALL_LENGTH);
         }
 

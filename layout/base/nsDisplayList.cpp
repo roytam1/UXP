@@ -3757,18 +3757,23 @@ nsDisplayOutline::Paint(nsDisplayListBuilder* aBuilder,
                                mFrame->StyleContext());
 }
 
+bool nsDisplayOutline::HasRadius() const {
+  if (nsLayoutUtils::HasNonZeroCorner(mFrame->StyleOutline()->mOutlineRadius)) {
+    return true;
+  }
+  return nsLayoutUtils::HasNonZeroCorner(mFrame->StyleBorder()->mBorderRadius);
+}
+
 bool
 nsDisplayOutline::IsInvisibleInRect(const nsRect& aRect)
 {
   const nsStyleOutline* outline = mFrame->StyleOutline();
   nsRect borderBox(ToReferenceFrame(), mFrame->GetSize());
-  if (borderBox.Contains(aRect) &&
-      !nsLayoutUtils::HasNonZeroCorner(outline->mOutlineRadius)) {
-    if (outline->mOutlineOffset >= 0) {
-      // aRect is entirely inside the border-rect, and the outline isn't
-      // rendered inside the border-rect, so the outline is not visible.
-      return true;
-    }
+  if (borderBox.Contains(aRect) && !HasRadius() &&
+    outline->mOutlineOffset >= 0) {
+    // aRect is entirely inside the border-rect, and the outline isn't
+    // rendered inside the border-rect, so the outline is not visible.
+    return true;
   }
 
   return false;

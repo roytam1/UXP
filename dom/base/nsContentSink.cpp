@@ -663,8 +663,8 @@ nsContentSink::ProcessLinkHeader(const nsAString& aLinkData)
             }
           } else if (attr.LowerCaseEqualsLiteral("referrerpolicy")) {
             // https://html.spec.whatwg.org/multipage/urls-and-fetching.html#referrer-policy-attribute
-            // Specs says referrer policy attribute is an enumerated attribute,
-            // case insensitive and includes the empty string
+            // The spec says that the referrer policy attribute is an enumerated attribute,
+            // case insensitive and includes the empty string.
             // We will parse the value with AttributeReferrerPolicyFromString
             // later, which will handle parsing it as an enumerated attribute.
             if (referrerPolicy.IsEmpty()) {
