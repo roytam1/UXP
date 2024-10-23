@@ -510,6 +510,8 @@ nsStyleBorder::CalcDifference(const nsStyleBorder& aNewData) const
     }
   }
 
+  // Note that border radius is used as a fallback for outline radius, if set.
+  // Any optimizations here should apply to both.
   if (mBorderRadius != aNewData.mBorderRadius ||
       !mBorderColors != !aNewData.mBorderColors) {
     return nsChangeHint_RepaintFrame;
