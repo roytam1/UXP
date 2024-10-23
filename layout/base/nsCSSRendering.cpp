@@ -855,8 +855,6 @@ nsCSSRendering::PaintOutline(nsPresContext* aPresContext,
                              const nsRect& aBorderArea,
                              nsStyleContext* aStyleContext)
 {
-  nscoord             twipsRadii[8];
-
   // Get our style context's color struct.
   const nsStyleOutline* ourOutline = aStyleContext->StyleOutline();
   MOZ_ASSERT(ourOutline != NS_STYLE_BORDER_STYLE_NONE,
@@ -898,24 +896,6 @@ nsCSSRendering::PaintOutline(nsPresContext* aPresContext,
   if (innerRect.Contains(aDirtyRect))
     return;
 
-  nsRect outerRect = innerRect;
-  outerRect.Inflate(width, width);
-
-  // get the radius for our outline
-  nsIFrame::ComputeBorderRadii(ourOutline->mOutlineRadius, aBorderArea.Size(),
-                               outerRect.Size(), Sides(), twipsRadii);
-
-  // Get our conversion values
-  nscoord twipsPerPixel = aPresContext->DevPixelsToAppUnits(1);
-
-  // get the outer rectangles
-  Rect oRect(NSRectToRect(outerRect, twipsPerPixel));
-
-  // convert the radii
-  nsMargin outlineMargin(width, width, width, width);
-  RectCornerRadii outlineRadii;
-  ComputePixelRadii(twipsRadii, twipsPerPixel, &outlineRadii);
-
   if (outlineStyle == NS_STYLE_BORDER_STYLE_AUTO) {
     if (nsLayoutUtils::IsOutlineStyleAutoEnabled()) {
       nsITheme* theme = aPresContext->GetTheme();
@@ -935,6 +915,36 @@ nsCSSRendering::PaintOutline(nsPresContext* aPresContext,
     outlineStyle = NS_STYLE_BORDER_STYLE_SOLID;
   }
 
+  RectCornerRadii outlineRadii;
+  nsRect outerRect = innerRect;
+  outerRect.Inflate(width, width);
+
+  const nscoord oneDevPixel = aPresContext->AppUnitsPerDevPixel();
+  Rect oRect(NSRectToRect(outerRect, oneDevPixel));
+
+  const Float outlineWidths[4] = {
+      Float(width) / oneDevPixel, Float(width) / oneDevPixel,
+      Float(width) / oneDevPixel, Float(width) / oneDevPixel};
+
+  // convert the radii
+  nscoord twipsRadii[8];
+
+  // get the radius for our outline
+  if (nsLayoutUtils::HasNonZeroCorner(ourOutline->mOutlineRadius)) {
+    nsIFrame::ComputeBorderRadii(ourOutline->mOutlineRadius, aBorderArea.Size(),
+                                 outerRect.Size(), Sides(), twipsRadii);
+    ComputePixelRadii(twipsRadii, oneDevPixel, &outlineRadii);
+  } else if (aForFrame->GetBorderRadii(twipsRadii)) {
+    RectCornerRadii innerRadii;
+    ComputePixelRadii(twipsRadii, oneDevPixel, &innerRadii);
+
+    Float devPixelOffset = aPresContext->AppUnitsToFloatDevPixels(offset);
+    const Float widths[4] = {
+        outlineWidths[0] + devPixelOffset, outlineWidths[1] + devPixelOffset,
+        outlineWidths[2] + devPixelOffset, outlineWidths[3] + devPixelOffset};
+    nsCSSBorderRenderer::ComputeOuterRadii(innerRadii, widths, &outlineRadii);
+  }
+
   uint8_t outlineStyles[4] = { outlineStyle, outlineStyle,
                                outlineStyle, outlineStyle };
 
@@ -947,12 +957,7 @@ nsCSSRendering::PaintOutline(nsPresContext* aPresContext,
                                outlineColor,
                                outlineColor };
 
-  // convert the border widths
-  Float outlineWidths[4] = { Float(width / twipsPerPixel),
-                             Float(width / twipsPerPixel),
-                             Float(width / twipsPerPixel),
-                             Float(width / twipsPerPixel) };
-  Rect dirtyRect = NSRectToRect(aDirtyRect, twipsPerPixel);
+  Rect dirtyRect = NSRectToRect(aDirtyRect, oneDevPixel);
 
   nsIDocument* document = nullptr;
   nsIContent* content = aForFrame->GetContent();

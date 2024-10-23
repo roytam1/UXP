@@ -2106,7 +2106,7 @@
      *   Operands: resume kind (GeneratorObject::ResumeKind)
      *   Stack: gen, val => rval
      */ \
-    macro(JSOP_RESUME,        205,"resume",      NULL,    3,  2,  1,  JOF_UINT8|JOF_INVOKE) \
+    macro(JSOP_RESUME,        205,"resume",      NULL,    2,  2,  1,  JOF_UINT16|JOF_INVOKE) \
     /*
      * Pops the top two values on the stack as 'obj' and 'v', pushes 'v' to
      * 'obj'.
