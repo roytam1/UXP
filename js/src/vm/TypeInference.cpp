@@ -3335,7 +3335,9 @@ js::TypeMonitorResult(JSContext* cx, JSScript* script, jsbytecode* pc, TypeSet::
 void
 js::TypeMonitorResult(JSContext* cx, JSScript* script, jsbytecode* pc, const js::Value& rval)
 {
-    MOZ_ASSERT(CodeSpec[*pc].format & JOF_TYPESET);
+    /* Allow the non-TYPESET scenario to simplify stubs used in compound opcodes. */
+    if (!(CodeSpec[*pc].format & JOF_TYPESET))
+        return;
 
     if (!script->hasBaselineScript())
         return;
