@@ -96,7 +96,7 @@ protected:
 // main stream and sending them off the destination stream listener, than doing any real
 // stream parsing/converting.
 //
-// WARNING: This converter requires that it's destination stream listener be able to handle
+// WARNING: This converter requires that its destination stream listener be able to handle
 //   multiple OnStartRequest(), OnDataAvailable(), and OnStopRequest() call combinations.
 //   Each series represents the beginning, data production, and ending phase of each sub-
 //   part of the original stream.
@@ -156,6 +156,9 @@ protected:
     nsCOMPtr<nsISupports> mContext;
     nsCString           mContentType;
     nsCString           mContentDisposition;
+    nsCString           mContentSecurityPolicy;
+    nsCString           mRootContentSecurityPolicy;
+    nsCString           mRootContentDisposition;
     uint64_t            mContentLength;
     
     char                *mBuffer;

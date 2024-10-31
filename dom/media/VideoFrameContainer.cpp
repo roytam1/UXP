@@ -225,19 +225,13 @@ void VideoFrameContainer::SetCurrentFramesLocked(const gfx::IntSize& aIntrinsicS
   nsTArray<ImageContainer::OwningImage> oldImages;
   mImageContainer->GetCurrentImages(&oldImages);
 
-  ImageContainer::FrameID lastFrameIDForOldPrincipalHandle =
-    mFrameIDForPendingPrincipalHandle - 1;
   if (mPendingPrincipalHandle != PRINCIPAL_HANDLE_NONE &&
-       ((!oldImages.IsEmpty() &&
-          oldImages.LastElement().mFrameID >= lastFrameIDForOldPrincipalHandle) ||
-        (!aImages.IsEmpty() &&
-          aImages[0].mFrameID > lastFrameIDForOldPrincipalHandle))) {
-    // We are releasing the last FrameID prior to `lastFrameIDForOldPrincipalHandle`
-    // OR
-    // there are no FrameIDs prior to `lastFrameIDForOldPrincipalHandle` in the new
-    // set of images.
-    // This means that the old principal handle has been flushed out and we can
-    // notify our video element about this change.
+      (aImages.IsEmpty() ||
+       aImages[0].mFrameID >= mFrameIDForPendingPrincipalHandle)) {
+    // There are no FrameIDs prior to `mFrameIDForPendingPrincipalHandle`
+    // in the new set of images.
+    // This means that the old principal handle has been flushed out and we
+    // can notify our video element about this change.
     RefPtr<VideoFrameContainer> self = this;
     PrincipalHandle principalHandle = mPendingPrincipalHandle;
     mLastPrincipalHandle = mPendingPrincipalHandle;
