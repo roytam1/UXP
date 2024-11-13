@@ -31,8 +31,30 @@ using mozilla::Maybe;
 
 using CapturesVector = GCVector<Value, 4>;
 
+
+// Allocate an object for the |.groups| or |.indices.groups| property
+// of a regexp match result.
+static PlainObject* CreateGroupsObject(JSContext* cx,
+                                       HandlePlainObject groupsTemplate)
+{
+  PlainObject* result = NewObjectWithGivenProto<PlainObject>(cx, nullptr);
+  result->setGroup(groupsTemplate->group());
+
+  return result;
+}
+
+// Fetch a group index corresponding to a |key| from the template object
+static uint32_t GetNamedCaptureIndex(JSContext* cx, HandlePlainObject groupsTemplate, HandleId key)
+{
+  RootedValue ival(cx);
+
+  if (!NativeGetProperty(cx, groupsTemplate, key, &ival))
+    return -1;
+  return ival.toInt32();
+}
+
 /*
- * ES 2021 draft 21.2.5.2.2: Steps 16-28
+ * Implements RegExpBuiltinExec: Steps 18-35
  * https://tc39.es/ecma262/#sec-regexpbuiltinexec
  */
 bool
@@ -51,24 +73,61 @@ js::CreateRegExpMatchResult(JSContext* cx, RegExpShared& re,
      *  input:          input string
      *  index:          start index for the match
      *  groups:         named capture groups for the match
+     *  indices:        capture indices for the match, if required
      */
 
+    bool hasIndices = re.hasIndices();
+    
     /* Get the templateObject that defines the shape and type of the output object */
-    JSObject* templateObject = cx->compartment()->regExps.getOrCreateMatchResultTemplateObject(cx);
+    RegExpCompartment::ResultTemplateKind kind =
+      hasIndices ? RegExpCompartment::ResultTemplateKind::WithIndices
+                 : RegExpCompartment::ResultTemplateKind::Normal;
+    JSObject* templateObject = cx->compartment()->regExps.getOrCreateMatchResultTemplateObject(cx, kind);
     if (!templateObject)
         return false;
 
-    // Step 16
+    // Steps 18-19
     size_t numPairs = matches.length();
     MOZ_ASSERT(numPairs > 0);
 
-    /* Step 18-19. */
+    // Step 34a (reordered): Allocate and initialize the indices object if needed.
+    // This is an inlined implementation of MakeIndicesArray:
+    // https://tc39.es/ecma262/#sec-makeindicesarray
+    RootedArrayObject indices(cx);
+    RootedPlainObject indicesGroups(cx);
+    if (hasIndices) {
+      // MakeIndicesArray: step 8
+      ArrayObject* indicesTemplate =
+          cx->compartment()->regExps.getOrCreateMatchResultTemplateObject(cx, RegExpCompartment::ResultTemplateKind::Indices);
+      if (!indicesTemplate) {
+        return false;
+      }
+      indices = NewDenseFullyAllocatedArrayWithTemplate(cx, numPairs, indicesTemplate);
+      if (!indices) {
+        return false;
+      }
+  
+      // MakeIndicesArray: steps 10-12
+      if (re.numNamedCaptures() > 0) {
+        RootedPlainObject groupsTemplate(cx, re.getGroupsTemplate());
+        indicesGroups = CreateGroupsObject(cx, groupsTemplate);
+        if (!indicesGroups) {
+          return false;
+        }
+        indices->setSlot(0, ObjectValue(*indicesGroups));
+      } else {
+        indices->setSlot(0, UndefinedValue());
+      }
+    }
+
+    // Steps 20-21: Allocate the match result object.
     RootedArrayObject arr(cx, NewDenseFullyAllocatedArrayWithTemplate(cx, numPairs, templateObject));
     if (!arr)
         return false;
 
-    /* Steps 22-23 and 27 a-e
-     * Store a Value for each pair. */
+    // Steps 28-29 and 33 a-d: Initialize the elements of the match result.
+    // Store a Value for each match pair.
+    // Merged with MakeIndicesArray: step 13 a-d. (Step 13.e is implemented below.)
     for (size_t i = 0; i < numPairs; i++) {
         const MatchPair& pair = matches[i];
 
@@ -76,24 +135,40 @@ js::CreateRegExpMatchResult(JSContext* cx, RegExpShared& re,
             MOZ_ASSERT(i != 0); /* Since we had a match, first pair must be present. */
             arr->setDenseInitializedLength(i + 1);
             arr->initDenseElement(i, UndefinedValue());
+            if (hasIndices) {
+              indices->setDenseInitializedLength(i + 1);
+              indices->initDenseElement(i, UndefinedValue());
+            }
         } else {
             JSLinearString* str = NewDependentString(cx, input, pair.start, pair.length());
             if (!str)
                 return false;
             arr->setDenseInitializedLength(i + 1);
             arr->initDenseElement(i, StringValue(str));
+
+            if (hasIndices) {
+              RootedArrayObject indexPair(cx, NewDenseFullyAllocatedArray(cx, 2));
+              if (!indexPair) {
+                return false;
+              }
+              indexPair->setDenseInitializedLength(2);
+              indexPair->initDenseElement(0, Int32Value(pair.start));
+              indexPair->initDenseElement(1, Int32Value(pair.limit));
+      
+              indices->setDenseInitializedLength(i + 1);
+              indices->initDenseElement(i, ObjectValue(*indexPair));
+            }
         }
     }
 
-    // Step 24 (reordered)
+    // Steps 30-31 (reordered): Allocate the groups object (if needed).
     RootedPlainObject groups(cx);
     if (re.numNamedCaptures() > 0) {
         // construct a new object from the template saved on RegExpShared
         RootedPlainObject groupsTemplate(cx, re.getGroupsTemplate());
-        groups = NewObjectWithGivenProto<PlainObject>(cx, nullptr);
-        groups->setGroup(groupsTemplate->group());
+        groups = CreateGroupsObject(cx, groupsTemplate);
 
-        // Step 27 f.
+        // Step 33 e-f
         // The groups template object stores the names of the named captures in the
         // the order in which they are defined.
         // Grab the index into the match vector from the template object and define the
@@ -104,32 +179,45 @@ js::CreateRegExpMatchResult(JSContext* cx, RegExpShared& re,
         }
         MOZ_ASSERT(keys.length() == re.numNamedCaptures());
         RootedId key(cx);
-        RootedValue ival(cx);
         RootedValue val(cx);
         for (size_t i = 0; i < keys.length(); i++) {
             key = keys[i];
-            // fetch the group's match index...
-            if (!NativeGetProperty(cx, groupsTemplate, key, &ival))
-              return false;
-            // ... and set it on groups
-            val = arr->getDenseElement(ival.toInt32());
+            uint32_t idx = GetNamedCaptureIndex(cx, groupsTemplate, key);
+            MOZ_ASSERT(idx >= 0);
+            // Copy the matched string to |.groups|
+            val = arr->getDenseElement(idx);
             if (!NativeDefineProperty(cx, groups, key, val, nullptr, nullptr, JSPROP_ENUMERATE)) {
                 return false;
+            }
+            // MakeIndicesArray: Step 13.e (reordered)
+            // If we have an |.indices|, copy the information to |.indices.groups|
+            if (hasIndices) {
+              val = indices->getDenseElement(idx);
+              if (!NativeDefineDataProperty(cx, indicesGroups, key, val,
+                                            JSPROP_ENUMERATE)) {
+                return false;
+              }
             }
         }
     }
 
-    /* Step 20 (reordered).
+    /* Step 22 (reordered).
      * Set the |index| property. (TemplateObject positions it in slot 0) */
     arr->setSlot(0, Int32Value(matches[0].start));
 
-    /* Step 21 (reordered).
+    /* Step 23 (reordered).
      * Set the |input| property. (TemplateObject positions it in slot 1) */
     arr->setSlot(1, StringValue(input));
 
-    // Steps 25-26 (reordered)
+    // Step 32 (reordered)
     // Set the |groups| property.
     arr->setSlot(2, groups ? ObjectValue(*groups) : UndefinedValue());
+    
+    // Step 34b (reordered)
+    // Set the |indices| property.
+    if (hasIndices) {
+      arr->setSlot(3, ObjectValue(*indices));
+    }
     
 #ifdef DEBUG
     RootedValue test(cx);
@@ -143,7 +231,7 @@ js::CreateRegExpMatchResult(JSContext* cx, RegExpShared& re,
     MOZ_ASSERT(test == arr->getSlot(1));
 #endif
 
-    /* Step 25. */
+    /* Step 35. */
     rval.setObject(*arr);
     return true;
 }
@@ -818,15 +906,42 @@ js::regexp_unicode(JSContext* cx, unsigned argc, JS::Value* vp)
     return CallNonGenericMethod<IsRegExpInstanceOrPrototype, regexp_unicode_impl>(cx, args);
 }
 
+// ES 2022 22.2.5.6.
+MOZ_ALWAYS_INLINE bool
+regexp_hasIndices_impl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(IsRegExpInstanceOrPrototype(args.thisv()));
+
+    // Step 2.a.
+    if (!IsRegExpObject(args.thisv())) {
+        args.rval().setUndefined();
+        return true;
+    }
+
+    // Steps 3-5.
+    Rooted<RegExpObject*> reObj(cx, &args.thisv().toObject().as<RegExpObject>());
+    args.rval().setBoolean(reObj->hasIndices());
+    return true;
+}
+
+bool
+js::regexp_hasIndices(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+    // Steps 1-3.
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<IsRegExpInstanceOrPrototype, regexp_hasIndices_impl>(cx, args);
+}
+
 const JSPropertySpec js::regexp_properties[] = {
     JS_SELF_HOSTED_GET("flags", "RegExpFlagsGetter", 0),
+    JS_PSG("hasIndices", regexp_hasIndices, 0),
     JS_PSG("global", regexp_global, 0),
     JS_PSG("ignoreCase", regexp_ignoreCase, 0),
     JS_PSG("multiline", regexp_multiline, 0),
+    JS_PSG("dotAll", regexp_dotAll, 0),
     JS_PSG("source", regexp_source, 0),
     JS_PSG("sticky", regexp_sticky, 0),
     JS_PSG("unicode", regexp_unicode, 0),
-    JS_PSG("dotAll", regexp_dotAll, 0),
     JS_PS_END
 };
 
@@ -1800,6 +1915,13 @@ js::RegExpPrototypeOptimizableRaw(JSContext* cx, JSObject* proto)
         return false;
 
     if (!IsSelfHostedFunctionWithName(flagsGetter, cx->names().RegExpFlagsGetter))
+        return false;
+
+    JSNative hasIndicesGetter;
+    if (!GetOwnNativeGetterPure(cx, proto, NameToId(cx->names().hasIndices), &hasIndicesGetter))
+        return false;
+
+    if (hasIndicesGetter != regexp_hasIndices)
         return false;
 
     JSNative globalGetter;

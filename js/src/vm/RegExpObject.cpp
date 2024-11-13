@@ -51,6 +51,7 @@ JS_STATIC_ASSERT(MultilineFlag == JSREG_MULTILINE);
 JS_STATIC_ASSERT(StickyFlag == JSREG_STICKY);
 JS_STATIC_ASSERT(UnicodeFlag == JSREG_UNICODE);
 JS_STATIC_ASSERT(DotAllFlag == JSREG_DOTALL);
+JS_STATIC_ASSERT(HasIndicesFlag == JSREG_HASINDICES);
 
 RegExpObject*
 js::RegExpAlloc(ExclusiveContext* cx, HandleObject proto /* = nullptr */)
@@ -136,6 +137,10 @@ RegExpObject::getShared(JSContext* cx, Handle<RegExpObject*> regexp,
 /* static */ bool
 RegExpObject::isOriginalFlagGetter(JSNative native, RegExpFlag* mask)
 {
+  if (native == regexp_hasIndices) {
+      *mask = HasIndicesFlag;
+      return true;
+  }
   if (native == regexp_global) {
       *mask = GlobalFlag;
       return true;
@@ -148,16 +153,16 @@ RegExpObject::isOriginalFlagGetter(JSNative native, RegExpFlag* mask)
       *mask = MultilineFlag;
       return true;
   }
+  if (native == regexp_dotAll) {
+      *mask = DotAllFlag;
+      return true;
+  }
   if (native == regexp_sticky) {
       *mask = StickyFlag;
       return true;
   }
   if (native == regexp_unicode) {
       *mask = UnicodeFlag;
-      return true;
-  }
-  if (native == regexp_dotAll) {
-      *mask = DotAllFlag;
       return true;
   }
 
@@ -488,11 +493,15 @@ RegExpObject::toString(JSContext* cx) const
     sb.infallibleAppend('/');
 
     // Steps 5-7.
+    if (hasIndices() && !sb.append('d'))
+        return nullptr;
     if (global() && !sb.append('g'))
         return nullptr;
     if (ignoreCase() && !sb.append('i'))
         return nullptr;
     if (multiline() && !sb.append('m'))
+        return nullptr;
+    if (dotAll() && !sb.append('s'))
         return nullptr;
     if (unicode() && !sb.append('u'))
         return nullptr;
@@ -1288,10 +1297,13 @@ RegExpShared::sizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf)
 
 RegExpCompartment::RegExpCompartment(Zone* zone)
   : set_(zone, Set(zone->runtimeFromMainThread())),
-    matchResultTemplateObject_(nullptr),
     optimizableRegExpPrototypeShape_(nullptr),
     optimizableRegExpInstanceShape_(nullptr)
-{}
+{
+  for (auto& templateObj : matchResultTemplateObjects_) {
+    templateObj = nullptr;
+  }
+}
 
 RegExpCompartment::~RegExpCompartment()
 {
@@ -1299,38 +1311,53 @@ RegExpCompartment::~RegExpCompartment()
 }
 
 ArrayObject*
-RegExpCompartment::createMatchResultTemplateObject(JSContext* cx)
+RegExpCompartment::createMatchResultTemplateObject(JSContext* cx, ResultTemplateKind kind)
 {
-    MOZ_ASSERT(!matchResultTemplateObject_);
+    MOZ_ASSERT(!matchResultTemplateObjects_[kind]);
 
     /* Create template array object */
     RootedArrayObject templateObject(cx, NewDenseUnallocatedArray(cx, RegExpObject::MaxPairCount,
                                                                   nullptr, TenuredObject));
-    if (!templateObject)
-        return matchResultTemplateObject_; // = nullptr
+    if (!templateObject) {
+        return nullptr;
+    }
 
     // Create a new group for the template.
     Rooted<TaggedProto> proto(cx, templateObject->taggedProto());
     ObjectGroup* group = ObjectGroupCompartment::makeGroup(cx, templateObject->getClass(), proto);
     if (!group)
-        return matchResultTemplateObject_; // = nullptr
+        return nullptr;
     templateObject->setGroup(group);
+
+    if (kind == ResultTemplateKind::Indices) {
+      /* The |indices| array only has a |groups| property. */
+      RootedValue groupsVal(cx, UndefinedValue());
+      if (!NativeDefineProperty(cx, templateObject, cx->names().groups,
+                                    groupsVal, nullptr, nullptr, JSPROP_ENUMERATE)) {
+        return nullptr;
+      }
+      AddTypePropertyId(cx, templateObject, NameToId(cx->names().groups), TypeSet::AnyObjectType());
+      matchResultTemplateObjects_[kind].set(templateObject);
+      return matchResultTemplateObjects_[kind];
+    }
 
     /* Set dummy index property */
     RootedValue index(cx, Int32Value(0));
     if (!NativeDefineProperty(cx, templateObject, cx->names().index, index, nullptr, nullptr,
                               JSPROP_ENUMERATE))
     {
-        return matchResultTemplateObject_; // = nullptr
+        return nullptr;
     }
+    AddTypePropertyId(cx, templateObject, JSID_VOID, TypeSet::UndefinedType());
 
     /* Set dummy input property */
     RootedValue inputVal(cx, StringValue(cx->runtime()->emptyString));
     if (!NativeDefineProperty(cx, templateObject, cx->names().input, inputVal, nullptr, nullptr,
                               JSPROP_ENUMERATE))
     {
-        return matchResultTemplateObject_; // = nullptr
+        return nullptr;
     }
+    AddTypePropertyId(cx, templateObject, JSID_VOID, TypeSet::StringType());
 
     /* Set dummy groups property */
     RootedValue groupsVal(cx, UndefinedValue());
@@ -1338,25 +1365,21 @@ RegExpCompartment::createMatchResultTemplateObject(JSContext* cx)
           cx, templateObject, cx->names().groups, groupsVal, nullptr, nullptr, JSPROP_ENUMERATE)) {
         return nullptr;
     }
-
-    // Make sure that the properties are in the right slots.
-    DebugOnly<Shape*> shape = templateObject->lastProperty();
-    MOZ_ASSERT(shape->slot() == 2 &&
-               shape->propidRef() == NameToId(cx->names().groups));
-    MOZ_ASSERT(shape->previous()->slot() == 1 &&
-               shape->previous()->propidRef() == NameToId(cx->names().input));
-    MOZ_ASSERT(shape->previous()->previous()->slot() == 0 &&
-               shape->previous()->previous()->propidRef() == NameToId(cx->names().index));
-
-    // Make sure type information reflects the indexed properties which might
-    // be added.
-    AddTypePropertyId(cx, templateObject, JSID_VOID, TypeSet::StringType());
-    AddTypePropertyId(cx, templateObject, JSID_VOID, TypeSet::UndefinedType());
     AddTypePropertyId(cx, templateObject, NameToId(cx->names().groups), TypeSet::AnyObjectType());
 
-    matchResultTemplateObject_.set(templateObject);
+    if (kind == ResultTemplateKind::WithIndices) {
+      /* Set dummy indices property */
+      RootedValue indicesVal(cx, UndefinedValue());
+      if (!NativeDefineProperty(cx, templateObject, cx->names().indices,
+                                    indicesVal, nullptr, nullptr, JSPROP_ENUMERATE)) {
+        return nullptr;
+      }
+      AddTypePropertyId(cx, templateObject, NameToId(cx->names().indices), TypeSet::AnyObjectType());
+    }
 
-    return matchResultTemplateObject_;
+    matchResultTemplateObjects_[kind].set(templateObject);
+
+    return matchResultTemplateObjects_[kind];
 }
 
 bool
@@ -1374,10 +1397,10 @@ RegExpCompartment::init(JSContext* cx)
 void
 RegExpCompartment::sweep(JSRuntime* rt)
 {
-    if (matchResultTemplateObject_ &&
-        IsAboutToBeFinalized(&matchResultTemplateObject_))
-    {
-        matchResultTemplateObject_.set(nullptr);
+    for (auto& templateObject : matchResultTemplateObjects_) {
+      if (templateObject && IsAboutToBeFinalized(&templateObject)) {
+        templateObject.set(nullptr);
+      }
     }
 
     if (optimizableRegExpPrototypeShape_ &&
@@ -1483,12 +1506,16 @@ ParseRegExpFlags(const CharT* chars, size_t length, RegExpFlag* flagsOut, char16
     for (size_t i = 0; i < length; i++) {
         *lastParsedOut = chars[i];
         switch (chars[i]) {
-          case 'i':
-            if (!HandleRegExpFlag(IgnoreCaseFlag, flagsOut))
+          case 'd':
+            if (!HandleRegExpFlag(HasIndicesFlag, flagsOut))
                 return false;
             break;
           case 'g':
             if (!HandleRegExpFlag(GlobalFlag, flagsOut))
+                return false;
+            break;
+          case 'i':
+            if (!HandleRegExpFlag(IgnoreCaseFlag, flagsOut))
                 return false;
             break;
           case 'm':

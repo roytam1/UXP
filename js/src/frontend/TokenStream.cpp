@@ -2083,7 +2083,9 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
             while (true) {
                 if (!peekChar(&c))
                     goto error;
-                if (c == 'g' && !(reflags & GlobalFlag))
+                if (c == 'd' && !(reflags & HasIndicesFlag))
+                    reflags = RegExpFlag(reflags | HasIndicesFlag);
+                else if (c == 'g' && !(reflags & GlobalFlag))
                     reflags = RegExpFlag(reflags | GlobalFlag);
                 else if (c == 'i' && !(reflags & IgnoreCaseFlag))
                     reflags = RegExpFlag(reflags | IgnoreCaseFlag);
