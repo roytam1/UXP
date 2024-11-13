@@ -5824,12 +5824,13 @@ JS_ObjectIsDate(JSContext* cx, JS::HandleObject obj, bool* isDate);
 /*
  * Regular Expressions.
  */
-#define JSREG_FOLD      0x01u   /* fold uppercase to lowercase */
-#define JSREG_GLOB      0x02u   /* global exec, creates array of matches */
-#define JSREG_MULTILINE 0x04u   /* treat ^ and $ as begin and end of line */
-#define JSREG_STICKY    0x08u   /* only match starting at lastIndex */
-#define JSREG_UNICODE   0x10u   /* unicode */
-#define JSREG_DOTALL    0x20u   /* match . to everything including newlines */
+#define JSREG_FOLD       0x01u   /* fold uppercase to lowercase */
+#define JSREG_GLOB       0x02u   /* global exec, creates array of matches */
+#define JSREG_MULTILINE  0x04u   /* treat ^ and $ as begin and end of line */
+#define JSREG_STICKY     0x08u   /* only match starting at lastIndex */
+#define JSREG_UNICODE    0x10u   /* unicode */
+#define JSREG_DOTALL     0x20u   /* match . to everything including newlines */
+#define JSREG_HASINDICES 0x40u   /* add .indices property to the match result */
 
 extern JS_PUBLIC_API(JSObject*)
 JS_NewRegExpObject(JSContext* cx, const char* bytes, size_t length, unsigned flags);
