@@ -1319,13 +1319,6 @@ PresShell::Destroy()
   mTouchManager.Destroy();
 }
 
-void
-PresShell::MakeZombie()
-{
-  mIsZombie = true;
-  CancelAllPendingReflows();
-}
-
 nsRefreshDriver*
 nsIPresShell::GetRefreshDriver() const
 {
@@ -3959,10 +3952,6 @@ PresShell::FlushPendingNotifications(mozFlushType aType)
 void
 PresShell::FlushPendingNotifications(mozilla::ChangesToFlush aFlush)
 {
-  if (mIsZombie) {
-    return;
-  }
-
   /**
    * VERY IMPORTANT: If you add some sort of new flushing to this
    * method, make sure to add the relevant SetNeedLayoutFlush or
@@ -6170,7 +6159,7 @@ PresShell::Paint(nsView*        aViewToPaint,
 
   MOZ_ASSERT(!mApproximateFrameVisibilityVisited, "Should have been cleared");
 
-  if (!mIsActive || mIsZombie) {
+  if (!mIsActive) {
     return;
   }
 
@@ -6886,20 +6875,6 @@ CheckPermissionForBeforeAfterKeyboardEvent(Element* aElement)
     if (permission == nsIPermissionManager::ALLOW_ACTION) {
       return true;
     }
-
-    // Check "embed-apps" permission for later use.
-    permission = nsIPermissionManager::DENY_ACTION;
-    permMgr->TestPermissionFromPrincipal(principal, "embed-apps", &permission);
-  }
-
-  // An element can handle before events and after events if the following
-  // conditions are met:
-  // 1) <iframe mozbrowser mozapp>
-  // 2) it has "embed-apps" permission.
-  nsCOMPtr<nsIMozBrowserFrame> browserFrame(do_QueryInterface(aElement));
-  if ((permission == nsIPermissionManager::ALLOW_ACTION) &&
-      browserFrame && browserFrame->GetReallyIsApp()) {
-    return true;
   }
 
   return false;
@@ -9042,10 +9017,6 @@ PresShell::ScheduleReflowOffTimer()
 bool
 PresShell::DoReflow(nsIFrame* target, bool aInterruptible)
 {
-  if (mIsZombie) {
-    return true;
-  }
-
   gfxTextPerfMetrics* tp = mPresContext->GetTextPerfMetrics();
   TimeStamp timeStart;
   if (tp) {

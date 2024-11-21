@@ -19,10 +19,6 @@ XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
 XPCOMUtils.defineLazyModuleGetter(this, "SystemAppProxy",
                                   "resource://gre/modules/SystemAppProxy.jsm");
 
-XPCOMUtils.defineLazyGetter(this, "appsService", function() {
-  return Cc["@mozilla.org/AppsService;1"].getService(Ci.nsIAppsService);
-});
-
 XPCOMUtils.defineLazyGetter(this, "hardwareKeyHandler", function() {
   return null;
 });
@@ -174,8 +170,8 @@ this.Keyboard = {
         this.formMM = null;
       }
     } else {
-      // Ignore notifications that aren't from a BrowserOrApp
-      if (!frameLoader.ownerIsMozBrowserOrAppFrame) {
+      // Ignore notifications that aren't from a Browser
+      if (!frameLoader.ownerIsMozBrowserFrame) {
         return;
       }
       this.initFormsFrameScript(mm);
@@ -554,24 +550,6 @@ InputRegistryGlue.prototype.addInput = function(msg, mm) {
     mm: mm,
     requestId: msg.data.requestId
   });
-
-  let manifestURL = appsService.getManifestURLByLocalId(msg.data.appId);
-
-  Keyboard.sendToSystem('System:InputRegistry:Add', {
-    id: msgId,
-    manifestURL: manifestURL,
-    inputId: msg.data.inputId,
-    inputManifest: msg.data.inputManifest
-  });
-
-  // XXX: To be removed when content migrate away from mozChromeEvents.
-  SystemAppProxy.dispatchEvent({
-    type: 'inputregistry-add',
-    id: msgId,
-    manifestURL: manifestURL,
-    inputId: msg.data.inputId,
-    inputManifest: msg.data.inputManifest
-  });
 };
 
 InputRegistryGlue.prototype.removeInput = function(msg, mm) {
@@ -579,22 +557,6 @@ InputRegistryGlue.prototype.removeInput = function(msg, mm) {
   this._msgMap.set(msgId, {
     mm: mm,
     requestId: msg.data.requestId
-  });
-
-  let manifestURL = appsService.getManifestURLByLocalId(msg.data.appId);
-
-  Keyboard.sendToSystem('System:InputRegistry:Remove', {
-    id: msgId,
-    manifestURL: manifestURL,
-    inputId: msg.data.inputId
-  });
-
-  // XXX: To be removed when content migrate away from mozChromeEvents.
-  SystemAppProxy.dispatchEvent({
-    type: 'inputregistry-remove',
-    id: msgId,
-    manifestURL: manifestURL,
-    inputId: msg.data.inputId
   });
 };
 

@@ -32,7 +32,6 @@
 #include "nsTArrayForwardDeclare.h"
 #include "nsTObserverArray.h"
 
-class mozIApplicationClearPrivateDataParams;
 class nsIConsoleReportCollector;
 
 namespace mozilla {

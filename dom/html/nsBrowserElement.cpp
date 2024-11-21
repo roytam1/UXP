@@ -15,11 +15,9 @@
 
 #include "AudioChannelService.h"
 
-#include "mozIApplication.h"
 #include "nsComponentManagerUtils.h"
 #include "nsContentUtils.h"
 #include "nsFrameLoader.h"
-#include "nsIAppsService.h"
 #include "nsIDOMDocument.h"
 #include "nsIDOMDOMRequest.h"
 #include "nsIDOMElement.h"
@@ -44,13 +42,13 @@ nsBrowserElement::IsBrowserElementOrThrow(ErrorResult& aRv)
 void
 nsBrowserElement::InitBrowserElementAPI()
 {
-  bool isMozBrowserOrApp;
+  bool isMozBrowser;
   nsCOMPtr<nsIFrameLoader> frameLoader = GetFrameLoader();
   NS_ENSURE_TRUE_VOID(frameLoader);
-  nsresult rv = frameLoader->GetOwnerIsMozBrowserOrAppFrame(&isMozBrowserOrApp);
+  nsresult rv = frameLoader->GetOwnerIsMozBrowserFrame(&isMozBrowser);
   NS_ENSURE_SUCCESS_VOID(rv);
 
-  if (!isMozBrowserOrApp) {
+  if (!isMozBrowser) {
     return;
   }
 
@@ -495,13 +493,13 @@ nsBrowserElement::GetAllowedAudioChannels(
       return;
     }
 
-    bool isMozBrowserOrApp;
-    aRv = frameLoader->GetOwnerIsMozBrowserOrAppFrame(&isMozBrowserOrApp);
+    bool isMozBrowser;
+    aRv = frameLoader->GetOwnerIsMozBrowserFrame(&isMozBrowser);
     if (NS_WARN_IF(aRv.Failed())) {
       return;
     }
 
-    if (!isMozBrowserOrApp) {
+    if (!isMozBrowser) {
       return;
     }
 

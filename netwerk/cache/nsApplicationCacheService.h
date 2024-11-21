@@ -18,8 +18,6 @@ public:
     NS_DECL_ISUPPORTS
     NS_DECL_NSIAPPLICATIONCACHESERVICE
 
-    static void AppClearDataObserverInit();
-
 private:
     ~nsApplicationCacheService();
     RefPtr<nsCacheService> mCacheService;

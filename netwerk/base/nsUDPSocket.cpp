@@ -612,8 +612,7 @@ nsUDPSocket::InitWithAddress(const NetAddr *aAddr, nsIPrincipal *aPrincipal,
 
   if (aPrincipal) {
     mAppId = aPrincipal->GetAppId();
-    mIsInIsolatedMozBrowserElement =
-      aPrincipal->GetIsInIsolatedMozBrowserElement();
+    mIsInIsolatedMozBrowserElement = false;
   }
 
   uint16_t port;

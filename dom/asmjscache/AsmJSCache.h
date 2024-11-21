@@ -72,14 +72,12 @@ struct WriteParams
   int64_t mFastHash;
   int64_t mNumChars;
   int64_t mFullHash;
-  bool mInstalled;
 
   WriteParams()
-  : mSize(0),
-    mFastHash(0),
-    mNumChars(0),
-    mFullHash(0),
-    mInstalled(false)
+  : mSize(0)
+  , mFastHash(0)
+  , mNumChars(0)
+  , mFullHash(0)
   { }
 };
 
@@ -90,8 +88,8 @@ struct ReadParams
   const char16_t* mLimit;
 
   ReadParams()
-  : mBegin(nullptr),
-    mLimit(nullptr)
+  : mBegin(nullptr)
+  , mLimit(nullptr)
   { }
 };
 
@@ -120,7 +118,6 @@ CloseEntryForRead(size_t aSize,
                   intptr_t aHandle);
 JS::AsmJSCacheResult
 OpenEntryForWrite(nsIPrincipal* aPrincipal,
-                  bool aInstalled,
                   const char16_t* aBegin,
                   const char16_t* aEnd,
                   size_t aSize,

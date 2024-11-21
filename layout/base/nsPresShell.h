@@ -102,7 +102,6 @@ public:
   void Init(nsIDocument* aDocument, nsPresContext* aPresContext,
             nsViewManager* aViewManager, nsStyleSet* aStyleSet);
   virtual void Destroy() override;
-  virtual void MakeZombie() override;
 
   virtual void UpdatePreferenceStyles() override;
 

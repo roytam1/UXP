@@ -29,7 +29,6 @@ interfaces = [
     'permission',
     'svg',
     'smil',
-    'apps',
     'push',
 ]
 

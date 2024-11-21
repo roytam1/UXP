@@ -38,8 +38,6 @@ public:
   NS_DECL_NSILOADCONTEXT
   NS_DECL_NSIINTERFACEREQUESTOR
 
-  // appId/inIsolatedMozBrowser arguments override those in SerializedLoadContext
-  // provided by child process.
   LoadContext(const IPC::SerializedLoadContext& aToCopy,
               dom::Element* aTopFrameElement,
               DocShellOriginAttributes& aAttrs)
@@ -54,8 +52,6 @@ public:
   {
   }
 
-  // appId/inIsolatedMozBrowser arguments override those in SerializedLoadContext
-  // provided by child process.
   LoadContext(const IPC::SerializedLoadContext& aToCopy,
               uint64_t aNestedFrameId,
               DocShellOriginAttributes& aAttrs)

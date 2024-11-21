@@ -261,11 +261,6 @@ public:
    */
   nsresult SetSourceSizeHint(uint32_t aSizeHint);
 
-  /* Provide a hint for the requested dimension of the resulting image. */
-  void SetRequestedSampleSize(int requestedSampleSize) {
-    mRequestedSampleSize = requestedSampleSize;
-  }
-
  nsCString GetURIString() {
     nsCString spec;
     if (GetURI()) {
@@ -406,9 +401,6 @@ private: // data
   // How many times we've decoded this image.
   // This is currently only used for statistics
   int32_t                        mDecodeCount;
-
-  // A hint for image decoder that directly scale the image to smaller buffer
-  int                        mRequestedSampleSize;
 
   // A weak pointer to our ImageContainer, which stays alive only as long as
   // the layer system needs it.

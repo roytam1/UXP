@@ -81,16 +81,13 @@ protected:
 struct OriginParams
 {
   OriginParams(PersistenceType aPersistenceType,
-               const nsACString& aOrigin,
-               bool aIsApp)
+               const nsACString& aOrigin)
   : mOrigin(aOrigin)
   , mPersistenceType(aPersistenceType)
-  , mIsApp(aIsApp)
   { }
 
   nsCString mOrigin;
   PersistenceType mPersistenceType;
-  bool mIsApp;
 };
 
 class QuotaManager final
@@ -152,7 +149,6 @@ public:
   InitQuotaForOrigin(PersistenceType aPersistenceType,
                      const nsACString& aGroup,
                      const nsACString& aOrigin,
-                     bool aIsApp,
                      uint64_t aUsageBytes,
                      int64_t aAccessTime);
 
@@ -209,8 +205,7 @@ public:
                         int64_t* aTimestamp,
                         nsACString& aSuffix,
                         nsACString& aGroup,
-                        nsACString& aOrigin,
-                        bool* aIsApp);
+                        nsACString& aOrigin);
 
   nsresult
   GetDirectoryMetadata2WithRestore(nsIFile* aDirectory,
@@ -218,8 +213,7 @@ public:
                                    int64_t* aTimestamp,
                                    nsACString& aSuffix,
                                    nsACString& aGroup,
-                                   nsACString& aOrigin,
-                                   bool* aIsApp);
+                                   nsACString& aOrigin);
 
   nsresult
   GetDirectoryMetadata2(nsIFile* aDirectory, int64_t* aTimestamp);
@@ -248,7 +242,6 @@ public:
   OpenDirectory(PersistenceType aPersistenceType,
                 const nsACString& aGroup,
                 const nsACString& aOrigin,
-                bool aIsApp,
                 Client::Type aClientType,
                 bool aExclusive,
                 OpenDirectoryListener* aOpenListener);
@@ -274,13 +267,11 @@ public:
                             const nsACString& aSuffix,
                             const nsACString& aGroup,
                             const nsACString& aOrigin,
-                            bool aIsApp,
                             nsIFile** aDirectory);
 
   void
   OriginClearCompleted(PersistenceType aPersistenceType,
-                       const nsACString& aOrigin,
-                       bool aIsApp);
+                       const nsACString& aOrigin);
 
   void
   ResetOrClearCompleted();
@@ -366,34 +357,21 @@ public:
   GetInfoFromPrincipal(nsIPrincipal* aPrincipal,
                        nsACString* aSuffix,
                        nsACString* aGroup,
-                       nsACString* aOrigin,
-                       bool* aIsApp);
+                       nsACString* aOrigin);
 
   static nsresult
   GetInfoFromWindow(nsPIDOMWindowOuter* aWindow,
                     nsACString* aSuffix,
                     nsACString* aGroup,
-                    nsACString* aOrigin,
-                    bool* aIsApp);
+                    nsACString* aOrigin);
 
   static void
   GetInfoForChrome(nsACString* aSuffix,
                    nsACString* aGroup,
-                   nsACString* aOrigin,
-                   bool* aIsApp);
+                   nsACString* aOrigin);
 
   static bool
   IsOriginInternal(const nsACString& aOrigin);
-
-  static bool
-  IsFirstPromptRequired(PersistenceType aPersistenceType,
-                        const nsACString& aOrigin,
-                        bool aIsApp);
-
-  static bool
-  IsQuotaEnforced(PersistenceType aPersistenceType,
-                  const nsACString& aOrigin,
-                  bool aIsApp);
 
   static void
   ChromeOrigin(nsACString& aOrigin);
@@ -413,7 +391,6 @@ private:
   CreateDirectoryLock(Nullable<PersistenceType> aPersistenceType,
                       const nsACString& aGroup,
                       const OriginScope& aOriginScope,
-                      Nullable<bool> aIsApp,
                       Nullable<Client::Type> aClientType,
                       bool aExclusive,
                       bool aInternal,
@@ -422,8 +399,7 @@ private:
   already_AddRefed<DirectoryLockImpl>
   CreateDirectoryLockForEviction(PersistenceType aPersistenceType,
                                  const nsACString& aGroup,
-                                 const nsACString& aOrigin,
-                                 bool aIsApp);
+                                 const nsACString& aOrigin);
 
   void
   RegisterDirectoryLock(DirectoryLockImpl* aLock);
@@ -468,7 +444,6 @@ private:
   InitializeOrigin(PersistenceType aPersistenceType,
                    const nsACString& aGroup,
                    const nsACString& aOrigin,
-                   bool aIsApp,
                    int64_t aAccessTime,
                    nsIFile* aDirectory);
 

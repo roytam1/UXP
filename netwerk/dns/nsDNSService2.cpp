@@ -1052,6 +1052,12 @@ nsDNSService::GetDNSCacheEntries(nsTArray<mozilla::net::DNSCacheEntries> *args)
     return NS_OK;
 }
 
+NS_IMETHODIMP
+nsDNSService::ClearCache() {
+  mResolver->FlushCache();
+  return NS_OK;
+}
+
 size_t
 nsDNSService::SizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf) const
 {

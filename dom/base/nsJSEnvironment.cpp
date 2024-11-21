@@ -2265,7 +2265,6 @@ AsmJSCacheOpenEntryForRead(JS::Handle<JSObject*> aGlobal,
 
 static JS::AsmJSCacheResult
 AsmJSCacheOpenEntryForWrite(JS::Handle<JSObject*> aGlobal,
-                            bool aInstalled,
                             const char16_t* aBegin,
                             const char16_t* aEnd,
                             size_t aSize,
@@ -2274,8 +2273,7 @@ AsmJSCacheOpenEntryForWrite(JS::Handle<JSObject*> aGlobal,
 {
   nsIPrincipal* principal =
     nsJSPrincipals::get(JS_GetCompartmentPrincipals(js::GetObjectCompartment(aGlobal)));
-  return asmjscache::OpenEntryForWrite(principal, aInstalled, aBegin, aEnd,
-                                       aSize, aMemory, aHandle);
+  return asmjscache::OpenEntryForWrite(principal, aBegin, aEnd, aSize, aMemory, aHandle);
 }
 
 class AsyncTaskRunnable final : public Runnable

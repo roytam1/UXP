@@ -3821,7 +3821,6 @@ class JS_FRIEND_API(TransitiveCompileOptions)
         asmJSOption(AsmJSOption::Disabled),
         throwOnAsmJSValidationFailureOption(false),
         forceAsync(false),
-        installedFile(false),
         sourceIsLazy(false),
         introductionType(nullptr),
         introductionLineno(0),
@@ -3856,7 +3855,6 @@ class JS_FRIEND_API(TransitiveCompileOptions)
     AsmJSOption asmJSOption;
     bool throwOnAsmJSValidationFailureOption;
     bool forceAsync;
-    bool installedFile;  // 'true' iff pre-compiling js file in packaged app
     bool sourceIsLazy;
 
     // |introductionType| is a statically allocated C string:
@@ -6300,17 +6298,14 @@ enum AsmJSCacheResult
  * outparams. If the callback returns 'true', the JS engine guarantees a call
  * to CloseAsmJSCacheEntryForWriteOp passing the same base address, size and
  * handle.
- *
- * If 'installed' is true, then the cache entry is associated with a permanently
- * installed JS file (e.g., in a packaged webapp). This information allows the
- * embedding to store the cache entry in a installed location associated with
- * the principal of 'global' where it will not be evicted until the associated
- * installed JS file is removed.
  */
 typedef AsmJSCacheResult
-(* OpenAsmJSCacheEntryForWriteOp)(HandleObject global, bool installed,
-                                  const char16_t* begin, const char16_t* end,
-                                  size_t size, uint8_t** memory, intptr_t* handle);
+(* OpenAsmJSCacheEntryForWriteOp)(HandleObject global,
+                                  const char16_t* begin,
+                                  const char16_t* end,
+                                  size_t size,
+                                  uint8_t** memory,
+                                  intptr_t* handle);
 typedef void
 (* CloseAsmJSCacheEntryForWriteOp)(size_t size, uint8_t* memory, intptr_t handle);
 

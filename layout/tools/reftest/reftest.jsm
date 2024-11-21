@@ -1,4 +1,4 @@
-/* -*- indent-tabs-mode: nil; js-indent-level: 4 -*- /
+/* -*- indent-tabs-mode: nil; js-indent-level: 4 -*- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -291,7 +291,6 @@ this.OnRefTestLoad = function OnRefTestLoad(win)
     if (gBrowserIsIframe) {
       gBrowser = gContainingWindow.document.createElementNS(XHTML_NS, "iframe");
       gBrowser.setAttribute("mozbrowser", "");
-      gBrowser.setAttribute("mozapp", prefs.getCharPref("b2g.system_manifest_url"));
     } else {
       gBrowser = gContainingWindow.document.createElementNS(XUL_NS, "xul:browser");
     }
