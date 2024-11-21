@@ -116,6 +116,11 @@ interface nsIDNSService : nsISupports
     [noscript] void getDNSCacheEntries(in EntriesArray args);
 
     /**
+     * Clears the DNS cache.
+     */
+    void clearCache();
+
+    /**
      * @return the hostname of the operating system.
      */
     readonly attribute AUTF8String myHostName;

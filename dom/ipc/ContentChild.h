@@ -91,8 +91,6 @@ public:
             base::ProcessId aParentPid,
             IPC::Channel* aChannel);
 
-  void InitProcessAttributes();
-
   void InitXPCOM();
 
   void InitGraphicsDeviceData();
@@ -173,7 +171,6 @@ public:
                                             const IPCTabContext& aContext,
                                             const uint32_t& aChromeFlags,
                                             const ContentParentId& aCpID,
-                                            const bool& aIsForApp,
                                             const bool& aIsForBrowser) override;
 
   virtual bool DeallocPBrowserChild(PBrowserChild*) override;
@@ -379,8 +376,6 @@ public:
                            const nsCString& name, const nsCString& UAName,
                            const nsCString& ID, const nsCString& vendor) override;
 
-  virtual bool RecvAppInit() override;
-
   virtual bool
   RecvInitServiceWorkers(const ServiceWorkerConfiguration& aConfig) override;
 
@@ -481,7 +476,6 @@ public:
   uint32_t GetMsaaID() const { return mMsaaID; }
 #endif
 
-  bool IsForApp() const { return mIsForApp; }
   bool IsForBrowser() const { return mIsForBrowser; }
 
   virtual PBlobChild*
@@ -502,7 +496,6 @@ public:
                                        const IPCTabContext& context,
                                        const uint32_t& chromeFlags,
                                        const ContentParentId& aCpID,
-                                       const bool& aIsForApp,
                                        const bool& aIsForBrowser) override;
 
   virtual bool RecvPBrowserConstructor(PBrowserChild* aCctor,
@@ -510,7 +503,6 @@ public:
                                        const IPCTabContext& aContext,
                                        const uint32_t& aChromeFlags,
                                        const ContentParentId& aCpID,
-                                       const bool& aIsForApp,
                                        const bool& aIsForBrowser) override;
 
   FORWARD_SHMEM_ALLOCATOR_TO(PContentChild)
@@ -616,7 +608,6 @@ private:
 
   AppInfo mAppInfo;
 
-  bool mIsForApp;
   bool mIsForBrowser;
   bool mCanOverrideProcessName;
   bool mIsAlive;

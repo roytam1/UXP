@@ -203,6 +203,13 @@ ChildDNSService::GetDNSCacheEntries(nsTArray<mozilla::net::DNSCacheEntries> *arg
 }
 
 NS_IMETHODIMP
+ChildDNSService::ClearCache()
+{
+  // Not available in IPC children.
+  return NS_ERROR_NOT_AVAILABLE;
+}
+
+NS_IMETHODIMP
 ChildDNSService::GetMyHostName(nsACString &result)
 {
   // TODO: get value from parent during PNecko construction?

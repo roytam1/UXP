@@ -112,7 +112,7 @@ var CopyPasteAssistent = {
       let targetDocShell = currentWindow
           .QueryInterface(Ci.nsIInterfaceRequestor)
           .getInterface(Ci.nsIWebNavigation);
-      if(targetDocShell.isMozBrowserOrApp) {
+      if(targetDocShell.isMozBrowser) {
         break;
       }
     }

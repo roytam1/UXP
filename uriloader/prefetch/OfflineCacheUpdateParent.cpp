@@ -257,20 +257,6 @@ OfflineCacheUpdateParent::SetRemoteTabs(bool aUseRemoteTabs)
 }
 
 NS_IMETHODIMP
-OfflineCacheUpdateParent::GetIsInIsolatedMozBrowserElement(bool *aIsInIsolatedMozBrowserElement)
-{
-    NS_ENSURE_TRUE(mLoadingPrincipal, NS_ERROR_UNEXPECTED);
-    return mLoadingPrincipal->GetIsInIsolatedMozBrowserElement(aIsInIsolatedMozBrowserElement);
-}
-
-NS_IMETHODIMP
-OfflineCacheUpdateParent::GetAppId(uint32_t *aAppId)
-{
-    NS_ENSURE_TRUE(mLoadingPrincipal, NS_ERROR_UNEXPECTED);
-    return mLoadingPrincipal->GetAppId(aAppId);
-}
-
-NS_IMETHODIMP
 OfflineCacheUpdateParent::GetOriginAttributes(JS::MutableHandleValue aAttrs)
 {
     NS_ENSURE_TRUE(mLoadingPrincipal, NS_ERROR_UNEXPECTED);

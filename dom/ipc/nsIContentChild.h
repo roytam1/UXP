@@ -68,7 +68,6 @@ public:
                           const IPCTabContext& aContext,
                           const uint32_t& aChromeFlags,
                           const ContentParentId& aCpID,
-                          const bool& aIsForApp,
                           const bool& aIsForBrowser) = 0;
 
   virtual mozilla::ipc::PFileDescriptorSetChild*
@@ -85,7 +84,6 @@ protected:
                                             const IPCTabContext& aContext,
                                             const uint32_t& aChromeFlags,
                                             const ContentParentId& aCpId,
-                                            const bool& aIsForApp,
                                             const bool& aIsForBrowser);
   virtual bool DeallocPBrowserChild(PBrowserChild*);
 

@@ -54,11 +54,6 @@ public:
 
   DecoderType GetType() const override { return DecoderType::JPEG; }
 
-  virtual void SetSampleSize(int aSampleSize) override
-  {
-    mSampleSize = aSampleSize;
-  }
-
   void NotifyDone();
 
 protected:
@@ -115,8 +110,6 @@ public:
   const Decoder::DecodeStyle mDecodeStyle;
 
   uint32_t mCMSMode;
-
-  int mSampleSize;
 };
 
 } // namespace image

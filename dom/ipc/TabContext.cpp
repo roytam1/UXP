@@ -7,7 +7,6 @@
 #include "mozilla/dom/PTabContext.h"
 #include "mozilla/dom/TabParent.h"
 #include "mozilla/dom/TabChild.h"
-#include "nsIAppsService.h"
 #include "nsIScriptSecurityManager.h"
 #include "nsServiceManagerUtils.h"
 
@@ -23,7 +22,7 @@ TabContext::TabContext()
   : mIsPrerendered(false)
   , mInitialized(false)
   , mIsMozBrowserElement(false)
-  , mContainingAppId(NO_APP_ID)
+  , mOriginAttributes()
   , mShowAccelerators(UIStateChangeType_NoChange)
   , mShowFocusRings(UIStateChangeType_NoChange)
 {
@@ -36,117 +35,9 @@ TabContext::IsMozBrowserElement() const
 }
 
 bool
-TabContext::IsIsolatedMozBrowserElement() const
+TabContext::IsMozBrowser() const
 {
-  return mOriginAttributes.mInIsolatedMozBrowser;
-}
-
-bool
-TabContext::IsMozBrowserOrApp() const
-{
-  return HasOwnApp() || IsMozBrowserElement();
-}
-
-uint32_t
-TabContext::OwnAppId() const
-{
-  return mOriginAttributes.mAppId;
-}
-
-already_AddRefed<mozIApplication>
-TabContext::GetOwnApp() const
-{
-  nsCOMPtr<mozIApplication> ownApp = mOwnApp;
-  return ownApp.forget();
-}
-
-bool
-TabContext::HasOwnApp() const
-{
-  nsCOMPtr<mozIApplication> ownApp = GetOwnApp();
-  return !!ownApp;
-}
-
-uint32_t
-TabContext::BrowserOwnerAppId() const
-{
-  if (IsMozBrowserElement()) {
-    return mContainingAppId;
-  }
-  return NO_APP_ID;
-}
-
-already_AddRefed<mozIApplication>
-TabContext::GetBrowserOwnerApp() const
-{
-  nsCOMPtr<mozIApplication> ownerApp;
-  if (IsMozBrowserElement()) {
-    ownerApp = mContainingApp;
-  }
-  return ownerApp.forget();
-}
-
-bool
-TabContext::HasBrowserOwnerApp() const
-{
-  nsCOMPtr<mozIApplication> ownerApp = GetBrowserOwnerApp();
-  return !!ownerApp;
-}
-
-uint32_t
-TabContext::AppOwnerAppId() const
-{
-  if (HasOwnApp()) {
-    return mContainingAppId;
-  }
-  return NO_APP_ID;
-}
-
-already_AddRefed<mozIApplication>
-TabContext::GetAppOwnerApp() const
-{
-  nsCOMPtr<mozIApplication> ownerApp;
-  if (HasOwnApp()) {
-    ownerApp = mContainingApp;
-  }
-  return ownerApp.forget();
-}
-
-bool
-TabContext::HasAppOwnerApp() const
-{
-  nsCOMPtr<mozIApplication> ownerApp = GetAppOwnerApp();
-  return !!ownerApp;
-}
-
-uint32_t
-TabContext::OwnOrContainingAppId() const
-{
-  if (HasOwnApp()) {
-    return mOriginAttributes.mAppId;
-  }
-
-  return mContainingAppId;
-}
-
-already_AddRefed<mozIApplication>
-TabContext::GetOwnOrContainingApp() const
-{
-  nsCOMPtr<mozIApplication> ownOrContainingApp;
-  if (HasOwnApp()) {
-    ownOrContainingApp = mOwnApp;
-  } else {
-    ownOrContainingApp = mContainingApp;
-  }
-
-  return ownOrContainingApp.forget();
-}
-
-bool
-TabContext::HasOwnOrContainingApp() const
-{
-  nsCOMPtr<mozIApplication> ownOrContainingApp = GetOwnOrContainingApp();
-  return !!ownOrContainingApp;
+  return IsMozBrowserElement();
 }
 
 bool
@@ -174,9 +65,7 @@ TabContext::UpdateTabContextAfterSwap(const TabContext& aContext)
 
   // The only permissable change is to `mIsMozBrowserElement`.  All other fields
   // must match for the change to be accepted.
-  if (aContext.OwnAppId() != OwnAppId() ||
-      aContext.mContainingAppId != mContainingAppId ||
-      aContext.mOriginAttributes != mOriginAttributes) {
+  if (aContext.mOriginAttributes != mOriginAttributes) {
     return false;
   }
 
@@ -205,42 +94,19 @@ TabContext::ShowFocusRings() const
 bool
 TabContext::SetTabContext(bool aIsMozBrowserElement,
                           bool aIsPrerendered,
-                          mozIApplication* aOwnApp,
-                          mozIApplication* aAppFrameOwnerApp,
                           UIStateChangeType aShowAccelerators,
                           UIStateChangeType aShowFocusRings,
                           const DocShellOriginAttributes& aOriginAttributes)
 {
   NS_ENSURE_FALSE(mInitialized, false);
 
-  // Get ids for both apps and only write to our member variables after we've
-  // verified that this worked.
-  uint32_t ownAppId = NO_APP_ID;
-  if (aOwnApp) {
-    nsresult rv = aOwnApp->GetLocalId(&ownAppId);
-    NS_ENSURE_SUCCESS(rv, false);
-    NS_ENSURE_TRUE(ownAppId != NO_APP_ID, false);
-  }
-
-  uint32_t containingAppId = NO_APP_ID;
-  if (aAppFrameOwnerApp) {
-    nsresult rv = aAppFrameOwnerApp->GetLocalId(&containingAppId);
-    NS_ENSURE_SUCCESS(rv, false);
-    NS_ENSURE_TRUE(containingAppId != NO_APP_ID, false);
-  }
-
-  // Veryify that app id matches mAppId passed in originAttributes
-  MOZ_RELEASE_ASSERT((aOwnApp && aOriginAttributes.mAppId == ownAppId) ||
-                     (aAppFrameOwnerApp && aOriginAttributes.mAppId == containingAppId) ||
-                     aOriginAttributes.mAppId == NO_APP_ID);
+  // Verify that app id matches mAppId passed in originAttributes
+  MOZ_RELEASE_ASSERT(aOriginAttributes.mAppId == NO_APP_ID);
 
   mInitialized = true;
   mIsMozBrowserElement = aIsMozBrowserElement;
   mIsPrerendered = aIsPrerendered;
   mOriginAttributes = aOriginAttributes;
-  mContainingAppId = containingAppId;
-  mOwnApp = aOwnApp;
-  mContainingApp = aAppFrameOwnerApp;
   mShowAccelerators = aShowAccelerators;
   mShowFocusRings = aShowFocusRings;
   return true;
@@ -250,23 +116,10 @@ IPCTabContext
 TabContext::AsIPCTabContext() const
 {
   return IPCTabContext(FrameIPCTabContext(mOriginAttributes,
-                                          mContainingAppId,
                                           mIsMozBrowserElement,
                                           mIsPrerendered,
                                           mShowAccelerators,
                                           mShowFocusRings));
-}
-
-static already_AddRefed<mozIApplication>
-GetAppForId(uint32_t aAppId)
-{
-  nsCOMPtr<nsIAppsService> appsService = do_GetService(APPS_SERVICE_CONTRACTID);
-  NS_ENSURE_TRUE(appsService, nullptr);
-
-  nsCOMPtr<mozIApplication> app;
-  appsService->GetAppByLocalId(aAppId, getter_AddRefs(app));
-
-  return app.forget();
 }
 
 MaybeInvalidTabContext::MaybeInvalidTabContext(const IPCTabContext& aParams)
@@ -274,7 +127,6 @@ MaybeInvalidTabContext::MaybeInvalidTabContext(const IPCTabContext& aParams)
 {
   bool isMozBrowserElement = false;
   bool isPrerendered = false;
-  uint32_t containingAppId = NO_APP_ID;
   DocShellOriginAttributes originAttributes;
   UIStateChangeType showAccelerators = UIStateChangeType_NoChange;
   UIStateChangeType showFocusRings = UIStateChangeType_NoChange;
@@ -324,11 +176,6 @@ MaybeInvalidTabContext::MaybeInvalidTabContext(const IPCTabContext& aParams)
       // opener app.
       isMozBrowserElement = ipcContext.isMozBrowserElement();
       originAttributes = context->mOriginAttributes;
-      if (isMozBrowserElement) {
-        containingAppId = context->OwnOrContainingAppId();
-      } else {
-        containingAppId = context->mContainingAppId;
-      }
       break;
     }
     case IPCTabContext::TFrameIPCTabContext: {
@@ -337,7 +184,6 @@ MaybeInvalidTabContext::MaybeInvalidTabContext(const IPCTabContext& aParams)
 
       isMozBrowserElement = ipcContext.isMozBrowserElement();
       isPrerendered = ipcContext.isPrerendered();
-      containingAppId = ipcContext.frameOwnerAppId();
       showAccelerators = ipcContext.showAccelerators();
       showFocusRings = ipcContext.showFocusRings();
       originAttributes = ipcContext.originAttributes();
@@ -352,7 +198,6 @@ MaybeInvalidTabContext::MaybeInvalidTabContext(const IPCTabContext& aParams)
         return;
       }
 
-      containingAppId = NO_APP_ID;
       break;
     }
     default: {
@@ -360,28 +205,9 @@ MaybeInvalidTabContext::MaybeInvalidTabContext(const IPCTabContext& aParams)
     }
   }
 
-  nsCOMPtr<mozIApplication> ownApp;
-  if (!isMozBrowserElement) {
-    // mAppId corresponds to OwnOrContainingAppId; if isMozBrowserElement is
-    // false then it's ownApp otherwise it's containingApp
-    ownApp = GetAppForId(originAttributes.mAppId);
-    if ((ownApp == nullptr) != (originAttributes.mAppId == NO_APP_ID)) {
-      mInvalidReason = "Got an ownAppId that didn't correspond to an app.";
-      return;
-    }
-  }
-
-  nsCOMPtr<mozIApplication> containingApp = GetAppForId(containingAppId);
-  if ((containingApp == nullptr) != (containingAppId == NO_APP_ID)) {
-    mInvalidReason = "Got a containingAppId that didn't correspond to an app.";
-    return;
-  }
-
   bool rv;
   rv = mTabContext.SetTabContext(isMozBrowserElement,
                                  isPrerendered,
-                                 ownApp,
-                                 containingApp,
                                  showAccelerators,
                                  showFocusRings,
                                  originAttributes);

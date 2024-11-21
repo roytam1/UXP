@@ -41,3 +41,4 @@
 <!ENTITY aboutNetworking.dnsLookupButton       "Resolve">
 <!ENTITY aboutNetworking.dnsDomain             "Domain">
 <!ENTITY aboutNetworking.dnsLookupTableColumn  "IPs">
+<!ENTITY aboutNetworking.clearDNSCache         "Clear DNS cache">

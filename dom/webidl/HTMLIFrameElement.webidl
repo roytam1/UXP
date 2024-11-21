@@ -63,11 +63,5 @@ partial interface HTMLIFrameElement {
            attribute boolean mozbrowser;
 };
 
-partial interface HTMLIFrameElement {
-  // nsIMozBrowserFrame
-  [ChromeOnly]
-  readonly attribute DOMString appManifestURL;
-};
-
 HTMLIFrameElement implements MozFrameLoaderOwner;
 HTMLIFrameElement implements BrowserElement;

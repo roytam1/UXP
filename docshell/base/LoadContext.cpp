@@ -158,28 +158,6 @@ LoadContext::SetRemoteTabs(bool aUseRemoteTabs)
 }
 
 NS_IMETHODIMP
-LoadContext::GetIsInIsolatedMozBrowserElement(bool* aIsInIsolatedMozBrowserElement)
-{
-  MOZ_ASSERT(mIsNotNull);
-
-  NS_ENSURE_ARG_POINTER(aIsInIsolatedMozBrowserElement);
-
-  *aIsInIsolatedMozBrowserElement = mOriginAttributes.mInIsolatedMozBrowser;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-LoadContext::GetAppId(uint32_t* aAppId)
-{
-  MOZ_ASSERT(mIsNotNull);
-
-  NS_ENSURE_ARG_POINTER(aAppId);
-
-  *aAppId = mOriginAttributes.mAppId;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 LoadContext::GetOriginAttributes(JS::MutableHandleValue aAttrs)
 {
   JSContext* cx = nsContentUtils::GetCurrentJSContext();
