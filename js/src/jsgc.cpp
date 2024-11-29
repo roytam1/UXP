@@ -7138,7 +7138,7 @@ JS_PUBLIC_API(bool)
 js::gc::detail::CellIsMarkedGrayIfKnown(const Cell* cell)
 {
     MOZ_ASSERT(cell);
-    if (!cell->isTenured())
+    if (!cell || !cell->isTenured())
         return false;
 
     // We ignore the gray marking state of cells and return false in two cases:
