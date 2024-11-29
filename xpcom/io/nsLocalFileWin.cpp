@@ -3042,6 +3042,7 @@ nsLocalFile::IsExecutable(bool* aResult)
       "jar",         // java application bundle
       "js",
       "jse",
+      "library-ms",  // Windows library files shell extension
       "lnk",
       "mad",         // Access Module Shortcut
       "maf",         // Access

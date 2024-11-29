@@ -485,6 +485,11 @@ Performance::Measure(JSContext* aCx,
                      const Optional<nsAString>& aEndMark,
                      ErrorResult& aRv)
 {
+  if (!GetParentObject()) {
+    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    return nullptr;
+  }
+
   // Maybe is more readable than using the union type directly.
   Maybe<const PerformanceMeasureOptions&> options;
   if (aStartOrMeasureOptions.IsPerformanceMeasureOptions()) {
