@@ -21,6 +21,7 @@ pref("@GUAO_PREF@.addons.mozilla.org","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@)
 // Required for domains that are unresponsive to requests from users (or likely to be)
 pref("@GUAO_PREF@.aol.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
 pref("@GUAO_PREF@.bing.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
+pref("@GUAO_PREF@.canva.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
 pref("@GUAO_PREF@.dropbox.com","Mozilla/5.0 (%OS_SLICE% rv:68.9) @GK_SLICE@ Firefox/68.9 (Pale Moon)");
 pref("@GUAO_PREF@.instagram.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ Firefox/68.0");
 pref("@GUAO_PREF@.kroger.com","Mozilla/5.0 (%OS_SLICE% rv:86.0) @GK_SLICE@ Firefox/86.0 (Pale Moon)");
@@ -47,7 +48,6 @@ pref("@GUAO_PREF@.deviantart.com","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@) @GR
 pref("@GUAO_PREF@.deviantart.net","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
 pref("@GUAO_PREF@.altibox.dk","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
 pref("@GUAO_PREF@.altibox.no","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
-pref("@GUAO_PREF@.firefox.com","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
 pref("@GUAO_PREF@.mozilla.org","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
 pref("@GUAO_PREF@.mozilla.com","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
 pref("@GUAO_PREF@.github.com","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
@@ -60,7 +60,6 @@ pref("@GUAO_PREF@.citi.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ Firefox
 pref("@GUAO_PREF@.chase.com","Mozilla/5.0 (%OS_SLICE% rv:102.0) @GK_SLICE@ Firefox/102.0");
 pref("@GUAO_PREF@.facebook.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ Firefox/68.0 @PM_SLICE@");
 pref("@GUAO_PREF@.mewe.com", "Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
-pref("@GUAO_PREF@.spotify.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
 
 // UA-sniffing domains that are "app/vendor-specific" and do not like Pale Moon
 pref("@GUAO_PREF@.web.whatsapp.com","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36");
