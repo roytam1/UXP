@@ -556,35 +556,6 @@ public:
 
 NS_IMPL_ISUPPORTS(CloseCookieDBListener, mozIStorageCompletionCallback)
 
-namespace {
-
-class AppClearDataObserver final : public nsIObserver {
-
-  ~AppClearDataObserver() = default;
-
-public:
-  NS_DECL_ISUPPORTS
-
-  // nsIObserver implementation.
-  NS_IMETHOD
-  Observe(nsISupports *aSubject, const char *aTopic, const char16_t *aData) override
-  {
-    MOZ_ASSERT(!nsCRT::strcmp(aTopic, TOPIC_CLEAR_ORIGIN_DATA));
-
-    MOZ_ASSERT(XRE_IsParentProcess());
-
-    nsCOMPtr<nsICookieManager2> cookieManager
-      = do_GetService(NS_COOKIEMANAGER_CONTRACTID);
-    MOZ_ASSERT(cookieManager);
-
-    return cookieManager->RemoveCookiesWithOriginAttributes(nsDependentString(aData), EmptyCString());
-  }
-};
-
-NS_IMPL_ISUPPORTS(AppClearDataObserver, nsIObserver)
-
-} // namespace
-
 size_t
 nsCookieKey::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const
 {

@@ -110,6 +110,7 @@ nsCocoaWindow::nsCocoaWindow()
 : mParent(nullptr)
 , mAncestorLink(nullptr)
 , mWindow(nil)
+, mClosedRetainedWindow(nil)
 , mDelegate(nil)
 , mSheetWindowParent(nil)
 , mPopupContentView(nil)
@@ -148,6 +149,12 @@ void nsCocoaWindow::DestroyNativeWindow()
   // We want to unhook the delegate here because we don't want events
   // sent to it after this object has been destroyed.
   [mWindow setDelegate:nil];
+  // Closing the window will also release it. Our second reference will
+  // keep it alive through our destructor. Release any reference we might
+  // have from an earlier call to DestroyNativeWindow, then create a new
+  // one.
+  [mClosedRetainedWindow autorelease];
+  mClosedRetainedWindow = [mWindow retain];
   [mWindow close];
   mWindow = nil;
   [mDelegate autorelease];
@@ -181,6 +188,8 @@ nsCocoaWindow::~nsCocoaWindow()
   if (mWindow && mWindowMadeHere) {
     DestroyNativeWindow();
   }
+
+  [mClosedRetainedWindow release];
 
   NS_IF_RELEASE(mPopupContentView);
 
