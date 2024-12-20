@@ -5681,8 +5681,14 @@ HTMLMediaElement::CopyInnerTo(Element* aDest)
 {
   nsresult rv = nsGenericHTMLElement::CopyInnerTo(aDest);
   NS_ENSURE_SUCCESS(rv, rv);
+
+  // Make sure cloned <audio> and <video> respect their "muted" attribute.
+  HTMLMediaElement* dest = static_cast<HTMLMediaElement*>(aDest);
+  if (HasAttr(kNameSpaceID_None, nsGkAtoms::muted)) {
+    dest->mMuted |= MUTED_BY_CONTENT;
+  }
+
   if (aDest->OwnerDoc()->IsStaticDocument()) {
-    HTMLMediaElement* dest = static_cast<HTMLMediaElement*>(aDest);
     dest->SetMediaInfo(mMediaInfo);
   }
   return rv;

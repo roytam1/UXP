@@ -384,8 +384,13 @@ protected:
   nsIWidget*           mParent;         // if we're a popup, this is our parent [WEAK]
   nsIWidget*           mAncestorLink;   // link to traverse ancestors [WEAK]
   BaseWindow*          mWindow;         // our cocoa window [STRONG]
+  BaseWindow*          mClosedRetainedWindow;  // a second strong reference to our
+  // window upon closing it, held through our destructor. This is useful
+  // to ensure that macOS run loops which reference the window will still
+  // have something to point to even if they don't use proper retain and
+  // release patterns.  
   WindowDelegate*      mDelegate;       // our delegate for processing window msgs [STRONG]
-  RefPtr<nsMenuBarX> mMenuBar;
+  RefPtr<nsMenuBarX>   mMenuBar;
   NSWindow*            mSheetWindowParent; // if this is a sheet, this is the NSWindow it's attached to
   nsChildView*         mPopupContentView; // if this is a popup, this is its content widget
   // if this is a toplevel window, and there is any ongoing fullscreen
