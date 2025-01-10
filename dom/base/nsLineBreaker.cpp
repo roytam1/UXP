@@ -10,6 +10,7 @@
 #include "nsHyphenationManager.h"
 #include "nsHyphenator.h"
 #include "mozilla/gfx/2D.h"
+#include "mozilla/ScopeExit.h"
 
 nsLineBreaker::nsLineBreaker()
   : mCurrentWordLanguage(nullptr),
@@ -57,6 +58,14 @@ SetupCapitalization(const char16_t* aWord, uint32_t aLength,
 nsresult
 nsLineBreaker::FlushCurrentWord()
 {
+  auto cleanup = mozilla::MakeScopeExit([&] {
+    mCurrentWord.Clear();
+    mTextItems.Clear();
+    mCurrentWordContainsComplexChar = false;
+    mCurrentWordContainsMixedLang = false;
+    mCurrentWordLanguage = nullptr;
+  });
+
   uint32_t length = mCurrentWord.Length();
   AutoTArray<uint8_t,4000> breakState;
   if (!breakState.AppendElements(length))
@@ -137,11 +146,6 @@ nsLineBreaker::FlushCurrentWord()
     offset += ti->mLength;
   }
 
-  mCurrentWord.Clear();
-  mTextItems.Clear();
-  mCurrentWordContainsComplexChar = false;
-  mCurrentWordContainsMixedLang = false;
-  mCurrentWordLanguage = nullptr;
   return NS_OK;
 }
 
