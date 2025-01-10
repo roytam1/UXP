@@ -1343,7 +1343,6 @@ StructuredCloneHolder::CustomReadTransferHandler(JSContext* aCx,
       static_cast<OffscreenCanvasCloneData*>(aContent);
     nsCOMPtr<nsIGlobalObject> parent = do_QueryInterface(mParent);
     RefPtr<OffscreenCanvas> canvas = OffscreenCanvas::CreateFromCloneData(parent, data);
-    delete data;
 
     JS::Rooted<JS::Value> value(aCx);
     if (!GetOrCreateDOMReflector(aCx, canvas, &value)) {
@@ -1351,6 +1350,7 @@ StructuredCloneHolder::CustomReadTransferHandler(JSContext* aCx,
       return false;
     }
 
+    delete data;
     aReturnObject.set(&value.toObject());
     return true;
   }
@@ -1363,7 +1363,6 @@ StructuredCloneHolder::CustomReadTransferHandler(JSContext* aCx,
       static_cast<ImageBitmapCloneData*>(aContent);
     nsCOMPtr<nsIGlobalObject> parent = do_QueryInterface(mParent);
     RefPtr<ImageBitmap> bitmap = ImageBitmap::CreateFromCloneData(parent, data);
-    delete data;
 
     JS::Rooted<JS::Value> value(aCx);
     if (!GetOrCreateDOMReflector(aCx, bitmap, &value)) {
@@ -1371,6 +1370,7 @@ StructuredCloneHolder::CustomReadTransferHandler(JSContext* aCx,
       return false;
     }
 
+    delete data;
     aReturnObject.set(&value.toObject());
     return true;
   }

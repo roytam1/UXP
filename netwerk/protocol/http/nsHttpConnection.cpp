@@ -323,7 +323,8 @@ nsHttpConnection::StartSpdy(uint8_t spdyVersion)
     if (!mTLSFilter) {
         mTransaction = mSpdySession;
     } else {
-        mTLSFilter->SetProxiedTransaction(mSpdySession);
+        rv = mTLSFilter->SetProxiedTransaction(mSpdySession);
+        NS_ENSURE_SUCCESS_VOID(rv);
     }
     if (mDontReuse) {
         mSpdySession->DontReuse();
@@ -355,6 +356,7 @@ nsHttpConnection::EnsureNPNComplete(nsresult &aOut0RTTWriteHandshakeValue,
     nsCOMPtr<nsISupports> securityInfo;
     nsCOMPtr<nsISSLSocketControl> ssl;
     nsAutoCString negotiatedNPN;
+    nsAutoCString transactionNPN;
 
     GetSecurityInfo(getter_AddRefs(securityInfo));
     if (!securityInfo) {
@@ -373,6 +375,18 @@ nsHttpConnection::EnsureNPNComplete(nsresult &aOut0RTTWriteHandshakeValue,
     }
 
     rv = ssl->GetNegotiatedNPN(negotiatedNPN);
+
+    // Check if the connection NPN matches negotiated NPN.
+    transactionNPN = mConnInfo->GetNPNToken();
+    LOG(("negotiatedNPN: %s - transactionNPN: %s", negotiatedNPN.get(),
+         transactionNPN.get()));
+    if (!transactionNPN.IsEmpty() && negotiatedNPN != transactionNPN) {
+      LOG(("Resetting connection due to mismatched NPN token"));
+      DontReuse();
+      mTransaction->Close(NS_ERROR_NET_RESET);
+      return true;
+    }
+
     if (!m0RTTChecked && (rv == NS_ERROR_NOT_CONNECTED) &&
         !mConnInfo->UsingProxy()) {
         // There is no ALPN info (yet!). We need to consider doing 0RTT. We

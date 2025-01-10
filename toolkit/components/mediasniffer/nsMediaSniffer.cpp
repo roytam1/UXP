@@ -3,17 +3,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "nsMediaSniffer.h"
-#include "nsIHttpChannel.h"
-#include "nsString.h"
-#include "nsMimeTypes.h"
+#include "ADTSDemuxer.h"
+#include "FlacDemuxer.h"
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/ModuleUtils.h"
 #include "mp3sniff.h"
 #include "nestegg/nestegg.h"
-#include "FlacDemuxer.h"
-
 #include "nsIClassInfoImpl.h"
+#include "nsIHttpChannel.h"
+#include "nsMediaSniffer.h"
+#include "nsMimeTypes.h"
+#include "nsString.h"
+
 #include <algorithm>
 
 // The minimum number of bytes that are needed to attempt to sniff an mp4 file.
@@ -50,8 +51,8 @@ nsMediaSnifferEntry sFtypEntries[] = {
   PATTERN_ENTRY("\xFF\xFF\xFF\xFF", "mmp4", VIDEO_MP4),
 };
 
-static bool MatchesBrands(const uint8_t aData[4], nsACString& aSniffedType)
-{
+static bool
+MatchesBrands(const uint8_t aData[4], nsACString& aSniffedType) {
   for (size_t i = 0; i < mozilla::ArrayLength(sFtypEntries); ++i) {
     const auto& currentEntry = sFtypEntries[i];
     bool matched = true;
@@ -74,8 +75,8 @@ static bool MatchesBrands(const uint8_t aData[4], nsACString& aSniffedType)
 // This function implements sniffing algorithm for MP4 family file types,
 // including MP4 (described at http://mimesniff.spec.whatwg.org/#signature-for-mp4),
 // M4A (Apple iTunes audio), and 3GPP.
-static bool MatchesMP4(const uint8_t* aData, const uint32_t aLength, nsACString& aSniffedType)
-{
+static bool
+MatchesMP4(const uint8_t* aData, const uint32_t aLength, nsACString& aSniffedType) {
   if (aLength <= MP4_MIN_BYTES_COUNT) {
     return false;
   }
@@ -108,29 +109,33 @@ static bool MatchesMP4(const uint8_t* aData, const uint32_t aLength, nsACString&
   return false;
 }
 
-static bool MatchesWebM(const uint8_t* aData, const uint32_t aLength)
-{
+static bool
+MatchesWebM(const uint8_t* aData, const uint32_t aLength) {
   return nestegg_sniff((uint8_t*)aData, aLength) ? true : false;
 }
 
 // This function implements mp3 sniffing based on parsing
 // packet headers and looking for expected boundaries.
-static bool MatchesMP3(const uint8_t* aData, const uint32_t aLength)
-{
+static bool
+MatchesMP3(const uint8_t* aData, const uint32_t aLength) {
   return mp3_sniff(aData, (long)aLength);
 }
 
-static bool MatchesFLAC(const uint8_t* aData, const uint32_t aLength)
-{
+static bool
+MatchesFLAC(const uint8_t* aData, const uint32_t aLength) {
   return mozilla::FlacDemuxer::FlacSniffer(aData, aLength);
+}
+
+static bool MatchesADTS(const uint8_t* aData, const uint32_t aLength)
+{
+  return mozilla::ADTSDemuxer::ADTSSniffer(aData, aLength);
 }
 
 NS_IMETHODIMP
 nsMediaSniffer::GetMIMETypeFromContent(nsIRequest* aRequest,
                                        const uint8_t* aData,
                                        const uint32_t aLength,
-                                       nsACString& aSniffedType)
-{
+                                       nsACString& aSniffedType) {
   nsCOMPtr<nsIChannel> channel = do_QueryInterface(aRequest);
   if (channel) {
     nsLoadFlags loadFlags = 0;
@@ -181,6 +186,13 @@ nsMediaSniffer::GetMIMETypeFromContent(nsIRequest* aRequest,
   // Bug 950023: 512 bytes are often not enough to sniff for mp3.
   if (MatchesMP3(aData, std::min(aLength, MAX_BYTES_SNIFFED_MP3))) {
     aSniffedType.AssignLiteral(AUDIO_MP3);
+    return NS_OK;
+  }
+
+  // Note: Sniff for ADTS content before flac.
+  // The flac decoder can easily produce false negatives.
+  if (MatchesADTS(aData, clampedLength)) {
+    aSniffedType.AssignLiteral(AUDIO_AAC);
     return NS_OK;
   }
 
