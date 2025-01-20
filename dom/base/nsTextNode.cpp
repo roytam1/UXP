@@ -97,8 +97,13 @@ nsTextNode::~nsTextNode()
 {
 }
 
-NS_IMPL_ISUPPORTS_INHERITED(nsTextNode, nsGenericDOMDataNode, nsIDOMNode,
-                            nsIDOMText, nsIDOMCharacterData)
+// Using the CC variant of this, even though this class does not define
+// a new CC participant, to make QIing to the CC interfaces faster.
+NS_IMPL_ISUPPORTS_CYCLE_COLLECTION_INHERITED(nsTextNode,
+                                             nsGenericDOMDataNode,
+                                             nsIDOMNode,
+                                             nsIDOMText,
+                                             nsIDOMCharacterData)
 
 JSObject*
 nsTextNode::WrapNode(JSContext *aCx, JS::Handle<JSObject*> aGivenProto)

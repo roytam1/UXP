@@ -1246,7 +1246,7 @@ CSSStyleSheet::TraverseInner(nsCycleCollectionTraversalCallback &cb)
 }
 
 // QueryInterface implementation for CSSStyleSheet
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(CSSStyleSheet)
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(CSSStyleSheet)
   NS_INTERFACE_MAP_ENTRY(nsICSSLoaderObserver)
   NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, StyleSheet)
   if (aIID.Equals(NS_GET_IID(CSSStyleSheet)))

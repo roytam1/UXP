@@ -135,7 +135,7 @@ nsXMLFragmentContentSink::~nsXMLFragmentContentSink()
 {
 }
 
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(nsXMLFragmentContentSink)
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(nsXMLFragmentContentSink)
   NS_INTERFACE_MAP_ENTRY(nsIFragmentContentSink)
 NS_INTERFACE_MAP_END_INHERITING(nsXMLContentSink)
 
