@@ -23,7 +23,7 @@ namespace dom {
 
 NS_IMPL_CYCLE_COLLECTION_INHERITED(AudioBufferSourceNode, AudioNode, mBuffer, mPlaybackRate, mDetune)
 
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(AudioBufferSourceNode)
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(AudioBufferSourceNode)
 NS_INTERFACE_MAP_END_INHERITING(AudioNode)
 
 NS_IMPL_ADDREF_INHERITED(AudioBufferSourceNode, AudioNode)

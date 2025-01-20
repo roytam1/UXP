@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "AbortSignal.h"
-#include "AbortController.h"
+
 #include "mozilla/dom/Event.h"
 #include "mozilla/dom/AbortSignalBinding.h"
 
@@ -15,24 +15,21 @@ NS_IMPL_CYCLE_COLLECTION_CLASS(AbortSignal)
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(AbortSignal,
                                                   DOMEventTargetHelper)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mController)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(AbortSignal,
                                                 DOMEventTargetHelper)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mController)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(AbortSignal)
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(AbortSignal)
 NS_INTERFACE_MAP_END_INHERITING(DOMEventTargetHelper)
 
 NS_IMPL_ADDREF_INHERITED(AbortSignal, DOMEventTargetHelper)
 NS_IMPL_RELEASE_INHERITED(AbortSignal, DOMEventTargetHelper)
 
-AbortSignal::AbortSignal(AbortController* aController,
+AbortSignal::AbortSignal(nsIGlobalObject* aGlobalObject,
                          bool aAborted)
-  : DOMEventTargetHelper(aController->GetParentObject())
-  , mController(aController)
+  : DOMEventTargetHelper(aGlobalObject)
   , mAborted(aAborted)
 {}
 
@@ -44,6 +41,21 @@ JSObject*
 AbortSignal::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
   return AbortSignalBinding::Wrap(aCx, this, aGivenProto);
+}
+
+already_AddRefed<AbortSignal> AbortSignal::Abort(GlobalObject& aGlobal) {
+  nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(aGlobal.GetAsSupports());
+  RefPtr<AbortSignal> abortSignal = new AbortSignal(global, true);
+  return abortSignal.forget();
+}
+
+already_AddRefed<AbortSignal> AbortSignal::Timeout(GlobalObject& aGlobal, uint64_t aMilliseconds) {
+  nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(aGlobal.GetAsSupports());
+  
+  // Stub implementation, just return an AbortSignal object
+  RefPtr<AbortSignal> abortSignal = new AbortSignal(global, false);
+  
+  return abortSignal.forget();
 }
 
 bool

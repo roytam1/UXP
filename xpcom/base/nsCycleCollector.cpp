@@ -961,27 +961,6 @@ CanonicalizeXPCOMParticipant(nsISupports* aIn)
   return out;
 }
 
-static inline void
-ToParticipant(nsISupports* aPtr, nsXPCOMCycleCollectionParticipant** aCp);
-
-static void
-CanonicalizeParticipant(void** aParti, nsCycleCollectionParticipant** aCp)
-{
-  // If the participant is null, this is an nsISupports participant,
-  // so we must QI to get the real participant.
-
-  if (!*aCp) {
-    nsISupports* nsparti = static_cast<nsISupports*>(*aParti);
-    nsparti = CanonicalizeXPCOMParticipant(nsparti);
-    NS_ASSERTION(nsparti,
-                 "Don't add objects that don't participate in collection!");
-    nsXPCOMCycleCollectionParticipant* xcp;
-    ToParticipant(nsparti, &xcp);
-    *aParti = nsparti;
-    *aCp = xcp;
-  }
-}
-
 struct nsPurpleBufferEntry
 {
   nsPurpleBufferEntry(void* aObject, nsCycleCollectingAutoRefCnt* aRefCnt,
@@ -1412,6 +1391,21 @@ ToParticipant(nsISupports* aPtr, nsXPCOMCycleCollectionParticipant** aCp)
   // in question.
   *aCp = nullptr;
   CallQueryInterface(aPtr, aCp);
+}
+
+static void
+ToParticipant(void* aParti, nsCycleCollectionParticipant** aCp)
+{
+  // If the participant is null, this is an nsISupports participant,
+  // so we must QI to get the real participant.
+
+  if (!*aCp) {
+    nsISupports* nsparti = static_cast<nsISupports*>(aParti);
+    MOZ_ASSERT(CanonicalizeXPCOMParticipant(nsparti) == nsparti);
+    nsXPCOMCycleCollectionParticipant* xcp;
+    ToParticipant(nsparti, &xcp);
+    *aCp = xcp;
+  }
 }
 
 template<class Visitor>
@@ -2094,7 +2088,7 @@ private:
 
 public:
   // nsCycleCollectionNoteRootCallback methods.
-  NS_IMETHOD_(void) NoteXPCOMRoot(nsISupports* aRoot);
+  NS_IMETHOD_(void) NoteXPCOMRoot(nsISupports* aRoot, nsCycleCollectionParticipant* aParticipant);
   NS_IMETHOD_(void) NoteJSRoot(JSObject* aRoot);
   NS_IMETHOD_(void) NoteNativeRoot(void* aRoot,
                                    nsCycleCollectionParticipant* aParticipant);
@@ -2220,7 +2214,7 @@ CCGraphBuilder::AddNode(void* aPtr, nsCycleCollectionParticipant* aParticipant)
 bool
 CCGraphBuilder::AddPurpleRoot(void* aRoot, nsCycleCollectionParticipant* aParti)
 {
-  CanonicalizeParticipant(&aRoot, &aParti);
+  ToParticipant(aRoot, &aParti);
 
   if (WantAllTraces() || !aParti->CanSkipInCC(aRoot)) {
     PtrInfo* pinfo = AddNode(aRoot, aParti);
@@ -2287,16 +2281,17 @@ CCGraphBuilder::BuildGraph(SliceBudget& aBudget)
 }
 
 NS_IMETHODIMP_(void)
-CCGraphBuilder::NoteXPCOMRoot(nsISupports* aRoot)
+CCGraphBuilder::NoteXPCOMRoot(nsISupports* aRoot, nsCycleCollectionParticipant* aParticipant)
 {
-  aRoot = CanonicalizeXPCOMParticipant(aRoot);
-  NS_ASSERTION(aRoot,
-               "Don't add objects that don't participate in collection!");
+  MOZ_ASSERT(aRoot == CanonicalizeXPCOMParticipant(aRoot));
 
+#ifdef DEBUG
   nsXPCOMCycleCollectionParticipant* cp;
   ToParticipant(aRoot, &cp);
+  MOZ_ASSERT(aParticipant == cp);
+#endif
 
-  NoteRoot(aRoot, cp);
+  NoteRoot(aRoot, aParticipant);
 }
 
 NS_IMETHODIMP_(void)
@@ -2658,7 +2653,7 @@ public:
     if (!aEntry->mRefCnt->get()) {
       void* o = aEntry->mObject;
       nsCycleCollectionParticipant* cp = aEntry->mParticipant;
-      CanonicalizeParticipant(&o, &cp);
+      ToParticipant(o, &cp);
       SnowWhiteObject swo = { o, cp, aEntry->mRefCnt };
       mObjects.InfallibleAppend(swo);
       aBuffer.Remove(aEntry);
@@ -2774,7 +2769,7 @@ public:
     }
     void* o = aEntry->mObject;
     nsCycleCollectionParticipant* cp = aEntry->mParticipant;
-    CanonicalizeParticipant(&o, &cp);
+    ToParticipant(o, &cp);
     if (aEntry->mRefCnt->IsPurple() && !cp->CanSkip(o, false) &&
         (!mRemoveChildlessNodes || MayHaveChild(o, cp))) {
       return;
@@ -2981,10 +2976,8 @@ public:
                "Snow-white objects shouldn't be in the purple buffer.");
 
     void* obj = aEntry->mObject;
-    if (!aEntry->mParticipant) {
-      obj = CanonicalizeXPCOMParticipant(static_cast<nsISupports*>(obj));
-      MOZ_ASSERT(obj, "Don't add objects that don't participate in collection!");
-    }
+    MOZ_ASSERT(aEntry->mParticipant || CanonicalizeXPCOMParticipant(static_cast<nsISupports*>(obj)) == obj,
+               "Suspect nsISupports pointer must be canonical");
 
     PtrInfo* pi = mGraph.FindNode(obj);
     if (!pi) {
@@ -3454,6 +3447,9 @@ nsCycleCollector::Suspect(void* aPtr, nsCycleCollectionParticipant* aParti,
 
   MOZ_ASSERT(HasParticipant(aPtr, aParti),
              "Suspected nsISupports pointer must QI to nsXPCOMCycleCollectionParticipant");
+
+  MOZ_ASSERT(aParti || CanonicalizeXPCOMParticipant(static_cast<nsISupports*>(aPtr)) == aPtr,
+             "Suspect nsISupports pointer must be canonical");
 
   mPurpleBuf.Put(aPtr, aParti, aRefCnt);
 }
@@ -3953,7 +3949,7 @@ SuspectAfterShutdown(void* aPtr, nsCycleCollectionParticipant* aCp,
   if (aRefCnt->get() == 0) {
     if (!aShouldDelete) {
       // The CC is shut down, so we can't be in the middle of an ICC.
-      CanonicalizeParticipant(&aPtr, &aCp);
+      ToParticipant(aPtr, &aCp);
       aRefCnt->stabilizeForDeletion();
       aCp->DeleteCycleCollectable(aPtr);
     } else {

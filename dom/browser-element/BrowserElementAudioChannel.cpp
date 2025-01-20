@@ -27,7 +27,7 @@ namespace dom {
 NS_IMPL_ADDREF_INHERITED(BrowserElementAudioChannel, DOMEventTargetHelper)
 NS_IMPL_RELEASE_INHERITED(BrowserElementAudioChannel, DOMEventTargetHelper)
 
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(BrowserElementAudioChannel)
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(BrowserElementAudioChannel)
   NS_INTERFACE_MAP_ENTRY(nsISupportsWeakReference)
   NS_INTERFACE_MAP_ENTRY(nsIObserver)
 NS_INTERFACE_MAP_END_INHERITING(DOMEventTargetHelper)

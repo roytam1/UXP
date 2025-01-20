@@ -11,7 +11,6 @@
 namespace mozilla {
 namespace dom {
 
-class AbortController;
 class AbortSignal;
 
 class AbortSignal final : public DOMEventTargetHelper
@@ -38,7 +37,7 @@ public:
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(AbortSignal, DOMEventTargetHelper)
 
-  AbortSignal(AbortController* aController, bool aAborted);
+  AbortSignal(nsIGlobalObject* aGlobalObject, bool aAborted);
   explicit AbortSignal(bool aAborted);
 
   JSObject*
@@ -47,10 +46,14 @@ public:
   bool
   Aborted() const;
 
-  void
-  Abort();
+  void Abort();
+  void Timeout();
 
   IMPL_EVENT_HANDLER(abort);
+  IMPL_EVENT_HANDLER(timeout);
+
+  static already_AddRefed<AbortSignal> Abort(GlobalObject& aGlobal);
+  static already_AddRefed<AbortSignal> Timeout(GlobalObject& aGlobal, uint64_t aMilliseconds);
 
   void
   AddFollower(Follower* aFollower);
@@ -60,8 +63,6 @@ public:
 
 private:
   ~AbortSignal() = default;
-
-  RefPtr<AbortController> mController;
 
   // Raw pointers. Follower unregisters itself in the DTOR.
   nsTArray<Follower*> mFollowers;

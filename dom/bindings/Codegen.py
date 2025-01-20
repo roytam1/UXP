@@ -3708,17 +3708,6 @@ class CGWrapWithCacheMethod(CGAbstractMethod):
         self.properties = properties
 
     def definition_body(self):
-        if self.descriptor.proxy:
-            preserveWrapper = dedent(
-                """
-                // For DOM proxies, the only reliable way to preserve the wrapper
-                // is to force creation of the expando object.
-                JS::Rooted<JSObject*> unused(aCx,
-                  DOMProxyHandler::EnsureExpandoObject(aCx, aReflector));
-                """)
-        else:
-            preserveWrapper = "PreserveWrapper(aObject);\n"
-
         failureCode = dedent(
             """
             aCache->ReleaseWrapper(aObject);
@@ -3773,7 +3762,7 @@ class CGWrapWithCacheMethod(CGAbstractMethod):
             // somewhat common) to have a non-null aGivenProto which is the
             // same as canonicalProto.
             if (proto != canonicalProto) {
-              $*{preserveWrapper}
+              PreserveWrapper(aObject);
             }
 
             return true;
@@ -3785,8 +3774,7 @@ class CGWrapWithCacheMethod(CGAbstractMethod):
                                                             failureCode),
             slots=InitMemberSlots(self.descriptor, failureCode),
             setImmutablePrototype=SetImmutablePrototype(self.descriptor,
-                                                        failureCode),
-            preserveWrapper=preserveWrapper)
+                                                        failureCode))
 
 
 class CGWrapMethod(CGAbstractMethod):
@@ -15115,7 +15103,7 @@ class CGJSImplClass(CGBindingImplClass):
                 NS_IMPL_CYCLE_COLLECTION_INHERITED(${ifaceName}, ${parentClass}, mImpl, mParent)
                 NS_IMPL_ADDREF_INHERITED(${ifaceName}, ${parentClass})
                 NS_IMPL_RELEASE_INHERITED(${ifaceName}, ${parentClass})
-                NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(${ifaceName})
+                NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(${ifaceName})
                 NS_INTERFACE_MAP_END_INHERITING(${parentClass})
                 """,
                 ifaceName=self.descriptor.name,
@@ -17404,7 +17392,7 @@ class CGEventClass(CGBindingImplClass):
             $*{unlink}
             NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
-            NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(${nativeType})
+            NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(${nativeType})
             NS_INTERFACE_MAP_END_INHERITING(${parentType})
 
             ${nativeType}::${nativeType}(mozilla::dom::EventTarget* aOwner)
