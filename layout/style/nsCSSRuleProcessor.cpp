@@ -2772,8 +2772,9 @@ static bool SelectorListMatches(Element* aElement,
       nsCSSSelector* next = selector->mNext;
       SelectorMatchesTreeFlags selectorTreeFlags = SelectorMatchesTreeFlags(0);
       // Try to look for the closest ancestor link element if we're processing
-      // the selector list argument of a pseudo-class.
+      // the selector list argument of a pseudo-class, but only if for a new style context (see SelectorMatches).
       if (!aNodeMatchContext.mIsRelevantLink &&
+          aTreeMatchContext.mForStyling &&
           (aSelectorFlags & SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT)) {
         selectorTreeFlags = eLookForRelevantLink;
       }

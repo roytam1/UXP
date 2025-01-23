@@ -242,9 +242,9 @@ WorkerRunnable::Run()
     // underlying WorkerThreadPrimaryRunnable active, which means we should
     // find a CycleCollectedJSContext.
     if (!CycleCollectedJSContext::Get()) {
-      MOZ_DIAGNOSTIC_ASSERT(false,
-                            "A WorkerRunnable was executed after "
-                            "WorkerThreadPrimaryRunnable ended.");
+      NS_ASSERTION(false,
+                   "A WorkerRunnable was executed after "
+                   "WorkerThreadPrimaryRunnable ended.");
 
       return NS_OK;
     }
