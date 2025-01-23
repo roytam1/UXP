@@ -143,14 +143,24 @@ struct ReduceNumberCalcOps : public mozilla::css::BasicFloatCalcOps,
 {
   result_type ComputeLeafValue(const nsCSSValue& aValue)
   {
-    // FIXME: Restore this assertion once ParseColor no longer uses this class.
-    //MOZ_ASSERT(aValue.GetUnit() == eCSSUnit_Number, "unexpected unit");
+    MOZ_ASSERT(aValue.GetUnit() == eCSSUnit_Number, "unexpected unit");
     return aValue.GetFloatValue();
   }
 
   float ComputeNumber(const nsCSSValue& aValue)
   {
     return mozilla::css::ComputeCalc(aValue, *this);
+  }
+};
+
+// Same as above, but reduces leaves as <percentage>. You normally don't want to use this.
+// Only useful in parsing percentage saturation and lightness values by ParseColorComponent.
+struct ReducePercentageCalcOps : ReduceNumberCalcOps
+{
+  result_type ComputeLeafValue(const nsCSSValue& aValue)
+  {
+    MOZ_ASSERT(aValue.GetUnit() == eCSSUnit_Percent, "unexpected unit");
+    return aValue.GetPercentValue();
   }
 };
 
@@ -7324,7 +7334,7 @@ CSSParserImpl::ParseColorComponent(float& aComponent, Maybe<char> aSeparator)
     if (!ParseCalc(aValue, VARIANT_LPN | VARIANT_CALC)) {
       return false;
     }
-    ReduceNumberCalcOps ops;
+    ReducePercentageCalcOps ops;
     value = mozilla::css::ComputeCalc(aValue, ops);
   } else {
     REPORT_UNEXPECTED_TOKEN(PEExpectedPercent);
