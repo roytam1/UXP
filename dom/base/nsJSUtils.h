@@ -163,7 +163,10 @@ public:
     // thread.
     nsresult JoinDecode(void** aOffThreadToken);
 
-    // Get a successfully compiled script.
+    // Get the compiled script if present, or nullptr.
+    //
+    // Compilation may succeed without producing a script when scripting is disabled for the global. Causes for this can
+    // be the global pref or dynamic change when script execution in a global is terminated due to max_script_run_time.
     JSScript* GetScript();
 
     // Execute the compiled script and ignore the return value.

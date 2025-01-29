@@ -315,8 +315,11 @@ nsJSUtils::ExecutionContext::JoinDecode(void **aOffThreadToken)
 }
 
 JSScript* nsJSUtils::ExecutionContext::GetScript() {
+  if (mSkip) {
+    return nullptr;
+  }
+
 #ifdef DEBUG
-  MOZ_ASSERT(!mSkip);
   MOZ_ASSERT(mScript);
   mScriptUsed = true;
 #endif
