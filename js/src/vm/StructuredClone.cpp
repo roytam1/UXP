@@ -1079,6 +1079,8 @@ JSStructuredCloneWriter::writeString(uint32_t tag, JSString* str)
 bool
 JSStructuredCloneWriter::writeBigInt(uint32_t tag, BigInt* bi)
 {
+    if (!bi)
+        return false;
     bool signBit = bi->isNegative();
     size_t length = bi->digitLength();
     // The length must fit in 31 bits to leave room for a sign bit.
