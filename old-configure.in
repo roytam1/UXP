@@ -221,6 +221,9 @@ case "$target" in
             # 'noexcept' used with no exception handling mode specified;
             # termination on exception is not guaranteed. Specify /EHsc
             CXXFLAGS="$CXXFLAGS -wd4577"
+            
+            # Silence unhelpful -Qspectre warnings
+            CXXFLAGS="$CXXFLAGS -wd5045"
 
             if test -n "$WIN_UCRT_REDIST_DIR"; then
               if test ! -d "$WIN_UCRT_REDIST_DIR"; then

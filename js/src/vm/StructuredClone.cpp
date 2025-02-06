@@ -1059,6 +1059,11 @@ JSStructuredCloneWriter::reportDataCloneError(uint32_t errorId)
 bool
 JSStructuredCloneWriter::writeString(uint32_t tag, JSString* str)
 {
+    // Nullcheck input
+    if (!str) {
+      return false;
+    }
+    
     JSLinearString* linear = str->ensureLinear(context());
     if (!linear)
         return false;
@@ -1079,6 +1084,11 @@ JSStructuredCloneWriter::writeString(uint32_t tag, JSString* str)
 bool
 JSStructuredCloneWriter::writeBigInt(uint32_t tag, BigInt* bi)
 {
+    // Nullcheck input
+    if (!bi) {
+      return false;
+    }
+    
     bool signBit = bi->isNegative();
     size_t length = bi->digitLength();
     // The length must fit in 31 bits to leave room for a sign bit.

@@ -25,7 +25,7 @@ pref("general.useragent.locale", "chrome://global/locale/intl.properties");
 // Platform User-agent compatibility mode default settings
 pref("general.useragent.compatMode.gecko", false);
 pref("general.useragent.compatMode.firefox", false);
-pref("general.useragent.compatMode.version", "102.0");
+pref("general.useragent.compatMode.version", "115.0");
 pref("general.useragent.appVersionIsBuildID", false);
 pref("general.useragent.change_platform_version", true);
 pref("general.useragent.platform_version", "6.7");

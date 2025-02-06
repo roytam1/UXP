@@ -43,6 +43,7 @@ MSG_DEF(MSG_GLOBAL_NOT_NATIVE, 0, JSEXN_TYPEERR, "Global is not a native object.
 MSG_DEF(MSG_ENCODING_NOT_SUPPORTED, 1, JSEXN_RANGEERR, "The given encoding '{0}' is not supported.")
 MSG_DEF(MSG_DOM_ENCODING_NOT_UTF, 0, JSEXN_RANGEERR, "The encoding must be utf-8, utf-16, or utf-16be.")
 MSG_DEF(MSG_DOM_DECODING_FAILED, 0, JSEXN_TYPEERR, "Decoding failed.")
+MSG_DEF(MSG_DOM_OPERATION_FAILED, 0, JSEXN_TYPEERR, "The operation could not be performed.")
 MSG_DEF(MSG_NOT_FINITE, 1, JSEXN_TYPEERR, "{0} is not a finite floating-point value.")
 MSG_DEF(MSG_INVALID_VERSION, 0, JSEXN_TYPEERR, "0 (Zero) is not a valid database version.")
 MSG_DEF(MSG_INVALID_BYTESTRING, 2, JSEXN_TYPEERR, "Cannot convert string to ByteString because the character"
