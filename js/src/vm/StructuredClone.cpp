@@ -1700,6 +1700,8 @@ JSStructuredCloneWriter::write(HandleValue v)
                 return false;
 
             if (cls == ESClass::Map) {
+                if (!counts.back())
+                    return false;
                 counts.back()--;
                 RootedValue val(context(), entries.back());
                 entries.popBack();
