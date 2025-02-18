@@ -68,8 +68,7 @@ template<typename T>
 struct FramePropertyDescriptor : public FramePropertyDescriptorUntyped
 {
   typedef void Destructor(T* aPropertyValue);
-  typedef void DestructorWithFrame(const nsIFrame* aFrame,
-                                   T* aPropertyValue);
+  typedef void DestructorWithFrame(const nsIFrame* aFrame, T* aPropertyValue);
 
   template<Destructor Dtor>
   static constexpr const FramePropertyDescriptor<T> NewWithDestructor()
@@ -340,11 +339,9 @@ private:
     // have a destructor
     void DestroyValueFor(const nsIFrame* aFrame) {
       if (mProperty->mDestructor) {
-        mProperty->mDestructor(
-            ReinterpretHelper<void*>::FromInternalValue(mValue));
+        mProperty->mDestructor(ReinterpretHelper<void*>::FromInternalValue(mValue));
       } else if (mProperty->mDestructorWithFrame) {
-        mProperty->mDestructorWithFrame(
-            aFrame, ReinterpretHelper<void*>::FromInternalValue(mValue));
+        mProperty->mDestructorWithFrame(aFrame, ReinterpretHelper<void*>::FromInternalValue(mValue));
       }
     }
 
@@ -375,8 +372,10 @@ private:
 /**
  * This class encapsulates the properties of a frame.
  */
-inline uint64_t FrameProperties::GetInternal(UntypedDescriptor aProperty,
-                                             bool* aFoundResult) const {
+inline uint64_t
+FrameProperties::GetInternal(UntypedDescriptor aProperty,
+                             bool* aFoundResult) const
+{
   MOZ_ASSERT(aProperty, "Null property?");
 
   auto index = mProperties.IndexOf(aProperty, 0, PropertyComparator());
@@ -394,9 +393,11 @@ inline uint64_t FrameProperties::GetInternal(UntypedDescriptor aProperty,
 return mProperties.ElementAt(index).mValue;
 }
 
-inline void FrameProperties::SetInternal(UntypedDescriptor aProperty,
-                                         uint64_t aValue,
-                                         const nsIFrame* aFrame) {
+inline void
+FrameProperties::SetInternal(UntypedDescriptor aProperty,
+                             uint64_t aValue,
+                             const nsIFrame* aFrame)
+{
   MOZ_ASSERT(aProperty, "Null property?");
 
   auto index = mProperties.IndexOf(aProperty, 0, PropertyComparator());
