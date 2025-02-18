@@ -42,6 +42,7 @@
 #include "nsLayoutUtils.h"
 #include "LayoutLogging.h"
 #include "mozilla/RestyleManager.h"
+#include "nsGridContainerFrame.h"
 
 #include "nsIDOMNode.h"
 #include "nsISelection.h"
@@ -4382,6 +4383,8 @@ nsFrame::MarkIntrinsicISizesDirty()
   if (GetStateBits() & NS_FRAME_FONT_INFLATION_FLOW_ROOT) {
     nsFontInflationData::MarkFontInflationDataTextDirty(this);
   }
+  
+  RemoveProperty(nsGridContainerFrame::CachedBAxisMeasurement::Prop());
 }
 
 /* virtual */ nscoord

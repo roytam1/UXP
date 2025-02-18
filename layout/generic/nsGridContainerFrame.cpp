@@ -45,6 +45,8 @@ typedef nsTHashtable< nsPtrHashKey<nsIFrame> > FrameHashtable;
 typedef mozilla::CSSAlignUtils::AlignJustifyFlags AlignJustifyFlags;
 typedef nsLayoutUtils::IntrinsicISizeType IntrinsicISizeType;
 
+using GridItemCachedBAxisMeasurement = nsGridContainerFrame::CachedBAxisMeasurement;
+
 // https://drafts.csswg.org/css-sizing/#constraints
 enum class SizingConstraint
 {
@@ -3793,6 +3795,17 @@ MeasuringReflow(nsIFrame*           aChild,
       nsIFrame::ReflowChildFlags::NoMoveFrame |
       nsIFrame::ReflowChildFlags::NoSizeView |
       nsIFrame::ReflowChildFlags::NoDeleteNextInFlowChild;
+
+  bool found;
+  GridItemCachedBAxisMeasurement cachedMeasurement =
+      aChild->GetProperty(GridItemCachedBAxisMeasurement::Prop(), &found);
+  if (found && cachedMeasurement.IsValidFor(aChild, aCBSize)) {
+    childSize.BSize(wm) = cachedMeasurement.BSize();
+    nsContainerFrame::FinishReflowChild(aChild, pc, childSize, &childRI, wm,
+                                        LogicalPoint(wm), nsSize(), flags);
+    return cachedMeasurement.BSize();
+  }
+
   parent->ReflowChild(aChild, pc, childSize, childRI, wm,
                       LogicalPoint(wm), nsSize(), flags, childStatus);
   parent->FinishReflowChild(aChild, pc, childSize, &childRI, wm,
@@ -3800,6 +3813,22 @@ MeasuringReflow(nsIFrame*           aChild,
 #ifdef DEBUG
     parent->DeleteProperty(nsContainerFrame::DebugReflowingWithInfiniteISize());
 #endif
+
+  if (!found &&
+      GridItemCachedBAxisMeasurement::CanCacheMeasurement(aChild, aCBSize)) {
+    GridItemCachedBAxisMeasurement cachedMeasurement(aChild, aCBSize,
+                                                     childSize.BSize(wm));
+    aChild->SetProperty(GridItemCachedBAxisMeasurement::Prop(),
+                        cachedMeasurement);
+  } else if (found) {
+    if (GridItemCachedBAxisMeasurement::CanCacheMeasurement(aChild,
+                                                            aCBSize)) {
+      cachedMeasurement.Update(aChild, aCBSize, childSize.BSize(wm));
+    } else {
+      aChild->RemoveProperty(GridItemCachedBAxisMeasurement::Prop());
+    }
+  }
+
   return childSize.BSize(wm);
 }
 
@@ -5916,7 +5945,7 @@ nsGridContainerFrame::ReflowChildren(GridReflowInput&     aState,
       if (child->GetType() != nsGkAtoms::placeholderFrame) {
         info = &aState.mGridItems[aState.mIter.GridItemIndex()];
       }
-      ReflowInFlowChild(*aState.mIter, info, containerSize, Nothing(), nullptr,
+      ReflowInFlowChild(child, info, containerSize, Nothing(), nullptr,
                         aState, aContentArea, aDesiredSize, aStatus);
       MOZ_ASSERT(NS_FRAME_IS_COMPLETE(aStatus), "child should be complete "
                  "in unconstrained reflow");
