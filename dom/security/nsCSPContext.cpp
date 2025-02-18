@@ -263,7 +263,7 @@ nsCSPContext::permitsInternal(CSPDirective aDir,
       // Do not send a report or notify observers if this is a preload - the
       // decision may be wrong due to the inability to get the nonce, and will
       // incorrectly fail the unit tests.
-      if (CSPService::sCSPReportingEnabled && (!aIsPreload && aSendViolationReports)) {
+      if (CSPService::sCSPReportingEnabled && !aIsPreload && aSendViolationReports) {
         uint32_t lineNumber = 0;
         uint32_t columnNumber = 0;
         nsAutoCString spec;
@@ -648,9 +648,9 @@ nsCSPContext::GetAllowsInline(CSPDirective aDirective,
                               keyword, observerTopic)                          \
   case nsIContentSecurityPolicy::VIOLATION_TYPE_ ## violationType :            \
     PR_BEGIN_MACRO                                                             \
-    if (CSPService::sCSPReportingEnabled &&                                    \
-        (!mPolicies[p]->allows(directive##_SRC_DIRECTIVE, keyword, nonceOrHash,\
-                              false))) {                                       \
+    if(CSPService::sCSPReportingEnabled &&                                     \
+       !mPolicies[p]->allows(directive##_SRC_DIRECTIVE, keyword, nonceOrHash,  \
+                              false)) {                                        \
       nsAutoString violatedDirective;                                          \
       mPolicies[p]->getDirectiveStringForContentType(                          \
           directive##_SRC_DIRECTIVE, violatedDirective);                       \
