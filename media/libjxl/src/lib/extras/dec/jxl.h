@@ -8,14 +8,16 @@
 
 // Decodes JPEG XL images in memory.
 
-#include <stdint.h>
+#include <jxl/memory_manager.h>
+#include <jxl/parallel_runner.h>
+#include <jxl/types.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <vector>
 
-#include "jxl/parallel_runner.h"
-#include "jxl/types.h"
 #include "lib/extras/packed_image.h"
 
 namespace jxl {
@@ -38,6 +40,9 @@ struct JXLDecompressParams {
   JxlParallelRunner runner;
   void* runner_opaque = nullptr;
 
+  // If memory_manager is set, decoder uses it.
+  JxlMemoryManager* memory_manager = nullptr;
+
   // Whether truncated input should be treated as an error.
   bool allow_partial_input = false;
 
@@ -53,6 +58,9 @@ struct JXLDecompressParams {
   bool use_image_callback = true;
   // Whether to unpremultiply colors for associated alpha channels.
   bool unpremultiply_alpha = false;
+
+  // Controls the effective bit depth of the output pixels.
+  JxlBitDepth output_bitdepth = {JXL_BIT_DEPTH_FROM_PIXEL_FORMAT, 0, 0};
 };
 
 bool DecodeImageJXL(const uint8_t* bytes, size_t bytes_size,

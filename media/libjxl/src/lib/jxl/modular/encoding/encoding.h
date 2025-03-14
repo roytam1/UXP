@@ -6,13 +6,15 @@
 #ifndef LIB_JXL_MODULAR_ENCODING_ENCODING_H_
 #define LIB_JXL_MODULAR_ENCODING_ENCODING_H_
 
-#include <stddef.h>
-#include <stdint.h>
-
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <vector>
 
-#include "lib/jxl/dec_ans.h"
-#include "lib/jxl/image.h"
+#include "lib/jxl/base/compiler_specific.h"
+#include "lib/jxl/base/status.h"
+#include "lib/jxl/field_encodings.h"
 #include "lib/jxl/modular/encoding/context_predict.h"
 #include "lib/jxl/modular/encoding/dec_ma.h"
 #include "lib/jxl/modular/modular_image.h"
@@ -21,8 +23,11 @@
 
 namespace jxl {
 
+struct ANSCode;
+class BitReader;
+
 // Valid range of properties for using lookup tables instead of trees.
-constexpr int32_t kPropRangeFast = 512;
+constexpr int32_t kPropRangeFast = 512 << 4;
 
 struct GroupHeader : public Fields {
   GroupHeader();
@@ -54,11 +59,16 @@ FlatTree FilterTree(const Tree &global_tree,
                     size_t *num_props, bool *use_wp, bool *wp_only,
                     bool *gradient_only);
 
-template <typename T>
+template <typename T, bool HAS_OFFSETS, bool HAS_MULTIPLIERS>
+struct TreeLut {
+  std::array<T, 2 * kPropRangeFast> context_lookup;
+  std::array<int8_t, HAS_OFFSETS ? (2 * kPropRangeFast) : 0> offsets;
+  std::array<int8_t, HAS_MULTIPLIERS ? (2 * kPropRangeFast) : 0> multipliers;
+};
+
+template <typename T, bool HAS_OFFSETS, bool HAS_MULTIPLIERS>
 bool TreeToLookupTable(const FlatTree &tree,
-                       T context_lookup[2 * kPropRangeFast],
-                       int8_t offsets[2 * kPropRangeFast],
-                       int8_t multipliers[2 * kPropRangeFast] = nullptr) {
+                       TreeLut<T, HAS_OFFSETS, HAS_MULTIPLIERS> &lut) {
   struct TreeRange {
     // Begin *excluded*, end *included*. This works best with > vs <= decision
     // nodes.
@@ -86,13 +96,20 @@ bool TreeToLookupTable(const FlatTree &tree,
           node.multiplier > std::numeric_limits<int8_t>::max()) {
         return false;
       }
-      if (multipliers == nullptr && node.multiplier != 1) {
+      if (!HAS_MULTIPLIERS && node.multiplier != 1) {
+        return false;
+      }
+      if (!HAS_OFFSETS && node.predictor_offset != 0) {
         return false;
       }
       for (int i = cur.begin + 1; i < cur.end + 1; i++) {
-        context_lookup[i + kPropRangeFast] = node.childID;
-        if (multipliers) multipliers[i + kPropRangeFast] = node.multiplier;
-        offsets[i + kPropRangeFast] = node.predictor_offset;
+        lut.context_lookup[i + kPropRangeFast] = node.childID;
+        if (HAS_MULTIPLIERS) {
+          lut.multipliers[i + kPropRangeFast] = node.multiplier;
+        }
+        if (HAS_OFFSETS) {
+          lut.offsets[i + kPropRangeFast] = node.predictor_offset;
+        }
       }
       continue;
     }

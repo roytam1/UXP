@@ -5,26 +5,23 @@
 
 #include "lib/extras/dec/pnm.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <jxl/encode.h>
 
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+
+#include "lib/extras/size_constraints.h"
 #include "lib/jxl/base/bits.h"
-#include "lib/jxl/base/compiler_specific.h"
+#include "lib/jxl/base/c_callback_support.h"
+#include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"
 
 namespace jxl {
 namespace extras {
 namespace {
-
-struct HeaderPNM {
-  size_t xsize;
-  size_t ysize;
-  bool is_gray;    // PGM
-  bool has_alpha;  // PAM
-  size_t bits_per_sample;
-  bool floating_point;
-  bool big_endian;
-};
 
 class Parser {
  public:
@@ -60,8 +57,10 @@ class Parser {
       case 'f':
         header->is_gray = true;
         return ParseHeaderPFM(header, pos);
+
+      default:
+        return false;
     }
-    return false;
   }
 
   // Exposed for testing
@@ -165,11 +164,12 @@ class Parser {
 
   Status MatchString(const char* keyword, bool skipws = true) {
     const uint8_t* ppos = pos_;
-    while (*keyword) {
+    const uint8_t* kw = reinterpret_cast<const uint8_t*>(keyword);
+    while (*kw) {
       if (ppos >= end_) return JXL_FAILURE("PAM: unexpected end of input");
-      if (*keyword != *ppos) return false;
+      if (*kw != *ppos) return false;
       ppos++;
-      keyword++;
+      kw++;
     }
     pos_ = ppos;
     if (skipws) {
@@ -183,16 +183,20 @@ class Parser {
   Status ParseHeaderPAM(HeaderPNM* header, const uint8_t** pos) {
     size_t depth = 3;
     size_t max_val = 255;
+    JXL_RETURN_IF_ERROR(SkipWhitespace());
     while (!MatchString("ENDHDR", /*skipws=*/false)) {
-      JXL_RETURN_IF_ERROR(SkipWhitespace());
       if (MatchString("WIDTH")) {
         JXL_RETURN_IF_ERROR(ParseUnsigned(&header->xsize));
+        JXL_RETURN_IF_ERROR(SkipWhitespace());
       } else if (MatchString("HEIGHT")) {
         JXL_RETURN_IF_ERROR(ParseUnsigned(&header->ysize));
+        JXL_RETURN_IF_ERROR(SkipWhitespace());
       } else if (MatchString("DEPTH")) {
         JXL_RETURN_IF_ERROR(ParseUnsigned(&depth));
+        JXL_RETURN_IF_ERROR(SkipWhitespace());
       } else if (MatchString("MAXVAL")) {
         JXL_RETURN_IF_ERROR(ParseUnsigned(&max_val));
+        JXL_RETURN_IF_ERROR(SkipWhitespace());
       } else if (MatchString("TUPLTYPE")) {
         if (MatchString("RGB_ALPHA")) {
           header->has_alpha = true;
@@ -209,6 +213,24 @@ class Parser {
         } else if (MatchString("BLACKANDWHITE")) {
           header->is_gray = true;
           max_val = 1;
+        } else if (MatchString("Alpha")) {
+          header->ec_types.push_back(JXL_CHANNEL_ALPHA);
+        } else if (MatchString("Depth")) {
+          header->ec_types.push_back(JXL_CHANNEL_DEPTH);
+        } else if (MatchString("SpotColor")) {
+          header->ec_types.push_back(JXL_CHANNEL_SPOT_COLOR);
+        } else if (MatchString("SelectionMask")) {
+          header->ec_types.push_back(JXL_CHANNEL_SELECTION_MASK);
+        } else if (MatchString("Black")) {
+          header->ec_types.push_back(JXL_CHANNEL_BLACK);
+        } else if (MatchString("CFA")) {
+          header->ec_types.push_back(JXL_CHANNEL_CFA);
+        } else if (MatchString("Thermal")) {
+          header->ec_types.push_back(JXL_CHANNEL_THERMAL);
+        } else if (MatchString("Unknown")) {
+          header->ec_types.push_back(JXL_CHANNEL_UNKNOWN);
+        } else if (MatchString("Optional")) {
+          header->ec_types.push_back(JXL_CHANNEL_OPTIONAL);
         } else {
           return JXL_FAILURE("PAM: unknown TUPLTYPE");
         }
@@ -223,13 +245,13 @@ class Parser {
     }
     size_t num_channels = header->is_gray ? 1 : 3;
     if (header->has_alpha) num_channels++;
-    if (num_channels != depth) {
+    if (num_channels + header->ec_types.size() != depth) {
       return JXL_FAILURE("PAM: bad DEPTH");
     }
     if (max_val == 0 || max_val >= 65536) {
       return JXL_FAILURE("PAM: bad MAXVAL");
     }
-    // e.g When `max_val` is 1 , we want 1 bit:
+    // e.g. When `max_val` is 1 , we want 1 bit:
     header->bits_per_sample = FloorLog2Nonzero(max_val) + 1;
     if ((1u << header->bits_per_sample) - 1 != max_val)
       return JXL_FAILURE("PNM: unsupported MaxVal (expected 2^n - 1)");
@@ -297,31 +319,141 @@ class Parser {
   const uint8_t* const end_;
 };
 
-Span<const uint8_t> MakeSpan(const char* str) {
-  return Span<const uint8_t>(reinterpret_cast<const uint8_t*>(str),
-                             strlen(str));
-}
-
 }  // namespace
 
+struct PNMChunkedInputFrame {
+  JxlChunkedFrameInputSource operator()() {
+    return JxlChunkedFrameInputSource{
+        this,
+        METHOD_TO_C_CALLBACK(
+            &PNMChunkedInputFrame::GetColorChannelsPixelFormat),
+        METHOD_TO_C_CALLBACK(&PNMChunkedInputFrame::GetColorChannelDataAt),
+        METHOD_TO_C_CALLBACK(&PNMChunkedInputFrame::GetExtraChannelPixelFormat),
+        METHOD_TO_C_CALLBACK(&PNMChunkedInputFrame::GetExtraChannelDataAt),
+        METHOD_TO_C_CALLBACK(&PNMChunkedInputFrame::ReleaseCurrentData)};
+  }
+
+  void /* NOLINT */ GetColorChannelsPixelFormat(JxlPixelFormat* pixel_format) {
+    *pixel_format = format;
+  }
+
+  const void* GetColorChannelDataAt(size_t xpos, size_t ypos, size_t xsize,
+                                    size_t ysize, size_t* row_offset) {
+    const size_t bytes_per_channel =
+        DivCeil(dec->header_.bits_per_sample, jxl::kBitsPerByte);
+    const size_t num_channels = dec->header_.is_gray ? 1 : 3;
+    const size_t bytes_per_pixel = num_channels * bytes_per_channel;
+    *row_offset = dec->header_.xsize * bytes_per_pixel;
+    const size_t offset = ypos * *row_offset + xpos * bytes_per_pixel;
+    return dec->pnm_.data() + offset + dec->data_start_;
+  }
+
+  void GetExtraChannelPixelFormat(size_t ec_index,
+                                  JxlPixelFormat* pixel_format) {
+    (void)this;
+    *pixel_format = {};
+    JXL_DEBUG_ABORT("Not implemented");
+  }
+
+  const void* GetExtraChannelDataAt(size_t ec_index, size_t xpos, size_t ypos,
+                                    size_t xsize, size_t ysize,
+                                    size_t* row_offset) {
+    (void)this;
+    *row_offset = 0;
+    JXL_DEBUG_ABORT("Not implemented");
+    return nullptr;
+  }
+
+  void ReleaseCurrentData(const void* buffer) {}
+
+  JxlPixelFormat format;
+  const ChunkedPNMDecoder* dec;
+};
+
+StatusOr<ChunkedPNMDecoder> ChunkedPNMDecoder::Init(const char* path) {
+  ChunkedPNMDecoder dec;
+  JXL_ASSIGN_OR_RETURN(dec.pnm_, MemoryMappedFile::Init(path));
+  size_t size = dec.pnm_.size();
+  if (size < 2) return JXL_FAILURE("Invalid ppm");
+  size_t hdr_buf = std::min<size_t>(size, 10 * 1024);
+  Span<const uint8_t> span(dec.pnm_.data(), hdr_buf);
+  Parser parser(span);
+  HeaderPNM& header = dec.header_;
+  const uint8_t* pos = nullptr;
+  if (!parser.ParseHeader(&header, &pos)) {
+    return StatusCode::kGenericError;
+  }
+  dec.data_start_ = pos - span.data();
+
+  if (header.bits_per_sample == 0 || header.bits_per_sample > 16) {
+    return JXL_FAILURE("Invalid bits_per_sample");
+  }
+  if (header.has_alpha || !header.ec_types.empty() || header.floating_point) {
+    return JXL_FAILURE("Only PGM and PPM inputs are supported");
+  }
+
+  const size_t bytes_per_channel =
+      DivCeil(dec.header_.bits_per_sample, jxl::kBitsPerByte);
+  const size_t num_channels = dec.header_.is_gray ? 1 : 3;
+  const size_t bytes_per_pixel = num_channels * bytes_per_channel;
+  size_t row_size = dec.header_.xsize * bytes_per_pixel;
+  if (size < header.ysize * row_size + dec.data_start_) {
+    return JXL_FAILURE("PNM file too small");
+  }
+  return dec;
+}
+
+jxl::Status ChunkedPNMDecoder::InitializePPF(const ColorHints& color_hints,
+                                             PackedPixelFile* ppf) {
+  // PPM specifies that in the raster, the sample values are "nonlinear"
+  // (BP.709, with gamma number of 2.2). Deviate from the specification and
+  // assume `sRGB` in our implementation.
+  JXL_RETURN_IF_ERROR(ApplyColorHints(color_hints, /*color_already_set=*/false,
+                                      header_.is_gray, ppf));
+
+  ppf->info.xsize = header_.xsize;
+  ppf->info.ysize = header_.ysize;
+  ppf->info.bits_per_sample = header_.bits_per_sample;
+  ppf->info.exponent_bits_per_sample = 0;
+  ppf->info.orientation = JXL_ORIENT_IDENTITY;
+  ppf->info.alpha_bits = 0;
+  ppf->info.alpha_exponent_bits = 0;
+  ppf->info.num_color_channels = (header_.is_gray ? 1 : 3);
+  ppf->info.num_extra_channels = 0;
+
+  const JxlDataType data_type =
+      header_.bits_per_sample > 8 ? JXL_TYPE_UINT16 : JXL_TYPE_UINT8;
+  const JxlPixelFormat format{
+      /*num_channels=*/ppf->info.num_color_channels,
+      /*data_type=*/data_type,
+      /*endianness=*/header_.big_endian ? JXL_BIG_ENDIAN : JXL_LITTLE_ENDIAN,
+      /*align=*/0,
+  };
+
+  PNMChunkedInputFrame frame;
+  frame.format = format;
+  frame.dec = this;
+  ppf->chunked_frames.emplace_back(header_.xsize, header_.ysize, frame);
+  return true;
+}
+
 Status DecodeImagePNM(const Span<const uint8_t> bytes,
-                      const ColorHints& color_hints,
-                      const SizeConstraints& constraints,
-                      PackedPixelFile* ppf) {
+                      const ColorHints& color_hints, PackedPixelFile* ppf,
+                      const SizeConstraints* constraints) {
   Parser parser(bytes);
   HeaderPNM header = {};
   const uint8_t* pos = nullptr;
   if (!parser.ParseHeader(&header, &pos)) return false;
   JXL_RETURN_IF_ERROR(
-      VerifyDimensions(&constraints, header.xsize, header.ysize));
+      VerifyDimensions(constraints, header.xsize, header.ysize));
 
   if (header.bits_per_sample == 0 || header.bits_per_sample > 32) {
     return JXL_FAILURE("PNM: bits_per_sample invalid");
   }
 
-  // PPM specify that in the raster, the sample values are "nonlinear" (BP.709,
-  // with gamma number of 2.2). Deviate from the specification and assume
-  // `sRGB` in our implementation.
+  // PPM specifies that in the raster, the sample values are "nonlinear"
+  // (BP.709, with gamma number of 2.2). Deviate from the specification and
+  // assume `sRGB` in our implementation.
   JXL_RETURN_IF_ERROR(ApplyColorHints(color_hints, /*color_already_set=*/false,
                                       header.is_gray, ppf));
 
@@ -341,7 +473,17 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
   ppf->info.alpha_bits = (header.has_alpha ? ppf->info.bits_per_sample : 0);
   ppf->info.alpha_exponent_bits = 0;
   ppf->info.num_color_channels = (header.is_gray ? 1 : 3);
-  ppf->info.num_extra_channels = (header.has_alpha ? 1 : 0);
+  uint32_t num_alpha_channels = (header.has_alpha ? 1 : 0);
+  uint32_t num_interleaved_channels =
+      ppf->info.num_color_channels + num_alpha_channels;
+  ppf->info.num_extra_channels = num_alpha_channels + header.ec_types.size();
+
+  for (auto type : header.ec_types) {
+    PackedExtraChannel pec = {};
+    pec.ec_info.bits_per_sample = ppf->info.bits_per_sample;
+    pec.ec_info.type = type;
+    ppf->extra_channels_info.emplace_back(std::move(pec));
+  }
 
   JxlDataType data_type;
   if (header.floating_point) {
@@ -356,64 +498,73 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
   }
 
   const JxlPixelFormat format{
-      /*num_channels=*/ppf->info.num_color_channels +
-          ppf->info.num_extra_channels,
+      /*num_channels=*/num_interleaved_channels,
       /*data_type=*/data_type,
       /*endianness=*/header.big_endian ? JXL_BIG_ENDIAN : JXL_LITTLE_ENDIAN,
       /*align=*/0,
   };
+  const JxlPixelFormat ec_format{1, format.data_type, format.endianness, 0};
   ppf->frames.clear();
-  ppf->frames.emplace_back(header.xsize, header.ysize, format);
+  {
+    JXL_ASSIGN_OR_RETURN(
+        PackedFrame frame,
+        PackedFrame::Create(header.xsize, header.ysize, format));
+    ppf->frames.emplace_back(std::move(frame));
+  }
   auto* frame = &ppf->frames.back();
-
+  for (size_t i = 0; i < header.ec_types.size(); ++i) {
+    JXL_ASSIGN_OR_RETURN(
+        PackedImage ec,
+        PackedImage::Create(header.xsize, header.ysize, ec_format));
+    frame->extra_channels.emplace_back(std::move(ec));
+  }
   size_t pnm_remaining_size = bytes.data() + bytes.size() - pos;
   if (pnm_remaining_size < frame->color.pixels_size) {
     return JXL_FAILURE("PNM file too small");
   }
-  const bool flipped_y = header.bits_per_sample == 32;  // PFMs are flipped
+
   uint8_t* out = reinterpret_cast<uint8_t*>(frame->color.pixels());
-  for (size_t y = 0; y < header.ysize; ++y) {
-    size_t y_in = flipped_y ? header.ysize - 1 - y : y;
-    const uint8_t* row_in = &pos[y_in * frame->color.stride];
-    uint8_t* row_out = &out[y * frame->color.stride];
-    memcpy(row_out, row_in, frame->color.stride);
+  std::vector<uint8_t*> ec_out(header.ec_types.size());
+  for (size_t i = 0; i < ec_out.size(); ++i) {
+    ec_out[i] = reinterpret_cast<uint8_t*>(frame->extra_channels[i].pixels());
+  }
+  if (ec_out.empty()) {
+    const bool flipped_y = header.bits_per_sample == 32;  // PFMs are flipped
+    for (size_t y = 0; y < header.ysize; ++y) {
+      size_t y_in = flipped_y ? header.ysize - 1 - y : y;
+      const uint8_t* row_in = &pos[y_in * frame->color.stride];
+      uint8_t* row_out = &out[y * frame->color.stride];
+      memcpy(row_out, row_in, frame->color.stride);
+    }
+  } else {
+    JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(data_type));
+    size_t pwidth = PackedImage::BitsPerChannel(data_type) / 8;
+    for (size_t y = 0; y < header.ysize; ++y) {
+      for (size_t x = 0; x < header.xsize; ++x) {
+        memcpy(out, pos, frame->color.pixel_stride());
+        out += frame->color.pixel_stride();
+        pos += frame->color.pixel_stride();
+        for (auto& p : ec_out) {
+          memcpy(p, pos, pwidth);
+          pos += pwidth;
+          p += pwidth;
+        }
+      }
+    }
+  }
+  if (ppf->info.exponent_bits_per_sample == 0) {
+    ppf->input_bitdepth.type = JXL_BIT_DEPTH_FROM_CODESTREAM;
   }
   return true;
 }
 
-void TestCodecPNM() {
-  size_t u = 77777;  // Initialized to wrong value.
-  double d = 77.77;
-// Failing to parse invalid strings results in a crash if `JXL_CRASH_ON_ERROR`
-// is defined and hence the tests fail. Therefore we only run these tests if
-// `JXL_CRASH_ON_ERROR` is not defined.
-#ifndef JXL_CRASH_ON_ERROR
-  JXL_CHECK(false == Parser(MakeSpan("")).ParseUnsigned(&u));
-  JXL_CHECK(false == Parser(MakeSpan("+")).ParseUnsigned(&u));
-  JXL_CHECK(false == Parser(MakeSpan("-")).ParseUnsigned(&u));
-  JXL_CHECK(false == Parser(MakeSpan("A")).ParseUnsigned(&u));
+// Exposed for testing.
+Status PnmParseSigned(Bytes str, double* v) {
+  return Parser(str).ParseSigned(v);
+}
 
-  JXL_CHECK(false == Parser(MakeSpan("")).ParseSigned(&d));
-  JXL_CHECK(false == Parser(MakeSpan("+")).ParseSigned(&d));
-  JXL_CHECK(false == Parser(MakeSpan("-")).ParseSigned(&d));
-  JXL_CHECK(false == Parser(MakeSpan("A")).ParseSigned(&d));
-#endif
-  JXL_CHECK(true == Parser(MakeSpan("1")).ParseUnsigned(&u));
-  JXL_CHECK(u == 1);
-
-  JXL_CHECK(true == Parser(MakeSpan("32")).ParseUnsigned(&u));
-  JXL_CHECK(u == 32);
-
-  JXL_CHECK(true == Parser(MakeSpan("1")).ParseSigned(&d));
-  JXL_CHECK(d == 1.0);
-  JXL_CHECK(true == Parser(MakeSpan("+2")).ParseSigned(&d));
-  JXL_CHECK(d == 2.0);
-  JXL_CHECK(true == Parser(MakeSpan("-3")).ParseSigned(&d));
-  JXL_CHECK(std::abs(d - -3.0) < 1E-15);
-  JXL_CHECK(true == Parser(MakeSpan("3.141592")).ParseSigned(&d));
-  JXL_CHECK(std::abs(d - 3.141592) < 1E-15);
-  JXL_CHECK(true == Parser(MakeSpan("-3.141592")).ParseSigned(&d));
-  JXL_CHECK(std::abs(d - -3.141592) < 1E-15);
+Status PnmParseUnsigned(Bytes str, size_t* v) {
+  return Parser(str).ParseUnsigned(v);
 }
 
 }  // namespace extras

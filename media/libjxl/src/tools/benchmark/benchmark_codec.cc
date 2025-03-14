@@ -5,34 +5,38 @@
 
 #include "tools/benchmark/benchmark_codec.h"
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include <jxl/memory_manager.h>
+#include <jxl/types.h>
 
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "lib/extras/packed_image_convert.h"
 #include "lib/extras/time.h"
-#include "lib/jxl/base/data_parallel.h"
-#include "lib/jxl/base/padded_bytes.h"
-#include "lib/jxl/base/profiler.h"
-#include "lib/jxl/base/span.h"
+#include "lib/jxl/base/common.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/codec_in_out.h"
 #include "lib/jxl/color_encoding_internal.h"
-#include "lib/jxl/color_management.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_bundle.h"
 #include "lib/jxl/image_ops.h"
 #include "tools/benchmark/benchmark_args.h"
 #include "tools/benchmark/benchmark_codec_custom.h"
-#ifdef JPEGXL_ENABLE_JPEG
 #include "tools/benchmark/benchmark_codec_jpeg.h"
-#endif  // JPEG_ENABLE_JPEG
 #include "tools/benchmark/benchmark_codec_jxl.h"
-#include "tools/benchmark/benchmark_codec_png.h"
 #include "tools/benchmark/benchmark_stats.h"
+#include "tools/cmdline.h"
+#include "tools/no_memory_manager.h"
+#include "tools/speed_stats.h"
+#include "tools/thread_pool_internal.h"
+
+#ifdef BENCHMARK_PNG
+#include "tools/benchmark/benchmark_codec_png.h"
+#endif  // BENCHMARK_PNG
 
 #ifdef BENCHMARK_WEBP
 #include "tools/benchmark/benchmark_codec_webp.h"
@@ -42,16 +46,21 @@
 #include "tools/benchmark/benchmark_codec_avif.h"
 #endif  // BENCHMARK_AVIF
 
-namespace jxl {
+namespace jpegxl {
+namespace tools {
 
-void ImageCodec::ParseParameters(const std::string& parameters) {
+using ::jxl::Image3F;
+using ::jxl::Status;
+
+Status ImageCodec::ParseParameters(const std::string& parameters) {
   params_ = parameters;
   std::vector<std::string> parts = SplitString(parameters, ':');
-  for (size_t i = 0; i < parts.size(); ++i) {
-    if (!ParseParam(parts[i])) {
-      JXL_ABORT("Invalid parameter %s", parts[i].c_str());
+  for (const auto& part : parts) {
+    if (!ParseParam(part)) {
+      return JXL_FAILURE("Invalid parameter %s", part.c_str());
     }
   }
+  return true;
 }
 
 Status ImageCodec::ParseParam(const std::string& param) {
@@ -75,26 +84,8 @@ Status ImageCodec::ParseParam(const std::string& param) {
       return false;
     }
     butteraugli_target_ = butteraugli_target;
-
-    // full hf asymmetry at high distance
-    static const double kHighDistance = 2.5;
-
-    // no hf asymmetry at low distance
-    static const double kLowDistance = 0.6;
-
-    if (butteraugli_target_ >= kHighDistance) {
-      ba_params_.hf_asymmetry = args_.ba_params.hf_asymmetry;
-    } else if (butteraugli_target_ >= kLowDistance) {
-      float w =
-          (butteraugli_target_ - kLowDistance) / (kHighDistance - kLowDistance);
-      ba_params_.hf_asymmetry =
-          args_.ba_params.hf_asymmetry * w + 1.0f * (1.0f - w);
-    } else {
-      ba_params_.hf_asymmetry = 1.0f;
-    }
     return true;
   } else if (param[0] == 'r') {
-    ba_params_.hf_asymmetry = args_.ba_params.hf_asymmetry;
     bitrate_target_ = strtof(param.substr(1).c_str(), nullptr);
     return true;
   }
@@ -107,39 +98,53 @@ class NoneCodec : public ImageCodec {
   explicit NoneCodec(const BenchmarkArgs& args) : ImageCodec(args) {}
   Status ParseParam(const std::string& param) override { return true; }
 
-  Status Compress(const std::string& filename, const CodecInOut* io,
-                  ThreadPoolInternal* pool, std::vector<uint8_t>* compressed,
+  Status Compress(const std::string& filename, const PackedPixelFile& ppf,
+                  ThreadPool* pool, std::vector<uint8_t>* compressed,
                   jpegxl::tools::SpeedStats* speed_stats) override {
-    PROFILER_ZONE("NoneCompress");
-    const double start = Now();
+    const double start = jxl::Now();
     // Encode image size so we "decompress" something of the same size, as
     // required by butteraugli.
-    const uint32_t xsize = io->xsize();
-    const uint32_t ysize = io->ysize();
+    const uint32_t xsize = ppf.xsize();
+    const uint32_t ysize = ppf.ysize();
     compressed->resize(8);
     memcpy(compressed->data(), &xsize, 4);
     memcpy(compressed->data() + 4, &ysize, 4);
-    const double end = Now();
+    const double end = jxl::Now();
     speed_stats->NotifyElapsed(end - start);
     return true;
   }
 
   Status Decompress(const std::string& filename,
-                    const Span<const uint8_t> compressed,
-                    ThreadPoolInternal* pool, CodecInOut* io,
+                    const Span<const uint8_t> compressed, ThreadPool* pool,
+                    PackedPixelFile* ppf,
                     jpegxl::tools::SpeedStats* speed_stats) override {
-    PROFILER_ZONE("NoneDecompress");
-    const double start = Now();
-    JXL_ASSERT(compressed.size() == 8);
-    uint32_t xsize, ysize;
+    CodecInOut io{jpegxl::tools::NoMemoryManager()};
+    JXL_RETURN_IF_ERROR(
+        Decompress(filename, compressed, pool, &io, speed_stats));
+    JxlPixelFormat format{0, JXL_TYPE_UINT16, JXL_NATIVE_ENDIAN, 0};
+    return jxl::extras::ConvertCodecInOutToPackedPixelFile(
+        io, format, io.Main().c_current(), pool, ppf);
+  };
+
+  static Status Decompress(const std::string& filename,
+                           const Span<const uint8_t> compressed,
+                           ThreadPool* pool, CodecInOut* io,
+                           jpegxl::tools::SpeedStats* speed_stats) {
+    const double start = jxl::Now();
+    JXL_ENSURE(compressed.size() == 8);
+    uint32_t xsize;
+    uint32_t ysize;
     memcpy(&xsize, compressed.data(), 4);
     memcpy(&ysize, compressed.data() + 4, 4);
-    Image3F image(xsize, ysize);
+    JXL_ASSIGN_OR_RETURN(
+        Image3F image,
+        Image3F::Create(jpegxl::tools::NoMemoryManager(), xsize, ysize));
     ZeroFillImage(&image);
     io->metadata.m.SetFloat32Samples();
     io->metadata.m.color_encoding = ColorEncoding::SRGB();
-    io->SetFromImage(std::move(image), io->metadata.m.color_encoding);
-    const double end = Now();
+    JXL_RETURN_IF_ERROR(
+        io->SetFromImage(std::move(image), io->metadata.m.color_encoding));
+    const double end = jxl::Now();
     speed_stats->NotifyElapsed(end - start);
     return true;
   }
@@ -147,9 +152,10 @@ class NoneCodec : public ImageCodec {
   void GetMoreStats(BenchmarkStats* stats) override {}
 };
 
-ImageCodecPtr CreateImageCodec(const std::string& description) {
+ImageCodecPtr CreateImageCodec(const std::string& description,
+                               JxlMemoryManager* memory_manager) {
   std::string name = description;
-  std::string parameters = "";
+  std::string parameters;
   size_t colon = description.find(':');
   if (colon < description.size()) {
     name = description.substr(0, colon);
@@ -157,21 +163,19 @@ ImageCodecPtr CreateImageCodec(const std::string& description) {
   }
   ImageCodecPtr result;
   if (name == "jxl") {
-    result.reset(CreateNewJxlCodec(*Args()));
+    result.reset(CreateNewJxlCodec(*Args(), memory_manager));
 #if !defined(__wasm__)
   } else if (name == "custom") {
     result.reset(CreateNewCustomCodec(*Args()));
 #endif
-#ifdef JPEGXL_ENABLE_JPEG
   } else if (name == "jpeg") {
     result.reset(CreateNewJPEGCodec(*Args()));
-#endif  // BENCHMARK_JPEG
-#if JPEGXL_ENABLE_APNG
+#ifdef BENCHMARK_PNG
   } else if (name == "png") {
     result.reset(CreateNewPNGCodec(*Args()));
-#endif
+#endif  // BENCHMARK_PNG
   } else if (name == "none") {
-    result.reset(new NoneCodec(*Args()));
+    result = jxl::make_unique<NoneCodec>(*Args());
 #ifdef BENCHMARK_WEBP
   } else if (name == "webp") {
     result.reset(CreateNewWebPCodec(*Args()));
@@ -180,12 +184,17 @@ ImageCodecPtr CreateImageCodec(const std::string& description) {
   } else if (name == "avif") {
     result.reset(CreateNewAvifCodec(*Args()));
 #endif  // BENCHMARK_AVIF
-  } else {
-    JXL_ABORT("Unknown image codec: %s", name.c_str());
+  }
+  if (!result.get()) {
+    fprintf(stderr, "Unknown image codec: %s", name.c_str());
+    JPEGXL_TOOLS_CHECK(false);
   }
   result->set_description(description);
-  if (!parameters.empty()) result->ParseParameters(parameters);
+  if (!parameters.empty()) {
+    JPEGXL_TOOLS_CHECK(result->ParseParameters(parameters));
+  }
   return result;
 }
 
-}  // namespace jxl
+}  // namespace tools
+}  // namespace jpegxl

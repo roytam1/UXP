@@ -37,6 +37,7 @@
 #include "ImageContainer.h"
 #include "jsfriendapi.h"
 #include "js/MemoryMetrics.h"
+#include "js/SourceBufferHolder.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/ContentEvents.h"

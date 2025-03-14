@@ -70,10 +70,12 @@
 #include "jit/Ion.h"
 #include "jit/JitcodeMap.h"
 #include "jit/OptimizationTracking.h"
+#include "js/CompileOptions.h"
 #include "js/Debug.h"
 #include "js/Equality.h"  // JS::SameValue
 #include "js/GCAPI.h"
 #include "js/Initialization.h"
+#include "js/SourceBufferHolder.h"
 #include "js/StructuredClone.h"
 #include "js/TrackedOptimizationInfo.h"
 #include "perf/jsperf.h"
@@ -109,6 +111,8 @@
 using namespace js;
 using namespace js::cli;
 using namespace js::shell;
+
+using JS::CompileOptions;
 
 using mozilla::ArrayLength;
 using mozilla::Atomic;
@@ -4062,8 +4066,8 @@ ParseModule(JSContext* cx, unsigned argc, Value* vp)
         return false;
 
     const char16_t* chars = stableChars.twoByteRange().begin().get();
-    SourceBufferHolder srcBuf(chars, scriptContents->length(),
-                              SourceBufferHolder::NoOwnership);
+    JS::SourceBufferHolder srcBuf(chars, scriptContents->length(),
+                                  SourceBufferHolder::NoOwnership);
 
     RootedObject module(cx, frontend::CompileModule(cx, options, srcBuf));
     if (!module)

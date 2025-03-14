@@ -6,28 +6,19 @@
 #ifndef LIB_JXL_QUANTIZER_H_
 #define LIB_JXL_QUANTIZER_H_
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-
 #include <algorithm>
 #include <cmath>
-#include <utility>
-#include <vector>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 
-#include "lib/jxl/ac_strategy.h"
-#include "lib/jxl/aux_out_fwd.h"
-#include "lib/jxl/base/bits.h"
 #include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/profiler.h"
+#include "lib/jxl/base/rect.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/common.h"
-#include "lib/jxl/dct_util.h"
 #include "lib/jxl/dec_bit_reader.h"
-#include "lib/jxl/enc_bit_writer.h"
+#include "lib/jxl/field_encodings.h"
 #include "lib/jxl/fields.h"
 #include "lib/jxl/image.h"
-#include "lib/jxl/linalg.h"
 #include "lib/jxl/quant_weights.h"
 
 // Quantizes DC and AC coefficients, with separate quantization tables according
@@ -35,6 +26,8 @@
 // block index inside that strategy).
 
 namespace jxl {
+
+enum class AcStrategyType : uint32_t;
 
 static constexpr int kGlobalScaleDenom = 1 << 16;
 static constexpr int kGlobalScaleNumerator = 4096;
@@ -63,10 +56,12 @@ static constexpr float kDefaultQuantBias[4] = {
     0.145f,
 };
 
+struct QuantizerParams;
+
 class Quantizer {
  public:
-  explicit Quantizer(const DequantMatrices* dequant);
-  Quantizer(const DequantMatrices* dequant, int quant_dc, int global_scale);
+  explicit Quantizer(const DequantMatrices& dequant);
+  Quantizer(const DequantMatrices& dequant, int quant_dc, int global_scale);
 
   static constexpr int32_t kQuantMax = 256;
 
@@ -76,7 +71,7 @@ class Quantizer {
   }
 
   float ScaleGlobalScale(const float scale) {
-    int new_global_scale = static_cast<int>(global_scale_ * scale + 0.5f);
+    int new_global_scale = static_cast<int>(std::lround(global_scale_ * scale));
     float scale_out = new_global_scale * 1.0f / global_scale_;
     global_scale_ = new_global_scale;
     RecomputeFromGlobalScale();
@@ -104,8 +99,8 @@ class Quantizer {
   void SetQuantFieldRect(const ImageF& qf, const Rect& rect,
                          ImageI* JXL_RESTRICT raw_quant_field) const;
 
-  void SetQuantField(float quant_dc, const ImageF& qf,
-                     ImageI* JXL_RESTRICT raw_quant_field);
+  Status SetQuantField(float quant_dc, const ImageF& qf,
+                       ImageI* JXL_RESTRICT raw_quant_field);
 
   void SetQuant(float quant_dc, float quant_ac,
                 ImageI* JXL_RESTRICT raw_quant_field);
@@ -118,17 +113,19 @@ class Quantizer {
   // Dequantize by multiplying with this times dequant_matrix.
   float inv_quant_ac(int32_t quant) const { return inv_global_scale_ / quant; }
 
-  Status Encode(BitWriter* writer, size_t layer, AuxOut* aux_out) const;
+  QuantizerParams GetParams() const;
 
   Status Decode(BitReader* reader);
 
   void DumpQuantizationMap(const ImageI& raw_quant_field) const;
 
-  JXL_INLINE const float* DequantMatrix(size_t quant_kind, size_t c) const {
+  JXL_INLINE const float* DequantMatrix(AcStrategyType quant_kind,
+                                        size_t c) const {
     return dequant_->Matrix(quant_kind, c);
   }
 
-  JXL_INLINE const float* InvDequantMatrix(size_t quant_kind, size_t c) const {
+  JXL_INLINE const float* InvDequantMatrix(AcStrategyType quant_kind,
+                                           size_t c) const {
     return dequant_->InvMatrix(quant_kind, c);
   }
 

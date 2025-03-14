@@ -6,23 +6,24 @@
 #ifndef LIB_JXL_ENC_TOC_H_
 #define LIB_JXL_ENC_TOC_H_
 
-#include <stddef.h>
-#include <stdint.h>
-
+#include <memory>
 #include <vector>
 
-#include "lib/jxl/aux_out.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/status.h"
+#include "lib/jxl/coeff_order_fwd.h"
 #include "lib/jxl/enc_bit_writer.h"
 
 namespace jxl {
 
-// Writes the group offsets. If the permutation vector is nullptr, the identity
+struct AuxOut;
+
+// Writes the group offsets. If the permutation vector is empty, the identity
 // permutation will be used.
-Status WriteGroupOffsets(const std::vector<BitWriter>& group_codes,
-                         const std::vector<coeff_order_t>* permutation,
-                         BitWriter* JXL_RESTRICT writer, AuxOut* aux_out);
+Status WriteGroupOffsets(
+    const std::vector<std::unique_ptr<BitWriter>>& group_codes,
+    const std::vector<coeff_order_t>& permutation,
+    BitWriter* JXL_RESTRICT writer, AuxOut* aux_out);
 
 }  // namespace jxl
 

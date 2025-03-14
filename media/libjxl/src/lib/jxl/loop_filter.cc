@@ -5,7 +5,8 @@
 
 #include "lib/jxl/loop_filter.h"
 
-#include "lib/jxl/aux_out.h"
+#include <cmath>
+
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/fields.h"
 

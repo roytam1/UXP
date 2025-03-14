@@ -124,7 +124,7 @@ To diagnose the cause of encoder/decoder failures (which often only result in a
 generic "decode failed" message), build using the following command:
 
 ```bash
-CMAKE_FLAGS="-DJXL_CRASH_ON_ERROR" ./ci.sh opt
+CMAKE_FLAGS="-DJXL_CRASH_ON_ERROR" ./ci.sh debug
 ```
 
 In such builds, the first JXL_FAILURE will print a message identifying where the
@@ -150,7 +150,7 @@ multiple image lines.
 
 **DCT size selection**: `ac_strategy.cc`
 
-**[Gaborish]**: `gaborish.h`.
+**[Gaborish]**: `enc_gaborish.h`.
 
 **[Edge preserving filter]**: `epf.h`
 

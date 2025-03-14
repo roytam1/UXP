@@ -3,13 +3,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+#include <jxl/thread_parallel_runner.h>
+#include <jxl/thread_parallel_runner_cxx.h>
+
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <vector>
-
-#include "jxl/thread_parallel_runner.h"
-#include "jxl/thread_parallel_runner_cxx.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size);
 
@@ -18,7 +18,7 @@ void ProcessInput(const char* filename) {
   std::vector<char> contents((std::istreambuf_iterator<char>(ifs)),
                              std::istreambuf_iterator<char>());
   ifs.close();
-  std::cout << "Processing " << filename << std::endl;
+  std::cout << "Processing " << filename << "\n";
   LLVMFuzzerTestOneInput(reinterpret_cast<uint8_t*>(contents.data()),
                          contents.size());
 }
@@ -32,7 +32,7 @@ int main(int argc, const char* argv[]) {
     auto runner = JxlThreadParallelRunnerMake(
         nullptr, JxlThreadParallelRunnerDefaultNumWorkerThreads());
     return JxlThreadParallelRunner(
-        runner.get(), argv,
+        static_cast<void*>(runner.get()), reinterpret_cast<void*>(argv),
         /* init= */ +[](void*, size_t) -> JxlParallelRetCode { return 0; },
         /* func= */
         +[](void* opaque, uint32_t value, size_t) {

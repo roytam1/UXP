@@ -5,21 +5,25 @@
 
 #include "lib/extras/dec/jpg.h"
 
-#include <jpeglib.h>
-#include <setjmp.h>
-#include <stdint.h>
+#if JPEGXL_ENABLE_JPEG
+#include "lib/jxl/base/include_jpeglib.h"  // NOLINT
+#endif
 
 #include <algorithm>
+#include <cstdint>
 #include <numeric>
 #include <utility>
 #include <vector>
 
+#include "lib/extras/size_constraints.h"
+#include "lib/jxl/base/compiler_specific.h"
+#include "lib/jxl/base/sanitizers.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/sanitizers.h"
 
 namespace jxl {
 namespace extras {
 
+#if JPEGXL_ENABLE_JPEG
 namespace {
 
 constexpr unsigned char kICCSignature[12] = {
@@ -30,7 +34,7 @@ constexpr unsigned char kExifSignature[6] = {0x45, 0x78, 0x69,
                                              0x66, 0x00, 0x00};
 constexpr int kExifMarker = JPEG_APP0 + 1;
 
-static inline bool IsJPG(const Span<const uint8_t> bytes) {
+inline bool IsJPG(const Span<const uint8_t> bytes) {
   if (bytes.size() < 2) return false;
   if (bytes[0] != 0xFF || bytes[1] != 0xD8) return false;
   return true;
@@ -106,7 +110,7 @@ Status ReadICCProfile(jpeg_decompress_struct* const cinfo,
   }
 
   if (seen_markers_count != num_markers) {
-    JXL_DASSERT(has_num_markers);
+    JXL_ENSURE(has_num_markers);
     return JXL_FAILURE("Incomplete set of ICC chunks");
   }
 
@@ -152,20 +156,44 @@ void MyErrorExit(j_common_ptr cinfo) {
 }
 
 void MyOutputMessage(j_common_ptr cinfo) {
-#if JXL_DEBUG_WARNING == 1
-  char buf[JMSG_LENGTH_MAX + 1];
-  (*cinfo->err->format_message)(cinfo, buf);
-  buf[JMSG_LENGTH_MAX] = 0;
-  JXL_WARNING("%s", buf);
-#endif
+  if (JXL_IS_DEBUG_BUILD) {
+    char buf[JMSG_LENGTH_MAX + 1];
+    (*cinfo->err->format_message)(cinfo, buf);
+    buf[JMSG_LENGTH_MAX] = 0;
+    JXL_WARNING("%s", buf);
+  }
+}
+
+Status UnmapColors(uint8_t* row, size_t xsize, int components,
+                   JSAMPARRAY colormap, size_t num_colors) {
+  JXL_ENSURE(colormap != nullptr);
+  std::vector<uint8_t> tmp(xsize * components);
+  for (size_t x = 0; x < xsize; ++x) {
+    JXL_ENSURE(row[x] < num_colors);
+    for (int c = 0; c < components; ++c) {
+      tmp[x * components + c] = colormap[c][row[x]];
+    }
+  }
+  memcpy(row, tmp.data(), tmp.size());
+  return true;
 }
 
 }  // namespace
+#endif
+
+bool CanDecodeJPG() {
+#if JPEGXL_ENABLE_JPEG
+  return true;
+#else
+  return false;
+#endif
+}
 
 Status DecodeImageJPG(const Span<const uint8_t> bytes,
-                      const ColorHints& color_hints,
-                      const SizeConstraints& constraints,
-                      PackedPixelFile* ppf) {
+                      const ColorHints& color_hints, PackedPixelFile* ppf,
+                      const SizeConstraints* constraints,
+                      const JPGDecompressParams* dparams) {
+#if JPEGXL_ENABLE_JPEG
   // Don't do anything for non-JPEG files (no need to report an error)
   if (!IsJPG(bytes)) return false;
 
@@ -176,10 +204,7 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
   std::unique_ptr<JSAMPLE[]> row;
 
   const auto try_catch_block = [&]() -> bool {
-    jpeg_decompress_struct cinfo;
-    // cinfo is initialized by libjpeg, which we are not instrumenting with
-    // msan, therefore we need to initialize cinfo here.
-    msan::UnpoisonMemory(&cinfo, sizeof(cinfo));
+    jpeg_decompress_struct cinfo = {};
     // Setup error handling in jpeg library so we can deal with broken jpegs in
     // the fuzzer.
     jpeg_error_mgr jerr;
@@ -207,8 +232,7 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
     if (read_header_result == JPEG_SUSPENDED) {
       return failure("truncated JPEG input");
     }
-    if (!VerifyDimensions(&constraints, cinfo.image_width,
-                          cinfo.image_height)) {
+    if (!VerifyDimensions(constraints, cinfo.image_width, cinfo.image_height)) {
       return failure("image too big");
     }
     // Might cause CPU-zip bomb.
@@ -219,7 +243,11 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
     if (nbcomp != 1 && nbcomp != 3) {
       return failure("unsupported number of components in JPEG");
     }
-    if (!ReadICCProfile(&cinfo, &ppf->icc)) {
+    if (ReadICCProfile(&cinfo, &ppf->icc)) {
+      ppf->primary_color_representation = PackedPixelFile::kIccIsPrimary;
+    } else {
+      ppf->primary_color_representation =
+          PackedPixelFile::kColorEncodingIsPrimary;
       ppf->icc.clear();
       // Default to SRGB
       // Actually, (cinfo.output_components == nbcomp) will be checked after
@@ -241,9 +269,9 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
     ppf->info.ysize = cinfo.image_height;
     // Original data is uint, so exponent_bits_per_sample = 0.
     ppf->info.bits_per_sample = BITS_IN_JSAMPLE;
-    JXL_ASSERT(BITS_IN_JSAMPLE == 8 || BITS_IN_JSAMPLE == 16);
+    static_assert(BITS_IN_JSAMPLE == 8 || BITS_IN_JSAMPLE == 16);
     ppf->info.exponent_bits_per_sample = 0;
-    ppf->info.uses_original_profile = true;
+    ppf->info.uses_original_profile = JXL_TRUE;
 
     // No alpha in JPG
     ppf->info.alpha_bits = 0;
@@ -252,22 +280,50 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
     ppf->info.num_color_channels = nbcomp;
     ppf->info.orientation = JXL_ORIENT_IDENTITY;
 
+    if (dparams && dparams->num_colors > 0) {
+      cinfo.quantize_colors = TRUE;
+      cinfo.desired_number_of_colors = dparams->num_colors;
+      cinfo.two_pass_quantize = static_cast<boolean>(dparams->two_pass_quant);
+      cinfo.dither_mode = static_cast<J_DITHER_MODE>(dparams->dither_mode);
+    }
+
     jpeg_start_decompress(&cinfo);
-    JXL_ASSERT(cinfo.output_components == nbcomp);
+    JXL_ENSURE(cinfo.out_color_components == nbcomp);
+    JxlDataType data_type =
+        ppf->info.bits_per_sample <= 8 ? JXL_TYPE_UINT8 : JXL_TYPE_UINT16;
 
     const JxlPixelFormat format{
         /*num_channels=*/static_cast<uint32_t>(nbcomp),
-        /*data_type=*/BITS_IN_JSAMPLE == 8 ? JXL_TYPE_UINT8 : JXL_TYPE_UINT16,
+        data_type,
         /*endianness=*/JXL_NATIVE_ENDIAN,
         /*align=*/0,
     };
     ppf->frames.clear();
     // Allocates the frame buffer.
-    ppf->frames.emplace_back(cinfo.image_width, cinfo.image_height, format);
+    {
+      JXL_ASSIGN_OR_RETURN(
+          PackedFrame frame,
+          PackedFrame::Create(cinfo.image_width, cinfo.image_height, format));
+      ppf->frames.emplace_back(std::move(frame));
+    }
     const auto& frame = ppf->frames.back();
-    JXL_ASSERT(sizeof(JSAMPLE) * cinfo.output_components * cinfo.image_width <=
+    JXL_ENSURE(sizeof(JSAMPLE) * cinfo.out_color_components *
+                   cinfo.image_width <=
                frame.color.stride);
 
+    if (cinfo.quantize_colors) {
+      JSAMPLE** colormap = cinfo.colormap;
+      jxl::msan::UnpoisonMemory(reinterpret_cast<void*>(colormap),
+                                cinfo.out_color_components * sizeof(JSAMPLE*));
+      for (int c = 0; c < cinfo.out_color_components; ++c) {
+        jxl::msan::UnpoisonMemory(
+            reinterpret_cast<void*>(colormap[c]),
+            cinfo.actual_number_of_colors * sizeof(JSAMPLE));
+      }
+    }
+    if (dparams && dparams->num_colors > 0) {
+      JXL_ENSURE(cinfo.colormap != nullptr);
+    }
     for (size_t y = 0; y < cinfo.image_height; ++y) {
       JSAMPROW rows[] = {reinterpret_cast<JSAMPLE*>(
           static_cast<uint8_t*>(frame.color.pixels()) +
@@ -275,6 +331,11 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
       jpeg_read_scanlines(&cinfo, rows, 1);
       msan::UnpoisonMemory(rows[0], sizeof(JSAMPLE) * cinfo.output_components *
                                         cinfo.image_width);
+      if (dparams && dparams->num_colors > 0) {
+        JXL_RETURN_IF_ERROR(
+            UnmapColors(rows[0], cinfo.output_width, cinfo.out_color_components,
+                        cinfo.colormap, cinfo.actual_number_of_colors));
+      }
     }
 
     jpeg_finish_decompress(&cinfo);
@@ -283,6 +344,9 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
   };
 
   return try_catch_block();
+#else
+  return false;
+#endif
 }
 
 }  // namespace extras

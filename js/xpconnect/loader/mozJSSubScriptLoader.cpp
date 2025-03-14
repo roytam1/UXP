@@ -19,6 +19,7 @@
 
 #include "jsapi.h"
 #include "jsfriendapi.h"
+#include "js/SourceBufferHolder.h"
 #include "nsJSPrincipals.h"
 #include "xpcprivate.h" // For xpc::OptionsBase
 #include "jswrapper.h"

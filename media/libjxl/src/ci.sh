@@ -5,23 +5,29 @@
 # license that can be found in the LICENSE file.
 
 # Continuous integration helper module. This module is meant to be called from
-# the .gitlab-ci.yml file during the continuous integration build, as well as
-# from the command line for developers.
+# workflows during the continuous integration build, as well as from the
+# command line for developers.
 
 set -eu
 
 OS=`uname -s`
 
-MYDIR=$(dirname $(realpath "$0"))
+SELF=$(realpath "$0")
+MYDIR=$(dirname "${SELF}")
 
 ### Environment parameters:
 TEST_STACK_LIMIT="${TEST_STACK_LIMIT:-256}"
+BENCHMARK_NUM_THREADS="${BENCHMARK_NUM_THREADS:-0}"
+BUILD_CONFIG=${BUILD_CONFIG:-}
 CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-RelWithDebInfo}
 CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH:-}
 CMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER:-}
 CMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER:-}
 CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM:-}
+SKIP_BUILD="${SKIP_BUILD:-0}"
 SKIP_TEST="${SKIP_TEST:-0}"
+FASTER_MSAN_BUILD="${FASTER_MSAN_BUILD:-0}"
+TARGETS="${TARGETS:-all doc}"
 TEST_SELECTOR="${TEST_SELECTOR:-}"
 BUILD_TARGET="${BUILD_TARGET:-}"
 ENABLE_WASM_SIMD="${ENABLE_WASM_SIMD:-0}"
@@ -32,6 +38,8 @@ else
 fi
 # Whether we should post a message in the MR when the build fails.
 POST_MESSAGE_ON_ERROR="${POST_MESSAGE_ON_ERROR:-1}"
+# By default, do a lightweight debian HWY package build.
+HWY_PKG_OPTIONS="${HWY_PKG_OPTIONS:---set-envvar=HWY_EXTRA_CONFIG=-DBUILD_TESTING=OFF -DHWY_ENABLE_EXAMPLES=OFF -DHWY_ENABLE_CONTRIB=OFF}"
 
 # Set default compilers to clang if not already set
 export CC=${CC:-clang}
@@ -69,13 +77,24 @@ if [[ "${ENABLE_WASM_SIMD}" -ne "0" ]]; then
   CMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS} -msimd128"
 fi
 
+if [[ "${ENABLE_WASM_SIMD}" -eq "2" ]]; then
+  CMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -DHWY_WANT_WASM2"
+  CMAKE_C_FLAGS="${CMAKE_C_FLAGS} -DHWY_WANT_WASM2"
+fi
+
+if [[ -z "${BUILD_CONFIG}" ]]; then
+  TOOLS_DIR="${BUILD_DIR}/tools"
+else
+  TOOLS_DIR="${BUILD_DIR}/tools/${BUILD_CONFIG}"
+fi
+
 if [[ ! -z "${HWY_BASELINE_TARGETS}" ]]; then
   CMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -DHWY_BASELINE_TARGETS=${HWY_BASELINE_TARGETS}"
 fi
 
 # Version inferred from the CI variables.
-CI_COMMIT_SHA=${CI_COMMIT_SHA:-${GITHUB_SHA:-}}
-JPEGXL_VERSION=${JPEGXL_VERSION:-${CI_COMMIT_SHA:0:8}}
+CI_COMMIT_SHA=${GITHUB_SHA:-}
+JPEGXL_VERSION=${JPEGXL_VERSION:-}
 
 # Benchmark parameters
 STORE_IMAGES=${STORE_IMAGES:-1}
@@ -118,17 +137,34 @@ if [[ "${BUILD_TARGET%%-*}" != "arm" ]]; then
   )
 fi
 
-CLANG_TIDY_BIN=$(which clang-tidy-6.0 clang-tidy-7 clang-tidy-8 clang-tidy | head -n 1)
+CLANG_TIDY_BIN_CANDIDATES=(
+  clang-tidy
+  clang-tidy-6.0
+  clang-tidy-7
+  clang-tidy-8
+  clang-tidy-9
+  clang-tidy-10
+  clang-tidy-11
+  clang-tidy-12
+  clang-tidy-13
+  clang-tidy-14
+  clang-tidy-15
+  clang-tidy-16
+  clang-tidy-17
+  clang-tidy-18
+)
+
+CLANG_TIDY_BIN=${CLANG_TIDY_BIN:-$(which ${CLANG_TIDY_BIN_CANDIDATES[@]} 2>/dev/null | tail -n 1)}
 # Default to "cat" if "colordiff" is not installed or if stdout is not a tty.
 if [[ -t 1 ]]; then
-  COLORDIFF_BIN=$(which colordiff cat | head -n 1)
+  COLORDIFF_BIN=$(which colordiff cat 2>/dev/null | head -n 1)
 else
   COLORDIFF_BIN="cat"
 fi
-FIND_BIN=$(which gfind find | head -n 1)
+FIND_BIN=$(which gfind find 2>/dev/null | head -n 1)
 # "false" will disable wine64 when not installed. This won't allow
 # cross-compiling.
-WINE_BIN=$(which wine64 false | head -n 1)
+WINE_BIN=$(which wine64 false 2>/dev/null | head -n 1)
 
 CLANG_VERSION="${CLANG_VERSION:-}"
 # Detect the clang version suffix and store it in CLANG_VERSION. For example,
@@ -139,6 +175,7 @@ detect_clang_version() {
   fi
   local clang_version=$("${CC:-clang}" --version | head -n1)
   clang_version=${clang_version#"Debian "}
+  clang_version=${clang_version#"Ubuntu "}
   local llvm_tag
   case "${clang_version}" in
     "clang version 6."*)
@@ -171,27 +208,6 @@ on_exit() {
   local retcode="$1"
   # Always cleanup the CLEANUP_FILES.
   cleanup
-
-  # Post a message in the MR when requested with POST_MESSAGE_ON_ERROR but only
-  # if the run failed and we are not running from a MR pipeline.
-  if [[ ${retcode} -ne 0 && -n "${CI_BUILD_NAME:-}" &&
-        -n "${POST_MESSAGE_ON_ERROR}" && -z "${CI_MERGE_REQUEST_ID:-}" &&
-        "${CI_BUILD_REF_NAME}" = "master" ]]; then
-    load_mr_vars_from_commit
-    { set +xeu; } 2>/dev/null
-    local message="**Run ${CI_BUILD_NAME} @ ${CI_COMMIT_SHORT_SHA} failed.**
-
-Check the output of the job at ${CI_JOB_URL:-} to see if this was your problem.
-If it was, please rollback this change or fix the problem ASAP, broken builds
-slow down development. Check if the error already existed in the previous build
-as well.
-
-Pipeline: ${CI_PIPELINE_URL}
-
-Previous build commit: ${CI_COMMIT_BEFORE_SHA}
-"
-    cmd_post_mr_comment "${message}"
-  fi
 }
 
 trap 'retcode=$?; { set +x; } 2>/dev/null; on_exit ${retcode}' INT TERM EXIT
@@ -203,7 +219,7 @@ trap 'retcode=$?; { set +x; } 2>/dev/null; on_exit ${retcode}' INT TERM EXIT
 # running from a merge request pipeline).
 MR_HEAD_SHA=""
 # The common ancestor between the current commit and the tracked branch, such
-# as master. This includes a list
+# as main. This includes a list
 MR_ANCESTOR_SHA=""
 
 # Populate MR_HEAD_SHA and MR_ANCESTOR_SHA.
@@ -216,30 +232,23 @@ merge_request_commits() {
     # changes on the Pull Request if needed. This fetches 10 more commits which
     # should be enough given that PR normally should have 1 commit.
     git -C "${MYDIR}" fetch -q origin "${GITHUB_SHA}" --depth 10
-    MR_HEAD_SHA="$(git rev-parse "FETCH_HEAD^2" 2>/dev/null ||
+    if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+      MR_HEAD_SHA="$(git rev-parse "FETCH_HEAD^2" 2>/dev/null ||
                    echo "${GITHUB_SHA}")"
+    else
+      MR_HEAD_SHA="${GITHUB_SHA}"
+    fi
   else
-    # CI_BUILD_REF is the reference currently being build in the CI workflow.
-    MR_HEAD_SHA=$(git -C "${MYDIR}" rev-parse -q "${CI_BUILD_REF:-HEAD}")
+    MR_HEAD_SHA=$(git -C "${MYDIR}" rev-parse -q "HEAD")
   fi
 
-  if [[ -n "${CI_MERGE_REQUEST_IID:-}" ]]; then
-    # Merge request pipeline in CI. In this case the upstream is called "origin"
-    # but it refers to the forked project that's the source of the merge
-    # request. We need to get the target of the merge request, for which we need
-    # to query that repository using our CI_JOB_TOKEN.
-    echo "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" \
-      >> "${HOME}/.netrc"
-    git -C "${MYDIR}" fetch "${CI_MERGE_REQUEST_PROJECT_URL}" \
-      "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
-    MR_ANCESTOR_SHA=$(git -C "${MYDIR}" rev-parse -q FETCH_HEAD)
-  elif [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+  if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
     # Pull request workflow in GitHub Actions. GitHub checkout action uses
     # "origin" as the remote for the git checkout.
     git -C "${MYDIR}" fetch -q origin "${GITHUB_BASE_REF}"
     MR_ANCESTOR_SHA=$(git -C "${MYDIR}" rev-parse -q FETCH_HEAD)
   else
-    # We are in a local branch, not a merge request.
+    # We are in a local branch, not a pull request workflow.
     MR_ANCESTOR_SHA=$(git -C "${MYDIR}" rev-parse -q HEAD@{upstream} || true)
   fi
 
@@ -258,40 +267,6 @@ merge_request_commits() {
   set -x
 }
 
-# Load the MR iid from the landed commit message when running not from a
-# merge request workflow. This is useful to post back results at the merge
-# request when running pipelines from master.
-load_mr_vars_from_commit() {
-  { set +x; } 2>/dev/null
-  if [[ -z "${CI_MERGE_REQUEST_IID:-}" ]]; then
-    local mr_iid=$(git rev-list --format=%B --max-count=1 HEAD |
-      grep -F "${CI_PROJECT_URL}" | grep -F "/merge_requests" | head -n 1)
-    # mr_iid contains a string like this if it matched:
-    #  Part-of: <https://gitlab.com/wg1/jpeg-xlm/merge_requests/123456>
-    if [[ -n "${mr_iid}" ]]; then
-      mr_iid=$(echo "${mr_iid}" |
-        sed -E 's,^.*merge_requests/([0-9]+)>.*$,\1,')
-      CI_MERGE_REQUEST_IID="${mr_iid}"
-      CI_MERGE_REQUEST_PROJECT_ID=${CI_PROJECT_ID}
-    fi
-  fi
-  set -x
-}
-
-# Posts a comment to the current merge request.
-cmd_post_mr_comment() {
-  { set +x; } 2>/dev/null
-  local comment="$1"
-  if [[ -n "${BOT_TOKEN:-}" && -n "${CI_MERGE_REQUEST_IID:-}" ]]; then
-    local url="${CI_API_V4_URL}/projects/${CI_MERGE_REQUEST_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes"
-    curl -X POST -g \
-      -H "PRIVATE-TOKEN: ${BOT_TOKEN}" \
-      --data-urlencode "body=${comment}" \
-      --output /dev/null \
-      "${url}"
-  fi
-  set -x
-}
 
 # Set up and export the environment variables needed by the child processes.
 export_env() {
@@ -452,14 +427,17 @@ cmake_configure() {
 }
 
 cmake_build_and_test() {
+  if [[ "${SKIP_BUILD}" -eq "1" ]]; then
+      return 0
+  fi
   # gtest_discover_tests() runs the test binaries to discover the list of tests
   # at build time, which fails under qemu.
-  ASAN_OPTIONS=detect_leaks=0 cmake --build "${BUILD_DIR}" -- all doc
+  ASAN_OPTIONS=detect_leaks=0 cmake --build "${BUILD_DIR}" -- $TARGETS
   # Pack test binaries if requested.
   if [[ "${PACK_TEST:-}" == "1" ]]; then
     (cd "${BUILD_DIR}"
      ${FIND_BIN} -name '*.cmake' -a '!' -path '*CMakeFiles*'
-     # gtest / gmock / gtest_main shared libs
+     # gtest / gtest_main shared libs
      ${FIND_BIN} lib/ -name 'libg*.so*'
      ${FIND_BIN} -type d -name tests -a '!' -path '*CMakeFiles*'
     ) | tar -C "${BUILD_DIR}" -cf "${BUILD_DIR}/tests.tar.xz" -T - \
@@ -507,7 +485,7 @@ strip_dead_code() {
 ### Externally visible commands
 
 cmd_debug() {
-  CMAKE_BUILD_TYPE="Debug"
+  CMAKE_BUILD_TYPE="DebugOpt"
   cmake_configure "$@"
   cmake_build_and_test
 }
@@ -521,7 +499,7 @@ cmd_release() {
 
 cmd_opt() {
   CMAKE_BUILD_TYPE="RelWithDebInfo"
-  CMAKE_CXX_FLAGS+=" -DJXL_DEBUG_WARNING -DJXL_DEBUG_ON_ERROR"
+  CMAKE_CXX_FLAGS+=" -DJXL_IS_DEBUG_BUILD"
   cmake_configure "$@"
   cmake_build_and_test
 }
@@ -547,6 +525,7 @@ cmd_coverage_report() {
     # Only print coverage information for the libjxl directories. The rest
     # is not part of the code under test.
     --filter '.*jxl/.*'
+    --exclude '.*_gbench.cc'
     --exclude '.*_test.cc'
     --exclude '.*_testonly..*'
     --exclude '.*_debug.*'
@@ -576,7 +555,7 @@ cmd_test() {
   (cd "${BUILD_DIR}"
    export UBSAN_OPTIONS=print_stacktrace=1
    [[ "${TEST_STACK_LIMIT}" == "none" ]] || ulimit -s "${TEST_STACK_LIMIT}"
-   ctest -j $(nproc --all || echo 1) --output-on-failure "$@")
+   ctest -j $(nproc --all || echo 1) ${TEST_SELECTOR} --output-on-failure "$@")
 }
 
 cmd_gbench() {
@@ -600,6 +579,7 @@ cmd_msanfuzz() {
   # Install msan if needed before changing the flags.
   detect_clang_version
   local msan_prefix="${HOME}/.msan/${CLANG_VERSION}"
+  # TODO(eustas): why libc++abi.a is bad?
   if [[ ! -d "${msan_prefix}" || -e "${msan_prefix}/lib/libc++abi.a" ]]; then
     # Install msan libraries for this version if needed or if an older version
     # with libc++abi was installed.
@@ -613,9 +593,9 @@ cmd_msanfuzz() {
 
 cmd_asan() {
   SANITIZER="asan"
-  CMAKE_C_FLAGS+=" -DJXL_ENABLE_ASSERT=1 -g -DADDRESS_SANITIZER \
+  CMAKE_C_FLAGS+=" -g -DADDRESS_SANITIZER \
     -fsanitize=address ${UBSAN_FLAGS[@]}"
-  CMAKE_CXX_FLAGS+=" -DJXL_ENABLE_ASSERT=1 -g -DADDRESS_SANITIZER \
+  CMAKE_CXX_FLAGS+=" -g -DADDRESS_SANITIZER \
     -fsanitize=address ${UBSAN_FLAGS[@]}"
   strip_dead_code
   cmake_configure "$@" -DJPEGXL_ENABLE_TCMALLOC=OFF
@@ -625,16 +605,13 @@ cmd_asan() {
 cmd_tsan() {
   SANITIZER="tsan"
   local tsan_args=(
-    -DJXL_ENABLE_ASSERT=1
     -g
     -DTHREAD_SANITIZER
-    ${UBSAN_FLAGS[@]}
     -fsanitize=thread
   )
   CMAKE_C_FLAGS+=" ${tsan_args[@]}"
   CMAKE_CXX_FLAGS+=" ${tsan_args[@]}"
 
-  CMAKE_BUILD_TYPE="RelWithDebInfo"
   cmake_configure "$@" -DJPEGXL_ENABLE_TCMALLOC=OFF
   cmake_build_and_test
 }
@@ -652,15 +629,20 @@ cmd_msan() {
   local msan_c_flags=(
     -fsanitize=memory
     -fno-omit-frame-pointer
-    -fsanitize-memory-track-origins
 
-    -DJXL_ENABLE_ASSERT=1
     -g
     -DMEMORY_SANITIZER
 
     # Force gtest to not use the cxxbai.
     -DGTEST_HAS_CXXABI_H_=0
   )
+  if [[ "${FASTER_MSAN_BUILD}" -ne "1" ]]; then
+    msan_c_flags=(
+      "${msan_c_flags[@]}"
+      -fsanitize-memory-track-origins
+    )
+  fi
+
   local msan_cxx_flags=(
     "${msan_c_flags[@]}"
 
@@ -680,16 +662,22 @@ cmd_msan() {
     -Wl,-rpath -Wl,"${msan_prefix}"/lib/
   )
 
-  CMAKE_C_FLAGS+=" ${msan_c_flags[@]} ${UBSAN_FLAGS[@]}"
-  CMAKE_CXX_FLAGS+=" ${msan_cxx_flags[@]} ${UBSAN_FLAGS[@]}"
+  CMAKE_C_FLAGS+=" ${msan_c_flags[@]}"
+  CMAKE_CXX_FLAGS+=" ${msan_cxx_flags[@]}"
   CMAKE_EXE_LINKER_FLAGS+=" ${msan_linker_flags[@]}"
   CMAKE_MODULE_LINKER_FLAGS+=" ${msan_linker_flags[@]}"
   CMAKE_SHARED_LINKER_FLAGS+=" ${msan_linker_flags[@]}"
   strip_dead_code
+
+  # MSAN share of stack size is non-negligible.
+  TEST_STACK_LIMIT="none"
+
+  # TODO(eustas): investigate why fuzzers do not link when MSAN libc++ is used
   cmake_configure "$@" \
     -DCMAKE_CROSSCOMPILING=1 -DRUN_HAVE_STD_REGEX=0 -DRUN_HAVE_POSIX_REGEX=0 \
     -DJPEGXL_ENABLE_TCMALLOC=OFF -DJPEGXL_WARNINGS_AS_ERRORS=OFF \
-    -DCMAKE_REQUIRED_LINK_OPTIONS="${msan_linker_flags[@]}"
+    -DCMAKE_REQUIRED_LINK_OPTIONS="${msan_linker_flags[@]}" \
+    -DJPEGXL_ENABLE_FUZZERS=OFF
   cmake_build_and_test
 }
 
@@ -698,6 +686,8 @@ cmd_msan() {
 cmd_msan_install() {
   local tmpdir=$(mktemp -d)
   CLEANUP_FILES+=("${tmpdir}")
+  local msan_root="${HOME}/.msan"
+  mkdir -p "${msan_root}"
   # Detect the llvm to install:
   export CC="${CC:-clang}"
   export CXX="${CXX:-clang++}"
@@ -705,50 +695,70 @@ cmd_msan_install() {
   # Allow overriding the LLVM checkout.
   local llvm_root="${LLVM_ROOT:-}"
   if [ -z "${llvm_root}" ]; then
-    local llvm_tag="llvmorg-${CLANG_VERSION}.0.0"
-    case "${CLANG_VERSION}" in
-      "6.0")
-        llvm_tag="llvmorg-6.0.1"
-        ;;
-      "7")
-        llvm_tag="llvmorg-7.0.1"
-        ;;
-    esac
-    local llvm_targz="${tmpdir}/${llvm_tag}.tar.gz"
-    curl -L --show-error -o "${llvm_targz}" \
-      "https://github.com/llvm/llvm-project/archive/${llvm_tag}.tar.gz"
+    declare -A llvm_tag_by_version=(
+      ["6.0"]="6.0.1"
+      ["7"]="7.1.0"
+      ["8"]="8.0.1"
+      ["9"]="9.0.2"
+      ["10"]="10.0.1"
+      ["11"]="11.1.0"
+      ["12"]="12.0.1"
+      ["13"]="13.0.1"
+      ["14"]="14.0.6"
+      ["15"]="15.0.7"
+      ["16"]="16.0.6"
+      ["17"]="17.0.6"
+      ["18"]="18.1.6"
+    ) 
+    local llvm_tag="${CLANG_VERSION}.0.0"
+    if [[ -n "${llvm_tag_by_version["${CLANG_VERSION}"]}" ]]; then
+      llvm_tag=${llvm_tag_by_version["${CLANG_VERSION}"]}
+    fi
+    llvm_tag="llvmorg-${llvm_tag}"
+    local llvm_targz="${msan_root}/${llvm_tag}.tar.gz"
+    if [ ! -f "${llvm_targz}" ]; then
+      curl -L --show-error -o "${llvm_targz}" \
+        "https://github.com/llvm/llvm-project/archive/${llvm_tag}.tar.gz"
+    fi
     tar -C "${tmpdir}" -zxf "${llvm_targz}"
     llvm_root="${tmpdir}/llvm-project-${llvm_tag}"
   fi
 
-  local msan_prefix="${HOME}/.msan/${CLANG_VERSION}"
+  local msan_prefix="${msan_root}/${CLANG_VERSION}"
   rm -rf "${msan_prefix}"
 
-  declare -A CMAKE_EXTRAS
-  CMAKE_EXTRAS[libcxx]="\
-    -DLIBCXX_CXX_ABI=libstdc++ \
-    -DLIBCXX_INSTALL_EXPERIMENTAL_LIBRARY=ON"
+  local TARGET_OPTS=""
+  if [[ -n "${BUILD_TARGET}" ]]; then
+    TARGET_OPTS=" \
+      -DCMAKE_C_COMPILER_TARGET=\"${BUILD_TARGET}\" \
+      -DCMAKE_CXX_COMPILER_TARGET=\"${BUILD_TARGET}\" \
+      -DCMAKE_SYSTEM_PROCESSOR=\"${BUILD_TARGET%%-*}\" \
+    "
+  fi
 
-  for project in libcxx; do
-    local proj_build="${tmpdir}/build-${project}"
-    local proj_dir="${llvm_root}/${project}"
-    mkdir -p "${proj_build}"
-    cmake -B"${proj_build}" -H"${proj_dir}" \
-      -G Ninja \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DLLVM_USE_SANITIZER=Memory \
-      -DLLVM_PATH="${llvm_root}/llvm" \
-      -DLLVM_CONFIG_PATH="$(which llvm-config llvm-config-7 llvm-config-6.0 | \
-                            head -n1)" \
-      -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS}" \
-      -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS}" \
-      -DCMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS}" \
-      -DCMAKE_SHARED_LINKER_FLAGS="${CMAKE_SHARED_LINKER_FLAGS}" \
-      -DCMAKE_INSTALL_PREFIX="${msan_prefix}" \
-      ${CMAKE_EXTRAS[${project}]}
-    cmake --build "${proj_build}"
-    ninja -C "${proj_build}" install
-  done
+  local build_dir="${tmpdir}/build-llvm"
+  mkdir -p "${build_dir}"
+  cd ${llvm_root}
+  cmake -B"${build_dir}" \
+    -G Ninja \
+    -S runtimes \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DLLVM_USE_SANITIZER=Memory \
+    -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind;compiler-rt" \
+    -DLIBCXXABI_ENABLE_SHARED=ON \
+    -DLIBCXXABI_ENABLE_STATIC=OFF \
+    -DLIBCXX_ENABLE_SHARED=ON \
+    -DLIBCXX_ENABLE_STATIC=OFF \
+    -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS}" \
+    -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS}" \
+    -DCMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS}" \
+    -DCMAKE_SHARED_LINKER_FLAGS="${CMAKE_SHARED_LINKER_FLAGS}" \
+    -DCMAKE_INSTALL_PREFIX="${msan_prefix}" \
+    -DLLVM_PATH="${llvm_root}/llvm" \
+    -DLLVM_CONFIG_PATH="$(which llvm-config-${CLANG_VERSION} llvm-config | head -n1)" \
+     ${TARGET_OPTS}
+  cmake --build "${build_dir}"
+  ninja -C "${build_dir}" install
 }
 
 # Internal build step shared between all cmd_ossfuzz_* commands.
@@ -788,7 +798,7 @@ _cmd_ossfuzz() {
     -e MSAN_LIBS_PATH="/work/msan" \
     -e JPEGXL_EXTRA_ARGS="${jpegxl_extra_args}" \
     -v "${MYDIR}":/src/libjxl \
-    -v "${MYDIR}/tools/ossfuzz-build.sh":/src/build.sh \
+    -v "${MYDIR}/tools/scripts/ossfuzz-build.sh":/src/build.sh \
     -v "${real_build_dir}":/work \
     gcr.io/oss-fuzz/libjxl
 }
@@ -822,9 +832,13 @@ cmd_ossfuzz_ninja() {
 
 cmd_fast_benchmark() {
   local small_corpus_tar="${BENCHMARK_CORPORA}/jyrki-full.tar"
+  local small_corpus_url="https://storage.googleapis.com/artifacts.jpegxl.appspot.com/corpora/jyrki-full.tar"
   mkdir -p "${BENCHMARK_CORPORA}"
-  curl --show-error -o "${small_corpus_tar}" -z "${small_corpus_tar}" \
-    "https://storage.googleapis.com/artifacts.jpegxl.appspot.com/corpora/jyrki-full.tar"
+  if [ -f "${small_corpus_tar}" ]; then
+    curl --show-error -o "${small_corpus_tar}" -z "${small_corpus_tar}" "${small_corpus_url}"
+  else
+    curl --show-error -o "${small_corpus_tar}" "${small_corpus_url}"
+  fi
 
   local tmpdir=$(mktemp -d)
   CLEANUP_FILES+=("${tmpdir}")
@@ -862,7 +876,7 @@ cmd_benchmark() {
     png_filename="${filename%.ppm}.png"
     png_filename=$(echo "${png_filename}" | tr '/' '_')
     sem --bg --id "${sem_id}" -j"${nprocs}" -- \
-      "${BUILD_DIR}/tools/decode_and_encode" \
+      "${TOOLS_DIR}/decode_and_encode" \
         "${tmpdir}/${filename}" "${mode}" "${tmpdir}/${png_filename}"
     images+=( "${png_filename}" )
   done < <(cd "${tmpdir}"; ${FIND_BIN} . -name '*.ppm' -type f)
@@ -875,6 +889,8 @@ cmd_benchmark() {
 get_mem_available() {
   if [[ "${OS}" == "Darwin" ]]; then
     echo $(vm_stat | grep -F 'Pages free:' | awk '{print $3 * 4}')
+  elif [[ "${OS}" == MINGW* ]]; then
+    echo $(vmstat | tail -n 1 | awk '{print $4 * 4}')
   else
     echo $(grep -F MemAvailable: /proc/meminfo | awk '{print $2}')
   fi
@@ -887,45 +903,46 @@ run_benchmark() {
   local output_dir="${BUILD_DIR}/benchmark_results"
   mkdir -p "${output_dir}"
 
-  # The memory available at the beginning of the benchmark run in kB. The number
-  # of threads depends on the available memory, and the passed memory per
-  # thread. We also add a 2 GiB of constant memory.
-  local mem_available="$(get_mem_available)"
-  # Check that we actually have a MemAvailable value.
-  [[ -n "${mem_available}" ]]
-  local num_threads=$(( (${mem_available} - 1048576) / ${mem_per_thread} ))
-  if [[ ${num_threads} -le 0 ]]; then
-    num_threads=1
+  if [[ "${OS}" == MINGW* ]]; then
+    src_img_dir=`cygpath -w "${src_img_dir}"`
+  fi
+
+  local num_threads=1
+  if [[ ${BENCHMARK_NUM_THREADS} -gt 0 ]]; then
+    num_threads=${BENCHMARK_NUM_THREADS}
+  else
+    # The memory available at the beginning of the benchmark run in kB. The number
+    # of threads depends on the available memory, and the passed memory per
+    # thread. We also add a 2 GiB of constant memory.
+    local mem_available="$(get_mem_available)"
+    # Check that we actually have a MemAvailable value.
+    [[ -n "${mem_available}" ]]
+    num_threads=$(( (${mem_available} - 1048576) / ${mem_per_thread} ))
+    if [[ ${num_threads} -le 0 ]]; then
+      num_threads=1
+    fi
   fi
 
   local benchmark_args=(
     --input "${src_img_dir}/*.png"
     --codec=jpeg:yuv420:q85,webp:q80,jxl:d1:6,jxl:d1:6:downsampling=8,jxl:d5:6,jxl:d5:6:downsampling=8,jxl:m:d0:2,jxl:m:d0:3,jxl:m:d2:2
     --output_dir "${output_dir}"
-    --noprofiler --show_progress
+    --show_progress
     --num_threads="${num_threads}"
+    --decode_reps=11
+    --encode_reps=11
   )
   if [[ "${STORE_IMAGES}" == "1" ]]; then
     benchmark_args+=(--save_decompressed --save_compressed)
   fi
   (
     [[ "${TEST_STACK_LIMIT}" == "none" ]] || ulimit -s "${TEST_STACK_LIMIT}"
-    "${BUILD_DIR}/tools/benchmark_xl" "${benchmark_args[@]}" | \
+    "${TOOLS_DIR}/benchmark_xl" "${benchmark_args[@]}" | \
        tee "${output_dir}/results.txt"
 
-    # Check error code for benckmark_xl command. This will exit if not.
+    # Check error code for benchmark_xl command. This will exit if not.
     return ${PIPESTATUS[0]}
   )
-
-  if [[ -n "${CI_BUILD_NAME:-}" ]]; then
-    { set +x; } 2>/dev/null
-    local message="Results for ${CI_BUILD_NAME} @ ${CI_COMMIT_SHORT_SHA} (job ${CI_JOB_URL:-}):
-
-$(cat "${output_dir}/results.txt")
-"
-    cmd_post_mr_comment "${message}"
-    set -x
-  fi
 }
 
 # Helper function to wait for the CPU temperature to cool down on ARM.
@@ -1066,7 +1083,7 @@ cmd_arm_benchmark() {
   local src_img
   for src_img in "${jpg_images[@]}" "${images[@]}"; do
     local src_img_hash=$(sha1sum "${src_img}" | cut -f 1 -d ' ')
-    local enc_binaries=("${BUILD_DIR}/tools/cjxl")
+    local enc_binaries=("${TOOLS_DIR}/cjxl")
     local src_ext="${src_img##*.}"
     for enc_binary in "${enc_binaries[@]}"; do
       local enc_binary_base=$(basename "${enc_binary}")
@@ -1115,7 +1132,7 @@ cmd_arm_benchmark() {
 
           local dec_output
           wait_for_temp
-          dec_output=$("${BUILD_DIR}/tools/djxl" "${enc_file}" \
+          dec_output=$("${TOOLS_DIR}/djxl" "${enc_file}" \
             --num_reps=5 --num_threads="${num_threads}" 2>&1 | tee /dev/stderr |
             grep -E "M[BP]/s \[")
           local img_size=$(echo "${dec_output}" | cut -f 1 -d ',')
@@ -1131,7 +1148,7 @@ cmd_arm_benchmark() {
           if [[ "${src_ext}" == "jpg" ]]; then
             wait_for_temp
             local dec_file="${BUILD_DIR}/arm_benchmark/${enc_file_hash}.jpg"
-            dec_output=$("${BUILD_DIR}/tools/djxl" "${enc_file}" \
+            dec_output=$("${TOOLS_DIR}/djxl" "${enc_file}" \
               "${dec_file}" --num_reps=5 --num_threads="${num_threads}" 2>&1 | \
                 tee /dev/stderr | grep -E "M[BP]/s \[")
             local jpeg_dec_mps_speed=$(_speed_from_output "${dec_output}")
@@ -1153,18 +1170,6 @@ cmd_arm_benchmark() {
   cmd_cpuset "${RUNNER_CPU_ALL:-}"
   cat "${runs_file}"
 
-  if [[ -n "${CI_BUILD_NAME:-}" ]]; then
-    load_mr_vars_from_commit
-    { set +x; } 2>/dev/null
-    local message="Results for ${CI_BUILD_NAME} @ ${CI_COMMIT_SHORT_SHA} (job ${CI_JOB_URL:-}):
-
-\`\`\`
-$(column -t -s "	" "${runs_file}")
-\`\`\`
-"
-    cmd_post_mr_comment "${message}"
-    set -x
-  fi
 }
 
 # Generate a corpus and run the fuzzer on that corpus.
@@ -1173,33 +1178,58 @@ cmd_fuzz() {
   local fuzzer_crash_dir=$(realpath "${BUILD_DIR}/fuzzer_crash")
   mkdir -p "${corpus_dir}" "${fuzzer_crash_dir}"
   # Generate step.
-  "${BUILD_DIR}/tools/fuzzer_corpus" "${corpus_dir}"
+  "${TOOLS_DIR}/fuzzer_corpus" "${corpus_dir}"
   # Run step:
   local nprocs=$(nproc --all || echo 1)
   (
-   cd "${BUILD_DIR}"
-   "tools/djxl_fuzzer" "${fuzzer_crash_dir}" "${corpus_dir}" \
+   cd "${TOOLS_DIR}"
+   djxl_fuzzer "${fuzzer_crash_dir}" "${corpus_dir}" \
      -max_total_time="${FUZZER_MAX_TIME}" -jobs=${nprocs} \
      -artifact_prefix="${fuzzer_crash_dir}/"
   )
 }
 
-# Runs the linter (clang-format) on the pending CLs.
+# Runs the linters (clang-format, build_cleaner, buildirier) on the pending CLs.
 cmd_lint() {
   merge_request_commits
   { set +x; } 2>/dev/null
-  local versions=(${1:-6.0 7 8 9 10 11})
+  local versions=(${1:-16 15 14 13 12 11 10 9 8 7 6.0})
   local clang_format_bins=("${versions[@]/#/clang-format-}" clang-format)
   local tmpdir=$(mktemp -d)
   CLEANUP_FILES+=("${tmpdir}")
 
   local ret=0
   local build_patch="${tmpdir}/build_cleaner.patch"
-  if ! "${MYDIR}/tools/build_cleaner.py" >"${build_patch}"; then
+  if ! "${MYDIR}/tools/scripts/build_cleaner.py" >"${build_patch}"; then
     ret=1
     echo "build_cleaner.py findings:" >&2
     "${COLORDIFF_BIN}" <"${build_patch}"
-    echo "Run \`tools/build_cleaner.py --update\` to apply them" >&2
+    echo "Run \`tools/scripts/build_cleaner.py --update\` to apply them" >&2
+  fi
+
+  # It is ok, if buildifier is not installed.
+  if which buildifier >/dev/null; then
+    local buildifier_patch="${tmpdir}/buildifier.patch"
+    local bazel_files=`git -C "${MYDIR}" ls-files | grep -E "/BUILD$|WORKSPACE|.bzl$"`
+    set -x
+    buildifier -d ${bazel_files} >"${buildifier_patch}"|| true
+    { set +x; } 2>/dev/null
+    if [ -s "${buildifier_patch}" ]; then
+      ret=1
+      echo 'buildifier have found some problems in Bazel build files:' >&2
+      "${COLORDIFF_BIN}" <"${buildifier_patch}"
+      echo 'To fix them run (from the base directory):' >&2
+      echo '  buildifier `git ls-files | grep -E "/BUILD$|WORKSPACE|.bzl$"`' >&2
+    fi
+  fi
+
+  # It is ok, if spell-checker is not installed.
+  if which typos >/dev/null; then
+    local src_ext="bazel|bzl|c|cc|cmake|gni|h|html|in|java|js|m|md|nix|py|rst|sh|ts|txt|yaml|yml"
+    local sources=`git -C "${MYDIR}" ls-files | grep -E "\.(${src_ext})$"`
+    typos -c "${MYDIR}/tools/scripts/typos.toml" ${sources}
+  else
+    echo "Consider installing https://github.com/crate-ci/typos for spell-checking"
   fi
 
   local installed=()
@@ -1218,7 +1248,7 @@ cmd_lint() {
     git -C "${MYDIR}" "${clang_format}" --binary "${clang_format}" \
       --style=file --diff "${MR_ANCESTOR_SHA}" -- >"${tmppatch}" || true
     { set +x; } 2>/dev/null
-    if grep -E '^--- ' "${tmppatch}">/dev/null; then
+    if grep -E '^--- ' "${tmppatch}" | grep -v 'a/third_party' >/dev/null; then
       if [[ -n "${LINT_OUTPUT:-}" ]]; then
         cp "${tmppatch}" "${LINT_OUTPUT}"
       fi
@@ -1326,6 +1356,7 @@ cmd_debian_stats() {
 build_debian_pkg() {
   local srcdir="$1"
   local srcpkg="$2"
+  local options="${3:-}"
 
   local debsdir="${BUILD_DIR}/debs"
   local builddir="${debsdir}/${srcpkg}"
@@ -1341,7 +1372,7 @@ build_debian_pkg() {
   done
   (
     cd "${builddir}"
-    debuild -b -uc -us
+    debuild "${options}" -b -uc -us
   )
 }
 
@@ -1353,7 +1384,7 @@ cmd_debian_build() {
       build_debian_pkg "${MYDIR}" "jpeg-xl"
       ;;
     highway)
-      build_debian_pkg "${MYDIR}/third_party/highway" "highway"
+      build_debian_pkg "${MYDIR}/third_party/highway" "highway" "${HWY_PKG_OPTIONS}"
       ;;
     *)
       echo "ERROR: Must pass a valid source package name to build." >&2
@@ -1374,7 +1405,7 @@ cmd_bump_version() {
   local newver="${1:-}"
 
   if ! which dch >/dev/null; then
-    echo "Run:\n  sudo apt install debhelper"
+    echo "Missing dch\nTo install it run:\n  sudo apt install devscripts"
     exit 1
   fi
 
@@ -1402,9 +1433,13 @@ cmd_bump_version() {
     -e "s/(set\\(JPEGXL_MINOR_VERSION) [0-9]+\\)/\\1 ${minor})/" \
     -e "s/(set\\(JPEGXL_PATCH_VERSION) [0-9]+\\)/\\1 ${patch})/" \
     -i lib/CMakeLists.txt
+  sed -E \
+    -e "s/(LIBJXL_VERSION: )\"[0-9.]+\"/\\1\"${major}.${minor}.${patch}\"/" \
+    -e "s/(LIBJXL_ABI_VERSION: )\"[0-9.]+\"/\\1\"${major}.${minor}\"/" \
+    -i .github/workflows/conformance.yml
 
   # Update lib.gni
-  tools/build_cleaner.py --update
+  tools/scripts/build_cleaner.py --update
 
   # Mark the previous version as "unstable".
   DEBCHANGE_RELEASE_HEURISTIC=log dch -M --distribution unstable --release ''
@@ -1418,11 +1453,11 @@ cmd_authors() {
   merge_request_commits
   local emails
   local names
-  readarray -t emails < <(git log --format='%ae' "${MR_HEAD_SHA}...${MR_ANCESTOR_SHA}")
-  readarray -t names < <(git log --format='%an' "${MR_HEAD_SHA}...${MR_ANCESTOR_SHA}")
+  readarray -t emails < <(git log --format='%ae' "${MR_ANCESTOR_SHA}..${MR_HEAD_SHA}")
+  readarray -t names < <(git log --format='%an' "${MR_ANCESTOR_SHA}..${MR_HEAD_SHA}")
   for i in "${!names[@]}"; do
     echo "Checking name '${names[$i]}' with email '${emails[$i]}' ..."
-    "${MYDIR}"/tools/check_author.py "${emails[$i]}" "${names[$i]}"
+    "${MYDIR}"/tools/scripts/check_author.py "${emails[$i]}" "${names[$i]}"
   done
 }
 
@@ -1450,7 +1485,7 @@ Where cmd is one of:
  benchmark Run the benchmark over the default corpus.
  fast_benchmark Run the benchmark over the small corpus.
 
- coverage  Buils and run tests with coverage support. Runs coverage_report as
+ coverage  Build and run tests with coverage support. Runs coverage_report as
            well.
  coverage_report Generate HTML, XML and text coverage report after a coverage
            run.
@@ -1483,6 +1518,7 @@ You can pass some optional environment variables as well:
  - FUZZER_MAX_TIME: "fuzz" command fuzzer running timeout in seconds.
  - LINT_OUTPUT: Path to the output patch from the "lint" command.
  - SKIP_CPUSET=1: Skip modifying the cpuset in the arm_benchmark.
+ - SKIP_BUILD=1: Skip the build stage, cmake configure only.
  - SKIP_TEST=1: Skip the test stage.
  - STORE_IMAGES=0: Makes the benchmark discard the computed images.
  - TEST_STACK_LIMIT: Stack size limit (ulimit -s) during tests, in KiB.

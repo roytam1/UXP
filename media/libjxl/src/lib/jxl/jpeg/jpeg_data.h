@@ -8,14 +8,16 @@
 #ifndef LIB_JXL_JPEG_JPEG_DATA_H_
 #define LIB_JXL_JPEG_JPEG_DATA_H_
 
-#include <stddef.h>
-#include <stdint.h>
-
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 
+#include "lib/jxl/base/status.h"
 #include "lib/jxl/common.h"  // JPEGXL_ENABLE_TRANSCODE_JPEG
+#include "lib/jxl/field_encodings.h"
 #include "lib/jxl/fields.h"
+#include "lib/jxl/frame_dimensions.h"
 
 namespace jxl {
 namespace jpeg {
@@ -60,53 +62,6 @@ constexpr uint32_t kJPEGZigZagOrder[64] = {
   35, 36, 48, 49, 57, 58, 62, 63
 };
 /* clang-format on */
-
-enum struct JPEGReadError {
-  OK = 0,
-  SOI_NOT_FOUND,
-  SOF_NOT_FOUND,
-  UNEXPECTED_EOF,
-  MARKER_BYTE_NOT_FOUND,
-  UNSUPPORTED_MARKER,
-  WRONG_MARKER_SIZE,
-  INVALID_PRECISION,
-  INVALID_WIDTH,
-  INVALID_HEIGHT,
-  INVALID_NUMCOMP,
-  INVALID_SAMP_FACTOR,
-  INVALID_START_OF_SCAN,
-  INVALID_END_OF_SCAN,
-  INVALID_SCAN_BIT_POSITION,
-  INVALID_COMPS_IN_SCAN,
-  INVALID_HUFFMAN_INDEX,
-  INVALID_QUANT_TBL_INDEX,
-  INVALID_QUANT_VAL,
-  INVALID_MARKER_LEN,
-  INVALID_SAMPLING_FACTORS,
-  INVALID_HUFFMAN_CODE,
-  INVALID_SYMBOL,
-  NON_REPRESENTABLE_DC_COEFF,
-  NON_REPRESENTABLE_AC_COEFF,
-  INVALID_SCAN,
-  OVERLAPPING_SCANS,
-  INVALID_SCAN_ORDER,
-  EXTRA_ZERO_RUN,
-  DUPLICATE_DRI,
-  DUPLICATE_SOF,
-  WRONG_RESTART_MARKER,
-  DUPLICATE_COMPONENT_ID,
-  COMPONENT_NOT_FOUND,
-  HUFFMAN_TABLE_NOT_FOUND,
-  HUFFMAN_TABLE_ERROR,
-  QUANT_TABLE_NOT_FOUND,
-  EMPTY_DHT,
-  EMPTY_DQT,
-  OUT_OF_BAND_COEFF,
-  EOB_RUN_TOO_LONG,
-  IMAGE_TOO_LARGE,
-  INVALID_QUANT_TBL_PRECISION,
-  TAIL_DATA_TOO_LARGE
-};
 
 // Quantization values for an 8x8 pixel block.
 struct JPEGQuantTable {
@@ -211,11 +166,7 @@ enum class AppMarkerType : uint32_t {
 // Represents a parsed jpeg file.
 struct JPEGData : public Fields {
   JPEGData()
-      : width(0),
-        height(0),
-        restart_interval(0),
-        error(JPEGReadError::OK),
-        has_zero_padding_bit(false) {}
+      : width(0), height(0), restart_interval(0), has_zero_padding_bit(false) {}
 
   JXL_FIELDS_NAME(JPEGData)
 #if JPEGXL_ENABLE_TRANSCODE_JPEG
@@ -224,7 +175,7 @@ struct JPEGData : public Fields {
   Status VisitFields(Visitor* visitor) override;
 #else
   Status VisitFields(Visitor* /* visitor */) override {
-    JXL_ABORT("JPEG transcoding support not enabled");
+    return JXL_UNREACHABLE("JPEG transcoding support not enabled");
   }
 #endif  // JPEGXL_ENABLE_TRANSCODE_JPEG
 
@@ -244,7 +195,6 @@ struct JPEGData : public Fields {
   std::vector<uint8_t> marker_order;
   std::vector<std::vector<uint8_t>> inter_marker_data;
   std::vector<uint8_t> tail_data;
-  JPEGReadError error;
 
   // Extra information required for bit-precise JPEG file reconstruction.
 
@@ -254,11 +204,12 @@ struct JPEGData : public Fields {
 
 #if JPEGXL_ENABLE_TRANSCODE_JPEG
 // Set ICC profile in jpeg_data.
-Status SetJPEGDataFromICC(const PaddedBytes& icc, jpeg::JPEGData* jpeg_data);
+Status SetJPEGDataFromICC(const std::vector<uint8_t>& icc,
+                          jpeg::JPEGData* jpeg_data);
 #else
-static JXL_INLINE Status SetJPEGDataFromICC(const PaddedBytes& /* icc */,
-                                            jpeg::JPEGData* /* jpeg_data */) {
-  JXL_ABORT("JPEG transcoding support not enabled");
+static JXL_INLINE Status SetJPEGDataFromICC(
+    const std::vector<uint8_t>& /* icc */, jpeg::JPEGData* /* jpeg_data */) {
+  return JXL_UNREACHABLE("JPEG transcoding support not enabled");
 }
 #endif  // JPEGXL_ENABLE_TRANSCODE_JPEG
 

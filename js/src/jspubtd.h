@@ -34,10 +34,6 @@ class CallArgs;
 template <typename T>
 class Rooted;
 
-class JS_FRIEND_API(CompileOptions);
-class JS_FRIEND_API(ReadOnlyCompileOptions);
-class JS_FRIEND_API(OwningCompileOptions);
-class JS_FRIEND_API(TransitiveCompileOptions);
 class JS_PUBLIC_API(CompartmentOptions);
 
 struct RootingContext;
@@ -149,8 +145,6 @@ namespace JS {
 class JS_PUBLIC_API(AutoEnterCycleCollection);
 class JS_PUBLIC_API(AutoAssertOnBarrier);
 struct JS_PUBLIC_API(PropertyDescriptor);
-
-typedef void (*OffThreadCompileCallback)(void* token, void* callbackData);
 
 enum class HeapState {
     Idle,             // doing nothing with the GC heap

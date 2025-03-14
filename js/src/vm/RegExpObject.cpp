@@ -42,6 +42,7 @@ using mozilla::DebugOnly;
 using mozilla::Maybe;
 using mozilla::PodCopy;
 using js::frontend::TokenStream;
+using JS::CompileOptions;
 
 using JS::AutoCheckCannotGC;
 

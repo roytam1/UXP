@@ -56,6 +56,7 @@ using mozilla::PodZero;
 using mozilla::Some;
 
 using JS::AutoGCRooter;
+using JS::ReadOnlyCompileOptions;
 
 namespace js {
 namespace frontend {

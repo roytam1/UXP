@@ -1,6 +1,7 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  */
 
+#include "js/SourceBufferHolder.h"
 #include "jsapi-tests/tests.h"
 
 using mozilla::ArrayLength;

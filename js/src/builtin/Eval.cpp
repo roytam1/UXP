@@ -12,6 +12,7 @@
 #include "jshashutil.h"
 
 #include "frontend/BytecodeCompiler.h"
+#include "js/SourceBufferHolder.h"
 #include "vm/Debugger.h"
 #include "vm/GlobalObject.h"
 #include "vm/JSONParser.h"
@@ -25,6 +26,8 @@ using mozilla::HashString;
 using mozilla::RangedPtr;
 
 using JS::AutoCheckCannotGC;
+using JS::CompileOptions;
+using JS::SourceBufferHolder;
 
 // We should be able to assert this for *any* fp->environmentChain().
 static void

@@ -22,6 +22,7 @@
 #include "jspubtd.h"
 
 #include "frontend/TokenKind.h"
+#include "js/CompileOptions.h"
 #include "js/UniquePtr.h"
 #include "js/Vector.h"
 #include "vm/RegExpObject.h"
@@ -323,7 +324,7 @@ class MOZ_STACK_CLASS TokenStream
   public:
     typedef Vector<char16_t, 32> CharBuffer;
 
-    TokenStream(ExclusiveContext* cx, const ReadOnlyCompileOptions& options,
+    TokenStream(ExclusiveContext* cx, const JS::ReadOnlyCompileOptions& options,
                 const char16_t* base, size_t length, StrictModeGetter* smg);
 
     ~TokenStream();
@@ -864,7 +865,7 @@ class MOZ_STACK_CLASS TokenStream
         return cx;
     }
 
-    const ReadOnlyCompileOptions& options() const {
+    const JS::ReadOnlyCompileOptions& options() const {
         return options_;
     }
 
@@ -1041,7 +1042,7 @@ class MOZ_STACK_CLASS TokenStream
     bool hasLookahead() const { return lookahead > 0; }
 
     // Options used for parsing/tokenizing.
-    const ReadOnlyCompileOptions& options_;
+    const JS::ReadOnlyCompileOptions& options_;
 
     Token               tokens[ntokens];    // circular token buffer
     unsigned            cursor;             // index of last parsed token

@@ -9,11 +9,13 @@
 // Portable, low-overhead C++11 ThreadPool alternative to OpenMP for
 // data-parallel computations.
 
-#include <stddef.h>
-#include <stdint.h>
+#include <jxl/parallel_runner.h>
 
-#include "jxl/parallel_runner.h"
-#include "lib/jxl/base/bits.h"
+#include <atomic>
+#include <cstddef>
+#include <cstdint>
+
+#include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/status.h"
 #if JXL_COMPILER_MSVC
 // suppress warnings about the const & applied to function types
@@ -25,7 +27,7 @@ namespace jxl {
 class ThreadPool {
  public:
   ThreadPool(JxlParallelRunner runner, void* runner_opaque)
-      : runner_(runner ? runner : &ThreadPool::SequentialRunnerStatic),
+      : runner_(runner),
         runner_opaque_(runner ? runner_opaque : static_cast<void*>(this)) {}
 
   ThreadPool(const ThreadPool&) = delete;
@@ -44,15 +46,34 @@ class ThreadPool {
   // Precondition: begin <= end.
   template <class InitFunc, class DataFunc>
   Status Run(uint32_t begin, uint32_t end, const InitFunc& init_func,
-             const DataFunc& data_func, const char* caller = "") {
-    JXL_ASSERT(begin <= end);
+             const DataFunc& data_func, const char* caller) {
+    JXL_ENSURE(begin <= end);
     if (begin == end) return true;
     RunCallState<InitFunc, DataFunc> call_state(init_func, data_func);
     // The runner_ uses the C convention and returns 0 in case of error, so we
     // convert it to a Status.
-    return (*runner_)(runner_opaque_, static_cast<void*>(&call_state),
-                      &call_state.CallInitFunc, &call_state.CallDataFunc, begin,
-                      end) == 0;
+    if (!runner_) {
+      void* jpegxl_opaque = static_cast<void*>(&call_state);
+      if (call_state.CallInitFunc(jpegxl_opaque, 1) !=
+          JXL_PARALLEL_RET_SUCCESS) {
+        return JXL_FAILURE("Failed to initialize thread");
+      }
+      for (uint32_t i = begin; i < end; i++) {
+        call_state.CallDataFunc(jpegxl_opaque, i, 0);
+      }
+      if (call_state.HasError()) {
+        return JXL_FAILURE("[%s] failed", caller);
+      }
+      return true;
+    }
+    JxlParallelRetCode ret = (*runner_)(
+        runner_opaque_, static_cast<void*>(&call_state),
+        &call_state.CallInitFunc, &call_state.CallDataFunc, begin, end);
+
+    if (ret != JXL_PARALLEL_RET_SUCCESS || call_state.HasError()) {
+      return JXL_FAILURE("[%s] failed", caller);
+    }
+    return true;
   }
 
   // Use this as init_func when no initialization is needed.
@@ -69,31 +90,35 @@ class ThreadPool {
 
     // JxlParallelRunInit interface.
     static int CallInitFunc(void* jpegxl_opaque, size_t num_threads) {
-      const auto* self =
+      auto* self =
           static_cast<RunCallState<InitFunc, DataFunc>*>(jpegxl_opaque);
       // Returns -1 when the internal init function returns false Status to
       // indicate an error.
-      return self->init_func_(num_threads) ? 0 : -1;
+      if (!self->init_func_(num_threads)) {
+        self->has_error_ = true;
+        return JXL_PARALLEL_RET_RUNNER_ERROR;
+      }
+      return JXL_PARALLEL_RET_SUCCESS;
     }
 
     // JxlParallelRunFunction interface.
     static void CallDataFunc(void* jpegxl_opaque, uint32_t value,
                              size_t thread_id) {
-      const auto* self =
+      auto* self =
           static_cast<RunCallState<InitFunc, DataFunc>*>(jpegxl_opaque);
-      return self->data_func_(value, thread_id);
+      if (self->has_error_) return;
+      if (!self->data_func_(value, thread_id)) {
+        self->has_error_ = true;
+      }
     }
+
+    bool HasError() const { return has_error_; }
 
    private:
     const InitFunc& init_func_;
     const DataFunc& data_func_;
+    std::atomic<bool> has_error_{false};
   };
-
-  // Default JxlParallelRunner used when no runner is provided by the
-  // caller. This runner doesn't use any threading and thread_id is always 0.
-  static JxlParallelRetCode SequentialRunnerStatic(
-      void* runner_opaque, void* jpegxl_opaque, JxlParallelRunInit init,
-      JxlParallelRunFunction func, uint32_t start_range, uint32_t end_range);
 
   // The caller supplied runner function and its opaque void*.
   const JxlParallelRunner runner_;

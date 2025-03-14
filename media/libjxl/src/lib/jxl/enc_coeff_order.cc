@@ -3,33 +3,51 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#include <stdint.h>
+#include <jxl/memory_manager.h>
+
+#include "lib/jxl/base/status.h"
+#include "lib/jxl/memory_manager_internal.h"
+
+// Suppress any -Wdeprecated-declarations warning that might be emitted by
+// GCC or Clang by std::stable_sort in C++17 or later mode
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(__GNUC__)
+#pragma GCC push_options
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 #include <algorithm>
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC pop_options
+#endif
+
+#include <cmath>
+#include <cstdint>
 #include <vector>
 
-#include "lib/jxl/ans_params.h"
-#include "lib/jxl/aux_out.h"
-#include "lib/jxl/aux_out_fwd.h"
-#include "lib/jxl/base/padded_bytes.h"
-#include "lib/jxl/base/profiler.h"
-#include "lib/jxl/base/span.h"
+#include "lib/jxl/ac_strategy.h"
+#include "lib/jxl/base/rect.h"
 #include "lib/jxl/coeff_order.h"
 #include "lib/jxl/coeff_order_fwd.h"
-#include "lib/jxl/dec_ans.h"
-#include "lib/jxl/dec_bit_reader.h"
+#include "lib/jxl/dct_util.h"
 #include "lib/jxl/enc_ans.h"
 #include "lib/jxl/enc_bit_writer.h"
-#include "lib/jxl/entropy_coder.h"
 #include "lib/jxl/lehmer_code.h"
-#include "lib/jxl/modular/encoding/encoding.h"
-#include "lib/jxl/modular/modular_image.h"
 
 namespace jxl {
+
+struct AuxOut;
+enum class LayerType : uint8_t;
 
 std::pair<uint32_t, uint32_t> ComputeUsedOrders(
     const SpeedTier speed, const AcStrategyImage& ac_strategy,
     const Rect& rect) {
+  // No coefficient reordering in Falcon or faster.
   // Only uses DCT8 = 0, so bitfield = 1.
   if (speed >= SpeedTier::kFalcon) return {1, 1};
 
@@ -55,22 +73,26 @@ std::pair<uint32_t, uint32_t> ComputeUsedOrders(
   return {ret, ret_customize};
 }
 
-void ComputeCoeffOrder(SpeedTier speed, const ACImage& acs,
-                       const AcStrategyImage& ac_strategy,
-                       const FrameDimensions& frame_dim, uint32_t& used_orders,
-                       uint16_t used_acs, coeff_order_t* JXL_RESTRICT order) {
+Status ComputeCoeffOrder(SpeedTier speed, const ACImage& acs,
+                         const AcStrategyImage& ac_strategy,
+                         const FrameDimensions& frame_dim,
+                         uint32_t& all_used_orders, uint32_t prev_used_acs,
+                         uint32_t current_used_acs,
+                         uint32_t current_used_orders,
+                         coeff_order_t* JXL_RESTRICT order) {
+  JxlMemoryManager* memory_manager = ac_strategy.memory_manager();
   std::vector<int32_t> num_zeros(kCoeffOrderMaxSize);
   // If compressing at high speed and only using 8x8 DCTs, only consider a
   // subset of blocks.
   double block_fraction = 1.0f;
   // TODO(veluca): figure out why sampling blocks if non-8x8s are used makes
   // encoding significantly less dense.
-  if (speed >= SpeedTier::kSquirrel && used_orders == 1) {
+  if (speed >= SpeedTier::kSquirrel && current_used_orders == 1) {
     block_fraction = 0.5f;
   }
   // No need to compute number of zero coefficients if all orders are the
   // default.
-  if (used_orders != 0) {
+  if (current_used_orders != 0) {
     uint64_t threshold =
         (std::numeric_limits<uint64_t>::max() >> 32) * block_fraction;
     uint64_t s[2] = {static_cast<uint64_t>(0x94D049BB133111EBull),
@@ -144,7 +166,9 @@ void ComputeCoeffOrder(SpeedTier speed, const ACImage& acs,
     uint32_t pos;
     uint32_t count;
   };
-  auto mem = hwy::AllocateAligned<PosAndCount>(AcStrategy::kMaxCoeffArea);
+  size_t mem_bytes = AcStrategy::kMaxCoeffArea * sizeof(PosAndCount);
+  JXL_ASSIGN_OR_RETURN(auto mem,
+                       AlignedMemory::Create(memory_manager, mem_bytes));
 
   std::vector<coeff_order_t> natural_order_buffer;
 
@@ -157,17 +181,21 @@ void ComputeCoeffOrder(SpeedTier speed, const ACImage& acs,
     size_t sz = kDCTBlockSize * acs.covered_blocks_x() * acs.covered_blocks_y();
 
     // Do nothing for transforms that don't appear.
-    if ((1 << ord) & ~used_acs) continue;
+    if ((1 << ord) & ~current_used_acs) continue;
+
+    // Do nothing if we already committed to this custom order previously.
+    if ((1 << ord) & prev_used_acs) continue;
+    if ((1 << ord) & all_used_orders) continue;
 
     if (natural_order_buffer.size() < sz) natural_order_buffer.resize(sz);
     acs.ComputeNaturalCoeffOrder(natural_order_buffer.data());
 
     // Ensure natural coefficient order is not permuted if the order is
     // not transmitted.
-    if ((1 << ord) & ~used_orders) {
+    if ((1 << ord) & ~current_used_orders) {
       for (size_t c = 0; c < 3; c++) {
         size_t offset = CoeffOrderOffset(ord, c);
-        JXL_DASSERT(CoeffOrderOffset(ord, c + 1) - offset == sz);
+        JXL_ENSURE(CoeffOrderOffset(ord, c + 1) - offset == sz);
         memcpy(&order[offset], natural_order_buffer.data(),
                sz * sizeof(*order));
       }
@@ -177,9 +205,9 @@ void ComputeCoeffOrder(SpeedTier speed, const ACImage& acs,
     bool is_nondefault = false;
     for (uint8_t c = 0; c < 3; c++) {
       // Apply zig-zag order.
-      PosAndCount* pos_and_val = mem.get();
+      PosAndCount* pos_and_val = mem.address<PosAndCount>();
       size_t offset = CoeffOrderOffset(ord, c);
-      JXL_DASSERT(CoeffOrderOffset(ord, c + 1) - offset == sz);
+      JXL_ENSURE(CoeffOrderOffset(ord, c + 1) - offset == sz);
       float inv_sqrt_sz = 1.0f / std::sqrt(sz);
       for (size_t i = 0; i < sz; ++i) {
         size_t pos = natural_order_buffer[i];
@@ -203,18 +231,21 @@ void ComputeCoeffOrder(SpeedTier speed, const ACImage& acs,
       }
     }
     if (!is_nondefault) {
-      used_orders &= ~(1 << ord);
+      current_used_orders &= ~(1 << ord);
     }
   }
+  all_used_orders |= current_used_orders;
+  return true;
 }
 
 namespace {
 
-void TokenizePermutation(const coeff_order_t* JXL_RESTRICT order, size_t skip,
-                         size_t size, std::vector<Token>* tokens) {
+Status TokenizePermutation(const coeff_order_t* JXL_RESTRICT order, size_t skip,
+                           size_t size, std::vector<Token>* tokens) {
   std::vector<LehmerT> lehmer(size);
   std::vector<uint32_t> temp(size + 1);
-  ComputeLehmerCode(order, temp.data(), size, lehmer.data());
+  JXL_RETURN_IF_ERROR(
+      ComputeLehmerCode(order, temp.data(), size, lehmer.data()));
   size_t end = size;
   while (end > skip && lehmer[end - 1] == 0) {
     --end;
@@ -225,40 +256,51 @@ void TokenizePermutation(const coeff_order_t* JXL_RESTRICT order, size_t skip,
     tokens->emplace_back(CoeffOrderContext(last), lehmer[i]);
     last = lehmer[i];
   }
+  return true;
 }
 
 }  // namespace
 
-void EncodePermutation(const coeff_order_t* JXL_RESTRICT order, size_t skip,
-                       size_t size, BitWriter* writer, int layer,
-                       AuxOut* aux_out) {
+Status EncodePermutation(const coeff_order_t* JXL_RESTRICT order, size_t skip,
+                         size_t size, BitWriter* writer, LayerType layer,
+                         AuxOut* aux_out) {
+  JxlMemoryManager* memory_manager = writer->memory_manager();
   std::vector<std::vector<Token>> tokens(1);
-  TokenizePermutation(order, skip, size, &tokens[0]);
+  JXL_RETURN_IF_ERROR(TokenizePermutation(order, skip, size, tokens.data()));
   std::vector<uint8_t> context_map;
   EntropyEncodingData codes;
-  BuildAndEncodeHistograms(HistogramParams(), kPermutationContexts, tokens,
-                           &codes, &context_map, writer, layer, aux_out);
-  WriteTokens(tokens[0], codes, context_map, writer, layer, aux_out);
+  JXL_ASSIGN_OR_RETURN(
+      size_t cost, BuildAndEncodeHistograms(
+                       memory_manager, HistogramParams(), kPermutationContexts,
+                       tokens, &codes, &context_map, writer, layer, aux_out));
+  (void)cost;
+  JXL_RETURN_IF_ERROR(
+      WriteTokens(tokens[0], codes, context_map, 0, writer, layer, aux_out));
+  return true;
 }
 
 namespace {
-void EncodeCoeffOrder(const coeff_order_t* JXL_RESTRICT order, AcStrategy acs,
-                      std::vector<Token>* tokens, coeff_order_t* order_zigzag,
-                      std::vector<coeff_order_t>& natural_order_lut) {
+Status EncodeCoeffOrder(const coeff_order_t* JXL_RESTRICT order, AcStrategy acs,
+                        std::vector<Token>* tokens, coeff_order_t* order_zigzag,
+                        std::vector<coeff_order_t>& natural_order_lut) {
   const size_t llf = acs.covered_blocks_x() * acs.covered_blocks_y();
   const size_t size = kDCTBlockSize * llf;
   for (size_t i = 0; i < size; ++i) {
     order_zigzag[i] = natural_order_lut[order[i]];
   }
-  TokenizePermutation(order_zigzag, llf, size, tokens);
+  JXL_RETURN_IF_ERROR(TokenizePermutation(order_zigzag, llf, size, tokens));
+  return true;
 }
 }  // namespace
 
-void EncodeCoeffOrders(uint16_t used_orders,
-                       const coeff_order_t* JXL_RESTRICT order,
-                       BitWriter* writer, size_t layer,
-                       AuxOut* JXL_RESTRICT aux_out) {
-  auto mem = hwy::AllocateAligned<coeff_order_t>(AcStrategy::kMaxCoeffArea);
+Status EncodeCoeffOrders(uint16_t used_orders,
+                         const coeff_order_t* JXL_RESTRICT order,
+                         BitWriter* writer, LayerType layer,
+                         AuxOut* JXL_RESTRICT aux_out) {
+  JxlMemoryManager* memory_manager = writer->memory_manager();
+  size_t mem_bytes = AcStrategy::kMaxCoeffArea * sizeof(coeff_order_t);
+  JXL_ASSIGN_OR_RETURN(auto mem,
+                       AlignedMemory::Create(memory_manager, mem_bytes));
   uint16_t computed = 0;
   std::vector<std::vector<Token>> tokens(1);
   std::vector<coeff_order_t> natural_order_lut;
@@ -273,18 +315,25 @@ void EncodeCoeffOrders(uint16_t used_orders,
     if (natural_order_lut.size() < size) natural_order_lut.resize(size);
     acs.ComputeNaturalCoeffOrderLut(natural_order_lut.data());
     for (size_t c = 0; c < 3; c++) {
-      EncodeCoeffOrder(&order[CoeffOrderOffset(ord, c)], acs, &tokens[0],
-                       mem.get(), natural_order_lut);
+      JXL_RETURN_IF_ERROR(
+          EncodeCoeffOrder(&order[CoeffOrderOffset(ord, c)], acs, tokens.data(),
+                           mem.address<coeff_order_t>(), natural_order_lut));
     }
   }
   // Do not write anything if no order is used.
   if (used_orders != 0) {
     std::vector<uint8_t> context_map;
     EntropyEncodingData codes;
-    BuildAndEncodeHistograms(HistogramParams(), kPermutationContexts, tokens,
-                             &codes, &context_map, writer, layer, aux_out);
-    WriteTokens(tokens[0], codes, context_map, writer, layer, aux_out);
+    JXL_ASSIGN_OR_RETURN(
+        size_t cost,
+        BuildAndEncodeHistograms(memory_manager, HistogramParams(),
+                                 kPermutationContexts, tokens, &codes,
+                                 &context_map, writer, layer, aux_out));
+    (void)cost;
+    JXL_RETURN_IF_ERROR(
+        WriteTokens(tokens[0], codes, context_map, 0, writer, layer, aux_out));
   }
+  return true;
 }
 
 }  // namespace jxl

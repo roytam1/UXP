@@ -9,26 +9,28 @@
 // Frame header with backward and forward-compatible extension capability and
 // compressed integer fields.
 
-#include <stddef.h>
-#include <stdint.h>
-
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <string>
+#include <vector>
 
-#include "lib/jxl/aux_out_fwd.h"
+#include "lib/jxl/base/common.h"
 #include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/override.h"
-#include "lib/jxl/base/padded_bytes.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/coeff_order_fwd.h"
-#include "lib/jxl/common.h"
+#include "lib/jxl/common.h"  // kMaxNumPasses
 #include "lib/jxl/dec_bit_reader.h"
-#include "lib/jxl/enc_bit_writer.h"
+#include "lib/jxl/field_encodings.h"
 #include "lib/jxl/fields.h"
+#include "lib/jxl/frame_dimensions.h"
 #include "lib/jxl/image_metadata.h"
 #include "lib/jxl/loop_filter.h"
 
 namespace jxl {
 
+// TODO(eustas): move to proper place?
 // Also used by extra channel names.
 static inline Status VisitNameString(Visitor* JXL_RESTRICT visitor,
                                      std::string* name) {
@@ -66,10 +68,12 @@ inline std::array<int, 3> JpegOrder(ColorTransform ct, bool is_gray) {
   if (is_gray) {
     return {{0, 0, 0}};
   }
-  JXL_ASSERT(ct != ColorTransform::kXYB);
   if (ct == ColorTransform::kYCbCr) {
     return {{1, 0, 2}};
+  } else if (ct == ColorTransform::kNone) {
+    return {{0, 1, 2}};
   } else {
+    JXL_DEBUG_ABORT("Internal logic error");
     return {{0, 1, 2}};
   }
 }
@@ -82,8 +86,8 @@ struct YCbCrChromaSubsampling : public Fields {
 
   Status VisitFields(Visitor* JXL_RESTRICT visitor) override {
     // TODO(veluca): consider allowing 4x downsamples
-    for (size_t i = 0; i < 3; i++) {
-      JXL_QUIET_RETURN_IF_ERROR(visitor->Bits(2, 0, &channel_mode_[i]));
+    for (uint32_t& ch : channel_mode_) {
+      JXL_QUIET_RETURN_IF_ERROR(visitor->Bits(2, 0, &ch));
     }
     Recompute();
     return true;
@@ -116,50 +120,49 @@ struct YCbCrChromaSubsampling : public Fields {
   }
 
   bool Is444() const {
-    for (size_t c : {0, 2}) {
-      if (channel_mode_[c] != channel_mode_[1]) {
-        return false;
-      }
-    }
-    return true;
+    return HShift(0) == 0 && VShift(0) == 0 &&  // Cb
+           HShift(2) == 0 && VShift(2) == 0 &&  // Cr
+           HShift(1) == 0 && VShift(1) == 0;    // Y
   }
 
   bool Is420() const {
-    return channel_mode_[0] == 1 && channel_mode_[1] == 0 &&
-           channel_mode_[2] == 1;
+    return HShift(0) == 1 && VShift(0) == 1 &&  // Cb
+           HShift(2) == 1 && VShift(2) == 1 &&  // Cr
+           HShift(1) == 0 && VShift(1) == 0;    // Y
   }
 
   bool Is422() const {
-    for (size_t c : {0, 2}) {
-      if (kHShift[channel_mode_[c]] == kHShift[channel_mode_[1]] + 1 &&
-          kVShift[channel_mode_[c]] == kVShift[channel_mode_[1]]) {
-        return false;
-      }
-    }
-    return true;
+    return HShift(0) == 1 && VShift(0) == 0 &&  // Cb
+           HShift(2) == 1 && VShift(2) == 0 &&  // Cr
+           HShift(1) == 0 && VShift(1) == 0;    // Y
   }
 
   bool Is440() const {
-    for (size_t c : {0, 2}) {
-      if (kHShift[channel_mode_[c]] == kHShift[channel_mode_[1]] &&
-          kVShift[channel_mode_[c]] == kVShift[channel_mode_[1]] + 1) {
-        return false;
-      }
-    }
-    return true;
+    return HShift(0) == 0 && VShift(0) == 1 &&  // Cb
+           HShift(2) == 0 && VShift(2) == 1 &&  // Cr
+           HShift(1) == 0 && VShift(1) == 0;    // Y
+  }
+
+  std::string DebugString() const {
+    if (Is444()) return "444";
+    if (Is420()) return "420";
+    if (Is422()) return "422";
+    if (Is440()) return "440";
+    return "cs" + std::to_string(channel_mode_[0]) +
+           std::to_string(channel_mode_[1]) + std::to_string(channel_mode_[2]);
   }
 
  private:
   void Recompute() {
     maxhs_ = 0;
     maxvs_ = 0;
-    for (size_t i = 0; i < 3; i++) {
-      maxhs_ = std::max(maxhs_, kHShift[channel_mode_[i]]);
-      maxvs_ = std::max(maxvs_, kVShift[channel_mode_[i]]);
+    for (uint32_t ch : channel_mode_) {
+      maxhs_ = std::max(maxhs_, kHShift[ch]);
+      maxvs_ = std::max(maxvs_, kVShift[ch]);
     }
   }
-  static constexpr uint8_t kHShift[4] = {0, 1, 1, 0};
-  static constexpr uint8_t kVShift[4] = {0, 1, 0, 1};
+  static const uint8_t kHShift[4];
+  static const uint8_t kVShift[4];
   uint32_t channel_mode_[3];
   uint8_t maxhs_;
   uint8_t maxvs_;
@@ -219,6 +222,8 @@ struct BlendingInfo : public Fields {
   bool clamp;
   // Frame ID to copy from (0-3). Only encoded if blend_mode is not kReplace.
   uint32_t source;
+
+  std::string DebugString() const;
 
   size_t nonserialized_num_extra_channels = 0;
   bool nonserialized_is_partial_frame = false;
@@ -423,7 +428,7 @@ struct FrameHeader : public Fields {
   uint32_t save_as_reference;
 
   // Whether to save this frame before or after the color transform. A frame
-  // that is saved before the color tansform can only be used for blending
+  // that is saved before the color transform can only be used for blending
   // through patches. On the contrary, a frame that is saved after the color
   // transform can only be used for blending through blending modes.
   // Irrelevant for extra channel blending. Can only be true if
@@ -492,9 +497,6 @@ struct FrameHeader : public Fields {
 
 Status ReadFrameHeader(BitReader* JXL_RESTRICT reader,
                        FrameHeader* JXL_RESTRICT frame);
-
-Status WriteFrameHeader(const FrameHeader& frame,
-                        BitWriter* JXL_RESTRICT writer, AuxOut* aux_out);
 
 // Shared by enc/dec. 5F and 13 are by far the most common for d1/2/4/8, 0
 // ensures low overhead for small images.

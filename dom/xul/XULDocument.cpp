@@ -88,6 +88,7 @@
 #include "mozilla/Preferences.h"
 #include "nsTextNode.h"
 #include "nsJSUtils.h"
+#include "js/SourceBufferHolder.h"
 #include "mozilla/dom/URL.h"
 #include "nsIContentPolicy.h"
 #include "mozAutoDocUpdate.h"

@@ -13,7 +13,8 @@
 
 #include "tools/icc_detect/icc_detect.h"
 
-namespace jxl {
+namespace jpegxl {
+namespace tools {
 
 FlickerTestWindow::FlickerTestWindow(FlickerTestParameters parameters,
                                      QWidget* const parent)
@@ -75,8 +76,8 @@ FlickerTestWindow::FlickerTestWindow(FlickerTestParameters parameters,
                               alteredFolderEntries.end());
 #endif
 
-  auto onlyOriginal = originalImages - alteredImages,
-       onlyAltered = alteredImages - originalImages;
+  auto onlyOriginal = originalImages - alteredImages;
+  auto onlyAltered = alteredImages - originalImages;
   if (!onlyOriginal.isEmpty() || !onlyAltered.isEmpty()) {
     QMessageBox messageBox;
     messageBox.setIcon(QMessageBox::Warning);
@@ -165,7 +166,8 @@ retry:
 
       case QMessageBox::Ignore:
         outputStream_ << image << ",,,\n";
-        return nextImage();
+        nextImage();
+        return;
 
       case QMessageBox::Abort:
         ui_.stackedView->setCurrentWidget(ui_.finalPage);
@@ -181,4 +183,5 @@ retry:
       parameters_.grayFadingTimeMSecs, parameters_.grayTimeMSecs);
 }
 
-}  // namespace jxl
+}  // namespace tools
+}  // namespace jpegxl
