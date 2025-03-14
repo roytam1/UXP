@@ -10,6 +10,7 @@
 
 #include "jsnativestack.h"
 #include "jsnum.h" // For FIX_FPU()
+#include "js/SourceBufferHolder.h"
 
 #include "builtin/Promise.h"
 #include "frontend/BytecodeCompiler.h"
@@ -32,6 +33,10 @@ using mozilla::ArrayLength;
 using mozilla::DebugOnly;
 using mozilla::Unused;
 using mozilla::TimeDuration;
+
+using JS::CompileOptions;
+using JS::ReadOnlyCompileOptions;
+using JS::SourceBufferHolder;
 
 namespace js {
 

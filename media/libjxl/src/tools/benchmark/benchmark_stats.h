@@ -6,31 +6,31 @@
 #ifndef TOOLS_BENCHMARK_BENCHMARK_STATS_H_
 #define TOOLS_BENCHMARK_BENCHMARK_STATS_H_
 
-#include <stddef.h>
-#include <stdint.h>
+#include <jxl/stats.h>
 
+#include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "lib/jxl/aux_out.h"
+#include "lib/jxl/base/status.h"
 
-namespace jxl {
+namespace jpegxl {
+namespace tools {
 
 std::string StringPrintf(const char* format, ...);
 
 struct JxlStats {
-  JxlStats() {
-    num_inputs = 0;
-    aux_out = AuxOut();
-  }
+  JxlStats()
+      : num_inputs(0), stats(JxlEncoderStatsCreate(), JxlEncoderStatsDestroy) {}
   void Assimilate(const JxlStats& victim) {
     num_inputs += victim.num_inputs;
-    aux_out.Assimilate(victim.aux_out);
+    JxlEncoderStatsMerge(stats.get(), victim.stats.get());
   }
-  void Print() const { aux_out.Print(num_inputs); }
+  void Print() const;
 
   size_t num_inputs;
-  AuxOut aux_out;
+  std::unique_ptr<JxlEncoderStats, decltype(JxlEncoderStatsDestroy)*> stats;
 };
 
 // The value of an entry in the table. Depending on the ColumnType, the string,
@@ -44,13 +44,11 @@ struct ColumnValue {
 struct BenchmarkStats {
   void Assimilate(const BenchmarkStats& victim);
 
-  std::vector<ColumnValue> ComputeColumns(const std::string& codec_desc,
-                                          size_t corpus_size) const;
+  std::vector<ColumnValue> ComputeColumns(const std::string& codec_desc) const;
 
-  std::string PrintLine(const std::string& codec_desc,
-                        size_t corpus_size) const;
+  std::string PrintLine(const std::string& codec_desc) const;
 
-  void PrintMoreStats() const;
+  ::jxl::Status PrintMoreStats() const;
 
   size_t total_input_files = 0;
   size_t total_input_pixels = 0;
@@ -61,21 +59,25 @@ struct BenchmarkStats {
   float max_distance = -1.0;  // Max butteraugli score
   // sum of 8th powers of butteraugli distmap pixels.
   double distance_p_norm = 0.0;
-  // sum of 2nd powers of differences between R, G, B.
-  double distance_2 = 0.0;
+  double psnr = 0.0;
+  double ssimulacra2 = 0.0;
   std::vector<float> distances;
+  std::vector<float> pnorms;
+  std::vector<float> ssimulacra2s;
   size_t total_errors = 0;
   JxlStats jxl_stats;
   std::vector<float> extra_metrics;
 };
 
-std::string PrintHeader(const std::vector<std::string>& extra_metrics_names);
+::jxl::StatusOr<std::string> PrintHeader(
+    const std::vector<std::string>& extra_metrics_names);
 
 // Given the rows of all printed statistics, print an aggregate row.
-std::string PrintAggregate(
+::jxl::StatusOr<std::string> PrintAggregate(
     size_t num_extra_metrics,
     const std::vector<std::vector<ColumnValue>>& aggregate);
 
-}  // namespace jxl
+}  // namespace tools
+}  // namespace jpegxl
 
 #endif  // TOOLS_BENCHMARK_BENCHMARK_STATS_H_

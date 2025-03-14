@@ -5,17 +5,48 @@
 
 #include "plugins/gimp/file-jxl-load.h"
 
+#include <jxl/decode.h>
+#include <jxl/decode_cxx.h>
+
 #define _PROFILE_ORIGIN_ JXL_COLOR_PROFILE_TARGET_ORIGINAL
 #define _PROFILE_TARGET_ JXL_COLOR_PROFILE_TARGET_DATA
 #define LOAD_PROC "file-jxl-load"
 
 namespace jxl {
 
+bool SetJpegXlOutBuffer(
+    std::unique_ptr<JxlDecoderStruct, JxlDecoderDestroyStruct> *dec,
+    JxlPixelFormat *format, size_t *buffer_size, gpointer *pixels_buffer_1) {
+  if (JXL_DEC_SUCCESS !=
+      JxlDecoderImageOutBufferSize(dec->get(), format, buffer_size)) {
+    g_printerr(LOAD_PROC " Error: JxlDecoderImageOutBufferSize failed\n");
+    return false;
+  }
+  *pixels_buffer_1 = g_malloc(*buffer_size);
+  if (JXL_DEC_SUCCESS != JxlDecoderSetImageOutBuffer(dec->get(), format,
+                                                     *pixels_buffer_1,
+                                                     *buffer_size)) {
+    g_printerr(LOAD_PROC " Error: JxlDecoderSetImageOutBuffer failed\n");
+    return false;
+  }
+  return true;
+}
+
 bool LoadJpegXlImage(const gchar *const filename, gint32 *const image_id) {
+  bool stop_processing = false;
+  JxlDecoderStatus status = JXL_DEC_NEED_MORE_INPUT;
   std::vector<uint8_t> icc_profile;
   GimpColorProfile *profile_icc = nullptr;
   GimpColorProfile *profile_int = nullptr;
   bool is_linear = false;
+  uint32_t xsize = 0;
+  uint32_t ysize = 0;
+  int32_t crop_x0 = 0;
+  int32_t crop_y0 = 0;
+  size_t layer_idx = 0;
+  uint32_t frame_duration = 0;
+  double tps_denom = 1.f;
+  double tps_numerator = 1.f;
 
   gint32 layer;
 
@@ -28,6 +59,9 @@ bool LoadJpegXlImage(const gchar *const filename, gint32 *const image_id) {
   GimpPrecision precision = GIMP_PRECISION_U16_GAMMA;
   JxlBasicInfo info = {};
   JxlPixelFormat format = {};
+  JxlAnimationHeader animation = {};
+  JxlBlendMode blend_mode = JXL_BLEND_BLEND;
+  std::vector<char> frame_name;
 
   format.num_channels = 4;
   format.data_type = JXL_TYPE_FLOAT;
@@ -53,9 +87,10 @@ bool LoadJpegXlImage(const gchar *const filename, gint32 *const image_id) {
 
   auto dec = JxlDecoderMake(nullptr);
   if (JXL_DEC_SUCCESS !=
-      JxlDecoderSubscribeEvents(dec.get(), JXL_DEC_BASIC_INFO |
-                                               JXL_DEC_COLOR_ENCODING |
-                                               JXL_DEC_FULL_IMAGE)) {
+      JxlDecoderSubscribeEvents(
+          dec.get(), JXL_DEC_BASIC_INFO | JXL_DEC_COLOR_ENCODING |
+                         JXL_DEC_FULL_IMAGE | JXL_DEC_FRAME_PROGRESSION |
+                         JXL_DEC_FRAME)) {
     g_printerr(LOAD_PROC " Error: JxlDecoderSubscribeEvents failed\n");
     return false;
   }
@@ -66,14 +101,26 @@ bool LoadJpegXlImage(const gchar *const filename, gint32 *const image_id) {
     g_printerr(LOAD_PROC " Error: JxlDecoderSetParallelRunner failed\n");
     return false;
   }
+  // TODO(user): make this work with coalescing set to false, while handling
+  // frames with duration 0 and references to earlier frames correctly.
+  if (JXL_DEC_SUCCESS != JxlDecoderSetCoalescing(dec.get(), JXL_TRUE)) {
+    g_printerr(LOAD_PROC " Error: JxlDecoderSetCoalescing failed\n");
+    return false;
+  }
 
   // grand decode loop...
   JxlDecoderSetInput(dec.get(), compressed.data(), compressed.size());
 
+  if (JXL_DEC_SUCCESS != JxlDecoderSetProgressiveDetail(
+                             dec.get(), JxlProgressiveDetail::kPasses)) {
+    g_printerr(LOAD_PROC " Error: JxlDecoderSetProgressiveDetail failed\n");
+    return false;
+  }
+
   while (true) {
     gimp_load_progress.update();
 
-    JxlDecoderStatus status = JxlDecoderProcessInput(dec.get());
+    if (!stop_processing) status = JxlDecoderProcessInput(dec.get());
 
     if (status == JXL_DEC_BASIC_INFO) {
       if (JXL_DEC_SUCCESS != JxlDecoderGetBasicInfo(dec.get(), &info)) {
@@ -81,20 +128,26 @@ bool LoadJpegXlImage(const gchar *const filename, gint32 *const image_id) {
         return false;
       }
 
+      xsize = info.xsize;
+      ysize = info.ysize;
+      if (info.have_animation) {
+        animation = info.animation;
+        tps_denom = animation.tps_denominator;
+        tps_numerator = animation.tps_numerator;
+      }
+
       JxlResizableParallelRunnerSetThreads(
-          runner.get(),
-          JxlResizableParallelRunnerSuggestThreads(info.xsize, info.ysize));
+          runner.get(), JxlResizableParallelRunnerSuggestThreads(xsize, ysize));
     } else if (status == JXL_DEC_COLOR_ENCODING) {
       // check for ICC profile
       size_t icc_size = 0;
       JxlColorEncoding color_encoding;
       if (JXL_DEC_SUCCESS !=
-          JxlDecoderGetColorAsEncodedProfile(
-              dec.get(), &format, _PROFILE_ORIGIN_, &color_encoding)) {
+          JxlDecoderGetColorAsEncodedProfile(dec.get(), _PROFILE_ORIGIN_,
+                                             &color_encoding)) {
         // Attempt to load ICC profile when no internal color encoding
-        if (JXL_DEC_SUCCESS != JxlDecoderGetICCProfileSize(dec.get(), &format,
-                                                           _PROFILE_ORIGIN_,
-                                                           &icc_size)) {
+        if (JXL_DEC_SUCCESS != JxlDecoderGetICCProfileSize(
+                                   dec.get(), _PROFILE_ORIGIN_, &icc_size)) {
           g_printerr(LOAD_PROC
                      " Warning: JxlDecoderGetICCProfileSize failed\n");
         }
@@ -102,7 +155,7 @@ bool LoadJpegXlImage(const gchar *const filename, gint32 *const image_id) {
         if (icc_size > 0) {
           icc_profile.resize(icc_size);
           if (JXL_DEC_SUCCESS != JxlDecoderGetColorAsICCProfile(
-                                     dec.get(), &format, _PROFILE_ORIGIN_,
+                                     dec.get(), _PROFILE_ORIGIN_,
                                      icc_profile.data(), icc_profile.size())) {
             g_printerr(LOAD_PROC
                        " Warning: JxlDecoderGetColorAsICCProfile failed\n");
@@ -125,8 +178,8 @@ bool LoadJpegXlImage(const gchar *const filename, gint32 *const image_id) {
 
       // Internal color profile detection...
       if (JXL_DEC_SUCCESS ==
-          JxlDecoderGetColorAsEncodedProfile(
-              dec.get(), &format, _PROFILE_TARGET_, &color_encoding)) {
+          JxlDecoderGetColorAsEncodedProfile(dec.get(), _PROFILE_TARGET_,
+                                             &color_encoding)) {
         g_printerr(LOAD_PROC " Info: Internal color encoding detected.\n");
 
         // figure out linearity of internal profile
@@ -279,11 +332,11 @@ bool LoadJpegXlImage(const gchar *const filename, gint32 *const image_id) {
 
       // create new image
       if (is_linear) {
-        *image_id = gimp_image_new_with_precision(
-            info.xsize, info.ysize, image_type, GIMP_PRECISION_FLOAT_LINEAR);
+        *image_id = gimp_image_new_with_precision(xsize, ysize, image_type,
+                                                  GIMP_PRECISION_FLOAT_LINEAR);
       } else {
-        *image_id = gimp_image_new_with_precision(
-            info.xsize, info.ysize, image_type, GIMP_PRECISION_FLOAT_GAMMA);
+        *image_id = gimp_image_new_with_precision(xsize, ysize, image_type,
+                                                  GIMP_PRECISION_FLOAT_GAMMA);
       }
 
       if (profile_int) {
@@ -294,22 +347,32 @@ bool LoadJpegXlImage(const gchar *const filename, gint32 *const image_id) {
     } else if (status == JXL_DEC_NEED_IMAGE_OUT_BUFFER) {
       // get image from decoder in FLOAT
       format.data_type = JXL_TYPE_FLOAT;
-      if (JXL_DEC_SUCCESS !=
-          JxlDecoderImageOutBufferSize(dec.get(), &format, &buffer_size)) {
-        g_printerr(LOAD_PROC " Error: JxlDecoderImageOutBufferSize failed\n");
+      if (!SetJpegXlOutBuffer(&dec, &format, &buffer_size, &pixels_buffer_1))
         return false;
-      }
-      pixels_buffer_1 = g_malloc(buffer_size);
-      if (JXL_DEC_SUCCESS != JxlDecoderSetImageOutBuffer(dec.get(), &format,
-                                                         pixels_buffer_1,
-                                                         buffer_size)) {
-        g_printerr(LOAD_PROC " Error: JxlDecoderSetImageOutBuffer failed\n");
-        return false;
-      }
-    } else if (status == JXL_DEC_FULL_IMAGE || status == JXL_DEC_FRAME) {
+    } else if (status == JXL_DEC_FULL_IMAGE) {
       // create and insert layer
-      layer = gimp_layer_new(*image_id, "Background", info.xsize, info.ysize,
-                             layer_type, /*opacity=*/100,
+      gchar *layer_name;
+      if (layer_idx == 0 && !info.have_animation) {
+        layer_name = g_strdup_printf("Background");
+      } else {
+        const char *blend = (blend_mode == JXL_BLEND_REPLACE) ? " (replace)"
+                            : (blend_mode == JXL_BLEND_BLEND) ? " (combine)"
+                                                              : "";
+        char *temp_frame_name = nullptr;
+        bool must_free_frame_name = false;
+        if (frame_name.size() == 0) {
+          temp_frame_name = g_strdup_printf("Frame %lu", layer_idx + 1);
+          must_free_frame_name = true;
+        } else {
+          temp_frame_name = frame_name.data();
+        }
+        double fduration = frame_duration * 1000.f * tps_denom / tps_numerator;
+        layer_name = g_strdup_printf("%s (%.15gms)%s", temp_frame_name,
+                                     fduration, blend);
+        if (must_free_frame_name) free(temp_frame_name);
+      }
+      layer = gimp_layer_new(*image_id, layer_name, xsize, ysize, layer_type,
+                             /*opacity=*/100,
                              gimp_image_get_default_new_layer_mode(*image_id));
 
       gimp_image_insert_layer(*image_id, layer, /*parent_id=*/-1,
@@ -333,18 +396,60 @@ bool LoadJpegXlImage(const gchar *const filename, gint32 *const image_id) {
       const Babl *source_format = babl_format(babl_format_str.c_str());
 
       babl_process(babl_fish(source_format, destination_format),
-                   pixels_buffer_1, pixels_buffer_2, info.xsize * info.ysize);
+                   pixels_buffer_1, pixels_buffer_2, xsize * ysize);
 
-      gegl_buffer_set(buffer, GEGL_RECTANGLE(0, 0, info.xsize, info.ysize), 0,
-                      nullptr, pixels_buffer_2, GEGL_AUTO_ROWSTRIDE);
+      gegl_buffer_set(buffer, GEGL_RECTANGLE(0, 0, xsize, ysize), 0, nullptr,
+                      pixels_buffer_2, GEGL_AUTO_ROWSTRIDE);
+      gimp_item_transform_translate(layer, crop_x0, crop_y0);
 
       g_clear_object(&buffer);
+      g_free(pixels_buffer_1);
+      g_free(pixels_buffer_2);
+      if (stop_processing) status = JXL_DEC_SUCCESS;
+      g_free(layer_name);
+      layer_idx++;
+    } else if (status == JXL_DEC_FRAME) {
+      JxlFrameHeader frame_header;
+      if (JxlDecoderGetFrameHeader(dec.get(), &frame_header) !=
+          JXL_DEC_SUCCESS) {
+        g_printerr(LOAD_PROC " Error: JxlDecoderSetImageOutBuffer failed\n");
+        return false;
+      }
+      xsize = frame_header.layer_info.xsize;
+      ysize = frame_header.layer_info.ysize;
+      crop_x0 = frame_header.layer_info.crop_x0;
+      crop_y0 = frame_header.layer_info.crop_y0;
+      frame_duration = frame_header.duration;
+      blend_mode = frame_header.layer_info.blend_info.blendmode;
+      if (blend_mode != JXL_BLEND_BLEND && blend_mode != JXL_BLEND_REPLACE) {
+        g_printerr(
+            LOAD_PROC
+            " Warning: JxlDecoderGetFrameHeader: Unhandled blend mode: %d\n",
+            blend_mode);
+      }
+      if (frame_header.name_length > 0) {
+        frame_name.resize(frame_header.name_length + 1);
+        if (JXL_DEC_SUCCESS != JxlDecoderGetFrameName(dec.get(),
+                                                      frame_name.data(),
+                                                      frame_name.size())) {
+          g_printerr(LOAD_PROC "Error: JxlDecoderGetFrameName failed");
+          return false;
+        }
+      } else {
+        frame_name.resize(0);
+      }
     } else if (status == JXL_DEC_SUCCESS) {
       // All decoding successfully finished.
       // It's not required to call JxlDecoderReleaseInput(dec.get())
       // since the decoder will be destroyed.
       break;
-    } else if (status == JXL_DEC_NEED_MORE_INPUT) {
+    } else if (status == JXL_DEC_NEED_MORE_INPUT ||
+               status == JXL_DEC_FRAME_PROGRESSION) {
+      stop_processing = status != JXL_DEC_FRAME_PROGRESSION;
+      if (JxlDecoderFlushImage(dec.get()) == JXL_DEC_SUCCESS) {
+        status = JXL_DEC_FULL_IMAGE;
+        continue;
+      }
       g_printerr(LOAD_PROC " Error: Already provided all input\n");
       return false;
     } else if (status == JXL_DEC_ERROR) {

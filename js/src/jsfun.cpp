@@ -38,7 +38,9 @@
 #include "jit/Ion.h"
 #include "jit/JitFrameIterator.h"
 #include "js/CallNonGenericMethod.h"
+#include "js/CompileOptions.h"
 #include "js/Proxy.h"
+#include "js/SourceBufferHolder.h"
 #include "vm/AsyncFunction.h"
 #include "vm/AsyncIteration.h"
 #include "vm/Debugger.h"
@@ -66,6 +68,9 @@ using mozilla::Maybe;
 using mozilla::PodCopy;
 using mozilla::RangedPtr;
 using mozilla::Some;
+
+using JS::CompileOptions;
+using JS::SourceBufferHolder;
 
 static bool
 fun_enumerate(JSContext* cx, HandleObject obj)

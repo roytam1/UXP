@@ -5,32 +5,29 @@
 
 #include "lib/jxl/enc_chroma_from_luma.h"
 
-#include <float.h>
-#include <stdlib.h>
+#include <jxl/memory_manager.h>
 
 #include <algorithm>
-#include <array>
+#include <cfloat>
 #include <cmath>
+#include <cstdlib>
+#include <hwy/base.h>  // HWY_ALIGN_MAX
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/jxl/enc_chroma_from_luma.cc"
-#include <hwy/aligned_allocator.h>
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
-#include "lib/jxl/aux_out.h"
-#include "lib/jxl/base/bits.h"
-#include "lib/jxl/base/padded_bytes.h"
-#include "lib/jxl/base/profiler.h"
-#include "lib/jxl/base/span.h"
+#include "lib/jxl/base/common.h"
+#include "lib/jxl/base/rect.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/common.h"
+#include "lib/jxl/cms/opsin_params.h"
 #include "lib/jxl/dec_transforms-inl.h"
+#include "lib/jxl/enc_aux_out.h"
+#include "lib/jxl/enc_params.h"
 #include "lib/jxl/enc_transforms-inl.h"
-#include "lib/jxl/entropy_coder.h"
-#include "lib/jxl/image_ops.h"
-#include "lib/jxl/modular/encoding/encoding.h"
 #include "lib/jxl/quantizer.h"
+#include "lib/jxl/simd_util.h"
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
 namespace HWY_NAMESPACE {
@@ -54,7 +51,9 @@ struct CFLFunction {
         values_s(values_s),
         num(num),
         base(base),
-        distance_mul(distance_mul) {}
+        distance_mul(distance_mul) {
+    JXL_DASSERT(num % Lanes(df) == 0);
+  }
 
   // Returns f'(x), where f is 1/3 * sum ((|color residual| + 1)^2-1) +
   // distance_mul * x^2 * num.
@@ -75,7 +74,6 @@ struct CFLFunction {
     auto fd_v = Zero(df);
     auto fdpe_v = Zero(df);
     auto fdme_v = Zero(df);
-    JXL_ASSERT(num % Lanes(df) == 0);
 
     for (size_t i = 0; i < num; i += Lanes(df)) {
       // color residual = ax + b
@@ -114,6 +112,7 @@ struct CFLFunction {
   float distance_mul;
 };
 
+// Chroma-from-luma search, values_m will have luma -- and values_s chroma.
 int32_t FindBestMultiplier(const float* values_m, const float* values_s,
                            size_t num, float base, float distance_mul,
                            bool fast) {
@@ -139,7 +138,7 @@ int32_t FindBestMultiplier(const float* values_m, const float* values_s,
     x = -GetLane(SumOfLanes(df, cb)) /
         (GetLane(SumOfLanes(df, ca)) + num * distance_mul * 0.5f);
   } else {
-    constexpr float eps = 1;
+    constexpr float eps = 100;
     constexpr float kClamp = 20.0f;
     CFLFunction fn(values_m, values_s, num, base, distance_mul);
     x = 0;
@@ -147,25 +146,44 @@ int32_t FindBestMultiplier(const float* values_m, const float* values_s,
     // Derivatives are approximate due to the high amount of noise in the exact
     // derivatives.
     for (size_t i = 0; i < 20; i++) {
-      float dfpeps, dfmeps;
+      float dfpeps;
+      float dfmeps;
       float df = fn.Compute(x, eps, &dfpeps, &dfmeps);
       float ddf = (dfpeps - dfmeps) / (2 * eps);
-      float step = df / ddf;
+      float kExperimentalInsignificantStabilizer = 0.85;
+      float step = df / (ddf + kExperimentalInsignificantStabilizer);
       x -= std::min(kClamp, std::max(-kClamp, step));
       if (std::abs(step) < 3e-3) break;
     }
   }
+  // CFL seems to be tricky for larger transforms for HF components
+  // close to zero. This heuristic brings the solutions closer to zero
+  // and reduces red-green oscillations. A better approach would
+  // look into variance of the multiplier within separate (e.g. 8x8)
+  // areas and only apply this heuristic where there is a high variance.
+  // This would give about 1 % more compression density.
+  float towards_zero = 2.6;
+  if (x >= towards_zero) {
+    x -= towards_zero;
+  } else if (x <= -towards_zero) {
+    x += towards_zero;
+  } else {
+    x = 0;
+  }
   return std::max(-128.0f, std::min(127.0f, roundf(x)));
 }
 
-void InitDCStorage(size_t num_blocks, ImageF* dc_values) {
+Status InitDCStorage(JxlMemoryManager* memory_manager, size_t num_blocks,
+                     ImageF* dc_values) {
   // First row: Y channel
   // Second row: X channel
   // Third row: Y channel
   // Fourth row: B channel
-  *dc_values = ImageF(RoundUpTo(num_blocks, Lanes(df)), 4);
+  JXL_ASSIGN_OR_RETURN(
+      *dc_values,
+      ImageF::Create(memory_manager, RoundUpTo(num_blocks, Lanes(df)), 4));
 
-  JXL_ASSERT(dc_values->xsize() != 0);
+  JXL_ENSURE(dc_values->xsize() != 0);
   // Zero-fill the last lanes
   for (size_t y = 0; y < 4; y++) {
     for (size_t x = dc_values->xsize() - Lanes(df); x < dc_values->xsize();
@@ -173,34 +191,26 @@ void InitDCStorage(size_t num_blocks, ImageF* dc_values) {
       dc_values->Row(y)[x] = 0;
     }
   }
+  return true;
 }
 
-void ComputeDC(const ImageF& dc_values, bool fast, int32_t* dc_x,
-               int32_t* dc_b) {
-  constexpr float kDistanceMultiplierDC = 1e-5f;
-  const float* JXL_RESTRICT dc_values_yx = dc_values.Row(0);
-  const float* JXL_RESTRICT dc_values_x = dc_values.Row(1);
-  const float* JXL_RESTRICT dc_values_yb = dc_values.Row(2);
-  const float* JXL_RESTRICT dc_values_b = dc_values.Row(3);
-  *dc_x = FindBestMultiplier(dc_values_yx, dc_values_x, dc_values.xsize(), 0.0f,
-                             kDistanceMultiplierDC, fast);
-  *dc_b = FindBestMultiplier(dc_values_yb, dc_values_b, dc_values.xsize(),
-                             kYToBRatio, kDistanceMultiplierDC, fast);
-}
-
-void ComputeTile(const Image3F& opsin, const DequantMatrices& dequant,
-                 const AcStrategyImage* ac_strategy, const Quantizer* quantizer,
-                 const Rect& r, bool fast, bool use_dct8, ImageSB* map_x,
-                 ImageSB* map_b, ImageF* dc_values, float* mem) {
+Status ComputeTile(const Image3F& opsin, const Rect& opsin_rect,
+                   const DequantMatrices& dequant,
+                   const AcStrategyImage* ac_strategy,
+                   const ImageI* raw_quant_field, const Quantizer* quantizer,
+                   const Rect& rect, bool fast, bool use_dct8, ImageSB* map_x,
+                   ImageSB* map_b, ImageF* dc_values, float* mem) {
   static_assert(kEncTileDimInBlocks == kColorTileDimInBlocks,
                 "Invalid color tile dim");
-  size_t xsize_blocks = opsin.xsize() / kBlockDim;
-  constexpr float kDistanceMultiplierAC = 1e-3f;
+  size_t xsize_blocks = opsin_rect.xsize() / kBlockDim;
+  constexpr float kDistanceMultiplierAC = 1e-9f;
+  const size_t dct_scratch_size =
+      3 * (MaxVectorSize() / sizeof(float)) * AcStrategy::kMaxBlockDim;
 
-  const size_t y0 = r.y0();
-  const size_t x0 = r.x0();
-  const size_t x1 = r.x0() + r.xsize();
-  const size_t y1 = r.y0() + r.ysize();
+  const size_t y0 = rect.y0();
+  const size_t x0 = rect.x0();
+  const size_t x1 = rect.x0() + rect.xsize();
+  const size_t y1 = rect.y0() + rect.ysize();
 
   int ty = y0 / kColorTileDimInBlocks;
   int tx = x0 / kColorTileDimInBlocks;
@@ -222,8 +232,10 @@ void ComputeTile(const Image3F& opsin, const DequantMatrices& dequant,
   float* HWY_RESTRICT coeffs_yb = coeffs_x + kColorTileDim * kColorTileDim;
   float* HWY_RESTRICT coeffs_b = coeffs_yb + kColorTileDim * kColorTileDim;
   float* HWY_RESTRICT scratch_space = coeffs_b + kColorTileDim * kColorTileDim;
-  JXL_DASSERT(scratch_space + 2 * AcStrategy::kMaxCoeffArea ==
-              block_y + CfLHeuristics::kItemsPerThread);
+  float* scratch_space_end =
+      scratch_space + 2 * AcStrategy::kMaxCoeffArea + dct_scratch_size;
+  JXL_ENSURE(scratch_space_end == block_y + CfLHeuristics::ItemsPerThread());
+  (void)scratch_space_end;
 
   // Small (~256 bytes each)
   HWY_ALIGN_MAX float
@@ -235,14 +247,17 @@ void ComputeTile(const Image3F& opsin, const DequantMatrices& dequant,
   size_t num_ac = 0;
 
   for (size_t y = y0; y < y1; ++y) {
-    const float* JXL_RESTRICT row_y = opsin.ConstPlaneRow(1, y * kBlockDim);
-    const float* JXL_RESTRICT row_x = opsin.ConstPlaneRow(0, y * kBlockDim);
-    const float* JXL_RESTRICT row_b = opsin.ConstPlaneRow(2, y * kBlockDim);
+    const float* JXL_RESTRICT row_y =
+        opsin_rect.ConstPlaneRow(opsin, 1, y * kBlockDim);
+    const float* JXL_RESTRICT row_x =
+        opsin_rect.ConstPlaneRow(opsin, 0, y * kBlockDim);
+    const float* JXL_RESTRICT row_b =
+        opsin_rect.ConstPlaneRow(opsin, 2, y * kBlockDim);
     size_t stride = opsin.PixelsPerRow();
 
     for (size_t x = x0; x < x1; x++) {
       AcStrategy acs = use_dct8
-                           ? AcStrategy::FromRawStrategy(AcStrategy::Type::DCT)
+                           ? AcStrategy::FromRawStrategy(AcStrategyType::DCT)
                            : ac_strategy->ConstRow(y)[x];
       if (!acs.IsFirstBlock()) continue;
       size_t xs = acs.covered_blocks_x();
@@ -259,9 +274,6 @@ void ComputeTile(const Image3F& opsin, const DequantMatrices& dequant,
           dequant.InvMatrix(acs.Strategy(), 0);
       const float* const JXL_RESTRICT qm_b =
           dequant.InvMatrix(acs.Strategy(), 2);
-      // Why does a constant seem to work better than
-      // raw_quant_field->Row(y)[x] ?
-      float q = use_dct8 ? 1 : quantizer->Scale() * 400.0f;
       float q_dc_x = use_dct8 ? 1 : 1.0f / quantizer->GetInvDcStep(0);
       float q_dc_b = use_dct8 ? 1 : 1.0f / quantizer->GetInvDcStep(2);
 
@@ -300,6 +312,14 @@ void ComputeTile(const Image3F& opsin, const DequantMatrices& dequant,
           block_b[cx * kBlockDim * iy + ix] = 0;
         }
       }
+      // Unclear why this is like it is. (This works slightly better
+      // than the previous approach which was also a hack.)
+      const float qq =
+          (raw_quant_field == nullptr) ? 1.0f : raw_quant_field->Row(y)[x];
+      // Experimentally values 128-130 seem best -- I don't know why we
+      // need this multiplier.
+      const float kStrangeMultiplier = 128;
+      float q = use_dct8 ? 1 : quantizer->Scale() * kStrangeMultiplier * qq;
       const auto qv = Set(df, q);
       for (size_t i = 0; i < cx * cy * 64; i += Lanes(df)) {
         const auto b_y = Load(df, block_y + i);
@@ -315,11 +335,13 @@ void ComputeTile(const Image3F& opsin, const DequantMatrices& dequant,
       }
     }
   }
-  JXL_CHECK(num_ac % Lanes(df) == 0);
+  JXL_ENSURE(num_ac % Lanes(df) == 0);
   row_out_x[tx] = FindBestMultiplier(coeffs_yx, coeffs_x, num_ac, 0.0f,
                                      kDistanceMultiplierAC, fast);
-  row_out_b[tx] = FindBestMultiplier(coeffs_yb, coeffs_b, num_ac, kYToBRatio,
-                                     kDistanceMultiplierAC, fast);
+  row_out_b[tx] =
+      FindBestMultiplier(coeffs_yb, coeffs_b, num_ac, jxl::cms::kYToBRatio,
+                         kDistanceMultiplierAC, fast);
+  return true;
 }
 
 // NOLINTNEXTLINE(google-readability-namespace-comments)
@@ -331,57 +353,57 @@ HWY_AFTER_NAMESPACE();
 namespace jxl {
 
 HWY_EXPORT(InitDCStorage);
-HWY_EXPORT(ComputeDC);
 HWY_EXPORT(ComputeTile);
 
-void CfLHeuristics::Init(const Image3F& opsin) {
-  size_t xsize_blocks = opsin.xsize() / kBlockDim;
-  size_t ysize_blocks = opsin.ysize() / kBlockDim;
-  HWY_DYNAMIC_DISPATCH(InitDCStorage)
-  (xsize_blocks * ysize_blocks, &dc_values);
+Status CfLHeuristics::Init(const Rect& rect) {
+  size_t xsize_blocks = rect.xsize() / kBlockDim;
+  size_t ysize_blocks = rect.ysize() / kBlockDim;
+  return HWY_DYNAMIC_DISPATCH(InitDCStorage)(
+      memory_manager, xsize_blocks * ysize_blocks, &dc_values);
 }
 
-void CfLHeuristics::ComputeTile(const Rect& r, const Image3F& opsin,
-                                const DequantMatrices& dequant,
-                                const AcStrategyImage* ac_strategy,
-                                const Quantizer* quantizer, bool fast,
-                                size_t thread, ColorCorrelationMap* cmap) {
+Status CfLHeuristics::ComputeTile(const Rect& r, const Image3F& opsin,
+                                  const Rect& opsin_rect,
+                                  const DequantMatrices& dequant,
+                                  const AcStrategyImage* ac_strategy,
+                                  const ImageI* raw_quant_field,
+                                  const Quantizer* quantizer, bool fast,
+                                  size_t thread, ColorCorrelationMap* cmap) {
   bool use_dct8 = ac_strategy == nullptr;
-  HWY_DYNAMIC_DISPATCH(ComputeTile)
-  (opsin, dequant, ac_strategy, quantizer, r, fast, use_dct8, &cmap->ytox_map,
-   &cmap->ytob_map, &dc_values, mem.get() + thread * kItemsPerThread);
+  return HWY_DYNAMIC_DISPATCH(ComputeTile)(
+      opsin, opsin_rect, dequant, ac_strategy, raw_quant_field, quantizer, r,
+      fast, use_dct8, &cmap->ytox_map, &cmap->ytob_map, &dc_values,
+      mem.address<float>() + thread * ItemsPerThread());
 }
 
-void CfLHeuristics::ComputeDC(bool fast, ColorCorrelationMap* cmap) {
-  int32_t ytob_dc = 0;
-  int32_t ytox_dc = 0;
-  HWY_DYNAMIC_DISPATCH(ComputeDC)(dc_values, fast, &ytox_dc, &ytob_dc);
-  cmap->SetYToBDC(ytob_dc);
-  cmap->SetYToXDC(ytox_dc);
-}
+Status ColorCorrelationEncodeDC(const ColorCorrelation& color_correlation,
+                                BitWriter* writer, LayerType layer,
+                                AuxOut* aux_out) {
+  float color_factor = color_correlation.GetColorFactor();
+  float base_correlation_x = color_correlation.GetBaseCorrelationX();
+  float base_correlation_b = color_correlation.GetBaseCorrelationB();
+  int32_t ytox_dc = color_correlation.GetYToXDC();
+  int32_t ytob_dc = color_correlation.GetYToBDC();
 
-void ColorCorrelationMapEncodeDC(ColorCorrelationMap* map, BitWriter* writer,
-                                 size_t layer, AuxOut* aux_out) {
-  float color_factor = map->GetColorFactor();
-  float base_correlation_x = map->GetBaseCorrelationX();
-  float base_correlation_b = map->GetBaseCorrelationB();
-  int32_t ytox_dc = map->GetYToXDC();
-  int32_t ytob_dc = map->GetYToBDC();
-
-  BitWriter::Allotment allotment(writer, 1 + 2 * kBitsPerByte + 12 + 32);
-  if (ytox_dc == 0 && ytob_dc == 0 && color_factor == kDefaultColorFactor &&
-      base_correlation_x == 0.0f && base_correlation_b == kYToBRatio) {
-    writer->Write(1, 1);
-    ReclaimAndCharge(writer, &allotment, layer, aux_out);
-    return;
-  }
-  writer->Write(1, 0);
-  JXL_CHECK(U32Coder::Write(kColorFactorDist, color_factor, writer));
-  JXL_CHECK(F16Coder::Write(base_correlation_x, writer));
-  JXL_CHECK(F16Coder::Write(base_correlation_b, writer));
-  writer->Write(kBitsPerByte, ytox_dc - std::numeric_limits<int8_t>::min());
-  writer->Write(kBitsPerByte, ytob_dc - std::numeric_limits<int8_t>::min());
-  ReclaimAndCharge(writer, &allotment, layer, aux_out);
+  return writer->WithMaxBits(
+      1 + 2 * kBitsPerByte + 12 + 32, layer, aux_out, [&]() -> Status {
+        if (ytox_dc == 0 && ytob_dc == 0 &&
+            color_factor == kDefaultColorFactor && base_correlation_x == 0.0f &&
+            base_correlation_b == jxl::cms::kYToBRatio) {
+          writer->Write(1, 1);
+          return true;
+        }
+        writer->Write(1, 0);
+        JXL_RETURN_IF_ERROR(
+            U32Coder::Write(kColorFactorDist, color_factor, writer));
+        JXL_RETURN_IF_ERROR(F16Coder::Write(base_correlation_x, writer));
+        JXL_RETURN_IF_ERROR(F16Coder::Write(base_correlation_b, writer));
+        writer->Write(kBitsPerByte,
+                      ytox_dc - std::numeric_limits<int8_t>::min());
+        writer->Write(kBitsPerByte,
+                      ytob_dc - std::numeric_limits<int8_t>::min());
+        return true;
+      });
 }
 
 }  // namespace jxl

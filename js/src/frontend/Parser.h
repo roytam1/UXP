@@ -22,6 +22,7 @@
 #include "frontend/SharedContext.h"
 #include "frontend/SyntaxParseHandler.h"
 #include "frontend/TokenStream.h"
+#include "js/CompileOptions.h"
 
 namespace js {
 
@@ -835,7 +836,7 @@ class ParserBase : public StrictModeGetter
         return pc->sc()->hasModuleGoal() ? ParseGoal::Module : ParseGoal::Script;
     }
 
-    ParserBase(ExclusiveContext* cx, LifoAlloc& alloc, const ReadOnlyCompileOptions& options,
+    ParserBase(ExclusiveContext* cx, LifoAlloc& alloc, const JS::ReadOnlyCompileOptions& options,
                const char16_t* chars, size_t length, bool foldConstants,
                UsedNameTracker& usedNames, Parser<SyntaxParseHandler>* syntaxParser,
                LazyScript* lazyOuterFunction);
@@ -860,7 +861,7 @@ class ParserBase : public StrictModeGetter
         return pc->sc()->setLocalStrictMode(strict);
     }
 
-    const ReadOnlyCompileOptions& options() const {
+    const JS::ReadOnlyCompileOptions& options() const {
         return tokenStream.options();
     }
 
@@ -1081,7 +1082,7 @@ FOR_EACH_PARSENODE_SUBCLASS(DECLARE_TYPE)
     void freeTree(Node node) { handler.freeTree(node); }
 
   public:
-    Parser(ExclusiveContext* cx, LifoAlloc& alloc, const ReadOnlyCompileOptions& options,
+    Parser(ExclusiveContext* cx, LifoAlloc& alloc, const JS::ReadOnlyCompileOptions& options,
            const char16_t* chars, size_t length, bool foldConstants, UsedNameTracker& usedNames,
            Parser<SyntaxParseHandler>* syntaxParser, LazyScript* lazyOuterFunction);
     ~Parser();

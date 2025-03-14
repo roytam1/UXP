@@ -41,6 +41,7 @@
 #include "jit/Ion.h"
 #include "jit/IonCode.h"
 #include "js/MemoryMetrics.h"
+#include "js/SourceBufferHolder.h"
 #include "js/Utility.h"
 #include "vm/ArgumentsObject.h"
 #include "vm/Compression.h"
@@ -67,6 +68,10 @@ using mozilla::AsVariant;
 using mozilla::PodCopy;
 using mozilla::PodZero;
 using mozilla::RotateLeft;
+
+using JS::CompileOptions;
+using JS::ReadOnlyCompileOptions;
+using JS::SourceBufferHolder;
 
 template<XDRMode mode>
 bool

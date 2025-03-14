@@ -8,123 +8,36 @@
 
 // Parameters and flags that govern JXL compression.
 
+#include <jxl/cms_interface.h>
+#include <jxl/encode.h>
 #include <stddef.h>
-#include <stdint.h>
 
-#include <string>
+#include <vector>
 
 #include "lib/jxl/base/override.h"
-#include "lib/jxl/butteraugli/butteraugli.h"
+#include "lib/jxl/common.h"
+#include "lib/jxl/enc_progressive_split.h"
+#include "lib/jxl/frame_dimensions.h"
 #include "lib/jxl/frame_header.h"
+#include "lib/jxl/modular/encoding/dec_ma.h"
 #include "lib/jxl/modular/options.h"
-#include "lib/jxl/modular/transform/transform.h"
+#include "lib/jxl/splines.h"
 
 namespace jxl {
-
-enum class SpeedTier {
-  // Turns on FindBestQuantizationHQ loop. Equivalent to "guetzli" mode.
-  kTortoise = 1,
-  // Turns on FindBestQuantization butteraugli loop.
-  kKitten = 2,
-  // Turns on dots, patches, and spline detection by default, as well as full
-  // context clustering. Default.
-  kSquirrel = 3,
-  // Turns on error diffusion and full AC strategy heuristics. Equivalent to
-  // "fast" mode.
-  kWombat = 4,
-  // Turns on gaborish by default, non-default cmap, initial quant field.
-  kHare = 5,
-  // Turns on simple heuristics for AC strategy, quant field, and clustering;
-  // also enables coefficient reordering.
-  kCheetah = 6,
-  // Turns off most encoder features. Does context clustering.
-  // Modular: uses fixed tree with Weighted predictor.
-  kFalcon = 7,
-  // Currently fastest possible setting for VarDCT.
-  // Modular: uses fixed tree with Gradient predictor.
-  kThunder = 8,
-  // VarDCT: same as kThunder.
-  // Modular: no tree, Gradient predictor, fast histograms
-  kLightning = 9
-};
-
-inline bool ParseSpeedTier(const std::string& s, SpeedTier* out) {
-  if (s == "lightning") {
-    *out = SpeedTier::kLightning;
-    return true;
-  } else if (s == "thunder") {
-    *out = SpeedTier::kThunder;
-    return true;
-  } else if (s == "falcon") {
-    *out = SpeedTier::kFalcon;
-    return true;
-  } else if (s == "cheetah") {
-    *out = SpeedTier::kCheetah;
-    return true;
-  } else if (s == "hare") {
-    *out = SpeedTier::kHare;
-    return true;
-  } else if (s == "fast" || s == "wombat") {
-    *out = SpeedTier::kWombat;
-    return true;
-  } else if (s == "squirrel") {
-    *out = SpeedTier::kSquirrel;
-    return true;
-  } else if (s == "kitten") {
-    *out = SpeedTier::kKitten;
-    return true;
-  } else if (s == "guetzli" || s == "tortoise") {
-    *out = SpeedTier::kTortoise;
-    return true;
-  }
-  size_t st = 10 - static_cast<size_t>(strtoull(s.c_str(), nullptr, 0));
-  if (st <= static_cast<size_t>(SpeedTier::kLightning) &&
-      st >= static_cast<size_t>(SpeedTier::kTortoise)) {
-    *out = SpeedTier(st);
-    return true;
-  }
-  return false;
-}
-
-inline const char* SpeedTierName(SpeedTier speed_tier) {
-  switch (speed_tier) {
-    case SpeedTier::kLightning:
-      return "lightning";
-    case SpeedTier::kThunder:
-      return "thunder";
-    case SpeedTier::kFalcon:
-      return "falcon";
-    case SpeedTier::kCheetah:
-      return "cheetah";
-    case SpeedTier::kHare:
-      return "hare";
-    case SpeedTier::kWombat:
-      return "wombat";
-    case SpeedTier::kSquirrel:
-      return "squirrel";
-    case SpeedTier::kKitten:
-      return "kitten";
-    case SpeedTier::kTortoise:
-      return "tortoise";
-  }
-  return "INVALID";
-}
 
 // NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding)
 struct CompressParams {
   float butteraugli_distance = 1.0f;
-  size_t target_size = 0;
-  float target_bitrate = 0.0f;
 
-  // 0.0 means search for the adaptive quantization map that matches the
-  // butteraugli distance, positive values mean quantize everywhere with that
-  // value.
-  float uniform_quant = 0.0f;
-  float quant_border_bias = 0.0f;
+  // explicit distances for extra channels (defaults to butteraugli_distance
+  // when not set; value of -1 can be used to represent 'default')
+  std::vector<float> ec_distance;
 
   // Try to achieve a maximum pixel-by-pixel error on each channel.
   bool max_error_mode = false;
   float max_error[3] = {0.0, 0.0, 0.0};
+
+  bool disable_perceptual_optimizations = false;
 
   SpeedTier speed_tier = SpeedTier::kSquirrel;
   int brotli_effort = -1;
@@ -132,21 +45,16 @@ struct CompressParams {
   // 0 = default.
   // 1 = slightly worse quality.
   // 4 = fastest speed, lowest quality
-  // TODO(veluca): hook this up to the C API.
   size_t decoding_speed_tier = 0;
 
-  int max_butteraugli_iters = 4;
-
-  int max_butteraugli_iters_guetzli_mode = 100;
-
   ColorTransform color_transform = ColorTransform::kXYB;
-  YCbCrChromaSubsampling chroma_subsampling;
 
   // If true, the "modular mode options" members below are used.
   bool modular_mode = false;
 
-  // Change group size in modular mode (0=128, 1=256, 2=512, 3=1024).
-  size_t modular_group_size_shift = 1;
+  // Change group size in modular mode (0=128, 1=256, 2=512, 3=1024, -1=encoder
+  // chooses).
+  int modular_group_size_shift = -1;
 
   Override preview = Override::kDefault;
   Override noise = Override::kDefault;
@@ -156,10 +64,10 @@ struct CompressParams {
   int epf = -1;
 
   // Progressive mode.
-  bool progressive_mode = false;
+  Override progressive_mode = Override::kDefault;
 
   // Quantized-progressive mode.
-  bool qprogressive_mode = false;
+  Override qprogressive_mode = Override::kDefault;
 
   // Put center groups first in the bitstream.
   bool centerfirst = false;
@@ -171,45 +79,28 @@ struct CompressParams {
   int progressive_dc = -1;
 
   // If on: preserve color of invisible pixels (if off: don't care)
-  // Default: on for lossless, off for lossy
+  // Default: on
   Override keep_invisible = Override::kDefault;
 
-  // Progressive-mode saliency.
-  //
-  // How many progressive saliency-encoding steps to perform.
-  // - 1: Encode only DC and lowest-frequency AC. Does not need a saliency-map.
-  // - 2: Encode only DC+LF, dropping all HF AC data.
-  //      Does not need a saliency-map.
-  // - 3: Encode DC+LF+{salient HF}, dropping all non-salient HF data.
-  // - 4: Encode DC+LF+{salient HF}+{other HF}.
-  // - 5: Encode DC+LF+{quantized HF}+{low HF bits}.
-  size_t saliency_num_progressive_steps = 3;
-  // Every saliency-heatmap cell with saliency >= threshold will be considered
-  // as 'salient'. The default value of 0.0 will consider every AC-block
-  // as salient, hence not require a saliency-map, and not actually generate
-  // a 4th progressive step.
-  float saliency_threshold = 0.0f;
-  // Saliency-map (owned by caller).
-  ImageF* saliency_map = nullptr;
-
-  // Input and output file name. Will be used to provide pluggable saliency
-  // extractor with paths.
-  const char* file_in = nullptr;
-  const char* file_out = nullptr;
-
-  // Currently unused as of 2020-01.
-  bool clear_metadata = false;
-
-  // Prints extra information during/after encoding.
-  bool verbose = false;
-  bool log_search_state = false;
-
-  ButteraugliParams ba_params;
+  JxlCmsInterface cms;
+  bool cms_set = false;
+  void SetCms(const JxlCmsInterface& cms) {
+    this->cms = cms;
+    cms_set = true;
+  }
 
   // Force usage of CfL when doing JPEG recompression. This can have unexpected
   // effects on the decoded pixels, while still being JPEG-compliant and
   // allowing reconstruction of the original JPEG.
   bool force_cfl_jpeg_recompression = true;
+
+  // Use brotli compression for any boxes derived from a JPEG frame.
+  bool jpeg_compress_boxes = true;
+
+  // Preserve this metadata when doing JPEG recompression.
+  bool jpeg_keep_exif = true;
+  bool jpeg_keep_xmp = true;
+  bool jpeg_keep_jumbf = true;
 
   // Set the noise to what it would approximately be if shooting at the nominal
   // exposure for a given ISO setting on a 35mm camera.
@@ -217,10 +108,12 @@ struct CompressParams {
 
   // modular mode options below
   ModularOptions options;
+
+  // TODO(eustas): use Override?
   int responsive = -1;
-  // empty for default squeeze
-  std::vector<SqueezeParams> squeezes;
   int colorspace = -1;
+  int move_to_front_from_channel = -1;
+
   // Use Global channel palette if #colors < this percentage of range
   float channel_colors_pre_transform_percent = 95.f;
   // Use Local channel palette if #colors < this percentage of range
@@ -229,17 +122,29 @@ struct CompressParams {
   bool lossy_palette = false;
 
   // Returns whether these params are lossless as defined by SetLossless();
-  bool IsLossless() const {
-    // YCbCr is also considered lossless here since it's intended for
-    // source material that is already YCbCr (we don't do the fwd transform)
-    return modular_mode && butteraugli_distance == 0.0f &&
-           color_transform != jxl::ColorTransform::kXYB;
+  bool IsLossless() const { return modular_mode && ModularPartIsLossless(); }
+
+  bool ModularPartIsLossless() const {
+    if (modular_mode) {
+      // YCbCr is also considered lossless here since it's intended for
+      // source material that is already YCbCr (we don't do the fwd transform)
+      if (butteraugli_distance != 0 ||
+          color_transform == jxl::ColorTransform::kXYB)
+        return false;
+    }
+    for (float f : ec_distance) {
+      if (f > 0) return false;
+      if (f < 0 && butteraugli_distance != 0) return false;
+    }
+    // all modular channels are encoded at distance 0
+    return true;
   }
 
   // Sets the parameters required to make the codec lossless.
   void SetLossless() {
     modular_mode = true;
     butteraugli_distance = 0.0f;
+    for (float& f : ec_distance) f = 0.0f;
     color_transform = jxl::ColorTransform::kNone;
   }
 
@@ -262,20 +167,36 @@ struct CompressParams {
   // -1: don't care
   int level = -1;
 
+  // See JXL_ENC_FRAME_SETTING_BUFFERING option value.
+  int buffering = -1;
+  // See JXL_ENC_FRAME_SETTING_USE_FULL_IMAGE_HEURISTICS option value.
+  bool use_full_image_heuristics = true;
+
   std::vector<float> manual_noise;
   std::vector<float> manual_xyb_factors;
+
+  // If not empty, this tree will be used for dc global section.
+  // Used in jxl_from_tree tool.
+  Tree custom_fixed_tree;
+  // If not empty, these custom splines will be used instead of the computed
+  // ones. Used in jxl_from_tee tool.
+  Splines custom_splines;
+  // If not null, overrides progressive mode settings. Used in decode_test.
+  const ProgressiveMode* custom_progressive_mode = nullptr;
+
+  JxlDebugImageCallback debug_image = nullptr;
+  void* debug_image_opaque;
 };
 
 static constexpr float kMinButteraugliForDynamicAR = 0.5f;
 static constexpr float kMinButteraugliForDots = 3.0f;
 static constexpr float kMinButteraugliToSubtractOriginalPatches = 3.0f;
-static constexpr float kMinButteraugliDistanceForProgressiveDc = 4.5f;
 
 // Always off
 static constexpr float kMinButteraugliForNoise = 99.0f;
 
 // Minimum butteraugli distance the encoder accepts.
-static constexpr float kMinButteraugliDistance = 0.01f;
+static constexpr float kMinButteraugliDistance = 0.001f;
 
 // Tile size for encoder-side processing. Must be equal to color tile dim in the
 // current implementation.

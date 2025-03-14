@@ -10,6 +10,10 @@ import java.nio.ByteBuffer;
 
 /** JPEG XL JNI decoder wrapper. */
 public class Decoder {
+  static {
+    JniHelper.ensureInitialized();
+  }
+
   /** Utility library, disable object construction. */
   private Decoder() {}
 
@@ -32,7 +36,14 @@ public class Decoder {
     return new ImageData(basicInfo.width, basicInfo.height, pixels, icc, pixelFormat);
   }
 
-  // TODO(eustas): accept byte-array as input.
+  public static StreamInfo decodeInfo(byte[] data) {
+    return decodeInfo(ByteBuffer.wrap(data));
+  }
+
+  public static StreamInfo decodeInfo(byte[] data, int offset, int length) {
+    return decodeInfo(ByteBuffer.wrap(data, offset, length));
+  }
+
   public static StreamInfo decodeInfo(Buffer data) {
     return DecoderJni.getBasicInfo(data, null);
   }

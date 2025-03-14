@@ -8,25 +8,22 @@
 
 // Compressed representation of ICC profiles.
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstdint>
 
-#include "lib/jxl/aux_out.h"
-#include "lib/jxl/aux_out_fwd.h"
 #include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/padded_bytes.h"
+#include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/dec_bit_reader.h"
 #include "lib/jxl/enc_bit_writer.h"
 
 namespace jxl {
 
-// Should still be called if `icc.empty()` - if so, writes only 1 bit.
-Status WriteICC(const PaddedBytes& icc, BitWriter* JXL_RESTRICT writer,
-                size_t layer, AuxOut* JXL_RESTRICT aux_out);
+struct AuxOut;
+enum class LayerType : uint8_t;
+class PaddedBytes;
 
-// Exposed only for testing
-Status PredictICC(const uint8_t* icc, size_t size, PaddedBytes* result);
+// Should still be called if `icc.empty()` - if so, writes only 1 bit.
+Status WriteICC(Span<const uint8_t> icc, BitWriter* JXL_RESTRICT writer,
+                LayerType layer, AuxOut* JXL_RESTRICT aux_out);
 
 }  // namespace jxl
 

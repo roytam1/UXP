@@ -53,26 +53,30 @@ def Average(a, b):
 
 
 eval_hash = {}
+g_best_val = None
 
 def EvalCacheForget():
   global eval_hash
   eval_hash = {}
 
+g_first_pnorm = None
+
 def RandomizedJxlCodecs():
+  global g_first_pnorm
+  g_first_pnorm = None
   retval = []
-  minval = 0.5
-  maxval = 3.3
+  minval = 1.0
+  maxval = 8.3
   rangeval = maxval/minval
-  steps = 7
+  steps = 5
   for i in range(steps):
     mul = minval * rangeval**(float(i)/(steps - 1))
     mul *= 0.99 + 0.05 * random.random()
-    retval.append("jxl:epf2:d%.3f" % mul)
-  steps = 7
+    retval.append("jxl:d%.4f" % mul)
   for i in range(steps - 1):
     mul = minval * rangeval**(float(i+0.5)/(steps - 1))
     mul *= 0.99 + 0.05 * random.random()
-    retval.append("jxl:epf0:d%.3f" % mul)
+    retval.append("jxl:d%.4f" % mul)
   return ",".join(retval)
 
 g_codecs = RandomizedJxlCodecs()
@@ -87,6 +91,8 @@ def Eval(vec, binary_name, cached=True):
   """
   global eval_hash
   global g_codecs
+  global g_best_val
+  global g_first_pnorm
   key = ""
   # os.environ["BUTTERAUGLI_OPTIMIZE"] = "1"
   for i in range(300):
@@ -101,8 +107,8 @@ def Eval(vec, binary_name, cached=True):
   process = subprocess.Popen(
       (binary_name,
        '--input',
-       '/usr/local/google/home/jyrki/mix_corpus/*.png',
-       '--error_pnorm=3',
+       '/usr/local/google/home/jyrki/newcorpus/split/*.png',
+       '--error_pnorm=3.0',
        '--more_columns',
        '--codec', g_codecs),
       stdout=subprocess.PIPE,
@@ -111,7 +117,7 @@ def Eval(vec, binary_name, cached=True):
 
   # process.wait()
   found_score = False
-  vec[0] = 1.0
+  vec[0] = 1e29
   dct2 = 0.0
   dct4 = 0.0
   dct16 = 0.0
@@ -120,22 +126,25 @@ def Eval(vec, binary_name, cached=True):
   for line in process.communicate(input=None)[0].splitlines():
     print("BE", line)
     sys.stdout.flush()
-    if line[0:3] == b'jxl':
-      bpp = line.split()[3]
-      dist_pnorm = line.split()[7]
-      vec[0] *= float(dist_pnorm) * float(bpp) / 16.0
-      #vec[0] *= (float(dist_max) * float(bpp) / 16.0) ** 0.2
-      n += 1
+    if line[0:4] == b'Aggr':
+      bpppnorm = float(line.split()[10])
+      if g_first_pnorm == None:
+        g_first_pnorm = float(line.split()[9])
+      correctbpp = 1. + 10.0 * (float(line.split()[9]) - g_first_pnorm) ** 2
+
+      vec[0] = 1e-5 * bpppnorm * correctbpp
       found_score = True
-      distance = float(line.split()[0].split(b'd')[-1])
-      #faultybpp = 1.0 + 0.43 * ((float(bpp) * distance ** 0.74) - 1.57) ** 2
-      #vec[0] *= faultybpp
 
   print("eval: ", vec)
   if (vec[0] <= 0.0):
     vec[0] = 1e30
   if found_score:
     eval_hash[key] = vec[0]
+    if not g_best_val or vec[0] < g_best_val:
+      g_best_val = vec[0]
+      print("\nSaving best simplex\n")
+      with open("best_simplex.txt", "w") as f:
+        print(vec, file=f)
     return
   vec[0] = 1e33
   return
@@ -242,13 +251,14 @@ g_simplex = InitialSimplex(best, g_dim, g_amount * 0.33)
 best = g_simplex[0][:]
 
 for restarts in range(99999):
-  for ii in range(g_dim * 2):
+  for ii in range(g_dim * 5):
     g_simplex.sort()
     print("reflect", ii, g_simplex[0])
     Reflect(g_simplex, g_binary)
 
   mulli = 0.1 + 15 * random.random()**2.0
   g_codecs = RandomizedJxlCodecs()
+  g_best_val = None # get a new best val
   print("\n\n\nRestart", restarts, "mulli", mulli)
   g_simplex.sort()
   best = g_simplex[0][:]

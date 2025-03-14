@@ -8,6 +8,7 @@
 #include <QApplication>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
+#include <QFileInfo>
 #include <QFlags>
 #include <QImage>
 #include <QMessageBox>
@@ -28,6 +29,34 @@ void displayLoadingError(const QString& path) {
                                               "Could not load image \"%1\".")
                       .arg(path));
   message.exec();
+}
+
+QString windowTitle(const QString& leftPath, const QString& rightPath) {
+  QFileInfo leftInfo(leftPath), rightInfo(rightPath);
+  if (leftInfo.canonicalPath() == rightInfo.canonicalPath()) {
+    // Same directory, only the filenames might be different
+    if (leftInfo.fileName() == rightInfo.fileName()) {
+      return QCoreApplication::translate("compare_images",
+                                         "%1 - Image Comparison Tool")
+          .arg(leftInfo.fileName());
+    } else {
+      return QCoreApplication::translate("compare_images",
+                                         "%1 vs. %2 - Image Comparison Tool")
+          .arg(leftInfo.fileName(), rightInfo.fileName());
+    }
+  } else {
+    if (leftInfo.fileName() == rightInfo.fileName()) {
+      // Same filename in different directories
+      return QCoreApplication::translate(
+                 "compare_images", "%1 (%2 vs. %3) - Image Comparison Tool")
+          .arg(leftInfo.fileName(), leftInfo.path(), rightInfo.path());
+    } else {
+      // Everything different
+      return QCoreApplication::translate("compare_images",
+                                         "%1 vs. %2 - Image Comparison Tool")
+          .arg(leftInfo.filePath(), rightInfo.filePath());
+    }
+  }
 }
 
 }  // namespace
@@ -87,13 +116,14 @@ int main(int argc, char** argv) {
     parser.showHelp(EXIT_FAILURE);
   }
 
-  jxl::SplitImageView view;
+  jpegxl::tools::SplitImageView view;
 
-  const QByteArray monitorIccProfile = jxl::GetMonitorIccProfile(&view);
+  const QByteArray monitorIccProfile =
+      jpegxl::tools::GetMonitorIccProfile(&view);
 
   const QString leftImagePath = arguments.takeFirst();
-  QImage leftImage = jxl::loadImage(leftImagePath, monitorIccProfile,
-                                    intensityTarget, colorSpaceHint);
+  QImage leftImage = jpegxl::tools::loadImage(leftImagePath, monitorIccProfile,
+                                              intensityTarget, colorSpaceHint);
   if (leftImage.isNull()) {
     displayLoadingError(leftImagePath);
     return EXIT_FAILURE;
@@ -101,8 +131,8 @@ int main(int argc, char** argv) {
   view.setLeftImage(std::move(leftImage));
 
   const QString rightImagePath = arguments.takeFirst();
-  QImage rightImage = jxl::loadImage(rightImagePath, monitorIccProfile,
-                                     intensityTarget, colorSpaceHint);
+  QImage rightImage = jpegxl::tools::loadImage(
+      rightImagePath, monitorIccProfile, intensityTarget, colorSpaceHint);
   if (rightImage.isNull()) {
     displayLoadingError(rightImagePath);
     return EXIT_FAILURE;
@@ -111,8 +141,8 @@ int main(int argc, char** argv) {
 
   if (!arguments.empty()) {
     const QString middleImagePath = arguments.takeFirst();
-    QImage middleImage = jxl::loadImage(middleImagePath, monitorIccProfile,
-                                        intensityTarget, colorSpaceHint);
+    QImage middleImage = jpegxl::tools::loadImage(
+        middleImagePath, monitorIccProfile, intensityTarget, colorSpaceHint);
     if (middleImage.isNull()) {
       displayLoadingError(middleImagePath);
       return EXIT_FAILURE;
@@ -122,6 +152,7 @@ int main(int argc, char** argv) {
 
   view.setWindowFlags(view.windowFlags() | Qt::Window);
   view.setWindowState(Qt::WindowMaximized);
+  view.setWindowTitle(windowTitle(leftImagePath, rightImagePath));
   view.show();
 
   return application.exec();

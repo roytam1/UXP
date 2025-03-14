@@ -3,16 +3,21 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <vector>
 
 #include "lib/extras/codec.h"
-#include "lib/jxl/base/thread_pool_internal.h"
-#include "tools/args.h"
+#include "lib/jxl/image_bundle.h"
 #include "tools/cmdline.h"
+#include "tools/file_io.h"
+#include "tools/no_memory_manager.h"
+#include "tools/thread_pool_internal.h"
 
 int main(int argc, const char** argv) {
-  jxl::ThreadPoolInternal pool;
+  jpegxl::tools::ThreadPoolInternal pool;
 
   jpegxl::tools::CommandLineParser parser;
   const char* input_filename = nullptr;
@@ -41,15 +46,17 @@ int main(int argc, const char** argv) {
     return EXIT_FAILURE;
   }
 
-  jxl::CodecInOut image;
-  JXL_CHECK(jxl::SetFromFile(input_filename, jxl::extras::ColorHints(), &image,
-                             &pool));
+  jxl::CodecInOut image{jpegxl::tools::NoMemoryManager()};
+  std::vector<uint8_t> encoded;
+  JPEGXL_TOOLS_CHECK(jpegxl::tools::ReadFile(input_filename, &encoded));
+  JPEGXL_TOOLS_CHECK(jxl::SetFromBytes(
+      jxl::Bytes(encoded), jxl::extras::ColorHints(), &image, pool.get()));
 
-  JXL_CHECK(image.xsize() == image.ysize() * image.ysize());
+  JPEGXL_TOOLS_CHECK(image.xsize() == image.ysize() * image.ysize());
   const unsigned N = image.ysize();
 
   FILE* const output = fopen(output_filename, "wb");
-  JXL_CHECK(output);
+  JPEGXL_TOOLS_CHECK(output);
 
   fprintf(output, "# Created by libjxl\n");
   fprintf(output, "LUT_3D_SIZE %u\n", N);
@@ -68,4 +75,5 @@ int main(int argc, const char** argv) {
       }
     }
   }
+  return EXIT_SUCCESS;
 }

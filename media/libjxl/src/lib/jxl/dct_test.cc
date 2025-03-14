@@ -3,24 +3,20 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#include <string.h>
-
 #include <cmath>
+#include <cstring>
 #include <numeric>
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/jxl/dct_test.cc"
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
-#include <hwy/tests/test_util-inl.h>
+#include <hwy/tests/hwy_gtest.h>
 
-#include "lib/jxl/base/thread_pool_internal.h"
-#include "lib/jxl/common.h"
 #include "lib/jxl/dct-inl.h"
 #include "lib/jxl/dct_for_test.h"
-#include "lib/jxl/dct_scales.h"
-#include "lib/jxl/image.h"
 #include "lib/jxl/test_utils.h"
+#include "lib/jxl/testing.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
@@ -34,7 +30,7 @@ namespace HWY_NAMESPACE {
 template <size_t N>
 void ComputeDCT(float block[N * N]) {
   HWY_ALIGN float tmp_block[N * N];
-  HWY_ALIGN float scratch_space[N * N];
+  HWY_ALIGN float scratch_space[4 * N * N];
   ComputeScaledDCT<N, N>()(DCTFrom(block, N), tmp_block, scratch_space);
 
   // Untranspose.
@@ -46,7 +42,7 @@ void ComputeDCT(float block[N * N]) {
 template <int N>
 void ComputeIDCT(float block[N * N]) {
   HWY_ALIGN float tmp_block[N * N];
-  HWY_ALIGN float scratch_space[N * N];
+  HWY_ALIGN float scratch_space[4 * N * N];
   // Untranspose.
   Transpose<N, N>::Run(DCTFrom(block, N), DCTTo(tmp_block, N));
 
@@ -89,6 +85,7 @@ void ColumnDctRoundtripT(float accuracy) {
   // regular 8x8 block transformation. On the bright side - we could check all
   // 8 basis vectors at once.
   HWY_ALIGN float block[kBlockSize];
+  HWY_ALIGN float scratch[3 * kBlockSize];
   DCTTo to(block, N);
   DCTFrom from(block, N);
   for (size_t i = 0; i < N; ++i) {
@@ -103,8 +100,8 @@ void ColumnDctRoundtripT(float accuracy) {
   DCTTo to_tmp(tmp, N);
   DCTFrom from_tmp(tmp, N);
 
-  DCT1D<N, N>()(from, to_tmp);
-  IDCT1D<N, N>()(from_tmp, to);
+  DCT1D<N, N>()(from, to_tmp, scratch);
+  IDCT1D<N, N>()(from_tmp, to, scratch);
 
   for (size_t i = 0; i < N; ++i) {
     for (size_t j = 0; j < N; ++j) {
@@ -157,24 +154,25 @@ void TestIdctAccuracy(float accuracy, size_t start = 0, size_t end = N * N) {
 
 template <size_t N>
 void TestInverseT(float accuracy) {
-  ThreadPoolInternal pool(N < 32 ? 0 : 8);
+  test::ThreadPoolForTests pool(N < 32 ? 0 : 8);
   enum { kBlockSize = N * N };
-  EXPECT_TRUE(RunOnPool(
-      &pool, 0, kBlockSize, ThreadPool::NoInit,
-      [accuracy](const uint32_t task, size_t /*thread*/) {
-        const size_t i = static_cast<size_t>(task);
-        HWY_ALIGN float x[kBlockSize] = {0.0f};
-        x[i] = 1.0;
+  const auto process_block = [accuracy](const uint32_t task,
+                                        size_t /*thread*/) -> Status {
+    const size_t i = static_cast<size_t>(task);
+    HWY_ALIGN float x[kBlockSize] = {0.0f};
+    x[i] = 1.0;
 
-        ComputeIDCT<N>(x);
-        ComputeDCT<N>(x);
+    ComputeIDCT<N>(x);
+    ComputeDCT<N>(x);
 
-        for (size_t k = 0; k < kBlockSize; ++k) {
-          EXPECT_NEAR(x[k], (k == i) ? 1.0f : 0.0f, accuracy)
-              << "i = " << i << ", k = " << k;
-        }
-      },
-      "TestInverse"));
+    for (size_t k = 0; k < kBlockSize; ++k) {
+      EXPECT_NEAR(x[k], (k == i) ? 1.0f : 0.0f, accuracy)
+          << "i = " << i << ", k = " << k;
+    }
+    return true;
+  };
+  EXPECT_TRUE(RunOnPool(pool.get(), 0, kBlockSize, ThreadPool::NoInit,
+                        process_block, "TestInverse"));
 }
 
 void InverseTest() {
@@ -230,7 +228,7 @@ void TestRectInverseT(float accuracy) {
     HWY_ALIGN float out[kBlockSize] = {0.0f};
     x[i] = 1.0;
     HWY_ALIGN float coeffs[kBlockSize] = {0.0f};
-    HWY_ALIGN float scratch_space[kBlockSize * 2];
+    HWY_ALIGN float scratch_space[kBlockSize * 5];
 
     ComputeScaledDCT<ROWS, COLS>()(DCTFrom(x, COLS), coeffs, scratch_space);
     ComputeScaledIDCT<ROWS, COLS>()(coeffs, DCTTo(out, COLS), scratch_space);
@@ -264,7 +262,7 @@ void TestRectInverse() {
 template <size_t ROWS, size_t COLS>
 void TestRectTransposeT(float accuracy) {
   constexpr size_t kBlockSize = ROWS * COLS;
-  HWY_ALIGN float scratch_space[kBlockSize * 2];
+  HWY_ALIGN float scratch_space[kBlockSize * 5];
   for (size_t px = 0; px < COLS; ++px) {
     for (size_t py = 0; py < ROWS; ++py) {
       HWY_ALIGN float x1[kBlockSize] = {0.0f};
@@ -367,9 +365,10 @@ HWY_EXPORT_AND_TEST_P(TransposeTest, TestRectTranspose);
 // Tests in the DctShardedTest class are sharded for N=32.
 class DctShardedTest : public ::hwy::TestWithParamTargetAndT<uint32_t> {};
 
-std::vector<uint32_t> ShardRange(uint32_t n) {
+template <size_t n>
+std::vector<uint32_t> ShardRange() {
 #ifdef JXL_DISABLE_SLOW_TESTS
-  JXL_ASSERT(n > 6);
+  static_assert(n > 6);
   std::vector<uint32_t> ret = {0, 1, 3, 5, n - 1};
 #else
   std::vector<uint32_t> ret(n);
@@ -379,7 +378,7 @@ std::vector<uint32_t> ShardRange(uint32_t n) {
 }
 
 HWY_TARGET_INSTANTIATE_TEST_SUITE_P_T(DctShardedTest,
-                                      ::testing::ValuesIn(ShardRange(32)));
+                                      ::testing::ValuesIn(ShardRange<32>()));
 
 HWY_EXPORT_AND_TEST_P_T(DctShardedTest, TestDctAccuracyShard);
 HWY_EXPORT_AND_TEST_P_T(DctShardedTest, TestIdctAccuracyShard);

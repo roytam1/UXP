@@ -99,6 +99,22 @@ This is the mathematical inverse of `tools/render_hlg`. Furthermore,
 `tools/pq_to_hlg` is equivalent to `tools/tone_map -t 1000` followed by
 `tools/display_to_hlg -m 1000`.
 
+## OpenEXR to PQ
+
+`tools/exr_to_pq` converts an OpenEXR image into a Rec. 2020 + PQ image, which
+can be saved as a PNG or PPM file. Luminance information is taken from the
+`whiteLuminance` tag if the input has it, and otherwise defaults to treating
+(1, 1, 1) as 100 cd/m². It is also possible to override this using the
+`--luminance` (`-l`) flag, in two different ways:
+
+```shell
+# Specifies that the brightest pixel in the image happens to be 1500 cd/m².
+$ tools/exr_to_pq --luminance='max=1500' input.exr output.png
+
+# Specifies that (1, 1, 1) in the input file is 203 cd/m².
+$ tools/exr_to_pq --luminance='white=203' input.exr output.png
+```
+
 # LUT generation
 
 There are additionally two tools that can be used to generate look-up tables
@@ -121,7 +137,7 @@ $ convert pq_to_400nit_rec2020.png -profile /usr/share/color/icc/colord/Rec709.i
 
 From there, the PNG image can be used as-is with ReShade’s “LUT” shader
 (provided that the correct LUT size is set), or it can be converted to a
-[Cube](https://wwwimages2.adobe.com/content/dam/acom/en/products/speedgrade/cc/pdfs/cube-lut-specification-1.0.pdf)
+[Cube](https://web.archive.org/web/20220215173646/https://wwwimages2.adobe.com/content/dam/acom/en/products/speedgrade/cc/pdfs/cube-lut-specification-1.0.pdf)
 file for use in other software such as FFmpeg’s [lut3d](https://ffmpeg.org/ffmpeg-filters.html#lut3d-1)
 filter:
 

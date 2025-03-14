@@ -3,22 +3,34 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+#include <jxl/color_encoding.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <string>
+#include <vector>
 
 #include "lib/extras/dec/color_description.h"
+#include "lib/jxl/fuzztest.h"
 
-namespace jxl {
+namespace {
 
-int TestOneInput(const uint8_t* data, size_t size) {
+int DoTestOneInput(const uint8_t* data, size_t size) {
   std::string description(reinterpret_cast<const char*>(data), size);
   JxlColorEncoding c;
-  (void)ParseDescription(description, &c);
+  (void)jxl::ParseDescription(description, &c);
 
   return 0;
 }
 
-}  // namespace jxl
+}  // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  return jxl::TestOneInput(data, size);
+  return DoTestOneInput(data, size);
 }
+
+void TestOneInput(const std::vector<uint8_t>& data) {
+  DoTestOneInput(data.data(), data.size());
+}
+
+FUZZ_TEST(CjxlFuzzTest, TestOneInput);

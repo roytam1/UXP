@@ -3,43 +3,57 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
+#include "lib/jxl/base/span.h"
+#include "lib/jxl/color_encoding_internal.h"
+#include "lib/jxl/dec_ans.h"
 #include "lib/jxl/dec_bit_reader.h"
+#include "lib/jxl/fields.h"
 #include "lib/jxl/frame_header.h"
+#include "lib/jxl/fuzztest.h"
 #include "lib/jxl/headers.h"
-#include "lib/jxl/image_bundle.h"
+#include "lib/jxl/image_metadata.h"
 #include "lib/jxl/jpeg/jpeg_data.h"
 #include "lib/jxl/loop_filter.h"
 #include "lib/jxl/modular/encoding/context_predict.h"
 #include "lib/jxl/modular/encoding/encoding.h"
 #include "lib/jxl/modular/transform/transform.h"
+#include "lib/jxl/quantizer.h"
 
-namespace jxl {
+namespace {
 
-int TestOneInput(const uint8_t* data, size_t size) {
+using ::jxl::BitReader;
+using ::jxl::Bytes;
+using ::jxl::CodecMetadata;
+using ::jxl::CustomTransformData;
+using ::jxl::ImageMetadata;
+using ::jxl::SizeHeader;
+
+int DoTestOneInput(const uint8_t* data, size_t size) {
   // Global parameters used by some headers.
   CodecMetadata codec_metadata;
 
   // First byte controls which header to parse.
   if (size == 0) return 0;
-  BitReader reader(Span<const uint8_t>(data + 1, size - 1));
+  BitReader reader(Bytes(data + 1, size - 1));
 #define FUZZER_CASE_HEADER(number, classname, ...) \
   case number: {                                   \
-    classname header{__VA_ARGS__};                 \
-    (void)Bundle::Read(&reader, &header);          \
+    ::jxl::classname header{__VA_ARGS__};          \
+    (void)jxl::Bundle::Read(&reader, &header);     \
     break;                                         \
   }
   switch (data[0]) {
     case 0: {
       SizeHeader size_header;
-      (void)ReadSizeHeader(&reader, &size_header);
+      (void)jxl::ReadSizeHeader(&reader, &size_header);
       break;
     }
 
     case 1: {
       ImageMetadata metadata;
-      (void)ReadImageMetadata(&reader, &metadata);
+      (void)jxl::ReadImageMetadata(&reader, &metadata);
       break;
     }
 
@@ -69,7 +83,7 @@ int TestOneInput(const uint8_t* data, size_t size) {
     default: {
       CustomTransformData transform_data;
       transform_data.nonserialized_xyb_encoded = true;
-      (void)Bundle::Read(&reader, &transform_data);
+      (void)jxl::Bundle::Read(&reader, &transform_data);
       break;
     }
   }
@@ -78,8 +92,14 @@ int TestOneInput(const uint8_t* data, size_t size) {
   return 0;
 }
 
-}  // namespace jxl
+}  // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  return jxl::TestOneInput(data, size);
+  return DoTestOneInput(data, size);
 }
+
+void TestOneInput(const std::vector<uint8_t>& data) {
+  DoTestOneInput(data.data(), data.size());
+}
+
+FUZZ_TEST(FieldsFuzzTest, TestOneInput);

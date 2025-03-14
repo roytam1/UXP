@@ -5,21 +5,16 @@
 
 #include "lib/jxl/icc_codec_common.h"
 
-#include <stdint.h>
+#include <cstdint>
+#include <tuple>
 
-#include <map>
-#include <string>
-#include <vector>
-
-#include "lib/jxl/aux_out.h"
-#include "lib/jxl/aux_out_fwd.h"
 #include "lib/jxl/base/byte_order.h"
-#include "lib/jxl/common.h"
-#include "lib/jxl/fields.h"
+#include "lib/jxl/base/status.h"
+#include "lib/jxl/padded_bytes.h"
 
 namespace jxl {
 namespace {
-static uint8_t ByteKind1(uint8_t b) {
+uint8_t ByteKind1(uint8_t b) {
   if ('a' <= b && b <= 'z') return 0;
   if ('A' <= b && b <= 'Z') return 0;
   if ('0' <= b && b <= '9') return 1;
@@ -32,7 +27,7 @@ static uint8_t ByteKind1(uint8_t b) {
   return 7;
 }
 
-static uint8_t ByteKind2(uint8_t b) {
+uint8_t ByteKind2(uint8_t b) {
   if ('a' <= b && b <= 'z') return 0;
   if ('A' <= b && b <= 'Z') return 0;
   if ('0' <= b && b <= '9') return 1;
@@ -55,14 +50,11 @@ uint32_t DecodeUint32(const uint8_t* data, size_t size, size_t pos) {
   return pos + 4 > size ? 0 : LoadBE32(data + pos);
 }
 
-void EncodeUint32(size_t pos, uint32_t value, PaddedBytes* data) {
-  if (pos + 4 > data->size()) return;
+Status AppendUint32(uint32_t value, PaddedBytes* data) {
+  size_t pos = data->size();
+  JXL_RETURN_IF_ERROR(data->resize(pos + 4));
   StoreBE32(value, data->data() + pos);
-}
-
-void AppendUint32(uint32_t value, PaddedBytes* data) {
-  data->resize(data->size() + 4);
-  EncodeUint32(data->size() - 4, value, data);
+  return true;
 }
 
 typedef std::array<uint8_t, 4> Tag;
@@ -77,14 +69,16 @@ void EncodeKeyword(const Tag& keyword, uint8_t* data, size_t size, size_t pos) {
   for (size_t i = 0; i < 4; ++i) data[pos + i] = keyword[i];
 }
 
-void AppendKeyword(const Tag& keyword, PaddedBytes* data) {
-  JXL_ASSERT(keyword.size() == 4);
-  data->append(keyword);
+Status AppendKeyword(const Tag& keyword, PaddedBytes* data) {
+#if 0
+  static_assert(std::tuple_size<Tag>{} == 4);
+#endif
+  return data->append(keyword);
 }
 
 // Checks if a + b > size, taking possible integer overflow into account.
-Status CheckOutOfBounds(size_t a, size_t b, size_t size) {
-  size_t pos = a + b;
+Status CheckOutOfBounds(uint64_t a, uint64_t b, uint64_t size) {
+  uint64_t pos = a + b;
   if (pos > size) return JXL_FAILURE("Out of bounds");
   if (pos < a) return JXL_FAILURE("Out of bounds");  // overflow happened
   return true;
@@ -96,29 +90,21 @@ Status CheckIs32Bit(uint64_t v) {
   return true;
 }
 
-PaddedBytes ICCInitialHeaderPrediction() {
-  PaddedBytes result(kICCHeaderSize);
-  for (size_t i = 0; i < kICCHeaderSize; i++) {
-    result[i] = 0;
-  }
-  result[8] = 4;
-  EncodeKeyword(kMntrTag, result.data(), result.size(), 12);
-  EncodeKeyword(kRgb_Tag, result.data(), result.size(), 16);
-  EncodeKeyword(kXyz_Tag, result.data(), result.size(), 20);
-  EncodeKeyword(kAcspTag, result.data(), result.size(), 36);
-  result[68] = 0;
-  result[69] = 0;
-  result[70] = 246;
-  result[71] = 214;
-  result[72] = 0;
-  result[73] = 1;
-  result[74] = 0;
-  result[75] = 0;
-  result[76] = 0;
-  result[77] = 0;
-  result[78] = 211;
-  result[79] = 45;
-  return result;
+const std::array<uint8_t, kICCHeaderSize> kIccInitialHeaderPrediction = {
+    0,   0,   0,   0,   0,   0,   0,   0,   4, 0, 0, 0, 'm', 'n', 't', 'r',
+    'R', 'G', 'B', ' ', 'X', 'Y', 'Z', ' ', 0, 0, 0, 0, 0,   0,   0,   0,
+    0,   0,   0,   0,   'a', 'c', 's', 'p', 0, 0, 0, 0, 0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0, 0, 0, 0, 0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   246, 214, 0, 1, 0, 0, 0,   0,   211, 45,
+    0,   0,   0,   0,   0,   0,   0,   0,   0, 0, 0, 0, 0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0, 0, 0, 0, 0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0, 0, 0, 0, 0,   0,   0,   0,
+};
+
+std::array<uint8_t, kICCHeaderSize> ICCInitialHeaderPrediction(uint32_t size) {
+  std::array<uint8_t, kICCHeaderSize> copy(kIccInitialHeaderPrediction);
+  StoreBE32(size, copy.data());
+  return copy;
 }
 
 void ICCPredictHeader(const uint8_t* icc, size_t size, uint8_t* header,

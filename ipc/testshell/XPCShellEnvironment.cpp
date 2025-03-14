@@ -15,6 +15,7 @@
 #include "base/basictypes.h"
 
 #include "jsapi.h"
+#include "js/SourceBufferHolder.h"
 
 #include "xpcpublic.h"
 

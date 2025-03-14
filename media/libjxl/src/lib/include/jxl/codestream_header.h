@@ -4,7 +4,7 @@
  * license that can be found in the LICENSE file.
  */
 
-/** @addtogroup libjxl_common
+/** @addtogroup libjxl_metadata
  * @{
  * @file codestream_header.h
  * @brief Definitions of structs and enums for the metadata from the JPEG XL
@@ -15,12 +15,11 @@
 #ifndef JXL_CODESTREAM_HEADER_H_
 #define JXL_CODESTREAM_HEADER_H_
 
+#include <jxl/types.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#include "jxl/types.h"
-
-#if defined(__cplusplus) || defined(c_plusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -71,17 +70,8 @@ typedef struct {
   uint32_t ysize;
 } JxlPreviewHeader;
 
-/** The intrinsic size header */
-typedef struct {
-  /** Intrinsic width in pixels */
-  uint32_t xsize;
-
-  /** Intrinsic height in pixels */
-  uint32_t ysize;
-} JxlIntrinsicSizeHeader;
-
 /** The codestream animation header, optionally present in the beginning of
- * the codestream, and if it is it applies to all animation frames, unlike
+ * the codestream, and if it is it applies to all animation frames, unlike @ref
  * JxlFrameHeader which applies to an individual frame.
  */
 typedef struct {
@@ -176,12 +166,12 @@ typedef struct {
    * it to to the original color profile. The decoder also does not convert to
    * the target display color profile. To convert the pixel data produced by
    * the decoder to the original color profile, one of the JxlDecoderGetColor*
-   * functions needs to be called with @ref JXL_COLOR_PROFILE_TARGET_DATA to get
-   * the color profile of the decoder output, and then an external CMS can be
-   * used for conversion.
-   * Note that for lossy compression, this should be set to false for most use
-   * cases, and if needed, the image should be converted to the original color
-   * profile after decoding, as described above.
+   * functions needs to be called with
+   * ::JXL_COLOR_PROFILE_TARGET_DATA to get the color profile of the decoder
+   * output, and then an external CMS can be used for conversion. Note that for
+   * lossy compression, this should be set to false for most use cases, and if
+   * needed, the image should be converted to the original color profile after
+   * decoding, as described above.
    */
   JXL_BOOL uses_original_profile;
 
@@ -204,17 +194,19 @@ typedef struct {
    * grayscale data, or 3 for colored data. This count does not include
    * the alpha channel or other extra channels. To check presence of an alpha
    * channel, such as in the case of RGBA color, check alpha_bits != 0.
-   * If and only if this is 1, the JxlColorSpace in the JxlColorEncoding is
-   * JXL_COLOR_SPACE_GRAY.
+   * If and only if this is 1, the @ref JxlColorSpace in the @ref
+   * JxlColorEncoding is
+   * ::JXL_COLOR_SPACE_GRAY.
    */
   uint32_t num_color_channels;
 
   /** Number of additional image channels. This includes the main alpha channel,
    * but can also include additional channels such as depth, additional alpha
    * channels, spot colors, and so on. Information about the extra channels
-   * can be queried with JxlDecoderGetExtraChannelInfo. The main alpha channel,
-   * if it exists, also has its information available in the alpha_bits,
-   * alpha_exponent_bits and alpha_premultiplied fields in this JxlBasicInfo.
+   * can be queried with @ref JxlDecoderGetExtraChannelInfo. The main alpha
+   * channel, if it exists, also has its information available in the
+   * alpha_bits, alpha_exponent_bits and alpha_premultiplied fields in this @ref
+   * JxlBasicInfo.
    */
   uint32_t num_extra_channels;
 
@@ -254,7 +246,7 @@ typedef struct {
    */
   uint32_t intrinsic_xsize;
 
-  /** Intrinsic heigth of the image.
+  /** Intrinsic height of the image.
    * The intrinsic size can be different from the actual size in pixels
    * (as given by xsize and ysize) and it denotes the recommended dimensions
    * for displaying the image, i.e. applications are advised to resample the
@@ -389,6 +381,8 @@ typedef struct {
   /** After blending, save the frame as reference frame with this ID (0-3).
    * Special case: if the frame duration is nonzero, ID 0 means "will not be
    * referenced in the future". This value is not used for the last frame.
+   * When encoding, ID 3 is reserved to frames that are generated internally by
+   * the encoder, and should not be used by applications.
    */
   uint32_t save_as_reference;
 } JxlLayerInfo;
@@ -396,7 +390,8 @@ typedef struct {
 /** The header of one displayed frame or non-coalesced layer. */
 typedef struct {
   /** How long to wait after rendering in ticks. The duration in seconds of a
-   * tick is given by tps_numerator and tps_denominator in JxlAnimationHeader.
+   * tick is given by tps_numerator and tps_denominator in @ref
+   * JxlAnimationHeader.
    */
   uint32_t duration;
 
@@ -404,9 +399,9 @@ typedef struct {
    * interpreted from most-significant to least-significant as hour, minute,
    * second, and frame. If timecode is nonzero, it is strictly larger than that
    * of a previous frame with nonzero duration. These values are only available
-   * if have_timecodes in JxlAnimationHeader is JXL_TRUE.
-   * This value is only used if have_timecodes in JxlAnimationHeader is
-   * JXL_TRUE.
+   * if have_timecodes in @ref JxlAnimationHeader is ::JXL_TRUE.
+   * This value is only used if have_timecodes in @ref JxlAnimationHeader is
+   * ::JXL_TRUE.
    */
   uint32_t timecode;
 
@@ -429,7 +424,7 @@ typedef struct {
   JxlLayerInfo layer_info;
 } JxlFrameHeader;
 
-#if defined(__cplusplus) || defined(c_plusplus)
+#ifdef __cplusplus
 }
 #endif
 

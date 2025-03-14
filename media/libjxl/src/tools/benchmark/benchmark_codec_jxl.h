@@ -6,18 +6,21 @@
 #ifndef TOOLS_BENCHMARK_BENCHMARK_CODEC_JXL_H_
 #define TOOLS_BENCHMARK_BENCHMARK_CODEC_JXL_H_
 
-#include <string>
+#include <jxl/memory_manager.h>
 
 #include "lib/jxl/base/status.h"
 #include "tools/benchmark/benchmark_args.h"
 #include "tools/benchmark/benchmark_codec.h"
 
-namespace jxl {
-ImageCodec* CreateNewJxlCodec(const BenchmarkArgs& args);
+namespace jpegxl {
+namespace tools {
+ImageCodec* CreateNewJxlCodec(const BenchmarkArgs& args,
+                              JxlMemoryManager* memory_manager);
 
 // Registers the jxl-specific command line options.
 Status AddCommandLineOptionsJxlCodec(BenchmarkArgs* args);
 Status ValidateArgsJxlCodec(BenchmarkArgs* args);
-}  // namespace jxl
+}  // namespace tools
+}  // namespace jpegxl
 
 #endif  // TOOLS_BENCHMARK_BENCHMARK_CODEC_JXL_H_

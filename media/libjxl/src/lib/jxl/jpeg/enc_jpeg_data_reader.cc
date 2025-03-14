@@ -12,61 +12,46 @@
 #include <string>
 #include <vector>
 
+#include "lib/jxl/base/common.h"
 #include "lib/jxl/base/printf_macros.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/common.h"
+#include "lib/jxl/frame_dimensions.h"
 #include "lib/jxl/jpeg/enc_jpeg_huffman_decode.h"
 #include "lib/jxl/jpeg/jpeg_data.h"
-
-// By default only print debug messages when JXL_DEBUG_ON_ERROR is enabled.
-#ifndef JXL_DEBUG_JPEG_DATA_READER
-#define JXL_DEBUG_JPEG_DATA_READER JXL_DEBUG_ON_ERROR
-#endif  // JXL_DEBUG_JPEG_DATA_READER
-
-#define JXL_JPEG_DEBUG(format, ...) \
-  JXL_DEBUG(JXL_DEBUG_JPEG_DATA_READER, format, ##__VA_ARGS__)
 
 namespace jxl {
 namespace jpeg {
 
 namespace {
-static const int kBrunsliMaxSampling = 15;
-static const size_t kBrunsliMaxNumBlocks = 1ull << 24;
+const int kBrunsliMaxSampling = 15;
 
 // Macros for commonly used error conditions.
 
-#define JXL_JPEG_VERIFY_LEN(n)                            \
-  if (*pos + (n) > len) {                                 \
-    JXL_JPEG_DEBUG("Unexpected end of input: pos=%" PRIuS \
-                   " need=%d len=%" PRIuS,                \
-                   *pos, static_cast<int>(n), len);       \
-    jpg->error = JPEGReadError::UNEXPECTED_EOF;           \
-    return false;                                         \
+#define JXL_JPEG_VERIFY_LEN(n)                                \
+  if (*pos + (n) > len) {                                     \
+    return JXL_FAILURE("Unexpected end of input: pos=%" PRIuS \
+                       " need=%d len=%" PRIuS,                \
+                       *pos, static_cast<int>(n), len);       \
   }
 
-#define JXL_JPEG_VERIFY_INPUT(var, low, high, code)                \
-  if ((var) < (low) || (var) > (high)) {                           \
-    JXL_JPEG_DEBUG("Invalid " #var ": %d", static_cast<int>(var)); \
-    jpg->error = JPEGReadError::INVALID_##code;                    \
-    return false;                                                  \
+#define JXL_JPEG_VERIFY_INPUT(var, low, high, code)                    \
+  if ((var) < (low) || (var) > (high)) {                               \
+    return JXL_FAILURE("Invalid " #var ": %d", static_cast<int>(var)); \
   }
 
-#define JXL_JPEG_VERIFY_MARKER_END()                         \
-  if (start_pos + marker_len != *pos) {                      \
-    JXL_JPEG_DEBUG("Invalid marker length: declared=%" PRIuS \
-                   " actual=%" PRIuS,                        \
-                   marker_len, (*pos - start_pos));          \
-    jpg->error = JPEGReadError::WRONG_MARKER_SIZE;           \
-    return false;                                            \
+#define JXL_JPEG_VERIFY_MARKER_END()                             \
+  if (start_pos + marker_len != *pos) {                          \
+    return JXL_FAILURE("Invalid marker length: declared=%" PRIuS \
+                       " actual=%" PRIuS,                        \
+                       marker_len, (*pos - start_pos));          \
   }
 
-#define JXL_JPEG_EXPECT_MARKER()                                            \
-  if (pos + 2 > len || data[pos] != 0xff) {                                 \
-    JXL_JPEG_DEBUG("Marker byte (0xff) expected, found: 0x%.2x pos=%" PRIuS \
-                   " len=%" PRIuS,                                          \
-                   (pos < len ? data[pos] : 0), pos, len);                  \
-    jpg->error = JPEGReadError::MARKER_BYTE_NOT_FOUND;                      \
-    return false;                                                           \
+#define JXL_JPEG_EXPECT_MARKER()                                 \
+  if (pos + 2 > len || data[pos] != 0xff) {                      \
+    return JXL_FAILURE(                                          \
+        "Marker byte (0xff) expected, found: 0x%.2x pos=%" PRIuS \
+        " len=%" PRIuS,                                          \
+        (pos < len ? data[pos] : 0), pos, len);                  \
   }
 
 inline int ReadUint8(const uint8_t* data, size_t* pos) {
@@ -84,9 +69,7 @@ inline int ReadUint16(const uint8_t* data, size_t* pos) {
 bool ProcessSOF(const uint8_t* data, const size_t len, JpegReadMode mode,
                 size_t* pos, JPEGData* jpg) {
   if (jpg->width != 0) {
-    JXL_JPEG_DEBUG("Duplicate SOF marker.");
-    jpg->error = JPEGReadError::DUPLICATE_SOF;
-    return false;
+    return JXL_FAILURE("Duplicate SOF marker.");
   }
   const size_t start_pos = *pos;
   JXL_JPEG_VERIFY_LEN(8);
@@ -109,23 +92,21 @@ bool ProcessSOF(const uint8_t* data, const size_t len, JpegReadMode mode,
   std::vector<bool> ids_seen(256, false);
   int max_h_samp_factor = 1;
   int max_v_samp_factor = 1;
-  for (size_t i = 0; i < jpg->components.size(); ++i) {
+  for (auto& component : jpg->components) {
     const int id = ReadUint8(data, pos);
     if (ids_seen[id]) {  // (cf. section B.2.2, syntax of Ci)
-      JXL_JPEG_DEBUG("Duplicate ID %d in SOF.", id);
-      jpg->error = JPEGReadError::DUPLICATE_COMPONENT_ID;
-      return false;
+      return JXL_FAILURE("Duplicate ID %d in SOF.", id);
     }
     ids_seen[id] = true;
-    jpg->components[i].id = id;
+    component.id = id;
     int factor = ReadUint8(data, pos);
     int h_samp_factor = factor >> 4;
     int v_samp_factor = factor & 0xf;
     JXL_JPEG_VERIFY_INPUT(h_samp_factor, 1, kBrunsliMaxSampling, SAMP_FACTOR);
     JXL_JPEG_VERIFY_INPUT(v_samp_factor, 1, kBrunsliMaxSampling, SAMP_FACTOR);
-    jpg->components[i].h_samp_factor = h_samp_factor;
-    jpg->components[i].v_samp_factor = v_samp_factor;
-    jpg->components[i].quant_idx = ReadUint8(data, pos);
+    component.h_samp_factor = h_samp_factor;
+    component.v_samp_factor = v_samp_factor;
+    component.quant_idx = ReadUint8(data, pos);
     max_h_samp_factor = std::max(max_h_samp_factor, h_samp_factor);
     max_v_samp_factor = std::max(max_v_samp_factor, v_samp_factor);
   }
@@ -135,25 +116,17 @@ bool ProcessSOF(const uint8_t* data, const size_t len, JpegReadMode mode,
   int MCU_rows = DivCeil(jpg->height, max_v_samp_factor * 8);
   int MCU_cols = DivCeil(jpg->width, max_h_samp_factor * 8);
   // Compute the block dimensions for each component.
-  for (size_t i = 0; i < jpg->components.size(); ++i) {
-    JPEGComponent* c = &jpg->components[i];
-    if (max_h_samp_factor % c->h_samp_factor != 0 ||
-        max_v_samp_factor % c->v_samp_factor != 0) {
-      JXL_JPEG_DEBUG("Non-integral subsampling ratios.");
-      jpg->error = JPEGReadError::INVALID_SAMPLING_FACTORS;
-      return false;
+  for (JPEGComponent& c : jpg->components) {
+    if (max_h_samp_factor % c.h_samp_factor != 0 ||
+        max_v_samp_factor % c.v_samp_factor != 0) {
+      return JXL_FAILURE("Non-integral subsampling ratios.");
     }
-    c->width_in_blocks = MCU_cols * c->h_samp_factor;
-    c->height_in_blocks = MCU_rows * c->v_samp_factor;
+    c.width_in_blocks = MCU_cols * c.h_samp_factor;
+    c.height_in_blocks = MCU_rows * c.v_samp_factor;
     const uint64_t num_blocks =
-        static_cast<uint64_t>(c->width_in_blocks) * c->height_in_blocks;
-    if (num_blocks > kBrunsliMaxNumBlocks) {
-      JXL_JPEG_DEBUG("Image too large.");
-      jpg->error = JPEGReadError::IMAGE_TOO_LARGE;
-      return false;
-    }
+        static_cast<uint64_t>(c.width_in_blocks) * c.height_in_blocks;
     if (mode == JpegReadMode::kReadAll) {
-      c->coeffs.resize(num_blocks * kDCTBlockSize);
+      c.coeffs.resize(num_blocks * kDCTBlockSize);
     }
   }
   JXL_JPEG_VERIFY_MARKER_END();
@@ -178,9 +151,7 @@ bool ProcessSOS(const uint8_t* data, const size_t len, size_t* pos,
   for (size_t i = 0; i < comps_in_scan; ++i) {
     uint32_t id = ReadUint8(data, pos);
     if (ids_seen[id]) {  // (cf. section B.2.3, regarding CSj)
-      JXL_JPEG_DEBUG("Duplicate ID %d in SOS.", id);
-      jpg->error = JPEGReadError::DUPLICATE_COMPONENT_ID;
-      return false;
+      return JXL_FAILURE("Duplicate ID %d in SOS.", id);
     }
     ids_seen[id] = true;
     bool found_index = false;
@@ -191,9 +162,7 @@ bool ProcessSOS(const uint8_t* data, const size_t len, size_t* pos,
       }
     }
     if (!found_index) {
-      JXL_JPEG_DEBUG("SOS marker: Could not find component with id %d", id);
-      jpg->error = JPEGReadError::COMPONENT_NOT_FOUND;
-      return false;
+      return JXL_FAILURE("SOS marker: Could not find component with id %d", id);
     }
     int c = ReadUint8(data, pos);
     int dc_tbl_idx = c >> 4;
@@ -222,8 +191,8 @@ bool ProcessSOS(const uint8_t* data, const size_t len, size_t* pos,
   for (size_t i = 0; i < comps_in_scan; ++i) {
     bool found_dc_table = false;
     bool found_ac_table = false;
-    for (size_t j = 0; j < jpg->huffman_code.size(); ++j) {
-      uint32_t slot_id = jpg->huffman_code[j].slot_id;
+    for (const auto& code : jpg->huffman_code) {
+      uint32_t slot_id = code.slot_id;
       if (slot_id == scan_info.components[i].dc_tbl_idx) {
         found_dc_table = true;
       } else if (slot_id == scan_info.components[i].ac_tbl_idx + 16) {
@@ -231,18 +200,14 @@ bool ProcessSOS(const uint8_t* data, const size_t len, size_t* pos,
       }
     }
     if (scan_info.Ss == 0 && !found_dc_table) {
-      JXL_JPEG_DEBUG(
+      return JXL_FAILURE(
           "SOS marker: Could not find DC Huffman table with index %d",
           scan_info.components[i].dc_tbl_idx);
-      jpg->error = JPEGReadError::HUFFMAN_TABLE_NOT_FOUND;
-      return false;
     }
     if (scan_info.Se > 0 && !found_ac_table) {
-      JXL_JPEG_DEBUG(
+      return JXL_FAILURE(
           "SOS marker: Could not find AC Huffman table with index %d",
           scan_info.components[i].ac_tbl_idx);
-      jpg->error = JPEGReadError::HUFFMAN_TABLE_NOT_FOUND;
-      return false;
     }
   }
   jpg->scan_info.push_back(scan_info);
@@ -261,16 +226,14 @@ bool ProcessDHT(const uint8_t* data, const size_t len, JpegReadMode mode,
   JXL_JPEG_VERIFY_LEN(2);
   size_t marker_len = ReadUint16(data, pos);
   if (marker_len == 2) {
-    JXL_JPEG_DEBUG("DHT marker: no Huffman table found");
-    jpg->error = JPEGReadError::EMPTY_DHT;
-    return false;
+    return JXL_FAILURE("DHT marker: no Huffman table found");
   }
   while (*pos < start_pos + marker_len) {
     JXL_JPEG_VERIFY_LEN(1 + kJpegHuffmanMaxBitLength);
     JPEGHuffmanCode huff;
     huff.slot_id = ReadUint8(data, pos);
     int huffman_index = huff.slot_id;
-    int is_ac_table = (huff.slot_id & 0x10) != 0;
+    bool is_ac_table = ((huff.slot_id & 0x10) != 0);
     HuffmanTableEntry* huff_lut;
     if (is_ac_table) {
       huffman_index -= 0x10;
@@ -307,9 +270,7 @@ bool ProcessDHT(const uint8_t* data, const size_t len, JpegReadMode mode,
         JXL_JPEG_VERIFY_INPUT(value, 0, kJpegDCAlphabetSize - 1, HUFFMAN_CODE);
       }
       if (values_seen[value]) {
-        JXL_JPEG_DEBUG("Duplicate Huffman code value %d", value);
-        jpg->error = JPEGReadError::INVALID_HUFFMAN_CODE;
-        return false;
+        return JXL_FAILURE("Duplicate Huffman code value %d", value);
       }
       values_seen[value] = true;
       huff.values[i] = value;
@@ -319,9 +280,7 @@ bool ProcessDHT(const uint8_t* data, const size_t len, JpegReadMode mode,
     huff.values[total_count] = kJpegHuffmanAlphabetSize;
     space -= (1 << (kJpegHuffmanMaxBitLength - max_depth));
     if (space < 0) {
-      JXL_JPEG_DEBUG("Invalid Huffman code lengths.");
-      jpg->error = JPEGReadError::INVALID_HUFFMAN_CODE;
-      return false;
+      return JXL_FAILURE("Invalid Huffman code lengths.");
     } else if (space > 0 && huff_lut[0].value != 0xffff) {
       // Re-initialize the values to an invalid symbol so that we can recognize
       // it when reading the bit stream using a Huffman code with space > 0.
@@ -332,7 +291,7 @@ bool ProcessDHT(const uint8_t* data, const size_t len, JpegReadMode mode,
     }
     huff.is_last = (*pos == start_pos + marker_len);
     if (mode == JpegReadMode::kReadAll) {
-      BuildJpegHuffmanTable(&huff.counts[0], &huff.values[0], huff_lut);
+      BuildJpegHuffmanTable(huff.counts.data(), huff.values.data(), huff_lut);
     }
     jpg->huffman_code.push_back(huff);
   }
@@ -348,9 +307,7 @@ bool ProcessDQT(const uint8_t* data, const size_t len, size_t* pos,
   JXL_JPEG_VERIFY_LEN(2);
   size_t marker_len = ReadUint16(data, pos);
   if (marker_len == 2) {
-    JXL_JPEG_DEBUG("DQT marker: no quantization table found");
-    jpg->error = JPEGReadError::EMPTY_DQT;
-    return false;
+    return JXL_FAILURE("DQT marker: no quantization table found");
   }
   while (*pos < start_pos + marker_len && jpg->quant.size() < kMaxQuantTables) {
     JXL_JPEG_VERIFY_LEN(1);
@@ -380,9 +337,7 @@ bool ProcessDQT(const uint8_t* data, const size_t len, size_t* pos,
 bool ProcessDRI(const uint8_t* data, const size_t len, size_t* pos,
                 bool* found_dri, JPEGData* jpg) {
   if (*found_dri) {
-    JXL_JPEG_DEBUG("Duplicate DRI marker.");
-    jpg->error = JPEGReadError::DUPLICATE_DRI;
-    return false;
+    return JXL_FAILURE("Duplicate DRI marker.");
   }
   *found_dri = true;
   const size_t start_pos = *pos;
@@ -401,7 +356,7 @@ bool ProcessAPP(const uint8_t* data, const size_t len, size_t* pos,
   size_t marker_len = ReadUint16(data, pos);
   JXL_JPEG_VERIFY_INPUT(marker_len, 2, 65535, MARKER_LEN);
   JXL_JPEG_VERIFY_LEN(marker_len - 2);
-  JXL_DASSERT(*pos >= 3);
+  JXL_ENSURE(*pos >= 3);
   // Save the marker type together with the app data.
   const uint8_t* app_str_start = data + *pos - 3;
   std::vector<uint8_t> app_str(app_str_start, app_str_start + marker_len + 1);
@@ -463,7 +418,7 @@ struct BitReaderState {
     if (bits_left_ <= 16) {
       while (bits_left_ <= 56) {
         val_ <<= 8;
-        val_ |= (uint64_t)GetNextByte();
+        val_ |= static_cast<uint64_t>(GetNextByte());
         bits_left_ += 8;
       }
     }
@@ -505,8 +460,7 @@ struct BitReaderState {
     }
     if (pos_ > next_marker_pos_) {
       // Data ran out before the scan was complete.
-      JXL_JPEG_DEBUG("Unexpected end of scan.");
-      return false;
+      return JXL_FAILURE("Unexpected end of scan.");
     }
     *pos = pos_;
     return true;
@@ -590,9 +544,7 @@ bool DecodeDCTBlock(const HuffmanTableEntry* dc_huff,
   if (Ss == 0) {
     int s = ReadSymbol(dc_huff, br);
     if (s >= kJpegDCAlphabetSize) {
-      JXL_JPEG_DEBUG("Invalid Huffman symbol %d  for DC coefficient.", s);
-      jpg->error = JPEGReadError::INVALID_SYMBOL;
-      return false;
+      return JXL_FAILURE("Invalid Huffman symbol %d  for DC coefficient.", s);
     }
     int diff = 0;
     if (s > 0) {
@@ -604,9 +556,7 @@ bool DecodeDCTBlock(const HuffmanTableEntry* dc_huff,
     coeffs[0] = dc_coeff;
     // TODO(eustas): is there a more elegant / explicit way to check this?
     if (dc_coeff != coeffs[0]) {
-      JXL_JPEG_DEBUG("Invalid DC coefficient %d", dc_coeff);
-      jpg->error = JPEGReadError::NON_REPRESENTABLE_DC_COEFF;
-      return false;
+      return JXL_FAILURE("Invalid DC coefficient %d", dc_coeff);
     }
     *last_dc_coeff = coeff;
     ++Ss;
@@ -622,25 +572,21 @@ bool DecodeDCTBlock(const HuffmanTableEntry* dc_huff,
   for (int k = Ss; k <= Se; k++) {
     int sr = ReadSymbol(ac_huff, br);
     if (sr >= kJpegHuffmanAlphabetSize) {
-      JXL_JPEG_DEBUG("Invalid Huffman symbol %d for AC coefficient %d", sr, k);
-      jpg->error = JPEGReadError::INVALID_SYMBOL;
-      return false;
+      return JXL_FAILURE("Invalid Huffman symbol %d for AC coefficient %d", sr,
+                         k);
     }
     int r = sr >> 4;
     int s = sr & 15;
     if (s > 0) {
       k += r;
       if (k > Se) {
-        JXL_JPEG_DEBUG("Out-of-band coefficient %d band was %d-%d", k, Ss, Se);
-        jpg->error = JPEGReadError::OUT_OF_BAND_COEFF;
-        return false;
+        return JXL_FAILURE("Out-of-band coefficient %d band was %d-%d", k, Ss,
+                           Se);
       }
       if (s + Al >= kJpegDCAlphabetSize) {
-        JXL_JPEG_DEBUG(
+        return JXL_FAILURE(
             "Out of range AC coefficient value: s = %d Al = %d k = %d", s, Al,
             k);
-        jpg->error = JPEGReadError::NON_REPRESENTABLE_AC_COEFF;
-        return false;
       }
       int bits = br->ReadBits(s);
       int coeff = HuffExtend(bits, s);
@@ -658,9 +604,7 @@ bool DecodeDCTBlock(const HuffmanTableEntry* dc_huff,
       *eobrun = 1 << r;
       if (r > 0) {
         if (!eobrun_allowed) {
-          JXL_JPEG_DEBUG("End-of-block run crossing DC coeff.");
-          jpg->error = JPEGReadError::EOB_RUN_TOO_LONG;
-          return false;
+          return JXL_FAILURE("End-of-block run crossing DC coeff.");
         }
         *eobrun += br->ReadBits(r);
       }
@@ -697,18 +641,15 @@ bool RefineDCTBlock(const HuffmanTableEntry* ac_huff, int Ss, int Se, int Al,
     for (; k <= Se; k++) {
       s = ReadSymbol(ac_huff, br);
       if (s >= kJpegHuffmanAlphabetSize) {
-        JXL_JPEG_DEBUG("Invalid Huffman symbol %d for AC coefficient %d", s, k);
-        jpg->error = JPEGReadError::INVALID_SYMBOL;
-        return false;
+        return JXL_FAILURE("Invalid Huffman symbol %d for AC coefficient %d", s,
+                           k);
       }
       r = s >> 4;
       s &= 15;
       if (s) {
         if (s != 1) {
-          JXL_JPEG_DEBUG("Invalid Huffman symbol %d for AC coefficient %d", s,
-                         k);
-          jpg->error = JPEGReadError::INVALID_SYMBOL;
-          return false;
+          return JXL_FAILURE("Invalid Huffman symbol %d for AC coefficient %d",
+                             s, k);
         }
         s = br->ReadBits(1) ? p1 : m1;
         in_zero_run = false;
@@ -722,9 +663,7 @@ bool RefineDCTBlock(const HuffmanTableEntry* ac_huff, int Ss, int Se, int Al,
           *eobrun = 1 << r;
           if (r > 0) {
             if (!eobrun_allowed) {
-              JXL_JPEG_DEBUG("End-of-block run crossing DC coeff.");
-              jpg->error = JPEGReadError::EOB_RUN_TOO_LONG;
-              return false;
+              return JXL_FAILURE("End-of-block run crossing DC coeff.");
             }
             *eobrun += br->ReadBits(r);
           }
@@ -754,19 +693,15 @@ bool RefineDCTBlock(const HuffmanTableEntry* ac_huff, int Ss, int Se, int Al,
       } while (k <= Se);
       if (s) {
         if (k > Se) {
-          JXL_JPEG_DEBUG("Out-of-band coefficient %d band was %d-%d", k, Ss,
-                         Se);
-          jpg->error = JPEGReadError::OUT_OF_BAND_COEFF;
-          return false;
+          return JXL_FAILURE("Out-of-band coefficient %d band was %d-%d", k, Ss,
+                             Se);
         }
         coeffs[kJPEGNaturalOrder[k]] = s;
       }
     }
   }
   if (in_zero_run) {
-    JXL_JPEG_DEBUG("Extra zero run before end-of-block.");
-    jpg->error = JPEGReadError::EXTRA_ZERO_RUN;
-    return false;
+    return JXL_FAILURE("Extra zero run before end-of-block.");
   }
   if (*eobrun > 0) {
     for (; k <= Se; k++) {
@@ -794,17 +729,14 @@ bool ProcessRestart(const uint8_t* data, const size_t len,
                     JPEGData* jpg) {
   size_t pos = 0;
   if (!br->FinishStream(jpg, &pos)) {
-    jpg->error = JPEGReadError::INVALID_SCAN;
-    return false;
+    return JXL_FAILURE("Invalid scan");
   }
   int expected_marker = 0xd0 + *next_restart_marker;
   JXL_JPEG_EXPECT_MARKER();
   int marker = data[pos + 1];
   if (marker != expected_marker) {
-    JXL_JPEG_DEBUG("Did not find expected restart marker %d actual %d",
-                   expected_marker, marker);
-    jpg->error = JPEGReadError::WRONG_RESTART_MARKER;
-    return false;
+    return JXL_FAILURE("Did not find expected restart marker %d actual %d",
+                       expected_marker, marker);
   }
   br->Reset(pos + 2);
   *next_restart_marker += 1;
@@ -824,11 +756,9 @@ bool ProcessScan(const uint8_t* data, const size_t len,
   bool is_interleaved = (scan_info->num_components > 1);
   int max_h_samp_factor = 1;
   int max_v_samp_factor = 1;
-  for (size_t i = 0; i < jpg->components.size(); ++i) {
-    max_h_samp_factor =
-        std::max(max_h_samp_factor, jpg->components[i].h_samp_factor);
-    max_v_samp_factor =
-        std::max(max_v_samp_factor, jpg->components[i].v_samp_factor);
+  for (const auto& component : jpg->components) {
+    max_h_samp_factor = std::max(max_h_samp_factor, component.h_samp_factor);
+    max_v_samp_factor = std::max(max_v_samp_factor, component.v_samp_factor);
   }
 
   int MCU_rows = DivCeil(jpg->height, max_v_samp_factor * 8);
@@ -854,27 +784,21 @@ bool ProcessScan(const uint8_t* data, const size_t len,
     int comp_idx = scan_info->components[i].comp_idx;
     for (int k = Ss; k <= Se; ++k) {
       if (scan_progression[comp_idx][k] & scan_bitmask) {
-        JXL_JPEG_DEBUG(
+        return JXL_FAILURE(
             "Overlapping scans: component=%d k=%d prev_mask: %u cur_mask %u",
             comp_idx, k, scan_progression[i][k], scan_bitmask);
-        jpg->error = JPEGReadError::OVERLAPPING_SCANS;
-        return false;
       }
       if (scan_progression[comp_idx][k] & refinement_bitmask) {
-        JXL_JPEG_DEBUG(
+        return JXL_FAILURE(
             "Invalid scan order, a more refined scan was already done: "
             "component=%d k=%d prev_mask=%u cur_mask=%u",
             comp_idx, k, scan_progression[i][k], scan_bitmask);
-        jpg->error = JPEGReadError::INVALID_SCAN_ORDER;
-        return false;
       }
       scan_progression[comp_idx][k] |= scan_bitmask;
     }
   }
   if (Al > 10) {
-    JXL_JPEG_DEBUG("Scan parameter Al=%d is not supported.", Al);
-    jpg->error = JPEGReadError::NON_REPRESENTABLE_AC_COEFF;
-    return false;
+    return JXL_FAILURE("Scan parameter Al=%d is not supported.", Al);
   }
   for (int mcu_y = 0; mcu_y < MCU_rows; ++mcu_y) {
     for (int mcu_x = 0; mcu_x < MCUs_per_row; ++mcu_x) {
@@ -885,13 +809,11 @@ bool ProcessScan(const uint8_t* data, const size_t len,
             restarts_to_go = jpg->restart_interval;
             memset(static_cast<void*>(last_dc_coeff), 0, sizeof(last_dc_coeff));
             if (eobrun > 0) {
-              JXL_JPEG_DEBUG("End-of-block run too long.");
-              jpg->error = JPEGReadError::EOB_RUN_TOO_LONG;
-              return false;
+              return JXL_FAILURE("End-of-block run too long.");
             }
             eobrun = -1;  // fresh start
           } else {
-            return false;
+            return JXL_FAILURE("Could not process restart.");
           }
         }
         --restarts_to_go;
@@ -942,20 +864,15 @@ bool ProcessScan(const uint8_t* data, const size_t len,
     }
   }
   if (eobrun > 0) {
-    JXL_JPEG_DEBUG("End-of-block run too long.");
-    jpg->error = JPEGReadError::EOB_RUN_TOO_LONG;
-    return false;
+    return JXL_FAILURE("End-of-block run too long.");
   }
   if (!br.FinishStream(jpg, pos)) {
-    jpg->error = JPEGReadError::INVALID_SCAN;
-    return false;
+    return JXL_FAILURE("Invalid scan.");
   }
   if (*pos > len) {
-    JXL_JPEG_DEBUG("Unexpected end of file during scan. pos=%" PRIuS
-                   " len=%" PRIuS,
-                   *pos, len);
-    jpg->error = JPEGReadError::UNEXPECTED_EOF;
-    return false;
+    return JXL_FAILURE("Unexpected end of file during scan. pos=%" PRIuS
+                       " len=%" PRIuS,
+                       *pos, len);
   }
   return true;
 }
@@ -974,10 +891,8 @@ bool FixupIndexes(JPEGData* jpg) {
       }
     }
     if (!found_index) {
-      JXL_JPEG_DEBUG("Quantization table with index %u not found",
-                     c->quant_idx);
-      jpg->error = JPEGReadError::QUANT_TABLE_NOT_FOUND;
-      return false;
+      return JXL_FAILURE("Quantization table with index %u not found",
+                         c->quant_idx);
     }
   }
   return true;
@@ -1009,9 +924,7 @@ bool ReadJpeg(const uint8_t* data, const size_t len, JpegReadMode mode,
   int marker = data[pos + 1];
   pos += 2;
   if (marker != 0xd8) {
-    JXL_JPEG_DEBUG("Did not find expected SOI marker, actual=%d", marker);
-    jpg->error = JPEGReadError::SOI_NOT_FOUND;
-    return false;
+    return JXL_FAILURE("Did not find expected SOI marker, actual=%d", marker);
   }
   int lut_size = kMaxHuffmanTables * kJpegHuffmanLutSize;
   std::vector<HuffmanTableEntry> dc_huff_lut(lut_size);
@@ -1097,11 +1010,8 @@ bool ReadJpeg(const uint8_t* data, const size_t len, JpegReadMode mode,
         }
         break;
       default:
-        JXL_JPEG_DEBUG("Unsupported marker: %d pos=%" PRIuS " len=%" PRIuS,
-                       marker, pos, len);
-        jpg->error = JPEGReadError::UNSUPPORTED_MARKER;
-        ok = false;
-        break;
+        return JXL_FAILURE("Unsupported marker: %d pos=%" PRIuS " len=%" PRIuS,
+                           marker, pos, len);
     }
     if (!ok) {
       return false;
@@ -1113,9 +1023,7 @@ bool ReadJpeg(const uint8_t* data, const size_t len, JpegReadMode mode,
   } while (marker != 0xd9);
 
   if (!found_sof) {
-    JXL_JPEG_DEBUG("Missing SOF marker.");
-    jpg->error = JPEGReadError::SOF_NOT_FOUND;
-    return false;
+    return JXL_FAILURE("Missing SOF marker.");
   }
 
   // Supplemental checks.
@@ -1130,14 +1038,10 @@ bool ReadJpeg(const uint8_t* data, const size_t len, JpegReadMode mode,
       // Section B.2.4.2: "If a table has never been defined for a particular
       // destination, then when this destination is specified in a scan header,
       // the results are unpredictable."
-      JXL_JPEG_DEBUG("Need at least one Huffman code table.");
-      jpg->error = JPEGReadError::HUFFMAN_TABLE_ERROR;
-      return false;
+      return JXL_FAILURE("Need at least one Huffman code table.");
     }
     if (jpg->huffman_code.size() >= kMaxDHTMarkers) {
-      JXL_JPEG_DEBUG("Too many Huffman tables.");
-      jpg->error = JPEGReadError::HUFFMAN_TABLE_ERROR;
-      return false;
+      return JXL_FAILURE("Too many Huffman tables.");
     }
   }
   return true;

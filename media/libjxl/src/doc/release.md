@@ -29,7 +29,7 @@ number. Released tags don't each one have their own release branch, all releases
 from the same MAJOR.MINOR version will share the same branch. The first commit
 after the branch-off points between the main branch and the release branch
 should be tagged with the suffix `-snapshot` and the name of the next
-MAJOR.MINOR version, in order to get meaningful ouput for `git --describe`.
+MAJOR.MINOR version, in order to get meaningful output for `git describe`.
 
 The main purpose of the release branch is to stabilize the code before a
 release. This involves including fixes to existing bugs but **not** including
@@ -93,6 +93,15 @@ branches](https://docs.github.com/en/github/administering-a-repository/defining-
 in our repository, however you can push to a protected branch when *creating* it
 but you can't directly push to it after it is created. To include more changes
 in the release branch see the "Cherry-picking fixes to a release" section below.
+Remember to tag the first commit in the `main` branch after the branch of point
+with the suffix `-snapshot`, so for instances, if you just made the
+branch `v0.5.x`, run
+```
+git checkout [hash of first commit after the branch off point]
+git tag v0.5-snapshot
+git push git@github.com:libjxl/libjxl.git v0.5-snapshot
+```
+
 
 ## Creating a merge label
 
@@ -128,13 +137,15 @@ To help update it, run this helper command (in a Debian-based system):
 This will update the version in the following files:
 
  * `lib/CMakeLists.txt`
- * `lib/lib.gni`, automatically updated with `tools/build_cleaner.py --update`.
+ * `lib/lib.gni`, automatically updated with
+   `tools/scripts/build_cleaner.py --update`.
  * `debian/changelog` to create the Debian package release with the new version.
    Debian changelog shouldn't repeat the library changelog, instead it should
    include changes to the packaging scripts.
- 
-If there were incompatible API/ABI changes, make sure to also adapt the 
-corresponding section in 
+ * `.github/workflows/conformance.yml`
+
+If there were incompatible API/ABI changes, make sure to also adapt the
+corresponding section in
 [CMakeLists.txt](https://github.com/libjxl/libjxl/blob/main/lib/CMakeLists.txt#L12).
 
 ## Cherry-pick fixes to a release
@@ -179,6 +190,15 @@ running `git cherry-pick` and `git commit --amend` multiple times for all the
 commits you need to cherry-pick, ideally in the same order they were merged on
 the `main` branch. At the end you will have a local branch with multiple commits
 on top of the release branch.
+
+To update the version number, for example from v0.8.0 to v0.8.1 run this helper
+command (in a Debian-based system):
+
+```bash
+./ci.sh bump_version 0.8.1
+```
+
+as described above and commit the changes.
 
 Finally, upload your changes to *your fork* like normal, except that when
 creating a pull request select the desired release branch as a target:
@@ -263,5 +283,67 @@ instructions:
    the release itself that are not included in the CHANGELOG.md, although prefer
    to include those in the CHANGELOG.md file. You can switch to the Preview tab
    to see the results.
+ * Copy-paste the following note:
+ ```markdown
+  **Note:** This release is for evaluation purposes and may contain bugs, including security bugs, that may not be individually documented when fixed. See the [SECURITY.md](SECURITY.md) file for details. Always prefer to use the latest release.
+
+Please provide feedback and report bugs [here](https://github.com/libjxl/libjxl/issues).
+```
+
 
  * Finally click "Publish release" and go celebrate with the team. 🎉
+
+ * The branch v0.7.x will be pushed to gitlab automatically, but make sure to
+   manually push the *tag* of the release also to
+   https://gitlab.com/wg1/jpeg-xl, by doing configuring `gitlab` to be the remote `git@gitlab.com:wg1/jpeg-xl.git` and then running:
+
+```bash
+git push gitlab v0.7.1
+```
+and possibly also push the tag for the snapshot to gitlab, if it wasn't done yet:
+```bash
+git push gitlab v0.7-snapshot
+```
+
+
+
+### How to build downstream projects
+
+```bash
+docker run -it debian:bookworm /bin/bash
+
+apt update
+apt install -y clang cmake git libbrotli-dev nasm pkg-config ninja-build
+export CC=clang
+export CXX=clang++
+
+mkdir -p /src
+cd /src
+
+git clone --recurse-submodules --depth 1 -b v0.9.x \
+  https://github.com/libjxl/libjxl.git
+git clone --recurse-submodules --depth 1 \
+  https://github.com/ImageMagick/ImageMagick.git
+git clone --recurse-submodules --depth 1 \
+  https://github.com/FFmpeg/FFmpeg.git
+
+cd /src/libjxl
+cmake -B build -G Ninja .
+cmake --build build -j`nproc`
+cmake --install build --prefix="/usr"
+
+cd /src/ImageMagick
+./configure --with-jxl=yes
+# check for "JPEG XL --with-jxl=yes yes"
+make -j `nproc`
+./utilities/magick -version
+
+cd /src/FFmpeg
+./configure --disable-all --disable-debug --enable-avcodec --enable-avfilter \
+  --enable-avformat --enable-libjxl --enable-encoder=libjxl \
+  --enable-decoder=libjxl --enable-ffmpeg
+# check for libjxl decoder/encoder support
+make -j `nproc`
+ldd ./ffmpeg
+./ffmpeg -version
+```

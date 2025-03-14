@@ -9,7 +9,8 @@
 // Helper functions to convert from the external image types to the internal
 // CodecInOut to help transitioning to the external types.
 
-#include "jxl/types.h"
+#include <jxl/types.h>
+
 #include "lib/extras/packed_image.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/codec_in_out.h"
@@ -29,6 +30,10 @@ Status ConvertCodecInOutToPackedPixelFile(const CodecInOut& io,
                                           const ColorEncoding& c_desired,
                                           ThreadPool* pool,
                                           PackedPixelFile* ppf);
+
+StatusOr<PackedPixelFile> ConvertImage3FToPackedPixelFile(
+    const Image3F& image, const ColorEncoding& c_enc, JxlPixelFormat format,
+    ThreadPool* pool);
 }  // namespace extras
 }  // namespace jxl
 

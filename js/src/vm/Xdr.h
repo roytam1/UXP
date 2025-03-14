@@ -9,6 +9,8 @@
 #include "mozilla/EndianUtils.h"
 #include "mozilla/TypeTraits.h"
 
+#include "js/CompileOptions.h"
+#include "js/Transcoding.h"
 #include "jsatom.h"
 #include "jsfriendapi.h"
 
@@ -142,7 +144,7 @@ class XDRState : public XDRCoderBase
     virtual LifoAlloc& lifoAlloc() const;
 
     virtual bool hasOptions() const { return false; }
-    virtual const ReadOnlyCompileOptions& options() {
+    virtual const JS::ReadOnlyCompileOptions& options() {
         MOZ_CRASH("does not have options");
     }
     virtual bool hasScriptSourceObjectOut() const { return false; }
@@ -306,7 +308,7 @@ using XDRDecoder = XDRState<XDR_DECODE>;
 
 class XDROffThreadDecoder : public XDRDecoder
 {
-    const ReadOnlyCompileOptions* options_;
+    const JS::ReadOnlyCompileOptions* options_;
     ScriptSourceObject** sourceObjectOut_;
     LifoAlloc& alloc_;
 
@@ -320,7 +322,7 @@ class XDROffThreadDecoder : public XDRDecoder
     // When providing a sourceObjectOut pointer, you have to ensure that it is
     // marked by the GC to avoid dangling pointers.
     XDROffThreadDecoder(ExclusiveContext* cx, LifoAlloc& alloc,
-                        const ReadOnlyCompileOptions* options,
+                        const JS::ReadOnlyCompileOptions* options,
                         ScriptSourceObject** sourceObjectOut,
                         JS::TranscodeBuffer& buffer, size_t cursor = 0)
       : XDRDecoder(cx, buffer, cursor),
@@ -338,7 +340,7 @@ class XDROffThreadDecoder : public XDRDecoder
     }
 
     bool hasOptions() const override { return true; }
-    const ReadOnlyCompileOptions& options() override {
+    const JS::ReadOnlyCompileOptions& options() override {
         return *options_;
     }
     bool hasScriptSourceObjectOut() const override { return true; }

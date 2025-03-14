@@ -31,6 +31,7 @@ using mozilla::Maybe;
 
 using CapturesVector = GCVector<Value, 4>;
 
+using JS::CompileOptions;
 
 // Allocate an object for the |.groups| or |.indices.groups| property
 // of a regexp match result.

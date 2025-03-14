@@ -31,6 +31,7 @@ using namespace js;
 using namespace js::frontend;
 
 using JS::AutoValueArray;
+using JS::CompileOptions;
 using mozilla::ArrayLength;
 using mozilla::DebugOnly;
 using mozilla::Forward;
