@@ -13,6 +13,7 @@
 #include "mozilla/IHistory.h"
 #include "mozilla/MemoryReporting.h"
 #include "nsIContent.h" // for nsLinkState
+#include "nsIContentPolicyBase.h" // for nsContentPolicyType
 
 namespace mozilla {
 

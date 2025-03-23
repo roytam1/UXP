@@ -4171,7 +4171,7 @@ struct MOZ_STACK_CLASS CanvasBidiProcessor : public nsBidiPresUtils::BidiProcess
   already_AddRefed<gfxPattern> GetPatternFor(Style aStyle)
   {
     const CanvasPattern* pat = mCtx->CurrentState().patternStyles[aStyle];
-    RefPtr<gfxPattern> pattern = new gfxPattern(pat->mSurface, Matrix());
+    RefPtr<gfxPattern> pattern = new gfxPattern(pat->mSurface, pat->mTransform);
     pattern->SetExtend(CvtCanvasRepeatToGfxRepeat(pat->mRepeat));
     return pattern.forget();
   }

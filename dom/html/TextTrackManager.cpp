@@ -11,6 +11,7 @@
 #include "mozilla/dom/TextTrackCue.h"
 #include "mozilla/dom/Event.h"
 #include "mozilla/ClearOnShutdown.h"
+#include "mozilla/CycleCollectedJSContext.h"
 #include "nsComponentManagerUtils.h"
 #include "nsVariant.h"
 #include "nsVideoFrame.h"
