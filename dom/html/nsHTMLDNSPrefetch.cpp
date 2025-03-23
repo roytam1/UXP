@@ -15,6 +15,7 @@
 #include "nsNetUtil.h"
 #include "nsNetCID.h"
 #include "nsIProtocolHandler.h"
+#include "nsContentUtils.h"
 
 #include "nsIDNSListener.h"
 #include "nsIWebProgressListener.h"

@@ -81,7 +81,7 @@ pref("services.sync.APILevel", 1); // FSyncMS doesn't support 'info/configuratio
 pref("accessibility.force_disabled", 1);
 
 pref("general.useragent.change_app_version", true);
-pref("general.useragent.app_version", "33.2");
+pref("general.useragent.app_version", "33.6.1");
 
 // ============================================================================
 
