@@ -3946,7 +3946,7 @@ ParseRegExp(JSContext* cx, unsigned argc, Value* vp)
     if (!pattern)
         return false;
 
-    CompileOptions options(cx);
+    JS::CompileOptions options(cx);
     frontend::TokenStream dummyTokenStream(cx, options, nullptr, 0, nullptr);
 
     irregexp::RegExpCompileData data;
