@@ -19,6 +19,11 @@
 #include "nsNetCID.h"
 #include "nsCOMPtr.h"
 #include "nsICryptoHash.h"
+#include "nsIX509Cert.h"
+#include "nsNSSCertificate.h"
+
+#include "ScopedNSSTypes.h"
+#include "secoid.h"
 
 #include <windows.h>
 
@@ -103,7 +108,7 @@ MakeSN(const char *principal, nsCString &result)
     int32_t index = buf.FindChar('@');
     if (index == kNotFound)
         return NS_ERROR_UNEXPECTED;
-    
+
     nsCOMPtr<nsIDNSService> dns = do_GetService(NS_DNSSERVICE_CONTRACTID, &rv);
     if (NS_FAILED(rv))
         return rv;
@@ -130,6 +135,160 @@ MakeSN(const char *principal, nsCString &result)
         LOG(("Using SPN of [%s]\n", result.get()));
     }
     return rv;
+}
+
+//-----------------------------------------------------------------------------
+
+/*
+ * This is pulled from the switch statement in sec_DecodeSigAlg in security/nss/lib/cryptohi/secvfy.c,
+ * which is not exported to the public API.
+ */
+SECOidTag
+DecodeSigAlg(const SECKEYPublicKey *key, SECOidTag sigAlg)
+{
+    unsigned int len;
+
+    switch (sigAlg) {
+        // Old RSA
+        case SEC_OID_PKCS1_MD2_WITH_RSA_ENCRYPTION:
+            return SEC_OID_MD2;
+        case SEC_OID_PKCS1_MD4_WITH_RSA_ENCRYPTION:
+            return SEC_OID_MD4;
+        case SEC_OID_PKCS1_MD5_WITH_RSA_ENCRYPTION:
+            return SEC_OID_MD5;
+        case SEC_OID_PKCS1_SHA1_WITH_RSA_ENCRYPTION:
+        case SEC_OID_ISO_SHA_WITH_RSA_SIGNATURE:
+        case SEC_OID_ISO_SHA1_WITH_RSA_SIGNATURE:
+            return SEC_OID_SHA1;
+        case SEC_OID_PKCS1_RSA_ENCRYPTION:
+            // could be estimated from RSA signature
+            return SEC_OID_UNKNOWN;
+        case SEC_OID_PKCS1_RSA_PSS_SIGNATURE:
+            // default, SHA-1
+            return SEC_OID_SHA1;
+
+        // Newer RSA and ECDSA
+        case SEC_OID_ANSIX962_ECDSA_SHA224_SIGNATURE:
+        case SEC_OID_PKCS1_SHA224_WITH_RSA_ENCRYPTION:
+        case SEC_OID_NIST_DSA_SIGNATURE_WITH_SHA224_DIGEST:
+            return SEC_OID_SHA224;
+        case SEC_OID_ANSIX962_ECDSA_SHA256_SIGNATURE:
+        case SEC_OID_PKCS1_SHA256_WITH_RSA_ENCRYPTION:
+        case SEC_OID_NIST_DSA_SIGNATURE_WITH_SHA256_DIGEST:
+            return SEC_OID_SHA256;
+        case SEC_OID_ANSIX962_ECDSA_SHA384_SIGNATURE:
+        case SEC_OID_PKCS1_SHA384_WITH_RSA_ENCRYPTION:
+            return SEC_OID_SHA384;
+        case SEC_OID_ANSIX962_ECDSA_SHA512_SIGNATURE:
+        case SEC_OID_PKCS1_SHA512_WITH_RSA_ENCRYPTION:
+            return SEC_OID_SHA512;
+
+        // DSA signatures
+        case SEC_OID_ANSIX9_DSA_SIGNATURE_WITH_SHA1_DIGEST:
+        case SEC_OID_BOGUS_DSA_SIGNATURE_WITH_SHA1_DIGEST:
+        case SEC_OID_ANSIX962_ECDSA_SHA1_SIGNATURE:
+            return SEC_OID_SHA1;
+        case SEC_OID_MISSI_DSS:
+        case SEC_OID_MISSI_KEA_DSS:
+        case SEC_OID_MISSI_KEA_DSS_OLD:
+        case SEC_OID_MISSI_DSS_OLD:
+            return SEC_OID_SHA1;
+        case SEC_OID_ANSIX962_ECDSA_SIGNATURE_RECOMMENDED_DIGEST:
+            /* This is an EC algorithm. Recommended means the largest
+             * hash algorithm that is not reduced by the keysize of
+             * the EC algorithm. Note that key strength is in bytes and
+             * algorithms are specified in bits. Never use an algorithm
+             * weaker than sha1. */
+            len = SECKEY_PublicKeyStrength(key);
+            if (len < 28) { /* 28 bytes == 224 bits */
+               return SEC_OID_SHA1;
+            }
+            if (len < 32) { /* 32 bytes == 256 bits */
+                return SEC_OID_SHA224;
+            }
+            if (len < 48) { /* 48 bytes == 384 bits */
+                return SEC_OID_SHA256;
+            }
+            if (len < 64) { /* 64 bytes == 512 bits */
+                return  SEC_OID_SHA384;
+            }
+            /* use the largest in this case */
+            return SEC_OID_SHA512;
+        case SEC_OID_ANSIX962_ECDSA_SIGNATURE_SPECIFIED_DIGEST:
+            // would need to parse params to resolve this
+            return SEC_OID_UNKNOWN;
+        default:
+            return SEC_OID_UNKNOWN;
+    }
+}
+
+//-----------------------------------------------------------------------------
+
+uint32_t
+CertSignatureHashFunction(const uint8_t *certDER, uint32_t certDERLen)
+{
+    // Get the certificate object from DER encoding
+    nsCOMPtr<nsIX509Cert> x509 = nsNSSCertificate::ConstructFromDER((char*)certDER, certDERLen);
+    if (!x509)
+        return 0;
+
+    mozilla::UniqueCERTCertificate cert(x509->GetCert());
+    if (!cert)
+        return 0;
+
+    // Get the signature and public key material (needed for some EC signatures)
+    SECAlgorithmID *algID = &cert->signature;
+    SECOidTag sigAlg = SECOID_FindOIDTag(&algID->algorithm);
+
+    CERTSubjectPublicKeyInfo *spki = &cert->subjectPublicKeyInfo;
+    mozilla::UniqueSECKEYPublicKey pubKey(SECKEY_ExtractPublicKey(spki));
+
+    // Translate signature OID to hash algorithm OID
+    SECOidTag hashAlg = DecodeSigAlg(pubKey.get(), sigAlg);
+
+    // Return the nsICryptoHash to use for a certificate signed with the given hash algorithm OID
+    switch (hashAlg) {
+        // Newer hashes, must use the type as used in the cert itself
+        case SEC_OID_SHA224:
+            return nsICryptoHash::SHA224;
+        case SEC_OID_SHA256:
+            return nsICryptoHash::SHA256;
+        case SEC_OID_SHA384:
+            return nsICryptoHash::SHA384;
+        case SEC_OID_SHA512:
+            return nsICryptoHash::SHA512;
+        // SHA-1 and MD must use SHA-256, do that for fallback too
+        case SEC_OID_MD2:
+        case SEC_OID_MD4:
+        case SEC_OID_MD5:
+        case SEC_OID_SHA1:
+        default:
+            return nsICryptoHash::SHA256;
+    }
+}
+
+//-----------------------------------------------------------------------------
+
+uint32_t
+DigestByteSize(uint32_t nsICryptoHashAlgo)
+{
+    switch(nsICryptoHashAlgo) {
+        case nsICryptoHash::MD2:
+            return 16;
+        case nsICryptoHash::MD5:
+            return 16;
+        case nsICryptoHash::SHA1:
+            return 20;
+        case nsICryptoHash::SHA256:
+            return 32;
+        case nsICryptoHash::SHA384:
+            return 48;
+        case nsICryptoHash::SHA512:
+            return 64;
+        case nsICryptoHash::SHA224:
+            return 28;
+    }
+    return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -287,11 +446,9 @@ nsAuthSSPI::GetNextToken(const void *inToken,
                          uint32_t   *outTokenLen)
 {
     // String for end-point bindings.
-    const char end_point[] = "tls-server-end-point:"; 
+    const char end_point[] = "tls-server-end-point:";
     const int end_point_length = sizeof(end_point) - 1;
-    const int hash_size = 32;  // Size of a SHA256 hash.
-    const int cbt_size = hash_size + end_point_length;
-	
+
     SECURITY_STATUS rc;
     MS_TimeStamp ignored;
 
@@ -345,11 +502,21 @@ nsAuthSSPI::GetNextToken(const void *inToken,
             ibd.ulVersion = SECBUFFER_VERSION;
             ibd.cBuffers = 0;
             ibd.pBuffers = ib;
-            
+
             // If we have stored a certificate, the Channel Binding Token
             // needs to be generated and sent in the first input buffer.
             if (mCertDERLength > 0) {
-                // First we create a proper Endpoint Binding structure. 
+                // We need to find out what signature algorithm is used in
+                // the certificate's signature and how long its digest is.
+                uint32_t hashFunc = CertSignatureHashFunction((unsigned char*)mCertDERData, mCertDERLength);
+                if (!hashFunc)
+                    return NS_ERROR_FAILURE;
+                const int hash_size = DigestByteSize(hashFunc);
+                if (!hash_size)
+                    return NS_ERROR_FAILURE;
+                const int cbt_size = hash_size + end_point_length;
+
+                // First we create a proper Endpoint Binding structure.
                 pendpoint_binding.dwInitiatorAddrType = 0;
                 pendpoint_binding.cbInitiatorLength = 0;
                 pendpoint_binding.dwInitiatorOffset = 0;
@@ -357,7 +524,7 @@ nsAuthSSPI::GetNextToken(const void *inToken,
                 pendpoint_binding.cbAcceptorLength = 0;
                 pendpoint_binding.dwAcceptorOffset = 0;
                 pendpoint_binding.cbApplicationDataLength = cbt_size;
-                pendpoint_binding.dwApplicationDataOffset = 
+                pendpoint_binding.dwApplicationDataOffset =
                                             sizeof(SEC_CHANNEL_BINDINGS);
 
                 // Then add it to the array of sec buffers accordingly.
@@ -365,7 +532,7 @@ nsAuthSSPI::GetNextToken(const void *inToken,
                 ib[ibd.cBuffers].cbBuffer =
                         pendpoint_binding.cbApplicationDataLength
                         + pendpoint_binding.dwApplicationDataOffset;
-          
+
                 sspi_cbt = (char *) moz_xmalloc(ib[ibd.cBuffers].cbBuffer);
                 if (!sspi_cbt){
                     return NS_ERROR_OUT_OF_MEMORY;
@@ -373,7 +540,7 @@ nsAuthSSPI::GetNextToken(const void *inToken,
 
                 // Helper to write in the memory block that stores the CBT
                 char* sspi_cbt_ptr = sspi_cbt;
-          
+
                 ib[ibd.cBuffers].pvBuffer = sspi_cbt;
                 ibd.cBuffers++;
 
@@ -383,16 +550,14 @@ nsAuthSSPI::GetNextToken(const void *inToken,
 
                 memcpy(sspi_cbt_ptr, end_point, end_point_length);
                 sspi_cbt_ptr += end_point_length;
-          
-                // Start hashing. We are always doing SHA256, but depending
-                // on the certificate, a different alogirthm might be needed.
-                nsAutoCString hashString;
 
+                // Start hashing.
+                nsAutoCString hashString;
                 nsresult rv;
                 nsCOMPtr<nsICryptoHash> crypto;
                 crypto = do_CreateInstance(NS_CRYPTO_HASH_CONTRACTID, &rv);
                 if (NS_SUCCEEDED(rv))
-                    rv = crypto->Init(nsICryptoHash::SHA256);
+                    rv = crypto->Init(hashFunc);
                 if (NS_SUCCEEDED(rv))
                     rv = crypto->Update((unsigned char*)mCertDERData, mCertDERLength);
                 if (NS_SUCCEEDED(rv))
@@ -404,12 +569,13 @@ nsAuthSSPI::GetNextToken(const void *inToken,
                     free(sspi_cbt);
                     return rv;
                 }
-          
+
                 // Once the hash has been computed, we store it in memory right
                 // after the Endpoint structure and the "tls-server-end-point:"
                 // char array.
+                MOZ_ASSERT(hashString.Length() == hash_size);
                 memcpy(sspi_cbt_ptr, hashString.get(), hash_size);
-          
+
                 // Free memory used to store the server certificate
                 free(mCertDERData);
                 mCertDERData = nullptr;
