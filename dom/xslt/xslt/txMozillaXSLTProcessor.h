@@ -110,12 +110,12 @@ public:
     Constructor(const mozilla::dom::GlobalObject& aGlobal,
                 mozilla::ErrorResult& aRv);
 
-    void ImportStylesheet(nsINode& stylesheet,
+    void ImportStylesheet(nsINode& aStylesheet,
                           mozilla::ErrorResult& aRv);
     already_AddRefed<mozilla::dom::DocumentFragment>
-    TransformToFragment(nsINode& source, nsIDocument& docVal, mozilla::ErrorResult& aRv);
+      TransformToFragment(nsINode& source, nsIDocument& docVal, mozilla::ErrorResult& aRv);
     already_AddRefed<nsIDocument>
-    TransformToDocument(nsINode& source, mozilla::ErrorResult& aRv);
+      TransformToDocument(nsINode& aSource, mozilla::ErrorResult& aRv);
 
     void SetParameter(JSContext* aCx,
                       const nsAString& aNamespaceURI,
@@ -131,6 +131,12 @@ public:
     {
         aRv = RemoveParameter(aNamespaceURI, aLocalName);
     }
+    void ClearParameters(mozilla::ErrorResult& aRv) {
+        aRv = ClearParameters();
+    };
+    void Reset(mozilla::ErrorResult& aRv) {
+        aRv = Reset();
+    };
 
     uint32_t Flags()
     {
@@ -160,6 +166,8 @@ public:
     static void Shutdown();
 
 private:
+    friend class nsTransformBlockerEvent;
+
     explicit txMozillaXSLTProcessor(nsISupports* aOwner);
     /**
      * Default destructor for txMozillaXSLTProcessor
@@ -186,6 +194,13 @@ private:
     RefPtr<txResultRecycler> mRecycler;
 
     uint32_t mFlags;
+
+    enum class State {
+      None,
+      Compiling,
+      Transforming,
+    };
+    State mState = State::None;
 };
 
 extern nsresult TX_LoadSheet(nsIURI* aUri, txMozillaXSLTProcessor* aProcessor,

@@ -3644,6 +3644,14 @@ pref("ui.osk.require_win10", false);
 // or appearing when it is not expected.
 pref("ui.osk.debug.keyboardDisplayReason", "");
 
+// Whether to follow `.lnk` (etc.) shortcuts in the Windows file-open dialog.
+//
+// Valid values:
+//  * 0: never
+//  * 1: always
+//  * 2: auto
+pref("widget.windows.follow_shortcuts_on_file_open", 2);
+
 # XP_WIN
 #endif
 
@@ -3998,9 +4006,9 @@ pref("autocomplete.ungrab_during_mode_switch", true);
 // toggling to use the XUL filepicker
 pref("ui.allow_platform_file_picker", true);
 
+#ifdef MOZ_WIDGET_GTK
 // Allow for using the native GTK file picker. If the application is not run
 // with GTK_USE_PORTAL=1 this pref has no effect.
-#ifdef MOZ_WIDGET_GTK
 pref("widget.allow-gtk-native-file-chooser", false);
 #endif
 

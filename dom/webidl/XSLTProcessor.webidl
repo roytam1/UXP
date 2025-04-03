@@ -85,11 +85,13 @@ interface XSLTProcessor {
      * the processor use the default-value for all parameters as specified in
      * the stylesheet.
      */
+    [Throws]
     void clearParameters();
 
     /**
      * Remove all parameters and stylesheets from this nsIXSLTProcessor.
      */
+    [Throws]
     void reset();
 
     /**
