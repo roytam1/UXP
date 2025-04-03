@@ -1782,6 +1782,7 @@ public:
     UnorderedRemoveElementsAt(aIndex, 1);
   }
 
+  // A variation on the RemoveElementsAt method defined above.
   void Clear() { RemoveElementsAt(0, Length()); }
 
   // This method removes elements based on the return value of the

@@ -10542,7 +10542,7 @@ CSSParserImpl::ParsePlaceSelf()
   return true;
 }
 
-// <color-stop> : <color> [ <percentage> | <length> ]?
+// <color-stop> : <color> [ <percentage> | <length> ]? [ <percentage> | <length> ]?
 bool
 CSSParserImpl::ParseColorStop(nsCSSValueGradient* aGradient)
 {
@@ -10565,6 +10565,27 @@ CSSParserImpl::ParseColorStop(nsCSSValueGradient* aGradient)
     }
     stop->mLocation.SetNoneValue();
   }
+
+  // Parse double-location stop second arg if present, no error if missing (normal stop).
+  // First, append another stop. For the parsing logic to work, we always need to append
+  // a stop first so the parsed values have somewhere to go. This does mean we're losing
+  // some performance because if the shorthand isn't present the stop has to be removed
+  // again, causing unnecessary array element juggling.
+  // See issue #2720
+  nsCSSValueGradientStop* stop2 = aGradient->mStops.AppendElement();
+  result = ParseVariant(stop2->mLocation, VARIANT_LP | VARIANT_CALC, nullptr);
+  if (result != CSSParseResult::NotFound) {
+    if (result == CSSParseResult::Error) {
+      // We didn't get a parseable stop, remove the additional stop again and throw.
+      aGradient->mStops.SetLength(aGradient->mStops.Length()-1);
+      return false;
+    }
+    stop2->mColor = stop->mColor; // copy color from first stop arg
+  } else {
+    // We didn't get a second stop after all, remove the additional stop again.
+    aGradient->mStops.SetLength(aGradient->mStops.Length()-1);
+  }    
+
   return true;
 }
 

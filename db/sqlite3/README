@@ -4,7 +4,7 @@ Check sqlite3.h for the version number and source id.
 See http://www.sqlite.org/ for more info.
 
 We have a UXP-specific moz.build in src/ (normally not there) that we
-use to build. Adfditionally, src/ contains sqlite.symbols which lists
+use to build. Additionally, src/ contains sqlite.symbols which lists
 all explicitly exported symbols from the library to expose.
 
 To move to a new version:

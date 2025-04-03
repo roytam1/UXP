@@ -11,6 +11,7 @@
 #include <cderr.h>
 
 #include "mozilla/mscom/EnsureMTA.h"
+#include "mozilla/Preferences.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/WindowsVersion.h"
 #include "nsReadableUtils.h"
@@ -33,6 +34,7 @@ using mozilla::IsWin8OrLater;
 using mozilla::IsWin10OrLater;
 using mozilla::MakeUnique;
 using mozilla::mscom::EnsureMTA;
+using mozilla::Preferences;
 using mozilla::UniquePtr;
 using namespace mozilla::widget;
 
@@ -954,20 +956,32 @@ nsFilePicker::ShowFilePicker(const nsString& aInitialDir, bool &aWasInitError)
   // just in case.
   AutoRestoreWorkingPath arw;
 
-  // mode specific
+  // mode specification
   switch(mMode) {
-    case modeOpen:
-      fos |= FOS_FILEMUSTEXIST;
-      break;
-
     case modeOpenMultiple:
-      fos |= FOS_FILEMUSTEXIST | FOS_ALLOWMULTISELECT;
+      fos |= FOS_ALLOWMULTISELECT;
+      MOZ_FALLTHROUGH;
+
+    case modeOpen: {
+      fos |= FOS_FILEMUSTEXIST;
+      int32_t followLinks = Preferences::GetInt("widget.windows.follow_shortcuts_on_file_open", 2);
+      switch (followLinks) {
+        case 1:
+          break;
+        case 2:
+          // No special handling at the moment for `auto`. Fallthrough to `never`:
+          MOZ_FALLTHROUGH;
+        default:
+          fos |= FOS_NODEREFERENCELINKS;
+      }
       break;
+    }
 
     case modeSave:
       fos |= FOS_NOREADONLYRETURN;
       // Don't follow shortcuts when saving a shortcut, this can be used
-      // to trick users (bug 271732)
+      // to trick users (BZ bug 271732). _Do_ follow shortcuts when not saving a
+      // shortcut (BZ bug 283730).
       if (IsDefaultPathLink())
         fos |= FOS_NODEREFERENCELINKS;
       break;
