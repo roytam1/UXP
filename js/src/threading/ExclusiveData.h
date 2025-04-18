@@ -117,7 +117,7 @@ class ExclusiveData
     }
 
     ExclusiveData(ExclusiveData&& rhs) :
-      lock_(mozilla::Move(rhs.lock))
+      lock_(mozilla::Move(rhs.lock()))
     {
         MOZ_ASSERT(&rhs != this, "self-move disallowed!");
         new (value_.addr()) T(mozilla::Move(*rhs.value_.addr()));

@@ -82,6 +82,7 @@ interface DOMMatrixReadOnly {
     [Throws] Float32Array      toFloat32Array();
     [Throws] Float64Array      toFloat64Array();
     [Exposed=Window]           stringifier;
+                               jsonifier;
 };
 
 [Constructor,
