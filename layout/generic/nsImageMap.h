@@ -21,6 +21,12 @@ class nsIFrame;
 class nsIContent;
 struct nsRect;
 
+namespace mozilla {
+namespace dom {
+class HTMLAreaElement;
+}
+}
+
 class nsImageMap final : public nsStubMutationObserver,
                          public nsIDOMEventListener
 {
@@ -31,7 +37,7 @@ class nsImageMap final : public nsStubMutationObserver,
 public:
   nsImageMap();
 
-  nsresult Init(nsImageFrame* aImageFrame, nsIContent* aMap);
+  void Init(nsImageFrame* aImageFrame, nsIContent* aMap);
 
   /**
    * Return the first area element (in content order) for the given aX,aY pixel
@@ -80,18 +86,21 @@ protected:
 
   void FreeAreas();
 
-  nsresult UpdateAreas();
-  nsresult SearchForAreas(nsIContent* aParent, bool& aFoundArea,
-                          bool& aFoundAnchor);
+  void UpdateAreas();
+  void SearchForAreas(nsIContent* aParent);
 
-  nsresult AddArea(nsIContent* aArea);
+  void AddArea(mozilla::dom::HTMLAreaElement* aArea);
  
   void MaybeUpdateAreas(nsIContent *aContent);
 
   nsImageFrame* mImageFrame;  // the frame that owns us
   nsCOMPtr<nsIContent> mMap;
   AutoTArray<Area*, 8> mAreas; // almost always has some entries
-  bool mContainsBlockContents;
+
+  // This is set when we search for all area children and tells us whether we
+  // should consider the whole subtree or just direct children when we get
+  // content notifications about changes inside the map subtree.
+  bool mConsiderWholeSubtree;
 };
 
 #endif /* nsImageMap_h */

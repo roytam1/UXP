@@ -109,7 +109,7 @@ SVGLineElement::GetLengthInfo()
 }
 
 //----------------------------------------------------------------------
-// nsSVGPathGeometryElement methods
+// SVGGeometryElement methods
 
 void
 SVGLineElement::GetMarkPoints(nsTArray<nsSVGMark> *aMarks) {

@@ -15,7 +15,6 @@
 #include "nsICSSDeclaration.h"
 #include "nsIDocument.h"
 #include "nsIDOMMutationEvent.h"
-#include "nsSVGPathGeometryElement.h"
 #include "mozilla/InternalMutationEvent.h"
 #include "mozAutoDocUpdate.h"
 #include "nsError.h"
@@ -45,6 +44,7 @@
 #include "SVGAnimatedPointList.h"
 #include "SVGAnimatedPathSegList.h"
 #include "SVGContentUtils.h"
+#include "SVGGeometryElement.h"
 #include "nsIFrame.h"
 #include "nsQueryObject.h"
 #include <stdarg.h>

@@ -8,21 +8,20 @@
 
 #include "mozilla/gfx/2D.h"
 #include "mozilla/RefPtr.h"
-#include "nsSVGNumber2.h"
-#include "nsSVGPathGeometryElement.h"
 #include "SVGAnimatedPathSegList.h"
+#include "SVGGeometryElement.h"
 #include "DOMSVGPathSeg.h"
 
 nsresult NS_NewSVGPathElement(nsIContent **aResult,
                               already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo);
-
-typedef nsSVGPathGeometryElement SVGPathElementBase;
 
 namespace mozilla {
 
 class nsISVGPoint;
 
 namespace dom {
+
+typedef SVGGeometryElement SVGPathElementBase;
 
 class SVGPathElement final : public SVGPathElementBase
 {
@@ -46,7 +45,7 @@ public:
   // nsSVGSVGElement methods:
   virtual bool HasValidDimensions() const override;
 
-  // nsSVGPathGeometryElement methods:
+  // SVGGeometryElement methods:
   virtual bool AttributeDefinesGeometry(const nsIAtom *aName) override;
   virtual bool IsMarkable() override;
   virtual void GetMarkPoints(nsTArray<nsSVGMark> *aMarks) override;
@@ -83,9 +82,6 @@ public:
   float GetPathLengthScale(PathLengthScaleForType aFor);
 
   // WebIDL
-  already_AddRefed<SVGAnimatedNumber> PathLength();
-  float GetTotalLength();
-  already_AddRefed<nsISVGPoint> GetPointAtLength(float distance, ErrorResult& rv);
   uint32_t GetPathSegAtLength(float distance);
   already_AddRefed<DOMSVGPathSegClosePath> CreateSVGPathSegClosePath();
   already_AddRefed<DOMSVGPathSegMovetoAbs> CreateSVGPathSegMovetoAbs(float x, float y);
@@ -121,12 +117,7 @@ public:
 
 protected:
 
-  // nsSVGElement method
-  virtual NumberAttributesInfo GetNumberInfo() override;
-
   SVGAnimatedPathSegList mD;
-  nsSVGNumber2 mPathLength;
-  static NumberInfo sNumberInfo;
 };
 
 } // namespace dom

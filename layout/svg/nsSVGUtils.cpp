@@ -46,8 +46,8 @@
 #include "nsSVGOuterSVGFrame.h"
 #include "mozilla/dom/SVGClipPathElement.h"
 #include "mozilla/dom/SVGPathElement.h"
-#include "nsSVGPathGeometryElement.h"
-#include "nsSVGPathGeometryFrame.h"
+#include "SVGGeometryElement.h"
+#include "SVGGeometryFrame.h"
 #include "nsSVGPaintServerFrame.h"
 #include "mozilla/dom/SVGSVGElement.h"
 #include "nsTextFrame.h"
@@ -415,7 +415,7 @@ nsSVGUtils::GetCanvasTM(nsIFrame *aFrame)
     return containerFrame->GetCanvasTM();
   }
 
-  return static_cast<nsSVGPathGeometryFrame*>(aFrame)->GetCanvasTM();
+  return static_cast<SVGGeometryFrame*>(aFrame)->GetCanvasTM();
 }
 
 gfxMatrix
@@ -1223,7 +1223,7 @@ nsSVGUtils::CanOptimizeOpacity(nsIFrame *aFrame)
   }
   nsIAtom *type = aFrame->GetType();
   if (type != nsGkAtoms::svgImageFrame &&
-      type != nsGkAtoms::svgPathGeometryFrame) {
+      type != nsGkAtoms::svgGeometryFrame) {
     return false;
   }
   if (aFrame->StyleEffects()->HasFilters()) {
@@ -1329,7 +1329,7 @@ nsSVGUtils::PathExtentsToMaxStrokeExtents(const gfxRect& aPathExtents,
 
 /*static*/ gfxRect
 nsSVGUtils::PathExtentsToMaxStrokeExtents(const gfxRect& aPathExtents,
-                                          nsSVGPathGeometryFrame* aFrame,
+                                          SVGGeometryFrame* aFrame,
                                           const gfxMatrix& aMatrix)
 {
   bool strokeMayHaveCorners =
