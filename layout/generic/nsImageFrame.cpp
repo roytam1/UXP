@@ -175,17 +175,18 @@ nsImageFrame::AccessibleType()
 void
 nsImageFrame::DisconnectMap()
 {
-  if (mImageMap) {
-    mImageMap->Destroy();
-    mImageMap = nullptr;
+  if (!mImageMap) {
+    return;
+  }
+  
+  mImageMap->Destroy();
+  mImageMap = nullptr;
 
 #ifdef ACCESSIBILITY
-  nsAccessibilityService* accService = GetAccService();
-  if (accService) {
+  if (nsAccessibilityService* accService = GetAccService()) {
     accService->RecreateAccessible(PresContext()->PresShell(), mContent);
   }
 #endif
-  }
 }
 
 void
@@ -1718,8 +1719,7 @@ nsImageFrame::PaintImage(nsRenderingContext& aRenderingContext, nsPoint aPt,
       nsLayoutUtils::GetSamplingFilterForFrame(this), dest, aDirtyRect,
       nullptr, flags, &anchorPoint);
 
-  nsImageMap* map = GetImageMap();
-  if (map) {
+  if (nsImageMap* map = GetImageMap()) {
     gfxPoint devPixelOffset =
       nsLayoutUtils::PointToGfxPoint(dest.TopLeft(),
                                      PresContext()->AppUnitsPerDevPixel());
@@ -1886,8 +1886,7 @@ nsImageMap*
 nsImageFrame::GetImageMap()
 {
   if (!mImageMap) {
-    nsIContent* map = GetMapElement();
-    if (map) {
+    if (nsIContent* map = GetMapElement()) {
       mImageMap = new nsImageMap();
       mImageMap->Init(this, map);
     }
@@ -1975,9 +1974,7 @@ nsImageFrame::GetContentForEvent(WidgetEvent* aEvent,
     return NS_OK;
   }
 
-  nsImageMap* map = GetImageMap();
-
-  if (nullptr != map) {
+  if (nsImageMap* map = GetImageMap()) {
     nsIntPoint p;
     TranslateEventCoords(
       nsLayoutUtils::GetEventCoordinatesRelativeTo(aEvent, this), p);
@@ -2006,7 +2003,7 @@ nsImageFrame::HandleEvent(nsPresContext* aPresContext,
       aEvent->mMessage == eMouseMove) {
     nsImageMap* map = GetImageMap();
     bool isServerMap = IsServerImageMap();
-    if ((nullptr != map) || isServerMap) {
+    if (map || isServerMap) {
       nsIntPoint p;
       TranslateEventCoords(
         nsLayoutUtils::GetEventCoordinatesRelativeTo(aEvent, this), p);
@@ -2015,7 +2012,7 @@ nsImageFrame::HandleEvent(nsPresContext* aPresContext,
       // through content, we need to make sure we're not inside
       // (in case we deal with a case of both client-side and
       // sever-side on the same image - it happens!)
-      if (nullptr != map) {
+      if (map) {
         inside = !!map->GetArea(p.x, p.y);
       }
 
@@ -2063,8 +2060,7 @@ nsresult
 nsImageFrame::GetCursor(const nsPoint& aPoint,
                         nsIFrame::Cursor& aCursor)
 {
-  nsImageMap* map = GetImageMap();
-  if (nullptr != map) {
+  if (nsImageMap* map = GetImageMap()) {
     nsIntPoint p;
     TranslateEventCoords(aPoint, p);
     nsCOMPtr<nsIContent> area = map->GetArea(p.x, p.y);

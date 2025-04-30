@@ -6,16 +6,16 @@
 #ifndef mozilla_dom_SVGCircleElement_h
 #define mozilla_dom_SVGCircleElement_h
 
-#include "nsSVGPathGeometryElement.h"
+#include "SVGGeometryElement.h"
 #include "nsSVGLength2.h"
 
 nsresult NS_NewSVGCircleElement(nsIContent **aResult,
                                 already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo);
 
-typedef nsSVGPathGeometryElement SVGCircleElementBase;
-
 namespace mozilla {
 namespace dom {
+
+typedef SVGGeometryElement SVGCircleElementBase;
 
 class SVGCircleElement final : public SVGCircleElementBase
 {
@@ -29,7 +29,7 @@ public:
   // nsSVGSVGElement methods:
   virtual bool HasValidDimensions() const override;
 
-  // nsSVGPathGeometryElement methods:
+  // SVGGeometryElement methods:
   virtual bool GetGeometryBounds(Rect* aBounds, const StrokeOptions& aStrokeOptions,
                                  const Matrix& aToBoundsSpace,
                                  const Matrix* aToNonScalingStrokeSpace = nullptr) override;

@@ -3,25 +3,26 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef NS_SVGPOLYELEMENT_H_
-#define NS_SVGPOLYELEMENT_H_
+#ifndef __SVGPOLYELEMENT_H_
+#define __SVGPOLYELEMENT_H_
 
 #include "mozilla/Attributes.h"
-#include "nsSVGPathGeometryElement.h"
 #include "SVGAnimatedPointList.h"
-
-typedef nsSVGPathGeometryElement nsSVGPolyElementBase;
+#include "SVGGeometryElement.h"
 
 namespace mozilla {
 class DOMSVGPointList;
-} // namespace mozilla
 
-class nsSVGPolyElement : public nsSVGPolyElementBase
+namespace dom {
+
+typedef SVGGeometryElement SVGPolyElementBase;
+
+class SVGPolyElement : public SVGPolyElementBase
 {
 protected:
-  explicit nsSVGPolyElement(already_AddRefed<mozilla::dom::NodeInfo>& aNodeInfo);
+  explicit SVGPolyElement(already_AddRefed<mozilla::dom::NodeInfo>& aNodeInfo);
 
-  virtual ~nsSVGPolyElement();
+  virtual ~SVGPolyElement();
 
 public:
   //interfaces
@@ -41,7 +42,7 @@ public:
   // nsSVGElement methods:
   virtual bool HasValidDimensions() const override;
 
-  // nsSVGPathGeometryElement methods:
+  // SVGGeometryElement methods:
   virtual bool AttributeDefinesGeometry(const nsIAtom *aName) override;
   virtual bool IsMarkable() override { return true; }
   virtual void GetMarkPoints(nsTArray<nsSVGMark> *aMarks) override;
@@ -57,4 +58,7 @@ protected:
   SVGAnimatedPointList mPoints;
 };
 
-#endif //NS_SVGPOLYELEMENT_H_
+} // namespace dom
+} // namespace mozilla
+
+#endif //__SVGPOLYELEMENT_H_

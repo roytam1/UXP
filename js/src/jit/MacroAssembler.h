@@ -1622,6 +1622,11 @@ class MacroAssembler : public MacroAssemblerSpecific
           case Scalar::Uint32:
             store32(value, dest);
             break;
+          case Scalar::BigInt64:
+          case Scalar::BigUint64:
+            //FIXME: storing 64-bit values doesn't actually work yet.
+            // store64(value, dest);
+            break;
           default:
             MOZ_CRASH("Invalid typed array type");
         }
