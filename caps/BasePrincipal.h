@@ -251,7 +251,14 @@ public:
 class BasePrincipal : public nsJSPrincipals
 {
 public:
-  BasePrincipal();
+  enum PrincipalKind {
+    eNullPrincipal,
+    eCodebasePrincipal,
+    eExpandedPrincipal,
+    eSystemPrincipal
+  };
+
+  explicit BasePrincipal(PrincipalKind aKind);
 
   enum DocumentDomainConsideration { DontConsiderDocumentDomain, ConsiderDocumentDomain};
   bool Subsumes(nsIPrincipal* aOther, DocumentDomainConsideration aConsideration);
@@ -301,16 +308,18 @@ public:
   uint32_t PrivateBrowsingId() const { return mOriginAttributes.mPrivateBrowsingId; }
   bool IsInIsolatedMozBrowserElement() const { return mOriginAttributes.mInIsolatedMozBrowser; }
 
-  enum PrincipalKind {
-    eNullPrincipal,
-    eCodebasePrincipal,
-    eExpandedPrincipal,
-    eSystemPrincipal
-  };
-
-  virtual PrincipalKind Kind() = 0;
+  PrincipalKind Kind() const { return mKind; }
 
   already_AddRefed<BasePrincipal> CloneStrippingUserContextIdAndFirstPartyDomain();
+
+  /**
+   * Returns true if this principal's CSP should override a document's CSP for
+   * loads that it triggers. Currently true only for expanded principals which
+   * subsume the document principal.
+   */
+  bool OverridesCSP(nsIPrincipal* aDocumentPrincipal) {
+    return mKind == eExpandedPrincipal && Subsumes(aDocumentPrincipal, DontConsiderDocumentDomain);
+  }
 
 protected:
   virtual ~BasePrincipal();
@@ -333,6 +342,7 @@ protected:
   nsCOMPtr<nsIContentSecurityPolicy> mCSP;
   nsCOMPtr<nsIContentSecurityPolicy> mPreloadCSP;
   PrincipalOriginAttributes mOriginAttributes;
+  PrincipalKind mKind;
 };
 
 } // namespace mozilla

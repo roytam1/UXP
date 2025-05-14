@@ -343,7 +343,8 @@ OriginAttributes::IsFirstPartyEnabled()
   return sFirstPartyIsolation;
 }
 
-BasePrincipal::BasePrincipal()
+BasePrincipal::BasePrincipal(PrincipalKind aKind)
+  : mKind(aKind)
 {}
 
 BasePrincipal::~BasePrincipal()

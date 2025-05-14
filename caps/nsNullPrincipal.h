@@ -36,7 +36,9 @@ public:
   // This should only be used by deserialization, and the factory constructor.
   // Other consumers should use the Create and CreateWithInheritedAttributes
   // methods.
-  nsNullPrincipal() {}
+  nsNullPrincipal()
+    : BasePrincipal(eNullPrincipal)
+  {}
 
   NS_DECL_NSISERIALIZABLE
 
@@ -59,8 +61,6 @@ public:
   nsresult Init(const mozilla::PrincipalOriginAttributes& aOriginAttributes = mozilla::PrincipalOriginAttributes());
 
   virtual nsresult GetScriptLocation(nsACString &aStr) override;
-
-  PrincipalKind Kind() override { return eNullPrincipal; }
 
  protected:
   virtual ~nsNullPrincipal() {}

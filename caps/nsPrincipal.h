@@ -46,8 +46,6 @@ public:
    */
   static void InitializeStatics();
 
-  PrincipalKind Kind() override { return eCodebasePrincipal; }
-
   nsCOMPtr<nsIURI> mDomain;
   nsCOMPtr<nsIURI> mCodebase;
   // If mCodebaseImmutable is true, mCodebase is non-null and immutable
@@ -81,8 +79,6 @@ public:
   virtual bool AddonHasPermission(const nsAString& aPerm) override;
   virtual nsresult GetScriptLocation(nsACString &aStr) override;
   nsresult GetOriginInternal(nsACString& aOrigin) override;
-
-  PrincipalKind Kind() override { return eExpandedPrincipal; }
 
 protected:
   virtual ~nsExpandedPrincipal();
