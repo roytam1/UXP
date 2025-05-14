@@ -83,7 +83,9 @@ HTMLFieldSetElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 nsresult
 HTMLFieldSetElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                   const nsAttrValue* aValue,
-                                  const nsAttrValue* aOldValue, bool aNotify)
+                                  const nsAttrValue* aOldValue,
+                                  nsIPrincipal* aSubjectPrincipal,
+                                  bool aNotify)
 {
   if (aNameSpaceID == kNameSpaceID_None && aName == nsGkAtoms::disabled &&
       nsINode::GetFirstChild()) {
@@ -100,7 +102,8 @@ HTMLFieldSetElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
   }
 
   return nsGenericHTMLFormElement::AfterSetAttr(aNameSpaceID, aName,
-                                                aValue, aOldValue, aNotify);
+                                                aValue, aOldValue, 
+                                                aSubjectPrincipal, aNotify);
 }
 
 // nsIDOMHTMLFieldSetElement

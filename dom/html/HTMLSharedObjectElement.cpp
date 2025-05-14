@@ -164,6 +164,7 @@ nsresult
 HTMLSharedObjectElement::AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
                                       const nsAttrValue* aValue,
                                       const nsAttrValue* aOldValue,
+                                      nsIPrincipal* aSubjectPrincipal,
                                       bool aNotify)
 {
   if (aValue) {
@@ -172,7 +173,7 @@ HTMLSharedObjectElement::AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
   }
 
   return nsGenericHTMLElement::AfterSetAttr(aNamespaceID, aName, aValue,
-                                            aOldValue, aNotify);
+                                            aOldValue, aSubjectPrincipal, aNotify);
 }
 
 nsresult

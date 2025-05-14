@@ -1330,7 +1330,9 @@ HTMLTextAreaElement::ContentChanged(nsIContent* aContent)
 nsresult
 HTMLTextAreaElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                   const nsAttrValue* aValue,
-                                  const nsAttrValue* aOldValue, bool aNotify)
+                                  const nsAttrValue* aOldValue,
+                                  nsIPrincipal* aSubjectPrincipal,
+                                  bool aNotify)
 {
   if (aNameSpaceID == kNameSpaceID_None) {
     if (aName == nsGkAtoms::required || aName == nsGkAtoms::disabled ||
@@ -1349,7 +1351,8 @@ HTMLTextAreaElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
   }
 
   return nsGenericHTMLFormElementWithState::AfterSetAttr(aNameSpaceID, aName, aValue,
-                                                         aOldValue, aNotify);
+                                                         aOldValue, aSubjectPrincipal,
+                                                         aNotify);
   }
 
 nsresult

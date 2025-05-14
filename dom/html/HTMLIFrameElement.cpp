@@ -183,7 +183,9 @@ HTMLIFrameElement::GetAttributeMappingFunction() const
 nsresult
 HTMLIFrameElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
-                                const nsAttrValue* aOldValue, bool aNotify)
+                                const nsAttrValue* aOldValue,
+                                nsIPrincipal* aMaybeScriptedPrincipal,
+                                bool aNotify)
 {
   AfterMaybeChangeAttr(aNameSpaceID, aName, aNotify);
 
@@ -197,8 +199,10 @@ HTMLIFrameElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
       }
     }
   }
-  return nsGenericHTMLFrameElement::AfterSetAttr(aNameSpaceID, aName, aValue,
-                                                 aOldValue, aNotify);
+  return nsGenericHTMLFrameElement::AfterSetAttr(aNameSpaceID, aName,
+                                                 aValue, aOldValue,
+                                                 aMaybeScriptedPrincipal,
+                                                 aNotify);
 }
 
 nsresult

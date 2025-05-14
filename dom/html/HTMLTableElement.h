@@ -197,6 +197,7 @@ public:
   virtual nsresult AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
                                 const nsAttrValue* aOldValue,
+                                nsIPrincipal* aSubjectPrincipal,
                                 bool aNotify) override;
 
   NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(HTMLTableElement,

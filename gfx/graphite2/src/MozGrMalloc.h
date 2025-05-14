@@ -12,8 +12,22 @@
 
 #include "mozilla/mozalloc.h"
 
-#define malloc moz_xmalloc
-#define calloc moz_xcalloc
-#define realloc moz_xrealloc
+// extern "C" is needed for the Solaris build, while the inline
+// functions are needed for the MinGW build.
+
+extern "C" inline void* malloc(size_t size)
+{
+    return moz_xmalloc(size);
+}
+
+extern "C" inline void* calloc(size_t nmemb, size_t size)
+{
+    return moz_xcalloc(nmemb, size);
+}
+
+extern "C" inline void* realloc(void *ptr, size_t size)
+{
+    return moz_xrealloc(ptr, size);
+}
 
 #endif // MOZ_GR_MALLOC_H

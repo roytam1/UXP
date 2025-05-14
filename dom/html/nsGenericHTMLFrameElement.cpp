@@ -337,13 +337,15 @@ PrincipalAllowsBrowserFrame(nsIPrincipal* aPrincipal)
 /* virtual */ nsresult
 nsGenericHTMLFrameElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                         const nsAttrValue* aValue,
-                                        const nsAttrValue* aOldValue, bool aNotify)
+                                        const nsAttrValue* aOldValue,
+                                        nsIPrincipal* aMaybeScriptedPrincipal,
+                                        bool aNotify)
 {
   if (aValue) {
     nsAttrValueOrString value(aValue);
-    AfterMaybeChangeAttr(aNameSpaceID, aName, &value, aNotify);
+    AfterMaybeChangeAttr(aNameSpaceID, aName, &value, aMaybeScriptedPrincipal, aNotify);
   } else {
-    AfterMaybeChangeAttr(aNameSpaceID, aName, nullptr, aNotify);
+    AfterMaybeChangeAttr(aNameSpaceID, aName, nullptr, aMaybeScriptedPrincipal, aNotify);
   }
 
   if (aNameSpaceID == kNameSpaceID_None) {
@@ -376,7 +378,8 @@ nsGenericHTMLFrameElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
   }
 
   return nsGenericHTMLElement::AfterSetAttr(aNameSpaceID, aName, aValue,
-                                            aOldValue, aNotify);
+                                            aOldValue, aMaybeScriptedPrincipal,
+                                            aNotify);
 }
 
 nsresult
@@ -385,20 +388,23 @@ nsGenericHTMLFrameElement::OnAttrSetButNotChanged(int32_t aNamespaceID,
                                                   const nsAttrValueOrString& aValue,
                                                   bool aNotify)
 {
-  AfterMaybeChangeAttr(aNamespaceID, aName, &aValue, aNotify);
+  AfterMaybeChangeAttr(aNamespaceID, aName, &aValue, nullptr, aNotify);
 
   return nsGenericHTMLElement::OnAttrSetButNotChanged(aNamespaceID, aName,
                                                       aValue, aNotify);
 }
 
 void
-nsGenericHTMLFrameElement::AfterMaybeChangeAttr(int32_t aNamespaceID,
+nsGenericHTMLFrameElement::AfterMaybeChangeAttr(int32_t aNameSpaceID,
                                                 nsIAtom* aName,
                                                 const nsAttrValueOrString* aValue,
+                                                nsIPrincipal* aMaybeScriptedPrincipal,
                                                 bool aNotify)
 {
-  if (aNamespaceID == kNameSpaceID_None) {
+  if (aNameSpaceID == kNameSpaceID_None) {
     if (aName == nsGkAtoms::src) {
+      mSrcTriggeringPrincipal = nsContentUtils::GetAttrTriggeringPrincipal(
+          this, aValue ? aValue->String() : EmptyString(), aMaybeScriptedPrincipal);
       if (aValue && (!IsHTMLElement(nsGkAtoms::iframe) ||
           !HasAttr(kNameSpaceID_None, nsGkAtoms::srcdoc))) {
         // Don't propagate error here. The attribute was successfully set,

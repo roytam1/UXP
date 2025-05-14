@@ -74,6 +74,7 @@ void
 AnonymousContent::SetAttributeForElement(const nsAString& aElementId,
                                          const nsAString& aName,
                                          const nsAString& aValue,
+                                         nsIPrincipal* aSubjectPrincipal,
                                          ErrorResult& aRv)
 {
   Element* element = GetElementById(aElementId);
@@ -82,7 +83,7 @@ AnonymousContent::SetAttributeForElement(const nsAString& aElementId,
     return;
   }
 
-  element->SetAttribute(aName, aValue, aRv);
+  element->SetAttribute(aName, aValue, aSubjectPrincipal, aRv);
 }
 
 void

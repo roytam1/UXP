@@ -244,7 +244,9 @@ HTMLOptionElement::BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
 nsresult
 HTMLOptionElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
-                                const nsAttrValue* aOldValue, bool aNotify)
+                                const nsAttrValue* aOldValue,
+                                nsIPrincipal* aSubjectPrincipal,
+                                bool aNotify)
 {
   if (aNameSpaceID == kNameSpaceID_None &&
       aName == nsGkAtoms::value && Selected()) {
@@ -258,7 +260,9 @@ HTMLOptionElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
   }
 
   return nsGenericHTMLElement::AfterSetAttr(aNameSpaceID, aName,
-                                            aValue, aOldValue, aNotify);
+                                            aValue, aOldValue,
+                                            aSubjectPrincipal,
+                                            aNotify);
 }
 
 NS_IMETHODIMP

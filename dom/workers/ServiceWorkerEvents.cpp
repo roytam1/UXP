@@ -261,10 +261,14 @@ public:
     rv = NS_NewURI(getter_AddRefs(uri), url, nullptr, nullptr);
     NS_ENSURE_SUCCESS(rv, false);
     int16_t decision = nsIContentPolicy::ACCEPT;
-    rv = NS_CheckContentLoadPolicy(aLoadInfo->InternalContentPolicyType(), uri,
+    rv = NS_CheckContentLoadPolicy(aLoadInfo->InternalContentPolicyType(),
+                                   uri,
                                    aLoadInfo->LoadingPrincipal(),
-                                   aLoadInfo->LoadingNode(), EmptyCString(),
-                                   nullptr, &decision);
+                                   aLoadInfo->TriggeringPrincipal(),
+                                   aLoadInfo->LoadingNode(),
+                                   EmptyCString(),
+                                   nullptr,
+                                   &decision);
     NS_ENSURE_SUCCESS(rv, false);
     return decision == nsIContentPolicy::ACCEPT;
   }

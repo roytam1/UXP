@@ -174,7 +174,7 @@ Attr::GetValue(nsAString& aValue)
 }
 
 void
-Attr::SetValue(const nsAString& aValue, ErrorResult& aRv)
+Attr::SetValue(const nsAString& aValue, nsIPrincipal* aTriggeringPrincipal, ErrorResult& aRv)
 {
   Element* element = GetElement();
   if (!element) {
@@ -187,6 +187,7 @@ Attr::SetValue(const nsAString& aValue, ErrorResult& aRv)
                          nameAtom,
                          mNodeInfo->GetPrefixAtom(),
                          aValue,
+                         aTriggeringPrincipal,
                          true);
 }
 
@@ -194,7 +195,7 @@ NS_IMETHODIMP
 Attr::SetValue(const nsAString& aValue)
 {
   ErrorResult rv;
-  SetValue(aValue, rv);
+  SetValue(aValue, nullptr, rv);
   return rv.StealNSResult();
 }
 

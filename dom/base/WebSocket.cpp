@@ -1556,7 +1556,8 @@ WebSocketImpl::Init(JSContext* aCx,
     int16_t shouldLoad = nsIContentPolicy::ACCEPT;
     aRv = NS_CheckContentLoadPolicy(nsIContentPolicy::TYPE_WEBSOCKET,
                                     uri,
-                                    aPrincipal,
+                                    aPrincipal, // loading principal
+                                    aPrincipal, // triggering principal
                                     originDoc,
                                     EmptyCString(),
                                     nullptr,

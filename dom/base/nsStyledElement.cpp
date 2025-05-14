@@ -110,7 +110,8 @@ nsStyledElement::SetInlineStyleDeclaration(css::Declaration* aDeclaration,
   nsIDocument* document = GetComposedDoc();
   mozAutoDocUpdate updateBatch(document, UPDATE_CONTENT_MODEL, aNotify);
   return SetAttrAndNotify(kNameSpaceID_None, nsGkAtoms::style, nullptr,
-                          oldValueSet ? &oldValue : nullptr, attrValue, modType,
+                          oldValueSet ? &oldValue : nullptr, attrValue,
+                          nullptr, modType,
                           hasListeners, aNotify, kDontCallAfterSetAttr,
                           document, updateBatch);
 }

@@ -578,7 +578,7 @@ ContentSecurityPolicyAllows(JSContext* aCx, JS::HandleValue aValue)
   WorkerPrivate* worker = GetWorkerPrivateFromContext(aCx);
   worker->AssertIsOnWorkerThread();
 
-  if (worker->GetReportCSPViolations()) {
+  if (worker->CSPEnabled() && worker->GetReportCSPViolations()) {
     JS::Rooted<JSString*> jsString(aCx, JS::ToString(aCx, aValue));
     if (NS_WARN_IF(!jsString)) {
       JS_ClearPendingException(aCx);
@@ -2715,12 +2715,14 @@ LogViolationDetailsRunnable::MainThreadRun()
 {
   AssertIsOnMainThread();
 
-  nsIContentSecurityPolicy* csp = mWorkerPrivate->GetCSP();
-  if (csp) {
-    if (mWorkerPrivate->GetReportCSPViolations()) {
-      csp->LogViolationDetails(nsIContentSecurityPolicy::VIOLATION_TYPE_EVAL,
-                               mFileName, mScriptSample, mLineNum, mColumnNum,
-                               EmptyString(), EmptyString());
+  if (mWorkerPrivate->CSPEnabled()) {
+    nsIContentSecurityPolicy* csp = mWorkerPrivate->GetCSP();
+    if (csp) {
+      if (mWorkerPrivate->GetReportCSPViolations()) {
+        csp->LogViolationDetails(nsIContentSecurityPolicy::VIOLATION_TYPE_EVAL,
+                                 mFileName, mScriptSample, mLineNum, mColumnNum,
+                                 EmptyString(), EmptyString());
+      }
     }
   }
 

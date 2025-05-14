@@ -117,13 +117,10 @@ public:
   virtual already_AddRefed<nsINodeList> GetChildren(uint32_t aFilter) override;
 
 
-  nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                   const nsAString& aValue, bool aNotify)
-  {
-    return SetAttr(aNameSpaceID, aName, nullptr, aValue, aNotify);
-  }
+  using nsIContent::SetAttr;
   virtual nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aAttribute,
                            nsIAtom* aPrefix, const nsAString& aValue,
+                           nsIPrincipal* aSubjectPrincipal,
                            bool aNotify) override;
   virtual nsresult UnsetAttr(int32_t aNameSpaceID, nsIAtom* aAttribute,
                              bool aNotify) override;

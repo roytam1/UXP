@@ -82,10 +82,13 @@ public:
     SetHTMLAttr(nsGkAtoms::scrolling, aScrolling, aError);
   }
 
-  // The XPCOM GetSrc is OK for us
-  void SetSrc(const nsAString& aSrc, ErrorResult& aError)
+  void GetSrc(nsString& aSrc, nsIPrincipal&)
   {
-    SetAttrHelper(nsGkAtoms::src, aSrc);
+    GetURIAttr(nsGkAtoms::src, nullptr, aSrc);
+  }
+  void SetSrc(const nsAString& aSrc, nsIPrincipal& aTriggeringPrincipal, ErrorResult& aError)
+  {
+    SetHTMLAttr(nsGkAtoms::src, aSrc, aTriggeringPrincipal, aError);
   }
 
   using nsGenericHTMLFrameElement::GetContentDocument;

@@ -8,6 +8,7 @@
 interface nsFrameLoader;
 interface nsIDocShell;
 interface nsIURI;
+interface nsIPrincipal;
 interface nsIFrame;
 interface nsSubDocumentFrame;
 interface nsIMessageSender;
@@ -51,7 +52,7 @@ interface nsIFrameLoader : nsISupports
    * Loads the specified URI in this frame. Behaves identically to loadFrame,
    * except that this method allows specifying the URI to load.
    */
-  void loadURI(in nsIURI aURI);
+  void loadURI(in nsIURI aURI, [optional] in nsIPrincipal aTriggeringPrincipal);
 
   /**
    * Puts the frameloader in prerendering mode.
