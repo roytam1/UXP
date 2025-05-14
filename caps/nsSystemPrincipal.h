@@ -36,7 +36,9 @@ public:
   NS_IMETHOD GetBaseDomain(nsACString& aBaseDomain) override;
   nsresult GetOriginInternal(nsACString& aOrigin) override;
 
-  nsSystemPrincipal() {}
+  nsSystemPrincipal()
+    : BasePrincipal(eSystemPrincipal)
+  {}
 
   virtual nsresult GetScriptLocation(nsACString &aStr) override;
 
@@ -52,8 +54,6 @@ protected:
   {
     return true;
   }
-
-  PrincipalKind Kind() override { return eSystemPrincipal; }
 };
 
 #endif // nsSystemPrincipal_h__
