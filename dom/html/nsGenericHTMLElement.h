@@ -914,6 +914,7 @@ protected:
   virtual nsresult AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
                                 const nsAttrValue* aOldValue,
+                                nsIPrincipal* aMaybeScriptedPrincipal,
                                 bool aNotify) override;
 
   virtual mozilla::EventListenerManager*
@@ -958,6 +959,10 @@ protected:
   void SetHTMLAttr(nsIAtom* aName, const nsAString& aValue, mozilla::ErrorResult& aError)
   {
     mozilla::dom::Element::SetAttr(aName, aValue, aError);
+  }
+  void SetHTMLAttr(nsIAtom* aName, const nsAString& aValue, nsIPrincipal& aTriggeringPrincipal, mozilla::ErrorResult& aError)
+  {
+    mozilla::dom::Element::SetAttr(aName, aValue, aTriggeringPrincipal, aError);
   }
   void UnsetHTMLAttr(nsIAtom* aName, mozilla::ErrorResult& aError)
   {
@@ -1270,6 +1275,7 @@ protected:
   virtual nsresult AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
                                 const nsAttrValue* aOldValue,
+                                nsIPrincipal* aMaybeScriptedPrincipal,
                                 bool aNotify) override;
 
   /**

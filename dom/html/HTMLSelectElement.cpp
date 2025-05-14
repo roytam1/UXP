@@ -1296,7 +1296,9 @@ HTMLSelectElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
 nsresult
 HTMLSelectElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
-                                const nsAttrValue* aOldValue, bool aNotify)
+                                const nsAttrValue* aOldValue,
+                                nsIPrincipal* aSubjectPrincipal,
+                                bool aNotify)
 {
   if (aNameSpaceID == kNameSpaceID_None) {
     if (aName == nsGkAtoms::disabled) {
@@ -1317,6 +1319,7 @@ HTMLSelectElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
 
   return nsGenericHTMLFormElementWithState::AfterSetAttr(aNameSpaceID, aName,
                                                          aValue, aOldValue,
+                                                         aSubjectPrincipal,
                                                          aNotify);
 }
 

@@ -18,6 +18,10 @@
 
 class nsXULElement;
 
+#define NS_GENERICHTMLFRAMEELEMENT_IID \
+{ 0x8190db72, 0xdab0, 0x4d72, \
+  { 0x94, 0x26, 0x87, 0x5f, 0x5a, 0x8a, 0x2a, 0xe5 } }
+
 /**
  * A helper class for frame elements
  */
@@ -44,6 +48,8 @@ public:
   NS_DECL_NSIFRAMELOADEROWNER
   NS_DECL_NSIDOMMOZBROWSERFRAME
   NS_DECL_NSIMOZBROWSERFRAME
+
+  NS_DECLARE_STATIC_IID_ACCESSOR(NS_GENERICHTMLFRAMEELEMENT_IID)
 
   // nsIContent
   virtual bool IsHTMLFocusable(bool aWithMouse, bool *aIsFocusable, int32_t *aTabIndex) override;
@@ -86,6 +92,11 @@ public:
    */
   static int32_t MapScrollingAttribute(const nsAttrValue* aValue);
 
+  nsIPrincipal* GetSrcTriggeringPrincipal() const
+  {
+    return mSrcTriggeringPrincipal;
+  }
+
 protected:
   virtual ~nsGenericHTMLFrameElement();
 
@@ -100,6 +111,7 @@ protected:
   virtual nsresult AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
                                 const nsAttrValue* aOldValue,
+                                nsIPrincipal* aSubjectPrincipal,
                                 bool aNotify) override;
   virtual nsresult OnAttrSetButNotChanged(int32_t aNamespaceID, nsIAtom* aName,
                                           const nsAttrValueOrString& aValue,
@@ -107,6 +119,8 @@ protected:
 
   RefPtr<nsFrameLoader> mFrameLoader;
   nsCOMPtr<nsPIDOMWindowOuter> mOpenerWindow;
+
+  nsCOMPtr<nsIPrincipal> mSrcTriggeringPrincipal;
 
   /**
    * True when the element is created by the parser using the
@@ -138,7 +152,12 @@ private:
    * @param aNotify Whether we plan to notify document observers.
    */
   void AfterMaybeChangeAttr(int32_t aNamespaceID, nsIAtom* aName,
-                            const nsAttrValueOrString* aValue, bool aNotify);
+                            const nsAttrValueOrString* aValue,
+                            nsIPrincipal* aMaybeScriptedPrincipal,
+                            bool aNotify);
 };
+
+NS_DEFINE_STATIC_IID_ACCESSOR(nsGenericHTMLFrameElement,
+                              NS_GENERICHTMLFRAMEELEMENT_IID)
 
 #endif // nsGenericHTMLFrameElement_h

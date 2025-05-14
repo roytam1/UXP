@@ -357,7 +357,9 @@ HTMLLinkElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
 nsresult
 HTMLLinkElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                               const nsAttrValue* aValue,
-                              const nsAttrValue* aOldValue, bool aNotify)
+                              const nsAttrValue* aOldValue,
+                              nsIPrincipal* aSubjectPrincipal,
+                              bool aNotify)
 {
   // It's safe to call ResetLinkState here because our new attr value has
   // already been set or unset.  ResetLinkState needs the updated attribute
@@ -370,6 +372,12 @@ HTMLLinkElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
     if (IsInUncomposedDoc()) {
       CreateAndDispatchEvent(OwnerDoc(), NS_LITERAL_STRING("DOMLinkChanged"));
     }
+  }
+
+  if (aNameSpaceID == kNameSpaceID_None && aName == nsGkAtoms::href) {
+    mTriggeringPrincipal = nsContentUtils::GetAttrTriggeringPrincipal(
+        this, aValue ? aValue->GetStringValue() : EmptyString(),
+        aSubjectPrincipal);
   }
 
   if (aValue) {
@@ -451,7 +459,8 @@ HTMLLinkElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
   }
 
   return nsGenericHTMLElement::AfterSetAttr(aNameSpaceID, aName, aValue,
-                                            aOldValue, aNotify);
+                                            aOldValue, aSubjectPrincipal,
+                                            aNotify);
 }
 
 nsresult
@@ -517,14 +526,20 @@ HTMLLinkElement::GetHrefURI() const
 }
 
 already_AddRefed<nsIURI>
-HTMLLinkElement::GetStyleSheetURL(bool* aIsInline)
+HTMLLinkElement::GetStyleSheetURL(bool* aIsInline, nsIPrincipal** aTriggeringPrincipal)
 {
   *aIsInline = false;
+  *aTriggeringPrincipal = nullptr;
+
   nsAutoString href;
   GetAttr(kNameSpaceID_None, nsGkAtoms::href, href);
   if (href.IsEmpty()) {
     return nullptr;
   }
+
+  nsCOMPtr<nsIPrincipal> prin = mTriggeringPrincipal;
+  prin.forget(aTriggeringPrincipal);
+
   nsCOMPtr<nsIURI> uri = Link::GetURI();
   return uri.forget();
 }

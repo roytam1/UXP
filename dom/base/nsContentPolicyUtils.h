@@ -152,7 +152,7 @@ NS_CP_ContentTypeName(uint32_t contentType)
         return NS_ERROR_FAILURE;                                              \
                                                                               \
     return policy-> action (contentType, contentLocation, requestOrigin,      \
-                            context, mimeType, extra, originPrincipal,        \
+                            context, mimeType, extra, triggeringPrincipal,    \
                             decision);                                        \
   PR_END_MACRO
 
@@ -160,7 +160,7 @@ NS_CP_ContentTypeName(uint32_t contentType)
 #define CHECK_CONTENT_POLICY_WITH_SERVICE(action, _policy)                    \
   PR_BEGIN_MACRO                                                              \
     return _policy-> action (contentType, contentLocation, requestOrigin,     \
-                             context, mimeType, extra, originPrincipal,       \
+                             context, mimeType, extra, triggeringPrincipal,   \
                              decision);                                       \
   PR_END_MACRO
 
@@ -173,14 +173,18 @@ NS_CP_ContentTypeName(uint32_t contentType)
 #define CHECK_PRINCIPAL_AND_DATA(action)                                      \
   nsCOMPtr<nsIURI> requestOrigin;                                             \
   PR_BEGIN_MACRO                                                              \
-  if (originPrincipal) {                                                      \
+  if (loadingPrincipal) {                                                     \
       nsCOMPtr<nsIScriptSecurityManager> secMan = aSecMan;                    \
       if (!secMan) {                                                          \
           secMan = do_GetService(NS_SCRIPTSECURITYMANAGER_CONTRACTID);        \
       }                                                                       \
       if (secMan) {                                                           \
           bool isSystem;                                                      \
-          nsresult rv = secMan->IsSystemPrincipal(originPrincipal,            \
+          /* We exempt most loads into any document with the system principal     \
+           * from content policy checks, mostly as an optimization. Which means   \
+           * that we need to apply this check to the loading principal, not the   \
+           * principal that triggered the load. */                                \
+          nsresult rv = secMan->IsSystemPrincipal(loadingPrincipal,           \
                                                   &isSystem);                 \
           NS_ENSURE_SUCCESS(rv, rv);                                          \
           if (isSystem && contentType != nsIContentPolicy::TYPE_DOCUMENT) {   \
@@ -203,31 +207,33 @@ NS_CP_ContentTypeName(uint32_t contentType)
                           dataPolicy-> action (externalType, contentLocation, \
                                                requestOrigin, context,        \
                                                mimeType, extra,               \
-                                               originPrincipal, decision);    \
+                                               triggeringPrincipal, decision);\
                       }                                                       \
                   }                                                           \
               }                                                               \
               return NS_OK;                                                   \
           }                                                                   \
       }                                                                       \
-      nsresult rv = originPrincipal->GetURI(getter_AddRefs(requestOrigin));   \
+      nsresult rv = loadingPrincipal->GetURI(getter_AddRefs(requestOrigin));  \
       NS_ENSURE_SUCCESS(rv, rv);                                              \
   }                                                                           \
   PR_END_MACRO
 
 /**
  * Alias for calling ShouldLoad on the content policy service.  Parameters are
- * the same as nsIContentPolicy::shouldLoad, except for the originPrincipal
- * parameter, which should be non-null if possible, and the last two
- * parameters, which can be used to pass in pointer to some useful services if
- * the caller already has them.  The origin URI to pass to shouldLoad will be
- * the URI of originPrincipal, unless originPrincipal is null (in which case a
- * null origin URI will be passed).
+ * the same as nsIContentPolicy::shouldLoad, except for the loadingPrincipal
+ * and triggeringPrincipal parameters (which should be non-null if possible,
+ * and have the same semantics as in LoadInfo), and the last two parameters,
+ * which can be used to pass in pointer to some useful services if the caller
+ * already has them. The origin URI to pass to shouldLoad will be the URI of
+ * loadingPrincipal, unless loadingPrincipal is null (in which case a null
+ * origin URI will be passed).
  */
 inline nsresult
 NS_CheckContentLoadPolicy(uint32_t          contentType,
                           nsIURI           *contentLocation,
-                          nsIPrincipal     *originPrincipal,
+                          nsIPrincipal     *loadingPrincipal,
+                          nsIPrincipal     *triggeringPrincipal,
                           nsISupports      *context,
                           const nsACString &mimeType,
                           nsISupports      *extra,
@@ -244,17 +250,19 @@ NS_CheckContentLoadPolicy(uint32_t          contentType,
 
 /**
  * Alias for calling ShouldProcess on the content policy service.  Parameters
- * are the same as nsIContentPolicy::shouldLoad, except for the originPrincipal
- * parameter, which should be non-null if possible, and the last two
- * parameters, which can be used to pass in pointer to some useful services if
- * the caller already has them.  The origin URI to pass to shouldLoad will be
- * the URI of originPrincipal, unless originPrincipal is null (in which case a
- * null origin URI will be passed).
+ * are the same as nsIContentPolicy::shouldLoad, except for the and
+ * triggeringPrincipal parameters (which should be non-null if possible, and
+ * have the same semantics as in nsLoadInfo), and the last parameter, which
+ * can be used to pass in a pointer to a useful service if the caller already
+ * has it.  The origin URI to pass to shouldLoad will be the URI of
+ * loadingPrincipal, unless loadingPrincipal is null (in which case a null
+ * origin URI will be passed).
  */
 inline nsresult
 NS_CheckContentProcessPolicy(uint32_t          contentType,
                              nsIURI           *contentLocation,
-                             nsIPrincipal     *originPrincipal,
+                             nsIPrincipal     *loadingPrincipal,
+                             nsIPrincipal     *triggeringPrincipal,
                              nsISupports      *context,
                              const nsACString &mimeType,
                              nsISupports      *extra,

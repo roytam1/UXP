@@ -820,7 +820,8 @@ nsContentSink::ProcessStyleLink(nsIContent* aElement,
   // We don't support CORS for processing instructions
   bool isAlternate;
   bool isExplicitlyEnabled;
-  rv = mCSSLoader->LoadStyleLink(aElement, url, aTitle, aMedia, aAlternate,
+  rv = mCSSLoader->LoadStyleLink(aElement, url, nullptr /* triggeringPrincipal */, 
+                                 aTitle, aMedia, aAlternate,
                                  CORS_NONE, referrerPolicy,
                                  integrity, mRunsToCompletion ? nullptr : this,
                                  &isAlternate, &isExplicitlyEnabled);

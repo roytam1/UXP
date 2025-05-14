@@ -293,10 +293,12 @@ SVGAElement::IntrinsicState() const
 nsresult
 SVGAElement::SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                      nsIAtom* aPrefix, const nsAString& aValue,
+                     nsIPrincipal* aSubjectPrincipal,
                      bool aNotify)
 {
   nsresult rv = SVGAElementBase::SetAttr(aNameSpaceID, aName, aPrefix,
-                                         aValue, aNotify);
+                                         aValue, aSubjectPrincipal,
+                                         aNotify);
 
   // The ordering of the parent class's SetAttr call and Link::ResetLinkState
   // is important here!  The attribute is not set until SetAttr returns, and

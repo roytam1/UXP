@@ -66,6 +66,7 @@ public:
   virtual nsresult AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
                                 const nsAttrValue* aOldValue,
+                                nsIPrincipal* aSubjectPrincipal,
                                 bool aNotify) override;
   virtual bool IsLink(nsIURI** aURI) const override;
   virtual already_AddRefed<nsIURI> GetHrefURI() const override;
@@ -87,10 +88,14 @@ public:
   // WebIDL
   bool Disabled() const;
   void SetDisabled(bool aDisabled, ErrorResult& aRv);
-  // XPCOM GetHref is fine.
-  void SetHref(const nsAString& aHref, ErrorResult& aRv)
+
+  void GetHref(nsString& aValue, nsIPrincipal&)
   {
-    SetHTMLAttr(nsGkAtoms::href, aHref, aRv);
+    GetHref(aValue);
+  }
+  void SetHref(const nsAString& aHref, nsIPrincipal& aTriggeringPrincipal, ErrorResult& aRv)
+  {
+    SetHTMLAttr(nsGkAtoms::href, aHref, aTriggeringPrincipal, aRv);
   }
   void GetCrossOrigin(nsAString& aResult)
   {
@@ -188,7 +193,7 @@ protected:
   virtual ~HTMLLinkElement();
 
   // nsStyleLinkElement
-  virtual already_AddRefed<nsIURI> GetStyleSheetURL(bool* aIsInline) override;
+  virtual already_AddRefed<nsIURI> GetStyleSheetURL(bool* aIsInline, nsIPrincipal** aTriggeringPrincipal) override;
   virtual void GetStyleSheetInfo(nsAString& aTitle,
                                  nsAString& aType,
                                  nsAString& aMedia,

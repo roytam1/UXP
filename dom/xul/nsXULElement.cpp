@@ -1046,7 +1046,9 @@ nsXULElement::BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
 nsresult
 nsXULElement::AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
                            const nsAttrValue* aValue,
-                           const nsAttrValue* aOldValue, bool aNotify)
+                           const nsAttrValue* aOldValue,
+                           nsIPrincipal* aSubjectPrincipal,
+                           bool aNotify)
 {
     if (aNamespaceID == kNameSpaceID_None) {
         if (aValue) {
@@ -1167,7 +1169,7 @@ nsXULElement::AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
     }
 
     return nsStyledElement::AfterSetAttr(aNamespaceID, aName,
-                                         aValue, aOldValue, aNotify);
+                                         aValue, aOldValue, aSubjectPrincipal, aNotify);
 }
 
 bool

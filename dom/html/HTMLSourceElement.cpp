@@ -98,8 +98,15 @@ HTMLSourceElement::UpdateMediaList(const nsAttrValue* aValue)
 nsresult
 HTMLSourceElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
-                                const nsAttrValue* aOldValue, bool aNotify)
+                                const nsAttrValue* aOldValue,
+                                nsIPrincipal* aMaybeScriptedPrincipal,
+                                bool aNotify)
 {
+  if (aNameSpaceID == kNameSpaceID_None && aName == nsGkAtoms::srcset) {
+    mSrcsetTriggeringPrincipal = nsContentUtils::GetAttrTriggeringPrincipal(
+        this, aValue ? aValue->GetStringValue() : EmptyString(),
+        aMaybeScriptedPrincipal);
+  }
   // If we are associated with a <picture> with a valid <img>, notify it of
   // responsive parameter changes
   Element *parent = nsINode::GetParentElement();
@@ -131,6 +138,9 @@ HTMLSourceElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
   } else if (aNameSpaceID == kNameSpaceID_None && aName == nsGkAtoms::media) {
     UpdateMediaList(aValue);
   } else if (aNameSpaceID == kNameSpaceID_None && aName == nsGkAtoms::src) {
+    mSrcTriggeringPrincipal = nsContentUtils::GetAttrTriggeringPrincipal(
+        this, aValue ? aValue->GetStringValue() : EmptyString(),
+        aMaybeScriptedPrincipal);
     mSrcMediaSource = nullptr;
     if (aValue) {
       nsString srcStr = aValue->GetStringValue();
@@ -143,7 +153,9 @@ HTMLSourceElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
   }
 
   return nsGenericHTMLElement::AfterSetAttr(aNameSpaceID, aName,
-                                            aValue, aOldValue, aNotify);
+                                            aValue, aOldValue,
+                                            aMaybeScriptedPrincipal,
+                                            aNotify);
 }
 
 nsresult

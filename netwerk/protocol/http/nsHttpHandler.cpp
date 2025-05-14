@@ -1805,7 +1805,7 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
         }
     }
 
-    if (PREF_CHANGED(HTTP_PREF("spdy.hpack-default-buffer"))) {
+    if (PREF_CHANGED(HTTP_PREF("spdy.default-hpack-buffer"))) {
         rv = prefs->GetIntPref(HTTP_PREF("spdy.default-hpack-buffer"), &val);
         if (NS_SUCCEEDED(rv)) {
             mDefaultHpackBuffer = val;

@@ -224,8 +224,7 @@ nsStyleLinkElement::UpdateStyleSheet(nsICSSLoaderObserver* aObserver,
 {
   if (aForceReload) {
     // We remove this stylesheet from the cache to load a new version.
-    nsCOMPtr<nsIContent> thisContent;
-    CallQueryInterface(this, getter_AddRefs(thisContent));
+    nsCOMPtr<nsIContent> thisContent = do_QueryInterface(this);
     nsCOMPtr<nsIDocument> doc = thisContent->IsInShadowTree() ?
       thisContent->OwnerDoc() : thisContent->GetUncomposedDoc();
     if (doc && doc->CSSLoader()->GetEnabled() &&
@@ -306,11 +305,10 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
 {
   *aWillNotify = false;
 
-  nsCOMPtr<nsIContent> thisContent;
-  CallQueryInterface(this, getter_AddRefs(thisContent));
+  nsCOMPtr<nsIContent> thisContent = do_QueryInterface(this);
 
   // All instances of nsStyleLinkElement should implement nsIContent.
-  NS_ENSURE_TRUE(thisContent, NS_ERROR_FAILURE);
+  MOZ_ASSERT(thisContent);
 
   if (thisContent->IsInAnonymousSubtree() &&
       thisContent->IsAnonymousContentInSVGUseSubtree()) {
@@ -362,7 +360,8 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
   }
 
   bool isInline;
-  nsCOMPtr<nsIURI> uri = GetStyleSheetURL(&isInline);
+  nsCOMPtr<nsIPrincipal> triggeringPrincipal;
+  nsCOMPtr<nsIURI> uri = GetStyleSheetURL(&isInline, getter_AddRefs(triggeringPrincipal));
 
   if (!aForceUpdate && mStyleSheet && !isInline && uri) {
     nsIURI* oldURI = mStyleSheet->GetSheetURI();
@@ -455,8 +454,8 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
     uri->Clone(getter_AddRefs(clonedURI));
     NS_ENSURE_TRUE(clonedURI, NS_ERROR_OUT_OF_MEMORY);
     rv = doc->CSSLoader()->
-      LoadStyleLink(thisContent, clonedURI, title, media, isAlternate,
-                    GetCORSMode(), referrerPolicy, integrity,
+      LoadStyleLink(thisContent, clonedURI, triggeringPrincipal, title, media,
+                    isAlternate, GetCORSMode(), referrerPolicy, integrity,
                     aObserver, &isAlternate, &isExplicitlyEnabled);
     if (NS_FAILED(rv)) {
       // Don't propagate LoadStyleLink() errors further than this, since some
@@ -486,8 +485,7 @@ nsStyleLinkElement::UpdateStyleSheetScopedness(bool aIsNowScoped)
 
   CSSStyleSheet* sheet = mStyleSheet->AsConcrete();
 
-  nsCOMPtr<nsIContent> thisContent;
-  CallQueryInterface(this, getter_AddRefs(thisContent));
+  nsCOMPtr<nsIContent> thisContent = do_QueryInterface(this);
 
   Element* oldScopeElement = sheet->GetScopeElement();
   Element* newScopeElement = aIsNowScoped ?
