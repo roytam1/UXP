@@ -130,6 +130,11 @@ elif CONFIG['_MSC_VER']:
         '-wd4099', # mismatched class/struct tags
     ]
 
+if CONFIG['_MSC_VER']:
+    CXXFLAGS += [
+        '-GR', # protobuf uses dynamic_cast on polymorphic types
+    ]
+
 if CONFIG['MOZ_USE_PTHREADS']:
     DEFINES['HAVE_PTHREAD'] = True
 
