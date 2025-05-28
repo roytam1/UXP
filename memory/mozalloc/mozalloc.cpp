@@ -3,6 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <cstdlib>              // These need to be included before overriding
+#include <string.h>             // with clang on 32-bit ARM Linux -dbsoft
 #include <stddef.h>             // for size_t
 
 // Building with USE_STATIC_LIBS = True sets -MT instead of -MD. -MT sets _MT,

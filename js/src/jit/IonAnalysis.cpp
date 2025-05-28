@@ -2892,6 +2892,12 @@ jit::ExtractLinearSum(MDefinition* ins, MathSpace space)
         return SimpleLinearSum(ins, 0);
     MOZ_ASSERT(space == MathSpace::Modulo || space == MathSpace::Infinite);
 
+    // We don't support modulo math space in ExtractLinearSum, because it
+    // doesn't work well in some compilation environments.
+    if (space == MathSpace::Modulo) {
+        return SimpleLinearSum(ins, 0);
+    }
+
     MDefinition* lhs = ins->getOperand(0);
     MDefinition* rhs = ins->getOperand(1);
     if (lhs->type() != MIRType::Int32 || rhs->type() != MIRType::Int32)

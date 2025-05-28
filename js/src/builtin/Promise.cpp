@@ -85,7 +85,7 @@ enum RejectFunctionSlots {
 
 enum PromiseCombinatorElementFunctionSlots {
   PromiseCombinatorElementFunctionSlot_Data = 0,
-  PromiseCombinatorElementFunctionSlot_ElementIndex,
+  PromiseCombinatorElementFunctionSlot_ElementIndexOrResolveFunc,
 };
 
 enum ReactionJobSlots {
@@ -2351,7 +2351,8 @@ PerformPromiseThenWithoutSettleHandlers(JSContext* cx, Handle<PromiseObject*> pr
 
 static JSFunction* NewPromiseCombinatorElementFunction(
     JSContext* cx, Native native,
-    Handle<PromiseCombinatorDataHolder*> dataHolder, uint32_t index);
+    Handle<PromiseCombinatorDataHolder*> dataHolder, uint32_t index,
+    Handle<Value> maybeResolveFunc);
 
 static bool PromiseAllResolveElementFunction(JSContext* cx, unsigned argc, Value* vp);
 
@@ -2430,7 +2431,7 @@ js::GetWaitForAllPromise(JSContext* cx, const JS::AutoObjectVector& promises)
 
             // Steps j-o.
             JSFunction* resolveFunc = NewPromiseCombinatorElementFunction(
-                                          cx, PromiseAllResolveElementFunction, dataHolder, index);
+                                          cx, PromiseAllResolveElementFunction, dataHolder, index, UndefinedHandleValue);
             if (!resolveFunc)
                 return nullptr;
 
@@ -2888,7 +2889,7 @@ GetPromiseCombinatorElements(JSContext* cx, Handle<PromiseCombinatorDataHolder*>
 static JSFunction*
 NewPromiseCombinatorElementFunction(JSContext* cx, Native native,
                                     Handle<PromiseCombinatorDataHolder*> dataHolder,
-                                    uint32_t index)
+                                    uint32_t index, Handle<Value> maybeResolveFunc)
 {
     JSFunction* fn = NewNativeFunction(cx, native, 1, nullptr,
                                        gc::AllocKind::FUNCTION_EXTENDED, GenericObject);
@@ -2898,8 +2899,13 @@ NewPromiseCombinatorElementFunction(JSContext* cx, Native native,
 
     fn->setExtendedSlot(PromiseCombinatorElementFunctionSlot_Data,
                         ObjectValue(*dataHolder));
-    fn->setExtendedSlot(PromiseCombinatorElementFunctionSlot_ElementIndex,
-                        Int32Value(index));
+    if (maybeResolveFunc.isObject()) {
+      fn->setExtendedSlot(PromiseCombinatorElementFunctionSlot_ElementIndexOrResolveFunc,
+                          maybeResolveFunc);
+    } else {
+      fn->setExtendedSlot(PromiseCombinatorElementFunctionSlot_ElementIndexOrResolveFunc,
+                          Int32Value(index));
+    }
     return fn;
 }
 
@@ -2916,6 +2922,13 @@ PromiseCombinatorElementFunctionAlreadyCalled(const CallArgs& args,
 {
   // Step 1.
   JSFunction* fn = &args.callee().as<JSFunction>();
+
+  size_t indexOrResolveFuncSlot = PromiseCombinatorElementFunctionSlot_ElementIndexOrResolveFunc;
+  if (fn->getExtendedSlot(indexOrResolveFuncSlot).isObject()) {
+    Value slotVal = fn->getExtendedSlot(indexOrResolveFuncSlot);
+    fn = &slotVal.toObject().as<JSFunction>();
+  }
+  MOZ_RELEASE_ASSERT(fn->getExtendedSlot(indexOrResolveFuncSlot).isInt32());
 
   // Step 2.
   const Value& dataVal =
@@ -2936,9 +2949,7 @@ PromiseCombinatorElementFunctionAlreadyCalled(const CallArgs& args,
                       UndefinedValue());
 
   // Step 5.
-  int32_t idx =
-      fn->getExtendedSlot(PromiseCombinatorElementFunctionSlot_ElementIndex)
-          .toInt32();
+  int32_t idx = fn->getExtendedSlot(indexOrResolveFuncSlot).toInt32();
   MOZ_ASSERT(idx >= 0);
   *index = uint32_t(idx);
 
@@ -2988,7 +2999,7 @@ PerformPromiseAll(JSContext *cx, PromiseForOfIterator& iterator, HandleObject C,
 
         // Steps 8.j-p.
         JSFunction* resolveFunc = NewPromiseCombinatorElementFunction(cx,
-                                      PromiseAllResolveElementFunction, dataHolder, index);
+                                      PromiseAllResolveElementFunction, dataHolder, index, UndefinedHandleValue);
         if (!resolveFunc)
             return false;
 
@@ -3187,7 +3198,7 @@ static MOZ_MUST_USE bool PerformPromiseAllSettled(
 
     // Steps 8.j-q.
     JSFunction* resolveFunc = NewPromiseCombinatorElementFunction(
-        cx, PromiseAllSettledResolveElementFunction, dataHolder, index);
+        cx, PromiseAllSettledResolveElementFunction, dataHolder, index, UndefinedHandleValue);
     if (!resolveFunc) {
       return false;
     }
@@ -3195,7 +3206,7 @@ static MOZ_MUST_USE bool PerformPromiseAllSettled(
 
     // Steps 8.r-x.
     JSFunction* rejectFunc = NewPromiseCombinatorElementFunction(
-        cx, PromiseAllSettledRejectElementFunction, dataHolder, index);
+        cx, PromiseAllSettledRejectElementFunction, dataHolder, index, resolveFunVal);
     if (!rejectFunc) {
       return false;
     }
@@ -3391,7 +3402,7 @@ PerformPromiseAny(JSContext* cx, PromiseForOfIterator& iterator, HandleObject C,
 
     // Steps 8.j-p.
     JSFunction* rejectFunc = NewPromiseCombinatorElementFunction(
-        cx, PromiseAnyRejectElementFunction, dataHolder, index);
+        cx, PromiseAnyRejectElementFunction, dataHolder, index, UndefinedHandleValue);
     if (!rejectFunc) {
       return false;
     }
