@@ -229,7 +229,6 @@ public:
   void removeInsecureFallbackSite(const nsACString& hostname, uint16_t port);
   bool isInsecureFallbackSite(const nsACString& hostname);
 
-  bool mFalseStartRequireNPN;
   bool mUnrestrictedRC4Fallback;
   uint16_t mVersionFallbackLimit;
 private:

@@ -13,8 +13,6 @@ pref("security.ssl.treat_unsafe_negotiation_as_broken", false);
 pref("security.ssl.require_safe_negotiation",  false);
 pref("security.ssl.enable_ocsp_stapling", true);
 pref("security.ssl.enable_false_start", true);
-pref("security.ssl.false_start.require-npn", false);
-pref("security.ssl.enable_npn", true);
 pref("security.ssl.enable_alpn", true);
 
 // TLS 1.3 cipher suites

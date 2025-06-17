@@ -24,7 +24,6 @@
 #include "nsIWritablePropertyBag2.h"
 #include "nsSubDocumentFrame.h"
 
-#include "nsILinkHandler.h"
 #include "nsIDOMDocument.h"
 #include "nsISelectionListener.h"
 #include "mozilla/dom/Selection.h"
@@ -910,12 +909,7 @@ nsDocumentViewer::InitInternal(nsIWidget* aParentWidget,
   nsCOMPtr<nsIInterfaceRequestor> requestor(mContainer);
   if (requestor) {
     if (mPresContext) {
-      nsCOMPtr<nsILinkHandler> linkHandler;
-      requestor->GetInterface(NS_GET_IID(nsILinkHandler),
-                              getter_AddRefs(linkHandler));
-
       mPresContext->SetContainer(mContainer);
-      mPresContext->SetLinkHandler(linkHandler);
     }
 
     // Set script-context-owner in the document
@@ -1421,8 +1415,6 @@ AttachContainerRecurse(nsIDocShell* aShell)
     viewer->GetPresContext(getter_AddRefs(pc));
     if (pc) {
       pc->SetContainer(static_cast<nsDocShell*>(aShell));
-      nsCOMPtr<nsILinkHandler> handler = do_QueryInterface(aShell);
-      pc->SetLinkHandler(handler);
     }
     nsCOMPtr<nsIPresShell> presShell;
     viewer->GetPresShell(getter_AddRefs(presShell));
@@ -2146,12 +2138,6 @@ nsDocumentViewer::Show(void)
       return rv;
 
     if (mPresContext && base_win) {
-      nsCOMPtr<nsILinkHandler> linkHandler(do_GetInterface(base_win));
-
-      if (linkHandler) {
-        mPresContext->SetLinkHandler(linkHandler);
-      }
-
       mPresContext->SetContainer(mContainer);
     }
 

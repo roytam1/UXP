@@ -49,6 +49,7 @@
 #include "nsIInterfaceRequestorUtils.h"
 #include "nsIWebProgress.h"
 #include "nsIDocShell.h"
+#include "nsDocShell.h" // for ::Cast
 #include "nsIPrompt.h"
 #include "nsIStringBundle.h"
 
@@ -776,9 +777,8 @@ HTMLFormElement::SubmitSubmission(HTMLFormSubmission* aFormSubmission)
 
   // If there is no link handler, then we won't actually be able to submit.
   nsIDocument* doc = GetComposedDoc();
-  nsCOMPtr<nsISupports> container = doc ? doc->GetContainer() : nullptr;
-  nsCOMPtr<nsILinkHandler> linkHandler(do_QueryInterface(container));
-  if (!linkHandler || IsEditable()) {
+  nsCOMPtr<nsIDocShell> container = doc ? doc->GetDocShell() : nullptr;
+  if (!container || IsEditable()) {
     mIsSubmitting = false;
     return NS_OK;
   }
@@ -857,12 +857,12 @@ HTMLFormElement::SubmitSubmission(HTMLFormSubmission* aFormSubmission)
                                                getter_AddRefs(postDataStream));
     NS_ENSURE_SUBMIT_SUCCESS(rv);
 
-    rv = linkHandler->OnLinkClickSync(this, actionURI,
-                                      target.get(),
-                                      NullString(),
-                                      postDataStream, nullptr,
-                                      getter_AddRefs(docShell),
-                                      getter_AddRefs(mSubmittingRequest));
+    rv = nsDocShell::Cast(container)->OnLinkClickSync(this, actionURI,
+                                                      target.get(),
+                                                      NullString(),
+                                                      postDataStream, nullptr,
+                                                      getter_AddRefs(docShell),
+                                                      getter_AddRefs(mSubmittingRequest));
     NS_ENSURE_SUBMIT_SUCCESS(rv);
   }
 

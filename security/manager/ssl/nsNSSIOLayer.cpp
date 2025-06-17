@@ -69,13 +69,6 @@ getSiteKey(const nsACString& hostName, uint16_t port,
   key.AppendInt(port);
 }
 
-// Historically, we have required that the server negotiate ALPN or NPN in
-// order to false start, as a compatibility hack to work around
-// implementations that just stop responding during false start. However, now
-// false start is resricted to modern crypto (TLS 1.2 and AEAD cipher suites)
-// so it is less likely that requring NPN or ALPN is still necessary.
-static const bool FALSE_START_REQUIRE_NPN_DEFAULT = false;
-
 } // unnamed namespace
 
 extern LazyLogModule gPIPNSSLog;
@@ -1260,7 +1253,6 @@ nsSSLIOLayerPoll(PRFileDesc* fd, int16_t in_flags, int16_t* out_flags)
 nsSSLIOLayerHelpers::nsSSLIOLayerHelpers()
   : mTreatUnsafeNegotiationAsBroken(false)
   , mTLSIntoleranceInfo()
-  , mFalseStartRequireNPN(false)
   , mUnrestrictedRC4Fallback(false)
   , mVersionFallbackLimit(SSL_LIBRARY_VERSION_TLS_1_0)
   , mutex("nsSSLIOLayerHelpers.mutex")
@@ -1471,10 +1463,6 @@ PrefObserver::Observe(nsISupports* aSubject, const char* aTopic,
       bool enabled;
       Preferences::GetBool("security.ssl.treat_unsafe_negotiation_as_broken", &enabled);
       mOwner->setTreatUnsafeNegotiationAsBroken(enabled);
-    } else if (prefName.EqualsLiteral("security.ssl.false_start.require-npn")) {
-      mOwner->mFalseStartRequireNPN =
-        Preferences::GetBool("security.ssl.false_start.require-npn",
-                             FALSE_START_REQUIRE_NPN_DEFAULT);
     } else if (prefName.EqualsLiteral("security.tls.version.fallback-limit")) {
       mOwner->loadVersionFallbackLimit();
     } else if (prefName.EqualsLiteral("security.tls.insecure_fallback_hosts")) {
@@ -1516,8 +1504,6 @@ nsSSLIOLayerHelpers::~nsSSLIOLayerHelpers()
   if (mPrefObserver) {
     Preferences::RemoveObserver(mPrefObserver,
         "security.ssl.treat_unsafe_negotiation_as_broken");
-    Preferences::RemoveObserver(mPrefObserver,
-        "security.ssl.false_start.require-npn");
     Preferences::RemoveObserver(mPrefObserver,
         "security.tls.version.fallback-limit");
     Preferences::RemoveObserver(mPrefObserver,
@@ -1576,9 +1562,6 @@ nsSSLIOLayerHelpers::Init()
   Preferences::GetBool("security.ssl.treat_unsafe_negotiation_as_broken", &enabled);
   setTreatUnsafeNegotiationAsBroken(enabled);
 
-  mFalseStartRequireNPN =
-    Preferences::GetBool("security.ssl.false_start.require-npn",
-                         FALSE_START_REQUIRE_NPN_DEFAULT);
   loadVersionFallbackLimit();
   initInsecureFallbackSites();
   mUnrestrictedRC4Fallback =
@@ -1587,8 +1570,6 @@ nsSSLIOLayerHelpers::Init()
   mPrefObserver = new PrefObserver(this);
   Preferences::AddStrongObserver(mPrefObserver,
                                  "security.ssl.treat_unsafe_negotiation_as_broken");
-  Preferences::AddStrongObserver(mPrefObserver,
-                                 "security.ssl.false_start.require-npn");
   Preferences::AddStrongObserver(mPrefObserver,
                                  "security.tls.version.fallback-limit");
   Preferences::AddStrongObserver(mPrefObserver,

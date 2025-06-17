@@ -27,7 +27,6 @@ using mozilla::DefaultXDisplay;
 #include "nsIStringStream.h"
 #include "nsNetUtil.h"
 #include "mozilla/Preferences.h"
-#include "nsILinkHandler.h"
 #include "nsIDocShellTreeItem.h"
 #include "nsIWebBrowserChrome.h"
 #include "nsLayoutUtils.h"
@@ -46,6 +45,7 @@ using mozilla::DefaultXDisplay;
 #include "nsIScriptSecurityManager.h"
 #include "nsIScrollableFrame.h"
 #include "nsIDocShell.h"
+#include "nsDocShell.h" // for ::Cast
 #include "ImageContainer.h"
 #include "nsIDOMHTMLCollection.h"
 #include "GLContext.h"
@@ -440,10 +440,8 @@ NS_IMETHODIMP nsPluginInstanceOwner::GetURL(const char *aURL,
   }
 
   // the container of the pres context will give us the link handler
-  nsCOMPtr<nsISupports> container = presContext->GetContainerWeak();
+  nsCOMPtr<nsIDocShell> container = presContext->GetDocShell();
   NS_ENSURE_TRUE(container,NS_ERROR_FAILURE);
-  nsCOMPtr<nsILinkHandler> lh = do_QueryInterface(container);
-  NS_ENSURE_TRUE(lh, NS_ERROR_FAILURE);
 
   nsAutoString unitarget;
   if ((0 == PL_strcmp(aTarget, "newwindow")) ||
@@ -495,8 +493,14 @@ NS_IMETHODIMP nsPluginInstanceOwner::GetURL(const char *aURL,
     triggeringPrincipal = BasePrincipal::CreateCodebasePrincipal(uri, attrs);
   }
 
-  rv = lh->OnLinkClick(content, uri, unitarget.get(), NullString(),
-                       aPostStream, headersDataStream, true, triggeringPrincipal);
+  rv = nsDocShell::Cast(container)->OnLinkClick(content,
+                                                uri,
+                                                unitarget.get(),
+                                                NullString(),
+                                                aPostStream,
+                                                headersDataStream,
+                                                true,
+                                                triggeringPrincipal);
 
   return rv;
 }

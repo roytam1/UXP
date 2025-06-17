@@ -8,7 +8,7 @@
  * Copyright (C) 2008, 2009 Anthony Ricaud <rik@webkit.org>
  * Copyright (C) 2011 Google Inc. All rights reserved.
  * Copyright (C) 2009 Mozilla Foundation. All rights reserved.
- * Copyright (C) 2022, 2023 Moonchild Productions. All rights reserved.
+ * Copyright (C) 2022, 2023, 2025 Moonchild Productions. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -60,17 +60,11 @@ const Curl = {
   generateCommand: function (data) {
     const utils = CurlUtils;
 
-    let command = ["curl"];
+    let commandParts = [];
 
     // Make sure to use the following helpers to sanitize arguments before execution.
-    const addParam = value => {
-      const safe = /^[a-zA-Z-]+$/.test(value) ? value : escapeString(value);
-      command.push(safe);
-    };
-
-    const addPostData = value => {
-      const safe = /^[a-zA-Z-]+$/.test(value) ? value : escapeString(value);
-      postData.push(safe);
+    const escapeStringifNeeded = value => {
+      return /^[a-zA-Z-]+$/.test(value) ? value : escapeString(value);
     };
 
     let ignoredHeaders = new Set();
@@ -81,7 +75,13 @@ const Curl = {
                        utils.escapeStringWin : utils.escapeStringPosix;
 
     // Add URL.
-    addParam(data.url);
+    commandParts.push(data.url);
+
+    // Disable globbing if the URL contains brackets.
+    // cURL also globs braces but they are already percent-encoded.
+    if (data.url.includes("[") || data.url.includes("]")) {
+      commandParts.push("--globoff");
+    }
 
     let postDataText = null;
     let multipartRequest = utils.isMultipartRequest(data);
@@ -91,15 +91,16 @@ const Curl = {
     if (utils.isUrlEncodedRequest(data) ||
           ["PUT", "POST", "PATCH"].includes(data.method)) {
       postDataText = data.postDataText;
-      addPostData("--data-raw");
-      addPostData(utils.writePostDataTextParams(postDataText));
+      postData.push("--data-raw");
+      let text =utils.writePostDataTextParams(postDataText);
+      postData.push(escapeStringifNeeded(text));
       ignoredHeaders.add("content-length");
     } else if (multipartRequest) {
       postDataText = data.postDataText;
-      addPostData("--data-binary");
+      postData.push("--data-binary");
       let boundary = utils.getMultipartBoundary(data);
       let text = utils.removeBinaryDataFromMultipartText(postDataText, boundary);
-      addPostData(text);
+      postData.push(escapeStringifNeeded(text));
       ignoredHeaders.add("content-length");
     }
 
@@ -107,15 +108,15 @@ const Curl = {
     // For GET and POST requests this is not necessary as GET is the
     // default. If --data or --binary is added POST is the default.
     if (!(data.method == "GET" || data.method == "POST")) {
-      addParam("-X");
-      addParam(data.method);
+      commandParts.push("-X");
+      commandParts.push(data.method);
     }
 
     // Add -I (HEAD)
     // For servers that supports HEAD.
     // This will fetch the header of a document only.
     if (data.method == "HEAD") {
-      addParam("-I");
+      commandParts.push("-I");
     }
 
     // Add http version.
@@ -126,7 +127,7 @@ const Curl = {
       // data.httpVersion are HTTP/1.0, HTTP/1.1 and HTTP/2.0
       // So in case of HTTP/2.0 (which should ideally be HTTP/2) we are using
       // only major version, and full version in other cases
-      addParam("--http" + (version == "2.0" ? version.split(".")[0] : version));
+      commandParts.push("--http" + (version == "2.0" ? version.split(".")[0] : version));
     }
 
     // Add request headers.
@@ -145,14 +146,26 @@ const Curl = {
       if (ignoredHeaders.has(header.name.toLowerCase())) {
         continue;
       }
-      addParam("-H");
-      addParam(header.name + ": " + header.value);
+      commandParts.push("-H");
+      let text = header.name + ": " + header.value;
+      commandParts.push(escapeStringifNeeded(text));
     }
 
     // Add post data.
-    command = command.concat(postData);
+    commandParts = commandParts.concat(postData);
 
-    return command.join(" ");
+    // Format with line breaks if the command has more than 2 parts
+    // e.g
+    // Command with 2 parts  - curl https://foo.com
+    // Commands with more than 2 parts -
+    // curl https://foo.com
+    // -X POST
+    // -H "Accept : */*"
+    // -H "accept-language: en-US"
+    const joinStr = Services.appinfo.OS == "WINNT" ? " ^\n  " : " \\\n  ";
+    return (
+      "curl " + commandParts.join(commandParts.length >= 3 ? joinStr : " ")
+    );
   }
 };
 
@@ -382,6 +395,9 @@ const CurlUtils = {
       return "\\u" + ("0000" + code).substr(code.length, 4);
     }
 
+    // Escape & and |, which are special characters on Windows.
+    const winSpecialCharsRegEx = /([&\|])/g;
+
     if (/[^\x20-\x7E]|\'/.test(str)) {
       // Use ANSI-C quoting syntax.
       return "$\'" + str.replace(/\\/g, "\\\\")
@@ -389,12 +405,12 @@ const CurlUtils = {
                         .replace(/\n/g, "\\n")
                         .replace(/\r/g, "\\r")
                         .replace(/!/g, "\\041")
-                        .replace(/([&\|])/g, "^$1")
+                        .replace(winSpecialCharsRegEx, "^$1")
                         .replace(/[^\x20-\x7E]/g, escapeCharacter) + "'";
     }
 
     // Use single quote syntax.
-    return "'" + str + "'";
+    return "'" + str.replace(winSpecialCharsRegEx, "^$1") + "'";
   },
 
   /**
@@ -409,9 +425,7 @@ const CurlUtils = {
        1. Replace \ with \\ first, because it is an escape character for
        certain conditions in both parsers.
 
-       2. Replace double quote chars with two double quotes (not by escaping
-       with \") because it is recognized by both the cmd.exe and MS Crt
-       arguments parsers.
+       2. Escape double quotes with double backslashes.
        
        3. Escape ` and $ so commands do not get executed, e.g $(calc.exe) or
        `\$(calc.exe)
@@ -428,25 +442,20 @@ const CurlUtils = {
        This ensures we do not try and double-escape another ^ if it was placed
        by the previous replace.
 
-       6. We replace \r and \r\n with \n; this allows us to consistently
-       escape all new lines in the next replace.
-
-       7. Lastly, we replace new lines with ^ and TWO new lines, because the
+       6. Lastly, we replace new lines with ^ and TWO new lines, because the
        first new line is there to enact the escape command, and the second is
        the character to escape (in this case new line).
-       The extra " enables escaping new lines with ^ within quotes in cmd.exe.
     */
-    const encapsChars = '"';
+    const encapsChars = '^"';
     return (
       encapsChars +
       str
         .replace(/\\/g, "\\\\")
-        .replace(/"/g, '""')
+        .replace(/"/g, '\\"')
         .replace(/[`$]/g, "\\$&")
         .replace(/[^a-zA-Z0-9\s_\-:=+~\/.',?;()*\$&\\{}\"`]/g, "^$&")
         .replace(/%(?=[a-zA-Z0-9_])/g, "%^")
-        .replace(/\r\n?/g, "\n")
-        .replace(/\n/g, '"^\r\n\r\n"')
+        .replace(/\r?\n/g, "^\n\n")
       + encapsChars);
   }
 };

@@ -51,7 +51,6 @@
 #include "nsIAuthPromptProvider.h"
 #include "nsILoadContext.h"
 #include "nsIWebShellServices.h"
-#include "nsILinkHandler.h"
 #include "nsIClipboardCommands.h"
 #include "nsITabParent.h"
 #include "nsCRT.h"
@@ -143,7 +142,6 @@ class nsDocShell final
   , public nsIAuthPromptProvider
   , public nsILoadContext
   , public nsIWebShellServices
-  , public nsILinkHandler
   , public nsIClipboardCommands
   , public nsIDOMStorageManager
   , public nsINetworkInterceptController
@@ -193,28 +191,70 @@ public:
   // nsIWebProgressListener has methods with identical names...
   NS_FORWARD_NSISECURITYEVENTSINK(nsDocLoader::)
 
-  // nsILinkHandler
-  NS_IMETHOD OnLinkClick(nsIContent* aContent,
-                         nsIURI* aURI,
-                         const char16_t* aTargetSpec,
-                         const nsAString& aFileName,
-                         nsIInputStream* aPostDataStream,
-                         nsIInputStream* aHeadersDataStream,
-                         bool aIsTrusted,
-                         nsIPrincipal* aTriggeringPrincipal) override;
-  NS_IMETHOD OnLinkClickSync(nsIContent* aContent,
-                             nsIURI* aURI,
-                             const char16_t* aTargetSpec,
-                             const nsAString& aFileName,
-                             nsIInputStream* aPostDataStream = 0,
-                             nsIInputStream* aHeadersDataStream = 0,
-                             nsIDocShell** aDocShell = 0,
-                             nsIRequest** aRequest = 0,
-                             nsIPrincipal* aTriggeringPrincipal = nullptr) override;
-  NS_IMETHOD OnOverLink(nsIContent* aContent,
-                        nsIURI* aURI,
-                        const char16_t* aTargetSpec) override;
-  NS_IMETHOD OnLeaveLink() override;
+  /**
+   * Process a click on a link.
+   *
+   * @param aContent the content for the frame that generated the trigger
+   * @param aURI a URI object that defines the destination for the link
+   * @param aTargetSpec indicates where the link is targeted (may be an empty
+   *        string)
+   * @param aFileName non-null when the link should be downloaded as the given file
+   * @param aPostDataStream the POST data to send
+   * @param aHeadersDataStream ??? (only used for plugins)
+   * @param aIsTrusted false if the triggerer is an untrusted DOM event.
+   * @param aTriggeringPrincipal, if not passed explicitly we fall back to
+   *        the document's principal.
+   */
+  nsresult OnLinkClick(nsIContent* aContent,
+                       nsIURI* aURI,
+                       const char16_t* aTargetSpec,
+                       const nsAString& aFileName,
+                       nsIInputStream* aPostDataStream,
+                       nsIInputStream* aHeadersDataStream,
+                       bool aIsTrusted,
+                       nsIPrincipal* aTriggeringPrincipal);
+  /**
+   * Process a click on a link.
+   *
+   * Works the same as OnLinkClick() except it happens immediately rather than
+   * through an event.
+   *
+   * @param aContent the content for the frame that generated the trigger
+   * @param aURI a URI obect that defines the destination for the link
+   * @param aTargetSpec indicates where the link is targeted (may be an empty
+   *        string)
+   * @param aFileName non-null when the link should be downloaded as the given file
+   * @param aPostDataStream the POST data to send
+   * @param aHeadersDataStream ??? (only used for plugins)
+   * @param aDocShell (out-param) the DocShell that the request was opened on
+   * @param aRequest the request that was opened
+   * @param aTriggeringPrincipal, if not passed explicitly we fall back to
+   *        the document's principal.
+   */
+  nsresult OnLinkClickSync(nsIContent* aContent,
+                           nsIURI* aURI,
+                           const char16_t* aTargetSpec,
+                           const nsAString& aFileName,
+                           nsIInputStream* aPostDataStream = nullptr,
+                           nsIInputStream* aHeadersDataStream = nullptr,
+                           nsIDocShell** aDocShell = nullptr,
+                           nsIRequest** aRequest = nullptr,
+                           nsIPrincipal* aTriggeringPrincipal = nullptr);
+  /**
+   * Process a mouse-over a link.
+   *
+   * @param aContent the linked content.
+   * @param aURI an URI object that defines the destination for the link
+   * @param aTargetSpec indicates where the link is targeted (it may be an empty
+   *        string)
+   */
+  nsresult OnOverLink(nsIContent* aContent,
+                      nsIURI* aURI,
+                      const char16_t* aTargetSpec);
+  /**
+   * Process the mouse leaving a link.
+   */
+  nsresult OnLeaveLink();
 
   nsDocShellInfoLoadType ConvertLoadTypeToDocShellLoadInfo(uint32_t aLoadType);
   uint32_t ConvertDocShellLoadInfoToLoadType(
