@@ -1498,7 +1498,7 @@
 
             var tree = this.parentNode.parentNode;
             if (tree.columns)
-              for (var currCol = tree.columns.getFirstColumn(); currCol = currCol.getNext(); ) {
+              for (var currCol = tree.columns.getFirstColumn(); currCol; currCol = currCol.getNext()) {
                 // Construct an entry for each column in the row, unless
                 // it is not being shown.
                 var currElement = currCol.element;
