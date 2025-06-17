@@ -61,6 +61,33 @@ isValidHexDig(char16_t aHexDig)
           (aHexDig >= 'a' && aHexDig <= 'f'));
 }
 
+// Checks grammar for valid base-64 strings. Does not verify decodability.
+static bool
+isValidBase64Value(const char16_t* cur, const char16_t* end)
+{
+  // Using grammar at https://w3c.github.io/webappsec-csp/#grammardef-nonce-source
+
+  // May end with one or two =
+  if (end > cur && *(end-1) == EQUALS) end--;
+  if (end > cur && *(end-1) == EQUALS) end--;
+
+  // Must have at least one character aside from any =
+  if (end == cur) {
+    return false;
+  }
+
+  // Rest must all be A-Za-z0-9+/-_
+  for (; cur < end; ++cur) {
+    if (!(isCharacterToken(*cur) || isNumberToken(*cur) ||
+          *cur == PLUS || *cur == SLASH ||
+          *cur == DASH || *cur == UNDERLINE)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 // ============================================
 
 namespace mozilla {

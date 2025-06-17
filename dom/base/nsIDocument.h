@@ -767,6 +767,9 @@ public:
     mSandboxFlags = sandboxFlags;
   }
 
+  virtual void SetLinkHandlingEnabled(bool aValue) = 0;
+  virtual bool LinkHandlingEnabled() = 0;
+
   /**
    * Access HTTP header data (this may also get set from other
    * sources, like HTML META tags).

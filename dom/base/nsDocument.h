@@ -412,6 +412,14 @@ public:
   virtual void RemoveIDTargetObserver(nsIAtom* aID, IDTargetObserver aObserver,
                                       void* aData, bool aForImage) override;
 
+  virtual void SetLinkHandlingEnabled(bool aValue) override {
+    mLinksEnabled = aValue;
+  }
+  
+  virtual bool LinkHandlingEnabled() override {
+    return mLinksEnabled;
+  }  
+  
   /**
    * Access HTTP header data (this may also get set from other sources, like
    * HTML META tags).
@@ -1222,6 +1230,10 @@ public:
 
   // Recorded time of change to 'loading' state.
   mozilla::TimeStamp mLoadingTimeStamp;
+
+  // False if we've disabled link handling for elements inside this document,
+  // true otherwise.
+  bool mLinksEnabled : 1;
 
   // True if the document has been detached from its content viewer.
   bool mIsGoingAway:1;

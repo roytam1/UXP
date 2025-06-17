@@ -43,7 +43,6 @@ namespace {
 
 // These bits are numbered so that the least subtle issues have higher values.
 // This should make it easier for us to interpret the results.
-const uint32_t NPN_NOT_NEGOTIATED = 64;
 const uint32_t POSSIBLE_VERSION_DOWNGRADE = 4;
 const uint32_t POSSIBLE_CIPHER_SUITE_DOWNGRADE = 2;
 const uint32_t KEA_NOT_SUPPORTED = 1;
@@ -1012,8 +1011,6 @@ CanFalseStartCallback(PRFileDesc* fd, void* client_data, PRBool *canFalseStart)
     return SECSuccess;
   }
 
-  nsSSLIOLayerHelpers& helpers = infoObject->SharedState().IOLayerHelpers();
-
   // Prevent version downgrade attacks from TLS 1.2, and avoid False Start for
   // TLS 1.3 and later. See Bug 861310 for all the details as to why.
   if (channelInfo.protocolVersion != SSL_LIBRARY_VERSION_TLS_1_2) {
@@ -1043,22 +1040,10 @@ CanFalseStartCallback(PRFileDesc* fd, void* client_data, PRBool *canFalseStart)
   }
 
   // XXX: An attacker can choose which protocols are advertised in the
-  // NPN extension. TODO(Bug 861311): We should restrict the ability
+  // ALPN extension. TODO(Bug 861311): We should restrict the ability
   // of an attacker leverage this capability by restricting false start
   // to the same protocol we previously saw for the server, after the
   // first successful connection to the server.
-
-  // Enforce NPN to do false start if policy requires it. Do this as an
-  // indicator if server compatibility.
-  if (helpers.mFalseStartRequireNPN) {
-    nsAutoCString negotiatedNPN;
-    if (NS_FAILED(infoObject->GetNegotiatedNPN(negotiatedNPN)) ||
-        !negotiatedNPN.Length()) {
-      MOZ_LOG(gPIPNSSLog, LogLevel::Debug, ("CanFalseStartCallback [%p] failed - "
-                                        "NPN cannot be verified\n", fd));
-      reasonsForNotFalseStarting |= NPN_NOT_NEGOTIATED;
-    }
-  }
 
   if (reasonsForNotFalseStarting == 0) {
     *canFalseStart = PR_TRUE;

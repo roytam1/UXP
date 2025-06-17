@@ -191,9 +191,9 @@ public:
                                               double aOriginX = 0,
                                               double aOriginY = 0,
                                               double aOriginZ = 0) const;
-  already_AddRefed<DOMMatrix> Rotate(double aAngle,
-                                     double aOriginX = 0,
-                                     double aOriginY = 0) const;
+  already_AddRefed<DOMMatrix> Rotate(double aRotX,
+                                     const Optional<double>& aRotY,
+                                     const Optional<double>& aRotZ) const;
   already_AddRefed<DOMMatrix> RotateFromVector(double aX,
                                                double aY) const;
   already_AddRefed<DOMMatrix> RotateAxisAngle(double aX,
@@ -324,9 +324,9 @@ public:
                                  double aOriginX = 0,
                                  double aOriginY = 0,
                                  double aOriginZ = 0);
-  DOMMatrix* RotateSelf(double aAngle,
-                        double aOriginX = 0,
-                        double aOriginY = 0);
+  DOMMatrix* RotateSelf(double aRotX,
+                        const Optional<double>& aRotY,
+                        const Optional<double>& aRotZ);
   DOMMatrix* RotateFromVectorSelf(double aX,
                                   double aY);
   DOMMatrix* RotateAxisAngleSelf(double aX,

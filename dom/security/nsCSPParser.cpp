@@ -642,6 +642,11 @@ nsCSPParser::nonceSource()
   if (dashIndex < 0) {
     return nullptr;
   }
+
+  if (!isValidBase64Value(expr.BeginReading() + dashIndex + 1, expr.EndReading())) {
+    return nullptr;
+  }
+
   // cache if encountering hash or nonce to invalidate unsafe-inline
   mHasHashOrNonce = true;
   return new nsCSPNonceSrc(Substring(expr,
@@ -668,6 +673,10 @@ nsCSPParser::hashSource()
 
   int32_t dashIndex = expr.FindChar(DASH);
   if (dashIndex < 0) {
+    return nullptr;
+  }
+
+  if (!isValidBase64Value(expr.BeginReading() + dashIndex + 1, expr.EndReading())) {
     return nullptr;
   }
 

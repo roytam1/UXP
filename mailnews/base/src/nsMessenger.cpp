@@ -94,8 +94,6 @@
 #include "nsIMIMEService.h"
 #include "nsITransfer.h"
 
-#include "nsILinkHandler.h"
-
 static NS_DEFINE_CID(kRDFServiceCID,  NS_RDFSERVICE_CID);
 
 #define MESSENGER_SAVE_DIR_PREF_NAME "messenger.save.dir"
