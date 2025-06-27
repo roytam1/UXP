@@ -2878,6 +2878,15 @@ public:
     return ResolveToLength<true>(aGap, aPercentageBasis);
   }
 
+  /**
+   * Returns the style context associated with the nearest non-native-anonymous
+   * ancestor of the given frame.
+   *
+   * @param aFrame The frame associated with native anonymous content.
+   * @return The resolved style context of the nearest non-anonymous DOM ancestor.
+   */
+  static nsStyleContext* GetNonAnonymousStyleContext(nsIFrame* aFrame);
+
 private:
   static uint32_t sFontSizeInflationEmPerLine;
   static uint32_t sFontSizeInflationMinTwips;

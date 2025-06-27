@@ -3723,7 +3723,7 @@ CSS_PROP_DISPLAY(
     kScrollSnapTypeKTable,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
-CSS_PROP_USERINTERFACE(
+CSS_PROP_UIRESET(
     scrollbar-width,
     scrollbar_width,
     ScrollbarWidth,

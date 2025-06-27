@@ -547,6 +547,15 @@ nsStyleBorder::CalcDifference(const nsStyleBorder& aNewData) const
     return nsChangeHint_NeutralChange;
   }
 
+  // mBorderImage* fields are checked only when border-image is not 'none'.
+  if (mBorderImageSource != aNewData.mBorderImageSource ||
+      mBorderImageRepeatH != aNewData.mBorderImageRepeatH ||
+      mBorderImageRepeatV != aNewData.mBorderImageRepeatV ||
+      mBorderImageSlice != aNewData.mBorderImageSlice ||
+      mBorderImageWidth != aNewData.mBorderImageWidth) {
+    return nsChangeHint_NeutralChange;
+  }
+
   return nsChangeHint(0);
 }
 
@@ -3924,7 +3933,6 @@ nsStyleUserInterface::nsStyleUserInterface(nsPresContext* aContext)
   , mPointerEvents(NS_STYLE_POINTER_EVENTS_AUTO)
   , mCursor(NS_STYLE_CURSOR_AUTO)
   , mCaretColor(StyleComplexColor::Auto())
-  , mScrollbarWidth(StyleScrollbarWidth::Auto)
 {
   MOZ_COUNT_CTOR(nsStyleUserInterface);
 }
@@ -3937,7 +3945,6 @@ nsStyleUserInterface::nsStyleUserInterface(const nsStyleUserInterface& aSource)
   , mCursor(aSource.mCursor)
   , mCursorImages(aSource.mCursorImages)
   , mCaretColor(aSource.mCaretColor)
-  , mScrollbarWidth(aSource.mScrollbarWidth)
 {
   MOZ_COUNT_CTOR(nsStyleUserInterface);
 }
@@ -3989,13 +3996,6 @@ nsStyleUserInterface::CalcDifference(const nsStyleUserInterface& aNewData) const
   if (mCaretColor != aNewData.mCaretColor) {
     hint |= nsChangeHint_RepaintFrame;
   }
-  
-  if (mScrollbarWidth != aNewData.mScrollbarWidth) {
-    // For scrollbar-width change, we need some special handling similar
-    // to overflow properties. Specifically, we may need to reconstruct
-    // the scrollbar or force reflow of the viewport scrollbar.
-    hint |= nsChangeHint_ScrollbarChange;
-  }
 
   return hint;
 }
@@ -4010,6 +4010,7 @@ nsStyleUIReset::nsStyleUIReset(nsPresContext* aContext)
   , mIMEMode(NS_STYLE_IME_MODE_AUTO)
   , mWindowDragging(StyleWindowDragging::Default)
   , mWindowShadow(NS_STYLE_WINDOW_SHADOW_DEFAULT)
+  , mScrollbarWidth(StyleScrollbarWidth::Auto)
 {
   MOZ_COUNT_CTOR(nsStyleUIReset);
 }
@@ -4020,6 +4021,7 @@ nsStyleUIReset::nsStyleUIReset(const nsStyleUIReset& aSource)
   , mIMEMode(aSource.mIMEMode)
   , mWindowDragging(aSource.mWindowDragging)
   , mWindowShadow(aSource.mWindowShadow)
+  , mScrollbarWidth(aSource.mScrollbarWidth)
 {
   MOZ_COUNT_CTOR(nsStyleUIReset);
 }
@@ -4032,25 +4034,40 @@ nsStyleUIReset::~nsStyleUIReset()
 nsChangeHint
 nsStyleUIReset::CalcDifference(const nsStyleUIReset& aNewData) const
 {
+  nsChangeHint hint = nsChangeHint(0);
+
   // ignore mIMEMode
   if (mForceBrokenImageIcon != aNewData.mForceBrokenImageIcon) {
-    return nsChangeHint_ReconstructFrame;
+    hint |= nsChangeHint_ReconstructFrame;
   }
+
   if (mWindowShadow != aNewData.mWindowShadow) {
     // We really need just an nsChangeHint_SyncFrameView, except
     // on an ancestor of the frame, so we get that by doing a
     // reflow.
-    return NS_STYLE_HINT_REFLOW;
+    hint |= NS_STYLE_HINT_REFLOW;
   }
+
   if (mUserSelect != aNewData.mUserSelect) {
-    return NS_STYLE_HINT_VISUAL;
+    hint |= NS_STYLE_HINT_VISUAL;
   }
 
   if (mWindowDragging != aNewData.mWindowDragging) {
-    return nsChangeHint_SchedulePaint;
+    hint |= nsChangeHint_SchedulePaint;
   }
 
-  return nsChangeHint(0);
+  if (mScrollbarWidth != aNewData.mScrollbarWidth) {
+    // For scrollbar-width change, we need some special handling similar
+    // to overflow properties. Specifically, we may need to reconstruct
+    // the scrollbar or force reflow of the viewport scrollbar.
+    hint |= nsChangeHint_ScrollbarChange;
+  }
+
+  if (!hint && mIMEMode != aNewData.mIMEMode) {
+    hint |= nsChangeHint_NeutralChange;
+  }
+
+  return hint;
 }
 
 //-----------------------

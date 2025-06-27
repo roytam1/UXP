@@ -79,6 +79,7 @@ Declaration::Declaration(const Declaration& aCopy)
         nullptr),
     mImmutable(false)
 {
+  mContainer.mRaw = 0;
 }
 
 Declaration::~Declaration()

@@ -324,10 +324,18 @@ FontFaceSet::Load(JSContext* aCx,
 
   nsTArray<RefPtr<Promise>> promises;
 
-  nsTArray<FontFace*> faces;
-  FindMatchingFontFaces(aFont, aText, faces, aRv);
-  if (aRv.Failed()) {
-    return nullptr;
+  nsTArray<RefPtr<FontFace>> faces;
+  {
+    nsTArray<FontFace*> weakFaces;
+    FindMatchingFontFaces(aFont, aText, weakFaces, aRv);
+    if (aRv.Failed()) {
+      return nullptr;
+    }
+    if (!faces.AppendElements(weakFaces, fallible) ||
+        !promises.SetCapacity(weakFaces.Length(), fallible)) {
+      aRv.Throw(NS_ERROR_FAILURE);
+      return nullptr;
+    }
   }
 
   for (FontFace* f : faces) {
@@ -335,10 +343,7 @@ FontFaceSet::Load(JSContext* aCx,
     if (aRv.Failed()) {
       return nullptr;
     }
-    if (!promises.AppendElement(promise, fallible)) {
-      aRv.Throw(NS_ERROR_FAILURE);
-      return nullptr;
-    }
+    promises.AppendElement(promise);
   }
 
   return Promise::All(aCx, promises, aRv);
