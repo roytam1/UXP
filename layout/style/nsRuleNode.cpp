@@ -5377,14 +5377,6 @@ nsRuleNode::ComputeUserInterfaceData(void* aStartStruct,
   // caret-color: auto, color, inherit
   setComplexColor(aRuleData->ValueForCaretColor(),
                   &nsStyleUserInterface::mCaretColor);
-  
-  // scrollbar-width: auto, thin, none
-  SetValue(*aRuleData->ValueForScrollbarWidth(),
-           ui->mScrollbarWidth,
-           conditions,
-           SETVAL_ENUMERATED,
-           parentUI->mScrollbarWidth,
-           StyleScrollbarWidth::Auto);
 
   COMPUTE_END_INHERITED(UserInterface, ui)
 }
@@ -5433,6 +5425,14 @@ nsRuleNode::ComputeUIResetData(void* aStartStruct,
            SETVAL_ENUMERATED | SETVAL_UNSET_INITIAL,
            parentUI->mWindowShadow,
            NS_STYLE_WINDOW_SHADOW_DEFAULT);
+
+  // scrollbar-width: auto, thin, none
+  SetValue(*aRuleData->ValueForScrollbarWidth(),
+           ui->mScrollbarWidth,
+           conditions,
+           SETVAL_ENUMERATED | SETVAL_UNSET_INITIAL,
+           parentUI->mScrollbarWidth,
+           StyleScrollbarWidth::Auto);
 
   COMPUTE_END_RESET(UIReset, ui)
 }
