@@ -9338,7 +9338,7 @@ nsLayoutUtils::ComputeGeometryBox(nsIFrame* aFrame,
   return r;
 }
 
-/* static */ nsStyleContext*
+/* static */ already_AddRefed<nsStyleContext>
 nsLayoutUtils::GetNonAnonymousStyleContext(nsIFrame* aFrame)
 {
   nsIContent* node = aFrame->GetContent();
@@ -9348,7 +9348,8 @@ nsLayoutUtils::GetNonAnonymousStyleContext(nsIFrame* aFrame)
   }
   MOZ_ASSERT(node, "Native anonymous element with no originating node?");
   if (nsIFrame* primaryFrame = node->GetPrimaryFrame()) {
-    return primaryFrame->StyleContext();
+    RefPtr<nsStyleContext> context = primaryFrame->StyleContext();
+    return context.forget();
   }
   // If the element doesn't have primary frame, get the computed style
   // from the element directly.
@@ -9356,9 +9357,5 @@ nsLayoutUtils::GetNonAnonymousStyleContext(nsIFrame* aFrame)
   MOZ_ASSERT(node == pc->Document()->GetRootElement(),
              "Root element is the only case for this fallback "
              "path to be triggered");
-  RefPtr<nsStyleContext> styleContext =
-      pc->StyleSet()->ResolveStyleFor(node->AsElement(), nullptr);
-  // Dropping the strong reference is fine because the style should be
-  // held strongly by the element.
-  return styleContext.get();
+  return pc->StyleSet()->ResolveStyleFor(node->AsElement(), nullptr);
 }

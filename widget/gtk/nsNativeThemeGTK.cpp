@@ -1101,7 +1101,9 @@ nsNativeThemeGTK::GetExtraSizeForWidget(nsIFrame* aFrame, uint8_t aWidgetType,
 static bool
 IsScrollbarWidthThin(nsIFrame* aFrame)
 {
-  return aFrame->StyleUserInterface()->mScrollbarWidth == StyleScrollbarWidth::Thin;
+  RefPtr<nsStyleContext> styleContext = nsLayoutUtils::GetNonAnonymousStyleContext(aFrame);
+  auto scrollbarWidth = styleContext->StyleUIReset()->mScrollbarWidth;
+  return scrollbarWidth == StyleScrollbarWidth::Thin;
 }
 
 NS_IMETHODIMP

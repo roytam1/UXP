@@ -2885,7 +2885,7 @@ public:
    * @param aFrame The frame associated with native anonymous content.
    * @return The resolved style context of the nearest non-anonymous DOM ancestor.
    */
-  static nsStyleContext* GetNonAnonymousStyleContext(nsIFrame* aFrame);
+  static already_AddRefed<nsStyleContext> GetNonAnonymousStyleContext(nsIFrame* aFrame);
 
 private:
   static uint32_t sFontSizeInflationEmPerLine;
