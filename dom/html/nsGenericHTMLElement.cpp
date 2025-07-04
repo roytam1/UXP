@@ -2198,13 +2198,13 @@ nsGenericHTMLFormElement::IntrinsicState() const
   }
 
   // Make the text controls read-write
-  if (!state.HasState(NS_EVENT_STATE_MOZ_READWRITE) &&
+  if (!state.HasState(NS_EVENT_STATE_READWRITE) &&
       IsTextOrNumberControl(/*aExcludePassword*/ false)) {
     bool roState = GetBoolAttr(nsGkAtoms::readonly);
 
     if (!roState) {
-      state |= NS_EVENT_STATE_MOZ_READWRITE;
-      state &= ~NS_EVENT_STATE_MOZ_READONLY;
+      state |= NS_EVENT_STATE_READWRITE;
+      state &= ~NS_EVENT_STATE_READONLY;
     }
   }
 

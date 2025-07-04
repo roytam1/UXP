@@ -118,6 +118,8 @@ const PSEUDO_SELECTORS = [
   [":target", 0],
   [":enabled", 0],
   [":disabled", 0],
+  [":read-only", 1],
+  [":read-write", 1],
   [":checked", 1],
   ["::selection", 0]
 ];
