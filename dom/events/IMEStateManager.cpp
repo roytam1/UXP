@@ -1608,7 +1608,7 @@ IMEStateManager::IsEditable(nsINode* node)
   }
   // |node| might be readwrite (for example, a text control)
   if (node->IsElement() &&
-      node->AsElement()->State().HasState(NS_EVENT_STATE_MOZ_READWRITE)) {
+      node->AsElement()->State().HasState(NS_EVENT_STATE_READWRITE)) {
     return true;
   }
   return false;

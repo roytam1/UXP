@@ -254,10 +254,10 @@ CSS_STATE_PSEUDO_CLASS(outOfRange, ":out-of-range", 0, "", NS_EVENT_STATE_OUTOFR
 CSS_STATE_PSEUDO_CLASS(defaultPseudo, ":default", 0, "", NS_EVENT_STATE_DEFAULT)
 CSS_STATE_PSEUDO_CLASS(placeholderShown, ":placeholder-shown", 0, "",
                        NS_EVENT_STATE_PLACEHOLDERSHOWN)
-CSS_STATE_PSEUDO_CLASS(mozReadOnly, ":-moz-read-only", 0, "",
-                       NS_EVENT_STATE_MOZ_READONLY)
-CSS_STATE_PSEUDO_CLASS(mozReadWrite, ":-moz-read-write", 0, "",
-                       NS_EVENT_STATE_MOZ_READWRITE)
+CSS_STATE_PSEUDO_CLASS(readOnly, ":read-only", 0, "",
+                       NS_EVENT_STATE_READONLY)
+CSS_STATE_PSEUDO_CLASS(readWrite, ":read-write", 0, "",
+                       NS_EVENT_STATE_READWRITE)
 CSS_STATE_PSEUDO_CLASS(mozSubmitInvalid, ":-moz-submit-invalid", 0, "",
                        NS_EVENT_STATE_MOZ_SUBMITINVALID)
 CSS_STATE_PSEUDO_CLASS(mozUIInvalid, ":-moz-ui-invalid", 0, "",

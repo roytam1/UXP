@@ -217,8 +217,8 @@ textarea::placeholder {
   white-space: pre-wrap !important;
 }
 
-input:-moz-read-write,
-textarea:-moz-read-write {
+input:read-write,
+textarea:read-write {
   -moz-user-modify: read-write !important;
 }
 

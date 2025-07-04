@@ -156,8 +156,8 @@ nsXULElement::nsXULElement(already_AddRefed<mozilla::dom::NodeInfo> aNodeInfo)
 
     // We may be READWRITE by default; check.
     if (IsReadWriteTextElement()) {
-        AddStatesSilently(NS_EVENT_STATE_MOZ_READWRITE);
-        RemoveStatesSilently(NS_EVENT_STATE_MOZ_READONLY);
+        AddStatesSilently(NS_EVENT_STATE_READWRITE);
+        RemoveStatesSilently(NS_EVENT_STATE_READONLY);
     }
 }
 
@@ -1855,8 +1855,8 @@ nsXULElement::IntrinsicState() const
     EventStates state = nsStyledElement::IntrinsicState();
 
     if (IsReadWriteTextElement()) {
-        state |= NS_EVENT_STATE_MOZ_READWRITE;
-        state &= ~NS_EVENT_STATE_MOZ_READONLY;
+        state |= NS_EVENT_STATE_READWRITE;
+        state &= ~NS_EVENT_STATE_READONLY;
     }
 
     return state;

@@ -992,7 +992,7 @@ nsFrameSelection::MoveCaret(nsDirection       aDirection,
       (focusNode->IsEditable() ||
        (focusNode->IsElement() &&
         focusNode->AsElement()->State().
-          HasState(NS_EVENT_STATE_MOZ_READWRITE)))) {
+          HasState(NS_EVENT_STATE_READWRITE)))) {
     // If caret moves in editor, it should cause scrolling even if it's in
     // overflow: hidden;.
     scrollFlags |= Selection::SCROLL_OVERFLOW_HIDDEN;
