@@ -19,7 +19,8 @@ const SPECIALVALUES = new Set([
   "initial",
   "inherit",
   "transparent",
-  "unset"
+  "unset",
+  "revert"
 ]);
 
 /**

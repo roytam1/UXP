@@ -787,7 +787,8 @@ protected:
                              nsStyleFont* aFont);
 
   inline RuleDetail CheckSpecifiedProperties(const nsStyleStructID aSID,
-                                             const nsRuleData* aRuleData);
+                                             const nsRuleData* aRuleData,
+                                             bool& ignoreRuleCache);
 
 private:
   nsRuleNode(nsPresContext* aPresContext, nsRuleNode* aParent,

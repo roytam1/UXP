@@ -23,7 +23,7 @@
 
 * {
   -moz-user-focus: ignore;
-  -moz-user-select: none;
+  user-select: none;
   display: -moz-box;
   box-sizing: border-box;
 }
@@ -97,7 +97,7 @@ thumb {
 }
 
 scrollbar, scrollbarbutton, scrollcorner, slider, thumb, scale {
-  -moz-user-select: none;
+  user-select: none;
 }
 
 scrollcorner {

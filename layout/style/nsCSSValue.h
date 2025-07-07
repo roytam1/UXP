@@ -484,6 +484,7 @@ enum nsCSSUnit {
   eCSSUnit_TokenStream  = 43,     // (nsCSSValueTokenStream*) value
   eCSSUnit_GridTemplateAreas   = 44,   // (GridTemplateAreasValue*)
                                        // for grid-template-areas
+  eCSSUnit_Revert       = 45,     // (SheetType) value is the current cascade origin
 
   eCSSUnit_Pair         = 50,     // (nsCSSValuePair*) pair of values
   eCSSUnit_Triplet      = 51,     // (nsCSSValueTriplet*) triplet of values
@@ -911,6 +912,12 @@ public:
     return mValue.mFloatColor;
   }
 
+  mozilla::SheetType GetCascadeOriginValue() const
+  {
+    MOZ_ASSERT(mUnit == eCSSUnit_Revert, "not a cascade origin value");
+    return mValue.mCascadeOrigin;
+  }
+
   void Reset()  // sets to null
   {
     if (mUnit != eCSSUnit_Null)
@@ -943,6 +950,7 @@ public:
   void SetRGBAColorValue(const mozilla::css::RGBAColorData& aValue);
   void SetComplexColorValue(
     already_AddRefed<mozilla::css::ComplexColorValue> aValue);
+  void SetCascadeOriginValue(mozilla::SheetType aValue, nsCSSUnit aUnit);
   void SetArrayValue(nsCSSValue::Array* aArray, nsCSSUnit aUnit);
   void SetURLValue(mozilla::css::URLValue* aURI);
   void SetImageValue(mozilla::css::ImageValue* aImage);
@@ -961,6 +969,7 @@ public:
   void SetInheritValue();
   void SetInitialValue();
   void SetUnsetValue();
+  void SetRevertValue(mozilla::SheetType aValue);
   void SetNoneValue();
   void SetAllValue();
   void SetNormalValue();
@@ -1054,6 +1063,7 @@ protected:
     nsCSSValueFloatColor* MOZ_OWNING_REF mFloatColor;
     mozilla::css::FontFamilyListRefCnt* MOZ_OWNING_REF mFontFamilyList;
     mozilla::css::ComplexColorValue* MOZ_OWNING_REF mComplexColor;
+    mozilla::SheetType mCascadeOrigin;
   } mValue;
 };
 

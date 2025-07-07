@@ -201,7 +201,7 @@ FontFaceSet::ParseFontShorthandForMatching(
 
   const nsCSSValue* family = data->ValueFor(eCSSProperty_font_family);
   if (family->GetUnit() != eCSSUnit_FontFamilyList) {
-    // We got inherit, initial, unset, a system font, or a token stream.
+    // We got inherit, initial, unset, revert, a system font, or a token stream.
     aRv.Throw(NS_ERROR_DOM_SYNTAX_ERR);
     return;
   }

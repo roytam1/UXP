@@ -2731,6 +2731,7 @@ PropertyIsInheritOrInitial(Declaration* aDeclaration, const nsCSSPropertyID aPro
   const nsCSSValue* filterVal =
     aDeclaration->GetNormalBlock()->ValueFor(aProperty);
   return (!filterVal || (filterVal->GetUnit() == eCSSUnit_Unset ||
+                         filterVal->GetUnit() == eCSSUnit_Revert ||
                          filterVal->GetUnit() == eCSSUnit_Inherit ||
                          filterVal->GetUnit() == eCSSUnit_Initial));
 }
