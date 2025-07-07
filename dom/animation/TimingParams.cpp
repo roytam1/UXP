@@ -154,6 +154,7 @@ TimingParams::ParseEasing(const nsAString& aEasing,
     case eCSSUnit_Inherit:
     case eCSSUnit_Initial:
     case eCSSUnit_Unset:
+    case eCSSUnit_Revert:
     case eCSSUnit_TokenStream:
     case eCSSUnit_Null:
       break;

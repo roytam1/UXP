@@ -4750,15 +4750,26 @@ nsComputedDOMStyle::DoGetOverflow()
 {
   const nsStyleDisplay* display = StyleDisplay();
 
-  if (display->mOverflowX != display->mOverflowY) {
-    // No value to return.  We can't express this combination of
-    // values as a shorthand.
-    return nullptr;
+  if (display->mOverflowX == display->mOverflowY) {
+    RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
+    val->SetIdent(nsCSSProps::ValueToKeywordEnum(display->mOverflowX,
+                                                 nsCSSProps::kOverflowKTable));
+    return val.forget();
   }
 
   RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
-  val->SetIdent(nsCSSProps::ValueToKeywordEnum(display->mOverflowX,
-                                               nsCSSProps::kOverflowKTable));
+  nsAutoString result;
+  
+  nsCSSKeyword xKeyword = nsCSSProps::ValueToKeywordEnum(display->mOverflowX,
+                                                         nsCSSProps::kOverflowKTable);
+  nsCSSKeyword yKeyword = nsCSSProps::ValueToKeywordEnum(display->mOverflowY,
+                                                         nsCSSProps::kOverflowKTable);
+  
+  result.AppendASCII(nsCSSKeywords::GetStringValue(xKeyword).get());
+  result.Append(char16_t(' '));
+  result.AppendASCII(nsCSSKeywords::GetStringValue(yKeyword).get());
+  
+  val->SetString(result);
   return val.forget();
 }
 

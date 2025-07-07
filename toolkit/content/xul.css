@@ -658,7 +658,7 @@ treecol.treecol-image {
 tree > treechildren {
   display: -moz-box;
   -moz-binding: url("chrome://global/content/bindings/tree.xml#treebody");
-  -moz-user-select: none;
+  user-select: none;
   -moz-box-flex: 1;
 }
 
@@ -763,7 +763,7 @@ progressmeter {
 
 textbox {
   -moz-binding: url("chrome://global/content/bindings/textbox.xml#textbox");
-  -moz-user-select: text;
+  user-select: text;
   text-shadow: none;
 }
 

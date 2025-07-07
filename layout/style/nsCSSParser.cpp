@@ -1170,8 +1170,9 @@ protected:
                                 nsString& aValue);
 
   /**
-   * Parses a CSS variable value.  This could be 'initial', 'inherit', 'unset'
-   * or a token stream, which may or may not include variable references.
+   * Parses a CSS variable value.  This could be 'initial', 'inherit', 'unset',
+   * 'revert', or a token stream, which may or may not include variable
+   * references.
    *
    * @param aType Out parameter into which the type of the variable value
    *   will be stored.
@@ -1525,6 +1526,9 @@ protected:
   // enum type be signed.
   css::SheetParsingMode mParsingMode : 3;
 
+  // Indicates the cascade origin of the sheet.
+  mozilla::SheetType mLevel;
+
   // True if we are in parsing rules for the chrome.
   bool mIsChrome : 1;
 
@@ -1656,6 +1660,7 @@ CSSParserImpl::CSSParserImpl()
     mHashlessColorQuirk(false),
     mUnitlessLengthQuirk(false),
     mParsingMode(css::eAuthorSheetFeatures),
+    mLevel(mozilla::SheetType::Doc),
     mIsChrome(false),
     mViewportUnitsEnabled(true),
     mHTMLMediaMode(false),
@@ -1799,6 +1804,22 @@ CSSParserImpl::ParseSheet(const nsAString& aInput,
   }
 
   mParsingMode = mSheet->ParsingMode();
+  switch (mParsingMode) {
+    case css::eAgentSheetFeatures:
+      mLevel = mozilla::SheetType::Agent;
+      break;
+
+    case css::eUserSheetFeatures:
+      mLevel = mozilla::SheetType::User;
+      break;
+
+    case css::eAuthorSheetFeatures:
+      mLevel = mozilla::SheetType::Doc;
+      break;
+
+    default:
+      MOZ_CRASH("impossible value for aType");
+  }
   mIsChrome = dom::IsChromeURI(aSheetURI);
   mReusableSheets = aReusableSheets;
 
@@ -1824,6 +1845,7 @@ CSSParserImpl::ParseSheet(const nsAString& aInput,
   ReleaseScanner();
 
   mParsingMode = css::eAuthorSheetFeatures;
+  mLevel = mozilla::SheetType::Doc;
   mIsChrome = false;
   mReusableSheets = nullptr;
 
@@ -8185,6 +8207,10 @@ CSSParserImpl::ParseVariant(nsCSSValue& aValue,
           aValue.SetUnsetValue();
           return CSSParseResult::Ok;
         }
+        else if (eCSSKeyword_revert == keyword) {
+          aValue.SetRevertValue(mLevel);
+          return CSSParseResult::Ok;
+        }
       }
       if ((aVariantMask & VARIANT_NONE) != 0) {
         if (eCSSKeyword_none == keyword) {
@@ -8384,7 +8410,8 @@ CSSParserImpl::ParseVariant(nsCSSValue& aValue,
        !(tk->mIdent.LowerCaseEqualsLiteral("inherit") ||
          tk->mIdent.LowerCaseEqualsLiteral("initial") ||
          (tk->mIdent.LowerCaseEqualsLiteral("unset") &&
-          nsLayoutUtils::UnsetValueEnabled())))) {
+          nsLayoutUtils::UnsetValueEnabled()) ||
+         tk->mIdent.LowerCaseEqualsLiteral("revert")))) {
     aValue.SetStringValue(tk->mIdent, eCSSUnit_Ident);
     return CSSParseResult::Ok;
   }
@@ -8454,6 +8481,7 @@ CSSParserImpl::ParseCustomIdent(nsCSSValue& aValue,
   if (keyword == eCSSKeyword_inherit ||
       keyword == eCSSKeyword_initial ||
       keyword == eCSSKeyword_unset ||
+      keyword == eCSSKeyword_revert ||
       keyword == eCSSKeyword_default ||
       (aPropertyKTable &&
         nsCSSProps::FindIndexOfKeyword(keyword, aPropertyKTable) >= 0)) {
@@ -8675,7 +8703,7 @@ bool
 CSSParserImpl::ParseImageOrientation(nsCSSValue& aValue)
 {
   if (ParseSingleTokenVariant(aValue, VARIANT_INHERIT, nullptr)) {
-    // 'inherit', 'initial' and 'unset' must be alone
+    // 'inherit', 'initial', 'unset', and 'revert' must be alone
     return true;
   }
 
@@ -8789,7 +8817,7 @@ CSSParserImpl::ParseElement(nsCSSValue& aValue)
 bool
 CSSParserImpl::ParseFlex()
 {
-  // First check for inherit / initial / unset
+  // First check for inherit / initial / unset / revert
   nsCSSValue tmpVal;
   if (ParseSingleTokenVariant(tmpVal, VARIANT_INHERIT, nullptr)) {
     AppendValue(eCSSProperty_flex_grow, tmpVal);
@@ -10297,7 +10325,8 @@ bool
 CSSParserImpl::ParseInitialLetter()
 {
   nsCSSValue value;
-  // 'inherit', 'initial', 'unset', 'none', and 'normal' must be alone
+  // 'inherit', 'initial', 'unset', 'revert', 'none', and 'normal'
+  // must be alone
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT | VARIANT_NORMAL,
                                nullptr)) {
     nsCSSValue first, second;
@@ -11551,8 +11580,14 @@ CSSParserImpl::ParseChoice(nsCSSValue aValues[],
         }
         found = ((1 << aNumIDs) - 1);
       }
+      else if (eCSSUnit_Revert == aValues[0].GetUnit()) { // one revert, all revert
+        for (loop = 1; loop < aNumIDs; loop++) {
+          aValues[loop].SetRevertValue(mLevel);
+        }
+        found = ((1 << aNumIDs) - 1);
+      }
     }
-    else {  // more than one value, verify no inherits, initials or unsets
+    else {  // more than one value, verify no inherits, initials, unsets, or reverts
       for (loop = 0; loop < aNumIDs; loop++) {
         if (eCSSUnit_Inherit == aValues[loop].GetUnit()) {
           found = -1;
@@ -11563,6 +11598,10 @@ CSSParserImpl::ParseChoice(nsCSSValue aValues[],
           break;
         }
         else if (eCSSUnit_Unset == aValues[loop].GetUnit()) {
+          found = -1;
+          break;
+        }
+        else if (eCSSUnit_Revert == aValues[loop].GetUnit()) {
           found = -1;
           break;
         }
@@ -11604,12 +11643,13 @@ CSSParserImpl::ParseBoxProperties(const nsCSSPropertyID aPropIDs[])
     return false;
   }
 
-  if (1 < count) { // verify no more than single inherit, initial or unset
+  if (1 < count) { // verify no more than single inherit, initial, unset, or revert
     NS_FOR_CSS_SIDES (index) {
       nsCSSUnit unit = (result.*(nsCSSRect::sides[index])).GetUnit();
       if (eCSSUnit_Inherit == unit ||
           eCSSUnit_Initial == unit ||
-          eCSSUnit_Unset == unit) {
+          eCSSUnit_Unset == unit ||
+          eCSSUnit_Revert == unit) {
         return false;
       }
     }
@@ -11713,10 +11753,11 @@ CSSParserImpl::ParseBoxCornerRadius(nsCSSPropertyID aPropID)
     return false;
   }
 
-  // optional second value (forbidden if first value is inherit/initial/unset)
+  // optional second value (forbidden if first value is inherit/initial/unset/revert)
   if (dimenX.GetUnit() != eCSSUnit_Inherit &&
       dimenX.GetUnit() != eCSSUnit_Initial &&
-      dimenX.GetUnit() != eCSSUnit_Unset) {
+      dimenX.GetUnit() != eCSSUnit_Unset &&
+      dimenX.GetUnit() != eCSSUnit_Revert) {
     if (ParseNonNegativeVariant(dimenY, VARIANT_LP | VARIANT_CALC, nullptr) ==
         CSSParseResult::Error) {
       return false;
@@ -11774,12 +11815,14 @@ CSSParserImpl::ParseBoxCornerRadiiInternals(nsCSSValue array[])
       return false;
   }
 
-  // if 'initial', 'inherit' or 'unset' was used, it must be the only value
+  // if 'initial', 'inherit', 'unset', or 'revert' was used, it
+  // must be the only value
   if (countX > 1 || countY > 0) {
     nsCSSUnit unit = dimenX.mTop.GetUnit();
     if (eCSSUnit_Inherit == unit ||
         eCSSUnit_Initial == unit ||
-        eCSSUnit_Unset == unit)
+        eCSSUnit_Unset == unit ||
+        eCSSUnit_Revert == unit)
       return false;
   }
 
@@ -12526,6 +12569,7 @@ CSSParserImpl::ParseFontDescriptorValue(nsCSSFontDesc aDescID,
             aValue.GetUnit() != eCSSUnit_Inherit &&
             aValue.GetUnit() != eCSSUnit_Initial &&
             aValue.GetUnit() != eCSSUnit_Unset &&
+            aValue.GetUnit() != eCSSUnit_Revert &&
             (aValue.GetUnit() != eCSSUnit_Enumerated ||
              (aValue.GetIntValue() != NS_STYLE_FONT_WEIGHT_BOLDER &&
               aValue.GetIntValue() != NS_STYLE_FONT_WEIGHT_LIGHTER)));
@@ -12590,7 +12634,7 @@ CSSParserImpl::ParseImageLayers(const nsCSSPropertyID aTable[])
   // background-color can only be set once, so it's not a list.
   nsCSSValue color;
 
-  // Check first for inherit/initial/unset.
+  // Check first for inherit/initial/unset/revert.
   if (ParseSingleTokenVariant(color, VARIANT_INHERIT, nullptr)) {
     // must be alone
     for (const nsCSSPropertyID* subprops =
@@ -12787,7 +12831,8 @@ CSSParserImpl::ParseImageLayersItem(
       int32_t dummy;
       if (keyword == eCSSKeyword_inherit ||
           keyword == eCSSKeyword_initial ||
-          keyword == eCSSKeyword_unset) {
+          keyword == eCSSKeyword_unset ||
+          keyword == eCSSKeyword_revert) {
         return false;
       } else if (keyword == eCSSKeyword_none) {
         if (haveImage)
@@ -12950,7 +12995,7 @@ CSSParserImpl::ParseImageLayersItem(
       if (haveColor)
         return false;
       haveColor = true;
-      // Note: This parses 'inherit', 'initial' and 'unset', but
+      // Note: This parses 'inherit', 'initial', 'unset', and 'revert', but
       // we've already checked for them, so it's ok.
       if (ParseSingleValueProperty(aState.mColor,
                                    aTable[nsStyleImageLayers::color]) !=
@@ -12974,7 +13019,7 @@ CSSParserImpl::ParseValueList(nsCSSPropertyID aPropID)
 {
   // aPropID is a single value prop-id
   nsCSSValue value;
-  // 'initial', 'inherit' and 'unset' stand alone, no list permitted.
+  // 'initial', 'inherit', 'unset', and 'revert' stand alone, no list permitted.
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT, nullptr)) {
     nsCSSValueList* item = value.SetListValue();
     for (;;) {
@@ -12997,7 +13042,7 @@ bool
 CSSParserImpl::ParseImageLayerRepeat(nsCSSPropertyID aPropID)
 {
   nsCSSValue value;
-  // 'initial', 'inherit' and 'unset' stand alone, no list permitted.
+  // 'initial', 'inherit', 'unset', and 'revert' stand alone, no list permitted.
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT, nullptr)) {
     nsCSSValuePair valuePair;
     if (!ParseImageLayerRepeatValues(valuePair)) {
@@ -13047,7 +13092,7 @@ CSSParserImpl::ParseImageLayerRepeatValues(nsCSSValuePair& aValue)
 bool
 CSSParserImpl::ParseImageLayerPosition(const nsCSSPropertyID aTable[])
 {
-  // 'initial', 'inherit' and 'unset' stand alone, no list permitted.
+  // 'initial', 'inherit', 'unset', and 'revert' stand alone, no list permitted.
   nsCSSValue position;
   if (ParseSingleTokenVariant(position, VARIANT_INHERIT, nullptr)) {
     AppendValue(aTable[nsStyleImageLayers::positionX], position);
@@ -13088,7 +13133,7 @@ bool
 CSSParserImpl::ParseImageLayerPositionCoord(nsCSSPropertyID aPropID, bool aIsHorizontal)
 {
   nsCSSValue value;
-  // 'initial', 'inherit' and 'unset' stand alone, no list permitted.
+  // 'initial', 'inherit', 'unset', and 'revert' stand alone, no list permitted.
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT, nullptr)) {
     nsCSSValue itemValue;
     if (!ParseImageLayerPositionCoordItem(itemValue, aIsHorizontal)) {
@@ -13123,8 +13168,8 @@ CSSParserImpl::ParseImageLayerPositionCoord(nsCSSPropertyID aPropID, bool aIsHor
  * like "top," "left center," etc.
  *
  * @param aOut The nsCSSValuePair in which to place the result.
- * @param aAcceptsInherit If true, 'inherit', 'initial' and 'unset' are
- *   legal values
+ * @param aAcceptsInherit If true, 'inherit', 'initial', 'unset', and 'revert'
+ *   are legal values
  * @param aAllowExplicitCenter If true, 'center' is a legal value
  * @return Whether or not the operation succeeded.
  */
@@ -13143,7 +13188,8 @@ bool CSSParserImpl::ParseBoxPositionValues(nsCSSValuePair &aOut,
   } else if (result == CSSParseResult::Ok) {
     if (eCSSUnit_Inherit == xValue.GetUnit() ||
         eCSSUnit_Initial == xValue.GetUnit() ||
-        eCSSUnit_Unset == xValue.GetUnit()) {  // both are inherit, initial or unset
+        eCSSUnit_Unset == xValue.GetUnit() ||
+        eCSSUnit_Revert == xValue.GetUnit()) {  // both are inherit, initial, unset, or revert
       yValue = xValue;
       return true;
     }
@@ -13557,7 +13603,7 @@ bool
 CSSParserImpl::ParseImageLayerSize(nsCSSPropertyID aPropID)
 {
   nsCSSValue value;
-  // 'initial', 'inherit' and 'unset' stand alone, no list permitted.
+  // 'initial', 'inherit', 'unset', and 'revert' stand alone, no list permitted.
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT, nullptr)) {
     nsCSSValuePair valuePair;
     if (!ParseImageLayerSizeValues(valuePair)) {
@@ -13585,8 +13631,8 @@ CSSParserImpl::ParseImageLayerSize(nsCSSPropertyID aPropID)
  * Parses two values that correspond to lengths for the background-size
  * property.  These can be one or two lengths (or the 'auto' keyword) or
  * percentages corresponding to the element's dimensions or the single keywords
- * 'contain' or 'cover'.  'initial', 'inherit' and 'unset' must be handled by
- * the caller if desired.
+ * 'contain' or 'cover'.  'initial', 'inherit', 'unset', and 'revert' must be
+ * handled by the caller if desired.
  *
  * @param aOut The nsCSSValuePair in which to place the result.
  * @return Whether or not the operation succeeded.
@@ -13684,8 +13730,8 @@ CSSParserImpl::ParseBorderImageSlice(bool aAcceptsInherit,
 
   if (aAcceptsInherit &&
       ParseSingleTokenVariant(value, VARIANT_INHERIT, nullptr)) {
-    // Keywords "inherit", "initial" and "unset" can not be mixed, so we
-    // are done.
+    // Keywords "inherit", "initial", "unset", and "revert" can not be
+    // mixed, so we are done.
     AppendValue(eCSSProperty_border_image_slice, value);
     return true;
   }
@@ -13735,8 +13781,8 @@ CSSParserImpl::ParseBorderImageWidth(bool aAcceptsInherit)
 
   if (aAcceptsInherit &&
       ParseSingleTokenVariant(value, VARIANT_INHERIT, nullptr)) {
-    // Keywords "inherit", "initial" and "unset" can not be mixed, so we
-    // are done.
+    // Keywords "inherit", "initial", "unset", and "revert" can not be
+    // mixed, so we are done.
     AppendValue(eCSSProperty_border_image_width, value);
     return true;
   }
@@ -13758,8 +13804,8 @@ CSSParserImpl::ParseBorderImageOutset(bool aAcceptsInherit)
 
   if (aAcceptsInherit &&
       ParseSingleTokenVariant(value, VARIANT_INHERIT, nullptr)) {
-    // Keywords "inherit", "initial" and "unset" can not be mixed, so we
-    // are done.
+    // Keywords "inherit", "initial", "unset", and "revert" can not be
+    // mixed, so we are done.
     AppendValue(eCSSProperty_border_image_outset, value);
     return true;
   }
@@ -13779,8 +13825,8 @@ CSSParserImpl::ParseBorderImageRepeat(bool aAcceptsInherit)
   nsCSSValue value;
   if (aAcceptsInherit &&
       ParseSingleTokenVariant(value, VARIANT_INHERIT, nullptr)) {
-    // Keywords "inherit", "initial" and "unset" can not be mixed, so we
-    // are done.
+    // Keywords "inherit", "initial", "unset", and "revert" can not be
+    // mixed, so we are done.
     AppendValue(eCSSProperty_border_image_repeat, value);
     return true;
   }
@@ -13819,7 +13865,8 @@ CSSParserImpl::ParseBorderImage()
     AppendValue(eCSSProperty_border_image_width, value);
     AppendValue(eCSSProperty_border_image_outset, value);
     AppendValue(eCSSProperty_border_image_repeat, value);
-    // Keywords "inherit", "initial" and "unset" can't be mixed, so we are done.
+    // Keywords "inherit", "initial", "unset", and "revert" can not be
+    // mixed, so we are done.
     return true;
   }
 
@@ -13973,8 +14020,9 @@ CSSParserImpl::ParseBorderSide(const nsCSSPropertyID aPropIDs[],
     case eCSSUnit_Inherit:
     case eCSSUnit_Initial:
     case eCSSUnit_Unset:
+    case eCSSUnit_Revert:
       extraValue = values[0];
-      // Set value of border-image properties to initial/inherit/unset
+      // Set value of border-image properties to initial/inherit/unset/revert
       AppendValue(eCSSProperty_border_image_source, extraValue);
       AppendValue(eCSSProperty_border_image_slice, extraValue);
       AppendValue(eCSSProperty_border_image_width, extraValue);
@@ -14015,7 +14063,8 @@ bool
 CSSParserImpl::ParseBorderColors(nsCSSPropertyID aProperty)
 {
   nsCSSValue value;
-  // 'inherit', 'initial', 'unset' and 'none' are only allowed on their own
+  // 'inherit', 'initial', 'unset', 'revert', and 'none' are only allowed
+  // on their own
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT | VARIANT_NONE,
                                nullptr)) {
     nsCSSValueList *cur = value.SetListValue();
@@ -14402,8 +14451,8 @@ CSSParserImpl::ParseContent()
              "content keyword tables out of sync");
 
   nsCSSValue value;
-  // 'inherit', 'initial', 'unset', 'normal', 'none', and 'alt-content' must
-  // be alone
+  // 'inherit', 'initial', 'unset', 'revert', 'normal', 'none', and
+  // 'alt-content' must be alone
   if (!ParseSingleTokenVariant(value, VARIANT_HMK | VARIANT_NONE,
                                kContentSolitaryKWs)) {
     nsCSSValueList* cur = value.SetListValue();
@@ -14473,7 +14522,7 @@ bool
 CSSParserImpl::ParseCursor()
 {
   nsCSSValue value;
-  // 'inherit', 'initial' and 'unset' must be alone
+  // 'inherit', 'initial', 'unset', and 'revert' must be alone
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT, nullptr)) {
     nsCSSValueList* cur = value.SetListValue();
     for (;;) {
@@ -14517,7 +14566,8 @@ CSSParserImpl::ParseFont()
   if (ParseSingleTokenVariant(family, VARIANT_HK, nsCSSProps::kFontKTable)) {
     if (eCSSUnit_Inherit == family.GetUnit() ||
         eCSSUnit_Initial == family.GetUnit() ||
-        eCSSUnit_Unset == family.GetUnit()) {
+        eCSSUnit_Unset == family.GetUnit() ||
+        eCSSUnit_Revert == family.GetUnit()) {
       AppendValue(eCSSProperty__x_system_font, nsCSSValue(eCSSUnit_None));
       AppendValue(eCSSProperty_font_family, family);
       AppendValue(eCSSProperty_font_style, family);
@@ -14585,7 +14635,8 @@ CSSParserImpl::ParseFont()
   if (found < 0 ||
       eCSSUnit_Inherit == values[kFontStyleIndex].GetUnit() ||
       eCSSUnit_Initial == values[kFontStyleIndex].GetUnit() ||
-      eCSSUnit_Unset == values[kFontStyleIndex].GetUnit()) { // illegal data
+      eCSSUnit_Unset == values[kFontStyleIndex].GetUnit() ||
+      eCSSUnit_Revert == values[kFontStyleIndex].GetUnit() ) { // illegal data
     return false;
   }
   if ((found & (1 << kFontStyleIndex)) == 0) {
@@ -14643,7 +14694,8 @@ CSSParserImpl::ParseFont()
   if (ParseFamily(family)) {
     if (eCSSUnit_Inherit != family.GetUnit() &&
         eCSSUnit_Initial != family.GetUnit() &&
-        eCSSUnit_Unset != family.GetUnit()) {
+        eCSSUnit_Unset != family.GetUnit() &&
+        eCSSUnit_Revert != family.GetUnit()) {
       AppendValue(eCSSProperty__x_system_font, nsCSSValue(eCSSUnit_None));
       AppendValue(eCSSProperty_font_family, family);
       AppendValue(eCSSProperty_font_style, values[kFontStyleIndex]);
@@ -14688,7 +14740,8 @@ CSSParserImpl::ParseFontSynthesis(nsCSSValue& aValue)
   if (eCSSUnit_None == aValue.GetUnit() ||
       eCSSUnit_Initial == aValue.GetUnit() ||
       eCSSUnit_Inherit == aValue.GetUnit() ||
-      eCSSUnit_Unset == aValue.GetUnit())
+      eCSSUnit_Unset == aValue.GetUnit() ||
+      eCSSUnit_Revert == aValue.GetUnit() )
   {
     return true;
   }
@@ -15308,6 +15361,9 @@ CSSParserImpl::ParseFamily(nsCSSValue& aValue)
           return true;
         }
         break;
+      case eCSSKeyword_revert:
+        aValue.SetRevertValue(mLevel);
+        return true;
       case eCSSKeyword__moz_use_system_font:
         if (!IsParsingCompoundProperty()) {
           aValue.SetSystemFontValue();
@@ -15341,6 +15397,7 @@ CSSParserImpl::ParseFamily(nsCSSValue& aValue)
         case eCSSKeyword_inherit:
         case eCSSKeyword_initial:
         case eCSSKeyword_default:
+        case eCSSKeyword_revert:
         case eCSSKeyword__moz_use_system_font:
           return false;
         case eCSSKeyword_unset:
@@ -15790,25 +15847,41 @@ CSSParserImpl::ParseOutline()
 bool
 CSSParserImpl::ParseOverflow()
 {
-  nsCSSValue overflow;
-  if (!ParseSingleTokenVariant(overflow, VARIANT_HK,
-                               nsCSSProps::kOverflowKTable)) {
+  nsCSSValue overflowX, overflowY;
+  // Parse the first value
+  if (!ParseSingleTokenVariant(overflowX, VARIANT_HK, nsCSSProps::kOverflowKTable)) {
     return false;
   }
 
-  nsCSSValue overflowX(overflow);
-  nsCSSValue overflowY(overflow);
-  if (eCSSUnit_Enumerated == overflow.GetUnit())
-    switch(overflow.GetIntValue()) {
-      case NS_STYLE_OVERFLOW_SCROLLBARS_HORIZONTAL:
-        overflowX.SetIntValue(NS_STYLE_OVERFLOW_SCROLL, eCSSUnit_Enumerated);
-        overflowY.SetIntValue(NS_STYLE_OVERFLOW_HIDDEN, eCSSUnit_Enumerated);
-        break;
-      case NS_STYLE_OVERFLOW_SCROLLBARS_VERTICAL:
-        overflowX.SetIntValue(NS_STYLE_OVERFLOW_HIDDEN, eCSSUnit_Enumerated);
-        overflowY.SetIntValue(NS_STYLE_OVERFLOW_SCROLL, eCSSUnit_Enumerated);
-        break;
+  // Try to parse a second value (optional)
+  bool haveSecond = ParseSingleTokenVariant(overflowY, VARIANT_HK, nsCSSProps::kOverflowKTable);
+  if (!haveSecond) {
+    overflowY = overflowX;
+  }
+
+  // Handle legacy scrollbars keywords for each axis
+  auto fix_legacy = [](nsCSSValue& v, bool isX) {
+    if (v.GetUnit() == eCSSUnit_Enumerated) {
+      switch (v.GetIntValue()) {
+        case NS_STYLE_OVERFLOW_SCROLLBARS_HORIZONTAL:
+          if (isX) {
+            v.SetIntValue(NS_STYLE_OVERFLOW_SCROLL, eCSSUnit_Enumerated);
+          } else {
+            v.SetIntValue(NS_STYLE_OVERFLOW_HIDDEN, eCSSUnit_Enumerated);
+          }
+          break;
+        case NS_STYLE_OVERFLOW_SCROLLBARS_VERTICAL:
+          if (isX) {
+            v.SetIntValue(NS_STYLE_OVERFLOW_HIDDEN, eCSSUnit_Enumerated);
+          } else {
+            v.SetIntValue(NS_STYLE_OVERFLOW_SCROLL, eCSSUnit_Enumerated);
+          }
+          break;
+      }
     }
+  };
+  fix_legacy(overflowX, true);
+  fix_legacy(overflowY, false);
   AppendValue(eCSSProperty_overflow_x, overflowX);
   AppendValue(eCSSProperty_overflow_y, overflowY);
   return true;
@@ -16013,7 +16086,7 @@ bool
 CSSParserImpl::ParseTextAlign(nsCSSValue& aValue, const KTableEntry aTable[])
 {
   if (ParseSingleTokenVariant(aValue, VARIANT_INHERIT, nullptr)) {
-    // 'inherit', 'initial' and 'unset' must be alone
+    // 'inherit', 'initial', 'unset', and 'revert' must be alone
     return true;
   }
 
@@ -16108,7 +16181,7 @@ bool
 CSSParserImpl::ParseTextOverflow(nsCSSValue& aValue)
 {
   if (ParseSingleTokenVariant(aValue, VARIANT_INHERIT, nullptr)) {
-    // 'inherit', 'initial' and 'unset' must be alone
+    // 'inherit', 'initial', 'unset', and 'revert' must be alone
     return true;
   }
 
@@ -16139,7 +16212,7 @@ CSSParserImpl::ParseTouchAction(nsCSSValue& aValue)
   }
 
   // Auto and None keywords aren't allowed in conjunction with others.
-  // Also inherit, initial and unset values are available.
+  // Also inherit, initial, unset, and revert values are available.
   if (eCSSUnit_Enumerated != aValue.GetUnit()) {
     return true;
   }
@@ -16644,7 +16717,7 @@ bool
 CSSParserImpl::ParseTransform(bool aIsPrefixed, bool aDisallowRelativeValues)
 {
   nsCSSValue value;
-  // 'inherit', 'initial', 'unset' and 'none' must be alone
+  // 'inherit', 'initial', 'unset', 'revert', and 'none' must be alone
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT | VARIANT_NONE,
                                nullptr)) {
     nsCSSValueSharedList* list = new nsCSSValueSharedList;
@@ -16930,7 +17003,8 @@ bool
 CSSParserImpl::ParseShapeOutside(nsCSSValue& aValue)
 {
   if (ParseSingleTokenVariant(aValue, VARIANT_HUO, nullptr)) {
-    // 'inherit', 'initial', 'unset', 'none', and <image> url must be alone.
+    // 'inherit', 'initial', 'unset', 'revert', 'none', and
+    // <image> url must be alone.
     return true;
   }
 
@@ -16954,9 +17028,10 @@ bool CSSParserImpl::ParseTransformOrigin(bool aPerspective)
   // a pair, and to keep the computation code simple.
   if (position.mXValue.GetUnit() == eCSSUnit_Inherit ||
       position.mXValue.GetUnit() == eCSSUnit_Initial ||
-      position.mXValue.GetUnit() == eCSSUnit_Unset) {
+      position.mXValue.GetUnit() == eCSSUnit_Unset ||
+      position.mXValue.GetUnit() == eCSSUnit_Revert) {
     MOZ_ASSERT(position.mXValue == position.mYValue,
-               "inherit/initial/unset only half?");
+               "inherit/initial/unset/revert only half?");
     AppendValue(prop, position.mXValue);
   } else {
     nsCSSValue value;
@@ -17133,7 +17208,7 @@ bool
 CSSParserImpl::ParseFilter()
 {
   nsCSSValue value;
-  // 'inherit', 'initial', 'unset' and 'none' must be alone
+  // 'inherit', 'initial', 'unset', 'revert', and 'none' must be alone
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT | VARIANT_NONE,
                                nullptr)) {
     nsCSSValueList* cur = value.SetListValue();
@@ -17162,7 +17237,7 @@ bool
 CSSParserImpl::ParseTransitionProperty()
 {
   nsCSSValue value;
-  // 'inherit', 'initial', 'unset' and 'none' must be alone
+  // 'inherit', 'initial', 'unset', 'revert', and 'none' must be alone
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT | VARIANT_NONE,
                                nullptr)) {
     // Accept a list of arbitrary identifiers.  They should be
@@ -17178,13 +17253,14 @@ CSSParserImpl::ParseTransitionProperty()
       }
       if (cur->mValue.GetUnit() == eCSSUnit_Ident) {
         nsDependentString str(cur->mValue.GetStringBufferValue());
-        // Exclude 'none', 'inherit', 'initial' and 'unset' according to the
-        // same rules as for 'counter-reset' in CSS 2.1.
+        // Exclude 'none', 'inherit', 'initial', 'unset', and 'revert'
+        // according to the same rules as for 'counter-reset' in CSS 2.1.
         if (str.LowerCaseEqualsLiteral("none") ||
             str.LowerCaseEqualsLiteral("inherit") ||
             str.LowerCaseEqualsLiteral("initial") ||
             (str.LowerCaseEqualsLiteral("unset") &&
-             nsLayoutUtils::UnsetValueEnabled())) {
+             nsLayoutUtils::UnsetValueEnabled()) ||
+            str.LowerCaseEqualsLiteral("revert")) {
           return false;
         }
       }
@@ -17325,9 +17401,9 @@ CSSParserImpl::ParseAnimationOrTransitionShorthand(
                  size_t aNumProperties)
 {
   nsCSSValue tempValue;
-  // first see if 'inherit', 'initial' or 'unset' is specified.  If one is,
-  // it can be the only thing specified, so don't attempt to parse any
-  // additional properties
+  // first see if 'inherit', 'initial', 'unset', or 'revert' is specified.
+  // If one is, it can be the only thing specified, so don't attempt to
+  // parse any additional properties
   if (ParseSingleTokenVariant(tempValue, VARIANT_INHERIT, nullptr)) {
     for (uint32_t i = 0; i < aNumProperties; ++i) {
       AppendValue(aProperties[i], tempValue);
@@ -17452,7 +17528,7 @@ CSSParserImpl::ParseTransition()
   // Make two checks on the list for 'transition-property':
   //   + If there is more than one item, then none of the items can be
   //     'none'.
-  //   + None of the items can be 'inherit', 'initial' or 'unset'.
+  //   + None of the items can be 'inherit', 'initial', 'unset', or 'revert'.
   {
     MOZ_ASSERT(kTransitionProperties[3] == eCSSProperty_transition_property,
                "array index mismatch");
@@ -17475,7 +17551,8 @@ CSSParserImpl::ParseTransition()
         if (str.EqualsLiteral("inherit") ||
             str.EqualsLiteral("initial") ||
             (str.EqualsLiteral("unset") &&
-             nsLayoutUtils::UnsetValueEnabled())) {
+             nsLayoutUtils::UnsetValueEnabled()) ||
+            str.EqualsLiteral("revert")) {
           return false;
         }
       }
@@ -17644,7 +17721,7 @@ CSSParserImpl::ParseShadowList(nsCSSPropertyID aProperty)
   bool isBoxShadow = aProperty == eCSSProperty_box_shadow;
 
   nsCSSValue value;
-  // 'inherit', 'initial', 'unset' and 'none' must be alone
+  // 'inherit', 'initial', 'unset', 'revert', and 'none' must be alone
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT | VARIANT_NONE,
                                nullptr)) {
     nsCSSValueList* cur = value.SetListValue();
@@ -17731,7 +17808,8 @@ CSSParserImpl::ParseDasharray()
 {
   nsCSSValue value;
 
-  // 'inherit', 'initial', 'unset' and 'none' are only allowed on their own
+  // 'inherit', 'initial', 'unset', 'revert' and 'none' are only allowed
+  // on their own
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT | VARIANT_NONE |
                                       VARIANT_OPENTYPE_SVG_KEYWORD,
                                nsCSSProps::kStrokeContextValueKTable)) {
@@ -18095,8 +18173,8 @@ CSSParserImpl::ParseValueWithVariables(CSSVariableDeclarations::Type* aType,
     }
   }
 
-  // Look for 'initial', 'inherit' or 'unset' as the first non-white space
-  // token.
+  // Look for 'initial', 'inherit', 'unset', or 'revert' as the first
+  // non-white space token.
   CSSVariableDeclarations::Type type = CSSVariableDeclarations::eTokenStream;
   if (mToken.mType == eCSSToken_Ident) {
     if (mToken.mIdent.LowerCaseEqualsLiteral("initial")) {
@@ -18105,6 +18183,8 @@ CSSParserImpl::ParseValueWithVariables(CSSVariableDeclarations::Type* aType,
       type = CSSVariableDeclarations::eInherit;
     } else if (mToken.mIdent.LowerCaseEqualsLiteral("unset")) {
       type = CSSVariableDeclarations::eUnset;
+    } else if (mToken.mIdent.LowerCaseEqualsLiteral("revert")) {
+      type = CSSVariableDeclarations::eRevert;
     }
   }
 

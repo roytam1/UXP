@@ -395,9 +395,6 @@ const CurlUtils = {
       return "\\u" + ("0000" + code).substr(code.length, 4);
     }
 
-    // Escape & and |, which are special characters on Windows.
-    const winSpecialCharsRegEx = /([&\|])/g;
-
     if (/[^\x20-\x7E]|\'/.test(str)) {
       // Use ANSI-C quoting syntax.
       return "$\'" + str.replace(/\\/g, "\\\\")
@@ -405,58 +402,50 @@ const CurlUtils = {
                         .replace(/\n/g, "\\n")
                         .replace(/\r/g, "\\r")
                         .replace(/!/g, "\\041")
-                        .replace(winSpecialCharsRegEx, "^$1")
                         .replace(/[^\x20-\x7E]/g, escapeCharacter) + "'";
     }
 
     // Use single quote syntax.
-    return "'" + str.replace(winSpecialCharsRegEx, "^$1") + "'";
+    return "'" + str + "'";
   },
 
   /**
    * Escape util function for Windows systems.
    */
   escapeStringWin: function (str) {
-    /* 
-       Because the cmd.exe parser and the MS Crt arguments parsers use some
-       of the same escape characters, they can interact with each other in
-       terrible ways, meaning the order of operations is critical here.
-
-       1. Replace \ with \\ first, because it is an escape character for
-       certain conditions in both parsers.
-
-       2. Escape double quotes with double backslashes.
-       
-       3. Escape ` and $ so commands do not get executed, e.g $(calc.exe) or
-       `\$(calc.exe)
-       
-       4. Escape all characters we are not sure about with ^, to ensure it
-       gets to the MS Crt arguments parser safely.
-
-       5. The % character is special because the MS Crt arguments parser will
-       try and look for environment variables and fill them in, in-place. We
-       cannot escape them with % and cannot escape them with ^ (because it's
-       cmd.exe's escape, not the MS Crt arguments parser). So, we can get the
-       cmd.exe parser to escape the character after it, if it is followed by
-       a valid starting character of an environment variable.
-       This ensures we do not try and double-escape another ^ if it was placed
-       by the previous replace.
-
-       6. Lastly, we replace new lines with ^ and TWO new lines, because the
-       first new line is there to enact the escape command, and the second is
-       the character to escape (in this case new line).
-    */
-    const encapsChars = '^"';
+    const encapsChars = '"';
     return (
       encapsChars +
       str
+        // Replace \ with \\ first because it is an escape character for certain
+        // conditions in both parsers.
         .replace(/\\/g, "\\\\")
-        .replace(/"/g, '\\"')
+        // Replace double quote chars with two double quotes (not by escaping with \")
+        // because it is recognized by both cmd.exe and MS CRT arguments parser.
+        .replace(/"/g, '""')
+        // Escape ` and $ so commands do not get executed e.g $(calc.exe) or `\$(calc.exe)
         .replace(/[`$]/g, "\\$&")
+        // Then escape all characters we are not sure about with ^ to ensure it
+        // gets to the MS CRT parser safely.
         .replace(/[^a-zA-Z0-9\s_\-:=+~\/.',?;()*\$&\\{}\"`]/g, "^$&")
+        // The % character is special because MS CRT parser will try and look for
+        // ENV variables and fill them in its place. We cannot escape them with %
+        // and cannot escape them with ^ (because it's cmd.exe's escape not MS CRT
+        // parser); So we can get cmd.exe parser to escape the character after it,
+        // if it is followed by a valid beginning character of an ENV variable.
+        // This ensures we do not try and double escape another ^ if it was placed
+        // by the previous replace.
         .replace(/%(?=[a-zA-Z0-9_])/g, "%^")
-        .replace(/\r?\n/g, "^\n\n")
-      + encapsChars);
+        // We replace \r and \r\n with \n, this allows to consistently escape all new
+        // lines in the next replace
+        .replace(/\r\n?/g, "\n")
+        // Lastly we replace new lines with ^ and TWO new lines because the first
+        // new line is there to enact the escape command the second is the character
+        // to escape (in this case new line).
+        // The extra " enables escaping new lines with ^ within quotes in cmd.exe.
+        .replace(/\n/g, '"^\r\n\r\n"')
+      + encapsChars
+    );
   }
 };
 

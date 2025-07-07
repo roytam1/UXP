@@ -11,12 +11,13 @@
 #include "nsCSSScanner.h"
 #include "nsRuleData.h"
 
-// These three special string values are used to represent specified values of
-// 'initial', 'inherit' and 'unset'.  (Note that none of these are valid
-// variable values.)
+// These four special string values are used to represent specified values of
+// 'initial', 'inherit', 'unset', and 'revert'.  (Note that none of these are
+// valid variable values.)
 #define INITIAL_VALUE "!"
 #define INHERIT_VALUE ";"
 #define UNSET_VALUE   ")"
+#define REVERT_VALUE  ">"
 
 namespace mozilla {
 
@@ -83,6 +84,9 @@ CSSVariableDeclarations::Get(const nsAString& aName,
   } else if (value.EqualsLiteral(UNSET_VALUE)) {
     aType = eUnset;
     aTokenStream.Truncate();
+  } else if (value.EqualsLiteral(REVERT_VALUE)) {
+    aType = eRevert;
+    aTokenStream.Truncate();
   } else {
     aType = eTokenStream;
     aTokenStream = value;
@@ -96,7 +100,8 @@ CSSVariableDeclarations::PutTokenStream(const nsAString& aName,
 {
   MOZ_ASSERT(!aTokenStream.EqualsLiteral(INITIAL_VALUE) &&
              !aTokenStream.EqualsLiteral(INHERIT_VALUE) &&
-             !aTokenStream.EqualsLiteral(UNSET_VALUE));
+             !aTokenStream.EqualsLiteral(UNSET_VALUE) &&
+             !aTokenStream.EqualsLiteral(REVERT_VALUE));
   mVariables.Put(aName, aTokenStream);
 }
 
@@ -116,6 +121,12 @@ void
 CSSVariableDeclarations::PutUnset(const nsAString& aName)
 {
   mVariables.Put(aName, NS_LITERAL_STRING(UNSET_VALUE));
+}
+
+void
+CSSVariableDeclarations::PutRevert(const nsAString& aName)
+{
+  mVariables.Put(aName, NS_LITERAL_STRING(REVERT_VALUE));
 }
 
 void
@@ -160,12 +171,13 @@ CSSVariableDeclarations::AddVariablesToResolver(
                      eCSSTokenSerialization_Nothing,
                      false);
     } else if (value.EqualsLiteral(INHERIT_VALUE) ||
-               value.EqualsLiteral(UNSET_VALUE)) {
-      // Values of 'inherit' and 'unset' don't need any handling, since it means
-      // we just need to keep whatever value is currently in the resolver.  This
-      // is because the specified variable declarations already have only the
-      // winning declaration for the variable and no longer have any of the
-      // others.
+               value.EqualsLiteral(UNSET_VALUE) ||
+               value.EqualsLiteral(REVERT_VALUE)) {
+      // Values of 'inherit', 'unset', and 'revert' don't need any handling,
+      // since it means we just need to keep whatever value is currently in
+      // the resolver.  This is because the specified variable declarations
+      // already have only the winning declaration for the variable and no
+      // longer have any of the others.
     } else {
       // At this point, we don't know what token types are at the start and end
       // of the specified variable value.  These will be determined later during

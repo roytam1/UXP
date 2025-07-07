@@ -42,7 +42,8 @@ public:
     eTokenStream,  // a stream of CSS tokens (the usual type for variables)
     eInitial,      // 'initial'
     eInherit,      // 'inherit'
-    eUnset         // 'unset'
+    eUnset,        // 'unset'
+    eRevert        // 'revert'
   };
 
   /**
@@ -53,8 +54,8 @@ public:
    * @param aType Out parameter into which the type of the variable value will
    *   be stored.
    * @param aValue Out parameter into which the value of the variable will
-   *   be stored.  If the variable is 'initial', 'inherit' or 'unset', this will
-   *   be the empty string.
+   *   be stored.  If the variable is 'initial', 'inherit', 'unset', or
+   *   'revert', this will be the empty string.
    * @return Whether a variable with the given name was found.  When false
    *   is returned, aType and aValue will not be modified.
    */
@@ -86,6 +87,15 @@ public:
    *   be part of the custom property name) whose value is to be set.
    */
   void PutUnset(const nsAString& aName);
+
+  /**
+   * Adds or modifies an existing entry in this set of variable declarations
+   * to have the value 'revert'.
+   *
+   * @param aName The variable name (not including any "--" prefix that would
+   *   be part of the custom property name) whose value is to be set.
+   */
+  void PutRevert(const nsAString& aName);
 
   /**
    * Adds or modifies an existing entry in this set of variable declarations

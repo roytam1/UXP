@@ -186,6 +186,7 @@ enum class StyleUserSelect : uint8_t {
   None,
   Text,
   Element,
+  Contain,
   Elements,
   All,
   Toggle,

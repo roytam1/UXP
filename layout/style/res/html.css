@@ -720,12 +720,12 @@ canvas {
 /* hidden elements */
 base, basefont, datalist, head, meta, script, style, title,
 noembed, param, template {
-   display: none !important;
+   display: none;
 }
 
 area {
   /* Don't give it frames other than its imageframe */
-  display: none !important;
+  display: none ! important;
 }
 
 iframe:fullscreen {

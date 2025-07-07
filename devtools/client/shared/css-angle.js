@@ -9,7 +9,8 @@ const {CSS_ANGLEUNIT} = require("devtools/shared/css/properties-db");
 const SPECIALVALUES = new Set([
   "initial",
   "inherit",
-  "unset"
+  "unset",
+  "revert"
 ]);
 
 const {getCSSLexer} = require("devtools/shared/css/lexer");

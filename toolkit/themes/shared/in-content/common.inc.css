@@ -655,7 +655,7 @@ xul|*.radio-label-box {
   padding-bottom: 2px;
   padding-inline-start: 9px;
   margin: 0;
-  -moz-user-select: none;
+  user-select: none;
 }
 
 *|*.category-icon {
@@ -678,7 +678,7 @@ xul|*.radio-label-box {
   font-weight: normal;
   line-height: 40px;
   margin: 0;
-  -moz-user-select: none;
+  user-select: none;
 }
 
 /* File fields */

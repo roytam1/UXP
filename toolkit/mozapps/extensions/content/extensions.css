@@ -61,7 +61,7 @@ xhtml|link {
 
 .text-list {
   white-space: pre-line;
-  -moz-user-select: element;
+  user-select: contain;
 }
 
 setting, row[unsupported="true"] {
@@ -203,10 +203,10 @@ setting[type="menulist"] {
 }
 
 .addon .relnotes {
-  -moz-user-select: text;
+  user-select: text;
 }
 #detail-name, #detail-desc, #detail-fulldesc {
-  -moz-user-select: text;
+  user-select: text;
 }
 
 /* Make sure we're not animating hidden images. See bug 623739. */
