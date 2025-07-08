@@ -94,7 +94,7 @@ a {
 
 /* The red bubble that shows the number of times a message is repeated */
 .message-repeats {
-  -moz-user-select: none;
+  user-select: none;
   flex: none;
   margin: 2px 6px;
   padding: 0 6px;
@@ -161,7 +161,7 @@ a {
 #output-wrapper {
   direction: ltr;
   overflow: auto;
-  -moz-user-select: text;
+  user-select: text;
   position: relative;
 }
 

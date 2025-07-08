@@ -20,7 +20,7 @@
 }
 
 body {
-  -moz-user-select: none;
+  user-select: none;
 }
 
 /* Force height and width (possibly overflowing) from inline elements.
@@ -359,7 +359,7 @@ ul.children + .tag-line::before {
   border-radius: 3px;
   padding: 0px 2px;
   margin-inline-start: 5px;
-  -moz-user-select: none;
+  user-select: none;
 }
 
 .markupview-events {

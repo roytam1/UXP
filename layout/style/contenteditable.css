@@ -10,17 +10,17 @@
 }
 
 *|*:read-write :read-only {
-  -moz-user-select: all;
+  user-select: all;
 }
 
 *|*:read-only > :read-write {
-  /* override the above -moz-user-select: all rule. */
-  -moz-user-select: -moz-text;
+  /* override the above user-select: all rule. */
+  user-select: -moz-text;
 }
 
 input:read-write > .anonymous-div:read-only,
 textarea:read-write > .anonymous-div:read-only {
-  -moz-user-select: text;
+  user-select: text;
 }
 
 /* Use default arrow over objects with size that 
@@ -60,7 +60,7 @@ a:link:read-write {
 *|*:read-write > input:read-only,
 *|*:read-write > button:read-only,
 *|*:read-write > textarea:read-only {
-  -moz-user-select: all;
+  user-select: all;
   -moz-user-input: auto !important;
   -moz-user-focus: none !important;
 }
@@ -75,7 +75,7 @@ input[contenteditable="true"]:disabled,
 input[contenteditable="true"][type="checkbox"],
 input[contenteditable="true"][type="radio"],
 input[contenteditable="true"][type="file"] {
-  -moz-user-select: all;
+  user-select: all;
   -moz-user-input: none !important;
   -moz-user-focus: none !important;
 }
@@ -96,15 +96,15 @@ input[contenteditable="true"][type="hidden"] {
 }
 
 label:read-write {
-    -moz-user-select: all;
+    user-select: all;
 }
 
 *|*::-moz-display-comboboxcontrol-frame {
-  -moz-user-select: text;
+  user-select: text;
 }
 
 option:read-write {
-  -moz-user-select: text;
+  user-select: text;
 }
 
 /* the following rules are for Image Resizing */
@@ -115,7 +115,7 @@ span[\_moz_anonclass="mozResizer"] {
   position: absolute;
   border: 1px black solid;
   background-color: white;
-  -moz-user-select: none;
+  user-select: none;
   z-index: 2147483646; /* max value -1 for this property */
 }
 
@@ -163,7 +163,7 @@ span[\_moz_anonclass="mozResizer"][anonlocation="se"] {
 span[\_moz_anonclass="mozResizingShadow"],
 img[\_moz_anonclass="mozResizingShadow"] {
   outline: thin dashed black;
-  -moz-user-select: none;
+  user-select: none;
   opacity: 0.5;
   position: absolute;
   z-index: 2147483647; /* max value for this property */
@@ -204,7 +204,7 @@ span[\_moz_anonclass="mozGrabber"] {
   background-image: url("resource://gre/res/grabber.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none;
+  user-select: none;
   cursor: move;
 }
 
@@ -220,7 +220,7 @@ a[\_moz_anonclass="mozTableAddColumnBefore"] {
   background-image: url("resource://gre/res/table-add-column-before.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none;
+  user-select: none;
   -moz-user-focus: none !important;
 }
 
@@ -242,7 +242,7 @@ a[\_moz_anonclass="mozTableAddColumnAfter"] {
   background-image: url("resource://gre/res/table-add-column-after.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none;
+  user-select: none;
   -moz-user-focus: none !important;
 }
 
@@ -264,7 +264,7 @@ a[\_moz_anonclass="mozTableRemoveColumn"] {
   background-image: url("resource://gre/res/table-remove-column.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none;
+  user-select: none;
   -moz-user-focus: none !important;
 }
 
@@ -286,7 +286,7 @@ a[\_moz_anonclass="mozTableAddRowBefore"] {
   background-image: url("resource://gre/res/table-add-row-before.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none;
+  user-select: none;
   -moz-user-focus: none !important;
 }
 
@@ -308,7 +308,7 @@ a[\_moz_anonclass="mozTableAddRowAfter"] {
   background-image: url("resource://gre/res/table-add-row-after.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none;
+  user-select: none;
   -moz-user-focus: none !important;
 }
 
@@ -330,7 +330,7 @@ a[\_moz_anonclass="mozTableRemoveRow"] {
   background-image: url("resource://gre/res/table-remove-row.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none;
+  user-select: none;
   -moz-user-focus: none !important;
 }
 

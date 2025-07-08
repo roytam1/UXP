@@ -21,7 +21,7 @@
 .netInfoBody .netInfoGroupTitle {
   cursor: pointer;
   font-weight: bold;
-  -moz-user-select: none;
+  user-select: none;
   cursor: pointer;
   padding-left: 3px;
 }

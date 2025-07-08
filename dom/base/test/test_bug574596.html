@@ -12,7 +12,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=574596
 <body>
 <a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=574596">Mozilla Bug 574596</a>
 <style type="text/css">
-#link1 a { -moz-user-select:none; }
+#link1 a { user-select:none; }
 </style>
 <div id="link1"><a href="http://www.mozilla.org/">link1</a></div>
 <div id="link2"><a href="http://www.mozilla.org/">link2</a></div>
@@ -61,7 +61,7 @@ function dumpTransfer(dataTransfer,expect) {
 
 function runTest() {
   var result = synthesizeDragStart($('link1'), dragLinkText, window);
-  is(result, null, "Drag -moz-user-select:none link (#link1)");
+  is(result, null, "Drag user-select:none link (#link1)");
   // if (result) dumpTransfer(result,dragLinkText);
 
   dragLinkText[0][2].data = "link2";

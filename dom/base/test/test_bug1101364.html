@@ -11,17 +11,17 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=1101364
   <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
   <style>
     #test1 {
-      -moz-user-select: none;
+      user-select: none;
     }
 
     #testDiv, #test2 {
-      -moz-user-select: text;
+      user-select: text;
     }
   </style>
 </head>
 <body id='body'>
 
-<iframe id="test1" src="data:text/html,<h1 id='test1' style='-moz-user-select:none'>Header</h1><div id='testDiv'>test1</div>"></iframe>
+<iframe id="test1" src="data:text/html,<h1 id='test1' style='user-select:none'>Header</h1><div id='testDiv'>test1</div>"></iframe>
 <iframe id="test2" src="data:text/html,<div contenteditable id='test2'>AAA<span id='test2Inner'>BBB</span></div>"></iframe>
 <pre id="test">
 <script class="testbody" type="text/javascript">
@@ -54,11 +54,11 @@ function test()
                                                         .getInterface(Ci.nsIWebNavigation)
   var docShell = webnav.QueryInterface(Ci.nsIDocShell);
   var test2Inner = iframe2.contentDocument.getElementById('test2Inner');
-  test2Inner.style.MozUserSelect = 'text';
+  test2Inner.style.UserSelect = 'text';
   docShell.doCommand("cmd_selectAll");
   var withoutUserSelect = snapshotWindow(iframe2.contentWindow);
 
-  test2Inner.style.MozUserSelect = 'none';
+  test2Inner.style.UserSelect = 'none';
   docShell.doCommand("cmd_selectAll");
   var withUserSelect = snapshotWindow(iframe2.contentWindow);
   ok(compareSnapshots(withoutUserSelect, withUserSelect, true)[0], 'Editable fields should ignore user select style');

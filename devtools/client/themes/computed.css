@@ -44,7 +44,7 @@
 }
 
 #propertyContainer {
-  -moz-user-select: text;
+  user-select: text;
   overflow-y: auto;
   overflow-x: hidden;
   flex: auto;

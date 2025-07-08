@@ -29,7 +29,7 @@
   margin: 0;
   ime-mode: disabled;
   cursor: default;
-  -moz-user-select: none;
+  user-select: none;
 }
 
 .datetime-separator {
@@ -39,7 +39,7 @@
 .datetime-input[readonly],
 .datetime-input[disabled] {
   color: GrayText;
-  -moz-user-select: none;
+  user-select: none;
 }
 
 .datetime-reset-button {

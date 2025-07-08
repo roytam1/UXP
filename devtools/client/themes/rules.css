@@ -67,7 +67,7 @@
 }
 
 #pseudo-class-panel > label {
-  -moz-user-select: none;
+  user-select: none;
   flex-grow: 1;
   display: flex;
   align-items: center;
@@ -76,7 +76,7 @@
 /* Rule View Container */
 
 #ruleview-container {
-  -moz-user-select: text;
+  user-select: text;
   overflow: auto;
   flex: auto;
   height: 100%;
@@ -148,7 +148,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 
-  -moz-user-select: none;
+  user-select: none;
   margin-bottom: 2px;
 }
 
@@ -184,7 +184,7 @@
   border-top-style: solid;
   border-bottom-style: solid;
   padding: 1px 4px;
-  -moz-user-select: none;
+  user-select: none;
   word-wrap: break-word;
   vertical-align: middle;
   min-height: 1.5em;

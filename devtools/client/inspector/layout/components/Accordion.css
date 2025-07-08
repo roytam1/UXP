@@ -20,7 +20,7 @@
   padding: 5px;
   transition: all 0.25s ease;
   width: 100%;
-  -moz-user-select: none;
+  user-select: none;
 }
 
 .accordion ._header:hover {

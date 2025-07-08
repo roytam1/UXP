@@ -275,7 +275,7 @@ body {
 .animation-timeline .time-header {
   min-height: var(--timeline-animation-height);
   cursor: col-resize;
-  -moz-user-select: none;
+  user-select: none;
 }
 
 .animation-timeline .time-header .header-item {
@@ -300,7 +300,7 @@ body {
 }
 
 .animation-timeline .time-body .time-tick {
-  -moz-user-select: none;
+  user-select: none;
   position: absolute;
   width: 0;
   /* When scroll bar is shown, make it covers entire time-body */

@@ -52,14 +52,14 @@ a:link {
 /* Allow double-clicks on these widgets to open properties dialogs
    XXX except when the widget has disabled attribute */
 input, button, textarea {
-  -moz-user-select: all !important;
+  user-select: all !important;
   -moz-user-input: auto !important;
   -moz-user-focus: none !important;
 }
 
 /* XXX Still need a better way of blocking other events to these widgets */
 select, input[disabled], input[type="checkbox"], input[type="radio"], input[type="file"] {
-  -moz-user-select: all !important;
+  user-select: all !important;
   -moz-user-input: none !important;
   -moz-user-focus: none !important;
 }
@@ -70,19 +70,19 @@ input[type="hidden"] {
 }
 
 label {
-    -moz-user-select: all !important;
+    user-select: all !important;
 }
 
 ::-moz-display-comboboxcontrol-frame {
-  -moz-user-select: text !important;
+  user-select: text !important;
 }
 
 option {
-  -moz-user-select: text !important;
+  user-select: text !important;
 }
 
 #mozToc.readonly {
-  -moz-user-select: all !important;
+  user-select: all !important;
   -moz-user-input: none !important;
 }
 
@@ -94,7 +94,7 @@ span[\_moz_anonclass="mozResizer"] {
   position: absolute;
   border: 1px black solid;
   background-color: white;
-  -moz-user-select: none;
+  user-select: none;
   z-index: 2147483646; /* max value -1 for this property */
 }
 
@@ -142,7 +142,7 @@ span[\_moz_anonclass="mozResizer"][anonlocation="se"] {
 span[\_moz_anonclass="mozResizingShadow"],
 img[\_moz_anonclass="mozResizingShadow"] {
   outline: thin dashed black;
-  -moz-user-select: none;
+  user-select: none;
   opacity: 0.5;
   position: absolute;
   z-index: 2147483647; /* max value for this property */
@@ -183,7 +183,7 @@ span[\_moz_anonclass="mozGrabber"] {
   background-image: url("resource://gre/res/grabber.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none;
+  user-select: none;
   cursor: move;
   z-index: 2147483647; /* max value for this property */
 }
@@ -200,7 +200,7 @@ a[\_moz_anonclass="mozTableAddColumnBefore"] {
   background-image: url("resource://gre/res/table-add-column-before.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none !important;
+  user-select: none !important;
   -moz-user-focus: none !important;
 }
 
@@ -222,7 +222,7 @@ a[\_moz_anonclass="mozTableAddColumnAfter"] {
   background-image: url("resource://gre/res/table-add-column-after.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none !important;
+  user-select: none !important;
   -moz-user-focus: none !important;
 }
 
@@ -244,7 +244,7 @@ a[\_moz_anonclass="mozTableRemoveColumn"] {
   background-image: url("resource://gre/res/table-remove-column.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none !important;
+  user-select: none !important;
   -moz-user-focus: none !important;
 }
 
@@ -266,7 +266,7 @@ a[\_moz_anonclass="mozTableAddRowBefore"] {
   background-image: url("resource://gre/res/table-add-row-before.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none !important;
+  user-select: none !important;
   -moz-user-focus: none !important;
 }
 
@@ -288,7 +288,7 @@ a[\_moz_anonclass="mozTableAddRowAfter"] {
   background-image: url("resource://gre/res/table-add-row-after.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none !important;
+  user-select: none !important;
   -moz-user-focus: none !important;
 }
 
@@ -310,7 +310,7 @@ a[\_moz_anonclass="mozTableRemoveRow"] {
   background-image: url("resource://gre/res/table-remove-row.gif");
   background-repeat: no-repeat;
   background-position: center center;
-  -moz-user-select: none !important;
+  user-select: none !important;
   -moz-user-focus: none !important;
 }
 

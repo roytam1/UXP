@@ -612,7 +612,6 @@ menuseparator {
 }
 
 .autocomplete .results * {
-  -moz-user-select: none;
   user-select: none;
 }
 
@@ -773,7 +772,6 @@ menuseparator {
 }
 .tree {
   -webkit-user-select: none;
-  -moz-user-select: none;
   -ms-user-select: none;
   -o-user-select: none;
   user-select: none;
@@ -820,7 +818,6 @@ html[dir="rtl"] .tree .node > div {
 }
 
 .sources-panel * {
-  -moz-user-select: none;
   user-select: none;
 }
 
@@ -834,7 +831,6 @@ html[dir="rtl"] .tree .node > div {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  -moz-user-select: none;
   user-select: none;
 }
 
@@ -916,7 +912,6 @@ html[dir="rtl"] .worker svg {
 
 .tree {
   -webkit-user-select: none;
-  -moz-user-select: none;
   -ms-user-select: none;
   -o-user-select: none;
   user-select: none;
@@ -966,7 +961,6 @@ html[dir="rtl"] .worker svg {
   right: 1px;
   opacity: 1;
   z-index: 100;
-  -moz-user-select: none;
   user-select: none;
 }
 
@@ -979,7 +973,6 @@ html[dir="rtl"] .source-footer .command-bar {
 }
 
 .source-footer .command-bar * {
-  -moz-user-select: none;
   user-select: none;
 }
 
@@ -1186,7 +1179,6 @@ html[dir="rtl"] .editor-mount {
   background-color: var(--theme-tab-toolbar-background);
   font-weight: lighter;
   z-index: 100;
-  -moz-user-select: none;
   user-select: none;
 }
 
@@ -1213,7 +1205,6 @@ html[dir="rtl"] .editor-mount {
   outline-width: 0;
 }
 .breakpoints-list * {
-  -moz-user-select: none;
   user-select: none;
 }
 
@@ -1396,7 +1387,6 @@ html .arrow.expanded svg {
 */
 
 .frames ul li * {
-  -moz-user-select: none;
   user-select: none;
 }
 
@@ -1449,7 +1439,6 @@ html .arrow.expanded svg {
   width: 100%;
 
   -webkit-user-select: none;
-  -moz-user-select: none;
   -ms-user-select: none;
   -o-user-select: none;
   user-select: none;
@@ -1475,7 +1464,6 @@ html .arrow.expanded svg {
 }
 
 .right-siderbar * {
-  -moz-user-select: none;
   user-select: none;
 }
 
@@ -1550,7 +1538,6 @@ html[dir="rtl"] .command-bar .stepOut {
   font-style: italic;
   text-align: center;
   padding: 0.5em;
-  -moz-user-select: none;
   user-select: none;
 }
 
@@ -1572,7 +1559,6 @@ span.pause-exceptions.all {
 }
 
 .source-header * {
-  -moz-user-select: none;
   user-select: none;
 }
 
