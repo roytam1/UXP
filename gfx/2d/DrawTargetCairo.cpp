@@ -623,7 +623,7 @@ bool
 DrawTargetCairo::IsValid() const
 {
   return mSurface && !cairo_surface_status(mSurface) &&
-         mContext && !cairo_surface_status(cairo_get_group_target(mContext));
+         mContext /*&& !cairo_surface_status(cairo_get_group_target(mContext))*/;
 }
 
 DrawTargetType
