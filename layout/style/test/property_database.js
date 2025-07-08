@@ -2237,12 +2237,12 @@ var gCSSProperties = {
     other_values: [ "read-write", "write-only" ],
     invalid_values: []
   },
-  "-moz-user-select": {
-    domProp: "MozUserSelect",
+  "user-select": {
+    domProp: "UserSelect",
     inherited: false,
     type: CSS_TYPE_LONGHAND,
     initial_values: [ "auto" ],
-    other_values: [ "none", "text", "element", "elements", "all", "toggle", "tri-state", "-moz-all", "-moz-none" ],
+    other_values: [ "none", "text", "element", "contain", "elements", "all", "toggle", "tri-state", "-moz-all", "-moz-none" ],
     invalid_values: []
   },
   "background": {
@@ -7885,8 +7885,8 @@ if (IsCSSPropertyPrefEnabled("layout.css.prefixes.webkit")) {
     domProp: "webkitUserSelect",
     inherited: false,
     type: CSS_TYPE_SHORTHAND_AND_LONGHAND,
-    alias_for: "-moz-user-select",
-    subproperties: [ "-moz-user-select" ],
+    alias_for: "user-select",
+    subproperties: [ "user-select" ],
   };
 
   if (SupportsMaskShorthand()) {

@@ -3443,7 +3443,7 @@ nsFrame::HandlePress(nsPresContext* aPresContext,
   {
     // A single node is selected and we aren't extending an existing
     // selection, which means the user clicked directly on an object (either
-    // -moz-user-select: all or a non-text node without children).
+    // user-select: all or a non-text node without children).
     // Therefore, disable selection extension during mouse moves.
     // XXX This is a bit hacky; shouldn't editor be able to deal with this?
     fc->SetDragState(false);
@@ -4251,7 +4251,7 @@ nsIFrame::ContentOffsets nsIFrame::GetContentOffsetsFromPoint(nsPoint aPoint,
 
     adjustedFrame = AdjustFrameForSelectionStyles(this);
 
-    // -moz-user-select: all needs special handling, because clicking on it
+    // user-select: all needs special handling, because clicking on it
     // should lead to the whole frame being selected
     if (adjustedFrame && adjustedFrame->StyleUIReset()->mUserSelect ==
         StyleUserSelect::All) {

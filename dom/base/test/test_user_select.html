@@ -1,7 +1,7 @@
 <!DOCTYPE>
 <html>
 <head>
-<title>-moz-user-select selection tests</title>
+<title>user-select selection tests</title>
   <script src="/tests/SimpleTest/SimpleTest.js"></script>
   <script src="/tests/SimpleTest/EventUtils.js"></script>
   <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
@@ -12,10 +12,10 @@
   src: url("Ahem.ttf");
 }
 body { font-family: Ahem; font-size: 20px; }
-s, .non-selectable { -moz-user-select: none; }
+s, .non-selectable { user-select: none; }
 n { display: none; }
 a { position:absolute; bottom: 0; right:0; }
-.text { -moz-user-select: text; }
+.text { user-select: text; }
 </style>
 
 </head>
@@ -48,7 +48,7 @@ bbbb</div>
 <div class="non-selectable">x</div><input>
 bbbbbbb</div>
 
-<iframe id="testD" src="data:text/html,<body>aaaa<span style='-moz-user-select:none'>bbbb</span>cccc"></iframe>
+<iframe id="testD" src="data:text/html,<body>aaaa<span style='user-select:none'>bbbb</span>cccc"></iframe>
 
 <pre id="test">
 <script class="testbody" type="text/javascript">
@@ -249,7 +249,7 @@ function test()
   // ================== shift+click tests =================
   // ======================================================
 
-  // test extending a selection that starts in a -moz-user-select:none node
+  // test extending a selection that starts in a user-select:none node
   clear();
   e = document.getElementById('test2');
   init([[0,0,0,1]], e);
@@ -261,7 +261,7 @@ function test()
   checkRanges([[-1,1,1,10]], e);
   doneTest(e);
 
-  // test extending a selection that end in a -moz-user-select:none node
+  // test extending a selection that end in a user-select:none node
   clear();
   e = document.getElementById('test3');
   init([[1,0,1,1]], e);

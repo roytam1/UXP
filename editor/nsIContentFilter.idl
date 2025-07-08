@@ -44,7 +44,7 @@ interface nsIContentFilter : nsISupports
    * approximation since the editor may need to adjust it if it deletes
    * the selection as part of the event and later determines that insertion
    * point is an empty container which should also be removed (or in other
-   * scenarios such as -moz-user-select:none).
+   * scenarios such as user-select:none).
    *
    * In some scenarios the selection will be deleted.  If callers choose
    * to adjust the insertion point, they should be careful that the insertion

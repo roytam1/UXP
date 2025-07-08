@@ -101,7 +101,7 @@ http://www.briangrinstead.com/blog/keep-aspect-ratio-with-html-and-css */
 }
 
 .spectrum-dragger, .spectrum-slider {
-  -moz-user-select: none;
+  user-select: none;
 }
 
 .spectrum-alpha {

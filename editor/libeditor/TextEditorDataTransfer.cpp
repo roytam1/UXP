@@ -233,7 +233,7 @@ TextEditor::InsertFromDrop(nsIDOMEvent* aDropEvent)
   // Only the HTMLEditor::FindUserSelectAllNode returns a node.
   nsCOMPtr<nsIDOMNode> userSelectNode = FindUserSelectAllNode(newSelectionParent);
   if (userSelectNode) {
-    // The drop is happening over a "-moz-user-select: all"
+    // The drop is happening over a "user-select: all"
     // subtree so make sure the content we insert goes before
     // the root of the subtree.
     //

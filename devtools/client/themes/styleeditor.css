@@ -322,7 +322,7 @@ h3 {
   margin: 20px auto;
   -moz-column-width: 300px;
   font-size: 13px;
-  -moz-user-select: text;
+  user-select: text;
 }
 
 .csscoverage-report-summary,

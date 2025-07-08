@@ -22,7 +22,7 @@
   white-space: nowrap;
   vertical-align: middle;
   cursor: pointer;
-  -moz-user-select: none;
+  user-select: none;
   padding: 0 2px;
   border-radius: 2px;
 }

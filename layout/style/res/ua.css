@@ -110,7 +110,7 @@
   vertical-align: baseline;
   font-variant-numeric: tabular-nums;
   /* Prevent the element from being selected when clicking on the marker. */
-  -moz-user-select: none;
+  user-select: none;
 }
 
 /* SVG documents don't always load this file but they do have links.
@@ -321,7 +321,7 @@
   top: 0; left: 0;
   right: 0; bottom: 0;
   /* This prevents undesired interactions with the selection code. */
-  -moz-user-select: none;
+  user-select: none;
 }
 
 *|*:-moz-full-screen:not(:root)::backdrop {

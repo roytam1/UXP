@@ -123,7 +123,7 @@ public:
                               nsTArray<RangeData>* aOutput);
   /**
    * AddItem adds aRange to this Selection.  If mUserInitiated is true,
-   * then aRange is first scanned for -moz-user-select:none nodes and split up
+   * then aRange is first scanned for user-select:none nodes and split up
    * into multiple ranges to exclude those before adding the resulting ranges
    * to this Selection.
    */
@@ -425,7 +425,7 @@ private:
   SelectionType mSelectionType;
   /**
    * True if the current selection operation was initiated by user action.
-   * It determines whether we exclude -moz-user-select:none nodes or not,
+   * It determines whether we exclude user-select:none nodes or not,
    * as well as whether selectstart events will be fired.
    */
   bool mUserInitiated;

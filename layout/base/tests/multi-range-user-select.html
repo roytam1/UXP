@@ -13,8 +13,8 @@
 }
 html,body { margin:0; padding: 0; }
 body,pre { font-family: Ahem; font-size: 20px; }
-span { -moz-user-select:none; }
-x { -moz-user-select:text; }
+span { user-select:none; }
+x { user-select:text; }
 </style>
 </head>
 <body>
@@ -40,7 +40,7 @@ var sel = window.getSelection();
 
 function enableSelection(id) {
   var span = document.getElementById(id);
-  span.style.MozUserSelect = 'text';
+  span.style.UserSelect = 'text';
 }
 
 function setupPrevSelection() {

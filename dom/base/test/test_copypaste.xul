@@ -52,7 +52,7 @@ function runTest() {
 
   ]]></script>
 
-  <description style="-moz-user-focus: normal; -moz-user-select: text;"><![CDATA[
+  <description style="-moz-user-focus: normal; user-select: text;"><![CDATA[
     hello
     world
   ]]></description>

@@ -4096,7 +4096,7 @@ if(dojo.isIE || dojo.isOpera){
 		//	selectable:
 		node = d.byId(node);
 		if(d.isMozilla){
-			node.style.MozUserSelect = selectable ? "" : "none";
+			node.style.UserSelect = selectable ? "" : "none";
 		}else if(d.isKhtml){
 			node.style.KhtmlUserSelect = selectable ? "auto" : "none";
 		}else if(d.isIE){
