@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pale Moon CSS clip-path: Geometry-Box Test Suite</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #333;
+            color: white;
+            border-radius: 5px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+        }
+        
+        .bug-info {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            display: inline-block;
+        }
+        
+        .test-section {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .test-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .test-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            background: #fafafa;
+        }
+        
+        .test-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .test-description {
+            margin-bottom: 15px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .test-box {
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ccc;
+            background: white;
+            overflow: hidden;
+        }
+        
+        .target-element {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .simple-target {
+            width: 150px;
+            height: 150px;
+            background: #3498db;
+        }
+        
+        .complex-target {
+            width: 100px;
+            height: 100px;
+            background: #27ae60;
+            border: 15px solid #e74c3c;
+            padding: 20px;
+            margin: 20px;
+        }
+        
+        .test-info {
+            background: #f0f8ff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            font-family: monospace;
+        }
+        
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .failure {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .reference-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .reference-item {
+            padding: 15px;
+            border: 1px solid #ddd;
+            background: white;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #ddd;
+        }
+        
+        .inline-container {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px dashed #ccc;
+        }
+        
+        .inline-target {
+            display: inline-block;
+            width: 120px;
+            height: 80px;
+            background: #9b59b6;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            border: 5px solid #f1c40f;
+            border-radius: 20px;
+            margin: 15px;
+            font-weight: bold;
+        }
+        
+        .edge-case {
+            width: 200px;
+            height: 200px;
+            background: #e74c3c;
+            margin: 30px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .test-container {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .section-title {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CSS clip-path: Geometry-Box Test Suite</h1>
+            <p class="subtitle">Comprehensive test coverage for Pale Moon browser - Bug #2757</p>
+            <div class="bug-info">
+                Bugzilla #1465988 | Support CSS clip-path:&lt;geometry-box&gt;
+            </div>
+        </header>
+        
+        
+        <div class="test-section">
+            <h2 class="section-title">Core Geometry Box Tests</h2>
+            <p>These tests validate basic <code>&lt;geometry-box&gt;</code> functionality with and without complex box models.</p>
+            
+            <div class="test-container">
+                <!-- Test 1: margin-box -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 1: margin-box</h3>
+                    <p class="test-description">Clip path set to margin-box. Should show full element.</p>
+                    <div class="test-box">
+                        <div class="target-element simple-target" style="clip-path: margin-box;">
+                            margin-box
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: margin-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Full element visible</span>
+                    </div>
+                </div>
+                
+                <!-- Test 2: border-box -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 2: border-box</h3>
+                    <p class="test-description">Clip path set to border-box. Should show full element.</p>
+                    <div class="test-box">
+                        <div class="target-element simple-target" style="clip-path: border-box;">
+                            border-box
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: border-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Full element visible</span>
+                    </div>
+                </div>
+                
+                <!-- Test 3: padding-box -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 3: padding-box</h3>
+                    <p class="test-description">Clip path set to padding-box. Should show full element.</p>
+                    <div class="test-box">
+                        <div class="target-element simple-target" style="clip-path: padding-box;">
+                            padding-box
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: padding-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Full element visible</span>
+                    </div>
+                </div>
+                
+                <!-- Test 4: content-box -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 4: content-box</h3>
+                    <p class="test-description">Clip path set to content-box. Should show full element.</p>
+                    <div class="test-box">
+                        <div class="target-element simple-target" style="clip-path: content-box;">
+                            content-box
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: content-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Full element visible</span>
+                    </div>
+                </div>
+                
+                <!-- Test 5: margin-box with complex model -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 5: margin-box (complex)</h3>
+                    <p class="test-description">Clip path set to margin-box. Should show entire element including border.</p>
+                    <div class="test-box">
+                        <div class="target-element complex-target" style="clip-path: margin-box;">
+                            margin-box
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: margin-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Full element with border visible</span>
+                    </div>
+                </div>
+                
+                <!-- Test 6: content-box with complex model -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 6: content-box (complex)</h3>
+                    <p class="test-description">Clip path set to content-box. Should show only the content area.</p>
+                    <div class="test-box">
+                        <div class="target-element complex-target" style="clip-path: content-box;">
+                            content-box
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: content-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Only content area visible</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">Combined Shape Function Tests</h2>
+            <p>These tests validate combinations of shape functions with geometry-box values.</p>
+            
+            <div class="test-container">
+                <!-- Test 7: inset with border-box -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 7: inset(10%) border-box</h3>
+                    <p class="test-description">10% inset from border-box boundaries. Should clip all sides equally.</p>
+                    <div class="test-box">
+                        <div class="target-element simple-target" style="clip-path: inset(10%) border-box;">
+                            inset(10%) border-box
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: inset(10%) border-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">15px clipping on all sides</span>
+                    </div>
+                </div>
+                
+                <!-- Test 8: inset with content-box -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 8: inset(20px) content-box</h3>
+                    <p class="test-description">20px inset from content-box boundaries. Should clip inside padding area.</p>
+                    <div class="test-box">
+                        <div class="target-element complex-target" style="clip-path: inset(20px) content-box;">
+                            inset(20px) content-box
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: inset(20px) content-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">20px clipping inside content</span>
+                    </div>
+                </div>
+                
+                <!-- Test 9: circle with padding-box -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 9: circle(40%) padding-box</h3>
+                    <p class="test-description">Circle centered in padding-box. Should clip to circle shape.</p>
+                    <div class="test-box">
+                        <div class="target-element complex-target" style="clip-path: circle(40%) padding-box;">
+                            circle(40%) padding-box
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: circle(40%) padding-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Circular clipping area</span>
+                    </div>
+                </div>
+                
+                <!-- Test 10: circle with margin-box -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 10: circle(30px at 30px 30px) margin-box</h3>
+                    <p class="test-description">Circle at specific position in margin-box. Should clip with offset.</p>
+                    <div class="test-box">
+                        <div class="target-element complex-target" style="clip-path: circle(30px at 30px 30px) margin-box;">
+                            circle(30px at 30px 30px) margin-box
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: circle(30px at 30px 30px) margin-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Circle at top-left position</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">Inline Element Tests</h2>
+            <p>These tests validate <code>clip-path</code> behavior on inline elements with border-radius.</p>
+            
+            <div class="test-container">
+                <!-- Test 11: Inline element with border-box and border-radius -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 11: Inline - border-box</h3>
+                    <p class="test-description">Inline element with border-box clip-path and border-radius.</p>
+                    <div class="test-box">
+                        <div class="inline-container">
+                            <span class="inline-target" style="clip-path: border-box;">border-box</span>
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: border-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Rounded corners visible</span>
+                    </div>
+                </div>
+                
+                <!-- Test 12: Inline element with margin-box and border-radius -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 12: Inline - margin-box</h3>
+                    <p class="test-description">Inline element with margin-box clip-path and border-radius.</p>
+                    <div class="test-box">
+                        <div class="inline-container">
+                            <span class="inline-target" style="clip-path: margin-box;">margin-box</span>
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: margin-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Margin area visible</span>
+                    </div>
+                </div>
+                
+                <!-- Test 13: Inline element with content-box and border-radius -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 13: Inline - content-box</h3>
+                    <p class="test-description">Inline element with content-box clip-path and border-radius.</p>
+                    <div class="test-box">
+                        <div class="inline-container">
+                            <span class="inline-target" style="clip-path: content-box;">content-box</span>
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: content-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Only content area visible</span>
+                    </div>
+                </div>
+                
+                <!-- Test 14: Inline element with padding-box and border-radius -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 14: Inline - padding-box</h3>
+                    <p class="test-description">Inline element with padding-box clip-path and border-radius.</p>
+                    <div class="test-box">
+                        <div class="inline-container">
+                            <span class="inline-target" style="clip-path: padding-box;">padding-box</span>
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: padding-box;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Padding area visible</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">Edge Case: Margin-Box with Border-Radius</h2>
+            <p>This test validates the margin-box edge case with border-radius.</p>
+            
+            <div class="test-container">
+                <!-- Test 15: Margin-box edge case with border-radius -->
+                <div class="test-card">
+                    <h3 class="test-title">Test 15: Margin-box Edge Case</h3>
+                    <p class="test-description">Margin-box clip-path with border-radius and specific margin/border ratio.</p>
+                    <div class="test-box">
+                        <div class="edge-case" style="clip-path: margin-box; border-radius: 50%;">
+                            margin: 10%<br>
+                            border-radius: 50%<br>
+                            clip-path: margin-box
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>CSS:</strong> clip-path: margin-box;<br>
+                        margin: 10%; border-radius: 50%;
+                    </div>
+                    <div class="test-info">
+                        <strong>Expected:</strong> <span class="success">Circular clipping with margin</span>
+                    </div>
+                </div>
+                
+                <!-- Reference for Test 15 -->
+                <div class="test-card">
+                    <h3 class="test-title">Reference: Margin-box Edge Case</h3>
+                    <p class="test-description">Expected result for the margin-box edge case test.</p>
+                    <div class="test-box">
+                        <div style="width: 160px; height: 160px; border-radius: 50%; background: linear-gradient(135deg, #e74c3c, #c0392b); display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; text-align: center; padding: 20px; margin: 0 auto;">
+                            Expected<br>Result
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>Reference:</strong> Circular element without margins
+                    </div>
+                    <div class="test-info">
+                        <strong>Compare to:</strong> Test 15
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">Reference Comparisons</h2>
+            <p>Compare test results with these reference elements to validate correct clipping behavior.</p>
+            
+            <div class="reference-grid">
+                <div class="reference-item">
+                    <h3 class="test-title">Reference: No clip-path</h3>
+                    <p>Simple element without any clipping applied</p>
+                    <div class="test-box">
+                        <div class="target-element simple-target">
+                            No clip-path
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>Compare to:</strong> Tests 1-4
+                    </div>
+                </div>
+                
+                <div class="reference-item">
+                    <h3 class="test-title">Reference: No clip-path (complex)</h3>
+                    <p>Element with borders and padding without clipping</p>
+                    <div class="test-box">
+                        <div class="target-element complex-target">
+                            No clip-path
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>Compare to:</strong> Test 5
+                    </div>
+                </div>
+                
+                <div class="reference-item">
+                    <h3 class="test-title">Reference: Content-only</h3>
+                    <p>Green content without border or padding</p>
+                    <div class="test-box">
+                        <div class="target-element complex-target" style="border: none; padding: 0; margin: 0; width: 100px; height: 100px;">
+                            Content only
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>Compare to:</strong> Test 6
+                    </div>
+                </div>
+                
+                <div class="reference-item">
+                    <h3 class="test-title">Reference: Inline Element</h3>
+                    <p>Inline element without any clipping</p>
+                    <div class="test-box">
+                        <div class="inline-container">
+                            <span class="inline-target">No clip-path</span>
+                        </div>
+                    </div>
+                    <div class="test-info">
+                        <strong>Compare to:</strong> Tests 11-14
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Comprehensive Test Suite for Pale Moon Browser - Bug #2757: Support CSS clip-path:&lt;geometry-box&gt;</p>
+            <p>Based on WPT tests from: <a href="https://github.com/web-platform-tests/wpt/pull/41881/files" target="_blank">PR #41881</a></p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -255,6 +255,11 @@ CSS_PROP_ALIAS(-moz-tab-size,
                MozTabSize,
                "")
 
+CSS_PROP_ALIAS(-moz-user-select,
+               user_select,
+               MozUserSelect,
+               "")
+
 #define WEBKIT_PREFIX_PREF "layout.css.prefixes.webkit"
 
 // -webkit- prefixes
