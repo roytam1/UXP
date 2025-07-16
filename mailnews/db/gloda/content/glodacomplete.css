@@ -55,40 +55,40 @@ span.ac-emphasize-text {
 
 .autocomplete-richlistitem[type="gloda-single-tag"] {
   -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-single-tag-item");
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 .autocomplete-richlistitem[type="gloda-single-identity"] {
   -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-single-identity-item");
   -moz-box-orient: vertical;
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 .autocomplete-richlistitem[type="gloda-fulltext-single"] {
   -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-fulltext-single-item");
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 .autocomplete-richlistitem[type="gloda-fulltext-any"] {
   -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-fulltext-any-item");
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 .autocomplete-richlistitem[type="gloda-fulltext-all"] {
   -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-fulltext-all-item");
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 richlistitem[type="gloda-contact-chunk"] {
   -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-contact-chunk");
   -moz-box-orient: vertical;
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 .autocomplete-richlistitem[type="gloda-multi"] {
   -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-multi-item");
   -moz-box-orient: vertical;
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 /* .autocomplete-history-dropmarker wants to be optional, but we don't care */

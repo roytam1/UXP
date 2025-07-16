@@ -83,7 +83,7 @@ menulist[editable="true"] {
 
 window,
 page {
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
   -moz-box-orient: vertical;
 }
 
@@ -184,7 +184,7 @@ notificationbox {
 }
 
 .notificationbox-stack {
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 notification {
@@ -844,7 +844,7 @@ panel[type="autocomplete-richlistbox"] {
 .autocomplete-richlistitem {
   -moz-binding: url("chrome://global/content/bindings/autocomplete.xml#autocomplete-richlistitem");
   -moz-box-orient: vertical;
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 %else
@@ -884,7 +884,7 @@ panel[type="autocomplete-richlistbox"] {
 .autocomplete-richlistitem {
   -moz-binding: url("chrome://global/content/bindings/autocomplete.xml#autocomplete-richlistitem");
   -moz-box-orient: vertical;
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 .autocomplete-treerows {
@@ -1125,12 +1125,12 @@ prefpane > .content-box {
 }
 
 prefwindow[type="child"] > .paneDeckContainer {
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 prefwindow[type="child"] > prefpane > .content-box {
   -moz-box-flex: 1;
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 preferences {

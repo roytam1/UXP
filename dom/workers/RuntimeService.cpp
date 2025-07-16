@@ -37,6 +37,7 @@
 #include "mozilla/dom/EventTargetBinding.h"
 #include "mozilla/dom/MessageChannel.h"
 #include "mozilla/dom/MessageEventBinding.h"
+#include "mozilla/dom/nsCSPService.h"
 #include "mozilla/dom/WorkerBinding.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/IndexedDatabaseManager.h"
@@ -2715,7 +2716,7 @@ LogViolationDetailsRunnable::MainThreadRun()
 {
   AssertIsOnMainThread();
 
-  if (mWorkerPrivate->CSPEnabled()) {
+  if (CSPService::sCSPEnabled) {
     nsIContentSecurityPolicy* csp = mWorkerPrivate->GetCSP();
     if (csp) {
       if (mWorkerPrivate->GetReportCSPViolations()) {

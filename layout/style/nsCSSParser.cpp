@@ -10583,6 +10583,8 @@ CSSParserImpl::ParseColorStop(nsCSSValueGradient* aGradient)
     stop->mIsInterpolationHint = true;
   }
 
+  nsCSSValue stopColor=stop->mColor;
+
   // Stop positions do not have to fall between the starting-point and
   // ending-point, so we don't use ParseNonNegativeVariant.
   result = ParseVariant(stop->mLocation, VARIANT_LP | VARIANT_CALC, nullptr);
@@ -10609,7 +10611,7 @@ CSSParserImpl::ParseColorStop(nsCSSValueGradient* aGradient)
       aGradient->mStops.SetLength(aGradient->mStops.Length()-1);
       return false;
     }
-    stop2->mColor = stop->mColor; // copy color from first stop arg
+    stop2->mColor = stopColor; // We found a valid location; copy color from first stop arg.
   } else {
     // We didn't get a second stop after all, remove the additional stop again.
     aGradient->mStops.SetLength(aGradient->mStops.Length()-1);

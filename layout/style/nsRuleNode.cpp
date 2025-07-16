@@ -6406,41 +6406,35 @@ nsRuleNode::ComputeDisplayData(void* aStartStruct,
            parentDisplay->mOverflowY,
            NS_STYLE_OVERFLOW_VISIBLE);
 
-  // CSS3 overflow-x and overflow-y require some fixup as well in some
-  // cases.  NS_STYLE_OVERFLOW_VISIBLE and NS_STYLE_OVERFLOW_CLIP are
-  // meaningful only when used in both dimensions.
-  if (display->mOverflowX != display->mOverflowY &&
-      (display->mOverflowX == NS_STYLE_OVERFLOW_VISIBLE ||
-       display->mOverflowX == NS_STYLE_OVERFLOW_CLIP ||
-       display->mOverflowY == NS_STYLE_OVERFLOW_VISIBLE ||
-       display->mOverflowY == NS_STYLE_OVERFLOW_CLIP)) {
-    // We can't store in the rule tree since a more specific rule might
-    // change these conditions.
+  // The visible/clip values of overflow compute to auto/hidden (respectively)
+  // if one of overflow-x or overflow-y is neither visible nor clip.
+  if (display->mOverflowX != display->mOverflowY) {
     conditions.SetUncacheable();
 
-    // NS_STYLE_OVERFLOW_CLIP is a deprecated value, so if it's specified
-    // in only one dimension, convert it to NS_STYLE_OVERFLOW_HIDDEN.
-    if (display->mOverflowX == NS_STYLE_OVERFLOW_CLIP) {
-      display->mOverflowX = NS_STYLE_OVERFLOW_HIDDEN;
-    }
-    if (display->mOverflowY == NS_STYLE_OVERFLOW_CLIP) {
-      display->mOverflowY = NS_STYLE_OVERFLOW_HIDDEN;
-    }
-
-    // If 'visible' is specified but doesn't match the other dimension, it
-    // turns into 'auto'.
-    if (display->mOverflowX == NS_STYLE_OVERFLOW_VISIBLE) {
+    // Convert visible->auto only when paired with non-visible, non-clip values
+    if (display->mOverflowX == NS_STYLE_OVERFLOW_VISIBLE &&
+        display->mOverflowY != NS_STYLE_OVERFLOW_CLIP) {
       display->mOverflowX = NS_STYLE_OVERFLOW_AUTO;
     }
-    if (display->mOverflowY == NS_STYLE_OVERFLOW_VISIBLE) {
+    if (display->mOverflowY == NS_STYLE_OVERFLOW_VISIBLE &&
+        display->mOverflowX != NS_STYLE_OVERFLOW_CLIP) {
       display->mOverflowY = NS_STYLE_OVERFLOW_AUTO;
     }
-    
+
+    // Convert clip->hidden when paired with non-visible, non-clip values
+    if (display->mOverflowX == NS_STYLE_OVERFLOW_CLIP &&
+        display->mOverflowY != NS_STYLE_OVERFLOW_VISIBLE) {
+      display->mOverflowX = NS_STYLE_OVERFLOW_HIDDEN;
+    }
+    if (display->mOverflowY == NS_STYLE_OVERFLOW_CLIP &&
+        display->mOverflowX != NS_STYLE_OVERFLOW_VISIBLE) {
+      display->mOverflowY = NS_STYLE_OVERFLOW_HIDDEN;
+    }
   }
 
   // When 'contain: paint', update overflow from 'visible' to 'clip'.
   if (display->IsContainPaint()) {
-    // XXX This actually sets overflow-[x|y] to -moz-hidden-unscrollable.
+    // XXX This actually sets overflow-[x|y] to clip.
     if (display->mOverflowX == NS_STYLE_OVERFLOW_VISIBLE) {
       // This uncacheability (and the one below) could be fixed by adding
       // mOriginalOverflowX and mOriginalOverflowY fields, if necessary.

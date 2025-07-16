@@ -1102,7 +1102,7 @@ private:
         return NS_ERROR_NOT_AVAILABLE;
       }
 
-      if (mWorkerPrivate->CSPEnabled()) {
+      if (CSPService::sCSPEnabled) {
         httpChannel->GetResponseHeader(
           NS_LITERAL_CSTRING("content-security-policy"),
           tCspHeaderValue);
@@ -1166,7 +1166,7 @@ private:
       //  by using the SRICheck module
       MOZ_LOG(SRILogHelper::GetSriLog(), mozilla::LogLevel::Debug,
             ("Scriptloader::Load, SRI required but not supported in workers"));
-      if (mWorkerPrivate->CSPEnabled()) {      
+      if (CSPService::sCSPEnabled) {      
         nsCOMPtr<nsIContentSecurityPolicy> wcsp;
         chanLoadInfo->LoadingPrincipal()->GetCsp(getter_AddRefs(wcsp));
         MOZ_ASSERT(wcsp, "We should have a CSP for the worker here");
@@ -1325,7 +1325,7 @@ private:
       MOZ_ALWAYS_SUCCEEDS(responsePrincipal->Equals(principal, &equal));
       MOZ_DIAGNOSTIC_ASSERT(equal);
 
-      if (mWorkerPrivate->CSPEnabled()) {
+      if (CSPService::sCSPEnabled) {
         nsCOMPtr<nsIContentSecurityPolicy> csp;
         MOZ_ALWAYS_SUCCEEDS(responsePrincipal->GetCsp(getter_AddRefs(csp)));
         MOZ_DIAGNOSTIC_ASSERT(!csp);
@@ -1342,7 +1342,7 @@ private:
       rv = mWorkerPrivate->SetPrincipalOnMainThread(responsePrincipal, loadGroup);
       MOZ_DIAGNOSTIC_ASSERT(NS_SUCCEEDED(rv));
 
-      if (mWorkerPrivate->CSPEnabled()) {
+      if (CSPService::sCSPEnabled) {
         rv = mWorkerPrivate->SetCSPFromHeaderValues(aCSPHeaderValue,
                                                     aCSPReportOnlyHeaderValue);
         MOZ_DIAGNOSTIC_ASSERT(NS_SUCCEEDED(rv));

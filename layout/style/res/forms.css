@@ -245,7 +245,7 @@ select {
   border-width: 2px;
   border-style: inset;
   text-indent: 0;
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
   text-shadow: none;
   /* No text-decoration reaching inside, by default */
   display: inline-block;
@@ -326,7 +326,7 @@ select:empty {
 }
 
 *|*::-moz-display-comboboxcontrol-frame {
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
   padding-inline-start: 4px;
   padding-inline-end: 0;
   color: inherit;

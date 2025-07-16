@@ -1809,7 +1809,7 @@ nsTextEditorState::InitializeRootNode()
   if (!IsSingleLineTextControl()) {
     // We can't just inherit the overflow because setting visible overflow will
     // crash when the number of lines exceeds the height of the textarea and
-    // setting -moz-hidden-unscrollable overflow (NS_STYLE_OVERFLOW_CLIP)
+    // setting clip overflow (NS_STYLE_OVERFLOW_CLIP)
     // doesn't paint the caret for some reason.
     const nsStyleDisplay* disp = mBoundFrame->StyleDisplay();
     if (disp->mOverflowX != NS_STYLE_OVERFLOW_VISIBLE &&
