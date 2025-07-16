@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CSS Overflow: parsing overflow with clip values (WPT filtered)</title>
+  <link rel="help" href="https://drafts.csswg.org/css-overflow-3/#overflow-properties">
+  <link rel="help" href="http://wpt.live/css/css-overflow/parsing/overflow-valid.html">
+  <meta name="assert" content="overflow supports the 'clip' keyword">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .test-header {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .test-results {
+      margin-top: 20px;
+    }
+    
+    .test-case {
+      border: 1px solid #ddd;
+      margin: 10px 0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .test-case.pass {
+      border-left: 4px solid #4CAF50;
+    }
+    
+    .test-case.fail {
+      border-left: 4px solid #f44336;
+    }
+    
+    .test-title {
+      padding: 12px 16px;
+      background: #f9f9f9;
+      font-weight: bold;
+      margin: 0;
+    }
+    
+    .test-case.pass .test-title {
+      background: #e8f5e8;
+      color: #2e7d32;
+    }
+    
+    .test-case.fail .test-title {
+      background: #ffebee;
+      color: #c62828;
+    }
+    
+    .test-details {
+      padding: 16px;
+    }
+    
+    .test-status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    
+    .pass .test-status {
+      background: #4CAF50;
+      color: white;
+    }
+    
+    .fail .test-status {
+      background: #f44336;
+      color: white;
+    }
+    
+    .expected-actual {
+      margin-top: 10px;
+      font-family: monospace;
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    
+    .expected {
+      color: #2e7d32;
+    }
+    
+    .actual {
+      color: #c62828;
+    }
+    
+    .summary {
+      background: #e3f2fd;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      text-align: center;
+    }
+    
+    .summary.all-pass {
+      background: #e8f5e8;
+      color: #2e7d32;
+    }
+    
+    .summary.has-failures {
+      background: #ffebee;
+      color: #c62828;
+    }
+    
+    #target {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-header">
+    <h1>CSS Overflow: parsing overflow with clip values (WPT filtered)</h1>
+    <!-- <p><strong>Specification:</strong> <a href="https://drafts.csswg.org/css-overflow-3/#overflow-properties">CSS Overflow Module Level 3</a></p>
+    <p><strong>Reference:</strong> <a href="http://wpt.live/css/css-overflow/parsing/overflow-valid.html">WPT overflow-valid.html</a></p>
+    <p><strong>Bug:</strong> <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=2499">Mozilla Bug 2499</a></p>
+    <p><strong>Test:</strong> Filtered clip-related tests from WPT overflow-valid.html</p> -->
+  </div>
+
+  <div id="target"></div>
+  <div id="results" class="test-results"></div>
+  <div id="summary" class="summary"></div>
+
+<script>
+let testResults = [];
+let passCount = 0;
+let failCount = 0;
+
+function addTestResult(name, passed, expected, actual, description) {
+  testResults.push({
+    name: name,
+    passed: passed,
+    expected: expected,
+    actual: actual,
+    description: description
+  });
+  
+  if (passed) {
+    passCount++;
+  } else {
+    failCount++;
+  }
+}
+
+function test_valid_value(property, value, expected, testName) {
+  if (arguments.length < 3) {
+    expected = value;
+  }
+  if (arguments.length < 4) {
+    testName = `${property}: ${value}`;
+  }
+  
+  const target = document.getElementById('target');
+  target.style.setProperty(property, "initial");
+  target.style.setProperty(property, value);
+  
+  const actual = target.style.getPropertyValue(property);
+  const passed = actual === expected;
+  
+  addTestResult(
+    testName,
+    passed,
+    expected,
+    actual,
+    `Setting ${property} to '${value}' should serialize to '${expected}'`
+  );
+  
+  target.style.removeProperty(property);
+}
+
+function test_computed_value(property, value, expected, testName) {
+  if (arguments.length < 3) {
+    expected = value;
+  }
+  if (arguments.length < 4) {
+    testName = `computed ${property}: ${value}`;
+  }
+  
+  const target = document.getElementById('target');
+  target.style.setProperty(property, "initial");
+  target.style.setProperty(property, value);
+  
+  const computedStyle = getComputedStyle(target);
+  const actual = computedStyle.getPropertyValue(property);
+  const passed = actual === expected;
+  
+  addTestResult(
+    testName,
+    passed,
+    expected,
+    actual,
+    `Computed value of ${property}: '${value}' should be '${expected}'`
+  );
+  
+  target.style.removeProperty(property);
+}
+
+function runAllTests() {
+  // === WPT overflow-valid.html clip-related tests ===
+  
+  // Basic clip values from WPT
+  test_valid_value("overflow", "clip");
+  test_valid_value("overflow-x", "clip");  
+  test_valid_value("overflow-y", "clip");
+  
+  // Shorthand serialization tests
+  test_valid_value("overflow", "clip clip", "clip");
+  
+  // Mixed values that should not serialize to shorthand
+  test_valid_value("overflow", "clip visible", "");
+  test_valid_value("overflow", "visible clip", "");
+  test_valid_value("overflow", "clip hidden", "");
+  test_valid_value("overflow", "hidden clip", "");
+  test_valid_value("overflow", "clip scroll", "");
+  test_valid_value("overflow", "scroll clip", "");
+  test_valid_value("overflow", "clip auto", "");
+  test_valid_value("overflow", "auto clip", "");
+  
+  // Computed value tests
+  test_computed_value("overflow", "clip");
+  test_computed_value("overflow-x", "clip");
+  test_computed_value("overflow-y", "clip");
+  
+  // Global values with clip
+  test_valid_value("overflow", "clip", "clip");
+  test_valid_value("overflow", "inherit", "");
+  test_valid_value("overflow", "initial", "");
+  test_valid_value("overflow", "unset", "");
+  
+  // Case sensitivity tests
+  test_valid_value("overflow", "CLIP", "");
+  test_valid_value("overflow", "Clip", "");
+  test_valid_value("overflow", "cLiP", "");
+  
+  // Invalid clip combinations
+  test_valid_value("overflow", "clip clip clip", "");
+  test_valid_value("overflow", "clip,", "");
+  test_valid_value("overflow", "clip;", "");
+  test_valid_value("overflow", "clip visible hidden", "");
+  
+  // Edge cases
+  test_valid_value("overflow", " clip ", "clip");
+  test_valid_value("overflow", "clip ", "clip");
+  test_valid_value("overflow", " clip", "clip");
+  test_valid_value("overflow", "\tclip\n", "clip");
+  
+  // Longhand property edge cases
+  test_valid_value("overflow-x", " clip ", "clip");
+  test_valid_value("overflow-y", " clip ", "clip");
+  test_valid_value("overflow-x", "CLIP", "");
+  test_valid_value("overflow-y", "CLIP", "");
+  
+  // Test with different element types
+  testWithElementType("div");
+  testWithElementType("span");
+  testWithElementType("p");
+}
+
+function testWithElementType(tagName) {
+  const element = document.createElement(tagName);
+  element.style.setProperty("overflow", "clip");
+  document.body.appendChild(element);
+  
+  const computedStyle = getComputedStyle(element);
+  const actual = computedStyle.getPropertyValue("overflow");
+  const expected = "clip";
+  const passed = actual === expected;
+  
+  addTestResult(
+    `${tagName} element`,
+    passed,
+    expected,
+    actual,
+    `overflow: clip should work on ${tagName} elements`
+  );
+  
+  document.body.removeChild(element);
+}
+
+function displayResults() {
+  const resultsContainer = document.getElementById('results');
+  const summaryContainer = document.getElementById('summary');
+  
+  // Display individual test results
+  testResults.forEach(function(result) {
+    const testDiv = document.createElement('div');
+    testDiv.className = `test-case ${result.passed ? 'pass' : 'fail'}`;
+    
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'test-title';
+    titleDiv.innerHTML = `
+      <span class="test-status">${result.passed ? 'PASS' : 'FAIL'}</span>
+      ${result.name}
+    `;
+    
+    const detailsDiv = document.createElement('div');
+    detailsDiv.className = 'test-details';
+    detailsDiv.innerHTML = `<p>${result.description}</p>`;
+    
+    if (!result.passed) {
+      const expectedActualDiv = document.createElement('div');
+      expectedActualDiv.className = 'expected-actual';
+      expectedActualDiv.innerHTML = `
+        <div class="expected">Expected: "${result.expected}"</div>
+        <div class="actual">Actual: "${result.actual}"</div>
+      `;
+      detailsDiv.appendChild(expectedActualDiv);
+    }
+    
+    testDiv.appendChild(titleDiv);
+    testDiv.appendChild(detailsDiv);
+    resultsContainer.appendChild(testDiv);
+  });
+  
+  // Display summary
+  const totalTests = passCount + failCount;
+  summaryContainer.className = `summary ${failCount === 0 ? 'all-pass' : 'has-failures'}`;
+  summaryContainer.innerHTML = `
+    <h2>Test Summary</h2>
+    <p><strong>Total Tests:</strong> ${totalTests}</p>
+    <p><strong>Passed:</strong> ${passCount}</p>
+    <p><strong>Failed:</strong> ${failCount}</p>
+    <p><strong>Success Rate:</strong> ${((passCount / totalTests) * 100).toFixed(1)}%</p>
+    `;
+}
+
+// Run tests when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  runAllTests();
+  displayResults();
+});
+
+</script>
+</body>
+</html> 

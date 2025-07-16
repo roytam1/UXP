@@ -1934,14 +1934,15 @@ ApplyOverflowClipping(nsDisplayListBuilder* aBuilder,
                       const nsStyleDisplay* aDisp,
                       DisplayListClipState::AutoClipMultiple& aClipState)
 {
-  // Only -moz-hidden-unscrollable is handled here (and 'hidden' for table
+  // Only clip is handled here (and 'hidden' for table
   // frames, and any non-visible value for blocks in a paginated context).
-  // We allow -moz-hidden-unscrollable to apply to any kind of frame. This
+  // We allow clip to apply to any kind of frame. This
   // is required by comboboxes which make their display text (an inline frame)
   // have clipping.
   if (!nsFrame::ShouldApplyOverflowClipping(aFrame, aDisp)) {
     return;
   }
+  
   nsRect clipRect;
   bool haveRadii = false;
   nscoord radii[8];
@@ -1955,6 +1956,23 @@ ApplyOverflowClipping(nsDisplayListBuilder* aBuilder,
       aBuilder->ToReferenceFrame(aFrame);
     // XXX border-radius
   }
+
+  // Support per-axis clipping: If only one axis has 'clip' or 'hidden' value,
+  // only clip that axis by extending the clip rect to infinity on the other axis
+  bool clipX = (aDisp->mOverflowX == NS_STYLE_OVERFLOW_CLIP || aDisp->mOverflowX == NS_STYLE_OVERFLOW_HIDDEN);
+  bool clipY = (aDisp->mOverflowY == NS_STYLE_OVERFLOW_CLIP || aDisp->mOverflowY == NS_STYLE_OVERFLOW_HIDDEN);
+  
+  if (clipX && !clipY) {
+    // Only clip X axis - extend Y to infinity
+    clipRect.y = nscoord_MIN / 2;
+    clipRect.height = nscoord_MAX;
+  } else if (clipY && !clipX) {
+    // Only clip Y axis - extend X to infinity
+    clipRect.x = nscoord_MIN / 2;
+    clipRect.width = nscoord_MAX;
+  }
+  // If both axes are clip/hidden, use the normal rect (no modification needed)
+
   aClipState.ClipContainingBlockDescendantsExtra(clipRect, haveRadii ? radii : nullptr);
 }
 
@@ -2826,7 +2844,7 @@ nsIFrame::BuildDisplayListForChild(nsDisplayListBuilder*   aBuilder,
     clipState.SetScrollClipForContainingBlockDescendants(aBuilder, nullptr);
   }
 
-  // Setup clipping for the parent's overflow:-moz-hidden-unscrollable,
+  // Setup clipping for the parent's overflow:clip,
   // or overflow:hidden on elements that don't support scrolling (and therefore
   // don't create nsHTML/XULScrollFrame). This clipping needs to not clip
   // anything directly rendered by the parent, only the rendering of its

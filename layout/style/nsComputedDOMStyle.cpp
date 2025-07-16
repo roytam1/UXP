@@ -4745,30 +4745,38 @@ nsComputedDOMStyle::DoGetWillChange()
   return valueList.forget();
 }
 
+// Helper for overflow computed value remapping according to CSS Overflow-3 spec.
+static nsCSSKeyword ComputeOverflowKeyword(int32_t selfEnum, int32_t otherEnum, const KTableEntry* table) {
+  nsCSSKeyword selfKw = nsCSSProps::ValueToKeywordEnum(selfEnum, table);
+  nsCSSKeyword otherKw = nsCSSProps::ValueToKeywordEnum(otherEnum, table);
+  // The visible/clip values of overflow compute to auto/hidden (respectively)
+  // if one of overflow-x or overflow-y is neither visible nor clip.
+  if (selfKw == eCSSKeyword_visible && otherKw != eCSSKeyword_visible && otherKw != eCSSKeyword_clip) {
+    selfKw = eCSSKeyword_auto;
+  }
+  if (selfKw == eCSSKeyword_clip && otherKw != eCSSKeyword_visible && otherKw != eCSSKeyword_clip) {
+    selfKw = eCSSKeyword_hidden;
+  }
+  return selfKw;
+}
+
 already_AddRefed<CSSValue>
 nsComputedDOMStyle::DoGetOverflow()
 {
   const nsStyleDisplay* display = StyleDisplay();
 
-  if (display->mOverflowX == display->mOverflowY) {
-    RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
-    val->SetIdent(nsCSSProps::ValueToKeywordEnum(display->mOverflowX,
-                                                 nsCSSProps::kOverflowKTable));
-    return val.forget();
-  }
+  nsCSSKeyword xKeyword = ComputeOverflowKeyword(display->mOverflowX, display->mOverflowY, nsCSSProps::kOverflowKTable);
+  nsCSSKeyword yKeyword = ComputeOverflowKeyword(display->mOverflowY, display->mOverflowX, nsCSSProps::kOverflowKTable);
 
   RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
+  if (xKeyword == yKeyword) {
+    val->SetIdent(xKeyword);
+    return val.forget();
+  }
   nsAutoString result;
-  
-  nsCSSKeyword xKeyword = nsCSSProps::ValueToKeywordEnum(display->mOverflowX,
-                                                         nsCSSProps::kOverflowKTable);
-  nsCSSKeyword yKeyword = nsCSSProps::ValueToKeywordEnum(display->mOverflowY,
-                                                         nsCSSProps::kOverflowKTable);
-  
   result.AppendASCII(nsCSSKeywords::GetStringValue(xKeyword).get());
   result.Append(char16_t(' '));
   result.AppendASCII(nsCSSKeywords::GetStringValue(yKeyword).get());
-  
   val->SetString(result);
   return val.forget();
 }
@@ -4777,9 +4785,9 @@ already_AddRefed<CSSValue>
 nsComputedDOMStyle::DoGetOverflowX()
 {
   RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
-  val->SetIdent(
-    nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mOverflowX,
-                                   nsCSSProps::kOverflowSubKTable));
+  const nsStyleDisplay* display = StyleDisplay();
+  nsCSSKeyword kw = ComputeOverflowKeyword(display->mOverflowX, display->mOverflowY, nsCSSProps::kOverflowSubKTable);
+  val->SetIdent(kw);
   return val.forget();
 }
 
@@ -4787,9 +4795,9 @@ already_AddRefed<CSSValue>
 nsComputedDOMStyle::DoGetOverflowY()
 {
   RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
-  val->SetIdent(
-    nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mOverflowY,
-                                   nsCSSProps::kOverflowSubKTable));
+  const nsStyleDisplay* display = StyleDisplay();
+  nsCSSKeyword kw = ComputeOverflowKeyword(display->mOverflowY, display->mOverflowX, nsCSSProps::kOverflowSubKTable);
+  val->SetIdent(kw);
   return val.forget();
 }
 
@@ -6782,3 +6790,5 @@ nsComputedDOMStyle::UnregisterPrefChangeCallbacks()
 #undef CSS_PROP
 #undef UNREGISTER_CALLBACK
 }
+
+
