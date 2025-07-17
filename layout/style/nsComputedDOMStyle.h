@@ -461,6 +461,12 @@ private:
   already_AddRefed<CSSValue> DoGetOverflow();
   already_AddRefed<CSSValue> DoGetOverflowX();
   already_AddRefed<CSSValue> DoGetOverflowY();
+  already_AddRefed<CSSValue> DoGetOverflowInline();
+  already_AddRefed<CSSValue> DoGetOverflowBlock();
+  already_AddRefed<CSSValue> DoGetOverflowInlineStart();
+  already_AddRefed<CSSValue> DoGetOverflowInlineEnd();
+  already_AddRefed<CSSValue> DoGetOverflowBlockStart();
+  already_AddRefed<CSSValue> DoGetOverflowBlockEnd();
   already_AddRefed<CSSValue> DoGetOverflowClipBox();
   already_AddRefed<CSSValue> DoGetResize();
   already_AddRefed<CSSValue> DoGetPageBreakAfter();

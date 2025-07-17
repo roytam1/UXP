@@ -6405,6 +6405,27 @@ nsRuleNode::ComputeDisplayData(void* aStartStruct,
            SETVAL_ENUMERATED | SETVAL_UNSET_INITIAL,
            parentDisplay->mOverflowY,
            NS_STYLE_OVERFLOW_VISIBLE);
+  
+  // overflow-inline: enum, inherit, initial
+  // For simplicity, map overflow-inline to overflow-x for now (horizontal writing mode assumption)
+  const nsCSSValue* overflowInlineValue = aRuleData->ValueForOverflowInline();
+  if (overflowInlineValue->GetUnit() != eCSSUnit_Null) {
+    SetValue(*overflowInlineValue,
+             display->mOverflowX, conditions,
+             SETVAL_ENUMERATED | SETVAL_UNSET_INITIAL,
+             parentDisplay->mOverflowX,
+             NS_STYLE_OVERFLOW_VISIBLE);
+  }
+  // overflow-block: enum, inherit, initial
+  // For simplicity, map overflow-block to overflow-y for now (horizontal writing mode assumption)
+  const nsCSSValue* overflowBlockValue = aRuleData->ValueForOverflowBlock();
+  if (overflowBlockValue->GetUnit() != eCSSUnit_Null) {
+    SetValue(*overflowBlockValue,
+             display->mOverflowY, conditions,
+             SETVAL_ENUMERATED | SETVAL_UNSET_INITIAL,
+             parentDisplay->mOverflowY,
+             NS_STYLE_OVERFLOW_VISIBLE);
+  }
 
   // The visible/clip values of overflow compute to auto/hidden (respectively)
   // if one of overflow-x or overflow-y is neither visible nor clip.
