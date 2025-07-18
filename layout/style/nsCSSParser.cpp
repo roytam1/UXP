@@ -12,7 +12,9 @@
 #include "mozilla/TypedEnumBits.h"
 
 #include <algorithm> // for std::stable_sort
-#include <limits> // for std::numeric_limits
+#include <limits>    // for std::numeric_limits
+#include <cmath>     // for std::floor and std::abs
+#include <regex>     // for std::regex and std::regex_match
 
 #include "nsCSSParser.h"
 #include "nsAlgorithm.h"
@@ -755,6 +757,7 @@ protected:
   bool ParseSupportsConditionTermsAfterOperator(
                                        bool& aConditionMet,
                                        SupportsConditionTermOperator aOperator);
+  bool ParseSupportsSelector(bool& aConditionMet);
 
   bool ParseCounterStyleRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   bool ParseCounterStyleName(nsAString& aName, bool aForDefinition);
@@ -4784,6 +4787,11 @@ CSSParserImpl::ParseSupportsConditionInParens(bool& aConditionMet)
     return ParseSupportsMozBoolPrefName(aConditionMet);
   }
 
+  if (mToken.mType == eCSSToken_Function &&
+      mToken.mIdent.LowerCaseEqualsLiteral("selector")) {
+    return ParseSupportsSelector(aConditionMet);
+  }
+
   if (mToken.mType == eCSSToken_Function ||
       mToken.mType == eCSSToken_Bad_URL) {
     if (!SkipUntil(')')) {
@@ -4841,6 +4849,261 @@ CSSParserImpl::ParseSupportsMozBoolPrefName(bool& aConditionMet)
     return false;
   }
 
+  return true;
+}
+
+/*
+  builds selector strings with proper formatting and spacing.
+  reconstructs selectors from tokens.
+*/
+static void
+AppendSelectorToken(const nsCSSToken& aToken,
+                   nsAutoString& aSelectorText,
+                   int32_t& aParenDepth, 
+                   bool& aHasContent)
+{
+  aHasContent = true;
+  
+  // space calculation depending on paren nesting
+  bool needSpace = false;
+  if (!aSelectorText.IsEmpty()) {
+    char16_t lastChar = aSelectorText.Last();
+    
+    // nth-child formulas: no spaces inside paren
+    if (aParenDepth > 0) {
+      // add space before and after 'of'
+      if (aToken.mType == eCSSToken_Ident && aToken.mIdent.LowerCaseEqualsLiteral("of")) {
+        needSpace = true;
+      }
+      else if (aToken.mType != eCSSToken_Ident && lastChar != '(' && lastChar != ' ' && 
+               aSelectorText.Length() >= 2) {
+        nsAutoString lastTwo;
+        if (aSelectorText.Length() >= 2) {
+          lastTwo = Substring(aSelectorText, aSelectorText.Length() - 2, 2);
+          if (lastTwo.EqualsLiteral("of")) {
+            needSpace = true;
+          }
+        }
+      }
+    } else {
+      // normal case: standard spacing rules (add space before 
+      // identifiers/classes if last char is alphanumeric)
+      if ((aToken.mType == eCSSToken_Ident || aToken.mType == eCSSToken_Symbol) &&
+        std::string(" :.#[(>+~," ).find(lastChar) == std::string::npos) {
+  
+        static const std::regex letter_regex("[a-zA-Z]");
+        static const std::regex ident_regex("[a-zA-Z0-9)]");
+        std::string lastCharStr(1, lastChar);
+  
+        // special case: if it follows an identifier, add space before '.'
+        if (aToken.mType == eCSSToken_Symbol && aToken.mSymbol == '.' &&
+            std::regex_match(lastCharStr, letter_regex)) {
+            needSpace = true;
+        }
+        // add space between consecutive identifiers
+        else if (aToken.mType == eCSSToken_Ident &&
+                std::regex_match(lastCharStr, ident_regex)) {
+            needSpace = true;
+        }
+      }
+    }
+  }
+  
+  // token reconstruction
+  switch (aToken.mType) {
+    case eCSSToken_Ident:
+      if (needSpace) aSelectorText.Append(' ');
+      aSelectorText.Append(aToken.mIdent);
+      break;
+      
+    case eCSSToken_AtKeyword:
+      if (needSpace) aSelectorText.Append(' ');
+      aSelectorText.Append('@');
+      aSelectorText.Append(aToken.mIdent);
+      break;
+      
+    case eCSSToken_ID:
+      aSelectorText.Append('#');
+      aSelectorText.Append(aToken.mIdent);
+      break;
+      
+    case eCSSToken_Hash:
+      aSelectorText.Append('#');
+      aSelectorText.Append(aToken.mIdent);
+      break;
+      
+    case eCSSToken_Symbol:
+      if ((aToken.mSymbol == '+' || aToken.mSymbol == '-') && aParenDepth > 0) {
+        aSelectorText.Append(aToken.mSymbol);
+      }
+
+      // add spaces around combinators (at top level)
+      else if ((aToken.mSymbol == '+' || aToken.mSymbol == '>' || aToken.mSymbol == '~') && aParenDepth == 0) {
+        if (!aSelectorText.IsEmpty() && aSelectorText.Last() != ' ') {
+          aSelectorText.Append(' ');
+        }
+        aSelectorText.Append(aToken.mSymbol);
+        aSelectorText.Append(' ');
+      }
+
+      else if (aToken.mSymbol == '.' && !aSelectorText.IsEmpty()) {
+        char16_t lastChar = aSelectorText.Last();
+        if ((lastChar >= 'a' && lastChar <= 'z') || (lastChar >= 'A' && lastChar <= 'Z')) {
+          aSelectorText.Append(' ');
+        }
+        aSelectorText.Append(aToken.mSymbol);
+      }
+      else {
+        aSelectorText.Append(aToken.mSymbol);
+      }
+      break;
+      
+    case eCSSToken_String:
+      if (needSpace) aSelectorText.Append(' ');
+      aSelectorText.Append('"');
+      aSelectorText.Append(aToken.mIdent);
+      aSelectorText.Append('"');
+      break;
+      
+    case eCSSToken_Function:
+      if (needSpace) aSelectorText.Append(' ');
+      aSelectorText.Append(aToken.mIdent);
+      aSelectorText.Append('(');
+      aParenDepth++;
+      break;
+      
+    case eCSSToken_Number:
+      if (aToken.mHasSign && aParenDepth > 0) {
+        if (aToken.mNumber >= 0) {
+          aSelectorText.Append('+');
+        } else {
+          aSelectorText.Append('-');
+        }
+        if (std::abs(aToken.mNumber) == floor(std::abs(aToken.mNumber))) {
+          aSelectorText.AppendInt(int32_t(std::abs(aToken.mNumber)));
+        } else {
+          aSelectorText.AppendFloat(std::abs(aToken.mNumber));
+        }
+      } else {
+        if (needSpace) aSelectorText.Append(' ');
+        if (aToken.mNumber == floor(aToken.mNumber)) {
+          aSelectorText.AppendInt(int32_t(aToken.mNumber));
+        } else {
+          aSelectorText.AppendFloat(aToken.mNumber);
+        }
+      }
+      break;
+      
+    case eCSSToken_Dimension:
+      if (needSpace) aSelectorText.Append(' ');
+      if (aToken.mNumber == floor(aToken.mNumber)) {
+        aSelectorText.AppendInt(int32_t(aToken.mNumber));
+      } else {
+        aSelectorText.AppendFloat(aToken.mNumber);
+      }
+      aSelectorText.Append(aToken.mIdent);
+      break;
+      
+    default:
+      if (!aToken.mIdent.IsEmpty()) {
+        if (needSpace) aSelectorText.Append(' ');
+        aSelectorText.Append(aToken.mIdent);
+      }
+      break;
+  }
+}
+
+// supports_selector
+//   : 'selector(' single_selector ')'
+//   ;
+bool
+CSSParserImpl::ParseSupportsSelector(bool& aConditionMet)
+{
+  aConditionMet = false;
+
+  nsAutoString selectorText;
+  bool foundClosingParen = false;
+  bool hasContent = false;
+  int32_t parenDepth = 0;
+  
+
+  while (true) { 
+    // fail unexpected EOF
+    if (!GetToken(true)) {
+      return false; 
+    }
+    
+    if (mToken.IsSymbol(')')) {
+      if (parenDepth == 0) {
+        foundClosingParen = true;
+        break;
+      } else {
+        parenDepth--;
+        selectorText.Append(mToken.mSymbol);
+      }
+    } else if (mToken.IsSymbol('(')) {
+      parenDepth++;
+      selectorText.Append(mToken.mSymbol);
+    } else {
+      AppendSelectorToken(mToken, selectorText, parenDepth, hasContent);
+    }
+  }
+  
+  if (!foundClosingParen) {
+    return false;
+  }
+  
+  if (!hasContent) {
+    aConditionMet = false;
+    return true;
+  }
+  
+  selectorText.CompressWhitespace(true, true);
+  
+  if (selectorText.IsEmpty()) {
+    aConditionMet = false;
+    return true;
+  }
+
+  // reset parenDepth for comma checking
+  parenDepth = 0; 
+  for (uint32_t i = 0; i < selectorText.Length(); i++) {
+    char16_t c = selectorText.CharAt(i);
+    if (c == '(') {
+      parenDepth++;
+    } else if (c == ')') {
+      if (parenDepth > 0) {
+        parenDepth--;
+      }
+    } else if (c == ',' && parenDepth == 0) { 
+      // top-level comma found
+      aConditionMet = false;
+      return true;
+    }
+  }
+
+  // catch ::-webkit- pseudo-elements
+  if (selectorText.Find(NS_LITERAL_STRING("::-webkit-")) >= 0) {
+    aConditionMet = false;
+    return true;
+  }
+
+  // isolate parser instance to avoid state corruption
+  CSSParserImpl tempParser;
+  tempParser.SetStyleSheet(mSheet);
+  tempParser.SetChildLoader(mChildLoader);
+  
+  // check support
+  SelectorParsingFlags flags = SelectorParsingFlags::eNone;
+  nsCSSSelectorList* selectorList = nullptr;
+  bool supportSuccess = tempParser.ParseSelectorString(selectorText, mSheetURI, 0, &selectorList) == NS_OK;
+
+  // clean up
+  if (selectorList) {
+    delete selectorList;
+  }
+
+  aConditionMet = supportSuccess;
   return true;
 }
 
