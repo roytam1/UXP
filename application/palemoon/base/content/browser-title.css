@@ -6,7 +6,7 @@
     content: attr(title);
     line-height: 50px;
     max-height: 50px;
-    overflow: -moz-hidden-unscrollable;
+    overflow: clip;
     pointer-events: none;
     position: fixed;
     word-wrap: break-word;
