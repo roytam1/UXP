@@ -1332,7 +1332,7 @@ static const unsigned MaxTableElems               =     1024 * 1024;
 static const unsigned MaxDataSegments             =       64 * 1024;
 static const unsigned MaxElemSegments             =       64 * 1024;
 static const unsigned MaxArgsPerFunc              =        4 * 1024;
-static const unsigned MaxBrTableElems             = 4 * 1024 * 1024;
+static const unsigned MaxBrTableElems             =           65520;
 
 // To be able to assign function indices during compilation while the number of
 // imports is still unknown, asm.js sets a maximum number of imports so it can

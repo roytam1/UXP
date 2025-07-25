@@ -448,7 +448,7 @@ class gfxFontEntry::FontTableBlobData {
 public:
     explicit FontTableBlobData(nsTArray<uint8_t>&& aBuffer)
         : mTableData(Move(aBuffer))
-        , mHashtable(nullptr)
+        , mFontEntry(nullptr)
         , mHashKey(0)
     {
         MOZ_COUNT_CTOR(FontTableBlobData);
@@ -456,8 +456,9 @@ public:
 
     ~FontTableBlobData() {
         MOZ_COUNT_DTOR(FontTableBlobData);
-        if (mHashtable && mHashKey) {
-            mHashtable->RemoveEntry(mHashKey);
+        if (mFontEntry && mHashKey) {
+            RefPtr<gfxFontEntry> kungFuDeathGrip(mFontEntry);
+            mFontEntry->mFontTableCache->RemoveEntry(mHashKey);
         }
     }
 
@@ -470,10 +471,10 @@ public:
 
     // Tell this FontTableBlobData to remove the HashEntry when this is
     // destroyed.
-    void ManageHashEntry(nsTHashtable<FontTableHashEntry> *aHashtable,
+    void ManageHashEntry(gfxFontEntry* aFontEntry,
                          uint32_t aHashKey)
     {
-        mHashtable = aHashtable;
+        mFontEntry = aFontEntry;
         mHashKey = aHashKey;
     }
 
@@ -481,7 +482,7 @@ public:
     // removed from the hashtable).
     void ForgetHashEntry()
     {
-        mHashtable = nullptr;
+        mFontEntry = nullptr;
         mHashKey = 0;
     }
 
@@ -496,10 +497,11 @@ private:
     // The font table data block
     nsTArray<uint8_t> mTableData;
 
-    // The blob destroy function needs to know the owning hashtable
-    // and the hashtable key, so that it can remove the entry.
-    nsTHashtable<FontTableHashEntry> *mHashtable;
-    uint32_t                          mHashKey;
+    // The blob destroy function needs to know the owning font entry
+    // so that it can hold the font-entry's reference while modifying the
+    // hashtable; and the hashtable key, so that it can remove the entry.
+    gfxFontEntry*     mFontEntry;
+    uint32_t          mHashKey;
 
     // not implemented
     FontTableBlobData(const FontTableBlobData&);
@@ -508,7 +510,7 @@ private:
 hb_blob_t *
 gfxFontEntry::FontTableHashEntry::
 ShareTableAndGetBlob(nsTArray<uint8_t>&& aTable,
-                     nsTHashtable<FontTableHashEntry> *aHashtable)
+                     gfxFontEntry* aFontEntry)
 {
     Clear();
     // adopts elements of aTable
@@ -528,7 +530,7 @@ ShareTableAndGetBlob(nsTArray<uint8_t>&& aTable,
 
     // Tell the FontTableBlobData to remove this hash entry when destroyed.
     // The hashtable does not keep a strong reference.
-    mSharedBlobData->ManageHashEntry(aHashtable, GetKey());
+    mSharedBlobData->ManageHashEntry(aFontEntry, GetKey());
     return mBlob;
 }
 
@@ -600,7 +602,7 @@ gfxFontEntry::ShareFontTableAndGetBlob(uint32_t aTag,
         return nullptr;
     }
 
-    return entry->ShareTableAndGetBlob(Move(*aBuffer), mFontTableCache.get());
+    return entry->ShareTableAndGetBlob(Move(*aBuffer), this);
 }
 
 already_AddRefed<gfxCharacterMap>

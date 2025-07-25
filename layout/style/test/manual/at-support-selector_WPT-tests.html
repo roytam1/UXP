@@ -1,0 +1,304 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Conditional Tests: @supports selector() - Complete Test Suite</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.4;
+            margin: 20px;
+            max-width: 800px;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+
+        .test {
+            border: 1px solid #ddd;
+            margin: 20px 0;
+            padding: 15px;
+        }
+
+        .test h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+
+        .test-output {
+            height: 100px;
+            width: 100px;
+            border: 1px solid #999;
+            margin: 10px 0;
+        }
+
+        .expected {
+            font-weight: bold;
+            color: green;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 2px 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CSS Conditional Tests: @supports selector() - Complete Test Suite</h1>
+
+    <!-- Test 1 -->
+    <div class="test">
+        <h2>Test 1: @supports selector() with multiple selectors doesn't work</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong> and <strong>no red</strong>.</p>
+        <p>This tests whether browsers correctly fail the condition for multiple selectors in <code>selector()</code>.</p>
+        <div class="test-output" id="test1-output"></div>
+    </div>
+
+    <!-- Test 2 -->
+    <div class="test">
+        <h2>Test 2: @supports selector() with -webkit- unknown pseudo-elements and negation</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong> and <strong>no red</strong>.</p>
+        <p>This tests whether browsers correctly handle negation with an unknown pseudo-element.</p>
+        <div class="test-output" id="test2-output"></div>
+    </div>
+
+    <!-- Test 3 -->
+    <div class="test">
+        <h2>Test 3: @supports selector() with pseudo-elements</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong> and <strong>no red</strong>.</p>
+        <p>This tests whether browsers recognize pseudo-elements in the <code>selector()</code> function.</p>
+        <div class="test-output" id="test3-output"></div>
+    </div>
+
+    <!-- Test 4 -->
+    <div class="test">
+        <h2>Test 4: @supports selector() with compound selector</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong> and <strong>no red</strong>.</p>
+        <p>This tests whether browsers can handle complex compound selectors in the <code>selector()</code> function.</p>
+        <div class="test-output" id="test4-output"></div>
+    </div>
+
+    <!-- Test 5 -->
+    <div class="test">
+        <h2>Test 5: @supports selector() with unsupported but valid pseudo and negation</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong> and <strong>no red</strong>.</p>
+        <p>This tests whether browsers give back a valid syntax selector<br />
+        (obscure edge case CSS used: <b>:nth-child(1 of .foo)</b>) that isn't actually supported.</p>
+        <div class="test-output" id="test5-output"></div>
+    </div>
+
+    <!-- Test 6 -->
+    <div class="test">
+        <h2>Test 6: @supports selector() with cascade of selectors</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong> and <strong>no red</strong>.</p>
+        <p>This tests whether browsers can handle passing cascaded selectors.</p>
+        <div class="test-output" id="test6-output"></div>
+    </div>
+
+    <!-- Test 7 -->
+    <div class="test">
+        <h2>Test 7: @supports selector() with :has() pseudo-class and negation</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong> and <strong>no red</strong>.</p>
+        <p>This tests whether browsers correctly identify support for the :has() pseudo-class. This is not supported yet.</p>
+        <div class="test-output" id="test7-output"></div>
+    </div>
+
+    <!-- Test 8.1 -->
+    <div class="test">
+        <h2>Test 8.1: @supports selector(:nth-child(5n))</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong>.</p>
+        <div class="test-output" id="test8-output-1"></div>
+    </div>
+
+    <!-- Test 8.2 -->
+    <div class="test">
+        <h2>Test 8.2: @supports selector(:nth-child(2n))</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong>.</p>
+        <div class="test-output" id="test8-output-2"></div>
+    </div>
+
+    <!-- Test 8.3 -->
+    <div class="test">
+        <h2>Test 8.3: @supports selector(li:nth-child(2n))</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong>.</p>
+        <div class="test-output" id="test8-output-3"></div>
+    </div>
+
+    <!-- Test 8.4 -->
+    <div class="test">
+        <h2>Test 8.4: @supports selector(:nth-child(odd))</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong>.</p>
+        <div class="test-output" id="test8-output-4"></div>
+    </div>
+
+    <!-- Test 8.5 -->
+    <div class="test">
+        <h2>Test 8.5: @supports selector(:nth-child(even))</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong>.</p>
+        <div class="test-output" id="test8-output-5"></div>
+    </div>
+
+    <!-- Test 8.6 -->
+    <div class="test">
+        <h2>Test 8.6: @supports selector(:nth-child(3n+1))</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong>.</p>
+        <div class="test-output" id="test8-output-6"></div>
+    </div>
+
+    <!-- Test 8.7 -->
+    <div class="test">
+        <h2>Test 8.7: @supports selector(:nth-child(2n + 2))</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong>.</p>
+        <div class="test-output" id="test8-output-7"></div>
+    </div>
+
+    <!-- Test 9 -->
+    <div class="test">
+        <h2>Test 9: @supports not selector(div)</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong>.</p>
+        <div class="test-output" id="test9-output"></div>
+    </div>
+
+    <!-- Test 10 -->
+    <div class="test">
+        <h2>Test 10: Complex selector chain<br>
+        @supports selector(section > div:nth-child(2n+1):not(.foo, .bar):hover)</h2>
+        <p>Test passes if there is a <strong class="expected">filled green square</strong>.</p>
+        <div class="test-output" id="test10-output"></div>
+    </div>
+
+    <style>
+        /* Test 1 Styles */
+        #test1-output {
+            background-color: green;
+        }
+        @supports selector(div, div) {
+            #test1-output { background: red; }
+        }
+
+        /* Test 2 Styles */
+        #test2-output {
+            background-color: red;
+        }
+        @supports not selector(::-webkit-unknown-pseudo) {
+            #test2-output { background: green; }
+        }
+
+        /* Test 3 Styles */
+        #test3-output {
+            background-color: red;
+        }
+        @supports selector(::before) {
+            #test3-output { background: green; }
+        }
+
+        /* Test 4 Styles */
+        #test4-output {
+            background-color: red;
+        }
+        @supports selector(a:link.class#ident) {
+            #test4-output { background: green; }
+        }
+
+        /* Test 5 Styles */
+        #test5-output {
+            background-color: red;
+        }
+        @supports not selector(:nth-child(1 of .foo)) {
+            #test5-output { background: green; }
+        }
+
+        /* Test 6 Styles */
+        #test6-output {
+            background-color: red;
+        }
+        @supports selector(div > h2 + p) {
+            #test6-output { background: green; }
+        }
+
+        /* Test 7 Styles */
+        #test7-output {
+            background-color: red;
+        }
+        @supports not selector(div:has(p)) {
+            #test7-output { background: green; }
+        }
+
+        /* Test 8.1 Styles */
+        #test8-output-1 {
+            background-color: red;
+        }
+        @supports selector(:nth-child(5n)) {
+            #test8-output-1 { background: green; }
+        }
+
+        /* Test 8.2 Styles */
+        #test8-output-2 {
+            background-color: red;
+        }
+        @supports selector(:nth-child(2n)) {
+            #test8-output-2 { background: green; }
+        }
+
+        /* Test 8.3 Styles */
+        #test8-output-3 {
+            background-color: red;
+        }
+        @supports selector(li:nth-child(2n)) {
+            #test8-output-3 { background: green; }
+        }
+
+        /* Test 8.4 Styles */
+        #test8-output-4 {
+            background-color: red;
+        }
+        @supports selector(:nth-child(odd)) {
+            #test8-output-4 { background: green; }
+        }
+
+        /* Test 8.5 Styles */
+        #test8-output-5 {
+            background-color: red;
+        }
+        @supports selector(:nth-child(even)) {
+            #test8-output-5 { background: green; }
+        }
+
+        /* Test 8.6 Styles */
+        #test8-output-6 {
+            background-color: red;
+        }
+        @supports selector(:nth-child(3n+1)) {
+            #test8-output-6 { background: green; }
+        }
+
+        /* Test 8.7 Styles */
+        #test8-output-7 {
+            background-color: red;
+        }
+        @supports selector(:nth-child(2n + 2)) {
+            #test8-output-7 { background: green; }
+        }
+
+        /* Test 9 Styles */
+        #test9-output {
+            background-color: green;
+        }
+        @supports not selector(div) {
+            #test9-output { background: red; }
+        }
+
+        /* Test 10 Styles */
+        #test10-output {
+            background-color: red;
+        }
+        @supports selector(section > div:nth-child(2n+1):not(.foo, .bar):hover) {
+            #test10-output { background: green; }
+        }
+    </style>
+</body>
+</html>
