@@ -91,7 +91,7 @@
 #include "mozilla/Preferences.h"
 #include "prprf.h"
 #include "xpcpublic.h"
-#include "nsCSSRuleProcessor.h"
+#include "nsCSSRuleUtils.h"
 #include "nsCSSParser.h"
 #include "HTMLLegendElement.h"
 #include "nsWrapperCacheInlines.h"
@@ -2912,9 +2912,9 @@ FindMatchingElementsWithId(const nsAString& aId, nsINode* aRoot,
       // We have an element with the right id and it's a strict descendant
       // of aRoot.  Make sure it really matches the selector.
       if (!aMatchInfo ||
-          nsCSSRuleProcessor::RestrictedSelectorListMatches(element,
-                                                            aMatchInfo->mMatchContext,
-                                                            aMatchInfo->mSelectorList)) {
+          nsCSSRuleUtils::RestrictedSelectorListMatches(element,
+                                                        aMatchInfo->mMatchContext,
+                                                        aMatchInfo->mSelectorList)) {
         aList.AppendElement(element);
         if (onlyFirstMatch) {
           return;
@@ -2965,9 +2965,9 @@ FindMatchingElements(nsINode* aRoot, nsCSSSelectorList* aSelectorList, T &aList,
        cur;
        cur = cur->GetNextNode(aRoot)) {
     if (cur->IsElement() &&
-        nsCSSRuleProcessor::RestrictedSelectorListMatches(cur->AsElement(),
-                                                          matchingContext,
-                                                          aSelectorList)) {
+        nsCSSRuleUtils::RestrictedSelectorListMatches(cur->AsElement(),
+                                                      matchingContext,
+                                                      aSelectorList)) {
       if (onlyFirstMatch) {
         aList.AppendElement(cur->AsElement());
         return;

@@ -3372,15 +3372,18 @@ namespace mozilla {
 
 CSSLayerStatementRule::CSSLayerStatementRule(
                        const nsTArray<nsString>& aNameList,
+                       const nsTArray<nsTArray<nsString>>& aPathList,
                        uint32_t aLineNumber, uint32_t aColumnNumber)
   : Rule(aLineNumber, aColumnNumber)
   , mNameList(aNameList)
+  , mPathList(aPathList)
 {
 }
 
 CSSLayerStatementRule::CSSLayerStatementRule(const CSSLayerStatementRule& aCopy)
   : Rule(aCopy)
   , mNameList(aCopy.mNameList)
+  , mPathList(aCopy.mPathList)
 {
 }
 
@@ -3407,6 +3410,7 @@ NS_IMPL_CYCLE_COLLECTION_CLASS(CSSLayerStatementRule)
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(CSSLayerStatementRule)
   tmp->mNameList.Clear();
+  tmp->mPathList.Clear();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(CSSLayerStatementRule, mozilla::css::Rule)
@@ -3458,10 +3462,28 @@ CSSLayerStatementRule::GetNameList(nsTArray<nsString>& aResult)
   aResult = mNameList;
 }
 
+void
+CSSLayerStatementRule::GetPathList(nsTArray<nsTArray<nsString>>& aResult)
+{
+  aResult = mPathList;
+}
+
 /* virtual */ size_t
 CSSLayerStatementRule::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
 {
-  return aMallocSizeOf(this);
+  size_t n = aMallocSizeOf(this);
+  n += mNameList.ShallowSizeOfExcludingThis(aMallocSizeOf);
+  for (const nsString& s : mNameList) {
+    n += s.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
+  }
+  n += mPathList.ShallowSizeOfExcludingThis(aMallocSizeOf);
+  for (const nsTArray<nsString>& inner : mPathList) {
+    n += inner.ShallowSizeOfExcludingThis(aMallocSizeOf);
+    for (const nsString& str : inner) {
+      n += str.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
+    }
+  }
+  return n;
 }
 
 /* virtual */ JSObject*
@@ -3477,9 +3499,11 @@ CSSLayerStatementRule::WrapObject(JSContext* aCx,
 //
 
 CSSLayerBlockRule::CSSLayerBlockRule(const nsString& aName,
+                                     const nsTArray<nsString>& aPath,
                                      uint32_t aLineNumber, uint32_t aColumnNumber)
   : css::GroupRule(aLineNumber, aColumnNumber)
   , mName(aName)
+  , mPath(aPath)
 {
 }
 
@@ -3490,6 +3514,7 @@ CSSLayerBlockRule::~CSSLayerBlockRule()
 CSSLayerBlockRule::CSSLayerBlockRule(const CSSLayerBlockRule& aCopy)
   : css::GroupRule(aCopy)
   , mName(aCopy.mName)
+  , mPath(aCopy.mPath)
 {
 }
 
@@ -3522,14 +3547,31 @@ CSSLayerBlockRule::UseForPresentation(nsPresContext* aPresContext,
   return true;
 }
 
-NS_IMPL_ADDREF_INHERITED(CSSLayerBlockRule, css::GroupRule)
-NS_IMPL_RELEASE_INHERITED(CSSLayerBlockRule, css::GroupRule)
+void
+CSSLayerBlockRule::GetPath(nsTArray<nsString>& aResult)
+{
+  aResult = mPath;
+}
+
+NS_IMPL_ADDREF_INHERITED(CSSLayerBlockRule, GroupRule)
+NS_IMPL_RELEASE_INHERITED(CSSLayerBlockRule, GroupRule)
 
 // QueryInterface implementation for CSSLayerBlockRule
-NS_INTERFACE_MAP_BEGIN(CSSLayerBlockRule)
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(CSSLayerBlockRule)
   NS_INTERFACE_MAP_ENTRY(nsIDOMCSSGroupingRule)
   NS_INTERFACE_MAP_ENTRY(nsIDOMCSSLayerBlockRule)
 NS_INTERFACE_MAP_END_INHERITING(GroupRule)
+
+NS_IMPL_CYCLE_COLLECTION_CLASS(CSSLayerBlockRule)
+
+NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(CSSLayerBlockRule,
+                                                GroupRule)
+  tmp->mPath.Clear();
+NS_IMPL_CYCLE_COLLECTION_UNLINK_END
+
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(CSSLayerBlockRule,
+                                                  GroupRule)
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 uint16_t
 CSSLayerBlockRule::Type() const
@@ -3566,9 +3608,9 @@ CSSLayerBlockRule::DeleteRule(uint32_t aIndex)
 
 // nsIDOMCSSLayerBlockRule methods
 NS_IMETHODIMP
-CSSLayerBlockRule::GetName(nsAString& aConditionText)
+CSSLayerBlockRule::GetName(nsAString& aLayerName)
 {
-  aConditionText.Assign(mName);
+  aLayerName.Assign(mName);
   return NS_OK;
 }
 
@@ -3578,6 +3620,10 @@ CSSLayerBlockRule::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
   size_t n = aMallocSizeOf(this);
   n += css::GroupRule::SizeOfExcludingThis(aMallocSizeOf);
   n += mName.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
+  n += mPath.ShallowSizeOfExcludingThis(aMallocSizeOf);
+  for (const nsString& s : mPath) {
+    n += s.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
+  }
   return n;
 }
 

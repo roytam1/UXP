@@ -23,13 +23,10 @@
 #include "nsRuleWalker.h"
 #include "nsTArray.h"
 
-struct CascadeEnumData;
+struct CascadeLayer;
 struct ElementDependentRuleProcessorData;
-struct nsCSSSelector;
-struct nsCSSSelectorList;
 struct nsFontFaceRuleContainer;
-struct RuleCascadeData;
-struct TreeMatchContext;
+struct RuleProcessorGroup;
 class nsCSSKeyframesRule;
 class nsCSSPageRule;
 class nsCSSFontFeatureValuesRule;
@@ -54,7 +51,7 @@ class DocumentRule;
  * is told when the rule processor is going away (via DropRuleProcessor).
  */
 
-class nsCSSRuleProcessor: public nsIStyleRuleProcessor {
+class nsCSSRuleProcessor : public nsIStyleRuleProcessor {
 public:
   typedef nsTArray<RefPtr<mozilla::CSSStyleSheet>> sheet_array_type;
 
@@ -77,60 +74,7 @@ public:
   NS_DECL_CYCLE_COLLECTION_CLASS(nsCSSRuleProcessor)
 
 public:
-  nsresult ClearRuleCascades();
-
-  static void Startup();
-  static void Shutdown();
-  static void FreeSystemMetrics();
-  static bool HasSystemMetric(nsIAtom* aMetric);
-
-  /*
-   * Returns true if the given aElement matches one of the
-   * selectors in aSelectorList.  Note that this method will assume
-   * the given aElement is not a relevant link.  aSelectorList must not
-   * include any pseudo-element selectors.  aSelectorList is allowed
-   * to be null; in this case false will be returned.
-   */
-  static bool RestrictedSelectorListMatches(mozilla::dom::Element* aElement,
-                                            TreeMatchContext& aTreeMatchContext,
-                                            nsCSSSelectorList* aSelectorList);
-
-  /*
-   * Helper to get the content state for a content node.  This may be
-   * slightly adjusted from IntrinsicState().
-   */
-  static mozilla::EventStates GetContentState(
-                                mozilla::dom::Element* aElement,
-                                const TreeMatchContext& aTreeMatchContext);
-
-  /*
-   * Helper to get the content state for :visited handling for an element
-   */
-  static mozilla::EventStates GetContentStateForVisitedHandling(
-             mozilla::dom::Element* aElement,
-             const TreeMatchContext& aTreeMatchContext,
-             nsRuleWalker::VisitedHandlingType aVisitedHandling,
-             bool aIsRelevantLink);
-
-  /*
-   * Helper to test whether a node is a link
-   */
-  static bool IsLink(const mozilla::dom::Element* aElement);
-
-  /**
-   * Returns true if the given aElement matches aSelector.
-   * Like nsCSSRuleProcessor.cpp's SelectorMatches (and unlike
-   * SelectorMatchesTree), this does not check an entire selector list
-   * separated by combinators.
-   *
-   * :visited and :link will match both visited and non-visited links,
-   * as if aTreeMatchContext->mVisitedHandling were eLinksVisitedOrUnvisited.
-   *
-   * aSelector is restricted to not containing pseudo-elements.
-   */
-  static bool RestrictedSelectorMatches(mozilla::dom::Element* aElement,
-                                        nsCSSSelector* aSelector,
-                                        TreeMatchContext& aTreeMatchContext);
+  nsresult ClearGroup();
 
   // nsIStyleRuleProcessor
   virtual void RulesMatching(ElementRuleProcessorData* aData) override;
@@ -154,6 +98,9 @@ public:
                                  override;
 
   virtual bool MediumFeaturesChanged(nsPresContext* aPresContext) override;
+
+  virtual nsTArray<nsCOMPtr<nsIStyleRuleProcessor>>* GetChildRuleProcessors()
+    override;
 
   /**
    * If this rule processor currently has a substantive media query
@@ -207,33 +154,15 @@ public:
   bool IsInRuleProcessorCache() const { return mInRuleProcessorCache; }
   bool IsUsedByMultipleStyleSets() const { return mStyleSetRefCnt > 1; }
 
-#ifdef XP_WIN
-  // Cached theme identifier for the moz-windows-theme media query.
-  static uint8_t GetWindowsThemeIdentifier();
-  static void SetWindowsThemeIdentifier(uint8_t aId) { 
-    sWinThemeId = aId;
-  }
-#endif
-
-  struct StateSelector {
-    StateSelector(mozilla::EventStates aStates, nsCSSSelector* aSelector)
-      : mStates(aStates),
-        mSelector(aSelector)
-    {}
-
-    mozilla::EventStates mStates;
-    nsCSSSelector* mSelector;
-  };
-
 protected:
   virtual ~nsCSSRuleProcessor();
 
 private:
   static bool CascadeSheet(mozilla::CSSStyleSheet* aSheet,
-                           CascadeEnumData* aData);
+                           CascadeLayer* aLayer);
 
-  RuleCascadeData* GetRuleCascade(nsPresContext* aPresContext);
-  void RefreshRuleCascade(nsPresContext* aPresContext);
+  RuleProcessorGroup* GetGroup(nsPresContext* aPresContext);
+  void RefreshGroup(nsPresContext* aPresContext);
 
   nsRestyleHint HasStateDependentStyle(ElementDependentRuleProcessorData* aData,
                                        mozilla::dom::Element* aStatefulElement,
@@ -246,14 +175,14 @@ private:
   sheet_array_type mSheets;
 
   // active first, then cached (most recent first)
-  RuleCascadeData* mRuleCascades;
+  RuleProcessorGroup* mGroup;
 
-  // If we cleared our mRuleCascades or replaced a previous rule
+  // If we cleared our mGroup or replaced a previous rule
   // processor, this is the media query result cache key that was used
-  // before we lost the old rule cascades.
+  // before we lost the old group.
   mozilla::UniquePtr<nsMediaQueryResultCacheKey> mPreviousCacheKey;
 
-  // The last pres context for which GetRuleCascades was called.
+  // The last pres context for which GetGroup was called.
   nsPresContext *mLastPresContext;
 
   // The scope element for this rule processor's scoped style sheets.
@@ -272,19 +201,15 @@ private:
   const bool mIsShared;
 
   // Whether we need to build up mDocumentCacheKey and mDocumentRules as
-  // we build a RuleCascadeData.  Is true only for shared rule processors
-  // and only before we build the first RuleCascadeData.  See comment in
-  // RefreshRuleCascade for why.
+  // we build RuleProcessorGroup.  Is true only for shared rule processors
+  // and only before we build the first RuleProcessorGroup.  See comment in
+  // RefreshGroup for why.
   bool mMustGatherDocumentRules;
 
   bool mInRuleProcessorCache;
 
 #ifdef DEBUG
   bool mDocumentRulesAndCacheKeyValid;
-#endif
-
-#ifdef XP_WIN
-  static uint8_t sWinThemeId;
 #endif
 };
 

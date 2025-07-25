@@ -35,7 +35,7 @@
 #include "nsViewManager.h"
 #include "mozilla/RestyleManager.h"
 #include "SurfaceCacheUtils.h"
-#include "nsCSSRuleProcessor.h"
+#include "nsCSSRuleUtils.h"
 #include "nsRuleNode.h"
 #include "gfxPlatform.h"
 #include "nsCSSRules.h"
@@ -1650,7 +1650,7 @@ nsPresContext::ThemeChangedInternal()
   }
 
   // This will force the system metrics to be generated the next time they're used
-  nsCSSRuleProcessor::FreeSystemMetrics();
+  nsCSSRuleUtils::FreeSystemMetrics();
 
   // Changes to system metrics can change media queries on them, or
   // :-moz-system-metric selectors (which requires eRestyle_Subtree).
@@ -1691,7 +1691,7 @@ nsPresContext::SysColorChangedInternal()
   }
 
   // Invalidate cached '-moz-windows-accent-color-applies' media query:
-  nsCSSRuleProcessor::FreeSystemMetrics();
+  nsCSSRuleUtils::FreeSystemMetrics();
 
   // Reset default background and foreground colors for the document since
   // they may be using system colors

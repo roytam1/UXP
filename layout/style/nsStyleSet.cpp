@@ -1086,6 +1086,43 @@ nsStyleSet::AssertNoCSSRules(nsRuleNode* aCurrLevelNode,
 }
 #endif
 
+static MOZ_ALWAYS_INLINE void
+FileRulesFromAllChildProcessors(
+  nsCOMPtr<nsIStyleRuleProcessor> aParentProcessor,
+  nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
+  RuleProcessorData* aData,
+  nsRuleWalker* aRuleWalker,
+  mozilla::SheetType aLevel,
+  nsRuleNode*& aLastRN,
+  nsTArray<nsRuleNode*>& aLastRNs,
+  nsTArray<bool>& aHaveImportantOriginRules,
+  bool& aHaveAnyImportantOriginRules)
+{
+  if (!aParentProcessor) {
+    return;
+  }
+
+  nsTArray<nsCOMPtr<nsIStyleRuleProcessor>>* processors =
+    aParentProcessor->GetChildRuleProcessors();
+  if (!processors) {
+    (*aCollectorFunc)(aParentProcessor, aData);
+    return;
+  }
+
+  for (nsCOMPtr<nsIStyleRuleProcessor> processor : *processors) {
+    aRuleWalker->SetLevel(aLevel, false, true);
+    (*aCollectorFunc)(processor, aData);
+
+    aLastRN = aRuleWalker->CurrentNode();
+    aLastRNs.AppendElement(aLastRN);
+
+    bool haveImportantRules = !aRuleWalker->GetCheckForImportantRules();
+    aHaveImportantOriginRules.AppendElement(haveImportantRules);
+    aHaveAnyImportantOriginRules =
+      aHaveAnyImportantOriginRules || haveImportantRules;
+  }
+}
+
 // Enumerate the rules in a way that cares about the order of the rules.
 void
 nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
@@ -1096,6 +1133,9 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
     js::ProfileEntry::Category::CSS);
 
   NS_ASSERTION(mBatching == 0, "rule processors out of date");
+
+  bool skipUserStyles =
+    aElement && aElement->IsInNativeAnonymousSubtree();
 
   // Cascading order:
   // [least important]
@@ -1117,19 +1157,41 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
   // this will be either the root or one of the restriction rules.
   nsRuleNode* lastRestrictionRN = aRuleWalker->CurrentNode();
 
-  aRuleWalker->SetLevel(SheetType::Agent, false, true);
-  if (mRuleProcessors[SheetType::Agent])
-    (*aCollectorFunc)(mRuleProcessors[SheetType::Agent], aData);
-  nsRuleNode* lastAgentRN = aRuleWalker->CurrentNode();
-  bool haveImportantUARules = !aRuleWalker->GetCheckForImportantRules();
+  nsRuleNode* lastAgentRN = nullptr;
+  nsTArray<nsRuleNode*> lastAgentRNs;
+  nsTArray<bool> haveImportantAgentRules;
+  bool haveAnyImportantAgentRules = false;
+  FileRulesFromAllChildProcessors(mRuleProcessors[SheetType::Agent],
+                                  aCollectorFunc,
+                                  aData,
+                                  aRuleWalker,
+                                  SheetType::Agent,
+                                  lastAgentRN,
+                                  lastAgentRNs,
+                                  haveImportantAgentRules,
+                                  haveAnyImportantAgentRules);
+  if (!lastAgentRN) {
+    lastAgentRN = aRuleWalker->CurrentNode();
+  }
 
-  aRuleWalker->SetLevel(SheetType::User, false, true);
-  bool skipUserStyles =
-    aElement && aElement->IsInNativeAnonymousSubtree();
-  if (!skipUserStyles && mRuleProcessors[SheetType::User]) // NOTE: different
-    (*aCollectorFunc)(mRuleProcessors[SheetType::User], aData);
-  nsRuleNode* lastUserRN = aRuleWalker->CurrentNode();
-  bool haveImportantUserRules = !aRuleWalker->GetCheckForImportantRules();
+  nsRuleNode* lastUserRN = nullptr;
+  nsTArray<nsRuleNode*> lastUserRNs;
+  nsTArray<bool> haveImportantUserRules;
+  bool haveAnyImportantUserRules = false;
+  if (!skipUserStyles) { // NOTE: different
+    FileRulesFromAllChildProcessors(mRuleProcessors[SheetType::User],
+                                    aCollectorFunc,
+                                    aData,
+                                    aRuleWalker,
+                                    SheetType::User,
+                                    lastUserRN,
+                                    lastUserRNs,
+                                    haveImportantUserRules,
+                                    haveAnyImportantUserRules);
+  }
+  if (!lastUserRN) {
+    lastUserRN = aRuleWalker->CurrentNode();
+  }
 
   aRuleWalker->SetLevel(SheetType::PresHint, false, false);
   if (mRuleProcessors[SheetType::PresHint])
@@ -1148,16 +1210,35 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
                                static_cast<ElementDependentRuleProcessorData*>(aData),
                                &cutOffInheritance);
   }
-  if (!skipUserStyles && !cutOffInheritance && // NOTE: different
-      mRuleProcessors[SheetType::Doc])
-    (*aCollectorFunc)(mRuleProcessors[SheetType::Doc], aData);
-  nsRuleNode* lastDocRN = aRuleWalker->CurrentNode();
-  bool haveImportantDocRules = !aRuleWalker->GetCheckForImportantRules();
+  bool haveImportantNACRules = !aRuleWalker->GetCheckForImportantRules();
+
+  nsRuleNode* lastDocRN = nullptr;
+  nsTArray<nsRuleNode*> lastDocRNs;
+  nsTArray<bool> haveImportantDocRules;
+  bool haveAnyImportantDocRules = haveImportantNACRules;
+  if (!skipUserStyles && !cutOffInheritance) { // NOTE: different
+    FileRulesFromAllChildProcessors(mRuleProcessors[SheetType::Doc],
+                                    aCollectorFunc,
+                                    aData,
+                                    aRuleWalker,
+                                    SheetType::Doc,
+                                    lastDocRN,
+                                    lastDocRNs,
+                                    haveImportantDocRules,
+                                    haveAnyImportantDocRules);
+  }
+  if (!lastDocRN) {
+    lastDocRN = aRuleWalker->CurrentNode();
+  }
+
   nsTArray<nsRuleNode*> lastScopedRNs;
   nsTArray<bool> haveImportantScopedRules;
   bool haveAnyImportantScopedRules = false;
   if (!skipUserStyles && !cutOffInheritance &&
       aElement && aElement->IsElementInStyleScope()) {
+    // XXX: Scoped style sheets will add important rules from cascade
+    // layers in reverse order. Behavior for layers inside this isn't
+    // specced and isn't worth the additional complexity.
     lastScopedRNs.SetLength(mScopedDocSheetRuleProcessors.Length());
     haveImportantScopedRules.SetLength(mScopedDocSheetRuleProcessors.Length());
     for (uint32_t i = 0; i < mScopedDocSheetRuleProcessors.Length(); i++) {
@@ -1173,6 +1254,7 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
     aData->mScope = nullptr;
   }
   nsRuleNode* lastScopedRN = aRuleWalker->CurrentNode();
+
   aRuleWalker->SetLevel(SheetType::StyleAttr, false, true);
   if (mRuleProcessors[SheetType::StyleAttr])
     (*aCollectorFunc)(mRuleProcessors[SheetType::StyleAttr], aData);
@@ -1210,9 +1292,21 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
   }
 #endif
 
-  if (haveImportantDocRules) {
-    aRuleWalker->SetLevel(SheetType::Doc, true, false);
-    AddImportantRules(lastDocRN, lastSVGAttrAnimationRN, aRuleWalker);  // doc
+  if (haveAnyImportantDocRules) {
+    for (uint32_t i = lastDocRNs.Length(); i-- != 0; ) {
+      aRuleWalker->SetLevel(SheetType::Doc, true, false);
+      nsRuleNode* startRN = lastDocRNs[i];
+      nsRuleNode* endRN = i == 0 ? lastSVGAttrAnimationRN : lastDocRNs[i - 1];
+      bool isNearestToNACWithImportantRules = i == 0 && haveImportantNACRules;
+      if (haveImportantDocRules[i] || isNearestToNACWithImportantRules) {
+        AddImportantRules(startRN, endRN, aRuleWalker); // doc
+      }
+#ifdef DEBUG
+      else {
+        AssertNoImportantRules(startRN, endRN);
+      }
+#endif
+    }
   }
 #ifdef DEBUG
   else {
@@ -1244,9 +1338,20 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
   AssertNoCSSRules(lastSVGAttrAnimationRN, lastUserRN);
 #endif
 
-  if (haveImportantUserRules) {
-    aRuleWalker->SetLevel(SheetType::User, true, false);
-    AddImportantRules(lastUserRN, lastAgentRN, aRuleWalker); //user
+  if (haveAnyImportantUserRules) {
+    for (uint32_t i = lastUserRNs.Length(); i-- != 0;) {
+      aRuleWalker->SetLevel(SheetType::User, true, false);
+      nsRuleNode* startRN = lastUserRNs[i];
+      nsRuleNode* endRN = i == 0 ? lastAgentRN : lastUserRNs[i - 1];
+      if (haveImportantUserRules[i]) {
+        AddImportantRules(startRN, endRN, aRuleWalker); // user
+      }
+#ifdef DEBUG
+      else {
+        AssertNoImportantRules(startRN, endRN);
+      }
+#endif
+    }
   }
 #ifdef DEBUG
   else {
@@ -1254,9 +1359,20 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
   }
 #endif
 
-  if (haveImportantUARules) {
-    aRuleWalker->SetLevel(SheetType::Agent, true, false);
-    AddImportantRules(lastAgentRN, lastRestrictionRN, aRuleWalker); //agent
+  if (haveAnyImportantAgentRules) {
+    for (uint32_t i = lastAgentRNs.Length(); i-- != 0;) {
+      aRuleWalker->SetLevel(SheetType::Agent, true, false);
+      nsRuleNode* startRN = lastAgentRNs[i];
+      nsRuleNode* endRN = i == 0 ? lastRestrictionRN : lastAgentRNs[i - 1];
+      if (haveImportantAgentRules[i]) {
+        AddImportantRules(startRN, endRN, aRuleWalker); // agent
+      }
+#ifdef DEBUG
+      else {
+        AssertNoImportantRules(startRN, endRN);
+      }
+#endif
+    }
   }
 #ifdef DEBUG
   else {
@@ -1373,10 +1489,10 @@ nsStyleSet::ResolveStyleFor(Element* aElement,
   }
 
   uint32_t flags = eDoAnimation;
-  if (nsCSSRuleProcessor::IsLink(aElement)) {
+  if (nsCSSRuleUtils::IsLink(aElement)) {
     flags |= eIsLink;
   }
-  if (nsCSSRuleProcessor::GetContentState(aElement, aTreeMatchContext).
+  if (nsCSSRuleUtils::GetContentState(aElement, aTreeMatchContext).
                             HasState(NS_EVENT_STATE_VISITED)) {
     flags |= eIsVisitedLink;
   }

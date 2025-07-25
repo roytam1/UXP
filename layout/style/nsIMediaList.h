@@ -62,7 +62,7 @@ struct nsMediaExpression {
  *
  * This object may not be used after any media rules in any of the
  * sheets it was given to have been modified.  However, this is
- * generally not a problem since ClearRuleCascades is called on the
+ * generally not a problem since ClearGroup is called on the
  * sheet whenever this happens, and these objects are stored inside the
  * rule cascades.  (FIXME: We're not actually doing this all the time.)
  *
