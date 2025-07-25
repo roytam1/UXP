@@ -5241,8 +5241,11 @@ CSSParserImpl::ParseSupportsConditionTermsAfterOperator(
 bool
 CSSParserImpl::ParseLayerRule(RuleAppendFunc aAppendFunc, void* aProcessData)
 {
-  nsString layerName;
-  nsTArray<nsString>* nameList = new nsTArray<nsString>();
+  nsString name;
+  nsTArray<nsString> path;
+
+  nsTArray<nsString> nameList;
+  nsTArray<nsTArray<nsString>> pathList;
 
   uint32_t linenum, colnum;
   if (!GetNextTokenLocation(true, &linenum, &colnum)) {
@@ -5258,8 +5261,8 @@ CSSParserImpl::ParseLayerRule(RuleAppendFunc aAppendFunc, void* aProcessData)
   // followed by a "{", which indicates an anonymous layer.
   bool isStatement = false;
   if (tk->mType == eCSSToken_Ident) {
-    nsString* currentName = new nsString();
-    currentName->Assign(tk->mIdent);
+    name.Assign(tk->mIdent);
+    path.AppendElement(tk->mIdent);
 
     bool parsing = true;
     bool expectIdent = false;
@@ -5272,49 +5275,40 @@ CSSParserImpl::ParseLayerRule(RuleAppendFunc aAppendFunc, void* aProcessData)
         case eCSSToken_Symbol: {
           if ('.' == tk->mSymbol) {
             expectIdent = true;
-            if (!currentName->IsEmpty()) {
-              currentName->Append(tk->mSymbol);
+            if (!name.IsEmpty()) {
+              name.Append(tk->mSymbol);
               continue;
             }
             parsing = false;
             break;
-          } else if (',' == tk->mSymbol) {
+          } else if (',' == tk->mSymbol || ';' == tk->mSymbol || '{' == tk->mSymbol) {
             if (expectIdent) {
               parsing = false;
               break;
             }
-            nameList->AppendElement(*currentName);
-            currentName = new nsString();
+            nameList.AppendElement(name);
+            pathList.AppendElement(path);
+            if ('{' == tk->mSymbol) {
+              if (nameList.Length() > 1) {
+                return false;
+              }
+              parsing = false;
+              break;
+            } else if (';' == tk->mSymbol) {
+              isStatement = true;
+              parsing = false;
+              break;
+            }
+            name.Truncate();
+            path.Clear();
             expectIdent = true;
             continue;
-          } else if (';' == tk->mSymbol) {
-            if (expectIdent) {
-              parsing = false;
-              break;
-            }
-            nameList->AppendElement(*currentName);
-            currentName = new nsString();
-            isStatement = true;
-            parsing = false;
-            break;
-          } else if ('{' == tk->mSymbol) {
-            if (expectIdent) {
-              parsing = false;
-              break;
-            }
-            nameList->AppendElement(*currentName);
-            uint32_t nameListLength = nameList->Length();
-            if (nameListLength == 0 || nameListLength > 1) {
-              return false;
-            }
-            layerName.Assign(nameList->ElementAt(0));
-            parsing = false;
-            break;
           }
         }
         case eCSSToken_Ident: {
           expectIdent = false;
-          currentName->Append(tk->mIdent);
+          name.Append(tk->mIdent);
+          path.AppendElement(tk->mIdent);
           break;
         }
         default: {
@@ -5326,22 +5320,26 @@ CSSParserImpl::ParseLayerRule(RuleAppendFunc aAppendFunc, void* aProcessData)
     if (expectIdent) {
       UngetToken();
       return false;
-    }    
-  } else if (tk->mType == eCSSToken_Symbol && '{' != tk->mSymbol) {
-    UngetToken();
+    }
+  } else if (tk->mType == eCSSToken_Symbol) {
+    if ('{' != tk->mSymbol) {
+      UngetToken();
+      return false;
+    }
+  } else {
     return false;
   }
 
   if (isStatement) {
     RefPtr<CSSLayerStatementRule> rule =
-      new CSSLayerStatementRule(*nameList, linenum, colnum);
+      new CSSLayerStatementRule(nameList, pathList, linenum, colnum);
     (*aAppendFunc)(rule, aProcessData);
     return true;
   }
 
   UngetToken();
   RefPtr<css::GroupRule> rule =
-    new CSSLayerBlockRule(layerName, linenum, colnum);
+    new CSSLayerBlockRule(name, path, linenum, colnum);
   return ParseGroupRule(rule, aAppendFunc, aProcessData);
 }
 

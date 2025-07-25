@@ -70,6 +70,40 @@ nsCSSPseudoClasses::sPseudoClassEnabled[] = {
 #undef IS_ENABLED_BY_DEFAULT
 };
 
+// Arrays of the states that are relevant for various pseudoclasses.
+
+/* static */ const mozilla::EventStates
+nsCSSPseudoClasses::sPseudoClassStateDependences[] = {
+#define CSS_PSEUDO_CLASS(_name, _value, _flags, _pref) EventStates(),
+#define CSS_STATE_DEPENDENT_PSEUDO_CLASS(                                      \
+  _name, _value, _flags, _pref, _states)                                       \
+  _states,
+#include "nsCSSPseudoClassList.h"
+#undef CSS_STATE_DEPENDENT_PSEUDO_CLASS
+#undef CSS_PSEUDO_CLASS
+    // Add more entries for our fake values to make sure we can't
+    // index out of bounds into this array no matter what.
+    EventStates(),
+    EventStates()
+  };
+
+/* static */ const mozilla::EventStates
+ nsCSSPseudoClasses::sPseudoClassStates[] = {
+#define CSS_PSEUDO_CLASS(_name, _value, _flags, _pref) EventStates(),
+#define CSS_STATE_PSEUDO_CLASS(_name, _value, _flags, _pref, _states) _states,
+#include "nsCSSPseudoClassList.h"
+#undef CSS_STATE_PSEUDO_CLASS
+#undef CSS_PSEUDO_CLASS
+  // Add more entries for our fake values to make sure we can't
+  // index out of bounds into this array no matter what.
+  EventStates(),
+  EventStates()
+};
+static_assert(MOZ_ARRAY_LENGTH(nsCSSPseudoClasses::sPseudoClassStates) ==
+                static_cast<size_t>(CSSPseudoClassType::MAX),
+              "CSSPseudoClassType::MAX is no longer equal to the length of "
+              "nsCSSPseudoClasses::sPseudoClassStates");
+
 void nsCSSPseudoClasses::AddRefAtoms()
 {
   NS_RegisterStaticAtoms(CSSPseudoClasses_info);

@@ -47,7 +47,7 @@
 #include "nsDisplayList.h"
 #include "RestyleTrackerInlines.h"
 #include "nsSMILAnimationController.h"
-#include "nsCSSRuleProcessor.h"
+#include "nsCSSRuleUtils.h"
 #include "ChildIterator.h"
 #include "Layers.h"
 
@@ -2550,8 +2550,8 @@ ElementRestyler::SelectorMatchesForRestyle(Element* aElement)
     return false;
   }
   for (nsCSSSelector* selector : mSelectorsForDescendants) {
-    if (nsCSSRuleProcessor::RestrictedSelectorMatches(aElement, selector,
-                                                      mTreeMatchContext)) {
+    if (nsCSSRuleUtils::RestrictedSelectorMatches(aElement, selector,
+                                                  mTreeMatchContext)) {
       return true;
     }
   }

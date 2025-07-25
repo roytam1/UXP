@@ -838,6 +838,12 @@ EffectCompositor::AnimationStyleRuleProcessor::MediumFeaturesChanged(
   return false;
 }
 
+nsTArray<nsCOMPtr<nsIStyleRuleProcessor>>*
+EffectCompositor::AnimationStyleRuleProcessor::GetChildRuleProcessors()
+{
+  return nullptr;
+}
+
 void
 EffectCompositor::AnimationStyleRuleProcessor::RulesMatching(
   ElementRuleProcessorData* aData)

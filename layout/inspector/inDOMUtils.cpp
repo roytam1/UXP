@@ -40,7 +40,7 @@
 #include "nsRuleWalker.h"
 #include "nsRuleProcessorData.h"
 #include "nsCSSPseudoClasses.h"
-#include "nsCSSRuleProcessor.h"
+#include "nsCSSRuleUtils.h"
 #include "mozilla/dom/CSSLexer.h"
 #include "mozilla/dom/InspectorUtilsBinding.h"
 #include "mozilla/dom/ToJSValue.h"
@@ -467,9 +467,9 @@ inDOMUtils::SelectorMatchesElement(nsIDOMElement* aElement,
                                    nsRuleWalker::eRelevantLinkUnvisited,
                                    element->OwnerDoc(),
                                    TreeMatchContext::eNeverMatchVisited);
-  *aMatches = nsCSSRuleProcessor::RestrictedSelectorListMatches(element,
-                                                                matchingContext,
-                                                                sel);
+  *aMatches = nsCSSRuleUtils::RestrictedSelectorListMatches(element,
+                                                            matchingContext,
+                                                            sel);
   return NS_OK;
 }
 
@@ -1183,26 +1183,6 @@ inDOMUtils::GetUsedFontFaces(nsIDOMRange* aRange,
 static EventStates
 GetStatesForPseudoClass(const nsAString& aStatePseudo)
 {
-  // An array of the states that are relevant for various pseudoclasses.
-  // XXXbz this duplicates code in nsCSSRuleProcessor
-  static const EventStates sPseudoClassStates[] = {
-#define CSS_PSEUDO_CLASS(_name, _value, _flags, _pref) \
-    EventStates(),
-#define CSS_STATE_PSEUDO_CLASS(_name, _value, _flags, _pref, _states) \
-    _states,
-#include "nsCSSPseudoClassList.h"
-#undef CSS_STATE_PSEUDO_CLASS
-#undef CSS_PSEUDO_CLASS
-
-    // Add more entries for our fake values to make sure we can't
-    // index out of bounds into this array no matter what.
-    EventStates(),
-    EventStates()
-  };
-  static_assert(MOZ_ARRAY_LENGTH(sPseudoClassStates) ==
-                static_cast<size_t>(CSSPseudoClassType::MAX),
-                "Length of PseudoClassStates array is incorrect");
-
   nsCOMPtr<nsIAtom> atom = NS_Atomize(aStatePseudo);
   CSSPseudoClassType type = nsCSSPseudoClasses::
     GetPseudoType(atom, CSSEnabledState::eIgnoreEnabledState);
@@ -1215,7 +1195,7 @@ GetStatesForPseudoClass(const nsAString& aStatePseudo)
   }
   // Our array above is long enough that indexing into it with
   // NotPseudo is ok.
-  return sPseudoClassStates[static_cast<CSSPseudoClassTypeBase>(type)];
+  return nsCSSPseudoClasses::sPseudoClassStates[static_cast<CSSPseudoClassTypeBase>(type)];
 }
 
 NS_IMETHODIMP

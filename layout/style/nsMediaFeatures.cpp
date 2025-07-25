@@ -14,7 +14,7 @@
 #ifdef XP_WIN
 #include "mozilla/LookAndFeel.h"
 #endif
-#include "nsCSSRuleProcessor.h"
+#include "nsCSSRuleUtils.h"
 #include "nsDeviceContext.h"
 #include "nsIBaseWindow.h"
 #include "nsIDocument.h"
@@ -404,7 +404,7 @@ GetSystemMetric(nsPresContext* aPresContext, const nsMediaFeature* aFeature,
   MOZ_ASSERT(aFeature->mValueType == nsMediaFeature::eBoolInteger,
              "unexpected type");
   nsIAtom *metricAtom = *aFeature->mData.mMetric;
-  bool hasMetric = nsCSSRuleProcessor::HasSystemMetric(metricAtom);
+  bool hasMetric = nsCSSRuleUtils::HasSystemMetric(metricAtom);
   aResult.SetIntValue(hasMetric ? 1 : 0, eCSSUnit_Integer);
   return NS_OK;
 }
@@ -420,7 +420,7 @@ GetWindowsTheme(nsPresContext* aPresContext, const nsMediaFeature* aFeature,
 
 #ifdef XP_WIN
   uint8_t windowsThemeId =
-    nsCSSRuleProcessor::GetWindowsThemeIdentifier();
+    nsCSSRuleUtils::GetWindowsThemeIdentifier();
 
   // Classic mode should fail to match.
   if (windowsThemeId == LookAndFeel::eWindowsTheme_Classic)

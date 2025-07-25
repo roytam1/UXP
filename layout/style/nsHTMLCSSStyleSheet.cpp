@@ -162,6 +162,12 @@ nsHTMLCSSStyleSheet::MediumFeaturesChanged(nsPresContext* aPresContext)
   return false;
 }
 
+/* virtual */ nsTArray<nsCOMPtr<nsIStyleRuleProcessor>>*
+nsHTMLCSSStyleSheet::GetChildRuleProcessors()
+{
+  return nullptr;
+}
+
 /* virtual */ size_t
 nsHTMLCSSStyleSheet::SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
 {

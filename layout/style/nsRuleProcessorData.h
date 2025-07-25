@@ -483,6 +483,58 @@ struct MOZ_STACK_CLASS RuleProcessorData {
   mozilla::dom::Element* mScope;
 };
 
+/**
+ * A |NodeMatchContext| has data about matching a selector (without
+ * combinators) against a single node.  It contains only input to the
+ * matching.
+ *
+ * Unlike |RuleProcessorData|, which is similar, a |NodeMatchContext|
+ * can vary depending on the selector matching process.  In other words,
+ * there might be multiple NodeMatchContexts corresponding to a single
+ * node, but only one possible RuleProcessorData.
+ */
+struct NodeMatchContext
+{
+  // In order to implement nsCSSRuleProcessor::HasStateDependentStyle,
+  // we need to be able to see if a node might match an
+  // event-state-dependent selector for any value of that event state.
+  // So mStateMask contains the states that should NOT be tested.
+  //
+  // NOTE: For |mStateMask| to work correctly, it's important that any
+  // change that changes multiple state bits include all those state
+  // bits in the notification.  Otherwise, if multiple states change but
+  // we do separate notifications then we might determine the style is
+  // not state-dependent when it really is (e.g., determining that a
+  // :hover:active rule no longer matches when both states are unset).
+  const mozilla::EventStates mStateMask;
+
+  // Is this link the unique link whose visitedness can affect the style
+  // of the node being matched?  (That link is the nearest link to the
+  // node being matched that is itself or an ancestor.)
+  //
+  // Always false when TreeMatchContext::mForStyling is false.  (We
+  // could figure it out for RestrictedSelectorListMatches, but we're
+  // starting from the middle of the selector list when doing
+  // Has{Attribute,State}DependentStyle, so we can't tell.  So when
+  // mForStyling is false, we have to assume we don't know.)
+  const bool mIsRelevantLink;
+
+  // If the node should be considered featureless (as specified in
+  // selectors 4), then mIsFeature should be set to true to prevent
+  // matching unless the selector is a special pseudo class or pseudo
+  // element that matches featureless elements.
+  const bool mIsFeatureless;
+
+  NodeMatchContext(mozilla::EventStates aStateMask,
+                   bool aIsRelevantLink,
+                   bool aIsFeatureless = false)
+    : mStateMask(aStateMask)
+    , mIsRelevantLink(aIsRelevantLink)
+    , mIsFeatureless(aIsFeatureless)
+  {
+  }
+};
+
 struct MOZ_STACK_CLASS ElementDependentRuleProcessorData :
                           public RuleProcessorData {
   ElementDependentRuleProcessorData(nsPresContext* aPresContext,
@@ -647,6 +699,50 @@ struct MOZ_STACK_CLASS AttributeRuleProcessorData :
   const nsAttrValue* mOtherValue;
   int32_t mModType;    // The type of modification (see nsIDOMMutationEvent).
   bool mAttrHasChanged; // Whether the attribute has already changed.
+};
+
+/**
+ * Additional information about a selector (without combinators) that is
+ * being matched.
+ */
+enum class SelectorMatchesFlags : uint8_t
+{
+  NONE = 0,
+
+  // The selector's flags are unknown.  This happens when you don't know
+  // if you're starting from the top of a selector.  Only used in cases
+  // where it's acceptable for matching to return a false positive.
+  // (It's not OK to return a false negative.)
+  UNKNOWN = 1 << 0,
+
+  // The selector is part of a compound selector which has been split in
+  // half, where the other half is a pseudo-element.  The current
+  // selector is not a pseudo-element itself.
+  HAS_PSEUDO_ELEMENT = 1 << 1,
+
+  // The selector is part of an argument to a functional pseudo-class or
+  // pseudo-element.
+  IS_PSEUDO_CLASS_ARGUMENT = 1 << 2,
+
+  // The selector should be blocked from matching because it is called
+  // from outside the shadow tree.
+  IS_OUTSIDE_SHADOW_TREE = 1 << 3
+};
+MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(SelectorMatchesFlags)
+
+/**
+ * Flags for SelectorMatchesTree.
+ */
+enum SelectorMatchesTreeFlags
+{
+  // Whether we still have not found the closest ancestor link element and
+  // thus have to check the current element for it.
+  eLookForRelevantLink = 0x1,
+
+  // Whether SelectorMatchesTree should check for, and return true upon
+  // finding, an ancestor element that has an eRestyle_SomeDescendants
+  // restyle hint pending.
+  eMatchOnConditionalRestyleAncestor = 0x2,
 };
 
 #endif /* !defined(nsRuleProcessorData_h_) */

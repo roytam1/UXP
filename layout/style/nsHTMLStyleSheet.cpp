@@ -29,7 +29,7 @@
 #include "nsRuleData.h"
 #include "nsError.h"
 #include "nsRuleProcessorData.h"
-#include "nsCSSRuleProcessor.h"
+#include "nsCSSRuleUtils.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/dom/Element.h"
 #include "nsHashKeys.h"
@@ -310,13 +310,13 @@ nsHTMLStyleSheet::RulesMatching(ElementRuleProcessorData* aData)
     if (aData->mElement->IsHTMLElement(nsGkAtoms::a)) {
       if (mLinkRule || mVisitedRule || mActiveRule) {
         EventStates state =
-          nsCSSRuleProcessor::GetContentStateForVisitedHandling(
+          nsCSSRuleUtils::GetContentStateForVisitedHandling(
                                   aData->mElement,
                                   aData->mTreeMatchContext,
                                   aData->mTreeMatchContext.VisitedHandling(),
                                   // If the node being matched is a link,
                                   // it's the relevant link.
-                                  nsCSSRuleProcessor::IsLink(aData->mElement));
+                                  nsCSSRuleUtils::IsLink(aData->mElement));
         if (mLinkRule && state.HasState(NS_EVENT_STATE_UNVISITED)) {
           ruleWalker->Forward(mLinkRule);
           aData->mTreeMatchContext.SetHaveRelevantLink();
@@ -327,7 +327,7 @@ nsHTMLStyleSheet::RulesMatching(ElementRuleProcessorData* aData)
         }
 
         // No need to add to the active rule if it's not a link
-        if (mActiveRule && nsCSSRuleProcessor::IsLink(aData->mElement) &&
+        if (mActiveRule && nsCSSRuleUtils::IsLink(aData->mElement) &&
             state.HasState(NS_EVENT_STATE_ACTIVE)) {
           ruleWalker->Forward(mActiveRule);
         }
@@ -372,7 +372,7 @@ nsHTMLStyleSheet::RulesMatching(ElementRuleProcessorData* aData)
 nsHTMLStyleSheet::HasStateDependentStyle(StateRuleProcessorData* aData)
 {
   if (aData->mElement->IsHTMLElement(nsGkAtoms::a) &&
-      nsCSSRuleProcessor::IsLink(aData->mElement) &&
+      nsCSSRuleUtils::IsLink(aData->mElement) &&
       ((mActiveRule && aData->mStateMask.HasState(NS_EVENT_STATE_ACTIVE)) ||
        (mLinkRule && aData->mStateMask.HasState(NS_EVENT_STATE_VISITED)) ||
        (mVisitedRule && aData->mStateMask.HasState(NS_EVENT_STATE_VISITED)))) {
@@ -437,6 +437,12 @@ nsHTMLStyleSheet::HasAttributeDependentStyle(
 nsHTMLStyleSheet::MediumFeaturesChanged(nsPresContext* aPresContext)
 {
   return false;
+}
+
+/* virtual */ nsTArray<nsCOMPtr<nsIStyleRuleProcessor>>*
+nsHTMLStyleSheet::GetChildRuleProcessors()
+{
+  return nullptr;
 }
 
 /* virtual */ size_t

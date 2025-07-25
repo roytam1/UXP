@@ -87,6 +87,9 @@ public:
     return false;
   }
 
+  static const mozilla::EventStates sPseudoClassStateDependences[];
+  static const mozilla::EventStates sPseudoClassStates[];
+
 private:
   static const uint32_t kPseudoClassFlags[size_t(Type::Count)];
   static bool sPseudoClassEnabled[size_t(Type::Count)];

@@ -22,6 +22,16 @@
 #include "nsIStyleRule.h"
 #include "nsICSSStyleRuleDOMWrapper.h"
 
+// Right now, there are four operators:
+//   ' ', the descendant combinator, is greedy
+//   '~', the indirect adjacent sibling combinator, is greedy
+//   '+' and '>', the direct adjacent sibling and child combinators, are not
+#define NS_IS_GREEDY_OPERATOR(ch)                                              \
+  ((ch) == char16_t(' ') || (ch) == char16_t('~'))
+
+#define NS_IS_ANCESTOR_OPERATOR(ch)                                            \
+  ((ch) == char16_t(' ') || (ch) == char16_t('>'))
+
 class nsIAtom;
 struct nsCSSSelectorList;
 

@@ -127,6 +127,13 @@ public:
   virtual bool MediumFeaturesChanged(nsPresContext* aPresContext) = 0;
 
   /**
+   * Returns an array of style rule processors if this origin supports
+   * cascade layers. The array will contain the rule processors for each
+   * layer in the order in which they should be applied.
+   */
+  virtual nsTArray<nsCOMPtr<nsIStyleRuleProcessor>>* GetChildRuleProcessors() = 0;
+
+  /**
    * Report the size of this style rule processor to about:memory.  A
    * processor may return 0.
    */
