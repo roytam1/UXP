@@ -370,7 +370,7 @@ panel[type="private-autocomplete-richlistbox"] {
 .private-autocomplete-richlistitem {
   -moz-binding: url("chrome://browser/content/autocomplete.xml#private-autocomplete-richlistitem");
   -moz-box-orient: vertical;
-  overflow: -moz-hidden-unscrollable;
+  overflow: clip;
 }
 
 .private-autocomplete-treerows {

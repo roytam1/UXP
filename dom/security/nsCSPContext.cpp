@@ -808,33 +808,51 @@ StripURIForReporting(nsIURI* aURI,
                      nsIURI* aSelfURI,
                      nsACString& outStrippedURI)
 {
-  // 1) If the origin of uri is a globally unique identifier (for example,
-  // aURI has a scheme of data, blob, or filesystem), then return the
-  // ASCII serialization of uri’s scheme.
-  bool isHttpOrFtp =
-    (NS_SUCCEEDED(aURI->SchemeIs("http", &isHttpOrFtp)) && isHttpOrFtp) ||
-    (NS_SUCCEEDED(aURI->SchemeIs("https", &isHttpOrFtp)) && isHttpOrFtp) ||
-    (NS_SUCCEEDED(aURI->SchemeIs("ftp", &isHttpOrFtp)) && isHttpOrFtp);
+  bool isAllowedScheme =
+    (NS_SUCCEEDED(aURI->SchemeIs("http", &isAllowedScheme)) && isAllowedScheme) ||
+    (NS_SUCCEEDED(aURI->SchemeIs("https", &isAllowedScheme)) && isAllowedScheme) ||
+    (NS_SUCCEEDED(aURI->SchemeIs("ftp", &isAllowedScheme)) && isAllowedScheme) ||
+    (NS_SUCCEEDED(aURI->SchemeIs("ws", &isAllowedScheme)) && isAllowedScheme) ||
+    (NS_SUCCEEDED(aURI->SchemeIs("wss", &isAllowedScheme)) && isAllowedScheme);
 
-  if (!isHttpOrFtp) {
-    // not strictly spec compliant, but what we really care about is
-    // http/https and also ftp. If it's not http/https or ftp, then treat aURI
-    // as if it's a globally unique identifier and just return the scheme.
+  if (!isAllowedScheme) {
+    // Step 1. If url's scheme is not an allowed scheme, then just return url's scheme,
+    // i.e. treat aURI as a globally unique identifier.
+    // What we really care about reporting is http/https/ftp.
+    // https://github.com/w3c/webappsec-csp/issues/735: We also allow WS(S) schemes.
     aURI->GetScheme(outStrippedURI);
     return;
   }
 
-  // 2) If the origin of uri is not the same as the origin of the protected
-  // resource, then return the ASCII serialization of uri’s origin.
-  if (!NS_SecurityCompareURIs(aSelfURI, aURI, false)) {
-    // cross origin redirects also fall into this category, see:
-    // http://www.w3.org/TR/CSP/#violation-reports
-    aURI->GetPrePath(outStrippedURI);
+  // Step 2. Set url's fragment to the empty string.
+  // Implicit in GetSpecIgnoringRef() below.
+  
+  // Step 3. Set url's username/password to the empty string.
+  nsCOMPtr<nsIURI> stripped;
+  nsresult rv = aURI->Clone(getter_AddRefs(stripped));
+  if (NS_FAILED(rv)) {
+    // Cloning the URI failed for some reason, just return the scheme.
+    aURI->GetScheme(outStrippedURI);
+    return;
+  }
+  rv = stripped->SetUserPass(EmptyCString());
+  if (NS_FAILED(rv)) {
+    // Mutating the URI failed for some reason, just return the scheme.
+    aURI->GetScheme(outStrippedURI);
     return;
   }
 
-  // 3) Return uri, with any fragment component removed.
-  aURI->GetSpecIgnoringRef(outStrippedURI);
+  // Non-standard: https://github.com/w3c/webappsec-csp/issues/735
+  // We match other browsers here: To avoid leaking the whole URL when blocking
+  // (or reporting!) cross-origin navigations inside a frame, we restrict the URLs
+  // to just the (ASCII serialization of) uri's origin.
+  if (!NS_SecurityCompareURIs(aSelfURI, stripped, false)) {
+    stripped->GetPrePath(outStrippedURI);
+    return;
+  }
+
+  // Step 4. Return uri, with any unwanted component removed.
+  stripped->GetSpecIgnoringRef(outStrippedURI);
 }
 
 nsresult

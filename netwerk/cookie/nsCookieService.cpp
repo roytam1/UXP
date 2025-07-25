@@ -3125,6 +3125,15 @@ nsCookieService::SetCookieInternal(nsIURI                        *aHostURI,
     COOKIE_LOGFAILURE(SET_COOKIE, aHostURI, savedCookieHeader, "invalid name character");
     return newCookie;
   }
+  
+  // RFC 6265 *explicitly* forbids nameless cookies (5.2 step 5)
+  // Note: we ignore RFC 6265 (bis)'s conflicting stipulation and treat equal-less cookies
+  // as value-less cookies, not nameless ones.
+  // This aligns with webkit/Safari and avoids serious sec issues like CVE-2025-8037.
+  if (cookieAttributes.name.IsEmpty()) {
+    COOKIE_LOGFAILURE(SET_COOKIE, aHostURI, savedCookieHeader, "nameless cookies are not allowed");
+    return newCookie;
+  }
 
   // domain & path checks
   if (!CheckDomain(cookieAttributes, aHostURI, aKey.mBaseDomain, aRequireHostMatch)) {
@@ -3574,15 +3583,11 @@ nsCookieService::ParseAttributes(nsDependentCString &aCookieHeader,
 
   // extract cookie <NAME> & <VALUE> (first attribute), and copy the strings.
   // if we find multiple cookies, return for processing
-  // note: if there's no '=', we assume token is <VALUE>. this is required by
-  //       some sites (see bug 169091).
-  // XXX fix the parser to parse according to <VALUE> grammar for this case
+  // note: if there's no '=', we assume token is <NAME>.
   newCookie = GetTokenValue(cookieStart, cookieEnd, tokenString, tokenValue, equalsFound);
+  aCookieAttributes.name = tokenString;
   if (equalsFound) {
-    aCookieAttributes.name = tokenString;
     aCookieAttributes.value = tokenValue;
-  } else {
-    aCookieAttributes.value = tokenString;
   }
 
   // extract remaining attributes

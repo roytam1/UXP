@@ -3164,6 +3164,9 @@ XREMain::XRE_mainStartup(bool* aExitFlag)
 #endif
 
 #if defined(MOZ_WIDGET_GTK)
+  // Set up fontconfig.
+  FcInit();
+
   // setup for private colormap.  Ideally we'd like to do this
   // in nsAppShell::Create, but we need to get in before gtk
   // has been initialized to make sure everything is running
