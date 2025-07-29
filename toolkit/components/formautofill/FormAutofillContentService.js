@@ -9,7 +9,7 @@
  * See the nsIFormAutofillContentService documentation for details.
  */
 
-"use strict";
+"use strict"
 
 const { classes: Cc, interfaces: Ci, utils: Cu, results: Cr } = Components;
 
@@ -29,6 +29,15 @@ function FormHandler(aForm, aWindow) {
   this.window = aWindow;
 
   this.fieldDetails = [];
+
+  // Add a reset event listener to clear autofill state
+  this.form.addEventListener("reset", () => {
+    for (let element of this.form.elements) {
+      if (typeof element.setAutofilled === "function") {
+        element.setAutofilled(false);
+      }
+    }
+  });
 }
 
 FormHandler.prototype = {
@@ -233,11 +242,14 @@ FormHandler.prototype = {
                                        f.addressType == field.addressType &&
                                        f.contactType == field.contactType &&
                                        f.fieldName == field.fieldName);
+      
       if (!fieldDetail) {
         continue;
       }
-
       fieldDetail.element.value = field.value;
+      if (typeof fieldDetail.element.setAutofilled === 'function') {
+        fieldDetail.element.setAutofilled(!!field.value);
+      }
     }
   },
 

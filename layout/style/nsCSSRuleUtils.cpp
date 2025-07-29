@@ -19,6 +19,7 @@ using namespace mozilla::dom;
 #define VISITED_PSEUDO_PREF "layout.css.visited_links_enabled"
 
 static bool gSupportVisitedPseudo = true;
+static bool gLoadImportedSheetsInOrder = true;
 
 static nsTArray<nsCOMPtr<nsIAtom>>* sSystemMetrics = 0;
 
@@ -31,6 +32,9 @@ nsCSSRuleUtils::Startup()
 {
   Preferences::AddBoolVarCache(
     &gSupportVisitedPseudo, VISITED_PSEUDO_PREF, true);
+  Preferences::AddBoolVarCache(&gLoadImportedSheetsInOrder,
+                               "layout.css.load-imported-sheets-in-order",
+                               true);
 }
 
 static bool
@@ -204,6 +208,12 @@ nsCSSRuleUtils::HasSystemMetric(nsIAtom* aMetric)
     return false;
   }
   return sSystemMetrics->IndexOf(aMetric) != sSystemMetrics->NoIndex;
+}
+
+/* static */ bool
+nsCSSRuleUtils::LoadImportedSheetsInOrderEnabled()
+{
+  return gLoadImportedSheetsInOrder;
 }
 
 #ifdef XP_WIN
@@ -566,6 +576,14 @@ nsCSSRuleUtils::StateSelectorMatches(Element* aElement,
   for (nsPseudoClassList* pseudoClass = aSelector->mPseudoClassList;
        pseudoClass;
        pseudoClass = pseudoClass->mNext) {
+    if (pseudoClass->mType == CSSPseudoClassType::autofill ||
+        pseudoClass->mType == CSSPseudoClassType::mozAutofillHighlight) {
+      // Match if the element has the autofill state, regardless of focus
+      if (!aElement->State().HasState(NS_EVENT_STATE_AUTOFILL)) {
+        return false;
+      }
+      continue; // This pseudo-class matches
+    }
     auto idx = static_cast<CSSPseudoClassTypeBase>(pseudoClass->mType);
     EventStates statesToCheck = nsCSSPseudoClasses::sPseudoClassStates[idx];
     if (!statesToCheck.IsEmpty() && !StateSelectorMatches(aElement,

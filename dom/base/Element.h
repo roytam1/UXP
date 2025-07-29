@@ -1603,6 +1603,16 @@ private:
 
   // Data members
   EventStates mState;
+
+public:
+  // Public helper to add or remove event states
+  void SetEventState(mozilla::EventStates aState, bool aAdd) {
+    if (aAdd) {
+      this->AddStates(aState);
+    } else {
+      this->RemoveStates(aState);
+    }
+  }
 };
 
 class RemoveFromBindingManagerRunnable : public mozilla::Runnable

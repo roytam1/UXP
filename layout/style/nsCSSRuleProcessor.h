@@ -154,13 +154,13 @@ public:
   bool IsInRuleProcessorCache() const { return mInRuleProcessorCache; }
   bool IsUsedByMultipleStyleSets() const { return mStyleSetRefCnt > 1; }
 
+  static bool CascadeSheet(mozilla::CSSStyleSheet* aSheet,
+                           CascadeLayer* aLayer);
+
 protected:
   virtual ~nsCSSRuleProcessor();
 
 private:
-  static bool CascadeSheet(mozilla::CSSStyleSheet* aSheet,
-                           CascadeLayer* aLayer);
-
   RuleProcessorGroup* GetGroup(nsPresContext* aPresContext);
   void RefreshGroup(nsPresContext* aPresContext);
 

@@ -40,6 +40,7 @@
 #include "nsIFrame.h"
 #include "nsIScriptSecurityManager.h"
 #include "nsFocusManager.h"
+#include "mozilla/dom/HTMLInputElement.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -541,9 +542,24 @@ nsFormFillController::SetTextValue(const nsAString & aTextValue)
 {
   nsCOMPtr<nsIDOMNSEditableElement> editable = do_QueryInterface(mFocusedInput);
   if (editable) {
+    editable->BeginProgrammaticValueSet();
     mSuppressOnInput = true;
     editable->SetUserInput(aTextValue);
     mSuppressOnInput = false;
+    editable->EndProgrammaticValueSet();
+
+    if (mFocusedInput) {
+      nsCOMPtr<nsIContent> content = do_QueryInterface(mFocusedInput);
+      if (content) {
+        mozilla::dom::HTMLInputElement* htmlInput = mozilla::dom::HTMLInputElement::FromContentOrNull(content);
+        if (htmlInput) {
+          htmlInput->SetAutofilled(true);
+          nsAutoString value;
+          htmlInput->GetValue(value);
+          htmlInput->SetAutofilledValue(value);
+        }
+      }
+    }
   }
   return NS_OK;
 }
@@ -1331,9 +1347,6 @@ nsFormFillController::StopControllingInput()
     nsresult rv;
     nsCOMPtr <nsIFormAutoComplete> formAutoComplete =
       do_GetService("@mozilla.org/satchel/form-autocomplete;1", &rv);
-    if (formAutoComplete) {
-      formAutoComplete->StopControllingInput(mFocusedInput);
-    }
 
     mFocusedInputNode = nullptr;
     mFocusedInput = nullptr;

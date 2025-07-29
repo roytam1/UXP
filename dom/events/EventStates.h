@@ -293,6 +293,9 @@ private:
 // Modal <dialog> element
 #define NS_EVENT_STATE_MODAL_DIALOG NS_DEFINE_EVENT_STATE_MACRO(54)
 
+// Autofilled input element (for :autofill pseudo-class)
+#define NS_EVENT_STATE_AUTOFILL NS_DEFINE_EVENT_STATE_MACRO(55)
+
 #define DIR_ATTR_STATES (NS_EVENT_STATE_HAS_DIR_ATTR |          \
                          NS_EVENT_STATE_DIR_ATTR_LTR |          \
                          NS_EVENT_STATE_DIR_ATTR_RTL |          \

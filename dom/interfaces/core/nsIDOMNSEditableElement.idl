@@ -25,4 +25,10 @@ interface nsIDOMNSEditableElement : nsISupports
   // 'change' event for example will be dispatched when focusing out the
   // element.
   [noscript] void setUserInput(in DOMString input);
+  /**
+   * Call this before and after programmatically setting the value to prevent
+   * OnValueChanged from treating it as a user edit.
+   */
+  void beginProgrammaticValueSet();
+  void endProgrammaticValueSet();
 };

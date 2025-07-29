@@ -27,6 +27,8 @@ struct nsCSSRuleUtils
   static void FreeSystemMetrics();
   static bool HasSystemMetric(nsIAtom* aMetric);
 
+  static bool LoadImportedSheetsInOrderEnabled();
+
 #ifdef XP_WIN
   // Cached theme identifier for the moz-windows-theme media query.
   static uint8_t GetWindowsThemeIdentifier();
