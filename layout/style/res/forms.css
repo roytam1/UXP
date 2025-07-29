@@ -106,6 +106,14 @@ input {
   overflow-clip-box: content-box;
 }
 
+/* Autofill highlight - placed immediately after base input styles */
+input:-moz-autofill-highlight,
+select:-moz-autofill-highlight,
+textarea:-moz-autofill-highlight {
+  background-color: #fffcd0 !important;
+  color: #090909;
+}
+
 input > .anonymous-div,
 input::placeholder {
   word-wrap: normal !important;

@@ -16,6 +16,7 @@
 #include "PLDHashTable.h"
 #include "nsICSSPseudoComparator.h"
 #include "mozilla/MemoryReporting.h"
+#include "mozilla/css/ImportRule.h"
 #include "mozilla/css/StyleRule.h"
 #include "mozilla/css/GroupRule.h"
 #include "nsIDocument.h"
@@ -649,6 +650,12 @@ CascadeRuleEnumFunc(css::Rule* aRule, void* aData)
     if (!layer->mData->mCounterStyleRules.AppendElement(counterStyleRule)) {
       return false;
     }
+  } else if (css::Rule::IMPORT_RULE == type &&
+             nsCSSRuleUtils::LoadImportedSheetsInOrderEnabled()) {
+    css::ImportRule* importRule = static_cast<css::ImportRule*>(aRule);
+    nsCSSRuleProcessor::CascadeSheet(
+      importRule->GetStyleSheet()->AsConcrete(),
+      layer);
   }
   return true;
 }
@@ -660,10 +667,12 @@ nsCSSRuleProcessor::CascadeSheet(CSSStyleSheet* aSheet, CascadeLayer* aLayer)
       aSheet->UseForPresentation(aLayer->mPresContext,
                                  aLayer->mCacheKey) &&
       aSheet->mInner) {
-    CSSStyleSheet* child = aSheet->mInner->mFirstChild;
-    while (child) {
-      CascadeSheet(child, aLayer);
-      child = child->mNext;
+    if (!nsCSSRuleUtils::LoadImportedSheetsInOrderEnabled()) {
+      CSSStyleSheet* child = aSheet->mInner->mFirstChild;
+      while (child) {
+        CascadeSheet(child, aLayer);
+        child = child->mNext;
+      }
     }
 
     if (!aSheet->mInner->mOrderedRules.EnumerateForwards(CascadeRuleEnumFunc,

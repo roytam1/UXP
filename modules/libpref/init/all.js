@@ -2713,6 +2713,12 @@ pref("layout.css.resizeobserver.enabled", true);
 // Is support for cascade layers enabled?
 pref("layout.css.cascade-layers.enabled", true);
 
+// Should rules in imported style sheets be added based on the order
+// of appearance of their respective @import rules in the parent
+// style sheet? Otherwise, they are added before rules preceding
+// @import are processed, which is problematic for cascade layers.
+pref("layout.css.load-imported-sheets-in-order", true);
+
 // pref for which side vertical scrollbars should be on
 // 0 = end-side in UI direction
 // 1 = end-side in document/content direction

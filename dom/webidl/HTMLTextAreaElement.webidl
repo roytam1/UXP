@@ -97,4 +97,10 @@ partial interface HTMLTextAreaElement {
   // element.
   [ChromeOnly]
   void setUserInput(DOMString input);
+
+  // Sets or clears the autofilled state of this textarea element.
+  // This is used by the browser's autofill system to indicate when
+  // a value has been automatically filled (e.g., from saved form data).
+  [ChromeOnly]
+  void setAutofilled(boolean autofilled);
 };

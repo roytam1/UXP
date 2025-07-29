@@ -1137,6 +1137,165 @@ static bool SetColor(const nsCSSValue& aValue, const nscolor aParentColor,
     aResult = aParentColor;
     result = true;
     aConditions.SetUncacheable();
+  } else if (eCSSUnit_ColorMix == unit) {
+    const mozilla::css::ColorMixValue* colorMix = aValue.GetColorMixValue();
+    if (colorMix) {
+      nscolor color1, color2;
+      if (SetColor(colorMix->mColor1, aParentColor, aPresContext, aContext, color1, aConditions) &&
+          SetColor(colorMix->mColor2, aParentColor, aPresContext, aContext, color2, aConditions)) {
+        
+        // interpolate each RGBA component with proper percentage handling
+        float w1 = colorMix->mWeight1;
+        float w2 = colorMix->mWeight2;
+
+        // edge case: if both weights are zero, return transparent black
+        if (w1 <= 0.0f && w2 <= 0.0f) {
+          aResult = NS_RGBA(0, 0, 0, 0);
+          result = true;
+        } else {
+          // normalize weights
+          float sum = w1 + w2;
+          if (sum <= 0.0f) {
+            // both weights zero - use equal weighting
+            w1 = w2 = 0.5f;
+            sum = 1.0f;
+          }
+          
+          float norm1 = w1 / sum;
+          float norm2 = w2 / sum;
+          
+          if (colorMix->mColorSpace == mozilla::css::ColorMixColorSpace::HSL) {
+            // HSL color space mixing
+            float h1, s1, l1, h2, s2, l2;
+            float a1 = NS_GET_A(color1) / 255.0f;
+            float a2 = NS_GET_A(color2) / 255.0f;
+            
+            // Convert RGB colors to HSL
+            NS_RGB2HSL(NS_GET_R(color1), NS_GET_G(color1), NS_GET_B(color1), &h1, &s1, &l1);
+            NS_RGB2HSL(NS_GET_R(color2), NS_GET_G(color2), NS_GET_B(color2), &h2, &s2, &l2);
+            
+            float h, s, l, a;
+            
+            // check if both are opaque
+            if (a1 >= 1.0f && a2 >= 1.0f) {
+              if (s1 == 0.0f || s2 == 0.0f) {
+                h = (s1 == 0.0f) ? h2 : h1;
+              } else {
+                float hue_diff = h2 - h1;
+                if (hue_diff > 0.5f) {
+                  h1 += 1.0f;
+                } else if (hue_diff < -0.5f) {
+                  h2 += 1.0f;
+                }
+                h = h1 * norm1 + h2 * norm2;
+                if (h >= 1.0f) h -= 1.0f;
+              }
+              
+              // interpolate saturation and lightness normally
+              s = s1 * norm1 + s2 * norm2;
+              l = l1 * norm1 + l2 * norm2;
+              a = 1.0f; // Result is opaque
+            } else {
+              // handle alpha premultiplication for HSL components when transparency is involved
+              float alpha1_weight = norm1 * a1;
+              float alpha2_weight = norm2 * a2;
+              float total_alpha_weight = alpha1_weight + alpha2_weight;
+              
+              if (total_alpha_weight <= 0.0f) {
+                // both colors are fully transparent
+                h = s = l = 0.0f;
+                a = 0.0f;
+              } else {
+                // normalize alpha-weighted contributions
+                float norm_alpha1 = alpha1_weight / total_alpha_weight;
+                float norm_alpha2 = alpha2_weight / total_alpha_weight;
+                
+                // handle hue interpolation (circular)
+                if (s1 == 0.0f || s2 == 0.0f) {
+                  h = (s1 == 0.0f) ? h2 : h1;
+                } else {
+                  float hue_diff = h2 - h1;
+                  if (hue_diff > 0.5f) {
+                    h1 += 1.0f;
+                  } else if (hue_diff < -0.5f) {
+                    h2 += 1.0f;
+                  }
+                  h = h1 * norm_alpha1 + h2 * norm_alpha2;
+                  if (h >= 1.0f) h -= 1.0f;
+                }
+                
+                // interpolate saturation and lightness with alpha weighting
+                s = s1 * norm_alpha1 + s2 * norm_alpha2;
+                l = l1 * norm_alpha1 + l2 * norm_alpha2;
+                
+                // interpolate alpha normally (without premultiplication)
+                a = a1 * norm1 + a2 * norm2;
+              }
+            }
+            
+            // Convert back to RGB
+            nscolor hslResult = NS_HSL2RGB(h, s, l);
+            uint8_t aInt = (uint8_t)mozilla::clamped(a * 255.0f + 0.5f, 0.0f, 255.0f);
+            
+            aResult = NS_RGBA(NS_GET_R(hslResult), NS_GET_G(hslResult), NS_GET_B(hslResult), aInt);
+            result = true;
+          } else {
+            // sRGB color space mixing with proper alpha premultiplication
+            float r1 = NS_GET_R(color1);
+            float g1 = NS_GET_G(color1);
+            float b1 = NS_GET_B(color1);
+            float a1 = NS_GET_A(color1) / 255.0f;
+            
+            float r2 = NS_GET_R(color2);
+            float g2 = NS_GET_G(color2);
+            float b2 = NS_GET_B(color2);
+            float a2 = NS_GET_A(color2) / 255.0f;
+            
+            float r, g, b, a;
+            
+            // Check if both colors are opaque - use simple interpolation
+            if (a1 >= 1.0f && a2 >= 1.0f) {
+              // Simple linear interpolation for opaque colors
+              r = r1 * norm1 + r2 * norm2;
+              g = g1 * norm1 + g2 * norm2;
+              b = b1 * norm1 + b2 * norm2;
+              a = 1.0f; // Result is opaque
+            } else {
+              // handle alpha premultiplication for RGB components when transparency is involved
+              float alpha1_weight = norm1 * a1;
+              float alpha2_weight = norm2 * a2;
+              float total_alpha_weight = alpha1_weight + alpha2_weight;
+              
+              if (total_alpha_weight <= 0.0f) {
+                // both colors are fully transparent
+                r = g = b = a = 0.0f;
+              } else {
+                // normalize alpha-weighted contributions
+                float norm_alpha1 = alpha1_weight / total_alpha_weight;
+                float norm_alpha2 = alpha2_weight / total_alpha_weight;
+                
+                // interpolate RGB components with alpha weighting
+                r = r1 * norm_alpha1 + r2 * norm_alpha2;
+                g = g1 * norm_alpha1 + g2 * norm_alpha2;
+                b = b1 * norm_alpha1 + b2 * norm_alpha2;
+
+                // interpolate alpha normally (without premultiplication)
+                a = a1 * norm1 + a2 * norm2;
+              }
+            }
+            
+            // convert to integers with rounding
+            uint8_t rInt = (uint8_t)mozilla::clamped(r + 0.5f, 0.0f, 255.0f);
+            uint8_t gInt = (uint8_t)mozilla::clamped(g + 0.5f, 0.0f, 255.0f);
+            uint8_t bInt = (uint8_t)mozilla::clamped(b + 0.5f, 0.0f, 255.0f);
+            uint8_t aInt = (uint8_t)mozilla::clamped(a * 255.0f + 0.5f, 0.0f, 255.0f);
+            
+            aResult = NS_RGBA(rInt, gInt, bInt, aInt);
+            result = true;
+          }
+        }
+      }
+    }
   } else if (eCSSUnit_Enumerated == unit &&
            aValue.GetIntValue() == NS_STYLE_COLOR_INHERIT_FROM_BODY) {
     NS_ASSERTION(aPresContext->CompatibilityMode() == eCompatibility_NavQuirks,

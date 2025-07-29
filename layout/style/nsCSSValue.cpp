@@ -166,6 +166,10 @@ nsCSSValue::nsCSSValue(const nsCSSValue& aCopy)
     mValue.mComplexColor = aCopy.mValue.mComplexColor;
     mValue.mComplexColor->AddRef();
   }
+  else if (eCSSUnit_ColorMix == mUnit) {
+    mValue.mColorMix = aCopy.mValue.mColorMix;
+    mValue.mColorMix->AddRef();
+  }
   else if (eCSSUnit_Revert == mUnit) {
     mValue.mCascadeOrigin = aCopy.mValue.mCascadeOrigin;
   }
@@ -281,6 +285,14 @@ bool nsCSSValue::operator==(const nsCSSValue& aOther) const
     }
     else if (eCSSUnit_ComplexColor == mUnit) {
       return *mValue.mComplexColor == *aOther.mValue.mComplexColor;
+    }
+    else if (eCSSUnit_ColorMix == mUnit) {
+      return mValue.mColorMix == aOther.mValue.mColorMix ||
+             (mValue.mColorMix->mColorSpace == aOther.mValue.mColorMix->mColorSpace &&
+              mValue.mColorMix->mColor1 == aOther.mValue.mColorMix->mColor1 &&
+              mValue.mColorMix->mColor2 == aOther.mValue.mColorMix->mColor2 &&
+              mValue.mColorMix->mWeight1 == aOther.mValue.mColorMix->mWeight1 &&
+              mValue.mColorMix->mWeight2 == aOther.mValue.mColorMix->mWeight2);
     }
     else if (eCSSUnit_Revert == mUnit) {
       return mValue.mCascadeOrigin == aOther.mValue.mCascadeOrigin;
@@ -421,6 +433,8 @@ void nsCSSValue::DoReset()
     mValue.mFloatColor->Release();
   } else if (eCSSUnit_ComplexColor == mUnit) {
     mValue.mComplexColor->Release();
+  } else if (eCSSUnit_ColorMix == mUnit) {
+    mValue.mColorMix->Release();
   } else if (UnitHasArrayValue()) {
     mValue.mArray->Release();
   } else if (eCSSUnit_URL == mUnit) {
@@ -543,6 +557,14 @@ nsCSSValue::SetComplexColorValue(already_AddRefed<ComplexColorValue> aValue)
   Reset();
   mUnit = eCSSUnit_ComplexColor;
   mValue.mComplexColor = aValue.take();
+}
+
+void
+nsCSSValue::SetColorMixValue(already_AddRefed<ColorMixValue> aValue)
+{
+  Reset();
+  mUnit = eCSSUnit_ColorMix;
+  mValue.mColorMix = aValue.take();
 }
 
 void
@@ -1709,6 +1731,28 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     }
     serializable.AppendToString(aProperty, aResult, aSerialization);
   }
+  else if (eCSSUnit_ColorMix == unit) {
+    const ColorMixValue* colorMix = GetColorMixValue();
+    aResult.AppendLiteral("color-mix(in ");
+    
+    // append color space
+    switch (colorMix->mColorSpace) {
+      case mozilla::css::ColorMixColorSpace::sRGB:
+        aResult.AppendLiteral("srgb");
+        break;
+      case mozilla::css::ColorMixColorSpace::HSL:
+        aResult.AppendLiteral("hsl");
+        break;
+    }
+    
+    // append color1 and color2
+    aResult.AppendLiteral(", ");
+    colorMix->mColor1.AppendToString(aProperty, aResult, aSerialization);
+    aResult.AppendLiteral(", ");
+    colorMix->mColor2.AppendToString(aProperty, aResult, aSerialization);
+    
+    aResult.Append(')');
+  }
   else if (eCSSUnit_URL == unit || eCSSUnit_Image == unit) {
     aResult.AppendLiteral("url(");
     nsStyleUtil::AppendEscapedCSSString(
@@ -2007,6 +2051,7 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     case eCSSUnit_HSLColor:              break;
     case eCSSUnit_HSLAColor:             break;
     case eCSSUnit_ComplexColor:          break;
+    case eCSSUnit_ColorMix:              break;
     case eCSSUnit_Percent:      aResult.Append(char16_t('%'));    break;
     case eCSSUnit_Number:       break;
     case eCSSUnit_Gradient:     break;
@@ -2219,6 +2264,11 @@ nsCSSValue::SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
     // Complex Color
     case eCSSUnit_ComplexColor:
       n += mValue.mComplexColor->SizeOfIncludingThis(aMallocSizeOf);
+      break;
+
+    // Color Mix
+    case eCSSUnit_ColorMix:
+      n += mValue.mColorMix->SizeOfIncludingThis(aMallocSizeOf);
       break;
 
     // Cascade Origin: nothing extra to measure.
@@ -3075,6 +3125,18 @@ css::ComplexColorValue::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
   return n;
 }
 
+size_t
+css::ColorMixValue::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
+{
+  // Only measure it if it's unshared, to avoid double-counting.
+  size_t n = 0;
+  if (mRefCnt <= 1) {
+    n += aMallocSizeOf(this);
+    n += mColor1.SizeOfExcludingThis(aMallocSizeOf);
+    n += mColor2.SizeOfExcludingThis(aMallocSizeOf);
+  }
+  return n;
+}
 nsCSSValueGradientStop::nsCSSValueGradientStop()
   : mLocation(eCSSUnit_None),
     mColor(eCSSUnit_Null),

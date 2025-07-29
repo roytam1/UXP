@@ -3381,7 +3381,9 @@ exports.CSS_PROPERTIES = {
       "word-spacing",
       "overflow-wrap",
       "writing-mode",
-      "z-index"
+      "z-index",
+      "overflow-block",
+      "overflow-inline"
     ],
     "supports": [
       1,
@@ -3411,7 +3413,6 @@ exports.CSS_PROPERTIES = {
       "-moz-grid-line",
       "-moz-groupbox",
       "-moz-gtk-info-bar",
-      "clip",
       "-moz-image-rect",
       "-moz-inline-box",
       "-moz-inline-grid",
@@ -3502,6 +3503,7 @@ exports.CSS_PROPERTIES = {
       "checkbox-container",
       "checkbox-label",
       "checkmenuitem",
+      "clip",
       "clone",
       "collapse",
       "color",
@@ -8554,6 +8556,42 @@ exports.CSS_PROPERTIES = {
     "subproperties": [
       "overflow-x",
       "overflow-y"
+    ],
+    "supports": [],
+    "values": [
+      "auto",
+      "clip",
+      "hidden",
+      "inherit",
+      "initial",
+      "revert",
+      "scroll",
+      "unset",
+      "visible"
+    ]
+  },
+  "overflow-block": {
+    "isInherited": false,
+    "subproperties": [
+      "overflow-block"
+    ],
+    "supports": [],
+    "values": [
+      "auto",
+      "clip",
+      "hidden",
+      "inherit",
+      "initial",
+      "revert",
+      "scroll",
+      "unset",
+      "visible"
+    ]
+  },
+  "overflow-inline": {
+    "isInherited": false,
+    "subproperties": [
+      "overflow-inline"
     ],
     "supports": [],
     "values": [

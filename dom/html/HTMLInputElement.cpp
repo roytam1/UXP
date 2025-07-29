@@ -2832,6 +2832,20 @@ HTMLInputElement::SetUserInput(const nsAString& aValue)
   return NS_OK;
 }
 
+void
+HTMLInputElement::SetAutofilled(bool aAutofilled)
+{
+  nsAutoString value;
+  GetValueInternal(value);
+  if (aAutofilled) {
+    AddStates(NS_EVENT_STATE_AUTOFILL);
+    mAutofilledValue = value;
+  } else {
+    RemoveStates(NS_EVENT_STATE_AUTOFILL);
+    mAutofilledValue.Truncate();
+  }
+}
+
 nsIEditor*
 HTMLInputElement::GetEditor()
 {
@@ -3562,7 +3576,18 @@ HTMLInputElement::Blur(ErrorResult& aError)
   }
 
   nsGenericHTMLElement::Blur(aError);
-}
+
+  if (State().HasState(NS_EVENT_STATE_AUTOFILL)) {
+    // Force a complete restyle to ensure autofill pseudo-classes are processed
+    if (nsIDocument* doc = GetComposedDoc()) {
+      if (nsIPresShell* shell = doc->GetShell()) {
+        if (nsIFrame* frame = GetPrimaryFrame()) {
+          shell->FrameNeedsReflow(frame, nsIPresShell::eStyleChange, NS_FRAME_IS_DIRTY);
+        }
+      }
+    }
+  }
+} 
 
 void
 HTMLInputElement::Focus(ErrorResult& aError)
@@ -7070,6 +7095,13 @@ HTMLInputElement::IntrinsicState() const
     state |= NS_EVENT_STATE_MOZ_SUBMITINVALID;
   }
 
+  // Autofill highlight should persist as long as the value matches the autofilled value
+  nsAutoString value;
+  GetValueInternal(value);
+  if (!mAutofilledValue.IsEmpty() && value == mAutofilledValue) {
+    state |= NS_EVENT_STATE_AUTOFILL;
+  }
+
   return state;
 }
 
@@ -8505,7 +8537,22 @@ HTMLInputElement::InitializeKeyboardEventListeners()
 NS_IMETHODIMP_(void)
 HTMLInputElement::OnValueChanged(bool aNotify, bool aWasInteractiveUserChange)
 {
+  nsAutoString value;
+  GetValueInternal(value);
   mLastValueChangeWasInteractive = aWasInteractiveUserChange;
+
+  // Only remove autofilled state if the value actually changed from autofilled value
+  if (aWasInteractiveUserChange && State().HasState(NS_EVENT_STATE_AUTOFILL)) {
+    if (!mAutofilledValue.IsEmpty() && mAutofilledValue != value) {
+      RemoveStates(NS_EVENT_STATE_AUTOFILL);
+      mAutofilledValue.Truncate();
+    }
+  } else if (aWasInteractiveUserChange && !State().HasState(NS_EVENT_STATE_AUTOFILL)) {
+    // If the value is changed back to the autofilled value, restore the state
+    if (!mAutofilledValue.IsEmpty() && mAutofilledValue == value) {
+      AddStates(NS_EVENT_STATE_AUTOFILL);
+    }
+  }
 
   UpdateAllValidityStates(aNotify);
 
@@ -8535,6 +8582,24 @@ HTMLInputElement::HasCachedSelection()
     }
   }
   return isCached;
+}
+
+NS_IMETHODIMP
+HTMLInputElement::BeginProgrammaticValueSet() {
+  nsTextEditorState* state = GetEditorState();
+  if (state) {
+    state->SettingValue(true);
+  }
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+HTMLInputElement::EndProgrammaticValueSet() {
+  nsTextEditorState* state = GetEditorState();
+  if (state) {
+    state->SettingValue(false);
+  }
+  return NS_OK;
 }
 
 void

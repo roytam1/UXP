@@ -113,6 +113,11 @@ const char * const * NS_AllColorNames(size_t *aSizeArray);
 // the float parameters are all expected to be in the range 0-1
 nscolor NS_HSL2RGB(float h, float s, float l);
 
+// function to convert from RGB color space to HSL color space
+// the uint8_t RGB parameters are expected to be in the range 0-255
+// the float HSL parameters will be set to values in the range 0-1
+void NS_RGB2HSL(uint8_t aR, uint8_t aG, uint8_t aB, float* aH, float* aS, float* aL);
+
 // Return a color name for the given nscolor.  If there is no color
 // name for it, returns null.  If there are multiple possible color
 // names for the given color, the first one in nsColorNameList.h

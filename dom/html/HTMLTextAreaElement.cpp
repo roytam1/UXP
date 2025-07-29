@@ -366,6 +366,46 @@ HTMLTextAreaElement::SetUserInput(const nsAString& aValue)
   return SetValueInternal(aValue, nsTextEditorState::eSetValue_BySetUserInput);
 }
 
+void
+HTMLTextAreaElement::SetAutofilled(bool aAutofilled)
+{
+  if (aAutofilled) {
+    AddStates(NS_EVENT_STATE_AUTOFILL);
+    GetValueInternal(mAutofilledValue, true); // Store the autofilled value
+  } else {
+    RemoveStates(NS_EVENT_STATE_AUTOFILL);
+    mAutofilledValue.Truncate();
+  }
+}
+
+NS_IMETHODIMP_(void)
+HTMLTextAreaElement::OnValueChanged(bool aNotify, bool aWasInteractiveUserChange)
+{
+  nsAutoString value;
+  GetValueInternal(value, true);
+
+  // Only remove autofilled state if the value actually changed from autofilled value
+  if (State().HasState(NS_EVENT_STATE_AUTOFILL) || !mAutofilledValue.IsEmpty()) {
+    if (aWasInteractiveUserChange && mAutofilledValue != value) {
+      RemoveStates(NS_EVENT_STATE_AUTOFILL);
+      mAutofilledValue.Truncate();
+    } else if (aWasInteractiveUserChange && mAutofilledValue == value) {
+      AddStates(NS_EVENT_STATE_AUTOFILL);
+    }
+  }
+
+  // Update the validity state
+  bool validBefore = IsValid();
+  UpdateTooLongValidityState();
+  UpdateTooShortValidityState();
+  UpdateValueMissingValidityState();
+
+  if (validBefore != IsValid() ||
+      HasAttr(kNameSpaceID_None, nsGkAtoms::placeholder)) {
+    UpdateState(aNotify);
+  }
+}
+
 NS_IMETHODIMP
 HTMLTextAreaElement::SetValueChanged(bool aValueChanged)
 {
@@ -556,6 +596,19 @@ HTMLTextAreaElement::FireChangeEventIfNeeded()
                                        false);
 }
 
+void
+HTMLTextAreaElement::EnsureAutofillState()
+{
+  nsAutoString value;
+  GetValueInternal(value, true);
+  if (!mAutofilledValue.IsEmpty() && mAutofilledValue == value) {
+    if (!State().HasState(NS_EVENT_STATE_AUTOFILL)) {
+      AddStates(NS_EVENT_STATE_AUTOFILL);
+      UpdateState(true); // Force style system to re-evaluate
+    }
+  }
+}
+
 nsresult
 HTMLTextAreaElement::PostHandleEvent(EventChainPostVisitor& aVisitor)
 {
@@ -580,6 +633,9 @@ HTMLTextAreaElement::PostHandleEvent(EventChainPostVisitor& aVisitor)
     }
 
     UpdateState(true);
+
+    // Defensive: re-apply autofill state if value is still autofilled value
+    EnsureAutofillState();
   }
 
   return NS_OK;
@@ -1186,6 +1242,10 @@ HTMLTextAreaElement::IntrinsicState() const
 {
   EventStates state = nsGenericHTMLFormElementWithState::IntrinsicState();
 
+  if (!mAutofilledValue.IsEmpty()) {
+    state |= NS_EVENT_STATE_AUTOFILL;
+  }
+
   if (HasAttr(kNameSpaceID_None, nsGkAtoms::required)) {
     state |= NS_EVENT_STATE_REQUIRED;
   } else {
@@ -1628,23 +1688,6 @@ HTMLTextAreaElement::InitializeKeyboardEventListeners()
   mState.InitializeKeyboardEventListeners();
 }
 
-NS_IMETHODIMP_(void)
-HTMLTextAreaElement::OnValueChanged(bool aNotify, bool aWasInteractiveUserChange)
-{
-  mLastValueChangeWasInteractive = aWasInteractiveUserChange;
-
-  // Update the validity state
-  bool validBefore = IsValid();
-  UpdateTooLongValidityState();
-  UpdateTooShortValidityState();
-  UpdateValueMissingValidityState();
-
-  if (validBefore != IsValid() ||
-      HasAttr(kNameSpaceID_None, nsGkAtoms::placeholder)) {
-    UpdateState(aNotify);
-  }
-}
-
 NS_IMETHODIMP_(bool)
 HTMLTextAreaElement::HasCachedSelection()
 {
@@ -1660,10 +1703,32 @@ HTMLTextAreaElement::FieldSetDisabledChanged(bool aNotify)
   nsGenericHTMLFormElementWithState::FieldSetDisabledChanged(aNotify);
 }
 
+NS_IMETHODIMP
+HTMLTextAreaElement::BeginProgrammaticValueSet() {
+  nsTextEditorState* state = GetEditorState();
+  if (state) {
+    state->SettingValue(true);
+  }
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+HTMLTextAreaElement::EndProgrammaticValueSet() {
+  nsTextEditorState* state = GetEditorState();
+  if (state) {
+    state->SettingValue(false);
+  }
+  return NS_OK;
+}
+
 JSObject*
 HTMLTextAreaElement::WrapNode(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
   return HTMLTextAreaElementBinding::Wrap(aCx, this, aGivenProto);
+}
+
+nsTextEditorState* HTMLTextAreaElement::GetEditorState() const {
+  return const_cast<nsTextEditorState*>(&mState);
 }
 
 } // namespace dom

@@ -4058,3 +4058,35 @@ nsTranslationNodeList::GetLength(uint32_t* aRetVal)
   *aRetVal = mLength;
   return NS_OK;
 }
+
+NS_IMETHODIMP
+nsDOMWindowUtils::AddElementEventState(nsIDOMElement* aElement, uint64_t aState)
+{
+  NS_ENSURE_ARG_POINTER(aElement);
+  nsCOMPtr<nsIContent> content = do_QueryInterface(aElement);
+  if (!content) {
+    return NS_ERROR_INVALID_ARG;
+  }
+  mozilla::dom::Element* element = static_cast<mozilla::dom::Element*>(content.get());
+  if (!element) {
+    return NS_ERROR_INVALID_ARG;
+  }
+  element->SetEventState(mozilla::EventStates(aState), true);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsDOMWindowUtils::RemoveElementEventState(nsIDOMElement* aElement, uint64_t aState)
+{
+  NS_ENSURE_ARG_POINTER(aElement);
+  nsCOMPtr<nsIContent> content = do_QueryInterface(aElement);
+  if (!content) {
+    return NS_ERROR_INVALID_ARG;
+  }
+  mozilla::dom::Element* element = static_cast<mozilla::dom::Element*>(content.get());
+  if (!element) {
+    return NS_ERROR_INVALID_ARG;
+  }
+  element->SetEventState(mozilla::EventStates(aState), false);
+  return NS_OK;
+}

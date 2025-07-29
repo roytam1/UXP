@@ -160,6 +160,8 @@ public:
   }
 
   NS_IMETHOD SetUserInput(const nsAString& aInput) override;
+  NS_IMETHOD BeginProgrammaticValueSet() override;
+  NS_IMETHOD EndProgrammaticValueSet() override;
 
   // Overriden nsIFormControl methods
   NS_IMETHOD_(uint32_t) GetType() const override { return mType; }
@@ -845,6 +847,15 @@ public:
   void SetUserInput(const nsAString& aInput,
                     nsIPrincipal& aSubjectPrincipal);
 
+  /**
+   * Sets or clears the autofilled state of this input element.
+   * When setting, also stores the autofilled value for persistence.
+   * When clearing, clears the stored autofilled value.
+   *
+   * @param aAutofilled Whether the element should be marked as autofilled
+   */
+  void SetAutofilled(bool aAutofilled);
+
   // XPCOM GetPhonetic() is OK
 
   /**
@@ -859,6 +870,8 @@ public:
   static Decimal StringToDecimal(const nsAString& aValue);
 
   void UpdateEntries(const nsTArray<OwningFileOrDirectory>& aFilesOrDirectories);
+
+  void SetAutofilledValue(const nsAString& aValue) { mAutofilledValue = aValue; }
 
 protected:
   virtual ~HTMLInputElement();
@@ -1103,7 +1116,7 @@ protected:
   bool MinOrMaxLengthApplies() const { return IsSingleLineTextControl(false, mType); }
 
   void FreeData();
-  nsTextEditorState *GetEditorState() const;
+  nsTextEditorState* GetEditorState() const;
 
   /**
    * Manages the internal data storage across type changes.
@@ -1629,6 +1642,11 @@ protected:
   bool                     mNumberControlSpinnerSpinsUp : 1;
   bool                     mPickerRunning : 1;
   bool                     mSelectionCached : 1;
+  /**
+   * The value that was autofilled by the browser. Used to persist the autofill
+   * highlight as long as the value matches, regardless of focus/blur.
+   */
+  nsString mAutofilledValue;
 
 private:
   static void MapAttributesIntoRule(const nsMappedAttributes* aAttributes,
@@ -1772,6 +1790,8 @@ private:
     nsCOMPtr<nsIFilePicker> mFilePicker;
     RefPtr<HTMLInputElement> mInput;
   };
+
+  void EnsureAutofillState();
 };
 
 } // namespace dom

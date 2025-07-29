@@ -7444,6 +7444,110 @@ CSSParserImpl::ParseColor(nsCSSValue& aValue)
       }
       break;
     case eCSSToken_Function: {
+      // check for color-mix function
+      if (mToken.mIdent.LowerCaseEqualsLiteral("color-mix")) {
+        // parse color-mix function
+        if (!GetToken(true)) {
+          SkipUntil(')');
+          return CSSParseResult::Error;
+        }
+        
+        if (mToken.mType != eCSSToken_Ident || !mToken.mIdent.LowerCaseEqualsLiteral("in")) {
+          SkipUntil(')');
+          return CSSParseResult::Error;
+        }
+        
+        // Check for supported color spaces: srgb or hsl
+        if (!GetToken(true) || mToken.mType != eCSSToken_Ident) {
+          SkipUntil(')');
+          return CSSParseResult::Error;
+        }
+        
+        mozilla::css::ColorMixColorSpace colorSpace;
+        if (mToken.mIdent.LowerCaseEqualsLiteral("srgb")) {
+          colorSpace = mozilla::css::ColorMixColorSpace::sRGB;
+        } else if (mToken.mIdent.LowerCaseEqualsLiteral("hsl")) {
+          colorSpace = mozilla::css::ColorMixColorSpace::HSL;
+        } else {
+          SkipUntil(')');
+          return CSSParseResult::Error;
+        }
+        
+        if (!ExpectSymbol(',', true)) {
+          SkipUntil(')');
+          return CSSParseResult::Error;
+        }
+        
+        nsCSSValue color1;
+        if (ParseColor(color1) != CSSParseResult::Ok) {
+          SkipUntil(')');
+          return CSSParseResult::Error;
+        }
+        
+        // parse optional weight for first color
+        bool w1_specified = false;
+        float w1 = 0.5f; // Default to 50%
+        if (GetToken(true)) {
+          if (mToken.mType == eCSSToken_Percentage) {
+            w1 = mToken.mNumber; // percentage tokens are already normalized (0.0-1.0)
+            w1_specified = true;
+            // Reject invalid percentages (outside 0-100% range)
+            if (w1 < 0.0f || w1 > 1.0f) {
+              SkipUntil(')');
+              return CSSParseResult::Error;
+            }
+          } else {
+            UngetToken();
+          }
+        }
+        
+        if (!ExpectSymbol(',', true)) {
+          SkipUntil(')');
+          return CSSParseResult::Error;
+        }
+        
+        nsCSSValue color2;
+        if (ParseColor(color2) != CSSParseResult::Ok) {
+          SkipUntil(')');
+          return CSSParseResult::Error;
+        }
+        
+        // parse optional weight for second color
+        bool w2_specified = false;
+        float w2 = 0.5f; // default to 50%
+        if (GetToken(true)) {
+          if (mToken.mType == eCSSToken_Percentage) {
+            w2 = mToken.mNumber; // percentage tokens are already normalized (0.0-1.0)
+            w2_specified = true;
+            // Reject invalid percentages (outside 0-100% range)
+            if (w2 < 0.0f || w2 > 1.0f) {
+              SkipUntil(')');
+              return CSSParseResult::Error;
+            }
+          } else {
+            UngetToken();
+          }
+        }
+        
+        if (w1_specified && !w2_specified) {
+          // first specified, second should be complement
+          w2 = 1.0f - w1;
+        } else if (!w1_specified && w2_specified) {
+          // second specified, first should be complement
+          w1 = 1.0f - w2;
+        }
+        
+        if (!ExpectSymbol(')', true)) {
+          SkipUntil(')');
+          return CSSParseResult::Error;
+        }
+        
+        RefPtr<mozilla::css::ColorMixValue> colorMix = new mozilla::css::ColorMixValue(
+          colorSpace, color1, color2, w1, w2);
+        aValue.SetColorMixValue(colorMix.forget());
+        return CSSParseResult::Ok;
+      }
+      
       bool isRGB;
       bool isHSL;
       if ((isRGB = mToken.mIdent.LowerCaseEqualsLiteral("rgb")) ||
@@ -8650,7 +8754,8 @@ CSSParserImpl::ParseVariant(nsCSSValue& aValue,
          (tk->mIdent.LowerCaseEqualsLiteral("rgb") ||
           tk->mIdent.LowerCaseEqualsLiteral("hsl") ||
           tk->mIdent.LowerCaseEqualsLiteral("rgba") ||
-          tk->mIdent.LowerCaseEqualsLiteral("hsla"))))
+          tk->mIdent.LowerCaseEqualsLiteral("hsla") ||
+          tk->mIdent.LowerCaseEqualsLiteral("color-mix"))))
     {
       // Put token back so that parse color can get it
       UngetToken();

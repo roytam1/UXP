@@ -348,6 +348,41 @@ NS_HSL2RGB(float h, float s, float l)
   return NS_RGB(r, g, b);  
 }
 
+// RGB to HSL conversion function
+// The uint8_t RGB parameters are expected to be in the range 0-255
+// Returns HSL values in the range: H[0-1], S[0-1], L[0-1]
+void
+NS_RGB2HSL(uint8_t aR, uint8_t aG, uint8_t aB, float* aH, float* aS, float* aL)
+{
+  float r = aR / 255.0f;
+  float g = aG / 255.0f;
+  float b = aB / 255.0f;
+
+  float max = std::max(r, std::max(g, b));
+  float min = std::min(r, std::min(g, b));
+  float h, s, l = (max + min) / 2.0f;
+
+  if (max == min) {
+    h = s = 0.0f; // achromatic
+  } else {
+    float d = max - min;
+    s = l > 0.5f ? d / (2.0f - max - min) : d / (max + min);
+
+    if (max == r) {
+      h = (g - b) / d + (g < b ? 6.0f : 0.0f);
+    } else if (max == g) {
+      h = (b - r) / d + 2.0f;
+    } else {
+      h = (r - g) / d + 4.0f;
+    }
+    h /= 6.0f;
+  }
+
+  *aH = h;
+  *aS = s;
+  *aL = l;
+}
+
 const char*
 NS_RGBToColorName(nscolor aColor)
 {

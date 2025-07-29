@@ -1270,6 +1270,12 @@ ComputeSelectorStateDependence(nsCSSSelector& aSelector)
       continue;
     }
 
+    if (pseudoClass->mType == CSSPseudoClassType::autofill ||
+        pseudoClass->mType == CSSPseudoClassType::mozAutofillHighlight) {
+      states |= NS_EVENT_STATE_AUTOFILL;
+      continue;
+    }
+
     auto idx = static_cast<CSSPseudoClassTypeBase>(pseudoClass->mType);
     states |= nsCSSPseudoClasses::sPseudoClassStateDependences[idx];
   }
