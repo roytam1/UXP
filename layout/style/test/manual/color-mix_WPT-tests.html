@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS color-mix() WPT Tests</title>
+    <style>
+        body { 
+          margin: 20px; 
+          background: repeating-linear-gradient(-55deg, #f0f0f0, #f0f0f0 10px, #FFF 10px, #FFF 20px);
+        }
+        .test-section { margin: 20px 0; }
+        .test-case { margin: 10px 0; }
+        .color-box {
+            width: 100px;
+            height: 50px;
+            border: 1px solid black;
+            display: inline-block;
+        }
+        .computed-value { font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>CSS color-mix() Web Platform Tests</h1>
+    <p>This file contains comprehensive tests for CSS color-mix() implementation.</p>
+
+    <!-- Section 0: WPT Dynamic Test Cases -->
+    <div class="test-section">
+        <h2>0. WPT Dynamic Test Cases</h2>
+        <p>These tests dynamically generate color-mix() cases as in the official WPT <code>color-mix-basic-001.html</code>.</p>
+        <style>
+            .wpt-dynamic-test { background-color: red; width: 14em; height: 1em; margin-top: 0; margin-bottom: 0; color: black; }
+        </style>
+        <div id="wpt-dynamic-tests-container"></div>
+        <script>
+        // WPT-style dynamic test cases
+        const TEST_CASES = [
+          ["blue", "red"],
+          ["blue", "green"],
+          ["rgb(255, 0, 0, .2)", "red"],
+          ["blue", "red", 0.9],
+          ["blue", "red", 0],
+          ["currentColor", "white"],
+          ["currentColor", "rgba(0, 0, 0, .5)"]
+        ];
+        const container = document.getElementById('wpt-dynamic-tests-container');
+        for (let [from, to, animationProgress] of TEST_CASES) {
+          const animationProgressExplicit = animationProgress !== undefined;
+          animationProgress = animationProgressExplicit ? animationProgress : 0.5;
+
+          let progress = ` ${animationProgress * 100}%`;
+          let oneMinusProgress = ` ${(1 - animationProgress) * 100}%`;
+          let values = [
+            `color-mix(in srgb, ${from}, ${to} ${progress})`,
+            `color-mix(in srgb, ${from} ${oneMinusProgress}, ${to})`,
+            `color-mix(in srgb, ${from} ${oneMinusProgress}, ${to} ${progress})`,
+          ];
+
+          if (animationProgress == 0.5) {
+            values.push(`color-mix(in srgb, ${from}, ${to})`);
+          }
+
+          for (let value of values) {
+            const element = document.createElement("div");
+            element.classList.add('wpt-dynamic-test');
+            element.style.backgroundColor = value;
+            container.appendChild(element);
+          }
+        }
+        </script>
+    </div>
+
+    <!-- Section 1: Basic Syntax Tests -->
+    <div class="test-section">
+        <h2>1. Basic Syntax Tests</h2>
+        
+        <div class="test-case">
+            <h3>Basic color mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red, blue);"></div>
+            <div>Mixes red and blue in sRGB color space with equal weights</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Explicit percentage mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red 50%, blue 50%);"></div>
+            <div>Mixes red and blue with explicit 50% weights each</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Partial percentage mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red, blue 25%);"></div>
+            <div>Mixes red (default 100%) with blue (25%)</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Three color mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red 33%, green 33%, blue 34%);"></div>
+            <div>Mixes three colors with specified percentages</div>
+        </div>
+    </div>
+
+    <!-- Section 2: Color Space Tests -->
+    <div class="test-section">
+        <h2>2. Color Space Tests</h2>
+        
+        <div class="test-case">
+            <h3>sRGB color space mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red, blue);"></div>
+            <div>Mixes colors in sRGB color space (default)</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>HSL color space mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in hsl, red, blue);"></div>
+            <div>Mixes colors in HSL color space</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>HSL with alpha mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in hsl, red, transparent);"></div>
+            <div>Mixes red with transparent in HSL space</div>
+        </div>
+    </div>
+
+    <!-- Section 3: Percentage and Weight Tests -->
+    <div class="test-section">
+        <h2>3. Percentage and Weight Tests</h2>
+        
+        <div class="test-case">
+            <h3>30/70 weight split</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red 30%, blue 70%);"></div>
+            <div>Mixes red (30%) and blue (70%)</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>0/100 weight split</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red 0%, blue 100%);"></div>
+            <div>Mixes red (0%) and blue (100%)</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Default weight mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red, blue 0%);"></div>
+            <div>Mixes red (default 100%) with blue (0%)</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Uneven weight distribution</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red 20%, green 30%, blue 50%);"></div>
+            <div>Mixes three colors with uneven weights</div>
+        </div>
+    </div>
+
+    <!-- Section 4: Alpha Channel Tests -->
+    <div class="test-section">
+        <h2>4. Alpha Channel Tests</h2>
+        
+        <div class="test-case">
+            <h3>Alpha channel mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, rgba(255,0,0,0.5), rgba(0,0,255,0.5));"></div>
+            <div>Mixes semi-transparent red and blue</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Color with transparent</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red, transparent);"></div>
+            <div>Mixes red with transparent</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Mixed alpha values</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, rgba(255,0,0,0.5), blue 50%);"></div>
+            <div>Mixes semi-transparent red with blue</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Fully transparent mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, transparent, transparent);"></div>
+            <div>Mixes transparent with transparent</div>
+        </div>
+    </div>
+
+    <!-- Section 5: Error Handling Tests -->
+    <div class="test-section">
+        <h2>5. Error Handling Tests</h2>
+        
+        <div class="test-case">
+            <h3>Invalid color space</h3>
+            <div class="color-box" style="background-color: color-mix(in invalid, red, blue);"></div>
+            <div>Uses invalid color space 'invalid'</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Too many colors</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red, blue, green, yellow);"></div>
+            <div>Attempts to mix more than 3 colors</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Invalid percentage (over 100%)</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red 150%, blue);"></div>
+            <div>Uses percentage over 100%</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Negative percentage</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red -10%, blue);"></div>
+            <div>Uses negative percentage</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Missing color space</h3>
+            <div class="color-box" style="background-color: color-mix(red, blue);"></div>
+            <div>Missing 'in' keyword and color space</div>
+        </div>
+    </div>
+
+    <!-- Section 6: Computed Value Tests -->
+    <div class="test-section">
+        <h2>6. Computed Value Tests</h2>
+        
+        <div class="test-case">
+            <h3>Basic computed value test</h3>
+            <div id="computed-test-1" class="color-box" style="background-color: color-mix(in srgb, red 25%, blue 75%);"></div>
+            <div class="computed-value" id="computed-result-1">Computed value will appear here</div>
+            <div>Tests computed value of color-mix</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>HSL computed value test</h3>
+            <div id="computed-test-2" class="color-box" style="background-color: color-mix(in hsl, red 50%, blue 50%);"></div>
+            <div class="computed-value" id="computed-result-2">Computed value will appear here</div>
+            <div>Tests computed value of HSL color-mix</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Alpha computed value test</h3>
+            <div id="computed-test-3" class="color-box" style="background-color: color-mix(in srgb, rgba(255,0,0,0.5), rgba(0,0,255,0.5));"></div>
+            <div class="computed-value" id="computed-result-3">Computed value will appear here</div>
+            <div>Tests computed value with alpha channels</div>
+        </div>
+    </div>
+
+    <!-- Section 7: Edge Cases and Advanced Tests -->
+    <div class="test-section">
+        <h2>7. Edge Cases and Advanced Tests</h2>
+        
+        <div class="test-case">
+            <h3>Same color mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red, red);"></div>
+            <div>Mixes red with red</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Color with itself at different weights</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red 30%, red 70%);"></div>
+            <div>Mixes red with red at different weights</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Hex color mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, #ff0000, #0000ff);"></div>
+            <div>Mixes hex colors</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Named color mixing</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red, blue);"></div>
+            <div>Mixes named colors</div>
+        </div>
+        
+        <div class="test-case">
+            <h3>Mixed color formats</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red, #0000ff);"></div>
+            <div>Mixes named color with hex color</div>
+        </div>
+    </div>
+
+    <!-- Section 8: Nested color-mix() Tests -->
+    <div class="test-section">
+        <h2>8. Nested color-mix() Tests</h2>
+        <div class="test-case">
+            <h3>Nested color-mix() basic</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, color-mix(in srgb, red, blue), green);"></div>
+            <div>Mixes the result of color-mix(red, blue) with green</div>
+        </div>
+        <div class="test-case">
+            <h3>Nested color-mix() with percentages</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, color-mix(in srgb, red 75%, blue 25%), green 50%);"></div>
+            <div>Mixes a weighted purple with green at 50%</div>
+        </div>
+    </div>
+
+    <!-- Section 9: Missing Components Tests -->
+    <div class="test-section">
+        <h2>9. Missing Components Tests</h2>
+        <div class="test-case">
+            <h3>Mixing with missing alpha</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, rgb(255,0,0), rgba(0,0,255,0.5));"></div>
+            <div>Mixes opaque red with semi-transparent blue</div>
+        </div>
+        <div class="test-case">
+            <h3>Mixing with both missing alpha</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, rgb(255,0,0), rgb(0,0,255));"></div>
+            <div>Mixes two opaque colors (no alpha)</div>
+        </div>
+    </div>
+
+    <!-- Section 10: Edge Percentage Cases -->
+    <div class="test-section">
+        <h2>10. Edge Percentage Cases</h2>
+        <div class="test-case">
+            <h3>0% and 100% weights</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red 0%, blue 100%);"></div>
+            <div>Red 0%, blue 100%</div>
+        </div>
+        <div class="test-case">
+            <h3>100% and 0% weights</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red 100%, blue 0%);"></div>
+            <div>Red 100%, blue 0%</div>
+        </div>
+        <div class="test-case">
+            <h3>Negative percentage</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red -10%, blue 110%);"></div>
+            <div>Red -10%, blue 110%</div>
+        </div>
+        <div class="test-case">
+            <h3>Percentages over 100%</h3>
+            <div class="color-box" style="background-color: color-mix(in srgb, red 150%, blue 150%);"></div>
+            <div>Red 150%, blue 150%</div>
+        </div>
+    </div>
+
+    <!-- Section 11: Privacy and :visited Tests (currentColor) -->
+    <div class="test-section">
+        <h2>11. Privacy and :visited Tests (currentColor)</h2>
+        <style>
+            .visited-link:visited { color: #123456; }
+        </style>
+        <a href="#" class="visited-link" id="visited-link" style="color: #654321;">Visited Link</a>
+        <div class="test-case">
+            <h3>color-mix() with :visited and currentColor</h3>
+            <div id="visited-color-mix" class="color-box" style="background-color: color-mix(in srgb, currentColor, red);"></div>
+            <div>Mixes currentColor (from :visited link) with red</div>
+        </div>
+        <div class="test-case">
+            <h3>getComputedStyle privacy check</h3>
+            <div id="visited-color-mix-privacy" class="color-box" style="background-color: color-mix(in srgb, currentColor, blue);"></div>
+            <div>Checks computed style for privacy</div>
+        </div>
+        <script>
+            // Simulate privacy check for :visited
+            const visitedBox = document.getElementById('visited-color-mix-privacy');
+            if (visitedBox) {
+                const computed = getComputedStyle(visitedBox).backgroundColor;
+                // In real WPT, this would check for privacy leaks
+                visitedBox.title = 'Computed: ' + computed;
+            }
+        </script>
+    </div>
+
+    <!-- Section 12: currentColor in color-mix() (Inheritance and Mixing) -->
+    <div class="test-section">
+        <h2>12. currentColor in color-mix() (Inheritance and Mixing)</h2>
+        <div class="test-case">
+            <h3>currentColor inherited in color-mix()</h3>
+            <div style="color: green;">
+                <div class="color-box" style="background-color: color-mix(in srgb, currentColor, red);"></div>
+                <div>Parent color is green, mixes with red</div>
+            </div>
+        </div>
+        <div class="test-case">
+            <h3>currentColor direct use</h3>
+            <div style="color: blue;">
+                <div class="color-box" style="background-color: color-mix(in srgb, currentColor, yellow);"></div>
+                <div>Parent color is blue, mixes with yellow</div>
+            </div>
+        </div>
+        <div class="test-case">
+            <h3>currentColor with alpha</h3>
+            <div style="color: rgba(255,0,0,0.5);">
+                <div class="color-box" style="background-color: color-mix(in srgb, currentColor, blue);"></div>
+                <div>Parent color is semi-transparent red, mixes with blue</div>
+            </div>
+        </div>
+        <div class="test-case">
+            <h3>currentColor in nested color-mix()</h3>
+            <div style="color: orange;">
+                <div class="color-box" style="background-color: color-mix(in srgb, color-mix(in srgb, currentColor, blue), red);"></div>
+                <div>currentColor is orange, nested mix with blue then red</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Computed value tests
+        function runComputedTests() {
+            const tests = [
+                { id: 'computed-test-1', resultId: 'computed-result-1' },
+                { id: 'computed-test-2', resultId: 'computed-result-2' },
+                { id: 'computed-test-3', resultId: 'computed-result-3' }
+            ];
+            
+            tests.forEach(test => {
+                const element = document.getElementById(test.id);
+                const resultElement = document.getElementById(test.resultId);
+                
+                if (element && resultElement) {
+                    const computedStyle = getComputedStyle(element);
+                    const backgroundColor = computedStyle.backgroundColor;
+                    resultElement.textContent = `Computed: ${backgroundColor}`;
+                    
+                    // Check if color-mix is supported
+                    if (backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') {
+                        resultElement.textContent += ' (color-mix not supported)';
+                        resultElement.style.color = 'red';
+                    } else {
+                        resultElement.style.color = 'green';
+                    }
+                }
+            });
+        }
+        
+        // Run tests when page loads
+        window.addEventListener('load', runComputedTests);
+        
+        // Add visual indicators for supported/unsupported features
+        function checkSupport() {
+            const testElements = document.querySelectorAll('.color-box');
+            testElements.forEach(element => {
+                const computedStyle = getComputedStyle(element);
+                const backgroundColor = computedStyle.backgroundColor;
+                
+                // If the computed value is transparent or black, color-mix might not be supported
+                if (backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') {
+                    element.style.border = '2px solid red';
+                    element.title = 'color-mix() not supported';
+                } else {
+                    element.style.border = '2px solid green';
+                    element.title = 'color-mix() supported';
+                }
+            });
+        }
+        
+        // Check support after a short delay to ensure styles are applied
+        setTimeout(checkSupport, 100);
+    </script>
+</body>
+</html> 
