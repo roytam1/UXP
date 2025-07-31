@@ -2328,17 +2328,13 @@ nsObjectLoadingContent::LoadObject(bool aNotify,
   // "about", "blob", "data", "file", "http", "https".
   //
   // Some accessibility tests use our internal "chrome" scheme.
-  if (mType != eType_Null) {
-    nsCOMPtr<nsIURI> tempURI = mURI;
-    nsCOMPtr<nsINestedURI> nestedURI = do_QueryInterface(tempURI);
+  if (mType != eType_Null && mURI) {
     bool isCandidate = false;
-    if (nestedURI) {
-      for (const auto& candidate :
-           {"about", "blob", "chrome", "data", "file", "http", "https"}) {
-        rv = tempURI->SchemeIs(candidate, &isCandidate);
-        if (NS_SUCCEEDED(rv) && isCandidate) {
-          break;
-        }
+    for (const auto& candidate :
+         {"about", "blob", "chrome", "data", "file", "http", "https"}) {
+      rv = mURI->SchemeIs(candidate, &isCandidate);
+      if (NS_SUCCEEDED(rv) && isCandidate) {
+        break;
       }
     }
     if (!isCandidate) {
