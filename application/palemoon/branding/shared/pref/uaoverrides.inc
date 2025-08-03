@@ -64,7 +64,7 @@ pref("@GUAO_PREF@.spotify.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLI
 
 // UA-sniffing domains that are "app/vendor-specific" and do not like Pale Moon
 pref("@GUAO_PREF@.web.whatsapp.com","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36");
-pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
+pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @GRE_VERSION_SLICE@ @FX_SLICE@ @PM_SLICE@");
 pref("@GUAO_PREF@.studio.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @GRE_VERSION_SLICE@ @FX_SLICE@ @PM_SLICE@");
 
 // The following domains do not like the Goanna slice

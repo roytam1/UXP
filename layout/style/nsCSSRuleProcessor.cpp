@@ -663,7 +663,7 @@ CascadeRuleEnumFunc(css::Rule* aRule, void* aData)
 /* static */ bool
 nsCSSRuleProcessor::CascadeSheet(CSSStyleSheet* aSheet, CascadeLayer* aLayer)
 {
-  if (aSheet->IsApplicable() &&
+  if (aSheet && aSheet->IsApplicable() &&
       aSheet->UseForPresentation(aLayer->mPresContext,
                                  aLayer->mCacheKey) &&
       aSheet->mInner) {
