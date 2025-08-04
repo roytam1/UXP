@@ -15,6 +15,7 @@
  * http://dvcs.w3.org/hg/speech-api/raw-file/tip/speechapi.html
  * https://w3c.github.io/webappsec-secure-contexts/#monkey-patching-global-object
  * https://w3c.github.io/requestidlecallback/
+ * https://wicg.github.io/visual-viewport/#the-visualviewport-interface
  */
 
 interface ApplicationCache;
@@ -491,4 +492,9 @@ partial interface Window {
 
 dictionary WindowPostMessageOptions : StructuredSerializeOptions {
   USVString targetOrigin = "/";
+};
+
+partial interface Window {
+  [SameObject, Pref="dom.visualviewport.enabled", Replaceable]
+  readonly attribute VisualViewport visualViewport;
 };

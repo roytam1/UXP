@@ -23,6 +23,7 @@
 #include "mozilla/dom/StorageEventBinding.h"
 #include "mozilla/dom/Timeout.h"
 #include "mozilla/dom/TimeoutHandler.h"
+#include "mozilla/dom/VisualViewport.h"
 #include "mozilla/IntegerPrintfMacros.h"
 #include "nsDOMOfflineResourceList.h"
 #include "nsError.h"
@@ -4159,6 +4160,16 @@ nsGlobalWindow::GetNavigator()
   nsIDOMNavigator* navigator = GetNavigator(dummy);
   dummy.SuppressException();
   return navigator;
+}
+
+VisualViewport*
+nsGlobalWindow::VisualViewport()
+{
+  if (!mVisualViewport) {
+    mVisualViewport = new mozilla::dom::VisualViewport(this);
+  }
+
+  return mVisualViewport;
 }
 
 nsScreen*

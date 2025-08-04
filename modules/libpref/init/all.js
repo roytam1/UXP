@@ -5054,6 +5054,9 @@ pref("intl.allow-insecure-text-input", false);
 // Enable meta-viewport support in remote APZ-enabled frames.
 pref("dom.meta-viewport.enabled", false);
 
+// Enable the Visual Viewport API?
+pref("dom.visualviewport.enabled", true);
+
 // Disable <meta http-equiv=set-cookie> support. See m-c bug 1457503 / UXP #1102.
 pref("dom.meta-set-cookie.enabled", false);
 
