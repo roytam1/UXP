@@ -1725,8 +1725,9 @@ js::ToLengthClamped<JSContext>(JSContext*, HandleValue, uint32_t*, bool*);
 template bool
 js::ToLengthClamped<ExclusiveContext>(ExclusiveContext*, HandleValue, uint32_t*, bool*);
 
+//Non-standard: Used by Atomics.
 bool
-js::ToIntegerIndex(JSContext* cx, JS::HandleValue v, uint64_t* index)
+js::NonStandardToIndex(JSContext* cx, HandleValue v, uint64_t* index)
 {
     // Fast common case.
     if (v.isInt32()) {
@@ -1776,7 +1777,7 @@ js::ToIntegerIndex(JSContext* cx, JS::HandleValue v, uint64_t* index)
 
 // ES2017 draft 7.1.17 ToIndex
 bool
-js::ToIndex(JSContext* cx, JS::HandleValue v, uint64_t* index)
+js::ToIndex(JSContext* cx, JS::HandleValue v, const unsigned errorNumber, uint64_t* index)
 {
     // Step 1.
     if (v.isUndefined()) {
@@ -1794,13 +1795,19 @@ js::ToIndex(JSContext* cx, JS::HandleValue v, uint64_t* index)
     // 2. Step eliminates < 0, +0 == -0 with SameValueZero.
     // 3/4. Limit to <= 2^53-1, so everything above should fail.
     if (integerIndex < 0 || integerIndex >= DOUBLE_INTEGRAL_PRECISION_LIMIT) {
-        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_BAD_INDEX);
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, errorNumber);
         return false;
     }
 
     // Step 3.
     *index = uint64_t(integerIndex);
     return true;
+}
+
+bool
+js::ToIndex(JSContext* cx, JS::HandleValue v, uint64_t* index)
+{
+    return ToIndex(cx, v, JSMSG_BAD_INDEX, index);
 }
 
 template <typename CharT>
