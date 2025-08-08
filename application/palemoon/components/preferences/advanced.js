@@ -129,6 +129,24 @@ var gAdvancedPane = {
   },
 
   /**
+   * Returns true if reduced motion query is enabled and false otherwise.
+   */
+  readReducedMotion: function()
+  {
+    var pref = document.getElementById("ui.prefersReducedMotion");
+    return (pref.value != 0);
+  },
+
+  /**
+   * Returns the int value of the preference represented by the UI bool.
+   */
+  writeReducedMotion: function()
+  {
+    var checkbox = document.getElementById("reduceMotion");
+    return checkbox.checked ? 1 : 0;
+  },
+
+  /**
    * security.OCSP.enabled is an integer value for legacy reasons.
    * A value of 1 means OCSP is enabled. Any other value means it is disabled.
    */
