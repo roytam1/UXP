@@ -455,6 +455,7 @@ public:
     eOperatingSystemVersion_Windows7,
     eOperatingSystemVersion_Windows8,
     eOperatingSystemVersion_Windows10,
+    eOperatingSystemVersion_Windows11,
     eOperatingSystemVersion_Unknown
   };
 

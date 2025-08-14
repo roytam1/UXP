@@ -258,7 +258,6 @@ pref("browser.sessionhistory.max_total_viewers", -1);
 // See https://github.com/MoonchildProductions/UXP/issues/719
 pref("browser.newtabpage.add_to_session_history", false);
 
-
 // Determines whether the browser's current theme should be light or dark.
 // 0 = feature disabled
 // 1 = default: light theme
@@ -266,6 +265,11 @@ pref("browser.newtabpage.add_to_session_history", false);
 pref("ui.color_scheme", 1);
 
 pref("ui.use_native_colors", true);
+
+// Whether websites should use reduced animation styles.
+// Used for CSS @media query.
+pref("ui.prefersReducedMotion", 0);
+
 #ifdef MOZ_WIDGET_GTK
 // Determines whether the menubar is shown in the global menubar or not.
 pref("ui.use_global_menubar", false);

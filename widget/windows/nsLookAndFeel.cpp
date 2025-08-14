@@ -27,7 +27,9 @@ nsLookAndFeel::GetOperatingSystemVersion()
     return version;
   }
 
-  if (IsWin10OrLater()) {
+  if (IsWin11OrLater()) {
+    version = eOperatingSystemVersion_Windows11;
+  } else if (IsWin10OrLater()) {
     version = eOperatingSystemVersion_Windows10;
   } else if (IsWin8OrLater()) {
     version = eOperatingSystemVersion_Windows8;
