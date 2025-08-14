@@ -47,9 +47,15 @@ static const nsCSSProps::KTableEntry kDisplayModeKeywords[] = {
 };
 
 static const nsCSSProps::KTableEntry kPrefersColorSchemeKeywords[] = {
-  { eCSSKeyword_light,			 NS_STYLE_PREFERS_COLOR_SCHEME_LIGHT },
-  { eCSSKeyword_dark,			 NS_STYLE_PREFERS_COLOR_SCHEME_DARK },
-  { eCSSKeyword_UNKNOWN,		 -1 },
+  { eCSSKeyword_light,                   NS_STYLE_PREFERS_COLOR_SCHEME_LIGHT },
+  { eCSSKeyword_dark,                    NS_STYLE_PREFERS_COLOR_SCHEME_DARK },
+  { eCSSKeyword_UNKNOWN,                 -1 },
+};
+
+static const nsCSSProps::KTableEntry kPrefersMotionKeywords[] = {
+  { eCSSKeyword_no_preference,           NS_STYLE_PREFERS_FULL_MOTION },
+  { eCSSKeyword_reduce,                  NS_STYLE_PREFERS_REDUCED_MOTION },
+  { eCSSKeyword_UNKNOWN,                 -1 },
 };
 
 #ifdef XP_WIN
@@ -81,7 +87,8 @@ const OperatingSystemVersionInfo osVersionStrings[] = {
   { LookAndFeel::eOperatingSystemVersion_WindowsVista,  L"windows-vista" },
   { LookAndFeel::eOperatingSystemVersion_Windows7,      L"windows-win7" },
   { LookAndFeel::eOperatingSystemVersion_Windows8,      L"windows-win8" },
-  { LookAndFeel::eOperatingSystemVersion_Windows10,     L"windows-win10" }
+  { LookAndFeel::eOperatingSystemVersion_Windows10,     L"windows-win10" },
+  { LookAndFeel::eOperatingSystemVersion_Windows11,     L"windows-win11" }
 };
 #endif
 
@@ -498,6 +505,22 @@ GetPrefersColorScheme(nsPresContext* aPresContext, const nsMediaFeature* aFeatur
 }
 
 static nsresult
+GetPrefersMotion(nsPresContext* aPresContext, const nsMediaFeature* aFeature,
+          nsCSSValue& aResult)
+{
+  switch(Preferences::GetInt("ui.prefersReducedMotion", 0)) {
+    case 1:
+      aResult.SetIntValue(NS_STYLE_PREFERS_REDUCED_MOTION, 
+                          eCSSUnit_Enumerated);
+      break;
+    default:
+      aResult.Reset();
+  }
+  return NS_OK;
+}
+
+
+static nsresult
 GetDarkTheme(nsPresContext* aPresContext, const nsMediaFeature* aFeature,
              nsCSSValue& aResult)
 {
@@ -629,6 +652,14 @@ nsMediaFeatures::features[] = {
     nsMediaFeature::eNoRequirements,
     { kPrefersColorSchemeKeywords },
     GetPrefersColorScheme
+  },
+  {
+    &nsGkAtoms::prefers_reduced_motion,
+    nsMediaFeature::eMinMaxNotAllowed,
+    nsMediaFeature::eEnumerated,
+    nsMediaFeature::eNoRequirements,
+    { kPrefersMotionKeywords },
+    GetPrefersMotion
   },
   {
     &nsGkAtoms::resolution,

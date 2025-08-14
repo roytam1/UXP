@@ -37,8 +37,6 @@ const {AutocompletePopup} = require("devtools/client/shared/autocomplete-popup")
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 const PREF_UA_STYLES = "devtools.inspector.showUserAgentStyles";
 const PREF_DEFAULT_COLOR_UNIT = "devtools.defaultColorUnit";
-const PREF_ENABLE_MDN_DOCS_TOOLTIP =
-      "devtools.inspector.mdnDocsTooltip.enabled";
 const FILTER_CHANGED_TIMEOUT = 150;
 
 // This is used to parse user input when filtering.
@@ -157,11 +155,8 @@ function CssRuleView(inspector, document, store, pageStyle) {
   this._prefObserver.on(PREF_ORIG_SOURCES, this._onSourcePrefChanged);
   this._prefObserver.on(PREF_UA_STYLES, this._handlePrefChange);
   this._prefObserver.on(PREF_DEFAULT_COLOR_UNIT, this._handlePrefChange);
-  this._prefObserver.on(PREF_ENABLE_MDN_DOCS_TOOLTIP, this._handlePrefChange);
 
   this.showUserAgentStyles = Services.prefs.getBoolPref(PREF_UA_STYLES);
-  this.enableMdnDocsTooltip =
-    Services.prefs.getBoolPref(PREF_ENABLE_MDN_DOCS_TOOLTIP);
 
   // The popup will be attached to the toolbox document.
   this.popup = new AutocompletePopup(inspector._toolbox.doc, {
