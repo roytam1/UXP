@@ -97,17 +97,21 @@ NS_IMETHODIMP
 nsScreenGtk :: GetPixelDepth(int32_t *aPixelDepth)
 {
   GdkVisual * visual = gdk_screen_get_system_visual(gdk_screen_get_default());
-  *aPixelDepth = gdk_visual_get_depth(visual);
-
+  uint32_t pixelDepth = gdk_visual_get_depth(visual);
+  if (pixelDepth == 32) {
+    // If a device reports 32 bits per pixel, it's still only using 8 bits
+    // per color component, which is what our callers want to know.
+    // (Some devices report 32 and some devices report 24, because Linux)
+    pixelDepth = 24;
+  }
+  *aPixelDepth = pixelDepth;
   return NS_OK;
-
 } // GetPixelDepth
 
 NS_IMETHODIMP 
 nsScreenGtk :: GetColorDepth(int32_t *aColorDepth)
 {
   return GetPixelDepth ( aColorDepth );
-
 } // GetColorDepth
 
 NS_IMETHODIMP
