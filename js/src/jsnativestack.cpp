@@ -107,15 +107,14 @@ js::GetNativeStackBaseImpl()
     pthread_t thread = pthread_self();
     pthread_attr_t sattr;
     pthread_attr_init(&sattr);
-    pthread_getattr_np(thread, &sattr);
+    int rc = pthread_getattr_np(thread, &sattr);
+    MOZ_RELEASE_ASSERT(rc == 0, "Call to pthread_getattr_np failed.");
 
     // stackBase will be the *lowest* address on all architectures.
     void* stackBase = nullptr;
     size_t stackSize = 0;
-    int rc = pthread_attr_getstack(&sattr, &stackBase, &stackSize);
-    if (rc) {
-        MOZ_CRASH("Call to pthread_attr_getstack failed, unable to setup stack range for JS.");
-    }
+    rc = pthread_attr_getstack(&sattr, &stackBase, &stackSize);
+    MOZ_RELEASE_ASSERT(rc == 0, "Call to pthread_attr_getstack failed, unable to setup stack range for JS.");
     MOZ_RELEASE_ASSERT(stackBase, "Invalid stack base, unable to setup stack range for JS.");
     pthread_attr_destroy(&sattr);
 
@@ -131,6 +130,7 @@ js::GetNativeStackBaseImpl()
 void*
 js::GetNativeStackBaseImpl()
 {
+    int rc;
     pthread_t thread = pthread_self();
 # if defined(XP_DARWIN) || defined(DARWIN)
     return pthread_get_stackaddr_np(thread);
@@ -148,14 +148,15 @@ js::GetNativeStackBaseImpl()
      * FIXME: this function is non-portable;
      * other POSIX systems may have different np alternatives
      */
-    pthread_getattr_np(thread, &sattr);
+    rc = pthread_getattr_np(thread, &sattr);
+    MOZ_RELEASE_ASSERT(rc == 0, "Call to pthread_getattr_np failed.");
 #  endif
 
     void* stackBase = 0;
     size_t stackSize = 0;
-    int rc;
 # if defined(__OpenBSD__)
     rc = pthread_stackseg_np(pthread_self(), &ss);
+    MOZ_RELEASE_ASSERT(rc == 0, "Call to pthread_stackseg_np failed, unable to setup stack range for JS.");
     stackBase = (void*)((size_t) ss.ss_sp - ss.ss_size);
     stackSize = ss.ss_size;
 # elif defined(ANDROID)
@@ -198,10 +199,8 @@ js::GetNativeStackBaseImpl()
     // differs between libc implementations and could imply /proc access etc.
     // which may not work in restricted environments.
     rc = pthread_attr_getstack(&sattr, &stackBase, &stackSize);
+    MOZ_RELEASE_ASSERT(rc == 0, "Call to pthread_attr_getstack failed, unable to setup stack range for JS.");
 # endif
-    if (rc) {
-        MOZ_CRASH("Call to pthread_attr_getstack failed, unable to setup stack range for JS.");
-    }
     MOZ_RELEASE_ASSERT(stackBase, "Invalid stack base, unable to setup stack range for JS.");
     pthread_attr_destroy(&sattr);
 
