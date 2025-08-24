@@ -484,6 +484,27 @@
     background: linear-gradient(#fafbfd, #ebf3fd);
     transition: .2s ease-in;
   }
+  
+  @media (-moz-os-version: windows-win10) {
+    /* desaturate Win10 and above */
+    #appmenuSecondaryPane {
+      background-color: rgba(240,240,240,0.5);
+      box-shadow: 1px 0 2px rgb(214,214,214) inset;
+    }
+    #appmenuSecondaryPane:-moz-locale-dir(rtl) {
+      box-shadow: -1px 0 2px rgb(214,214,214) inset;
+    }
+
+    #appmenuSecondaryPane menupopup {
+      background-image: linear-gradient(to right, #f5f5f5 26px, ThreeDLightShadow 26px,
+                                      ThreeDLightShadow 27px, ThreeDHighlight 27px,
+                                      ThreeDHighlight 28px, #f5f5f5 28px);
+      -moz-border-top-colors: ThreeDShadow #f5f5f5;
+      -moz-border-bottom-colors: ThreeDShadow #f5f5f5;
+      -moz-border-left-colors: ThreeDShadow #f5f5f5;
+      -moz-border-right-colors: ThreeDShadow #f5f5f5;
+    }
+  } /* Win 10+ */
 }
 
 #appmenuSecondaryPane-spacer {
@@ -3686,30 +3707,30 @@ toolbar[brighttext] #addonbar-closebutton {
   }
   
 /* Show toolbar borders on vista through win8, but not on win10 and later: */
-@media (-moz-os-version: windows-vista),
-       (-moz-os-version: windows-win7),
-       (-moz-os-version: windows-win8) {
-  /* Vertical toolbar border */
-  #main-window[sizemode=normal] #navigator-toolbox::after,
-  #main-window[sizemode=normal] #navigator-toolbox[tabsontop=true] > toolbar:not(#toolbar-menubar):not(#TabsToolbar),
-  #main-window[sizemode=normal] #navigator-toolbox[tabsontop=false] > toolbar:not(#toolbar-menubar):not(#nav-bar) {
-    border-left: 1px solid @toolbarShadowColor@;
-    border-right: 1px solid @toolbarShadowColor@;
-    background-clip: padding-box;
-  }
-  #main-window[sizemode=normal] #navigator-toolbox > toolbar:-moz-lwtheme {
-    border-color: transparent !important;
-  }
-  #main-window[sizemode=normal] #browser-border-start,
-  #main-window[sizemode=normal] #browser-border-end {
-    display: -moz-box;
-    background-color: @toolbarShadowColor@;
-    width: 1px;
-  }
-  #main-window[sizemode=normal] #browser-bottombox {
-    border: 1px solid @toolbarShadowColor@;
-    border-top-style: none;
-    background-clip: padding-box;
+@media (-moz-os-version: windows-vista) {
+  @media not all and (-moz-os-version: windows-win10) {
+    /* Vertical toolbar border */
+    #main-window[sizemode=normal] #navigator-toolbox::after,
+    #main-window[sizemode=normal] #navigator-toolbox[tabsontop=true] > toolbar:not(#toolbar-menubar):not(#TabsToolbar),
+    #main-window[sizemode=normal] #navigator-toolbox[tabsontop=false] > toolbar:not(#toolbar-menubar):not(#nav-bar) {
+      border-left: 1px solid @toolbarShadowColor@;
+      border-right: 1px solid @toolbarShadowColor@;
+      background-clip: padding-box;
+    }
+    #main-window[sizemode=normal] #navigator-toolbox > toolbar:-moz-lwtheme {
+      border-color: transparent !important;
+    }
+    #main-window[sizemode=normal] #browser-border-start,
+    #main-window[sizemode=normal] #browser-border-end {
+      display: -moz-box;
+      background-color: @toolbarShadowColor@;
+      width: 1px;
+    }
+    #main-window[sizemode=normal] #browser-bottombox {
+      border: 1px solid @toolbarShadowColor@;
+      border-top-style: none;
+      background-clip: padding-box;
+    }
   }
 }
 
