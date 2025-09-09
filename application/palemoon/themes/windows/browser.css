@@ -795,10 +795,6 @@ menuitem.bookmark-item {
   list-style-image: var(--toolbarbutton-image);
 }
 
-toolbar[brighttext] .toolbarbutton-1 {
-  list-style-image: var(--toolbarbutton-inverted-image);
-}
-
 @media not all and (-moz-os-version: windows-win10),
        not all and (-moz-os-version: windows-win11) {
   .toolbarbutton-1:not(:-moz-lwtheme) {
@@ -806,10 +802,8 @@ toolbar[brighttext] .toolbarbutton-1 {
   }
 }
 
-@media (-moz-windows-accent-color-is-dark) {
-  toolbar .toolbarbutton-1 {
-    list-style-image: var(--toolbarbutton-inverted-image);
-  }
+toolbar[brighttext] .toolbarbutton-1 {
+  list-style-image: var(--toolbarbutton-inverted-image);
 }
 
 .toolbarbutton-1[disabled=true] > .toolbarbutton-icon,
@@ -3800,18 +3794,6 @@ toolbar[brighttext] #addonbar-closebutton {
     color: inherit;
   }
 
-@media not all and (-moz-os-version: windows-win10),
-       not all and (-moz-os-version: windows-win11) {
-  :-moz-any(#toolbar-menubar, #nav-bar[tabsontop=false]) :-moz-any(@primaryToolbarButtons@):not(:-moz-any(#alltabs-button,#sync-button[status])) > .toolbarbutton-icon:not(:-moz-lwtheme),
-  :-moz-any(#toolbar-menubar, #nav-bar[tabsontop=false]) :-moz-any(@primaryToolbarButtons@) > toolbarbutton > .toolbarbutton-icon:not(:-moz-lwtheme),
-  #TabsToolbar[tabsontop=true] :-moz-any(@primaryToolbarButtons@):not(:-moz-any(#alltabs-button,#new-tab-button,#sync-button[status])) > .toolbarbutton-icon:not(:-moz-lwtheme),
-  #TabsToolbar[tabsontop=true] :-moz-any(@primaryToolbarButtons@) > toolbarbutton > .toolbarbutton-icon:not(:-moz-lwtheme),
-  #nav-bar + #customToolbars + #PersonalToolbar[collapsed=true] + #TabsToolbar[tabsontop=false]:last-child :-moz-any(@primaryToolbarButtons@):not(:-moz-any(#alltabs-button,#new-tab-button,#sync-button[status])) > .toolbarbutton-icon:not(:-moz-lwtheme),
-  #nav-bar + #customToolbars + #PersonalToolbar[collapsed=true] + #TabsToolbar[tabsontop=false]:last-child :-moz-any(@primaryToolbarButtons@) > toolbarbutton > .toolbarbutton-icon:not(:-moz-lwtheme) {
-    list-style-image: var(--toolbarbutton-glass-image);
-  }
-}
-  
 /* Show toolbar borders on vista through win8, but not on win10 and later: */
 @media (-moz-os-version: windows-vista),
        (-moz-os-version: windows-win7),
