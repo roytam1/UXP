@@ -795,8 +795,8 @@ menuitem.bookmark-item {
   list-style-image: var(--toolbarbutton-image);
 }
 
-@media not all and (-moz-os-version: windows-win10),
-       not all and (-moz-os-version: windows-win11) {
+@media (-moz-os-version: windows-vista),
+       (-moz-os-version: windows-win7) {
   .toolbarbutton-1:not(:-moz-lwtheme) {
     list-style-image: var(--toolbarbutton-glass-image);
   }
