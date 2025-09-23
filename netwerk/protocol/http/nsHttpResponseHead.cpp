@@ -620,22 +620,22 @@ nsHttpResponseHead::ParseHeaderLine_locked(const nsACString &line, bool original
         // permit only a single value here.
         if (nsHttp::ParseInt64(val.get(), &ignored, &len)) {
             mContentLength = len;
-        }
-        else {
+        } else {
             // If this is a negative content length then just ignore it
             LOG(("invalid content-length! %s\n", val.get()));
         }
-    }
-    else if (hdr == nsHttp::Content_Type) {
+    } else if (hdr == nsHttp::Content_Type) {
         LOG(("ParseContentType [type=%s]\n", val.get()));
         bool dummy;
         net_ParseContentType(val,
                              mContentType, mContentCharset, &dummy);
-    }
-    else if (hdr == nsHttp::Cache_Control)
-        ParseCacheControl(val.get());
-    else if (hdr == nsHttp::Pragma)
+    } else if (hdr == nsHttp::Cache_Control) {
+        // Re-parse merged header in its entirety. See Issue #2852
+        ParseCacheControl(mHeaders.PeekHeader(hdr));
+    } else if (hdr == nsHttp::Pragma) {
         ParsePragma(val.get());
+    }
+
     return NS_OK;
 }
 
