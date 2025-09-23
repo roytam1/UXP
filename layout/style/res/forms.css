@@ -111,7 +111,7 @@ input:-moz-autofill-highlight,
 select:-moz-autofill-highlight,
 textarea:-moz-autofill-highlight {
   background-color: #fffcd0 !important;
-  color: #090909;
+  color: #090909 !important;
 }
 
 input > .anonymous-div,

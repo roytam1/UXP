@@ -272,7 +272,9 @@ public:
 
     virtual void GetAzureBackendInfo(mozilla::widget::InfoObject &aObj) {
       aObj.DefineProperty("AzureCanvasBackend", GetBackendName(mPreferredCanvasBackend));
-      aObj.DefineProperty("AzureCanvasAccelerated", AllowOpenGLCanvas());
+      if (mPreferredCanvasBackend == mozilla::gfx::BackendType::SKIA) {
+        aObj.DefineProperty("AzureCanvasSkiaOpenGL", AllowOpenGLCanvas());
+      }
       aObj.DefineProperty("AzureFallbackCanvasBackend", GetBackendName(mFallbackCanvasBackend));
       aObj.DefineProperty("AzureContentBackend", GetBackendName(mContentBackend));
     }

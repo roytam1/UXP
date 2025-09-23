@@ -265,7 +265,8 @@ public:
     // unregisters the table from the font entry.
     //
     // Pass nullptr for aBuffer to indicate that the table is not present and
-    // nullptr will be returned.
+    // nullptr will be returned.  Also returns nullptr on OOM or when there are
+    // other issues storing the entry in the cache table.
     hb_blob_t *ShareFontTableAndGetBlob(uint32_t aTag,
                                         nsTArray<uint8_t>* aTable);
 
