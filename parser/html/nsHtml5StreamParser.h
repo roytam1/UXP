@@ -562,11 +562,6 @@ class nsHtml5StreamParser : public nsICharsetDetectionObserver {
     eParserMode                   mMode;
 
     /**
-     * Whether the parser should not sniff the content type.
-     */
-    bool                          mSkipContentSniffing;
-
-    /**
      * The pref html5.flushtimer.initialdelay: Time in milliseconds between
      * the time a network buffer is seen and the timer firing when the
      * timer hasn't fired previously in this parse.

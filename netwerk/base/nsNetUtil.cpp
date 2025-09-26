@@ -16,7 +16,6 @@
 #include "nsContentUtils.h"
 #include "nsHashKeys.h"
 #include "nsHttp.h"
-#include "nsMimeTypes.h"
 #include "nsIAsyncStreamCopier.h"
 #include "nsIAuthPrompt.h"
 #include "nsIAuthPrompt2.h"
@@ -2150,33 +2149,6 @@ NS_SniffContent(const char *aSnifferType, nsIRequest *aRequest,
     return;
   }
 
-  aSniffedType.Truncate();
-
-  nsCOMPtr<nsIChannel> channel = do_QueryInterface(aRequest);
-  if (channel) {
-    nsCOMPtr<nsILoadInfo> loadInfo = channel->GetLoadInfo();
-    if (loadInfo->GetSkipContentSniffing()) {
-      // In case XCTO nosniff was present, we should skip sniffing here, but...
-      nsAutoCString currentContentType;
-      channel->GetContentType(currentContentType);
-      // We cannot skip sniffing if the current MIME type is a JSON file.
-      // The JSON-Viewer relies on its own sniffer to determine if it can render
-      // the page, so we need to make an exception if the Server provides a valid
-      // JSON MIME type (application/json, application/web-manifest or text/json).
-      // We also don't skip sniffing if the currently-known content type is empty,
-      // to deal with webmaster errors (nosniff is set but no content-type supplied)
-      // See Issue #2258.
-      if (!currentContentType.Equals(APPLICATION_JSON) && 
-          !currentContentType.Equals(APPLICATION_WEB_MANIFEST) &&
-          !currentContentType.Equals(TEXT_JSON) &&
-          !currentContentType.IsEmpty()) {
-        // Content type supplied and it's not a JSON type; honor XCTO:nosniff.
-        return;
-      }
-    }
-  }
-  
-  // Iterate through the sniffers...
   nsCOMArray<nsIContentSniffer> sniffers;
   cache->GetEntries(sniffers);
   for (int32_t i = 0; i < sniffers.Count(); ++i) {
@@ -2185,9 +2157,8 @@ NS_SniffContent(const char *aSnifferType, nsIRequest *aRequest,
       return;
     }
   }
-  
-  // If we get here, there's nothing more to be done, return with a truncated aSniffedType.
 
+  aSniffedType.Truncate();
 }
 
 bool

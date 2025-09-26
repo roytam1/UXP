@@ -166,7 +166,6 @@ nsHtml5StreamParser::nsHtml5StreamParser(nsHtml5TreeOpExecutor* aExecutor,
   , mLoadFlusher(new nsHtml5LoadFlusher(aExecutor))
   , mFlushTimer(do_CreateInstance("@mozilla.org/timer;1"))
   , mMode(aMode)
-  , mSkipContentSniffing(false)
 {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
   mFlushTimer->SetTarget(mThread);
@@ -550,7 +549,7 @@ nsHtml5StreamParser::FinalizeSniffing(const uint8_t* aFromSegment, // can be nul
   }
 
   // meta scan failed.
-  if (!mSkipContentSniffing && mCharsetSource >= kCharsetFromHintPrevDoc) {
+  if (mCharsetSource >= kCharsetFromHintPrevDoc) {
     mFeedChardet = false;
     return SetupDecodingAndWriteSniffingBufferAndCurrentSegment(aFromSegment, aCount, aWriteCount);
   }
@@ -875,13 +874,6 @@ nsHtml5StreamParser::OnStartRequest(nsIRequest* aRequest, nsISupports* aContext)
     mObserver->OnStartRequest(aRequest, aContext);
   }
   mRequest = aRequest;
-  nsCOMPtr<nsIChannel> myChannel(do_QueryInterface(aRequest));
-  nsCOMPtr<nsILoadInfo> loadInfo = myChannel->GetLoadInfo();
-  mSkipContentSniffing = loadInfo->GetSkipContentSniffing();
-
-  if (mSkipContentSniffing) {
-    mFeedChardet = false;
-  }
 
   mStreamState = STREAM_BEING_READ;
 

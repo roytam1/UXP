@@ -14,7 +14,6 @@
 #include "nsHttp.h"
 #include "nsHttpChannel.h"
 #include "nsHttpHandler.h"
-#include "nsString.h"
 #include "nsIApplicationCacheService.h"
 #include "nsIApplicationCacheContainer.h"
 #include "nsICacheStorageService.h"
@@ -1101,16 +1100,6 @@ ProcessXCTO(nsIURI* aURI, nsHttpResponseHead* aResponseHead, nsILoadInfo* aLoadI
         ReportTypeBlocking(aURI, aLoadInfo, "MimeTypeMismatch");
         return NS_ERROR_CORRUPTED_CONTENT;
     }
-    auto policyType = aLoadInfo->GetExternalContentPolicyType();
-    if (policyType == nsIContentPolicy::TYPE_DOCUMENT ||
-        policyType == nsIContentPolicy::TYPE_SUBDOCUMENT) {
-      // If the header XCTO nosniff is set for any browsing context, then
-      // we set the skipContentSniffing flag on the Loadinfo. Within
-      // NS_SniffContent we then bail early and do not do any sniffing.
-      aLoadInfo->SetSkipContentSniffing(true);
-      return NS_OK;
-    }
-
     return NS_OK;
 }
 
