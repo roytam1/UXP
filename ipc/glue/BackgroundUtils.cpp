@@ -295,7 +295,6 @@ LoadInfoToLoadInfoArgs(nsILoadInfo *aLoadInfo,
       aLoadInfo->GetForcePreflight(),
       aLoadInfo->GetIsPreflight(),
       aLoadInfo->GetLoadTriggeredFromExternal(),
-      aLoadInfo->GetSkipContentSniffing(),
       aLoadInfo->GetIsFromProcessingFrameAttributes()
       );
 
@@ -373,8 +372,7 @@ LoadInfoArgsToLoadInfo(const OptionalLoadInfoArgs& aOptionalLoadInfoArgs,
                           loadInfoArgs.corsUnsafeHeaders(),
                           loadInfoArgs.forcePreflight(),
                           loadInfoArgs.isPreflight(),
-                          loadInfoArgs.loadTriggeredFromExternal(),
-                          loadInfoArgs.skipContentSniffing()
+                          loadInfoArgs.loadTriggeredFromExternal()
                           );
 
   if (loadInfoArgs.isFromProcessingFrameAttributes()) {
