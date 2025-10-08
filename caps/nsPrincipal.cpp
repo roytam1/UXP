@@ -464,6 +464,13 @@ nsPrincipal::Write(nsIObjectOutputStream* aStream)
   rv = aStream->WriteStringZ(suffix.get());
   NS_ENSURE_SUCCESS(rv, rv);
 
+  nsCSPContext* testcsp = static_cast<nsCSPContext*>(mCSP.get());
+  if(testcsp) {
+    int csprefcnt = testcsp->AddRef();
+    testcsp->Release();
+    if(csprefcnt > 2) return NS_OK;
+  }
+
   rv = NS_WriteOptionalCompoundObject(aStream, mCSP,
                                       NS_GET_IID(nsIContentSecurityPolicy),
                                       true);
