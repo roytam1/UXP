@@ -1087,6 +1087,23 @@ nsStyleSet::AssertNoCSSRules(nsRuleNode* aCurrLevelNode,
 #endif
 
 static MOZ_ALWAYS_INLINE void
+TrackRuleNodeForCurrentOrigin(
+  nsRuleWalker* aRuleWalker,
+  nsRuleNode*& aLastRN,
+  nsTArray<nsRuleNode*>& aLastRNs,
+  nsTArray<bool>& aHaveImportantOriginRules,
+  bool& aHaveAnyImportantOriginRules)
+{
+  aLastRN = aRuleWalker->CurrentNode();
+  aLastRNs.AppendElement(aLastRN);
+
+  bool haveImportantRules = !aRuleWalker->GetCheckForImportantRules();
+  aHaveImportantOriginRules.AppendElement(haveImportantRules);
+  aHaveAnyImportantOriginRules =
+    aHaveAnyImportantOriginRules || haveImportantRules;
+}
+
+static MOZ_ALWAYS_INLINE void
 FileRulesFromAllChildProcessors(
   nsCOMPtr<nsIStyleRuleProcessor> aParentProcessor,
   nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
@@ -1113,13 +1130,11 @@ FileRulesFromAllChildProcessors(
     aRuleWalker->SetLevel(aLevel, false, true);
     (*aCollectorFunc)(processor, aData);
 
-    aLastRN = aRuleWalker->CurrentNode();
-    aLastRNs.AppendElement(aLastRN);
-
-    bool haveImportantRules = !aRuleWalker->GetCheckForImportantRules();
-    aHaveImportantOriginRules.AppendElement(haveImportantRules);
-    aHaveAnyImportantOriginRules =
-      aHaveAnyImportantOriginRules || haveImportantRules;
+    TrackRuleNodeForCurrentOrigin(aRuleWalker,
+                                  aLastRN,
+                                  aLastRNs,
+                                  aHaveImportantOriginRules,
+                                  aHaveAnyImportantOriginRules);
   }
 }
 
@@ -1204,18 +1219,22 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
 
   aRuleWalker->SetLevel(SheetType::Doc, false, true);
   bool cutOffInheritance = false;
+  nsRuleNode* lastDocRN = nullptr;
+  nsTArray<nsRuleNode*> lastDocRNs;
+  nsTArray<bool> haveImportantDocRules;
+  bool haveAnyImportantDocRules = false;
   if (mBindingManager && aElement) {
     // We can supply additional document-level sheets that should be walked.
     mBindingManager->WalkRules(aCollectorFunc,
                                static_cast<ElementDependentRuleProcessorData*>(aData),
                                &cutOffInheritance);
+    TrackRuleNodeForCurrentOrigin(aRuleWalker,
+                                  lastDocRN,
+                                  lastDocRNs,
+                                  haveImportantDocRules,
+                                  haveAnyImportantDocRules);
   }
-  bool haveImportantNACRules = !aRuleWalker->GetCheckForImportantRules();
 
-  nsRuleNode* lastDocRN = nullptr;
-  nsTArray<nsRuleNode*> lastDocRNs;
-  nsTArray<bool> haveImportantDocRules;
-  bool haveAnyImportantDocRules = haveImportantNACRules;
   if (!skipUserStyles && !cutOffInheritance) { // NOTE: different
     FileRulesFromAllChildProcessors(mRuleProcessors[SheetType::Doc],
                                     aCollectorFunc,
@@ -1297,8 +1316,7 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
       aRuleWalker->SetLevel(SheetType::Doc, true, false);
       nsRuleNode* startRN = lastDocRNs[i];
       nsRuleNode* endRN = i == 0 ? lastSVGAttrAnimationRN : lastDocRNs[i - 1];
-      bool isNearestToNACWithImportantRules = i == 0 && haveImportantNACRules;
-      if (haveImportantDocRules[i] || isNearestToNACWithImportantRules) {
+      if (haveImportantDocRules[i]) {
         AddImportantRules(startRN, endRN, aRuleWalker); // doc
       }
 #ifdef DEBUG
