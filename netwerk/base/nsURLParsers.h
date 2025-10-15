@@ -9,6 +9,8 @@
 #include "nsIURLParser.h"
 #include "mozilla/Attributes.h"
 
+#include <limits>
+
 //----------------------------------------------------------------------------
 // base class for url parsers
 //----------------------------------------------------------------------------

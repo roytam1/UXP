@@ -17,6 +17,8 @@
 #include "mozilla/DebugOnly.h"
 #include "mozilla/FloatingPoint.h"
 
+#include <limits>
+
 namespace mozilla {
 namespace gfx {
 
