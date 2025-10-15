@@ -16,6 +16,8 @@
 #include "mozilla/TypeTraits.h"
 #include "Types.h"
 
+#include <limits>
+
 namespace mozilla {
 namespace gfx {
 

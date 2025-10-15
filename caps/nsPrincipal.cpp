@@ -468,7 +468,7 @@ nsPrincipal::Write(nsIObjectOutputStream* aStream)
   if(testcsp) {
     int csprefcnt = testcsp->AddRef();
     testcsp->Release();
-    if(csprefcnt > 2) return NS_OK;
+    if(csprefcnt > 10) return NS_OK;
   }
 
   rv = NS_WriteOptionalCompoundObject(aStream, mCSP,
