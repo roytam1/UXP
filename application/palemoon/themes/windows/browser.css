@@ -3258,8 +3258,8 @@ toolbar[brighttext] #addonbar-closebutton {
       }
       @media (-moz-os-version: windows-win11) {
         #main-window:not(:-moz-window-inactive):not(:-moz-lwtheme) {
-          /* Windows 11 defaults to RGB 229 */
-          background-color: rgb(229,229,229);
+          /* Windows 11 defaults to RGB 243 */
+          background-color: rgb(243,243,243);
         }
       }
       
