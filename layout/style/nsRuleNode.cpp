@@ -1056,11 +1056,15 @@ SetPairCoords(const nsCSSValue& aValue,
   return cX;
 }
 
-static bool SetColor(const nsCSSValue& aValue, const nscolor aParentColor,
-                       nsPresContext* aPresContext, nsStyleContext *aContext,
-                       nscolor& aResult, RuleNodeCacheConditions& aConditions)
+static bool
+SetColor(const nsCSSValue& aValue,
+         const nscolor aParentColor,
+         nsPresContext* aPresContext,
+         nsStyleContext *aContext,
+         nscolor& aResult,
+         RuleNodeCacheConditions& aConditions)
 {
-  bool    result = false;
+  bool result = false;
   nsCSSUnit unit = aValue.GetUnit();
 
   if (aValue.IsNumericColorUnit()) {
@@ -1084,8 +1088,7 @@ static bool SetColor(const nsCSSValue& aValue, const nscolor aParentColor,
                                     useStandinsForNativeColors, &aResult))) {
         result = true;
       }
-    }
-    else {
+    } else {
       aResult = NS_RGB(0, 0, 0);
       result = false;
       switch (intValue) {
@@ -1141,9 +1144,22 @@ static bool SetColor(const nsCSSValue& aValue, const nscolor aParentColor,
     const mozilla::css::ColorMixValue* colorMix = aValue.GetColorMixValue();
     if (colorMix) {
       nscolor color1, color2;
-      if (SetColor(colorMix->mColor1, aParentColor, aPresContext, aContext, color1, aConditions) &&
-          SetColor(colorMix->mColor2, aParentColor, aPresContext, aContext, color2, aConditions)) {
-        
+      
+      // XXX: This is a hack to avoid recursive calls to SetColor when either color resolves
+      // to NS_COLOR_CURRENTCOLOR, as it would result in re-evaluation of the color.
+      // Instead of recursing, we reach up to set either color to the parent color, instead.
+      if (colorMix->mColor1.GetUnit() == eCSSUnit_EnumColor && colorMix->mColor1.GetIntValue() == NS_COLOR_CURRENTCOLOR) {
+        color1 = aParentColor;
+      } else {
+        SetColor(colorMix->mColor1, aParentColor, aPresContext, aContext, color1, aConditions);
+      }
+      if (colorMix->mColor2.GetUnit() == eCSSUnit_EnumColor && colorMix->mColor2.GetIntValue() == NS_COLOR_CURRENTCOLOR) {
+        color2 = aParentColor;
+      } else {
+        SetColor(colorMix->mColor2, aParentColor, aPresContext, aContext, color2, aConditions);
+      }
+
+      if (color1 && color2) {
         // interpolate each RGBA component with proper percentage handling
         float w1 = colorMix->mWeight1;
         float w2 = colorMix->mWeight2;
