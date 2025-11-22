@@ -7138,6 +7138,7 @@ JS_PUBLIC_API(bool)
 js::gc::detail::CellIsMarkedGrayIfKnown(const Cell* cell)
 {
     MOZ_ASSERT(cell);
+    // Cells should always be tenured cells, here.
     if (!cell || !cell->isTenured())
         return false;
 
