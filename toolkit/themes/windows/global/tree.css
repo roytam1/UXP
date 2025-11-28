@@ -198,9 +198,10 @@ treechildren::-moz-tree-cell-text(progressmeter) {
 
 /* ::::: tree columns ::::: */
 
-@media (-moz-os-version: windows-win10) and (-moz-windows-theme: aero) {
+@media (-moz-os-version: windows-win10) and (-moz-windows-theme: aero),
+       (-moz-os-version: windows-win11) and (-moz-windows-theme: aero) {
   treecols {
-    /* Windows 10's "aero" msstyle does not provide a complete style for
+    /* Windows 10/11's "aero" msstyle does not provide a complete style for
        the treecols header so we need to provide a bottom border */
     border-bottom: 1px solid ThreeDLightShadow;
   }
