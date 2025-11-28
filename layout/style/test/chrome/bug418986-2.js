@@ -65,7 +65,12 @@ var windows_versions = [
 var windows_themes = [
   "aero",
   "aero-lite",
+  "luna-blue",
+  "luna-olive",
+  "luna-silver",
+  "royale",
   "generic",
+  "zune"
 ];
 
 // Read the current OS.
