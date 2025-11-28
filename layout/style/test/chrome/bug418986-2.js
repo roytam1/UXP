@@ -58,6 +58,7 @@ var windows_versions = [
   "windows-win7",
   "windows-win8",
   "windows-win10",
+  "windows-win11"
 ];
 
 // Possible values for '-moz-windows-theme'
