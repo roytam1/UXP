@@ -372,6 +372,9 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
         if (s->codec_id == AV_CODEC_ID_SVQ1) {
             w_align = 64;
             h_align = 64;
+        } else if (s->codec_id == AV_CODEC_ID_SNOW) {
+            w_align = 16;
+            h_align = 16;
         }
         break;
     case AV_PIX_FMT_RGB555:
@@ -1766,9 +1769,9 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
     if (sr > 0) {
         /* calc from sample rate */
         if (id == AV_CODEC_ID_TTA)
-            return 256 * sr / 245;
+            return 256ll * sr / 245;
         else if (id == AV_CODEC_ID_DST)
-            return 588 * sr / 44100;
+            return 588ll * sr / 44100;
 
         if (ch > 0) {
             /* calc from sample rate and channels */
@@ -1878,7 +1881,7 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
                 case AV_CODEC_ID_ADPCM_IMA_WAV:
                     if (bps < 2 || bps > 5)
                         return 0;
-                    tmp = blocks * (1LL + (ba - 4 * ch) / (bps * ch) * 8);
+                    tmp = blocks * (1LL + (ba - 4 * ch) / (bps * ch) * 8LL);
                     break;
                 case AV_CODEC_ID_ADPCM_IMA_DK3:
                     tmp = blocks * (((ba - 16LL) * 2 / 3 * 4) / ch);
