@@ -622,7 +622,7 @@ CollationRuleParser::parseSetting(UErrorCode &errorCode) {
                 setParseError("expected language tag in [import langTag]", errorCode);
                 return;
             }
-            if(length == 3 && uprv_memcmp(baseID, "und", 3) == 0) {
+            if(!length || (length == 3 && uprv_memcmp(baseID, "und", 3) == 0)) {
                 uprv_strcpy(baseID, "root");
             }
             // @collation=type, or length=0 if not specified
