@@ -1059,7 +1059,7 @@ nsPluginHost::GetBlocklistStateForType(const nsACString &aMimeType,
   return tag->GetBlocklistState(aState);
 }
 
- NS_IMETHODIMP
+NS_IMETHODIMP
 nsPluginHost::IsPluginOOP(const nsACString& aMimeType,
                           bool* aResult)
 {
