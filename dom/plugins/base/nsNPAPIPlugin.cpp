@@ -232,11 +232,6 @@ nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
     return true;
   }
 
-#if (MOZ_WIDGET_GTK == 3)
-  // We force OOP on Linux/GTK3 because some plugins use GTK2 and both GTK
-  // libraries can't be loaded in the same process.
-  return true;
-#else
   if (PR_GetEnv("MOZ_DISABLE_OOP_PLUGINS")) {
     return false;
   }
@@ -244,28 +239,6 @@ nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
   if (!aPluginTag) {
     return false;
   }
-
-#ifdef ACCESSIBILITY
-  // Certain assistive technologies don't want oop Flash, thus we have a special
-  // pref for them to disable oop Flash (refer to bug 785047 for details).
-  bool useA11yPref = false;
-#ifdef XP_WIN
-  useA11yPref =  a11y::Compatibility::IsJAWS();
-#endif
-#endif
-
-#ifdef XP_WIN
-  // On Windows 7+, we force Flash to run in OOPP mode because Adobe
-  // doesn't test Flash in-process and there are known stability bugs.
-  if (aPluginTag->mIsFlashPlugin && IsWin7SP1OrLater()) {
-#ifdef ACCESSIBILITY
-    if (!useA11yPref)
-      return true;
-#else
-    return true;
-#endif
-  }
-#endif
 
   nsIPrefBranch* prefs = Preferences::GetRootBranch();
   if (!prefs) {
@@ -294,11 +267,6 @@ nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
 #endif
 #else
   nsAutoCString prefGroupKey("dom.ipc.plugins.enabled.");
-#endif
-
-#ifdef ACCESSIBILITY
-  if (useA11yPref)
-    prefGroupKey.AssignLiteral("dom.ipc.plugins.enabled.a11y.");
 #endif
 
   uint32_t prefCount;
@@ -348,15 +316,11 @@ nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
     Preferences::GetBool("dom.ipc.plugins.enabled.ppc", false);
 #endif
 #else
-#ifdef ACCESSIBILITY
-    useA11yPref ? Preferences::GetBool("dom.ipc.plugins.enabled.a11y", false) :
-#endif
     Preferences::GetBool("dom.ipc.plugins.enabled", false);
 #endif
   }
 
   return oopPluginsEnabled;
-#endif
 }
 
 inline PluginLibrary*
