@@ -228,7 +228,135 @@ nsNPAPIPlugin::PluginCrashed(const nsAString& pluginDumpID,
 bool
 nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
 {
+  if (XRE_IsContentProcess()) {
+    return true;
+  }
+
+#if (MOZ_WIDGET_GTK == 3)
+  // We force OOP on Linux/GTK3 because some plugins use GTK2 and both GTK
+  // libraries can't be loaded in the same process.
   return true;
+#else
+  if (PR_GetEnv("MOZ_DISABLE_OOP_PLUGINS")) {
+    return false;
+  }
+
+  if (!aPluginTag) {
+    return false;
+  }
+
+#ifdef ACCESSIBILITY
+  // Certain assistive technologies don't want oop Flash, thus we have a special
+  // pref for them to disable oop Flash (refer to bug 785047 for details).
+  bool useA11yPref = false;
+#ifdef XP_WIN
+  useA11yPref =  a11y::Compatibility::IsJAWS();
+#endif
+#endif
+
+#ifdef XP_WIN
+  // On Windows 7+, we force Flash to run in OOPP mode because Adobe
+  // doesn't test Flash in-process and there are known stability bugs.
+  if (aPluginTag->mIsFlashPlugin && IsWin7SP1OrLater()) {
+#ifdef ACCESSIBILITY
+    if (!useA11yPref)
+      return true;
+#else
+    return true;
+#endif
+  }
+#endif
+
+  nsIPrefBranch* prefs = Preferences::GetRootBranch();
+  if (!prefs) {
+    return false;
+  }
+
+  // Get per-library whitelist/blacklist pref string
+  // "dom.ipc.plugins.enabled.filename.dll" and fall back to the default value
+  // of "dom.ipc.plugins.enabled"
+  // The "filename.dll" part can contain shell wildcard pattern
+
+  nsAutoCString prefFile(aPluginTag->mFullPath.get());
+  int32_t slashPos = prefFile.RFindCharInSet("/\\");
+  if (kNotFound == slashPos)
+    return false;
+  prefFile.Cut(0, slashPos + 1);
+  ToLowerCase(prefFile);
+
+#ifdef XP_MACOSX
+#if defined(__i386__)
+  nsAutoCString prefGroupKey("dom.ipc.plugins.enabled.i386.");
+#elif defined(__x86_64__)
+  nsAutoCString prefGroupKey("dom.ipc.plugins.enabled.x86_64.");
+#elif defined(__ppc__)
+  nsAutoCString prefGroupKey("dom.ipc.plugins.enabled.ppc.");
+#endif
+#else
+  nsAutoCString prefGroupKey("dom.ipc.plugins.enabled.");
+#endif
+
+#ifdef ACCESSIBILITY
+  if (useA11yPref)
+    prefGroupKey.AssignLiteral("dom.ipc.plugins.enabled.a11y.");
+#endif
+
+  uint32_t prefCount;
+  char** prefNames;
+  nsresult rv = prefs->GetChildList(prefGroupKey.get(),
+                                    &prefCount, &prefNames);
+
+  bool oopPluginsEnabled = false;
+  bool prefSet = false;
+
+  if (NS_SUCCEEDED(rv) && prefCount > 0) {
+    uint32_t prefixLength = prefGroupKey.Length();
+    for (uint32_t currentPref = 0; currentPref < prefCount; currentPref++) {
+      // Get the mask
+      const char* maskStart = prefNames[currentPref] + prefixLength;
+      bool match = false;
+
+      int valid = NS_WildCardValid(maskStart);
+      if (valid == INVALID_SXP) {
+         continue;
+      }
+      else if(valid == NON_SXP) {
+        // mask is not a shell pattern, compare it as normal string
+        match = (strcmp(prefFile.get(), maskStart) == 0);
+      }
+      else {
+        match = (NS_WildCardMatch(prefFile.get(), maskStart, 0) == MATCH);
+      }
+
+      if (match && NS_SUCCEEDED(Preferences::GetBool(prefNames[currentPref],
+                                                     &oopPluginsEnabled))) {
+        prefSet = true;
+        break;
+      }
+    }
+    NS_FREE_XPCOM_ALLOCATED_POINTER_ARRAY(prefCount, prefNames);
+  }
+
+  if (!prefSet) {
+    oopPluginsEnabled =
+#ifdef XP_MACOSX
+#if defined(__i386__)
+    Preferences::GetBool("dom.ipc.plugins.enabled.i386", false);
+#elif defined(__x86_64__)
+    Preferences::GetBool("dom.ipc.plugins.enabled.x86_64", false);
+#elif defined(__ppc__)
+    Preferences::GetBool("dom.ipc.plugins.enabled.ppc", false);
+#endif
+#else
+#ifdef ACCESSIBILITY
+    useA11yPref ? Preferences::GetBool("dom.ipc.plugins.enabled.a11y", false) :
+#endif
+    Preferences::GetBool("dom.ipc.plugins.enabled", false);
+#endif
+  }
+
+  return oopPluginsEnabled;
+#endif
 }
 
 inline PluginLibrary*
