@@ -242,7 +242,7 @@ nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
 
   nsIPrefBranch* prefs = Preferences::GetRootBranch();
   if (!prefs) {
-    return false;
+    return true;
   }
 
   // Get per-library whitelist/blacklist pref string
@@ -263,7 +263,7 @@ nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
   nsresult rv = prefs->GetChildList(prefGroupKey.get(),
                                     &prefCount, &prefNames);
 
-  bool oopPluginsEnabled = false;
+  bool oopPluginsEnabled = true;
   bool prefSet = false;
 
   if (NS_SUCCEEDED(rv) && prefCount > 0) {
@@ -295,7 +295,7 @@ nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
   }
 
   if (!prefSet) {
-    oopPluginsEnabled = Preferences::GetBool("dom.ipc.plugins.enabled", false);
+    oopPluginsEnabled = Preferences::GetBool("dom.ipc.plugins.enabled", true);
   }
 
   return oopPluginsEnabled;
