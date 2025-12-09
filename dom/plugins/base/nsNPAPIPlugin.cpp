@@ -245,6 +245,11 @@ nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
     return true;
   }
 
+  // In GTK3+ this is always true because all plugins use GTK2 and both GTK
+  // libraries can't be loaded in the same process.
+  bool oopPluginsEnabled = true;
+
+#if !defined(MOZ_WIDGET_GTK) || (MOZ_WIDGET_GTK == 2)
   // Get per-library whitelist/blacklist pref string
   // "dom.ipc.plugins.enabled.filename.dll" and fall back to the default value
   // of "dom.ipc.plugins.enabled"
@@ -263,7 +268,6 @@ nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
   nsresult rv = prefs->GetChildList(prefGroupKey.get(),
                                     &prefCount, &prefNames);
 
-  bool oopPluginsEnabled = true;
   bool prefSet = false;
 
   if (NS_SUCCEEDED(rv) && prefCount > 0) {
@@ -297,6 +301,7 @@ nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
   if (!prefSet) {
     oopPluginsEnabled = Preferences::GetBool("dom.ipc.plugins.enabled", true);
   }
+#endif /* !defined(MOZ_WIDGET_GTK) || (MOZ_WIDGET_GTK == 2) */
 
   return oopPluginsEnabled;
 }
