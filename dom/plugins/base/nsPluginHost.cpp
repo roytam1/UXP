@@ -1063,7 +1063,11 @@ NS_IMETHODIMP
 nsPluginHost::IsPluginOOP(const nsACString& aMimeType,
                           bool* aResult)
 {
-  *aResult = true;
+  nsPluginTag* tag = FindNativePluginForType(aMimeType, true);
+  if (!tag) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+  *aResult = nsNPAPIPlugin::RunPluginOOP(tag);
   return NS_OK;
 }
 
