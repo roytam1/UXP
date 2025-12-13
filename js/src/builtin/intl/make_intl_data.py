@@ -905,10 +905,11 @@ def readUnicodeExtensions(core_file):
                 # - <https://unicode.org/reports/tr35/#CODEPOINTS>
                 # - <https://unicode.org/reports/tr35/#REORDER_CODE>
                 # - <https://unicode.org/reports/tr35/#RG_KEY_VALUE>
+                # - <https://unicode.org/reports/tr35/#SCRIPT_CODE>
                 # - <https://unicode.org/reports/tr35/#SUBDIVISION_CODE>
                 # - <https://unicode.org/reports/tr35/#PRIVATE_USE>
-                if name in ("CODEPOINTS", "REORDER_CODE", "RG_KEY_VALUE", "SUBDIVISION_CODE",
-                            "PRIVATE_USE"):
+                if name in ("CODEPOINTS", "REORDER_CODE", "RG_KEY_VALUE", "SCRIPT_CODE",
+                            "SUBDIVISION_CODE", "PRIVATE_USE"):
                     continue
 
                 # All other names should match the 'type' production.
