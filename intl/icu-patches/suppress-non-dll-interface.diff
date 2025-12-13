@@ -1,0 +1,589 @@
+diff --git a/intl/icu/source/common/unicode/rbbi.h b/intl/icu/source/common/unicode/rbbi.h
+--- a/intl/icu/source/common/unicode/rbbi.h
++++ b/intl/icu/source/common/unicode/rbbi.h
+@@ -112,18 +112,29 @@
+  * <p>Instances of this class are most commonly created by the factory methods of
+  *  BreakIterator::createWordInstance(), BreakIterator::createLineInstance(), etc.,
+  *  and then used via the abstract API in class BreakIterator</p>
+  *
+  * <p>See the ICU User Guide for information on Break Iterator Rules.</p>
+  *
+  * <p>This class is not intended to be subclassed.</p>
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_COMMON_API RuleBasedBreakIterator /*final*/ : public BreakIterator {
+ 
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ private:
+     /**
+      * The UText through which this BreakIterator accesses the text
+      */
+     UText  fText = UTEXT_INITIALIZER;
+ 
+ #ifndef U_HIDE_INTERNAL_API
+ public:
+diff --git a/intl/icu/source/i18n/cecal.h b/intl/icu/source/i18n/cecal.h
+--- a/intl/icu/source/i18n/cecal.h
++++ b/intl/icu/source/i18n/cecal.h
+@@ -17,18 +17,29 @@
+ #include "unicode/calendar.h"
+ 
+ U_NAMESPACE_BEGIN
+ 
+ /**
+  * Base class for EthiopicCalendar and CopticCalendar.
+  * @internal
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API CECalendar : public Calendar {
+ 
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+ 
+    /**
+     * Gets The Temporal monthCode value corresponding to the month for the date.
+     * The value is a string identifier that starts with the literal grapheme
+     * "M" followed by two graphemes representing the zero-padded month number
+     * of the current month in a normal (non-leap) year. For the short thirteen
+     * month in each year in the CECalendar, the value is "M13".
+diff --git a/intl/icu/source/i18n/chnsecal.h b/intl/icu/source/i18n/chnsecal.h
+--- a/intl/icu/source/i18n/chnsecal.h
++++ b/intl/icu/source/i18n/chnsecal.h
+@@ -88,17 +88,29 @@
+  * {@link com.ibm.icu.util.Calendar#getInstance(ULocale)} passing in a <code>ULocale</code>
+  * with the tag <code>"@calendar=chinese"</code>.</p>
+  *
+  * @see com.ibm.icu.text.ChineseDateFormat
+  * @see com.ibm.icu.util.Calendar
+  * @author Alan Liu
+  * @internal
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API ChineseCalendar : public Calendar {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+  public:
+   //-------------------------------------------------------------------------
+   // Constructors...
+   //-------------------------------------------------------------------------
+ 
+   /**
+    * Constructs a ChineseCalendar based on the current time in the default time zone
+    * with the given locale.
+diff --git a/intl/icu/source/i18n/collationsettings.h b/intl/icu/source/i18n/collationsettings.h
+--- a/intl/icu/source/i18n/collationsettings.h
++++ b/intl/icu/source/i18n/collationsettings.h
+@@ -26,17 +26,29 @@
+ U_NAMESPACE_BEGIN
+ 
+ struct CollationData;
+ 
+ /**
+  * Collation settings/options/attributes.
+  * These are the values that can be changed via API.
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ struct U_I18N_API CollationSettings : public SharedObject {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+     /**
+      * Options bit 0: Perform the FCD check on the input text and deliver normalized text.
+      */
+     static const int32_t CHECK_FCD = 1;
+     /**
+      * Options bit 1: Numeric collation.
+      * Also known as CODAN = COllate Digits As Numbers.
+      *
+diff --git a/intl/icu/source/i18n/hebrwcal.h b/intl/icu/source/i18n/hebrwcal.h
+--- a/intl/icu/source/i18n/hebrwcal.h
++++ b/intl/icu/source/i18n/hebrwcal.h
+@@ -77,17 +77,29 @@
+  * @see com.ibm.icu.util.GregorianCalendar
+  *
+  * @author Laura Werner
+  * @author Alan Liu
+  * @author Steven R. Loomis
+  * <p>
+  * @internal
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API HebrewCalendar : public Calendar {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+   /**
+    * Useful constants for HebrewCalendar.
+    * @internal
+    */
+   enum Month {
+     /** 
+      * Constant for Tishri, the 1st month of the Hebrew year. 
+diff --git a/intl/icu/source/i18n/indiancal.h b/intl/icu/source/i18n/indiancal.h
+--- a/intl/icu/source/i18n/indiancal.h
++++ b/intl/icu/source/i18n/indiancal.h
+@@ -62,18 +62,28 @@
+  * <p>
+  * The Indian Calendar has only one allowable era: <code>Saka Era</code>.  If the
+  * calendar is not in lenient mode (see <code>setLenient</code>), dates before
+  * 1/1/1 Saka Era are rejected with an <code>IllegalArgumentException</code>.
+  * <p>
+  * @internal
+  */
+ 
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
+ 
+ class U_I18N_API IndianCalendar : public Calendar {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+   /**
+    * Useful constants for IndianCalendar.
+    * @internal
+    */
+   enum EEras {
+     /** 
+      * Constant for Chaitra, the 1st month of the Indian year. 
+diff --git a/intl/icu/source/i18n/islamcal.h b/intl/icu/source/i18n/islamcal.h
+--- a/intl/icu/source/i18n/islamcal.h
++++ b/intl/icu/source/i18n/islamcal.h
+@@ -75,17 +75,29 @@
+  *
+  * @see GregorianCalendar
+  *
+  * @author Laura Werner
+  * @author Alan Liu
+  * @author Steven R. Loomis
+  * @internal
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API IslamicCalendar : public Calendar {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+  public:
+   //-------------------------------------------------------------------------
+   // Constants...
+   //-------------------------------------------------------------------------
+   /**
+    * Constants for the months
+    * @internal
+    */
+diff --git a/intl/icu/source/i18n/number_utypes.h b/intl/icu/source/i18n/number_utypes.h
+--- a/intl/icu/source/i18n/number_utypes.h
++++ b/intl/icu/source/i18n/number_utypes.h
+@@ -24,17 +24,29 @@
+ /**
+  * Struct for data used by FormattedNumber.
+  *
+  * This struct is held internally by the C++ version FormattedNumber since the member types are not
+  * declared in the public header file.
+  *
+  * Exported as U_I18N_API for tests
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API UFormattedNumberData : public FormattedValueStringBuilderImpl {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+     UFormattedNumberData() : FormattedValueStringBuilderImpl(kUndefinedField) {}
+     virtual ~UFormattedNumberData();
+ 
+     UFormattedNumberData(UFormattedNumberData&&) = default;
+     UFormattedNumberData& operator=(UFormattedNumberData&&) = default;
+ 
+     // The formatted quantity.
+diff --git a/intl/icu/source/i18n/sharedbreakiterator.h b/intl/icu/source/i18n/sharedbreakiterator.h
+--- a/intl/icu/source/i18n/sharedbreakiterator.h
++++ b/intl/icu/source/i18n/sharedbreakiterator.h
+@@ -23,17 +23,29 @@
+ // SharedBreakIterator encapsulates a shared BreakIterator. Because
+ // BreakIterator has mutable semantics, clients must ensure that all uses
+ // of a particular shared BreakIterator is protected by the same mutex
+ // ensuring that only one thread at a time gets access to that shared
+ // BreakIterator. Clients can accomplish this by creating a mutex for all
+ // uses of break iterator within a particular class. Then objects of that
+ // class may then freely share break iterators among themselves. However,
+ // these shared break iterators must never be exposed outside of that class.
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API SharedBreakIterator : public SharedObject {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+     SharedBreakIterator(BreakIterator *biToAdopt);
+     virtual ~SharedBreakIterator();
+ 
+     BreakIterator *get() const { return ptr; }
+     BreakIterator *operator->() const { return ptr; }
+     BreakIterator &operator*() const { return *ptr; }
+ private:
+diff --git a/intl/icu/source/i18n/sharedcalendar.h b/intl/icu/source/i18n/sharedcalendar.h
+--- a/intl/icu/source/i18n/sharedcalendar.h
++++ b/intl/icu/source/i18n/sharedcalendar.h
+@@ -14,17 +14,28 @@
+ #include "unicode/utypes.h"
+ #include "sharedobject.h"
+ #include "unifiedcache.h"
+ 
+ U_NAMESPACE_BEGIN
+ 
+ class Calendar;
+ 
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API SharedCalendar : public SharedObject {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+     SharedCalendar(Calendar *calToAdopt) : ptr(calToAdopt) { }
+     virtual ~SharedCalendar();
+     const Calendar *get() const { return ptr; }
+     const Calendar *operator->() const { return ptr; }
+     const Calendar &operator*() const { return *ptr; }
+ private:
+     Calendar *ptr;
+diff --git a/intl/icu/source/i18n/sharednumberformat.h b/intl/icu/source/i18n/sharednumberformat.h
+--- a/intl/icu/source/i18n/sharednumberformat.h
++++ b/intl/icu/source/i18n/sharednumberformat.h
+@@ -14,17 +14,28 @@
+ #include "unicode/utypes.h"
+ #include "sharedobject.h"
+ #include "unifiedcache.h"
+ 
+ U_NAMESPACE_BEGIN
+ 
+ class NumberFormat;
+ 
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API SharedNumberFormat : public SharedObject {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+     SharedNumberFormat(NumberFormat *nfToAdopt) : ptr(nfToAdopt) { }
+     virtual ~SharedNumberFormat();
+     const NumberFormat *get() const { return ptr; }
+     const NumberFormat *operator->() const { return ptr; }
+     const NumberFormat &operator*() const { return *ptr; }
+ private:
+     NumberFormat *ptr;
+diff --git a/intl/icu/source/i18n/sharedpluralrules.h b/intl/icu/source/i18n/sharedpluralrules.h
+--- a/intl/icu/source/i18n/sharedpluralrules.h
++++ b/intl/icu/source/i18n/sharedpluralrules.h
+@@ -14,17 +14,28 @@
+ #include "unicode/utypes.h"
+ #include "sharedobject.h"
+ #include "unifiedcache.h"
+ 
+ U_NAMESPACE_BEGIN
+ 
+ class PluralRules;
+ 
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API SharedPluralRules : public SharedObject {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+     SharedPluralRules(PluralRules *prToAdopt) : ptr(prToAdopt) { }
+     virtual ~SharedPluralRules();
+     const PluralRules *operator->() const { return ptr; }
+     const PluralRules &operator*() const { return *ptr; }
+ private:
+     PluralRules *ptr;
+     SharedPluralRules(const SharedPluralRules &) = delete;
+diff --git a/intl/icu/source/i18n/unicode/gregocal.h b/intl/icu/source/i18n/unicode/gregocal.h
+--- a/intl/icu/source/i18n/unicode/gregocal.h
++++ b/intl/icu/source/i18n/unicode/gregocal.h
+@@ -145,17 +145,29 @@
+  *     }
+  *
+  *     delete ids;
+  *     delete calendar; // also deletes pdt
+  * \endcode
+  * </pre>
+  * @stable ICU 2.0
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API GregorianCalendar: public Calendar {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+ 
+     /**
+      * Useful constants for GregorianCalendar and TimeZone.
+      * @stable ICU 2.0
+      */
+     enum EEras {
+         BC,
+diff --git a/intl/icu/source/i18n/unicode/measfmt.h b/intl/icu/source/i18n/unicode/measfmt.h
+--- a/intl/icu/source/i18n/unicode/measfmt.h
++++ b/intl/icu/source/i18n/unicode/measfmt.h
+@@ -93,17 +93,29 @@
+  * numberformatter.h fits their use case.  Although not deprecated, this header
+  * is provided for backwards compatibility only, and has much more limited
+  * capabilities.
+  *
+  * @see Format
+  * @author Alan Liu
+  * @stable ICU 3.0
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API MeasureFormat : public Format {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+  public:
+     using Format::parseObject;
+     using Format::format;
+ 
+     /**
+      * Constructor.
+      * <p>
+      * <strong>NOTE:</strong> New users are strongly encouraged to use
+diff --git a/intl/icu/source/i18n/unicode/numfmt.h b/intl/icu/source/i18n/unicode/numfmt.h
+--- a/intl/icu/source/i18n/unicode/numfmt.h
++++ b/intl/icu/source/i18n/unicode/numfmt.h
+@@ -167,17 +167,29 @@
+  * the end, e.g. with parentheses in negative numbers: "(12)" for -12.
+  * <p>
+  * <em>User subclasses are not supported.</em> While clients may write
+  * subclasses, such code will not necessarily work and will not be
+  * guaranteed to work stably from release to release.
+  *
+  * @stable ICU 2.0
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API NumberFormat : public Format {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+     /**
+      * Rounding mode.
+      *
+      * <p>
+      * For more detail on rounding modes, see:
+      * https://unicode-org.github.io/icu/userguide/format_parse/numbers/rounding-modes
+      *
+diff --git a/intl/icu/source/i18n/unicode/selfmt.h b/intl/icu/source/i18n/unicode/selfmt.h
+--- a/intl/icu/source/i18n/unicode/selfmt.h
++++ b/intl/icu/source/i18n/unicode/selfmt.h
+@@ -180,17 +180,28 @@
+   * Produces the output:<br>
+   * \htmlonly
+   * <code>Kirti est all&#x00E9;e &#x00E0; Paris.</code>
+   * \endhtmlonly
+   *
+   * @stable ICU 4.4
+   */
+ 
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API SelectFormat : public Format {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+ 
+     /**
+      * Creates a new <code>SelectFormat</code> for a given pattern string.
+      * @param  pattern the pattern for this <code>SelectFormat</code>.
+      *                 errors are returned to status if the pattern is invalid.
+      * @param status   output param set to success/failure code on exit, which
+      *                 must not indicate a failure before the function call.
+diff --git a/intl/icu/source/i18n/utf16collationiterator.h b/intl/icu/source/i18n/utf16collationiterator.h
+--- a/intl/icu/source/i18n/utf16collationiterator.h
++++ b/intl/icu/source/i18n/utf16collationiterator.h
+@@ -26,17 +26,29 @@
+ 
+ U_NAMESPACE_BEGIN
+ 
+ /**
+  * UTF-16 collation element and character iterator.
+  * Handles normalized UTF-16 text inline, with length or NUL-terminated.
+  * Unnormalized text is handled by a subclass.
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API UTF16CollationIterator : public CollationIterator {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+     UTF16CollationIterator(const CollationData *d, UBool numeric,
+                            const char16_t *s, const char16_t *p, const char16_t *lim)
+             : CollationIterator(d, numeric),
+               start(s), pos(p), limit(lim) {}
+ 
+     UTF16CollationIterator(const UTF16CollationIterator &other, const char16_t *newText);
+ 
+diff --git a/intl/icu/source/i18n/utf8collationiterator.h b/intl/icu/source/i18n/utf8collationiterator.h
+--- a/intl/icu/source/i18n/utf8collationiterator.h
++++ b/intl/icu/source/i18n/utf8collationiterator.h
+@@ -26,17 +26,29 @@
+ 
+ U_NAMESPACE_BEGIN
+ 
+ /**
+  * UTF-8 collation element and character iterator.
+  * Handles normalized UTF-8 text inline, with length or NUL-terminated.
+  * Unnormalized text is handled by a subclass.
+  */
++
++#ifdef _MSC_VER
++#pragma warning(push)
++#pragma warning(disable:4251)
++#pragma warning(disable:4275)
++#endif
++
+ class U_I18N_API UTF8CollationIterator : public CollationIterator {
++
++#ifdef _MSC_VER
++#pragma warning(pop)
++#endif
++
+ public:
+     UTF8CollationIterator(const CollationData *d, UBool numeric,
+                           const uint8_t *s, int32_t p, int32_t len)
+             : CollationIterator(d, numeric),
+               u8(s), pos(p), length(len) {}
+ 
+     virtual ~UTF8CollationIterator();
+ 
