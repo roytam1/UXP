@@ -427,7 +427,8 @@ const CurlUtils = {
         .replace(/[`$]/g, "\\$&")
         // Then escape all characters we are not sure about with ^ to ensure it
         // gets to the MS CRT parser safely.
-        .replace(/[^a-zA-Z0-9\s_\-:=+~\/.',?;()*\$&\\{}\"`]/g, "^$&")
+        // Note: Do not escape unicode control non-printable characters (0000-001f + 007f-009f)
+        .replace(/[^a-zA-Z0-9\s_\-:=+~\/.',?;()*\$&\\{}\"`\u0000-\u001f\u007f-\u009f]/g, "^$&")
         // The % character is special because MS CRT parser will try and look for
         // ENV variables and fill them in its place. We cannot escape them with %
         // and cannot escape them with ^ (because it's cmd.exe's escape not MS CRT
