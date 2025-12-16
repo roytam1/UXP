@@ -88,6 +88,10 @@ public:
   IsValidURL(const GlobalObject& aGlobal, const nsAString& aURL,
              ErrorResult& aRv);
 
+  static bool
+  CanParse(const GlobalObject& aGlobal, const nsAString& aURL,
+           const Optional<nsAString>& aBase);
+
   virtual void
   GetHref(nsAString& aHref, ErrorResult& aRv) const = 0;
 
