@@ -301,6 +301,7 @@ LoadContextOptions(const char* aPrefName, void* /* aClosure */)
                 .setAsyncStack(GetWorkerPref<bool>(NS_LITERAL_CSTRING("asyncstack")))
                 .setWerror(GetWorkerPref<bool>(NS_LITERAL_CSTRING("werror")))
                 .setStreams(GetWorkerPref<bool>(NS_LITERAL_CSTRING("streams")))
+                .setWeakRefs(GetWorkerPref<bool>(NS_LITERAL_CSTRING("weakrefs")))
                 .setExtraWarnings(GetWorkerPref<bool>(NS_LITERAL_CSTRING("strict")))
                 .setArrayProtoValues(GetWorkerPref<bool>(
                       NS_LITERAL_CSTRING("array_prototype_values")));

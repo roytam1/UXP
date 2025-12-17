@@ -89,7 +89,7 @@ WeakRefObject::create(JSContext* cx, HandleObject target, HandleObject proto /* 
     if (!obj)
         return nullptr;
 
-    Referent* data = cx->new_<Referent>(target);
+    Referent* data = cx->new_<Referent>(target, cx->options().weakRefs());
     if (!data)
         return nullptr;
 
@@ -146,12 +146,16 @@ WeakRefObject::trace(JSTracer* trc, JSObject* obj)
         if (!target)
             return;
 
-        // Weak edges must be tenured; fall back to a strong trace while the
-        // referent is still in the nursery to avoid crashing the GC.
-        if (IsInsideNursery(target))
+        // When pref-disabled, keep referent alive via strong trace so deref()
+        // stays usable as a stub without touching GC internals.
+        if (!data->enabled) {
+            TraceManuallyBarrieredEdge(trc, data->target.unsafeGet(), "WeakRef stub referent");
+        } else if (IsInsideNursery(target)) {
+            // Weak edges must be tenured; trace strongly while referent is in the nursery.
             TraceManuallyBarrieredEdge(trc, data->target.unsafeGet(), "WeakRef nursery referent");
-        else
+        } else {
             TraceWeakEdge(trc, &data->target, "WeakRef referent");
+        }
     }
 }
 

@@ -15,8 +15,10 @@ class WeakRefObject : public NativeObject
 {
   public:
     struct Referent {
-        explicit Referent(JSObject* obj) : target(obj) {}
+        explicit Referent(JSObject* obj, bool enabled)
+          : target(obj), enabled(enabled) {}
         WeakRef<JSObject*> target;
+        bool enabled;
     };
 
     static const Class class_;
