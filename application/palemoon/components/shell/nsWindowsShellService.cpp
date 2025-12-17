@@ -726,7 +726,7 @@ SettingsAppBelievesConnected()
 nsresult
 nsWindowsShellService::LaunchModernSettingsDialogDefaultApps()
 {
-  if (!IsWindows10BuildOrLater(14965) &&
+  if (!IsWindowsBuildOrLater(14965) &&
       !IsWindowsLogonConnected() && SettingsAppBelievesConnected()) {
     // Use the classic Control Panel to work around a bug in
     // particularly old builds of Windows 10.
