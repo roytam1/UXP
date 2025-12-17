@@ -260,6 +260,9 @@ ResidentFastDistinguishedAmount(int64_t* aN)
 #ifdef __FreeBSD__
 #include <libutil.h>
 #include <algorithm>
+#include <dlfcn.h>
+
+typedef struct kinfo_vmentry *(*kinfo_getvmmap_t)(pid_t, int *);
 
 static MOZ_MUST_USE nsresult
 GetKinfoVmentrySelf(int64_t* aPrss, uint64_t* aMaxreg)
@@ -267,7 +270,29 @@ GetKinfoVmentrySelf(int64_t* aPrss, uint64_t* aMaxreg)
   int cnt;
   struct kinfo_vmentry* vmmap;
   struct kinfo_vmentry* kve;
-  if (!(vmmap = kinfo_getvmmap(getpid(), &cnt))) {
+  static kinfo_getvmmap_t fp_kinfo_getvmmap = nullptr;
+
+  // Cache the function pointer on first call
+  // So we can avoid hardlinking libutil
+  if(!fp_kinfo_getvmmap) {
+    void *libutil = dlopen("libutil.so", RTLD_LAZY);
+    if(libutil) {
+       fp_kinfo_getvmmap = (kinfo_getvmmap_t)dlsym(libutil, "kinfo_getvmmap");
+    }
+    // If we failed to get the function pointer, bail with failure
+    if(!fp_kinfo_getvmmap) {
+      if(libutil) {
+        dlclose(libutil);
+      }
+      return NS_ERROR_FAILURE;
+    }
+  }
+  // Abort if API call fails, or there is a struct size mismatch
+  if (!(vmmap = fp_kinfo_getvmmap(getpid(), &cnt))
+      || (vmmap->kve_structsize != sizeof(*vmmap))) {
+    if(vmmap) {
+      free(vmmap);
+    }
     return NS_ERROR_FAILURE;
   }
   if (aPrss) {

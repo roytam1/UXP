@@ -22,6 +22,8 @@ interface URL {
   // Bug 824857 should remove this.
   [Throws]
   stringifier;
+  
+  static boolean canParse(USVString url, optional USVString base);
 
   [Throws]
   attribute USVString href;

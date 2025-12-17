@@ -427,7 +427,8 @@ const CurlUtils = {
         .replace(/[`$]/g, "\\$&")
         // Then escape all characters we are not sure about with ^ to ensure it
         // gets to the MS CRT parser safely.
-        .replace(/[^a-zA-Z0-9\s_\-:=+~\/.',?;()*\$&\\{}\"`]/g, "^$&")
+        // Note: Do not escape unicode control non-printable characters (0000-001f + 007f-009f)
+        .replace(/[^a-zA-Z0-9\s_\-:=+~\/.',?;()*\$&\\{}\"`\u0000-\u001f\u007f-\u009f]/g, "^$&")
         // The % character is special because MS CRT parser will try and look for
         // ENV variables and fill them in its place. We cannot escape them with %
         // and cannot escape them with ^ (because it's cmd.exe's escape not MS CRT
@@ -436,6 +437,13 @@ const CurlUtils = {
         // This ensures we do not try and double escape another ^ if it was placed
         // by the previous replace.
         .replace(/%(?=[a-zA-Z0-9_])/g, "%^")
+        // All other whitespace characters are replaced with a single space, as there
+        // is no way to enter their literal values in a command line, and they do break
+        // the command sequence, allowing for injection.
+        // Since want to keep line breaks, we need to exclude them in the regex (`[^\r\n]`),
+        // and use double negations to get the other whitespace chars (`[^\S]` translates
+        // to "not not whitespace")
+        .replace(/[^\S\r\n]/g, " ")
         // Lastly we replace new lines with ^ and TWO new lines because the first
         // new line is there to enact the escape command the second is the character
         // to escape (in this case new line).
