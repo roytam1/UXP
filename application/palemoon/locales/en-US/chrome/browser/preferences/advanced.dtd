@@ -12,6 +12,8 @@
 <!ENTITY useCursorNavigation.accesskey   "c">
 <!ENTITY searchStartTyping.label         "Search for text when I start typing">
 <!ENTITY searchStartTyping.accesskey     "x">
+<!ENTITY reduceMotion.label              "Prefer reduced visual motion">
+<!ENTITY reduceMotion.accesskey          "m">
 <!ENTITY blockAutoRefresh.label          "Warn me when websites try to redirect or reload the page">
 <!ENTITY blockAutoRefresh.accesskey      "b">
 
@@ -19,8 +21,6 @@
 
 <!ENTITY useAutoScroll.label             "Use autoscrolling">
 <!ENTITY useAutoScroll.accesskey         "a">
-<!ENTITY useSmoothScrolling.label        "Use smooth scrolling">
-<!ENTITY useSmoothScrolling.accesskey    "m">
 <!ENTITY checkSpelling.label             "Check my spelling as I type">
 <!ENTITY checkSpelling.accesskey         "t">
 <!ENTITY HWAccel.label                   "Hardware Acceleration (HWA)">
@@ -42,9 +42,6 @@
 <!ENTITY UACompat.Gecko                  "Gecko Compatibility">
 <!ENTITY UACompat.Firefox                "Firefox Compatibility">
 
-<!ENTITY captivePortalGroup.label        "Captive portals">
-<!ENTITY captivePortalDetect.label       "Detect restricted network access">
-
 <!ENTITY dataChoicesTab.label            "Data Choices">
 
 <!ENTITY crashReporterSection.label      "Crash Reporter">
@@ -64,6 +61,9 @@
 <!ENTITY DNS.label                       "DNS">
 <!ENTITY enableDNSPrefetch.label         "Prefetch DNS lookups">
 <!ENTITY enableDNSPrefetch.accesskey     "P">
+
+<!ENTITY captivePortalGroup.label        "Captive portals">
+<!ENTITY captivePortalDetect.label       "Detect restricted network access">
 
 <!ENTITY cacheTab.label                  "Cache">
 
@@ -146,6 +146,8 @@
 
 <!ENTITY scrollparamTab.label               "Scrolling">
 <!ENTITY smoothscroll.explain.label         "The parameters below only have an effect if smooth scrolling is enabled overall with the checkbox above.">
+<!ENTITY useSmoothScrolling.label           "Use smooth scrolling">
+<!ENTITY useSmoothScrolling.accesskey       "m">
 <!ENTITY smoothscroll.to                    "to">
 <!ENTITY smoothscroll.params.label          "Smooth scrolling parameters">
 <!ENTITY smoothscroll.mousewheel.label      "Smooth scroll with mouse wheel">

@@ -773,7 +773,9 @@ struct AssemblerBufferWithConstantPools : public AssemblerBuffer<SliceSize, Inst
 
             // Total pending secondary range veneer size.
             size_t secondaryVeneers =
-              guardSize_ * (branchDeadlines_.size() - branchDeadlines_.maxRangeSize());
+              guardSize_ * 
+              (branchDeadlines_.size() - branchDeadlines_.maxRangeSize()) *
+              InstSize;
 
             if (deadline < poolEnd + secondaryVeneers)
                 return false;

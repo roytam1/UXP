@@ -308,6 +308,17 @@ TexUnpackBlob::ConvertIfNeeded(WebGLContext* webgl, const char* funcName,
     if (!rowLength || !rowCount)
         return true;
 
+    auto minSrcStride =
+        CheckedInt<size_t>(WebGLTexelConversions::TexelBytesForFormat(srcFormat)) * rowLength;
+    auto minDstStride =
+        CheckedInt<size_t>(WebGLTexelConversions::TexelBytesForFormat(dstFormat)) * rowLength;
+    if (srcStride <= 0 || dstStride <= 0 || !minSrcStride.isValid() ||
+        !minDstStride.isValid() || size_t(srcStride) < minSrcStride.value() ||
+        size_t(dstStride) < minDstStride.value()) {
+      webgl->ErrorInvalidOperation("Invalid stride.");
+      return false;
+    }
+
     const auto& dstIsPremult = webgl->mPixelStore_PremultiplyAlpha;
     const auto srcOrigin = (webgl->mPixelStore_FlipY ? gl::OriginPos::TopLeft
                                                      : gl::OriginPos::BottomLeft);
