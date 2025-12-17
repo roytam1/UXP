@@ -20,8 +20,9 @@
     color: InactiveCaptionText;
 }
 
-/* Win10 doesn't respond to inactive caption, so dim it instead */
-@media (-moz-os-version: windows-win10) {
+/* Win10/11 don't respond to inactive caption, so dim it instead */
+@media (-moz-os-version: windows-win10),
+       (-moz-os-version: windows-win11) {
     #main-window:-moz-window-inactive::after {
       opacity: 0.5;
     }
@@ -36,13 +37,13 @@
 
 
 #main-window::after {
-    padding: 0 132px; /* AppMenu button/wincontrols width offset */
+    padding: 0 132px 0 136px; /* AppMenu button/wincontrols width offset */
     left: 0;
     right: 0;
 }
 
 #main-window[privatebrowsingmode=temporary]::after {
-    padding: 0px 132px 0px 152px; /* AppMenu button width offset for PB mode */
+    padding: 0px 132px 0px 156px; /* AppMenu button width offset for PB mode */
 }
 
 #main-window[sizemode="normal"]::after {
@@ -158,14 +159,15 @@
       }
     }
     
-    @media (-moz-os-version: windows-win10) {    
+    @media (-moz-os-version: windows-win10),
+           (-moz-os-version: windows-win11) {
       #main-window::after {
         text-align: left;
       }
       
       @media (-moz-windows-accent-color-applies: 0) {
         #main-window:not(:-moz-window-inactive):not(:-moz-lwtheme)::after {
-          /* Default Windows 10 styling is white - apply black text styling */
+          /* Default Windows 10/11 styling is light - apply black text styling */
           color: black;
         }
       }

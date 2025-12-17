@@ -228,7 +228,82 @@ nsNPAPIPlugin::PluginCrashed(const nsAString& pluginDumpID,
 bool
 nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
 {
-  return true;
+  if (XRE_IsContentProcess()) {
+    return true;
+  }
+
+  if (PR_GetEnv("MOZ_DISABLE_OOP_PLUGINS")) {
+    return false;
+  }
+
+  if (!aPluginTag) {
+    return false;
+  }
+
+  nsIPrefBranch* prefs = Preferences::GetRootBranch();
+  if (!prefs) {
+    return true;
+  }
+
+  // In GTK3+ this is always true because all plugins use GTK2 and both GTK
+  // libraries can't be loaded in the same process.
+  bool oopPluginsEnabled = true;
+
+#if !defined(MOZ_WIDGET_GTK) || (MOZ_WIDGET_GTK == 2)
+  // Get per-library whitelist/blacklist pref string
+  // "dom.ipc.plugins.enabled.filename.dll" and fall back to the default value
+  // of "dom.ipc.plugins.enabled"
+  // The "filename.dll" part can contain shell wildcard pattern
+
+  nsAutoCString prefFile(aPluginTag->mFullPath.get());
+  int32_t slashPos = prefFile.RFindCharInSet("/\\");
+  if (kNotFound == slashPos)
+    return false;
+  prefFile.Cut(0, slashPos + 1);
+  ToLowerCase(prefFile);
+
+  nsAutoCString prefGroupKey("dom.ipc.plugins.enabled.");
+  uint32_t prefCount;
+  char** prefNames;
+  nsresult rv = prefs->GetChildList(prefGroupKey.get(),
+                                    &prefCount, &prefNames);
+
+  bool prefSet = false;
+
+  if (NS_SUCCEEDED(rv) && prefCount > 0) {
+    uint32_t prefixLength = prefGroupKey.Length();
+    for (uint32_t currentPref = 0; currentPref < prefCount; currentPref++) {
+      // Get the mask
+      const char* maskStart = prefNames[currentPref] + prefixLength;
+      bool match = false;
+
+      int valid = NS_WildCardValid(maskStart);
+      if (valid == INVALID_SXP) {
+         continue;
+      }
+      else if(valid == NON_SXP) {
+        // mask is not a shell pattern, compare it as normal string
+        match = (strcmp(prefFile.get(), maskStart) == 0);
+      }
+      else {
+        match = (NS_WildCardMatch(prefFile.get(), maskStart, 0) == MATCH);
+      }
+
+      if (match && NS_SUCCEEDED(Preferences::GetBool(prefNames[currentPref],
+                                                     &oopPluginsEnabled))) {
+        prefSet = true;
+        break;
+      }
+    }
+    NS_FREE_XPCOM_ALLOCATED_POINTER_ARRAY(prefCount, prefNames);
+  }
+
+  if (!prefSet) {
+    oopPluginsEnabled = Preferences::GetBool("dom.ipc.plugins.enabled", true);
+  }
+#endif /* !defined(MOZ_WIDGET_GTK) || (MOZ_WIDGET_GTK == 2) */
+
+  return oopPluginsEnabled;
 }
 
 inline PluginLibrary*

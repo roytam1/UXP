@@ -751,10 +751,13 @@ NewImageChannel(nsIChannel** aResult,
     // outside a document, in which case the triggeringPrincipal and
     // triggeringPrincipal should always be the systemPrincipal.
     // However, there are exceptions: one is Notifications which create a
-    // channel in the parent prcoess in which case we can't get a requestingNode.
+    // channel separate from content, in which case we can't get a
+    // requestingNode while we might still have a valid triggering principal.
+    // Use the triggering principal if we have a valid one, fall back to 
+    // the system principal if we don't.
     rv = NS_NewChannel(aResult,
                        aURI,
-                       nsContentUtils::GetSystemPrincipal(),
+                       aTriggeringPrincipal ? aTriggeringPrincipal : nsContentUtils::GetSystemPrincipal(),
                        securityFlags,
                        aPolicyType,
                        nullptr,   // loadGroup

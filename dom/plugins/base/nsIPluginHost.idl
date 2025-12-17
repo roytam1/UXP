@@ -21,7 +21,7 @@ interface nsIClearSiteDataCallback : nsISupports
     void callback(in nsresult rv);
 };
 
-[scriptable, uuid(f938f5ba-7093-42cd-a559-af8039d99204)]
+[scriptable, uuid(405b3e43-d56f-4071-80de-ab6ad05e304d)]
 interface nsIPluginHost : nsISupports
 {
   /**
@@ -169,4 +169,9 @@ interface nsIPluginHost : nsISupports
    * passed in the FakePluginTagInit when registering.
    */
   void unregisterFakePlugin(in AUTF8String handlerURI);
+
+  /**
+   * Returns true if plugins with the given mimetype will run out of process.
+   */
+  boolean isPluginOOP(in AUTF8String aMimeType);
 };

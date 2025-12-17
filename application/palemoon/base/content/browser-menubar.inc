@@ -176,7 +176,8 @@
                 <menu id="viewToolbarsMenu"
                       label="&viewToolbarsMenu.label;"
                       accesskey="&viewToolbarsMenu.accesskey;">
-                  <menupopup onpopupshowing="onViewToolbarsPopupShowing(event);">
+                  <menupopup id="view_toolbars_popup"
+                             onpopupshowing="onViewToolbarsPopupShowing(event);">
                     <menuseparator/>
                     <menuitem id="menu_tabsOnTop"
                               command="cmd_ToggleTabsOnTop"
