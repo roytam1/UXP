@@ -113,6 +113,13 @@ def update_data_file(topsrcdir):
                      '-DUCONFIG_NO_BREAK_ITERATION ' +
                      '-DU_CHARSET_IS_UTF8')
     })
+
+    # Exclude data that we currently don't need.
+    #
+    # The file format for ICU's data build tool is described at
+    # <https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/buildtool.md>.
+    env['ICU_DATA_FILTER_FILE'] = mozpath.join(topsrcdir, 'intl/icu/data_filter.json')
+
     print('Running ICU configure...')
     if not try_run(
             'icu-configure',
