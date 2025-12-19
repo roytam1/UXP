@@ -1047,35 +1047,14 @@ static bool LikelySubtags(JSContext* cx, LikelySubtags likelySubtags,
     return false;
   }
 
-  // UTS #35 requires that locale ID is maximized before its likely subtags are
-  // removed, so we need to call uloc_addLikelySubtags() for both cases.
-  // See <https://ssl.icu-project.org/trac/ticket/10220> and
-  // <https://ssl.icu-project.org/trac/ticket/12345>.
-
+  // Either add or remove likely subtags to/from the locale ID.
   LocaleId localeLikelySubtags(cx);
-
-  // Add likely subtags to the locale ID. When minimizing we can skip adding the
-  // likely subtags for already maximized tags. (When maximizing we've already
-  // verified above that the tag is missing likely subtags.)
-  bool addLikelySubtags = likelySubtags == LikelySubtags::Add ||
-                          !HasLikelySubtags(LikelySubtags::Add, tag);
-
-  if (addLikelySubtags) {
+  if (likelySubtags == LikelySubtags::Add) {
     if (!CallLikelySubtags<uloc_addLikelySubtags>(cx, locale,
                                                   localeLikelySubtags)) {
       return false;
     }
-  }
-
-  // Now that we've succesfully maximized the locale, we can minimize it.
-  if (likelySubtags == LikelySubtags::Remove) {
-    if (addLikelySubtags) {
-      // Copy the maximized subtags back into |locale|.
-      locale = std::move(localeLikelySubtags);
-      localeLikelySubtags = LocaleId(cx);
-    }
-
-    // Remove likely subtags from the locale ID.
+  } else {
     if (!CallLikelySubtags<uloc_minimizeSubtags>(cx, locale,
                                                  localeLikelySubtags)) {
       return false;
