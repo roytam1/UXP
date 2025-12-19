@@ -124,26 +124,20 @@ UNUSED_SOURCES = sets.Set([
     'intl/icu/source/i18n/ulocdata.cpp',
 ])
 
-def find_source_file(dir, filename):
-    base = os.path.splitext(filename)[0]
-    for ext in ('.cpp', '.c'):
-        f = mozpath.join(dir, base + ext)
-        if os.path.isfile(f):
-            return f
+def ensure_source_file_exists(dir, filename):
+    f = mozpath.join(dir, filename)
+    if os.path.isfile(f):
+        return f
     raise Exception("Couldn't find source file for: %s" % filename)
 
 
-def get_sources_from_makefile(makefile):
-    import pymake.parser
-    from pymake.parserdata import SetVariable
-    srcdir = os.path.dirname(makefile)
-    for statement in pymake.parser.parsefile(makefile):
-        if (isinstance(statement, SetVariable) and
-                statement.vnameexp.is_static_string and
-                statement.vnameexp.s == 'OBJECTS'):
-            return sorted((find_source_file(srcdir, s)
-                           for s in statement.value.split()),
-                          key=lambda x: x.lower())
+def get_sources(sources_file):
+    srcdir = os.path.dirname(sources_file)
+    with open(sources_file) as f:
+        return sorted(
+            (ensure_source_file_exists(srcdir, name.strip()) for name in f),
+            key=lambda x: x.lower(),
+        )
 
 
 def list_headers(path):
@@ -172,14 +166,13 @@ def write_sources(mozbuild, sources, headers):
 
 def update_sources(topsrcdir):
     print('Updating ICU sources lists...')
-    sys.path.append(mozpath.join(topsrcdir, 'build/pymake'))
     for d in ['common', 'i18n']:
-        base_path = mozpath.join(topsrcdir, 'intl/icu/source/%s' % mozpath.basename(d))
-        makefile = mozpath.join(base_path, 'Makefile.in')
+        base_path = mozpath.join(topsrcdir, 'intl/icu/source/%s' % d)
+        sources_file = mozpath.join(base_path, 'sources.txt')
         mozbuild = mozpath.join(topsrcdir,
-                                'config/external/icu/%s/sources.mozbuild' % d)
+                                'config/external/icu/%s/sources.mozbuild' % mozpath.basename(d))
         sources = [mozpath.relpath(s, topsrcdir)
-                   for s in get_sources_from_makefile(makefile)]
+                   for s in get_sources(sources_file)]
         unicode_dir = mozpath.join(base_path, 'unicode')
         if os.path.exists(unicode_dir):
             headers = [mozpath.normsep(os.path.relpath(s, topsrcdir))
