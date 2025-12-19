@@ -216,6 +216,8 @@ def update_data_file(topsrcdir):
     # bug 1262101 - these should be shared with the moz.build files
     env.update({
         'CPPFLAGS': ('-DU_NO_DEFAULT_INCLUDE_UTF_HEADERS=1 ' +
+                     '-DU_HIDE_OBSOLETE_UTF_OLD_H=1 ' +
+                     '-DUCONFIG_NO_LEGACY_CONVERSION ' +
                      '-DUCONFIG_NO_TRANSLITERATION ' +
                      '-DUCONFIG_NO_REGULAR_EXPRESSIONS ' +
                      '-DUCONFIG_NO_BREAK_ITERATION ' +
@@ -238,6 +240,7 @@ def update_data_file(topsrcdir):
              '--disable-extras',
              '--disable-icuio',
              '--disable-layout',
+             '--disable-layoutex',
              '--disable-tests',
              '--disable-samples',
              '--disable-strict'],
