@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 sn{
     Currencies{
         AED{
@@ -174,9 +175,13 @@ sn{
             "SHP",
             "Paundi re Senti Helena",
         }
+        SLE{
+            "SLE",
+            "Leoni",
+        }
         SLL{
             "SLL",
-            "Leoni",
+            "Leoni (1964—2022)",
         }
         SOS{
             "SOS",
@@ -215,7 +220,7 @@ sn{
             "Furenki CFA BEAC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Furenki CFA BCEAO",
         }
         ZAR{
@@ -239,5 +244,4 @@ sn{
         one{"{0} {1}"}
         other{"{0} {1}"}
     }
-    Version{"2.1.43.94"}
 }

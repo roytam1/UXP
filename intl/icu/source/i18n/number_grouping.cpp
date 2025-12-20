@@ -18,7 +18,7 @@ namespace {
 int16_t getMinGroupingForLocale(const Locale& locale) {
     // TODO: Cache this?
     UErrorCode localStatus = U_ZERO_ERROR;
-    LocalUResourceBundlePointer bundle(ures_open(NULL, locale.getName(), &localStatus));
+    LocalUResourceBundlePointer bundle(ures_open(nullptr, locale.getName(), &localStatus));
     int32_t resultLen = 0;
     const char16_t* result = ures_getStringByKeyWithFallback(
         bundle.getAlias(),
@@ -34,7 +34,7 @@ int16_t getMinGroupingForLocale(const Locale& locale) {
 
 }
 
-Grouper Grouper::forStrategy(UGroupingStrategy grouping) {
+Grouper Grouper::forStrategy(UNumberGroupingStrategy grouping) {
     switch (grouping) {
     case UNUM_GROUPING_OFF:
         return {-1, -1, -2, grouping};
@@ -47,8 +47,7 @@ Grouper Grouper::forStrategy(UGroupingStrategy grouping) {
     case UNUM_GROUPING_THOUSANDS:
         return {3, 3, 1, grouping};
     default:
-        U_ASSERT(FALSE);
-        return {}; // return a value: silence compiler warning
+        UPRV_UNREACHABLE_EXIT;
     }
 }
 
@@ -65,6 +64,13 @@ Grouper Grouper::forProperties(const DecimalFormatProperties& properties) {
 }
 
 void Grouper::setLocaleData(const impl::ParsedPatternInfo &patternInfo, const Locale& locale) {
+    if (fMinGrouping == -2) {
+        fMinGrouping = getMinGroupingForLocale(locale);
+    } else if (fMinGrouping == -3) {
+        fMinGrouping = static_cast<int16_t>(uprv_max(2, getMinGroupingForLocale(locale)));
+    } else {
+        // leave fMinGrouping alone
+    }
     if (fGrouping1 != -2 && fGrouping2 != -4) {
         return;
     }
@@ -72,17 +78,10 @@ void Grouper::setLocaleData(const impl::ParsedPatternInfo &patternInfo, const Lo
     auto grouping2 = static_cast<int16_t> ((patternInfo.positive.groupingSizes >> 16) & 0xffff);
     auto grouping3 = static_cast<int16_t> ((patternInfo.positive.groupingSizes >> 32) & 0xffff);
     if (grouping2 == -1) {
-        grouping1 = fGrouping1 == -4 ? (short) 3 : (short) -1;
+        grouping1 = fGrouping1 == -4 ? static_cast<short>(3) : static_cast<short>(-1);
     }
     if (grouping3 == -1) {
         grouping2 = grouping1;
-    }
-    if (fMinGrouping == -2) {
-        fMinGrouping = getMinGroupingForLocale(locale);
-    } else if (fMinGrouping == -3) {
-        fMinGrouping = static_cast<int16_t>(uprv_max(2, getMinGroupingForLocale(locale)));
-    } else {
-        // leave fMinGrouping alone
     }
     fGrouping1 = grouping1;
     fGrouping2 = grouping2;

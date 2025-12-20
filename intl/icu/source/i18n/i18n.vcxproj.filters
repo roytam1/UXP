@@ -117,16 +117,16 @@
     <ClCompile Include="double-conversion-cached-powers.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
-    <ClCompile Include="double-conversion-diy-fp.cpp">
+    <ClCompile Include="double-conversion-double-to-string.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="double-conversion-fast-dtoa.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
-    <ClCompile Include="double-conversion-strtod.cpp">
+    <ClCompile Include="double-conversion-string-to-double.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
-    <ClCompile Include="double-conversion.cpp">
+    <ClCompile Include="double-conversion-strtod.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="dtfmtsym.cpp">
@@ -156,6 +156,15 @@
     <ClCompile Include="format.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
+    <ClCompile Include="formattedval_iterimpl.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="formattedval_sbimpl.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="formattedvalue.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
     <ClCompile Include="fphdlimp.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
@@ -177,6 +186,9 @@
     <ClCompile Include="indiancal.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
+    <ClCompile Include="iso8601cal.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
     <ClCompile Include="islamcal.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
@@ -195,7 +207,46 @@
     <ClCompile Include="measunit.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
+    <ClCompile Include="measunit_extra.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
     <ClCompile Include="measure.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_arguments.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_checker.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_context.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_data_model.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_errors.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_evaluation.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_formattable.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_formatter.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_function_registry.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_parser.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="messageformat2_serializer.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="msgfmt.cpp">
@@ -220,6 +271,9 @@
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="persncal.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="pluralranges.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="plurfmt.cpp">
@@ -519,9 +573,6 @@
     <ClCompile Include="uregion.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
-    <ClCompile Include="nounit.cpp">
-      <Filter>misc</Filter>
-    </ClCompile>
     <ClCompile Include="number_affixutils.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
@@ -558,6 +609,9 @@
     <ClCompile Include="number_notation.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
+    <ClCompile Include="number_output.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
     <ClCompile Include="number_padding.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
@@ -573,7 +627,10 @@
     <ClCompile Include="number_scientific.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
-    <ClCompile Include="number_stringbuilder.cpp">
+    <ClCompile Include="formatted_string_builder.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="number_usageprefs.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="number_utils.cpp">
@@ -588,13 +645,19 @@
     <ClCompile Include="number_currencysymbols.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
+    <ClCompile Include="number_simple.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
     <ClCompile Include="number_skeletons.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="number_symbolswrapper.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="number_capi.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
-    <ClCompile Include="numparse_stringsegment.cpp">
+    <ClCompile Include="string_segment.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="numparse_parsednumber.cpp">
@@ -624,6 +687,9 @@
     <ClCompile Include="numparse_validators.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
+    <ClCompile Include="numrange_capi.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
     <ClCompile Include="numrange_fluent.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
@@ -634,6 +700,21 @@
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="erarules.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="units_complexconverter.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="units_converter.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="units_data.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="units_router.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="displayoptions.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
   </ItemGroup>
@@ -764,6 +845,9 @@
     <ClInclude Include="double-conversion-diy-fp.h">
       <Filter>formatting</Filter>
     </ClInclude>
+    <ClInclude Include="double-conversion-double-to-string.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
     <ClInclude Include="double-conversion-fast-dtoa.h">
       <Filter>formatting</Filter>
     </ClInclude>
@@ -771,6 +855,12 @@
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="double-conversion-utils.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
+    <ClInclude Include="double-conversion-string-to-double.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
+    <ClInclude Include="double-conversion-strtod.h">
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="double-conversion.h">
@@ -788,6 +878,9 @@
     <ClInclude Include="ethpccal.h">
       <Filter>formatting</Filter>
     </ClInclude>
+    <ClInclude Include="formattedval_impl.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
     <ClInclude Include="fphdlimp.h">
       <Filter>formatting</Filter>
     </ClInclude>
@@ -800,10 +893,16 @@
     <ClInclude Include="indiancal.h">
       <Filter>formatting</Filter>
     </ClInclude>
+    <ClInclude Include="iso8601cal.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
     <ClInclude Include="islamcal.h">
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="japancal.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
+    <ClInclude Include="measunit_impl.h">
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="msgfmt_impl.h">
@@ -863,13 +962,16 @@
     <ClInclude Include="number_scientific.h">
       <Filter>formatting</Filter>
     </ClInclude>
-    <ClInclude Include="number_stringbuilder.h">
+    <ClInclude Include="formatted_string_builder.h">
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="number_types.h">
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="number_utypes.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
+    <ClInclude Include="number_usageprefs.h">
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="number_utils.h">
@@ -887,7 +989,10 @@
     <ClInclude Include="number_skeletons.h">
       <Filter>formatting</Filter>
     </ClInclude>
-    <ClInclude Include="numparse_stringsegment.h">
+    <ClInclude Include="number_symbolswrapper.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
+    <ClInclude Include="string_segment.h">
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="numparse_impl.h">
@@ -929,6 +1034,9 @@
     <ClInclude Include="persncal.h">
       <Filter>formatting</Filter>
     </ClInclude>
+    <ClInclude Include="pluralranges.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
     <ClInclude Include="plurrule_impl.h">
       <Filter>formatting</Filter>
     </ClInclude>
@@ -963,6 +1071,18 @@
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="umsg_imp.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
+    <ClInclude Include="units_complexconverter.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
+    <ClInclude Include="units_converter.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
+    <ClInclude Include="units_data.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
+    <ClInclude Include="units_router.h">
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="vzone.h">

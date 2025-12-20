@@ -1,26 +1,43 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 es_419{
     Currencies{
-        AMD{
-            "AMD",
-            "dram armenio",
+        ANG{
+            "ANG",
+            "florín de las Antillas Neerlandesas",
         }
-        CAD{
-            "CAD",
-            "dólar canadiense",
-        }
-        ERN{
-            "ERN",
-            "nafka",
+        BMD{
+            "BMD",
+            "dólar de Bermudas",
         }
         EUR{
             "EUR",
             "euro",
         }
-        MYR{
-            "MYR",
-            "ringgit malayo",
+        HTG{
+            "HTG",
+            "gourde haitiano",
+        }
+        KZT{
+            "KZT",
+            "tenge kazajo",
+        }
+        MWK{
+            "MWK",
+            "kwacha malauí",
+        }
+        NIO{
+            "NIO",
+            "córdoba nicaragüense",
+        }
+        SLE{
+            "SLE",
+            "leone",
+        }
+        SLL{
+            "SLL",
+            "leones (1964—2022)",
         }
         THB{
             "THB",
@@ -34,29 +51,9 @@ es_419{
             "UZS",
             "som uzbeko",
         }
-        VEF{
-            "VEF",
-            "bolívar venezolano",
-        }
-        VES{
-            "VES",
-            "VES",
-        }
         VND{
             "VND",
-            "dong",
-        }
-        XAF{
-            "XAF",
-            "franco CFA BEAC",
-        }
-        XOF{
-            "XOF",
-            "franco CFA BCEAO",
-        }
-        ZMW{
-            "ZMW",
-            "kuacha zambiano",
+            "dong vietnamita",
         }
     }
     Currencies%narrow{
@@ -67,16 +64,37 @@ es_419{
         VEF{"BsF"}
     }
     CurrencyPlurals{
-        BGN{
-            one{"lev búlgaro"}
-            other{"leva búlgaros"}
+        ANG{
+            one{"florín de las Antillas Neerlandesas"}
+            other{"florines de las Antillas Neerlandesas"}
         }
-        LVL{
-            one{"lats letón"}
+        BMD{
+            one{"dólar de Bermudas"}
+            other{"dólares de Bermudas"}
         }
-        MYR{
-            one{"ringgit malayo"}
-            other{"ringgits malayos"}
+        HTG{
+            one{"gourde haitiano"}
+            other{"gourdes haitianos"}
+        }
+        KZT{
+            one{"tenge kazajo"}
+            other{"tengues kazajos"}
+        }
+        MWK{
+            one{"kwacha malauí"}
+            other{"kwachas malauíes"}
+        }
+        NIO{
+            one{"córdoba nicaragüense"}
+            other{"córdobas nicaragüenses"}
+        }
+        SLE{
+            one{"leone"}
+            other{"leones"}
+        }
+        SLL{
+            one{"leone (1964—2022)"}
+            other{"leones (1964—2022)"}
         }
         THB{
             one{"baht tailandes"}
@@ -86,30 +104,9 @@ es_419{
             one{"som uzbeko"}
             other{"soms uzbekos"}
         }
-        VEF{
-            one{"bolívar venezolano"}
-            other{"bolívares venezolanos"}
-        }
-        VES{
-            one{"VES"}
-            other{"VES"}
-        }
-        XAF{
-            one{"franco CFA BEAC"}
-            other{"francos CFA BEAC"}
-        }
-        XOF{
-            one{"franco CFA BCEAO"}
-            other{"francos CFA BCEAO"}
-        }
         XXX{
             one{"(unidad de moneda desconocida)"}
             other{"(moneda desconocida)"}
         }
-        ZMW{
-            one{"kuacha zambiano"}
-            other{"kuachas zambianos"}
-        }
     }
-    Version{"2.1.43.65"}
 }

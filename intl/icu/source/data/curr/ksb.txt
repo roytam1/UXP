@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 ksb{
     Currencies{
         AED{
@@ -174,9 +175,13 @@ ksb{
             "SHP",
             "pauni ya Santahelena",
         }
+        SLE{
+            "SLE",
+            "leoni",
+        }
         SLL{
             "SLL",
-            "leoni",
+            "leoni (1964—2022)",
         }
         SOS{
             "SOS",
@@ -215,7 +220,7 @@ ksb{
             "falanga CFA BEAC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "falanga CFA BCEAO",
         }
         ZAR{
@@ -235,5 +240,4 @@ ksb{
             "dola ya Zimbabwe",
         }
     }
-    Version{"2.1.39.11"}
 }

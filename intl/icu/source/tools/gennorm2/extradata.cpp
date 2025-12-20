@@ -25,9 +25,9 @@ U_NAMESPACE_BEGIN
 
 ExtraData::ExtraData(Norms &n, UBool fast) :
         Norms::Enumerator(n),
-        yesYesCompositions(1000, (UChar32)0xffff, 2),  // 0=inert, 1=Jamo L, 2=start of compositions
-        yesNoMappingsAndCompositions(1000, (UChar32)0, 1),  // 0=Hangul LV, 1=start of normal data
-        yesNoMappingsOnly(1000, (UChar32)0, 1),  // 0=Hangul LVT, 1=start of normal data
+        yesYesCompositions(1000, static_cast<UChar32>(0xffff), 2), // 0=inert, 1=Jamo L, 2=start of compositions
+        yesNoMappingsAndCompositions(1000, static_cast<UChar32>(0), 1), // 0=Hangul LV, 1=start of normal data
+        yesNoMappingsOnly(1000, static_cast<UChar32>(0), 1), // 0=Hangul LVT, 1=start of normal data
         optimizeFast(fast) {
     // Hangul LV algorithmically decomposes to two Jamo.
     // Some code may harmlessly read this firstUnit.
@@ -43,17 +43,17 @@ int32_t ExtraData::writeMapping(UChar32 c, const Norm &norm, UnicodeString &data
     // Write the mapping & raw mapping extraData.
     int32_t firstUnit=length|(norm.trailCC<<8);
     int32_t preMappingLength=0;
-    if(norm.rawMapping!=NULL) {
+    if(norm.rawMapping!=nullptr) {
         UnicodeString &rm=*norm.rawMapping;
         int32_t rmLength=rm.length();
         if(rmLength>Normalizer2Impl::MAPPING_LENGTH_MASK) {
             fprintf(stderr,
                     "gennorm2 error: "
                     "raw mapping for U+%04lX longer than maximum of %d\n",
-                    (long)c, Normalizer2Impl::MAPPING_LENGTH_MASK);
+                    static_cast<long>(c), Normalizer2Impl::MAPPING_LENGTH_MASK);
             exit(U_INVALID_FORMAT_ERROR);
         }
-        UChar rm0=rm.charAt(0);
+        char16_t rm0=rm.charAt(0);
         if( rmLength==length-1 &&
             // 99: overlong substring lengths get pinned to remainder lengths anyway
             0==rm.compare(1, 99, m, 2, 99) &&
@@ -71,18 +71,18 @@ int32_t ExtraData::writeMapping(UChar32 c, const Norm &norm, UnicodeString &data
         } else {
             // Store the raw mapping with its length.
             dataString.append(rm);
-            dataString.append((UChar)rmLength);
+            dataString.append(static_cast<char16_t>(rmLength));
             preMappingLength=rmLength+1;
         }
         firstUnit|=Normalizer2Impl::MAPPING_HAS_RAW_MAPPING;
     }
     int32_t cccLccc=norm.cc|(norm.leadCC<<8);
     if(cccLccc!=0) {
-        dataString.append((UChar)cccLccc);
+        dataString.append(static_cast<char16_t>(cccLccc));
         ++preMappingLength;
         firstUnit|=Normalizer2Impl::MAPPING_HAS_CCC_LCCC_WORD;
     }
-    dataString.append((UChar)firstUnit);
+    dataString.append(static_cast<char16_t>(firstUnit));
     dataString.append(m);
     return preMappingLength;
 }
@@ -92,17 +92,18 @@ int32_t ExtraData::writeNoNoMapping(UChar32 c, const Norm &norm,
                                     Hashtable &previousMappings) {
     UnicodeString newMapping;
     int32_t offset=writeMapping(c, norm, newMapping);
-    int32_t previousOffset=previousMappings.geti(newMapping);
-    if(previousOffset!=0) {
+    UBool found=false;
+    int32_t previousOffset=previousMappings.getiAndFound(newMapping, found);
+    if(found) {
         // Duplicate, point to the identical mapping that has already been stored.
-        offset=previousOffset-1;
+        offset=previousOffset;
     } else {
         // Append this new mapping and
         // enter it into the hashtable, avoiding value 0 which is "not found".
         offset=dataString.length()+offset;
         dataString.append(newMapping);
-        IcuToolErrorCode errorCode("gennorm2/writeExtraData()/Hashtable.puti()");
-        previousMappings.puti(newMapping, offset+1, errorCode);
+        IcuToolErrorCode errorCode("gennorm2/writeExtraData()/Hashtable.putiAllowZero()");
+        previousMappings.putiAllowZero(newMapping, offset, errorCode);
     }
     return offset;
 }
@@ -117,10 +118,10 @@ UBool ExtraData::setNoNoDelta(UChar32 c, Norm &norm) const {
         if(-Normalizer2Impl::MAX_DELTA<=delta && delta<=Normalizer2Impl::MAX_DELTA) {
             norm.type=Norm::NO_NO_DELTA;
             norm.offset=delta;
-            return TRUE;
+            return true;
         }
     }
-    return FALSE;
+    return false;
 }
 
 void ExtraData::writeCompositions(UChar32 c, const Norm &norm, UnicodeString &dataString) {
@@ -128,7 +129,7 @@ void ExtraData::writeCompositions(UChar32 c, const Norm &norm, UnicodeString &da
         fprintf(stderr,
                 "gennorm2 error: "
                 "U+%04lX combines-forward and has ccc!=0, not possible in Unicode normalization\n",
-                (long)c);
+                static_cast<long>(c));
         exit(U_INVALID_FORMAT_ERROR);
     }
     int32_t length;
@@ -137,7 +138,7 @@ void ExtraData::writeCompositions(UChar32 c, const Norm &norm, UnicodeString &da
         const CompositionPair &pair=pairs[i];
         // 22 bits for the composite character and whether it combines forward.
         UChar32 compositeAndFwd=pair.composite<<1;
-        if(norms.getNormRef(pair.composite).compositions!=NULL) {
+        if(norms.getNormRef(pair.composite).combinesFwd()) {
             compositeAndFwd|=1;  // The composite character also combines-forward.
         }
         // Encode most pairs in two units and some in three.
@@ -164,9 +165,9 @@ void ExtraData::writeCompositions(UChar32 c, const Norm &norm, UnicodeString &da
         if(i==(length-1)) {
             firstUnit|=Normalizer2Impl::COMP_1_LAST_TUPLE;
         }
-        dataString.append((UChar)firstUnit).append((UChar)secondUnit);
+        dataString.append(static_cast<char16_t>(firstUnit)).append(static_cast<char16_t>(secondUnit));
         if(thirdUnit>=0) {
-            dataString.append((UChar)thirdUnit);
+            dataString.append(static_cast<char16_t>(thirdUnit));
         }
     }
 }
@@ -176,11 +177,11 @@ void ExtraData::rangeHandler(UChar32 start, UChar32 end, Norm &norm) {
         fprintf(stderr,
                 "gennorm2 error: unexpected shared data for "
                 "multiple code points U+%04lX..U+%04lX\n",
-                (long)start, (long)end);
+                static_cast<long>(start), static_cast<long>(end));
         exit(U_INTERNAL_PROGRAM_ERROR);
     }
     if(norm.error!=nullptr) {
-        fprintf(stderr, "gennorm2 error: U+%04lX %s\n", (long)start, norm.error);
+        fprintf(stderr, "gennorm2 error: U+%04lX %s\n", static_cast<long>(start), norm.error);
         exit(U_INVALID_FORMAT_ERROR);
     }
     writeExtraData(start, norm);
@@ -229,6 +230,15 @@ void ExtraData::writeExtraData(UChar32 c, Norm &norm) {
         // There can be multiple extra data entries for mappings to the empty string
         // if they have different raw mappings.
         norm.offset=writeNoNoMapping(c, norm, noNoMappingsEmpty, previousNoNoMappingsEmpty);
+        break;
+    case Norm::MAYBE_NO_MAPPING_ONLY:
+        norm.offset=maybeNoMappingsOnly.length()+
+                writeMapping(c, norm, maybeNoMappingsOnly);
+        break;
+    case Norm::MAYBE_NO_COMBINES_FWD:
+        norm.offset=maybeNoMappingsAndCompositions.length()+
+                writeMapping(c, norm, maybeNoMappingsAndCompositions);
+        writeCompositions(c, norm, maybeNoMappingsAndCompositions);
         break;
     case Norm::MAYBE_YES_COMBINES_FWD:
         norm.offset=maybeYesCompositions.length();

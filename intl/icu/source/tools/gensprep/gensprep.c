@@ -23,11 +23,13 @@
 
 #define USPREP_TYPE_NAMES_ARRAY 1
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "cmemory.h"
 #include "cstring.h"
+#include "toolutil.h"
 #include "unewdata.h"
 #include "uoptions.h"
 #include "uparse.h"
@@ -43,7 +45,7 @@ U_CDECL_BEGIN
 #include "gensprep.h"
 U_CDECL_END
 
-UBool beVerbose=FALSE, haveCopyright=TRUE;
+UBool beVerbose=false, haveCopyright=true;
 
 #define NORM_CORRECTIONS_FILE_NAME "NormalizationCorrections.txt"
 
@@ -224,7 +226,7 @@ main(int argc, char* argv[]) {
 
     /* process the file */
     uprv_strcpy(basename,inputFileName);
-    parseMappings(filename,FALSE, &errorCode);
+    parseMappings(filename,false, &errorCode);
     if(U_FAILURE(errorCode)) {
         fprintf(stderr, "Could not open file %s for reading. Error: %s \n", filename, u_errorName(errorCode));
         return errorCode;
@@ -278,6 +280,8 @@ static void U_CALLCONV
 normalizationCorrectionsLineFn(void *context,
                     char *fields[][2], int32_t fieldCount,
                     UErrorCode *pErrorCode) {
+    (void)context; // suppress compiler warnings about unused variable
+    (void)fieldCount; // suppress compiler warnings about unused variable
     uint32_t mapping[40];
     char *end, *s;
     uint32_t code;
@@ -341,6 +345,7 @@ static void U_CALLCONV
 strprepProfileLineFn(void *context,
               char *fields[][2], int32_t fieldCount,
               UErrorCode *pErrorCode) {
+    (void)fieldCount; // suppress compiler warnings about unused variable  
     uint32_t mapping[40];
     char *end, *map;
     uint32_t code;
@@ -358,12 +363,12 @@ strprepProfileLineFn(void *context,
         length = (int32_t)(fields[0][1] - s);
         if (length >= NORMALIZE_DIRECTIVE_LEN
             && uprv_strncmp(s, NORMALIZE_DIRECTIVE, NORMALIZE_DIRECTIVE_LEN) == 0) {
-            options[NORMALIZE].doesOccur = TRUE;
+            options[NORMALIZE].doesOccur = true;
             return;
         }
         else if (length >= CHECK_BIDI_DIRECTIVE_LEN
             && uprv_strncmp(s, CHECK_BIDI_DIRECTIVE, CHECK_BIDI_DIRECTIVE_LEN) == 0) {
-            options[CHECK_BIDI].doesOccur = TRUE;
+            options[CHECK_BIDI].doesOccur = true;
             return;
         }
         else {

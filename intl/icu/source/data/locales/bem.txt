@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 bem{
     AuxExemplarCharacters{"[d h q r v x z]"}
     ExemplarCharacters{"[a b c e f g i j k l m n o p s {sh} t u w y]"}
@@ -12,14 +13,13 @@ bem{
             }
         }
     }
-    Version{"2.1.38.69"}
     calendar{
         generic{
             DateTimePatterns{
-                "h:mm:ss a zzzz",
-                "h:mm:ss a z",
-                "h:mm:ss a",
-                "h:mm a",
+                "h:mm:ss a zzzz",
+                "h:mm:ss a z",
+                "h:mm:ss a",
+                "h:mm a",
                 "EEEE, d MMMM y G",
                 "d MMMM y G",
                 "d MMM y G",
@@ -31,19 +31,11 @@ bem{
                 "{1} {0}",
             }
             availableFormats{
-                Hm{"HH:mm"}
-                Hms{"HH:mm:ss"}
-                M{"L"}
                 MEd{"E, M/d"}
-                MMM{"LLL"}
                 MMMEd{"E, MMM d"}
                 MMMMEd{"E, MMMM d"}
-                MMMMd{"MMMM d"}
-                MMMd{"MMM d"}
                 Md{"M/d"}
-                d{"d"}
-                hm{"h:mm a"}
-                ms{"mm:ss"}
+                hm{"h:mm a"}
                 y{"y"}
                 yM{"M/y"}
                 yMEd{"E, M/d/y"}
@@ -57,19 +49,15 @@ bem{
             }
         }
         gregorian{
-            AmPmMarkers{
-                "uluchelo",
-                "akasuba",
-            }
             AmPmMarkersAbbr{
                 "uluchelo",
                 "akasuba",
             }
             DateTimePatterns{
-                "h:mm:ss a zzzz",
-                "h:mm:ss a z",
-                "h:mm:ss a",
-                "h:mm a",
+                "h:mm:ss a zzzz",
+                "h:mm:ss a z",
+                "h:mm:ss a",
+                "h:mm a",
                 "EEEE, d MMMM y",
                 "d MMMM y",
                 "d MMM y",
@@ -80,21 +68,22 @@ bem{
                 "{1} {0}",
                 "{1} {0}",
             }
+            DateTimeSkeletons{
+                "ahmmsszzzz",
+                "ahmmssz",
+                "ahmmss",
+                "ahmm",
+                "yMMMMEEEEd",
+                "yMMMMd",
+                "yMMMd",
+                "yMMdd",
+            }
             availableFormats{
-                Hm{"HH:mm"}
-                Hms{"HH:mm:ss"}
-                M{"L"}
                 MEd{"E, M/d"}
-                MMM{"LLL"}
                 MMMEd{"E, MMM d"}
                 MMMMEd{"E, MMMM d"}
-                MMMMd{"MMMM d"}
-                MMMd{"MMM d"}
                 Md{"M/d"}
-                d{"d"}
-                hm{"h:mm a"}
-                ms{"mm:ss"}
-                y{"y"}
+                hm{"h:mm a"}
                 yM{"M/y"}
                 yMEd{"E, M/d/y"}
                 yMMM{"MMM y"}
@@ -120,12 +109,12 @@ bem{
             }
             eras{
                 abbreviated{
-                    "BC",
-                    "AD",
+                    0{"BC"}
+                    1{"AD"}
                 }
                 wide{
-                    "Before Yesu",
-                    "After Yesu",
+                    0{"Before Yesu"}
+                    1{"After Yesu"}
                 }
             }
             monthNames{
@@ -177,12 +166,6 @@ bem{
                 }
             }
         }
-    }
-    delimiters{
-        alternateQuotationEnd{"’"}
-        alternateQuotationStart{"‘"}
-        quotationEnd{"”"}
-        quotationStart{"“"}
     }
     fields{
         day{

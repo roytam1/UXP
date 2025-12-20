@@ -1,33 +1,23 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 az_Cyrl{
     %%Parent{"root"}
     AuxExemplarCharacters{"[ц щ ъ ь э ю я]"}
     ExemplarCharacters{"[а ә б в г ғ д е ж з и й ј к ҝ л м н о ө п р с т у ү ф х һ ч ҹ ш ы]"}
-    ExemplarCharactersNumbers{"[\\- , . % ‰ + 0 1 2 3 4 5 6 7 8 9]"}
     NumberElements{
         latn{
             patterns{
-                accountingFormat{"#,##0.00 ¤"}
+                accountingFormat%alphaNextToNumber{"#,##0.00 ¤"}
                 currencyFormat{"#,##0.00 ¤"}
-                decimalFormat{"#,##0.###"}
-                percentFormat{"#,##0%"}
+                currencyFormat%alphaNextToNumber{"#,##0.00 ¤"}
             }
             symbols{
                 decimal{","}
-                exponential{"E"}
                 group{"."}
-                infinity{"∞"}
-                list{";"}
-                minusSign{"-"}
-                nan{"NaN"}
-                perMille{"‰"}
-                percentSign{"%"}
-                plusSign{"+"}
             }
         }
     }
-    Version{"2.1.44.53"}
     calendar{
         generic{
             DateTimePatterns{
@@ -50,7 +40,6 @@ az_Cyrl{
                 GyMMMEd{"G d MMM y, E"}
                 GyMMMd{"G d MMM y"}
                 MEd{"dd.MM, E"}
-                MMM{"LLL"}
                 MMMEd{"d MMM, E"}
                 MMMd{"d MMM"}
                 Md{"dd.MM"}
@@ -65,10 +54,6 @@ az_Cyrl{
                 MEd{
                     M{"dd.MM, E – dd.MM, E"}
                     d{"dd.MM, E – dd.MM, E"}
-                }
-                MMMEd{
-                    M{"MMM d, E – MMM d, E"}
-                    d{"MMM d, E – MMM d, E"}
                 }
                 Md{
                     M{"dd.MM – dd.MM"}
@@ -109,10 +94,6 @@ az_Cyrl{
             }
         }
         gregorian{
-            AmPmMarkers{
-                "АМ",
-                "ПМ",
-            }
             AmPmMarkersAbbr{
                 "АМ",
                 "ПМ",
@@ -136,17 +117,26 @@ az_Cyrl{
                 "{1} {0}",
                 "{1} {0}",
             }
+            DateTimeSkeletons{
+                "HHmmsszzzz",
+                "HHmmssz",
+                "HHmmss",
+                "HHmm",
+                "yMMMMEEEEd",
+                "yMMMMd",
+                "yMMMd",
+                "yyMMdd",
+            }
             availableFormats{
                 Ed{"d E"}
                 GyMMM{"G MMM y"}
                 GyMMMEd{"G d MMM y, E"}
                 GyMMMd{"G d MMM y"}
                 MEd{"dd.MM, E"}
-                MMM{"LLL"}
                 MMMEd{"d MMM, E"}
                 MMMMW{
-                    one{"MMM, W 'һәфтә'"}
-                    other{"MMM, W 'һәфтә'"}
+                    one{"MMMM, W 'һәфтә'"}
+                    other{"MMMM, W 'һәфтә'"}
                 }
                 MMMd{"d MMM"}
                 Md{"dd.MM"}
@@ -172,24 +162,6 @@ az_Cyrl{
                         "Ҹ.",
                         "Ш.",
                     }
-                    narrow{
-                        "7",
-                        "1",
-                        "2",
-                        "3",
-                        "4",
-                        "5",
-                        "6",
-                    }
-                    short{
-                        "Б.",
-                        "Б.Е.",
-                        "Ч.А.",
-                        "Ч.",
-                        "Ҹ.А.",
-                        "Ҹ.",
-                        "Ш.",
-                    }
                     wide{
                         "базар",
                         "базар ертәси",
@@ -201,15 +173,6 @@ az_Cyrl{
                     }
                 }
                 stand-alone{
-                    abbreviated{
-                        "Б.",
-                        "Б.Е.",
-                        "Ч.А.",
-                        "Ч.",
-                        "Ҹ.А.",
-                        "Ҹ.",
-                        "Ш.",
-                    }
                     narrow{
                         "7",
                         "1",
@@ -218,24 +181,6 @@ az_Cyrl{
                         "4",
                         "5",
                         "6",
-                    }
-                    short{
-                        "Б.",
-                        "Б.Е.",
-                        "Ч.А.",
-                        "Ч.",
-                        "Ҹ.А.",
-                        "Ҹ.",
-                        "Ш.",
-                    }
-                    wide{
-                        "базар",
-                        "базар ертәси",
-                        "чәршәнбә ахшамы",
-                        "чәршәнбә",
-                        "ҹүмә ахшамы",
-                        "ҹүмә",
-                        "шәнбә",
                     }
                 }
             }
@@ -261,68 +206,24 @@ az_Cyrl{
                         night2{"ҝеҹә"}
                         noon{"ҝ"}
                     }
-                    wide{
-                        afternoon1{"ҝүндүз"}
-                        evening1{"ахшамүстү"}
-                        midnight{"ҝеҹәјары"}
-                        morning1{"сүбһ"}
-                        morning2{"сәһәр"}
-                        night1{"ахшам"}
-                        night2{"ҝеҹә"}
-                        noon{"ҝүнорта"}
-                    }
-                }
-                stand-alone{
-                    abbreviated{
-                        afternoon1{"ҝүндүз"}
-                        evening1{"ахшамүстү"}
-                        midnight{"ҝеҹәјары"}
-                        morning1{"сүбһ"}
-                        morning2{"сәһәр"}
-                        night1{"ахшам"}
-                        night2{"ҝеҹә"}
-                        noon{"ҝүнорта"}
-                    }
-                    narrow{
-                        afternoon1{"ҝүндүз"}
-                        evening1{"ахшамүстү"}
-                        midnight{"ҝеҹәјары"}
-                        morning1{"сүбһ"}
-                        morning2{"сәһәр"}
-                        night1{"ахшам"}
-                        night2{"ҝеҹә"}
-                        noon{"ҝүнорта"}
-                    }
-                    wide{
-                        afternoon1{"ҝүндүз"}
-                        am{"АМ"}
-                        evening1{"ахшамүстү"}
-                        midnight{"ҝеҹәјары"}
-                        morning1{"сүбһ"}
-                        morning2{"сәһәр"}
-                        night1{"ахшам"}
-                        night2{"ҝеҹә"}
-                        noon{"ҝүнорта"}
-                        pm{"ПМ"}
-                    }
                 }
             }
             eras{
                 abbreviated{
-                    "е.ә.",
-                    "ј.е.",
+                    0{"е.ә."}
+                    1{"ј.е."}
                 }
                 abbreviated%variant{
-                    "б.е.ә.",
-                    "б.е.",
+                    0{"б.е.ә."}
+                    1{"б.е."}
                 }
                 wide{
-                    "ерамыздан әввәл",
-                    "јени ера",
+                    0{"ерамыздан әввәл"}
+                    1{"јени ера"}
                 }
                 wide%variant{
-                    "бизим ерадан әввәл",
-                    "бизим ера",
+                    0{"бизим ерадан әввәл"}
+                    1{"бизим ера"}
                 }
             }
             intervalFormats{
@@ -365,7 +266,6 @@ az_Cyrl{
                 }
                 yMMMd{
                     M{"d MMM y – d MMM"}
-                    d{"y MMM d–d"}
                     y{"d MMM y – d MMM y"}
                 }
                 yMd{
@@ -406,20 +306,6 @@ az_Cyrl{
                     }
                 }
                 stand-alone{
-                    abbreviated{
-                        "јан",
-                        "фев",
-                        "мар",
-                        "апр",
-                        "май",
-                        "ијн",
-                        "ијл",
-                        "авг",
-                        "сен",
-                        "окт",
-                        "ној",
-                        "дек",
-                    }
                     wide{
                         "Јанвар",
                         "Феврал",

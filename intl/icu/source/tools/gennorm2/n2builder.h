@@ -86,13 +86,13 @@ private:
      */
     UBool mappingHasCompBoundaryAfter(const BuilderReorderingBuffer &buffer,
                                       Norm::MappingType mappingType) const;
-    /** Returns TRUE if the mapping by itself recomposes, that is, it is not comp-normalized. */
+    /** Returns true if the mapping by itself recomposes, that is, it is not comp-normalized. */
     UBool mappingRecomposes(const BuilderReorderingBuffer &buffer) const;
     void postProcess(Norm &norm);
 
     void setSmallFCD(UChar32 c);
     int32_t getMinNoNoDelta() const {
-        return indexes[Normalizer2Impl::IX_MIN_MAYBE_YES]-
+        return indexes[Normalizer2Impl::IX_MIN_MAYBE_NO]-
             ((2*Normalizer2Impl::MAX_DELTA+1)<<Normalizer2Impl::DELTA_SHIFT);
     }
     void writeNorm16(UMutableCPTrie *norm16Trie, UChar32 start, UChar32 end, Norm &norm);

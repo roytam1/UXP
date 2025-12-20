@@ -1,14 +1,93 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 kab{
     AuxExemplarCharacters{"[o v]"}
-    ExemplarCharacters{"[a b c č d ḍ e ɛ f g ǧ ɣ h ḥ i j k l m n p q r ṛ s ṣ t ṭ u w x y z ẓ]"}
-    ExemplarCharactersIndex{"[A B C Č D Ḍ E Ɛ F G Ǧ Ɣ H Ḥ I J K L M N P Q R Ṛ S Ṣ T Ṭ U W X Y Z Ẓ]"}
-    ExemplarCharactersNumbers{"[  \\- , % ‰ + 0 1 2 3 4 5 6 7 8 9]"}
+    ExemplarCharacters{"[a b cč dḍ e ɛ f gǧ ɣ hḥ i j k l m n p q rṛ sṣ tṭ u w x y zẓ]"}
+    ExemplarCharactersIndex{"[A B CČ DḌ E Ɛ F GǦ Ɣ HḤ I J K L M N P Q RṚ SṢ TṬ U W X Y ZẒ]"}
+    ExemplarCharactersNumbers{"[  \\- ‑ , % ‰ + 0 1 2 3 4 5 6 7 8 9]"}
     NumberElements{
         latn{
             patterns{
                 currencyFormat{"#,##0.00¤"}
+            }
+            patternsShort{
+                currencyFormat{
+                    1000{
+                        one{"0G¤"}
+                        other{"0G¤"}
+                    }
+                    10000{
+                        one{"00G¤"}
+                        other{"00G¤"}
+                    }
+                    100000{
+                        one{"000G¤"}
+                        other{"000G¤"}
+                    }
+                    1000000000{
+                        one{"0L¤"}
+                        other{"0L¤"}
+                    }
+                    10000000000{
+                        one{"00L¤"}
+                        other{"00L¤"}
+                    }
+                    100000000000{
+                        one{"000L¤"}
+                        other{"000L¤"}
+                    }
+                }
+                currencyFormat%alphaNextToNumber{
+                    1000{
+                        one{"0G ¤"}
+                        other{"0G ¤"}
+                    }
+                    10000{
+                        one{"00G ¤"}
+                        other{"00G ¤"}
+                    }
+                    100000{
+                        one{"000G ¤"}
+                        other{"000G ¤"}
+                    }
+                    1000000{
+                        one{"0M ¤"}
+                        other{"0M ¤"}
+                    }
+                    10000000{
+                        one{"00M ¤"}
+                        other{"00M ¤"}
+                    }
+                    100000000{
+                        one{"000M ¤"}
+                        other{"000M ¤"}
+                    }
+                    1000000000{
+                        one{"0L ¤"}
+                        other{"0L ¤"}
+                    }
+                    10000000000{
+                        one{"00L ¤"}
+                        other{"00L ¤"}
+                    }
+                    100000000000{
+                        one{"000L ¤"}
+                        other{"000L ¤"}
+                    }
+                    1000000000000{
+                        one{"0T ¤"}
+                        other{"0T ¤"}
+                    }
+                    10000000000000{
+                        one{"00T ¤"}
+                        other{"00T ¤"}
+                    }
+                    100000000000000{
+                        one{"000T ¤"}
+                        other{"000T ¤"}
+                    }
+                }
             }
             symbols{
                 decimal{","}
@@ -16,14 +95,13 @@ kab{
             }
         }
     }
-    Version{"2.1.43.94"}
     calendar{
         generic{
             DateTimePatterns{
-                "h:mm:ss a zzzz",
-                "h:mm:ss a z",
-                "h:mm:ss a",
-                "h:mm a",
+                "h:mm:ss a zzzz",
+                "h:mm:ss a z",
+                "h:mm:ss a",
+                "h:mm a",
                 "EEEE d MMMM y G",
                 "d MMMM y G",
                 "d MMM, y G",
@@ -33,6 +111,16 @@ kab{
                 "{1} {0}",
                 "{1} {0}",
                 "{1} {0}",
+            }
+            DateTimeSkeletons{
+                "ahmmsszzzz",
+                "ahmmssz",
+                "ahmmss",
+                "ahmm",
+                "GyMMMMEEEEd",
+                "GyMMMMd",
+                "GyMMMd",
+                "GGGGGyMd",
             }
             availableFormats{
                 M{"M"}
@@ -63,14 +151,14 @@ kab{
                 "n tmeddit",
             }
             AmPmMarkersAbbr{
-                "n tufat",
-                "n tmeddit",
+                "n tufat",
+                "n tmeddit",
             }
             DateTimePatterns{
-                "h:mm:ss a zzzz",
-                "h:mm:ss a z",
-                "h:mm:ss a",
-                "h:mm a",
+                "h:mm:ss a zzzz",
+                "h:mm:ss a z",
+                "h:mm:ss a",
+                "h:mm a",
                 "EEEE d MMMM y",
                 "d MMMM y",
                 "d MMM, y",
@@ -81,18 +169,15 @@ kab{
                 "{1} {0}",
                 "{1} {0}",
             }
-            appendItems{
-                Day{"{0} ({2}: {1})"}
-                Day-Of-Week{"{0} {1}"}
-                Era{"{1} {0}"}
-                Hour{"{0} ({2}: {1})"}
-                Minute{"{0} ({2}: {1})"}
-                Month{"{0} ({2}: {1})"}
-                Quarter{"{0} ({2}: {1})"}
-                Second{"{0} ({2}: {1})"}
-                Timezone{"{0} {1}"}
-                Week{"{0} ({2}: {1})"}
-                Year{"{1} {0}"}
+            DateTimeSkeletons{
+                "ahmmsszzzz",
+                "ahmmssz",
+                "ahmmss",
+                "ahmm",
+                "yMMMMEEEEd",
+                "yMMMMd",
+                "yMMMd",
+                "yMd",
             }
             availableFormats{
                 M{"M"}
@@ -105,7 +190,6 @@ kab{
                 MMdd{"dd/MM"}
                 Md{"d/M"}
                 ms{"m:ss"}
-                y{"y"}
                 yM{"M/y"}
                 yMEd{"E d/M/y"}
                 yMM{"MM/y"}
@@ -119,44 +203,89 @@ kab{
             dayNames{
                 format{
                     abbreviated{
-                        "Yan",
-                        "San",
-                        "Kraḍ",
-                        "Kuẓ",
-                        "Sam",
-                        "Sḍis",
-                        "Say",
+                        "Acer",
+                        "Arim",
+                        "Aram",
+                        "Ahad",
+                        "Amhad",
+                        "Sem",
+                        "Sed",
+                    }
+                    narrow{
+                        "C",
+                        "R",
+                        "R",
+                        "H",
+                        "M",
+                        "S",
+                        "S",
+                    }
+                    short{
+                        "Acer",
+                        "Arim",
+                        "Aram",
+                        "Ahad",
+                        "Amhad",
+                        "Sem",
+                        "Sed",
                     }
                     wide{
-                        "Yanass",
-                        "Sanass",
-                        "Kraḍass",
-                        "Kuẓass",
-                        "Samass",
-                        "Sḍisass",
-                        "Sayass",
+                        "Acer",
+                        "Arim",
+                        "Aram",
+                        "Ahad",
+                        "Amhad",
+                        "Sem",
+                        "Sed",
                     }
                 }
                 stand-alone{
+                    abbreviated{
+                        "Acer",
+                        "Arim",
+                        "Aram",
+                        "Ahad",
+                        "Amhad",
+                        "Sem",
+                        "Sed",
+                    }
                     narrow{
-                        "Y",
+                        "C",
+                        "R",
+                        "R",
+                        "H",
+                        "M",
                         "S",
-                        "K",
-                        "K",
                         "S",
-                        "S",
-                        "S",
+                    }
+                    short{
+                        "Acer",
+                        "Arim",
+                        "Aram",
+                        "Ahad",
+                        "Amhad",
+                        "Sem",
+                        "Sed",
+                    }
+                    wide{
+                        "Acer",
+                        "Arim",
+                        "Aram",
+                        "Ahad",
+                        "Amhad",
+                        "Sem",
+                        "Sed",
                     }
                 }
             }
             eras{
                 abbreviated{
-                    "snd. T.Ɛ",
-                    "sld. T.Ɛ",
+                    0{"snd. T.Ɛ"}
+                    1{"sld. T.Ɛ"}
                 }
                 wide{
-                    "send talalit n Ɛisa",
-                    "seld talalit n Ɛisa",
+                    0{"send talalit n Ɛisa"}
+                    1{"seld talalit n Ɛisa"}
                 }
             }
             monthNames{

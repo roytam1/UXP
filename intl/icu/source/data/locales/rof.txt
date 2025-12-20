@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 rof{
     AuxExemplarCharacters{"[q x]"}
     ExemplarCharacters{"[a b c d e f g h i j k l m n o p r s t u v w y z]"}
@@ -11,7 +12,6 @@ rof{
             }
         }
     }
-    Version{"2.1.39.11"}
     calendar{
         generic{
             DateTimePatterns{
@@ -30,19 +30,11 @@ rof{
                 "{1} {0}",
             }
             availableFormats{
-                Hm{"HH:mm"}
-                Hms{"HH:mm:ss"}
-                M{"L"}
                 MEd{"E, M/d"}
-                MMM{"LLL"}
                 MMMEd{"E, MMM d"}
                 MMMMEd{"E, MMMM d"}
-                MMMMd{"MMMM d"}
-                MMMd{"MMM d"}
                 Md{"M/d"}
-                d{"d"}
-                hm{"h:mm a"}
-                ms{"mm:ss"}
+                hm{"h:mm a"}
                 y{"y"}
                 yM{"M/y"}
                 yMEd{"E, M/d/y"}
@@ -54,10 +46,6 @@ rof{
             }
         }
         gregorian{
-            AmPmMarkers{
-                "kang’ama",
-                "kingoto",
-            }
             AmPmMarkersAbbr{
                 "kang’ama",
                 "kingoto",
@@ -78,20 +66,11 @@ rof{
                 "{1} {0}",
             }
             availableFormats{
-                Hm{"HH:mm"}
-                Hms{"HH:mm:ss"}
-                M{"L"}
                 MEd{"E, M/d"}
-                MMM{"LLL"}
                 MMMEd{"E, MMM d"}
                 MMMMEd{"E, MMMM d"}
-                MMMMd{"MMMM d"}
-                MMMd{"MMM d"}
                 Md{"M/d"}
-                d{"d"}
-                hm{"h:mm a"}
-                ms{"mm:ss"}
-                y{"y"}
+                hm{"h:mm a"}
                 yM{"M/y"}
                 yMEd{"E, M/d/y"}
                 yMMM{"MMM y"}
@@ -135,12 +114,12 @@ rof{
             }
             eras{
                 abbreviated{
-                    "KM",
-                    "BM",
+                    0{"KM"}
+                    1{"BM"}
                 }
                 wide{
-                    "Kabla ya Mayesu",
-                    "Baada ya Mayesu",
+                    0{"Kabla ya Mayesu"}
+                    1{"Baada ya Mayesu"}
                 }
             }
             monthNames{
@@ -208,12 +187,6 @@ rof{
                 }
             }
         }
-    }
-    delimiters{
-        alternateQuotationEnd{"’"}
-        alternateQuotationStart{"‘"}
-        quotationEnd{"”"}
-        quotationStart{"“"}
     }
     fields{
         day{

@@ -59,6 +59,7 @@ printUsage(const char *pname, UBool isHelp) {
             "%csage: %s [-h|-?|--help ] [-tl|-tb|-te] [-c] [-C comment]\n"
             "\t[-a list] [-r list] [-x list] [-l [-o outputListFileName]]\n"
             "\t[-s path] [-d path] [-w] [-m mode]\n"
+            "\t[--ignore-deps]\n"
             "\t[--auto_toc_prefix] [--auto_toc_prefix_with_type] [--toc_prefix]\n"
             "\tinfilename [outfilename]\n",
             isHelp ? 'U' : 'u', pname);
@@ -119,6 +120,10 @@ printUsage(const char *pname, UBool isHelp) {
             "\t-m mode or --matchmode mode  set the matching mode for item names with\n"
             "\t                             wildcards\n"
             "\t        noslash: the '*' wildcard does not match the '/' tree separator\n");
+        fprintf(where,
+            "\n"
+            "\t--ignore-deps     Do not fail if not all resource dependencies are met. Use this\n"
+            "\t                  option if the missing resources come from another source.");
         fprintf(where,
             "\n"
             "\tIn the .dat package, the Table of Contents (ToC) contains an entry\n"
@@ -198,6 +203,8 @@ static UOption options[]={
 
     UOPTION_DEF("matchmode", 'm', UOPT_REQUIRES_ARG),
 
+    UOPTION_DEF("ignore-deps", '\1', UOPT_NO_ARG),
+
     UOPTION_DEF("add", 'a', UOPT_REQUIRES_ARG),
     UOPTION_DEF("remove", 'r', UOPT_REQUIRES_ARG),
     UOPTION_DEF("extract", 'x', UOPT_REQUIRES_ARG),
@@ -225,6 +232,8 @@ enum {
 
     OPT_MATCHMODE,
 
+    OPT_IGNORE_DEPS,
+
     OPT_ADD_LIST,
     OPT_REMOVE_LIST,
     OPT_EXTRACT_LIST,
@@ -243,8 +252,8 @@ static UBool
 isPackageName(const char *filename) {
     int32_t len;
 
-    len=(int32_t)strlen(filename)-4; /* -4: subtract the length of ".dat" */
-    return (UBool)(len>0 && 0==strcmp(filename+len, ".dat"));
+    len = static_cast<int32_t>(strlen(filename)) - 4; /* -4: subtract the length of ".dat" */
+    return len > 0 && 0 == strcmp(filename + len, ".dat");
 }
 /*
 This line is required by MinGW because it incorrectly globs the arguments.
@@ -269,16 +278,16 @@ main(int argc, char *argv[]) {
     argc=u_parseArgs(argc, argv, UPRV_LENGTHOF(options), options);
     isHelp=options[OPT_HELP_H].doesOccur || options[OPT_HELP_QUESTION_MARK].doesOccur;
     if(isHelp) {
-        printUsage(pname, TRUE);
+        printUsage(pname, true);
         return U_ZERO_ERROR;
     }
 
     pkg=new Package;
-    if(pkg==NULL) {
+    if(pkg==nullptr) {
         fprintf(stderr, "icupkg: not enough memory\n");
         return U_MEMORY_ALLOCATION_ERROR;
     }
-    isModified=FALSE;
+    isModified=false;
 
     int autoPrefix=0;
     if(options[OPT_AUTO_TOC_PREFIX].doesOccur) {
@@ -288,14 +297,14 @@ main(int argc, char *argv[]) {
     if(options[OPT_AUTO_TOC_PREFIX_WITH_TYPE].doesOccur) {
         if(options[OPT_TOC_PREFIX].doesOccur) {
             fprintf(stderr, "icupkg: --auto_toc_prefix_with_type and also --toc_prefix\n");
-            printUsage(pname, FALSE);
+            printUsage(pname, false);
             return U_ILLEGAL_ARGUMENT_ERROR;
         }
         pkg->setAutoPrefixWithType();
         ++autoPrefix;
     }
     if(argc<2 || 3<argc || autoPrefix>1) {
-        printUsage(pname, FALSE);
+        printUsage(pname, false);
         return U_ILLEGAL_ARGUMENT_ERROR;
     }
 
@@ -303,45 +312,45 @@ main(int argc, char *argv[]) {
         sourcePath=options[OPT_SOURCEDIR].value;
     } else {
         // work relative to the current working directory
-        sourcePath=NULL;
+        sourcePath=nullptr;
     }
     if(options[OPT_DESTDIR].doesOccur) {
         destPath=options[OPT_DESTDIR].value;
     } else {
         // work relative to the current working directory
-        destPath=NULL;
+        destPath=nullptr;
     }
 
     if(0==strcmp(argv[1], "new")) {
         if(autoPrefix) {
             fprintf(stderr, "icupkg: --auto_toc_prefix[_with_type] but no input package\n");
-            printUsage(pname, FALSE);
+            printUsage(pname, false);
             return U_ILLEGAL_ARGUMENT_ERROR;
         }
-        inFilename=NULL;
-        isPackage=TRUE;
+        inFilename=nullptr;
+        isPackage=true;
     } else {
         inFilename=argv[1];
         if(isPackageName(inFilename)) {
             pkg->readPackage(inFilename);
-            isPackage=TRUE;
+            isPackage=true;
         } else {
             /* swap a single file (icuswap replacement) rather than work on a package */
             pkg->addFile(sourcePath, inFilename);
-            isPackage=FALSE;
+            isPackage=false;
         }
     }
 
     if(argc>=3) {
         outFilename=argv[2];
         if(0!=strcmp(argv[1], argv[2])) {
-            isModified=TRUE;
+            isModified=true;
         }
     } else if(isPackage) {
-        outFilename=NULL;
+        outFilename=nullptr;
     } else /* !isPackage */ {
         outFilename=inFilename;
-        isModified=(UBool)(sourcePath!=destPath);
+        isModified = static_cast<UBool>(sourcePath != destPath);
     }
 
     /* parse the output type option */
@@ -349,7 +358,7 @@ main(int argc, char *argv[]) {
         const char *type=options[OPT_OUT_TYPE].value;
         if(type[0]==0 || type[1]!=0) {
             /* the type must be exactly one letter */
-            printUsage(pname, FALSE);
+            printUsage(pname, false);
             return U_ILLEGAL_ARGUMENT_ERROR;
         }
         outType=type[0];
@@ -359,7 +368,7 @@ main(int argc, char *argv[]) {
         case 'e':
             break;
         default:
-            printUsage(pname, FALSE);
+            printUsage(pname, false);
             return U_ILLEGAL_ARGUMENT_ERROR;
         }
 
@@ -369,7 +378,7 @@ main(int argc, char *argv[]) {
          * If we swap a single file, just assume that we are modifying it.
          * The Package class does not give us access to the item and its type.
          */
-        isModified|=(UBool)(!isPackage || outType!=pkg->getInType());
+        isModified |= static_cast<UBool>(!isPackage || outType != pkg->getInType());
     } else if(isPackage) {
         outType=pkg->getInType(); // default to input type
     } else /* !isPackage: swap single file */ {
@@ -377,7 +386,7 @@ main(int argc, char *argv[]) {
     }
 
     if(options[OPT_WRITEPKG].doesOccur) {
-        isModified=TRUE;
+        isModified=true;
     }
 
     if(!isPackage) {
@@ -393,7 +402,7 @@ main(int argc, char *argv[]) {
             options[OPT_EXTRACT_LIST].doesOccur ||
             options[OPT_LIST_ITEMS].doesOccur
         ) {
-            printUsage(pname, FALSE);
+            printUsage(pname, false);
             return U_ILLEGAL_ARGUMENT_ERROR;
         }
         if(isModified) {
@@ -411,14 +420,14 @@ main(int argc, char *argv[]) {
     } else if(options[OPT_COPYRIGHT].doesOccur) {
         outComment=U_COPYRIGHT_STRING;
     } else {
-        outComment=NULL;
+        outComment=nullptr;
     }
 
     if(options[OPT_MATCHMODE].doesOccur) {
         if(0==strcmp(options[OPT_MATCHMODE].value, "noslash")) {
             pkg->setMatchMode(Package::MATCH_NOSLASH);
         } else {
-            printUsage(pname, FALSE);
+            printUsage(pname, false);
             return U_ILLEGAL_ARGUMENT_ERROR;
         }
     }
@@ -426,16 +435,16 @@ main(int argc, char *argv[]) {
     /* remove items */
     if(options[OPT_REMOVE_LIST].doesOccur) {
         listPkg=new Package();
-        if(listPkg==NULL) {
+        if(listPkg==nullptr) {
             fprintf(stderr, "icupkg: not enough memory\n");
             exit(U_MEMORY_ALLOCATION_ERROR);
         }
-        if(readList(NULL, options[OPT_REMOVE_LIST].value, FALSE, listPkg)) {
+        if(readList(nullptr, options[OPT_REMOVE_LIST].value, false, listPkg)) {
             pkg->removeItems(*listPkg);
             delete listPkg;
-            isModified=TRUE;
+            isModified=true;
         } else {
-            printUsage(pname, FALSE);
+            printUsage(pname, false);
             return U_ILLEGAL_ARGUMENT_ERROR;
         }
     }
@@ -445,19 +454,19 @@ main(int argc, char *argv[]) {
      * use a separate Package so that its memory and items stay around
      * as long as the main Package
      */
-    addListPkg=NULL;
+    addListPkg=nullptr;
     if(options[OPT_ADD_LIST].doesOccur) {
         addListPkg=new Package();
-        if(addListPkg==NULL) {
+        if(addListPkg==nullptr) {
             fprintf(stderr, "icupkg: not enough memory\n");
             exit(U_MEMORY_ALLOCATION_ERROR);
         }
-        if(readList(sourcePath, options[OPT_ADD_LIST].value, TRUE, addListPkg)) {
+        if(readList(sourcePath, options[OPT_ADD_LIST].value, true, addListPkg)) {
             pkg->addItems(*addListPkg);
             // delete addListPkg; deferred until after writePackage()
-            isModified=TRUE;
+            isModified=true;
         } else {
-            printUsage(pname, FALSE);
+            printUsage(pname, false);
             return U_ILLEGAL_ARGUMENT_ERROR;
         }
     }
@@ -465,15 +474,15 @@ main(int argc, char *argv[]) {
     /* extract items */
     if(options[OPT_EXTRACT_LIST].doesOccur) {
         listPkg=new Package();
-        if(listPkg==NULL) {
+        if(listPkg==nullptr) {
             fprintf(stderr, "icupkg: not enough memory\n");
             exit(U_MEMORY_ALLOCATION_ERROR);
         }
-        if(readList(NULL, options[OPT_EXTRACT_LIST].value, FALSE, listPkg)) {
+        if(readList(nullptr, options[OPT_EXTRACT_LIST].value, false, listPkg)) {
             pkg->extractItems(destPath, *listPkg, outType);
             delete listPkg;
         } else {
-            printUsage(pname, FALSE);
+            printUsage(pname, false);
             return U_ILLEGAL_ARGUMENT_ERROR;
         }
     }
@@ -484,7 +493,7 @@ main(int argc, char *argv[]) {
         if (options[OPT_LIST_FILE].doesOccur) {
             FileStream *out;
             out = T_FileStream_open(options[OPT_LIST_FILE].value, "w");
-            if (out != NULL) {
+            if (out != nullptr) {
                 for(i=0; i<pkg->getItemCount(); ++i) {
                     T_FileStream_writeLine(out, pkg->getItem(i)->name);
                     T_FileStream_writeLine(out, "\n");
@@ -501,7 +510,7 @@ main(int argc, char *argv[]) {
     }
 
     /* check dependencies between items */
-    if(!pkg->checkDependencies()) {
+    if(!options[OPT_IGNORE_DEPS].doesOccur && !pkg->checkDependencies()) {
         /* some dependencies are not fulfilled */
         return U_MISSING_RESOURCE_ERROR;
     }
@@ -510,8 +519,8 @@ main(int argc, char *argv[]) {
     if(isModified) {
         char outFilenameBuffer[1024]; // for auto-generated output filename, if necessary
 
-        if(outFilename==NULL || outFilename[0]==0) {
-            if(inFilename==NULL || inFilename[0]==0) {
+        if(outFilename==nullptr || outFilename[0]==0) {
+            if(inFilename==nullptr || inFilename[0]==0) {
                 fprintf(stderr, "icupkg: unable to auto-generate an output filename if there is no input filename\n");
                 exit(U_ILLEGAL_ARGUMENT_ERROR);
             }
@@ -536,7 +545,7 @@ main(int argc, char *argv[]) {
         if(options[OPT_TOC_PREFIX].doesOccur) {
             pkg->setPrefix(options[OPT_TOC_PREFIX].value);
         }
-        result = writePackageDatFile(outFilename, outComment, NULL, NULL, pkg, outType);
+        result = writePackageDatFile(outFilename, outComment, nullptr, nullptr, pkg, outType);
     }
 
     delete addListPkg;

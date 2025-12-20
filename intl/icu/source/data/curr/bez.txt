@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 bez{
     Currencies{
         AED{
@@ -170,9 +171,13 @@ bez{
             "SHP",
             "Lupila lwa Husantahelena",
         }
+        SLE{
+            "SLE",
+            "Lupila lwa Lioni",
+        }
         SLL{
             "SLL",
-            "Lupila lwa Lioni",
+            "Lupila lwa Lioni (1964—2022)",
         }
         SOS{
             "SOS",
@@ -211,7 +216,7 @@ bez{
             "Lupila lwa CFA BEAC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Lupila lwa CFA BCEAO",
         }
         ZAR{
@@ -231,5 +236,4 @@ bez{
             "Lupila lwa Huzimbabwe",
         }
     }
-    Version{"2.1.39.11"}
 }

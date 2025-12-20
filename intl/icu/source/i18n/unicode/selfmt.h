@@ -18,9 +18,12 @@
 #ifndef SELFMT
 #define SELFMT
 
+#include "unicode/utypes.h"
+
+#if U_SHOW_CPLUSPLUS_API
+
 #include "unicode/messagepattern.h"
 #include "unicode/numfmt.h"
-#include "unicode/utypes.h"
 
 /**
  * \file
@@ -182,7 +185,18 @@ class MessageFormat;
   * @stable ICU 4.4
   */
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4251)
+#pragma warning(disable:4275)
+#endif
+
 class U_I18N_API SelectFormat : public Format {
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 public:
 
     /**
@@ -256,7 +270,7 @@ public:
      * @return         true if other is semantically equal to this.
      * @stable ICU 4.4
      */
-    virtual UBool operator==(const Format& other) const;
+    virtual bool operator==(const Format& other) const override;
 
     /**
      * Return true if another object is semantically unequal to this one.
@@ -265,14 +279,14 @@ public:
      * @return         true if other is semantically unequal to this.
      * @stable ICU 4.4
      */
-    virtual UBool operator!=(const Format& other) const;
+    virtual bool operator!=(const Format& other) const;
 
     /**
      * Clones this Format object polymorphically.  The caller owns the
      * result and should delete it when done.
      * @stable ICU 4.4
      */
-    virtual Format* clone(void) const;
+    virtual SelectFormat* clone() const override;
 
     /**
      * Format an object to produce a string.
@@ -292,7 +306,7 @@ public:
     UnicodeString& format(const Formattable& obj,
                          UnicodeString& appendTo,
                          FieldPosition& pos,
-                         UErrorCode& status) const;
+                         UErrorCode& status) const override;
 
     /**
      * Returns the pattern from applyPattern() or constructor.
@@ -328,24 +342,24 @@ public:
      */
     virtual void parseObject(const UnicodeString& source,
                             Formattable& result,
-                            ParsePosition& parse_pos) const;
+                            ParsePosition& parse_pos) const override;
 
     /**
      * ICU "poor man's RTTI", returns a UClassID for this class.
      * @stable ICU 4.4
      */
-    static UClassID U_EXPORT2 getStaticClassID(void);
+    static UClassID U_EXPORT2 getStaticClassID();
 
     /**
      * ICU "poor man's RTTI", returns a UClassID for the actual class.
      * @stable ICU 4.4
      */
-    virtual UClassID getDynamicClassID() const;
+    virtual UClassID getDynamicClassID() const override;
 
 private:
     friend class MessageFormat;
 
-    SelectFormat();   // default constructor not implemented.
+    SelectFormat() = delete;   // default constructor not implemented.
 
     /**
      * Finds the SelectFormat sub-message for the given keyword, or the "other" sub-message.
@@ -364,6 +378,8 @@ private:
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
+
+#endif /* U_SHOW_CPLUSPLUS_API */
 
 #endif // _SELFMT
 //eof

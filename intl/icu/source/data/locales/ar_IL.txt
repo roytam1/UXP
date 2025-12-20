@@ -1,10 +1,11 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 ar_IL{
     NumberElements{
         default{"arab"}
+        default_latn{"latn"}
     }
-    Version{"2.1.38.80"}
     calendar{
         gregorian{
             DateTimePatterns{
@@ -16,11 +17,21 @@ ar_IL{
                 "d MMMM y",
                 "dd‏/MM‏/y",
                 "d‏/M‏/y",
-                "{1} {0}",
-                "{1} {0}",
-                "{1} {0}",
-                "{1} {0}",
-                "{1} {0}",
+                "{1}، {0}",
+                "{1}، {0}",
+                "{1}، {0}",
+                "{1}، {0}",
+                "{1}، {0}",
+            }
+            DateTimeSkeletons{
+                "Hmmsszzzz",
+                "Hmmssz",
+                "Hmmss",
+                "Hmm",
+                "yMMMMEEEEd",
+                "yMMMMd",
+                "yMMdd",
+                "yMd",
             }
         }
     }

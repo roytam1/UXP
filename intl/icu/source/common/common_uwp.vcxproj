@@ -1,9 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- The following import will include the UWP configuration options for VS projects. -->
-  <Import Project="..\allinone\Build.Windows.UWP.ProjectConfiguration.props" />
-  <!-- The following import will include the library configuration options for VS projects. -->
-  <Import Project="..\allinone\Build.Windows.Library.ProjectConfiguration.props" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -17,6 +13,10 @@
       <Configuration>Debug</Configuration>
       <Platform>ARM</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
@@ -29,51 +29,50 @@
       <Configuration>Release</Configuration>
       <Platform>ARM</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C10CF34B-3F79-430E-AD38-5A32DC0589C2}</ProjectGuid>
     <Keyword>DynamicLibrary</Keyword>
     <DefaultLanguage>en-US</DefaultLanguage>
   </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
+<!-- The following import will include the UWP configuration options for VS projects. -->
+  <Import Project="..\allinone\Build.Windows.UWP.ProjectConfiguration.props" />
+  <!-- The following import will include the library configuration options for VS projects. -->
+  <Import Project="..\allinone\Build.Windows.Library.ProjectConfiguration.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\x86\ReleaseUWP\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\x86\ReleaseUWP\</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\x86\DebugUWP\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\x86\DebugUWP\</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\x64\ReleaseUWP\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\x64\ReleaseUWP\</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\x64\DebugUWP\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\x64\DebugUWP\</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">.\arm\ReleaseUWP\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">.\arm\ReleaseUWP\</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">.\arm\DebugUWP\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">.\arm\DebugUWP\</IntDir>
-    <LinkIncremental Condition="'$(Configuration)'=='Release'">false</LinkIncremental>
+    <OutDir>.\$(Platform)\$(Configuration)UWP\</OutDir>
+    <IntDir>.\$(Platform)\$(Configuration)UWP\</IntDir>
+    <!-- The ICU projects use "Win32" to mean "x86", so we need to special case it. -->
+    <OutDir Condition="'$(Platform)'=='Win32'">.\x86\$(Configuration)UWP\</OutDir>
+    <IntDir Condition="'$(Platform)'=='Win32'">.\x86\$(Configuration)UWP\</IntDir>
+    <!-- Disable Incremental Linking for Release builds as it prevents Link-time Code Generation -->
     <LinkIncremental Condition="'$(Configuration)'=='Debug'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)'=='Release'">false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <!-- Options that are common to *all* configurations -->
     <Midl>
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <TypeLibraryName>$(OutDir)\icuuc.tlb</TypeLibraryName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\include;..\common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <!-- U_DISABLE_RENAMING -->
       <!-- U_HIDE_DRAFT_API & U_HIDE_DEPRECATED_API -->
       <PreprocessorDefinitions>U_ATTRIBUTE_DEPRECATED=;_CRT_SECURE_NO_DEPRECATE;U_COMMON_IMPLEMENTATION;U_PLATFORM_USES_ONLY_WIN32_API=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -81,7 +80,6 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <DisableLanguageExtensions>false</DisableLanguageExtensions>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <WarningLevel>Level3</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -89,6 +87,11 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAsWinRT>false</CompileAsWinRT>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <PrecompiledHeaderOutputFile>$(OutDir)/icuuc.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(OutDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(OutDir)/</ObjectFileName>
+      <ProgramDataBaseFileName>$(OutDir)/icuuc.pdb</ProgramDataBaseFileName>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0409</Culture>
@@ -102,6 +105,8 @@
       </DataExecutionPrevention>
       <TurnOffAssemblyGeneration>true</TurnOffAssemblyGeneration>
       <IgnoreSpecificDefaultLibraries>vccorlib.lib;msvcrt.lib</IgnoreSpecificDefaultLibraries>
+      <!-- The icudt.lib is for U_ICUDATA_ENTRY_POINT -->
+      <AdditionalDependencies>icudt.lib;onecore.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
@@ -118,7 +123,10 @@
     </ResourceCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalDependencies>vccorlib.lib;WindowsApp.lib;msvcrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>vccorlib.lib;msvcrt.lib;vcruntime.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\$(IcuBinOutputDir)\icuuc$(IcuMajorVersion).dll</OutputFile>
+      <ProgramDatabaseFile>.\..\..\$(IcuLibOutputDir)\icuuc.pdb</ProgramDatabaseFile>
+      <ImportLibrary>..\..\$(IcuLibOutputDir)\icuuc.lib</ImportLibrary>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
@@ -132,14 +140,16 @@
       <Optimization>Disabled</Optimization>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>vccorlibd.lib;WindowsApp.lib;msvcrtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>vccorlibd.lib;msvcrtd.lib;vcruntimed.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\$(IcuBinOutputDir)\icuuc$(IcuMajorVersion)d.dll</OutputFile>
+      <ProgramDatabaseFile>.\..\..\$(IcuLibOutputDir)\icuucd.pdb</ProgramDatabaseFile>
+      <ImportLibrary>..\..\$(IcuLibOutputDir)\icuucd.lib</ImportLibrary>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Platform)'=='Win32'">
@@ -150,6 +160,10 @@
     <ClCompile>
       <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <!-- This is so that we can use the existing stubdata icudt.lib and not need a UWP version. -->
+      <AdditionalLibraryDirectories>.\..\..\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Platform)'=='x64'">
     <!-- Options that are common to all 64-bit configurations -->
@@ -161,6 +175,8 @@
     </ClCompile>
     <Link>
       <TargetMachine>MachineX64</TargetMachine>
+      <!-- This is so that we can use the existing stubdata icudt.lib and not need a UWP version. -->
+      <AdditionalLibraryDirectories>.\..\..\lib64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Platform)'=='ARM'">
@@ -173,103 +189,22 @@
     </ClCompile>
     <Link>
       <TargetMachine>MachineARM</TargetMachine>
+      <!-- This is so that we can use the existing stubdata icudt.lib and not need a UWP version. -->
+      <AdditionalLibraryDirectories>.\..\..\libARM;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
-  <!-- Options that are specific to a particular configuration -->
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <ItemDefinitionGroup Condition="'$(Platform)'=='ARM64'">
+    <!-- Options that are common to all ARM64 configurations -->
     <Midl>
-      <TypeLibraryName>.\..\..\lib32uwp\icuuc.tlb</TypeLibraryName>
+      <TargetEnvironment>ARM64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <PrecompiledHeaderOutputFile>.\x86\ReleaseUWP/common.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\x86\ReleaseUWP/</AssemblerListingLocation>
-      <ObjectFileName>.\x86\ReleaseUWP/</ObjectFileName>
-      <ProgramDataBaseFileName>.\x86\ReleaseUWP/</ProgramDataBaseFileName>
+      <PreprocessorDefinitions>ARM64;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <OutputFile>..\..\bin32uwp\icuuc63.dll</OutputFile>
-      <ProgramDatabaseFile>.\..\..\lib32uwp\icuuc.pdb</ProgramDatabaseFile>
-      <ImportLibrary>..\..\lib32uwp\icuuc.lib</ImportLibrary>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Midl>
-      <TypeLibraryName>.\..\..\lib32uwp\icuucd.tlb</TypeLibraryName>
-    </Midl>
-    <ClCompile>
-      <PrecompiledHeaderOutputFile>.\x86\DebugUWP/common.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\x86\DebugUWP/</AssemblerListingLocation>
-      <ObjectFileName>.\x86\DebugUWP/</ObjectFileName>
-      <ProgramDataBaseFileName>.\x86\DebugUWP/</ProgramDataBaseFileName>
-    </ClCompile>
-    <Link>
-      <OutputFile>..\..\bin32uwp\icuuc63d.dll</OutputFile>
-      <ProgramDatabaseFile>.\..\..\lib32uwp\icuucd.pdb</ProgramDatabaseFile>
-      <ImportLibrary>..\..\lib32uwp\icuucd.lib</ImportLibrary>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <Midl>
-      <TypeLibraryName>.\..\..\lib64uwp\icuuc.tlb</TypeLibraryName>
-    </Midl>
-    <ClCompile>
-      <PrecompiledHeaderOutputFile>.\x64\ReleaseUWP/common.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\x64\ReleaseUWP/</AssemblerListingLocation>
-      <ObjectFileName>.\x64\ReleaseUWP/</ObjectFileName>
-      <ProgramDataBaseFileName>.\x64\ReleaseUWP/</ProgramDataBaseFileName>
-    </ClCompile>
-    <Link>
-      <OutputFile>..\..\bin64uwp\icuuc63.dll</OutputFile>
-      <ProgramDatabaseFile>.\..\..\lib64uwp\icuuc.pdb</ProgramDatabaseFile>
-      <ImportLibrary>..\..\lib64uwp\icuuc.lib</ImportLibrary>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Midl>
-      <TypeLibraryName>.\..\..\lib64uwp\icuucd.tlb</TypeLibraryName>
-    </Midl>
-    <ClCompile>
-      <PrecompiledHeaderOutputFile>.\x64\DebugUWP/common.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\x64\DebugUWP/</AssemblerListingLocation>
-      <ObjectFileName>.\x64\DebugUWP/</ObjectFileName>
-      <ProgramDataBaseFileName>.\x64\DebugUWP/</ProgramDataBaseFileName>
-    </ClCompile>
-    <Link>
-      <OutputFile>..\..\bin64uwp\icuuc63d.dll</OutputFile>
-      <ProgramDatabaseFile>.\..\..\lib64uwp\icuucd.pdb</ProgramDatabaseFile>
-      <ImportLibrary>..\..\lib64uwp\icuucd.lib</ImportLibrary>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <Midl>
-      <TypeLibraryName>.\..\..\libARMuwp\icuuc.tlb</TypeLibraryName>
-    </Midl>
-    <ClCompile>
-      <PrecompiledHeaderOutputFile>.\ARM\ReleaseUWP/common.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\ARM\ReleaseUWP/</AssemblerListingLocation>
-      <ObjectFileName>.\ARM\ReleaseUWP/</ObjectFileName>
-      <ProgramDataBaseFileName>.\ARM\ReleaseUWP/</ProgramDataBaseFileName>
-    </ClCompile>
-    <Link>
-      <OutputFile>..\..\binARMuwp\icuuc63.dll</OutputFile>
-      <ProgramDatabaseFile>.\..\..\libARMuwp\icuuc.pdb</ProgramDatabaseFile>
-      <ImportLibrary>..\..\libARMuwp\icuuc.lib</ImportLibrary>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
-    <Midl>
-      <TypeLibraryName>.\..\..\libARMuwp\icuucd.tlb</TypeLibraryName>
-    </Midl>
-    <ClCompile>
-      <PrecompiledHeaderOutputFile>.\ARM\DebugUWP/common.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\ARM\DebugUWP/</AssemblerListingLocation>
-      <ObjectFileName>.\ARM\DebugUWP/</ObjectFileName>
-      <ProgramDataBaseFileName>.\ARM\DebugUWP/</ProgramDataBaseFileName>
-    </ClCompile>
-    <Link>
-      <OutputFile>..\..\binARMuwp\icuuc63d.dll</OutputFile>
-      <ProgramDatabaseFile>.\..\..\libARMuwp\icuucd.pdb</ProgramDatabaseFile>
-      <ImportLibrary>..\..\libARMuwp\icuucd.lib</ImportLibrary>
+      <TargetMachine>MachineARM64</TargetMachine>
+      <!-- This is so that we can use the existing stubdata icudt.lib and not need a UWP version. -->
+      <AdditionalLibraryDirectories>.\..\..\libARM64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -285,6 +220,8 @@
     <ClCompile Include="brkeng.cpp" />
     <ClCompile Include="brkiter.cpp" />
     <ClCompile Include="dictbe.cpp" />
+    <ClCompile Include="lstmbe.cpp" />
+    <ClCompile Include="mlbe.cpp" />
     <ClCompile Include="pluralmap.cpp" />
     <ClCompile Include="rbbi.cpp" />
     <ClCompile Include="rbbidata.cpp" />
@@ -316,9 +253,7 @@
     <ClCompile Include="errorcode.cpp" />
     <ClCompile Include="icudataver.cpp" />
     <ClCompile Include="locmap.cpp" />
-    <ClCompile Include="putil.cpp">
-      <CompileAsWinRT>true</CompileAsWinRT>
-    </ClCompile>
+    <ClCompile Include="putil.cpp" />
     <ClCompile Include="umath.cpp" />
     <ClCompile Include="umutex.cpp" />
     <ClCompile Include="utrace.cpp" />
@@ -364,19 +299,27 @@
     <ClCompile Include="punycode.cpp" />
     <ClCompile Include="uidna.cpp" />
     <ClCompile Include="uts46.cpp" />
+    <ClCompile Include="localebuilder.cpp" />
+    <ClCompile Include="ulocbuilder.cpp" />
+    <ClCompile Include="localematcher.cpp" />
+    <ClCompile Include="localeprioritylist.cpp" />
     <ClCompile Include="locavailable.cpp" />
     <ClCompile Include="locbased.cpp" />
     <ClCompile Include="locdispnames.cpp" />
+    <ClCompile Include="locdistance.cpp" />
     <ClCompile Include="locdspnm.cpp" />
     <ClCompile Include="locid.cpp" />
     <ClCompile Include="loclikely.cpp" />
+    <ClCompile Include="loclikelysubtags.cpp" />
     <ClCompile Include="locresdata.cpp" />
     <ClCompile Include="locutil.cpp" />
+    <ClCompile Include="lsr.cpp" />
     <ClCompile Include="resbund.cpp" />
     <ClCompile Include="resbund_cnv.cpp" />
     <ClCompile Include="ucat.cpp" />
     <ClCompile Include="uloc.cpp" />
     <ClCompile Include="uloc_tag.cpp" />
+    <ClCompile Include="ulocale.cpp" />
     <ClCompile Include="ures_cnv.cpp" />
     <ClCompile Include="uresbund.cpp" />
     <ClCompile Include="uresdata.cpp" />
@@ -397,6 +340,7 @@
     <ClCompile Include="ucase.cpp" />
     <ClCompile Include="uchar.cpp" />
     <ClCompile Include="characterproperties.cpp" />
+    <ClCompile Include="emojiprops.cpp" />
     <ClCompile Include="unames.cpp" />
     <ClCompile Include="unifiedcache.cpp" />
     <ClCompile Include="unifilt.cpp" />
@@ -463,6 +407,8 @@
     <ClCompile Include="utext.cpp" />
     <ClCompile Include="utf_impl.cpp" />
     <ClCompile Include="static_unicode_sets.cpp" />
+    <ClCompile Include="restrace.cpp" />
+    <ClCompile Include="fixedstring.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="localsvc.h" />
@@ -473,6 +419,8 @@
     <ClInclude Include="ubidiimp.h" />
     <ClInclude Include="brkeng.h" />
     <ClInclude Include="dictbe.h" />
+    <ClInclude Include="lstmbe.h" />
+    <ClInclude Include="mlbe.h" />
     <ClInclude Include="rbbidata.h" />
     <ClInclude Include="rbbinode.h" />
     <ClInclude Include="rbbirb.h" />
@@ -532,8 +480,14 @@
     <ClInclude Include="ustrfmt.h" />
     <ClInclude Include="util.h" />
     <ClInclude Include="punycode.h" />
+    <ClInclude Include="localeprioritylist.h" />
     <ClInclude Include="locbased.h" />
+    <ClInclude Include="locdistance.h" />
+    <ClInclude Include="charstrmap.h" />
+    <ClInclude Include="uniquecharstr.h" />
+    <ClInclude Include="loclikelysubtags.h" />
     <ClInclude Include="locutil.h" />
+    <ClInclude Include="lsr.h" />
     <ClInclude Include="sharedobject.h" />
     <ClCompile Include="sharedobject.cpp" />
     <ClInclude Include="ulocimp.h" />
@@ -551,7 +505,9 @@
     <ClInclude Include="patternprops.h" />
     <ClInclude Include="propname.h" />
     <ClInclude Include="ruleiter.h" />
+    <ClInclude Include="emojiprops.h" />
     <ClInclude Include="ucase.h" />
+    <ClInclude Include="ulayout_props.h" />
     <ClInclude Include="unisetspan.h" />
     <ClInclude Include="uprops.h" />
     <ClInclude Include="usc_impl.h" />
@@ -570,11 +526,17 @@
     <ClInclude Include="ustr_cnv.h" />
     <ClInclude Include="ustr_imp.h" />
     <ClInclude Include="static_unicode_sets.h" />
+    <ClInclude Include="capi_helper.h" />
+    <ClInclude Include="restrace.h" />
+    <ClInclude Include="fixedstring.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="common.rc" />
   </ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Target Name="Build" Condition="'$(SkipUWP)'=='true'">
+    <Message Text="Skipping building the UWP project: $(MSBuildThisFile)" Importance="high" />
+  </Target>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" Condition="'$(SkipUWP)'!='true'" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>

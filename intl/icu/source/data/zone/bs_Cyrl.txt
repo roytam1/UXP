@@ -1,32 +1,1286 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 bs_Cyrl{
     %%Parent{"root"}
-    Version{"2.1.41.34"}
     zoneStrings{
+        "Africa:Abidjan"{
+            ec{"Абиџан"}
+        }
+        "Africa:Accra"{
+            ec{"Акра"}
+        }
+        "Africa:Addis_Ababa"{
+            ec{"Адис Абеба"}
+        }
+        "Africa:Algiers"{
+            ec{"Алжир"}
+        }
+        "Africa:Asmera"{
+            ec{"Асмера"}
+        }
+        "Africa:Bamako"{
+            ec{"Бамако"}
+        }
+        "Africa:Bangui"{
+            ec{"Бангуи"}
+        }
+        "Africa:Banjul"{
+            ec{"Банжул"}
+        }
+        "Africa:Bissau"{
+            ec{"Бисао"}
+        }
+        "Africa:Blantyre"{
+            ec{"Блантир"}
+        }
+        "Africa:Brazzaville"{
+            ec{"Бразавил"}
+        }
+        "Africa:Bujumbura"{
+            ec{"Буџумбура"}
+        }
+        "Africa:Cairo"{
+            ec{"Каиро"}
+        }
+        "Africa:Casablanca"{
+            ec{"Казабланка"}
+        }
+        "Africa:Ceuta"{
+            ec{"Сеута"}
+        }
+        "Africa:Conakry"{
+            ec{"Конакри"}
+        }
+        "Africa:Dakar"{
+            ec{"Дакар"}
+        }
+        "Africa:Dar_es_Salaam"{
+            ec{"Дар-ес-Салам"}
+        }
+        "Africa:Djibouti"{
+            ec{"Џибути"}
+        }
+        "Africa:Douala"{
+            ec{"Дуала"}
+        }
+        "Africa:El_Aaiun"{
+            ec{"Ел Ајун"}
+        }
+        "Africa:Freetown"{
+            ec{"Фритаун"}
+        }
+        "Africa:Gaborone"{
+            ec{"Габорон"}
+        }
+        "Africa:Harare"{
+            ec{"Хараре"}
+        }
+        "Africa:Johannesburg"{
+            ec{"Јоханесбург"}
+        }
+        "Africa:Juba"{
+            ec{"Џуба"}
+        }
+        "Africa:Kampala"{
+            ec{"Кампала"}
+        }
+        "Africa:Khartoum"{
+            ec{"Картум"}
+        }
+        "Africa:Kigali"{
+            ec{"Кигали"}
+        }
+        "Africa:Kinshasa"{
+            ec{"Киншаса"}
+        }
+        "Africa:Lagos"{
+            ec{"Лагос"}
+        }
+        "Africa:Libreville"{
+            ec{"Либревил"}
+        }
+        "Africa:Lome"{
+            ec{"Ломе"}
+        }
+        "Africa:Luanda"{
+            ec{"Луанда"}
+        }
+        "Africa:Lubumbashi"{
+            ec{"Лумумбаши"}
+        }
+        "Africa:Lusaka"{
+            ec{"Лусака"}
+        }
+        "Africa:Malabo"{
+            ec{"Малабо"}
+        }
+        "Africa:Maputo"{
+            ec{"Мапуто"}
+        }
+        "Africa:Maseru"{
+            ec{"Масеру"}
+        }
+        "Africa:Mbabane"{
+            ec{"Мбабане"}
+        }
+        "Africa:Mogadishu"{
+            ec{"Могадиш"}
+        }
+        "Africa:Monrovia"{
+            ec{"Монровија"}
+        }
+        "Africa:Nairobi"{
+            ec{"Најроби"}
+        }
+        "Africa:Ndjamena"{
+            ec{"Нџамена"}
+        }
+        "Africa:Niamey"{
+            ec{"Нијамеј"}
+        }
+        "Africa:Nouakchott"{
+            ec{"Нуакшот"}
+        }
+        "Africa:Ouagadougou"{
+            ec{"Уагадугу"}
+        }
+        "Africa:Porto-Novo"{
+            ec{"Порто Ново"}
+        }
+        "Africa:Sao_Tome"{
+            ec{"Сао Томе"}
+        }
+        "Africa:Tripoli"{
+            ec{"Триполи"}
+        }
+        "Africa:Tunis"{
+            ec{"Тунис"}
+        }
+        "Africa:Windhoek"{
+            ec{"Виндхук"}
+        }
+        "America:Adak"{
+            ec{"Адак"}
+        }
+        "America:Anchorage"{
+            ec{"Енкориџ"}
+        }
+        "America:Anguilla"{
+            ec{"Ангвила"}
+        }
+        "America:Antigua"{
+            ec{"Антигва"}
+        }
+        "America:Araguaina"{
+            ec{"Арагвајана"}
+        }
+        "America:Argentina:La_Rioja"{
+            ec{"Ла Риоха"}
+        }
+        "America:Argentina:Rio_Gallegos"{
+            ec{"Рио Гаљегос"}
+        }
+        "America:Argentina:Salta"{
+            ec{"Салта"}
+        }
+        "America:Argentina:San_Juan"{
+            ec{"Сан Хуан"}
+        }
+        "America:Argentina:San_Luis"{
+            ec{"Сан Луи"}
+        }
+        "America:Argentina:Tucuman"{
+            ec{"Тукуман"}
+        }
+        "America:Argentina:Ushuaia"{
+            ec{"Ушуаија"}
+        }
+        "America:Aruba"{
+            ec{"Аруба"}
+        }
+        "America:Asuncion"{
+            ec{"Асунсион"}
+        }
+        "America:Bahia"{
+            ec{"Баија"}
+        }
+        "America:Bahia_Banderas"{
+            ec{"Баија Бандерас"}
+        }
+        "America:Barbados"{
+            ec{"Барбадос"}
+        }
+        "America:Belem"{
+            ec{"Белем"}
+        }
+        "America:Belize"{
+            ec{"Белизе"}
+        }
+        "America:Blanc-Sablon"{
+            ec{"Бланк-Сејблон"}
+        }
+        "America:Boa_Vista"{
+            ec{"Боа Виста"}
+        }
+        "America:Bogota"{
+            ec{"Богота"}
+        }
+        "America:Boise"{
+            ec{"Бојзи"}
+        }
+        "America:Buenos_Aires"{
+            ec{"Буенос Аирес"}
+        }
+        "America:Cambridge_Bay"{
+            ec{"Кембриџ Беј"}
+        }
+        "America:Campo_Grande"{
+            ec{"Кампо Гранде"}
+        }
+        "America:Cancun"{
+            ec{"Канкун"}
+        }
+        "America:Caracas"{
+            ec{"Каракас"}
+        }
+        "America:Catamarca"{
+            ec{"Катамарка"}
+        }
+        "America:Cayenne"{
+            ec{"Кајен"}
+        }
+        "America:Cayman"{
+            ec{"Кајманска острва"}
+        }
+        "America:Chicago"{
+            ec{"Чикаго"}
+        }
+        "America:Chihuahua"{
+            ec{"Чивава"}
+        }
+        "America:Coral_Harbour"{
+            ec{"Атикокан"}
+        }
+        "America:Cordoba"{
+            ec{"Кордоба"}
+        }
+        "America:Costa_Rica"{
+            ec{"Костарика"}
+        }
+        "America:Creston"{
+            ec{"Крестон"}
+        }
+        "America:Cuiaba"{
+            ec{"Куиаба"}
+        }
+        "America:Curacao"{
+            ec{"Курасао"}
+        }
+        "America:Danmarkshavn"{
+            ec{"Данмарксхаген"}
+        }
+        "America:Dawson"{
+            ec{"Досон"}
+        }
+        "America:Dawson_Creek"{
+            ec{"Досон Крик"}
+        }
+        "America:Denver"{
+            ec{"Денвер"}
+        }
+        "America:Detroit"{
+            ec{"Детроит"}
+        }
+        "America:Dominica"{
+            ec{"Доминика"}
+        }
+        "America:Edmonton"{
+            ec{"Едмонтон"}
+        }
+        "America:Eirunepe"{
+            ec{"Еирунепе"}
+        }
+        "America:El_Salvador"{
+            ec{"Салвадор"}
+        }
+        "America:Fort_Nelson"{
+            ec{"Форт Нелсон"}
+        }
+        "America:Fortaleza"{
+            ec{"Форталеза"}
+        }
+        "America:Glace_Bay"{
+            ec{"Глејс Беј"}
+        }
+        "America:Godthab"{
+            ec{"Нук"}
+        }
+        "America:Goose_Bay"{
+            ec{"Гус Беј"}
+        }
+        "America:Grand_Turk"{
+            ec{"Гранд Турк"}
+        }
+        "America:Grenada"{
+            ec{"Гренада"}
+        }
+        "America:Guadeloupe"{
+            ec{"Гвадалупе"}
+        }
+        "America:Guatemala"{
+            ec{"Гватемала"}
+        }
+        "America:Guayaquil"{
+            ec{"Гвајакил"}
+        }
+        "America:Guyana"{
+            ec{"Гуана"}
+        }
+        "America:Halifax"{
+            ec{"Халифакс"}
+        }
+        "America:Havana"{
+            ec{"Хавана"}
+        }
+        "America:Hermosillo"{
+            ec{"Хермосиљо"}
+        }
+        "America:Indiana:Knox"{
+            ec{"Кнокс, Индијана"}
+        }
+        "America:Indiana:Marengo"{
+            ec{"Маренго, Индијана"}
+        }
+        "America:Indiana:Petersburg"{
+            ec{"Петерсбург, Индијана"}
+        }
+        "America:Indiana:Tell_City"{
+            ec{"Тел Сити, Индијана"}
+        }
+        "America:Indiana:Vevay"{
+            ec{"Вевај, Индијана"}
+        }
+        "America:Indiana:Vincennes"{
+            ec{"Винценес, Индијана"}
+        }
+        "America:Indiana:Winamac"{
+            ec{"Винамак, Индијана"}
+        }
+        "America:Indianapolis"{
+            ec{"Индианаполис"}
+        }
+        "America:Inuvik"{
+            ec{"Инувик"}
+        }
+        "America:Iqaluit"{
+            ec{"Иквалуит"}
+        }
+        "America:Jamaica"{
+            ec{"Јамајка"}
+        }
+        "America:Jujuy"{
+            ec{"Хухуј"}
+        }
+        "America:Juneau"{
+            ec{"Жуно"}
+        }
+        "America:Kentucky:Monticello"{
+            ec{"Монтичело, Кентаки"}
+        }
+        "America:Kralendijk"{
+            ec{"Крелендијк"}
+        }
+        "America:La_Paz"{
+            ec{"Ла Паз"}
+        }
+        "America:Lima"{
+            ec{"Лима"}
+        }
+        "America:Los_Angeles"{
+            ec{"Лос Анђелес"}
+        }
+        "America:Louisville"{
+            ec{"Луисвил"}
+        }
+        "America:Lower_Princes"{
+            ec{"Лоуер Принс Квортер"}
+        }
+        "America:Maceio"{
+            ec{"Масејо"}
+        }
+        "America:Managua"{
+            ec{"Манагва"}
+        }
+        "America:Manaus"{
+            ec{"Манаус"}
+        }
+        "America:Marigot"{
+            ec{"Мариго"}
+        }
+        "America:Martinique"{
+            ec{"Мартиник"}
+        }
+        "America:Matamoros"{
+            ec{"Матаморос"}
+        }
+        "America:Mazatlan"{
+            ec{"Мазатлан"}
+        }
+        "America:Mendoza"{
+            ec{"Мендоза"}
+        }
+        "America:Menominee"{
+            ec{"Меномини"}
+        }
+        "America:Merida"{
+            ec{"Мерида"}
+        }
+        "America:Metlakatla"{
+            ec{"Метлакатла"}
+        }
+        "America:Mexico_City"{
+            ec{"Мексико Сити"}
+        }
+        "America:Miquelon"{
+            ec{"Микелон"}
+        }
+        "America:Moncton"{
+            ec{"Монктон"}
+        }
+        "America:Monterrey"{
+            ec{"Монтереј"}
+        }
+        "America:Montevideo"{
+            ec{"Монтевидео"}
+        }
+        "America:Montserrat"{
+            ec{"Монтсерат"}
+        }
+        "America:Nassau"{
+            ec{"Насау"}
+        }
+        "America:New_York"{
+            ec{"Њујорк"}
+        }
+        "America:Nome"{
+            ec{"Ном"}
+        }
+        "America:Noronha"{
+            ec{"Нороња"}
+        }
+        "America:North_Dakota:Beulah"{
+            ec{"Бијула, Северна Дакота"}
+        }
+        "America:North_Dakota:Center"{
+            ec{"Центар, Северна Дакота"}
+        }
+        "America:North_Dakota:New_Salem"{
+            ec{"Нови Салем, Северна Дакота"}
+        }
+        "America:Ojinaga"{
+            ec{"Охинага"}
+        }
+        "America:Panama"{
+            ec{"Панама"}
+        }
+        "America:Paramaribo"{
+            ec{"Парамарибо"}
+        }
+        "America:Phoenix"{
+            ec{"Феникс"}
+        }
+        "America:Port-au-Prince"{
+            ec{"Порт-о-Пренс"}
+        }
+        "America:Port_of_Spain"{
+            ec{"Порт оф Спејн"}
+        }
+        "America:Porto_Velho"{
+            ec{"Порто Вељо"}
+        }
+        "America:Puerto_Rico"{
+            ec{"Порторико"}
+        }
+        "America:Punta_Arenas"{
+            ec{"Пунта Аренас"}
+        }
+        "America:Rankin_Inlet"{
+            ec{"Ранкин Инлет"}
+        }
+        "America:Recife"{
+            ec{"Ресифе"}
+        }
+        "America:Regina"{
+            ec{"Регина"}
+        }
+        "America:Resolute"{
+            ec{"Ресолут"}
+        }
+        "America:Rio_Branco"{
+            ec{"Рио Бранко"}
+        }
+        "America:Santarem"{
+            ec{"Сантарем"}
+        }
+        "America:Santiago"{
+            ec{"Сантијаго"}
+        }
+        "America:Santo_Domingo"{
+            ec{"Санто Доминго"}
+        }
+        "America:Sao_Paulo"{
+            ec{"Сао Паоло"}
+        }
+        "America:Scoresbysund"{
+            ec{"Итокортормит"}
+        }
+        "America:Sitka"{
+            ec{"Ситка"}
+        }
+        "America:St_Barthelemy"{
+            ec{"Св. Бартоломeј"}
+        }
+        "America:St_Johns"{
+            ec{"Св. Џон"}
+        }
+        "America:St_Kitts"{
+            ec{"Сент Китс"}
+        }
+        "America:St_Lucia"{
+            ec{"Св. Луција"}
+        }
+        "America:St_Thomas"{
+            ec{"Св. Тома"}
+        }
+        "America:St_Vincent"{
+            ec{"Сент Винсент"}
+        }
+        "America:Swift_Current"{
+            ec{"Свифт Курент"}
+        }
+        "America:Tegucigalpa"{
+            ec{"Тегусигалпа"}
+        }
+        "America:Thule"{
+            ec{"Туле"}
+        }
+        "America:Tijuana"{
+            ec{"Тихуана"}
+        }
+        "America:Toronto"{
+            ec{"Торонто"}
+        }
+        "America:Tortola"{
+            ec{"Тортола"}
+        }
+        "America:Vancouver"{
+            ec{"Ванкувер"}
+        }
+        "America:Whitehorse"{
+            ec{"Вајтхорс"}
+        }
+        "America:Winnipeg"{
+            ec{"Винипег"}
+        }
+        "America:Yakutat"{
+            ec{"Јакутат"}
+        }
+        "Antarctica:Casey"{
+            ec{"Касеј"}
+        }
+        "Antarctica:Davis"{
+            ec{"Дејвис"}
+        }
+        "Antarctica:DumontDUrville"{
+            ec{"Димон д’Урвил"}
+        }
+        "Antarctica:Macquarie"{
+            ec{"Меквори"}
+        }
+        "Antarctica:Mawson"{
+            ec{"Мосон"}
+        }
+        "Antarctica:McMurdo"{
+            ec{"Макмурдо"}
+        }
+        "Antarctica:Palmer"{
+            ec{"Палмер"}
+        }
+        "Antarctica:Rothera"{
+            ec{"Ротера"}
+        }
+        "Antarctica:Syowa"{
+            ec{"Шова"}
+        }
+        "Antarctica:Troll"{
+            ec{"Трол"}
+        }
+        "Antarctica:Vostok"{
+            ec{"Восток"}
+        }
+        "Arctic:Longyearbyen"{
+            ec{"Лонгјербјен"}
+        }
+        "Asia:Aden"{
+            ec{"Аден"}
+        }
+        "Asia:Almaty"{
+            ec{"Алмати"}
+        }
+        "Asia:Amman"{
+            ec{"Аман"}
+        }
+        "Asia:Anadyr"{
+            ec{"Анадир"}
+        }
+        "Asia:Aqtau"{
+            ec{"Актау"}
+        }
+        "Asia:Aqtobe"{
+            ec{"Акутобе"}
+        }
+        "Asia:Ashgabat"{
+            ec{"Ашхабад"}
+        }
+        "Asia:Atyrau"{
+            ec{"Атирај"}
+        }
+        "Asia:Baghdad"{
+            ec{"Багдад"}
+        }
+        "Asia:Bahrain"{
+            ec{"Бахреин"}
+        }
+        "Asia:Baku"{
+            ec{"Баку"}
+        }
+        "Asia:Bangkok"{
+            ec{"Банкок"}
+        }
+        "Asia:Barnaul"{
+            ec{"Барнаул"}
+        }
+        "Asia:Beirut"{
+            ec{"Бејрут"}
+        }
+        "Asia:Bishkek"{
+            ec{"Бишкек"}
+        }
+        "Asia:Brunei"{
+            ec{"Брунеји"}
+        }
+        "Asia:Calcutta"{
+            ec{"Калкута"}
+        }
+        "Asia:Chita"{
+            ec{"Чита"}
+        }
+        "Asia:Colombo"{
+            ec{"Коломбо"}
+        }
+        "Asia:Damascus"{
+            ec{"Дамаск"}
+        }
+        "Asia:Dhaka"{
+            ec{"Дака"}
+        }
+        "Asia:Dili"{
+            ec{"Дили"}
+        }
+        "Asia:Dubai"{
+            ec{"Дубаи"}
+        }
+        "Asia:Dushanbe"{
+            ec{"Душанбе"}
+        }
+        "Asia:Famagusta"{
+            ec{"Фамагуста"}
+        }
+        "Asia:Gaza"{
+            ec{"Газа"}
+        }
+        "Asia:Hebron"{
+            ec{"Хеброн"}
+        }
+        "Asia:Hong_Kong"{
+            ec{"Хонг Конг"}
+        }
+        "Asia:Hovd"{
+            ec{"Ховд"}
+        }
+        "Asia:Irkutsk"{
+            ec{"Иркуцк"}
+        }
+        "Asia:Jakarta"{
+            ec{"Џакарта"}
+        }
+        "Asia:Jayapura"{
+            ec{"Џајапура"}
+        }
+        "Asia:Jerusalem"{
+            ec{"Јерусалим"}
+        }
+        "Asia:Kabul"{
+            ec{"Кабул"}
+        }
+        "Asia:Kamchatka"{
+            ec{"Камчатка"}
+        }
+        "Asia:Karachi"{
+            ec{"Карачи"}
+        }
+        "Asia:Katmandu"{
+            ec{"Катманду"}
+        }
+        "Asia:Khandyga"{
+            ec{"Хандига"}
+        }
+        "Asia:Krasnoyarsk"{
+            ec{"Краснојарск"}
+        }
+        "Asia:Kuala_Lumpur"{
+            ec{"Куала Лумпур"}
+        }
+        "Asia:Kuching"{
+            ec{"Кучинг"}
+        }
+        "Asia:Kuwait"{
+            ec{"Кувајт"}
+        }
+        "Asia:Macau"{
+            ec{"Макау"}
+        }
+        "Asia:Magadan"{
+            ec{"Магадан"}
+        }
+        "Asia:Makassar"{
+            ec{"Макасар"}
+        }
+        "Asia:Manila"{
+            ec{"Манила"}
+        }
+        "Asia:Muscat"{
+            ec{"Мускат"}
+        }
+        "Asia:Nicosia"{
+            ec{"Никозија"}
+        }
+        "Asia:Novokuznetsk"{
+            ec{"Новокузњецк"}
+        }
+        "Asia:Novosibirsk"{
+            ec{"Новосибирск"}
+        }
+        "Asia:Omsk"{
+            ec{"Омск"}
+        }
+        "Asia:Oral"{
+            ec{"Орал"}
+        }
+        "Asia:Phnom_Penh"{
+            ec{"Пном Пен"}
+        }
+        "Asia:Pontianak"{
+            ec{"Понтианак"}
+        }
+        "Asia:Pyongyang"{
+            ec{"Пјонгјанг"}
+        }
+        "Asia:Qatar"{
+            ec{"Катар"}
+        }
+        "Asia:Qostanay"{
+            ec{"Костанај"}
+        }
+        "Asia:Qyzylorda"{
+            ec{"Кизилорда"}
+        }
+        "Asia:Rangoon"{
+            ec{"Рангун"}
+        }
+        "Asia:Riyadh"{
+            ec{"Ријад"}
+        }
+        "Asia:Saigon"{
+            ec{"Хо Ши Мин"}
+        }
+        "Asia:Sakhalin"{
+            ec{"Сахалин"}
+        }
+        "Asia:Samarkand"{
+            ec{"Самарканд"}
+        }
+        "Asia:Seoul"{
+            ec{"Сеул"}
+        }
+        "Asia:Shanghai"{
+            ec{"Шангај"}
+        }
+        "Asia:Singapore"{
+            ec{"Сингапур"}
+        }
+        "Asia:Srednekolymsk"{
+            ec{"Средњеколимск"}
+        }
+        "Asia:Taipei"{
+            ec{"Тајпеј"}
+        }
+        "Asia:Tashkent"{
+            ec{"Ташкент"}
+        }
+        "Asia:Tbilisi"{
+            ec{"Тбилиси"}
+        }
+        "Asia:Tehran"{
+            ec{"Техеран"}
+        }
+        "Asia:Thimphu"{
+            ec{"Тимпу"}
+        }
+        "Asia:Tokyo"{
+            ec{"Токио"}
+        }
+        "Asia:Tomsk"{
+            ec{"Томск"}
+        }
+        "Asia:Ulaanbaatar"{
+            ec{"Улан Батор"}
+        }
+        "Asia:Urumqi"{
+            ec{"Урумкви"}
+        }
+        "Asia:Ust-Nera"{
+            ec{"Уст-Нера"}
+        }
+        "Asia:Vientiane"{
+            ec{"Вијентијан"}
+        }
+        "Asia:Vladivostok"{
+            ec{"Владивосток"}
+        }
+        "Asia:Yakutsk"{
+            ec{"Јакутск"}
+        }
+        "Asia:Yekaterinburg"{
+            ec{"Јекатеринбург"}
+        }
+        "Asia:Yerevan"{
+            ec{"Јереван"}
+        }
+        "Atlantic:Azores"{
+            ec{"Азори"}
+        }
+        "Atlantic:Bermuda"{
+            ec{"Бермуда"}
+        }
+        "Atlantic:Canary"{
+            ec{"Канарска острва"}
+        }
+        "Atlantic:Cape_Verde"{
+            ec{"Зеленортска Острва"}
+        }
+        "Atlantic:Faeroe"{
+            ec{"Фарска острва"}
+        }
+        "Atlantic:Madeira"{
+            ec{"Мадеира"}
+        }
+        "Atlantic:Reykjavik"{
+            ec{"Рејкјавик"}
+        }
+        "Atlantic:South_Georgia"{
+            ec{"Јужна Џорџија"}
+        }
+        "Atlantic:St_Helena"{
+            ec{"Св. Јелена"}
+        }
+        "Atlantic:Stanley"{
+            ec{"Стенли"}
+        }
+        "Australia:Adelaide"{
+            ec{"Аделаида"}
+        }
+        "Australia:Brisbane"{
+            ec{"Бризбејн"}
+        }
+        "Australia:Broken_Hill"{
+            ec{"Брокен Хил"}
+        }
+        "Australia:Darwin"{
+            ec{"Дарвин"}
+        }
+        "Australia:Eucla"{
+            ec{"Иукла"}
+        }
+        "Australia:Hobart"{
+            ec{"Хобарт"}
+        }
+        "Australia:Lindeman"{
+            ec{"Линдеман"}
+        }
+        "Australia:Lord_Howe"{
+            ec{"Лорд Хов"}
+        }
+        "Australia:Melbourne"{
+            ec{"Мелбурн"}
+        }
+        "Australia:Perth"{
+            ec{"Перт"}
+        }
+        "Australia:Sydney"{
+            ec{"Сиднеј"}
+        }
+        "Etc:UTC"{
+            ls{"Координисано универзално вријеме"}
+        }
+        "Etc:Unknown"{
+            ec{"Непознат или неважећи град"}
+        }
+        "Europe:Amsterdam"{
+            ec{"Амстердам"}
+        }
+        "Europe:Andorra"{
+            ec{"Андора"}
+        }
+        "Europe:Astrakhan"{
+            ec{"Астрахан"}
+        }
+        "Europe:Athens"{
+            ec{"Атина"}
+        }
+        "Europe:Belgrade"{
+            ec{"Београд"}
+        }
+        "Europe:Berlin"{
+            ec{"Берлин"}
+        }
+        "Europe:Bratislava"{
+            ec{"Братислава"}
+        }
+        "Europe:Brussels"{
+            ec{"Брисел"}
+        }
+        "Europe:Bucharest"{
+            ec{"Букурешт"}
+        }
+        "Europe:Budapest"{
+            ec{"Будимпешта"}
+        }
+        "Europe:Busingen"{
+            ec{"Бусинген"}
+        }
+        "Europe:Chisinau"{
+            ec{"Кишињев"}
+        }
+        "Europe:Copenhagen"{
+            ec{"Копенхаген"}
+        }
+        "Europe:Dublin"{
+            ec{"Даблин"}
+            ld{"Ирско стандардно вријеме"}
+        }
+        "Europe:Gibraltar"{
+            ec{"Гибралтар"}
+        }
+        "Europe:Guernsey"{
+            ec{"Гернзи"}
+        }
+        "Europe:Helsinki"{
+            ec{"Хелсинки"}
+        }
+        "Europe:Isle_of_Man"{
+            ec{"Острво Мен"}
+        }
+        "Europe:Istanbul"{
+            ec{"Истанбул"}
+        }
+        "Europe:Jersey"{
+            ec{"Џерси"}
+        }
+        "Europe:Kaliningrad"{
+            ec{"Калињинград"}
+        }
+        "Europe:Kiev"{
+            ec{"Кијев"}
+        }
+        "Europe:Kirov"{
+            ec{"Киров"}
+        }
+        "Europe:Lisbon"{
+            ec{"Лисабон"}
+        }
+        "Europe:Ljubljana"{
+            ec{"Љубљана"}
+        }
+        "Europe:London"{
+            ec{"Лондон"}
+            ld{"Британско љетње вријеме"}
+        }
+        "Europe:Luxembourg"{
+            ec{"Луксембург"}
+        }
+        "Europe:Madrid"{
+            ec{"Мадрид"}
+        }
+        "Europe:Malta"{
+            ec{"Малта"}
+        }
+        "Europe:Mariehamn"{
+            ec{"Марихамн"}
+        }
+        "Europe:Minsk"{
+            ec{"Минск"}
+        }
+        "Europe:Monaco"{
+            ec{"Монако"}
+        }
+        "Europe:Moscow"{
+            ec{"Москва"}
+        }
+        "Europe:Oslo"{
+            ec{"Осло"}
+        }
+        "Europe:Paris"{
+            ec{"Париз"}
+        }
+        "Europe:Podgorica"{
+            ec{"Подгорица"}
+        }
+        "Europe:Prague"{
+            ec{"Праг"}
+        }
+        "Europe:Riga"{
+            ec{"Рига"}
+        }
+        "Europe:Rome"{
+            ec{"Рим"}
+        }
+        "Europe:Samara"{
+            ec{"Самара"}
+        }
+        "Europe:San_Marino"{
+            ec{"Сан Марино"}
+        }
+        "Europe:Sarajevo"{
+            ec{"Сарајево"}
+        }
+        "Europe:Saratov"{
+            ec{"Саратов"}
+        }
+        "Europe:Simferopol"{
+            ec{"Симферопољ"}
+        }
+        "Europe:Skopje"{
+            ec{"Скопље"}
+        }
+        "Europe:Sofia"{
+            ec{"Софија"}
+        }
+        "Europe:Stockholm"{
+            ec{"Стокхолм"}
+        }
+        "Europe:Tallinn"{
+            ec{"Талин"}
+        }
+        "Europe:Tirane"{
+            ec{"Тирана"}
+        }
+        "Europe:Ulyanovsk"{
+            ec{"Уљановск"}
+        }
+        "Europe:Vaduz"{
+            ec{"Вадуз"}
+        }
+        "Europe:Vatican"{
+            ec{"Ватикан"}
+        }
+        "Europe:Vienna"{
+            ec{"Беч"}
+        }
+        "Europe:Vilnius"{
+            ec{"Виљнус"}
+        }
+        "Europe:Volgograd"{
+            ec{"Волгоград"}
+        }
+        "Europe:Warsaw"{
+            ec{"Варшава"}
+        }
+        "Europe:Zagreb"{
+            ec{"Загреб"}
+        }
+        "Europe:Zurich"{
+            ec{"Цирих"}
+        }
+        "Indian:Antananarivo"{
+            ec{"Антананариво"}
+        }
+        "Indian:Chagos"{
+            ec{"Чагос"}
+        }
+        "Indian:Christmas"{
+            ec{"Божић"}
+        }
+        "Indian:Cocos"{
+            ec{"Кокос"}
+        }
+        "Indian:Comoro"{
+            ec{"Коморо"}
+        }
+        "Indian:Kerguelen"{
+            ec{"Кергелен"}
+        }
+        "Indian:Mahe"{
+            ec{"Махе"}
+        }
+        "Indian:Maldives"{
+            ec{"Малдиви"}
+        }
+        "Indian:Mauritius"{
+            ec{"Маурицијус"}
+        }
+        "Indian:Mayotte"{
+            ec{"Мајот"}
+        }
+        "Indian:Reunion"{
+            ec{"Реунион"}
+        }
+        "Pacific:Apia"{
+            ec{"Апија"}
+        }
+        "Pacific:Auckland"{
+            ec{"Окланд"}
+        }
+        "Pacific:Bougainville"{
+            ec{"Бугенвил"}
+        }
+        "Pacific:Chatham"{
+            ec{"Катхам"}
+        }
+        "Pacific:Easter"{
+            ec{"Ускршње острво"}
+        }
+        "Pacific:Efate"{
+            ec{"Ефат"}
+        }
+        "Pacific:Fakaofo"{
+            ec{"Факаофо"}
+        }
+        "Pacific:Fiji"{
+            ec{"Фиџи"}
+        }
+        "Pacific:Funafuti"{
+            ec{"Фунафути"}
+        }
+        "Pacific:Galapagos"{
+            ec{"Галапагос"}
+        }
+        "Pacific:Gambier"{
+            ec{"Гамбије"}
+        }
+        "Pacific:Guadalcanal"{
+            ec{"Гвадалканал"}
+        }
+        "Pacific:Guam"{
+            ec{"Гуам"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Хонолулу"}
+        }
+        "Pacific:Kiritimati"{
+            ec{"Киритимати"}
+        }
+        "Pacific:Kosrae"{
+            ec{"Кошре"}
+        }
+        "Pacific:Kwajalein"{
+            ec{"Кваџалејин"}
+        }
+        "Pacific:Majuro"{
+            ec{"Мајуро"}
+        }
+        "Pacific:Marquesas"{
+            ec{"Маркиз"}
+        }
+        "Pacific:Midway"{
+            ec{"Мидвеј"}
+        }
+        "Pacific:Nauru"{
+            ec{"Науру"}
+        }
+        "Pacific:Niue"{
+            ec{"Ниуе"}
+        }
+        "Pacific:Norfolk"{
+            ec{"Норфолк"}
+        }
+        "Pacific:Noumea"{
+            ec{"Нумеа"}
+        }
+        "Pacific:Pago_Pago"{
+            ec{"Паго Паго"}
+        }
+        "Pacific:Palau"{
+            ec{"Палау"}
+        }
+        "Pacific:Pitcairn"{
+            ec{"Питкерн"}
+        }
+        "Pacific:Ponape"{
+            ec{"Понапе"}
+        }
+        "Pacific:Port_Moresby"{
+            ec{"Порт Морзби"}
+        }
+        "Pacific:Rarotonga"{
+            ec{"Раротонга"}
+        }
+        "Pacific:Saipan"{
+            ec{"Сајпан"}
+        }
+        "Pacific:Tahiti"{
+            ec{"Тахити"}
+        }
+        "Pacific:Tarawa"{
+            ec{"Тарава"}
+        }
+        "Pacific:Tongatapu"{
+            ec{"Тонгатапу"}
+        }
+        "Pacific:Truk"{
+            ec{"Трук"}
+        }
+        "Pacific:Wake"{
+            ec{"Вејк"}
+        }
+        "Pacific:Wallis"{
+            ec{"Валис"}
+        }
         "meta:Acre"{
             ld{"Акре летње рачунање времена"}
             lg{"Акре време"}
             ls{"Акре стандардно време"}
         }
+        "meta:Afghanistan"{
+            ls{"Авганистан вријеме"}
+        }
         "meta:Africa_Central"{
-            ls{"Централно-афричко време"}
+            ls{"Централно-афричко вријеме"}
         }
         "meta:Africa_Eastern"{
-            ls{"Источно-афричко време"}
+            ls{"Источно-афричко вријеме"}
         }
         "meta:Africa_Southern"{
-            ls{"Јужно-афричко време"}
+            ls{"Јужно-афричко вријеме"}
         }
         "meta:Africa_Western"{
-            ld{"Западно-афричко летње рачунање времена"}
-            lg{"Западно-афричко време"}
-            ls{"Западно-афричко стандардно време"}
+            ls{"Западно-афричко вријеме"}
         }
         "meta:Alaska"{
-            ld{"Аљашко летње време"}
-            lg{"Аљашко време"}
-            ls{"Аљашко стандардно време"}
+            ld{"Аљаска љетње вријеме"}
+            lg{"Аљаска вријеме"}
+            ls{"Аљаска стандардно вријеме"}
         }
         "meta:Almaty"{
             ld{"Алмати летње рачунање времена"}
@@ -34,34 +1288,39 @@ bs_Cyrl{
             ls{"Алмати стандардно време"}
         }
         "meta:Amazon"{
-            ld{"Амазон летње рачунање времена"}
-            lg{"Амазон време"}
-            ls{"Амазон стандардно време"}
+            ld{"Амазон љетње рачунање времена"}
+            lg{"Амазон вријеме"}
+            ls{"Амазон стандардно вријеме"}
         }
         "meta:America_Central"{
-            ld{"Централно летње рачунање времена"}
-            lg{"Централно време"}
-            ls{"Централно стандардно време"}
+            ld{"Централно љетње рачунање времена"}
+            lg{"Централно вријеме"}
+            ls{"Централно стандардно вријеме"}
         }
         "meta:America_Eastern"{
-            ld{"Источно летње рачунање времена"}
-            lg{"Источно време"}
-            ls{"Источно стандардно време"}
+            ld{"Источно љетње рачунање времена"}
+            lg{"Источно вријеме"}
+            ls{"Источно стандардно вријеме"}
         }
         "meta:America_Mountain"{
-            ld{"Планинско летње рачунање времена"}
-            lg{"Планинско време"}
-            ls{"Планинско стандардно време"}
+            ld{"Планинско љетње рачунање времена"}
+            lg{"Планинско вријеме"}
+            ls{"Планинско стандардно вријеме"}
         }
         "meta:America_Pacific"{
-            ld{"Пацифичко летње рачунање времена"}
-            lg{"Пацифичко време"}
-            ls{"Пацифичко стандардно време"}
+            ld{"Пацифичко љетње рачунање времена"}
+            lg{"Пацифичко вријеме"}
+            ls{"Пацифичко стандардно вријеме"}
         }
         "meta:Anadyr"{
             ld{"Анадир летње рачунање времена"}
             lg{"Анадир време"}
             ls{"Анадир стандардно време"}
+        }
+        "meta:Apia"{
+            ld{"Апија љетње рачунање времена"}
+            lg{"Апија вријеме"}
+            ls{"Апија стандардно вријеме"}
         }
         "meta:Aqtau"{
             ld{"Акватау летње рачунање времена"}
@@ -74,430 +1333,444 @@ bs_Cyrl{
             ls{"Акутобе стандардно време"}
         }
         "meta:Arabian"{
-            ld{"Арабијско летње рачунање времена"}
-            lg{"Арабијско време"}
-            ls{"Арабијско стандардно време"}
+            ld{"Арабијско љетње рачунање времена"}
+            lg{"Арабијско вријеме"}
+            ls{"Арабијско стандардно вријеме"}
         }
         "meta:Argentina"{
-            ld{"Аргентина летње рачунање времена"}
-            lg{"Аргентина време"}
-            ls{"Аргентина стандардно време"}
+            ld{"Аргентина љетње рачунање времена"}
+            lg{"Аргентина вријеме"}
+            ls{"Аргентина стандардно вријеме"}
         }
         "meta:Argentina_Western"{
-            ld{"Западна Аргентина летње рачунање времена"}
-            lg{"Западна Аргентина време"}
-            ls{"Западна Аргентина стандардно време"}
+            ld{"Западна Аргентина љетње рачунање времена"}
+            lg{"Западна Аргентина вријеме"}
+            ls{"Западна Аргентина стандардно вријеме"}
         }
         "meta:Armenia"{
-            ld{"Арменија летње рачунање времена"}
-            lg{"Арменија време"}
-            ls{"Арменија стандардно време"}
+            ld{"Арменија љетње рачунање времена"}
+            lg{"Арменија вријеме"}
+            ls{"Арменија стандардно вријеме"}
         }
         "meta:Atlantic"{
-            ld{"Атланско лтње рачунање времена"}
-            lg{"Атланско време"}
-            ls{"Атланско стандардно време"}
+            ld{"Атланско љетње рачунање времена"}
+            lg{"Атланско вријеме"}
+            ls{"Атланско стандардно вријеме"}
         }
         "meta:Australia_Central"{
-            ld{"Аустралијско централно летње рачунање времена"}
-            lg{"Аустралијско централно време"}
-            ls{"Аустралијско централно стандардно време"}
+            ld{"Аустралијско централно љетње рачунање времена"}
+            lg{"Аустралијско централно вријеме"}
+            ls{"Аустралијско централно стандардно вријеме"}
         }
         "meta:Australia_CentralWestern"{
-            ld{"Аустралијско централно западно летње рачунање времена"}
-            lg{"Аустралијско централно западно време"}
-            ls{"Аустралијско централно западно стандардно време"}
+            ld{"Аустралијско централно западно љетње рачунање времена"}
+            lg{"Аустралијско централно западно вријеме"}
+            ls{"Аустралијско централно западно стандардно вријеме"}
         }
         "meta:Australia_Eastern"{
-            ld{"Аустралијско источно летње рачунање времена"}
-            lg{"Аустралијско источно време"}
-            ls{"Аустралијско источно стандардно време"}
+            ld{"Аустралијско источно љетње рачунање времена"}
+            lg{"Аустралијско источно вријеме"}
+            ls{"Аустралијско источно стандардно вријеме"}
         }
         "meta:Australia_Western"{
-            ld{"Аустралијско западно летње рачунање времена"}
-            lg{"Аустралијско западно време"}
-            ls{"Аустралијско западно стандардно време"}
+            ld{"Аустралијско западно љетње рачунање времена"}
+            lg{"Аустралијско западно вријеме"}
+            ls{"Аустралијско западно стандардно вријеме"}
         }
         "meta:Azerbaijan"{
-            ld{"Азербејџан летње рачунање времена"}
-            lg{"Азербејџан време"}
-            ls{"Азербејџан стандардно време"}
+            ld{"Азербејџан љетње рачунање времена"}
+            lg{"Азербејџан вријеме"}
+            ls{"Азербејџан стандардно вријеме"}
         }
         "meta:Azores"{
-            ld{"Азори летње рачунање времена"}
-            lg{"Азори време"}
-            ls{"Азори стандардно време"}
+            ld{"Азори љетње рачунање времена"}
+            lg{"Азори вријеме"}
+            ls{"Азори стандардно вријеме"}
         }
         "meta:Bangladesh"{
-            ld{"Бангладеш летње рачунање времена"}
-            lg{"Бангладеш време"}
-            ls{"Бангладеш стандардно време"}
+            ld{"Бангладеш љетње рачунање времена"}
+            lg{"Бангладеш вријеме"}
+            ls{"Бангладеш стандардно вријеме"}
         }
         "meta:Bhutan"{
-            ls{"Бутан време"}
+            ls{"Бутан вријеме"}
         }
         "meta:Bolivia"{
-            ls{"Боливија време"}
+            ls{"Боливија вријеме"}
         }
         "meta:Brasilia"{
-            ld{"Бразилија летње рачунање времена"}
-            lg{"Бразилија време"}
-            ls{"Бразилија стандардно време"}
+            ld{"Бразилија љетње рачунање времена"}
+            lg{"Бразилија вријеме"}
+            ls{"Бразилија стандардно вријеме"}
         }
         "meta:Brunei"{
-            ls{"Брунеј Дарусалум време"}
+            ls{"Брунеј Дарусалам вријеме"}
         }
         "meta:Cape_Verde"{
-            ld{"Зеленортско летње рачунање времена"}
-            lg{"Зелениртско време"}
-            ls{"Зелениртско стандардно време"}
+            ld{"Зеленортско љетње рачунање времена"}
+            lg{"Зеленортско вријеме"}
+            ls{"Зеленортско стандардно вријеме"}
         }
         "meta:Chamorro"{
-            ls{"Чаморо време"}
+            ls{"Чаморо вријеме"}
         }
         "meta:Chatham"{
-            ld{"Чатам летње рачунање времена"}
-            lg{"Чатам време"}
-            ls{"Чатам стандардно време"}
+            ld{"Чатам љетње рачунање времена"}
+            lg{"Чатам вријеме"}
+            ls{"Чатам стандардно вријеме"}
         }
         "meta:Chile"{
-            ld{"Чиле летње рачунање времена"}
-            lg{"Чиле време"}
-            ls{"Чиле стандардно време"}
+            ld{"Чиле љетње рачунање времена"}
+            lg{"Чиле вријеме"}
+            ls{"Чиле стандардно вријеме"}
         }
         "meta:China"{
-            ld{"Кина летње рачунање времена"}
-            lg{"Кина време"}
-            ls{"Кинеско стандардно време"}
-        }
-        "meta:Choibalsan"{
-            ld{"Чојбалсан летње рачунање времена"}
-            lg{"Чојбалсан време"}
-            ls{"Чојбалсан стандардно време"}
+            ld{"Кина љетње рачунање времена"}
+            lg{"Кина вријеме"}
+            ls{"Кина стандардно вријеме"}
         }
         "meta:Christmas"{
-            ls{"Божићна острва време"}
+            ls{"Божићна острва вријеме"}
         }
         "meta:Cocos"{
-            ls{"Кокос (Келинг) Острва време"}
+            ls{"Кокос (Келинг) Острва вријеме"}
         }
         "meta:Colombia"{
-            ld{"Колумбија летње рачунање времена"}
-            lg{"Колумбија време"}
-            ls{"Колумбија стандардно време"}
+            ld{"Колумбија љетње рачунање времена"}
+            lg{"Колумбија вријеме"}
+            ls{"Колумбија стандардно вријеме"}
         }
         "meta:Cook"{
-            ld{"Кукова острва полу-летње рачунање времена"}
-            lg{"Кукова острва време"}
-            ls{"Кукова острва стандардно време"}
+            ld{"Кукова острва полу-љетње рачунање времена"}
+            lg{"Кукова острва вријеме"}
+            ls{"Кукова острва стандардно вријеме"}
         }
         "meta:Cuba"{
-            ld{"Куба летње рачунање времена"}
-            lg{"Куба време"}
-            ls{"Куба стандардно време"}
+            ld{"Куба љетње рачунање времена"}
+            lg{"Куба вријеме"}
+            ls{"Куба стандардно вријеме"}
         }
         "meta:Davis"{
-            ls{"Дејвис време"}
+            ls{"Дејвис вријеме"}
         }
         "meta:DumontDUrville"{
-            ls{"Димон д’Урвил време"}
+            ls{"Димон д’Урвил вријеме"}
         }
         "meta:East_Timor"{
-            ls{"Источни тимор време"}
+            ls{"Тимор-Лесте вријеме"}
         }
         "meta:Easter"{
-            ld{"Ускршња острва летње рачунање времена"}
-            lg{"Ускршња острва време"}
-            ls{"Ускршња острва стандардно време"}
+            ld{"Ускршња острва љетње рачунање времена"}
+            lg{"Ускршња острва вријеме"}
+            ls{"Ускршња острва стандардно вријеме"}
         }
         "meta:Ecuador"{
-            ls{"Еквадор време"}
+            ls{"Еквадор вријеме"}
         }
         "meta:Europe_Central"{
-            ld{"Средњеевропско летње рачунање времена"}
-            lg{"Средњеевропско време"}
-            ls{"Средњеевропско стандардно време"}
+            ld{"Средњеевропско љетње рачунање времена"}
+            lg{"Средњеевропско вријеме"}
+            ls{"Средњеевропско стандардно вријеме"}
         }
         "meta:Europe_Eastern"{
-            ld{"Источноевропско летње рачунање времена"}
-            lg{"Источноевропско време"}
-            ls{"Источноевропско стандардно време"}
+            ld{"Источноевропско љетње рачунање времена"}
+            lg{"Источноевропско вријеме"}
+            ls{"Источноевропско стандардно вријеме"}
+        }
+        "meta:Europe_Further_Eastern"{
+            ls{"Даље источноевропско вријеме"}
         }
         "meta:Europe_Western"{
-            ld{"Западноевропско летње рачунање времена"}
-            lg{"Западноевропско време"}
-            ls{"Западноевропско стандардно време"}
+            ld{"Западноевропско љетње рачунање времена"}
+            lg{"Западноевропско вријеме"}
+            ls{"Западноевропско стандардно вријеме"}
         }
         "meta:Falkland"{
-            ld{"Фолкландска Острва летње рачунање времена"}
-            lg{"Фолкландска Острва време"}
-            ls{"Фолкландска Острва стандардно време"}
+            ld{"Фолкландска Острва љетње рачунање времена"}
+            lg{"Фолкландска Острва вријеме"}
+            ls{"Фолкландска Острва стандардно вријеме"}
         }
         "meta:Fiji"{
-            ld{"Фиџи летње рачунање времена"}
-            lg{"Фиџи време"}
-            ls{"Фиџи стандардно време"}
+            ld{"Фиџи љетње рачунање времена"}
+            lg{"Фиџи вријеме"}
+            ls{"Фиџи стандардно вријеме"}
         }
         "meta:French_Guiana"{
-            ls{"Француска Гвајана време"}
+            ls{"Француска Гвајана вријеме"}
         }
         "meta:French_Southern"{
-            ls{"Француско јужно и антарктичко време"}
+            ls{"Француско јужно и антарктичко вријеме"}
         }
         "meta:GMT"{
-            ls{"Гринвич средње време"}
+            ls{"Гриничко средње вријеме"}
         }
         "meta:Galapagos"{
-            ls{"Галапагос време"}
+            ls{"Галапагос вријеме"}
         }
         "meta:Gambier"{
-            ls{"Гамбијер време"}
+            ls{"Гамбијер вријеме"}
         }
         "meta:Georgia"{
-            ld{"Грузија летње рачунање времена"}
-            lg{"Грузија време"}
-            ls{"Грузија стандардно време"}
+            ld{"Грузија љетње рачунање времена"}
+            lg{"Грузија вријеме"}
+            ls{"Грузија стандардно вријеме"}
         }
         "meta:Gilbert_Islands"{
-            ls{"Гилберт острва време"}
+            ls{"Гилберт острва вријеме"}
         }
         "meta:Greenland_Eastern"{
-            ld{"Источни Гренланд летње рачунање времена"}
-            lg{"Источни Гренланд време"}
-            ls{"Источни Гренланд стандардно време"}
+            ld{"Источни Гренланд љетње рачунање времена"}
+            lg{"Источни Гренланд вријеме"}
+            ls{"Источни Гренланд стандардно вријеме"}
         }
         "meta:Greenland_Western"{
-            ld{"Западни Гренланд летње рачунање времена"}
-            lg{"Западни Гренланд време"}
-            ls{"Западни Гренланд стандардно време"}
+            ld{"Западни Гренланд љетње рачунање времена"}
+            lg{"Западни Гренланд вријеме"}
+            ls{"Западни Гренланд стандардно вријеме"}
         }
         "meta:Guam"{
             ls{"Гуам стандардно време"}
         }
         "meta:Gulf"{
-            ls{"Залив време"}
+            ls{"Заливско вријеме"}
         }
         "meta:Guyana"{
-            ls{"Гвајана време"}
+            ls{"Гвајана вријеме"}
+        }
+        "meta:Hawaii"{
+            ls{"Хавајско-алеутско стандардно вријеме"}
         }
         "meta:Hawaii_Aleutian"{
-            ld{"Хавајско-алеутско летње рачунање времена"}
-            lg{"Хавајско-алеутско време"}
-            ls{"Хавајско-алеутско стандардно време"}
+            ld{"Хавајско-алеутско љетње рачунање времена"}
+            lg{"Хавајско-алеутско вријеме"}
+            ls{"Хавајско-алеутско стандардно вријеме"}
         }
         "meta:Hong_Kong"{
-            ld{"Хонгконшко летње рачунање времена"}
-            lg{"Хонг Конг време"}
-            ls{"Хонг Конг стандардно време"}
+            ld{"Хонгконшко љетње рачунање времена"}
+            lg{"Хонг Конг вријеме"}
+            ls{"Хонг Конг стандардно вријеме"}
         }
         "meta:Hovd"{
-            ld{"Ховд летње рачунање времена"}
-            lg{"Ховд време"}
-            ls{"Ховд стандардно време"}
+            ld{"Ховд љетње рачунање времена"}
+            lg{"Ховд вријеме"}
+            ls{"Ховд стандардно вријеме"}
         }
         "meta:India"{
-            ls{"Индијско стандардно време"}
+            ls{"Индијско стандардно вријеме"}
         }
         "meta:Indian_Ocean"{
-            ls{"Индијско океанско време"}
+            ls{"Индијско океанско вријеме"}
         }
         "meta:Indochina"{
-            ls{"Индокина време"}
+            ls{"Индокина вријеме"}
         }
         "meta:Indonesia_Central"{
-            ls{"Централно-индонезијско време"}
+            ls{"Централно-индонезијско вријеме"}
         }
         "meta:Indonesia_Eastern"{
-            ls{"Источно-индонезијско време"}
+            ls{"Источно-индонезијско вријеме"}
         }
         "meta:Indonesia_Western"{
-            ls{"Западно-индонезијско време"}
+            ls{"Западно-индонезијско вријеме"}
         }
         "meta:Iran"{
-            ld{"Иран летње рачунање времена"}
-            lg{"Иран време"}
-            ls{"Иран стандардно време"}
+            ld{"Иран љетње рачунање времена"}
+            lg{"Иран вријеме"}
+            ls{"Иран стандардно вријеме"}
         }
         "meta:Irkutsk"{
-            ld{"Иркуцк летње рачунање времена"}
-            lg{"Иркуцк време"}
-            ls{"Иркуцк стандардно време"}
+            ld{"Иркуцк љетње рачунање времена"}
+            lg{"Иркуцк вријеме"}
+            ls{"Иркуцк стандардно вријеме"}
         }
         "meta:Israel"{
-            ld{"Израелско летње рачунање времена"}
-            lg{"Израелско време"}
-            ls{"Израелско стандардно време"}
+            ld{"Израелско љетње рачунање времена"}
+            lg{"Израелско вријеме"}
+            ls{"Израелско стандардно вријеме"}
         }
         "meta:Japan"{
-            ld{"Јапанско летње рачунање времена"}
-            lg{"Јапанско време"}
-            ls{"Јапанско стандардно време"}
+            ld{"Јапанско љетње рачунање времена"}
+            lg{"Јапанско вријеме"}
+            ls{"Јапанско стандардно вријеме"}
         }
         "meta:Kamchatka"{
             ld{"Петропавловско-камчатско летње рачунање вемена"}
             lg{"Петропавловско-камчатско време"}
             ls{"Петропавловско-камчатско стандардно време"}
         }
+        "meta:Kazakhstan"{
+            ls{"Kazakhstan Time"}
+        }
         "meta:Kazakhstan_Eastern"{
-            ls{"Источно-казахстанско време"}
+            ls{"Источно-казахстанско вријеме"}
         }
         "meta:Kazakhstan_Western"{
-            ls{"Западно-казахстанско време"}
+            ls{"Западно-казахстанско вријеме"}
         }
         "meta:Korea"{
-            ld{"Корејско летње рачунање времена"}
-            lg{"Кореја време"}
-            ls{"Корејско стандардно време"}
+            ld{"Корејско љетње рачунање времена"}
+            lg{"Корејско вријеме"}
+            ls{"Корејско стандардно вријеме"}
         }
         "meta:Kosrae"{
-            ls{"Кошре време"}
+            ls{"Кошре вријеме"}
         }
         "meta:Krasnoyarsk"{
-            ld{"Краснојарск летње рачунање времена"}
-            lg{"Краснојарск време"}
-            ls{"Краснојарск стандардно време"}
+            ld{"Краснојарск љетње рачунање времена"}
+            lg{"Краснојарско вријеме"}
+            ls{"Краснојарск стандардно вријеме"}
         }
         "meta:Kyrgystan"{
-            ls{"Киргизстан време"}
+            ls{"Киргистан вријеме"}
         }
         "meta:Lanka"{
             ls{"Шри Ланка време"}
         }
         "meta:Line_Islands"{
-            ls{"Лине Острва време"}
+            ls{"Лине Острва вријеме"}
         }
         "meta:Lord_Howe"{
-            ld{"Лорд Хов летње рачунање времена"}
-            lg{"Лорд Хов време"}
-            ls{"Лорд Хов стандардно време"}
+            ld{"Лорд Хов љетње рачунање времена"}
+            lg{"Лорд Хов вријеме"}
+            ls{"Лорд Хов стандардно вријеме"}
         }
         "meta:Macau"{
             ld{"Макао летње рачунање вемена"}
             lg{"Макао време"}
             ls{"Макао стандардно време"}
         }
-        "meta:Macquarie"{
-            ls{"Макверијско време"}
-        }
         "meta:Magadan"{
-            ld{"Магадан летње рачунање вемена"}
-            lg{"Магадан време"}
-            ls{"Магадан стандардно време"}
+            ld{"Магадан љетње рачунање вемена"}
+            lg{"Магадан вријеме"}
+            ls{"Магадан стандардно вријеме"}
         }
         "meta:Malaysia"{
-            ls{"Малезија време"}
+            ls{"Малезија вријеме"}
         }
         "meta:Maldives"{
-            ls{"Малдиви време"}
+            ls{"Малдиви вријеме"}
         }
         "meta:Marquesas"{
-            ls{"Маркиз време"}
+            ls{"Маркиз вријеме"}
         }
         "meta:Marshall_Islands"{
-            ls{"Маршалска Острва време"}
+            ls{"Маршалска Острва вријеме"}
         }
         "meta:Mauritius"{
-            ld{"Маурицијус летње рачунање времена"}
-            lg{"Маурицијус време"}
-            ls{"Маурицијус стандардно време"}
+            ld{"Маурицијус љетње рачунање времена"}
+            lg{"Маурицијус вријеме"}
+            ls{"Маурицијус стандардно вријеме"}
         }
         "meta:Mawson"{
-            ls{"Мосон време"}
+            ls{"Мосон вријеме"}
+        }
+        "meta:Mexico_Pacific"{
+            ld{"Мексичко пацифичко љетње рачунање времена"}
+            lg{"Мексичко пацифичко вријеме"}
+            ls{"Мексичко пацифичко стандардно вријеме"}
         }
         "meta:Mongolia"{
-            ld{"Улан Батор летње рачунање времена"}
-            lg{"Улан Батор време"}
-            ls{"Улан Батор стандардно време"}
+            ld{"Улан Батор љетње рачунање времена"}
+            lg{"Улан Батор вријеме"}
+            ls{"Улан Батор стандардно вријеме"}
         }
         "meta:Moscow"{
-            ld{"Москва летње рачунање времена"}
-            lg{"Москва време"}
-            ls{"Москва стандардно време"}
+            ld{"Москва љетње рачунање времена"}
+            lg{"Москва вријеме"}
+            ls{"Москва стандардно вријеме"}
         }
         "meta:Myanmar"{
-            ls{"Мијанмар време"}
+            ls{"Мијанмар вријеме"}
         }
         "meta:Nauru"{
-            ls{"Науру време"}
+            ls{"Науру вријеме"}
         }
         "meta:Nepal"{
-            ls{"Непал време"}
+            ls{"Непал вријеме"}
         }
         "meta:New_Caledonia"{
-            ld{"Нова Каледонија летње рачунање времена"}
-            lg{"Нова Каледонија време"}
-            ls{"Нова Каледонија стандардно време"}
+            ld{"Нова Каледонија љетње рачунање времена"}
+            lg{"Нова Каледонија вријеме"}
+            ls{"Нова Каледонија стандардно вријеме"}
         }
         "meta:New_Zealand"{
-            ld{"Нови Зеланд летње рачунање времена"}
-            lg{"Нови Зеланд време"}
-            ls{"Нови Зеланд стандардно време"}
+            ld{"Нови Зеланд љетње рачунање времена"}
+            lg{"Нови Зеланд вријеме"}
+            ls{"Нови Зеланд стандардно вријеме"}
         }
         "meta:Newfoundland"{
-            ld{"Њуфаундленд летње рачунање времена"}
-            lg{"Њуфаундленд време"}
-            ls{"Њуфаундленд стандардно време"}
+            ld{"Њуфаундленд љетње рачунање времена"}
+            lg{"Њуфаундленд вријеме"}
+            ls{"Њуфаундленд стандардно вријеме"}
         }
         "meta:Niue"{
-            ls{"Ниуе време"}
+            ls{"Ниуе вријеме"}
         }
         "meta:Norfolk"{
-            ls{"Норфолк Острво време"}
+            ld{"Норфолк Острво љетње рачунање вријеме"}
+            lg{"Норфолк Острво вријеме"}
+            ls{"Норфолк Острво стандардно вријеме"}
         }
         "meta:Noronha"{
-            ld{"Фернандо де Нороња летње рачунање времена"}
-            lg{"Фернандо де Нороња време"}
-            ls{"Фернандо де Нороња стандардно време"}
+            ld{"Фернандо де Нороња љетње рачунање времена"}
+            lg{"Фернандо де Нороња вријеме"}
+            ls{"Фернандо де Нороња стандардно вријеме"}
         }
         "meta:North_Mariana"{
             ls{"Северна Маријанска Острва време"}
         }
         "meta:Novosibirsk"{
-            ld{"Новосибирск летње рачунање времена"}
-            lg{"Новосибирск време"}
-            ls{"Новосибирск стандардно време"}
+            ld{"Новосибирск љетње рачунање времена"}
+            lg{"Новосибирско вријеме"}
+            ls{"Новосибирск стандардно вријеме"}
         }
         "meta:Omsk"{
-            ld{"Омск летње рачунање времена"}
-            lg{"Омск време"}
-            ls{"Омск стандардно време"}
+            ld{"Омск љетње рачунање времена"}
+            lg{"Омск вријеме"}
+            ls{"Омск стандардно вријеме"}
         }
         "meta:Pakistan"{
-            ld{"Пакистан летње рачунање времена"}
-            lg{"Пакистан време"}
-            ls{"Пакистан стандардно време"}
+            ld{"Пакистан љетње рачунање времена"}
+            lg{"Пакистан вријеме"}
+            ls{"Пакистан стандардно вријеме"}
+        }
+        "meta:Palau"{
+            ls{"Палау вријеме"}
         }
         "meta:Papua_New_Guinea"{
-            ls{"Папуа Нова Гвинеја време"}
+            ls{"Папуа Нова Гвинеја вријеме"}
         }
         "meta:Paraguay"{
-            ld{"Парагвај летње рачунање времена"}
-            lg{"Парагвај време"}
-            ls{"Парагвај стандардно време"}
+            ld{"Парагвај љетње рачунање времена"}
+            lg{"Парагвај вријеме"}
+            ls{"Парагвај стандардно вријеме"}
         }
         "meta:Peru"{
-            ld{"Перу летње рачунање времена"}
-            lg{"Перу време"}
-            ls{"Перу стандардно време"}
+            ld{"Перу љетње рачунање времена"}
+            lg{"Перу вријеме"}
+            ls{"Перу стандардно вријеме"}
         }
         "meta:Philippines"{
-            ld{"Филипини летње рачунање времена"}
-            lg{"Филипини време"}
-            ls{"Филипини стандардно време"}
+            ld{"Филипини љетње рачунање времена"}
+            lg{"Филипини вријеме"}
+            ls{"Филипини стандардно вријеме"}
         }
         "meta:Phoenix_Islands"{
-            ls{"Феникс острва време"}
+            ls{"Феникс острва вријеме"}
         }
         "meta:Pierre_Miquelon"{
-            ld{"Сен Пјер и Микелон летње рачунање вемена"}
-            lg{"Сен Пјер и Микелон време"}
-            ls{"Сен Пјер и Микелон стандардно време"}
+            ld{"Сен Пјер и Микелон љетње рачунање вемена"}
+            lg{"Сен Пјер и Микелон вријеме"}
+            ls{"Сен Пјер и Микелон стандардно вријеме"}
         }
         "meta:Pitcairn"{
-            ls{"Питкерн време"}
+            ls{"Питкерн вријеме"}
         }
         "meta:Ponape"{
-            ls{"Понапе време"}
+            ls{"Понапе вријеме"}
+        }
+        "meta:Pyongyang"{
+            ls{"Пјонгјанг вријеме"}
         }
         "meta:Qyzylorda"{
             ld{"Кизилорда летње рачунање времена"}
@@ -505,15 +1778,15 @@ bs_Cyrl{
             ls{"Кизилорда стандардно време"}
         }
         "meta:Reunion"{
-            ls{"Реинион време"}
+            ls{"Реинион вријеме"}
         }
         "meta:Rothera"{
-            ls{"Ротера време"}
+            ls{"Ротера вријеме"}
         }
         "meta:Sakhalin"{
-            ld{"Сахалин летње рачунање времена"}
-            lg{"Сахалин време"}
-            ls{"Сахалин стандардно време"}
+            ld{"Сахалин љетње рачунање времена"}
+            lg{"Сахалин вријеме"}
+            ls{"Сахалин стандардно вријеме"}
         }
         "meta:Samara"{
             ld{"Самара летње рачунање времена"}
@@ -521,108 +1794,113 @@ bs_Cyrl{
             ls{"Самара стандардно време"}
         }
         "meta:Samoa"{
-            ld{"Самоа летње рачунање времена"}
-            lg{"Самоа време"}
-            ls{"Самоа стандардно време"}
+            ld{"Самоа љетње рачунање времена"}
+            lg{"Самоа вријеме"}
+            ls{"Самоа стандардно вријеме"}
         }
         "meta:Seychelles"{
-            ls{"Сејшели време"}
+            ls{"Сејшели вријеме"}
         }
         "meta:Singapore"{
-            ls{"Сингапур стандардно време"}
+            ls{"Сингапур стандардно вријеме"}
         }
         "meta:Solomon"{
-            ls{"Соломонска Острва време"}
+            ls{"Соломонска Острва вријеме"}
         }
         "meta:South_Georgia"{
-            ls{"Јужна Џорџија време"}
+            ls{"Јужна Џорџија вријеме"}
         }
         "meta:Suriname"{
-            ls{"Суринам време"}
+            ls{"Суринам вријеме"}
         }
         "meta:Syowa"{
-            ls{"Шова време"}
+            ls{"Шова вријеме"}
         }
         "meta:Tahiti"{
-            ls{"Тахити време"}
+            ls{"Тахити вријеме"}
         }
         "meta:Taipei"{
-            ld{"Таипеи летње рачунање времена"}
-            lg{"Таипеи време"}
-            ls{"Таипеи стандардно веме"}
+            ld{"Тајпеј љетње рачунање времена"}
+            lg{"Тајпеј вријеме"}
+            ls{"Тајпеј стандардно вријеме"}
         }
         "meta:Tajikistan"{
-            ls{"Таџикистан време"}
+            ls{"Таџикистан вријеме"}
         }
         "meta:Tokelau"{
-            ls{"Токелау време"}
+            ls{"Токелау вријеме"}
         }
         "meta:Tonga"{
-            ld{"Тонга летње рачунање времена"}
-            lg{"Тонга време"}
-            ls{"Тонга стандардно време"}
+            ld{"Тонга љетње рачунање времена"}
+            lg{"Тонга вријеме"}
+            ls{"Тонга стандардно вријеме"}
         }
         "meta:Truk"{
-            ls{"Трук време"}
+            ls{"Трук вријеме"}
+        }
+        "meta:Turkey"{
+            ld{"Турска летње рачунање времена"}
+            lg{"Турска време"}
+            ls{"Турска стандардно време"}
         }
         "meta:Turkmenistan"{
-            ld{"Туркменистан летње рачунање времена"}
-            lg{"Туркменистан време"}
-            ls{"Туркменистан стандардно време"}
+            ld{"Туркменистан љетње рачунање времена"}
+            lg{"Туркменистан вријеме"}
+            ls{"Туркменистан стандардно вријеме"}
         }
         "meta:Tuvalu"{
-            ls{"Тувалу време"}
+            ls{"Тувалу вријеме"}
         }
         "meta:Uruguay"{
-            ld{"Уругвај летње рачунање времена"}
-            lg{"Уругвај време"}
-            ls{"Уругвај стандардно време"}
+            ld{"Уругвај љетње рачунање времена"}
+            lg{"Уругвај вријеме"}
+            ls{"Уругвај стандардно вријеме"}
         }
         "meta:Uzbekistan"{
-            ld{"Узбекистан летње рачунање времена"}
-            lg{"Узбекистан време"}
-            ls{"Узбекистан стандардно време"}
+            ld{"Узбекистан љетње рачунање времена"}
+            lg{"Узбекистан вријеме"}
+            ls{"Узбекистан стандардно вријеме"}
         }
         "meta:Vanuatu"{
-            ld{"Вануату летње рачунање времена"}
-            lg{"Вануату време"}
-            ls{"Вануату стандардно време"}
+            ld{"Вануату љетње рачунање времена"}
+            lg{"Вануату вријеме"}
+            ls{"Вануату стандардно вријеме"}
         }
         "meta:Venezuela"{
-            ls{"Венецуела време"}
+            ls{"Венецуела вријеме"}
         }
         "meta:Vladivostok"{
-            ld{"Владивосток летње рачунање времена"}
-            lg{"Владивосток време"}
-            ls{"Владивосток стандардно време"}
+            ld{"Владивосток љетње рачунање времена"}
+            lg{"Владивосток вријеме"}
+            ls{"Владивосток стандардно вријеме"}
         }
         "meta:Volgograd"{
-            ld{"Волгоград летње рачунање времена"}
-            lg{"Волгоград време"}
-            ls{"Волгоград стандардно време"}
+            ld{"Волгоград љетње рачунање времена"}
+            lg{"Волгоград вријеме"}
+            ls{"Волгоград стандардно вријеме"}
         }
         "meta:Vostok"{
-            ls{"Восток време"}
+            ls{"Восток вријеме"}
         }
         "meta:Wake"{
-            ls{"Вејк острво време"}
+            ls{"Вејк острво вријеме"}
         }
         "meta:Wallis"{
-            ls{"Валис и Футуна Острва време"}
+            ls{"Валис и Футуна Острва вријеме"}
         }
         "meta:Yakutsk"{
-            ld{"Јакутск летње рачунање времена"}
-            lg{"Јакутск време"}
-            ls{"Јакутск стандардно време"}
+            ld{"Јакутск љетње рачунање времена"}
+            lg{"Јакутск вријеме"}
+            ls{"Јакутск стандардно вријеме"}
         }
         "meta:Yekaterinburg"{
-            ld{"Јекатеринбург летње рачунање времена"}
-            lg{"Јекатеринбург време"}
-            ls{"Јекатеринбург стандардно време"}
+            ld{"Јекатеринбург љетње рачунање времена"}
+            lg{"Јекатеринбург вријеме"}
+            ls{"Јекатеринбург стандардно вријеме"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        hourFormat{"+HHmm;-HHmm"}
-        regionFormat{"Време у земљи: {0}"}
+        "meta:Yukon"{
+            ls{"Yukon Time"}
+        }
+        regionFormat{"Време: {0}"}
     }
 }

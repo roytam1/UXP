@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 sah{
     Currencies{
         RUB{
@@ -11,19 +12,7 @@ sah{
             "АХШ дуоллара",
         }
     }
-    Currencies%narrow{
-        RUB{"₽"}
-    }
-    CurrencyPlurals{
-        RUB{
-            other{"Арассыыйа солкуобайа"}
-        }
-        USD{
-            other{"АХШ дуоллара"}
-        }
-    }
     CurrencyUnitPatterns{
         other{"{0} {1}"}
     }
-    Version{"2.1.43.94"}
 }

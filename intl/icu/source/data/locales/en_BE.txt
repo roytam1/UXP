@@ -1,19 +1,16 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 en_BE{
-    %%Parent{"en_001"}
+    %%Parent{"en_150"}
     NumberElements{
         latn{
-            patterns{
-                currencyFormat{"#,##0.00 ¤"}
-            }
             symbols{
                 decimal{","}
                 group{"."}
             }
         }
     }
-    Version{"2.1.44.18"}
     calendar{
         generic{
             DateTimePatterns{
@@ -26,10 +23,20 @@ en_BE{
                 "dd MMM y G",
                 "dd/MM/y GGGGG",
                 "{1}, {0}",
-                "{1} 'at' {0}",
-                "{1} 'at' {0}",
                 "{1}, {0}",
                 "{1}, {0}",
+                "{1}, {0}",
+                "{1}, {0}",
+            }
+            DateTimeSkeletons{
+                "HHmmsszzzz",
+                "HHmmssz",
+                "HHmmss",
+                "HHmm",
+                "GyMMMMEEEEd",
+                "GyMMMMd",
+                "GyMMMdd",
+                "GGGGGyMMdd",
             }
             availableFormats{
                 Md{"d/M"}
@@ -48,10 +55,20 @@ en_BE{
                 "dd MMM y",
                 "dd/MM/yy",
                 "{1}, {0}",
-                "{1} 'at' {0}",
-                "{1} 'at' {0}",
                 "{1}, {0}",
                 "{1}, {0}",
+                "{1}, {0}",
+                "{1}, {0}",
+            }
+            DateTimeSkeletons{
+                "HHmmsszzzz",
+                "HHmmssz",
+                "HHmmss",
+                "HHmm",
+                "yMMMMEEEEd",
+                "yMMMMd",
+                "yMMMdd",
+                "yyMMdd",
             }
             availableFormats{
                 MEd{"E, d/M"}

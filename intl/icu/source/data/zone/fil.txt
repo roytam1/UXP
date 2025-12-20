@@ -1,16 +1,58 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 fil{
-    Version{"2.1.44.91"}
     zoneStrings{
+        "America:Bahia_Banderas"{
+            ec{"Bahia Banderas"}
+        }
+        "America:Cancun"{
+            ec{"Cancun"}
+        }
+        "America:Ciudad_Juarez"{
+            ec{"Lungsod ng Juárez"}
+        }
+        "America:Merida"{
+            ec{"Merida"}
+        }
+        "America:Mexico_City"{
+            ec{"Lungsod ng Mexico"}
+        }
+        "America:Port_of_Spain"{
+            ec{"Puwerto ng Espanya"}
+        }
+        "America:Rankin_Inlet"{
+            ec{"Makipot na Look ng Rankin"}
+        }
+        "Asia:Macau"{
+            ec{"Macau"}
+        }
+        "Asia:Qostanay"{
+            ec{"Kostanay"}
+        }
+        "Asia:Saigon"{
+            ec{"Lungsod ng Ho Chi Minh"}
+        }
         "Etc:UTC"{
             ls{"Coordinated Universal Time"}
+        }
+        "Etc:Unknown"{
+            ec{"Di-kilalang Lungsod"}
         }
         "Europe:Dublin"{
             ld{"Standard na Oras sa Ireland"}
         }
+        "Europe:Kiev"{
+            ec{"Kiev"}
+        }
         "Europe:London"{
             ld{"Oras sa Tag-init ng Britain"}
+        }
+        "Pacific:Enderbury"{
+            ec{"Canton Island"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
         }
         "meta:Afghanistan"{
             ls{"Oras sa Afghanistan"}
@@ -25,9 +67,7 @@ fil{
             ls{"Oras sa Timog Africa"}
         }
         "meta:Africa_Western"{
-            ld{"Oras sa Tag-init ng Kanlurang Africa"}
-            lg{"Oras sa Kanlurang Africa"}
-            ls{"Standard na Oras sa Kanlurang Africa"}
+            ls{"Oras sa Kanlurang Africa"}
         }
         "meta:Alaska"{
             ld{"Daylight Time sa Alaska"}
@@ -40,24 +80,24 @@ fil{
             ls{"Standard na Oras sa Amazon"}
         }
         "meta:America_Central"{
-            ld{"Sentral na Daylight Time"}
-            lg{"Sentral na Oras"}
-            ls{"Sentral na Karaniwang Oras"}
+            ld{"Sentral na Daylight na Oras sa North America"}
+            lg{"Sentral na Oras sa North America"}
+            ls{"Sentral na Standard na Oras sa North America"}
         }
         "meta:America_Eastern"{
-            ld{"Eastern Daylight Time"}
-            lg{"Eastern Time"}
-            ls{"Eastern na Standard na Oras"}
+            ld{"Daylight na Oras sa Silangan ng Hilagang Amerika"}
+            lg{"Oras sa Silangan ng Hilagang Amerika"}
+            ls{"Standard na Oras sa Silangan ng Hilangang Amerika"}
         }
         "meta:America_Mountain"{
-            ld{"Daylight Time sa Bundok"}
-            lg{"Oras sa Bundok"}
-            ls{"Standard na Oras sa Bundok"}
+            ld{"Daylight na Oras sa Bundok sa Hilagang Amerika"}
+            lg{"Oras sa Bundok sa Hilagang Amerika"}
+            ls{"Standard na Oras sa Bundok sa Hilagang Amerika"}
         }
         "meta:America_Pacific"{
-            ld{"Daylight Time sa Pasipiko"}
-            lg{"Oras sa Pasipiko"}
-            ls{"Standard na Oras sa Pasipiko"}
+            ld{"Daylight na Oras sa Pasipiko sa Hilagang Amerika"}
+            lg{"Oras sa Pasipiko sa HIlagang Amerika"}
+            ls{"Standard na Oras sa Pasipiko sa Hilagang Amerika"}
         }
         "meta:Anadyr"{
             ld{"Summer Time sa Anadyr"}
@@ -90,7 +130,7 @@ fil{
             ls{"Standard na Oras sa Armenia"}
         }
         "meta:Atlantic"{
-            ld{"Daylight Time sa Atlantiko"}
+            ld{"Daylight na Oras sa Atlantiko"}
             lg{"Oras sa Atlantiko"}
             ls{"Standard na Oras sa Atlantiko"}
         }
@@ -100,19 +140,19 @@ fil{
             ls{"Standard na Oras sa Gitnang Australya"}
         }
         "meta:Australia_CentralWestern"{
-            ld{"Daylight Time sa Gitnang Kanlurang Australya"}
-            lg{"Oras ng Gitnang Kanluran ng Australya"}
-            ls{"Standard Time ng Gitnang Kanluran ng Australya"}
+            ld{"Daylight Time sa Gitnang Kanlurang Australia"}
+            lg{"Oras ng Gitnang Kanluran ng Australia"}
+            ls{"Standard Time ng Gitnang Kanluran ng Australia"}
         }
         "meta:Australia_Eastern"{
-            ld{"Daylight Time sa Silangang Australya"}
-            lg{"Oras sa Silangang Australya"}
-            ls{"Standard na Oras sa Silangang Australya"}
+            ld{"Daylight Time sa Silangang Australia"}
+            lg{"Oras sa Silangang Australia"}
+            ls{"Standard na Oras sa Silangang Australia"}
         }
         "meta:Australia_Western"{
-            ld{"Daylight Time sa Kanlurang Australya"}
-            lg{"Oras sa Kanlurang Australya"}
-            ls{"Standard na Oras sa Kanlurang Australya"}
+            ld{"Daylight Time sa Kanlurang Australia"}
+            lg{"Oras sa Kanlurang Australia"}
+            ls{"Standard na Oras sa Kanlurang Australia"}
         }
         "meta:Azerbaijan"{
             ld{"Oras sa Tag-init ng Azerbaijan"}
@@ -166,11 +206,6 @@ fil{
             lg{"Oras sa China"}
             ls{"Standard na Oras sa China"}
         }
-        "meta:Choibalsan"{
-            ld{"Oras sa Tag-init ng Choibalsan"}
-            lg{"Oras sa Choibalsan"}
-            ls{"Standard na Oras sa Choibalsan"}
-        }
         "meta:Christmas"{
             ls{"Oras sa Christmas Island"}
         }
@@ -188,7 +223,7 @@ fil{
             ls{"Standard na Oras sa Cook Islands"}
         }
         "meta:Cuba"{
-            ld{"Daylight Time sa Cuba"}
+            ld{"Daylight na Oras sa Cuba"}
             lg{"Oras sa Cuba"}
             ls{"Standard na Oras sa Cuba"}
         }
@@ -276,6 +311,9 @@ fil{
         "meta:Guyana"{
             ls{"Oras sa Guyana"}
         }
+        "meta:Hawaii"{
+            ls{"Standard na Oras sa Hawaii-Aleutian"}
+        }
         "meta:Hawaii_Aleutian"{
             ld{"Oras sa Tag-init ng Hawaii-Aleutian"}
             lg{"Oras sa Hawaii-Aleutian"}
@@ -292,7 +330,7 @@ fil{
             ls{"Standard na Oras sa Hovd"}
         }
         "meta:India"{
-            ls{"Standard na Oras sa Bhutan"}
+            ls{"Standard na Oras sa India"}
         }
         "meta:Indian_Ocean"{
             ls{"Oras sa Indian Ocean"}
@@ -334,6 +372,9 @@ fil{
             lg{"Oras sa Petropavlovsk-Kamchatski"}
             ls{"Standard Time sa Petropavlovsk-Kamchatski"}
         }
+        "meta:Kazakhstan"{
+            ls{"Oras ng Kazakhstan"}
+        }
         "meta:Kazakhstan_Eastern"{
             ls{"Oras sa Silangang Kazakhstan"}
         }
@@ -364,9 +405,6 @@ fil{
             lg{"Oras sa Lord Howe"}
             ls{"Standard na Oras sa Lord Howe"}
         }
-        "meta:Macquarie"{
-            ls{"Oras sa Macquarie Island"}
-        }
         "meta:Magadan"{
             ld{"Oras sa Tag-init ng Magadan"}
             lg{"Oras sa Magadan"}
@@ -392,13 +430,8 @@ fil{
         "meta:Mawson"{
             ls{"Oras sa Mawson"}
         }
-        "meta:Mexico_Northwest"{
-            ld{"Daylight Time sa Hilagang-kanlurang Mexico"}
-            lg{"Oras sa Hilagang-kanlurang Mexico"}
-            ls{"Standard na Oras sa Hilagang-kanlurang Mexico"}
-        }
         "meta:Mexico_Pacific"{
-            ld{"Daylight Time sa Pasipiko ng Mexico"}
+            ld{"Daylight na Oras sa Pasipiko ng Mexico"}
             lg{"Oras sa Pasipiko ng Mexico"}
             ls{"Standard na Oras sa Pasipiko ng Mexico"}
         }
@@ -432,7 +465,7 @@ fil{
             ls{"Standard na Oras sa New Zealand"}
         }
         "meta:Newfoundland"{
-            ld{"Daylight Time sa Newfoundland"}
+            ld{"Daylight na Oras sa Newfoundland"}
             lg{"Oras sa Newfoundland"}
             ls{"Standard na Oras sa Newfoundland"}
         }
@@ -440,7 +473,9 @@ fil{
             ls{"Oras sa Niue"}
         }
         "meta:Norfolk"{
-            ls{"Oras sa Norfolk Island"}
+            ld{"Daylight Time sa Norfolk Island"}
+            lg{"Oras sa Norfolk Island"}
+            ls{"Standard na Oras sa Norfolk Island"}
         }
         "meta:Noronha"{
             ld{"Oras sa Tag-init ng Fernando de Noronha"}
@@ -487,7 +522,7 @@ fil{
             ls{"Oras sa Phoenix Islands"}
         }
         "meta:Pierre_Miquelon"{
-            ld{"Daylight Time sa Saint Pierre & Miquelon"}
+            ld{"Daylight na Oras sa Saint Pierre & Miquelon"}
             lg{"Oras sa Saint Pierre & Miquelon"}
             ls{"Standard na Oras sa Saint Pierre & Miquelon"}
         }
@@ -616,10 +651,9 @@ fil{
             lg{"Oras sa Yekaterinburg"}
             ls{"Standard na Oras sa Yekaterinburg"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
+        "meta:Yukon"{
+            ls{"Oras sa Yukon"}
+        }
         regionFormat{"Oras sa {0}"}
         regionFormatDaylight{"Daylight Time ng {0}"}
         regionFormatStandard{"Standard na Oras sa {0}"}

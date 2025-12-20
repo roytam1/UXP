@@ -16,11 +16,23 @@
 #include "number_decimfmtprops.h"
 #include "number_affixutils.h"
 
-U_NAMESPACE_BEGIN namespace number {
-namespace impl {
+U_NAMESPACE_BEGIN
+namespace number::impl {
 
 // Forward declaration
 class PatternParser;
+
+// Note: the order of fields in this enum matters for parsing.
+enum PatternSignType {
+    /** Render using normal positive subpattern rules */
+    PATTERN_SIGN_TYPE_POS,
+    /** Render using rules to force the display of a plus sign */
+    PATTERN_SIGN_TYPE_POS_SIGN,
+    /** Render using negative subpattern rules */
+    PATTERN_SIGN_TYPE_NEG,
+    /** Count for looping over the possibilities */
+    PATTERN_SIGN_TYPE_COUNT
+};
 
 // Exported as U_I18N_API because it is a public member field of exported ParsedSubpatternInfo
 struct U_I18N_API Endpoints {
@@ -50,6 +62,7 @@ struct U_I18N_API ParsedSubpatternInfo {
     bool hasPercentSign = false;
     bool hasPerMilleSign = false;
     bool hasCurrencySign = false;
+    bool hasCurrencyDecimal = false;
     bool hasMinusSign = false;
     bool hasPlusSign = false;
 
@@ -67,30 +80,32 @@ struct U_I18N_API ParsedPatternInfo : public AffixPatternProvider, public UMemor
     ParsedPatternInfo()
             : state(this->pattern), currentSubpattern(nullptr) {}
 
-    ~ParsedPatternInfo() U_OVERRIDE = default;
+    ~ParsedPatternInfo() override = default;
 
     // Need to declare this explicitly because of the destructor
-    ParsedPatternInfo& operator=(ParsedPatternInfo&& src) U_NOEXCEPT = default;
+    ParsedPatternInfo& operator=(ParsedPatternInfo&& src) noexcept = default;
 
     static int32_t getLengthFromEndpoints(const Endpoints& endpoints);
 
-    char16_t charAt(int32_t flags, int32_t index) const U_OVERRIDE;
+    char16_t charAt(int32_t flags, int32_t index) const override;
 
-    int32_t length(int32_t flags) const U_OVERRIDE;
+    int32_t length(int32_t flags) const override;
 
-    UnicodeString getString(int32_t flags) const U_OVERRIDE;
+    UnicodeString getString(int32_t flags) const override;
 
-    bool positiveHasPlusSign() const U_OVERRIDE;
+    bool positiveHasPlusSign() const override;
 
-    bool hasNegativeSubpattern() const U_OVERRIDE;
+    bool hasNegativeSubpattern() const override;
 
-    bool negativeHasMinusSign() const U_OVERRIDE;
+    bool negativeHasMinusSign() const override;
 
-    bool hasCurrencySign() const U_OVERRIDE;
+    bool hasCurrencySign() const override;
 
-    bool containsSymbolType(AffixPatternType type, UErrorCode& status) const U_OVERRIDE;
+    bool containsSymbolType(AffixPatternType type, UErrorCode& status) const override;
 
-    bool hasBody() const U_OVERRIDE;
+    bool hasBody() const override;
+
+    bool currencyAsDecimal() const override;
 
   private:
     struct U_I18N_API ParserState {
@@ -98,17 +113,22 @@ struct U_I18N_API ParsedPatternInfo : public AffixPatternProvider, public UMemor
         int32_t offset = 0;
 
         explicit ParserState(const UnicodeString& _pattern)
-                : pattern(_pattern) {};
+                : pattern(_pattern) {}
 
-        ParserState& operator=(ParserState&& src) U_NOEXCEPT {
+        ParserState& operator=(ParserState&& src) noexcept {
             // Leave pattern reference alone; it will continue to point to the same place in memory,
             // which gets overwritten by ParsedPatternInfo's implicit move assignment.
             offset = src.offset;
             return *this;
         }
 
+        /** Returns the next code point, or -1 if string is too short. */
         UChar32 peek();
 
+        /** Returns the code point after the next code point, or -1 if string is too short. */
+        UChar32 peek2();
+
+        /** Returns the next code point and then steps forward. */
         UChar32 next();
 
         // TODO: We don't currently do anything with the message string.
@@ -223,6 +243,28 @@ class U_I18N_API PatternParser {
 class U_I18N_API PatternStringUtils {
   public:
     /**
+     * Determine whether a given roundingIncrement should be ignored for formatting
+     * based on the current maxFrac value (maximum fraction digits). For example a
+     * roundingIncrement of 0.01 should be ignored if maxFrac is 1, but not if maxFrac
+     * is 2 or more. Note that roundingIncrements are rounded up in significance, so
+     * a roundingIncrement of 0.006 is treated like 0.01 for this determination, i.e.
+     * it should not be ignored if maxFrac is 2 or more (but a roundingIncrement of
+     * 0.005 is treated like 0.001 for significance).
+     *
+     * This test is needed for both NumberPropertyMapper::oldToNew and 
+     * PatternStringUtils::propertiesToPatternString. In Java it cannot be
+     * exported by NumberPropertyMapper (package private) so it is in
+     * PatternStringUtils, do the same in C.
+     *
+     * @param roundIncr
+     *            The roundingIncrement to be checked. Must be non-zero.
+     * @param maxFrac
+     *            The current maximum fraction digits value.
+     * @return true if roundIncr should be ignored for formatting.
+     */
+     static bool ignoreRoundingIncrement(double roundIncr, int32_t maxFrac);
+
+    /**
      * Creates a pattern string from a property bag.
      *
      * <p>
@@ -273,9 +315,14 @@ class U_I18N_API PatternStringUtils {
      * substitution, and plural forms for CurrencyPluralInfo.
      */
     static void patternInfoToStringBuilder(const AffixPatternProvider& patternInfo, bool isPrefix,
-                                           int8_t signum, UNumberSignDisplay signDisplay,
-                                           StandardPlural::Form plural, bool perMilleReplacesPercent,
+                                           PatternSignType patternSignType,
+                                           bool approximately,
+                                           StandardPlural::Form plural,
+                                           bool perMilleReplacesPercent,
+                                           bool dropCurrencySymbols,
                                            UnicodeString& output);
+
+    static PatternSignType resolveSignDisplay(UNumberSignDisplay signDisplay, Signum signum);
 
   private:
     /** @return The number of chars inserted. */
@@ -283,8 +330,7 @@ class U_I18N_API PatternStringUtils {
                                    UErrorCode& status);
 };
 
-} // namespace impl
-} // namespace number
+} // namespace number::impl
 U_NAMESPACE_END
 
 

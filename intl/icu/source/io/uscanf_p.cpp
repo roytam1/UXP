@@ -83,16 +83,16 @@
 typedef struct u_scanf_spec_info {
     int32_t fWidth;         /* Width  */
 
-    UChar   fSpec;          /* Format specification  */
+    char16_t   fSpec;          /* Format specification  */
 
-    UChar   fPadChar;       /* Padding character  */
+    char16_t   fPadChar;       /* Padding character  */
 
-    UBool   fSkipArg;       /* TRUE if arg should be skipped */
+    UBool   fSkipArg;       /* true if arg should be skipped */
     UBool   fIsLongDouble;  /* L flag  */
     UBool   fIsShort;       /* h flag  */
     UBool   fIsLong;        /* l flag  */
     UBool   fIsLongLong;    /* ll flag  */
-    UBool   fIsString;      /* TRUE if this is a NULL-terminated string. */
+    UBool   fIsString;      /* true if this is a NUL-terminated string. */
 } u_scanf_spec_info;
 
 
@@ -112,11 +112,11 @@ typedef struct u_scanf_spec {
  * @return The number of characters contained in this specifier.
  */
 static int32_t
-u_scanf_parse_spec (const UChar     *fmt,
+u_scanf_parse_spec (const char16_t  *fmt,
             u_scanf_spec    *spec)
 {
-    const UChar *s = fmt;
-    const UChar *backup;
+    const char16_t *s = fmt;
+    const char16_t *backup;
     u_scanf_spec_info *info = &(spec->fInfo);
 
     /* initialize spec to default values */
@@ -125,12 +125,12 @@ u_scanf_parse_spec (const UChar     *fmt,
     info->fWidth        = -1;
     info->fSpec         = 0x0000;
     info->fPadChar      = 0x0020;
-    info->fSkipArg      = FALSE;
-    info->fIsLongDouble = FALSE;
-    info->fIsShort      = FALSE;
-    info->fIsLong       = FALSE;
-    info->fIsLongLong   = FALSE;
-    info->fIsString     = TRUE;
+    info->fSkipArg      = false;
+    info->fIsLongDouble = false;
+    info->fIsShort      = false;
+    info->fIsLong       = false;
+    info->fIsLongLong   = false;
+    info->fIsString     = true;
 
 
     /* skip over the initial '%' */
@@ -144,11 +144,11 @@ u_scanf_parse_spec (const UChar     *fmt,
 
         /* handle positional parameters */
         if(ISDIGIT(*s)) {
-            spec->fArgPos = (int) (*s++ - DIGIT_ZERO);
+            spec->fArgPos = *s++ - DIGIT_ZERO;
 
             while(ISDIGIT(*s)) {
                 spec->fArgPos *= 10;
-                spec->fArgPos += (int) (*s++ - DIGIT_ZERO);
+                spec->fArgPos += *s++ - DIGIT_ZERO;
             }
         }
 
@@ -168,17 +168,17 @@ u_scanf_parse_spec (const UChar     *fmt,
 
             /* skip argument */
         case FLAG_ASTERISK:
-            info->fSkipArg = TRUE;
+            info->fSkipArg = true;
             break;
 
             /* pad character specified */
         case FLAG_PAREN:
 
             /* first four characters are hex values for pad char */
-            info->fPadChar = (UChar)ufmt_digitvalue(*s++);
-            info->fPadChar = (UChar)((info->fPadChar * 16) + ufmt_digitvalue(*s++));
-            info->fPadChar = (UChar)((info->fPadChar * 16) + ufmt_digitvalue(*s++));
-            info->fPadChar = (UChar)((info->fPadChar * 16) + ufmt_digitvalue(*s++));
+            info->fPadChar = static_cast<char16_t>(ufmt_digitvalue(*s++));
+            info->fPadChar = static_cast<char16_t>((info->fPadChar * 16) + ufmt_digitvalue(*s++));
+            info->fPadChar = static_cast<char16_t>((info->fPadChar * 16) + ufmt_digitvalue(*s++));
+            info->fPadChar = static_cast<char16_t>((info->fPadChar * 16) + ufmt_digitvalue(*s++));
 
             /* final character is ignored */
             s++;
@@ -189,11 +189,11 @@ u_scanf_parse_spec (const UChar     *fmt,
 
     /* Get the width */
     if(ISDIGIT(*s)){
-        info->fWidth = (int) (*s++ - DIGIT_ZERO);
+        info->fWidth = *s++ - DIGIT_ZERO;
 
         while(ISDIGIT(*s)) {
             info->fWidth *= 10;
-            info->fWidth += (int) (*s++ - DIGIT_ZERO);
+            info->fWidth += *s++ - DIGIT_ZERO;
         }
     }
 
@@ -203,23 +203,23 @@ u_scanf_parse_spec (const UChar     *fmt,
 
             /* short */
         case MOD_H:
-            info->fIsShort = TRUE;
+            info->fIsShort = true;
             break;
 
             /* long or long long */
         case MOD_LOWERL:
             if(*s == MOD_LOWERL) {
-                info->fIsLongLong = TRUE;
+                info->fIsLongLong = true;
                 /* skip over the next 'l' */
                 s++;
             }
             else
-                info->fIsLong = TRUE;
+                info->fIsLong = true;
             break;
 
             /* long double */
         case MOD_L:
-            info->fIsLongDouble = TRUE;
+            info->fIsLongDouble = true;
             break;
         }
     }
@@ -228,7 +228,7 @@ u_scanf_parse_spec (const UChar     *fmt,
     info->fSpec = *s++;
 
     /* return # of characters in this specifier */
-    return (int32_t)(s - fmt);
+    return static_cast<int32_t>(s - fmt);
 }
 
 #define UP_PERCENT 0x0025
@@ -277,7 +277,7 @@ u_scanf_parse_spec (const UChar     *fmt,
 #define UFMT_USTRING        {ufmt_ustring, u_scanf_ustring_handler}
 
 
-#define UFMT_EMPTY {ufmt_empty, NULL}
+#define UFMT_EMPTY {ufmt_empty, nullptr}
 
 /**
  * A u_scanf handler function.  
@@ -298,7 +298,7 @@ u_scanf_parse_spec (const UChar     *fmt,
 typedef int32_t (*u_scanf_handler) (UFILE   *stream,
                    u_scanf_spec_info  *info,
                    ufmt_args                *args,
-                   const UChar              *fmt,
+                   const char16_t           *fmt,
                    int32_t                  *fmtConsumed,
                    int32_t                  *argConverted);
 
@@ -316,14 +316,14 @@ typedef struct u_scanf_info {
 
 static int32_t
 u_scanf_skip_leading_ws(UFILE   *input,
-                        UChar   pad)
+                        char16_t   pad)
 {
-    UChar   c;
+    char16_t   c;
     int32_t count = 0;
     UBool isNotEOF;
 
     /* skip all leading ws in the input */
-    while( (isNotEOF = ufile_getch(input, &c)) && (c == pad || u_isWhitespace(c)) )
+    while (((isNotEOF = ufile_getch(input, &c)) == static_cast<UBool>(true)) && (c == pad || u_isWhitespace(c)))
     {
         count++;
     }
@@ -341,10 +341,10 @@ u_scanf_skip_leading_positive_sign(UFILE   *input,
                                    UNumberFormat *format,
                                    UErrorCode *status)
 {
-    UChar   c;
+    char16_t   c;
     int32_t count = 0;
     UBool isNotEOF;
-    UChar plusSymbol[USCANF_SYMBOL_BUFFER_SIZE];
+    char16_t plusSymbol[USCANF_SYMBOL_BUFFER_SIZE];
     int32_t symbolLen;
     UErrorCode localStatus = U_ZERO_ERROR;
 
@@ -357,7 +357,7 @@ u_scanf_skip_leading_positive_sign(UFILE   *input,
 
         if (U_SUCCESS(localStatus)) {
             /* skip all leading ws in the input */
-            while( (isNotEOF = ufile_getch(input, &c)) && (count < symbolLen && c == plusSymbol[count]) )
+            while (((isNotEOF = ufile_getch(input, &c)) == static_cast<UBool>(true)) && (count < symbolLen && c == plusSymbol[count]))
             {
                 count++;
             }
@@ -376,7 +376,7 @@ static int32_t
 u_scanf_simple_percent_handler(UFILE        *input,
                                u_scanf_spec_info *info,
                                ufmt_args    *args,
-                               const UChar  *fmt,
+                               const char16_t  *fmt,
                                int32_t      *fmtConsumed,
                                int32_t      *argConverted)
 {
@@ -397,7 +397,7 @@ static int32_t
 u_scanf_count_handler(UFILE         *input,
                       u_scanf_spec_info *info,
                       ufmt_args     *args,
-                      const UChar   *fmt,
+                      const char16_t   *fmt,
                       int32_t       *fmtConsumed,
                       int32_t       *argConverted)
 {
@@ -409,11 +409,11 @@ u_scanf_count_handler(UFILE         *input,
     /* will contain the # of items converted thus far */
     if (!info->fSkipArg) {
         if (info->fIsShort)
-            *(int16_t*)(args[0].ptrValue) = (int16_t)(UINT16_MAX & info->fWidth);
+            *static_cast<int16_t*>(args[0].ptrValue) = static_cast<int16_t>(UINT16_MAX & info->fWidth);
         else if (info->fIsLongLong)
-            *(int64_t*)(args[0].ptrValue) = info->fWidth;
+            *static_cast<int64_t*>(args[0].ptrValue) = info->fWidth;
         else
-            *(int32_t*)(args[0].ptrValue) = (int32_t)(UINT32_MAX & info->fWidth);
+            *static_cast<int32_t*>(args[0].ptrValue) = static_cast<int32_t>(UINT32_MAX & info->fWidth);
     }
     *argConverted = 0;
 
@@ -425,7 +425,7 @@ static int32_t
 u_scanf_double_handler(UFILE        *input,
                        u_scanf_spec_info *info,
                        ufmt_args    *args,
-                       const UChar  *fmt,
+                       const char16_t  *fmt,
                        int32_t      *fmtConsumed,
                        int32_t      *argConverted)
 {
@@ -447,7 +447,7 @@ u_scanf_double_handler(UFILE        *input,
     ufile_fill_uchar_buffer(input);
 
     /* determine the size of the input's buffer */
-    len = (int32_t)(input->str.fLimit - input->str.fPos);
+    len = static_cast<int32_t>(input->str.fLimit - input->str.fPos);
 
     /* truncate to the width, if specified */
     if(info->fWidth != -1)
@@ -457,7 +457,7 @@ u_scanf_double_handler(UFILE        *input,
     format = u_locbund_getNumberFormat(&input->str.fBundle, UNUM_DECIMAL);
 
     /* handle error */
-    if(format == 0)
+    if (format == nullptr)
         return 0;
 
     /* Skip the positive prefix. ICU normally can't handle this due to strict parsing. */
@@ -468,11 +468,11 @@ u_scanf_double_handler(UFILE        *input,
 
     if (!info->fSkipArg) {
         if (info->fIsLong)
-            *(double*)(args[0].ptrValue) = num;
+            *static_cast<double*>(args[0].ptrValue) = num;
         else if (info->fIsLongDouble)
-            *(long double*)(args[0].ptrValue) = num;
+            *static_cast<long double*>(args[0].ptrValue) = num;
         else
-            *(float*)(args[0].ptrValue) = (float)num;
+            *static_cast<float*>(args[0].ptrValue) = static_cast<float>(num);
     }
 
     /* mask off any necessary bits */
@@ -493,7 +493,7 @@ static int32_t
 u_scanf_scientific_handler(UFILE        *input,
                            u_scanf_spec_info *info,
                            ufmt_args    *args,
-                           const UChar  *fmt,
+                           const char16_t  *fmt,
                            int32_t      *fmtConsumed,
                            int32_t      *argConverted)
 {
@@ -506,9 +506,9 @@ u_scanf_scientific_handler(UFILE        *input,
     int32_t         parsePos    = 0;
     int32_t         skipped;
     UErrorCode      status      = U_ZERO_ERROR;
-    UChar srcExpBuf[UPRINTF_SYMBOL_BUFFER_SIZE];
+    char16_t srcExpBuf[UPRINTF_SYMBOL_BUFFER_SIZE];
     int32_t srcLen, expLen;
-    UChar expBuf[UPRINTF_SYMBOL_BUFFER_SIZE];
+    char16_t expBuf[UPRINTF_SYMBOL_BUFFER_SIZE];
 
 
     /* skip all ws in the input */
@@ -518,7 +518,7 @@ u_scanf_scientific_handler(UFILE        *input,
     ufile_fill_uchar_buffer(input);
 
     /* determine the size of the input's buffer */
-    len = (int32_t)(input->str.fLimit - input->str.fPos);
+    len = static_cast<int32_t>(input->str.fLimit - input->str.fPos);
 
     /* truncate to the width, if specified */
     if(info->fWidth != -1)
@@ -528,7 +528,7 @@ u_scanf_scientific_handler(UFILE        *input,
     format = u_locbund_getNumberFormat(&input->str.fBundle, UNUM_SCIENTIFIC);
 
     /* handle error */
-    if(format == 0)
+    if (format == nullptr)
         return 0;
 
     /* set the appropriate flags on the formatter */
@@ -540,14 +540,14 @@ u_scanf_scientific_handler(UFILE        *input,
         &status);
 
     /* Upper/lower case the e */
-    if (info->fSpec == (UChar)0x65 /* e */) {
-        expLen = u_strToLower(expBuf, (int32_t)sizeof(expBuf),
+    if (info->fSpec == static_cast<char16_t>(0x65) /* e */) {
+        expLen = u_strToLower(expBuf, static_cast<int32_t>(sizeof(expBuf)),
             srcExpBuf, srcLen,
             input->str.fBundle.fLocale,
             &status);
     }
     else {
-        expLen = u_strToUpper(expBuf, (int32_t)sizeof(expBuf),
+        expLen = u_strToUpper(expBuf, static_cast<int32_t>(sizeof(expBuf)),
             srcExpBuf, srcLen,
             input->str.fBundle.fLocale,
             &status);
@@ -570,11 +570,11 @@ u_scanf_scientific_handler(UFILE        *input,
 
     if (!info->fSkipArg) {
         if (info->fIsLong)
-            *(double*)(args[0].ptrValue) = num;
+            *static_cast<double*>(args[0].ptrValue) = num;
         else if (info->fIsLongDouble)
-            *(long double*)(args[0].ptrValue) = num;
+            *static_cast<long double*>(args[0].ptrValue) = num;
         else
-            *(float*)(args[0].ptrValue) = (float)num;
+            *static_cast<float*>(args[0].ptrValue) = static_cast<float>(num);
     }
 
     /* mask off any necessary bits */
@@ -593,7 +593,7 @@ static int32_t
 u_scanf_scidbl_handler(UFILE        *input,
                        u_scanf_spec_info *info,
                        ufmt_args    *args,
-                       const UChar  *fmt,
+                       const char16_t  *fmt,
                        int32_t      *fmtConsumed,
                        int32_t      *argConverted)
 {
@@ -624,7 +624,7 @@ u_scanf_scidbl_handler(UFILE        *input,
     ufile_fill_uchar_buffer(input);
 
     /* determine the size of the input's buffer */
-    len = (int32_t)(input->str.fLimit - input->str.fPos);
+    len = static_cast<int32_t>(input->str.fLimit - input->str.fPos);
 
     /* truncate to the width, if specified */
     if(info->fWidth != -1)
@@ -635,7 +635,7 @@ u_scanf_scidbl_handler(UFILE        *input,
     genericFormat = u_locbund_getNumberFormat(&input->str.fBundle, UNUM_DECIMAL);
 
     /* handle error */
-    if(scientificFormat == 0 || genericFormat == 0)
+    if (scientificFormat == nullptr || genericFormat == nullptr)
         return 0;
 
     /* Skip the positive prefix. ICU normally can't handle this due to strict parsing. */
@@ -666,11 +666,11 @@ u_scanf_scidbl_handler(UFILE        *input,
 
     if (!info->fSkipArg) {
         if (info->fIsLong)
-            *(double*)(args[0].ptrValue) = num;
+            *static_cast<double*>(args[0].ptrValue) = num;
         else if (info->fIsLongDouble)
-            *(long double*)(args[0].ptrValue) = num;
+            *static_cast<long double*>(args[0].ptrValue) = num;
         else
-            *(float*)(args[0].ptrValue) = (float)num;
+            *static_cast<float*>(args[0].ptrValue) = static_cast<float>(num);
     }
 
     /* mask off any necessary bits */
@@ -686,7 +686,7 @@ static int32_t
 u_scanf_integer_handler(UFILE       *input,
                         u_scanf_spec_info *info,
                         ufmt_args   *args,
-                        const UChar *fmt,
+                        const char16_t *fmt,
                         int32_t     *fmtConsumed,
                         int32_t     *argConverted)
 {
@@ -694,10 +694,11 @@ u_scanf_integer_handler(UFILE       *input,
     (void)fmtConsumed;
 
     int32_t         len;
-    void            *num        = (void*) (args[0].ptrValue);
-    UNumberFormat   *format;
+    void* num = args[0].ptrValue;
+    UNumberFormat   *format, *localFormat;
     int32_t         parsePos    = 0;
     int32_t         skipped;
+    int32_t         parseIntOnly = 0;
     UErrorCode      status      = U_ZERO_ERROR;
     int64_t         result;
 
@@ -709,7 +710,7 @@ u_scanf_integer_handler(UFILE       *input,
     ufile_fill_uchar_buffer(input);
 
     /* determine the size of the input's buffer */
-    len = (int32_t)(input->str.fLimit - input->str.fPos);
+    len = static_cast<int32_t>(input->str.fLimit - input->str.fPos);
 
     /* truncate to the width, if specified */
     if(info->fWidth != -1)
@@ -719,27 +720,39 @@ u_scanf_integer_handler(UFILE       *input,
     format = u_locbund_getNumberFormat(&input->str.fBundle, UNUM_DECIMAL);
 
     /* handle error */
-    if(format == 0)
+    if (format == nullptr)
         return 0;
 
+    /* for integer types, do not attempt to parse fractions */
+    localFormat = unum_clone(format, &status);
+    if(U_FAILURE(status))
+        return 0;
+
+    if(info->fSpec == 'd' || info->fSpec == 'i' || info->fSpec == 'u')
+        parseIntOnly = 1;
+    unum_setAttribute(localFormat, UNUM_PARSE_INT_ONLY, parseIntOnly);
+
     /* Skip the positive prefix. ICU normally can't handle this due to strict parsing. */
-    skipped += u_scanf_skip_leading_positive_sign(input, format, &status);
+    skipped += u_scanf_skip_leading_positive_sign(input, localFormat, &status);
 
     /* parse the number */
-    result = unum_parseInt64(format, input->str.fPos, len, &parsePos, &status);
+    result = unum_parseInt64(localFormat, input->str.fPos, len, &parsePos, &status);
 
     /* mask off any necessary bits */
     if (!info->fSkipArg) {
         if (info->fIsShort)
-            *(int16_t*)num = (int16_t)(UINT16_MAX & result);
+            *static_cast<int16_t*>(num) = static_cast<int16_t>(UINT16_MAX & result);
         else if (info->fIsLongLong)
-            *(int64_t*)num = result;
+            *static_cast<int64_t*>(num) = result;
         else
-            *(int32_t*)num = (int32_t)(UINT32_MAX & result);
+            *static_cast<int32_t*>(num) = static_cast<int32_t>(UINT32_MAX & result);
     }
 
     /* update the input's position to reflect consumed data */
     input->str.fPos += parsePos;
+
+    /* cleanup cloned formatter */
+    unum_close(localFormat);
 
     /* we converted 1 arg */
     *argConverted = !info->fSkipArg;
@@ -750,7 +763,7 @@ static int32_t
 u_scanf_uinteger_handler(UFILE          *input,
                          u_scanf_spec_info *info,
                          ufmt_args      *args,
-                         const UChar    *fmt,
+                         const char16_t *fmt,
                          int32_t        *fmtConsumed,
                          int32_t        *argConverted)
 {
@@ -762,7 +775,7 @@ static int32_t
 u_scanf_percent_handler(UFILE       *input,
                         u_scanf_spec_info *info,
                         ufmt_args   *args,
-                        const UChar *fmt,
+                        const char16_t *fmt,
                         int32_t     *fmtConsumed,
                         int32_t     *argConverted)
 {
@@ -783,7 +796,7 @@ u_scanf_percent_handler(UFILE       *input,
     ufile_fill_uchar_buffer(input);
 
     /* determine the size of the input's buffer */
-    len = (int32_t)(input->str.fLimit - input->str.fPos);
+    len = static_cast<int32_t>(input->str.fLimit - input->str.fPos);
 
     /* truncate to the width, if specified */
     if(info->fWidth != -1)
@@ -793,7 +806,7 @@ u_scanf_percent_handler(UFILE       *input,
     format = u_locbund_getNumberFormat(&input->str.fBundle, UNUM_PERCENT);
 
     /* handle error */
-    if(format == 0)
+    if (format == nullptr)
         return 0;
 
     /* Skip the positive prefix. ICU normally can't handle this due to strict parsing. */
@@ -803,7 +816,7 @@ u_scanf_percent_handler(UFILE       *input,
     num = unum_parseDouble(format, input->str.fPos, len, &parsePos, &status);
 
     if (!info->fSkipArg) {
-        *(double*)(args[0].ptrValue) = num;
+        *static_cast<double*>(args[0].ptrValue) = num;
     }
 
     /* mask off any necessary bits */
@@ -822,23 +835,23 @@ static int32_t
 u_scanf_string_handler(UFILE        *input,
                        u_scanf_spec_info *info,
                        ufmt_args    *args,
-                       const UChar  *fmt,
+                       const char16_t  *fmt,
                        int32_t      *fmtConsumed,
                        int32_t      *argConverted)
 {
     (void)fmt;
     (void)fmtConsumed;
 
-    const UChar *source;
+    const char16_t *source;
     UConverter  *conv;
-    char        *arg    = (char*)(args[0].ptrValue);
+    char* arg = static_cast<char*>(args[0].ptrValue);
     char        *alias  = arg;
     char        *limit;
     UErrorCode  status  = U_ZERO_ERROR;
     int32_t     count;
     int32_t     skipped = 0;
-    UChar       c;
-    UBool       isNotEOF = FALSE;
+    char16_t    c;
+    UBool       isNotEOF = false;
 
     /* skip all ws in the input */
     if (info->fIsString) {
@@ -855,7 +868,7 @@ u_scanf_string_handler(UFILE        *input,
         return -1;
 
     while( (info->fWidth == -1 || count < info->fWidth) 
-        && (isNotEOF = ufile_getch(input, &c))
+        && ((isNotEOF = ufile_getch(input, &c)) == static_cast<UBool>(true))
         && (!info->fIsString || (c != info->fPadChar && !u_isWhitespace(c))))
     {
 
@@ -872,7 +885,7 @@ u_scanf_string_handler(UFILE        *input,
 
             /* convert the character to the default codepage */
             ucnv_fromUnicode(conv, &alias, limit, &source, source + 1,
-                NULL, TRUE, &status);
+                nullptr, true, &status);
 
             if(U_FAILURE(status)) {
                 /* clean up */
@@ -908,14 +921,14 @@ static int32_t
 u_scanf_char_handler(UFILE          *input,
                      u_scanf_spec_info *info,
                      ufmt_args      *args,
-                     const UChar    *fmt,
+                     const char16_t *fmt,
                      int32_t        *fmtConsumed,
                      int32_t        *argConverted)
 {
     if (info->fWidth < 0) {
         info->fWidth = 1;
     }
-    info->fIsString = FALSE;
+    info->fIsString = false;
     return u_scanf_string_handler(input, info, args, fmt, fmtConsumed, argConverted);
 }
 
@@ -923,19 +936,19 @@ static int32_t
 u_scanf_ustring_handler(UFILE       *input,
                         u_scanf_spec_info *info,
                         ufmt_args   *args,
-                        const UChar *fmt,
+                        const char16_t *fmt,
                         int32_t     *fmtConsumed,
                         int32_t     *argConverted)
 {
     (void)fmt;
     (void)fmtConsumed;
 
-    UChar   *arg     = (UChar*)(args[0].ptrValue);
-    UChar   *alias     = arg;
+    char16_t* arg = static_cast<char16_t*>(args[0].ptrValue);
+    char16_t   *alias     = arg;
     int32_t count;
     int32_t skipped = 0;
-    UChar   c;
-    UBool   isNotEOF = FALSE;
+    char16_t   c;
+    UBool   isNotEOF = false;
 
     /* skip all ws in the input */
     if (info->fIsString) {
@@ -946,7 +959,7 @@ u_scanf_ustring_handler(UFILE       *input,
     count = 0;
 
     while( (info->fWidth == -1 || count < info->fWidth)
-        && (isNotEOF = ufile_getch(input, &c))
+        && ((isNotEOF = ufile_getch(input, &c)) == static_cast<UBool>(true))
         && (!info->fIsString || (c != info->fPadChar && !u_isWhitespace(c))))
     {
 
@@ -980,14 +993,14 @@ static int32_t
 u_scanf_uchar_handler(UFILE         *input,
                       u_scanf_spec_info *info,
                       ufmt_args     *args,
-                      const UChar   *fmt,
+                      const char16_t   *fmt,
                       int32_t       *fmtConsumed,
                       int32_t       *argConverted)
 {
     if (info->fWidth < 0) {
         info->fWidth = 1;
     }
-    info->fIsString = FALSE;
+    info->fIsString = false;
     return u_scanf_ustring_handler(input, info, args, fmt, fmtConsumed, argConverted);
 }
 
@@ -995,7 +1008,7 @@ static int32_t
 u_scanf_spellout_handler(UFILE          *input,
                          u_scanf_spec_info *info,
                          ufmt_args      *args,
-                         const UChar    *fmt,
+                         const char16_t *fmt,
                          int32_t        *fmtConsumed,
                          int32_t        *argConverted)
 {
@@ -1017,7 +1030,7 @@ u_scanf_spellout_handler(UFILE          *input,
     ufile_fill_uchar_buffer(input);
 
     /* determine the size of the input's buffer */
-    len = (int32_t)(input->str.fLimit - input->str.fPos);
+    len = static_cast<int32_t>(input->str.fLimit - input->str.fPos);
 
     /* truncate to the width, if specified */
     if(info->fWidth != -1)
@@ -1027,7 +1040,7 @@ u_scanf_spellout_handler(UFILE          *input,
     format = u_locbund_getNumberFormat(&input->str.fBundle, UNUM_SPELLOUT);
 
     /* handle error */
-    if(format == 0)
+    if (format == nullptr)
         return 0;
 
     /* Skip the positive prefix. ICU normally can't handle this due to strict parsing. */
@@ -1038,7 +1051,7 @@ u_scanf_spellout_handler(UFILE          *input,
     num = unum_parseDouble(format, input->str.fPos, len, &parsePos, &status);
 
     if (!info->fSkipArg) {
-        *(double*)(args[0].ptrValue) = num;
+        *static_cast<double*>(args[0].ptrValue) = num;
     }
 
     /* mask off any necessary bits */
@@ -1057,7 +1070,7 @@ static int32_t
 u_scanf_hex_handler(UFILE       *input,
                     u_scanf_spec_info *info,
                     ufmt_args   *args,
-                    const UChar *fmt,
+                    const char16_t *fmt,
                     int32_t     *fmtConsumed,
                     int32_t     *argConverted)
 {
@@ -1066,7 +1079,7 @@ u_scanf_hex_handler(UFILE       *input,
 
     int32_t     len;
     int32_t     skipped;
-    void        *num    = (void*) (args[0].ptrValue);
+    void* num = args[0].ptrValue;
     int64_t     result;
 
     /* skip all ws in the input */
@@ -1076,7 +1089,7 @@ u_scanf_hex_handler(UFILE       *input,
     ufile_fill_uchar_buffer(input);
 
     /* determine the size of the input's buffer */
-    len = (int32_t)(input->str.fLimit - input->str.fPos);
+    len = static_cast<int32_t>(input->str.fLimit - input->str.fPos);
 
     /* truncate to the width, if specified */
     if(info->fWidth != -1)
@@ -1100,11 +1113,11 @@ u_scanf_hex_handler(UFILE       *input,
     /* mask off any necessary bits */
     if (!info->fSkipArg) {
         if (info->fIsShort)
-            *(int16_t*)num = (int16_t)(UINT16_MAX & result);
+            *static_cast<int16_t*>(num) = static_cast<int16_t>(UINT16_MAX & result);
         else if (info->fIsLongLong)
-            *(int64_t*)num = result;
+            *static_cast<int64_t*>(num) = result;
         else
-            *(int32_t*)num = (int32_t)(UINT32_MAX & result);
+            *static_cast<int32_t*>(num) = static_cast<int32_t>(UINT32_MAX & result);
     }
 
     /* we converted 1 arg */
@@ -1116,7 +1129,7 @@ static int32_t
 u_scanf_octal_handler(UFILE         *input,
                       u_scanf_spec_info *info,
                       ufmt_args     *args,
-                      const UChar   *fmt,
+                      const char16_t   *fmt,
                       int32_t       *fmtConsumed,
                       int32_t       *argConverted)
 {
@@ -1125,7 +1138,7 @@ u_scanf_octal_handler(UFILE         *input,
 
     int32_t     len;
     int32_t     skipped;
-    void        *num         = (void*) (args[0].ptrValue);
+    void* num = args[0].ptrValue;
     int64_t     result;
 
     /* skip all ws in the input */
@@ -1135,7 +1148,7 @@ u_scanf_octal_handler(UFILE         *input,
     ufile_fill_uchar_buffer(input);
 
     /* determine the size of the input's buffer */
-    len = (int32_t)(input->str.fLimit - input->str.fPos);
+    len = static_cast<int32_t>(input->str.fLimit - input->str.fPos);
 
     /* truncate to the width, if specified */
     if(info->fWidth != -1)
@@ -1150,11 +1163,11 @@ u_scanf_octal_handler(UFILE         *input,
     /* mask off any necessary bits */
     if (!info->fSkipArg) {
         if (info->fIsShort)
-            *(int16_t*)num = (int16_t)(UINT16_MAX & result);
+            *static_cast<int16_t*>(num) = static_cast<int16_t>(UINT16_MAX & result);
         else if (info->fIsLongLong)
-            *(int64_t*)num = result;
+            *static_cast<int64_t*>(num) = result;
         else
-            *(int32_t*)num = (int32_t)(UINT32_MAX & result);
+            *static_cast<int32_t*>(num) = static_cast<int32_t>(UINT32_MAX & result);
     }
 
     /* we converted 1 arg */
@@ -1166,7 +1179,7 @@ static int32_t
 u_scanf_pointer_handler(UFILE       *input,
                         u_scanf_spec_info *info,
                         ufmt_args   *args,
-                        const UChar *fmt,
+                        const char16_t *fmt,
                         int32_t     *fmtConsumed,
                         int32_t     *argConverted)
 {
@@ -1176,7 +1189,7 @@ u_scanf_pointer_handler(UFILE       *input,
     int32_t len;
     int32_t skipped;
     void    *result;
-    void    **p     = (void**)(args[0].ptrValue);
+    void** p = static_cast<void**>(args[0].ptrValue);
 
 
     /* skip all ws in the input */
@@ -1186,7 +1199,7 @@ u_scanf_pointer_handler(UFILE       *input,
     ufile_fill_uchar_buffer(input);
 
     /* determine the size of the input's buffer */
-    len = (int32_t)(input->str.fLimit - input->str.fPos);
+    len = static_cast<int32_t>(input->str.fLimit - input->str.fPos);
 
     /* truncate to the width, if specified */
     if(info->fWidth != -1) {
@@ -1194,8 +1207,8 @@ u_scanf_pointer_handler(UFILE       *input,
     }
 
     /* Make sure that we don't consume too much */
-    if (len > (int32_t)(sizeof(void*)*2)) {
-        len = (int32_t)(sizeof(void*)*2);
+    if (len > static_cast<int32_t>(sizeof(void*) * 2)) {
+        len = static_cast<int32_t>(sizeof(void*) * 2);
     }
 
     /* parse the pointer - assign to temporary value */
@@ -1217,7 +1230,7 @@ static int32_t
 u_scanf_scanset_handler(UFILE       *input,
                         u_scanf_spec_info *info,
                         ufmt_args   *args,
-                        const UChar *fmt,
+                        const char16_t *fmt,
                         int32_t     *fmtConsumed,
                         int32_t     *argConverted)
 {
@@ -1225,9 +1238,9 @@ u_scanf_scanset_handler(UFILE       *input,
     UErrorCode  status = U_ZERO_ERROR;
     int32_t     chLeft = INT32_MAX;
     UChar32     c;
-    UChar       *alias = (UChar*) (args[0].ptrValue);
-    UBool       isNotEOF = FALSE;
-    UBool       readCharacter = FALSE;
+    char16_t* alias = static_cast<char16_t*>(args[0].ptrValue);
+    UBool       isNotEOF = false;
+    UBool       readCharacter = false;
 
     /* Create an empty set */
     scanset = uset_open(0, -1);
@@ -1249,11 +1262,11 @@ u_scanf_scanset_handler(UFILE       *input,
 
         /* grab characters one at a time and make sure they are in the scanset */
         while(chLeft > 0) {
-            if ((isNotEOF = ufile_getch32(input, &c)) && uset_contains(scanset, c)) {
-                readCharacter = TRUE;
+            if (((isNotEOF = ufile_getch32(input, &c)) == static_cast<UBool>(true)) && uset_contains(scanset, c)) {
+                readCharacter = true;
                 if (!info->fSkipArg) {
                     int32_t idx = 0;
-                    UBool isError = FALSE;
+                    UBool isError = false;
 
                     U16_APPEND(alias, idx, chLeft, c, isError);
                     if (isError) {
@@ -1342,10 +1355,10 @@ static const u_scanf_info g_u_scanf_infos[USCANF_NUM_FMT_HANDLERS] = {
 
 U_CFUNC int32_t
 u_scanf_parse(UFILE     *f,
-            const UChar *patternSpecification,
+            const char16_t *patternSpecification,
             va_list     ap)
 {
-    const UChar     *alias;
+    const char16_t  *alias;
     int32_t         count, converted, argConsumed, cpConsumed;
     uint16_t        handlerNum;
 
@@ -1389,7 +1402,7 @@ u_scanf_parse(UFILE     *f,
                 break;
             }
             else if(spec.fInfo.fSkipArg) {
-                args.ptrValue = NULL;
+                args.ptrValue = nullptr;
             }
             else {
                 switch(info) {
@@ -1410,15 +1423,14 @@ u_scanf_parse(UFILE     *f,
 
                 default:
                     /* else args is ignored */
-                    args.ptrValue = NULL;
+                    args.ptrValue = nullptr;
                     break;
                 }
             }
 
             /* call the handler function */
             handler = g_u_scanf_infos[ handlerNum ].handler;
-            if(handler != 0) {
-
+            if (handler != nullptr) {
                 /* reset count to 1 so that += for alias works. */
                 count = 1;
 

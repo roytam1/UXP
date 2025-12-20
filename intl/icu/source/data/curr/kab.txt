@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 kab{
     Currencies{
         AED{
@@ -170,9 +171,13 @@ kab{
             "SHP",
             "Apund Asant Ilini",
         }
+        SLE{
+            "SLE",
+            "Alyun",
+        }
         SLL{
             "SLL",
-            "Alyun",
+            "Alyun (1964—2022)",
         }
         SOS{
             "SOS",
@@ -211,7 +216,7 @@ kab{
             "Afrank BCEA CFA",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Afrank BCEAO CFA",
         }
         ZAR{
@@ -231,5 +236,4 @@ kab{
             "Adular Azimbabwi",
         }
     }
-    Version{"2.1.43.94"}
 }

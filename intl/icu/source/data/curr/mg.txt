@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 mg{
     Currencies{
         AED{
@@ -174,9 +175,13 @@ mg{
             "SHP",
             "livre de Sainte-Hélène",
         }
+        SLE{
+            "SLE",
+            "Leone",
+        }
         SLL{
             "SLL",
-            "Leone",
+            "Leone (1964—2022)",
         }
         SOS{
             "SOS",
@@ -215,7 +220,7 @@ mg{
             "Farantsa CFA (BEAC)",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Farantsa CFA (BCEAO)",
         }
         ZAR{
@@ -239,5 +244,4 @@ mg{
         one{"{0} {1}"}
         other{"{0} {1}"}
     }
-    Version{"2.1.43.94"}
 }

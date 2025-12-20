@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 kln{
     AuxExemplarCharacters{"[f q v x z]"}
     ExemplarCharacters{"[a b c d e g h i j k l m n o p r s t u w y]"}
@@ -12,7 +13,6 @@ kln{
             }
         }
     }
-    Version{"2.1.39.11"}
     calendar{
         generic{
             DateTimePatterns{
@@ -31,19 +31,11 @@ kln{
                 "{1} {0}",
             }
             availableFormats{
-                Hm{"HH:mm"}
-                Hms{"HH:mm:ss"}
-                M{"L"}
                 MEd{"E, M/d"}
-                MMM{"LLL"}
                 MMMEd{"E, MMM d"}
                 MMMMEd{"E, MMMM d"}
-                MMMMd{"MMMM d"}
-                MMMd{"MMM d"}
                 Md{"M/d"}
-                d{"d"}
-                hm{"h:mm a"}
-                ms{"mm:ss"}
+                hm{"h:mm a"}
                 y{"y"}
                 yM{"M/y"}
                 yMEd{"E, M/d/y"}
@@ -79,20 +71,11 @@ kln{
                 "{1} {0}",
             }
             availableFormats{
-                Hm{"HH:mm"}
-                Hms{"HH:mm:ss"}
-                M{"L"}
                 MEd{"E, M/d"}
-                MMM{"LLL"}
                 MMMEd{"E, MMM d"}
                 MMMMEd{"E, MMMM d"}
-                MMMMd{"MMMM d"}
-                MMMd{"MMM d"}
                 Md{"M/d"}
-                d{"d"}
-                hm{"h:mm a"}
-                ms{"mm:ss"}
-                y{"y"}
+                hm{"h:mm a"}
                 yM{"M/y"}
                 yMEd{"E, M/d/y"}
                 yMMM{"MMM y"}
@@ -136,12 +119,12 @@ kln{
             }
             eras{
                 abbreviated{
-                    "AM",
-                    "KO",
+                    0{"AM"}
+                    1{"KO"}
                 }
                 wide{
-                    "Amait kesich Jesu",
-                    "Kokakesich Jesu",
+                    0{"Amait kesich Jesu"}
+                    1{"Kokakesich Jesu"}
                 }
             }
             monthNames{
@@ -209,12 +192,6 @@ kln{
                 }
             }
         }
-    }
-    delimiters{
-        alternateQuotationEnd{"’"}
-        alternateQuotationStart{"‘"}
-        quotationEnd{"”"}
-        quotationStart{"“"}
     }
     fields{
         day{
