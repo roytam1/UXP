@@ -17,13 +17,15 @@
 #include "unicode/platform.h"
 #include "unicode/uniset.h"
 #include "standardplural.h"
+#include "formatted_string_builder.h"
 
-U_NAMESPACE_BEGIN namespace number {
-namespace impl {
+U_NAMESPACE_BEGIN
+namespace number::impl {
+
+// For convenience and historical reasons, import the Field typedef to the namespace.
+typedef FormattedStringBuilder::Field Field;
 
 // Typedef several enums for brevity and for easier comparison to Java.
-
-typedef UNumberFormatFields Field;
 
 typedef UNumberFormatRoundingMode RoundingMode;
 
@@ -45,7 +47,6 @@ static constexpr char16_t kFallbackPaddingString[] = u" ";
 class Modifier;
 class MutablePatternModifier;
 class DecimalQuantity;
-class NumberStringBuilder;
 class ModifierStore;
 struct MicroProps;
 
@@ -60,26 +61,29 @@ enum AffixPatternType {
     // Represents a plus sign symbol '+'.
             TYPE_PLUS_SIGN = -2,
 
+    // Represents an approximately sign symbol '~'.
+            TYPE_APPROXIMATELY_SIGN = -3,
+
     // Represents a percent sign symbol '%'.
-            TYPE_PERCENT = -3,
+            TYPE_PERCENT = -4,
 
     // Represents a permille sign symbol '‰'.
-            TYPE_PERMILLE = -4,
+            TYPE_PERMILLE = -5,
 
     // Represents a single currency symbol '¤'.
-            TYPE_CURRENCY_SINGLE = -5,
+            TYPE_CURRENCY_SINGLE = -6,
 
     // Represents a double currency symbol '¤¤'.
-            TYPE_CURRENCY_DOUBLE = -6,
+            TYPE_CURRENCY_DOUBLE = -7,
 
     // Represents a triple currency symbol '¤¤¤'.
-            TYPE_CURRENCY_TRIPLE = -7,
+            TYPE_CURRENCY_TRIPLE = -8,
 
     // Represents a quadruple currency symbol '¤¤¤¤'.
-            TYPE_CURRENCY_QUAD = -8,
+            TYPE_CURRENCY_QUAD = -9,
 
     // Represents a quintuple currency symbol '¤¤¤¤¤'.
-            TYPE_CURRENCY_QUINT = -9,
+            TYPE_CURRENCY_QUINT = -10,
 
     // Represents a sequence of six or more currency symbols.
             TYPE_CURRENCY_OVERFLOW = -15
@@ -87,6 +91,14 @@ enum AffixPatternType {
 
 enum CompactType {
     TYPE_DECIMAL, TYPE_CURRENCY
+};
+
+enum Signum {
+    SIGNUM_NEG = 0,
+    SIGNUM_NEG_ZERO = 1,
+    SIGNUM_POS_ZERO = 2,
+    SIGNUM_POS = 3,
+    SIGNUM_COUNT = 4,
 };
 
 
@@ -127,6 +139,11 @@ class U_I18N_API AffixPatternProvider {
      * number instead of rendering the number.
      */
     virtual bool hasBody() const = 0;
+
+    /**
+     * True if the currency symbol should replace the decimal separator.
+     */
+    virtual bool currencyAsDecimal() const = 0;
 };
 
 
@@ -156,7 +173,7 @@ class U_I18N_API Modifier {
      *            formatted.
      * @return The number of characters (UTF-16 code units) that were added to the string builder.
      */
-    virtual int32_t apply(NumberStringBuilder& output, int leftIndex, int rightIndex,
+    virtual int32_t apply(FormattedStringBuilder& output, int leftIndex, int rightIndex,
                           UErrorCode& status) const = 0;
 
     /**
@@ -184,7 +201,7 @@ class U_I18N_API Modifier {
     /**
      * Whether the modifier contains at least one occurrence of the given field.
      */
-    virtual bool containsField(UNumberFormatFields field) const = 0;
+    virtual bool containsField(Field field) const = 0;
 
     /**
      * A fill-in for getParameters(). obj will always be set; if non-null, the other
@@ -192,11 +209,11 @@ class U_I18N_API Modifier {
      */
     struct U_I18N_API Parameters {
         const ModifierStore* obj = nullptr;
-        int8_t signum;
+        Signum signum;
         StandardPlural::Form plural;
 
         Parameters();
-        Parameters(const ModifierStore* _obj, int8_t _signum, StandardPlural::Form _plural);
+        Parameters(const ModifierStore* _obj, Signum _signum, StandardPlural::Form _plural);
     };
 
     /**
@@ -207,10 +224,15 @@ class U_I18N_API Modifier {
     virtual void getParameters(Parameters& output) const = 0;
 
     /**
+     * Returns whether this Modifier equals another Modifier.
+     */
+    virtual bool strictEquals(const Modifier& other) const = 0;
+
+    /**
      * Returns whether this Modifier is *semantically equivalent* to the other Modifier;
      * in many cases, this is the same as equal, but parameters should be ignored.
      */
-    virtual bool semanticallyEquivalent(const Modifier& other) const = 0;
+    bool semanticallyEquivalent(const Modifier& other) const;
 };
 
 
@@ -227,7 +249,7 @@ class U_I18N_API ModifierStore {
     /**
      * Returns a Modifier with the given parameters (best-effort).
      */
-    virtual const Modifier* getModifier(int8_t signum, StandardPlural::Form plural) const = 0;
+    virtual const Modifier* getModifier(Signum signum, StandardPlural::Form plural) const = 0;
 };
 
 
@@ -236,31 +258,31 @@ class U_I18N_API ModifierStore {
  * itself. The {@link #processQuantity} method performs the final step in the number processing pipeline: it uses the
  * quantity to generate a finalized {@link MicroProps}, which can be used to render the number to output.
  *
- * <p>
  * In other words, this interface is used for the parts of number processing that are <em>quantity-dependent</em>.
  *
- * <p>
  * In order to allow for multiple different objects to all mutate the same MicroProps, a "chain" of MicroPropsGenerators
  * are linked together, and each one is responsible for manipulating a certain quantity-dependent part of the
  * MicroProps. At the tail of the linked list is a base instance of {@link MicroProps} with properties that are not
  * quantity-dependent. Each element in the linked list calls {@link #processQuantity} on its "parent", then does its
  * work, and then returns the result.
  *
+ * This chain of MicroPropsGenerators is typically constructed by NumberFormatterImpl::macrosToMicroGenerator() when
+ * constructing a NumberFormatter.
+ *
  * Exported as U_I18N_API because it is a base class for other exported types
  *
  */
 class U_I18N_API MicroPropsGenerator {
   public:
-    virtual ~MicroPropsGenerator();
+    virtual ~MicroPropsGenerator() = default;
 
     /**
-     * Considers the given {@link DecimalQuantity}, optionally mutates it, and returns a {@link MicroProps}.
+     * Considers the given {@link DecimalQuantity}, optionally mutates it, and
+     * populates a {@link MicroProps} instance.
      *
-     * @param quantity
-     *            The quantity for consideration and optional mutation.
-     * @param micros
-     *            The MicroProps instance to populate.
-     * @return A MicroProps instance resolved for the quantity.
+     * @param quantity The quantity for consideration and optional mutation.
+     * @param micros The MicroProps instance to populate. It will be modified as
+     *   needed for the given quantity.
      */
     virtual void processQuantity(DecimalQuantity& quantity, MicroProps& micros,
                                  UErrorCode& status) const = 0;
@@ -346,8 +368,7 @@ class U_I18N_API NullableValue {
     T fValue;
 };
 
-} // namespace impl
-} // namespace number
+} // namespace number::impl
 U_NAMESPACE_END
 
 #endif //__NUMBER_TYPES_H__

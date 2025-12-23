@@ -1,16 +1,142 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 fo{
-    Version{"2.1.41.34"}
     zoneStrings{
+        "Africa:Djibouti"{
+            ec{"Djibuti"}
+        }
+        "America:Bahia_Banderas"{
+            ec{"Bahia Banderas"}
+        }
+        "America:Belize"{
+            ec{"Belis"}
+        }
+        "America:Cancun"{
+            ec{"Cancun"}
+        }
+        "America:Costa_Rica"{
+            ec{"Kosta Rika"}
+        }
+        "America:Jamaica"{
+            ec{"Jamaika"}
+        }
+        "America:Merida"{
+            ec{"Merida"}
+        }
+        "America:Puerto_Rico"{
+            ec{"Puerto Riko"}
+        }
+        "Asia:Bahrain"{
+            ec{"Barein"}
+        }
+        "Asia:Gaza"{
+            ec{"Gasa"}
+        }
+        "Asia:Kuwait"{
+            ec{"Kuvait"}
+        }
+        "Asia:Macau"{
+            ec{"Makao"}
+        }
+        "Asia:Qostanay"{
+            ec{"Kostanay"}
+        }
+        "Asia:Rangoon"{
+            ec{"Rangoon"}
+        }
+        "Asia:Singapore"{
+            ec{"Singapor"}
+        }
+        "Asia:Tehran"{
+            ec{"Teheran"}
+        }
+        "Atlantic:Azores"{
+            ec{"Azorurnar"}
+        }
+        "Atlantic:Cape_Verde"{
+            ec{"Grønhøvdaoyggjar"}
+        }
+        "Atlantic:Faeroe"{
+            ec{"Føroyar"}
+        }
+        "Atlantic:Reykjavik"{
+            ec{"Reykjavík"}
+        }
+        "Atlantic:South_Georgia"{
+            ec{"Suðurgeorgiaoyggjar"}
+        }
         "Etc:UTC"{
             ls{"Samskipað heimstíð"}
+        }
+        "Etc:Unknown"{
+            ec{"Ókendur býur"}
+        }
+        "Europe:Athens"{
+            ec{"Aten"}
+        }
+        "Europe:Belgrade"{
+            ec{"Beograd"}
+        }
+        "Europe:Brussels"{
+            ec{"Bruxelles"}
+        }
+        "Europe:Bucharest"{
+            ec{"Bukarest"}
+        }
+        "Europe:Copenhagen"{
+            ec{"Keypmannahavn"}
         }
         "Europe:Dublin"{
             ld{"Írsk vanlig tíð"}
         }
+        "Europe:Kiev"{
+            ec{"Kiev"}
+        }
+        "Europe:Lisbon"{
+            ec{"Lissabon"}
+        }
         "Europe:London"{
-            ld{"Stóra Bretland summartíð"}
+            ld{"Bretsk summartíð"}
+        }
+        "Europe:Luxembourg"{
+            ec{"Luksemborg"}
+        }
+        "Europe:Monaco"{
+            ec{"Monako"}
+        }
+        "Europe:Moscow"{
+            ec{"Moskva"}
+        }
+        "Europe:Prague"{
+            ec{"Prag"}
+        }
+        "Europe:Rome"{
+            ec{"Rom"}
+        }
+        "Europe:Stockholm"{
+            ec{"Stokkhólm"}
+        }
+        "Europe:Vatican"{
+            ec{"Vatikanið"}
+        }
+        "Europe:Vienna"{
+            ec{"Wien"}
+        }
+        "Europe:Warsaw"{
+            ec{"Varsjava"}
+        }
+        "Europe:Zurich"{
+            ec{"Zürich"}
+        }
+        "Indian:Maldives"{
+            ec{"Maldivoyggjar"}
+        }
+        "Indian:Mauritius"{
+            ec{"Móritius"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
         }
         "meta:Afghanistan"{
             ls{"Afganistan tíð"}
@@ -25,9 +151,7 @@ fo{
             ls{"Suðurafrika vanlig tíð"}
         }
         "meta:Africa_Western"{
-            ld{"Vesturafrika summartíð"}
-            lg{"Vesturafrika tíð"}
-            ls{"Vesturafrika vanlig tíð"}
+            ls{"Vesturafrika tíð"}
         }
         "meta:Alaska"{
             ld{"Alaska summartíð"}
@@ -161,11 +285,6 @@ fo{
             lg{"Kina tíð"}
             ls{"Kina vanlig tíð"}
         }
-        "meta:Choibalsan"{
-            ld{"Choibalsan summartíð"}
-            lg{"Choibalsan tíð"}
-            ls{"Choibalsan vanlig tíð"}
-        }
         "meta:Christmas"{
             ls{"Jólaoyggj tíð"}
         }
@@ -271,6 +390,9 @@ fo{
         "meta:Guyana"{
             ls{"Gujana tíð"}
         }
+        "meta:Hawaii"{
+            ls{"Hawaii-Aleutian vanlig tíð"}
+        }
         "meta:Hawaii_Aleutian"{
             ld{"Hawaii-Aleutian summartíð"}
             lg{"Hawaii-Aleutian tíð"}
@@ -324,6 +446,9 @@ fo{
             lg{"Japan tíð"}
             ls{"Japan vanlig tíð"}
         }
+        "meta:Kazakhstan"{
+            ls{"Kasakstan tíð"}
+        }
         "meta:Kazakhstan_Eastern"{
             ls{"Eystur Kasakstan tíð"}
         }
@@ -354,9 +479,6 @@ fo{
             lg{"Lord Howe tíð"}
             ls{"Lord Howe vanlig tíð"}
         }
-        "meta:Macquarie"{
-            ls{"Macquariesoyggj tíð"}
-        }
         "meta:Magadan"{
             ld{"Magadan summartíð"}
             lg{"Magadan tíð"}
@@ -381,11 +503,6 @@ fo{
         }
         "meta:Mawson"{
             ls{"Mawson tíð"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"Northwest Mexico summartíð"}
-            lg{"Northwest Mexico tíð"}
-            ls{"Northwest Mexico vanlig tíð"}
         }
         "meta:Mexico_Pacific"{
             ld{"Mexican Pacific summartíð"}
@@ -430,7 +547,9 @@ fo{
             ls{"Niue tíð"}
         }
         "meta:Norfolk"{
-            ls{"Norfolksoyggj tíð"}
+            ld{"Norfolkoyggj summartíð"}
+            lg{"Norfolkoyggj tíð"}
+            ls{"Norfolkoyggj vanlig tíð"}
         }
         "meta:Noronha"{
             ld{"Fernando de Noronha summartíð"}
@@ -601,10 +720,9 @@ fo{
             lg{"Yekaterinburg tíð"}
             ls{"Yekaterinburg vanlig tíð"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
+        "meta:Yukon"{
+            ls{"Yukon tíð"}
+        }
         regionFormat{"{0} tíð"}
         regionFormatDaylight{"{0} summartíð"}
         regionFormatStandard{"{0} vanlig tíð"}

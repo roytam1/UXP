@@ -38,7 +38,7 @@
 #define UPPERCASE_Z 0x005A
 
 int
-ufmt_digitvalue(UChar c)
+ufmt_digitvalue(char16_t c)
 {
     if( ((c>=DIGIT_0)&&(c<=DIGIT_9)) ||
         ((c>=LOWERCASE_A)&&(c<=LOWERCASE_Z)) ||
@@ -53,19 +53,19 @@ ufmt_digitvalue(UChar c)
 }
 
 UBool
-ufmt_isdigit(UChar     c,
+ufmt_isdigit(char16_t  c,
              int32_t     radix)
 {
     int digitVal = ufmt_digitvalue(c);
 
-    return (UBool)(digitVal < radix && digitVal >= 0);
+    return digitVal < radix && digitVal >= 0;
 }
 
 #define TO_UC_DIGIT(a) a <= 9 ? (DIGIT_0 + a) : (0x0037 + a)
 #define TO_LC_DIGIT(a) a <= 9 ? (DIGIT_0 + a) : (0x0057 + a)
 
 void 
-ufmt_64tou(UChar     *buffer, 
+ufmt_64tou(char16_t  *buffer,
           int32_t   *len,
           uint64_t  value, 
           uint8_t  radix,
@@ -74,12 +74,12 @@ ufmt_64tou(UChar     *buffer,
 {
     int32_t  length = 0;
     uint32_t digit;
-    UChar    *left, *right, temp;
+    char16_t *left, *right, temp;
     
     do {
-        digit = (uint32_t)(value % radix);
+        digit = static_cast<uint32_t>(value % radix);
         value = value / radix;
-        buffer[length++] = (UChar)(uselower ? TO_LC_DIGIT(digit) 
+        buffer[length++] = static_cast<char16_t>(uselower ? TO_LC_DIGIT(digit)
             : TO_UC_DIGIT(digit));
     } while(value);
 
@@ -102,24 +102,24 @@ ufmt_64tou(UChar     *buffer,
 }
 
 void 
-ufmt_ptou(UChar    *buffer, 
+ufmt_ptou(char16_t *buffer,
           int32_t   *len,
           void      *value, 
           UBool     uselower)
 {
     int32_t i;
     int32_t length = 0;
-    uint8_t *ptrIdx = (uint8_t *)&value;
+    uint8_t* ptrIdx = reinterpret_cast<uint8_t*>(&value);
 
 #if U_IS_BIG_ENDIAN
     for (i = 0; i < (int32_t)sizeof(void *); i++)
 #else
-    for (i = (int32_t)sizeof(void *)-1; i >= 0 ; i--)
+    for (i = static_cast<int32_t>(sizeof(void*)) - 1; i >= 0; i--)
 #endif
     {
         uint8_t byteVal = ptrIdx[i];
-        uint16_t firstNibble = (uint16_t)(byteVal>>4);
-        uint16_t secondNibble = (uint16_t)(byteVal&0xF);
+        uint16_t firstNibble = static_cast<uint16_t>(byteVal >> 4);
+        uint16_t secondNibble = static_cast<uint16_t>(byteVal & 0xF);
         if (uselower) {
             buffer[length++]=TO_LC_DIGIT(firstNibble);
             buffer[length++]=TO_LC_DIGIT(secondNibble);
@@ -134,16 +134,16 @@ ufmt_ptou(UChar    *buffer,
 }
 
 int64_t
-ufmt_uto64(const UChar     *buffer, 
+ufmt_uto64(const char16_t  *buffer,
           int32_t     *len,
           int8_t     radix)
 {
-    const UChar     *limit;
+    const char16_t  *limit;
     int32_t         count;
     uint64_t        result;
     
     
-    /* intialize parameters */
+    /* initialize parameters */
     limit     = buffer + *len;
     count     = 0;
     result    = 0;
@@ -165,7 +165,7 @@ ufmt_uto64(const UChar     *buffer,
 
 #define NIBBLE_PER_BYTE 2
 void *
-ufmt_utop(const UChar     *buffer,
+ufmt_utop(const char16_t  *buffer,
           int32_t     *len)
 {
     int32_t count, resultIdx, incVal, offset;
@@ -175,10 +175,10 @@ ufmt_utop(const UChar     *buffer,
         uint8_t bytes[sizeof(void*)];
     } result;
     
-    /* intialize variables */
+    /* initialize variables */
     count      = 0;
     offset     = 0;
-    result.ptr = NULL;
+    result.ptr = nullptr;
 
     /* Skip the leading zeros */
     while(buffer[count] == DIGIT_0 || u_isspace(buffer[count])) {
@@ -193,8 +193,8 @@ ufmt_utop(const UChar     *buffer,
     }
 
     /* detect overflow */
-    if (count - offset > (int32_t)(sizeof(void*)*NIBBLE_PER_BYTE)) {
-        offset = count - (int32_t)(sizeof(void*)*NIBBLE_PER_BYTE);
+    if (count - offset > static_cast<int32_t>(sizeof(void*) * NIBBLE_PER_BYTE)) {
+        offset = count - static_cast<int32_t>(sizeof(void*) * NIBBLE_PER_BYTE);
     }
     
     /* Initialize the direction of the input */
@@ -209,11 +209,11 @@ ufmt_utop(const UChar     *buffer,
     *len = count;
     while(--count >= offset) {
         /* Get the first nibble of the byte */
-        uint8_t byte = (uint8_t)ufmt_digitvalue(buffer[count]);
+        uint8_t byte = static_cast<uint8_t>(ufmt_digitvalue(buffer[count]));
 
         if (count > offset) {
             /* Get the second nibble of the byte when available */
-            byte = (uint8_t)(byte + (ufmt_digitvalue(buffer[--count]) << 4));
+            byte = static_cast<uint8_t>(byte + (ufmt_digitvalue(buffer[--count]) << 4));
         }
         /* Write the byte into the array */
         result.bytes[resultIdx] = byte;
@@ -223,27 +223,26 @@ ufmt_utop(const UChar     *buffer,
     return result.ptr;
 }
 
-UChar*
+char16_t*
 ufmt_defaultCPToUnicode(const char *s, int32_t sSize,
-                        UChar *target, int32_t tSize)
+                        char16_t *target, int32_t tSize)
 {
-    UChar *alias;
+    char16_t *alias;
     UErrorCode status = U_ZERO_ERROR;
     UConverter *defConverter = u_getDefaultConverter(&status);
-    
-    if(U_FAILURE(status) || defConverter == 0)
-        return 0;
+
+    if (U_FAILURE(status) || defConverter == nullptr)
+        return nullptr;
 
     if(sSize <= 0) {
         sSize = static_cast<int32_t>(uprv_strlen(s)) + 1;
     }
     
     /* perform the conversion in one swoop */
-    if(target != 0) {
-        
+    if (target != nullptr) {
         alias = target;
         ucnv_toUnicode(defConverter, &alias, alias + tSize, &s, s + sSize - 1, 
-            NULL, TRUE, &status);
+            nullptr, true, &status);
         
         
         /* add the null terminator */

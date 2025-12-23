@@ -1,18 +1,17 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 ksf{
     AuxExemplarCharacters{"[q x]"}
-    ExemplarCharacters{
-        "[a á b c d e é ǝ {ǝ\u0301} ɛ {ɛ\u0301} f g h i í j k l m n ŋ o ó ɔ {ɔ\u0301}"
-        " p r s t u ú v w y z]"
-    }
+    ExemplarCharacters{"[aá b c d eé ǝ{ǝ́} ɛ{ɛ́} f g h ií j k l m n ŋ oó ɔ{ɔ́} p r s t uú v w y z]"}
     ExemplarCharactersIndex{"[A B C D E Ǝ Ɛ F G H I J K L M N Ŋ O Ɔ P R S T U V W Y Z]"}
-    ExemplarCharactersNumbers{"[  \\- , % ‰ + 0 1 2 3 4 5 6 7 8 9]"}
+    ExemplarCharactersNumbers{"[  \\- ‑ , % ‰ + 0 1 2 3 4 5 6 7 8 9]"}
     NumberElements{
         latn{
             patterns{
+                accountingFormat%alphaNextToNumber{"#,##0.00 ¤"}
                 currencyFormat{"#,##0.00 ¤"}
-                decimalFormat{"#,##0.###"}
+                currencyFormat%alphaNextToNumber{"#,##0.00 ¤"}
             }
             symbols{
                 decimal{","}
@@ -20,7 +19,6 @@ ksf{
             }
         }
     }
-    Version{"2.1.39.11"}
     calendar{
         generic{
             DateTimePatterns{
@@ -38,19 +36,24 @@ ksf{
                 "{1} {0}",
                 "{1} {0}",
             }
+            DateTimeSkeletons{
+                "HHmmsszzzz",
+                "HHmmssz",
+                "HHmmss",
+                "HHmm",
+                "GyMMMMEEEEd",
+                "GyMMMMd",
+                "GyMMMd",
+                "GGGGGyMd",
+            }
             availableFormats{
                 Ed{"E d"}
-                Hm{"HH:mm"}
-                Hms{"HH:mm:ss"}
-                M{"L"}
                 MEd{"E d/M"}
-                MMM{"LLL"}
                 MMMEd{"E d MMM"}
                 MMMd{"d MMM"}
                 Md{"d/M"}
-                d{"d"}
-                hm{"h:mm a"}
-                hms{"h:mm:ss a"}
+                hm{"h:mm a"}
+                hms{"h:mm:ss a"}
                 ms{"m:ss"}
                 y{"y"}
                 yM{"M/y"}
@@ -64,10 +67,6 @@ ksf{
             }
         }
         gregorian{
-            AmPmMarkers{
-                "sárúwá",
-                "cɛɛ́nko",
-            }
             AmPmMarkersAbbr{
                 "sárúwá",
                 "cɛɛ́nko",
@@ -87,21 +86,25 @@ ksf{
                 "{1} {0}",
                 "{1} {0}",
             }
+            DateTimeSkeletons{
+                "HHmmsszzzz",
+                "HHmmssz",
+                "HHmmss",
+                "HHmm",
+                "yMMMMEEEEd",
+                "yMMMMd",
+                "yMMMd",
+                "yMd",
+            }
             availableFormats{
                 Ed{"E d"}
-                Hm{"HH:mm"}
-                Hms{"HH:mm:ss"}
-                M{"L"}
                 MEd{"E d/M"}
-                MMM{"LLL"}
                 MMMEd{"E d MMM"}
                 MMMd{"d MMM"}
                 Md{"d/M"}
-                d{"d"}
-                hm{"h:mm a"}
-                hms{"h:mm:ss a"}
+                hm{"h:mm a"}
+                hms{"h:mm:ss a"}
                 ms{"m:ss"}
-                y{"y"}
                 yM{"M/y"}
                 yMEd{"E d/M/y"}
                 yMMM{"MMM y"}
@@ -146,12 +149,12 @@ ksf{
             }
             eras{
                 abbreviated{
-                    "d.Y.",
-                    "k.Y.",
+                    0{"d.Y."}
+                    1{"k.Y."}
                 }
                 wide{
-                    "di Yɛ́sus aká yálɛ",
-                    "cámɛɛn kǝ kǝbɔpka Y",
+                    0{"di Yɛ́sus aká yálɛ"}
+                    1{"cámɛɛn kǝ kǝbɔpka Y"}
                 }
             }
             monthNames{
@@ -205,8 +208,6 @@ ksf{
         }
     }
     delimiters{
-        alternateQuotationEnd{"’"}
-        alternateQuotationStart{"‘"}
         quotationEnd{"»"}
         quotationStart{"«"}
     }

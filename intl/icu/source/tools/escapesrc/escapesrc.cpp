@@ -113,7 +113,7 @@ inline const char *skipws(const char *p, const char *e) {
 void appendByte(std::string &outstr,
                 uint8_t byte) {
     char tmp2[5];
-    sprintf(tmp2, "\\x%02X", 0xFF & (int)(byte));
+    snprintf(tmp2, sizeof(tmp2), "\\x%02X", 0xFF & static_cast<int>(byte));
     outstr += tmp2;
 }
 
@@ -270,7 +270,7 @@ bool fixAt(std::string &linestr, size_t pos) {
 #endif
       
       // Proceed to decode utf-8
-      const uint8_t *s = (const uint8_t*) (linestr.c_str());
+      const uint8_t* s = reinterpret_cast<const uint8_t*>(linestr.c_str());
       int32_t length = linestr.size();
       UChar32 c;
       if(U8_IS_SINGLE((uint8_t)s[i]) && oldIllegal[s[i]]) {
@@ -285,7 +285,7 @@ bool fixAt(std::string &linestr, size_t pos) {
         U8_NEXT(s, i, length, c);
       }
       if(c<0) {
-        fprintf(stderr, "Illegal utf-8 sequence at Column: %d\n", (int)old_pos);
+        fprintf(stderr, "Illegal utf-8 sequence at Column: %d\n", static_cast<int>(old_pos));
         fprintf(stderr, "Line: >>%s<<\n", linestr.c_str());
         return true;
       }
@@ -296,9 +296,9 @@ bool fixAt(std::string &linestr, size_t pos) {
 
       char newSeq[20];
       if( c <= 0xFFFF) {
-        sprintf(newSeq, "\\u%04X", c);
+        snprintf(newSeq, sizeof(newSeq), "\\u%04X", c);
       } else {
-        sprintf(newSeq, "\\U%08X", c);
+        snprintf(newSeq, sizeof(newSeq), "\\U%08X", c);
       }
       linestr.replace(pos, seqLen, newSeq);
       pos += strlen(newSeq) - 1;
@@ -327,6 +327,9 @@ bool fixLine(int /*no*/, std::string &linestr) {
 
   // start from the end and find all u" cases
   size_t pos = len = linestr.size();
+  if(len>INT32_MAX/2) {
+    return true;
+  }
   while((pos>0) && (pos = linestr.rfind("u\"", pos)) != std::string::npos) {
     //printf("found doublequote at %d\n", pos);
     if(fixAt(linestr, pos)) return true;
@@ -391,15 +394,19 @@ int convert(const std::string &infile, const std::string &outfile) {
   while( getline( inf, linestr)) {
     no++;
     if(fixLine(no, linestr)) {
-      outf.close();
-      fprintf(stderr, "%s:%d: Fixup failed by %s\n", infile.c_str(), no, prog.c_str());
-      cleanup(outfile);
-      return 1;
+      goto fail;
     }
     outf << linestr << '\n';
   }
 
-  return 0;
+  if(inf.eof()) {
+    return 0;
+  }
+fail:
+  outf.close();
+  fprintf(stderr, "%s:%d: Fixup failed by %s\n", infile.c_str(), no, prog.c_str());
+  cleanup(outfile);
+  return 1;
 }
 
 /**

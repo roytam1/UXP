@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 mas{
     Currencies{
         AED{
@@ -170,9 +171,13 @@ mas{
             "SHP",
             "Iropiyianí e Santahelena",
         }
+        SLE{
+            "SLE",
+            "Iropiyianí e leoni",
+        }
         SLL{
             "SLL",
-            "Iropiyianí e leoni",
+            "Iropiyianí e leoni (1964—2022)",
         }
         SOS{
             "SOS",
@@ -211,7 +216,7 @@ mas{
             "Iropiyianí e CFA BEAC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Iropiyianí e CFA BCEAO",
         }
         ZAR{
@@ -231,5 +236,4 @@ mas{
             "Iropiyianí e Simbabwe",
         }
     }
-    Version{"2.1.39.11"}
 }

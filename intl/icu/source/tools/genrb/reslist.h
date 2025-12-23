@@ -21,7 +21,9 @@
 #define RESLIST_H
 
 #define KEY_SPACE_SIZE 65536
-#define RESLIST_MAX_INT_VECTOR 2048
+#define RESLIST_INT_VECTOR_INIT_SIZE 2048
+
+#include <functional>
 
 #include "unicode/utypes.h"
 #include "unicode/unistr.h"
@@ -36,13 +38,15 @@
 
 U_CDECL_BEGIN
 
+class PathFilter;
 class PseudoListResource;
+class ResKeyPath;
 
 struct ResFile {
     ResFile()
-            : fBytes(NULL), fIndexes(NULL),
-              fKeys(NULL), fKeysLength(0), fKeysCount(0),
-              fStrings(NULL), fStringIndexLimit(0),
+            : fBytes(nullptr), fIndexes(nullptr),
+              fKeys(nullptr), fKeysLength(0), fKeysCount(0),
+              fStrings(nullptr), fStringIndexLimit(0),
               fChecksum(0) {}
     ~ResFile() { close(); }
 
@@ -74,7 +78,7 @@ struct SRBRoot {
     void write(const char *outputDir, const char *outputPkg,
                char *writtenFilename, int writtenFilenameLen, UErrorCode &errorCode);
 
-    void setLocale(UChar *locale, UErrorCode &errorCode);
+    void setLocale(char16_t *locale, UErrorCode &errorCode);
     int32_t addTag(const char *tag, UErrorCode &errorCode);
 
     const char *getKeyString(int32_t key) const;
@@ -133,9 +137,9 @@ void bundle_write_xml(struct SRBRoot *bundle, const char *outputDir,const char* 
 /*
  * Return a unique pointer to a dummy object,
  * for use in non-error cases when no resource is to be added to the bundle.
- * (NULL is used in error cases.)
+ * (nullptr is used in error cases.)
  */
-struct SResource* res_none(void);
+struct SResource* res_none();
 
 class ArrayResource;
 class TableResource;
@@ -145,9 +149,9 @@ TableResource *table_open(struct SRBRoot *bundle, const char *tag, const struct 
 
 ArrayResource *array_open(struct SRBRoot *bundle, const char *tag, const struct UString* comment, UErrorCode *status);
 
-struct SResource *string_open(struct SRBRoot *bundle, const char *tag, const UChar *value, int32_t len, const struct UString* comment, UErrorCode *status);
+struct SResource *string_open(struct SRBRoot *bundle, const char *tag, const char16_t *value, int32_t len, const struct UString* comment, UErrorCode *status);
 
-struct SResource *alias_open(struct SRBRoot *bundle, const char *tag, UChar *value, int32_t len, const struct UString* comment, UErrorCode *status);
+struct SResource *alias_open(struct SRBRoot *bundle, const char *tag, char16_t *value, int32_t len, const struct UString* comment, UErrorCode *status);
 
 IntVectorResource *intvector_open(struct SRBRoot *bundle, const char *tag,  const struct UString* comment, UErrorCode *status);
 
@@ -212,6 +216,19 @@ struct SResource {
     void write(UNewDataMemory *mem, uint32_t *byteOffset);
     virtual void handleWrite(UNewDataMemory *mem, uint32_t *byteOffset);
 
+    /**
+     * Applies the given filter with the given base path to this resource.
+     * Removes child resources rejected by the filter recursively.
+     * 
+     * @param bundle Needed in order to access the key for this and child resources.
+     */
+    virtual void applyFilter(const PathFilter& filter, ResKeyPath& path, const SRBRoot* bundle);
+
+    /**
+     * Calls the given function for every key ID present in this tree.
+     */
+    virtual void collectKeys(std::function<void(int32_t)> collector) const;
+
     int8_t   fType;     /* nominal type: fRes (when != 0xffffffff) may use subtype */
     UBool    fWritten;  /* res_write() can exit early */
     uint32_t fRes;      /* resource item word; RES_BOGUS=0xffffffff if not known yet */
@@ -228,10 +245,13 @@ public:
     ContainerResource(SRBRoot *bundle, const char *tag, int8_t type,
                       const UString* comment, UErrorCode &errorCode)
             : SResource(bundle, tag, type, comment, errorCode),
-              fCount(0), fFirst(NULL) {}
+              fCount(0), fFirst(nullptr) {}
     virtual ~ContainerResource();
 
-    virtual void handlePreflightStrings(SRBRoot *bundle, UHashtable *stringSet, UErrorCode &errorCode);
+    void handlePreflightStrings(SRBRoot *bundle, UHashtable *stringSet, UErrorCode &errorCode) override;
+
+    void collectKeys(std::function<void(int32_t)> collector) const override;
+
 protected:
     void writeAllRes16(SRBRoot *bundle);
     void preWriteAllRes(uint32_t *byteOffset);
@@ -254,9 +274,11 @@ public:
 
     void add(SResource *res, int linenumber, UErrorCode &errorCode);
 
-    virtual void handleWrite16(SRBRoot *bundle);
-    virtual void handlePreWrite(uint32_t *byteOffset);
-    virtual void handleWrite(UNewDataMemory *mem, uint32_t *byteOffset);
+    void handleWrite16(SRBRoot *bundle) override;
+    void handlePreWrite(uint32_t *byteOffset) override;
+    void handleWrite(UNewDataMemory *mem, uint32_t *byteOffset) override;
+
+    void applyFilter(const PathFilter& filter, ResKeyPath& path, const SRBRoot* bundle) override;
 
     int8_t fTableType;  // determined by table_write16() for table_preWrite() & table_write()
     SRBRoot *fRoot;
@@ -267,14 +289,14 @@ public:
     ArrayResource(SRBRoot *bundle, const char *tag,
                   const UString* comment, UErrorCode &errorCode)
             : ContainerResource(bundle, tag, URES_ARRAY, comment, errorCode),
-              fLast(NULL) {}
+              fLast(nullptr) {}
     virtual ~ArrayResource();
 
     void add(SResource *res);
 
-    virtual void handleWrite16(SRBRoot *bundle);
-    virtual void handlePreWrite(uint32_t *byteOffset);
-    virtual void handleWrite(UNewDataMemory *mem, uint32_t *byteOffset);
+    virtual void handleWrite16(SRBRoot *bundle) override;
+    virtual void handlePreWrite(uint32_t *byteOffset) override;
+    virtual void handleWrite(UNewDataMemory *mem, uint32_t *byteOffset) override;
 
     SResource *fLast;
 };
@@ -286,29 +308,29 @@ public:
 class PseudoListResource : public ContainerResource {
 public:
     PseudoListResource(SRBRoot *bundle, UErrorCode &errorCode)
-            : ContainerResource(bundle, NULL, URES_TABLE, NULL, errorCode) {}
+            : ContainerResource(bundle, nullptr, URES_TABLE, nullptr, errorCode) {}
     virtual ~PseudoListResource();
 
     void add(SResource *res);
 
-    virtual void handleWrite16(SRBRoot *bundle);
+    virtual void handleWrite16(SRBRoot *bundle) override;
 };
 
 class StringBaseResource : public SResource {
 public:
     StringBaseResource(SRBRoot *bundle, const char *tag, int8_t type,
-                       const UChar *value, int32_t len,
+                       const char16_t *value, int32_t len,
                        const UString* comment, UErrorCode &errorCode);
     StringBaseResource(SRBRoot *bundle, int8_t type,
                        const icu::UnicodeString &value, UErrorCode &errorCode);
-    StringBaseResource(int8_t type, const UChar *value, int32_t len, UErrorCode &errorCode);
+    StringBaseResource(int8_t type, const char16_t *value, int32_t len, UErrorCode &errorCode);
     virtual ~StringBaseResource();
 
-    const UChar *getBuffer() const { return icu::toUCharPtr(fString.getBuffer()); }
+    const char16_t *getBuffer() const { return icu::toUCharPtr(fString.getBuffer()); }
     int32_t length() const { return fString.length(); }
 
-    virtual void handlePreWrite(uint32_t *byteOffset);
-    virtual void handleWrite(UNewDataMemory *mem, uint32_t *byteOffset);
+    virtual void handlePreWrite(uint32_t *byteOffset) override;
+    virtual void handleWrite(UNewDataMemory *mem, uint32_t *byteOffset) override;
 
     // TODO: private with getter?
     icu::UnicodeString fString;
@@ -316,24 +338,24 @@ public:
 
 class StringResource : public StringBaseResource {
 public:
-    StringResource(SRBRoot *bundle, const char *tag, const UChar *value, int32_t len,
+    StringResource(SRBRoot *bundle, const char *tag, const char16_t *value, int32_t len,
                    const UString* comment, UErrorCode &errorCode)
             : StringBaseResource(bundle, tag, URES_STRING, value, len, comment, errorCode),
-              fSame(NULL), fSuffixOffset(0),
+              fSame(nullptr), fSuffixOffset(0),
               fNumCopies(0), fNumUnitsSaved(0), fNumCharsForLength(0) {}
     StringResource(SRBRoot *bundle, const icu::UnicodeString &value, UErrorCode &errorCode)
             : StringBaseResource(bundle, URES_STRING, value, errorCode),
-              fSame(NULL), fSuffixOffset(0),
+              fSame(nullptr), fSuffixOffset(0),
               fNumCopies(0), fNumUnitsSaved(0), fNumCharsForLength(0) {}
     StringResource(int32_t poolStringIndex, int8_t numCharsForLength,
-                   const UChar *value, int32_t length,
+                   const char16_t *value, int32_t length,
                    UErrorCode &errorCode)
             : StringBaseResource(URES_STRING, value, length, errorCode),
-              fSame(NULL), fSuffixOffset(0),
+              fSame(nullptr), fSuffixOffset(0),
               fNumCopies(0), fNumUnitsSaved(0), fNumCharsForLength(numCharsForLength) {
         // v3 pool string encoded as string-v2 with low offset
         fRes = URES_MAKE_RESOURCE(URES_STRING_V2, poolStringIndex);
-        fWritten = TRUE;
+        fWritten = true;
     }
     virtual ~StringResource();
 
@@ -341,8 +363,8 @@ public:
         return fNumCharsForLength + length() + 1;  // +1 for the NUL
     }
 
-    virtual void handlePreflightStrings(SRBRoot *bundle, UHashtable *stringSet, UErrorCode &errorCode);
-    virtual void handleWrite16(SRBRoot *bundle);
+    virtual void handlePreflightStrings(SRBRoot *bundle, UHashtable *stringSet, UErrorCode &errorCode) override;
+    virtual void handleWrite16(SRBRoot *bundle) override;
 
     void writeUTF16v2(int32_t base, icu::UnicodeString &dest);
 
@@ -355,7 +377,7 @@ public:
 
 class AliasResource : public StringBaseResource {
 public:
-    AliasResource(SRBRoot *bundle, const char *tag, const UChar *value, int32_t len,
+    AliasResource(SRBRoot *bundle, const char *tag, const char16_t *value, int32_t len,
                   const UString* comment, UErrorCode &errorCode)
             : StringBaseResource(bundle, tag, URES_ALIAS, value, len, comment, errorCode) {}
     virtual ~AliasResource();
@@ -379,11 +401,12 @@ public:
 
     void add(int32_t value, UErrorCode &errorCode);
 
-    virtual void handlePreWrite(uint32_t *byteOffset);
-    virtual void handleWrite(UNewDataMemory *mem, uint32_t *byteOffset);
+    virtual void handlePreWrite(uint32_t *byteOffset) override;
+    virtual void handleWrite(UNewDataMemory *mem, uint32_t *byteOffset) override;
 
     // TODO: UVector32
-    uint32_t fCount;
+    size_t fCount;
+    size_t fSize;
     uint32_t *fArray;
 };
 
@@ -394,8 +417,8 @@ public:
                    const UString* comment, UErrorCode &errorCode);
     virtual ~BinaryResource();
 
-    virtual void handlePreWrite(uint32_t *byteOffset);
-    virtual void handleWrite(UNewDataMemory *mem, uint32_t *byteOffset);
+    virtual void handlePreWrite(uint32_t *byteOffset) override;
+    virtual void handleWrite(UNewDataMemory *mem, uint32_t *byteOffset) override;
 
     // TODO: CharString?
     uint32_t fLength;
@@ -408,7 +431,7 @@ public:
 void res_close(struct SResource *res);
 
 void setIncludeCopyright(UBool val);
-UBool getIncludeCopyright(void);
+UBool getIncludeCopyright();
 
 void setFormatVersion(int32_t formatVersion);
 

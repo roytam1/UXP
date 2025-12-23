@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 lg{
     Currencies{
         AED{
@@ -174,9 +175,13 @@ lg{
             "SHP",
             "Pawundi ey’eSenti Herena",
         }
+        SLE{
+            "SLE",
+            "Lewone",
+        }
         SLL{
             "SLL",
-            "Lewone",
+            "Lewone (1964—2022)",
         }
         SOS{
             "SOS",
@@ -215,7 +220,7 @@ lg{
             "Faranga ey’omu Afirika eya wakati",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Faranga ey’omu Afirika ey’ebugwanjuba",
         }
         ZAR{
@@ -235,5 +240,4 @@ lg{
             "Doola ey’eZimbabwe",
         }
     }
-    Version{"2.1.39.11"}
 }

@@ -1,14 +1,13 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 ru_UA{
     NumberElements{
         minimumGroupingDigits{"2"}
     }
-    Version{"2.1.43.65"}
     calendar{
         gregorian{
             availableFormats{
-                GyMMM{"LLL y 'г'. G"}
                 yMEd{"ccc, d.MM.y"}
             }
             intervalFormats{

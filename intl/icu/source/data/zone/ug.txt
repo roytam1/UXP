@@ -1,13 +1,37 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 ug{
-    Version{"2.1.44.88"}
     zoneStrings{
+        "Africa:Sao_Tome"{
+            ec{"سان-تومې"}
+        }
+        "America:Asuncion"{
+            ec{"ئاسۇنسىيون"}
+        }
+        "America:Curacao"{
+            ec{"كۇراسو"}
+        }
+        "America:St_Barthelemy"{
+            ec{"ساينىت-بارتھېلەمىي"}
+        }
+        "Antarctica:DumontDUrville"{
+            ec{"دۇمونت دۇرۋىللې"}
+        }
+        "Asia:Saigon"{
+            ec{"خوچىمىن شەھىرى"}
+        }
+        "Etc:Unknown"{
+            ec{"يوچۇن شەھەر"}
+        }
         "Europe:Dublin"{
             ld{"ئىرېلاند يازلىق ۋاقتى"}
         }
         "Europe:London"{
             ld{"ئەنگلىيە يازلىق ۋاقتى"}
+        }
+        "Indian:Reunion"{
+            ec{"رېئونىيون"}
         }
         "meta:Acre"{
             ld{"ئاكرى يازلىق ۋاقتى"}
@@ -27,9 +51,7 @@ ug{
             ls{"جەنۇبىي ئافرىقا ئۆلچەملىك ۋاقتى"}
         }
         "meta:Africa_Western"{
-            ld{"غەربىي ئافرىقا يازلىق ۋاقتى"}
-            lg{"غەربىي ئافرىقا ۋاقتى"}
-            ls{"غەربىي ئافرىقا ئۆلچەملىك ۋاقتى"}
+            ls{"غەربىي ئافرىقا ۋاقتى"}
         }
         "meta:Alaska"{
             ld{"ئالياسكا يازلىق ۋاقتى"}
@@ -181,11 +203,6 @@ ug{
             lg{"جۇڭگو ۋاقتى"}
             ls{"جۇڭگو ئۆلچەملىك ۋاقتى"}
         }
-        "meta:Choibalsan"{
-            ld{"چويبالسان يازلىق ۋاقتى"}
-            lg{"چويبالسان ۋاقتى"}
-            ls{"چويبالسان ئۆلچەملىك ۋاقتى"}
-        }
         "meta:Christmas"{
             ls{"روژدېستۋو ئارىلى ۋاقتى"}
         }
@@ -291,6 +308,9 @@ ug{
         "meta:Guyana"{
             ls{"گىۋىيانا ۋاقتى"}
         }
+        "meta:Hawaii"{
+            ls{"ھاۋاي-ئالېيۇت ئۆلچەملىك ۋاقتى"}
+        }
         "meta:Hawaii_Aleutian"{
             ld{"ھاۋاي-ئالېيۇت يازلىق ۋاقتى"}
             lg{"ھاۋاي-ئالېيۇت ۋاقتى"}
@@ -387,9 +407,6 @@ ug{
             lg{"ئاۋمېن ۋاقتى"}
             ls{"ئاۋمېن ئۆلچەملىك ۋاقتى"}
         }
-        "meta:Macquarie"{
-            ls{"ماككۇۋارى ئاراللىرى ۋاقتى"}
-        }
         "meta:Magadan"{
             ld{"ماگادان يازلىق ۋاقتى"}
             lg{"ماگادان ۋاقتى"}
@@ -414,11 +431,6 @@ ug{
         }
         "meta:Mawson"{
             ls{"ماۋسون ۋاقتى"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"مېكسىكا غەربىي شىمالىي قىسىم يازلىق ۋاقتى"}
-            lg{"مېكسىكا غەربىي شىمالىي قىسىم ۋاقتى"}
-            ls{"مېكسىكا غەربىي شىمالىي قىسىم ئۆلچەملىك ۋاقتى"}
         }
         "meta:Mexico_Pacific"{
             ld{"مېكسىكا تىنچ ئوكيان يازلىق ۋاقتى"}
@@ -463,7 +475,9 @@ ug{
             ls{"نىيۇئې ۋاقتى"}
         }
         "meta:Norfolk"{
-            ls{"نورفولك ئاراللىرى ۋاقتى"}
+            ld{"نورفولك ئاراللىرى يازلىق ۋاقتى"}
+            lg{"نورفولك ئاراللىرى ۋاقتى"}
+            ls{"نورفولك ئاراللىرى ئۆلچەملىك ۋاقتى"}
         }
         "meta:Noronha"{
             ld{"فېرناندو-نورونخا يازلىق ۋاقتى"}
@@ -644,9 +658,6 @@ ug{
             lg{"يېكاتېرىنبۇرگ ۋاقتى"}
             ls{"يېكاتېرىنبۇرگ ئۆلچەملىك ۋاقتى"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        hourFormat{"+HH:mm;-HH:mm"}
         regionFormat{"{0} ۋاقتى"}
         regionFormatDaylight{"{0} يازلىق ۋاقتى"}
         regionFormatStandard{"{0} ئۆلچەملىك ۋاقتى"}

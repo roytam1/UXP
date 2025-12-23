@@ -1,5 +1,5 @@
-commit 4f715ae124c418a15a3fa4d8fb14f406576a7ee5
-Author: Jeff Genovy <29107334+jefgen@users.noreply.github.com>
-Date:   Wed Apr 10 17:32:11 2019 -0700
+commit b66f1dfd8012eba718813c3938cb6373a3af6f84
+Author: Robin Leroy <egg.robin.leroy@gmail.com>
+Date:   Wed Dec 17 00:54:31 2025 +0100
 
-    ICU-20536 ICU 63.2 release tasks + tzdata2019a
+    ICU-23299 wstring woes

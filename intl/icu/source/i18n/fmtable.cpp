@@ -26,9 +26,9 @@
 #include "unicode/measure.h"
 #include "unicode/curramt.h"
 #include "unicode/uformattable.h"
-#include "charstr.h"
 #include "cmemory.h"
 #include "cstring.h"
+#include "fixedstring.h"
 #include "fmtableimp.h"
 #include "number_decimalquantity.h"
 
@@ -53,10 +53,10 @@ using number::impl::DecimalQuantity;
 // NOTE: These inlines assume that all fObjects are in fact instances
 // of the Measure class, which is true as of 3.0.  [alan]
 
-// Return TRUE if *a == *b.
+// Return true if *a == *b.
 static inline UBool objectEquals(const UObject* a, const UObject* b) {
     // LATER: return *a == *b;
-    return *((const Measure*) a) == *((const Measure*) b);
+    return *((const Measure*) a) == *b;
 }
 
 // Return a clone of *a.
@@ -65,9 +65,9 @@ static inline UObject* objectClone(const UObject* a) {
     return ((const Measure*) a)->clone();
 }
 
-// Return TRUE if *a is an instance of Measure.
+// Return true if *a is an instance of Measure.
 static inline UBool instanceOfMeasure(const UObject* a) {
-    return dynamic_cast<const Measure*>(a) != NULL;
+    return dynamic_cast<const Measure*>(a) != nullptr;
 }
 
 /**
@@ -79,7 +79,7 @@ static inline UBool instanceOfMeasure(const UObject* a) {
  */
 static Formattable* createArrayCopy(const Formattable* array, int32_t count) {
     Formattable *result = new Formattable[count];
-    if (result != NULL) {
+    if (result != nullptr) {
         for (int32_t i=0; i<count; ++i)
             result[i] = array[i]; // Don't memcpy!
     }
@@ -104,8 +104,8 @@ static void setError(UErrorCode& ec, UErrorCode err) {
 void  Formattable::init() {
     fValue.fInt64 = 0;
     fType = kLong;
-    fDecimalStr = NULL;
-    fDecimalQuantity = NULL;
+    fDecimalStr = nullptr;
+    fDecimalQuantity = nullptr;
     fBogus.setToBogus(); 
 }
 
@@ -177,7 +177,7 @@ Formattable::Formattable(const UnicodeString& stringToCopy)
 
 // -------------------------------------
 // Creates a formattable object with a UnicodeString* value.
-// (adopting symantics)
+// (adopting semantics)
 
 Formattable::Formattable(UnicodeString* stringToAdopt)
 {
@@ -258,16 +258,11 @@ Formattable::operator=(const Formattable& source)
             break;
         }
 
-        UErrorCode status = U_ZERO_ERROR;
-        if (source.fDecimalQuantity != NULL) {
+        if (source.fDecimalQuantity != nullptr) {
           fDecimalQuantity = new DecimalQuantity(*source.fDecimalQuantity);
         }
-        if (source.fDecimalStr != NULL) {
-            fDecimalStr = new CharString(*source.fDecimalStr, status);
-            if (U_FAILURE(status)) {
-                delete fDecimalStr;
-                fDecimalStr = NULL;
-            }
+        if (source.fDecimalStr != nullptr) {
+            fDecimalStr = new FixedString(*source.fDecimalStr);
         }
     }
     return *this;
@@ -275,18 +270,18 @@ Formattable::operator=(const Formattable& source)
 
 // -------------------------------------
 
-UBool
+bool
 Formattable::operator==(const Formattable& that) const
 {
     int32_t i;
 
-    if (this == &that) return TRUE;
+    if (this == &that) return true;
 
-    // Returns FALSE if the data types are different.
-    if (fType != that.fType) return FALSE;
+    // Returns false if the data types are different.
+    if (fType != that.fType) return false;
 
     // Compares the actual data values.
-    UBool equal = TRUE;
+    bool equal = true;
     switch (fType) {
     case kDate:
         equal = (fValue.fDate == that.fValue.fDate);
@@ -303,20 +298,20 @@ Formattable::operator==(const Formattable& that) const
         break;
     case kArray:
         if (fValue.fArrayAndCount.fCount != that.fValue.fArrayAndCount.fCount) {
-            equal = FALSE;
+            equal = false;
             break;
         }
         // Checks each element for equality.
         for (i=0; i<fValue.fArrayAndCount.fCount; ++i) {
             if (fValue.fArrayAndCount.fArray[i] != that.fValue.fArrayAndCount.fArray[i]) {
-                equal = FALSE;
+                equal = false;
                 break;
             }
         }
         break;
     case kObject:
-        if (fValue.fObject == NULL || that.fValue.fObject == NULL) {
-            equal = FALSE;
+        if (fValue.fObject == nullptr || that.fValue.fObject == nullptr) {
+            equal = false;
         } else {
             equal = objectEquals(fValue.fObject, that.fValue.fObject);
         }
@@ -357,10 +352,10 @@ void Formattable::dispose()
     fValue.fInt64 = 0;
 
     delete fDecimalStr;
-    fDecimalStr = NULL;
+    fDecimalStr = nullptr;
 
     delete fDecimalQuantity;
-    fDecimalQuantity = NULL;
+    fDecimalQuantity = nullptr;
 }
 
 Formattable *
@@ -382,9 +377,9 @@ Formattable::isNumeric() const {
     case kDouble:
     case kLong:
     case kInt64:
-        return TRUE;
+        return true;
     default:
-        return FALSE;
+        return false;
     }
 }
 
@@ -399,7 +394,7 @@ Formattable::getLong(UErrorCode& status) const
         
     switch (fType) {
     case Formattable::kLong: 
-        return (int32_t)fValue.fInt64;
+        return static_cast<int32_t>(fValue.fInt64);
     case Formattable::kInt64:
         if (fValue.fInt64 > INT32_MAX) {
             status = U_INVALID_FORMAT_ERROR;
@@ -408,7 +403,7 @@ Formattable::getLong(UErrorCode& status) const
             status = U_INVALID_FORMAT_ERROR;
             return INT32_MIN;
         } else {
-            return (int32_t)fValue.fInt64;
+            return static_cast<int32_t>(fValue.fInt64);
         }
     case Formattable::kDouble:
         if (fValue.fDouble > INT32_MAX) {
@@ -418,10 +413,10 @@ Formattable::getLong(UErrorCode& status) const
             status = U_INVALID_FORMAT_ERROR;
             return INT32_MIN;
         } else {
-            return (int32_t)fValue.fDouble; // loses fraction
+            return static_cast<int32_t>(fValue.fDouble); // loses fraction
         }
     case Formattable::kObject:
-        if (fValue.fObject == NULL) {
+        if (fValue.fObject == nullptr) {
             status = U_MEMORY_ALLOCATION_ERROR;
             return 0;
         }
@@ -456,13 +451,13 @@ Formattable::getInt64(UErrorCode& status) const
     case Formattable::kInt64: 
         return fValue.fInt64;
     case Formattable::kDouble:
-        if (fValue.fDouble > (double)U_INT64_MAX) {
+        if (fValue.fDouble > static_cast<double>(U_INT64_MAX)) {
             status = U_INVALID_FORMAT_ERROR;
             return U_INT64_MAX;
-        } else if (fValue.fDouble < (double)U_INT64_MIN) {
+        } else if (fValue.fDouble < static_cast<double>(U_INT64_MIN)) {
             status = U_INVALID_FORMAT_ERROR;
             return U_INT64_MIN;
-        } else if (fabs(fValue.fDouble) > U_DOUBLE_MAX_EXACT_INT && fDecimalQuantity != NULL) {
+        } else if (fabs(fValue.fDouble) > U_DOUBLE_MAX_EXACT_INT && fDecimalQuantity != nullptr) {
             if (fDecimalQuantity->fitsInLong(true)) {
                 return fDecimalQuantity->toLong();
             } else {
@@ -471,10 +466,10 @@ Formattable::getInt64(UErrorCode& status) const
                 return fDecimalQuantity->isNegative() ? U_INT64_MIN : U_INT64_MAX;
             }
         } else {
-            return (int64_t)fValue.fDouble;
+            return static_cast<int64_t>(fValue.fDouble);
         } 
     case Formattable::kObject:
-        if (fValue.fObject == NULL) {
+        if (fValue.fObject == nullptr) {
             status = U_MEMORY_ALLOCATION_ERROR;
             return 0;
         }
@@ -500,11 +495,11 @@ Formattable::getDouble(UErrorCode& status) const
     switch (fType) {
     case Formattable::kLong: 
     case Formattable::kInt64: // loses precision
-        return (double)fValue.fInt64;
+        return static_cast<double>(fValue.fInt64);
     case Formattable::kDouble:
         return fValue.fDouble;
     case Formattable::kObject:
-        if (fValue.fObject == NULL) {
+        if (fValue.fObject == nullptr) {
             status = U_MEMORY_ALLOCATION_ERROR;
             return 0;
         }
@@ -522,7 +517,7 @@ Formattable::getDouble(UErrorCode& status) const
 
 const UObject*
 Formattable::getObject() const {
-    return (fType == kObject) ? fValue.fObject : NULL;
+    return (fType == kObject) ? fValue.fObject : nullptr;
 }
 
 // -------------------------------------
@@ -630,7 +625,7 @@ Formattable::getString(UnicodeString& result, UErrorCode& status) const
         setError(status, U_INVALID_FORMAT_ERROR);
         result.setToBogus();
     } else {
-        if (fValue.fString == NULL) {
+        if (fValue.fString == nullptr) {
             setError(status, U_MEMORY_ALLOCATION_ERROR);
         } else {
             result = *fValue.fString;
@@ -647,7 +642,7 @@ Formattable::getString(UErrorCode& status) const
         setError(status, U_INVALID_FORMAT_ERROR);
         return *getBogus();
     }
-    if (fValue.fString == NULL) {
+    if (fValue.fString == nullptr) {
         setError(status, U_MEMORY_ALLOCATION_ERROR);
         return *getBogus();
     }
@@ -662,7 +657,7 @@ Formattable::getString(UErrorCode& status)
         setError(status, U_INVALID_FORMAT_ERROR);
         return *getBogus();
     }
-    if (fValue.fString == NULL) {
+    if (fValue.fString == nullptr) {
     	setError(status, U_MEMORY_ALLOCATION_ERROR);
     	return *getBogus();
     }
@@ -676,7 +671,7 @@ Formattable::getArray(int32_t& count, UErrorCode& status) const
     if (fType != kArray) {
         setError(status, U_INVALID_FORMAT_ERROR);
         count = 0;
-        return NULL;
+        return nullptr;
     }
     count = fValue.fArrayAndCount.fCount; 
     return fValue.fArrayAndCount.fArray;
@@ -688,7 +683,7 @@ Formattable::getArray(int32_t& count, UErrorCode& status) const
 UnicodeString*
 Formattable::getBogus() const 
 {
-    return (UnicodeString*)&fBogus; /* cast away const :-( */
+    return const_cast<UnicodeString*>(&fBogus); /* cast away const :-( */
 }
 
 
@@ -697,21 +692,21 @@ StringPiece Formattable::getDecimalNumber(UErrorCode &status) {
     if (U_FAILURE(status)) {
         return "";
     }
-    if (fDecimalStr != NULL) {
-      return fDecimalStr->toStringPiece();
+    if (fDecimalStr != nullptr) {
+      return fDecimalStr->data();
     }
 
-    CharString *decimalStr = internalGetCharString(status);
-    if(decimalStr == NULL) {
+    FixedString* decimalStr = internalGetFixedString(status);
+    if(decimalStr == nullptr) {
       return ""; // getDecimalNumber returns "" for error cases
     } else {
-      return decimalStr->toStringPiece();
+      return decimalStr->data();
     }
 }
 
-CharString *Formattable::internalGetCharString(UErrorCode &status) {
-    if(fDecimalStr == NULL) {
-      if (fDecimalQuantity == NULL) {
+FixedString *Formattable::internalGetFixedString(UErrorCode &status) {
+    if(fDecimalStr == nullptr) {
+      if (fDecimalQuantity == nullptr) {
         // No decimal number for the formattable yet.  Which means the value was
         // set directly by the user as an int, int64 or double.  If the value came
         // from parsing, or from the user setting a decimal number, fDecimalNum
@@ -724,20 +719,29 @@ CharString *Formattable::internalGetCharString(UErrorCode &status) {
         fDecimalQuantity = dq.orphan();
       }
 
-      fDecimalStr = new CharString();
-      if (fDecimalStr == NULL) {
+      fDecimalStr = new FixedString();
+      if (fDecimalStr == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
-        return NULL;
+        return nullptr;
       }
       // Older ICUs called uprv_decNumberToString here, which is not exactly the same as
       // DecimalQuantity::toScientificString(). The biggest difference is that uprv_decNumberToString does
       // not print scientific notation for magnitudes greater than -5 and smaller than some amount (+5?).
-      if (fDecimalQuantity->isZero()) {
-        fDecimalStr->append("0", -1, status);
-      } else if (fDecimalQuantity->getMagnitude() != INT32_MIN && std::abs(fDecimalQuantity->getMagnitude()) < 5) {
-        fDecimalStr->appendInvariantChars(fDecimalQuantity->toPlainString(), status);
+      if (fDecimalQuantity->isInfinite()) {
+        *fDecimalStr = "Infinity";
+      } else if (fDecimalQuantity->isNaN()) {
+        *fDecimalStr = "NaN";
+      } else if (fDecimalQuantity->isZeroish()) {
+        *fDecimalStr = "0";
+      } else if (fType==kLong || fType==kInt64 || // use toPlainString for integer types
+                  (fDecimalQuantity->getMagnitude() != INT32_MIN && std::abs(fDecimalQuantity->getMagnitude()) < 5)) {
+        copyInvariantChars(fDecimalQuantity->toPlainString(), *fDecimalStr, status);
       } else {
-        fDecimalStr->appendInvariantChars(fDecimalQuantity->toScientificString(), status);
+        copyInvariantChars(fDecimalQuantity->toScientificString(), *fDecimalStr, status);
+      }
+      if (U_SUCCESS(status) && fDecimalStr->isEmpty()) {
+        status = U_MEMORY_ALLOCATION_ERROR;
+        return nullptr;
       }
     }
     return fDecimalStr;
@@ -770,11 +774,9 @@ Formattable::populateDecimalQuantity(number::impl::DecimalQuantity& output, UErr
 // ---------------------------------------
 void
 Formattable::adoptDecimalQuantity(DecimalQuantity *dq) {
-    if (fDecimalQuantity != NULL) {
-        delete fDecimalQuantity;
-    }
+    delete fDecimalQuantity;
     fDecimalQuantity = dq;
-    if (dq == NULL) { // allow adoptDigitList(NULL) to clear
+    if (dq == nullptr) { // allow adoptDigitList(nullptr) to clear
         return;
     }
 
@@ -890,27 +892,27 @@ U_NAMESPACE_END
 
 U_NAMESPACE_USE
 
-U_DRAFT UFormattable* U_EXPORT2
+U_CAPI UFormattable* U_EXPORT2
 ufmt_open(UErrorCode *status) {
   if( U_FAILURE(*status) ) {
-    return NULL;
+    return nullptr;
   }
   UFormattable *fmt = (new Formattable())->toUFormattable();
 
-  if( fmt == NULL ) {
+  if( fmt == nullptr ) {
     *status = U_MEMORY_ALLOCATION_ERROR;
   }
   return fmt;
 }
 
-U_DRAFT void U_EXPORT2
+U_CAPI void U_EXPORT2
 ufmt_close(UFormattable *fmt) {
   Formattable *obj = Formattable::fromUFormattable(fmt);
 
   delete obj;
 }
 
-U_INTERNAL UFormattableType U_EXPORT2
+U_CAPI UFormattableType U_EXPORT2
 ufmt_getType(const UFormattable *fmt, UErrorCode *status) {
   if(U_FAILURE(*status)) {
     return (UFormattableType)UFMT_COUNT;
@@ -920,27 +922,27 @@ ufmt_getType(const UFormattable *fmt, UErrorCode *status) {
 }
 
 
-U_INTERNAL UBool U_EXPORT2
+U_CAPI UBool U_EXPORT2
 ufmt_isNumeric(const UFormattable *fmt) {
   const Formattable *obj = Formattable::fromUFormattable(fmt);
   return obj->isNumeric();
 }
 
-U_DRAFT UDate U_EXPORT2
+U_CAPI UDate U_EXPORT2
 ufmt_getDate(const UFormattable *fmt, UErrorCode *status) {
   const Formattable *obj = Formattable::fromUFormattable(fmt);
 
   return obj->getDate(*status);
 }
 
-U_DRAFT double U_EXPORT2
+U_CAPI double U_EXPORT2
 ufmt_getDouble(UFormattable *fmt, UErrorCode *status) {
   Formattable *obj = Formattable::fromUFormattable(fmt);
 
   return obj->getDouble(*status);
 }
 
-U_DRAFT int32_t U_EXPORT2
+U_CAPI int32_t U_EXPORT2
 ufmt_getLong(UFormattable *fmt, UErrorCode *status) {
   Formattable *obj = Formattable::fromUFormattable(fmt);
 
@@ -948,12 +950,12 @@ ufmt_getLong(UFormattable *fmt, UErrorCode *status) {
 }
 
 
-U_DRAFT const void *U_EXPORT2
+U_CAPI const void *U_EXPORT2
 ufmt_getObject(const UFormattable *fmt, UErrorCode *status) {
   const Formattable *obj = Formattable::fromUFormattable(fmt);
 
   const void *ret = obj->getObject();
-  if( ret==NULL &&
+  if( ret==nullptr &&
       (obj->getType() != Formattable::kObject) &&
       U_SUCCESS( *status )) {
     *status = U_INVALID_FORMAT_ERROR;
@@ -961,7 +963,7 @@ ufmt_getObject(const UFormattable *fmt, UErrorCode *status) {
   return ret;
 }
 
-U_DRAFT const UChar* U_EXPORT2
+U_CAPI const char16_t* U_EXPORT2
 ufmt_getUChars(UFormattable *fmt, int32_t *len, UErrorCode *status) {
   Formattable *obj = Formattable::fromUFormattable(fmt);
 
@@ -970,18 +972,18 @@ ufmt_getUChars(UFormattable *fmt, int32_t *len, UErrorCode *status) {
     if( U_SUCCESS(*status) ){
       *status = U_INVALID_FORMAT_ERROR;
     }
-    return NULL;
+    return nullptr;
   }
 
   // This should return a valid string
   UnicodeString &str = obj->getString(*status);
-  if( U_SUCCESS(*status) && len != NULL ) {
+  if( U_SUCCESS(*status) && len != nullptr ) {
     *len = str.length();
   }
   return str.getTerminatedBuffer();
 }
 
-U_DRAFT int32_t U_EXPORT2
+U_CAPI int32_t U_EXPORT2
 ufmt_getArrayLength(const UFormattable* fmt, UErrorCode *status) {
   const Formattable *obj = Formattable::fromUFormattable(fmt);
 
@@ -990,43 +992,43 @@ ufmt_getArrayLength(const UFormattable* fmt, UErrorCode *status) {
   return count;
 }
 
-U_DRAFT UFormattable * U_EXPORT2
+U_CAPI UFormattable * U_EXPORT2
 ufmt_getArrayItemByIndex(UFormattable* fmt, int32_t n, UErrorCode *status) {
   Formattable *obj = Formattable::fromUFormattable(fmt);
   int32_t count;
   (void)obj->getArray(count, *status);
   if(U_FAILURE(*status)) {
-    return NULL;
+    return nullptr;
   } else if(n<0 || n>=count) {
     setError(*status, U_INDEX_OUTOFBOUNDS_ERROR);
-    return NULL;
+    return nullptr;
   } else {
     return (*obj)[n].toUFormattable(); // returns non-const Formattable
   }
 }
 
-U_DRAFT const char * U_EXPORT2
+U_CAPI const char * U_EXPORT2
 ufmt_getDecNumChars(UFormattable *fmt, int32_t *len, UErrorCode *status) {
   if(U_FAILURE(*status)) {
     return "";
   }
   Formattable *obj = Formattable::fromUFormattable(fmt);
-  CharString *charString = obj->internalGetCharString(*status);
+  FixedString *charString = obj->internalGetFixedString(*status);
   if(U_FAILURE(*status)) {
     return "";
   }
-  if(charString == NULL) {
+  if(charString == nullptr) {
     *status = U_MEMORY_ALLOCATION_ERROR;
     return "";
   } else {
-    if(len!=NULL) {
-      *len = charString->length();
+    if(len!=nullptr) {
+      *len = static_cast<int32_t>(uprv_strlen(charString->data()));
     }
     return charString->data();
   }
 }
 
-U_DRAFT int64_t U_EXPORT2
+U_CAPI int64_t U_EXPORT2
 ufmt_getInt64(UFormattable *fmt, UErrorCode *status) {
   Formattable *obj = Formattable::fromUFormattable(fmt);
   return obj->getInt64(*status);

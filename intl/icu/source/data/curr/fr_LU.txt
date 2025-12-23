@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 fr_LU{
     Currencies{
         FRF{
@@ -11,5 +12,4 @@ fr_LU{
             "franc luxembourgeois",
         }
     }
-    Version{"2.1.38.39"}
 }

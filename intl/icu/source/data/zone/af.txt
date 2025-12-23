@@ -1,16 +1,305 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 af{
-    Version{"2.1.43.65"}
     zoneStrings{
+        "Africa:Addis_Ababa"{
+            ec{"Addis Abeba"}
+        }
+        "Africa:Cairo"{
+            ec{"Kaïro"}
+        }
+        "Africa:Djibouti"{
+            ec{"Djiboeti"}
+        }
+        "Africa:Khartoum"{
+            ec{"Kartoem"}
+        }
+        "Africa:Mogadishu"{
+            ec{"Mogadisjoe"}
+        }
+        "America:Cambridge_Bay"{
+            ec{"Cambridgebaai"}
+        }
+        "America:Cayman"{
+            ec{"Kaaiman"}
+        }
+        "America:Glace_Bay"{
+            ec{"Glacebaai"}
+        }
+        "America:Goose_Bay"{
+            ec{"Goosebaai"}
+        }
+        "America:Jamaica"{
+            ec{"Jamaika"}
+        }
+        "America:Mexico_City"{
+            ec{"Meksikostad"}
+        }
+        "America:North_Dakota:Beulah"{
+            ec{"Beulah, Noord-Dakota"}
+        }
+        "America:North_Dakota:Center"{
+            ec{"Center, Noord-Dakota"}
+        }
+        "America:North_Dakota:New_Salem"{
+            ec{"New Salem, Noord-Dakota"}
+        }
+        "America:St_Barthelemy"{
+            ec{"Sint Bartholomeus"}
+        }
+        "America:St_Johns"{
+            ec{"Sint John’s"}
+        }
+        "America:St_Kitts"{
+            ec{"Sint Kitts"}
+        }
+        "America:St_Lucia"{
+            ec{"Sint Lucia"}
+        }
+        "America:St_Thomas"{
+            ec{"Sint Thomas"}
+        }
+        "America:St_Vincent"{
+            ec{"Sint Vincent"}
+        }
+        "Antarctica:Casey"{
+            ec{"Casey-stasie"}
+        }
+        "Antarctica:Davis"{
+            ec{"Davis-stasie"}
+        }
+        "Antarctica:DumontDUrville"{
+            ec{"Dumont d’Urville-stasie"}
+        }
+        "Antarctica:Mawson"{
+            ec{"Mawson-stasie"}
+        }
+        "Antarctica:McMurdo"{
+            ec{"McMurdo-stasie"}
+        }
+        "Antarctica:Rothera"{
+            ec{"Rothera-navorsingstasie"}
+        }
+        "Antarctica:Syowa"{
+            ec{"Syowa-stasie"}
+        }
+        "Antarctica:Troll"{
+            ec{"Troll-stasie"}
+        }
+        "Antarctica:Vostok"{
+            ec{"Wostok-stasie"}
+        }
+        "Asia:Ashgabat"{
+            ec{"Asjchabad"}
+        }
+        "Asia:Baghdad"{
+            ec{"Bagdad"}
+        }
+        "Asia:Bahrain"{
+            ec{"Bahrein"}
+        }
+        "Asia:Baku"{
+            ec{"Bakoe"}
+        }
+        "Asia:Beirut"{
+            ec{"Beiroet"}
+        }
+        "Asia:Bishkek"{
+            ec{"Bisjkek"}
+        }
+        "Asia:Brunei"{
+            ec{"Broenei"}
+        }
+        "Asia:Damascus"{
+            ec{"Damaskus"}
+        }
+        "Asia:Dubai"{
+            ec{"Doebai"}
+        }
+        "Asia:Hong_Kong"{
+            ec{"Hongkong"}
+        }
+        "Asia:Irkutsk"{
+            ec{"Irkoetsk"}
+        }
+        "Asia:Jakarta"{
+            ec{"Djakarta"}
+        }
+        "Asia:Kabul"{
+            ec{"Kaboel"}
+        }
+        "Asia:Kamchatka"{
+            ec{"Kamtsjatka"}
+        }
+        "Asia:Karachi"{
+            ec{"Karatsji"}
+        }
+        "Asia:Katmandu"{
+            ec{"Katmandoe"}
+        }
+        "Asia:Krasnoyarsk"{
+            ec{"Krasnojarsk"}
+        }
+        "Asia:Kuala_Lumpur"{
+            ec{"Koeala-Loempoer"}
+        }
+        "Asia:Kuwait"{
+            ec{"Koeweit"}
+        }
+        "Asia:Macau"{
+            ec{"Macau"}
+        }
+        "Asia:Muscat"{
+            ec{"Muskat"}
+        }
+        "Asia:Qatar"{
+            ec{"Katar"}
+        }
+        "Asia:Qostanay"{
+            ec{"Kostanay"}
+        }
+        "Asia:Riyadh"{
+            ec{"Riaad"}
+        }
+        "Asia:Saigon"{
+            ec{"Ho Tsji Minhstad"}
+        }
+        "Asia:Seoul"{
+            ec{"Seoel"}
+        }
+        "Asia:Singapore"{
+            ec{"Singapoer"}
+        }
+        "Asia:Tokyo"{
+            ec{"Tokio"}
+        }
+        "Asia:Vladivostok"{
+            ec{"Wladiwostok"}
+        }
+        "Asia:Yakutsk"{
+            ec{"Jakoetsk"}
+        }
+        "Asia:Yekaterinburg"{
+            ec{"Jekaterinburg"}
+        }
+        "Atlantic:Azores"{
+            ec{"Asore"}
+        }
+        "Atlantic:Canary"{
+            ec{"Kanarie"}
+        }
+        "Atlantic:Cape_Verde"{
+            ec{"Kaap Verde"}
+        }
+        "Atlantic:South_Georgia"{
+            ec{"Suid-Georgië"}
+        }
+        "Atlantic:St_Helena"{
+            ec{"Sint Helena"}
+        }
         "Etc:UTC"{
             ls{"Gekoördineerde universele tyd"}
+        }
+        "Etc:Unknown"{
+            ec{"Onbekende ligging"}
+        }
+        "Europe:Athens"{
+            ec{"Athene"}
+        }
+        "Europe:Berlin"{
+            ec{"Berlyn"}
+        }
+        "Europe:Brussels"{
+            ec{"Brussel"}
+        }
+        "Europe:Bucharest"{
+            ec{"Boekarest"}
+        }
+        "Europe:Budapest"{
+            ec{"Boedapest"}
+        }
+        "Europe:Copenhagen"{
+            ec{"Kopenhagen"}
         }
         "Europe:Dublin"{
             ld{"Ierse standaardtyd"}
         }
+        "Europe:Isle_of_Man"{
+            ec{"Eiland Man"}
+        }
+        "Europe:Kiev"{
+            ec{"Kiëf"}
+        }
+        "Europe:Lisbon"{
+            ec{"Lissabon"}
+        }
         "Europe:London"{
+            ec{"Londen"}
             ld{"Britse somertyd"}
+        }
+        "Europe:Luxembourg"{
+            ec{"Luxemburg"}
+        }
+        "Europe:Moscow"{
+            ec{"Moskou"}
+        }
+        "Europe:Paris"{
+            ec{"Parys"}
+        }
+        "Europe:Prague"{
+            ec{"Praag"}
+        }
+        "Europe:Saratov"{
+            ec{"Saratof"}
+        }
+        "Europe:Vatican"{
+            ec{"Vatikaanstad"}
+        }
+        "Europe:Vienna"{
+            ec{"Wene"}
+        }
+        "Europe:Volgograd"{
+            ec{"Wolgograd"}
+        }
+        "Europe:Warsaw"{
+            ec{"Warskou"}
+        }
+        "Europe:Zurich"{
+            ec{"Zürich"}
+        }
+        "Indian:Cocos"{
+            ec{"Kokos"}
+        }
+        "Indian:Comoro"{
+            ec{"Comore"}
+        }
+        "Indian:Maldives"{
+            ec{"Maledive"}
+        }
+        "Pacific:Easter"{
+            ec{"Paaseiland"}
+        }
+        "Pacific:Enderbury"{
+            ec{"Kantoneiland"}
+        }
+        "Pacific:Fiji"{
+            ec{"Fidji"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
+        }
+        "Pacific:Kwajalein"{
+            ec{"Kwajalein Atoll"}
+        }
+        "Pacific:Marquesas"{
+            ec{"Marquesas-eilande"}
+        }
+        "Pacific:Pitcairn"{
+            ec{"Pitcairn-eilande"}
+        }
+        "Pacific:Wake"{
+            ec{"Wake-eiland"}
         }
         "meta:Afghanistan"{
             ls{"Afganistan-tyd"}
@@ -28,11 +317,7 @@ af{
             ss{"SAST"}
         }
         "meta:Africa_Western"{
-            ld{"Wes-Afrika-somertyd"}
-            lg{"Wes-Afrika-tyd"}
-            ls{"Wes-Afrika-standaardtyd"}
-            sd{"WAST"}
-            sg{"WAT"}
+            ls{"Wes-Afrika-tyd"}
             ss{"WAT"}
         }
         "meta:Alaska"{
@@ -121,9 +406,9 @@ af{
             ls{"Westelike Australiese standaardtyd"}
         }
         "meta:Azerbaijan"{
-            ld{"Aserbeidjan-somertyd"}
-            lg{"Aserbeidjan-tyd"}
-            ls{"Aserbeidjan-standaardtyd"}
+            ld{"Azerbeidjan-somertyd"}
+            lg{"Azerbeidjan-tyd"}
+            ls{"Azerbeidjan-standaardtyd"}
         }
         "meta:Azores"{
             ld{"Asore-somertyd"}
@@ -139,7 +424,7 @@ af{
             ls{"Bhoetan-tyd"}
         }
         "meta:Bolivia"{
-            ls{"Bolivia-tyd"}
+            ls{"Bolivië-tyd"}
         }
         "meta:Brasilia"{
             ld{"Brasilia-somertyd"}
@@ -172,11 +457,6 @@ af{
             lg{"China-tyd"}
             ls{"China-standaardtyd"}
         }
-        "meta:Choibalsan"{
-            ld{"Choibalsan-somertyd"}
-            lg{"Choibalsan-tyd"}
-            ls{"Choibalsan-standaardtyd"}
-        }
         "meta:Christmas"{
             ls{"Christmaseiland-tyd"}
         }
@@ -202,7 +482,7 @@ af{
             ls{"Davis-tyd"}
         }
         "meta:DumontDUrville"{
-            ls{"Dumont-d’Urville-tyd"}
+            ls{"Dumont d’Urville-tyd"}
         }
         "meta:East_Timor"{
             ls{"Oos-Timor-tyd"}
@@ -280,7 +560,10 @@ af{
             ls{"Persiese Golf-standaardtyd"}
         }
         "meta:Guyana"{
-            ls{"Guyana-tyd"}
+            ls{"Guiana-tyd"}
+        }
+        "meta:Hawaii"{
+            ls{"Hawaii-Aleoete-standaardtyd"}
         }
         "meta:Hawaii_Aleutian"{
             ld{"Hawaii-Aleoete-dagligtyd"}
@@ -321,9 +604,9 @@ af{
             ls{"Iran-standaardtyd"}
         }
         "meta:Irkutsk"{
-            ld{"Irkutsk-somertyd"}
-            lg{"Irkutsk-tyd"}
-            ls{"Irkutsk-standaardtyd"}
+            ld{"Irkoetsk-somertyd"}
+            lg{"Irkoetsk-tyd"}
+            ls{"Irkoetsk-standaardtyd"}
         }
         "meta:Israel"{
             ld{"Israel-dagligtyd"}
@@ -339,6 +622,9 @@ af{
             ld{"Petropavlovsk-Kamchatski-somertyd"}
             lg{"Petropavlovsk-Kamchatski-tyd"}
             ls{"Petropavlovsk-Kamchatski-standaardtyd"}
+        }
+        "meta:Kazakhstan"{
+            ls{"Kazakstan-tyd"}
         }
         "meta:Kazakhstan_Eastern"{
             ls{"Oos-Kazakstan-tyd"}
@@ -370,9 +656,6 @@ af{
             lg{"Lord Howe-tyd"}
             ls{"Lord Howe-standaardtyd"}
         }
-        "meta:Macquarie"{
-            ls{"Macquarie-eiland-tyd"}
-        }
         "meta:Magadan"{
             ld{"Magadan-somertyd"}
             lg{"Magadan-tyd"}
@@ -397,11 +680,6 @@ af{
         }
         "meta:Mawson"{
             ls{"Mawson-tyd"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"Noordwes-Meksiko-dagligtyd"}
-            lg{"Noordwes-Meksiko-tyd"}
-            ls{"Noordwes-Meksiko-standaardtyd"}
         }
         "meta:Mexico_Pacific"{
             ld{"Meksikaanse Pasifiese dagligtyd"}
@@ -446,7 +724,9 @@ af{
             ls{"Niue-tyd"}
         }
         "meta:Norfolk"{
-            ls{"Norfolkeiland-tyd"}
+            ld{"Norfolkeiland-dagligtyd"}
+            lg{"Norfolkeiland-tyd"}
+            ls{"Norfolkeiland-standaardtyd"}
         }
         "meta:Noronha"{
             ld{"Fernando de Noronha-somertyd"}
@@ -622,10 +902,9 @@ af{
             lg{"Jekaterinburg-tyd"}
             ls{"Jekaterinburg-standaardtyd"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
+        "meta:Yukon"{
+            ls{"Yukontyd"}
+        }
         regionFormat{"{0}-tyd"}
         regionFormatDaylight{"{0}-dagligtyd"}
         regionFormatStandard{"{0}-standaardtyd"}

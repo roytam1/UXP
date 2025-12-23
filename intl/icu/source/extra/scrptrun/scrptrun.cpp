@@ -19,6 +19,8 @@
 #include "cmemory.h"
 #include "scrptrun.h"
 
+U_NAMESPACE_BEGIN
+
 const char ScriptRun::fgClassID=0;
 
 UChar32 ScriptRun::pairedChars[] = {
@@ -123,14 +125,14 @@ UBool ScriptRun::next()
     scriptCode = USCRIPT_COMMON;
 
     for (scriptStart = scriptEnd; scriptEnd < charLimit; scriptEnd += 1) {
-        UChar   high = charArray[scriptEnd];
+        char16_t   high = charArray[scriptEnd];
         UChar32 ch   = high;
 
         // if the character is a high surrogate and it's not the last one
         // in the text, see if it's followed by a low surrogate
         if (high >= 0xD800 && high <= 0xDBFF && scriptEnd < charLimit - 1)
         {
-            UChar low = charArray[scriptEnd + 1];
+            char16_t low = charArray[scriptEnd + 1];
 
             // if it is followed by a low surrogate,
             // consume it and form the full character
@@ -153,6 +155,7 @@ UBool ScriptRun::next()
             if ((pairIndex & 1) == 0) {
                 parenStack[++parenSP].pairIndex = pairIndex;
                 parenStack[parenSP].scriptCode  = scriptCode;
+                startSP = parenSP;
             } else if (parenSP >= 0) {
                 int32_t pi = pairIndex & ~1;
 
@@ -201,3 +204,4 @@ UBool ScriptRun::next()
     return true;
 }
 
+U_NAMESPACE_END

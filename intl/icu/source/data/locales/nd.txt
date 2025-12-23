@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 nd{
     AuxExemplarCharacters{"[r]"}
     ExemplarCharacters{"[a b c d e f g h i j k l m n o p q s t u v w x y z]"}
@@ -12,7 +13,6 @@ nd{
             }
         }
     }
-    Version{"2.1.39.11"}
     calendar{
         generic{
             DateTimePatterns{
@@ -31,19 +31,11 @@ nd{
                 "{1} {0}",
             }
             availableFormats{
-                Hm{"HH:mm"}
-                Hms{"HH:mm:ss"}
-                M{"L"}
                 MEd{"E, M/d"}
-                MMM{"LLL"}
                 MMMEd{"E, MMM d"}
                 MMMMEd{"E, MMMM d"}
-                MMMMd{"MMMM d"}
-                MMMd{"MMM d"}
                 Md{"M/d"}
-                d{"d"}
-                hm{"h:mm a"}
-                ms{"mm:ss"}
+                hm{"h:mm a"}
                 y{"y"}
                 yM{"M/y"}
                 yMEd{"E, M/d/y"}
@@ -71,20 +63,11 @@ nd{
                 "{1} {0}",
             }
             availableFormats{
-                Hm{"HH:mm"}
-                Hms{"HH:mm:ss"}
-                M{"L"}
                 MEd{"E, M/d"}
-                MMM{"LLL"}
                 MMMEd{"E, MMM d"}
                 MMMMEd{"E, MMMM d"}
-                MMMMd{"MMMM d"}
-                MMMd{"MMM d"}
                 Md{"M/d"}
-                d{"d"}
-                hm{"h:mm a"}
-                ms{"mm:ss"}
-                y{"y"}
+                hm{"h:mm a"}
                 yM{"M/y"}
                 yMEd{"E, M/d/y"}
                 yMMM{"MMM y"}
@@ -128,12 +111,12 @@ nd{
             }
             eras{
                 abbreviated{
-                    "BC",
-                    "AD",
+                    0{"BC"}
+                    1{"AD"}
                 }
                 wide{
-                    "UKristo angakabuyi",
-                    "Ukristo ebuyile",
+                    0{"UKristo angakabuyi"}
+                    1{"Ukristo ebuyile"}
                 }
             }
             monthNames{
@@ -201,12 +184,6 @@ nd{
                 }
             }
         }
-    }
-    delimiters{
-        alternateQuotationEnd{"’"}
-        alternateQuotationStart{"‘"}
-        quotationEnd{"”"}
-        quotationStart{"“"}
     }
     fields{
         day{

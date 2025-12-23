@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 lu{
     Currencies{
         AED{
@@ -174,9 +175,13 @@ lu{
             "SHP",
             "Pauni wa Santu Elena",
         }
+        SLE{
+            "SLE",
+            "Leone",
+        }
         SLL{
             "SLL",
-            "Leone",
+            "Leone (1964—2022)",
         }
         SOS{
             "SOS",
@@ -215,7 +220,7 @@ lu{
             "Nfalanga CFA BEAC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Nfalanga CFA BCEAO",
         }
         ZAR{
@@ -235,5 +240,4 @@ lu{
             "Ndola wa Zimbabwe",
         }
     }
-    Version{"2.1.39.11"}
 }

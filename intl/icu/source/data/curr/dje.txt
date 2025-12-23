@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 dje{
     Currencies{
         AED{
@@ -174,9 +175,13 @@ dje{
             "SHP",
             "Seŋ Helena Fraŋ",
         }
+        SLE{
+            "SLE",
+            "Leeon",
+        }
         SLL{
             "SLL",
-            "Leeon",
+            "Leeon (1964—2022)",
         }
         SOS{
             "SOS",
@@ -215,7 +220,7 @@ dje{
             "CFA Fraŋ (BEAC)",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "CFA Fraŋ (BCEAO)",
         }
         ZAR{
@@ -235,5 +240,4 @@ dje{
             "Zimbabwe Dollar",
         }
     }
-    Version{"2.1.39.11"}
 }

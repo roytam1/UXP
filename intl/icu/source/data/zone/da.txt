@@ -1,16 +1,181 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 da{
-    Version{"2.1.43.65"}
     zoneStrings{
+        "Africa:Addis_Ababa"{
+            ec{"Addis Abeba"}
+        }
+        "Africa:Algiers"{
+            ec{"Algier"}
+        }
+        "America:Bahia_Banderas"{
+            ec{"Bahia Banderas"}
+        }
+        "America:Cancun"{
+            ec{"Cancun"}
+        }
+        "America:Cayman"{
+            ec{"Caymanøerne"}
+        }
+        "America:Merida"{
+            ec{"Merida"}
+        }
+        "America:St_Barthelemy"{
+            ec{"Saint-Barthélemy"}
+        }
+        "Asia:Aqtau"{
+            ec{"Aktau"}
+        }
+        "Asia:Aqtobe"{
+            ec{"Aktobe"}
+        }
+        "Asia:Ashgabat"{
+            ec{"Asjkhabad"}
+        }
+        "Asia:Baghdad"{
+            ec{"Bagdad"}
+        }
+        "Asia:Bishkek"{
+            ec{"Bisjkek"}
+        }
+        "Asia:Damascus"{
+            ec{"Damaskus"}
+        }
+        "Asia:Dushanbe"{
+            ec{"Dusjanbe"}
+        }
+        "Asia:Hong_Kong"{
+            ec{"Hongkong"}
+        }
+        "Asia:Kamchatka"{
+            ec{"Kamtjatka"}
+        }
+        "Asia:Katmandu"{
+            ec{"Katmandu"}
+        }
+        "Asia:Krasnoyarsk"{
+            ec{"Krasnojarsk"}
+        }
+        "Asia:Novokuznetsk"{
+            ec{"Novokusnetsk"}
+        }
+        "Asia:Qostanay"{
+            ec{"Kostanay"}
+        }
+        "Asia:Qyzylorda"{
+            ec{"Kyzylorda"}
+        }
+        "Asia:Rangoon"{
+            ec{"Rangoon"}
+        }
+        "Asia:Saigon"{
+            ec{"Ho Chi Minh City"}
+        }
+        "Asia:Tashkent"{
+            ec{"Tasjkent"}
+        }
+        "Asia:Tehran"{
+            ec{"Teheran"}
+        }
+        "Asia:Ulaanbaatar"{
+            ec{"Ulan Bator"}
+        }
+        "Asia:Yakutsk"{
+            ec{"Jakutsk"}
+        }
+        "Asia:Yekaterinburg"{
+            ec{"Jekaterinburg"}
+        }
+        "Asia:Yerevan"{
+            ec{"Jerevan"}
+        }
+        "Atlantic:Azores"{
+            ec{"Azorerne"}
+        }
+        "Atlantic:Canary"{
+            ec{"De Kanariske Øer"}
+        }
+        "Atlantic:Cape_Verde"{
+            ec{"Kap Verde"}
+        }
+        "Atlantic:Faeroe"{
+            ec{"Færøerne"}
+        }
         "Etc:UTC"{
             ls{"Koordineret universaltid"}
+        }
+        "Etc:Unknown"{
+            ec{"Ukendt by"}
+        }
+        "Europe:Athens"{
+            ec{"Athen"}
+        }
+        "Europe:Belgrade"{
+            ec{"Beograd"}
+        }
+        "Europe:Brussels"{
+            ec{"Bruxelles"}
+        }
+        "Europe:Bucharest"{
+            ec{"Bukarest"}
+        }
+        "Europe:Copenhagen"{
+            ec{"København"}
         }
         "Europe:Dublin"{
             ld{"Irsk normaltid"}
         }
+        "Europe:Kiev"{
+            ec{"Kiev"}
+        }
+        "Europe:Lisbon"{
+            ec{"Lissabon"}
+        }
         "Europe:London"{
             ld{"Britisk sommertid"}
+        }
+        "Europe:Moscow"{
+            ec{"Moskva"}
+        }
+        "Europe:Prague"{
+            ec{"Prag"}
+        }
+        "Europe:Rome"{
+            ec{"Rom"}
+        }
+        "Europe:Ulyanovsk"{
+            ec{"Uljanovsk"}
+        }
+        "Europe:Vatican"{
+            ec{"Vatikanet"}
+        }
+        "Europe:Vienna"{
+            ec{"Wien"}
+        }
+        "Europe:Warsaw"{
+            ec{"Warszawa"}
+        }
+        "Europe:Zurich"{
+            ec{"Zürich"}
+        }
+        "Indian:Christmas"{
+            ec{"Juleøen"}
+        }
+        "Indian:Comoro"{
+            ec{"Comorerne"}
+        }
+        "Indian:Maldives"{
+            ec{"Maldiverne"}
+        }
+        "Pacific:Easter"{
+            ec{"Påskeøen"}
+        }
+        "Pacific:Enderbury"{
+            ec{"Canton Island"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
         }
         "meta:Acre"{
             ld{"Acre-sommertid"}
@@ -30,9 +195,7 @@ da{
             ls{"Sydafrikansk tid"}
         }
         "meta:Africa_Western"{
-            ld{"Vestafrikansk sommertid"}
-            lg{"Vestafrikansk tid"}
-            ls{"Vestafrikansk normaltid"}
+            ls{"Vestafrikansk tid"}
         }
         "meta:Alaska"{
             ld{"Alaska-sommertid"}
@@ -186,11 +349,6 @@ da{
             lg{"Kinesisk tid"}
             ls{"Kinesisk normaltid"}
         }
-        "meta:Choibalsan"{
-            ld{"Tsjojbalsan-sommertid"}
-            lg{"Tsjojbalsan-tid"}
-            ls{"Tsjojbalsan-normaltid"}
-        }
         "meta:Christmas"{
             ls{"Juleøen-normaltid"}
         }
@@ -308,6 +466,9 @@ da{
         "meta:Guyana"{
             ls{"Guyana-tid"}
         }
+        "meta:Hawaii"{
+            ls{"Hawaii-Aleutian-normaltid"}
+        }
         "meta:Hawaii_Aleutian"{
             ld{"Hawaii-Aleutian-sommertid"}
             lg{"Hawaii-Aleutian-tid"}
@@ -366,6 +527,9 @@ da{
             lg{"Petropavlovsk-Kamchatski tid"}
             ls{"Petropavlovsk-Kamchatski normaltid"}
         }
+        "meta:Kazakhstan"{
+            ls{"Kasakhstansk tid"}
+        }
         "meta:Kazakhstan_Eastern"{
             ls{"Østkasakhstansk tid"}
         }
@@ -404,9 +568,6 @@ da{
             lg{"Macao-tid"}
             ls{"Macao-normaltid"}
         }
-        "meta:Macquarie"{
-            ls{"Macquarie-tid"}
-        }
         "meta:Magadan"{
             ld{"Magadan-sommertid"}
             lg{"Magadan-tid"}
@@ -431,11 +592,6 @@ da{
         }
         "meta:Mawson"{
             ls{"Mawson-tid"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"Nordvestmexicansk sommertid"}
-            lg{"Nordvestmexicansk tid"}
-            ls{"Nordvestmexicansk normaltid"}
         }
         "meta:Mexico_Pacific"{
             ld{"Mexicansk Pacific-sommertid"}
@@ -480,7 +636,9 @@ da{
             ls{"Niue-tid"}
         }
         "meta:Norfolk"{
-            ls{"Norfolk Island-tid"}
+            ld{"Norfolk Island-sommertid"}
+            lg{"Norfolk Island-tid"}
+            ls{"Norfolk Island-normaltid"}
         }
         "meta:Noronha"{
             ld{"Fernando de Noronha-sommertid"}
@@ -506,7 +664,7 @@ da{
             ls{"Pakistansk normaltid"}
         }
         "meta:Palau"{
-            ls{"Palau-normaltid"}
+            ls{"Palau-tid"}
         }
         "meta:Papua_New_Guinea"{
             ls{"Papua Ny Guinea-tid"}
@@ -609,6 +767,11 @@ da{
         "meta:Truk"{
             ls{"Chuuk-tid"}
         }
+        "meta:Turkey"{
+            ld{"Tyrkisk sommertid"}
+            lg{"Tyrkisk tid"}
+            ls{"Tyrkisk normaltid"}
+        }
         "meta:Turkmenistan"{
             ld{"Turkmensk sommertid"}
             lg{"Turkmensk tid"}
@@ -664,12 +827,12 @@ da{
             lg{"Jekaterinburg-tid"}
             ls{"Jekaterinburg-normaltid"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
+        "meta:Yukon"{
+            ls{"Yukon-tid"}
+        }
         hourFormat{"+HH.mm;-HH.mm"}
-        regionFormat{"{0}"}
-        regionFormatDaylight{"{0} (+1)"}
-        regionFormatStandard{"{0} (+0)"}
+        regionFormat{"{0}-tid"}
+        regionFormatDaylight{"{0}-sommertid"}
+        regionFormatStandard{"{0}-normaltid"}
     }
 }

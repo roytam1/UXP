@@ -1,12 +1,9 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 seh{
-    ExemplarCharacters{
-        "[a á à â ã b c ç d e é ê f g h i í j k l m n o ó ò ô õ p q r s t u ú v w x y"
-        " z]"
-    }
+    ExemplarCharacters{"[aáàâã b cç d eéê f g h ií j k l m n oóòôõ p q r s t uú v w x y z]"}
     ExemplarCharactersIndex{"[A B C D E F G H I J K L M N O P Q R S T U V W X Y Z]"}
-    ExemplarCharactersNumbers{"[\\- , . % ‰ + 0 1 2 3 4 5 6 7 8 9]"}
     NumberElements{
         latn{
             patterns{
@@ -18,7 +15,6 @@ seh{
             }
         }
     }
-    Version{"2.1.39.11"}
     calendar{
         generic{
             DateTimePatterns{
@@ -36,22 +32,28 @@ seh{
                 "{1} {0}",
                 "{1} {0}",
             }
+            DateTimeSkeletons{
+                "HHmmsszzzz",
+                "HHmmssz",
+                "HHmmss",
+                "HHmm",
+                "GyMMMMEEEEd",
+                "GyMMMMd",
+                "GyMMMd",
+                "GGGGGyMd",
+            }
             availableFormats{
                 HHmm{"HH:mm"}
                 HHmmss{"HH:mm:ss"}
                 Hm{"H:mm"}
-                M{"L"}
                 MEd{"E, dd/MM"}
-                MMM{"LLL"}
                 MMMEd{"E, d MMM"}
                 MMMMEd{"E, d MMMM"}
                 MMMMd{"d MMMM"}
                 MMMd{"d MMM"}
                 MMdd{"dd/MM"}
                 Md{"d/M"}
-                d{"d"}
                 mmss{"mm:ss"}
-                ms{"mm:ss"}
                 y{"y"}
                 yM{"MM/y"}
                 yMEd{"E, dd/MM/y"}
@@ -80,23 +82,28 @@ seh{
                 "{1} {0}",
                 "{1} {0}",
             }
+            DateTimeSkeletons{
+                "HHmmsszzzz",
+                "HHmmssz",
+                "HHmmss",
+                "HHmm",
+                "yMMMMEEEEd",
+                "yMMMMd",
+                "yMMMd",
+                "yMd",
+            }
             availableFormats{
                 HHmm{"HH:mm"}
                 HHmmss{"HH:mm:ss"}
                 Hm{"H:mm"}
-                M{"L"}
                 MEd{"E, dd/MM"}
-                MMM{"LLL"}
                 MMMEd{"E, d MMM"}
                 MMMMEd{"E, d MMMM"}
                 MMMMd{"d MMMM"}
                 MMMd{"d MMM"}
                 MMdd{"dd/MM"}
                 Md{"d/M"}
-                d{"d"}
                 mmss{"mm:ss"}
-                ms{"mm:ss"}
-                y{"y"}
                 yM{"MM/y"}
                 yMEd{"E, dd/MM/y"}
                 yMM{"MM/y"}
@@ -104,8 +111,6 @@ seh{
                 yMMMEd{"E, d 'de' MMM 'de' y"}
                 yMMMM{"MMMM 'de' y"}
                 yMMMd{"d 'de' MMM 'de' y"}
-                yQQQ{"y QQQ"}
-                yQQQQ{"y QQQQ"}
             }
             dayNames{
                 format{
@@ -142,12 +147,12 @@ seh{
             }
             eras{
                 abbreviated{
-                    "AC",
-                    "AD",
+                    0{"AC"}
+                    1{"AD"}
                 }
                 wide{
-                    "Antes de Cristo",
-                    "Anno Domini",
+                    0{"Antes de Cristo"}
+                    1{"Anno Domini"}
                 }
             }
             monthNames{
@@ -199,12 +204,6 @@ seh{
                 }
             }
         }
-    }
-    delimiters{
-        alternateQuotationEnd{"’"}
-        alternateQuotationStart{"‘"}
-        quotationEnd{"”"}
-        quotationStart{"“"}
     }
     fields{
         day{

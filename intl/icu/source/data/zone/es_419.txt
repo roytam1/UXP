@@ -1,10 +1,40 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 es_419{
-    Version{"2.1.43.65"}
     zoneStrings{
+        "Africa:Conakry"{
+            ec{"Conakry"}
+        }
+        "America:Fort_Nelson"{
+            ec{"Fuerte Nelson"}
+        }
+        "America:Nassau"{
+            ec{"Nasáu"}
+        }
+        "America:Santiago"{
+            ec{"Santiago"}
+        }
+        "America:St_Thomas"{
+            ec{"Santo Tomás"}
+        }
+        "Asia:Khandyga"{
+            ec{"Khandyga"}
+        }
+        "Atlantic:Canary"{
+            ec{"Islas Canarias"}
+        }
         "Etc:UTC"{
-            ls{"Hora Universal Coordinada"}
+            ls{"hora universal coordinada"}
+        }
+        "Europe:Dublin"{
+            ld{"hora estándar de Irlanda"}
+        }
+        "Europe:Guernsey"{
+            ec{"Guernsey"}
+        }
+        "Pacific:Wake"{
+            ec{"Isla Wake"}
         }
         "meta:America_Mountain"{
             ld{"hora de verano de la montaña"}
@@ -53,6 +83,9 @@ es_419{
             lg{"hora de las Islas Malvinas"}
             ls{"hora estándar de las Islas Malvinas"}
         }
+        "meta:French_Southern"{
+            ls{"hora de las Tierras Australes y Antárticas Francesas"}
+        }
         "meta:GMT"{
             ss{"∅∅∅"}
         }
@@ -62,14 +95,16 @@ es_419{
         "meta:India"{
             ls{"hora de India"}
         }
-        "meta:Macquarie"{
-            ls{"hora de la Isla Macquarie"}
-        }
         "meta:Marshall_Islands"{
             ls{"hora de Islas Marshall"}
         }
+        "meta:Myanmar"{
+            ls{"hora de Myanmar (Birmania)"}
+        }
         "meta:Norfolk"{
-            ls{"hora de la Isla Norfolk"}
+            ld{"hora de verano de la Isla Norfolk"}
+            lg{"hora de la Isla Norfolk"}
+            ls{"hora estándar de la Isla Norfolk"}
         }
         "meta:Pyongyang"{
             ls{"hora de Pionyang"}

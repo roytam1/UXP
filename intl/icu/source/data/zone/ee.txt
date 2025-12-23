@@ -1,16 +1,40 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 ee{
-    Version{"2.1.44.88"}
     zoneStrings{
+        "America:Bahia_Banderas"{
+            ec{"Bahia Banderas"}
+        }
+        "America:Cancun"{
+            ec{"Cancun"}
+        }
+        "America:Merida"{
+            ec{"Merida"}
+        }
+        "Asia:Katmandu"{
+            ec{"Kathmandu nutomegaƒoƒome"}
+        }
+        "Asia:Macau"{
+            ec{"Macau"}
+        }
         "Etc:UTC"{
             ls{"Xexeme gaƒoƒoɖoanyi me"}
+        }
+        "Etc:Unknown"{
+            ec{"Du manya"}
         }
         "Europe:Dublin"{
             ld{"Ireland nutome gaƒoƒo me"}
         }
+        "Europe:Kiev"{
+            ec{"Kiev"}
+        }
         "Europe:London"{
             ld{"British dzomeŋɔli gaƒoƒo me"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
         }
         "meta:Afghanistan"{
             ls{"Afghanistan gaƒoƒo me"}
@@ -28,11 +52,7 @@ ee{
             ss{"SAST"}
         }
         "meta:Africa_Western"{
-            ld{"West Africa dzomeŋɔli gaƒoƒo me"}
-            lg{"West Africa gaƒoƒo me"}
-            ls{"West Africa nutome gaƒoƒo me"}
-            sd{"WAST"}
-            sg{"WAT"}
+            ls{"West Africa game"}
             ss{"WAT"}
         }
         "meta:Alaska"{
@@ -167,11 +187,6 @@ ee{
             lg{"China gaƒoƒo me"}
             ls{"China nutome gaƒoƒo me"}
         }
-        "meta:Choibalsan"{
-            ld{"Choibalsan dzomeŋɔli gaƒoƒo me"}
-            lg{"Choibalsan gaƒoƒo me"}
-            ls{"Choibalsan nutome gaƒoƒo me"}
-        }
         "meta:Christmas"{
             ls{"Christmas Island gaƒoƒo me"}
         }
@@ -242,7 +257,7 @@ ee{
             ls{"French Southern & Antarctic gaƒoƒo me"}
         }
         "meta:GMT"{
-            ls{"Greenwich gaƒoƒo me"}
+            ls{"Greenwich gaƒoƒo"}
         }
         "meta:Galapagos"{
             ls{"Galapagos gaƒoƒo me"}
@@ -273,6 +288,9 @@ ee{
         }
         "meta:Guyana"{
             ls{"Guyana gaƒoƒo me"}
+        }
+        "meta:Hawaii"{
+            ls{"Hawaii-Aleutia nutome gaƒoƒo me"}
         }
         "meta:Hawaii_Aleutian"{
             ld{"Hawaii-Aleutia kele gaƒoƒo me"}
@@ -357,9 +375,6 @@ ee{
             lg{"Lord Howe gaƒoƒo me"}
             ls{"Lord Howe nutome gaƒoƒo me"}
         }
-        "meta:Macquarie"{
-            ls{"Macquarie Island gaƒoƒo me"}
-        }
         "meta:Magadan"{
             ld{"Magadan dzomeŋɔli gaƒoƒo me"}
             lg{"Magadan gaƒoƒo me"}
@@ -384,11 +399,6 @@ ee{
         }
         "meta:Mawson"{
             ls{"Mawson gaƒoƒo me"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"Northwest Mexico kele gaƒoƒo me"}
-            lg{"Northwest Mexico gaƒoƒo me"}
-            ls{"Northwest Mexico nutome gaƒoƒo me"}
         }
         "meta:Mexico_Pacific"{
             ld{"Mexican Pacific kele gaƒoƒome"}
@@ -433,7 +443,9 @@ ee{
             ls{"Niue gaƒoƒo me"}
         }
         "meta:Norfolk"{
-            ls{"Norfolk Island gaƒoƒo me"}
+            ld{"Norfolk Island dzomeŋɔli gaƒoƒo me"}
+            lg{"Norfolk Island gaƒoƒo me"}
+            ls{"Norfolk Island nutome gaƒoƒo me"}
         }
         "meta:Noronha"{
             ld{"Fernando de Noronha dzomeŋɔli gaƒoƒo me"}
@@ -604,12 +616,9 @@ ee{
             lg{"Yekaterinburg gaƒoƒo me"}
             ls{"Yekaterinburg nutome gaƒoƒo me"}
         }
-        fallbackFormat{"{1} ({0})"}
         gmtFormat{"{0} GMT"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
-        regionFormat{"{0} gaƒoƒo me"}
-        regionFormatDaylight{"{0} kele gaƒoƒo me"}
-        regionFormatStandard{"{0} nutome gaƒoƒo me"}
+        regionFormat{"{0} game"}
+        regionFormatDaylight{"{0} ŋkekemeɣeyiɣi"}
+        regionFormatStandard{"{0} game ɖoɖoea"}
     }
 }

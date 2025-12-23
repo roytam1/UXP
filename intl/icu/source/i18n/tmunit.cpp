@@ -59,11 +59,11 @@ TimeUnit* U_EXPORT2
 TimeUnit::createInstance(TimeUnit::UTimeUnitFields timeUnitField, 
                          UErrorCode& status) {
     if (U_FAILURE(status)) {
-        return NULL;
+        return nullptr;
     }
     if (timeUnitField < 0 || timeUnitField >= UTIMEUNIT_FIELD_COUNT) {
         status = U_ILLEGAL_ARGUMENT_ERROR;
-        return NULL;
+        return nullptr;
     }
     return new TimeUnit(timeUnitField);
 }
@@ -94,8 +94,7 @@ TimeUnit::TimeUnit(TimeUnit::UTimeUnitFields timeUnitField) {
         initTime("second");
         break;
     default:
-        U_ASSERT(false);
-        break;
+        UPRV_UNREACHABLE_EXIT;
     }
 }
 
@@ -103,7 +102,7 @@ TimeUnit::TimeUnit(const TimeUnit& other)
 :   MeasureUnit(other), fTimeUnitField(other.fTimeUnitField) {
 }
 
-UObject* 
+TimeUnit* 
 TimeUnit::clone() const {
     return new TimeUnit(*this);
 }

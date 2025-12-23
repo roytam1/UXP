@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 cy{
     Currencies{
         AED{
@@ -262,10 +263,6 @@ cy{
             "CRC",
             "Colón Costa Rica",
         }
-        CSD{
-            "CSD",
-            "CSD",
-        }
         CUC{
             "CUC",
             "Peso Trosadwy Ciwba",
@@ -329,10 +326,6 @@ cy{
         ERN{
             "ERN",
             "Nakfa Eritrea",
-        }
-        ESP{
-            "ESP",
-            "ESP",
         }
         ETB{
             "ETB",
@@ -398,17 +391,9 @@ cy{
             "GQE",
             "Ekwele Guinea Gyhydeddol",
         }
-        GRD{
-            "GRD",
-            "GRD",
-        }
         GTQ{
             "GTQ",
             "Quetzal Guatemala",
-        }
-        GWE{
-            "GWE",
-            "GWE",
         }
         GWP{
             "GWP",
@@ -425,10 +410,6 @@ cy{
         HNL{
             "HNL",
             "Lempira Honduras",
-        }
-        HRD{
-            "HRD",
-            "HRD",
         }
         HRK{
             "HRK",
@@ -481,10 +462,6 @@ cy{
         ISK{
             "ISK",
             "Króna Gwlad yr Iâ",
-        }
-        ITL{
-            "ITL",
-            "ITL",
         }
         JMD{
             "JMD",
@@ -570,17 +547,9 @@ cy{
             "LTT",
             "Talonas Lithwania",
         }
-        LUC{
-            "LUC",
-            "LUC",
-        }
         LUF{
             "LUF",
             "Ffranc Lwcsembwrg",
-        }
-        LUL{
-            "LUL",
-            "LUL",
         }
         LVL{
             "LVL",
@@ -622,10 +591,6 @@ cy{
             "MKD",
             "Denar Macedonia",
         }
-        MKN{
-            "MKN",
-            "MKN",
-        }
         MLF{
             "MLF",
             "Ffranc Mali",
@@ -640,7 +605,7 @@ cy{
         }
         MOP{
             "MOP",
-            "Pataca Macau",
+            "pataca Macau",
         }
         MRO{
             "MRO",
@@ -649,14 +614,6 @@ cy{
         MRU{
             "MRU",
             "Ouguiya Mauritania",
-        }
-        MTL{
-            "MTL",
-            "MTL",
-        }
-        MTP{
-            "MTP",
-            "MTP",
         }
         MUR{
             "MUR",
@@ -760,7 +717,7 @@ cy{
         }
         PHP{
             "PHP",
-            "Peso’r Philipinau",
+            "Peso Philipinas",
         }
         PKR{
             "PKR",
@@ -769,10 +726,6 @@ cy{
         PLN{
             "PLN",
             "Zloty Gwlad Pwyl",
-        }
-        PTE{
-            "PTE",
-            "PTE",
         }
         PYG{
             "PYG",
@@ -838,13 +791,13 @@ cy{
             "SHP",
             "Punt St Helena",
         }
-        SIT{
-            "SIT",
-            "SIT",
+        SLE{
+            "SLE",
+            "Leone Sierra Leone",
         }
         SLL{
             "SLL",
-            "Leone Sierra Leone",
+            "Leone Sierra Leone (1964—2022)",
         }
         SOS{
             "SOS",
@@ -958,10 +911,6 @@ cy{
             "USS",
             "Doler UDA (yr un diwrnod)",
         }
-        UYI{
-            "UYI",
-            "UYI",
-        }
         UYP{
             "UYP",
             "Peso Uruguay (1975–1993)",
@@ -1026,12 +975,16 @@ cy{
             "EC$",
             "Doler Dwyrain y Caribî",
         }
+        XCG{
+            "Cg.",
+            "guilder Caribïaidd",
+        }
         XEU{
             "XEU",
             "Uned Arian Cyfred Ewropeaidd",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Ffranc CFA Gorllewin Affrica",
         }
         XPD{
@@ -1062,22 +1015,6 @@ cy{
             "YER",
             "Rial Yemen",
         }
-        YUD{
-            "YUD",
-            "YUD",
-        }
-        YUM{
-            "YUM",
-            "YUM",
-        }
-        YUN{
-            "YUN",
-            "YUN",
-        }
-        YUR{
-            "YUR",
-            "YUR",
-        }
         ZAL{
             "ZAL",
             "Rand (ariannol) De Affrica",
@@ -1106,6 +1043,10 @@ cy{
             "ZWD",
             "Doler Zimbabwe (1980–2008)",
         }
+        ZWG{
+            "ZWG",
+            "Zimbabwean Gold",
+        }
         ZWL{
             "ZWL",
             "Doler Zimbabwe (2009)",
@@ -1116,104 +1057,13 @@ cy{
         }
     }
     Currencies%narrow{
-        AOA{"Kz"}
-        ARS{"$"}
-        AUD{"$"}
-        BAM{"KM"}
-        BBD{"$"}
         BDT{"TK"}
-        BMD{"$"}
-        BND{"$"}
-        BOB{"Bs"}
-        BRL{"R$"}
-        BSD{"$"}
         BWP{"BWP"}
         BYN{"р."}
-        BZD{"$"}
-        CAD{"$"}
-        CLP{"$"}
-        CNY{"¥"}
-        COP{"$"}
-        CRC{"₡"}
-        CUC{"$"}
-        CUP{"$"}
-        CZK{"Kč"}
-        DKK{"kr"}
-        DOP{"$"}
-        EGP{"E£"}
-        EUR{"€"}
-        FJD{"$"}
-        FKP{"£"}
-        GBP{"£"}
-        GEL{"₾"}
-        GIP{"£"}
-        GNF{"FG"}
-        GTQ{"Q"}
-        GYD{"$"}
         HKD{"HK$"}
-        HNL{"L"}
-        HRK{"kn"}
-        HUF{"Ft"}
-        IDR{"Rp"}
-        ILS{"₪"}
-        INR{"₹"}
-        ISK{"kr"}
-        JMD{"$"}
-        JPY{"¥"}
-        KHR{"៛"}
-        KMF{"CF"}
-        KPW{"₩"}
-        KRW{"₩"}
-        KYD{"$"}
-        KZT{"₸"}
-        LAK{"₭"}
-        LBP{"L£"}
-        LKR{"Rs"}
-        LRD{"$"}
-        MGA{"Ar"}
-        MMK{"K"}
-        MNT{"₮"}
-        MUR{"Rs"}
-        MXN{"$"}
-        MYR{"RM"}
-        NAD{"$"}
-        NGN{"₦"}
-        NIO{"C$"}
-        NOK{"kr"}
-        NPR{"Rs"}
-        NZD{"$"}
-        PHP{"₱"}
-        PKR{"Rs"}
-        PLN{"zł"}
-        PYG{"₲"}
-        RON{"lei"}
-        RUB{"₽"}
-        RWF{"RF"}
-        SBD{"$"}
-        SEK{"kr"}
-        SGD{"$"}
-        SHP{"£"}
-        SRD{"$"}
-        SSP{"£"}
-        STN{"Db"}
-        SYP{"£"}
-        THB{"฿"}
-        TOP{"T$"}
-        TRY{"₺"}
-        TTD{"$"}
         TWD{"NT$"}
-        UAH{"₴"}
-        USD{"$"}
-        UYU{"$"}
-        VEF{"Bs"}
-        VND{"₫"}
-        XCD{"$"}
         ZAR{"ZAR"}
         ZMW{"ZMW"}
-    }
-    Currencies%variant{
-        GEL{"₾"}
-        TRY{"TL"}
     }
     CurrencyPlurals{
         AED{
@@ -1347,7 +1197,7 @@ cy{
         AUD{
             few{"doler Awstralia"}
             many{"doler Awstralia"}
-            one{"ddoler Awstralia"}
+            one{"doler Awstralia"}
             other{"doler Awstralia"}
             two{"ddoler Awstralia"}
             zero{"doler Awstralia"}
@@ -1467,7 +1317,7 @@ cy{
         BMD{
             few{"doler Bermuda"}
             many{"doler Bermuda"}
-            one{"ddoler Bermuda"}
+            one{"doler Bermuda"}
             other{"doler Bermuda"}
             two{"ddoler Bermuda"}
             zero{"doler Bermuda"}
@@ -1475,7 +1325,7 @@ cy{
         BND{
             few{"doler Brunei"}
             many{"doler Brunei"}
-            one{"ddoler Brunei"}
+            one{"doler Brunei"}
             other{"doler Brunei"}
             two{"ddoler Brunei"}
             zero{"doler Brunei"}
@@ -1619,7 +1469,7 @@ cy{
         BZD{
             few{"doler Belize"}
             many{"doler Belize"}
-            one{"ddoler Belize"}
+            one{"doler Belize"}
             other{"doler Belize"}
             two{"ddoler Belize"}
             zero{"doler Belize"}
@@ -1627,9 +1477,9 @@ cy{
         CAD{
             few{"doler Canada"}
             many{"doler Canada"}
-            one{"ddoler Canada"}
+            one{"doler Canada"}
             other{"doler Canada"}
-            two{"ddoler Canada"}
+            two{"doler Canada"}
             zero{"doler Canada"}
         }
         CDF{
@@ -1850,8 +1700,8 @@ cy{
         }
         EGP{
             few{"punt yr Aifft"}
-            many{"phunt yr Aifft"}
-            one{"bunt yr Aifft"}
+            many{"punt yr Aifft"}
+            one{"punt yr Aifft"}
             other{"punt yr Aifft"}
             two{"bunt yr Aifft"}
             zero{"punt yr Aifft"}
@@ -1891,14 +1741,14 @@ cy{
         FJD{
             few{"doler Ffiji"}
             many{"doler Ffiji"}
-            one{"ddoler Ffiji"}
+            one{"doler Ffiji"}
             other{"doler Ffiji"}
             two{"ddoler Ffiji"}
             zero{"doler Ffiji"}
         }
         FKP{
             few{"punt Ynysoedd Falkland/Malvinas"}
-            many{"phunt Ynysoedd Falkland/Malvinas"}
+            many{"punt Ynysoedd Falkland/Malvinas"}
             one{"punt Ynysoedd Falkland/Malvinas"}
             other{"punt Ynysoedd Falkland/Malvinas"}
             two{"bunt Ynysoedd Falkland/Malvinas"}
@@ -1914,7 +1764,7 @@ cy{
         }
         GBP{
             few{"punt Prydain"}
-            many{"phunt Prydain"}
+            many{"punt Prydain"}
             one{"bunt Prydain"}
             other{"punt Prydain"}
             two{"bunt Prydain"}
@@ -1954,7 +1804,7 @@ cy{
         }
         GIP{
             few{"punt Gibraltar"}
-            many{"phunt Gibraltar"}
+            many{"punt Gibraltar"}
             one{"punt Gibraltar"}
             other{"punt Gibraltar"}
             two{"bunt Gibraltar"}
@@ -2011,7 +1861,7 @@ cy{
         GYD{
             few{"doler Guyana"}
             many{"doler Guyana"}
-            one{"ddoler Guyana"}
+            one{"doler Guyana"}
             other{"doler Guyana"}
             two{"ddoler Guyana"}
             zero{"doler Guyana"}
@@ -2019,7 +1869,7 @@ cy{
         HKD{
             few{"doler Hong Kong"}
             many{"doler Hong Kong"}
-            one{"ddoler Hong Kong"}
+            one{"doler Hong Kong"}
             other{"doler Hong Kong"}
             two{"ddoler Hong Kong"}
             zero{"doler Hong Kong"}
@@ -2139,7 +1989,7 @@ cy{
         JMD{
             few{"doler Jamaica"}
             many{"doler Jamaica"}
-            one{"ddoler Jamaica"}
+            one{"doler Jamaica"}
             other{"doler Jamaica"}
             two{"ddoler Jamaica"}
             zero{"doler Jamaica"}
@@ -2235,7 +2085,7 @@ cy{
         KYD{
             few{"doler Ynysoedd Cayman"}
             many{"doler Ynysoedd Cayman"}
-            one{"ddoler Ynysoedd Cayman"}
+            one{"doler Ynysoedd Cayman"}
             other{"doler Ynysoedd Cayman"}
             two{"ddoler Ynysoedd Cayman"}
             zero{"doler Ynysoedd Cayman"}
@@ -2258,7 +2108,7 @@ cy{
         }
         LBP{
             few{"punt Libanus"}
-            many{"phunt Libanus"}
+            many{"punt Libanus"}
             one{"punt Libanus"}
             other{"punt Libanus"}
             two{"bunt Libanus"}
@@ -2416,14 +2266,6 @@ cy{
             two{"tugrik Mongolia"}
             zero{"tugrik Mongolia"}
         }
-        MOP{
-            few{"pataca Macau"}
-            many{"pataca Macau"}
-            one{"pataca Macau"}
-            other{"pataca Macau"}
-            two{"pataca Macau"}
-            zero{"pataca Macau"}
-        }
         MRO{
             few{"ouguiya Mauritania (1973–2017)"}
             many{"ouguiya Mauritania (1973–2017)"}
@@ -2531,7 +2373,7 @@ cy{
         NAD{
             few{"doler Namibia"}
             many{"doler Namibia"}
-            one{"ddoler Namibia"}
+            one{"doler Namibia"}
             other{"doler Namibia"}
             two{"ddoler Namibia"}
             zero{"doler Namibia"}
@@ -2587,7 +2429,7 @@ cy{
         NZD{
             few{"doler Seland Newydd"}
             many{"doler Seland Newydd"}
-            one{"ddoler Seland Newydd"}
+            one{"doler Seland Newydd"}
             other{"doler Seland Newydd"}
             two{"ddoler Seland Newydd"}
             zero{"doler Seland Newydd"}
@@ -2731,7 +2573,7 @@ cy{
         SBD{
             few{"doler Ynysoedd Solomon"}
             many{"doler Ynysoedd Solomon"}
-            one{"ddoler Ynysoedd Solomon"}
+            one{"doler Ynysoedd Solomon"}
             other{"doler Ynysoedd Solomon"}
             two{"ddoler Ynysoedd Solomon"}
             zero{"doler Ynysoedd Solomon"}
@@ -2754,8 +2596,8 @@ cy{
         }
         SDG{
             few{"punt Sudan"}
-            many{"phunt Sudan"}
-            one{"bunt Sudan"}
+            many{"punt Sudan"}
+            one{"punt Sudan"}
             other{"punt Sudan"}
             two{"bunt Sudan"}
             zero{"punt Sudan"}
@@ -2779,26 +2621,34 @@ cy{
         SGD{
             few{"doler Singapore"}
             many{"doler Singapore"}
-            one{"ddoler Singapore"}
+            one{"doler Singapore"}
             other{"doler Singapore"}
             two{"ddoler Singapore"}
             zero{"doler Singapore"}
         }
         SHP{
             few{"punt St. Helena"}
-            many{"phunt St. Helena"}
-            one{"bunt St. Helena"}
+            many{"punt St. Helena"}
+            one{"punt St. Helena"}
             other{"punt St. Helena"}
             two{"bunt St. Helena"}
             zero{"punt St. Helena"}
         }
-        SLL{
+        SLE{
             few{"leone Sierra Leone"}
             many{"leone Sierra Leone"}
             one{"leone Sierra Leone"}
             other{"leone Sierra Leone"}
             two{"leone Sierra Leone"}
             zero{"leone Sierra Leone"}
+        }
+        SLL{
+            few{"leone Sierra Leone (1964—2022)"}
+            many{"leone Sierra Leone (1964—2022)"}
+            one{"leone Sierra Leone (1964—2022)"}
+            other{"leone Sierra Leone (1964—2022)"}
+            two{"leone Sierra Leone (1964—2022)"}
+            zero{"leone Sierra Leone (1964—2022)"}
         }
         SOS{
             few{"swllt Somalia"}
@@ -2811,7 +2661,7 @@ cy{
         SRD{
             few{"doler Surinam"}
             many{"doler Surinam"}
-            one{"ddoler Surinam"}
+            one{"doler Surinam"}
             other{"doler Surinam"}
             two{"ddoler Surinam"}
             zero{"doler Surinam"}
@@ -2826,7 +2676,7 @@ cy{
         }
         SSP{
             few{"punt De Sudan"}
-            many{"phunt De Sudan"}
+            many{"punt De Sudan"}
             one{"punt De Sudan"}
             other{"punt De Sudan"}
             two{"bunt De Sudan"}
@@ -2955,7 +2805,7 @@ cy{
         TTD{
             few{"doler Trinidad a Tobago"}
             many{"doler Trinidad a Tobago"}
-            one{"ddoler Trinidad a Tobago"}
+            one{"doler Trinidad a Tobago"}
             other{"doler Trinidad a Tobago"}
             two{"ddoler Trinidad a Tobago"}
             zero{"doler Trinidad a Tobago"}
@@ -2963,7 +2813,7 @@ cy{
         TWD{
             few{"doler newydd Taiwan"}
             many{"doler newydd Taiwan"}
-            one{"ddoler newydd Taiwan"}
+            one{"doler newydd Taiwan"}
             other{"doler newydd Taiwan"}
             two{"ddoler newydd Taiwan"}
             zero{"doler newydd Taiwan"}
@@ -3003,7 +2853,7 @@ cy{
         USD{
             few{"doler UDA"}
             many{"doler UDA"}
-            one{"ddoler UDA"}
+            one{"doler UDA"}
             other{"doler UDA"}
             two{"ddoler UDA"}
             zero{"doler UDA"}
@@ -3131,10 +2981,18 @@ cy{
         XCD{
             few{"doler Dwyrain y Caribî"}
             many{"doler Dwyrain y Caribî"}
-            one{"ddoler Dwyrain y Caribî"}
+            one{"doler Dwyrain y Caribî"}
             other{"doler Dwyrain y Caribî"}
             two{"ddoler Dwyrain y Caribî"}
             zero{"doler Dwyrain y Caribî"}
+        }
+        XCG{
+            few{"guilder Caribïaidd"}
+            many{"guilder Caribïaidd"}
+            one{"guilder Caribïaidd"}
+            other{"guilder Caribïaidd"}
+            two{"guilder Caribïaidd"}
+            zero{"guilder Caribïaidd"}
         }
         XEU{
             few{"uned arian cyfred Ewropeaidd"}
@@ -3248,6 +3106,14 @@ cy{
             two{"ddoler Zimbabwe (1980–2008)"}
             zero{"doler Zimbabwe (1980–2008)"}
         }
+        ZWG{
+            few{"Zimbabwean Gold"}
+            many{"Zimbabwean Gold"}
+            one{"Zimbabwean Gold"}
+            other{"Zimbabwean Gold"}
+            two{"Zimbabwean Gold"}
+            zero{"Zimbabwean Gold"}
+        }
         ZWL{
             few{"doler Zimbabwe (2009)"}
             many{"doler Zimbabwe (2009)"}
@@ -3265,13 +3131,4 @@ cy{
             zero{"doler Zimbabwe (2008)"}
         }
     }
-    CurrencyUnitPatterns{
-        few{"{0} {1}"}
-        many{"{0} {1}"}
-        one{"{0} {1}"}
-        other{"{0} {1}"}
-        two{"{0} {1}"}
-        zero{"{0} {1}"}
-    }
-    Version{"2.1.44.91"}
 }

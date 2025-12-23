@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 naq{
     Currencies{
         AED{
@@ -174,9 +175,13 @@ naq{
             "SHP",
             "St Helena Ponds",
         }
+        SLE{
+            "SLE",
+            "Leone",
+        }
         SLL{
             "SLL",
-            "Leone",
+            "Leone (1964—2022)",
         }
         SOS{
             "SOS",
@@ -215,7 +220,7 @@ naq{
             "CFA Franc BEAC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "CFA Franc BCEAO",
         }
         ZAR{
@@ -235,5 +240,4 @@ naq{
             "Zimbabwe Dollari",
         }
     }
-    Version{"2.1.39.11"}
 }
