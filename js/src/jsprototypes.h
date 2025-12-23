@@ -119,6 +119,7 @@ IF_SAB(real,imaginary)(Atomics, InitAtomicsClass, OCLASP(Atomics)) \
     imaginary(WritableStreamDefaultController,dummy,    dummy) \
     real(ByteLengthQueuingStrategy,           InitViaClassSpec, &js::ByteLengthQueuingStrategy::class_) \
     real(CountQueuingStrategy,  InitViaClassSpec,       &js::CountQueuingStrategy::class_) \
+    real(WeakRef,               InitWeakRefClass,       OCLASP(WeakRef)) \
 
 #define JS_FOR_EACH_PROTOTYPE(macro) JS_FOR_PROTOTYPES(macro,macro)
 
