@@ -2911,6 +2911,18 @@ static const nsCSSPropertyID gInsetSubpropTable[] = {
   eCSSProperty_UNKNOWN
 };
 
+static const nsCSSPropertyID gInsetBlockSubpropTable[] = {
+  eCSSProperty_inset_block_start,
+  eCSSProperty_inset_block_end,
+  eCSSProperty_UNKNOWN
+};
+
+static const nsCSSPropertyID gInsetInlineSubpropTable[] = {
+  eCSSProperty_inset_inline_start,
+  eCSSProperty_inset_inline_end,
+  eCSSProperty_UNKNOWN
+};
+
 static const nsCSSPropertyID gListStyleSubpropTable[] = {
   eCSSProperty_list_style_type,
   eCSSProperty_list_style_image,

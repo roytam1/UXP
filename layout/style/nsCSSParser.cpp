@@ -1098,6 +1098,8 @@ protected:
   bool ParseFontSrcFormat(InfallibleTArray<nsCSSValue>& values);
   bool ParseFontRanges(nsCSSValue& aValue);
   bool ParseInset();
+  bool ParseInsetBlock();
+  bool ParseInsetInline();
   bool ParseListStyle();
   bool ParseListStyleType(nsCSSValue& aValue);
   bool ParseMargin();
@@ -12664,6 +12666,10 @@ CSSParserImpl::ParsePropertyByFunction(nsCSSPropertyID aPropID)
     return ParseJustifyItems();
   case eCSSProperty_inset:
     return ParseInset();
+  case eCSSProperty_inset_block:
+    return ParseInsetBlock();
+  case eCSSProperty_inset_inline:
+    return ParseInsetInline();
   case eCSSProperty_list_style:
     return ParseListStyle();
   case eCSSProperty_margin:
@@ -16118,6 +16124,24 @@ CSSParserImpl::ParseInset()
   };
 
   return ParseBoxProperties(kInsetSideIDs);
+}
+
+bool
+CSSParserImpl::ParseInsetBlock()
+{
+  return ParseBoxPairProperties(VARIANT_AUTO | VARIANT_INHERIT,
+                                VARIANT_AUTO | VARIANT_LPCALC,
+                                eCSSProperty_inset_block_start,
+                                eCSSProperty_inset_block_end);
+}
+
+bool
+CSSParserImpl::ParseInsetInline()
+{
+  return ParseBoxPairProperties(VARIANT_AUTO | VARIANT_INHERIT,
+                                VARIANT_AUTO | VARIANT_LPCALC,
+                                eCSSProperty_inset_inline_start,
+                                eCSSProperty_inset_inline_end);
 }
 
 bool
