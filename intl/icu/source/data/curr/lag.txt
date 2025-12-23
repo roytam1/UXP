@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 lag{
     Currencies{
         AED{
@@ -170,9 +171,13 @@ lag{
             "SHP",
             "Páundi ya Mʉtakatíifu Heléena",
         }
+        SLE{
+            "SLE",
+            "Leóoni",
+        }
         SLL{
             "SLL",
-            "Leóoni",
+            "Leóoni (1964—2022)",
         }
         SOS{
             "SOS",
@@ -211,7 +216,7 @@ lag{
             "Faráanga ya CFA BEAC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Faráanga ya CFA BCEAO",
         }
         ZAR{
@@ -231,5 +236,4 @@ lag{
             "Dóola ya Simbáabwe",
         }
     }
-    Version{"2.1.39.11"}
 }

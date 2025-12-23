@@ -97,46 +97,36 @@ digitToBasic(int32_t digit, UBool uppercase) {
     /* 26..35 map to ASCII 0..9         */
     if(digit<26) {
         if(uppercase) {
-            return (char)(_CAPITAL_A+digit);
+            return static_cast<char>(_CAPITAL_A + digit);
         } else {
-            return (char)(_SMALL_A+digit);
+            return static_cast<char>(_SMALL_A + digit);
         }
     } else {
-        return (char)((_ZERO_-26)+digit);
+        return static_cast<char>((_ZERO_ - 26) + digit);
     }
 }
 
 /**
- * basicToDigit[] contains the numeric value of a basic code
- * point (for use in representing integers) in the range 0 to
- * BASE-1, or -1 if b is does not represent a value.
+ * @return the numeric value of a basic code point (for use in representing integers)
+ *         in the range 0 to BASE-1, or a negative value if cp is invalid.
  */
-static const int8_t
-basicToDigit[256]={
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1, -1, -1, -1, -1, -1,
-
-    -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-
-    -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
+static int32_t decodeDigit(int32_t cp) {
+    if(cp<=u'Z') {
+        if(cp<=u'9') {
+            if(cp<u'0') {
+                return -1;
+            } else {
+                return cp-u'0'+26;  // 0..9 -> 26..35
+            }
+        } else {
+            return cp-u'A';  // A-Z -> 0..25
+        }
+    } else if(cp<=u'z') {
+        return cp-'a';  // a..z -> 0..25
+    } else {
+        return -1;
+    }
+}
 
 static inline char
 asciiCaseMap(char b, UBool uppercase) {
@@ -178,25 +168,37 @@ adaptBias(int32_t delta, int32_t length, UBool firstTime) {
     return count+(((BASE-TMIN+1)*delta)/(delta+SKEW));
 }
 
-#define MAX_CP_COUNT    200
+namespace {
 
-U_CFUNC int32_t
-u_strToPunycode(const UChar *src, int32_t srcLength,
-                UChar *dest, int32_t destCapacity,
+// ICU-13727: Limit input length for n^2 algorithm
+// where well-formed strings are at most 59 characters long.
+constexpr int32_t ENCODE_MAX_CODE_UNITS=1000;
+constexpr int32_t DECODE_MAX_CHARS=2000;
+
+}  // namespace
+
+// encode
+U_CAPI int32_t
+u_strToPunycode(const char16_t *src, int32_t srcLength,
+                char16_t *dest, int32_t destCapacity,
                 const UBool *caseFlags,
                 UErrorCode *pErrorCode) {
 
-    int32_t cpBuffer[MAX_CP_COUNT];
+    int32_t cpBuffer[ENCODE_MAX_CODE_UNITS];
     int32_t n, delta, handledCPCount, basicLength, destLength, bias, j, m, q, k, t, srcCPCount;
-    UChar c, c2;
+    char16_t c, c2;
 
     /* argument checking */
-    if(pErrorCode==NULL || U_FAILURE(*pErrorCode)) {
+    if(pErrorCode==nullptr || U_FAILURE(*pErrorCode)) {
         return 0;
     }
 
-    if(src==NULL || srcLength<-1 || (dest==NULL && destCapacity!=0)) {
+    if(src==nullptr || srcLength<-1 || destCapacity<0 || (dest==nullptr && destCapacity!=0)) {
         *pErrorCode=U_ILLEGAL_ARGUMENT_ERROR;
+        return 0;
+    }
+    if (srcLength>ENCODE_MAX_CODE_UNITS) {
+        *pErrorCode=U_INPUT_TOO_LONG_ERROR;
         return 0;
     }
 
@@ -211,22 +213,21 @@ u_strToPunycode(const UChar *src, int32_t srcLength,
             if((c=src[j])==0) {
                 break;
             }
-            if(srcCPCount==MAX_CP_COUNT) {
-                /* too many input code points */
-                *pErrorCode=U_INDEX_OUTOFBOUNDS_ERROR;
+            if(j>=ENCODE_MAX_CODE_UNITS) {
+                *pErrorCode=U_INPUT_TOO_LONG_ERROR;
                 return 0;
             }
             if(IS_BASIC(c)) {
                 cpBuffer[srcCPCount++]=0;
                 if(destLength<destCapacity) {
                     dest[destLength]=
-                        caseFlags!=NULL ?
+                        caseFlags!=nullptr ?
                             asciiCaseMap((char)c, caseFlags[j]) :
                             (char)c;
                 }
                 ++destLength;
             } else {
-                n=(caseFlags!=NULL && caseFlags[j])<<31L;
+                n=(caseFlags!=nullptr && caseFlags[j])<<31L;
                 if(U16_IS_SINGLE(c)) {
                     n|=c;
                 } else if(U16_IS_LEAD(c) && U16_IS_TRAIL(c2=src[j+1])) {
@@ -243,23 +244,18 @@ u_strToPunycode(const UChar *src, int32_t srcLength,
     } else {
         /* length-specified input */
         for(j=0; j<srcLength; ++j) {
-            if(srcCPCount==MAX_CP_COUNT) {
-                /* too many input code points */
-                *pErrorCode=U_INDEX_OUTOFBOUNDS_ERROR;
-                return 0;
-            }
             c=src[j];
             if(IS_BASIC(c)) {
                 cpBuffer[srcCPCount++]=0;
                 if(destLength<destCapacity) {
                     dest[destLength]=
-                        caseFlags!=NULL ?
+                        caseFlags!=nullptr ?
                             asciiCaseMap((char)c, caseFlags[j]) :
                             (char)c;
                 }
                 ++destLength;
             } else {
-                n=(caseFlags!=NULL && caseFlags[j])<<31L;
+                n=(caseFlags!=nullptr && caseFlags[j])<<31L;
                 if(U16_IS_SINGLE(c)) {
                     n|=c;
                 } else if(U16_IS_LEAD(c) && (j+1)<srcLength && U16_IS_TRAIL(c2=src[j+1])) {
@@ -312,7 +308,7 @@ u_strToPunycode(const UChar *src, int32_t srcLength,
          * Increase delta enough to advance the decoder's
          * <n,i> state to <m,0>, but guard against overflow:
          */
-        if(m-n>(0x7fffffff-MAX_CP_COUNT-delta)/(handledCPCount+1)) {
+        if(m-n>(0x7fffffff-handledCPCount-delta)/(handledCPCount+1)) {
             *pErrorCode=U_INTERNAL_PROGRAM_ERROR;
             return 0;
         }
@@ -357,10 +353,10 @@ u_strToPunycode(const UChar *src, int32_t srcLength,
                 }
 
                 if(destLength<destCapacity) {
-                    dest[destLength]=digitToBasic(q, (UBool)(cpBuffer[j]<0));
+                    dest[destLength] = digitToBasic(q, cpBuffer[j] < 0);
                 }
                 ++destLength;
-                bias=adaptBias(delta, handledCPCount+1, (UBool)(handledCPCount==basicLength));
+                bias = adaptBias(delta, handledCPCount + 1, handledCPCount == basicLength);
                 delta=0;
                 ++handledCPCount;
             }
@@ -373,27 +369,32 @@ u_strToPunycode(const UChar *src, int32_t srcLength,
     return u_terminateUChars(dest, destCapacity, destLength, pErrorCode);
 }
 
-U_CFUNC int32_t
-u_strFromPunycode(const UChar *src, int32_t srcLength,
-                  UChar *dest, int32_t destCapacity,
+// decode
+U_CAPI int32_t
+u_strFromPunycode(const char16_t *src, int32_t srcLength,
+                  char16_t *dest, int32_t destCapacity,
                   UBool *caseFlags,
                   UErrorCode *pErrorCode) {
     int32_t n, destLength, i, bias, basicLength, j, in, oldi, w, k, digit, t,
             destCPCount, firstSupplementaryIndex, cpLength;
-    UChar b;
+    char16_t b;
 
     /* argument checking */
-    if(pErrorCode==NULL || U_FAILURE(*pErrorCode)) {
+    if(pErrorCode==nullptr || U_FAILURE(*pErrorCode)) {
         return 0;
     }
 
-    if(src==NULL || srcLength<-1 || (dest==NULL && destCapacity!=0)) {
+    if(src==nullptr || srcLength<-1 || (dest==nullptr && destCapacity!=0)) {
         *pErrorCode=U_ILLEGAL_ARGUMENT_ERROR;
         return 0;
     }
 
     if(srcLength==-1) {
         srcLength=u_strlen(src);
+    }
+    if (srcLength>DECODE_MAX_CHARS) {
+        *pErrorCode=U_INPUT_TOO_LONG_ERROR;
+        return 0;
     }
 
     /*
@@ -420,9 +421,9 @@ u_strFromPunycode(const UChar *src, int32_t srcLength,
         }
 
         if(j<destCapacity) {
-            dest[j]=(UChar)b;
+            dest[j] = b;
 
-            if(caseFlags!=NULL) {
+            if(caseFlags!=nullptr) {
                 caseFlags[j]=IS_BASIC_UPPERCASE(b);
             }
         }
@@ -455,7 +456,7 @@ u_strFromPunycode(const UChar *src, int32_t srcLength,
                 return 0;
             }
 
-            digit=basicToDigit[(uint8_t)src[in++]];
+            digit=decodeDigit(src[in++]);
             if(digit<0) {
                 *pErrorCode=U_INVALID_CHAR_FOUND;
                 return 0;
@@ -499,7 +500,7 @@ u_strFromPunycode(const UChar *src, int32_t srcLength,
          * where needed instead of in for() loop tail.
          */
         ++destCPCount;
-        bias=adaptBias(i-oldi, destCPCount, (UBool)(oldi==0));
+        bias = adaptBias(i - oldi, destCPCount, oldi == 0);
 
         /*
          * i was supposed to wrap around from (incremented) destCPCount to 0,
@@ -524,7 +525,7 @@ u_strFromPunycode(const UChar *src, int32_t srcLength,
 
         /* Insert n at position i of the output: */
         cpLength=U16_LENGTH(n);
-        if(dest!=NULL && ((destLength+cpLength)<=destCapacity)) {
+        if(dest!=nullptr && ((destLength+cpLength)<=destCapacity)) {
             int32_t codeUnitIndex;
 
             /*
@@ -549,12 +550,12 @@ u_strFromPunycode(const UChar *src, int32_t srcLength,
                 U16_FWD_N(dest, codeUnitIndex, destLength, i-codeUnitIndex);
             }
 
-            /* use the UChar index codeUnitIndex instead of the code point index i */
+            /* use the char16_t index codeUnitIndex instead of the code point index i */
             if(codeUnitIndex<destLength) {
                 uprv_memmove(dest+codeUnitIndex+cpLength,
                              dest+codeUnitIndex,
                              (destLength-codeUnitIndex)*U_SIZEOF_UCHAR);
-                if(caseFlags!=NULL) {
+                if(caseFlags!=nullptr) {
                     uprv_memmove(caseFlags+codeUnitIndex+cpLength,
                                  caseFlags+codeUnitIndex,
                                  destLength-codeUnitIndex);
@@ -562,17 +563,17 @@ u_strFromPunycode(const UChar *src, int32_t srcLength,
             }
             if(cpLength==1) {
                 /* BMP, insert one code unit */
-                dest[codeUnitIndex]=(UChar)n;
+                dest[codeUnitIndex]=(char16_t)n;
             } else {
                 /* supplementary character, insert two code units */
                 dest[codeUnitIndex]=U16_LEAD(n);
                 dest[codeUnitIndex+1]=U16_TRAIL(n);
             }
-            if(caseFlags!=NULL) {
+            if(caseFlags!=nullptr) {
                 /* Case of last character determines uppercase flag: */
                 caseFlags[codeUnitIndex]=IS_BASIC_UPPERCASE(src[in-1]);
                 if(cpLength==2) {
-                    caseFlags[codeUnitIndex+1]=FALSE;
+                    caseFlags[codeUnitIndex+1]=false;
                 }
             }
         }

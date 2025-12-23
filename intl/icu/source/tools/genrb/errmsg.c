@@ -18,9 +18,11 @@
 */
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include "cstring.h"
 #include "errmsg.h"
+#include "toolutil.h"
 
 U_CFUNC void error(uint32_t linenumber, const char *msg, ...)
 {
@@ -33,26 +35,26 @@ U_CFUNC void error(uint32_t linenumber, const char *msg, ...)
     va_end(va);
 }
 
-static UBool gShowWarning = TRUE;
+static UBool gShowWarning = true;
 
 U_CFUNC void setShowWarning(UBool val)
 {
     gShowWarning = val;
 }
 
-U_CFUNC UBool getShowWarning(){
+U_CFUNC UBool getShowWarning(void){
     return gShowWarning;
 }
 
-static UBool gStrict =FALSE;
-U_CFUNC UBool isStrict(){
+static UBool gStrict =false;
+U_CFUNC UBool isStrict(void){
     return gStrict;
 }
 U_CFUNC void setStrict(UBool val){
     gStrict = val;
 }
-static UBool gVerbose =FALSE;
-U_CFUNC UBool isVerbose(){
+static UBool gVerbose =false;
+U_CFUNC UBool isVerbose(void){
     return gVerbose;
 }
 U_CFUNC void setVerbose(UBool val){

@@ -30,11 +30,11 @@ InputText::InputText(UErrorCode &status)
                                                  //   removed if appropriate.
       fByteStats(NEW_ARRAY(int16_t, 256)),       // byte frequency statistics for the input text.
                                                  //   Value is percent, not absolute.
-      fDeclaredEncoding(0),
-      fRawInput(0),
+      fDeclaredEncoding(nullptr),
+      fRawInput(nullptr),
       fRawLength(0)
 {
-    if (fInputBytes == NULL || fByteStats == NULL) {
+    if (fInputBytes == nullptr || fByteStats == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
     }
 }
@@ -49,16 +49,16 @@ InputText::~InputText()
 void InputText::setText(const char *in, int32_t len)
 {
     fInputLen  = 0;
-    fC1Bytes   = FALSE;
-    fRawInput  = (const uint8_t *) in;
-    fRawLength = len == -1? (int32_t)uprv_strlen(in) : len;
+    fC1Bytes   = false;
+    fRawInput = reinterpret_cast<const uint8_t*>(in);
+    fRawLength = len == -1 ? static_cast<int32_t>(uprv_strlen(in)) : len;
 }
 
 void InputText::setDeclaredEncoding(const char* encoding, int32_t len)
 {
     if(encoding) {
         if (len == -1) {
-            len = (int32_t)uprv_strlen(encoding);
+            len = static_cast<int32_t>(uprv_strlen(encoding));
         }
 
         len += 1;     // to make place for the \0 at the end.
@@ -70,7 +70,7 @@ void InputText::setDeclaredEncoding(const char* encoding, int32_t len)
 
 UBool InputText::isSet() const 
 {
-    return fRawInput != NULL;
+    return fRawInput != nullptr;
 }
 
 /**
@@ -83,7 +83,7 @@ void InputText::MungeInput(UBool fStripTags) {
     int     srci = 0;
     int     dsti = 0;
     uint8_t b;
-    bool    inMarkup = FALSE;
+    bool    inMarkup = false;
     int32_t openTags = 0;
     int32_t badTags  = 0;
 
@@ -98,12 +98,12 @@ void InputText::MungeInput(UBool fStripTags) {
         for (srci = 0; srci < fRawLength && dsti < BUFFER_SIZE; srci += 1) {
             b = fRawInput[srci];
 
-            if (b == (uint8_t)0x3C) { /* Check for the ASCII '<' */
+            if (b == static_cast<uint8_t>(0x3C)) { /* Check for the ASCII '<' */
                 if (inMarkup) {
                     badTags += 1;
                 }
 
-                inMarkup = TRUE;
+                inMarkup = true;
                 openTags += 1;
             }
 
@@ -111,8 +111,8 @@ void InputText::MungeInput(UBool fStripTags) {
                 fInputBytes[dsti++] = b;
             }
 
-            if (b == (uint8_t)0x3E) { /* Check for the ASCII '>' */
-                inMarkup = FALSE;
+            if (b == static_cast<uint8_t>(0x3E)) { /* Check for the ASCII '>' */
+                inMarkup = false;
             }
         }
 
@@ -141,7 +141,7 @@ void InputText::MungeInput(UBool fStripTags) {
     }
 
     //
-    // Tally up the byte occurence statistics.
+    // Tally up the byte occurrence statistics.
     // These are available for use by the various detectors.
     //
 
@@ -153,7 +153,7 @@ void InputText::MungeInput(UBool fStripTags) {
 
     for (int32_t i = 0x80; i <= 0x9F; i += 1) {
         if (fByteStats[i] != 0) {
-            fC1Bytes = TRUE;
+            fC1Bytes = true;
             break;
         }
     }

@@ -13,12 +13,24 @@
 
 #include "unicode/utypes.h"
 #include "sharedobject.h"
+#include "unifiedcache.h"
 
 U_NAMESPACE_BEGIN
 
 class Calendar;
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4251)
+#pragma warning(disable:4275)
+#endif
+
 class U_I18N_API SharedCalendar : public SharedObject {
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 public:
     SharedCalendar(Calendar *calToAdopt) : ptr(calToAdopt) { }
     virtual ~SharedCalendar();
@@ -27,9 +39,14 @@ public:
     const Calendar &operator*() const { return *ptr; }
 private:
     Calendar *ptr;
-    SharedCalendar(const SharedCalendar &);
-    SharedCalendar &operator=(const SharedCalendar &);
+    SharedCalendar(const SharedCalendar &) = delete;
+    SharedCalendar &operator=(const SharedCalendar &) = delete;
 };
+
+template<> U_I18N_API
+const SharedCalendar *LocaleCacheKey<SharedCalendar>::createObject(
+        const void * /*unusedCreationContext*/, UErrorCode &status) const;
+
 
 U_NAMESPACE_END
 

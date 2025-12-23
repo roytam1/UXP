@@ -48,6 +48,7 @@
 #   define ICU_ENTRY_OFFSET 0
 #endif
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "unicode/putil.h"
@@ -63,11 +64,14 @@ enum {
   kOptHelpH = 0,
   kOptHelpQuestionMark,
   kOptDestDir,
+  kOptQuiet,
   kOptName,
   kOptEntryPoint,
 #ifdef CAN_GENERATE_OBJECTS
   kOptObject,
   kOptMatchArch,
+  kOptCpuArch,
+  kOptSkipDllExport,
 #endif
   kOptFilename,
   kOptAssembly
@@ -77,11 +81,14 @@ static UOption options[]={
 /*0*/UOPTION_HELP_H,
      UOPTION_HELP_QUESTION_MARK,
      UOPTION_DESTDIR,
+     UOPTION_QUIET,
      UOPTION_DEF("name", 'n', UOPT_REQUIRES_ARG),
      UOPTION_DEF("entrypoint", 'e', UOPT_REQUIRES_ARG),
 #ifdef CAN_GENERATE_OBJECTS
-/*5*/UOPTION_DEF("object", 'o', UOPT_NO_ARG),
+/*6*/UOPTION_DEF("object", 'o', UOPT_NO_ARG),
      UOPTION_DEF("match-arch", 'm', UOPT_REQUIRES_ARG),
+     UOPTION_DEF("cpu-arch", 'c', UOPT_REQUIRES_ARG),
+     UOPTION_DEF("skip-dll-export", '\0', UOPT_NO_ARG),
 #endif
      UOPTION_DEF("filename", 'f', UOPT_REQUIRES_ARG),
      UOPTION_DEF("assembly", 'a', UOPT_REQUIRES_ARG)
@@ -92,7 +99,7 @@ static UOption options[]={
 #define CALL_WRITEOBJECT    'o'
 extern int
 main(int argc, char* argv[]) {
-    UBool verbose = TRUE;
+    UBool verbose = true;
     char writeCode;
 
     U_MAIN_INIT_ARGS(argc, argv);
@@ -116,6 +123,7 @@ main(int argc, char* argv[]) {
             "options:\n"
             "\t-h or -? or --help  this usage text\n"
             "\t-d or --destdir     destination directory, followed by the path\n"
+            "\t-q or --quiet       do not display warnings and progress\n"
             "\t-n or --name        symbol prefix, followed by the prefix\n"
             "\t-e or --entrypoint  entry point name, followed by the name (_dat will be appended)\n"
             "\t-r or --revision    Specify a version\n"
@@ -124,7 +132,10 @@ main(int argc, char* argv[]) {
         fprintf(stderr,
             "\t-o or --object      write a .obj file instead of .c\n"
             "\t-m or --match-arch file.o  match the architecture (CPU, 32/64 bits) of the specified .o\n"
-            "\t                    ELF format defaults to i386. Windows defaults to the native platform.\n");
+            "\t                    ELF format defaults to i386. Windows defaults to the native platform.\n"
+            "\t-c or --cpu-arch    Specify a CPU architecture for which to write a .obj file for ClangCL on Windows\n"
+            "\t                    Valid values for this opton are x64, x86 and arm64.\n"
+            "\t--skip-dll-export   Don't export the ICU data entry point symbol (for use when statically linking)\n");
 #endif
         fprintf(stderr,
             "\t-f or --filename    Specify an alternate base filename. (default: symbolname_typ)\n"
@@ -159,6 +170,9 @@ main(int argc, char* argv[]) {
             writeCode = CALL_WRITECCODE;
             /* TODO: remove writeCode=&writeCCode; */
         }
+        if (options[kOptQuiet].doesOccur) {
+            verbose = false;
+        }
         while(--argc) {
             filename=getLongPathname(argv[argc]);
             if (verbose) {
@@ -168,23 +182,36 @@ main(int argc, char* argv[]) {
             switch (writeCode) {
             case CALL_WRITECCODE:
                 writeCCode(filename, options[kOptDestDir].value,
+                           options[kOptEntryPoint].doesOccur ? options[kOptEntryPoint].value : NULL,
                            options[kOptName].doesOccur ? options[kOptName].value : NULL,
                            options[kOptFilename].doesOccur ? options[kOptFilename].value : NULL,
-                           NULL);
+                           NULL,
+                           0);
                 break;
             case CALL_WRITEASSEMBLY:
                 writeAssemblyCode(filename, options[kOptDestDir].value,
                                   options[kOptEntryPoint].doesOccur ? options[kOptEntryPoint].value : NULL,
                                   options[kOptFilename].doesOccur ? options[kOptFilename].value : NULL,
-                                  NULL);
+                                  NULL,
+                                  0);
                 break;
 #ifdef CAN_GENERATE_OBJECTS
             case CALL_WRITEOBJECT:
+                if(options[kOptCpuArch].doesOccur) {
+                    if (!checkCpuArchitecture(options[kOptCpuArch].value)) {
+                        fprintf(stderr,
+                            "CPU architecture \"%s\" is unknown.\n", options[kOptCpuArch].value);
+                        return -1;
+                    }
+                }
                 writeObjectCode(filename, options[kOptDestDir].value,
                                 options[kOptEntryPoint].doesOccur ? options[kOptEntryPoint].value : NULL,
                                 options[kOptMatchArch].doesOccur ? options[kOptMatchArch].value : NULL,
+                                options[kOptCpuArch].doesOccur ? options[kOptCpuArch].value : NULL,
                                 options[kOptFilename].doesOccur ? options[kOptFilename].value : NULL,
-                                NULL);
+                                NULL,
+                                0,
+                                !options[kOptSkipDllExport].doesOccur);
                 break;
 #endif
             default:

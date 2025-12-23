@@ -4,7 +4,7 @@
  License & terms of use: http://www.unicode.org/copyright.html
  Copyright (c) 2010-2015 International Business Machines Corporation and others. All rights reserved.
 -->
-<!DOCTYPE ldml SYSTEM "http://www.unicode.org/repos/cldr/trunk/common/dtd/ldml.dtd">
+<!DOCTYPE ldml SYSTEM "../../dtd/cldr/common/dtd/ldml.dtd">
 <ldml>
 	<identity>
 		<version number="$Revision$"/>
@@ -12,9 +12,10 @@
 	</identity>
     <rbnf>
         <rulesetGrouping type="DurationRules">
-            <ruleset type="duration">
-                <rbnfrule value="0">=#,##0=;</rbnfrule>
-            </ruleset>
+            <rbnfRules><![CDATA[
+%duration:
+0: =#,##0=;
+]]></rbnfRules>
         </rulesetGrouping>
     </rbnf>
 </ldml>

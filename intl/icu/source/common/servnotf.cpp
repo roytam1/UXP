@@ -21,18 +21,18 @@ U_NAMESPACE_BEGIN
 EventListener::~EventListener() {}
 UOBJECT_DEFINE_RTTI_IMPLEMENTATION(EventListener)
 
-static UMutex notifyLock = U_MUTEX_INITIALIZER;
+static UMutex notifyLock;
 
-ICUNotifier::ICUNotifier(void) 
-: listeners(NULL) 
+ICUNotifier::ICUNotifier() 
+: listeners(nullptr) 
 {
 }
 
-ICUNotifier::~ICUNotifier(void) {
+ICUNotifier::~ICUNotifier() {
     {
         Mutex lmx(&notifyLock);
         delete listeners;
-        listeners = NULL;
+        listeners = nullptr;
     }
 }
 
@@ -41,18 +41,22 @@ void
 ICUNotifier::addListener(const EventListener* l, UErrorCode& status) 
 {
     if (U_SUCCESS(status)) {
-        if (l == NULL) {
+        if (l == nullptr) {
             status = U_ILLEGAL_ARGUMENT_ERROR;
             return;
         }
 
         if (acceptsListener(*l)) {
             Mutex lmx(&notifyLock);
-            if (listeners == NULL) {
-                listeners = new UVector(5, status);
+            if (listeners == nullptr) {
+                LocalPointer<UVector> lpListeners(new UVector(5, status), status);
+                if (U_FAILURE(status)) {
+                    return;
+                }
+                listeners = lpListeners.orphan();
             } else {
                 for (int i = 0, e = listeners->size(); i < e; ++i) {
-                    const EventListener* el = (const EventListener*)(listeners->elementAt(i));
+                    const EventListener* el = static_cast<const EventListener*>(listeners->elementAt(i));
                     if (l == el) {
                         return;
                     }
@@ -74,22 +78,22 @@ void
 ICUNotifier::removeListener(const EventListener *l, UErrorCode& status) 
 {
     if (U_SUCCESS(status)) {
-        if (l == NULL) {
+        if (l == nullptr) {
             status = U_ILLEGAL_ARGUMENT_ERROR;
             return;
         }
 
         {
             Mutex lmx(&notifyLock);
-            if (listeners != NULL) {
+            if (listeners != nullptr) {
                 // identity equality check
                 for (int i = 0, e = listeners->size(); i < e; ++i) {
-                    const EventListener* el = (const EventListener*)listeners->elementAt(i);
+                    const EventListener* el = static_cast<const EventListener*>(listeners->elementAt(i));
                     if (l == el) {
                         listeners->removeElementAt(i);
                         if (listeners->size() == 0) {
                             delete listeners;
-                            listeners = NULL;
+                            listeners = nullptr;
                         }
                         return;
                     }
@@ -100,15 +104,13 @@ ICUNotifier::removeListener(const EventListener *l, UErrorCode& status)
 }
 
 void 
-ICUNotifier::notifyChanged(void) 
+ICUNotifier::notifyChanged() 
 {
-    if (listeners != NULL) {
-        Mutex lmx(&notifyLock);
-        if (listeners != NULL) {
-            for (int i = 0, e = listeners->size(); i < e; ++i) {
-                EventListener* el = (EventListener*)listeners->elementAt(i);
-                notifyListener(*el);
-            }
+    Mutex lmx(&notifyLock);
+    if (listeners != nullptr) {
+        for (int i = 0, e = listeners->size(); i < e; ++i) {
+            EventListener* el = static_cast<EventListener*>(listeners->elementAt(i));
+            notifyListener(*el);
         }
     }
 }

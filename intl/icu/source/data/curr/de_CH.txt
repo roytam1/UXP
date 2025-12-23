@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 de_CH{
     Currencies{
         BYN{
@@ -18,14 +19,6 @@ de_CH{
             "STN",
             "São-toméischer Dobra (2018)",
         }
-        VEF{
-            "VEF",
-            "Venezolanischer Bolívar",
-        }
-        VES{
-            "VES",
-            "VES",
-        }
     }
     Currencies%narrow{
         EUR{"EUR"}
@@ -43,14 +36,9 @@ de_CH{
             one{"São-toméischer Dobra (2018)"}
             other{"São-toméischer Dobra (2018)"}
         }
-        VEF{
-            one{"Venezolanischer Bolívar"}
-            other{"Venezolanische Bolívares"}
-        }
-        VES{
-            one{"VES"}
-            other{"VES"}
+        XCG{
+            one{"Karibischer Gulden"}
+            other{"Karibischer Gulden"}
         }
     }
-    Version{"2.1.44.50"}
 }

@@ -1,16 +1,126 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 cy{
-    Version{"2.1.44.91"}
     zoneStrings{
+        "Africa:Algiers"{
+            ec{"Alger"}
+        }
+        "America:Bahia_Banderas"{
+            ec{"Bae Banderas"}
+        }
+        "America:Cambridge_Bay"{
+            ec{"Bae Cambridge"}
+        }
+        "America:Indiana:Tell_City"{
+            ec{"Dinas Tell, Indiana"}
+        }
+        "America:Merida"{
+            ec{"Merida"}
+        }
+        "America:Mexico_City"{
+            ec{"Dinas Mecsico"}
+        }
+        "America:New_York"{
+            ec{"Efrog Newydd"}
+        }
+        "America:North_Dakota:Beulah"{
+            ec{"Beulah, Gogledd Dakota"}
+        }
+        "America:North_Dakota:Center"{
+            ec{"Center, Gogledd Dakota"}
+        }
+        "America:North_Dakota:New_Salem"{
+            ec{"New Salem, Gogledd Dakota"}
+        }
+        "Asia:Gaza"{
+            ec{"Gasa"}
+        }
+        "Asia:Jerusalem"{
+            ec{"Jerwsalem"}
+        }
+        "Asia:Macau"{
+            ec{"Macau"}
+        }
+        "Asia:Qostanay"{
+            ec{"Kostanay"}
+        }
+        "Asia:Saigon"{
+            ec{"Dinas Hô Chi Minh"}
+        }
+        "Asia:Tbilisi"{
+            ec{"Tiflis"}
+        }
+        "Asia:Ulaanbaatar"{
+            ec{"Ulan Bator"}
+        }
+        "Atlantic:Canary"{
+            ec{"Yr Ynysoedd Dedwydd"}
+        }
+        "Atlantic:Faeroe"{
+            ec{"Ffaro"}
+        }
+        "Atlantic:Reykjavik"{
+            ec{"Reykjavík"}
+        }
+        "Atlantic:South_Georgia"{
+            ec{"De Georgia"}
+        }
         "Etc:UTC"{
             ls{"Amser Cyffredniol Cydlynol"}
         }
+        "Etc:Unknown"{
+            ec{"Dinas Anhysbys"}
+        }
+        "Europe:Brussels"{
+            ec{"Brwsel"}
+        }
+        "Europe:Bucharest"{
+            ec{"Bwcarést"}
+        }
         "Europe:Dublin"{
+            ec{"Dulyn"}
             ld{"Amser Safonol Iwerddon"}
         }
+        "Europe:Guernsey"{
+            ec{"Ynys y Garn"}
+        }
+        "Europe:Isle_of_Man"{
+            ec{"Ynys Manaw"}
+        }
+        "Europe:Istanbul"{
+            ec{"Caergystennin"}
+        }
+        "Europe:Kiev"{
+            ec{"Kiev"}
+        }
         "Europe:London"{
+            ec{"Llundain"}
             ld{"Amser Haf Prydain"}
+        }
+        "Europe:Luxembourg"{
+            ec{"Lwcsembwrg"}
+        }
+        "Europe:Prague"{
+            ec{"Prag"}
+        }
+        "Europe:Rome"{
+            ec{"Rhufain"}
+        }
+        "Europe:Vatican"{
+            ec{"Y Fatican"}
+        }
+        "Europe:Vienna"{
+            ec{"Fienna"}
+        }
+        "Indian:Christmas"{
+            ec{"Ynys y Nadolig"}
+        }
+        "Pacific:Easter"{
+            ec{"Ynys y Pasg"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
         }
         "meta:Afghanistan"{
             ls{"Amser Afghanistan"}
@@ -25,9 +135,7 @@ cy{
             ls{"Amser Safonol De Affrica"}
         }
         "meta:Africa_Western"{
-            ld{"Amser Haf Gorllewin Affrica"}
-            lg{"Amser Gorllewin Affrica"}
-            ls{"Amser Safonol Gorllewin Affrica"}
+            ls{"Amser Gorllewin Affrica"}
         }
         "meta:Alaska"{
             ld{"Amser Haf Alaska"}
@@ -128,7 +236,7 @@ cy{
             ls{"Amser Bhutan"}
         }
         "meta:Bolivia"{
-            ls{"Amser Bolivia"}
+            ls{"Amser Bolifia"}
         }
         "meta:Brasilia"{
             ld{"Amser Haf Brasília"}
@@ -161,11 +269,6 @@ cy{
             lg{"Amser Tsieina"}
             ls{"Amser Safonol Tsieina"}
         }
-        "meta:Choibalsan"{
-            ld{"Amser Haf Choibalsan"}
-            lg{"Amser Choibalsan"}
-            ls{"Amser Safonol Choibalsan"}
-        }
         "meta:Christmas"{
             ls{"Amser Ynys Y Nadolig"}
         }
@@ -183,9 +286,9 @@ cy{
             ls{"Amser Safonol Ynysoedd Cook"}
         }
         "meta:Cuba"{
-            ld{"Amser Haf Cuba"}
-            lg{"Amser Cuba"}
-            ls{"Amser Safonol Cuba"}
+            ld{"Amser Haf Ciwa"}
+            lg{"Amser Ciwba"}
+            ls{"Amser Safonol Ciwba"}
         }
         "meta:Davis"{
             ls{"Amser Davis"}
@@ -281,6 +384,9 @@ cy{
         "meta:Guyana"{
             ls{"Amser Guyana"}
         }
+        "meta:Hawaii"{
+            ls{"Amser Safonol Hawaii-Aleutian"}
+        }
         "meta:Hawaii_Aleutian"{
             ld{"Amser Haf Hawaii-Aleutian"}
             lg{"Amser Hawaii-Aleutian"}
@@ -330,15 +436,18 @@ cy{
             ls{"Amser Safonol Israel"}
         }
         "meta:Japan"{
-            ld{"Amser Haf Siapan"}
-            lg{"Amser Siapan"}
-            ls{"Amser Safonol Siapan"}
+            ld{"Amser Haf Japan"}
+            lg{"Amser Japan"}
+            ls{"Amser Safonol Japan"}
+        }
+        "meta:Kazakhstan"{
+            ls{"Amser Kazakhstan"}
         }
         "meta:Kazakhstan_Eastern"{
             ls{"Amser Dwyrain Kazakhstan"}
         }
         "meta:Kazakhstan_Western"{
-            ls{"Amser Gorllewin Casachstan"}
+            ls{"Amser Gorllewin Kazakhstan"}
         }
         "meta:Korea"{
             ld{"Amser Haf Corea"}
@@ -364,9 +473,6 @@ cy{
             lg{"Amser yr Arglwydd Howe"}
             ls{"Amser Safonol yr Arglwydd Howe"}
         }
-        "meta:Macquarie"{
-            ls{"Amser Ynys Macquarie"}
-        }
         "meta:Magadan"{
             ld{"Amser Haf Magadan"}
             lg{"Amser Magadan"}
@@ -391,11 +497,6 @@ cy{
         }
         "meta:Mawson"{
             ls{"Amser Mawson"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"Amser Haf Gogledd Orllewin Mecsico"}
-            lg{"Amser Gogledd Orllewin Mecsico"}
-            ls{"Amser Safonol Gogledd Orllewin Mecsico"}
         }
         "meta:Mexico_Pacific"{
             ld{"Amser Haf Pasiffig Mecsico"}
@@ -440,7 +541,9 @@ cy{
             ls{"Amser Niue"}
         }
         "meta:Norfolk"{
-            ls{"Amser Ynys Norfolk"}
+            ld{"Amser Haf Ynys Norfolk"}
+            lg{"Amser Ynys Norfolk"}
+            ls{"Amser Safonol Ynys Norfolk"}
         }
         "meta:Noronha"{
             ld{"Amser Haf Fernando de Noronha"}
@@ -575,9 +678,9 @@ cy{
             ls{"Amser Safonol Uruguay"}
         }
         "meta:Uzbekistan"{
-            ld{"Amser Haf Wsbecistan"}
-            lg{"Amser Wsbecistan"}
-            ls{"Amser Safonol Wsbecistan"}
+            ld{"Amser Haf Uzbekistan"}
+            lg{"Amser Uzbekistan"}
+            ls{"Amser Safonol Uzbekistan"}
         }
         "meta:Vanuatu"{
             ld{"Amser Haf Vanuatu"}
@@ -616,10 +719,9 @@ cy{
             lg{"Amser Yekaterinburg"}
             ls{"Amser Safonol Yekaterinburg"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
+        "meta:Yukon"{
+            ls{"Amser Yukon"}
+        }
         regionFormat{"Amser {0}"}
         regionFormatDaylight{"Amser Haf {0}"}
         regionFormatStandard{"Amser Safonol {0}"}

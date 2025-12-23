@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 seh{
     Currencies{
         AED{
@@ -178,9 +179,13 @@ seh{
             "SHP",
             "Libra de Santa Helena",
         }
+        SLE{
+            "SLE",
+            "Leone de Serra Leoa",
+        }
         SLL{
             "SLL",
-            "Leone de Serra Leoa",
+            "Leone de Serra Leoa (1964—2022)",
         }
         SOS{
             "SOS",
@@ -219,7 +224,7 @@ seh{
             "Franco CFA BEAC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Franco CFA BCEAO",
         }
         ZAR{
@@ -239,5 +244,4 @@ seh{
             "Dólar do Zimbábue",
         }
     }
-    Version{"2.1.39.11"}
 }

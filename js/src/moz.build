@@ -142,6 +142,7 @@ main_deunified_sources = [
     'builtin/TestingFunctions.cpp',
     'builtin/TypedObject.cpp',
     'builtin/WeakMapObject.cpp',
+    'builtin/WeakRefObject.cpp',
     'builtin/WeakSetObject.cpp',
     'devtools/sharkctl.cpp',
     'ds/LifoAlloc.cpp',

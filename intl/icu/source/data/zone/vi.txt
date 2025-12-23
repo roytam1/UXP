@@ -1,16 +1,88 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 vi{
-    Version{"2.1.43.65"}
     zoneStrings{
+        "America:Bahia_Banderas"{
+            ec{"Bahia Banderas"}
+        }
+        "America:Cancun"{
+            ec{"Cancun"}
+        }
+        "America:Merida"{
+            ec{"Merida"}
+        }
+        "America:North_Dakota:Beulah"{
+            ec{"Beulah, Bắc Dakota"}
+        }
+        "America:North_Dakota:Center"{
+            ec{"Center, Bắc Dakota"}
+        }
+        "America:North_Dakota:New_Salem"{
+            ec{"New Salem, Bắc Dakota"}
+        }
+        "Asia:Hong_Kong"{
+            ec{"Hồng Kông"}
+        }
+        "Asia:Macau"{
+            ec{"Ma Cao"}
+        }
+        "Asia:Pyongyang"{
+            ec{"Bình Nhưỡng"}
+        }
+        "Asia:Qostanay"{
+            ec{"Kostanay"}
+        }
+        "Asia:Rangoon"{
+            ec{"Rangoon"}
+        }
+        "Asia:Saigon"{
+            ec{"TP Hồ Chí Minh"}
+        }
+        "Asia:Shanghai"{
+            ec{"Thượng Hải"}
+        }
+        "Asia:Taipei"{
+            ec{"Đài Bắc"}
+        }
+        "Asia:Ulaanbaatar"{
+            ec{"Ulan Bator"}
+        }
+        "Asia:Vientiane"{
+            ec{"Viêng Chăn"}
+        }
+        "Atlantic:South_Georgia"{
+            ec{"Nam Georgia"}
+        }
         "Etc:UTC"{
             ls{"Giờ Phối hợp Quốc tế"}
+        }
+        "Etc:Unknown"{
+            ec{"Thành phố không xác định"}
         }
         "Europe:Dublin"{
             ld{"Giờ chuẩn Ai-len"}
         }
+        "Europe:Isle_of_Man"{
+            ec{"Đảo Man"}
+        }
+        "Europe:Kiev"{
+            ec{"Kiev"}
+        }
         "Europe:London"{
             ld{"Giờ Mùa Hè Anh"}
+        }
+        "Europe:Moscow"{
+            ec{"Mát-xcơ-va"}
+        }
+        "Europe:Prague"{
+            ec{"Praha"}
+        }
+        "Pacific:Enderbury"{
+            ec{"Đảo Canton"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
         }
         "meta:Acre"{
             ld{"Giờ Mùa Hè Acre"}
@@ -30,14 +102,15 @@ vi{
             ls{"Giờ Chuẩn Nam Phi"}
         }
         "meta:Africa_Western"{
-            ld{"Giờ Mùa Hè Tây Phi"}
-            lg{"Giờ Tây Phi"}
-            ls{"Giờ Chuẩn Tây Phi"}
+            ls{"Giờ Tây Phi"}
         }
         "meta:Alaska"{
             ld{"Giờ Mùa Hè Alaska"}
             lg{"Giờ Alaska"}
             ls{"Giờ Chuẩn Alaska"}
+            sd{"AKDT"}
+            sg{"AKT"}
+            ss{"AKST"}
         }
         "meta:Almaty"{
             ld{"Giờ Mùa Hè Almaty"}
@@ -53,21 +126,33 @@ vi{
             ld{"Giờ mùa hè miền Trung"}
             lg{"Giờ miền Trung"}
             ls{"Giờ chuẩn miền Trung"}
+            sd{"CDT"}
+            sg{"CT"}
+            ss{"CST"}
         }
         "meta:America_Eastern"{
             ld{"Giờ mùa hè miền Đông"}
             lg{"Giờ miền Đông"}
             ls{"Giờ chuẩn miền Đông"}
+            sd{"EDT"}
+            sg{"ET"}
+            ss{"EST"}
         }
         "meta:America_Mountain"{
             ld{"Giờ mùa hè miền núi"}
             lg{"Giờ miền núi"}
             ls{"Giờ chuẩn miền núi"}
+            sd{"MDT"}
+            sg{"MT"}
+            ss{"MST"}
         }
         "meta:America_Pacific"{
             ld{"Giờ mùa hè Thái Bình Dương"}
             lg{"Giờ Thái Bình Dương"}
             ls{"Giờ chuẩn Thái Bình Dương"}
+            sd{"PDT"}
+            sg{"PT"}
+            ss{"PST"}
         }
         "meta:Anadyr"{
             ld{"Giờ mùa hè Anadyr"}
@@ -113,6 +198,9 @@ vi{
             ld{"Giờ mùa hè Đại Tây Dương"}
             lg{"Giờ Đại Tây Dương"}
             ls{"Giờ Chuẩn Đại Tây Dương"}
+            sd{"ADT"}
+            sg{"AT"}
+            ss{"AST"}
         }
         "meta:Australia_Central"{
             ld{"Giờ Mùa Hè Miền Trung Australia"}
@@ -140,9 +228,9 @@ vi{
             ls{"Giờ Chuẩn Azerbaijan"}
         }
         "meta:Azores"{
-            ld{"Giờ Mùa Hè Azores"}
+            ld{"Giờ mùa hè Azores"}
             lg{"Giờ Azores"}
-            ls{"Giờ Chuẩn Azores"}
+            ls{"Giờ chuẩn Azores"}
         }
         "meta:Bangladesh"{
             ld{"Giờ Mùa Hè Bangladesh"}
@@ -168,6 +256,9 @@ vi{
             lg{"Giờ Cape Verde"}
             ls{"Giờ Chuẩn Cape Verde"}
         }
+        "meta:Casey"{
+            ls{"Giờ Casey"}
+        }
         "meta:Chamorro"{
             ls{"Giờ Chamorro"}
         }
@@ -185,11 +276,6 @@ vi{
             ld{"Giờ Mùa Hè Trung Quốc"}
             lg{"Giờ Trung Quốc"}
             ls{"Giờ Chuẩn Trung Quốc"}
-        }
-        "meta:Choibalsan"{
-            ld{"Giờ Mùa Hè Choibalsan"}
-            lg{"Giờ Choibalsan"}
-            ls{"Giờ Chuẩn Choibalsan"}
         }
         "meta:Christmas"{
             ls{"Giờ Đảo Christmas"}
@@ -240,7 +326,7 @@ vi{
             ls{"Giờ chuẩn Đông Âu"}
         }
         "meta:Europe_Further_Eastern"{
-            ls{"Giờ Châu Âu Viễn Đông"}
+            ls{"Giờ Viễn đông Châu Âu"}
         }
         "meta:Europe_Western"{
             ld{"Giờ mùa hè Tây Âu"}
@@ -273,9 +359,9 @@ vi{
             ls{"Giờ Gambier"}
         }
         "meta:Georgia"{
-            ld{"Giờ Mùa Hè Gruzia"}
-            lg{"Giờ Gruzia"}
-            ls{"Giờ Chuẩn Gruzia"}
+            ld{"Giờ Mùa Hè Georgia"}
+            lg{"Giờ Georgia"}
+            ls{"Giờ Chuẩn Georgia"}
         }
         "meta:Gilbert_Islands"{
             ls{"Giờ Quần Đảo Gilbert"}
@@ -299,10 +385,17 @@ vi{
         "meta:Guyana"{
             ls{"Giờ Guyana"}
         }
+        "meta:Hawaii"{
+            ls{"Giờ Chuẩn Hawaii-Aleut"}
+            ss{"HAST"}
+        }
         "meta:Hawaii_Aleutian"{
             ld{"Giờ Mùa Hè Hawaii-Aleut"}
             lg{"Giờ Hawaii-Aleut"}
             ls{"Giờ Chuẩn Hawaii-Aleut"}
+            sd{"HADT"}
+            sg{"HAT"}
+            ss{"HAST"}
         }
         "meta:Hong_Kong"{
             ld{"Giờ Mùa Hè Hồng Kông"}
@@ -357,6 +450,9 @@ vi{
             lg{"Giờ Petropavlovsk-Kamchatski"}
             ls{"Giờ chuẩn Petropavlovsk-Kamchatski"}
         }
+        "meta:Kazakhstan"{
+            ls{"Giờ Kazakhstan"}
+        }
         "meta:Kazakhstan_Eastern"{
             ls{"Giờ Miền Đông Kazakhstan"}
         }
@@ -395,9 +491,6 @@ vi{
             lg{"Giờ Ma Cao"}
             ls{"Giờ Chuẩn Ma Cao"}
         }
-        "meta:Macquarie"{
-            ls{"Giờ đảo Macquarie"}
-        }
         "meta:Magadan"{
             ld{"Giờ mùa hè Magadan"}
             lg{"Giờ Magadan"}
@@ -422,11 +515,6 @@ vi{
         }
         "meta:Mawson"{
             ls{"Giờ Mawson"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"Giờ Mùa Hè Tây Bắc Mexico"}
-            lg{"Giờ Tây Bắc Mexico"}
-            ls{"Giờ Chuẩn Tây Bắc Mexico"}
         }
         "meta:Mexico_Pacific"{
             ld{"Giờ Mùa Hè Thái Bình Dương Mexico"}
@@ -471,7 +559,9 @@ vi{
             ls{"Giờ Niue"}
         }
         "meta:Norfolk"{
-            ls{"Giờ đảo Norfolk"}
+            ld{"Giờ Mùa Hè Đảo Norfolk"}
+            lg{"Giờ Đảo Norfolk"}
+            ls{"Giờ Chuẩn Đảo Norfolk"}
         }
         "meta:Noronha"{
             ld{"Giờ Mùa Hè Fernando de Noronha"}
@@ -600,6 +690,11 @@ vi{
         "meta:Truk"{
             ls{"Giờ Chuuk"}
         }
+        "meta:Turkey"{
+            ld{"Giờ Mùa Hè Thổ Nhĩ Kỳ"}
+            lg{"Giờ Thổ Nhĩ Kỳ"}
+            ls{"Giờ Chuẩn Thổ Nhĩ Kỳ"}
+        }
         "meta:Turkmenistan"{
             ld{"Giờ Mùa Hè Turkmenistan"}
             lg{"Giờ Turkmenistan"}
@@ -655,10 +750,9 @@ vi{
             lg{"Giờ Yekaterinburg"}
             ls{"Giờ Chuẩn Yekaterinburg"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
+        "meta:Yukon"{
+            ls{"Giờ Yukon"}
+        }
         regionFormat{"Giờ {0}"}
         regionFormatDaylight{"Giờ mùa hè {0}"}
         regionFormatStandard{"Giờ chuẩn {0}"}

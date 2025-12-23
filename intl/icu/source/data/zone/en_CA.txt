@@ -1,58 +1,47 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 en_CA{
-    %%Parent{"en_001"}
-    Version{"2.1.44.88"}
     zoneStrings{
-        "Pacific:Honolulu"{
-            sd{"HDT"}
-            sg{"HST"}
-            ss{"HST"}
+        "America:St_Barthelemy"{
+            ec{"Saint-Barthélemy"}
         }
-        "meta:Alaska"{
-            sd{"AKDT"}
-            sg{"AKT"}
-            ss{"AKST"}
+        "America:St_Johns"{
+            ec{"Saint John’s"}
         }
-        "meta:America_Central"{
-            sd{"CDT"}
-            sg{"CT"}
-            ss{"CST"}
+        "America:St_Kitts"{
+            ec{"Saint Kitts"}
         }
-        "meta:America_Eastern"{
-            sd{"EDT"}
-            sg{"ET"}
-            ss{"EST"}
+        "America:St_Lucia"{
+            ec{"Saint Lucia"}
         }
-        "meta:America_Mountain"{
-            sd{"MDT"}
-            sg{"MT"}
-            ss{"MST"}
+        "America:St_Thomas"{
+            ec{"Saint Thomas"}
         }
-        "meta:America_Pacific"{
-            sd{"PDT"}
-            sg{"PT"}
-            ss{"PST"}
+        "America:St_Vincent"{
+            ec{"Saint Vincent"}
         }
-        "meta:Argentina"{
-            lg{"Argentina Time"}
-            ls{"Argentina Standard Time"}
+        "Atlantic:St_Helena"{
+            ec{"Saint Helena"}
         }
-        "meta:Atlantic"{
-            sd{"ADT"}
-            sg{"AT"}
-            ss{"AST"}
-        }
-        "meta:Hawaii_Aleutian"{
-            sd{"HADT"}
-            sg{"HAT"}
-            ss{"HAST"}
+        "meta:French_Southern"{
+            ls{"French Southern and Antarctic Time"}
         }
         "meta:Newfoundland"{
             sd{"NDT"}
             sg{"NT"}
             ss{"NST"}
         }
-        regionFormatDaylight{"{0} Daylight Saving Time"}
+        "meta:Pierre_Miquelon"{
+            ld{"Saint-Pierre-et-Miquelon Daylight Time"}
+            lg{"Saint-Pierre-et-Miquelon Time"}
+            ls{"Saint-Pierre-et-Miquelon Standard Time"}
+            sd{"PMDT"}
+            sg{"PMT"}
+            ss{"PMST"}
+        }
+        "meta:Wallis"{
+            ls{"Wallis and Futuna Time"}
+        }
     }
 }

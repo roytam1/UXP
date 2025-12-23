@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 agq{
     Currencies{
         AED{
@@ -170,9 +171,13 @@ agq{
             "SHP",
             "Bɔ̀ŋ è Sɛ̀n Èlenà",
         }
+        SLE{
+            "SLE",
+            "Lyɔ̂ŋ",
+        }
         SLL{
             "SLL",
-            "Lyɔ̂ŋ",
+            "Lyɔ̂ŋ (1964—2022)",
         }
         SOS{
             "SOS",
@@ -211,7 +216,7 @@ agq{
             "CFA Fàlâŋ BEAC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "CFA Fàlâŋ BCEAO",
         }
         ZAR{
@@ -231,5 +236,4 @@ agq{
             "Dɔlà è Zìmbagbɛ̀",
         }
     }
-    Version{"2.1.39.11"}
 }

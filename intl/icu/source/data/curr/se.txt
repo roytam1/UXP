@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 se{
     Currencies{
         DKK{
@@ -13,22 +14,6 @@ se{
         FIM{
             "FIM",
             "suoma márkki",
-        }
-        HKD{
-            "HK$",
-            "HKD",
-        }
-        INR{
-            "₹",
-            "INR",
-        }
-        JPY{
-            "JP¥",
-            "JPY",
-        }
-        MXN{
-            "MX$",
-            "MXN",
         }
         NOK{
             "kr",
@@ -51,27 +36,9 @@ se{
             "uns golli",
         }
     }
-    CurrencyPlurals{
-        EUR{
-            one{"euro"}
-            other{"euro"}
-            two{"euro"}
-        }
-        NOK{
-            one{"norgga kruvdno"}
-            other{"norgga kruvdno"}
-            two{"norgga kruvdno"}
-        }
-        SEK{
-            one{"ruoŧŧa kruvdno"}
-            other{"ruoŧŧa kruvdno"}
-            two{"ruoŧŧa kruvdno"}
-        }
-    }
     CurrencyUnitPatterns{
         one{"{0} {1}"}
         other{"{0} {1}"}
         two{"{0} {1}"}
     }
-    Version{"2.1.43.94"}
 }

@@ -19,9 +19,8 @@ icu_dir=`dirname $0`/icu
 for patch in \
  bug-915735 \
  suppress-warnings.diff \
- bug-1172609-timezone-recreateDefault.diff \
  bug-1198952-workaround-make-3.82-bug.diff \
- bug-1504656-relativetimeformat-plural-other-fallback.diff \
+ suppress-non-dll-interface.diff \
 ; do
   echo "Applying local patch $patch"
   patch -d ${icu_dir}/../../ -p1 --no-backup-if-mismatch < ${icu_dir}/../icu-patches/$patch

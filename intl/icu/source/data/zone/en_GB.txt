@@ -1,8 +1,8 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 en_GB{
     %%Parent{"en_001"}
-    Version{"2.1.44.18"}
     zoneStrings{
         "Europe:London"{
             sd{"BST"}
@@ -22,10 +22,8 @@ en_GB{
             sg{"WET"}
             ss{"WET"}
         }
-        "meta:Pierre_Miquelon"{
-            ld{"St Pierre & Miquelon Daylight Time"}
-            lg{"St Pierre & Miquelon Time"}
-            ls{"St Pierre & Miquelon Standard Time"}
+        "meta:Gulf"{
+            ss{"GST"}
         }
     }
 }

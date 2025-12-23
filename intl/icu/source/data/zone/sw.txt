@@ -1,16 +1,52 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 sw{
-    Version{"2.1.43.65"}
     zoneStrings{
+        "America:Bahia_Banderas"{
+            ec{"Bahia Banderas"}
+        }
+        "America:Cancun"{
+            ec{"Cancun"}
+        }
+        "America:Ciudad_Juarez"{
+            ec{"Ciudad Juarez"}
+        }
+        "America:Merida"{
+            ec{"Merida"}
+        }
+        "America:Mexico_City"{
+            ec{"Jiji la Mexico"}
+        }
+        "Asia:Macau"{
+            ec{"Macau"}
+        }
+        "Asia:Qostanay"{
+            ec{"Kostanay"}
+        }
+        "Asia:Rangoon"{
+            ec{"Rangoon"}
+        }
+        "Atlantic:South_Georgia"{
+            ec{"Georgia Kusini"}
+        }
         "Etc:UTC"{
             ls{"Mfumo wa kuratibu saa ulimwenguni"}
+        }
+        "Etc:Unknown"{
+            ec{"Jiji Lisilojulikana"}
         }
         "Europe:Dublin"{
             ld{"Saa za Majira ya Joto za Ayalandi"}
         }
+        "Europe:Kiev"{
+            ec{"Kiev"}
+        }
         "Europe:London"{
             ld{"Saa za Majira ya Joto za Uingereza"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
         }
         "meta:Afghanistan"{
             ls{"Saa za Afghanistan"}
@@ -25,9 +61,7 @@ sw{
             ls{"Saa za Wastani za Afrika Kusini"}
         }
         "meta:Africa_Western"{
-            ld{"Saa za Majira ya joto za Afrika Magharibi"}
-            lg{"Saa za Afrika Magharibi"}
-            ls{"Saa za Wastani za Afrika Magharibi"}
+            ls{"Saa za Afrika Magharibi"}
         }
         "meta:Alaska"{
             ld{"Saa za Mchana za Alaska"}
@@ -166,21 +200,16 @@ sw{
             lg{"Saa za Uchina"}
             ls{"Saa za Wastani za Uchina"}
         }
-        "meta:Choibalsan"{
-            ld{"Saa za Majira ya joto za Choibalsan"}
-            lg{"Saa za Choibalsan"}
-            ls{"Saa za Wastani za Choibalsan"}
-        }
         "meta:Christmas"{
-            ls{"Saa za Kisiwa cha Christmas"}
+            ls{"Saa za Kisiwa cha Krismasi"}
         }
         "meta:Cocos"{
             ls{"Saa za Visiwa vya Cocos"}
         }
         "meta:Colombia"{
-            ld{"Saa za Majira ya joto za Colombia"}
-            lg{"Saa za Colombia"}
-            ls{"Saa za Wastani za Colombia"}
+            ld{"Saa za Majira ya joto za Kolombia"}
+            lg{"Saa za Kolombia"}
+            ls{"Saa za Wastani za Kolombia"}
         }
         "meta:Cook"{
             ld{"Saa za Majira nusu ya joto za Visiwa Cook"}
@@ -188,9 +217,9 @@ sw{
             ls{"Saa za Wastani za Visiwa vya Cook"}
         }
         "meta:Cuba"{
-            ld{"Saa za Mchana za Cuba"}
-            lg{"Saa za Cuba"}
-            ls{"Saa za Wastani ya Cuba"}
+            ld{"Saa za Mchana za Kuba"}
+            lg{"Saa za Kuba"}
+            ls{"Saa za Wastani ya Kuba"}
         }
         "meta:Davis"{
             ls{"Saa za Davis"}
@@ -207,12 +236,12 @@ sw{
             ls{"Saa za Wastani za Kisiwa cha Easter"}
         }
         "meta:Ecuador"{
-            ls{"Saa za Ecuador"}
+            ls{"Saa za Ekwado"}
         }
         "meta:Europe_Central"{
             ld{"Saa za Majira ya joto za Ulaya ya Kati"}
             lg{"Saa za Ulaya ya Kati"}
-            ls{"Saa za Wastani za Ulaya ya kati"}
+            ls{"Saa za Wastani za Ulaya ya Kati"}
         }
         "meta:Europe_Eastern"{
             ld{"Saa za Majira ya joto za Mashariki mwa Ulaya"}
@@ -253,9 +282,9 @@ sw{
             ls{"Saa za Gambier"}
         }
         "meta:Georgia"{
-            ld{"Saa za Majira ya joto za Georgia"}
-            lg{"Saa za Georgia"}
-            ls{"Saa za Wastani za Georgia"}
+            ld{"Saa za Majira ya joto za Jojia"}
+            lg{"Saa za Jojia"}
+            ls{"Saa za Wastani za Jojia"}
         }
         "meta:Gilbert_Islands"{
             ls{"Saa za Visiwa vya Gilbert"}
@@ -276,6 +305,9 @@ sw{
         "meta:Guyana"{
             ls{"Saa za Guyana"}
         }
+        "meta:Hawaii"{
+            ls{"Saa za Wastani za Hawaii-Aleutian"}
+        }
         "meta:Hawaii_Aleutian"{
             ld{"Saa za Mchana za Hawaii-Aleutian"}
             lg{"Saa za Hawaii-Aleutian"}
@@ -292,7 +324,7 @@ sw{
             ls{"Saa za Wastani za Hovd"}
         }
         "meta:India"{
-            ls{"Saa Wastani za India"}
+            ls{"Saa za Wastani za India"}
         }
         "meta:Indian_Ocean"{
             ls{"Saa za Bahari Hindi"}
@@ -327,12 +359,15 @@ sw{
         "meta:Japan"{
             ld{"Saa za Mchana za Japan"}
             lg{"Saa za Japan"}
-            ls{"Saa Wastani za Japan"}
+            ls{"Saa za Wastani za Japani"}
         }
         "meta:Kamchatka"{
             ld{"Saa za Kiangazi za Petropavlovsk-Kamchatski"}
             lg{"Saa za Petropavlovsk-Kamchatski"}
             ls{"Saa za Wastani za Petropavlovsk-Kamchatski"}
+        }
+        "meta:Kazakhstan"{
+            ls{"Saa za Kazakhstan"}
         }
         "meta:Kazakhstan_Eastern"{
             ls{"Saa za Kazakhstan Mashariki"}
@@ -364,9 +399,6 @@ sw{
             lg{"Saa za Lord Howe"}
             ls{"Saa za Wastani za Lord Howe"}
         }
-        "meta:Macquarie"{
-            ls{"Saa za kisiwa cha Macquarie"}
-        }
         "meta:Magadan"{
             ld{"Saa za Majira ya joto za Magadan"}
             lg{"Saa za Magadan"}
@@ -385,22 +417,17 @@ sw{
             ls{"Saa za Visiwa vya Marshall"}
         }
         "meta:Mauritius"{
-            ld{"Saa za Majira ya joto za Mauritius"}
-            lg{"Saa za Mauritius"}
-            ls{"Saa za Wastani za Mauritius"}
+            ld{"Saa za Majira ya joto za Morisi"}
+            lg{"Saa za Morisi"}
+            ls{"Saa za Wastani za Morisi"}
         }
         "meta:Mawson"{
             ls{"Saa za Mawson"}
         }
-        "meta:Mexico_Northwest"{
-            ld{"Saa za mchana za Mexico Kaskazini Magharibi"}
-            lg{"Saa za Mexico Kaskazini Magharibi"}
-            ls{"Saa za Wastani za Mexico Kaskazini Magharibi"}
-        }
         "meta:Mexico_Pacific"{
-            ld{"Saa za mchana za pasifiki za Mexico"}
-            lg{"Saa za pasifiki za Mexico"}
-            ls{"Saa za wastani za pasifiki za Mexico"}
+            ld{"Saa za mchana za pasifiki za Meksiko"}
+            lg{"Saa za pasifiki za Meksiko"}
+            ls{"Saa za wastani za pasifiki za Meksiko"}
         }
         "meta:Mongolia"{
             ld{"Saa za Majira ya joto za Ulan Bator"}
@@ -440,7 +467,9 @@ sw{
             ls{"Saa za Niue"}
         }
         "meta:Norfolk"{
-            ls{"Saa za Kisiwa cha Norfolk"}
+            ld{"Saa za Majira ya joto za Kisiwa cha Norfolk"}
+            lg{"Saa za Kisiwa cha Norfolk"}
+            ls{"Saa za Wastani za Kisiwa cha Norfolk"}
         }
         "meta:Noronha"{
             ld{"Saa za Majira ya joto za Fernando de Noronha"}
@@ -469,9 +498,9 @@ sw{
             ls{"Saa za Papua New Guinea"}
         }
         "meta:Paraguay"{
-            ld{"Saa za Majira ya joto za Paraguay"}
-            lg{"Saa za Paraguay"}
-            ls{"Saa za Wastani za Paraguay"}
+            ld{"Saa za Majira ya joto za Paragwai"}
+            lg{"Saa za Paragwai"}
+            ls{"Saa za Wastani za Paragwai"}
         }
         "meta:Peru"{
             ld{"Saa za Majira ya joto za Peru"}
@@ -570,9 +599,9 @@ sw{
             ls{"Saa za Tuvalu"}
         }
         "meta:Uruguay"{
-            ld{"Saa za Majira ya joto za Uruguay"}
-            lg{"Saa za Uruguay"}
-            ls{"Saa za Wastani za Uruguay"}
+            ld{"Saa za Majira ya joto za Urugwai"}
+            lg{"Saa za Urugwai"}
+            ls{"Saa za Wastani za Urugwai"}
         }
         "meta:Uzbekistan"{
             ld{"Saa za Majira ya joto za Uzbekistan"}
@@ -616,10 +645,10 @@ sw{
             lg{"Saa za Yekaterinburg"}
             ls{"Saa za Wastani za Yekaterinburg"}
         }
-        fallbackFormat{"{1} ({0})"}
+        "meta:Yukon"{
+            ls{"Saa za Yukon"}
+        }
         gmtFormat{"GMT {0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
         regionFormat{"Saa za {0}"}
         regionFormatDaylight{"Saa za Mchana za {0}"}
         regionFormatStandard{"Saa za wastani za {0}"}

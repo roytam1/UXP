@@ -52,11 +52,10 @@ SpoofImpl::SpoofImpl() {
 }
 
 void SpoofImpl::construct(UErrorCode& status) {
-    fMagic = USPOOF_MAGIC;
     fChecks = USPOOF_ALL_CHECKS;
-    fSpoofData = NULL;
-    fAllowedCharsSet = NULL;
-    fAllowedLocales = NULL;
+    fSpoofData = nullptr;
+    fAllowedCharsSet = nullptr;
+    fAllowedLocales = nullptr;
     fRestrictionLevel = USPOOF_HIGHLY_RESTRICTIVE;
 
     if (U_FAILURE(status)) { return; }
@@ -64,7 +63,7 @@ void SpoofImpl::construct(UErrorCode& status) {
     UnicodeSet *allowedCharsSet = new UnicodeSet(0, 0x10ffff);
     fAllowedCharsSet = allowedCharsSet;
     fAllowedLocales  = uprv_strdup("");
-    if (fAllowedCharsSet == NULL || fAllowedLocales == NULL) {
+    if (fAllowedCharsSet == nullptr || fAllowedLocales == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
         return;
     }
@@ -74,28 +73,25 @@ void SpoofImpl::construct(UErrorCode& status) {
 
 // Copy Constructor, used by the user level clone() function.
 SpoofImpl::SpoofImpl(const SpoofImpl &src, UErrorCode &status)  :
-        fMagic(0), fChecks(USPOOF_ALL_CHECKS), fSpoofData(NULL), fAllowedCharsSet(NULL) , 
-        fAllowedLocales(NULL) {
+        fChecks(USPOOF_ALL_CHECKS), fSpoofData(nullptr), fAllowedCharsSet(nullptr) , 
+        fAllowedLocales(nullptr) {
     if (U_FAILURE(status)) {
         return;
     }
-    fMagic = src.fMagic;
     fChecks = src.fChecks;
-    if (src.fSpoofData != NULL) {
+    if (src.fSpoofData != nullptr) {
         fSpoofData = src.fSpoofData->addReference();
     }
-    fAllowedCharsSet = static_cast<const UnicodeSet *>(src.fAllowedCharsSet->clone());
+    fAllowedCharsSet = src.fAllowedCharsSet->clone();
     fAllowedLocales = uprv_strdup(src.fAllowedLocales);
-    if (fAllowedCharsSet == NULL || fAllowedLocales == NULL) {
+    if (fAllowedCharsSet == nullptr || fAllowedLocales == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
     }
     fRestrictionLevel = src.fRestrictionLevel;
 }
 
 SpoofImpl::~SpoofImpl() {
-    fMagic = 0;                // head off application errors by preventing use of
-                               //    of deleted objects.
-    if (fSpoofData != NULL) {
+    if (fSpoofData != nullptr) {
         fSpoofData->removeReference();   // Will delete if refCount goes to zero.
     }
     delete fAllowedCharsSet;
@@ -104,7 +100,7 @@ SpoofImpl::~SpoofImpl() {
 
 //  Cast this instance as a USpoofChecker for the C API.
 USpoofChecker *SpoofImpl::asUSpoofChecker() {
-    return reinterpret_cast<USpoofChecker*>(this);
+    return exportForC();
 }
 
 //
@@ -112,20 +108,12 @@ USpoofChecker *SpoofImpl::asUSpoofChecker() {
 //    received from the C API.
 //
 const SpoofImpl *SpoofImpl::validateThis(const USpoofChecker *sc, UErrorCode &status) {
+    const auto* This = validate(sc, status);
     if (U_FAILURE(status)) {
-        return NULL;
+        return nullptr;
     }
-    if (sc == NULL) {
-        status = U_ILLEGAL_ARGUMENT_ERROR;
-        return NULL;
-    }
-    SpoofImpl *This = (SpoofImpl *)sc;
-    if (This->fMagic != USPOOF_MAGIC) {
-        status = U_INVALID_FORMAT_ERROR;
-        return NULL;
-    }
-    if (This->fSpoofData != NULL && !This->fSpoofData->validateDataVersion(status)) {
-        return NULL;
+    if (This->fSpoofData != nullptr && !This->fSpoofData->validateDataVersion(status)) {
+        return nullptr;
     }
     return This;
 }
@@ -138,16 +126,16 @@ SpoofImpl *SpoofImpl::validateThis(USpoofChecker *sc, UErrorCode &status) {
 
 void SpoofImpl::setAllowedLocales(const char *localesList, UErrorCode &status) {
     UnicodeSet    allowedChars;
-    UnicodeSet    *tmpSet = NULL;
+    UnicodeSet    *tmpSet = nullptr;
     const char    *locStart = localesList;
-    const char    *locEnd = NULL;
+    const char    *locEnd = nullptr;
     const char    *localesListEnd = localesList + uprv_strlen(localesList);
     int32_t        localeListCount = 0;   // Number of locales provided by caller.
 
     // Loop runs once per locale from the localesList, a comma separated list of locales.
     do {
         locEnd = uprv_strchr(locStart, ',');
-        if (locEnd == NULL) {
+        if (locEnd == nullptr) {
             locEnd = localesListEnd;
         }
         while (*locStart == ' ') {
@@ -160,7 +148,7 @@ void SpoofImpl::setAllowedLocales(const char *localesList, UErrorCode &status) {
         if (trimmedEnd <= locStart) {
             break;
         }
-        const char *locale = uprv_strndup(locStart, (int32_t)(trimmedEnd + 1 - locStart));
+        const char* locale = uprv_strndup(locStart, static_cast<int32_t>(trimmedEnd + 1 - locStart));
         localeListCount++;
 
         // We have one locale from the locales list.
@@ -179,7 +167,7 @@ void SpoofImpl::setAllowedLocales(const char *localesList, UErrorCode &status) {
         uprv_free((void *)fAllowedLocales);
         fAllowedLocales = uprv_strdup("");
         tmpSet = new UnicodeSet(0, 0x10ffff);
-        if (fAllowedLocales == NULL || tmpSet == NULL) {
+        if (fAllowedLocales == nullptr || tmpSet == nullptr) {
             status = U_MEMORY_ALLOCATION_ERROR;
             return;
         } 
@@ -205,9 +193,9 @@ void SpoofImpl::setAllowedLocales(const char *localesList, UErrorCode &status) {
     }
 
     // Store the updated spoof checker state.
-    tmpSet = static_cast<UnicodeSet *>(allowedChars.clone());
+    tmpSet = allowedChars.clone();
     const char *tmpLocalesList = uprv_strdup(localesList);
-    if (tmpSet == NULL || tmpLocalesList == NULL) {
+    if (tmpSet == nullptr || tmpLocalesList == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
         return;
     }
@@ -317,7 +305,7 @@ void SpoofImpl::getNumerics(const UnicodeString& input, UnicodeSet& result, UErr
         if (u_charType(codePoint) == U_DECIMAL_DIGIT_NUMBER) {
             // Store the zero character as a representative for comparison.
             // Unicode guarantees it is codePoint - value
-            result.add(codePoint - (UChar32)u_getNumericValue(codePoint));
+            result.add(codePoint - static_cast<UChar32>(u_getNumericValue(codePoint)));
         }
     }
 }
@@ -332,10 +320,10 @@ URestrictionLevel SpoofImpl::getRestrictionLevel(const UnicodeString& input, UEr
     // Section 5.2 step 2
     // Java use a static UnicodeSet for this test.  In C++, avoid the static variable
     // and just do a simple for loop.
-    UBool allASCII = TRUE;
+    UBool allASCII = true;
     for (int32_t i=0, length=input.length(); i<length; i++) {
         if (input.charAt(i) > 0x7f) {
-            allASCII = FALSE;
+            allASCII = false;
             break;
         }
     }
@@ -417,11 +405,11 @@ bool SpoofImpl::isIllegalCombiningDotLeadCharacter(UChar32 cp) const {
 
 
 // Convert a text format hex number.  Utility function used by builder code.  Static.
-// Input: UChar *string text.  Output: a UChar32
+// Input: char16_t *string text.  Output: a UChar32
 // Input has been pre-checked, and will have no non-hex chars.
 // The number must fall in the code point range of 0..0x10ffff
 // Static Function.
-UChar32 SpoofImpl::ScanHex(const UChar *s, int32_t start, int32_t limit, UErrorCode &status) {
+UChar32 SpoofImpl::ScanHex(const char16_t *s, int32_t start, int32_t limit, UErrorCode &status) {
     if (U_FAILURE(status)) {
         return 0;
     }
@@ -444,7 +432,7 @@ UChar32 SpoofImpl::ScanHex(const UChar *s, int32_t start, int32_t limit, UErrorC
         status = U_PARSE_ERROR;
         val = 0;
     }
-    return (UChar32)val;
+    return static_cast<UChar32>(val);
 }
 
 
@@ -454,12 +442,12 @@ UChar32 SpoofImpl::ScanHex(const UChar *s, int32_t start, int32_t limit, UErrorC
 //
 //-----------------------------------------
 
-CheckResult::CheckResult() : fMagic(USPOOF_CHECK_MAGIC) {
+CheckResult::CheckResult() {
     clear();
 }
 
 USpoofCheckResult* CheckResult::asUSpoofCheckResult() {
-    return reinterpret_cast<USpoofCheckResult*>(this);
+    return exportForC();
 }
 
 //
@@ -467,22 +455,11 @@ USpoofCheckResult* CheckResult::asUSpoofCheckResult() {
 //    received from the C API.
 //
 const CheckResult* CheckResult::validateThis(const USpoofCheckResult *ptr, UErrorCode &status) {
-    if (U_FAILURE(status)) { return NULL; }
-    if (ptr == NULL) {
-        status = U_ILLEGAL_ARGUMENT_ERROR;
-        return NULL;
-    }
-    CheckResult *This = (CheckResult*) ptr;
-    if (This->fMagic != USPOOF_CHECK_MAGIC) {
-        status = U_INVALID_FORMAT_ERROR;
-        return NULL;
-    }
-    return This;
+    return validate(ptr, status);
 }
 
 CheckResult* CheckResult::validateThis(USpoofCheckResult *ptr, UErrorCode &status) {
-    return const_cast<CheckResult *>
-        (CheckResult::validateThis(const_cast<const USpoofCheckResult*>(ptr), status));
+    return validate(ptr, status);
 }
 
 void CheckResult::clear() {
@@ -511,16 +488,16 @@ CheckResult::~CheckResult() {
 
 UBool SpoofData::validateDataVersion(UErrorCode &status) const {
     if (U_FAILURE(status) ||
-        fRawData == NULL ||
+        fRawData == nullptr ||
         fRawData->fMagic != USPOOF_MAGIC ||
         fRawData->fFormatVersion[0] != USPOOF_CONFUSABLE_DATA_FORMAT_VERSION ||
         fRawData->fFormatVersion[1] != 0 ||
         fRawData->fFormatVersion[2] != 0 ||
         fRawData->fFormatVersion[3] != 0) {
             status = U_INVALID_FORMAT_ERROR;
-            return FALSE;
+            return false;
     }
-    return TRUE;
+    return true;
 }
 
 static UBool U_CALLCONV
@@ -538,12 +515,12 @@ spoofDataIsAcceptable(void *context,
         pInfo->formatVersion[0] == USPOOF_CONFUSABLE_DATA_FORMAT_VERSION
     ) {
         UVersionInfo *version = static_cast<UVersionInfo *>(context);
-        if(version != NULL) {
+        if(version != nullptr) {
             uprv_memcpy(version, pInfo->dataVersion, 4);
         }
-        return TRUE;
+        return true;
     } else {
-        return FALSE;
+        return false;
     }
 }
 
@@ -561,18 +538,18 @@ spoofDataIsAcceptable(void *context,
 //  uspoof_cleanupDefaultData - Called during cleanup.
 //
 
-static UInitOnce gSpoofInitDefaultOnce = U_INITONCE_INITIALIZER;
+static UInitOnce gSpoofInitDefaultOnce {};
 static SpoofData* gDefaultSpoofData;
 
 static UBool U_CALLCONV
-uspoof_cleanupDefaultData(void) {
+uspoof_cleanupDefaultData() {
     if (gDefaultSpoofData) {
         // Will delete, assuming all user-level spoof checkers were closed.
         gDefaultSpoofData->removeReference();
         gDefaultSpoofData = nullptr;
         gSpoofInitDefaultOnce.reset();
     }
-    return TRUE;
+    return true;
 }
 
 static void U_CALLCONV uspoof_loadDefaultData(UErrorCode& status) {
@@ -596,7 +573,7 @@ static void U_CALLCONV uspoof_loadDefaultData(UErrorCode& status) {
 
 SpoofData* SpoofData::getDefault(UErrorCode& status) {
     umtx_initOnce(gSpoofInitDefaultOnce, &uspoof_loadDefaultData, status);
-    if (U_FAILURE(status)) { return NULL; }
+    if (U_FAILURE(status)) { return nullptr; }
     gDefaultSpoofData->addReference();
     return gDefaultSpoofData;
 }
@@ -624,11 +601,11 @@ SpoofData::SpoofData(const void *data, int32_t length, UErrorCode &status)
     if (U_FAILURE(status)) {
         return;
     }
-    if ((size_t)length < sizeof(SpoofDataHeader)) {
+    if (static_cast<size_t>(length) < sizeof(SpoofDataHeader)) {
         status = U_INVALID_FORMAT_ERROR;
         return;
     }
-    if (data == NULL) {
+    if (data == nullptr) {
         status = U_ILLEGAL_ARGUMENT_ERROR;
         return;
     }
@@ -659,7 +636,7 @@ SpoofData::SpoofData(UErrorCode &status) {
     
     fRawData = static_cast<SpoofDataHeader *>(uprv_malloc(initialSize));
     fMemLimit = initialSize;
-    if (fRawData == NULL) {
+    if (fRawData == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
         return;
     }
@@ -677,14 +654,14 @@ SpoofData::SpoofData(UErrorCode &status) {
 //           Should be updated if any new fields are added.
 //           Called by constructors to put things in a known initial state.
 void SpoofData::reset() {
-   fRawData = NULL;
-   fDataOwned = FALSE;
-   fUDM      = NULL;
+   fRawData = nullptr;
+   fDataOwned = false;
+   fUDM      = nullptr;
    fMemLimit = 0;
    fRefCount = 1;
-   fCFUKeys = NULL;
-   fCFUValues = NULL;
-   fCFUStrings = NULL;
+   fCFUKeys = nullptr;
+   fCFUValues = nullptr;
+   fCFUStrings = nullptr;
 }
 
 
@@ -696,7 +673,7 @@ void SpoofData::reset() {
 //            during the opening of a Spoof Checker from prebuilt data.
 //
 //            The pointers for non-existent data sections (identified by an offset of 0)
-//            are set to NULL.
+//            are set to nullptr.
 //
 //            Note:  During building the data, adding each new data section
 //            reallocs the raw data area, which likely relocates it, which
@@ -704,20 +681,20 @@ void SpoofData::reset() {
 //            multiple calls to this function during building.
 //
 void SpoofData::initPtrs(UErrorCode &status) {
-    fCFUKeys = NULL;
-    fCFUValues = NULL;
-    fCFUStrings = NULL;
+    fCFUKeys = nullptr;
+    fCFUValues = nullptr;
+    fCFUStrings = nullptr;
     if (U_FAILURE(status)) {
         return;
     }
     if (fRawData->fCFUKeys != 0) {
-        fCFUKeys = (int32_t *)((char *)fRawData + fRawData->fCFUKeys);
+        fCFUKeys = reinterpret_cast<int32_t*>(reinterpret_cast<char*>(fRawData) + fRawData->fCFUKeys);
     }
     if (fRawData->fCFUStringIndex != 0) {
-        fCFUValues = (uint16_t *)((char *)fRawData + fRawData->fCFUStringIndex);
+        fCFUValues = reinterpret_cast<uint16_t*>(reinterpret_cast<char*>(fRawData) + fRawData->fCFUStringIndex);
     }
     if (fRawData->fCFUStringTable != 0) {
-        fCFUStrings = (UChar *)((char *)fRawData + fRawData->fCFUStringTable);
+        fCFUStrings = reinterpret_cast<char16_t*>(reinterpret_cast<char*>(fRawData) + fRawData->fCFUStringTable);
     }
 }
 
@@ -726,11 +703,11 @@ SpoofData::~SpoofData() {
     if (fDataOwned) {
         uprv_free(fRawData);
     }
-    fRawData = NULL;
-    if (fUDM != NULL) {
+    fRawData = nullptr;
+    if (fUDM != nullptr) {
         udata_close(fUDM);
     }
-    fUDM = NULL;
+    fUDM = nullptr;
 }
 
 
@@ -749,12 +726,10 @@ SpoofData *SpoofData::addReference() {
 
 void *SpoofData::reserveSpace(int32_t numBytes,  UErrorCode &status) {
     if (U_FAILURE(status)) {
-        return NULL;
+        return nullptr;
     }
     if (!fDataOwned) {
-        U_ASSERT(FALSE);
-        status = U_INTERNAL_PROGRAM_ERROR;
-        return NULL;
+        UPRV_UNREACHABLE_EXIT;
     }
 
     numBytes = (numBytes + 15) & ~15;   // Round up to a multiple of 16
@@ -764,7 +739,7 @@ void *SpoofData::reserveSpace(int32_t numBytes,  UErrorCode &status) {
     fRawData->fLength = fMemLimit;
     uprv_memset((char *)fRawData + returnOffset, 0, numBytes);
     initPtrs(status);
-    return (char *)fRawData + returnOffset;
+    return reinterpret_cast<char*>(fRawData) + returnOffset;
 }
 
 int32_t SpoofData::serialize(void *buf, int32_t capacity, UErrorCode &status) const {
@@ -831,7 +806,7 @@ int32_t SpoofData::appendValueTo(int32_t index, UnicodeString& dest) const {
     // an index into the string table (for longer strings)
     uint16_t value = fCFUValues[index];
     if (stringLength == 1) {
-        dest.append((UChar)value);
+        dest.append(static_cast<char16_t>(value));
     } else {
         dest.append(fCFUStrings + value, stringLength);
     }
@@ -853,10 +828,10 @@ U_CAPI int32_t U_EXPORT2
 uspoof_swap(const UDataSwapper *ds, const void *inData, int32_t length, void *outData,
            UErrorCode *status) {
 
-    if (status == NULL || U_FAILURE(*status)) {
+    if (status == nullptr || U_FAILURE(*status)) {
         return 0;
     }
-    if(ds==NULL || inData==NULL || length<-1 || (length>0 && outData==NULL)) {
+    if(ds==nullptr || inData==nullptr || length<-1 || (length>0 && outData==nullptr)) {
         *status=U_ILLEGAL_ARGUMENT_ERROR;
         return 0;
     }
@@ -970,7 +945,7 @@ uspoof_swap(const UDataSwapper *ds, const void *inData, int32_t length, void *ou
     uint32_t magic = ds->readUInt32(spoofDH->fMagic);
     ds->writeUInt32((uint32_t *)&outputDH->fMagic, magic);
 
-    if (outputDH->fFormatVersion != spoofDH->fFormatVersion) {
+    if (inBytes != outBytes) {
         uprv_memcpy(outputDH->fFormatVersion, spoofDH->fFormatVersion, sizeof(spoofDH->fFormatVersion));
     }
     // swap starting at fLength

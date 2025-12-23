@@ -15,6 +15,8 @@
 
 #include "unicode/utypes.h"
 
+#if U_SHOW_CPLUSPLUS_API
+
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/format.h"
@@ -89,13 +91,26 @@ class DateFormat;
 /**
  * <p><strong>IMPORTANT:</strong> New users are strongly encouraged to see if
  * numberformatter.h fits their use case.  Although not deprecated, this header
- * is provided for backwards compatibility only.
+ * is provided for backwards compatibility only, and has much more limited
+ * capabilities.
  *
  * @see Format
  * @author Alan Liu
  * @stable ICU 3.0
  */
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4251)
+#pragma warning(disable:4275)
+#endif
+
 class U_I18N_API MeasureFormat : public Format {
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
  public:
     using Format::parseObject;
     using Format::format;
@@ -145,13 +160,13 @@ class U_I18N_API MeasureFormat : public Format {
      * Return true if given Format objects are semantically equal.
      * @stable ICU 53
      */
-    virtual UBool operator==(const Format &other) const;
+    virtual bool operator==(const Format &other) const override;
 
     /**
      * Clones this object polymorphically.
      * @stable ICU 53
      */
-    virtual Format *clone() const;
+    virtual MeasureFormat *clone() const override;
 
     /**
      * Formats object to produce a string.
@@ -161,8 +176,9 @@ class U_I18N_API MeasureFormat : public Format {
             const Formattable &obj,
             UnicodeString &appendTo,
             FieldPosition &pos,
-            UErrorCode &status) const;
+            UErrorCode &status) const override;
 
+#ifndef U_FORCE_HIDE_DRAFT_API
     /**
      * Parse a string to produce an object. This implementation sets
      * status to U_UNSUPPORTED_ERROR.
@@ -172,7 +188,8 @@ class U_I18N_API MeasureFormat : public Format {
     virtual void parseObject(
             const UnicodeString &source,
             Formattable &reslt,
-            ParsePosition &pos) const;
+            ParsePosition &pos) const override;
+#endif  // U_FORCE_HIDE_DRAFT_API
 
     /**
      * Formats measure objects to produce a string. An example of such a
@@ -239,7 +256,7 @@ class U_I18N_API MeasureFormat : public Format {
      * {@link icu::number::NumberFormatter} instead of NumberFormat.
      * @param locale desired locale
      * @param ec input-output error code
-     * @return a formatter object, or NULL upon error
+     * @return a formatter object, or nullptr upon error
      * @stable ICU 3.0
      */
     static MeasureFormat* U_EXPORT2 createCurrencyFormat(const Locale& locale,
@@ -252,7 +269,7 @@ class U_I18N_API MeasureFormat : public Format {
      * <strong>NOTE:</strong> New users are strongly encouraged to use
      * {@link icu::number::NumberFormatter} instead of NumberFormat.
      * @param ec input-output error code
-     * @return a formatter object, or NULL upon error
+     * @return a formatter object, or nullptr upon error
      * @stable ICU 3.0
      */
     static MeasureFormat* U_EXPORT2 createCurrencyFormat(UErrorCode& ec);
@@ -268,7 +285,7 @@ class U_I18N_API MeasureFormat : public Format {
      * @return          The class ID for all objects of this class.
      * @stable ICU 53
      */
-    static UClassID U_EXPORT2 getStaticClassID(void);
+    static UClassID U_EXPORT2 getStaticClassID();
 
     /**
      * Returns a unique class ID POLYMORPHICALLY. Pure virtual override. This
@@ -281,7 +298,7 @@ class U_I18N_API MeasureFormat : public Format {
      *                  other classes have different class IDs.
      * @stable ICU 53
      */
-    virtual UClassID getDynamicClassID(void) const;
+    virtual UClassID getDynamicClassID() const override;
 
  protected:
     /**
@@ -305,7 +322,7 @@ class U_I18N_API MeasureFormat : public Format {
     /**
      * ICU use only.
      * Allows subclass to change locale. Note that this method also changes
-     * the NumberFormat object. Returns TRUE if locale changed; FALSE if no
+     * the NumberFormat object. Returns true if locale changed; false if no
      * change was made.
      * @internal.
      */
@@ -322,7 +339,14 @@ class U_I18N_API MeasureFormat : public Format {
      * ICU use only.
      * @internal.
      */
-    const NumberFormat &getNumberFormat() const;
+    const NumberFormat &getNumberFormatInternal() const;
+
+    /**
+     * ICU use only.
+     * Always returns the short form currency formatter.
+     * @internal.
+     */
+    const NumberFormat& getCurrencyFormatInternal() const;
 
     /**
      * ICU use only.
@@ -355,27 +379,6 @@ class U_I18N_API MeasureFormat : public Format {
     // shared across instances.
     ListFormatter *listFormatter;
 
-    const SimpleFormatter *getFormatterOrNull(
-            const MeasureUnit &unit, UMeasureFormatWidth width, int32_t index) const;
-
-    const SimpleFormatter *getFormatter(
-            const MeasureUnit &unit, UMeasureFormatWidth width, int32_t index,
-            UErrorCode &errorCode) const;
-
-    const SimpleFormatter *getPluralFormatter(
-            const MeasureUnit &unit, UMeasureFormatWidth width, int32_t index,
-            UErrorCode &errorCode) const;
-
-    const SimpleFormatter *getPerFormatter(
-            UMeasureFormatWidth width,
-            UErrorCode &status) const;
-
-    int32_t withPerUnitAndAppend(
-        const UnicodeString &formatted,
-        const MeasureUnit &perUnit,
-        UnicodeString &appendTo,
-        UErrorCode &status) const;
-
     UnicodeString &formatMeasure(
         const Measure &measure,
         const NumberFormat &nf,
@@ -396,17 +399,12 @@ class U_I18N_API MeasureFormat : public Format {
         int32_t bitMap,   // 1=hour set, 2=minute set, 4=second set
         UnicodeString &appendTo,
         UErrorCode &status) const;
-
-    UnicodeString &formatNumeric(
-        UDate date,
-        const DateFormat &dateFmt,
-        UDateFormatField smallestField,
-        const Formattable &smallestAmount,
-        UnicodeString &appendTo,
-        UErrorCode &status) const;
 };
 
 U_NAMESPACE_END
 
 #endif // #if !UCONFIG_NO_FORMATTING
+
+#endif /* U_SHOW_CPLUSPLUS_API */
+
 #endif // #ifndef MEASUREFORMAT_H

@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 hsb{
     Currencies{
         ADP{
@@ -209,6 +210,10 @@ hsb{
         CLP{
             "CLP",
             "chilski peso",
+        }
+        CNH{
+            "CNH",
+            "chinski yuan (offshore)",
         }
         CNY{
             "CN¥",
@@ -422,6 +427,10 @@ hsb{
             "LRD",
             "liberiski dolar",
         }
+        LSL{
+            "LSL",
+            "lesothiski loti",
+        }
         LTL{
             "LTL",
             "litawski litas",
@@ -543,7 +552,7 @@ hsb{
             "papua-nowoginejski kina",
         }
         PHP{
-            "PHP",
+            "₱",
             "filipinski peso",
         }
         PKR{
@@ -606,9 +615,13 @@ hsb{
             "SHP",
             "St. Helenski punt",
         }
+        SLE{
+            "SLE",
+            "sierra-leoneski leone",
+        }
         SLL{
             "SLL",
-            "sierra-leoneski leone",
+            "sierra-leoneski leone (1964—2022)",
         }
         SOS{
             "SOS",
@@ -726,8 +739,12 @@ hsb{
             "EC$",
             "wuchodnokaribiski dolar",
         }
+        XCG{
+            "Cg.",
+            "karibiski gulden",
+        }
         XOF{
-            "CFA",
+            "F CFA",
             "CFA-frank (BCEAO)",
         }
         XPF{
@@ -750,9 +767,10 @@ hsb{
             "ZMW",
             "sambiski kwacha",
         }
-    }
-    Currencies%narrow{
-        EUR{"€"}
+        ZWG{
+            "ZWG",
+            "simbabwiske złoto",
+        }
     }
     CurrencyPlurals{
         ADP{
@@ -1066,6 +1084,12 @@ hsb{
             one{"chilski peso"}
             other{"chilskich pesow"}
             two{"chilskej pesaj"}
+        }
+        CNH{
+            few{"chinske yuany (offshore)"}
+            one{"chinski yuan (offshore)"}
+            other{"chinskich yuanow (offshore)"}
+            two{"chinskej yuanaj (offshore)"}
         }
         CNY{
             few{"chinske yuany"}
@@ -1385,6 +1409,12 @@ hsb{
             other{"liberiskich dolarow"}
             two{"liberiskej dolaraj"}
         }
+        LSL{
+            few{"lesothiske lotije"}
+            one{"lesothiski loti"}
+            other{"lesothiskich lotijow"}
+            two{"lesothiskej lotijej"}
+        }
         LTL{
             few{"litawske litasy"}
             one{"litawski litas"}
@@ -1661,11 +1691,17 @@ hsb{
             other{"St. Helenskich puntow"}
             two{"St. Helenskej puntaj"}
         }
-        SLL{
+        SLE{
             few{"sierra-leoneske leony"}
             one{"sierra-leoneski leone"}
             other{"sierra-leoneskich leonow"}
             two{"sierra-leoneskej leonaj"}
+        }
+        SLL{
+            few{"sierra-leoneske leony (1964—2022)"}
+            one{"sierra-leoneski leone (1964—2022)"}
+            other{"sierra-leoneskich leonow (1964—2022)"}
+            two{"sierra-leoneskej leonaj (1964—2022)"}
         }
         SOS{
             few{"somaliske šilingi"}
@@ -1841,6 +1877,12 @@ hsb{
             other{"wuchodnokaribiskich dolarow"}
             two{"wuchodnokaribiskej dolaraj"}
         }
+        XCG{
+            few{"karibiske guldeny"}
+            one{"karibiski gulden"}
+            other{"karibiskich guldenow"}
+            two{"karibiskej guldenaj"}
+        }
         XOF{
             few{"CFA-franki (BCEAO)"}
             one{"CFA-frank (BCEAO)"}
@@ -1877,12 +1919,11 @@ hsb{
             other{"sambiskich kwachow"}
             two{"sambiskej kwachaj"}
         }
+        ZWG{
+            few{"simbabwiske złota"}
+            one{"simbabwiske złoto"}
+            other{"simbabwiskich złotow"}
+            two{"simbabwiskej złoće"}
+        }
     }
-    CurrencyUnitPatterns{
-        few{"{0} {1}"}
-        one{"{0} {1}"}
-        other{"{0} {1}"}
-        two{"{0} {1}"}
-    }
-    Version{"2.1.41.34"}
 }

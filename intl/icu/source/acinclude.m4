@@ -77,6 +77,7 @@ x86_64-*-cygwin)
 *-*ibm-openedition*|*-*-os390*)	icu_cv_host_frag=mh-os390 ;;
 *-*-os400*)	icu_cv_host_frag=mh-os400 ;;
 *-apple-rhapsody*)	icu_cv_host_frag=mh-darwin ;;
+powerpc*-apple-darwin*)	icu_cv_host_frag=mh-darwin-ppc ;;
 *-apple-darwin*)	icu_cv_host_frag=mh-darwin ;;
 *-*-beos)       icu_cv_host_frag=mh-beos ;; 
 *-*-haiku)      icu_cv_host_frag=mh-haiku ;; 
@@ -448,7 +449,7 @@ AC_DEFUN([AC_CHECK_64BIT_LIBS],
 AC_DEFUN([AC_CHECK_STRICT_COMPILE],
 [
     AC_MSG_CHECKING([whether strict compiling is on])
-    AC_ARG_ENABLE(strict,[  --enable-strict         compile with strict compiler options [default=yes]], [
+    AC_ARG_ENABLE(strict,[  --disable-strict        do not compile with strict compiler options], [
         if test "$enableval" = no
         then
             ac_use_strict_options=no
@@ -462,17 +463,6 @@ AC_DEFUN([AC_CHECK_STRICT_COMPILE],
     then
         if test "$GCC" = yes
         then
-            case "${host}" in
-            *-*-solaris*)
-                # Don't use -std=c11 on Solaris because of timezone check fails
-                ;;
-            *)
-                # Do not use -ansi. It limits us to C90, and it breaks some platforms.
-                # We use -std=c11 to disable the gnu99 defaults and its associated warnings
-                CFLAGS="$CFLAGS -std=c11"
-                ;;
-            esac
-            
             CFLAGS="$CFLAGS -Wall -pedantic -Wshadow -Wpointer-arith -Wmissing-prototypes -Wwrite-strings"
 
             # Suppress clang C warnings:

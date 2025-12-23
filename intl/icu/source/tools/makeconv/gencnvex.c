@@ -16,6 +16,7 @@
 *   created by: Markus W. Scherer
 */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include "unicode/utypes.h"
 #include "unicode/ustring.h"
@@ -107,12 +108,17 @@ CnvExtClose(NewConverter *cnvData) {
 static UBool
 CnvExtIsValid(NewConverter *cnvData,
         const uint8_t *bytes, int32_t length) {
-    return FALSE;
+    // suppress compiler warnings about unused variables
+    (void)cnvData;
+    (void)bytes;
+    (void)length;
+    return false;
 }
 
 static uint32_t
 CnvExtWrite(NewConverter *cnvData, const UConverterStaticData *staticData,
             UNewDataMemory *pData, int32_t tableType) {
+    (void) staticData; // suppress compiler warnings about unused variable
     CnvExtData *extData=(CnvExtData *)cnvData;
     int32_t length, top, headerSize;
 
@@ -121,7 +127,7 @@ CnvExtWrite(NewConverter *cnvData, const UConverterStaticData *staticData,
     if(tableType&TABLE_BASE) {
         headerSize=0;
     } else {
-        _MBCSHeader header={ { 0, 0, 0, 0 }, 0, 0, 0, 0, 0, 0, 0 };
+        _MBCSHeader header={ { 0, 0, 0, 0 }, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
         /* write the header and base table name for an extension-only table */
         length=(int32_t)uprv_strlen(extData->ucm->baseName)+1;
@@ -458,7 +464,7 @@ generateToUTable(CnvExtData *extData, UCMTable *table,
 
     if(count>=0x100) {
         fprintf(stderr, "error: toUnicode extension table section overflow: %ld section entries\n", (long)count);
-        return FALSE;
+        return false;
     }
 
     /* allocate the section: 1 entry for the header + count for the items */
@@ -496,7 +502,7 @@ generateToUTable(CnvExtData *extData, UCMTable *table,
     subLimit=UCNV_EXT_TO_U_GET_VALUE(section[0]);
     for(j=0; j<count; ++j) {
         subStart=subLimit;
-        subLimit= (j+1)<count ? UCNV_EXT_TO_U_GET_VALUE(section[j+1]) : limit;
+        subLimit= (j+1)<count ? (int32_t)UCNV_EXT_TO_U_GET_VALUE(section[j+1]) : limit;
 
         /* remove the subStart temporary value */
         section[j]&=~UCNV_EXT_TO_U_VALUE_MASK;
@@ -518,7 +524,7 @@ generateToUTable(CnvExtData *extData, UCMTable *table,
                 fprintf(stderr, "error: multiple mappings from same bytes\n");
                 ucm_printMapping(table, m, stderr);
                 ucm_printMapping(table, mappings+map[subStart], stderr);
-                return FALSE;
+                return false;
             }
 
             defaultValue=getToUnicodeValue(extData, table, m);
@@ -533,11 +539,11 @@ generateToUTable(CnvExtData *extData, UCMTable *table,
 
             /* recurse */
             if(!generateToUTable(extData, table, subStart, subLimit, unitIndex+1, defaultValue)) {
-                return FALSE;
+                return false;
             }
         }
     }
-    return TRUE;
+    return true;
 }
 
 /*
@@ -655,8 +661,10 @@ getFromUBytesValue(CnvExtData *extData, UCMTable *table, UCMapping *m) {
         /* 1..3: store the bytes in the value word */
     case 3:
         value=((uint32_t)*bytes++)<<16;
+        U_FALLTHROUGH;
     case 2:
         value|=((uint32_t)*bytes++)<<8;
+        U_FALLTHROUGH;
     case 1:
         value|=*bytes;
         break;
@@ -791,7 +799,7 @@ generateFromUTable(CnvExtData *extData, UCMTable *table,
                 fprintf(stderr, "error: multiple mappings from same Unicode code points\n");
                 ucm_printMapping(table, m, stderr);
                 ucm_printMapping(table, mappings+map[subStart], stderr);
-                return FALSE;
+                return false;
             }
 
             defaultValue=getFromUBytesValue(extData, table, m);
@@ -806,11 +814,11 @@ generateFromUTable(CnvExtData *extData, UCMTable *table,
 
             /* recurse */
             if(!generateFromUTable(extData, table, subStart, subLimit, unitIndex+1, defaultValue)) {
-                return FALSE;
+                return false;
             }
         }
     }
-    return TRUE;
+    return true;
 }
 
 /*
@@ -936,7 +944,7 @@ generateFromUTrie(CnvExtData *extData, UCMTable *table, int32_t mapLength) {
     UChar32 c, next;
 
     if(mapLength==0) {
-        return TRUE;
+        return true;
     }
 
     mappings=table->mappings;
@@ -979,7 +987,7 @@ generateFromUTrie(CnvExtData *extData, UCMTable *table, int32_t mapLength) {
                 fprintf(stderr, "error: multiple mappings from same Unicode code points\n");
                 ucm_printMapping(table, m, stderr);
                 ucm_printMapping(table, mappings+map[subStart], stderr);
-                return FALSE;
+                return false;
             }
 
             value=getFromUBytesValue(extData, table, m);
@@ -994,11 +1002,11 @@ generateFromUTrie(CnvExtData *extData, UCMTable *table, int32_t mapLength) {
 
             /* recurse, starting from 16-bit-unit index 2, the first 16-bit unit after c */
             if(!generateFromUTable(extData, table, subStart, subLimit, 2, value)) {
-                return FALSE;
+                return false;
             }
         }
     }
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1034,7 +1042,7 @@ makeFromUTable(CnvExtData *extData, UCMTable *table) {
     utm_alloc(extData->fromUTableValues);
 
     if(!generateFromUTrie(extData, table, fromUCount)) {
-        return FALSE;
+        return false;
     }
 
     /*
@@ -1047,7 +1055,7 @@ makeFromUTable(CnvExtData *extData, UCMTable *table) {
         stage1[i]=(uint16_t)(stage1[i]+stage1Top);
     }
 
-    return TRUE;
+    return true;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1058,7 +1066,7 @@ CnvExtAddTable(NewConverter *cnvData, UCMTable *table, UConverterStaticData *sta
 
     if(table->unicodeMask&UCNV_HAS_SURROGATES) {
         fprintf(stderr, "error: contains mappings for surrogate code points\n");
-        return FALSE;
+        return false;
     }
 
     staticData->conversionType=UCNV_MBCS;
