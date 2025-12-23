@@ -1,20 +1,19 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 ar_AE{
     NumberElements{
-        default{"arab"}
+        default{"latn"}
+        default_latn{"latn"}
     }
-    Version{"2.1.38.80"}
     calendar{
         gregorian{
             eras{
                 abbreviated%variant{
-                    "ق.م",
-                    "ب.م",
+                    0{"ق.م"}
                 }
                 wide%variant{
-                    "قبل الميلاد",
-                    "بعد الميلاد",
+                    0{"قبل الميلاد"}
                 }
             }
         }

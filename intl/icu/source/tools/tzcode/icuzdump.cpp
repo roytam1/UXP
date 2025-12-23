@@ -47,7 +47,7 @@ public:
     DumpFormatter() {
         UErrorCode status = U_ZERO_ERROR;
         stz = new SimpleTimeZone(0, "");
-        sdf = new SimpleDateFormat((UnicodeString)"yyyy-MM-dd EEE HH:mm:ss", Locale::getEnglish(), status);
+        sdf = new SimpleDateFormat(UnicodeString("yyyy-MM-dd EEE HH:mm:ss"), Locale::getEnglish(), status);
         DecimalFormatSymbols *symbols = new DecimalFormatSymbols(Locale::getEnglish(), status);
         decf = new DecimalFormat("00", symbols, status);
     }
@@ -98,7 +98,7 @@ public:
         loyear = 1902;
         hiyear = 2050;
         tick = 1000;
-        linesep = NULL;
+        linesep = nullptr;
     }
 
     ~ICUZDump() {
@@ -137,12 +137,12 @@ public:
 
         getCutOverTimes(cutlo, cuthi);
         t = cutlo;
-        timezone->getOffset(t, FALSE, rawOffset, dstOffset, status);
+        timezone->getOffset(t, false, rawOffset, dstOffset, status);
         while (t < cuthi) {
             int32_t newRawOffset, newDstOffset;
             UDate newt = t + SEARCH_INCREMENT;
 
-            timezone->getOffset(newt, FALSE, newRawOffset, newDstOffset, status);
+            timezone->getOffset(newt, false, newRawOffset, newDstOffset, status);
 
             UBool bSameOffset = (rawOffset + dstOffset) == (newRawOffset + newDstOffset);
             UBool bSameDst = ((dstOffset != 0) && (newDstOffset != 0)) || ((dstOffset == 0) && (newDstOffset == 0));
@@ -152,13 +152,13 @@ public:
                 UDate lot = t;
                 UDate hit = newt;
                 while (true) {
-                    int32_t diff = (int32_t)(hit - lot);
+                    int32_t diff = static_cast<int32_t>(hit - lot);
                     if (diff <= tick) {
                         break;
                     }
                     UDate medt = lot + ((diff / 2) / tick) * tick;
                     int32_t medRawOffset, medDstOffset;
-                    timezone->getOffset(medt, FALSE, medRawOffset, medDstOffset, status);
+                    timezone->getOffset(medt, false, medRawOffset, medDstOffset, status);
 
                     bSameOffset = (rawOffset + dstOffset) == (medRawOffset + medDstOffset);
                     bSameDst = ((dstOffset != 0) && (medDstOffset != 0)) || ((dstOffset == 0) && (medDstOffset == 0));
@@ -171,12 +171,12 @@ public:
                 }
                 // write out the boundary
                 str.remove();
-                formatter->format(lot, rawOffset + dstOffset, (dstOffset == 0 ? FALSE : TRUE), str);
+                formatter->format(lot, rawOffset + dstOffset, (dstOffset == 0 ? false : true), str);
                 out << str << " > ";
                 str.remove();
-                formatter->format(hit, newRawOffset + newDstOffset, (newDstOffset == 0 ? FALSE : TRUE), str);
+                formatter->format(hit, newRawOffset + newDstOffset, (newDstOffset == 0 ? false : true), str);
                 out << str;
-                if (linesep != NULL) {
+                if (linesep != nullptr) {
                     out << linesep;
                 } else {
                     out << endl;
@@ -211,43 +211,43 @@ private:
 
 class ZoneIterator {
 public:
-    ZoneIterator(UBool bAll = FALSE) {
+    ZoneIterator(UBool bAll = false) {
         if (bAll) {
-            zenum = TimeZone::createEnumeration();
+            UErrorCode status = U_ZERO_ERROR;
+            zenum = TimeZone::createEnumeration(status);
+            // TODO: Add error case handling later.
         }
         else {
-            zenum = NULL;
-            zids = NULL;
+            zenum = nullptr;
+            zids = nullptr;
             idx = 0;
             numids = 1;
         }
     }
 
     ZoneIterator(const char** ids, int32_t num) {
-        zenum = NULL;
+        zenum = nullptr;
         zids = ids;
         idx = 0;
         numids = num;
     }
 
     ~ZoneIterator() {
-        if (zenum != NULL) {
-            delete zenum;
-        }
+        delete zenum;
     }
 
     TimeZone* next() {
-        TimeZone* tz = NULL;
-        if (zenum != NULL) {
+        TimeZone* tz = nullptr;
+        if (zenum != nullptr) {
             UErrorCode status = U_ZERO_ERROR;
             const UnicodeString* zid = zenum->snext(status);
-            if (zid != NULL) {
+            if (zid != nullptr) {
                 tz = TimeZone::createTimeZone(*zid);
             }
         }
         else {
             if (idx < numids) {
-                if (zids != NULL) {
+                if (zids != nullptr) {
                     tz = TimeZone::createTimeZone((const UnicodeString&)zids[idx]);
                 }
                 else {
@@ -288,9 +288,9 @@ extern int
 main(int argc, char *argv[]) {
     int32_t low = 1902;
     int32_t high = 2038;
-    UBool bAll = FALSE;
-    const char *dir = NULL;
-    const char *linesep = NULL;
+    UBool bAll = false;
+    const char *dir = nullptr;
+    const char *linesep = nullptr;
 
     U_MAIN_INIT_ARGS(argc, argv);
     argc = u_parseArgs(argc, argv, UPRV_LENGTHOF(options), options);
@@ -335,8 +335,8 @@ main(int argc, char *argv[]) {
     }
 
     if (options[kOptCutover].doesOccur) {
-        char* comma = (char*)strchr(options[kOptCutover].value, ',');
-        if (comma == NULL) {
+        char* comma = const_cast<char*>(strchr(options[kOptCutover].value, ','));
+        if (comma == nullptr) {
             high = atoi(options[kOptCutover].value);
         } else {
             *comma = 0;
@@ -348,14 +348,14 @@ main(int argc, char *argv[]) {
     ICUZDump dumper;
     dumper.setLowYear(low);
     dumper.setHighYear(high);
-    if (dir != NULL && linesep != NULL) {
+    if (dir != nullptr && linesep != nullptr) {
         // use the specified line separator only for file output
-        dumper.setLineSeparator((const char*)linesep);
+        dumper.setLineSeparator(linesep);
     }
 
     ZoneIterator* zit;
     if (bAll) {
-        zit = new ZoneIterator(TRUE);
+        zit = new ZoneIterator(true);
     } else {
         if (argc <= 1) {
             zit = new ZoneIterator();
@@ -365,16 +365,16 @@ main(int argc, char *argv[]) {
     }
 
     UnicodeString id;
-    if (dir != NULL) {
+    if (dir != nullptr) {
         // file output
         ostringstream path;
         ios::openmode mode = ios::out;
-        if (linesep != NULL) {
+        if (linesep != nullptr) {
             mode |= ios::binary;
         }
         for (;;) {
             TimeZone* tz = zit->next();
-            if (tz == NULL) {
+            if (tz == nullptr) {
                 break;
             }
             dumper.setTimeZone(tz);
@@ -402,16 +402,16 @@ main(int argc, char *argv[]) {
 
     } else {
         // stdout
-        UBool bFirst = TRUE;
+        UBool bFirst = true;
         for (;;) {
             TimeZone* tz = zit->next();
-            if (tz == NULL) {
+            if (tz == nullptr) {
                 break;
             }
             dumper.setTimeZone(tz);
             tz->getID(id);
             if (bFirst) {
-                bFirst = FALSE;
+                bFirst = false;
             } else {
                 cout << endl;
             }

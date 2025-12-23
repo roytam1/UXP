@@ -1,16 +1,70 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 fr_CA{
-    Version{"2.1.43.65"}
     zoneStrings{
-        "Etc:UTC"{
-            ls{"temps universel coordonné"}
+        "Africa:Ndjamena"{
+            ec{"Ndjamena"}
+        }
+        "Africa:Tripoli"{
+            ec{"Tripoli [Libye]"}
+        }
+        "America:Barbados"{
+            ec{"Barbade (La)"}
+        }
+        "America:Cayman"{
+            ec{"îles Caïmans"}
+        }
+        "America:North_Dakota:Beulah"{
+            ec{"Beulah [Dakota du Nord]"}
+        }
+        "America:North_Dakota:Center"{
+            ec{"Center [Dakota du Nord]"}
+        }
+        "America:North_Dakota:New_Salem"{
+            ec{"New Salem [Dakota du Nord]"}
+        }
+        "America:St_Johns"{
+            ec{"St. John’s"}
+        }
+        "America:St_Kitts"{
+            ec{"Saint-Christophe-et-Niévès"}
+        }
+        "America:St_Thomas"{
+            ec{"Saint Thomas"}
+        }
+        "Antarctica:DumontDUrville"{
+            ec{"Dumont d’Urville"}
+        }
+        "Asia:Dhaka"{
+            ec{"Dacca"}
+        }
+        "Asia:Thimphu"{
+            ec{"Thimphou"}
+        }
+        "Atlantic:Canary"{
+            ec{"îles Canaries"}
+        }
+        "Atlantic:Faeroe"{
+            ec{"îles Féroé"}
         }
         "Europe:Dublin"{
             ld{"heure avancée irlandaise"}
         }
+        "Europe:Isle_of_Man"{
+            ec{"île de Man"}
+        }
         "Europe:London"{
             ld{"heure avancée britannique"}
+        }
+        "Europe:Vatican"{
+            ec{"Vatican"}
+        }
+        "Pacific:Easter"{
+            ec{"île de Pâques"}
+        }
+        "Pacific:Palau"{
+            ec{"Palau"}
         }
         "meta:Acre"{
             ld{"heure avancée de l’Acre"}
@@ -25,11 +79,6 @@ fr_CA{
         }
         "meta:Africa_Southern"{
             ls{"heure normale d’Afrique du Sud"}
-        }
-        "meta:Africa_Western"{
-            ld{"heure avancée d’Afrique de l’Ouest"}
-            lg{"heure d’Afrique de l’Ouest"}
-            ls{"heure normale d’Afrique de l’Ouest"}
         }
         "meta:Alaska"{
             ld{"heure avancée de l’Alaska"}
@@ -122,6 +171,9 @@ fr_CA{
             ld{"heure avancée de l’Atlantique"}
             lg{"heure de l’Atlantique"}
             ls{"heure normale de l’Atlantique"}
+            sd{"HAA"}
+            sg{"HA"}
+            ss{"HNA"}
         }
         "meta:Australia_Central"{
             ld{"heure avancée du centre de l’Australie"}
@@ -163,15 +215,13 @@ fr_CA{
             lg{"heure de Brasilia"}
             ls{"heure normale de Brasilia"}
         }
+        "meta:Brunei"{
+            ls{"heure du Brunéi"}
+        }
         "meta:Cape_Verde"{
             ld{"heure avancée du Cap-Vert"}
             lg{"heure du Cap-Vert"}
             ls{"heure normale du Cap-Vert"}
-        }
-        "meta:Chatham"{
-            ld{"heure avancée des Îles Chatham"}
-            lg{"heure des îles Chatham"}
-            ls{"heure normale des Îles Chatham"}
         }
         "meta:Chile"{
             ld{"heure avancée du Chili"}
@@ -182,11 +232,6 @@ fr_CA{
             ld{"heure avancée de Chine"}
             lg{"heure de Chine"}
             ls{"heure normale de Chine"}
-        }
-        "meta:Choibalsan"{
-            ld{"heure avancée de Choibalsan"}
-            lg{"heure de Choibalsan"}
-            ls{"heure normale de Choibalsan"}
         }
         "meta:Colombia"{
             ld{"heure avancée de Colombie"}
@@ -209,19 +254,19 @@ fr_CA{
             ls{"heure normale de l’île de Pâques"}
         }
         "meta:Europe_Central"{
-            ld{"heure avancée d’Europe centrale"}
-            lg{"heure d’Europe centrale"}
-            ls{"heure normale d’Europe centrale"}
+            ld{"heure avancée de l’Europe centrale"}
+            lg{"heure de l’Europe centrale"}
+            ls{"heure normale de l’Europe centrale"}
         }
         "meta:Europe_Eastern"{
-            ld{"heure avancée d’Europe de l’Est"}
-            lg{"heure d’Europe de l’Est"}
-            ls{"heure normale d’Europe de l’Est"}
+            ld{"heure avancée de l’Europe de l’Est"}
+            lg{"heure de l’Europe de l’Est"}
+            ls{"heure normale de l’Europe de l’Est"}
         }
         "meta:Europe_Western"{
-            ld{"heure avancée d’Europe de l’Ouest"}
-            lg{"heure d’Europe de l’Ouest"}
-            ls{"heure normale d’Europe de l’Ouest"}
+            ld{"heure avancée de l’Europe de l’Ouest"}
+            lg{"heure de l’Europe de l’Ouest"}
+            ls{"heure normale de l’Europe de l’Ouest"}
         }
         "meta:Falkland"{
             ld{"heure avancée des îles Malouines"}
@@ -251,6 +296,9 @@ fr_CA{
             lg{"heure de l’Ouest du Groenland"}
             ls{"heure normale de l’Ouest du Groenland"}
         }
+        "meta:Hawaii"{
+            ls{"heure normale d’Hawaï-Aléoutiennes"}
+        }
         "meta:Hawaii_Aleutian"{
             ld{"heure avancée d’Hawaï-Aléoutiennes"}
             lg{"heure d’Hawaï-Aléoutiennes"}
@@ -265,6 +313,9 @@ fr_CA{
             ld{"heure avancée de Hovd"}
             lg{"heure de Hovd"}
             ls{"heure normale de Hovd"}
+        }
+        "meta:Indian_Ocean"{
+            ls{"heure de l’océan Indien"}
         }
         "meta:Iran"{
             ld{"heure avancée d’Iran"}
@@ -316,11 +367,6 @@ fr_CA{
             lg{"heure de Maurice"}
             ls{"heure normale de Maurice"}
         }
-        "meta:Mexico_Northwest"{
-            ld{"heure avancée du Nord-Ouest du Mexique"}
-            lg{"heure du Nord-Ouest du Mexique"}
-            ls{"heure normale du Nord-Ouest du Mexique"}
-        }
         "meta:Mexico_Pacific"{
             ld{"heure avancée du Pacifique mexicain"}
             lg{"heure du Pacifique mexicain"}
@@ -353,6 +399,14 @@ fr_CA{
             sd{"HAT"}
             sg{"HT"}
             ss{"HNT"}
+        }
+        "meta:Niue"{
+            ls{"heure de Nioué"}
+        }
+        "meta:Norfolk"{
+            ld{"heure avancée de l’île Norfolk"}
+            lg{"heure de l’île Norfolk"}
+            ls{"heure normale de l’île Norfolk"}
         }
         "meta:Noronha"{
             ld{"heure avancée de Fernando de Noronha"}
@@ -393,6 +447,9 @@ fr_CA{
             ld{"heure avancée de Saint-Pierre-et-Miquelon"}
             lg{"heure de Saint-Pierre-et-Miquelon"}
             ls{"heure normale de Saint-Pierre-et-Miquelon"}
+            sd{"HAPM"}
+            sg{"HPM"}
+            ss{"HNPM"}
         }
         "meta:Reunion"{
             ls{"heure de la Réunion"}

@@ -1340,6 +1340,9 @@ pref("javascript.options.dynamicImport", true);
 // Streams API
 pref("javascript.options.streams", true);
 
+// Enable garbage collection of weakrefed objects
+pref("javascript.options.weakrefs", false);
+
 // advanced prefs
 pref("advanced.mailftp",                    false);
 pref("image.animation_mode",                "normal");

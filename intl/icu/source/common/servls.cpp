@@ -20,13 +20,12 @@
 #include "charstr.h"
 #include "uassert.h"
 
-#define UNDERSCORE_CHAR ((UChar)0x005f)
-#define AT_SIGN_CHAR    ((UChar)64)
-#define PERIOD_CHAR     ((UChar)46)
+#define UNDERSCORE_CHAR ((char16_t)0x005f)
+#define AT_SIGN_CHAR    ((char16_t)64)
+#define PERIOD_CHAR     ((char16_t)46)
 
 U_NAMESPACE_BEGIN
 
-static UMutex llock = U_MUTEX_INITIALIZER;
 ICULocaleService::ICULocaleService()
   : fallbackLocale(Locale::getDefault())
 {
@@ -45,13 +44,13 @@ ICULocaleService::~ICULocaleService()
 UObject*
 ICULocaleService::get(const Locale& locale, UErrorCode& status) const
 {
-    return get(locale, LocaleKey::KIND_ANY, NULL, status);
+    return get(locale, LocaleKey::KIND_ANY, nullptr, status);
 }
 
 UObject*
 ICULocaleService::get(const Locale& locale, int32_t kind, UErrorCode& status) const
 {
-    return get(locale, kind, NULL, status);
+    return get(locale, kind, nullptr, status);
 }
 
 UObject*
@@ -63,7 +62,7 @@ ICULocaleService::get(const Locale& locale, Locale* actualReturn, UErrorCode& st
 UObject*
 ICULocaleService::get(const Locale& locale, int32_t kind, Locale* actualReturn, UErrorCode& status) const
 {
-    UObject* result = NULL;
+    UObject* result = nullptr;
     if (U_FAILURE(status)) {
         return result;
     }
@@ -74,13 +73,13 @@ ICULocaleService::get(const Locale& locale, int32_t kind, Locale* actualReturn, 
     } else {
         ICUServiceKey* key = createKey(&locName, kind, status);
         if (key) {
-            if (actualReturn == NULL) {
+            if (actualReturn == nullptr) {
                 result = getKey(*key, status);
             } else {
                 UnicodeString temp;
                 result = getKey(*key, &temp, status);
 
-                if (result != NULL) {
+                if (result != nullptr) {
                     key->parseSuffix(temp);
                     LocaleUtility::initLocaleFromName(temp, *actualReturn);
                 }
@@ -118,11 +117,11 @@ URegistryKey
 ICULocaleService::registerInstance(UObject* objToAdopt, const Locale& locale, int32_t kind, int32_t coverage, UErrorCode& status)
 {
     ICUServiceFactory * factory = new SimpleLocaleKeyFactory(objToAdopt, locale, kind, coverage);
-    if (factory != NULL) {
+    if (factory != nullptr) {
         return registerFactory(factory, status);
     }
     delete objToAdopt;
-    return NULL;
+    return nullptr;
 }
 
 #if 0
@@ -144,11 +143,11 @@ URegistryKey
 ICULocaleService::registerInstance(UObject* objToAdopt, const UnicodeString& locale, int32_t kind, int32_t coverage, UErrorCode& status)
 {
     ICUServiceFactory * factory = new SimpleLocaleKeyFactory(objToAdopt, locale, kind, coverage);
-    if (factory != NULL) {
+    if (factory != nullptr) {
         return registerFactory(factory, status);
     }
     delete objToAdopt;
-    return NULL;
+    return nullptr;
 }
 #endif
 
@@ -163,7 +162,7 @@ private:
     ServiceEnumeration(const ICULocaleService* service, UErrorCode &status)
         : _service(service)
         , _timestamp(service->getTimestamp())
-        , _ids(uprv_deleteUObject, NULL, status)
+        , _ids(uprv_deleteUObject, nullptr, status)
         , _pos(0)
     {
         _service->getVisibleIDs(_ids, status);
@@ -172,7 +171,7 @@ private:
     ServiceEnumeration(const ServiceEnumeration &other, UErrorCode &status)
         : _service(other._service)
         , _timestamp(other._timestamp)
-        , _ids(uprv_deleteUObject, NULL, status)
+        , _ids(uprv_deleteUObject, nullptr, status)
         , _pos(0)
     {
         if(U_SUCCESS(status)) {
@@ -180,7 +179,8 @@ private:
 
             length = other._ids.size();
             for(i = 0; i < length; ++i) {
-                _ids.addElement(((UnicodeString *)other._ids.elementAt(i))->clone(), status);
+                LocalPointer<UnicodeString> clonedId(static_cast<UnicodeString*>(other._ids.elementAt(i))->clone(), status);
+                _ids.adoptElement(clonedId.orphan(), status);
             }
 
             if(U_SUCCESS(status)) {
@@ -197,17 +197,17 @@ public:
             return result;
         }
         delete result;
-        return NULL;
+        return nullptr;
     }
 
     virtual ~ServiceEnumeration();
 
-    virtual StringEnumeration *clone() const {
+    virtual StringEnumeration *clone() const override {
         UErrorCode status = U_ZERO_ERROR;
         ServiceEnumeration *cl = new ServiceEnumeration(*this, status);
         if(U_FAILURE(status)) {
             delete cl;
-            cl = NULL;
+            cl = nullptr;
         }
         return cl;
     }
@@ -215,25 +215,25 @@ public:
     UBool upToDate(UErrorCode& status) const {
         if (U_SUCCESS(status)) {
             if (_timestamp == _service->getTimestamp()) {
-                return TRUE;
+                return true;
             }
             status = U_ENUM_OUT_OF_SYNC_ERROR;
         }
-        return FALSE;
+        return false;
     }
 
-    virtual int32_t count(UErrorCode& status) const {
+    virtual int32_t count(UErrorCode& status) const override {
         return upToDate(status) ? _ids.size() : 0;
     }
 
-    virtual const UnicodeString* snext(UErrorCode& status) {
+    virtual const UnicodeString* snext(UErrorCode& status) override {
         if (upToDate(status) && (_pos < _ids.size())) {
-            return (const UnicodeString*)_ids[_pos++];
+            return static_cast<const UnicodeString*>(_ids[_pos++]);
         }
-        return NULL;
+        return nullptr;
     }
 
-    virtual void reset(UErrorCode& status) {
+    virtual void reset(UErrorCode& status) override {
         if (status == U_ENUM_OUT_OF_SYNC_ERROR) {
             status = U_ZERO_ERROR;
         }
@@ -245,8 +245,8 @@ public:
     }
 
 public:
-    static UClassID U_EXPORT2 getStaticClassID(void);
-    virtual UClassID getDynamicClassID(void) const;
+    static UClassID U_EXPORT2 getStaticClassID();
+    virtual UClassID getDynamicClassID() const override;
 };
 
 ServiceEnumeration::~ServiceEnumeration() {}
@@ -254,7 +254,7 @@ ServiceEnumeration::~ServiceEnumeration() {}
 UOBJECT_DEFINE_RTTI_IMPLEMENTATION(ServiceEnumeration)
 
 StringEnumeration*
-ICULocaleService::getAvailableLocales(void) const
+ICULocaleService::getAvailableLocales() const
 {
     return ServiceEnumeration::create(this);
 }
@@ -263,7 +263,8 @@ const UnicodeString&
 ICULocaleService::validateFallbackLocale() const
 {
     const Locale&     loc    = Locale::getDefault();
-    ICULocaleService* ncThis = (ICULocaleService*)this;
+    ICULocaleService* ncThis = const_cast<ICULocaleService*>(this);
+    static UMutex llock;
     {
         Mutex mutex(&llock);
         if (loc != fallbackLocale) {

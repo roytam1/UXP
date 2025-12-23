@@ -1,7 +1,7 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 de_IT{
-    Version{"2.1.38.39"}
     calendar{
         gregorian{
             monthNames{
@@ -49,20 +49,6 @@ de_IT{
                         "Okt",
                         "Nov",
                         "Dez",
-                    }
-                    wide{
-                        "Jänner",
-                        "Februar",
-                        "März",
-                        "April",
-                        "Mai",
-                        "Juni",
-                        "Juli",
-                        "August",
-                        "September",
-                        "Oktober",
-                        "November",
-                        "Dezember",
                     }
                 }
             }

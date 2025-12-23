@@ -874,6 +874,11 @@ def readUnicodeExtensions(core_file):
     # type = alphanum{3,8} (sep alphanum{3,8})* ;
     typeRE = re.compile(r"^[a-z0-9]{3,8}(-[a-z0-9]{3,8})*$")
 
+    # https://www.unicode.org/reports/tr35/#Unicode_language_identifier
+    #
+    # unicode_region_subtag = alpha{2} ;
+    alphaRegionRE = re.compile(r"^[A-Z]{2}$", re.IGNORECASE)
+
     # Mapping from Unicode extension types to dict of deprecated to
     # preferred values.
     mapping = {
@@ -905,10 +910,11 @@ def readUnicodeExtensions(core_file):
                 # - <https://unicode.org/reports/tr35/#CODEPOINTS>
                 # - <https://unicode.org/reports/tr35/#REORDER_CODE>
                 # - <https://unicode.org/reports/tr35/#RG_KEY_VALUE>
+                # - <https://unicode.org/reports/tr35/#SCRIPT_CODE>
                 # - <https://unicode.org/reports/tr35/#SUBDIVISION_CODE>
                 # - <https://unicode.org/reports/tr35/#PRIVATE_USE>
-                if name in ("CODEPOINTS", "REORDER_CODE", "RG_KEY_VALUE", "SUBDIVISION_CODE",
-                            "PRIVATE_USE"):
+                if name in ("CODEPOINTS", "REORDER_CODE", "RG_KEY_VALUE", "SCRIPT_CODE",
+                            "SUBDIVISION_CODE", "PRIVATE_USE"):
                     continue
 
                 # All other names should match the 'type' production.
@@ -989,14 +995,14 @@ def readUnicodeExtensions(core_file):
             # Take the first replacement when multiple ones are present.
             replacement = alias.get("replacement").split(" ")[0].lower()
 
-            # Skip over invalid replacements.
-            #
-            # <subdivisionAlias type="fi01" replacement="AX" reason="overlong"/>
-            #
-            # It's not entirely clear to me if CLDR actually wants to use
-            # "axzzzz" as the replacement for this case.
-            if typeRE.match(replacement) is None:
-                continue
+            # Append "zzzz" if the replacement is a two-letter region code.
+            if alphaRegionRE.match(replacement) is not None:
+                replacement += "zzzz"
+
+            # Assert the replacement is syntactically correct.
+            assert (
+                typeRE.match(replacement) is not None
+            ), "replacement {} matches the 'type' production".format(replacement)
 
             # 'subdivisionAlias' applies to 'rg' and 'sd' keys.
             mapping["u"].setdefault("rg", {})[type] = replacement
@@ -1597,19 +1603,11 @@ def readICUTimeZonesFromTimezoneTypes(icuTzDir):
         if name.startswith(typeAliasTimeZoneKey):
             links[toTimeZone(name[len(typeAliasTimeZoneKey):])] = value
 
-    # Remove the ICU placeholder time zone "Etc/Unknown".
-    zones.remove(Zone("Etc/Unknown"))
-
-    # tzdata2017c removed the link Canada/East-Saskatchewan -> America/Regina,
-    # but it is still present in ICU sources. Manually remove it to keep our
-    # tables consistent with IANA.
-    del links[Zone("Canada/East-Saskatchewan")]
-
     validateTimeZones(zones, links)
 
     return (zones, links)
 
-def readICUTimeZonesFromZoneInfo(icuTzDir, ignoreFactory):
+def readICUTimeZonesFromZoneInfo(icuTzDir):
     """ Read the ICU time zone information from `icuTzDir`/zoneinfo64.txt
         and returns the tuple (zones, links).
     """
@@ -1633,18 +1631,6 @@ def readICUTimeZonesFromZoneInfo(icuTzDir, ignoreFactory):
     links = dict((Zone(tzNames[zone]), tzNames[target]) for (zone, target) in tzLinks.iteritems())
     zones = set([Zone(v) for v in tzNames if Zone(v) not in links])
 
-    # Remove the ICU placeholder time zone "Etc/Unknown".
-    zones.remove(Zone("Etc/Unknown"))
-
-    # tzdata2017c removed the link Canada/East-Saskatchewan -> America/Regina,
-    # but it is still present in ICU sources. Manually remove it to keep our
-    # tables consistent with IANA.
-    del links[Zone("Canada/East-Saskatchewan")]
-
-    # Remove the placeholder time zone "Factory".
-    if ignoreFactory:
-        zones.remove(Zone("Factory"))
-
     validateTimeZones(zones, links)
 
     return (zones, links)
@@ -1652,20 +1638,32 @@ def readICUTimeZonesFromZoneInfo(icuTzDir, ignoreFactory):
 def readICUTimeZones(icuDir, icuTzDir, ignoreFactory):
     # zoneinfo64.txt contains the supported time zones by ICU. This data is
     # generated from tzdata files, it doesn't include "backzone" in stock ICU.
-    (zoneinfoZones, zoneinfoLinks) = readICUTimeZonesFromZoneInfo(icuTzDir, ignoreFactory)
+    (zoneinfoZones, zoneinfoLinks) = readICUTimeZonesFromZoneInfo(icuTzDir)
 
     # timezoneTypes.txt contains the canonicalization information for ICU. This
     # data is generated from CLDR files. It includes data about time zones from
     # tzdata's "backzone" file.
     (typesZones, typesLinks) = readICUTimeZonesFromTimezoneTypes(icuTzDir)
 
+    # Remove the placeholder time zone "Factory".
+    # See also <https://github.com/eggert/tz/blob/master/factory>.
+    if ignoreFactory:
+        zoneinfoZones.remove(Zone("Factory"))
+
+    # Remove the placeholder time zone "Etc/Unknown".
+    # See also <https://unicode.org/reports/tr35/#Time_Zone_Identifiers>.
+    for zones in (zoneinfoZones, typesZones):
+        zones.remove(Zone("Etc/Unknown"))
+
+    # Remove any outdated ICU links.
+    for links in (zoneinfoLinks, typesLinks):
+        for zone in otherICULegacyLinks().keys():
+            if zone not in links:
+                raise KeyError("Can't remove non-existent link from '%s'" % zone)
+            del links[zone]
+
     # Information in zoneinfo64 should be a superset of timezoneTypes.
     inZoneInfo64 = lambda zone: zone in zoneinfoZones or zone in zoneinfoLinks
-
-    # Remove legacy ICU time zones from zoneinfo64 data.
-    (legacyZones, legacyLinks) = readICULegacyZones(icuDir)
-    zoneinfoZones = set(zone for zone in zoneinfoZones if zone not in legacyZones)
-    zoneinfoLinks = dict((zone, target) for (zone, target) in zoneinfoLinks.iteritems() if zone not in legacyLinks)
 
     notFoundInZoneInfo64 = [zone for zone in typesZones if not inZoneInfo64(zone)]
     if notFoundInZoneInfo64:
@@ -1695,17 +1693,52 @@ def readICULegacyZones(icuDir):
         and returns the tuple (zones, links).
     """
     tzdir = TzDataDir(os.path.join(icuDir, "tools/tzcode"))
+
+    # Per spec we must recognize only IANA time zones and links, but ICU
+    # recognizes various legacy, non-IANA time zones and links. Compute these
+    # non-IANA time zones and links.
+
+    # Most legacy, non-IANA time zones and links are in the icuzones file.
     (zones, links) = readIANAFiles(tzdir, ["icuzones"])
 
     # Remove the ICU placeholder time zone "Etc/Unknown".
+    # See also <https://unicode.org/reports/tr35/#Time_Zone_Identifiers>.
     zones.remove(Zone("Etc/Unknown"))
 
-    # tzdata2017c removed the link Canada/East-Saskatchewan -> America/Regina,
-    # but it is still present in ICU sources. Manually tag it as a legacy time
-    # zone so our tables are kept consistent with IANA.
-    links[Zone("Canada/East-Saskatchewan")] = "America/Regina"
+    # A handful of non-IANA zones/links are not in icuzones and must be added
+    # manually so that we won't invoke ICU with them.
+    for (zone, target) in otherICULegacyLinks().items():
+        if zone in links:
+            if links[zone] != target:
+                raise KeyError(
+                    "Can't overwrite link '%s -> %s' with '%s'" % (zone, links[zone], target)
+                )
+            else:
+                print(
+                    "Info: Link '%s -> %s' can be removed from otherICULegacyLinks()" % (zone, target)
+                )
+        links[zone] = target
 
     return (zones, links)
+
+
+def otherICULegacyLinks():
+    """The file `icuTzDir`/tools/tzcode/icuzones contains all ICU legacy time
+    zones with the exception of time zones which are removed by IANA after an
+    ICU release.
+
+    For example ICU 67 uses tzdata2018i, but tzdata2020b removed the link from
+    "US/Pacific-New" to "America/Los_Angeles". ICU standalone tzdata updates
+    don't include modified icuzones files, so we must manually record any IANA
+    modifications here.
+
+    After an ICU update, we can remove any no longer needed entries from this
+    function by checking if the relevant entries are now included in icuzones.
+    """
+
+    return {
+    }
+
 
 def icuTzDataVersion(icuTzDir):
     """ Read the ICU time zone version from `icuTzDir`/zoneinfo64.txt. """
@@ -1798,6 +1831,12 @@ def processTimeZones(tzdataDir, icuDir, icuTzDir, version, ignoreBackzone, ignor
     (ianaZones, ianaLinks) = readIANATimeZones(tzdataDir, ignoreBackzone, ignoreFactory)
     (icuZones, icuLinks) = readICUTimeZones(icuDir, icuTzDir, ignoreFactory)
     (legacyZones, legacyLinks) = readICULegacyZones(icuDir)
+
+    # Remove all egacy ICU time zones.
+    icuZones = {zone for zone in icuZones if zone not in legacyZones}
+    icuLinks = {
+        zone: target for (zone, target) in icuLinks.items() if zone not in legacyLinks
+    }
 
     incorrectZones = findIncorrectICUZones(ianaZones, ianaLinks, icuZones, icuLinks, ignoreBackzone)
     if not incorrectZones:
@@ -2110,9 +2149,9 @@ static int32_t Compare{0}Type(const char* a, mozilla::Span<const char> b) {{
     }}
   }}
 
-  // Return zero if both strings are equal or a negative number if |b| is a
+  // Return zero if both strings are equal or a positive number if |b| is a
   // prefix of |a|.
-  return -int32_t(UnsignedChar(a[b.size()]));
+  return int32_t(UnsignedChar(a[b.size()]));
 }}
 
 template <size_t Length>

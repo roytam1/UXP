@@ -28,7 +28,7 @@ U_NAMESPACE_BEGIN
 UOBJECT_DEFINE_RTTI_IMPLEMENTATION(TitlecaseTransliterator)
 
 TitlecaseTransliterator::TitlecaseTransliterator() :
-    CaseMapTransliterator(UNICODE_STRING("Any-Title", 9), NULL)
+    CaseMapTransliterator(UNICODE_STRING("Any-Title", 9), nullptr)
 {
     // Need to look back 2 characters in the case of "can't"
     setMaximumContextLength(2);
@@ -60,7 +60,7 @@ TitlecaseTransliterator::TitlecaseTransliterator(const TitlecaseTransliterator& 
 /**
  * Transliterator API.
  */
-Transliterator* TitlecaseTransliterator::clone(void) const {
+TitlecaseTransliterator* TitlecaseTransliterator::clone() const {
     return new TitlecaseTransliterator(*this);
 }
 
@@ -87,7 +87,7 @@ void TitlecaseTransliterator::handleTransliterate(
 
     // Our mode; we are either converting letter toTitle or
     // toLower.
-    UBool doTitle = TRUE;
+    UBool doTitle = true;
     
     // Determine if there is a preceding context of cased case-ignorable*,
     // in which case we want to start in toLower mode.  If the
@@ -99,7 +99,7 @@ void TitlecaseTransliterator::handleTransliterate(
         c = text.char32At(start);
         type=ucase_getTypeOrIgnorable(c);
         if(type>0) { // cased
-            doTitle=FALSE;
+            doTitle=false;
             break;
         } else if(type==0) { // uncased but not ignorable
             break;
@@ -117,7 +117,7 @@ void TitlecaseTransliterator::handleTransliterate(
     csc.limit = offsets.contextLimit;
 
     UnicodeString tmp;
-    const UChar *s;
+    const char16_t *s;
     int32_t textPos, delta, result;
 
     for(textPos=offsets.start; textPos<offsets.limit;) {
@@ -132,7 +132,7 @@ void TitlecaseTransliterator::handleTransliterate(
             } else {
                 result=ucase_toFullLower(c, utrans_rep_caseContextIterator, &csc, &s, UCASE_LOC_ROOT);
             }
-            doTitle = (UBool)(type==0); // doTitle=isUncased
+            doTitle = static_cast<UBool>(type == 0); // doTitle=isUncased
 
             if(csc.b1 && isIncremental) {
                 // fMap() tried to look beyond the context limit
@@ -146,7 +146,7 @@ void TitlecaseTransliterator::handleTransliterate(
                 // see UCASE_MAX_STRING_LENGTH
                 if(result<=UCASE_MAX_STRING_LENGTH) {
                     // string s[result]
-                    tmp.setTo(FALSE, s, result);
+                    tmp.setTo(false, s, result);
                     delta=result-U16_LENGTH(c);
                 } else {
                     // single code point

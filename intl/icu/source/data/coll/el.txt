@@ -1,14 +1,14 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 el{
-    Version{"2.1.19.14"}
     collations{
         standard{
             Sequence{
                 "[normalization on]"
                 "[reorder Grek]"
             }
-            Version{"34"}
+            Version{"48"}
         }
     }
 }

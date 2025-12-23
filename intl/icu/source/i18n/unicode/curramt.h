@@ -15,6 +15,8 @@
 
 #include "unicode/utypes.h"
 
+#if U_SHOW_CPLUSPLUS_API
+
 #if !UCONFIG_NO_FORMATTING
 
 #include "unicode/measure.h"
@@ -39,9 +41,9 @@ class U_I18N_API CurrencyAmount: public Measure {
     /**
      * Construct an object with the given numeric amount and the given
      * ISO currency code.
-     * @param amount a numeric object; amount.isNumeric() must be TRUE
+     * @param amount a numeric object; amount.isNumeric() must be true
      * @param isoCode the 3-letter ISO 4217 currency code; must not be
-     * NULL and must have length 3
+     * nullptr and must have length 3
      * @param ec input-output error code. If the amount or the isoCode
      * is invalid, then this will be set to a failing value.
      * @stable ICU 3.0
@@ -54,7 +56,7 @@ class U_I18N_API CurrencyAmount: public Measure {
      * ISO currency code.
      * @param amount the amount of the given currency
      * @param isoCode the 3-letter ISO 4217 currency code; must not be
-     * NULL and must have length 3
+     * nullptr and must have length 3
      * @param ec input-output error code. If the isoCode is invalid,
      * then this will be set to a failing value.
      * @stable ICU 3.0
@@ -79,7 +81,7 @@ class U_I18N_API CurrencyAmount: public Measure {
      * have the same class as returned by getDynamicClassID().
      * @stable ICU 3.0
      */
-    virtual UObject* clone() const;
+    virtual CurrencyAmount* clone() const override;
 
     /**
      * Destructor
@@ -95,7 +97,7 @@ class U_I18N_API CurrencyAmount: public Measure {
      * different class IDs.
      * @stable ICU 3.0
      */
-    virtual UClassID getDynamicClassID() const;
+    virtual UClassID getDynamicClassID() const override;
 
     /**
      * Returns the class ID for this class. This is used to compare to
@@ -109,7 +111,7 @@ class U_I18N_API CurrencyAmount: public Measure {
      * Return the currency unit object of this object.
      * @stable ICU 3.0
      */
-    inline const CurrencyUnit& getCurrency() const;
+    const CurrencyUnit& getCurrency() const;
 
     /**
      * Return the ISO currency code of this object.
@@ -118,10 +120,6 @@ class U_I18N_API CurrencyAmount: public Measure {
     inline const char16_t* getISOCurrency() const;
 };
 
-inline const CurrencyUnit& CurrencyAmount::getCurrency() const {
-    return (const CurrencyUnit&) getUnit();
-}
-
 inline const char16_t* CurrencyAmount::getISOCurrency() const {
     return getCurrency().getISOCurrency();
 }
@@ -129,4 +127,7 @@ inline const char16_t* CurrencyAmount::getISOCurrency() const {
 U_NAMESPACE_END
 
 #endif // !UCONFIG_NO_FORMATTING
+
+#endif /* U_SHOW_CPLUSPLUS_API */
+
 #endif // __CURRENCYAMOUNT_H__

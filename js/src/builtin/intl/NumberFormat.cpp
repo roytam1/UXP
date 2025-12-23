@@ -521,6 +521,18 @@ GetFieldTypeForNumberField(UNumberFormatFields fieldName, HandleValue x)
                                "and scientific notation were never requested");
         break;
 
+      case UNUM_MEASURE_UNIT_FIELD:
+        MOZ_ASSERT_UNREACHABLE("unexpected measure unit field found, even though "
+                               "we don't use any user-defined patterns that "
+                               "would require a measure unit field");
+        break;
+
+      case UNUM_COMPACT_FIELD:
+        MOZ_ASSERT_UNREACHABLE("unexpected compact field found, even though "
+                               "we don't use any user-defined patterns that "
+                               "would require a compact number notation");
+        break;
+
       case UNUM_FIELD_COUNT:
         MOZ_ASSERT_UNREACHABLE("format field sentinel value returned by "
                                "iterator!");

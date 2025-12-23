@@ -1,16 +1,463 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 hu{
-    Version{"2.1.43.65"}
     zoneStrings{
+        "Africa:Addis_Ababa"{
+            ec{"Addisz-Abeba"}
+        }
+        "Africa:Algiers"{
+            ec{"Algír"}
+        }
+        "Africa:Asmera"{
+            ec{"Aszmara"}
+        }
+        "Africa:Cairo"{
+            ec{"Kairó"}
+        }
+        "Africa:Dar_es_Salaam"{
+            ec{"Dar es-Salaam"}
+        }
+        "Africa:Djibouti"{
+            ec{"Dzsibuti"}
+        }
+        "Africa:El_Aaiun"{
+            ec{"El-Ajún"}
+        }
+        "Africa:Khartoum"{
+            ec{"Kartúm"}
+        }
+        "Africa:Malabo"{
+            ec{"Malabó"}
+        }
+        "Africa:Tunis"{
+            ec{"Tunisz"}
+        }
+        "America:Bahia_Banderas"{
+            ec{"Bahia Banderas"}
+        }
+        "America:Cayman"{
+            ec{"Kajmán-szigetek"}
+        }
+        "America:Dominica"{
+            ec{"Dominika"}
+        }
+        "America:El_Salvador"{
+            ec{"Salvador"}
+        }
+        "America:Havana"{
+            ec{"Havanna"}
+        }
+        "America:Mexico_City"{
+            ec{"Mexikóváros"}
+        }
+        "America:North_Dakota:Beulah"{
+            ec{"Beulah, Észak-Dakota"}
+        }
+        "America:North_Dakota:Center"{
+            ec{"Center, Észak-Dakota"}
+        }
+        "America:North_Dakota:New_Salem"{
+            ec{"New Salem, Észak-Dakota"}
+        }
+        "America:Rio_Branco"{
+            ec{"Río Branco"}
+        }
+        "America:St_Barthelemy"{
+            ec{"Saint-Barthélemy"}
+        }
+        "Antarctica:Vostok"{
+            ec{"Vosztok"}
+        }
+        "Asia:Aden"{
+            ec{"Áden"}
+        }
+        "Asia:Almaty"{
+            ec{"Alma-Ata"}
+        }
+        "Asia:Amman"{
+            ec{"Ammán"}
+        }
+        "Asia:Anadyr"{
+            ec{"Anadir"}
+        }
+        "Asia:Aqtau"{
+            ec{"Aktau"}
+        }
+        "Asia:Aqtobe"{
+            ec{"Aktöbe"}
+        }
+        "Asia:Ashgabat"{
+            ec{"Asgabat"}
+        }
+        "Asia:Atyrau"{
+            ec{"Atirau"}
+        }
+        "Asia:Baghdad"{
+            ec{"Bagdad"}
+        }
+        "Asia:Bahrain"{
+            ec{"Bahrein"}
+        }
+        "Asia:Beirut"{
+            ec{"Bejrút"}
+        }
+        "Asia:Bishkek"{
+            ec{"Biskek"}
+        }
+        "Asia:Calcutta"{
+            ec{"Kalkutta"}
+        }
+        "Asia:Chita"{
+            ec{"Csita"}
+        }
+        "Asia:Damascus"{
+            ec{"Damaszkusz"}
+        }
+        "Asia:Dhaka"{
+            ec{"Dakka"}
+        }
+        "Asia:Dubai"{
+            ec{"Dubaj"}
+        }
+        "Asia:Dushanbe"{
+            ec{"Dusanbe"}
+        }
+        "Asia:Gaza"{
+            ec{"Gáza"}
+        }
+        "Asia:Hong_Kong"{
+            ec{"Hongkong"}
+        }
+        "Asia:Irkutsk"{
+            ec{"Irkutszk"}
+        }
+        "Asia:Jerusalem"{
+            ec{"Jeruzsálem"}
+        }
+        "Asia:Kamchatka"{
+            ec{"Kamcsatka"}
+        }
+        "Asia:Karachi"{
+            ec{"Karacsi"}
+        }
+        "Asia:Katmandu"{
+            ec{"Katmandu"}
+        }
+        "Asia:Khandyga"{
+            ec{"Handiga"}
+        }
+        "Asia:Krasnoyarsk"{
+            ec{"Krasznojarszk"}
+        }
+        "Asia:Kuching"{
+            ec{"Kucseng"}
+        }
+        "Asia:Kuwait"{
+            ec{"Kuvait"}
+        }
+        "Asia:Macau"{
+            ec{"Makaó"}
+        }
+        "Asia:Magadan"{
+            ec{"Magadán"}
+        }
+        "Asia:Makassar"{
+            ec{"Makasar"}
+        }
+        "Asia:Muscat"{
+            ec{"Maszkat"}
+        }
+        "Asia:Novokuznetsk"{
+            ec{"Novokuznyeck"}
+        }
+        "Asia:Novosibirsk"{
+            ec{"Novoszibirszk"}
+        }
+        "Asia:Omsk"{
+            ec{"Omszk"}
+        }
+        "Asia:Pyongyang"{
+            ec{"Phenjan"}
+        }
+        "Asia:Qatar"{
+            ec{"Katar"}
+        }
+        "Asia:Qostanay"{
+            ec{"Kosztanaj"}
+        }
+        "Asia:Qyzylorda"{
+            ec{"Kizilorda"}
+        }
+        "Asia:Riyadh"{
+            ec{"Rijád"}
+        }
+        "Asia:Saigon"{
+            ec{"Ho Si Minh-város"}
+        }
+        "Asia:Sakhalin"{
+            ec{"Szahalin"}
+        }
+        "Asia:Samarkand"{
+            ec{"Szamarkand"}
+        }
+        "Asia:Seoul"{
+            ec{"Szöul"}
+        }
+        "Asia:Shanghai"{
+            ec{"Sanghaj"}
+        }
+        "Asia:Singapore"{
+            ec{"Szingapúr"}
+        }
+        "Asia:Srednekolymsk"{
+            ec{"Szrednekolimszk"}
+        }
+        "Asia:Taipei"{
+            ec{"Tajpej"}
+        }
+        "Asia:Tashkent"{
+            ec{"Taskent"}
+        }
+        "Asia:Tbilisi"{
+            ec{"Tbiliszi"}
+        }
+        "Asia:Tehran"{
+            ec{"Teherán"}
+        }
+        "Asia:Thimphu"{
+            ec{"Timpu"}
+        }
+        "Asia:Tokyo"{
+            ec{"Tokió"}
+        }
+        "Asia:Tomsk"{
+            ec{"Tomszk"}
+        }
+        "Asia:Ulaanbaatar"{
+            ec{"Ulánbátor"}
+        }
+        "Asia:Urumqi"{
+            ec{"Ürümcsi"}
+        }
+        "Asia:Ust-Nera"{
+            ec{"Uszty-Nyera"}
+        }
+        "Asia:Vientiane"{
+            ec{"Vientián"}
+        }
+        "Asia:Vladivostok"{
+            ec{"Vlagyivosztok"}
+        }
+        "Asia:Yakutsk"{
+            ec{"Jakutszk"}
+        }
+        "Asia:Yekaterinburg"{
+            ec{"Jekatyerinburg"}
+        }
+        "Asia:Yerevan"{
+            ec{"Jereván"}
+        }
+        "Atlantic:Azores"{
+            ec{"Azori-szigetek"}
+        }
+        "Atlantic:Canary"{
+            ec{"Kanári-szigetek"}
+        }
+        "Atlantic:Cape_Verde"{
+            ec{"Zöld-foki szigetek"}
+        }
+        "Atlantic:Faeroe"{
+            ec{"Feröer"}
+        }
+        "Atlantic:Reykjavik"{
+            ec{"Reykjavík"}
+        }
+        "Atlantic:South_Georgia"{
+            ec{"Déli-Georgia"}
+        }
+        "Atlantic:St_Helena"{
+            ec{"Szent Ilona"}
+        }
         "Etc:UTC"{
-            ls{"egyezményes koordinált világidő"}
+            ls{"koordinált világidő"}
+        }
+        "Etc:Unknown"{
+            ec{"Ismeretlen város"}
+        }
+        "Europe:Amsterdam"{
+            ec{"Amszterdam"}
+        }
+        "Europe:Astrakhan"{
+            ec{"Asztrahán"}
+        }
+        "Europe:Athens"{
+            ec{"Athén"}
+        }
+        "Europe:Belgrade"{
+            ec{"Belgrád"}
+        }
+        "Europe:Bratislava"{
+            ec{"Pozsony"}
+        }
+        "Europe:Brussels"{
+            ec{"Brüsszel"}
+        }
+        "Europe:Bucharest"{
+            ec{"Bukarest"}
+        }
+        "Europe:Copenhagen"{
+            ec{"Koppenhága"}
         }
         "Europe:Dublin"{
             ld{"ír nyári idő"}
         }
+        "Europe:Gibraltar"{
+            ec{"Gibraltár"}
+        }
+        "Europe:Isle_of_Man"{
+            ec{"Man-sziget"}
+        }
+        "Europe:Istanbul"{
+            ec{"Isztanbul"}
+        }
+        "Europe:Kaliningrad"{
+            ec{"Kalinyingrád"}
+        }
+        "Europe:Kiev"{
+            ec{"Kijev"}
+        }
+        "Europe:Lisbon"{
+            ec{"Lisszabon"}
+        }
         "Europe:London"{
             ld{"brit nyári idő"}
+        }
+        "Europe:Luxembourg"{
+            ec{"Luxemburg"}
+        }
+        "Europe:Malta"{
+            ec{"Málta"}
+        }
+        "Europe:Minsk"{
+            ec{"Minszk"}
+        }
+        "Europe:Moscow"{
+            ec{"Moszkva"}
+        }
+        "Europe:Paris"{
+            ec{"Párizs"}
+        }
+        "Europe:Prague"{
+            ec{"Prága"}
+        }
+        "Europe:Rome"{
+            ec{"Róma"}
+        }
+        "Europe:Samara"{
+            ec{"Szamara"}
+        }
+        "Europe:Sarajevo"{
+            ec{"Szarajevó"}
+        }
+        "Europe:Saratov"{
+            ec{"Szaratov"}
+        }
+        "Europe:Simferopol"{
+            ec{"Szimferopol"}
+        }
+        "Europe:Skopje"{
+            ec{"Szkopje"}
+        }
+        "Europe:Sofia"{
+            ec{"Szófia"}
+        }
+        "Europe:Tallinn"{
+            ec{"Tallin"}
+        }
+        "Europe:Ulyanovsk"{
+            ec{"Uljanovszk"}
+        }
+        "Europe:Vatican"{
+            ec{"Vatikán"}
+        }
+        "Europe:Vienna"{
+            ec{"Bécs"}
+        }
+        "Europe:Volgograd"{
+            ec{"Volgográd"}
+        }
+        "Europe:Warsaw"{
+            ec{"Varsó"}
+        }
+        "Europe:Zagreb"{
+            ec{"Zágráb"}
+        }
+        "Europe:Zurich"{
+            ec{"Zürich"}
+        }
+        "Indian:Christmas"{
+            ec{"Karácsony-sziget"}
+        }
+        "Indian:Cocos"{
+            ec{"Kókusz-sziget"}
+        }
+        "Indian:Comoro"{
+            ec{"Komoró"}
+        }
+        "Indian:Maldives"{
+            ec{"Maldív-szigetek"}
+        }
+        "Pacific:Chatham"{
+            ec{"Chatham-szigetek"}
+        }
+        "Pacific:Easter"{
+            ec{"Húsvét-szigetek"}
+        }
+        "Pacific:Enderbury"{
+            ec{"Canton-sziget"}
+        }
+        "Pacific:Fiji"{
+            ec{"Fidzsi"}
+        }
+        "Pacific:Galapagos"{
+            ec{"Galapagos-szigetek"}
+        }
+        "Pacific:Gambier"{
+            ec{"Gambier-szigetek"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
+        }
+        "Pacific:Kiritimati"{
+            ec{"Kiritimati-sziget"}
+        }
+        "Pacific:Kosrae"{
+            ec{"Kosrae-szigetek"}
+        }
+        "Pacific:Kwajalein"{
+            ec{"Kwajalein-zátony"}
+        }
+        "Pacific:Majuro"{
+            ec{"Majuro-zátony"}
+        }
+        "Pacific:Marquesas"{
+            ec{"Marquesas-szigetek"}
+        }
+        "Pacific:Midway"{
+            ec{"Midway-szigetek"}
+        }
+        "Pacific:Pitcairn"{
+            ec{"Pitcairn-szigetek"}
+        }
+        "Pacific:Ponape"{
+            ec{"Ponape-szigetek"}
+        }
+        "Pacific:Truk"{
+            ec{"Truk"}
+        }
+        "Pacific:Wake"{
+            ec{"Wake-sziget"}
         }
         "meta:Acre"{
             ld{"Acre nyári idő"}
@@ -30,9 +477,7 @@ hu{
             ls{"dél-afrikai téli idő"}
         }
         "meta:Africa_Western"{
-            ld{"nyugat-afrikai nyári idő"}
-            lg{"nyugat-afrikai időzóna"}
-            ls{"nyugat-afrikai téli idő"}
+            ls{"nyugat-afrikai időzóna"}
         }
         "meta:Alaska"{
             ld{"alaszkai nyári idő"}
@@ -168,6 +613,9 @@ hu{
             lg{"zöld-foki-szigeteki időzóna"}
             ls{"zöld-foki-szigeteki téli idő"}
         }
+        "meta:Casey"{
+            ls{"casey-i idő"}
+        }
         "meta:Chamorro"{
             ls{"chamorrói téli idő"}
         }
@@ -186,13 +634,8 @@ hu{
             lg{"kínai idő"}
             ls{"kínai téli idő"}
         }
-        "meta:Choibalsan"{
-            ld{"csojbalszani nyári idő"}
-            lg{"csojbalszani idő"}
-            ls{"csojbalszani téli idő"}
-        }
         "meta:Christmas"{
-            ls{"karácsony-szigeti téli idő"}
+            ls{"karácsony-szigeti idő"}
         }
         "meta:Cocos"{
             ls{"kókusz-szigeteki téli idő"}
@@ -231,7 +674,7 @@ hu{
         }
         "meta:Europe_Central"{
             ld{"közép-európai nyári idő"}
-            lg{"közép-európai időzóna"}
+            lg{"közép-európai idő"}
             ls{"közép-európai téli idő"}
             sd{"CEST"}
             sg{"CET"}
@@ -309,6 +752,9 @@ hu{
         "meta:Guyana"{
             ls{"guyanai téli idő"}
         }
+        "meta:Hawaii"{
+            ls{"hawaii-aleuti téli idő"}
+        }
         "meta:Hawaii_Aleutian"{
             ld{"hawaii-aleuti nyári idő"}
             lg{"hawaii-aleuti időzóna"}
@@ -367,6 +813,9 @@ hu{
             lg{"Petropavlovszk-kamcsatkai idő"}
             ls{"Petropavlovszk-kamcsatkai zónaidő"}
         }
+        "meta:Kazakhstan"{
+            ls{"kazahsztáni idő"}
+        }
         "meta:Kazakhstan_Eastern"{
             ls{"kelet-kazahsztáni idő"}
         }
@@ -405,9 +854,6 @@ hu{
             lg{"Macaui idő"}
             ls{"Macaui zónaidő"}
         }
-        "meta:Macquarie"{
-            ls{"macquarie-szigeti téli idő"}
-        }
         "meta:Magadan"{
             ld{"magadáni nyári idő"}
             lg{"magadáni idő"}
@@ -432,11 +878,6 @@ hu{
         }
         "meta:Mawson"{
             ls{"mawsoni idő"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"északnyugat-mexikói nyári idő"}
-            lg{"északnyugat-mexikói idő"}
-            ls{"északnyugat-mexikói zónaidő"}
         }
         "meta:Mexico_Pacific"{
             ld{"mexikói csendes-óceáni nyári idő"}
@@ -481,7 +922,9 @@ hu{
             ls{"niuei idő"}
         }
         "meta:Norfolk"{
-            ls{"norfolk-szigeteki idő"}
+            ld{"norfolk-szigeteki nyári idő"}
+            lg{"norfolk-szigeteki idő"}
+            ls{"norfolk-szigeteki téli idő"}
         }
         "meta:Noronha"{
             ld{"Fernando de Noronha-i nyári idő"}
@@ -610,6 +1053,11 @@ hu{
         "meta:Truk"{
             ls{"truki idő"}
         }
+        "meta:Turkey"{
+            ld{"Törökországi nyári idő"}
+            lg{"Törökországi idő"}
+            ls{"Törökországi zónaidő"}
+        }
         "meta:Turkmenistan"{
             ld{"türkmenisztáni nyári idő"}
             lg{"türkmenisztáni idő"}
@@ -665,10 +1113,9 @@ hu{
             lg{"jekatyerinburgi idő"}
             ls{"jekatyerinburgi téli idő"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
+        "meta:Yukon"{
+            ls{"yukoni idő"}
+        }
         regionFormat{"{0} idő"}
         regionFormatDaylight{"{0} nyári idő"}
         regionFormatStandard{"{0} zónaidő"}

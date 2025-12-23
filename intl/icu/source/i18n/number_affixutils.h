@@ -11,11 +11,11 @@
 #include "number_types.h"
 #include "unicode/stringpiece.h"
 #include "unicode/unistr.h"
-#include "number_stringbuilder.h"
+#include "formatted_string_builder.h"
 #include "unicode/uniset.h"
 
-U_NAMESPACE_BEGIN namespace number {
-namespace impl {
+U_NAMESPACE_BEGIN
+namespace number::impl {
 
 enum AffixPatternState {
     STATE_BASE = 0,
@@ -134,17 +134,18 @@ class U_I18N_API AffixUtils {
     /**
      * Executes the unescape state machine. Replaces the unquoted characters "-", "+", "%", "‰", and
      * "¤" with the corresponding symbols provided by the {@link SymbolProvider}, and inserts the
-     * result into the NumberStringBuilder at the requested location.
+     * result into the FormattedStringBuilder at the requested location.
      *
      * <p>Example input: "'-'¤x"; example output: "-$x"
      *
      * @param affixPattern The original string to be unescaped.
-     * @param output The NumberStringBuilder to mutate with the result.
-     * @param position The index into the NumberStringBuilder to insert the string.
+     * @param output The FormattedStringBuilder to mutate with the result.
+     * @param position The index into the FormattedStringBuilder to insert the string.
      * @param provider An object to generate locale symbols.
      */
-    static int32_t unescape(const UnicodeString& affixPattern, NumberStringBuilder& output,
-                            int32_t position, const SymbolProvider& provider, UErrorCode& status);
+    static int32_t unescape(const UnicodeString& affixPattern, FormattedStringBuilder& output,
+                            int32_t position, const SymbolProvider& provider, Field field,
+                            UErrorCode& status);
 
     /**
    * Sames as {@link #unescape}, but only calculates the code point count.  More efficient than {@link #unescape}
@@ -233,8 +234,7 @@ class U_I18N_API AffixUtils {
     }
 };
 
-} // namespace impl
-} // namespace number
+} // namespace number::impl
 U_NAMESPACE_END
 
 

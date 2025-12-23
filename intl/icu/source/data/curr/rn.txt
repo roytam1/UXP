@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 rn{
     Currencies{
         AED{
@@ -170,9 +171,13 @@ rn{
             "SHP",
             "Ipawundi rya Sente Helena",
         }
+        SLE{
+            "SLE",
+            "Ilewone",
+        }
         SLL{
             "SLL",
-            "Ilewone",
+            "Ilewone (1964—2022)",
         }
         SOS{
             "SOS",
@@ -223,5 +228,4 @@ rn{
             "Idolari ryo muri Zimbabwe",
         }
     }
-    Version{"2.1.39.11"}
 }

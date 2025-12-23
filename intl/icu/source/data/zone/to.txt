@@ -1,13 +1,167 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 to{
-    Version{"2.1.44.88"}
     zoneStrings{
+        "Africa:Sao_Tome"{
+            ec{"Sao Tomé"}
+        }
+        "America:Bahia_Banderas"{
+            ec{"Bahia Banderas"}
+        }
+        "America:Cancun"{
+            ec{"Cancun"}
+        }
+        "America:Merida"{
+            ec{"Merida"}
+        }
+        "America:New_York"{
+            ec{"Niu ʻIoke"}
+        }
+        "Asia:Hebron"{
+            ec{"Hepeloni"}
+        }
+        "Asia:Jerusalem"{
+            ec{"Selūsalema"}
+        }
+        "Asia:Macau"{
+            ec{"Macau"}
+        }
+        "Asia:Rangoon"{
+            ec{"Rangoon"}
+        }
+        "Australia:Adelaide"{
+            ec{"Atelaite"}
+        }
+        "Australia:Brisbane"{
+            ec{"Pelisipane"}
+        }
+        "Australia:Melbourne"{
+            ec{"Melipoane"}
+        }
+        "Australia:Sydney"{
+            ec{"Senē"}
+        }
+        "Etc:UTC"{
+            ls{"taimi fakaemāmani"}
+        }
+        "Etc:Unknown"{
+            ec{"Feituʻu taʻeʻiloa"}
+        }
+        "Europe:Athens"{
+            ec{"ʻAtenisi"}
+        }
         "Europe:Dublin"{
             ld{"houa fakaʻaealani taimi totonu"}
         }
+        "Europe:Kiev"{
+            ec{"Kiev"}
+        }
         "Europe:London"{
+            ec{"Lonitoni"}
             ld{"houa fakapilitānia taimi liliu"}
+        }
+        "Europe:Moscow"{
+            ec{"Mosikou"}
+        }
+        "Europe:Paris"{
+            ec{"Palesi"}
+        }
+        "Europe:Rome"{
+            ec{"Loma"}
+        }
+        "Europe:Vatican"{
+            ec{"Vatikani"}
+        }
+        "Pacific:Auckland"{
+            ec{"ʻAokalani"}
+        }
+        "Pacific:Bougainville"{
+            ec{"Pukanivila"}
+        }
+        "Pacific:Easter"{
+            ec{"Lapanui"}
+        }
+        "Pacific:Enderbury"{
+            ec{"Kanitoni"}
+        }
+        "Pacific:Fiji"{
+            ec{"Fisi"}
+        }
+        "Pacific:Gambier"{
+            ec{"Kamipiē"}
+        }
+        "Pacific:Guadalcanal"{
+            ec{"Kuatākanali"}
+        }
+        "Pacific:Guam"{
+            ec{"Kuami"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
+        }
+        "Pacific:Kiritimati"{
+            ec{"Kilisimasi"}
+        }
+        "Pacific:Kosrae"{
+            ec{"Kosilae"}
+        }
+        "Pacific:Kwajalein"{
+            ec{"Kuasaleni"}
+        }
+        "Pacific:Majuro"{
+            ec{"Masulo"}
+        }
+        "Pacific:Marquesas"{
+            ec{"Malikuesa"}
+        }
+        "Pacific:Midway"{
+            ec{"Mitiuai"}
+        }
+        "Pacific:Nauru"{
+            ec{"Naulu"}
+        }
+        "Pacific:Niue"{
+            ec{"Niuē"}
+        }
+        "Pacific:Norfolk"{
+            ec{"Noafōki"}
+        }
+        "Pacific:Noumea"{
+            ec{"Numea"}
+        }
+        "Pacific:Pago_Pago"{
+            ec{"Pangopango"}
+        }
+        "Pacific:Pitcairn"{
+            ec{"Pitikeni"}
+        }
+        "Pacific:Ponape"{
+            ec{"Ponapē"}
+        }
+        "Pacific:Port_Moresby"{
+            ec{"Taulanga Molesipi"}
+        }
+        "Pacific:Rarotonga"{
+            ec{"Lalotonga"}
+        }
+        "Pacific:Saipan"{
+            ec{"Saʻipani"}
+        }
+        "Pacific:Tahiti"{
+            ec{"Tahisi"}
+        }
+        "Pacific:Tarawa"{
+            ec{"Talava"}
+        }
+        "Pacific:Truk"{
+            ec{"Tūke"}
+        }
+        "Pacific:Wake"{
+            ec{"Ueke"}
+        }
+        "Pacific:Wallis"{
+            ec{"ʻUvea"}
         }
         "meta:Acre"{
             ld{"houa fakaʻakelī taimi liliu"}
@@ -27,9 +181,7 @@ to{
             ls{"houa fakaʻafelika-tonga"}
         }
         "meta:Africa_Western"{
-            ld{"houa fakaʻafelika-hihifo taimi liliu"}
-            lg{"houa fakaʻafelika-hihifo"}
-            ls{"houa fakaʻafelika-hihifo taimi totonu"}
+            ls{"houa fakaʻafelika-hihifo"}
         }
         "meta:Alaska"{
             ld{"houa fakaʻalasika taimi liliu"}
@@ -186,11 +338,6 @@ to{
             lg{"houa fakasiaina"}
             ls{"houa fakasiaina taimi totonu"}
         }
-        "meta:Choibalsan"{
-            ld{"houa fakakoipalisani taimi liliu"}
-            lg{"houa fakakoipalisani"}
-            ls{"houa fakakoipalisani taimi totonu"}
-        }
         "meta:Christmas"{
             ls{"houa fakamotukilisimasi"}
         }
@@ -299,10 +446,13 @@ to{
         "meta:Guyana"{
             ls{"houa fakakuiana"}
         }
+        "meta:Hawaii"{
+            ls{"houa fakahauaiʻi-aleuti taimi totonu"}
+        }
         "meta:Hawaii_Aleutian"{
-            ld{"houa fakahauaʻi taimi liliu"}
-            lg{"houa fakahauaʻi"}
-            ls{"houa fakahauaʻi taimi totonu"}
+            ld{"houa fakahauaiʻi-aleuti taimi liliu"}
+            lg{"houa fakahauaiʻi-aleuti"}
+            ls{"houa fakahauaiʻi-aleuti taimi totonu"}
         }
         "meta:Hong_Kong"{
             ld{"houa fakahongi-kongi taimi liliu"}
@@ -357,6 +507,9 @@ to{
             lg{"houa fakalūsia-petelopavilovisiki"}
             ls{"houa fakalūsia-petelopavilovisiki taimi totonu"}
         }
+        "meta:Kazakhstan"{
+            ls{"houa fakakasakitani"}
+        }
         "meta:Kazakhstan_Eastern"{
             ls{"houa fakakasakitani-hahake"}
         }
@@ -395,9 +548,6 @@ to{
             lg{"houa fakamakau"}
             ls{"houa fakamakau taimi totonu"}
         }
-        "meta:Macquarie"{
-            ls{"houa fakamotumakuali"}
-        }
         "meta:Magadan"{
             ld{"houa fakalūsia-makatani taimi liliu"}
             lg{"houa fakalūsia-makatani"}
@@ -422,11 +572,6 @@ to{
         }
         "meta:Mawson"{
             ls{"houa fakamausoni"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"houa fakamekisikou-tokelauhihifo taimi liliu"}
-            lg{"houa fakamekisikou-tokelauhihifo"}
-            ls{"houa fakamekisikou-tokelauhihifo taimi totonu"}
         }
         "meta:Mexico_Pacific"{
             ld{"houa fakamekisikou-pasifika taimi liliu"}
@@ -471,7 +616,9 @@ to{
             ls{"houa fakaniuē"}
         }
         "meta:Norfolk"{
-            ls{"houa fakanoafōki"}
+            ld{"houa fakanoafōki taimi liliu"}
+            lg{"houa fakanoafōki"}
+            ls{"houa fakanoafōki taimi totonu"}
         }
         "meta:Noronha"{
             ld{"houa fakafēnanito-te-nolōnia taimi liliu"}
@@ -530,6 +677,9 @@ to{
         }
         "meta:Ponape"{
             ls{"houa fakapōnapē"}
+        }
+        "meta:Pyongyang"{
+            ls{"houa fakapiongiangi"}
         }
         "meta:Qyzylorda"{
             ld{"houa fakakisilōta taimi liliu"}
@@ -652,10 +802,9 @@ to{
             lg{"houa fakalūsia-ʻiekatelinepūki"}
             ls{"houa fakalūsia-ʻiekatelinepūki taimi totonu"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
+        "meta:Yukon"{
+            ls{"houa fakaiukoni"}
+        }
         regionFormat{"Taimi {0}"}
         regionFormatDaylight{"{0} Taimi liliu"}
         regionFormatStandard{"{0} Taimi totonu"}

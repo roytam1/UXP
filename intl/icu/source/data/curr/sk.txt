@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 sk{
     Currencies{
         ADP{
@@ -688,7 +689,7 @@ sk{
         }
         MRU{
             "MRU",
-            "mauritánska ukija",
+            "mauritánska ouguiya",
         }
         MTL{
             "MTL",
@@ -898,9 +899,13 @@ sk{
             "SKK",
             "slovenská koruna",
         }
+        SLE{
+            "SLE",
+            "sierraleonský leone",
+        }
         SLL{
             "SLL",
-            "sierraleonský leone",
+            "sierraleonský leone (1964 – 2022)",
         }
         SOS{
             "SOS",
@@ -940,7 +945,7 @@ sk{
         }
         SZL{
             "SZL",
-            "svazijské lilangeni",
+            "svazijský lilangeni",
         }
         THB{
             "THB",
@@ -1098,6 +1103,10 @@ sk{
             "EC$",
             "východokaribský dolár",
         }
+        XCG{
+            "Cg",
+            "karibský gulden",
+        }
         XDR{
             "XDR",
             "SDR",
@@ -1115,7 +1124,7 @@ sk{
             "francúzsky UIC frank",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "západoafrický frank",
         }
         XPD{
@@ -1202,6 +1211,10 @@ sk{
             "ZWD",
             "zimbabwiansky dolár (1980 – 2008)",
         }
+        ZWG{
+            "ZWG",
+            "zimbabwiansky zlatý",
+        }
         ZWL{
             "ZWL",
             "zimbabwiansky dolár (2009)",
@@ -1212,109 +1225,12 @@ sk{
         }
     }
     Currencies%narrow{
-        AOA{"Kz"}
-        ARS{"$"}
-        AUD{"$"}
-        BAM{"KM"}
-        BBD{"$"}
-        BDT{"৳"}
-        BMD{"$"}
-        BND{"$"}
-        BOB{"Bs"}
-        BRL{"R$"}
-        BSD{"$"}
-        BWP{"P"}
         BYN{"р."}
-        BZD{"$"}
-        CAD{"$"}
-        CLP{"$"}
-        CNY{"¥"}
-        COP{"$"}
-        CRC{"₡"}
-        CUC{"$"}
-        CUP{"$"}
-        CZK{"Kč"}
-        DKK{"kr"}
-        DOP{"$"}
-        EGP{"E£"}
-        ESP{"₧"}
-        EUR{"€"}
-        FJD{"$"}
-        FKP{"£"}
-        GBP{"£"}
-        GEL{"₾"}
-        GIP{"£"}
-        GNF{"FG"}
-        GTQ{"Q"}
-        GYD{"$"}
-        HKD{"$"}
-        HNL{"L"}
-        HRK{"kn"}
-        HUF{"Ft"}
-        IDR{"Rp"}
-        ILS{"₪"}
-        INR{"₹"}
-        ISK{"kr"}
-        JMD{"$"}
-        JPY{"¥"}
-        KHR{"៛"}
-        KMF{"CF"}
-        KPW{"₩"}
-        KRW{"₩"}
-        KYD{"$"}
-        KZT{"₸"}
-        LAK{"₭"}
-        LBP{"L£"}
-        LKR{"Rs"}
-        LRD{"$"}
-        LTL{"Lt"}
-        LVL{"Ls"}
-        MGA{"Ar"}
-        MMK{"K"}
-        MNT{"₮"}
-        MUR{"Rs"}
-        MXN{"$"}
-        MYR{"RM"}
-        NAD{"$"}
-        NGN{"₦"}
-        NIO{"C$"}
-        NOK{"kr"}
-        NPR{"Rs"}
-        NZD{"$"}
-        PHP{"₱"}
-        PKR{"Rs"}
-        PLN{"zł"}
-        PYG{"₲"}
-        RON{"lei"}
-        RUB{"₽"}
         RUR{"р."}
-        RWF{"RF"}
-        SBD{"$"}
-        SEK{"kr"}
-        SGD{"$"}
-        SHP{"£"}
-        SRD{"$"}
-        SSP{"£"}
-        STN{"Db"}
-        SYP{"£"}
-        THB{"฿"}
-        TOP{"T$"}
-        TRY{"₺"}
-        TTD{"$"}
         TWD{"NT$"}
-        UAH{"₴"}
-        USD{"$"}
-        UYU{"$"}
-        VEF{"Bs"}
-        VND{"₫"}
-        XCD{"$"}
-        ZAR{"R"}
-        ZMW{"ZK"}
     }
     Currencies%variant{
-        GEL{"₾"}
         RUB{"₽"}
-        TRY{"TL"}
     }
     CurrencyPlurals{
         ADP{
@@ -2344,10 +2260,10 @@ sk{
             other{"mauritánskych ukijí (1973–2017)"}
         }
         MRU{
-            few{"mauritánske ukije"}
-            many{"mauritánskej ukije"}
-            one{"mauritánska ukija"}
-            other{"mauritánskych ukijí"}
+            few{"mauritánske ouguiye"}
+            many{"mauritánskej ouguiye"}
+            one{"mauritánska ouguiya"}
+            other{"mauritánskych ouguiyí"}
         }
         MTL{
             few{"maltské líry"}
@@ -2661,11 +2577,17 @@ sk{
             one{"slovenská koruna"}
             other{"slovenských korún"}
         }
-        SLL{
+        SLE{
             few{"sierraleonské leone"}
             many{"sierraleonského leone"}
             one{"sierraleonský leone"}
             other{"sierraleonských leone"}
+        }
+        SLL{
+            few{"sierraleonské leone (1964 – 2022)"}
+            many{"sierraleonského leone (1964 – 2022)"}
+            one{"sierraleonský leone (1964 – 2022)"}
+            other{"sierraleonských leone (1964 – 2022)"}
         }
         SOS{
             few{"somálske šilingy"}
@@ -2724,7 +2646,7 @@ sk{
         SZL{
             few{"svazijské lilangeni"}
             many{"svazijského lilangeni"}
-            one{"svazijské lilangeni"}
+            one{"svazijský lilangeni"}
             other{"svazijských lilangeni"}
         }
         THB{
@@ -2961,11 +2883,11 @@ sk{
             one{"východokaribský dolár"}
             other{"východokaribských dolárov"}
         }
-        XDR{
-            few{"SDR"}
-            many{"SDR"}
-            one{"SDR"}
-            other{"SDR"}
+        XCG{
+            few{"karibské guldeny"}
+            many{"karibského guldena"}
+            one{"karibský gulden"}
+            other{"karibských guldenov"}
         }
         XEU{
             few{"európske menové jednotky"}
@@ -3014,12 +2936,6 @@ sk{
             many{"jednotky fondov RINET"}
             one{"jednotka fondov RINET"}
             other{"jednotiek fondov RINET"}
-        }
-        XSU{
-            few{"sucre"}
-            many{"sucre"}
-            one{"sucre"}
-            other{"sucre"}
         }
         XTS{
             few{"jednotky testovacej meny"}
@@ -3117,6 +3033,12 @@ sk{
             one{"zimbabwiansky dolár (1980 – 2008)"}
             other{"zimbabwianskych dolárov (1980 – 2008)"}
         }
+        ZWG{
+            few{"zimbabwianske zlaté"}
+            many{"zimbabwianskeho zlatého"}
+            one{"zimbabwiansky zlatý"}
+            other{"zimbabwianskych zlatých"}
+        }
         ZWL{
             few{"zimbabwianske doláre (2009)"}
             many{"zimbabwianskeho dolára (2009)"}
@@ -3130,11 +3052,4 @@ sk{
             other{"zimbabwianskych dolárov (2008)"}
         }
     }
-    CurrencyUnitPatterns{
-        few{"{0} {1}"}
-        many{"{0} {1}"}
-        one{"{0} {1}"}
-        other{"{0} {1}"}
-    }
-    Version{"2.1.43.65"}
 }

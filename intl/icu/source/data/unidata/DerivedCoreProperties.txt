@@ -1,11 +1,11 @@
-# DerivedCoreProperties-11.0.0.txt
-# Date: 2018-02-21, 05:34:02 GMT
-# © 2018 Unicode®, Inc.
+# DerivedCoreProperties-17.0.0.txt
+# Date: 2025-07-30, 23:55:08 GMT
+# © 2025 Unicode®, Inc.
 # Unicode and the Unicode Logo are registered trademarks of Unicode, Inc. in the U.S. and other countries.
-# For terms of use, see http://www.unicode.org/terms_of_use.html
+# For terms of use and license, see https://www.unicode.org/terms_of_use.html
 #
 # Unicode Character Database
-#   For documentation, see http://www.unicode.org/reports/tr44/
+#   For documentation, see https://www.unicode.org/reports/tr44/
 
 # ================================================
 
@@ -177,6 +177,8 @@ FF5C          ; Math
 FF5E          ; Math
 FFE2          ; Math
 FFE9..FFEC    ; Math
+10D8E..10D8F  ; Math
+1CEF0         ; Math
 1D400..1D454  ; Math
 1D456..1D49C  ; Math
 1D49E..1D49F  ; Math
@@ -252,8 +254,9 @@ FFE9..FFEC    ; Math
 1EEA5..1EEA9  ; Math
 1EEAB..1EEBB  ; Math
 1EEF0..1EEF1  ; Math
+1F8D0..1F8D8  ; Math
 
-# Total code points: 2310
+# Total code points: 2322
 
 # ================================================
 
@@ -272,14 +275,15 @@ FFE9..FFEC    ; Math
 01BC..01BF    ; Alphabetic
 01C0..01C3    ; Alphabetic
 01C4..0293    ; Alphabetic
-0294          ; Alphabetic
-0295..02AF    ; Alphabetic
+0294..0295    ; Alphabetic
+0296..02AF    ; Alphabetic
 02B0..02C1    ; Alphabetic
 02C6..02D1    ; Alphabetic
 02E0..02E4    ; Alphabetic
 02EC          ; Alphabetic
 02EE          ; Alphabetic
 0345          ; Alphabetic
+0363..036F    ; Alphabetic
 0370..0373    ; Alphabetic
 0374          ; Alphabetic
 0376..0377    ; Alphabetic
@@ -341,8 +345,11 @@ FFE9..FFEC    ; Math
 0829..082C    ; Alphabetic
 0840..0858    ; Alphabetic
 0860..086A    ; Alphabetic
-08A0..08B4    ; Alphabetic
-08B6..08BD    ; Alphabetic
+0870..0887    ; Alphabetic
+0889..088F    ; Alphabetic
+0897          ; Alphabetic
+08A0..08C8    ; Alphabetic
+08C9          ; Alphabetic
 08D4..08DF    ; Alphabetic
 08E3..08E9    ; Alphabetic
 08F0..0902    ; Alphabetic
@@ -460,6 +467,7 @@ FFE9..FFEC    ; Math
 0BD7          ; Alphabetic
 0C00          ; Alphabetic
 0C01..0C03    ; Alphabetic
+0C04          ; Alphabetic
 0C05..0C0C    ; Alphabetic
 0C0E..0C10    ; Alphabetic
 0C12..0C28    ; Alphabetic
@@ -471,6 +479,7 @@ FFE9..FFEC    ; Math
 0C4A..0C4C    ; Alphabetic
 0C55..0C56    ; Alphabetic
 0C58..0C5A    ; Alphabetic
+0C5C..0C5D    ; Alphabetic
 0C60..0C61    ; Alphabetic
 0C62..0C63    ; Alphabetic
 0C80          ; Alphabetic
@@ -490,13 +499,14 @@ FFE9..FFEC    ; Math
 0CCA..0CCB    ; Alphabetic
 0CCC          ; Alphabetic
 0CD5..0CD6    ; Alphabetic
-0CDE          ; Alphabetic
+0CDC..0CDE    ; Alphabetic
 0CE0..0CE1    ; Alphabetic
 0CE2..0CE3    ; Alphabetic
 0CF1..0CF2    ; Alphabetic
+0CF3          ; Alphabetic
 0D00..0D01    ; Alphabetic
 0D02..0D03    ; Alphabetic
-0D05..0D0C    ; Alphabetic
+0D04..0D0C    ; Alphabetic
 0D0E..0D10    ; Alphabetic
 0D12..0D3A    ; Alphabetic
 0D3D          ; Alphabetic
@@ -510,6 +520,7 @@ FFE9..FFEC    ; Math
 0D5F..0D61    ; Alphabetic
 0D62..0D63    ; Alphabetic
 0D7A..0D7F    ; Alphabetic
+0D81          ; Alphabetic
 0D82..0D83    ; Alphabetic
 0D85..0D96    ; Alphabetic
 0D9A..0DB1    ; Alphabetic
@@ -530,16 +541,10 @@ FFE9..FFEC    ; Math
 0E4D          ; Alphabetic
 0E81..0E82    ; Alphabetic
 0E84          ; Alphabetic
-0E87..0E88    ; Alphabetic
-0E8A          ; Alphabetic
-0E8D          ; Alphabetic
-0E94..0E97    ; Alphabetic
-0E99..0E9F    ; Alphabetic
-0EA1..0EA3    ; Alphabetic
+0E86..0E8A    ; Alphabetic
+0E8C..0EA3    ; Alphabetic
 0EA5          ; Alphabetic
-0EA7          ; Alphabetic
-0EAA..0EAB    ; Alphabetic
-0EAD..0EB0    ; Alphabetic
+0EA7..0EB0    ; Alphabetic
 0EB1          ; Alphabetic
 0EB2..0EB3    ; Alphabetic
 0EB4..0EB9    ; Alphabetic
@@ -554,7 +559,7 @@ FFE9..FFEC    ; Math
 0F49..0F6C    ; Alphabetic
 0F71..0F7E    ; Alphabetic
 0F7F          ; Alphabetic
-0F80..0F81    ; Alphabetic
+0F80..0F83    ; Alphabetic
 0F88..0F8C    ; Alphabetic
 0F8D..0F97    ; Alphabetic
 0F99..0FBC    ; Alphabetic
@@ -573,17 +578,20 @@ FFE9..FFEC    ; Math
 105A..105D    ; Alphabetic
 105E..1060    ; Alphabetic
 1061          ; Alphabetic
-1062          ; Alphabetic
+1062..1064    ; Alphabetic
 1065..1066    ; Alphabetic
-1067..1068    ; Alphabetic
+1067..106D    ; Alphabetic
 106E..1070    ; Alphabetic
 1071..1074    ; Alphabetic
 1075..1081    ; Alphabetic
 1082          ; Alphabetic
 1083..1084    ; Alphabetic
 1085..1086    ; Alphabetic
+1087..108C    ; Alphabetic
+108D          ; Alphabetic
 108E          ; Alphabetic
-109C          ; Alphabetic
+108F          ; Alphabetic
+109A..109C    ; Alphabetic
 109D          ; Alphabetic
 10A0..10C5    ; Alphabetic
 10C7          ; Alphabetic
@@ -607,7 +615,6 @@ FFE9..FFEC    ; Math
 12D8..1310    ; Alphabetic
 1312..1315    ; Alphabetic
 1318..135A    ; Alphabetic
-135F          ; Alphabetic
 1380..138F    ; Alphabetic
 13A0..13F5    ; Alphabetic
 13F8..13FD    ; Alphabetic
@@ -617,10 +624,9 @@ FFE9..FFEC    ; Math
 16A0..16EA    ; Alphabetic
 16EE..16F0    ; Alphabetic
 16F1..16F8    ; Alphabetic
-1700..170C    ; Alphabetic
-170E..1711    ; Alphabetic
+1700..1711    ; Alphabetic
 1712..1713    ; Alphabetic
-1720..1731    ; Alphabetic
+171F..1731    ; Alphabetic
 1732..1733    ; Alphabetic
 1740..1751    ; Alphabetic
 1752..1753    ; Alphabetic
@@ -672,6 +678,8 @@ FFE9..FFEC    ; Math
 1A6D..1A72    ; Alphabetic
 1A73..1A74    ; Alphabetic
 1AA7          ; Alphabetic
+1ABF..1AC0    ; Alphabetic
+1ACC..1ACE    ; Alphabetic
 1B00..1B03    ; Alphabetic
 1B04          ; Alphabetic
 1B05..1B33    ; Alphabetic
@@ -682,7 +690,7 @@ FFE9..FFEC    ; Math
 1B3D..1B41    ; Alphabetic
 1B42          ; Alphabetic
 1B43          ; Alphabetic
-1B45..1B4B    ; Alphabetic
+1B45..1B4C    ; Alphabetic
 1B80..1B81    ; Alphabetic
 1B82          ; Alphabetic
 1B83..1BA0    ; Alphabetic
@@ -703,23 +711,24 @@ FFE9..FFEC    ; Math
 1C24..1C2B    ; Alphabetic
 1C2C..1C33    ; Alphabetic
 1C34..1C35    ; Alphabetic
+1C36          ; Alphabetic
 1C4D..1C4F    ; Alphabetic
 1C5A..1C77    ; Alphabetic
 1C78..1C7D    ; Alphabetic
-1C80..1C88    ; Alphabetic
+1C80..1C8A    ; Alphabetic
 1C90..1CBA    ; Alphabetic
 1CBD..1CBF    ; Alphabetic
 1CE9..1CEC    ; Alphabetic
-1CEE..1CF1    ; Alphabetic
-1CF2..1CF3    ; Alphabetic
+1CEE..1CF3    ; Alphabetic
 1CF5..1CF6    ; Alphabetic
+1CFA          ; Alphabetic
 1D00..1D2B    ; Alphabetic
 1D2C..1D6A    ; Alphabetic
 1D6B..1D77    ; Alphabetic
 1D78          ; Alphabetic
 1D79..1D9A    ; Alphabetic
 1D9B..1DBF    ; Alphabetic
-1DE7..1DF4    ; Alphabetic
+1DD3..1DF4    ; Alphabetic
 1E00..1F15    ; Alphabetic
 1F18..1F1D    ; Alphabetic
 1F20..1F45    ; Alphabetic
@@ -761,9 +770,7 @@ FFE9..FFEC    ; Math
 2183..2184    ; Alphabetic
 2185..2188    ; Alphabetic
 24B6..24E9    ; Alphabetic
-2C00..2C2E    ; Alphabetic
-2C30..2C5E    ; Alphabetic
-2C60..2C7B    ; Alphabetic
+2C00..2C7B    ; Alphabetic
 2C7C..2C7D    ; Alphabetic
 2C7E..2CE4    ; Alphabetic
 2CEB..2CEE    ; Alphabetic
@@ -800,11 +807,10 @@ FFE9..FFEC    ; Math
 30FF          ; Alphabetic
 3105..312F    ; Alphabetic
 3131..318E    ; Alphabetic
-31A0..31BA    ; Alphabetic
+31A0..31BF    ; Alphabetic
 31F0..31FF    ; Alphabetic
-3400..4DB5    ; Alphabetic
-4E00..9FEF    ; Alphabetic
-A000..A014    ; Alphabetic
+3400..4DBF    ; Alphabetic
+4E00..A014    ; Alphabetic
 A015          ; Alphabetic
 A016..A48C    ; Alphabetic
 A4D0..A4F7    ; Alphabetic
@@ -829,13 +835,17 @@ A771..A787    ; Alphabetic
 A788          ; Alphabetic
 A78B..A78E    ; Alphabetic
 A78F          ; Alphabetic
-A790..A7B9    ; Alphabetic
+A790..A7DC    ; Alphabetic
+A7F1..A7F4    ; Alphabetic
+A7F5..A7F6    ; Alphabetic
 A7F7          ; Alphabetic
 A7F8..A7F9    ; Alphabetic
 A7FA          ; Alphabetic
 A7FB..A801    ; Alphabetic
+A802          ; Alphabetic
 A803..A805    ; Alphabetic
 A807..A80A    ; Alphabetic
+A80B          ; Alphabetic
 A80C..A822    ; Alphabetic
 A823..A824    ; Alphabetic
 A825..A826    ; Alphabetic
@@ -848,6 +858,7 @@ A8C5          ; Alphabetic
 A8F2..A8F7    ; Alphabetic
 A8FB          ; Alphabetic
 A8FD..A8FE    ; Alphabetic
+A8FF          ; Alphabetic
 A90A..A925    ; Alphabetic
 A926..A92A    ; Alphabetic
 A930..A946    ; Alphabetic
@@ -860,10 +871,11 @@ A984..A9B2    ; Alphabetic
 A9B4..A9B5    ; Alphabetic
 A9B6..A9B9    ; Alphabetic
 A9BA..A9BB    ; Alphabetic
-A9BC          ; Alphabetic
-A9BD..A9BF    ; Alphabetic
+A9BC..A9BD    ; Alphabetic
+A9BE..A9BF    ; Alphabetic
 A9CF          ; Alphabetic
 A9E0..A9E4    ; Alphabetic
+A9E5          ; Alphabetic
 A9E6          ; Alphabetic
 A9E7..A9EF    ; Alphabetic
 A9FA..A9FE    ; Alphabetic
@@ -882,6 +894,9 @@ AA60..AA6F    ; Alphabetic
 AA70          ; Alphabetic
 AA71..AA76    ; Alphabetic
 AA7A          ; Alphabetic
+AA7B          ; Alphabetic
+AA7C          ; Alphabetic
+AA7D          ; Alphabetic
 AA7E..AAAF    ; Alphabetic
 AAB0          ; Alphabetic
 AAB1          ; Alphabetic
@@ -908,7 +923,8 @@ AB20..AB26    ; Alphabetic
 AB28..AB2E    ; Alphabetic
 AB30..AB5A    ; Alphabetic
 AB5C..AB5F    ; Alphabetic
-AB60..AB65    ; Alphabetic
+AB60..AB68    ; Alphabetic
+AB69          ; Alphabetic
 AB70..ABBF    ; Alphabetic
 ABC0..ABE2    ; Alphabetic
 ABE3..ABE4    ; Alphabetic
@@ -976,9 +992,21 @@ FFDA..FFDC    ; Alphabetic
 104D8..104FB  ; Alphabetic
 10500..10527  ; Alphabetic
 10530..10563  ; Alphabetic
+10570..1057A  ; Alphabetic
+1057C..1058A  ; Alphabetic
+1058C..10592  ; Alphabetic
+10594..10595  ; Alphabetic
+10597..105A1  ; Alphabetic
+105A3..105B1  ; Alphabetic
+105B3..105B9  ; Alphabetic
+105BB..105BC  ; Alphabetic
+105C0..105F3  ; Alphabetic
 10600..10736  ; Alphabetic
 10740..10755  ; Alphabetic
 10760..10767  ; Alphabetic
+10780..10785  ; Alphabetic
+10787..107B0  ; Alphabetic
+107B2..107BA  ; Alphabetic
 10800..10805  ; Alphabetic
 10808         ; Alphabetic
 1080A..10835  ; Alphabetic
@@ -991,6 +1019,7 @@ FFDA..FFDC    ; Alphabetic
 108F4..108F5  ; Alphabetic
 10900..10915  ; Alphabetic
 10920..10939  ; Alphabetic
+10940..10959  ; Alphabetic
 10980..109B7  ; Alphabetic
 109BE..109BF  ; Alphabetic
 10A00         ; Alphabetic
@@ -1013,19 +1042,41 @@ FFDA..FFDC    ; Alphabetic
 10CC0..10CF2  ; Alphabetic
 10D00..10D23  ; Alphabetic
 10D24..10D27  ; Alphabetic
+10D4A..10D4D  ; Alphabetic
+10D4E         ; Alphabetic
+10D4F         ; Alphabetic
+10D50..10D65  ; Alphabetic
+10D69         ; Alphabetic
+10D6F         ; Alphabetic
+10D70..10D85  ; Alphabetic
+10E80..10EA9  ; Alphabetic
+10EAB..10EAC  ; Alphabetic
+10EB0..10EB1  ; Alphabetic
+10EC2..10EC4  ; Alphabetic
+10EC5         ; Alphabetic
+10EC6..10EC7  ; Alphabetic
+10EFA..10EFC  ; Alphabetic
 10F00..10F1C  ; Alphabetic
 10F27         ; Alphabetic
 10F30..10F45  ; Alphabetic
+10F70..10F81  ; Alphabetic
+10FB0..10FC4  ; Alphabetic
+10FE0..10FF6  ; Alphabetic
 11000         ; Alphabetic
 11001         ; Alphabetic
 11002         ; Alphabetic
 11003..11037  ; Alphabetic
 11038..11045  ; Alphabetic
+11071..11072  ; Alphabetic
+11073..11074  ; Alphabetic
+11075         ; Alphabetic
+11080..11081  ; Alphabetic
 11082         ; Alphabetic
 11083..110AF  ; Alphabetic
 110B0..110B2  ; Alphabetic
 110B3..110B6  ; Alphabetic
 110B7..110B8  ; Alphabetic
+110C2         ; Alphabetic
 110D0..110E8  ; Alphabetic
 11100..11102  ; Alphabetic
 11103..11126  ; Alphabetic
@@ -1034,6 +1085,7 @@ FFDA..FFDC    ; Alphabetic
 1112D..11132  ; Alphabetic
 11144         ; Alphabetic
 11145..11146  ; Alphabetic
+11147         ; Alphabetic
 11150..11172  ; Alphabetic
 11176         ; Alphabetic
 11180..11181  ; Alphabetic
@@ -1043,6 +1095,8 @@ FFDA..FFDC    ; Alphabetic
 111B6..111BE  ; Alphabetic
 111BF         ; Alphabetic
 111C1..111C4  ; Alphabetic
+111CE         ; Alphabetic
+111CF         ; Alphabetic
 111DA         ; Alphabetic
 111DC         ; Alphabetic
 11200..11211  ; Alphabetic
@@ -1053,6 +1107,8 @@ FFDA..FFDC    ; Alphabetic
 11234         ; Alphabetic
 11237         ; Alphabetic
 1123E         ; Alphabetic
+1123F..11240  ; Alphabetic
+11241         ; Alphabetic
 11280..11286  ; Alphabetic
 11288         ; Alphabetic
 1128A..1128D  ; Alphabetic
@@ -1080,6 +1136,19 @@ FFDA..FFDC    ; Alphabetic
 11357         ; Alphabetic
 1135D..11361  ; Alphabetic
 11362..11363  ; Alphabetic
+11380..11389  ; Alphabetic
+1138B         ; Alphabetic
+1138E         ; Alphabetic
+11390..113B5  ; Alphabetic
+113B7         ; Alphabetic
+113B8..113BA  ; Alphabetic
+113BB..113C0  ; Alphabetic
+113C2         ; Alphabetic
+113C5         ; Alphabetic
+113C7..113CA  ; Alphabetic
+113CC..113CD  ; Alphabetic
+113D1         ; Alphabetic
+113D3         ; Alphabetic
 11400..11434  ; Alphabetic
 11435..11437  ; Alphabetic
 11438..1143F  ; Alphabetic
@@ -1087,6 +1156,7 @@ FFDA..FFDC    ; Alphabetic
 11443..11444  ; Alphabetic
 11445         ; Alphabetic
 11447..1144A  ; Alphabetic
+1145F..11461  ; Alphabetic
 11480..114AF  ; Alphabetic
 114B0..114B2  ; Alphabetic
 114B3..114B8  ; Alphabetic
@@ -1119,18 +1189,42 @@ FFDA..FFDC    ; Alphabetic
 116AD         ; Alphabetic
 116AE..116AF  ; Alphabetic
 116B0..116B5  ; Alphabetic
+116B8         ; Alphabetic
 11700..1171A  ; Alphabetic
-1171D..1171F  ; Alphabetic
+1171D         ; Alphabetic
+1171E         ; Alphabetic
+1171F         ; Alphabetic
 11720..11721  ; Alphabetic
 11722..11725  ; Alphabetic
 11726         ; Alphabetic
 11727..1172A  ; Alphabetic
+11740..11746  ; Alphabetic
 11800..1182B  ; Alphabetic
 1182C..1182E  ; Alphabetic
 1182F..11837  ; Alphabetic
 11838         ; Alphabetic
 118A0..118DF  ; Alphabetic
-118FF         ; Alphabetic
+118FF..11906  ; Alphabetic
+11909         ; Alphabetic
+1190C..11913  ; Alphabetic
+11915..11916  ; Alphabetic
+11918..1192F  ; Alphabetic
+11930..11935  ; Alphabetic
+11937..11938  ; Alphabetic
+1193B..1193C  ; Alphabetic
+1193F         ; Alphabetic
+11940         ; Alphabetic
+11941         ; Alphabetic
+11942         ; Alphabetic
+119A0..119A7  ; Alphabetic
+119AA..119D0  ; Alphabetic
+119D1..119D3  ; Alphabetic
+119D4..119D7  ; Alphabetic
+119DA..119DB  ; Alphabetic
+119DC..119DF  ; Alphabetic
+119E1         ; Alphabetic
+119E3         ; Alphabetic
+119E4         ; Alphabetic
 11A00         ; Alphabetic
 11A01..11A0A  ; Alphabetic
 11A0B..11A32  ; Alphabetic
@@ -1142,12 +1236,18 @@ FFDA..FFDC    ; Alphabetic
 11A51..11A56  ; Alphabetic
 11A57..11A58  ; Alphabetic
 11A59..11A5B  ; Alphabetic
-11A5C..11A83  ; Alphabetic
-11A86..11A89  ; Alphabetic
+11A5C..11A89  ; Alphabetic
 11A8A..11A96  ; Alphabetic
 11A97         ; Alphabetic
 11A9D         ; Alphabetic
-11AC0..11AF8  ; Alphabetic
+11AB0..11AF8  ; Alphabetic
+11B60         ; Alphabetic
+11B61         ; Alphabetic
+11B62..11B64  ; Alphabetic
+11B65         ; Alphabetic
+11B66         ; Alphabetic
+11B67         ; Alphabetic
+11BC0..11BE0  ; Alphabetic
 11C00..11C08  ; Alphabetic
 11C0A..11C2E  ; Alphabetic
 11C2F         ; Alphabetic
@@ -1182,31 +1282,70 @@ FFDA..FFDC    ; Alphabetic
 11D95         ; Alphabetic
 11D96         ; Alphabetic
 11D98         ; Alphabetic
+11DB0..11DD8  ; Alphabetic
+11DD9         ; Alphabetic
+11DDA..11DDB  ; Alphabetic
 11EE0..11EF2  ; Alphabetic
 11EF3..11EF4  ; Alphabetic
 11EF5..11EF6  ; Alphabetic
+11F00..11F01  ; Alphabetic
+11F02         ; Alphabetic
+11F03         ; Alphabetic
+11F04..11F10  ; Alphabetic
+11F12..11F33  ; Alphabetic
+11F34..11F35  ; Alphabetic
+11F36..11F3A  ; Alphabetic
+11F3E..11F3F  ; Alphabetic
+11F40         ; Alphabetic
+11FB0         ; Alphabetic
 12000..12399  ; Alphabetic
 12400..1246E  ; Alphabetic
 12480..12543  ; Alphabetic
-13000..1342E  ; Alphabetic
+12F90..12FF0  ; Alphabetic
+13000..1342F  ; Alphabetic
+13441..13446  ; Alphabetic
+13460..143FA  ; Alphabetic
 14400..14646  ; Alphabetic
+16100..1611D  ; Alphabetic
+1611E..16129  ; Alphabetic
+1612A..1612C  ; Alphabetic
+1612D..1612E  ; Alphabetic
 16800..16A38  ; Alphabetic
 16A40..16A5E  ; Alphabetic
+16A70..16ABE  ; Alphabetic
 16AD0..16AED  ; Alphabetic
 16B00..16B2F  ; Alphabetic
-16B30..16B36  ; Alphabetic
 16B40..16B43  ; Alphabetic
 16B63..16B77  ; Alphabetic
 16B7D..16B8F  ; Alphabetic
+16D40..16D42  ; Alphabetic
+16D43..16D6A  ; Alphabetic
+16D6B..16D6C  ; Alphabetic
 16E40..16E7F  ; Alphabetic
-16F00..16F44  ; Alphabetic
+16EA0..16EB8  ; Alphabetic
+16EBB..16ED3  ; Alphabetic
+16F00..16F4A  ; Alphabetic
+16F4F         ; Alphabetic
 16F50         ; Alphabetic
-16F51..16F7E  ; Alphabetic
+16F51..16F87  ; Alphabetic
+16F8F..16F92  ; Alphabetic
 16F93..16F9F  ; Alphabetic
 16FE0..16FE1  ; Alphabetic
-17000..187F1  ; Alphabetic
-18800..18AF2  ; Alphabetic
-1B000..1B11E  ; Alphabetic
+16FE3         ; Alphabetic
+16FF0..16FF1  ; Alphabetic
+16FF2..16FF3  ; Alphabetic
+16FF4..16FF6  ; Alphabetic
+17000..18CD5  ; Alphabetic
+18CFF..18D1E  ; Alphabetic
+18D80..18DF2  ; Alphabetic
+1AFF0..1AFF3  ; Alphabetic
+1AFF5..1AFFB  ; Alphabetic
+1AFFD..1AFFE  ; Alphabetic
+1B000..1B122  ; Alphabetic
+1B132         ; Alphabetic
+1B150..1B152  ; Alphabetic
+1B155         ; Alphabetic
+1B164..1B167  ; Alphabetic
 1B170..1B2FB  ; Alphabetic
 1BC00..1BC6A  ; Alphabetic
 1BC70..1BC7C  ; Alphabetic
@@ -1243,14 +1382,45 @@ FFDA..FFDC    ; Alphabetic
 1D78A..1D7A8  ; Alphabetic
 1D7AA..1D7C2  ; Alphabetic
 1D7C4..1D7CB  ; Alphabetic
+1DF00..1DF09  ; Alphabetic
+1DF0A         ; Alphabetic
+1DF0B..1DF1E  ; Alphabetic
+1DF25..1DF2A  ; Alphabetic
 1E000..1E006  ; Alphabetic
 1E008..1E018  ; Alphabetic
 1E01B..1E021  ; Alphabetic
 1E023..1E024  ; Alphabetic
 1E026..1E02A  ; Alphabetic
+1E030..1E06D  ; Alphabetic
+1E08F         ; Alphabetic
+1E100..1E12C  ; Alphabetic
+1E137..1E13D  ; Alphabetic
+1E14E         ; Alphabetic
+1E290..1E2AD  ; Alphabetic
+1E2C0..1E2EB  ; Alphabetic
+1E4D0..1E4EA  ; Alphabetic
+1E4EB         ; Alphabetic
+1E5D0..1E5ED  ; Alphabetic
+1E5F0         ; Alphabetic
+1E6C0..1E6DE  ; Alphabetic
+1E6E0..1E6E2  ; Alphabetic
+1E6E3         ; Alphabetic
+1E6E4..1E6E5  ; Alphabetic
+1E6E6         ; Alphabetic
+1E6E7..1E6ED  ; Alphabetic
+1E6EE..1E6EF  ; Alphabetic
+1E6F0..1E6F4  ; Alphabetic
+1E6F5         ; Alphabetic
+1E6FE         ; Alphabetic
+1E6FF         ; Alphabetic
+1E7E0..1E7E6  ; Alphabetic
+1E7E8..1E7EB  ; Alphabetic
+1E7ED..1E7EE  ; Alphabetic
+1E7F0..1E7FE  ; Alphabetic
 1E800..1E8C4  ; Alphabetic
 1E900..1E943  ; Alphabetic
 1E947         ; Alphabetic
+1E94B         ; Alphabetic
 1EE00..1EE03  ; Alphabetic
 1EE05..1EE1F  ; Alphabetic
 1EE21..1EE22  ; Alphabetic
@@ -1287,14 +1457,16 @@ FFDA..FFDC    ; Alphabetic
 1F130..1F149  ; Alphabetic
 1F150..1F169  ; Alphabetic
 1F170..1F189  ; Alphabetic
-20000..2A6D6  ; Alphabetic
-2A700..2B734  ; Alphabetic
-2B740..2B81D  ; Alphabetic
-2B820..2CEA1  ; Alphabetic
+20000..2A6DF  ; Alphabetic
+2A700..2B81D  ; Alphabetic
+2B820..2CEAD  ; Alphabetic
 2CEB0..2EBE0  ; Alphabetic
+2EBF0..2EE5D  ; Alphabetic
 2F800..2FA1D  ; Alphabetic
+30000..3134A  ; Alphabetic
+31350..33479  ; Alphabetic
 
-# Total code points: 126989
+# Total code points: 147421
 
 # ================================================
 
@@ -1448,7 +1620,7 @@ FFDA..FFDC    ; Alphabetic
 024B          ; Lowercase
 024D          ; Lowercase
 024F..0293    ; Lowercase
-0295..02AF    ; Lowercase
+0296..02AF    ; Lowercase
 02B0..02B8    ; Lowercase
 02C0..02C1    ; Lowercase
 02E0..02E4    ; Lowercase
@@ -1579,9 +1751,11 @@ FFDA..FFDC    ; Alphabetic
 052F          ; Lowercase
 0560..0588    ; Lowercase
 10D0..10FA    ; Lowercase
+10FC          ; Lowercase
 10FD..10FF    ; Lowercase
 13F8..13FD    ; Lowercase
 1C80..1C88    ; Lowercase
+1C8A          ; Lowercase
 1D00..1D2B    ; Lowercase
 1D2C..1D6A    ; Lowercase
 1D6B..1D77    ; Lowercase
@@ -1747,7 +1921,7 @@ FFDA..FFDC    ; Alphabetic
 2170..217F    ; Lowercase
 2184          ; Lowercase
 24D0..24E9    ; Lowercase
-2C30..2C5E    ; Lowercase
+2C30..2C5F    ; Lowercase
 2C61          ; Lowercase
 2C65..2C66    ; Lowercase
 2C68          ; Lowercase
@@ -1916,20 +2090,48 @@ A7AF          ; Lowercase
 A7B5          ; Lowercase
 A7B7          ; Lowercase
 A7B9          ; Lowercase
+A7BB          ; Lowercase
+A7BD          ; Lowercase
+A7BF          ; Lowercase
+A7C1          ; Lowercase
+A7C3          ; Lowercase
+A7C8          ; Lowercase
+A7CA          ; Lowercase
+A7CD          ; Lowercase
+A7CF          ; Lowercase
+A7D1          ; Lowercase
+A7D3          ; Lowercase
+A7D5          ; Lowercase
+A7D7          ; Lowercase
+A7D9          ; Lowercase
+A7DB          ; Lowercase
+A7F1..A7F4    ; Lowercase
+A7F6          ; Lowercase
 A7F8..A7F9    ; Lowercase
 A7FA          ; Lowercase
 AB30..AB5A    ; Lowercase
 AB5C..AB5F    ; Lowercase
-AB60..AB65    ; Lowercase
+AB60..AB68    ; Lowercase
+AB69          ; Lowercase
 AB70..ABBF    ; Lowercase
 FB00..FB06    ; Lowercase
 FB13..FB17    ; Lowercase
 FF41..FF5A    ; Lowercase
 10428..1044F  ; Lowercase
 104D8..104FB  ; Lowercase
+10597..105A1  ; Lowercase
+105A3..105B1  ; Lowercase
+105B3..105B9  ; Lowercase
+105BB..105BC  ; Lowercase
+10780         ; Lowercase
+10783..10785  ; Lowercase
+10787..107B0  ; Lowercase
+107B2..107BA  ; Lowercase
 10CC0..10CF2  ; Lowercase
+10D70..10D85  ; Lowercase
 118C0..118DF  ; Lowercase
 16E60..16E7F  ; Lowercase
+16EBB..16ED3  ; Lowercase
 1D41A..1D433  ; Lowercase
 1D44E..1D454  ; Lowercase
 1D456..1D467  ; Lowercase
@@ -1958,9 +2160,13 @@ FF41..FF5A    ; Lowercase
 1D7AA..1D7C2  ; Lowercase
 1D7C4..1D7C9  ; Lowercase
 1D7CB         ; Lowercase
+1DF00..1DF09  ; Lowercase
+1DF0B..1DF1E  ; Lowercase
+1DF25..1DF2A  ; Lowercase
+1E030..1E06D  ; Lowercase
 1E922..1E943  ; Lowercase
 
-# Total code points: 2334
+# Total code points: 2595
 
 # ================================================
 
@@ -2243,6 +2449,7 @@ FF41..FF5A    ; Lowercase
 10C7          ; Uppercase
 10CD          ; Uppercase
 13A0..13F5    ; Uppercase
+1C89          ; Uppercase
 1C90..1CBA    ; Uppercase
 1CBD..1CBF    ; Uppercase
 1E00          ; Uppercase
@@ -2400,7 +2607,7 @@ FF41..FF5A    ; Lowercase
 2160..216F    ; Uppercase
 2183          ; Uppercase
 24B6..24CF    ; Uppercase
-2C00..2C2E    ; Uppercase
+2C00..2C2F    ; Uppercase
 2C60          ; Uppercase
 2C62..2C64    ; Uppercase
 2C67          ; Uppercase
@@ -2562,12 +2769,35 @@ A7AA..A7AE    ; Uppercase
 A7B0..A7B4    ; Uppercase
 A7B6          ; Uppercase
 A7B8          ; Uppercase
+A7BA          ; Uppercase
+A7BC          ; Uppercase
+A7BE          ; Uppercase
+A7C0          ; Uppercase
+A7C2          ; Uppercase
+A7C4..A7C7    ; Uppercase
+A7C9          ; Uppercase
+A7CB..A7CC    ; Uppercase
+A7CE          ; Uppercase
+A7D0          ; Uppercase
+A7D2          ; Uppercase
+A7D4          ; Uppercase
+A7D6          ; Uppercase
+A7D8          ; Uppercase
+A7DA          ; Uppercase
+A7DC          ; Uppercase
+A7F5          ; Uppercase
 FF21..FF3A    ; Uppercase
 10400..10427  ; Uppercase
 104B0..104D3  ; Uppercase
+10570..1057A  ; Uppercase
+1057C..1058A  ; Uppercase
+1058C..10592  ; Uppercase
+10594..10595  ; Uppercase
 10C80..10CB2  ; Uppercase
+10D50..10D65  ; Uppercase
 118A0..118BF  ; Uppercase
 16E40..16E5F  ; Uppercase
+16EA0..16EB8  ; Uppercase
 1D400..1D419  ; Uppercase
 1D434..1D44D  ; Uppercase
 1D468..1D481  ; Uppercase
@@ -2604,7 +2834,7 @@ FF21..FF3A    ; Uppercase
 1F150..1F169  ; Uppercase
 1F170..1F189  ; Uppercase
 
-# Total code points: 1901
+# Total code points: 2006
 
 # ================================================
 
@@ -2622,7 +2852,7 @@ FF21..FF3A    ; Uppercase
 00F8..01BA    ; Cased
 01BC..01BF    ; Cased
 01C4..0293    ; Cased
-0295..02AF    ; Cased
+0296..02AF    ; Cased
 02B0..02B8    ; Cased
 02C0..02C1    ; Cased
 02E0..02E4    ; Cased
@@ -2645,10 +2875,11 @@ FF21..FF3A    ; Uppercase
 10C7          ; Cased
 10CD          ; Cased
 10D0..10FA    ; Cased
+10FC          ; Cased
 10FD..10FF    ; Cased
 13A0..13F5    ; Cased
 13F8..13FD    ; Cased
-1C80..1C88    ; Cased
+1C80..1C8A    ; Cased
 1C90..1CBA    ; Cased
 1CBD..1CBF    ; Cased
 1D00..1D2B    ; Cased
@@ -2696,9 +2927,7 @@ FF21..FF3A    ; Uppercase
 2160..217F    ; Cased
 2183..2184    ; Cased
 24B6..24E9    ; Cased
-2C00..2C2E    ; Cased
-2C30..2C5E    ; Cased
-2C60..2C7B    ; Cased
+2C00..2C7B    ; Cased
 2C7C..2C7D    ; Cased
 2C7E..2CE4    ; Cased
 2CEB..2CEE    ; Cased
@@ -2713,12 +2942,15 @@ A722..A76F    ; Cased
 A770          ; Cased
 A771..A787    ; Cased
 A78B..A78E    ; Cased
-A790..A7B9    ; Cased
+A790..A7DC    ; Cased
+A7F1..A7F4    ; Cased
+A7F5..A7F6    ; Cased
 A7F8..A7F9    ; Cased
 A7FA          ; Cased
 AB30..AB5A    ; Cased
 AB5C..AB5F    ; Cased
-AB60..AB65    ; Cased
+AB60..AB68    ; Cased
+AB69          ; Cased
 AB70..ABBF    ; Cased
 FB00..FB06    ; Cased
 FB13..FB17    ; Cased
@@ -2727,10 +2959,26 @@ FF41..FF5A    ; Cased
 10400..1044F  ; Cased
 104B0..104D3  ; Cased
 104D8..104FB  ; Cased
+10570..1057A  ; Cased
+1057C..1058A  ; Cased
+1058C..10592  ; Cased
+10594..10595  ; Cased
+10597..105A1  ; Cased
+105A3..105B1  ; Cased
+105B3..105B9  ; Cased
+105BB..105BC  ; Cased
+10780         ; Cased
+10783..10785  ; Cased
+10787..107B0  ; Cased
+107B2..107BA  ; Cased
 10C80..10CB2  ; Cased
 10CC0..10CF2  ; Cased
+10D50..10D65  ; Cased
+10D70..10D85  ; Cased
 118A0..118DF  ; Cased
 16E40..16E7F  ; Cased
+16EA0..16EB8  ; Cased
+16EBB..16ED3  ; Cased
 1D400..1D454  ; Cased
 1D456..1D49C  ; Cased
 1D49E..1D49F  ; Cased
@@ -2761,12 +3009,16 @@ FF41..FF5A    ; Cased
 1D78A..1D7A8  ; Cased
 1D7AA..1D7C2  ; Cased
 1D7C4..1D7CB  ; Cased
+1DF00..1DF09  ; Cased
+1DF0B..1DF1E  ; Cased
+1DF25..1DF2A  ; Cased
+1E030..1E06D  ; Cased
 1E900..1E943  ; Cased
 1F130..1F149  ; Cased
 1F150..1F169  ; Cased
 1F170..1F189  ; Cased
 
-# Total code points: 4266
+# Total code points: 4632
 
 # ================================================
 
@@ -2806,6 +3058,7 @@ FF41..FF5A    ; Cased
 0483..0487    ; Case_Ignorable
 0488..0489    ; Case_Ignorable
 0559          ; Case_Ignorable
+055F          ; Case_Ignorable
 0591..05BD    ; Case_Ignorable
 05BF          ; Case_Ignorable
 05C1..05C2    ; Case_Ignorable
@@ -2840,7 +3093,11 @@ FF41..FF5A    ; Cased
 0828          ; Case_Ignorable
 0829..082D    ; Case_Ignorable
 0859..085B    ; Case_Ignorable
-08D3..08E1    ; Case_Ignorable
+0888          ; Case_Ignorable
+0890..0891    ; Case_Ignorable
+0897..089F    ; Case_Ignorable
+08C9          ; Case_Ignorable
+08CA..08E1    ; Case_Ignorable
 08E2          ; Case_Ignorable
 08E3..0902    ; Case_Ignorable
 093A          ; Case_Ignorable
@@ -2876,13 +3133,14 @@ FF41..FF5A    ; Cased
 0B3F          ; Case_Ignorable
 0B41..0B44    ; Case_Ignorable
 0B4D          ; Case_Ignorable
-0B56          ; Case_Ignorable
+0B55..0B56    ; Case_Ignorable
 0B62..0B63    ; Case_Ignorable
 0B82          ; Case_Ignorable
 0BC0          ; Case_Ignorable
 0BCD          ; Case_Ignorable
 0C00          ; Case_Ignorable
 0C04          ; Case_Ignorable
+0C3C          ; Case_Ignorable
 0C3E..0C40    ; Case_Ignorable
 0C46..0C48    ; Case_Ignorable
 0C4A..0C4D    ; Case_Ignorable
@@ -2899,6 +3157,7 @@ FF41..FF5A    ; Cased
 0D41..0D44    ; Case_Ignorable
 0D4D          ; Case_Ignorable
 0D62..0D63    ; Case_Ignorable
+0D81          ; Case_Ignorable
 0DCA          ; Case_Ignorable
 0DD2..0DD4    ; Case_Ignorable
 0DD6          ; Case_Ignorable
@@ -2907,10 +3166,9 @@ FF41..FF5A    ; Cased
 0E46          ; Case_Ignorable
 0E47..0E4E    ; Case_Ignorable
 0EB1          ; Case_Ignorable
-0EB4..0EB9    ; Case_Ignorable
-0EBB..0EBC    ; Case_Ignorable
+0EB4..0EBC    ; Case_Ignorable
 0EC6          ; Case_Ignorable
-0EC8..0ECD    ; Case_Ignorable
+0EC8..0ECE    ; Case_Ignorable
 0F18..0F19    ; Case_Ignorable
 0F35          ; Case_Ignorable
 0F37          ; Case_Ignorable
@@ -2935,7 +3193,7 @@ FF41..FF5A    ; Cased
 10FC          ; Case_Ignorable
 135D..135F    ; Case_Ignorable
 1712..1714    ; Case_Ignorable
-1732..1734    ; Case_Ignorable
+1732..1733    ; Case_Ignorable
 1752..1753    ; Case_Ignorable
 1772..1773    ; Case_Ignorable
 17B4..17B5    ; Case_Ignorable
@@ -2946,6 +3204,7 @@ FF41..FF5A    ; Cased
 17DD          ; Case_Ignorable
 180B..180D    ; Case_Ignorable
 180E          ; Case_Ignorable
+180F          ; Case_Ignorable
 1843          ; Case_Ignorable
 1885..1886    ; Case_Ignorable
 18A9          ; Case_Ignorable
@@ -2965,6 +3224,8 @@ FF41..FF5A    ; Cased
 1AA7          ; Case_Ignorable
 1AB0..1ABD    ; Case_Ignorable
 1ABE          ; Case_Ignorable
+1ABF..1ADD    ; Case_Ignorable
+1AE0..1AEB    ; Case_Ignorable
 1B00..1B03    ; Case_Ignorable
 1B34          ; Case_Ignorable
 1B36..1B3A    ; Case_Ignorable
@@ -2991,8 +3252,7 @@ FF41..FF5A    ; Cased
 1D2C..1D6A    ; Case_Ignorable
 1D78          ; Case_Ignorable
 1D9B..1DBF    ; Case_Ignorable
-1DC0..1DF9    ; Case_Ignorable
-1DFB..1DFF    ; Case_Ignorable
+1DC0..1DFF    ; Case_Ignorable
 1FBD          ; Case_Ignorable
 1FBF..1FC1    ; Case_Ignorable
 1FCD..1FCF    ; Case_Ignorable
@@ -3045,11 +3305,13 @@ A720..A721    ; Case_Ignorable
 A770          ; Case_Ignorable
 A788          ; Case_Ignorable
 A789..A78A    ; Case_Ignorable
+A7F1..A7F4    ; Case_Ignorable
 A7F8..A7F9    ; Case_Ignorable
 A802          ; Case_Ignorable
 A806          ; Case_Ignorable
 A80B          ; Case_Ignorable
 A825..A826    ; Case_Ignorable
+A82C          ; Case_Ignorable
 A8C4..A8C5    ; Case_Ignorable
 A8E0..A8F1    ; Case_Ignorable
 A8FF          ; Case_Ignorable
@@ -3058,7 +3320,7 @@ A947..A951    ; Case_Ignorable
 A980..A982    ; Case_Ignorable
 A9B3          ; Case_Ignorable
 A9B6..A9B9    ; Case_Ignorable
-A9BC          ; Case_Ignorable
+A9BC..A9BD    ; Case_Ignorable
 A9CF          ; Case_Ignorable
 A9E5          ; Case_Ignorable
 A9E6          ; Case_Ignorable
@@ -3080,11 +3342,13 @@ AAF3..AAF4    ; Case_Ignorable
 AAF6          ; Case_Ignorable
 AB5B          ; Case_Ignorable
 AB5C..AB5F    ; Case_Ignorable
+AB69          ; Case_Ignorable
+AB6A..AB6B    ; Case_Ignorable
 ABE5          ; Case_Ignorable
 ABE8          ; Case_Ignorable
 ABED          ; Case_Ignorable
 FB1E          ; Case_Ignorable
-FBB2..FBC1    ; Case_Ignorable
+FBB2..FBC2    ; Case_Ignorable
 FE00..FE0F    ; Case_Ignorable
 FE13          ; Case_Ignorable
 FE20..FE2F    ; Case_Ignorable
@@ -3103,6 +3367,9 @@ FFF9..FFFB    ; Case_Ignorable
 101FD         ; Case_Ignorable
 102E0         ; Case_Ignorable
 10376..1037A  ; Case_Ignorable
+10780..10785  ; Case_Ignorable
+10787..107B0  ; Case_Ignorable
+107B2..107BA  ; Case_Ignorable
 10A01..10A03  ; Case_Ignorable
 10A05..10A06  ; Case_Ignorable
 10A0C..10A0F  ; Case_Ignorable
@@ -3110,13 +3377,23 @@ FFF9..FFFB    ; Case_Ignorable
 10A3F         ; Case_Ignorable
 10AE5..10AE6  ; Case_Ignorable
 10D24..10D27  ; Case_Ignorable
+10D4E         ; Case_Ignorable
+10D69..10D6D  ; Case_Ignorable
+10D6F         ; Case_Ignorable
+10EAB..10EAC  ; Case_Ignorable
+10EC5         ; Case_Ignorable
+10EFA..10EFF  ; Case_Ignorable
 10F46..10F50  ; Case_Ignorable
+10F82..10F85  ; Case_Ignorable
 11001         ; Case_Ignorable
 11038..11046  ; Case_Ignorable
+11070         ; Case_Ignorable
+11073..11074  ; Case_Ignorable
 1107F..11081  ; Case_Ignorable
 110B3..110B6  ; Case_Ignorable
 110B9..110BA  ; Case_Ignorable
 110BD         ; Case_Ignorable
+110C2         ; Case_Ignorable
 110CD         ; Case_Ignorable
 11100..11102  ; Case_Ignorable
 11127..1112B  ; Case_Ignorable
@@ -3125,10 +3402,12 @@ FFF9..FFFB    ; Case_Ignorable
 11180..11181  ; Case_Ignorable
 111B6..111BE  ; Case_Ignorable
 111C9..111CC  ; Case_Ignorable
+111CF         ; Case_Ignorable
 1122F..11231  ; Case_Ignorable
 11234         ; Case_Ignorable
 11236..11237  ; Case_Ignorable
 1123E         ; Case_Ignorable
+11241         ; Case_Ignorable
 112DF         ; Case_Ignorable
 112E3..112EA  ; Case_Ignorable
 11300..11301  ; Case_Ignorable
@@ -3136,6 +3415,11 @@ FFF9..FFFB    ; Case_Ignorable
 11340         ; Case_Ignorable
 11366..1136C  ; Case_Ignorable
 11370..11374  ; Case_Ignorable
+113BB..113C0  ; Case_Ignorable
+113CE         ; Case_Ignorable
+113D0         ; Case_Ignorable
+113D2         ; Case_Ignorable
+113E1..113E2  ; Case_Ignorable
 11438..1143F  ; Case_Ignorable
 11442..11444  ; Case_Ignorable
 11446         ; Case_Ignorable
@@ -3155,11 +3439,18 @@ FFF9..FFFB    ; Case_Ignorable
 116AD         ; Case_Ignorable
 116B0..116B5  ; Case_Ignorable
 116B7         ; Case_Ignorable
-1171D..1171F  ; Case_Ignorable
+1171D         ; Case_Ignorable
+1171F         ; Case_Ignorable
 11722..11725  ; Case_Ignorable
 11727..1172B  ; Case_Ignorable
 1182F..11837  ; Case_Ignorable
 11839..1183A  ; Case_Ignorable
+1193B..1193C  ; Case_Ignorable
+1193E         ; Case_Ignorable
+11943         ; Case_Ignorable
+119D4..119D7  ; Case_Ignorable
+119DA..119DB  ; Case_Ignorable
+119E0         ; Case_Ignorable
 11A01..11A0A  ; Case_Ignorable
 11A33..11A38  ; Case_Ignorable
 11A3B..11A3E  ; Case_Ignorable
@@ -3168,6 +3459,9 @@ FFF9..FFFB    ; Case_Ignorable
 11A59..11A5B  ; Case_Ignorable
 11A8A..11A96  ; Case_Ignorable
 11A98..11A99  ; Case_Ignorable
+11B60         ; Case_Ignorable
+11B62..11B64  ; Case_Ignorable
+11B66         ; Case_Ignorable
 11C30..11C36  ; Case_Ignorable
 11C38..11C3D  ; Case_Ignorable
 11C3F         ; Case_Ignorable
@@ -3183,15 +3477,37 @@ FFF9..FFFB    ; Case_Ignorable
 11D90..11D91  ; Case_Ignorable
 11D95         ; Case_Ignorable
 11D97         ; Case_Ignorable
+11DD9         ; Case_Ignorable
 11EF3..11EF4  ; Case_Ignorable
+11F00..11F01  ; Case_Ignorable
+11F36..11F3A  ; Case_Ignorable
+11F40         ; Case_Ignorable
+11F42         ; Case_Ignorable
+11F5A         ; Case_Ignorable
+13430..1343F  ; Case_Ignorable
+13440         ; Case_Ignorable
+13447..13455  ; Case_Ignorable
+1611E..16129  ; Case_Ignorable
+1612D..1612F  ; Case_Ignorable
 16AF0..16AF4  ; Case_Ignorable
 16B30..16B36  ; Case_Ignorable
 16B40..16B43  ; Case_Ignorable
+16D40..16D42  ; Case_Ignorable
+16D6B..16D6C  ; Case_Ignorable
+16F4F         ; Case_Ignorable
 16F8F..16F92  ; Case_Ignorable
 16F93..16F9F  ; Case_Ignorable
 16FE0..16FE1  ; Case_Ignorable
+16FE3         ; Case_Ignorable
+16FE4         ; Case_Ignorable
+16FF2..16FF3  ; Case_Ignorable
+1AFF0..1AFF3  ; Case_Ignorable
+1AFF5..1AFFB  ; Case_Ignorable
+1AFFD..1AFFE  ; Case_Ignorable
 1BC9D..1BC9E  ; Case_Ignorable
 1BCA0..1BCA3  ; Case_Ignorable
+1CF00..1CF2D  ; Case_Ignorable
+1CF30..1CF46  ; Case_Ignorable
 1D167..1D169  ; Case_Ignorable
 1D173..1D17A  ; Case_Ignorable
 1D17B..1D182  ; Case_Ignorable
@@ -3209,20 +3525,36 @@ FFF9..FFFB    ; Case_Ignorable
 1E01B..1E021  ; Case_Ignorable
 1E023..1E024  ; Case_Ignorable
 1E026..1E02A  ; Case_Ignorable
+1E030..1E06D  ; Case_Ignorable
+1E08F         ; Case_Ignorable
+1E130..1E136  ; Case_Ignorable
+1E137..1E13D  ; Case_Ignorable
+1E2AE         ; Case_Ignorable
+1E2EC..1E2EF  ; Case_Ignorable
+1E4EB         ; Case_Ignorable
+1E4EC..1E4EF  ; Case_Ignorable
+1E5EE..1E5EF  ; Case_Ignorable
+1E6E3         ; Case_Ignorable
+1E6E6         ; Case_Ignorable
+1E6EE..1E6EF  ; Case_Ignorable
+1E6F5         ; Case_Ignorable
+1E6FF         ; Case_Ignorable
 1E8D0..1E8D6  ; Case_Ignorable
 1E944..1E94A  ; Case_Ignorable
+1E94B         ; Case_Ignorable
 1F3FB..1F3FF  ; Case_Ignorable
 E0001         ; Case_Ignorable
 E0020..E007F  ; Case_Ignorable
 E0100..E01EF  ; Case_Ignorable
 
-# Total code points: 2357
+# Total code points: 2794
 
 # ================================================
 
 # Derived Property:   Changes_When_Lowercased (CWL)
 #  Characters whose normalized forms are not stable under a toLowercase mapping.
-#  For more information, see D139 in Section 3.13, "Default Case Algorithms".
+#  For more information, see the definition of "isLowercase(X)"
+#  in the "Conformance" / "Default Case Algorithms" section of the core specification.
 #  Changes_When_Lowercased(X) is true when toLowercase(toNFD(X)) != toNFD(X)
 
 0041..005A    ; Changes_When_Lowercased
@@ -3500,6 +3832,7 @@ E0100..E01EF  ; Case_Ignorable
 10C7          ; Changes_When_Lowercased
 10CD          ; Changes_When_Lowercased
 13A0..13F5    ; Changes_When_Lowercased
+1C89          ; Changes_When_Lowercased
 1C90..1CBA    ; Changes_When_Lowercased
 1CBD..1CBF    ; Changes_When_Lowercased
 1E00          ; Changes_When_Lowercased
@@ -3650,7 +3983,7 @@ E0100..E01EF  ; Case_Ignorable
 2160..216F    ; Changes_When_Lowercased
 2183          ; Changes_When_Lowercased
 24B6..24CF    ; Changes_When_Lowercased
-2C00..2C2E    ; Changes_When_Lowercased
+2C00..2C2F    ; Changes_When_Lowercased
 2C60          ; Changes_When_Lowercased
 2C62..2C64    ; Changes_When_Lowercased
 2C67          ; Changes_When_Lowercased
@@ -3812,21 +4145,45 @@ A7AA..A7AE    ; Changes_When_Lowercased
 A7B0..A7B4    ; Changes_When_Lowercased
 A7B6          ; Changes_When_Lowercased
 A7B8          ; Changes_When_Lowercased
+A7BA          ; Changes_When_Lowercased
+A7BC          ; Changes_When_Lowercased
+A7BE          ; Changes_When_Lowercased
+A7C0          ; Changes_When_Lowercased
+A7C2          ; Changes_When_Lowercased
+A7C4..A7C7    ; Changes_When_Lowercased
+A7C9          ; Changes_When_Lowercased
+A7CB..A7CC    ; Changes_When_Lowercased
+A7CE          ; Changes_When_Lowercased
+A7D0          ; Changes_When_Lowercased
+A7D2          ; Changes_When_Lowercased
+A7D4          ; Changes_When_Lowercased
+A7D6          ; Changes_When_Lowercased
+A7D8          ; Changes_When_Lowercased
+A7DA          ; Changes_When_Lowercased
+A7DC          ; Changes_When_Lowercased
+A7F5          ; Changes_When_Lowercased
 FF21..FF3A    ; Changes_When_Lowercased
 10400..10427  ; Changes_When_Lowercased
 104B0..104D3  ; Changes_When_Lowercased
+10570..1057A  ; Changes_When_Lowercased
+1057C..1058A  ; Changes_When_Lowercased
+1058C..10592  ; Changes_When_Lowercased
+10594..10595  ; Changes_When_Lowercased
 10C80..10CB2  ; Changes_When_Lowercased
+10D50..10D65  ; Changes_When_Lowercased
 118A0..118BF  ; Changes_When_Lowercased
 16E40..16E5F  ; Changes_When_Lowercased
+16EA0..16EB8  ; Changes_When_Lowercased
 1E900..1E921  ; Changes_When_Lowercased
 
-# Total code points: 1383
+# Total code points: 1488
 
 # ================================================
 
 # Derived Property:   Changes_When_Uppercased (CWU)
 #  Characters whose normalized forms are not stable under a toUppercase mapping.
-#  For more information, see D140 in Section 3.13, "Default Case Algorithms".
+#  For more information, see the definition of "isUppercase(X)"
+#  in the "Conformance" / "Default Case Algorithms" section of the core specification.
 #  Changes_When_Uppercased(X) is true when toUppercase(toNFD(X)) != toNFD(X)
 
 0061..007A    ; Changes_When_Uppercased
@@ -3901,7 +4258,7 @@ FF21..FF3A    ; Changes_When_Lowercased
 018C          ; Changes_When_Uppercased
 0192          ; Changes_When_Uppercased
 0195          ; Changes_When_Uppercased
-0199..019A    ; Changes_When_Uppercased
+0199..019B    ; Changes_When_Uppercased
 019E          ; Changes_When_Uppercased
 01A1          ; Changes_When_Uppercased
 01A3          ; Changes_When_Uppercased
@@ -3977,15 +4334,14 @@ FF21..FF3A    ; Changes_When_Lowercased
 0259          ; Changes_When_Uppercased
 025B..025C    ; Changes_When_Uppercased
 0260..0261    ; Changes_When_Uppercased
-0263          ; Changes_When_Uppercased
-0265..0266    ; Changes_When_Uppercased
+0263..0266    ; Changes_When_Uppercased
 0268..026C    ; Changes_When_Uppercased
 026F          ; Changes_When_Uppercased
 0271..0272    ; Changes_When_Uppercased
 0275          ; Changes_When_Uppercased
 027D          ; Changes_When_Uppercased
 0280          ; Changes_When_Uppercased
-0283          ; Changes_When_Uppercased
+0282..0283    ; Changes_When_Uppercased
 0287..028C    ; Changes_When_Uppercased
 0292          ; Changes_When_Uppercased
 029D..029E    ; Changes_When_Uppercased
@@ -4118,8 +4474,10 @@ FF21..FF3A    ; Changes_When_Lowercased
 10FD..10FF    ; Changes_When_Uppercased
 13F8..13FD    ; Changes_When_Uppercased
 1C80..1C88    ; Changes_When_Uppercased
+1C8A          ; Changes_When_Uppercased
 1D79          ; Changes_When_Uppercased
 1D7D          ; Changes_When_Uppercased
+1D8E          ; Changes_When_Uppercased
 1E01          ; Changes_When_Uppercased
 1E03          ; Changes_When_Uppercased
 1E05          ; Changes_When_Uppercased
@@ -4267,7 +4625,7 @@ FF21..FF3A    ; Changes_When_Lowercased
 2170..217F    ; Changes_When_Uppercased
 2184          ; Changes_When_Uppercased
 24D0..24E9    ; Changes_When_Uppercased
-2C30..2C5E    ; Changes_When_Uppercased
+2C30..2C5F    ; Changes_When_Uppercased
 2C61          ; Changes_When_Uppercased
 2C65..2C66    ; Changes_When_Uppercased
 2C68          ; Changes_When_Uppercased
@@ -4415,7 +4773,7 @@ A785          ; Changes_When_Uppercased
 A787          ; Changes_When_Uppercased
 A78C          ; Changes_When_Uppercased
 A791          ; Changes_When_Uppercased
-A793          ; Changes_When_Uppercased
+A793..A794    ; Changes_When_Uppercased
 A797          ; Changes_When_Uppercased
 A799          ; Changes_When_Uppercased
 A79B          ; Changes_When_Uppercased
@@ -4429,6 +4787,22 @@ A7A9          ; Changes_When_Uppercased
 A7B5          ; Changes_When_Uppercased
 A7B7          ; Changes_When_Uppercased
 A7B9          ; Changes_When_Uppercased
+A7BB          ; Changes_When_Uppercased
+A7BD          ; Changes_When_Uppercased
+A7BF          ; Changes_When_Uppercased
+A7C1          ; Changes_When_Uppercased
+A7C3          ; Changes_When_Uppercased
+A7C8          ; Changes_When_Uppercased
+A7CA          ; Changes_When_Uppercased
+A7CD          ; Changes_When_Uppercased
+A7CF          ; Changes_When_Uppercased
+A7D1          ; Changes_When_Uppercased
+A7D3          ; Changes_When_Uppercased
+A7D5          ; Changes_When_Uppercased
+A7D7          ; Changes_When_Uppercased
+A7D9          ; Changes_When_Uppercased
+A7DB          ; Changes_When_Uppercased
+A7F6          ; Changes_When_Uppercased
 AB53          ; Changes_When_Uppercased
 AB70..ABBF    ; Changes_When_Uppercased
 FB00..FB06    ; Changes_When_Uppercased
@@ -4436,18 +4810,25 @@ FB13..FB17    ; Changes_When_Uppercased
 FF41..FF5A    ; Changes_When_Uppercased
 10428..1044F  ; Changes_When_Uppercased
 104D8..104FB  ; Changes_When_Uppercased
+10597..105A1  ; Changes_When_Uppercased
+105A3..105B1  ; Changes_When_Uppercased
+105B3..105B9  ; Changes_When_Uppercased
+105BB..105BC  ; Changes_When_Uppercased
 10CC0..10CF2  ; Changes_When_Uppercased
+10D70..10D85  ; Changes_When_Uppercased
 118C0..118DF  ; Changes_When_Uppercased
 16E60..16E7F  ; Changes_When_Uppercased
+16EBB..16ED3  ; Changes_When_Uppercased
 1E922..1E943  ; Changes_When_Uppercased
 
-# Total code points: 1475
+# Total code points: 1580
 
 # ================================================
 
 # Derived Property:   Changes_When_Titlecased (CWT)
 #  Characters whose normalized forms are not stable under a toTitlecase mapping.
-#  For more information, see D141 in Section 3.13, "Default Case Algorithms".
+#  For more information, see the definition of "isTitlecase(X)"
+#  in the "Conformance" / "Default Case Algorithms" section of the core specification.
 #  Changes_When_Titlecased(X) is true when toTitlecase(toNFD(X)) != toNFD(X)
 
 0061..007A    ; Changes_When_Titlecased
@@ -4522,7 +4903,7 @@ FF41..FF5A    ; Changes_When_Uppercased
 018C          ; Changes_When_Titlecased
 0192          ; Changes_When_Titlecased
 0195          ; Changes_When_Titlecased
-0199..019A    ; Changes_When_Titlecased
+0199..019B    ; Changes_When_Titlecased
 019E          ; Changes_When_Titlecased
 01A1          ; Changes_When_Titlecased
 01A3          ; Changes_When_Titlecased
@@ -4599,15 +4980,14 @@ FF41..FF5A    ; Changes_When_Uppercased
 0259          ; Changes_When_Titlecased
 025B..025C    ; Changes_When_Titlecased
 0260..0261    ; Changes_When_Titlecased
-0263          ; Changes_When_Titlecased
-0265..0266    ; Changes_When_Titlecased
+0263..0266    ; Changes_When_Titlecased
 0268..026C    ; Changes_When_Titlecased
 026F          ; Changes_When_Titlecased
 0271..0272    ; Changes_When_Titlecased
 0275          ; Changes_When_Titlecased
 027D          ; Changes_When_Titlecased
 0280          ; Changes_When_Titlecased
-0283          ; Changes_When_Titlecased
+0282..0283    ; Changes_When_Titlecased
 0287..028C    ; Changes_When_Titlecased
 0292          ; Changes_When_Titlecased
 029D..029E    ; Changes_When_Titlecased
@@ -4738,8 +5118,10 @@ FF41..FF5A    ; Changes_When_Uppercased
 0561..0587    ; Changes_When_Titlecased
 13F8..13FD    ; Changes_When_Titlecased
 1C80..1C88    ; Changes_When_Titlecased
+1C8A          ; Changes_When_Titlecased
 1D79          ; Changes_When_Titlecased
 1D7D          ; Changes_When_Titlecased
+1D8E          ; Changes_When_Titlecased
 1E01          ; Changes_When_Titlecased
 1E03          ; Changes_When_Titlecased
 1E05          ; Changes_When_Titlecased
@@ -4887,7 +5269,7 @@ FF41..FF5A    ; Changes_When_Uppercased
 2170..217F    ; Changes_When_Titlecased
 2184          ; Changes_When_Titlecased
 24D0..24E9    ; Changes_When_Titlecased
-2C30..2C5E    ; Changes_When_Titlecased
+2C30..2C5F    ; Changes_When_Titlecased
 2C61          ; Changes_When_Titlecased
 2C65..2C66    ; Changes_When_Titlecased
 2C68          ; Changes_When_Titlecased
@@ -5035,7 +5417,7 @@ A785          ; Changes_When_Titlecased
 A787          ; Changes_When_Titlecased
 A78C          ; Changes_When_Titlecased
 A791          ; Changes_When_Titlecased
-A793          ; Changes_When_Titlecased
+A793..A794    ; Changes_When_Titlecased
 A797          ; Changes_When_Titlecased
 A799          ; Changes_When_Titlecased
 A79B          ; Changes_When_Titlecased
@@ -5049,6 +5431,22 @@ A7A9          ; Changes_When_Titlecased
 A7B5          ; Changes_When_Titlecased
 A7B7          ; Changes_When_Titlecased
 A7B9          ; Changes_When_Titlecased
+A7BB          ; Changes_When_Titlecased
+A7BD          ; Changes_When_Titlecased
+A7BF          ; Changes_When_Titlecased
+A7C1          ; Changes_When_Titlecased
+A7C3          ; Changes_When_Titlecased
+A7C8          ; Changes_When_Titlecased
+A7CA          ; Changes_When_Titlecased
+A7CD          ; Changes_When_Titlecased
+A7CF          ; Changes_When_Titlecased
+A7D1          ; Changes_When_Titlecased
+A7D3          ; Changes_When_Titlecased
+A7D5          ; Changes_When_Titlecased
+A7D7          ; Changes_When_Titlecased
+A7D9          ; Changes_When_Titlecased
+A7DB          ; Changes_When_Titlecased
+A7F6          ; Changes_When_Titlecased
 AB53          ; Changes_When_Titlecased
 AB70..ABBF    ; Changes_When_Titlecased
 FB00..FB06    ; Changes_When_Titlecased
@@ -5056,18 +5454,25 @@ FB13..FB17    ; Changes_When_Titlecased
 FF41..FF5A    ; Changes_When_Titlecased
 10428..1044F  ; Changes_When_Titlecased
 104D8..104FB  ; Changes_When_Titlecased
+10597..105A1  ; Changes_When_Titlecased
+105A3..105B1  ; Changes_When_Titlecased
+105B3..105B9  ; Changes_When_Titlecased
+105BB..105BC  ; Changes_When_Titlecased
 10CC0..10CF2  ; Changes_When_Titlecased
+10D70..10D85  ; Changes_When_Titlecased
 118C0..118DF  ; Changes_When_Titlecased
 16E60..16E7F  ; Changes_When_Titlecased
+16EBB..16ED3  ; Changes_When_Titlecased
 1E922..1E943  ; Changes_When_Titlecased
 
-# Total code points: 1402
+# Total code points: 1507
 
 # ================================================
 
 # Derived Property:   Changes_When_Casefolded (CWCF)
 #  Characters whose normalized forms are not stable under case folding.
-#  For more information, see D142 in Section 3.13, "Default Case Algorithms".
+#  For more information, see the definition of "isCasefolded(X)"
+#  in the "Conformance" / "Default Case Algorithms" section of the core specification.
 #  Changes_When_Casefolded(X) is true when toCasefold(toNFD(X)) != toNFD(X)
 
 0041..005A    ; Changes_When_Casefolded
@@ -5352,7 +5757,7 @@ FF41..FF5A    ; Changes_When_Titlecased
 10C7          ; Changes_When_Casefolded
 10CD          ; Changes_When_Casefolded
 13F8..13FD    ; Changes_When_Casefolded
-1C80..1C88    ; Changes_When_Casefolded
+1C80..1C89    ; Changes_When_Casefolded
 1C90..1CBA    ; Changes_When_Casefolded
 1CBD..1CBF    ; Changes_When_Casefolded
 1E00          ; Changes_When_Casefolded
@@ -5505,7 +5910,7 @@ FF41..FF5A    ; Changes_When_Titlecased
 2160..216F    ; Changes_When_Casefolded
 2183          ; Changes_When_Casefolded
 24B6..24CF    ; Changes_When_Casefolded
-2C00..2C2E    ; Changes_When_Casefolded
+2C00..2C2F    ; Changes_When_Casefolded
 2C60          ; Changes_When_Casefolded
 2C62..2C64    ; Changes_When_Casefolded
 2C67          ; Changes_When_Casefolded
@@ -5667,24 +6072,48 @@ A7AA..A7AE    ; Changes_When_Casefolded
 A7B0..A7B4    ; Changes_When_Casefolded
 A7B6          ; Changes_When_Casefolded
 A7B8          ; Changes_When_Casefolded
+A7BA          ; Changes_When_Casefolded
+A7BC          ; Changes_When_Casefolded
+A7BE          ; Changes_When_Casefolded
+A7C0          ; Changes_When_Casefolded
+A7C2          ; Changes_When_Casefolded
+A7C4..A7C7    ; Changes_When_Casefolded
+A7C9          ; Changes_When_Casefolded
+A7CB..A7CC    ; Changes_When_Casefolded
+A7CE          ; Changes_When_Casefolded
+A7D0          ; Changes_When_Casefolded
+A7D2          ; Changes_When_Casefolded
+A7D4          ; Changes_When_Casefolded
+A7D6          ; Changes_When_Casefolded
+A7D8          ; Changes_When_Casefolded
+A7DA          ; Changes_When_Casefolded
+A7DC          ; Changes_When_Casefolded
+A7F5          ; Changes_When_Casefolded
 AB70..ABBF    ; Changes_When_Casefolded
 FB00..FB06    ; Changes_When_Casefolded
 FB13..FB17    ; Changes_When_Casefolded
 FF21..FF3A    ; Changes_When_Casefolded
 10400..10427  ; Changes_When_Casefolded
 104B0..104D3  ; Changes_When_Casefolded
+10570..1057A  ; Changes_When_Casefolded
+1057C..1058A  ; Changes_When_Casefolded
+1058C..10592  ; Changes_When_Casefolded
+10594..10595  ; Changes_When_Casefolded
 10C80..10CB2  ; Changes_When_Casefolded
+10D50..10D65  ; Changes_When_Casefolded
 118A0..118BF  ; Changes_When_Casefolded
 16E40..16E5F  ; Changes_When_Casefolded
+16EA0..16EB8  ; Changes_When_Casefolded
 1E900..1E921  ; Changes_When_Casefolded
 
-# Total code points: 1456
+# Total code points: 1561
 
 # ================================================
 
 # Derived Property:   Changes_When_Casemapped (CWCM)
 #  Characters whose normalized forms are not stable under case mapping.
-#  For more information, see D143 in Section 3.13, "Default Case Algorithms".
+#  For more information, see the definition of "isCased(X)"
+#  in the "Conformance" / "Default Case Algorithms" section of the core specification.
 #  Changes_When_Casemapped(X) is true when CWL(X), or CWT(X), or CWU(X)
 
 0041..005A    ; Changes_When_Casemapped
@@ -5694,8 +6123,7 @@ FF21..FF3A    ; Changes_When_Casefolded
 00D8..00F6    ; Changes_When_Casemapped
 00F8..0137    ; Changes_When_Casemapped
 0139..018C    ; Changes_When_Casemapped
-018E..019A    ; Changes_When_Casemapped
-019C..01A9    ; Changes_When_Casemapped
+018E..01A9    ; Changes_When_Casemapped
 01AC..01B9    ; Changes_When_Casemapped
 01BC..01BD    ; Changes_When_Casemapped
 01BF          ; Changes_When_Casemapped
@@ -5706,15 +6134,14 @@ FF21..FF3A    ; Changes_When_Casefolded
 0259          ; Changes_When_Casemapped
 025B..025C    ; Changes_When_Casemapped
 0260..0261    ; Changes_When_Casemapped
-0263          ; Changes_When_Casemapped
-0265..0266    ; Changes_When_Casemapped
+0263..0266    ; Changes_When_Casemapped
 0268..026C    ; Changes_When_Casemapped
 026F          ; Changes_When_Casemapped
 0271..0272    ; Changes_When_Casemapped
 0275          ; Changes_When_Casemapped
 027D          ; Changes_When_Casemapped
 0280          ; Changes_When_Casemapped
-0283          ; Changes_When_Casemapped
+0282..0283    ; Changes_When_Casemapped
 0287..028C    ; Changes_When_Casemapped
 0292          ; Changes_When_Casemapped
 029D..029E    ; Changes_When_Casemapped
@@ -5741,11 +6168,12 @@ FF21..FF3A    ; Changes_When_Casefolded
 10FD..10FF    ; Changes_When_Casemapped
 13A0..13F5    ; Changes_When_Casemapped
 13F8..13FD    ; Changes_When_Casemapped
-1C80..1C88    ; Changes_When_Casemapped
+1C80..1C8A    ; Changes_When_Casemapped
 1C90..1CBA    ; Changes_When_Casemapped
 1CBD..1CBF    ; Changes_When_Casemapped
 1D79          ; Changes_When_Casemapped
 1D7D          ; Changes_When_Casemapped
+1D8E          ; Changes_When_Casemapped
 1E00..1E9B    ; Changes_When_Casemapped
 1E9E          ; Changes_When_Casemapped
 1EA0..1F15    ; Changes_When_Casemapped
@@ -5774,9 +6202,7 @@ FF21..FF3A    ; Changes_When_Casefolded
 2160..217F    ; Changes_When_Casemapped
 2183..2184    ; Changes_When_Casemapped
 24B6..24E9    ; Changes_When_Casemapped
-2C00..2C2E    ; Changes_When_Casemapped
-2C30..2C5E    ; Changes_When_Casemapped
-2C60..2C70    ; Changes_When_Casemapped
+2C00..2C70    ; Changes_When_Casemapped
 2C72..2C73    ; Changes_When_Casemapped
 2C75..2C76    ; Changes_When_Casemapped
 2C7E..2CE3    ; Changes_When_Casemapped
@@ -5791,9 +6217,10 @@ A722..A72F    ; Changes_When_Casemapped
 A732..A76F    ; Changes_When_Casemapped
 A779..A787    ; Changes_When_Casemapped
 A78B..A78D    ; Changes_When_Casemapped
-A790..A793    ; Changes_When_Casemapped
+A790..A794    ; Changes_When_Casemapped
 A796..A7AE    ; Changes_When_Casemapped
-A7B0..A7B9    ; Changes_When_Casemapped
+A7B0..A7DC    ; Changes_When_Casemapped
+A7F5..A7F6    ; Changes_When_Casemapped
 AB53          ; Changes_When_Casemapped
 AB70..ABBF    ; Changes_When_Casemapped
 FB00..FB06    ; Changes_When_Casemapped
@@ -5803,13 +6230,25 @@ FF41..FF5A    ; Changes_When_Casemapped
 10400..1044F  ; Changes_When_Casemapped
 104B0..104D3  ; Changes_When_Casemapped
 104D8..104FB  ; Changes_When_Casemapped
+10570..1057A  ; Changes_When_Casemapped
+1057C..1058A  ; Changes_When_Casemapped
+1058C..10592  ; Changes_When_Casemapped
+10594..10595  ; Changes_When_Casemapped
+10597..105A1  ; Changes_When_Casemapped
+105A3..105B1  ; Changes_When_Casemapped
+105B3..105B9  ; Changes_When_Casemapped
+105BB..105BC  ; Changes_When_Casemapped
 10C80..10CB2  ; Changes_When_Casemapped
 10CC0..10CF2  ; Changes_When_Casemapped
+10D50..10D65  ; Changes_When_Casemapped
+10D70..10D85  ; Changes_When_Casemapped
 118A0..118DF  ; Changes_When_Casemapped
 16E40..16E7F  ; Changes_When_Casemapped
+16EA0..16EB8  ; Changes_When_Casemapped
+16EBB..16ED3  ; Changes_When_Casemapped
 1E900..1E943  ; Changes_When_Casemapped
 
-# Total code points: 2827
+# Total code points: 3037
 
 # ================================================
 
@@ -5834,8 +6273,8 @@ FF41..FF5A    ; Changes_When_Casemapped
 01BC..01BF    ; ID_Start
 01C0..01C3    ; ID_Start
 01C4..0293    ; ID_Start
-0294          ; ID_Start
-0295..02AF    ; ID_Start
+0294..0295    ; ID_Start
+0296..02AF    ; ID_Start
 02B0..02C1    ; ID_Start
 02C6..02D1    ; ID_Start
 02E0..02E4    ; ID_Start
@@ -5882,8 +6321,10 @@ FF41..FF5A    ; Changes_When_Casemapped
 0828          ; ID_Start
 0840..0858    ; ID_Start
 0860..086A    ; ID_Start
-08A0..08B4    ; ID_Start
-08B6..08BD    ; ID_Start
+0870..0887    ; ID_Start
+0889..088F    ; ID_Start
+08A0..08C8    ; ID_Start
+08C9          ; ID_Start
 0904..0939    ; ID_Start
 093D          ; ID_Start
 0950          ; ID_Start
@@ -5949,6 +6390,7 @@ FF41..FF5A    ; Changes_When_Casemapped
 0C2A..0C39    ; ID_Start
 0C3D          ; ID_Start
 0C58..0C5A    ; ID_Start
+0C5C..0C5D    ; ID_Start
 0C60..0C61    ; ID_Start
 0C80          ; ID_Start
 0C85..0C8C    ; ID_Start
@@ -5957,10 +6399,10 @@ FF41..FF5A    ; Changes_When_Casemapped
 0CAA..0CB3    ; ID_Start
 0CB5..0CB9    ; ID_Start
 0CBD          ; ID_Start
-0CDE          ; ID_Start
+0CDC..0CDE    ; ID_Start
 0CE0..0CE1    ; ID_Start
 0CF1..0CF2    ; ID_Start
-0D05..0D0C    ; ID_Start
+0D04..0D0C    ; ID_Start
 0D0E..0D10    ; ID_Start
 0D12..0D3A    ; ID_Start
 0D3D          ; ID_Start
@@ -5979,16 +6421,10 @@ FF41..FF5A    ; Changes_When_Casemapped
 0E46          ; ID_Start
 0E81..0E82    ; ID_Start
 0E84          ; ID_Start
-0E87..0E88    ; ID_Start
-0E8A          ; ID_Start
-0E8D          ; ID_Start
-0E94..0E97    ; ID_Start
-0E99..0E9F    ; ID_Start
-0EA1..0EA3    ; ID_Start
+0E86..0E8A    ; ID_Start
+0E8C..0EA3    ; ID_Start
 0EA5          ; ID_Start
-0EA7          ; ID_Start
-0EAA..0EAB    ; ID_Start
-0EAD..0EB0    ; ID_Start
+0EA7..0EB0    ; ID_Start
 0EB2..0EB3    ; ID_Start
 0EBD          ; ID_Start
 0EC0..0EC4    ; ID_Start
@@ -6038,9 +6474,8 @@ FF41..FF5A    ; Changes_When_Casemapped
 16A0..16EA    ; ID_Start
 16EE..16F0    ; ID_Start
 16F1..16F8    ; ID_Start
-1700..170C    ; ID_Start
-170E..1711    ; ID_Start
-1720..1731    ; ID_Start
+1700..1711    ; ID_Start
+171F..1731    ; ID_Start
 1740..1751    ; ID_Start
 1760..176C    ; ID_Start
 176E..1770    ; ID_Start
@@ -6064,7 +6499,7 @@ FF41..FF5A    ; Changes_When_Casemapped
 1A20..1A54    ; ID_Start
 1AA7          ; ID_Start
 1B05..1B33    ; ID_Start
-1B45..1B4B    ; ID_Start
+1B45..1B4C    ; ID_Start
 1B83..1BA0    ; ID_Start
 1BAE..1BAF    ; ID_Start
 1BBA..1BE5    ; ID_Start
@@ -6072,12 +6507,13 @@ FF41..FF5A    ; Changes_When_Casemapped
 1C4D..1C4F    ; ID_Start
 1C5A..1C77    ; ID_Start
 1C78..1C7D    ; ID_Start
-1C80..1C88    ; ID_Start
+1C80..1C8A    ; ID_Start
 1C90..1CBA    ; ID_Start
 1CBD..1CBF    ; ID_Start
 1CE9..1CEC    ; ID_Start
-1CEE..1CF1    ; ID_Start
+1CEE..1CF3    ; ID_Start
 1CF5..1CF6    ; ID_Start
+1CFA          ; ID_Start
 1D00..1D2B    ; ID_Start
 1D2C..1D6A    ; ID_Start
 1D6B..1D77    ; ID_Start
@@ -6126,9 +6562,7 @@ FF41..FF5A    ; Changes_When_Casemapped
 2160..2182    ; ID_Start
 2183..2184    ; ID_Start
 2185..2188    ; ID_Start
-2C00..2C2E    ; ID_Start
-2C30..2C5E    ; ID_Start
-2C60..2C7B    ; ID_Start
+2C00..2C7B    ; ID_Start
 2C7C..2C7D    ; ID_Start
 2C7E..2CE4    ; ID_Start
 2CEB..2CEE    ; ID_Start
@@ -6164,11 +6598,10 @@ FF41..FF5A    ; Changes_When_Casemapped
 30FF          ; ID_Start
 3105..312F    ; ID_Start
 3131..318E    ; ID_Start
-31A0..31BA    ; ID_Start
+31A0..31BF    ; ID_Start
 31F0..31FF    ; ID_Start
-3400..4DB5    ; ID_Start
-4E00..9FEF    ; ID_Start
-A000..A014    ; ID_Start
+3400..4DBF    ; ID_Start
+4E00..A014    ; ID_Start
 A015          ; ID_Start
 A016..A48C    ; ID_Start
 A4D0..A4F7    ; ID_Start
@@ -6191,7 +6624,9 @@ A771..A787    ; ID_Start
 A788          ; ID_Start
 A78B..A78E    ; ID_Start
 A78F          ; ID_Start
-A790..A7B9    ; ID_Start
+A790..A7DC    ; ID_Start
+A7F1..A7F4    ; ID_Start
+A7F5..A7F6    ; ID_Start
 A7F7          ; ID_Start
 A7F8..A7F9    ; ID_Start
 A7FA          ; ID_Start
@@ -6238,7 +6673,8 @@ AB20..AB26    ; ID_Start
 AB28..AB2E    ; ID_Start
 AB30..AB5A    ; ID_Start
 AB5C..AB5F    ; ID_Start
-AB60..AB65    ; ID_Start
+AB60..AB68    ; ID_Start
+AB69          ; ID_Start
 AB70..ABBF    ; ID_Start
 ABC0..ABE2    ; ID_Start
 AC00..D7A3    ; ID_Start
@@ -6299,9 +6735,21 @@ FFDA..FFDC    ; ID_Start
 104D8..104FB  ; ID_Start
 10500..10527  ; ID_Start
 10530..10563  ; ID_Start
+10570..1057A  ; ID_Start
+1057C..1058A  ; ID_Start
+1058C..10592  ; ID_Start
+10594..10595  ; ID_Start
+10597..105A1  ; ID_Start
+105A3..105B1  ; ID_Start
+105B3..105B9  ; ID_Start
+105BB..105BC  ; ID_Start
+105C0..105F3  ; ID_Start
 10600..10736  ; ID_Start
 10740..10755  ; ID_Start
 10760..10767  ; ID_Start
+10780..10785  ; ID_Start
+10787..107B0  ; ID_Start
+107B2..107BA  ; ID_Start
 10800..10805  ; ID_Start
 10808         ; ID_Start
 1080A..10835  ; ID_Start
@@ -6314,6 +6762,7 @@ FFDA..FFDC    ; ID_Start
 108F4..108F5  ; ID_Start
 10900..10915  ; ID_Start
 10920..10939  ; ID_Start
+10940..10959  ; ID_Start
 10980..109B7  ; ID_Start
 109BE..109BF  ; ID_Start
 10A00         ; ID_Start
@@ -6332,14 +6781,31 @@ FFDA..FFDC    ; ID_Start
 10C80..10CB2  ; ID_Start
 10CC0..10CF2  ; ID_Start
 10D00..10D23  ; ID_Start
+10D4A..10D4D  ; ID_Start
+10D4E         ; ID_Start
+10D4F         ; ID_Start
+10D50..10D65  ; ID_Start
+10D6F         ; ID_Start
+10D70..10D85  ; ID_Start
+10E80..10EA9  ; ID_Start
+10EB0..10EB1  ; ID_Start
+10EC2..10EC4  ; ID_Start
+10EC5         ; ID_Start
+10EC6..10EC7  ; ID_Start
 10F00..10F1C  ; ID_Start
 10F27         ; ID_Start
 10F30..10F45  ; ID_Start
+10F70..10F81  ; ID_Start
+10FB0..10FC4  ; ID_Start
+10FE0..10FF6  ; ID_Start
 11003..11037  ; ID_Start
+11071..11072  ; ID_Start
+11075         ; ID_Start
 11083..110AF  ; ID_Start
 110D0..110E8  ; ID_Start
 11103..11126  ; ID_Start
 11144         ; ID_Start
+11147         ; ID_Start
 11150..11172  ; ID_Start
 11176         ; ID_Start
 11183..111B2  ; ID_Start
@@ -6348,6 +6814,7 @@ FFDA..FFDC    ; ID_Start
 111DC         ; ID_Start
 11200..11211  ; ID_Start
 11213..1122B  ; ID_Start
+1123F..11240  ; ID_Start
 11280..11286  ; ID_Start
 11288         ; ID_Start
 1128A..1128D  ; ID_Start
@@ -6363,8 +6830,16 @@ FFDA..FFDC    ; ID_Start
 1133D         ; ID_Start
 11350         ; ID_Start
 1135D..11361  ; ID_Start
+11380..11389  ; ID_Start
+1138B         ; ID_Start
+1138E         ; ID_Start
+11390..113B5  ; ID_Start
+113B7         ; ID_Start
+113D1         ; ID_Start
+113D3         ; ID_Start
 11400..11434  ; ID_Start
 11447..1144A  ; ID_Start
+1145F..11461  ; ID_Start
 11480..114AF  ; ID_Start
 114C4..114C5  ; ID_Start
 114C7         ; ID_Start
@@ -6373,18 +6848,30 @@ FFDA..FFDC    ; ID_Start
 11600..1162F  ; ID_Start
 11644         ; ID_Start
 11680..116AA  ; ID_Start
+116B8         ; ID_Start
 11700..1171A  ; ID_Start
+11740..11746  ; ID_Start
 11800..1182B  ; ID_Start
 118A0..118DF  ; ID_Start
-118FF         ; ID_Start
+118FF..11906  ; ID_Start
+11909         ; ID_Start
+1190C..11913  ; ID_Start
+11915..11916  ; ID_Start
+11918..1192F  ; ID_Start
+1193F         ; ID_Start
+11941         ; ID_Start
+119A0..119A7  ; ID_Start
+119AA..119D0  ; ID_Start
+119E1         ; ID_Start
+119E3         ; ID_Start
 11A00         ; ID_Start
 11A0B..11A32  ; ID_Start
 11A3A         ; ID_Start
 11A50         ; ID_Start
-11A5C..11A83  ; ID_Start
-11A86..11A89  ; ID_Start
+11A5C..11A89  ; ID_Start
 11A9D         ; ID_Start
-11AC0..11AF8  ; ID_Start
+11AB0..11AF8  ; ID_Start
+11BC0..11BE0  ; ID_Start
 11C00..11C08  ; ID_Start
 11C0A..11C2E  ; ID_Start
 11C40         ; ID_Start
@@ -6397,27 +6884,55 @@ FFDA..FFDC    ; ID_Start
 11D67..11D68  ; ID_Start
 11D6A..11D89  ; ID_Start
 11D98         ; ID_Start
+11DB0..11DD8  ; ID_Start
+11DD9         ; ID_Start
+11DDA..11DDB  ; ID_Start
 11EE0..11EF2  ; ID_Start
+11F02         ; ID_Start
+11F04..11F10  ; ID_Start
+11F12..11F33  ; ID_Start
+11FB0         ; ID_Start
 12000..12399  ; ID_Start
 12400..1246E  ; ID_Start
 12480..12543  ; ID_Start
-13000..1342E  ; ID_Start
+12F90..12FF0  ; ID_Start
+13000..1342F  ; ID_Start
+13441..13446  ; ID_Start
+13460..143FA  ; ID_Start
 14400..14646  ; ID_Start
+16100..1611D  ; ID_Start
 16800..16A38  ; ID_Start
 16A40..16A5E  ; ID_Start
+16A70..16ABE  ; ID_Start
 16AD0..16AED  ; ID_Start
 16B00..16B2F  ; ID_Start
 16B40..16B43  ; ID_Start
 16B63..16B77  ; ID_Start
 16B7D..16B8F  ; ID_Start
+16D40..16D42  ; ID_Start
+16D43..16D6A  ; ID_Start
+16D6B..16D6C  ; ID_Start
 16E40..16E7F  ; ID_Start
-16F00..16F44  ; ID_Start
+16EA0..16EB8  ; ID_Start
+16EBB..16ED3  ; ID_Start
+16F00..16F4A  ; ID_Start
 16F50         ; ID_Start
 16F93..16F9F  ; ID_Start
 16FE0..16FE1  ; ID_Start
-17000..187F1  ; ID_Start
-18800..18AF2  ; ID_Start
-1B000..1B11E  ; ID_Start
+16FE3         ; ID_Start
+16FF2..16FF3  ; ID_Start
+16FF4..16FF6  ; ID_Start
+17000..18CD5  ; ID_Start
+18CFF..18D1E  ; ID_Start
+18D80..18DF2  ; ID_Start
+1AFF0..1AFF3  ; ID_Start
+1AFF5..1AFFB  ; ID_Start
+1AFFD..1AFFE  ; ID_Start
+1B000..1B122  ; ID_Start
+1B132         ; ID_Start
+1B150..1B152  ; ID_Start
+1B155         ; ID_Start
+1B164..1B167  ; ID_Start
 1B170..1B2FB  ; ID_Start
 1BC00..1BC6A  ; ID_Start
 1BC70..1BC7C  ; ID_Start
@@ -6453,8 +6968,34 @@ FFDA..FFDC    ; ID_Start
 1D78A..1D7A8  ; ID_Start
 1D7AA..1D7C2  ; ID_Start
 1D7C4..1D7CB  ; ID_Start
+1DF00..1DF09  ; ID_Start
+1DF0A         ; ID_Start
+1DF0B..1DF1E  ; ID_Start
+1DF25..1DF2A  ; ID_Start
+1E030..1E06D  ; ID_Start
+1E100..1E12C  ; ID_Start
+1E137..1E13D  ; ID_Start
+1E14E         ; ID_Start
+1E290..1E2AD  ; ID_Start
+1E2C0..1E2EB  ; ID_Start
+1E4D0..1E4EA  ; ID_Start
+1E4EB         ; ID_Start
+1E5D0..1E5ED  ; ID_Start
+1E5F0         ; ID_Start
+1E6C0..1E6DE  ; ID_Start
+1E6E0..1E6E2  ; ID_Start
+1E6E4..1E6E5  ; ID_Start
+1E6E7..1E6ED  ; ID_Start
+1E6F0..1E6F4  ; ID_Start
+1E6FE         ; ID_Start
+1E6FF         ; ID_Start
+1E7E0..1E7E6  ; ID_Start
+1E7E8..1E7EB  ; ID_Start
+1E7ED..1E7EE  ; ID_Start
+1E7F0..1E7FE  ; ID_Start
 1E800..1E8C4  ; ID_Start
 1E900..1E943  ; ID_Start
+1E94B         ; ID_Start
 1EE00..1EE03  ; ID_Start
 1EE05..1EE1F  ; ID_Start
 1EE21..1EE22  ; ID_Start
@@ -6488,14 +7029,16 @@ FFDA..FFDC    ; ID_Start
 1EEA1..1EEA3  ; ID_Start
 1EEA5..1EEA9  ; ID_Start
 1EEAB..1EEBB  ; ID_Start
-20000..2A6D6  ; ID_Start
-2A700..2B734  ; ID_Start
-2B740..2B81D  ; ID_Start
-2B820..2CEA1  ; ID_Start
+20000..2A6DF  ; ID_Start
+2A700..2B81D  ; ID_Start
+2B820..2CEAD  ; ID_Start
 2CEB0..2EBE0  ; ID_Start
+2EBF0..2EE5D  ; ID_Start
 2F800..2FA1D  ; ID_Start
+30000..3134A  ; ID_Start
+31350..33479  ; ID_Start
 
-# Total code points: 125660
+# Total code points: 145916
 
 # ================================================
 
@@ -6524,8 +7067,8 @@ FFDA..FFDC    ; ID_Start
 01BC..01BF    ; ID_Continue
 01C0..01C3    ; ID_Continue
 01C4..0293    ; ID_Continue
-0294          ; ID_Continue
-0295..02AF    ; ID_Continue
+0294..0295    ; ID_Continue
+0296..02AF    ; ID_Continue
 02B0..02C1    ; ID_Continue
 02C6..02D1    ; ID_Continue
 02E0..02E4    ; ID_Continue
@@ -6600,9 +7143,12 @@ FFDA..FFDC    ; ID_Start
 0840..0858    ; ID_Continue
 0859..085B    ; ID_Continue
 0860..086A    ; ID_Continue
-08A0..08B4    ; ID_Continue
-08B6..08BD    ; ID_Continue
-08D3..08E1    ; ID_Continue
+0870..0887    ; ID_Continue
+0889..088F    ; ID_Continue
+0897..089F    ; ID_Continue
+08A0..08C8    ; ID_Continue
+08C9          ; ID_Continue
+08CA..08E1    ; ID_Continue
 08E3..0902    ; ID_Continue
 0903          ; ID_Continue
 0904..0939    ; ID_Continue
@@ -6706,7 +7252,7 @@ FFDA..FFDC    ; ID_Start
 0B47..0B48    ; ID_Continue
 0B4B..0B4C    ; ID_Continue
 0B4D          ; ID_Continue
-0B56          ; ID_Continue
+0B55..0B56    ; ID_Continue
 0B57          ; ID_Continue
 0B5C..0B5D    ; ID_Continue
 0B5F..0B61    ; ID_Continue
@@ -6740,6 +7286,7 @@ FFDA..FFDC    ; ID_Start
 0C0E..0C10    ; ID_Continue
 0C12..0C28    ; ID_Continue
 0C2A..0C39    ; ID_Continue
+0C3C          ; ID_Continue
 0C3D          ; ID_Continue
 0C3E..0C40    ; ID_Continue
 0C41..0C44    ; ID_Continue
@@ -6747,6 +7294,7 @@ FFDA..FFDC    ; ID_Start
 0C4A..0C4D    ; ID_Continue
 0C55..0C56    ; ID_Continue
 0C58..0C5A    ; ID_Continue
+0C5C..0C5D    ; ID_Continue
 0C60..0C61    ; ID_Continue
 0C62..0C63    ; ID_Continue
 0C66..0C6F    ; ID_Continue
@@ -6768,14 +7316,15 @@ FFDA..FFDC    ; ID_Start
 0CCA..0CCB    ; ID_Continue
 0CCC..0CCD    ; ID_Continue
 0CD5..0CD6    ; ID_Continue
-0CDE          ; ID_Continue
+0CDC..0CDE    ; ID_Continue
 0CE0..0CE1    ; ID_Continue
 0CE2..0CE3    ; ID_Continue
 0CE6..0CEF    ; ID_Continue
 0CF1..0CF2    ; ID_Continue
+0CF3          ; ID_Continue
 0D00..0D01    ; ID_Continue
 0D02..0D03    ; ID_Continue
-0D05..0D0C    ; ID_Continue
+0D04..0D0C    ; ID_Continue
 0D0E..0D10    ; ID_Continue
 0D12..0D3A    ; ID_Continue
 0D3B..0D3C    ; ID_Continue
@@ -6792,6 +7341,7 @@ FFDA..FFDC    ; ID_Start
 0D62..0D63    ; ID_Continue
 0D66..0D6F    ; ID_Continue
 0D7A..0D7F    ; ID_Continue
+0D81          ; ID_Continue
 0D82..0D83    ; ID_Continue
 0D85..0D96    ; ID_Continue
 0D9A..0DB1    ; ID_Continue
@@ -6815,24 +7365,17 @@ FFDA..FFDC    ; ID_Start
 0E50..0E59    ; ID_Continue
 0E81..0E82    ; ID_Continue
 0E84          ; ID_Continue
-0E87..0E88    ; ID_Continue
-0E8A          ; ID_Continue
-0E8D          ; ID_Continue
-0E94..0E97    ; ID_Continue
-0E99..0E9F    ; ID_Continue
-0EA1..0EA3    ; ID_Continue
+0E86..0E8A    ; ID_Continue
+0E8C..0EA3    ; ID_Continue
 0EA5          ; ID_Continue
-0EA7          ; ID_Continue
-0EAA..0EAB    ; ID_Continue
-0EAD..0EB0    ; ID_Continue
+0EA7..0EB0    ; ID_Continue
 0EB1          ; ID_Continue
 0EB2..0EB3    ; ID_Continue
-0EB4..0EB9    ; ID_Continue
-0EBB..0EBC    ; ID_Continue
+0EB4..0EBC    ; ID_Continue
 0EBD          ; ID_Continue
 0EC0..0EC4    ; ID_Continue
 0EC6          ; ID_Continue
-0EC8..0ECD    ; ID_Continue
+0EC8..0ECE    ; ID_Continue
 0ED0..0ED9    ; ID_Continue
 0EDC..0EDF    ; ID_Continue
 0F00          ; ID_Continue
@@ -6918,11 +7461,12 @@ FFDA..FFDC    ; ID_Start
 16A0..16EA    ; ID_Continue
 16EE..16F0    ; ID_Continue
 16F1..16F8    ; ID_Continue
-1700..170C    ; ID_Continue
-170E..1711    ; ID_Continue
+1700..1711    ; ID_Continue
 1712..1714    ; ID_Continue
-1720..1731    ; ID_Continue
-1732..1734    ; ID_Continue
+1715          ; ID_Continue
+171F..1731    ; ID_Continue
+1732..1733    ; ID_Continue
+1734          ; ID_Continue
 1740..1751    ; ID_Continue
 1752..1753    ; ID_Continue
 1760..176C    ; ID_Continue
@@ -6941,6 +7485,7 @@ FFDA..FFDC    ; ID_Start
 17DD          ; ID_Continue
 17E0..17E9    ; ID_Continue
 180B..180D    ; ID_Continue
+180F          ; ID_Continue
 1810..1819    ; ID_Continue
 1820..1842    ; ID_Continue
 1843          ; ID_Continue
@@ -6988,6 +7533,8 @@ FFDA..FFDC    ; ID_Start
 1A90..1A99    ; ID_Continue
 1AA7          ; ID_Continue
 1AB0..1ABD    ; ID_Continue
+1ABF..1ADD    ; ID_Continue
+1AE0..1AEB    ; ID_Continue
 1B00..1B03    ; ID_Continue
 1B04          ; ID_Continue
 1B05..1B33    ; ID_Continue
@@ -6999,7 +7546,7 @@ FFDA..FFDC    ; ID_Start
 1B3D..1B41    ; ID_Continue
 1B42          ; ID_Continue
 1B43..1B44    ; ID_Continue
-1B45..1B4B    ; ID_Continue
+1B45..1B4C    ; ID_Continue
 1B50..1B59    ; ID_Continue
 1B6B..1B73    ; ID_Continue
 1B80..1B81    ; ID_Continue
@@ -7032,7 +7579,7 @@ FFDA..FFDC    ; ID_Start
 1C50..1C59    ; ID_Continue
 1C5A..1C77    ; ID_Continue
 1C78..1C7D    ; ID_Continue
-1C80..1C88    ; ID_Continue
+1C80..1C8A    ; ID_Continue
 1C90..1CBA    ; ID_Continue
 1CBD..1CBF    ; ID_Continue
 1CD0..1CD2    ; ID_Continue
@@ -7041,20 +7588,19 @@ FFDA..FFDC    ; ID_Start
 1CE2..1CE8    ; ID_Continue
 1CE9..1CEC    ; ID_Continue
 1CED          ; ID_Continue
-1CEE..1CF1    ; ID_Continue
-1CF2..1CF3    ; ID_Continue
+1CEE..1CF3    ; ID_Continue
 1CF4          ; ID_Continue
 1CF5..1CF6    ; ID_Continue
 1CF7          ; ID_Continue
 1CF8..1CF9    ; ID_Continue
+1CFA          ; ID_Continue
 1D00..1D2B    ; ID_Continue
 1D2C..1D6A    ; ID_Continue
 1D6B..1D77    ; ID_Continue
 1D78          ; ID_Continue
 1D79..1D9A    ; ID_Continue
 1D9B..1DBF    ; ID_Continue
-1DC0..1DF9    ; ID_Continue
-1DFB..1DFF    ; ID_Continue
+1DC0..1DFF    ; ID_Continue
 1E00..1F15    ; ID_Continue
 1F18..1F1D    ; ID_Continue
 1F20..1F45    ; ID_Continue
@@ -7074,6 +7620,7 @@ FFDA..FFDC    ; ID_Start
 1FE0..1FEC    ; ID_Continue
 1FF2..1FF4    ; ID_Continue
 1FF6..1FFC    ; ID_Continue
+200C..200D    ; ID_Continue
 203F..2040    ; ID_Continue
 2054          ; ID_Continue
 2071          ; ID_Continue
@@ -7102,9 +7649,7 @@ FFDA..FFDC    ; ID_Start
 2160..2182    ; ID_Continue
 2183..2184    ; ID_Continue
 2185..2188    ; ID_Continue
-2C00..2C2E    ; ID_Continue
-2C30..2C5E    ; ID_Continue
-2C60..2C7B    ; ID_Continue
+2C00..2C7B    ; ID_Continue
 2C7C..2C7D    ; ID_Continue
 2C7E..2CE4    ; ID_Continue
 2CEB..2CEE    ; ID_Continue
@@ -7142,15 +7687,15 @@ FFDA..FFDC    ; ID_Start
 309D..309E    ; ID_Continue
 309F          ; ID_Continue
 30A1..30FA    ; ID_Continue
+30FB          ; ID_Continue
 30FC..30FE    ; ID_Continue
 30FF          ; ID_Continue
 3105..312F    ; ID_Continue
 3131..318E    ; ID_Continue
-31A0..31BA    ; ID_Continue
+31A0..31BF    ; ID_Continue
 31F0..31FF    ; ID_Continue
-3400..4DB5    ; ID_Continue
-4E00..9FEF    ; ID_Continue
-A000..A014    ; ID_Continue
+3400..4DBF    ; ID_Continue
+4E00..A014    ; ID_Continue
 A015          ; ID_Continue
 A016..A48C    ; ID_Continue
 A4D0..A4F7    ; ID_Continue
@@ -7178,7 +7723,9 @@ A771..A787    ; ID_Continue
 A788          ; ID_Continue
 A78B..A78E    ; ID_Continue
 A78F          ; ID_Continue
-A790..A7B9    ; ID_Continue
+A790..A7DC    ; ID_Continue
+A7F1..A7F4    ; ID_Continue
+A7F5..A7F6    ; ID_Continue
 A7F7          ; ID_Continue
 A7F8..A7F9    ; ID_Continue
 A7FA          ; ID_Continue
@@ -7192,6 +7739,7 @@ A80C..A822    ; ID_Continue
 A823..A824    ; ID_Continue
 A825..A826    ; ID_Continue
 A827          ; ID_Continue
+A82C          ; ID_Continue
 A840..A873    ; ID_Continue
 A880..A881    ; ID_Continue
 A882..A8B3    ; ID_Continue
@@ -7217,8 +7765,8 @@ A9B3          ; ID_Continue
 A9B4..A9B5    ; ID_Continue
 A9B6..A9B9    ; ID_Continue
 A9BA..A9BB    ; ID_Continue
-A9BC          ; ID_Continue
-A9BD..A9C0    ; ID_Continue
+A9BC..A9BD    ; ID_Continue
+A9BE..A9C0    ; ID_Continue
 A9CF          ; ID_Continue
 A9D0..A9D9    ; ID_Continue
 A9E0..A9E4    ; ID_Continue
@@ -7274,7 +7822,8 @@ AB20..AB26    ; ID_Continue
 AB28..AB2E    ; ID_Continue
 AB30..AB5A    ; ID_Continue
 AB5C..AB5F    ; ID_Continue
-AB60..AB65    ; ID_Continue
+AB60..AB68    ; ID_Continue
+AB69          ; ID_Continue
 AB70..ABBF    ; ID_Continue
 ABC0..ABE2    ; ID_Continue
 ABE3..ABE4    ; ID_Continue
@@ -7315,6 +7864,7 @@ FF10..FF19    ; ID_Continue
 FF21..FF3A    ; ID_Continue
 FF3F          ; ID_Continue
 FF41..FF5A    ; ID_Continue
+FF65          ; ID_Continue
 FF66..FF6F    ; ID_Continue
 FF70          ; ID_Continue
 FF71..FF9D    ; ID_Continue
@@ -7354,9 +7904,21 @@ FFDA..FFDC    ; ID_Continue
 104D8..104FB  ; ID_Continue
 10500..10527  ; ID_Continue
 10530..10563  ; ID_Continue
+10570..1057A  ; ID_Continue
+1057C..1058A  ; ID_Continue
+1058C..10592  ; ID_Continue
+10594..10595  ; ID_Continue
+10597..105A1  ; ID_Continue
+105A3..105B1  ; ID_Continue
+105B3..105B9  ; ID_Continue
+105BB..105BC  ; ID_Continue
+105C0..105F3  ; ID_Continue
 10600..10736  ; ID_Continue
 10740..10755  ; ID_Continue
 10760..10767  ; ID_Continue
+10780..10785  ; ID_Continue
+10787..107B0  ; ID_Continue
+107B2..107BA  ; ID_Continue
 10800..10805  ; ID_Continue
 10808         ; ID_Continue
 1080A..10835  ; ID_Continue
@@ -7369,6 +7931,7 @@ FFDA..FFDC    ; ID_Continue
 108F4..108F5  ; ID_Continue
 10900..10915  ; ID_Continue
 10920..10939  ; ID_Continue
+10940..10959  ; ID_Continue
 10980..109B7  ; ID_Continue
 109BE..109BF  ; ID_Continue
 10A00         ; ID_Continue
@@ -7395,16 +7958,39 @@ FFDA..FFDC    ; ID_Continue
 10D00..10D23  ; ID_Continue
 10D24..10D27  ; ID_Continue
 10D30..10D39  ; ID_Continue
+10D40..10D49  ; ID_Continue
+10D4A..10D4D  ; ID_Continue
+10D4E         ; ID_Continue
+10D4F         ; ID_Continue
+10D50..10D65  ; ID_Continue
+10D69..10D6D  ; ID_Continue
+10D6F         ; ID_Continue
+10D70..10D85  ; ID_Continue
+10E80..10EA9  ; ID_Continue
+10EAB..10EAC  ; ID_Continue
+10EB0..10EB1  ; ID_Continue
+10EC2..10EC4  ; ID_Continue
+10EC5         ; ID_Continue
+10EC6..10EC7  ; ID_Continue
+10EFA..10EFF  ; ID_Continue
 10F00..10F1C  ; ID_Continue
 10F27         ; ID_Continue
 10F30..10F45  ; ID_Continue
 10F46..10F50  ; ID_Continue
+10F70..10F81  ; ID_Continue
+10F82..10F85  ; ID_Continue
+10FB0..10FC4  ; ID_Continue
+10FE0..10FF6  ; ID_Continue
 11000         ; ID_Continue
 11001         ; ID_Continue
 11002         ; ID_Continue
 11003..11037  ; ID_Continue
 11038..11046  ; ID_Continue
 11066..1106F  ; ID_Continue
+11070         ; ID_Continue
+11071..11072  ; ID_Continue
+11073..11074  ; ID_Continue
+11075         ; ID_Continue
 1107F..11081  ; ID_Continue
 11082         ; ID_Continue
 11083..110AF  ; ID_Continue
@@ -7412,6 +7998,7 @@ FFDA..FFDC    ; ID_Continue
 110B3..110B6  ; ID_Continue
 110B7..110B8  ; ID_Continue
 110B9..110BA  ; ID_Continue
+110C2         ; ID_Continue
 110D0..110E8  ; ID_Continue
 110F0..110F9  ; ID_Continue
 11100..11102  ; ID_Continue
@@ -7422,6 +8009,7 @@ FFDA..FFDC    ; ID_Continue
 11136..1113F  ; ID_Continue
 11144         ; ID_Continue
 11145..11146  ; ID_Continue
+11147         ; ID_Continue
 11150..11172  ; ID_Continue
 11173         ; ID_Continue
 11176         ; ID_Continue
@@ -7433,6 +8021,8 @@ FFDA..FFDC    ; ID_Continue
 111BF..111C0  ; ID_Continue
 111C1..111C4  ; ID_Continue
 111C9..111CC  ; ID_Continue
+111CE         ; ID_Continue
+111CF         ; ID_Continue
 111D0..111D9  ; ID_Continue
 111DA         ; ID_Continue
 111DC         ; ID_Continue
@@ -7445,6 +8035,8 @@ FFDA..FFDC    ; ID_Continue
 11235         ; ID_Continue
 11236..11237  ; ID_Continue
 1123E         ; ID_Continue
+1123F..11240  ; ID_Continue
+11241         ; ID_Continue
 11280..11286  ; ID_Continue
 11288         ; ID_Continue
 1128A..1128D  ; ID_Continue
@@ -7476,6 +8068,24 @@ FFDA..FFDC    ; ID_Continue
 11362..11363  ; ID_Continue
 11366..1136C  ; ID_Continue
 11370..11374  ; ID_Continue
+11380..11389  ; ID_Continue
+1138B         ; ID_Continue
+1138E         ; ID_Continue
+11390..113B5  ; ID_Continue
+113B7         ; ID_Continue
+113B8..113BA  ; ID_Continue
+113BB..113C0  ; ID_Continue
+113C2         ; ID_Continue
+113C5         ; ID_Continue
+113C7..113CA  ; ID_Continue
+113CC..113CD  ; ID_Continue
+113CE         ; ID_Continue
+113CF         ; ID_Continue
+113D0         ; ID_Continue
+113D1         ; ID_Continue
+113D2         ; ID_Continue
+113D3         ; ID_Continue
+113E1..113E2  ; ID_Continue
 11400..11434  ; ID_Continue
 11435..11437  ; ID_Continue
 11438..1143F  ; ID_Continue
@@ -7486,6 +8096,7 @@ FFDA..FFDC    ; ID_Continue
 11447..1144A  ; ID_Continue
 11450..11459  ; ID_Continue
 1145E         ; ID_Continue
+1145F..11461  ; ID_Continue
 11480..114AF  ; ID_Continue
 114B0..114B2  ; ID_Continue
 114B3..114B8  ; ID_Continue
@@ -7524,14 +8135,19 @@ FFDA..FFDC    ; ID_Continue
 116B0..116B5  ; ID_Continue
 116B6         ; ID_Continue
 116B7         ; ID_Continue
+116B8         ; ID_Continue
 116C0..116C9  ; ID_Continue
+116D0..116E3  ; ID_Continue
 11700..1171A  ; ID_Continue
-1171D..1171F  ; ID_Continue
+1171D         ; ID_Continue
+1171E         ; ID_Continue
+1171F         ; ID_Continue
 11720..11721  ; ID_Continue
 11722..11725  ; ID_Continue
 11726         ; ID_Continue
 11727..1172B  ; ID_Continue
 11730..11739  ; ID_Continue
+11740..11746  ; ID_Continue
 11800..1182B  ; ID_Continue
 1182C..1182E  ; ID_Continue
 1182F..11837  ; ID_Continue
@@ -7539,7 +8155,32 @@ FFDA..FFDC    ; ID_Continue
 11839..1183A  ; ID_Continue
 118A0..118DF  ; ID_Continue
 118E0..118E9  ; ID_Continue
-118FF         ; ID_Continue
+118FF..11906  ; ID_Continue
+11909         ; ID_Continue
+1190C..11913  ; ID_Continue
+11915..11916  ; ID_Continue
+11918..1192F  ; ID_Continue
+11930..11935  ; ID_Continue
+11937..11938  ; ID_Continue
+1193B..1193C  ; ID_Continue
+1193D         ; ID_Continue
+1193E         ; ID_Continue
+1193F         ; ID_Continue
+11940         ; ID_Continue
+11941         ; ID_Continue
+11942         ; ID_Continue
+11943         ; ID_Continue
+11950..11959  ; ID_Continue
+119A0..119A7  ; ID_Continue
+119AA..119D0  ; ID_Continue
+119D1..119D3  ; ID_Continue
+119D4..119D7  ; ID_Continue
+119DA..119DB  ; ID_Continue
+119DC..119DF  ; ID_Continue
+119E0         ; ID_Continue
+119E1         ; ID_Continue
+119E3         ; ID_Continue
+119E4         ; ID_Continue
 11A00         ; ID_Continue
 11A01..11A0A  ; ID_Continue
 11A0B..11A32  ; ID_Continue
@@ -7552,13 +8193,20 @@ FFDA..FFDC    ; ID_Continue
 11A51..11A56  ; ID_Continue
 11A57..11A58  ; ID_Continue
 11A59..11A5B  ; ID_Continue
-11A5C..11A83  ; ID_Continue
-11A86..11A89  ; ID_Continue
+11A5C..11A89  ; ID_Continue
 11A8A..11A96  ; ID_Continue
 11A97         ; ID_Continue
 11A98..11A99  ; ID_Continue
 11A9D         ; ID_Continue
-11AC0..11AF8  ; ID_Continue
+11AB0..11AF8  ; ID_Continue
+11B60         ; ID_Continue
+11B61         ; ID_Continue
+11B62..11B64  ; ID_Continue
+11B65         ; ID_Continue
+11B66         ; ID_Continue
+11B67         ; ID_Continue
+11BC0..11BE0  ; ID_Continue
+11BF0..11BF9  ; ID_Continue
 11C00..11C08  ; ID_Continue
 11C0A..11C2E  ; ID_Continue
 11C2F         ; ID_Continue
@@ -7597,17 +8245,47 @@ FFDA..FFDC    ; ID_Continue
 11D97         ; ID_Continue
 11D98         ; ID_Continue
 11DA0..11DA9  ; ID_Continue
+11DB0..11DD8  ; ID_Continue
+11DD9         ; ID_Continue
+11DDA..11DDB  ; ID_Continue
+11DE0..11DE9  ; ID_Continue
 11EE0..11EF2  ; ID_Continue
 11EF3..11EF4  ; ID_Continue
 11EF5..11EF6  ; ID_Continue
+11F00..11F01  ; ID_Continue
+11F02         ; ID_Continue
+11F03         ; ID_Continue
+11F04..11F10  ; ID_Continue
+11F12..11F33  ; ID_Continue
+11F34..11F35  ; ID_Continue
+11F36..11F3A  ; ID_Continue
+11F3E..11F3F  ; ID_Continue
+11F40         ; ID_Continue
+11F41         ; ID_Continue
+11F42         ; ID_Continue
+11F50..11F59  ; ID_Continue
+11F5A         ; ID_Continue
+11FB0         ; ID_Continue
 12000..12399  ; ID_Continue
 12400..1246E  ; ID_Continue
 12480..12543  ; ID_Continue
-13000..1342E  ; ID_Continue
+12F90..12FF0  ; ID_Continue
+13000..1342F  ; ID_Continue
+13440         ; ID_Continue
+13441..13446  ; ID_Continue
+13447..13455  ; ID_Continue
+13460..143FA  ; ID_Continue
 14400..14646  ; ID_Continue
+16100..1611D  ; ID_Continue
+1611E..16129  ; ID_Continue
+1612A..1612C  ; ID_Continue
+1612D..1612F  ; ID_Continue
+16130..16139  ; ID_Continue
 16800..16A38  ; ID_Continue
 16A40..16A5E  ; ID_Continue
 16A60..16A69  ; ID_Continue
+16A70..16ABE  ; ID_Continue
+16AC0..16AC9  ; ID_Continue
 16AD0..16AED  ; ID_Continue
 16AF0..16AF4  ; ID_Continue
 16B00..16B2F  ; ID_Continue
@@ -7616,22 +8294,45 @@ FFDA..FFDC    ; ID_Continue
 16B50..16B59  ; ID_Continue
 16B63..16B77  ; ID_Continue
 16B7D..16B8F  ; ID_Continue
+16D40..16D42  ; ID_Continue
+16D43..16D6A  ; ID_Continue
+16D6B..16D6C  ; ID_Continue
+16D70..16D79  ; ID_Continue
 16E40..16E7F  ; ID_Continue
-16F00..16F44  ; ID_Continue
+16EA0..16EB8  ; ID_Continue
+16EBB..16ED3  ; ID_Continue
+16F00..16F4A  ; ID_Continue
+16F4F         ; ID_Continue
 16F50         ; ID_Continue
-16F51..16F7E  ; ID_Continue
+16F51..16F87  ; ID_Continue
 16F8F..16F92  ; ID_Continue
 16F93..16F9F  ; ID_Continue
 16FE0..16FE1  ; ID_Continue
-17000..187F1  ; ID_Continue
-18800..18AF2  ; ID_Continue
-1B000..1B11E  ; ID_Continue
+16FE3         ; ID_Continue
+16FE4         ; ID_Continue
+16FF0..16FF1  ; ID_Continue
+16FF2..16FF3  ; ID_Continue
+16FF4..16FF6  ; ID_Continue
+17000..18CD5  ; ID_Continue
+18CFF..18D1E  ; ID_Continue
+18D80..18DF2  ; ID_Continue
+1AFF0..1AFF3  ; ID_Continue
+1AFF5..1AFFB  ; ID_Continue
+1AFFD..1AFFE  ; ID_Continue
+1B000..1B122  ; ID_Continue
+1B132         ; ID_Continue
+1B150..1B152  ; ID_Continue
+1B155         ; ID_Continue
+1B164..1B167  ; ID_Continue
 1B170..1B2FB  ; ID_Continue
 1BC00..1BC6A  ; ID_Continue
 1BC70..1BC7C  ; ID_Continue
 1BC80..1BC88  ; ID_Continue
 1BC90..1BC99  ; ID_Continue
 1BC9D..1BC9E  ; ID_Continue
+1CCF0..1CCF9  ; ID_Continue
+1CF00..1CF2D  ; ID_Continue
+1CF30..1CF46  ; ID_Continue
 1D165..1D166  ; ID_Continue
 1D167..1D169  ; ID_Continue
 1D16D..1D172  ; ID_Continue
@@ -7676,15 +8377,55 @@ FFDA..FFDC    ; ID_Continue
 1DA84         ; ID_Continue
 1DA9B..1DA9F  ; ID_Continue
 1DAA1..1DAAF  ; ID_Continue
+1DF00..1DF09  ; ID_Continue
+1DF0A         ; ID_Continue
+1DF0B..1DF1E  ; ID_Continue
+1DF25..1DF2A  ; ID_Continue
 1E000..1E006  ; ID_Continue
 1E008..1E018  ; ID_Continue
 1E01B..1E021  ; ID_Continue
 1E023..1E024  ; ID_Continue
 1E026..1E02A  ; ID_Continue
+1E030..1E06D  ; ID_Continue
+1E08F         ; ID_Continue
+1E100..1E12C  ; ID_Continue
+1E130..1E136  ; ID_Continue
+1E137..1E13D  ; ID_Continue
+1E140..1E149  ; ID_Continue
+1E14E         ; ID_Continue
+1E290..1E2AD  ; ID_Continue
+1E2AE         ; ID_Continue
+1E2C0..1E2EB  ; ID_Continue
+1E2EC..1E2EF  ; ID_Continue
+1E2F0..1E2F9  ; ID_Continue
+1E4D0..1E4EA  ; ID_Continue
+1E4EB         ; ID_Continue
+1E4EC..1E4EF  ; ID_Continue
+1E4F0..1E4F9  ; ID_Continue
+1E5D0..1E5ED  ; ID_Continue
+1E5EE..1E5EF  ; ID_Continue
+1E5F0         ; ID_Continue
+1E5F1..1E5FA  ; ID_Continue
+1E6C0..1E6DE  ; ID_Continue
+1E6E0..1E6E2  ; ID_Continue
+1E6E3         ; ID_Continue
+1E6E4..1E6E5  ; ID_Continue
+1E6E6         ; ID_Continue
+1E6E7..1E6ED  ; ID_Continue
+1E6EE..1E6EF  ; ID_Continue
+1E6F0..1E6F4  ; ID_Continue
+1E6F5         ; ID_Continue
+1E6FE         ; ID_Continue
+1E6FF         ; ID_Continue
+1E7E0..1E7E6  ; ID_Continue
+1E7E8..1E7EB  ; ID_Continue
+1E7ED..1E7EE  ; ID_Continue
+1E7F0..1E7FE  ; ID_Continue
 1E800..1E8C4  ; ID_Continue
 1E8D0..1E8D6  ; ID_Continue
 1E900..1E943  ; ID_Continue
 1E944..1E94A  ; ID_Continue
+1E94B         ; ID_Continue
 1E950..1E959  ; ID_Continue
 1EE00..1EE03  ; ID_Continue
 1EE05..1EE1F  ; ID_Continue
@@ -7719,15 +8460,18 @@ FFDA..FFDC    ; ID_Continue
 1EEA1..1EEA3  ; ID_Continue
 1EEA5..1EEA9  ; ID_Continue
 1EEAB..1EEBB  ; ID_Continue
-20000..2A6D6  ; ID_Continue
-2A700..2B734  ; ID_Continue
-2B740..2B81D  ; ID_Continue
-2B820..2CEA1  ; ID_Continue
+1FBF0..1FBF9  ; ID_Continue
+20000..2A6DF  ; ID_Continue
+2A700..2B81D  ; ID_Continue
+2B820..2CEAD  ; ID_Continue
 2CEB0..2EBE0  ; ID_Continue
+2EBF0..2EE5D  ; ID_Continue
 2F800..2FA1D  ; ID_Continue
+30000..3134A  ; ID_Continue
+31350..33479  ; ID_Continue
 E0100..E01EF  ; ID_Continue
 
-# Total code points: 128510
+# Total code points: 149240
 
 # ================================================
 
@@ -7750,8 +8494,8 @@ E0100..E01EF  ; ID_Continue
 01BC..01BF    ; XID_Start
 01C0..01C3    ; XID_Start
 01C4..0293    ; XID_Start
-0294          ; XID_Start
-0295..02AF    ; XID_Start
+0294..0295    ; XID_Start
+0296..02AF    ; XID_Start
 02B0..02C1    ; XID_Start
 02C6..02D1    ; XID_Start
 02E0..02E4    ; XID_Start
@@ -7797,8 +8541,10 @@ E0100..E01EF  ; ID_Continue
 0828          ; XID_Start
 0840..0858    ; XID_Start
 0860..086A    ; XID_Start
-08A0..08B4    ; XID_Start
-08B6..08BD    ; XID_Start
+0870..0887    ; XID_Start
+0889..088F    ; XID_Start
+08A0..08C8    ; XID_Start
+08C9          ; XID_Start
 0904..0939    ; XID_Start
 093D          ; XID_Start
 0950          ; XID_Start
@@ -7864,6 +8610,7 @@ E0100..E01EF  ; ID_Continue
 0C2A..0C39    ; XID_Start
 0C3D          ; XID_Start
 0C58..0C5A    ; XID_Start
+0C5C..0C5D    ; XID_Start
 0C60..0C61    ; XID_Start
 0C80          ; XID_Start
 0C85..0C8C    ; XID_Start
@@ -7872,10 +8619,10 @@ E0100..E01EF  ; ID_Continue
 0CAA..0CB3    ; XID_Start
 0CB5..0CB9    ; XID_Start
 0CBD          ; XID_Start
-0CDE          ; XID_Start
+0CDC..0CDE    ; XID_Start
 0CE0..0CE1    ; XID_Start
 0CF1..0CF2    ; XID_Start
-0D05..0D0C    ; XID_Start
+0D04..0D0C    ; XID_Start
 0D0E..0D10    ; XID_Start
 0D12..0D3A    ; XID_Start
 0D3D          ; XID_Start
@@ -7894,16 +8641,10 @@ E0100..E01EF  ; ID_Continue
 0E46          ; XID_Start
 0E81..0E82    ; XID_Start
 0E84          ; XID_Start
-0E87..0E88    ; XID_Start
-0E8A          ; XID_Start
-0E8D          ; XID_Start
-0E94..0E97    ; XID_Start
-0E99..0E9F    ; XID_Start
-0EA1..0EA3    ; XID_Start
+0E86..0E8A    ; XID_Start
+0E8C..0EA3    ; XID_Start
 0EA5          ; XID_Start
-0EA7          ; XID_Start
-0EAA..0EAB    ; XID_Start
-0EAD..0EB0    ; XID_Start
+0EA7..0EB0    ; XID_Start
 0EB2          ; XID_Start
 0EBD          ; XID_Start
 0EC0..0EC4    ; XID_Start
@@ -7953,9 +8694,8 @@ E0100..E01EF  ; ID_Continue
 16A0..16EA    ; XID_Start
 16EE..16F0    ; XID_Start
 16F1..16F8    ; XID_Start
-1700..170C    ; XID_Start
-170E..1711    ; XID_Start
-1720..1731    ; XID_Start
+1700..1711    ; XID_Start
+171F..1731    ; XID_Start
 1740..1751    ; XID_Start
 1760..176C    ; XID_Start
 176E..1770    ; XID_Start
@@ -7979,7 +8719,7 @@ E0100..E01EF  ; ID_Continue
 1A20..1A54    ; XID_Start
 1AA7          ; XID_Start
 1B05..1B33    ; XID_Start
-1B45..1B4B    ; XID_Start
+1B45..1B4C    ; XID_Start
 1B83..1BA0    ; XID_Start
 1BAE..1BAF    ; XID_Start
 1BBA..1BE5    ; XID_Start
@@ -7987,12 +8727,13 @@ E0100..E01EF  ; ID_Continue
 1C4D..1C4F    ; XID_Start
 1C5A..1C77    ; XID_Start
 1C78..1C7D    ; XID_Start
-1C80..1C88    ; XID_Start
+1C80..1C8A    ; XID_Start
 1C90..1CBA    ; XID_Start
 1CBD..1CBF    ; XID_Start
 1CE9..1CEC    ; XID_Start
-1CEE..1CF1    ; XID_Start
+1CEE..1CF3    ; XID_Start
 1CF5..1CF6    ; XID_Start
+1CFA          ; XID_Start
 1D00..1D2B    ; XID_Start
 1D2C..1D6A    ; XID_Start
 1D6B..1D77    ; XID_Start
@@ -8041,9 +8782,7 @@ E0100..E01EF  ; ID_Continue
 2160..2182    ; XID_Start
 2183..2184    ; XID_Start
 2185..2188    ; XID_Start
-2C00..2C2E    ; XID_Start
-2C30..2C5E    ; XID_Start
-2C60..2C7B    ; XID_Start
+2C00..2C7B    ; XID_Start
 2C7C..2C7D    ; XID_Start
 2C7E..2CE4    ; XID_Start
 2CEB..2CEE    ; XID_Start
@@ -8078,11 +8817,10 @@ E0100..E01EF  ; ID_Continue
 30FF          ; XID_Start
 3105..312F    ; XID_Start
 3131..318E    ; XID_Start
-31A0..31BA    ; XID_Start
+31A0..31BF    ; XID_Start
 31F0..31FF    ; XID_Start
-3400..4DB5    ; XID_Start
-4E00..9FEF    ; XID_Start
-A000..A014    ; XID_Start
+3400..4DBF    ; XID_Start
+4E00..A014    ; XID_Start
 A015          ; XID_Start
 A016..A48C    ; XID_Start
 A4D0..A4F7    ; XID_Start
@@ -8105,7 +8843,9 @@ A771..A787    ; XID_Start
 A788          ; XID_Start
 A78B..A78E    ; XID_Start
 A78F          ; XID_Start
-A790..A7B9    ; XID_Start
+A790..A7DC    ; XID_Start
+A7F1..A7F4    ; XID_Start
+A7F5..A7F6    ; XID_Start
 A7F7          ; XID_Start
 A7F8..A7F9    ; XID_Start
 A7FA          ; XID_Start
@@ -8152,7 +8892,8 @@ AB20..AB26    ; XID_Start
 AB28..AB2E    ; XID_Start
 AB30..AB5A    ; XID_Start
 AB5C..AB5F    ; XID_Start
-AB60..AB65    ; XID_Start
+AB60..AB68    ; XID_Start
+AB69          ; XID_Start
 AB70..ABBF    ; XID_Start
 ABC0..ABE2    ; XID_Start
 AC00..D7A3    ; XID_Start
@@ -8218,9 +8959,21 @@ FFDA..FFDC    ; XID_Start
 104D8..104FB  ; XID_Start
 10500..10527  ; XID_Start
 10530..10563  ; XID_Start
+10570..1057A  ; XID_Start
+1057C..1058A  ; XID_Start
+1058C..10592  ; XID_Start
+10594..10595  ; XID_Start
+10597..105A1  ; XID_Start
+105A3..105B1  ; XID_Start
+105B3..105B9  ; XID_Start
+105BB..105BC  ; XID_Start
+105C0..105F3  ; XID_Start
 10600..10736  ; XID_Start
 10740..10755  ; XID_Start
 10760..10767  ; XID_Start
+10780..10785  ; XID_Start
+10787..107B0  ; XID_Start
+107B2..107BA  ; XID_Start
 10800..10805  ; XID_Start
 10808         ; XID_Start
 1080A..10835  ; XID_Start
@@ -8233,6 +8986,7 @@ FFDA..FFDC    ; XID_Start
 108F4..108F5  ; XID_Start
 10900..10915  ; XID_Start
 10920..10939  ; XID_Start
+10940..10959  ; XID_Start
 10980..109B7  ; XID_Start
 109BE..109BF  ; XID_Start
 10A00         ; XID_Start
@@ -8251,14 +9005,31 @@ FFDA..FFDC    ; XID_Start
 10C80..10CB2  ; XID_Start
 10CC0..10CF2  ; XID_Start
 10D00..10D23  ; XID_Start
+10D4A..10D4D  ; XID_Start
+10D4E         ; XID_Start
+10D4F         ; XID_Start
+10D50..10D65  ; XID_Start
+10D6F         ; XID_Start
+10D70..10D85  ; XID_Start
+10E80..10EA9  ; XID_Start
+10EB0..10EB1  ; XID_Start
+10EC2..10EC4  ; XID_Start
+10EC5         ; XID_Start
+10EC6..10EC7  ; XID_Start
 10F00..10F1C  ; XID_Start
 10F27         ; XID_Start
 10F30..10F45  ; XID_Start
+10F70..10F81  ; XID_Start
+10FB0..10FC4  ; XID_Start
+10FE0..10FF6  ; XID_Start
 11003..11037  ; XID_Start
+11071..11072  ; XID_Start
+11075         ; XID_Start
 11083..110AF  ; XID_Start
 110D0..110E8  ; XID_Start
 11103..11126  ; XID_Start
 11144         ; XID_Start
+11147         ; XID_Start
 11150..11172  ; XID_Start
 11176         ; XID_Start
 11183..111B2  ; XID_Start
@@ -8267,6 +9038,7 @@ FFDA..FFDC    ; XID_Start
 111DC         ; XID_Start
 11200..11211  ; XID_Start
 11213..1122B  ; XID_Start
+1123F..11240  ; XID_Start
 11280..11286  ; XID_Start
 11288         ; XID_Start
 1128A..1128D  ; XID_Start
@@ -8282,8 +9054,16 @@ FFDA..FFDC    ; XID_Start
 1133D         ; XID_Start
 11350         ; XID_Start
 1135D..11361  ; XID_Start
+11380..11389  ; XID_Start
+1138B         ; XID_Start
+1138E         ; XID_Start
+11390..113B5  ; XID_Start
+113B7         ; XID_Start
+113D1         ; XID_Start
+113D3         ; XID_Start
 11400..11434  ; XID_Start
 11447..1144A  ; XID_Start
+1145F..11461  ; XID_Start
 11480..114AF  ; XID_Start
 114C4..114C5  ; XID_Start
 114C7         ; XID_Start
@@ -8292,18 +9072,30 @@ FFDA..FFDC    ; XID_Start
 11600..1162F  ; XID_Start
 11644         ; XID_Start
 11680..116AA  ; XID_Start
+116B8         ; XID_Start
 11700..1171A  ; XID_Start
+11740..11746  ; XID_Start
 11800..1182B  ; XID_Start
 118A0..118DF  ; XID_Start
-118FF         ; XID_Start
+118FF..11906  ; XID_Start
+11909         ; XID_Start
+1190C..11913  ; XID_Start
+11915..11916  ; XID_Start
+11918..1192F  ; XID_Start
+1193F         ; XID_Start
+11941         ; XID_Start
+119A0..119A7  ; XID_Start
+119AA..119D0  ; XID_Start
+119E1         ; XID_Start
+119E3         ; XID_Start
 11A00         ; XID_Start
 11A0B..11A32  ; XID_Start
 11A3A         ; XID_Start
 11A50         ; XID_Start
-11A5C..11A83  ; XID_Start
-11A86..11A89  ; XID_Start
+11A5C..11A89  ; XID_Start
 11A9D         ; XID_Start
-11AC0..11AF8  ; XID_Start
+11AB0..11AF8  ; XID_Start
+11BC0..11BE0  ; XID_Start
 11C00..11C08  ; XID_Start
 11C0A..11C2E  ; XID_Start
 11C40         ; XID_Start
@@ -8316,27 +9108,55 @@ FFDA..FFDC    ; XID_Start
 11D67..11D68  ; XID_Start
 11D6A..11D89  ; XID_Start
 11D98         ; XID_Start
+11DB0..11DD8  ; XID_Start
+11DD9         ; XID_Start
+11DDA..11DDB  ; XID_Start
 11EE0..11EF2  ; XID_Start
+11F02         ; XID_Start
+11F04..11F10  ; XID_Start
+11F12..11F33  ; XID_Start
+11FB0         ; XID_Start
 12000..12399  ; XID_Start
 12400..1246E  ; XID_Start
 12480..12543  ; XID_Start
-13000..1342E  ; XID_Start
+12F90..12FF0  ; XID_Start
+13000..1342F  ; XID_Start
+13441..13446  ; XID_Start
+13460..143FA  ; XID_Start
 14400..14646  ; XID_Start
+16100..1611D  ; XID_Start
 16800..16A38  ; XID_Start
 16A40..16A5E  ; XID_Start
+16A70..16ABE  ; XID_Start
 16AD0..16AED  ; XID_Start
 16B00..16B2F  ; XID_Start
 16B40..16B43  ; XID_Start
 16B63..16B77  ; XID_Start
 16B7D..16B8F  ; XID_Start
+16D40..16D42  ; XID_Start
+16D43..16D6A  ; XID_Start
+16D6B..16D6C  ; XID_Start
 16E40..16E7F  ; XID_Start
-16F00..16F44  ; XID_Start
+16EA0..16EB8  ; XID_Start
+16EBB..16ED3  ; XID_Start
+16F00..16F4A  ; XID_Start
 16F50         ; XID_Start
 16F93..16F9F  ; XID_Start
 16FE0..16FE1  ; XID_Start
-17000..187F1  ; XID_Start
-18800..18AF2  ; XID_Start
-1B000..1B11E  ; XID_Start
+16FE3         ; XID_Start
+16FF2..16FF3  ; XID_Start
+16FF4..16FF6  ; XID_Start
+17000..18CD5  ; XID_Start
+18CFF..18D1E  ; XID_Start
+18D80..18DF2  ; XID_Start
+1AFF0..1AFF3  ; XID_Start
+1AFF5..1AFFB  ; XID_Start
+1AFFD..1AFFE  ; XID_Start
+1B000..1B122  ; XID_Start
+1B132         ; XID_Start
+1B150..1B152  ; XID_Start
+1B155         ; XID_Start
+1B164..1B167  ; XID_Start
 1B170..1B2FB  ; XID_Start
 1BC00..1BC6A  ; XID_Start
 1BC70..1BC7C  ; XID_Start
@@ -8372,8 +9192,34 @@ FFDA..FFDC    ; XID_Start
 1D78A..1D7A8  ; XID_Start
 1D7AA..1D7C2  ; XID_Start
 1D7C4..1D7CB  ; XID_Start
+1DF00..1DF09  ; XID_Start
+1DF0A         ; XID_Start
+1DF0B..1DF1E  ; XID_Start
+1DF25..1DF2A  ; XID_Start
+1E030..1E06D  ; XID_Start
+1E100..1E12C  ; XID_Start
+1E137..1E13D  ; XID_Start
+1E14E         ; XID_Start
+1E290..1E2AD  ; XID_Start
+1E2C0..1E2EB  ; XID_Start
+1E4D0..1E4EA  ; XID_Start
+1E4EB         ; XID_Start
+1E5D0..1E5ED  ; XID_Start
+1E5F0         ; XID_Start
+1E6C0..1E6DE  ; XID_Start
+1E6E0..1E6E2  ; XID_Start
+1E6E4..1E6E5  ; XID_Start
+1E6E7..1E6ED  ; XID_Start
+1E6F0..1E6F4  ; XID_Start
+1E6FE         ; XID_Start
+1E6FF         ; XID_Start
+1E7E0..1E7E6  ; XID_Start
+1E7E8..1E7EB  ; XID_Start
+1E7ED..1E7EE  ; XID_Start
+1E7F0..1E7FE  ; XID_Start
 1E800..1E8C4  ; XID_Start
 1E900..1E943  ; XID_Start
+1E94B         ; XID_Start
 1EE00..1EE03  ; XID_Start
 1EE05..1EE1F  ; XID_Start
 1EE21..1EE22  ; XID_Start
@@ -8407,14 +9253,16 @@ FFDA..FFDC    ; XID_Start
 1EEA1..1EEA3  ; XID_Start
 1EEA5..1EEA9  ; XID_Start
 1EEAB..1EEBB  ; XID_Start
-20000..2A6D6  ; XID_Start
-2A700..2B734  ; XID_Start
-2B740..2B81D  ; XID_Start
-2B820..2CEA1  ; XID_Start
+20000..2A6DF  ; XID_Start
+2A700..2B81D  ; XID_Start
+2B820..2CEAD  ; XID_Start
 2CEB0..2EBE0  ; XID_Start
+2EBF0..2EE5D  ; XID_Start
 2F800..2FA1D  ; XID_Start
+30000..3134A  ; XID_Start
+31350..33479  ; XID_Start
 
-# Total code points: 125637
+# Total code points: 145893
 
 # ================================================
 
@@ -8440,8 +9288,8 @@ FFDA..FFDC    ; XID_Start
 01BC..01BF    ; XID_Continue
 01C0..01C3    ; XID_Continue
 01C4..0293    ; XID_Continue
-0294          ; XID_Continue
-0295..02AF    ; XID_Continue
+0294..0295    ; XID_Continue
+0296..02AF    ; XID_Continue
 02B0..02C1    ; XID_Continue
 02C6..02D1    ; XID_Continue
 02E0..02E4    ; XID_Continue
@@ -8515,9 +9363,12 @@ FFDA..FFDC    ; XID_Start
 0840..0858    ; XID_Continue
 0859..085B    ; XID_Continue
 0860..086A    ; XID_Continue
-08A0..08B4    ; XID_Continue
-08B6..08BD    ; XID_Continue
-08D3..08E1    ; XID_Continue
+0870..0887    ; XID_Continue
+0889..088F    ; XID_Continue
+0897..089F    ; XID_Continue
+08A0..08C8    ; XID_Continue
+08C9          ; XID_Continue
+08CA..08E1    ; XID_Continue
 08E3..0902    ; XID_Continue
 0903          ; XID_Continue
 0904..0939    ; XID_Continue
@@ -8621,7 +9472,7 @@ FFDA..FFDC    ; XID_Start
 0B47..0B48    ; XID_Continue
 0B4B..0B4C    ; XID_Continue
 0B4D          ; XID_Continue
-0B56          ; XID_Continue
+0B55..0B56    ; XID_Continue
 0B57          ; XID_Continue
 0B5C..0B5D    ; XID_Continue
 0B5F..0B61    ; XID_Continue
@@ -8655,6 +9506,7 @@ FFDA..FFDC    ; XID_Start
 0C0E..0C10    ; XID_Continue
 0C12..0C28    ; XID_Continue
 0C2A..0C39    ; XID_Continue
+0C3C          ; XID_Continue
 0C3D          ; XID_Continue
 0C3E..0C40    ; XID_Continue
 0C41..0C44    ; XID_Continue
@@ -8662,6 +9514,7 @@ FFDA..FFDC    ; XID_Start
 0C4A..0C4D    ; XID_Continue
 0C55..0C56    ; XID_Continue
 0C58..0C5A    ; XID_Continue
+0C5C..0C5D    ; XID_Continue
 0C60..0C61    ; XID_Continue
 0C62..0C63    ; XID_Continue
 0C66..0C6F    ; XID_Continue
@@ -8683,14 +9536,15 @@ FFDA..FFDC    ; XID_Start
 0CCA..0CCB    ; XID_Continue
 0CCC..0CCD    ; XID_Continue
 0CD5..0CD6    ; XID_Continue
-0CDE          ; XID_Continue
+0CDC..0CDE    ; XID_Continue
 0CE0..0CE1    ; XID_Continue
 0CE2..0CE3    ; XID_Continue
 0CE6..0CEF    ; XID_Continue
 0CF1..0CF2    ; XID_Continue
+0CF3          ; XID_Continue
 0D00..0D01    ; XID_Continue
 0D02..0D03    ; XID_Continue
-0D05..0D0C    ; XID_Continue
+0D04..0D0C    ; XID_Continue
 0D0E..0D10    ; XID_Continue
 0D12..0D3A    ; XID_Continue
 0D3B..0D3C    ; XID_Continue
@@ -8707,6 +9561,7 @@ FFDA..FFDC    ; XID_Start
 0D62..0D63    ; XID_Continue
 0D66..0D6F    ; XID_Continue
 0D7A..0D7F    ; XID_Continue
+0D81          ; XID_Continue
 0D82..0D83    ; XID_Continue
 0D85..0D96    ; XID_Continue
 0D9A..0DB1    ; XID_Continue
@@ -8730,24 +9585,17 @@ FFDA..FFDC    ; XID_Start
 0E50..0E59    ; XID_Continue
 0E81..0E82    ; XID_Continue
 0E84          ; XID_Continue
-0E87..0E88    ; XID_Continue
-0E8A          ; XID_Continue
-0E8D          ; XID_Continue
-0E94..0E97    ; XID_Continue
-0E99..0E9F    ; XID_Continue
-0EA1..0EA3    ; XID_Continue
+0E86..0E8A    ; XID_Continue
+0E8C..0EA3    ; XID_Continue
 0EA5          ; XID_Continue
-0EA7          ; XID_Continue
-0EAA..0EAB    ; XID_Continue
-0EAD..0EB0    ; XID_Continue
+0EA7..0EB0    ; XID_Continue
 0EB1          ; XID_Continue
 0EB2..0EB3    ; XID_Continue
-0EB4..0EB9    ; XID_Continue
-0EBB..0EBC    ; XID_Continue
+0EB4..0EBC    ; XID_Continue
 0EBD          ; XID_Continue
 0EC0..0EC4    ; XID_Continue
 0EC6          ; XID_Continue
-0EC8..0ECD    ; XID_Continue
+0EC8..0ECE    ; XID_Continue
 0ED0..0ED9    ; XID_Continue
 0EDC..0EDF    ; XID_Continue
 0F00          ; XID_Continue
@@ -8833,11 +9681,12 @@ FFDA..FFDC    ; XID_Start
 16A0..16EA    ; XID_Continue
 16EE..16F0    ; XID_Continue
 16F1..16F8    ; XID_Continue
-1700..170C    ; XID_Continue
-170E..1711    ; XID_Continue
+1700..1711    ; XID_Continue
 1712..1714    ; XID_Continue
-1720..1731    ; XID_Continue
-1732..1734    ; XID_Continue
+1715          ; XID_Continue
+171F..1731    ; XID_Continue
+1732..1733    ; XID_Continue
+1734          ; XID_Continue
 1740..1751    ; XID_Continue
 1752..1753    ; XID_Continue
 1760..176C    ; XID_Continue
@@ -8856,6 +9705,7 @@ FFDA..FFDC    ; XID_Start
 17DD          ; XID_Continue
 17E0..17E9    ; XID_Continue
 180B..180D    ; XID_Continue
+180F          ; XID_Continue
 1810..1819    ; XID_Continue
 1820..1842    ; XID_Continue
 1843          ; XID_Continue
@@ -8903,6 +9753,8 @@ FFDA..FFDC    ; XID_Start
 1A90..1A99    ; XID_Continue
 1AA7          ; XID_Continue
 1AB0..1ABD    ; XID_Continue
+1ABF..1ADD    ; XID_Continue
+1AE0..1AEB    ; XID_Continue
 1B00..1B03    ; XID_Continue
 1B04          ; XID_Continue
 1B05..1B33    ; XID_Continue
@@ -8914,7 +9766,7 @@ FFDA..FFDC    ; XID_Start
 1B3D..1B41    ; XID_Continue
 1B42          ; XID_Continue
 1B43..1B44    ; XID_Continue
-1B45..1B4B    ; XID_Continue
+1B45..1B4C    ; XID_Continue
 1B50..1B59    ; XID_Continue
 1B6B..1B73    ; XID_Continue
 1B80..1B81    ; XID_Continue
@@ -8947,7 +9799,7 @@ FFDA..FFDC    ; XID_Start
 1C50..1C59    ; XID_Continue
 1C5A..1C77    ; XID_Continue
 1C78..1C7D    ; XID_Continue
-1C80..1C88    ; XID_Continue
+1C80..1C8A    ; XID_Continue
 1C90..1CBA    ; XID_Continue
 1CBD..1CBF    ; XID_Continue
 1CD0..1CD2    ; XID_Continue
@@ -8956,20 +9808,19 @@ FFDA..FFDC    ; XID_Start
 1CE2..1CE8    ; XID_Continue
 1CE9..1CEC    ; XID_Continue
 1CED          ; XID_Continue
-1CEE..1CF1    ; XID_Continue
-1CF2..1CF3    ; XID_Continue
+1CEE..1CF3    ; XID_Continue
 1CF4          ; XID_Continue
 1CF5..1CF6    ; XID_Continue
 1CF7          ; XID_Continue
 1CF8..1CF9    ; XID_Continue
+1CFA          ; XID_Continue
 1D00..1D2B    ; XID_Continue
 1D2C..1D6A    ; XID_Continue
 1D6B..1D77    ; XID_Continue
 1D78          ; XID_Continue
 1D79..1D9A    ; XID_Continue
 1D9B..1DBF    ; XID_Continue
-1DC0..1DF9    ; XID_Continue
-1DFB..1DFF    ; XID_Continue
+1DC0..1DFF    ; XID_Continue
 1E00..1F15    ; XID_Continue
 1F18..1F1D    ; XID_Continue
 1F20..1F45    ; XID_Continue
@@ -8989,6 +9840,7 @@ FFDA..FFDC    ; XID_Start
 1FE0..1FEC    ; XID_Continue
 1FF2..1FF4    ; XID_Continue
 1FF6..1FFC    ; XID_Continue
+200C..200D    ; XID_Continue
 203F..2040    ; XID_Continue
 2054          ; XID_Continue
 2071          ; XID_Continue
@@ -9017,9 +9869,7 @@ FFDA..FFDC    ; XID_Start
 2160..2182    ; XID_Continue
 2183..2184    ; XID_Continue
 2185..2188    ; XID_Continue
-2C00..2C2E    ; XID_Continue
-2C30..2C5E    ; XID_Continue
-2C60..2C7B    ; XID_Continue
+2C00..2C7B    ; XID_Continue
 2C7C..2C7D    ; XID_Continue
 2C7E..2CE4    ; XID_Continue
 2CEB..2CEE    ; XID_Continue
@@ -9056,15 +9906,15 @@ FFDA..FFDC    ; XID_Start
 309D..309E    ; XID_Continue
 309F          ; XID_Continue
 30A1..30FA    ; XID_Continue
+30FB          ; XID_Continue
 30FC..30FE    ; XID_Continue
 30FF          ; XID_Continue
 3105..312F    ; XID_Continue
 3131..318E    ; XID_Continue
-31A0..31BA    ; XID_Continue
+31A0..31BF    ; XID_Continue
 31F0..31FF    ; XID_Continue
-3400..4DB5    ; XID_Continue
-4E00..9FEF    ; XID_Continue
-A000..A014    ; XID_Continue
+3400..4DBF    ; XID_Continue
+4E00..A014    ; XID_Continue
 A015          ; XID_Continue
 A016..A48C    ; XID_Continue
 A4D0..A4F7    ; XID_Continue
@@ -9092,7 +9942,9 @@ A771..A787    ; XID_Continue
 A788          ; XID_Continue
 A78B..A78E    ; XID_Continue
 A78F          ; XID_Continue
-A790..A7B9    ; XID_Continue
+A790..A7DC    ; XID_Continue
+A7F1..A7F4    ; XID_Continue
+A7F5..A7F6    ; XID_Continue
 A7F7          ; XID_Continue
 A7F8..A7F9    ; XID_Continue
 A7FA          ; XID_Continue
@@ -9106,6 +9958,7 @@ A80C..A822    ; XID_Continue
 A823..A824    ; XID_Continue
 A825..A826    ; XID_Continue
 A827          ; XID_Continue
+A82C          ; XID_Continue
 A840..A873    ; XID_Continue
 A880..A881    ; XID_Continue
 A882..A8B3    ; XID_Continue
@@ -9131,8 +9984,8 @@ A9B3          ; XID_Continue
 A9B4..A9B5    ; XID_Continue
 A9B6..A9B9    ; XID_Continue
 A9BA..A9BB    ; XID_Continue
-A9BC          ; XID_Continue
-A9BD..A9C0    ; XID_Continue
+A9BC..A9BD    ; XID_Continue
+A9BE..A9C0    ; XID_Continue
 A9CF          ; XID_Continue
 A9D0..A9D9    ; XID_Continue
 A9E0..A9E4    ; XID_Continue
@@ -9188,7 +10041,8 @@ AB20..AB26    ; XID_Continue
 AB28..AB2E    ; XID_Continue
 AB30..AB5A    ; XID_Continue
 AB5C..AB5F    ; XID_Continue
-AB60..AB65    ; XID_Continue
+AB60..AB68    ; XID_Continue
+AB69          ; XID_Continue
 AB70..ABBF    ; XID_Continue
 ABC0..ABE2    ; XID_Continue
 ABE3..ABE4    ; XID_Continue
@@ -9235,6 +10089,7 @@ FF10..FF19    ; XID_Continue
 FF21..FF3A    ; XID_Continue
 FF3F          ; XID_Continue
 FF41..FF5A    ; XID_Continue
+FF65          ; XID_Continue
 FF66..FF6F    ; XID_Continue
 FF70          ; XID_Continue
 FF71..FF9D    ; XID_Continue
@@ -9274,9 +10129,21 @@ FFDA..FFDC    ; XID_Continue
 104D8..104FB  ; XID_Continue
 10500..10527  ; XID_Continue
 10530..10563  ; XID_Continue
+10570..1057A  ; XID_Continue
+1057C..1058A  ; XID_Continue
+1058C..10592  ; XID_Continue
+10594..10595  ; XID_Continue
+10597..105A1  ; XID_Continue
+105A3..105B1  ; XID_Continue
+105B3..105B9  ; XID_Continue
+105BB..105BC  ; XID_Continue
+105C0..105F3  ; XID_Continue
 10600..10736  ; XID_Continue
 10740..10755  ; XID_Continue
 10760..10767  ; XID_Continue
+10780..10785  ; XID_Continue
+10787..107B0  ; XID_Continue
+107B2..107BA  ; XID_Continue
 10800..10805  ; XID_Continue
 10808         ; XID_Continue
 1080A..10835  ; XID_Continue
@@ -9289,6 +10156,7 @@ FFDA..FFDC    ; XID_Continue
 108F4..108F5  ; XID_Continue
 10900..10915  ; XID_Continue
 10920..10939  ; XID_Continue
+10940..10959  ; XID_Continue
 10980..109B7  ; XID_Continue
 109BE..109BF  ; XID_Continue
 10A00         ; XID_Continue
@@ -9315,16 +10183,39 @@ FFDA..FFDC    ; XID_Continue
 10D00..10D23  ; XID_Continue
 10D24..10D27  ; XID_Continue
 10D30..10D39  ; XID_Continue
+10D40..10D49  ; XID_Continue
+10D4A..10D4D  ; XID_Continue
+10D4E         ; XID_Continue
+10D4F         ; XID_Continue
+10D50..10D65  ; XID_Continue
+10D69..10D6D  ; XID_Continue
+10D6F         ; XID_Continue
+10D70..10D85  ; XID_Continue
+10E80..10EA9  ; XID_Continue
+10EAB..10EAC  ; XID_Continue
+10EB0..10EB1  ; XID_Continue
+10EC2..10EC4  ; XID_Continue
+10EC5         ; XID_Continue
+10EC6..10EC7  ; XID_Continue
+10EFA..10EFF  ; XID_Continue
 10F00..10F1C  ; XID_Continue
 10F27         ; XID_Continue
 10F30..10F45  ; XID_Continue
 10F46..10F50  ; XID_Continue
+10F70..10F81  ; XID_Continue
+10F82..10F85  ; XID_Continue
+10FB0..10FC4  ; XID_Continue
+10FE0..10FF6  ; XID_Continue
 11000         ; XID_Continue
 11001         ; XID_Continue
 11002         ; XID_Continue
 11003..11037  ; XID_Continue
 11038..11046  ; XID_Continue
 11066..1106F  ; XID_Continue
+11070         ; XID_Continue
+11071..11072  ; XID_Continue
+11073..11074  ; XID_Continue
+11075         ; XID_Continue
 1107F..11081  ; XID_Continue
 11082         ; XID_Continue
 11083..110AF  ; XID_Continue
@@ -9332,6 +10223,7 @@ FFDA..FFDC    ; XID_Continue
 110B3..110B6  ; XID_Continue
 110B7..110B8  ; XID_Continue
 110B9..110BA  ; XID_Continue
+110C2         ; XID_Continue
 110D0..110E8  ; XID_Continue
 110F0..110F9  ; XID_Continue
 11100..11102  ; XID_Continue
@@ -9342,6 +10234,7 @@ FFDA..FFDC    ; XID_Continue
 11136..1113F  ; XID_Continue
 11144         ; XID_Continue
 11145..11146  ; XID_Continue
+11147         ; XID_Continue
 11150..11172  ; XID_Continue
 11173         ; XID_Continue
 11176         ; XID_Continue
@@ -9353,6 +10246,8 @@ FFDA..FFDC    ; XID_Continue
 111BF..111C0  ; XID_Continue
 111C1..111C4  ; XID_Continue
 111C9..111CC  ; XID_Continue
+111CE         ; XID_Continue
+111CF         ; XID_Continue
 111D0..111D9  ; XID_Continue
 111DA         ; XID_Continue
 111DC         ; XID_Continue
@@ -9365,6 +10260,8 @@ FFDA..FFDC    ; XID_Continue
 11235         ; XID_Continue
 11236..11237  ; XID_Continue
 1123E         ; XID_Continue
+1123F..11240  ; XID_Continue
+11241         ; XID_Continue
 11280..11286  ; XID_Continue
 11288         ; XID_Continue
 1128A..1128D  ; XID_Continue
@@ -9396,6 +10293,24 @@ FFDA..FFDC    ; XID_Continue
 11362..11363  ; XID_Continue
 11366..1136C  ; XID_Continue
 11370..11374  ; XID_Continue
+11380..11389  ; XID_Continue
+1138B         ; XID_Continue
+1138E         ; XID_Continue
+11390..113B5  ; XID_Continue
+113B7         ; XID_Continue
+113B8..113BA  ; XID_Continue
+113BB..113C0  ; XID_Continue
+113C2         ; XID_Continue
+113C5         ; XID_Continue
+113C7..113CA  ; XID_Continue
+113CC..113CD  ; XID_Continue
+113CE         ; XID_Continue
+113CF         ; XID_Continue
+113D0         ; XID_Continue
+113D1         ; XID_Continue
+113D2         ; XID_Continue
+113D3         ; XID_Continue
+113E1..113E2  ; XID_Continue
 11400..11434  ; XID_Continue
 11435..11437  ; XID_Continue
 11438..1143F  ; XID_Continue
@@ -9406,6 +10321,7 @@ FFDA..FFDC    ; XID_Continue
 11447..1144A  ; XID_Continue
 11450..11459  ; XID_Continue
 1145E         ; XID_Continue
+1145F..11461  ; XID_Continue
 11480..114AF  ; XID_Continue
 114B0..114B2  ; XID_Continue
 114B3..114B8  ; XID_Continue
@@ -9444,14 +10360,19 @@ FFDA..FFDC    ; XID_Continue
 116B0..116B5  ; XID_Continue
 116B6         ; XID_Continue
 116B7         ; XID_Continue
+116B8         ; XID_Continue
 116C0..116C9  ; XID_Continue
+116D0..116E3  ; XID_Continue
 11700..1171A  ; XID_Continue
-1171D..1171F  ; XID_Continue
+1171D         ; XID_Continue
+1171E         ; XID_Continue
+1171F         ; XID_Continue
 11720..11721  ; XID_Continue
 11722..11725  ; XID_Continue
 11726         ; XID_Continue
 11727..1172B  ; XID_Continue
 11730..11739  ; XID_Continue
+11740..11746  ; XID_Continue
 11800..1182B  ; XID_Continue
 1182C..1182E  ; XID_Continue
 1182F..11837  ; XID_Continue
@@ -9459,7 +10380,32 @@ FFDA..FFDC    ; XID_Continue
 11839..1183A  ; XID_Continue
 118A0..118DF  ; XID_Continue
 118E0..118E9  ; XID_Continue
-118FF         ; XID_Continue
+118FF..11906  ; XID_Continue
+11909         ; XID_Continue
+1190C..11913  ; XID_Continue
+11915..11916  ; XID_Continue
+11918..1192F  ; XID_Continue
+11930..11935  ; XID_Continue
+11937..11938  ; XID_Continue
+1193B..1193C  ; XID_Continue
+1193D         ; XID_Continue
+1193E         ; XID_Continue
+1193F         ; XID_Continue
+11940         ; XID_Continue
+11941         ; XID_Continue
+11942         ; XID_Continue
+11943         ; XID_Continue
+11950..11959  ; XID_Continue
+119A0..119A7  ; XID_Continue
+119AA..119D0  ; XID_Continue
+119D1..119D3  ; XID_Continue
+119D4..119D7  ; XID_Continue
+119DA..119DB  ; XID_Continue
+119DC..119DF  ; XID_Continue
+119E0         ; XID_Continue
+119E1         ; XID_Continue
+119E3         ; XID_Continue
+119E4         ; XID_Continue
 11A00         ; XID_Continue
 11A01..11A0A  ; XID_Continue
 11A0B..11A32  ; XID_Continue
@@ -9472,13 +10418,20 @@ FFDA..FFDC    ; XID_Continue
 11A51..11A56  ; XID_Continue
 11A57..11A58  ; XID_Continue
 11A59..11A5B  ; XID_Continue
-11A5C..11A83  ; XID_Continue
-11A86..11A89  ; XID_Continue
+11A5C..11A89  ; XID_Continue
 11A8A..11A96  ; XID_Continue
 11A97         ; XID_Continue
 11A98..11A99  ; XID_Continue
 11A9D         ; XID_Continue
-11AC0..11AF8  ; XID_Continue
+11AB0..11AF8  ; XID_Continue
+11B60         ; XID_Continue
+11B61         ; XID_Continue
+11B62..11B64  ; XID_Continue
+11B65         ; XID_Continue
+11B66         ; XID_Continue
+11B67         ; XID_Continue
+11BC0..11BE0  ; XID_Continue
+11BF0..11BF9  ; XID_Continue
 11C00..11C08  ; XID_Continue
 11C0A..11C2E  ; XID_Continue
 11C2F         ; XID_Continue
@@ -9517,17 +10470,47 @@ FFDA..FFDC    ; XID_Continue
 11D97         ; XID_Continue
 11D98         ; XID_Continue
 11DA0..11DA9  ; XID_Continue
+11DB0..11DD8  ; XID_Continue
+11DD9         ; XID_Continue
+11DDA..11DDB  ; XID_Continue
+11DE0..11DE9  ; XID_Continue
 11EE0..11EF2  ; XID_Continue
 11EF3..11EF4  ; XID_Continue
 11EF5..11EF6  ; XID_Continue
+11F00..11F01  ; XID_Continue
+11F02         ; XID_Continue
+11F03         ; XID_Continue
+11F04..11F10  ; XID_Continue
+11F12..11F33  ; XID_Continue
+11F34..11F35  ; XID_Continue
+11F36..11F3A  ; XID_Continue
+11F3E..11F3F  ; XID_Continue
+11F40         ; XID_Continue
+11F41         ; XID_Continue
+11F42         ; XID_Continue
+11F50..11F59  ; XID_Continue
+11F5A         ; XID_Continue
+11FB0         ; XID_Continue
 12000..12399  ; XID_Continue
 12400..1246E  ; XID_Continue
 12480..12543  ; XID_Continue
-13000..1342E  ; XID_Continue
+12F90..12FF0  ; XID_Continue
+13000..1342F  ; XID_Continue
+13440         ; XID_Continue
+13441..13446  ; XID_Continue
+13447..13455  ; XID_Continue
+13460..143FA  ; XID_Continue
 14400..14646  ; XID_Continue
+16100..1611D  ; XID_Continue
+1611E..16129  ; XID_Continue
+1612A..1612C  ; XID_Continue
+1612D..1612F  ; XID_Continue
+16130..16139  ; XID_Continue
 16800..16A38  ; XID_Continue
 16A40..16A5E  ; XID_Continue
 16A60..16A69  ; XID_Continue
+16A70..16ABE  ; XID_Continue
+16AC0..16AC9  ; XID_Continue
 16AD0..16AED  ; XID_Continue
 16AF0..16AF4  ; XID_Continue
 16B00..16B2F  ; XID_Continue
@@ -9536,22 +10519,45 @@ FFDA..FFDC    ; XID_Continue
 16B50..16B59  ; XID_Continue
 16B63..16B77  ; XID_Continue
 16B7D..16B8F  ; XID_Continue
+16D40..16D42  ; XID_Continue
+16D43..16D6A  ; XID_Continue
+16D6B..16D6C  ; XID_Continue
+16D70..16D79  ; XID_Continue
 16E40..16E7F  ; XID_Continue
-16F00..16F44  ; XID_Continue
+16EA0..16EB8  ; XID_Continue
+16EBB..16ED3  ; XID_Continue
+16F00..16F4A  ; XID_Continue
+16F4F         ; XID_Continue
 16F50         ; XID_Continue
-16F51..16F7E  ; XID_Continue
+16F51..16F87  ; XID_Continue
 16F8F..16F92  ; XID_Continue
 16F93..16F9F  ; XID_Continue
 16FE0..16FE1  ; XID_Continue
-17000..187F1  ; XID_Continue
-18800..18AF2  ; XID_Continue
-1B000..1B11E  ; XID_Continue
+16FE3         ; XID_Continue
+16FE4         ; XID_Continue
+16FF0..16FF1  ; XID_Continue
+16FF2..16FF3  ; XID_Continue
+16FF4..16FF6  ; XID_Continue
+17000..18CD5  ; XID_Continue
+18CFF..18D1E  ; XID_Continue
+18D80..18DF2  ; XID_Continue
+1AFF0..1AFF3  ; XID_Continue
+1AFF5..1AFFB  ; XID_Continue
+1AFFD..1AFFE  ; XID_Continue
+1B000..1B122  ; XID_Continue
+1B132         ; XID_Continue
+1B150..1B152  ; XID_Continue
+1B155         ; XID_Continue
+1B164..1B167  ; XID_Continue
 1B170..1B2FB  ; XID_Continue
 1BC00..1BC6A  ; XID_Continue
 1BC70..1BC7C  ; XID_Continue
 1BC80..1BC88  ; XID_Continue
 1BC90..1BC99  ; XID_Continue
 1BC9D..1BC9E  ; XID_Continue
+1CCF0..1CCF9  ; XID_Continue
+1CF00..1CF2D  ; XID_Continue
+1CF30..1CF46  ; XID_Continue
 1D165..1D166  ; XID_Continue
 1D167..1D169  ; XID_Continue
 1D16D..1D172  ; XID_Continue
@@ -9596,15 +10602,55 @@ FFDA..FFDC    ; XID_Continue
 1DA84         ; XID_Continue
 1DA9B..1DA9F  ; XID_Continue
 1DAA1..1DAAF  ; XID_Continue
+1DF00..1DF09  ; XID_Continue
+1DF0A         ; XID_Continue
+1DF0B..1DF1E  ; XID_Continue
+1DF25..1DF2A  ; XID_Continue
 1E000..1E006  ; XID_Continue
 1E008..1E018  ; XID_Continue
 1E01B..1E021  ; XID_Continue
 1E023..1E024  ; XID_Continue
 1E026..1E02A  ; XID_Continue
+1E030..1E06D  ; XID_Continue
+1E08F         ; XID_Continue
+1E100..1E12C  ; XID_Continue
+1E130..1E136  ; XID_Continue
+1E137..1E13D  ; XID_Continue
+1E140..1E149  ; XID_Continue
+1E14E         ; XID_Continue
+1E290..1E2AD  ; XID_Continue
+1E2AE         ; XID_Continue
+1E2C0..1E2EB  ; XID_Continue
+1E2EC..1E2EF  ; XID_Continue
+1E2F0..1E2F9  ; XID_Continue
+1E4D0..1E4EA  ; XID_Continue
+1E4EB         ; XID_Continue
+1E4EC..1E4EF  ; XID_Continue
+1E4F0..1E4F9  ; XID_Continue
+1E5D0..1E5ED  ; XID_Continue
+1E5EE..1E5EF  ; XID_Continue
+1E5F0         ; XID_Continue
+1E5F1..1E5FA  ; XID_Continue
+1E6C0..1E6DE  ; XID_Continue
+1E6E0..1E6E2  ; XID_Continue
+1E6E3         ; XID_Continue
+1E6E4..1E6E5  ; XID_Continue
+1E6E6         ; XID_Continue
+1E6E7..1E6ED  ; XID_Continue
+1E6EE..1E6EF  ; XID_Continue
+1E6F0..1E6F4  ; XID_Continue
+1E6F5         ; XID_Continue
+1E6FE         ; XID_Continue
+1E6FF         ; XID_Continue
+1E7E0..1E7E6  ; XID_Continue
+1E7E8..1E7EB  ; XID_Continue
+1E7ED..1E7EE  ; XID_Continue
+1E7F0..1E7FE  ; XID_Continue
 1E800..1E8C4  ; XID_Continue
 1E8D0..1E8D6  ; XID_Continue
 1E900..1E943  ; XID_Continue
 1E944..1E94A  ; XID_Continue
+1E94B         ; XID_Continue
 1E950..1E959  ; XID_Continue
 1EE00..1EE03  ; XID_Continue
 1EE05..1EE1F  ; XID_Continue
@@ -9639,15 +10685,18 @@ FFDA..FFDC    ; XID_Continue
 1EEA1..1EEA3  ; XID_Continue
 1EEA5..1EEA9  ; XID_Continue
 1EEAB..1EEBB  ; XID_Continue
-20000..2A6D6  ; XID_Continue
-2A700..2B734  ; XID_Continue
-2B740..2B81D  ; XID_Continue
-2B820..2CEA1  ; XID_Continue
+1FBF0..1FBF9  ; XID_Continue
+20000..2A6DF  ; XID_Continue
+2A700..2B81D  ; XID_Continue
+2B820..2CEAD  ; XID_Continue
 2CEB0..2EBE0  ; XID_Continue
+2EBF0..2EE5D  ; XID_Continue
 2F800..2FA1D  ; XID_Continue
+30000..3134A  ; XID_Continue
+31350..33479  ; XID_Continue
 E0100..E01EF  ; XID_Continue
 
-# Total code points: 128491
+# Total code points: 149221
 
 # ================================================
 
@@ -9657,8 +10706,18 @@ E0100..E01EF  ; XID_Continue
 #  + Cf (Format characters)
 #  + Variation_Selector
 #  - White_Space
-#  - FFF9..FFFB (Annotation characters)
+#  - FFF9..FFFB (Interlinear annotation format characters)
+#  - 13430..13440 (Egyptian hieroglyph format characters)
 #  - Prepended_Concatenation_Mark (Exceptional format characters that should be visible)
+#
+# There are currently no stability guarantees for DICP. However, the
+# values of DICP interact with the derivation of XID_Continue
+# and NFKC_CF, for which there are stability guarantees.
+# Maintainers of this property should note that in the
+# unlikely case that the DICP value changes for an existing character
+# which is also XID_Continue=Yes, then exceptions must be put
+# in place to ensure that the NFKC_CF mapping value for that
+# existing character does not change.
 
 00AD          ; Default_Ignorable_Code_Point
 034F          ; Default_Ignorable_Code_Point
@@ -9667,6 +10726,7 @@ E0100..E01EF  ; XID_Continue
 17B4..17B5    ; Default_Ignorable_Code_Point
 180B..180D    ; Default_Ignorable_Code_Point
 180E          ; Default_Ignorable_Code_Point
+180F          ; Default_Ignorable_Code_Point
 200B..200F    ; Default_Ignorable_Code_Point
 202A..202E    ; Default_Ignorable_Code_Point
 2060..2064    ; Default_Ignorable_Code_Point
@@ -9687,7 +10747,7 @@ E0080..E00FF  ; Default_Ignorable_Code_Point
 E0100..E01EF  ; Default_Ignorable_Code_Point
 E01F0..E0FFF  ; Default_Ignorable_Code_Point
 
-# Total code points: 4173
+# Total code points: 4174
 
 # ================================================
 
@@ -9721,7 +10781,8 @@ E01F0..E0FFF  ; Default_Ignorable_Code_Point
 0825..0827    ; Grapheme_Extend
 0829..082D    ; Grapheme_Extend
 0859..085B    ; Grapheme_Extend
-08D3..08E1    ; Grapheme_Extend
+0897..089F    ; Grapheme_Extend
+08CA..08E1    ; Grapheme_Extend
 08E3..0902    ; Grapheme_Extend
 093A          ; Grapheme_Extend
 093C          ; Grapheme_Extend
@@ -9758,7 +10819,7 @@ E01F0..E0FFF  ; Default_Ignorable_Code_Point
 0B3F          ; Grapheme_Extend
 0B41..0B44    ; Grapheme_Extend
 0B4D          ; Grapheme_Extend
-0B56          ; Grapheme_Extend
+0B55..0B56    ; Grapheme_Extend
 0B57          ; Grapheme_Extend
 0B62..0B63    ; Grapheme_Extend
 0B82          ; Grapheme_Extend
@@ -9768,6 +10829,7 @@ E01F0..E0FFF  ; Default_Ignorable_Code_Point
 0BD7          ; Grapheme_Extend
 0C00          ; Grapheme_Extend
 0C04          ; Grapheme_Extend
+0C3C          ; Grapheme_Extend
 0C3E..0C40    ; Grapheme_Extend
 0C46..0C48    ; Grapheme_Extend
 0C4A..0C4D    ; Grapheme_Extend
@@ -9776,8 +10838,11 @@ E01F0..E0FFF  ; Default_Ignorable_Code_Point
 0C81          ; Grapheme_Extend
 0CBC          ; Grapheme_Extend
 0CBF          ; Grapheme_Extend
+0CC0          ; Grapheme_Extend
 0CC2          ; Grapheme_Extend
 0CC6          ; Grapheme_Extend
+0CC7..0CC8    ; Grapheme_Extend
+0CCA..0CCB    ; Grapheme_Extend
 0CCC..0CCD    ; Grapheme_Extend
 0CD5..0CD6    ; Grapheme_Extend
 0CE2..0CE3    ; Grapheme_Extend
@@ -9788,6 +10853,7 @@ E01F0..E0FFF  ; Default_Ignorable_Code_Point
 0D4D          ; Grapheme_Extend
 0D57          ; Grapheme_Extend
 0D62..0D63    ; Grapheme_Extend
+0D81          ; Grapheme_Extend
 0DCA          ; Grapheme_Extend
 0DCF          ; Grapheme_Extend
 0DD2..0DD4    ; Grapheme_Extend
@@ -9797,9 +10863,8 @@ E01F0..E0FFF  ; Default_Ignorable_Code_Point
 0E34..0E3A    ; Grapheme_Extend
 0E47..0E4E    ; Grapheme_Extend
 0EB1          ; Grapheme_Extend
-0EB4..0EB9    ; Grapheme_Extend
-0EBB..0EBC    ; Grapheme_Extend
-0EC8..0ECD    ; Grapheme_Extend
+0EB4..0EBC    ; Grapheme_Extend
+0EC8..0ECE    ; Grapheme_Extend
 0F18..0F19    ; Grapheme_Extend
 0F35          ; Grapheme_Extend
 0F37          ; Grapheme_Extend
@@ -9823,7 +10888,9 @@ E01F0..E0FFF  ; Default_Ignorable_Code_Point
 109D          ; Grapheme_Extend
 135D..135F    ; Grapheme_Extend
 1712..1714    ; Grapheme_Extend
-1732..1734    ; Grapheme_Extend
+1715          ; Grapheme_Extend
+1732..1733    ; Grapheme_Extend
+1734          ; Grapheme_Extend
 1752..1753    ; Grapheme_Extend
 1772..1773    ; Grapheme_Extend
 17B4..17B5    ; Grapheme_Extend
@@ -9832,6 +10899,7 @@ E01F0..E0FFF  ; Default_Ignorable_Code_Point
 17C9..17D3    ; Grapheme_Extend
 17DD          ; Grapheme_Extend
 180B..180D    ; Grapheme_Extend
+180F          ; Grapheme_Extend
 1885..1886    ; Grapheme_Extend
 18A9          ; Grapheme_Extend
 1920..1922    ; Grapheme_Extend
@@ -9849,20 +10917,28 @@ E01F0..E0FFF  ; Default_Ignorable_Code_Point
 1A7F          ; Grapheme_Extend
 1AB0..1ABD    ; Grapheme_Extend
 1ABE          ; Grapheme_Extend
+1ABF..1ADD    ; Grapheme_Extend
+1AE0..1AEB    ; Grapheme_Extend
 1B00..1B03    ; Grapheme_Extend
 1B34          ; Grapheme_Extend
+1B35          ; Grapheme_Extend
 1B36..1B3A    ; Grapheme_Extend
+1B3B          ; Grapheme_Extend
 1B3C          ; Grapheme_Extend
+1B3D          ; Grapheme_Extend
 1B42          ; Grapheme_Extend
+1B43..1B44    ; Grapheme_Extend
 1B6B..1B73    ; Grapheme_Extend
 1B80..1B81    ; Grapheme_Extend
 1BA2..1BA5    ; Grapheme_Extend
 1BA8..1BA9    ; Grapheme_Extend
+1BAA          ; Grapheme_Extend
 1BAB..1BAD    ; Grapheme_Extend
 1BE6          ; Grapheme_Extend
 1BE8..1BE9    ; Grapheme_Extend
 1BED          ; Grapheme_Extend
 1BEF..1BF1    ; Grapheme_Extend
+1BF2..1BF3    ; Grapheme_Extend
 1C2C..1C33    ; Grapheme_Extend
 1C36..1C37    ; Grapheme_Extend
 1CD0..1CD2    ; Grapheme_Extend
@@ -9871,8 +10947,7 @@ E01F0..E0FFF  ; Default_Ignorable_Code_Point
 1CED          ; Grapheme_Extend
 1CF4          ; Grapheme_Extend
 1CF8..1CF9    ; Grapheme_Extend
-1DC0..1DF9    ; Grapheme_Extend
-1DFB..1DFF    ; Grapheme_Extend
+1DC0..1DFF    ; Grapheme_Extend
 200C          ; Grapheme_Extend
 20D0..20DC    ; Grapheme_Extend
 20DD..20E0    ; Grapheme_Extend
@@ -9894,15 +10969,18 @@ A802          ; Grapheme_Extend
 A806          ; Grapheme_Extend
 A80B          ; Grapheme_Extend
 A825..A826    ; Grapheme_Extend
+A82C          ; Grapheme_Extend
 A8C4..A8C5    ; Grapheme_Extend
 A8E0..A8F1    ; Grapheme_Extend
 A8FF          ; Grapheme_Extend
 A926..A92D    ; Grapheme_Extend
 A947..A951    ; Grapheme_Extend
+A953          ; Grapheme_Extend
 A980..A982    ; Grapheme_Extend
 A9B3          ; Grapheme_Extend
 A9B6..A9B9    ; Grapheme_Extend
-A9BC          ; Grapheme_Extend
+A9BC..A9BD    ; Grapheme_Extend
+A9C0          ; Grapheme_Extend
 A9E5          ; Grapheme_Extend
 AA29..AA2E    ; Grapheme_Extend
 AA31..AA32    ; Grapheme_Extend
@@ -9934,32 +11012,54 @@ FF9E..FF9F    ; Grapheme_Extend
 10A3F         ; Grapheme_Extend
 10AE5..10AE6  ; Grapheme_Extend
 10D24..10D27  ; Grapheme_Extend
+10D69..10D6D  ; Grapheme_Extend
+10EAB..10EAC  ; Grapheme_Extend
+10EFA..10EFF  ; Grapheme_Extend
 10F46..10F50  ; Grapheme_Extend
+10F82..10F85  ; Grapheme_Extend
 11001         ; Grapheme_Extend
 11038..11046  ; Grapheme_Extend
+11070         ; Grapheme_Extend
+11073..11074  ; Grapheme_Extend
 1107F..11081  ; Grapheme_Extend
 110B3..110B6  ; Grapheme_Extend
 110B9..110BA  ; Grapheme_Extend
+110C2         ; Grapheme_Extend
 11100..11102  ; Grapheme_Extend
 11127..1112B  ; Grapheme_Extend
 1112D..11134  ; Grapheme_Extend
 11173         ; Grapheme_Extend
 11180..11181  ; Grapheme_Extend
 111B6..111BE  ; Grapheme_Extend
+111C0         ; Grapheme_Extend
 111C9..111CC  ; Grapheme_Extend
+111CF         ; Grapheme_Extend
 1122F..11231  ; Grapheme_Extend
 11234         ; Grapheme_Extend
+11235         ; Grapheme_Extend
 11236..11237  ; Grapheme_Extend
 1123E         ; Grapheme_Extend
+11241         ; Grapheme_Extend
 112DF         ; Grapheme_Extend
 112E3..112EA  ; Grapheme_Extend
 11300..11301  ; Grapheme_Extend
 1133B..1133C  ; Grapheme_Extend
 1133E         ; Grapheme_Extend
 11340         ; Grapheme_Extend
+1134D         ; Grapheme_Extend
 11357         ; Grapheme_Extend
 11366..1136C  ; Grapheme_Extend
 11370..11374  ; Grapheme_Extend
+113B8         ; Grapheme_Extend
+113BB..113C0  ; Grapheme_Extend
+113C2         ; Grapheme_Extend
+113C5         ; Grapheme_Extend
+113C7..113C9  ; Grapheme_Extend
+113CE         ; Grapheme_Extend
+113CF         ; Grapheme_Extend
+113D0         ; Grapheme_Extend
+113D2         ; Grapheme_Extend
+113E1..113E2  ; Grapheme_Extend
 11438..1143F  ; Grapheme_Extend
 11442..11444  ; Grapheme_Extend
 11446         ; Grapheme_Extend
@@ -9981,12 +11081,22 @@ FF9E..FF9F    ; Grapheme_Extend
 116AB         ; Grapheme_Extend
 116AD         ; Grapheme_Extend
 116B0..116B5  ; Grapheme_Extend
+116B6         ; Grapheme_Extend
 116B7         ; Grapheme_Extend
-1171D..1171F  ; Grapheme_Extend
+1171D         ; Grapheme_Extend
+1171F         ; Grapheme_Extend
 11722..11725  ; Grapheme_Extend
 11727..1172B  ; Grapheme_Extend
 1182F..11837  ; Grapheme_Extend
 11839..1183A  ; Grapheme_Extend
+11930         ; Grapheme_Extend
+1193B..1193C  ; Grapheme_Extend
+1193D         ; Grapheme_Extend
+1193E         ; Grapheme_Extend
+11943         ; Grapheme_Extend
+119D4..119D7  ; Grapheme_Extend
+119DA..119DB  ; Grapheme_Extend
+119E0         ; Grapheme_Extend
 11A01..11A0A  ; Grapheme_Extend
 11A33..11A38  ; Grapheme_Extend
 11A3B..11A3E  ; Grapheme_Extend
@@ -9995,6 +11105,9 @@ FF9E..FF9F    ; Grapheme_Extend
 11A59..11A5B  ; Grapheme_Extend
 11A8A..11A96  ; Grapheme_Extend
 11A98..11A99  ; Grapheme_Extend
+11B60         ; Grapheme_Extend
+11B62..11B64  ; Grapheme_Extend
+11B66         ; Grapheme_Extend
 11C30..11C36  ; Grapheme_Extend
 11C38..11C3D  ; Grapheme_Extend
 11C3F         ; Grapheme_Extend
@@ -10011,13 +11124,28 @@ FF9E..FF9F    ; Grapheme_Extend
 11D95         ; Grapheme_Extend
 11D97         ; Grapheme_Extend
 11EF3..11EF4  ; Grapheme_Extend
+11F00..11F01  ; Grapheme_Extend
+11F36..11F3A  ; Grapheme_Extend
+11F40         ; Grapheme_Extend
+11F41         ; Grapheme_Extend
+11F42         ; Grapheme_Extend
+11F5A         ; Grapheme_Extend
+13440         ; Grapheme_Extend
+13447..13455  ; Grapheme_Extend
+1611E..16129  ; Grapheme_Extend
+1612D..1612F  ; Grapheme_Extend
 16AF0..16AF4  ; Grapheme_Extend
 16B30..16B36  ; Grapheme_Extend
+16F4F         ; Grapheme_Extend
 16F8F..16F92  ; Grapheme_Extend
+16FE4         ; Grapheme_Extend
+16FF0..16FF1  ; Grapheme_Extend
 1BC9D..1BC9E  ; Grapheme_Extend
-1D165         ; Grapheme_Extend
+1CF00..1CF2D  ; Grapheme_Extend
+1CF30..1CF46  ; Grapheme_Extend
+1D165..1D166  ; Grapheme_Extend
 1D167..1D169  ; Grapheme_Extend
-1D16E..1D172  ; Grapheme_Extend
+1D16D..1D172  ; Grapheme_Extend
 1D17B..1D182  ; Grapheme_Extend
 1D185..1D18B  ; Grapheme_Extend
 1D1AA..1D1AD  ; Grapheme_Extend
@@ -10033,12 +11161,22 @@ FF9E..FF9F    ; Grapheme_Extend
 1E01B..1E021  ; Grapheme_Extend
 1E023..1E024  ; Grapheme_Extend
 1E026..1E02A  ; Grapheme_Extend
+1E08F         ; Grapheme_Extend
+1E130..1E136  ; Grapheme_Extend
+1E2AE         ; Grapheme_Extend
+1E2EC..1E2EF  ; Grapheme_Extend
+1E4EC..1E4EF  ; Grapheme_Extend
+1E5EE..1E5EF  ; Grapheme_Extend
+1E6E3         ; Grapheme_Extend
+1E6E6         ; Grapheme_Extend
+1E6EE..1E6EF  ; Grapheme_Extend
+1E6F5         ; Grapheme_Extend
 1E8D0..1E8D6  ; Grapheme_Extend
 1E944..1E94A  ; Grapheme_Extend
 E0020..E007F  ; Grapheme_Extend
 E0100..E01EF  ; Grapheme_Extend
 
-# Total code points: 1943
+# Total code points: 2232
 
 # ================================================
 
@@ -10107,8 +11245,8 @@ E0100..E01EF  ; Grapheme_Extend
 01BC..01BF    ; Grapheme_Base
 01C0..01C3    ; Grapheme_Base
 01C4..0293    ; Grapheme_Base
-0294          ; Grapheme_Base
-0295..02AF    ; Grapheme_Base
+0294..0295    ; Grapheme_Base
+0296..02AF    ; Grapheme_Base
 02B0..02C1    ; Grapheme_Base
 02C2..02C5    ; Grapheme_Base
 02C6..02D1    ; Grapheme_Base
@@ -10159,7 +11297,7 @@ E0100..E01EF  ; Grapheme_Extend
 060C..060D    ; Grapheme_Base
 060E..060F    ; Grapheme_Base
 061B          ; Grapheme_Base
-061E..061F    ; Grapheme_Base
+061D..061F    ; Grapheme_Base
 0620..063F    ; Grapheme_Base
 0640          ; Grapheme_Base
 0641..064A    ; Grapheme_Base
@@ -10197,8 +11335,11 @@ E0100..E01EF  ; Grapheme_Extend
 0840..0858    ; Grapheme_Base
 085E          ; Grapheme_Base
 0860..086A    ; Grapheme_Base
-08A0..08B4    ; Grapheme_Base
-08B6..08BD    ; Grapheme_Base
+0870..0887    ; Grapheme_Base
+0888          ; Grapheme_Base
+0889..088F    ; Grapheme_Base
+08A0..08C8    ; Grapheme_Base
+08C9          ; Grapheme_Base
 0903          ; Grapheme_Base
 0904..0939    ; Grapheme_Base
 093B          ; Grapheme_Base
@@ -10311,8 +11452,10 @@ E0100..E01EF  ; Grapheme_Extend
 0C3D          ; Grapheme_Base
 0C41..0C44    ; Grapheme_Base
 0C58..0C5A    ; Grapheme_Base
+0C5C..0C5D    ; Grapheme_Base
 0C60..0C61    ; Grapheme_Base
 0C66..0C6F    ; Grapheme_Base
+0C77          ; Grapheme_Base
 0C78..0C7E    ; Grapheme_Base
 0C7F          ; Grapheme_Base
 0C80          ; Grapheme_Base
@@ -10325,16 +11468,15 @@ E0100..E01EF  ; Grapheme_Extend
 0CB5..0CB9    ; Grapheme_Base
 0CBD          ; Grapheme_Base
 0CBE          ; Grapheme_Base
-0CC0..0CC1    ; Grapheme_Base
+0CC1          ; Grapheme_Base
 0CC3..0CC4    ; Grapheme_Base
-0CC7..0CC8    ; Grapheme_Base
-0CCA..0CCB    ; Grapheme_Base
-0CDE          ; Grapheme_Base
+0CDC..0CDE    ; Grapheme_Base
 0CE0..0CE1    ; Grapheme_Base
 0CE6..0CEF    ; Grapheme_Base
 0CF1..0CF2    ; Grapheme_Base
+0CF3          ; Grapheme_Base
 0D02..0D03    ; Grapheme_Base
-0D05..0D0C    ; Grapheme_Base
+0D04..0D0C    ; Grapheme_Base
 0D0E..0D10    ; Grapheme_Base
 0D12..0D3A    ; Grapheme_Base
 0D3D          ; Grapheme_Base
@@ -10371,16 +11513,10 @@ E0100..E01EF  ; Grapheme_Extend
 0E5A..0E5B    ; Grapheme_Base
 0E81..0E82    ; Grapheme_Base
 0E84          ; Grapheme_Base
-0E87..0E88    ; Grapheme_Base
-0E8A          ; Grapheme_Base
-0E8D          ; Grapheme_Base
-0E94..0E97    ; Grapheme_Base
-0E99..0E9F    ; Grapheme_Base
-0EA1..0EA3    ; Grapheme_Base
+0E86..0E8A    ; Grapheme_Base
+0E8C..0EA3    ; Grapheme_Base
 0EA5          ; Grapheme_Base
-0EA7          ; Grapheme_Base
-0EAA..0EAB    ; Grapheme_Base
-0EAD..0EB0    ; Grapheme_Base
+0EA7..0EB0    ; Grapheme_Base
 0EB2..0EB3    ; Grapheme_Base
 0EBD          ; Grapheme_Base
 0EC0..0EC4    ; Grapheme_Base
@@ -10470,7 +11606,8 @@ E0100..E01EF  ; Grapheme_Extend
 13F8..13FD    ; Grapheme_Base
 1400          ; Grapheme_Base
 1401..166C    ; Grapheme_Base
-166D..166E    ; Grapheme_Base
+166D          ; Grapheme_Base
+166E          ; Grapheme_Base
 166F..167F    ; Grapheme_Base
 1680          ; Grapheme_Base
 1681..169A    ; Grapheme_Base
@@ -10480,9 +11617,8 @@ E0100..E01EF  ; Grapheme_Extend
 16EB..16ED    ; Grapheme_Base
 16EE..16F0    ; Grapheme_Base
 16F1..16F8    ; Grapheme_Base
-1700..170C    ; Grapheme_Base
-170E..1711    ; Grapheme_Base
-1720..1731    ; Grapheme_Base
+1700..1711    ; Grapheme_Base
+171F..1731    ; Grapheme_Base
 1735..1736    ; Grapheme_Base
 1740..1751    ; Grapheme_Base
 1760..176C    ; Grapheme_Base
@@ -10540,27 +11676,24 @@ E0100..E01EF  ; Grapheme_Extend
 1AA8..1AAD    ; Grapheme_Base
 1B04          ; Grapheme_Base
 1B05..1B33    ; Grapheme_Base
-1B35          ; Grapheme_Base
-1B3B          ; Grapheme_Base
-1B3D..1B41    ; Grapheme_Base
-1B43..1B44    ; Grapheme_Base
-1B45..1B4B    ; Grapheme_Base
+1B3E..1B41    ; Grapheme_Base
+1B45..1B4C    ; Grapheme_Base
+1B4E..1B4F    ; Grapheme_Base
 1B50..1B59    ; Grapheme_Base
 1B5A..1B60    ; Grapheme_Base
 1B61..1B6A    ; Grapheme_Base
 1B74..1B7C    ; Grapheme_Base
+1B7D..1B7F    ; Grapheme_Base
 1B82          ; Grapheme_Base
 1B83..1BA0    ; Grapheme_Base
 1BA1          ; Grapheme_Base
 1BA6..1BA7    ; Grapheme_Base
-1BAA          ; Grapheme_Base
 1BAE..1BAF    ; Grapheme_Base
 1BB0..1BB9    ; Grapheme_Base
 1BBA..1BE5    ; Grapheme_Base
 1BE7          ; Grapheme_Base
 1BEA..1BEC    ; Grapheme_Base
 1BEE          ; Grapheme_Base
-1BF2..1BF3    ; Grapheme_Base
 1BFC..1BFF    ; Grapheme_Base
 1C00..1C23    ; Grapheme_Base
 1C24..1C2B    ; Grapheme_Base
@@ -10572,17 +11705,17 @@ E0100..E01EF  ; Grapheme_Extend
 1C5A..1C77    ; Grapheme_Base
 1C78..1C7D    ; Grapheme_Base
 1C7E..1C7F    ; Grapheme_Base
-1C80..1C88    ; Grapheme_Base
+1C80..1C8A    ; Grapheme_Base
 1C90..1CBA    ; Grapheme_Base
 1CBD..1CBF    ; Grapheme_Base
 1CC0..1CC7    ; Grapheme_Base
 1CD3          ; Grapheme_Base
 1CE1          ; Grapheme_Base
 1CE9..1CEC    ; Grapheme_Base
-1CEE..1CF1    ; Grapheme_Base
-1CF2..1CF3    ; Grapheme_Base
+1CEE..1CF3    ; Grapheme_Base
 1CF5..1CF6    ; Grapheme_Base
 1CF7          ; Grapheme_Base
+1CFA          ; Grapheme_Base
 1D00..1D2B    ; Grapheme_Base
 1D2C..1D6A    ; Grapheme_Base
 1D6B..1D77    ; Grapheme_Base
@@ -10653,7 +11786,7 @@ E0100..E01EF  ; Grapheme_Extend
 208D          ; Grapheme_Base
 208E          ; Grapheme_Base
 2090..209C    ; Grapheme_Base
-20A0..20BF    ; Grapheme_Base
+20A0..20C1    ; Grapheme_Base
 2100..2101    ; Grapheme_Base
 2102          ; Grapheme_Base
 2103..2106    ; Grapheme_Base
@@ -10727,7 +11860,7 @@ E0100..E01EF  ; Grapheme_Extend
 239B..23B3    ; Grapheme_Base
 23B4..23DB    ; Grapheme_Base
 23DC..23E1    ; Grapheme_Base
-23E2..2426    ; Grapheme_Base
+23E2..2429    ; Grapheme_Base
 2440..244A    ; Grapheme_Base
 2460..249B    ; Grapheme_Base
 249C..24E9    ; Grapheme_Base
@@ -10810,12 +11943,8 @@ E0100..E01EF  ; Grapheme_Extend
 2B45..2B46    ; Grapheme_Base
 2B47..2B4C    ; Grapheme_Base
 2B4D..2B73    ; Grapheme_Base
-2B76..2B95    ; Grapheme_Base
-2B98..2BC8    ; Grapheme_Base
-2BCA..2BFE    ; Grapheme_Base
-2C00..2C2E    ; Grapheme_Base
-2C30..2C5E    ; Grapheme_Base
-2C60..2C7B    ; Grapheme_Base
+2B76..2BFF    ; Grapheme_Base
+2C00..2C7B    ; Grapheme_Base
 2C7C..2C7D    ; Grapheme_Base
 2C7E..2CE4    ; Grapheme_Base
 2CE5..2CEA    ; Grapheme_Base
@@ -10876,11 +12005,22 @@ E0100..E01EF  ; Grapheme_Extend
 2E40          ; Grapheme_Base
 2E41          ; Grapheme_Base
 2E42          ; Grapheme_Base
-2E43..2E4E    ; Grapheme_Base
+2E43..2E4F    ; Grapheme_Base
+2E50..2E51    ; Grapheme_Base
+2E52..2E54    ; Grapheme_Base
+2E55          ; Grapheme_Base
+2E56          ; Grapheme_Base
+2E57          ; Grapheme_Base
+2E58          ; Grapheme_Base
+2E59          ; Grapheme_Base
+2E5A          ; Grapheme_Base
+2E5B          ; Grapheme_Base
+2E5C          ; Grapheme_Base
+2E5D          ; Grapheme_Base
 2E80..2E99    ; Grapheme_Base
 2E9B..2EF3    ; Grapheme_Base
 2F00..2FD5    ; Grapheme_Base
-2FF0..2FFB    ; Grapheme_Base
+2FF0..2FFF    ; Grapheme_Base
 3000          ; Grapheme_Base
 3001..3003    ; Grapheme_Base
 3004          ; Grapheme_Base
@@ -10933,8 +12073,9 @@ E0100..E01EF  ; Grapheme_Extend
 3190..3191    ; Grapheme_Base
 3192..3195    ; Grapheme_Base
 3196..319F    ; Grapheme_Base
-31A0..31BA    ; Grapheme_Base
-31C0..31E3    ; Grapheme_Base
+31A0..31BF    ; Grapheme_Base
+31C0..31E5    ; Grapheme_Base
+31EF          ; Grapheme_Base
 31F0..31FF    ; Grapheme_Base
 3200..321E    ; Grapheme_Base
 3220..3229    ; Grapheme_Base
@@ -10946,12 +12087,10 @@ E0100..E01EF  ; Grapheme_Extend
 3280..3289    ; Grapheme_Base
 328A..32B0    ; Grapheme_Base
 32B1..32BF    ; Grapheme_Base
-32C0..32FE    ; Grapheme_Base
-3300..33FF    ; Grapheme_Base
-3400..4DB5    ; Grapheme_Base
+32C0..33FF    ; Grapheme_Base
+3400..4DBF    ; Grapheme_Base
 4DC0..4DFF    ; Grapheme_Base
-4E00..9FEF    ; Grapheme_Base
-A000..A014    ; Grapheme_Base
+4E00..A014    ; Grapheme_Base
 A015          ; Grapheme_Base
 A016..A48C    ; Grapheme_Base
 A490..A4C6    ; Grapheme_Base
@@ -10984,7 +12123,9 @@ A788          ; Grapheme_Base
 A789..A78A    ; Grapheme_Base
 A78B..A78E    ; Grapheme_Base
 A78F          ; Grapheme_Base
-A790..A7B9    ; Grapheme_Base
+A790..A7DC    ; Grapheme_Base
+A7F1..A7F4    ; Grapheme_Base
+A7F5..A7F6    ; Grapheme_Base
 A7F7          ; Grapheme_Base
 A7F8..A7F9    ; Grapheme_Base
 A7FA          ; Grapheme_Base
@@ -11015,14 +12156,14 @@ A900..A909    ; Grapheme_Base
 A90A..A925    ; Grapheme_Base
 A92E..A92F    ; Grapheme_Base
 A930..A946    ; Grapheme_Base
-A952..A953    ; Grapheme_Base
+A952          ; Grapheme_Base
 A95F          ; Grapheme_Base
 A960..A97C    ; Grapheme_Base
 A983          ; Grapheme_Base
 A984..A9B2    ; Grapheme_Base
 A9B4..A9B5    ; Grapheme_Base
 A9BA..A9BB    ; Grapheme_Base
-A9BD..A9C0    ; Grapheme_Base
+A9BE..A9BF    ; Grapheme_Base
 A9C1..A9CD    ; Grapheme_Base
 A9CF          ; Grapheme_Base
 A9D0..A9D9    ; Grapheme_Base
@@ -11071,7 +12212,9 @@ AB28..AB2E    ; Grapheme_Base
 AB30..AB5A    ; Grapheme_Base
 AB5B          ; Grapheme_Base
 AB5C..AB5F    ; Grapheme_Base
-AB60..AB65    ; Grapheme_Base
+AB60..AB68    ; Grapheme_Base
+AB69          ; Grapheme_Base
+AB6A..AB6B    ; Grapheme_Base
 AB70..ABBF    ; Grapheme_Base
 ABC0..ABE2    ; Grapheme_Base
 ABE3..ABE4    ; Grapheme_Base
@@ -11096,15 +12239,19 @@ FB3E          ; Grapheme_Base
 FB40..FB41    ; Grapheme_Base
 FB43..FB44    ; Grapheme_Base
 FB46..FBB1    ; Grapheme_Base
-FBB2..FBC1    ; Grapheme_Base
+FBB2..FBC2    ; Grapheme_Base
+FBC3..FBD2    ; Grapheme_Base
 FBD3..FD3D    ; Grapheme_Base
 FD3E          ; Grapheme_Base
 FD3F          ; Grapheme_Base
+FD40..FD4F    ; Grapheme_Base
 FD50..FD8F    ; Grapheme_Base
+FD90..FD91    ; Grapheme_Base
 FD92..FDC7    ; Grapheme_Base
+FDC8..FDCF    ; Grapheme_Base
 FDF0..FDFB    ; Grapheme_Base
 FDFC          ; Grapheme_Base
-FDFD          ; Grapheme_Base
+FDFD..FDFF    ; Grapheme_Base
 FE10..FE16    ; Grapheme_Base
 FE17          ; Grapheme_Base
 FE18          ; Grapheme_Base
@@ -11215,7 +12362,7 @@ FFFC..FFFD    ; Grapheme_Base
 10179..10189  ; Grapheme_Base
 1018A..1018B  ; Grapheme_Base
 1018C..1018E  ; Grapheme_Base
-10190..1019B  ; Grapheme_Base
+10190..1019C  ; Grapheme_Base
 101A0         ; Grapheme_Base
 101D0..101FC  ; Grapheme_Base
 10280..1029C  ; Grapheme_Base
@@ -11242,9 +12389,21 @@ FFFC..FFFD    ; Grapheme_Base
 10500..10527  ; Grapheme_Base
 10530..10563  ; Grapheme_Base
 1056F         ; Grapheme_Base
+10570..1057A  ; Grapheme_Base
+1057C..1058A  ; Grapheme_Base
+1058C..10592  ; Grapheme_Base
+10594..10595  ; Grapheme_Base
+10597..105A1  ; Grapheme_Base
+105A3..105B1  ; Grapheme_Base
+105B3..105B9  ; Grapheme_Base
+105BB..105BC  ; Grapheme_Base
+105C0..105F3  ; Grapheme_Base
 10600..10736  ; Grapheme_Base
 10740..10755  ; Grapheme_Base
 10760..10767  ; Grapheme_Base
+10780..10785  ; Grapheme_Base
+10787..107B0  ; Grapheme_Base
+107B2..107BA  ; Grapheme_Base
 10800..10805  ; Grapheme_Base
 10808         ; Grapheme_Base
 1080A..10835  ; Grapheme_Base
@@ -11266,6 +12425,7 @@ FFFC..FFFD    ; Grapheme_Base
 1091F         ; Grapheme_Base
 10920..10939  ; Grapheme_Base
 1093F         ; Grapheme_Base
+10940..10959  ; Grapheme_Base
 10980..109B7  ; Grapheme_Base
 109BC..109BD  ; Grapheme_Base
 109BE..109BF  ; Grapheme_Base
@@ -11302,19 +12462,43 @@ FFFC..FFFD    ; Grapheme_Base
 10CFA..10CFF  ; Grapheme_Base
 10D00..10D23  ; Grapheme_Base
 10D30..10D39  ; Grapheme_Base
+10D40..10D49  ; Grapheme_Base
+10D4A..10D4D  ; Grapheme_Base
+10D4E         ; Grapheme_Base
+10D4F         ; Grapheme_Base
+10D50..10D65  ; Grapheme_Base
+10D6E         ; Grapheme_Base
+10D6F         ; Grapheme_Base
+10D70..10D85  ; Grapheme_Base
+10D8E..10D8F  ; Grapheme_Base
 10E60..10E7E  ; Grapheme_Base
+10E80..10EA9  ; Grapheme_Base
+10EAD         ; Grapheme_Base
+10EB0..10EB1  ; Grapheme_Base
+10EC2..10EC4  ; Grapheme_Base
+10EC5         ; Grapheme_Base
+10EC6..10EC7  ; Grapheme_Base
+10ED0         ; Grapheme_Base
+10ED1..10ED8  ; Grapheme_Base
 10F00..10F1C  ; Grapheme_Base
 10F1D..10F26  ; Grapheme_Base
 10F27         ; Grapheme_Base
 10F30..10F45  ; Grapheme_Base
 10F51..10F54  ; Grapheme_Base
 10F55..10F59  ; Grapheme_Base
+10F70..10F81  ; Grapheme_Base
+10F86..10F89  ; Grapheme_Base
+10FB0..10FC4  ; Grapheme_Base
+10FC5..10FCB  ; Grapheme_Base
+10FE0..10FF6  ; Grapheme_Base
 11000         ; Grapheme_Base
 11002         ; Grapheme_Base
 11003..11037  ; Grapheme_Base
 11047..1104D  ; Grapheme_Base
 11052..11065  ; Grapheme_Base
 11066..1106F  ; Grapheme_Base
+11071..11072  ; Grapheme_Base
+11075         ; Grapheme_Base
 11082         ; Grapheme_Base
 11083..110AF  ; Grapheme_Base
 110B0..110B2  ; Grapheme_Base
@@ -11329,16 +12513,18 @@ FFFC..FFFD    ; Grapheme_Base
 11140..11143  ; Grapheme_Base
 11144         ; Grapheme_Base
 11145..11146  ; Grapheme_Base
+11147         ; Grapheme_Base
 11150..11172  ; Grapheme_Base
 11174..11175  ; Grapheme_Base
 11176         ; Grapheme_Base
 11182         ; Grapheme_Base
 11183..111B2  ; Grapheme_Base
 111B3..111B5  ; Grapheme_Base
-111BF..111C0  ; Grapheme_Base
+111BF         ; Grapheme_Base
 111C1..111C4  ; Grapheme_Base
 111C5..111C8  ; Grapheme_Base
 111CD         ; Grapheme_Base
+111CE         ; Grapheme_Base
 111D0..111D9  ; Grapheme_Base
 111DA         ; Grapheme_Base
 111DB         ; Grapheme_Base
@@ -11349,8 +12535,8 @@ FFFC..FFFD    ; Grapheme_Base
 11213..1122B  ; Grapheme_Base
 1122C..1122E  ; Grapheme_Base
 11232..11233  ; Grapheme_Base
-11235         ; Grapheme_Base
 11238..1123D  ; Grapheme_Base
+1123F..11240  ; Grapheme_Base
 11280..11286  ; Grapheme_Base
 11288         ; Grapheme_Base
 1128A..1128D  ; Grapheme_Base
@@ -11371,10 +12557,22 @@ FFFC..FFFD    ; Grapheme_Base
 1133F         ; Grapheme_Base
 11341..11344  ; Grapheme_Base
 11347..11348  ; Grapheme_Base
-1134B..1134D  ; Grapheme_Base
+1134B..1134C  ; Grapheme_Base
 11350         ; Grapheme_Base
 1135D..11361  ; Grapheme_Base
 11362..11363  ; Grapheme_Base
+11380..11389  ; Grapheme_Base
+1138B         ; Grapheme_Base
+1138E         ; Grapheme_Base
+11390..113B5  ; Grapheme_Base
+113B7         ; Grapheme_Base
+113B9..113BA  ; Grapheme_Base
+113CA         ; Grapheme_Base
+113CC..113CD  ; Grapheme_Base
+113D1         ; Grapheme_Base
+113D3         ; Grapheme_Base
+113D4..113D5  ; Grapheme_Base
+113D7..113D8  ; Grapheme_Base
 11400..11434  ; Grapheme_Base
 11435..11437  ; Grapheme_Base
 11440..11441  ; Grapheme_Base
@@ -11382,8 +12580,9 @@ FFFC..FFFD    ; Grapheme_Base
 11447..1144A  ; Grapheme_Base
 1144B..1144F  ; Grapheme_Base
 11450..11459  ; Grapheme_Base
-1145B         ; Grapheme_Base
+1145A..1145B  ; Grapheme_Base
 1145D         ; Grapheme_Base
+1145F..11461  ; Grapheme_Base
 11480..114AF  ; Grapheme_Base
 114B1..114B2  ; Grapheme_Base
 114B9         ; Grapheme_Base
@@ -11411,15 +12610,19 @@ FFFC..FFFD    ; Grapheme_Base
 11680..116AA  ; Grapheme_Base
 116AC         ; Grapheme_Base
 116AE..116AF  ; Grapheme_Base
-116B6         ; Grapheme_Base
+116B8         ; Grapheme_Base
+116B9         ; Grapheme_Base
 116C0..116C9  ; Grapheme_Base
+116D0..116E3  ; Grapheme_Base
 11700..1171A  ; Grapheme_Base
+1171E         ; Grapheme_Base
 11720..11721  ; Grapheme_Base
 11726         ; Grapheme_Base
 11730..11739  ; Grapheme_Base
 1173A..1173B  ; Grapheme_Base
 1173C..1173E  ; Grapheme_Base
 1173F         ; Grapheme_Base
+11740..11746  ; Grapheme_Base
 11800..1182B  ; Grapheme_Base
 1182C..1182E  ; Grapheme_Base
 11838         ; Grapheme_Base
@@ -11427,7 +12630,27 @@ FFFC..FFFD    ; Grapheme_Base
 118A0..118DF  ; Grapheme_Base
 118E0..118E9  ; Grapheme_Base
 118EA..118F2  ; Grapheme_Base
-118FF         ; Grapheme_Base
+118FF..11906  ; Grapheme_Base
+11909         ; Grapheme_Base
+1190C..11913  ; Grapheme_Base
+11915..11916  ; Grapheme_Base
+11918..1192F  ; Grapheme_Base
+11931..11935  ; Grapheme_Base
+11937..11938  ; Grapheme_Base
+1193F         ; Grapheme_Base
+11940         ; Grapheme_Base
+11941         ; Grapheme_Base
+11942         ; Grapheme_Base
+11944..11946  ; Grapheme_Base
+11950..11959  ; Grapheme_Base
+119A0..119A7  ; Grapheme_Base
+119AA..119D0  ; Grapheme_Base
+119D1..119D3  ; Grapheme_Base
+119DC..119DF  ; Grapheme_Base
+119E1         ; Grapheme_Base
+119E2         ; Grapheme_Base
+119E3         ; Grapheme_Base
+119E4         ; Grapheme_Base
 11A00         ; Grapheme_Base
 11A0B..11A32  ; Grapheme_Base
 11A39         ; Grapheme_Base
@@ -11435,13 +12658,19 @@ FFFC..FFFD    ; Grapheme_Base
 11A3F..11A46  ; Grapheme_Base
 11A50         ; Grapheme_Base
 11A57..11A58  ; Grapheme_Base
-11A5C..11A83  ; Grapheme_Base
-11A86..11A89  ; Grapheme_Base
+11A5C..11A89  ; Grapheme_Base
 11A97         ; Grapheme_Base
 11A9A..11A9C  ; Grapheme_Base
 11A9D         ; Grapheme_Base
 11A9E..11AA2  ; Grapheme_Base
-11AC0..11AF8  ; Grapheme_Base
+11AB0..11AF8  ; Grapheme_Base
+11B00..11B09  ; Grapheme_Base
+11B61         ; Grapheme_Base
+11B65         ; Grapheme_Base
+11B67         ; Grapheme_Base
+11BC0..11BE0  ; Grapheme_Base
+11BE1         ; Grapheme_Base
+11BF0..11BF9  ; Grapheme_Base
 11C00..11C08  ; Grapheme_Base
 11C0A..11C2E  ; Grapheme_Base
 11C2F         ; Grapheme_Base
@@ -11468,19 +12697,46 @@ FFFC..FFFD    ; Grapheme_Base
 11D96         ; Grapheme_Base
 11D98         ; Grapheme_Base
 11DA0..11DA9  ; Grapheme_Base
+11DB0..11DD8  ; Grapheme_Base
+11DD9         ; Grapheme_Base
+11DDA..11DDB  ; Grapheme_Base
+11DE0..11DE9  ; Grapheme_Base
 11EE0..11EF2  ; Grapheme_Base
 11EF5..11EF6  ; Grapheme_Base
 11EF7..11EF8  ; Grapheme_Base
+11F02         ; Grapheme_Base
+11F03         ; Grapheme_Base
+11F04..11F10  ; Grapheme_Base
+11F12..11F33  ; Grapheme_Base
+11F34..11F35  ; Grapheme_Base
+11F3E..11F3F  ; Grapheme_Base
+11F43..11F4F  ; Grapheme_Base
+11F50..11F59  ; Grapheme_Base
+11FB0         ; Grapheme_Base
+11FC0..11FD4  ; Grapheme_Base
+11FD5..11FDC  ; Grapheme_Base
+11FDD..11FE0  ; Grapheme_Base
+11FE1..11FF1  ; Grapheme_Base
+11FFF         ; Grapheme_Base
 12000..12399  ; Grapheme_Base
 12400..1246E  ; Grapheme_Base
 12470..12474  ; Grapheme_Base
 12480..12543  ; Grapheme_Base
-13000..1342E  ; Grapheme_Base
+12F90..12FF0  ; Grapheme_Base
+12FF1..12FF2  ; Grapheme_Base
+13000..1342F  ; Grapheme_Base
+13441..13446  ; Grapheme_Base
+13460..143FA  ; Grapheme_Base
 14400..14646  ; Grapheme_Base
+16100..1611D  ; Grapheme_Base
+1612A..1612C  ; Grapheme_Base
+16130..16139  ; Grapheme_Base
 16800..16A38  ; Grapheme_Base
 16A40..16A5E  ; Grapheme_Base
 16A60..16A69  ; Grapheme_Base
 16A6E..16A6F  ; Grapheme_Base
+16A70..16ABE  ; Grapheme_Base
+16AC0..16AC9  ; Grapheme_Base
 16AD0..16AED  ; Grapheme_Base
 16AF5         ; Grapheme_Base
 16B00..16B2F  ; Grapheme_Base
@@ -11493,17 +12749,36 @@ FFFC..FFFD    ; Grapheme_Base
 16B5B..16B61  ; Grapheme_Base
 16B63..16B77  ; Grapheme_Base
 16B7D..16B8F  ; Grapheme_Base
+16D40..16D42  ; Grapheme_Base
+16D43..16D6A  ; Grapheme_Base
+16D6B..16D6C  ; Grapheme_Base
+16D6D..16D6F  ; Grapheme_Base
+16D70..16D79  ; Grapheme_Base
 16E40..16E7F  ; Grapheme_Base
 16E80..16E96  ; Grapheme_Base
 16E97..16E9A  ; Grapheme_Base
-16F00..16F44  ; Grapheme_Base
+16EA0..16EB8  ; Grapheme_Base
+16EBB..16ED3  ; Grapheme_Base
+16F00..16F4A  ; Grapheme_Base
 16F50         ; Grapheme_Base
-16F51..16F7E  ; Grapheme_Base
+16F51..16F87  ; Grapheme_Base
 16F93..16F9F  ; Grapheme_Base
 16FE0..16FE1  ; Grapheme_Base
-17000..187F1  ; Grapheme_Base
-18800..18AF2  ; Grapheme_Base
-1B000..1B11E  ; Grapheme_Base
+16FE2         ; Grapheme_Base
+16FE3         ; Grapheme_Base
+16FF2..16FF3  ; Grapheme_Base
+16FF4..16FF6  ; Grapheme_Base
+17000..18CD5  ; Grapheme_Base
+18CFF..18D1E  ; Grapheme_Base
+18D80..18DF2  ; Grapheme_Base
+1AFF0..1AFF3  ; Grapheme_Base
+1AFF5..1AFFB  ; Grapheme_Base
+1AFFD..1AFFE  ; Grapheme_Base
+1B000..1B122  ; Grapheme_Base
+1B132         ; Grapheme_Base
+1B150..1B152  ; Grapheme_Base
+1B155         ; Grapheme_Base
+1B164..1B167  ; Grapheme_Base
 1B170..1B2FB  ; Grapheme_Base
 1BC00..1BC6A  ; Grapheme_Base
 1BC70..1BC7C  ; Grapheme_Base
@@ -11511,17 +12786,24 @@ FFFC..FFFD    ; Grapheme_Base
 1BC90..1BC99  ; Grapheme_Base
 1BC9C         ; Grapheme_Base
 1BC9F         ; Grapheme_Base
+1CC00..1CCEF  ; Grapheme_Base
+1CCF0..1CCF9  ; Grapheme_Base
+1CCFA..1CCFC  ; Grapheme_Base
+1CD00..1CEB3  ; Grapheme_Base
+1CEBA..1CED0  ; Grapheme_Base
+1CEE0..1CEEF  ; Grapheme_Base
+1CEF0         ; Grapheme_Base
+1CF50..1CFC3  ; Grapheme_Base
 1D000..1D0F5  ; Grapheme_Base
 1D100..1D126  ; Grapheme_Base
 1D129..1D164  ; Grapheme_Base
-1D166         ; Grapheme_Base
 1D16A..1D16C  ; Grapheme_Base
-1D16D         ; Grapheme_Base
 1D183..1D184  ; Grapheme_Base
 1D18C..1D1A9  ; Grapheme_Base
-1D1AE..1D1E8  ; Grapheme_Base
+1D1AE..1D1EA  ; Grapheme_Base
 1D200..1D241  ; Grapheme_Base
 1D245         ; Grapheme_Base
+1D2C0..1D2D3  ; Grapheme_Base
 1D2E0..1D2F3  ; Grapheme_Base
 1D300..1D356  ; Grapheme_Base
 1D360..1D378  ; Grapheme_Base
@@ -11572,9 +12854,42 @@ FFFC..FFFD    ; Grapheme_Base
 1DA76..1DA83  ; Grapheme_Base
 1DA85..1DA86  ; Grapheme_Base
 1DA87..1DA8B  ; Grapheme_Base
+1DF00..1DF09  ; Grapheme_Base
+1DF0A         ; Grapheme_Base
+1DF0B..1DF1E  ; Grapheme_Base
+1DF25..1DF2A  ; Grapheme_Base
+1E030..1E06D  ; Grapheme_Base
+1E100..1E12C  ; Grapheme_Base
+1E137..1E13D  ; Grapheme_Base
+1E140..1E149  ; Grapheme_Base
+1E14E         ; Grapheme_Base
+1E14F         ; Grapheme_Base
+1E290..1E2AD  ; Grapheme_Base
+1E2C0..1E2EB  ; Grapheme_Base
+1E2F0..1E2F9  ; Grapheme_Base
+1E2FF         ; Grapheme_Base
+1E4D0..1E4EA  ; Grapheme_Base
+1E4EB         ; Grapheme_Base
+1E4F0..1E4F9  ; Grapheme_Base
+1E5D0..1E5ED  ; Grapheme_Base
+1E5F0         ; Grapheme_Base
+1E5F1..1E5FA  ; Grapheme_Base
+1E5FF         ; Grapheme_Base
+1E6C0..1E6DE  ; Grapheme_Base
+1E6E0..1E6E2  ; Grapheme_Base
+1E6E4..1E6E5  ; Grapheme_Base
+1E6E7..1E6ED  ; Grapheme_Base
+1E6F0..1E6F4  ; Grapheme_Base
+1E6FE         ; Grapheme_Base
+1E6FF         ; Grapheme_Base
+1E7E0..1E7E6  ; Grapheme_Base
+1E7E8..1E7EB  ; Grapheme_Base
+1E7ED..1E7EE  ; Grapheme_Base
+1E7F0..1E7FE  ; Grapheme_Base
 1E800..1E8C4  ; Grapheme_Base
 1E8C7..1E8CF  ; Grapheme_Base
 1E900..1E943  ; Grapheme_Base
+1E94B         ; Grapheme_Base
 1E950..1E959  ; Grapheme_Base
 1E95E..1E95F  ; Grapheme_Base
 1EC71..1ECAB  ; Grapheme_Base
@@ -11582,6 +12897,9 @@ FFFC..FFFD    ; Grapheme_Base
 1ECAD..1ECAF  ; Grapheme_Base
 1ECB0         ; Grapheme_Base
 1ECB1..1ECB4  ; Grapheme_Base
+1ED01..1ED2D  ; Grapheme_Base
+1ED2E         ; Grapheme_Base
+1ED2F..1ED3D  ; Grapheme_Base
 1EE00..1EE03  ; Grapheme_Base
 1EE05..1EE1F  ; Grapheme_Base
 1EE21..1EE22  ; Grapheme_Base
@@ -11623,8 +12941,7 @@ FFFC..FFFD    ; Grapheme_Base
 1F0C1..1F0CF  ; Grapheme_Base
 1F0D1..1F0F5  ; Grapheme_Base
 1F100..1F10C  ; Grapheme_Base
-1F110..1F16B  ; Grapheme_Base
-1F170..1F1AC  ; Grapheme_Base
+1F10D..1F1AD  ; Grapheme_Base
 1F1E6..1F202  ; Grapheme_Base
 1F210..1F23B  ; Grapheme_Base
 1F240..1F248  ; Grapheme_Base
@@ -11632,34 +12949,43 @@ FFFC..FFFD    ; Grapheme_Base
 1F260..1F265  ; Grapheme_Base
 1F300..1F3FA  ; Grapheme_Base
 1F3FB..1F3FF  ; Grapheme_Base
-1F400..1F6D4  ; Grapheme_Base
-1F6E0..1F6EC  ; Grapheme_Base
-1F6F0..1F6F9  ; Grapheme_Base
-1F700..1F773  ; Grapheme_Base
-1F780..1F7D8  ; Grapheme_Base
+1F400..1F6D8  ; Grapheme_Base
+1F6DC..1F6EC  ; Grapheme_Base
+1F6F0..1F6FC  ; Grapheme_Base
+1F700..1F7D9  ; Grapheme_Base
+1F7E0..1F7EB  ; Grapheme_Base
+1F7F0         ; Grapheme_Base
 1F800..1F80B  ; Grapheme_Base
 1F810..1F847  ; Grapheme_Base
 1F850..1F859  ; Grapheme_Base
 1F860..1F887  ; Grapheme_Base
 1F890..1F8AD  ; Grapheme_Base
-1F900..1F90B  ; Grapheme_Base
-1F910..1F93E  ; Grapheme_Base
-1F940..1F970  ; Grapheme_Base
-1F973..1F976  ; Grapheme_Base
-1F97A         ; Grapheme_Base
-1F97C..1F9A2  ; Grapheme_Base
-1F9B0..1F9B9  ; Grapheme_Base
-1F9C0..1F9C2  ; Grapheme_Base
-1F9D0..1F9FF  ; Grapheme_Base
+1F8B0..1F8BB  ; Grapheme_Base
+1F8C0..1F8C1  ; Grapheme_Base
+1F8D0..1F8D8  ; Grapheme_Base
+1F900..1FA57  ; Grapheme_Base
 1FA60..1FA6D  ; Grapheme_Base
-20000..2A6D6  ; Grapheme_Base
-2A700..2B734  ; Grapheme_Base
-2B740..2B81D  ; Grapheme_Base
-2B820..2CEA1  ; Grapheme_Base
+1FA70..1FA7C  ; Grapheme_Base
+1FA80..1FA8A  ; Grapheme_Base
+1FA8E..1FAC6  ; Grapheme_Base
+1FAC8         ; Grapheme_Base
+1FACD..1FADC  ; Grapheme_Base
+1FADF..1FAEA  ; Grapheme_Base
+1FAEF..1FAF8  ; Grapheme_Base
+1FB00..1FB92  ; Grapheme_Base
+1FB94..1FBEF  ; Grapheme_Base
+1FBF0..1FBF9  ; Grapheme_Base
+1FBFA         ; Grapheme_Base
+20000..2A6DF  ; Grapheme_Base
+2A700..2B81D  ; Grapheme_Base
+2B820..2CEAD  ; Grapheme_Base
 2CEB0..2EBE0  ; Grapheme_Base
+2EBF0..2EE5D  ; Grapheme_Base
 2F800..2FA1D  ; Grapheme_Base
+30000..3134A  ; Grapheme_Base
+31350..33479  ; Grapheme_Base
 
-# Total code points: 135374
+# Total code points: 157494
 
 # ================================================
 
@@ -11679,9 +13005,11 @@ FFFC..FFFD    ; Grapheme_Base
 0D4D          ; Grapheme_Link
 0DCA          ; Grapheme_Link
 0E3A          ; Grapheme_Link
+0EBA          ; Grapheme_Link
 0F84          ; Grapheme_Link
 1039..103A    ; Grapheme_Link
 1714          ; Grapheme_Link
+1715          ; Grapheme_Link
 1734          ; Grapheme_Link
 17D2          ; Grapheme_Link
 1A60          ; Grapheme_Link
@@ -11691,6 +13019,7 @@ FFFC..FFFD    ; Grapheme_Base
 1BF2..1BF3    ; Grapheme_Link
 2D7F          ; Grapheme_Link
 A806          ; Grapheme_Link
+A82C          ; Grapheme_Link
 A8C4          ; Grapheme_Link
 A953          ; Grapheme_Link
 A9C0          ; Grapheme_Link
@@ -11698,6 +13027,7 @@ AAF6          ; Grapheme_Link
 ABED          ; Grapheme_Link
 10A3F         ; Grapheme_Link
 11046         ; Grapheme_Link
+11070         ; Grapheme_Link
 1107F         ; Grapheme_Link
 110B9         ; Grapheme_Link
 11133..11134  ; Grapheme_Link
@@ -11705,6 +13035,9 @@ ABED          ; Grapheme_Link
 11235         ; Grapheme_Link
 112EA         ; Grapheme_Link
 1134D         ; Grapheme_Link
+113CE         ; Grapheme_Link
+113CF         ; Grapheme_Link
+113D0         ; Grapheme_Link
 11442         ; Grapheme_Link
 114C2         ; Grapheme_Link
 115BF         ; Grapheme_Link
@@ -11712,13 +13045,557 @@ ABED          ; Grapheme_Link
 116B6         ; Grapheme_Link
 1172B         ; Grapheme_Link
 11839         ; Grapheme_Link
+1193D         ; Grapheme_Link
+1193E         ; Grapheme_Link
+119E0         ; Grapheme_Link
 11A34         ; Grapheme_Link
 11A47         ; Grapheme_Link
 11A99         ; Grapheme_Link
 11C3F         ; Grapheme_Link
 11D44..11D45  ; Grapheme_Link
 11D97         ; Grapheme_Link
+11F41         ; Grapheme_Link
+11F42         ; Grapheme_Link
+1612F         ; Grapheme_Link
 
-# Total code points: 56
+# Total code points: 69
+
+# ================================================
+
+# Derived Property: Indic_Conjunct_Break
+#  Generated from the Grapheme_Cluster_Break, Indic_Syllabic_Category,
+#  Canonical_Combining_Class, and Script properties as described in UAX #44:
+#  https://www.unicode.org/reports/tr44/.
+
+#  All code points not explicitly listed for Indic_Conjunct_Break
+#  have the value None.
+
+# @missing: 0000..10FFFF; InCB; None
+
+# ================================================
+
+# Indic_Conjunct_Break=Linker
+
+094D          ; InCB; Linker
+09CD          ; InCB; Linker
+0ACD          ; InCB; Linker
+0B4D          ; InCB; Linker
+0C4D          ; InCB; Linker
+0D4D          ; InCB; Linker
+1039          ; InCB; Linker
+17D2          ; InCB; Linker
+1A60          ; InCB; Linker
+1B44          ; InCB; Linker
+1BAB          ; InCB; Linker
+A9C0          ; InCB; Linker
+AAF6          ; InCB; Linker
+10A3F         ; InCB; Linker
+11133         ; InCB; Linker
+113D0         ; InCB; Linker
+1193E         ; InCB; Linker
+11A47         ; InCB; Linker
+11A99         ; InCB; Linker
+11F42         ; InCB; Linker
+
+# Total code points: 20
+
+# ================================================
+
+# Indic_Conjunct_Break=Consonant
+
+0915..0939    ; InCB; Consonant
+0958..095F    ; InCB; Consonant
+0978..097F    ; InCB; Consonant
+0995..09A8    ; InCB; Consonant
+09AA..09B0    ; InCB; Consonant
+09B2          ; InCB; Consonant
+09B6..09B9    ; InCB; Consonant
+09DC..09DD    ; InCB; Consonant
+09DF          ; InCB; Consonant
+09F0..09F1    ; InCB; Consonant
+0A95..0AA8    ; InCB; Consonant
+0AAA..0AB0    ; InCB; Consonant
+0AB2..0AB3    ; InCB; Consonant
+0AB5..0AB9    ; InCB; Consonant
+0AF9          ; InCB; Consonant
+0B15..0B28    ; InCB; Consonant
+0B2A..0B30    ; InCB; Consonant
+0B32..0B33    ; InCB; Consonant
+0B35..0B39    ; InCB; Consonant
+0B5C..0B5D    ; InCB; Consonant
+0B5F          ; InCB; Consonant
+0B71          ; InCB; Consonant
+0C15..0C28    ; InCB; Consonant
+0C2A..0C39    ; InCB; Consonant
+0C58..0C5A    ; InCB; Consonant
+0D15..0D3A    ; InCB; Consonant
+1000..102A    ; InCB; Consonant
+103F          ; InCB; Consonant
+1050..1055    ; InCB; Consonant
+105A..105D    ; InCB; Consonant
+1061          ; InCB; Consonant
+1065..1066    ; InCB; Consonant
+106E..1070    ; InCB; Consonant
+1075..1081    ; InCB; Consonant
+108E          ; InCB; Consonant
+1780..17B3    ; InCB; Consonant
+1A20..1A54    ; InCB; Consonant
+1B0B..1B0C    ; InCB; Consonant
+1B13..1B33    ; InCB; Consonant
+1B45..1B4C    ; InCB; Consonant
+1B83..1BA0    ; InCB; Consonant
+1BAE..1BAF    ; InCB; Consonant
+1BBB..1BBD    ; InCB; Consonant
+A989..A98B    ; InCB; Consonant
+A98F..A9B2    ; InCB; Consonant
+A9E0..A9E4    ; InCB; Consonant
+A9E7..A9EF    ; InCB; Consonant
+A9FA..A9FE    ; InCB; Consonant
+AA60..AA6F    ; InCB; Consonant
+AA71..AA73    ; InCB; Consonant
+AA7A          ; InCB; Consonant
+AA7E..AA7F    ; InCB; Consonant
+AAE0..AAEA    ; InCB; Consonant
+ABC0..ABDA    ; InCB; Consonant
+10A00         ; InCB; Consonant
+10A10..10A13  ; InCB; Consonant
+10A15..10A17  ; InCB; Consonant
+10A19..10A35  ; InCB; Consonant
+11103..11126  ; InCB; Consonant
+11144         ; InCB; Consonant
+11147         ; InCB; Consonant
+11380..11389  ; InCB; Consonant
+1138B         ; InCB; Consonant
+1138E         ; InCB; Consonant
+11390..113B5  ; InCB; Consonant
+11900..11906  ; InCB; Consonant
+11909         ; InCB; Consonant
+1190C..11913  ; InCB; Consonant
+11915..11916  ; InCB; Consonant
+11918..1192F  ; InCB; Consonant
+11A00         ; InCB; Consonant
+11A0B..11A32  ; InCB; Consonant
+11A50         ; InCB; Consonant
+11A5C..11A83  ; InCB; Consonant
+11F04..11F10  ; InCB; Consonant
+11F12..11F33  ; InCB; Consonant
+
+# Total code points: 911
+
+# ================================================
+
+# Indic_Conjunct_Break=Extend
+
+0300..036F    ; InCB; Extend
+0483..0487    ; InCB; Extend
+0488..0489    ; InCB; Extend
+0591..05BD    ; InCB; Extend
+05BF          ; InCB; Extend
+05C1..05C2    ; InCB; Extend
+05C4..05C5    ; InCB; Extend
+05C7          ; InCB; Extend
+0610..061A    ; InCB; Extend
+064B..065F    ; InCB; Extend
+0670          ; InCB; Extend
+06D6..06DC    ; InCB; Extend
+06DF..06E4    ; InCB; Extend
+06E7..06E8    ; InCB; Extend
+06EA..06ED    ; InCB; Extend
+0711          ; InCB; Extend
+0730..074A    ; InCB; Extend
+07A6..07B0    ; InCB; Extend
+07EB..07F3    ; InCB; Extend
+07FD          ; InCB; Extend
+0816..0819    ; InCB; Extend
+081B..0823    ; InCB; Extend
+0825..0827    ; InCB; Extend
+0829..082D    ; InCB; Extend
+0859..085B    ; InCB; Extend
+0897..089F    ; InCB; Extend
+08CA..08E1    ; InCB; Extend
+08E3..0902    ; InCB; Extend
+093A          ; InCB; Extend
+093C          ; InCB; Extend
+0941..0948    ; InCB; Extend
+0951..0957    ; InCB; Extend
+0962..0963    ; InCB; Extend
+0981          ; InCB; Extend
+09BC          ; InCB; Extend
+09BE          ; InCB; Extend
+09C1..09C4    ; InCB; Extend
+09D7          ; InCB; Extend
+09E2..09E3    ; InCB; Extend
+09FE          ; InCB; Extend
+0A01..0A02    ; InCB; Extend
+0A3C          ; InCB; Extend
+0A41..0A42    ; InCB; Extend
+0A47..0A48    ; InCB; Extend
+0A4B..0A4D    ; InCB; Extend
+0A51          ; InCB; Extend
+0A70..0A71    ; InCB; Extend
+0A75          ; InCB; Extend
+0A81..0A82    ; InCB; Extend
+0ABC          ; InCB; Extend
+0AC1..0AC5    ; InCB; Extend
+0AC7..0AC8    ; InCB; Extend
+0AE2..0AE3    ; InCB; Extend
+0AFA..0AFF    ; InCB; Extend
+0B01          ; InCB; Extend
+0B3C          ; InCB; Extend
+0B3E          ; InCB; Extend
+0B3F          ; InCB; Extend
+0B41..0B44    ; InCB; Extend
+0B55..0B56    ; InCB; Extend
+0B57          ; InCB; Extend
+0B62..0B63    ; InCB; Extend
+0B82          ; InCB; Extend
+0BBE          ; InCB; Extend
+0BC0          ; InCB; Extend
+0BCD          ; InCB; Extend
+0BD7          ; InCB; Extend
+0C00          ; InCB; Extend
+0C04          ; InCB; Extend
+0C3C          ; InCB; Extend
+0C3E..0C40    ; InCB; Extend
+0C46..0C48    ; InCB; Extend
+0C4A..0C4C    ; InCB; Extend
+0C55..0C56    ; InCB; Extend
+0C62..0C63    ; InCB; Extend
+0C81          ; InCB; Extend
+0CBC          ; InCB; Extend
+0CBF          ; InCB; Extend
+0CC0          ; InCB; Extend
+0CC2          ; InCB; Extend
+0CC6          ; InCB; Extend
+0CC7..0CC8    ; InCB; Extend
+0CCA..0CCB    ; InCB; Extend
+0CCC..0CCD    ; InCB; Extend
+0CD5..0CD6    ; InCB; Extend
+0CE2..0CE3    ; InCB; Extend
+0D00..0D01    ; InCB; Extend
+0D3B..0D3C    ; InCB; Extend
+0D3E          ; InCB; Extend
+0D41..0D44    ; InCB; Extend
+0D57          ; InCB; Extend
+0D62..0D63    ; InCB; Extend
+0D81          ; InCB; Extend
+0DCA          ; InCB; Extend
+0DCF          ; InCB; Extend
+0DD2..0DD4    ; InCB; Extend
+0DD6          ; InCB; Extend
+0DDF          ; InCB; Extend
+0E31          ; InCB; Extend
+0E34..0E3A    ; InCB; Extend
+0E47..0E4E    ; InCB; Extend
+0EB1          ; InCB; Extend
+0EB4..0EBC    ; InCB; Extend
+0EC8..0ECE    ; InCB; Extend
+0F18..0F19    ; InCB; Extend
+0F35          ; InCB; Extend
+0F37          ; InCB; Extend
+0F39          ; InCB; Extend
+0F71..0F7E    ; InCB; Extend
+0F80..0F84    ; InCB; Extend
+0F86..0F87    ; InCB; Extend
+0F8D..0F97    ; InCB; Extend
+0F99..0FBC    ; InCB; Extend
+0FC6          ; InCB; Extend
+102D..1030    ; InCB; Extend
+1032..1037    ; InCB; Extend
+103A          ; InCB; Extend
+103D..103E    ; InCB; Extend
+1058..1059    ; InCB; Extend
+105E..1060    ; InCB; Extend
+1071..1074    ; InCB; Extend
+1082          ; InCB; Extend
+1085..1086    ; InCB; Extend
+108D          ; InCB; Extend
+109D          ; InCB; Extend
+135D..135F    ; InCB; Extend
+1712..1714    ; InCB; Extend
+1715          ; InCB; Extend
+1732..1733    ; InCB; Extend
+1734          ; InCB; Extend
+1752..1753    ; InCB; Extend
+1772..1773    ; InCB; Extend
+17B4..17B5    ; InCB; Extend
+17B7..17BD    ; InCB; Extend
+17C6          ; InCB; Extend
+17C9..17D1    ; InCB; Extend
+17D3          ; InCB; Extend
+17DD          ; InCB; Extend
+180B..180D    ; InCB; Extend
+180F          ; InCB; Extend
+1885..1886    ; InCB; Extend
+18A9          ; InCB; Extend
+1920..1922    ; InCB; Extend
+1927..1928    ; InCB; Extend
+1932          ; InCB; Extend
+1939..193B    ; InCB; Extend
+1A17..1A18    ; InCB; Extend
+1A1B          ; InCB; Extend
+1A56          ; InCB; Extend
+1A58..1A5E    ; InCB; Extend
+1A62          ; InCB; Extend
+1A65..1A6C    ; InCB; Extend
+1A73..1A7C    ; InCB; Extend
+1A7F          ; InCB; Extend
+1AB0..1ABD    ; InCB; Extend
+1ABE          ; InCB; Extend
+1ABF..1ADD    ; InCB; Extend
+1AE0..1AEB    ; InCB; Extend
+1B00..1B03    ; InCB; Extend
+1B34          ; InCB; Extend
+1B35          ; InCB; Extend
+1B36..1B3A    ; InCB; Extend
+1B3B          ; InCB; Extend
+1B3C          ; InCB; Extend
+1B3D          ; InCB; Extend
+1B42          ; InCB; Extend
+1B43          ; InCB; Extend
+1B6B..1B73    ; InCB; Extend
+1B80..1B81    ; InCB; Extend
+1BA2..1BA5    ; InCB; Extend
+1BA8..1BA9    ; InCB; Extend
+1BAA          ; InCB; Extend
+1BAC..1BAD    ; InCB; Extend
+1BE6          ; InCB; Extend
+1BE8..1BE9    ; InCB; Extend
+1BED          ; InCB; Extend
+1BEF..1BF1    ; InCB; Extend
+1BF2..1BF3    ; InCB; Extend
+1C2C..1C33    ; InCB; Extend
+1C36..1C37    ; InCB; Extend
+1CD0..1CD2    ; InCB; Extend
+1CD4..1CE0    ; InCB; Extend
+1CE2..1CE8    ; InCB; Extend
+1CED          ; InCB; Extend
+1CF4          ; InCB; Extend
+1CF8..1CF9    ; InCB; Extend
+1DC0..1DFF    ; InCB; Extend
+200D          ; InCB; Extend
+20D0..20DC    ; InCB; Extend
+20DD..20E0    ; InCB; Extend
+20E1          ; InCB; Extend
+20E2..20E4    ; InCB; Extend
+20E5..20F0    ; InCB; Extend
+2CEF..2CF1    ; InCB; Extend
+2D7F          ; InCB; Extend
+2DE0..2DFF    ; InCB; Extend
+302A..302D    ; InCB; Extend
+302E..302F    ; InCB; Extend
+3099..309A    ; InCB; Extend
+A66F          ; InCB; Extend
+A670..A672    ; InCB; Extend
+A674..A67D    ; InCB; Extend
+A69E..A69F    ; InCB; Extend
+A6F0..A6F1    ; InCB; Extend
+A802          ; InCB; Extend
+A806          ; InCB; Extend
+A80B          ; InCB; Extend
+A825..A826    ; InCB; Extend
+A82C          ; InCB; Extend
+A8C4..A8C5    ; InCB; Extend
+A8E0..A8F1    ; InCB; Extend
+A8FF          ; InCB; Extend
+A926..A92D    ; InCB; Extend
+A947..A951    ; InCB; Extend
+A953          ; InCB; Extend
+A980..A982    ; InCB; Extend
+A9B3          ; InCB; Extend
+A9B6..A9B9    ; InCB; Extend
+A9BC..A9BD    ; InCB; Extend
+A9E5          ; InCB; Extend
+AA29..AA2E    ; InCB; Extend
+AA31..AA32    ; InCB; Extend
+AA35..AA36    ; InCB; Extend
+AA43          ; InCB; Extend
+AA4C          ; InCB; Extend
+AA7C          ; InCB; Extend
+AAB0          ; InCB; Extend
+AAB2..AAB4    ; InCB; Extend
+AAB7..AAB8    ; InCB; Extend
+AABE..AABF    ; InCB; Extend
+AAC1          ; InCB; Extend
+AAEC..AAED    ; InCB; Extend
+ABE5          ; InCB; Extend
+ABE8          ; InCB; Extend
+ABED          ; InCB; Extend
+FB1E          ; InCB; Extend
+FE00..FE0F    ; InCB; Extend
+FE20..FE2F    ; InCB; Extend
+FF9E..FF9F    ; InCB; Extend
+101FD         ; InCB; Extend
+102E0         ; InCB; Extend
+10376..1037A  ; InCB; Extend
+10A01..10A03  ; InCB; Extend
+10A05..10A06  ; InCB; Extend
+10A0C..10A0F  ; InCB; Extend
+10A38..10A3A  ; InCB; Extend
+10AE5..10AE6  ; InCB; Extend
+10D24..10D27  ; InCB; Extend
+10D69..10D6D  ; InCB; Extend
+10EAB..10EAC  ; InCB; Extend
+10EFA..10EFF  ; InCB; Extend
+10F46..10F50  ; InCB; Extend
+10F82..10F85  ; InCB; Extend
+11001         ; InCB; Extend
+11038..11046  ; InCB; Extend
+11070         ; InCB; Extend
+11073..11074  ; InCB; Extend
+1107F..11081  ; InCB; Extend
+110B3..110B6  ; InCB; Extend
+110B9..110BA  ; InCB; Extend
+110C2         ; InCB; Extend
+11100..11102  ; InCB; Extend
+11127..1112B  ; InCB; Extend
+1112D..11132  ; InCB; Extend
+11134         ; InCB; Extend
+11173         ; InCB; Extend
+11180..11181  ; InCB; Extend
+111B6..111BE  ; InCB; Extend
+111C0         ; InCB; Extend
+111C9..111CC  ; InCB; Extend
+111CF         ; InCB; Extend
+1122F..11231  ; InCB; Extend
+11234         ; InCB; Extend
+11235         ; InCB; Extend
+11236..11237  ; InCB; Extend
+1123E         ; InCB; Extend
+11241         ; InCB; Extend
+112DF         ; InCB; Extend
+112E3..112EA  ; InCB; Extend
+11300..11301  ; InCB; Extend
+1133B..1133C  ; InCB; Extend
+1133E         ; InCB; Extend
+11340         ; InCB; Extend
+1134D         ; InCB; Extend
+11357         ; InCB; Extend
+11366..1136C  ; InCB; Extend
+11370..11374  ; InCB; Extend
+113B8         ; InCB; Extend
+113BB..113C0  ; InCB; Extend
+113C2         ; InCB; Extend
+113C5         ; InCB; Extend
+113C7..113C9  ; InCB; Extend
+113CE         ; InCB; Extend
+113CF         ; InCB; Extend
+113D2         ; InCB; Extend
+113E1..113E2  ; InCB; Extend
+11438..1143F  ; InCB; Extend
+11442..11444  ; InCB; Extend
+11446         ; InCB; Extend
+1145E         ; InCB; Extend
+114B0         ; InCB; Extend
+114B3..114B8  ; InCB; Extend
+114BA         ; InCB; Extend
+114BD         ; InCB; Extend
+114BF..114C0  ; InCB; Extend
+114C2..114C3  ; InCB; Extend
+115AF         ; InCB; Extend
+115B2..115B5  ; InCB; Extend
+115BC..115BD  ; InCB; Extend
+115BF..115C0  ; InCB; Extend
+115DC..115DD  ; InCB; Extend
+11633..1163A  ; InCB; Extend
+1163D         ; InCB; Extend
+1163F..11640  ; InCB; Extend
+116AB         ; InCB; Extend
+116AD         ; InCB; Extend
+116B0..116B5  ; InCB; Extend
+116B6         ; InCB; Extend
+116B7         ; InCB; Extend
+1171D         ; InCB; Extend
+1171F         ; InCB; Extend
+11722..11725  ; InCB; Extend
+11727..1172B  ; InCB; Extend
+1182F..11837  ; InCB; Extend
+11839..1183A  ; InCB; Extend
+11930         ; InCB; Extend
+1193B..1193C  ; InCB; Extend
+1193D         ; InCB; Extend
+11943         ; InCB; Extend
+119D4..119D7  ; InCB; Extend
+119DA..119DB  ; InCB; Extend
+119E0         ; InCB; Extend
+11A01..11A0A  ; InCB; Extend
+11A33..11A38  ; InCB; Extend
+11A3B..11A3E  ; InCB; Extend
+11A51..11A56  ; InCB; Extend
+11A59..11A5B  ; InCB; Extend
+11A8A..11A96  ; InCB; Extend
+11A98         ; InCB; Extend
+11B60         ; InCB; Extend
+11B62..11B64  ; InCB; Extend
+11B66         ; InCB; Extend
+11C30..11C36  ; InCB; Extend
+11C38..11C3D  ; InCB; Extend
+11C3F         ; InCB; Extend
+11C92..11CA7  ; InCB; Extend
+11CAA..11CB0  ; InCB; Extend
+11CB2..11CB3  ; InCB; Extend
+11CB5..11CB6  ; InCB; Extend
+11D31..11D36  ; InCB; Extend
+11D3A         ; InCB; Extend
+11D3C..11D3D  ; InCB; Extend
+11D3F..11D45  ; InCB; Extend
+11D47         ; InCB; Extend
+11D90..11D91  ; InCB; Extend
+11D95         ; InCB; Extend
+11D97         ; InCB; Extend
+11EF3..11EF4  ; InCB; Extend
+11F00..11F01  ; InCB; Extend
+11F36..11F3A  ; InCB; Extend
+11F40         ; InCB; Extend
+11F41         ; InCB; Extend
+11F5A         ; InCB; Extend
+13440         ; InCB; Extend
+13447..13455  ; InCB; Extend
+1611E..16129  ; InCB; Extend
+1612D..1612F  ; InCB; Extend
+16AF0..16AF4  ; InCB; Extend
+16B30..16B36  ; InCB; Extend
+16F4F         ; InCB; Extend
+16F8F..16F92  ; InCB; Extend
+16FE4         ; InCB; Extend
+16FF0..16FF1  ; InCB; Extend
+1BC9D..1BC9E  ; InCB; Extend
+1CF00..1CF2D  ; InCB; Extend
+1CF30..1CF46  ; InCB; Extend
+1D165..1D166  ; InCB; Extend
+1D167..1D169  ; InCB; Extend
+1D16D..1D172  ; InCB; Extend
+1D17B..1D182  ; InCB; Extend
+1D185..1D18B  ; InCB; Extend
+1D1AA..1D1AD  ; InCB; Extend
+1D242..1D244  ; InCB; Extend
+1DA00..1DA36  ; InCB; Extend
+1DA3B..1DA6C  ; InCB; Extend
+1DA75         ; InCB; Extend
+1DA84         ; InCB; Extend
+1DA9B..1DA9F  ; InCB; Extend
+1DAA1..1DAAF  ; InCB; Extend
+1E000..1E006  ; InCB; Extend
+1E008..1E018  ; InCB; Extend
+1E01B..1E021  ; InCB; Extend
+1E023..1E024  ; InCB; Extend
+1E026..1E02A  ; InCB; Extend
+1E08F         ; InCB; Extend
+1E130..1E136  ; InCB; Extend
+1E2AE         ; InCB; Extend
+1E2EC..1E2EF  ; InCB; Extend
+1E4EC..1E4EF  ; InCB; Extend
+1E5EE..1E5EF  ; InCB; Extend
+1E6E3         ; InCB; Extend
+1E6E6         ; InCB; Extend
+1E6EE..1E6EF  ; InCB; Extend
+1E6F5         ; InCB; Extend
+1E8D0..1E8D6  ; InCB; Extend
+1E944..1E94A  ; InCB; Extend
+1F3FB..1F3FF  ; InCB; Extend
+E0020..E007F  ; InCB; Extend
+E0100..E01EF  ; InCB; Extend
+
+# Total code points: 2217
 
 # EOF

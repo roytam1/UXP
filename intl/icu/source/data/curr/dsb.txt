@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 dsb{
     Currencies{
         ADP{
@@ -209,6 +210,10 @@ dsb{
         CLP{
             "CLP",
             "chilski peso",
+        }
+        CNH{
+            "CNH",
+            "chinski yuan (offshore)",
         }
         CNY{
             "CN¥",
@@ -422,6 +427,10 @@ dsb{
             "LRD",
             "liberiski dolar",
         }
+        LSL{
+            "LSL",
+            "lesothiski loti",
+        }
         LTL{
             "LTL",
             "litawski litas",
@@ -543,7 +552,7 @@ dsb{
             "papua-neuguinejska kina",
         }
         PHP{
-            "PHP",
+            "₱",
             "filipinski peso",
         }
         PKR{
@@ -606,9 +615,13 @@ dsb{
             "SHP",
             "St. Helena punt",
         }
+        SLE{
+            "SLE",
+            "sierra-leoneski leone",
+        }
         SLL{
             "SLL",
-            "sierra-leoneski leone",
+            "sierra-leoneski leone (1964—2022)",
         }
         SOS{
             "SOS",
@@ -726,8 +739,12 @@ dsb{
             "EC$",
             "pódzajtšnokaribiski dolar",
         }
+        XCG{
+            "Cg.",
+            "karibiski šesnak",
+        }
         XOF{
-            "CFA",
+            "F CFA",
             "CFA-frank (BCEAO)",
         }
         XPF{
@@ -750,9 +767,10 @@ dsb{
             "ZMW",
             "sambiska kwacha",
         }
-    }
-    Currencies%narrow{
-        EUR{"€"}
+        ZWG{
+            "ZWG",
+            "simbabwiske złoto",
+        }
     }
     CurrencyPlurals{
         ADP{
@@ -1067,6 +1085,12 @@ dsb{
             other{"chilskich peso"}
             two{"chilskej peso"}
         }
+        CNH{
+            few{"chinske yuany (offshore)"}
+            one{"chinski yuan (offshore)"}
+            other{"chinskich yuanow (offshore)"}
+            two{"chinskej yuanaj (offshore)"}
+        }
         CNY{
             few{"chinske yuany"}
             one{"chinski yuan"}
@@ -1151,12 +1175,6 @@ dsb{
             other{"etiopiskich birrow"}
             two{"etiopiskej birra"}
         }
-        EUR{
-            few{"euro"}
-            one{"euro"}
-            other{"euro"}
-            two{"euro"}
-        }
         FJD{
             few{"fidźiske dolary"}
             one{"fidźiski dolar"}
@@ -1210,12 +1228,6 @@ dsb{
             one{"guatemalski quetzal"}
             other{"guatemalskich quetzalow"}
             two{"guatemalskej quetzala"}
-        }
-        GWP{
-            few{"Guinea-Bissau peso"}
-            one{"Guinea-Bissau peso"}
-            other{"Guinea-Bissau peso"}
-            two{"Guinea-Bissau peso"}
         }
         GYD{
             few{"guyańske dolary"}
@@ -1384,6 +1396,12 @@ dsb{
             one{"liberiski dolar"}
             other{"liberiskich dolarow"}
             two{"liberiskej dolara"}
+        }
+        LSL{
+            few{"lesothiske lotije"}
+            one{"lesothiski loti"}
+            other{"lesothiskich lotijow"}
+            two{"lesothiskej lotija"}
         }
         LTL{
             few{"litawske litasy"}
@@ -1661,11 +1679,17 @@ dsb{
             other{"St. Helena puntow"}
             two{"St. Helena punta"}
         }
-        SLL{
+        SLE{
             few{"sierra-leoneske leone"}
             one{"sierra-leoneski leone"}
             other{"sierra-leoneskich leone"}
             two{"sierra-leoneskej leone"}
+        }
+        SLL{
+            few{"sierra-leoneske leone (1964—2022)"}
+            one{"sierra-leoneski leone (1964—2022)"}
+            other{"sierra-leoneskich leone (1964—2022)"}
+            two{"sierra-leoneskej leone (1964—2022)"}
         }
         SOS{
             few{"somaliske šilingi"}
@@ -1841,6 +1865,12 @@ dsb{
             other{"pódzajtšnokaribiskich dolarow"}
             two{"pódzajtšnokaribiskej dolara"}
         }
+        XCG{
+            few{"karibiske šesnaki"}
+            one{"karibiski šesnak"}
+            other{"karibiskich šesnakow"}
+            two{"karibiskej šesnaka"}
+        }
         XOF{
             few{"CFA-franki (BCEAO)"}
             one{"CFA-frank (BCEAO)"}
@@ -1877,12 +1907,11 @@ dsb{
             other{"sambiskich kwachow"}
             two{"sambiskej kwaše"}
         }
+        ZWG{
+            few{"simbabwiske złota"}
+            one{"simbabwiske złoto"}
+            other{"simbabwiskich złotow"}
+            two{"simbabwiskej złośe"}
+        }
     }
-    CurrencyUnitPatterns{
-        few{"{0} {1}"}
-        one{"{0} {1}"}
-        other{"{0} {1}"}
-        two{"{0} {1}"}
-    }
-    Version{"2.1.41.34"}
 }

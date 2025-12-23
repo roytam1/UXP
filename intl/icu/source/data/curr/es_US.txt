@@ -1,23 +1,20 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 es_US{
     %%Parent{"es_419"}
     Currencies{
-        AMD{
-            "AMD",
-            "dram",
+        BTN{
+            "BTN",
+            "ngultrum butanés",
+        }
+        ETB{
+            "ETB",
+            "birr",
         }
         JPY{
             "¥",
-            "yen",
-        }
-        MYR{
-            "MYR",
-            "ringit",
-        }
-        STN{
-            "STN",
-            "dobra santotomense",
+            "yen japonés",
         }
         THB{
             "THB",
@@ -35,9 +32,13 @@ es_US{
             "XAF",
             "franco CFA de África central",
         }
-        XOF{
-            "XOF",
-            "franco CFA de África Occidental",
+        ZMW{
+            "ZMW",
+            "kwacha zambiano",
+        }
+        ZWG{
+            "ZWG",
+            "oro de Zimbabue",
         }
     }
     Currencies%narrow{
@@ -48,16 +49,13 @@ es_US{
         VEF{"Bs"}
     }
     CurrencyPlurals{
-        KGS{
-            one{"som"}
+        BTN{
+            one{"ngultrum butanés"}
+            other{"gultrums bultaneses"}
         }
-        MYR{
-            one{"ringit"}
-            other{"ringits"}
-        }
-        STN{
-            one{"dobra santotomense"}
-            other{"dobra santotomense"}
+        ETB{
+            one{"birr"}
+            other{"birres"}
         }
         THB{
             one{"bat"}
@@ -71,10 +69,9 @@ es_US{
             one{"franco CFA de África central"}
             other{"francos CFA de África central"}
         }
-        XOF{
-            one{"franco CFA de África Occidental"}
-            other{"francos CFA de África Occidental"}
+        ZMW{
+            one{"kwacha zambiano"}
+            other{"kwachas zambianos"}
         }
     }
-    Version{"2.1.43.65"}
 }

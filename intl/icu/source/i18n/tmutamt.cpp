@@ -45,12 +45,12 @@ TimeUnitAmount::operator=(const TimeUnitAmount& other) {
 }
 
 
-UBool
+bool
 TimeUnitAmount::operator==(const UObject& other) const {
     return Measure::operator==(other);
 }
 
-UObject* 
+TimeUnitAmount* 
 TimeUnitAmount::clone() const {
     return new TimeUnitAmount(*this);
 }
@@ -63,7 +63,7 @@ TimeUnitAmount::~TimeUnitAmount() {
 
 const TimeUnit&
 TimeUnitAmount::getTimeUnit() const {
-    return (const TimeUnit&) getUnit();
+    return static_cast<const TimeUnit&>(getUnit());
 }
 
 

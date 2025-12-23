@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 sbp{
     Currencies{
         AED{
@@ -170,9 +171,13 @@ sbp{
             "SHP",
             "Ihela ya Santahelena",
         }
+        SLE{
+            "SLE",
+            "Ihela ya Siela Liyoni",
+        }
         SLL{
             "SLL",
-            "Ihela ya Siela Liyoni",
+            "Ihela ya Siela Liyoni (1964—2022)",
         }
         SOS{
             "SOS",
@@ -211,7 +216,7 @@ sbp{
             "Ihela ya CFA BEAC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Ihela ya CFA BCEAO",
         }
         ZAR{
@@ -231,5 +236,4 @@ sbp{
             "Ihela ya Simbabwe",
         }
     }
-    Version{"2.1.39.11"}
 }

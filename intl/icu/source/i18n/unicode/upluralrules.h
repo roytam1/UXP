@@ -14,11 +14,19 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include "unicode/localpointer.h"
 #include "unicode/uenum.h"
+
+#if U_SHOW_CPLUSPLUS_API
+#include "unicode/localpointer.h"
+#endif   // U_SHOW_CPLUSPLUS_API
+
 #ifndef U_HIDE_INTERNAL_API
 #include "unicode/unum.h"
 #endif  /* U_HIDE_INTERNAL_API */
+
+// Forward-declaration
+struct UFormattedNumber;
+struct UFormattedNumberRange;
 
 /**
  * \file
@@ -31,8 +39,9 @@
  * returns the keyword for the first condition that matches the number.
  * If none match, the default rule(other) is returned.
  *
- * For more information, see the LDML spec, C.11 Language Plural Rules:
- * http://www.unicode.org/reports/tr35/#Language_Plural_Rules
+ * For more information, see the
+ * LDML spec, Part 3.5 Language Plural Rules:
+ * https://www.unicode.org/reports/tr35/tr35-numbers.html#Language_Plural_Rules
  *
  * Keywords: ICU locale data has 6 predefined values -
  * 'zero', 'one', 'two', 'few', 'many' and 'other'. Callers need to check
@@ -40,7 +49,7 @@
  *
  * These are based on CLDR <i>Language Plural Rules</i>. For these
  * predefined rules, see the CLDR page at
- * http://unicode.org/repos/cldr-tmp/trunk/diff/supplemental/language_plural_rules.html
+ * https://unicode-org.github.io/cldr-staging/charts/latest/supplemental/language_plural_rules.html
  */
 
 /**
@@ -132,19 +141,64 @@ U_NAMESPACE_END
 
 
 /**
- * Given a number, returns the keyword of the first rule that
+ * Given a floating-point number, returns the keyword of the first rule that
  * applies to the number, according to the supplied UPluralRules object.
  * @param uplrules The UPluralRules object specifying the rules.
  * @param number The number for which the rule has to be determined.
- * @param keyword The keyword of the rule that applies to number.
- * @param capacity The capacity of keyword.
+ * @param keyword An output buffer to write the keyword of the rule that
+ *         applies to number.
+ * @param capacity The capacity of the keyword buffer.
  * @param status A pointer to a UErrorCode to receive any errors.
- * @return The length of keyword.
+ * @return The length of the keyword.
  * @stable ICU 4.8
  */
 U_CAPI int32_t U_EXPORT2
 uplrules_select(const UPluralRules *uplrules,
                double number,
+               UChar *keyword, int32_t capacity,
+               UErrorCode *status);
+
+/**
+ * Given a formatted number, returns the keyword of the first rule
+ * that applies to the number, according to the supplied UPluralRules object.
+ *
+ * A UFormattedNumber allows you to specify an exponent or trailing zeros,
+ * which can affect the plural category. To get a UFormattedNumber, see
+ * {@link UNumberFormatter}.
+ *
+ * @param uplrules The UPluralRules object specifying the rules.
+ * @param number The formatted number for which the rule has to be determined.
+ * @param keyword The destination buffer for the keyword of the rule that
+ *         applies to the number.
+ * @param capacity The capacity of the keyword buffer.
+ * @param status A pointer to a UErrorCode to receive any errors.
+ * @return The length of the keyword.
+ * @stable ICU 64
+ */
+U_CAPI int32_t U_EXPORT2
+uplrules_selectFormatted(const UPluralRules *uplrules,
+               const struct UFormattedNumber* number,
+               UChar *keyword, int32_t capacity,
+               UErrorCode *status);
+
+/**
+ * Given a formatted number range, returns the overall plural form of the
+ * range. For example, "3-5" returns "other" in English.
+ *
+ * To get a UFormattedNumberRange, see UNumberRangeFormatter.
+ *
+ * @param uplrules The UPluralRules object specifying the rules.
+ * @param urange The number range onto which the rules will be applied.
+ * @param keyword The destination buffer for the keyword of the rule that
+ *         applies to the number range.
+ * @param capacity The capacity of the keyword buffer.
+ * @param status A pointer to a UErrorCode to receive any errors.
+ * @return The length of the keyword.
+ * @stable ICU 68
+ */
+U_CAPI int32_t U_EXPORT2
+uplrules_selectForRange(const UPluralRules *uplrules,
+               const struct UFormattedNumberRange* urange,
                UChar *keyword, int32_t capacity,
                UErrorCode *status);
 
@@ -160,13 +214,14 @@ uplrules_select(const UPluralRules *uplrules,
  * @param fmt The UNumberFormat specifying how the number will be formatted
  *        (this can affect the plural form, e.g. "1 dollar" vs "1.0 dollars").
  *        If this is NULL, the function behaves like uplrules_select.
- * @param keyword The keyword of the rule that applies to number.
+ * @param keyword An output buffer to write the keyword of the rule that
+ *         applies to number.
  * @param capacity The capacity of the keyword buffer.
  * @param status A pointer to a UErrorCode to receive any errors.
  * @return The length of keyword.
  * @internal ICU 59 technology preview, may be removed in the future
  */
-U_INTERNAL int32_t U_EXPORT2
+U_CAPI int32_t U_EXPORT2
 uplrules_selectWithFormat(const UPluralRules *uplrules,
                           double number,
                           const UNumberFormat *fmt,
@@ -185,7 +240,7 @@ uplrules_selectWithFormat(const UPluralRules *uplrules,
  * upon error. The caller is responsible for closing the result.
  * @stable ICU 59
  */
-U_STABLE UEnumeration* U_EXPORT2
+U_CAPI UEnumeration* U_EXPORT2
 uplrules_getKeywords(const UPluralRules *uplrules,
                      UErrorCode *status);
 

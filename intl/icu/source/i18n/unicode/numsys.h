@@ -20,13 +20,7 @@
 
 #include "unicode/utypes.h"
 
-/**
- * \def NUMSYS_NAME_CAPACITY
- * Size of a numbering system name.
- * @internal
- */
-#define NUMSYS_NAME_CAPACITY 8
-
+#if U_SHOW_CPLUSPLUS_API
 
 /**
  * \file
@@ -35,11 +29,17 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-
 #include "unicode/format.h"
 #include "unicode/uobject.h"
 
 U_NAMESPACE_BEGIN
+
+// can't be #ifndef U_HIDE_INTERNAL_API; needed for char[] field size
+/**
+ * Size of a numbering system name.
+ * @internal
+ */
+constexpr const size_t kInternalNumSysNameCapacity = 8;
 
 /**
  * Defines numbering systems. A numbering system describes the scheme by which 
@@ -74,6 +74,12 @@ public:
     NumberingSystem(const NumberingSystem& other);
 
     /**
+     * Copy assignment.
+     * @stable ICU 4.2
+     */
+    NumberingSystem& operator=(const NumberingSystem& other) = default;
+
+    /**
      * Destructor.
      * @stable ICU 4.2
      */
@@ -96,7 +102,7 @@ public:
     /**
      * Create a numbering system using the specified radix, type, and description. 
      * @param radix         The radix (base) for this numbering system.
-     * @param isAlgorithmic TRUE if the numbering system is algorithmic rather than numeric.
+     * @param isAlgorithmic true if the numbering system is algorithmic rather than numeric.
      * @param description   The string representing the set of digits used in a numeric system, or the name of the RBNF
      *                      ruleset to be used in an algorithmic system.
      * @param status ICU status
@@ -106,9 +112,13 @@ public:
 
     /**
      * Return a StringEnumeration over all the names of numbering systems known to ICU.
+     * The numbering system names will be in alphabetical (invariant) order.
+     *
+     * The returned StringEnumeration is owned by the caller, who must delete it when
+     * finished with it.
+     *
      * @stable ICU 4.2
      */
-
      static StringEnumeration * U_EXPORT2 getAvailableNames(UErrorCode& status);
 
     /**
@@ -119,8 +129,10 @@ public:
      * default, native, traditional, finance - do not identify specific numbering systems,
      * but rather key values that may only be used as part of a locale, which in turn
      * defines how they are mapped to a specific numbering system such as "latn" or "hant".
+     *
      * @param name   The name of the numbering system.
-     * @param status ICU status
+     * @param status ICU status; set to U_UNSUPPORTED_ERROR if numbering system not found.
+     * @return The NumberingSystem instance, or nullptr if not found.
      * @stable ICU 4.2
      */
     static NumberingSystem* U_EXPORT2 createInstanceByName(const char* name, UErrorCode& status);
@@ -136,7 +148,7 @@ public:
 
     /**
      * Returns the name of this numbering system if it was created using one of the predefined names
-     * known to ICU.  Otherwise, returns NULL.
+     * known to ICU.  Otherwise, returns nullptr.
      * The predefined names are identical to the numbering system names as defined by
      * the BCP47 definition in Unicode CLDR.
      * See also, http://www.unicode.org/repos/cldr/tags/latest/common/bcp47/number.xml
@@ -159,10 +171,10 @@ public:
 
 
     /**
-     * Returns TRUE if the given numbering system is algorithmic
+     * Returns true if the given numbering system is algorithmic
      *
-     * @return         TRUE if the numbering system is algorithmic.
-     *                 Otherwise, return FALSE.
+     * @return         true if the numbering system is algorithmic.
+     *                 Otherwise, return false.
      * @stable ICU 4.2
      */
     UBool isAlgorithmic() const;
@@ -173,21 +185,21 @@ public:
      * @stable ICU 4.2
      *
     */
-    static UClassID U_EXPORT2 getStaticClassID(void);
+    static UClassID U_EXPORT2 getStaticClassID();
 
     /**
      * ICU "poor man's RTTI", returns a UClassID for the actual class.
      *
      * @stable ICU 4.2
      */
-    virtual UClassID getDynamicClassID() const;
+    virtual UClassID getDynamicClassID() const override;
 
 
 private:
     UnicodeString   desc;
     int32_t         radix;
     UBool           algorithmic;
-    char            name[NUMSYS_NAME_CAPACITY+1];
+    char            name[kInternalNumSysNameCapacity+1];
 
     void setRadix(int32_t radix);
 
@@ -196,15 +208,13 @@ private:
     void setDesc(const UnicodeString &desc);
 
     void setName(const char* name);
-
-    static UBool isValidDigitString(const UnicodeString &str);
-
-    UBool hasContiguousDecimalDigits() const;
 };
 
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
+
+#endif /* U_SHOW_CPLUSPLUS_API */
 
 #endif // _NUMSYS
 //eof

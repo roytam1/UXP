@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 nyn{
     Currencies{
         AED{
@@ -174,9 +175,13 @@ nyn{
             "SHP",
             "Paundi ya Senti Herena",
         }
+        SLE{
+            "SLE",
+            "Leone",
+        }
         SLL{
             "SLL",
-            "Leone",
+            "Leone (1964—2022)",
         }
         SOS{
             "SOS",
@@ -215,7 +220,7 @@ nyn{
             "Faranga ya CFA BEAC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "Faranga ya CFA BCEAO",
         }
         ZAR{
@@ -235,5 +240,4 @@ nyn{
             "Doora ya Zimbabwe",
         }
     }
-    Version{"2.1.39.11"}
 }

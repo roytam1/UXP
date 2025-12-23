@@ -11,31 +11,33 @@
  */
 
 /*
- * Created on Sun Jul 24 13:07:03 2022 from UCD data files with version info:
+ * Created on Sat Dec 20 09:00:40 2025 from UCD data files with version info:
  *
 
 # Unicode Character Database
-# Date: 2018-06-04, 17:57:00 GMT [KW]
-# © 2018 Unicode®, Inc.
+# Date: 2025-08-15
+# © 2025 Unicode®, Inc.
 # Unicode and the Unicode Logo are registered trademarks of Unicode, Inc. in the U.S. and other countries.
-# For terms of use, see http://www.unicode.org/terms_of_use.html
+# For terms of use and license, see https://www.unicode.org/terms_of_use.html
 #
 # For documentation, see the following:
 # NamesList.html
 # UAX #38, "Unicode Han Database (Unihan)"
-# UAX #44, "Unicode Character Database."
+# UAX #42, "Unicode Character Database in XML"
+# UAX #44, "Unicode Character Database"
+# UTS #51, "Unicode Emoji"
+# UAX #57, "Unicode Egyptian Hieroglyph Database"
 #
-# The UAXes can be accessed at http://www.unicode.org/versions/Unicode11.0.0/
+# The UAXes and UTS #51 can be accessed at https://www.unicode.org/versions/Unicode17.0.0/
 
-This directory contains the final data files
-for the Unicode Character Database, for Version 11.0.0 of the Unicode Standard.
+This directory contains final data files
+for the Unicode Character Database, for Version 17.0.0 of the Unicode Standard.
 
 # IdentifierStatus.txt
-# Date: 2018-05-25, 00:12:52 GMT
+# Date: 2025-08-01, 18:11:48 GMT
 
-#
 # Unihan_Variants.txt
-# Date: 2018-05-18 02:15:26 GMT [JHJ]
+# Date: 2025-07-24 00:00:00 GMT [KL]
 
 # VerticalOrientation-17.txt
 # Date: 2016-10-20, 07:00:00 GMT [EM, KI, LI]
@@ -244,8 +246,36 @@ enum class Script : int16_t {
   HANIFI_ROHINGYA = 182,
   SOGDIAN = 183,
   OLD_SOGDIAN = 184,
+  ELYMAIC = 185,
+  NYIAKENG_PUACHUE_HMONG = 186,
+  NANDINAGARI = 187,
+  WANCHO = 188,
+  CHORASMIAN = 189,
+  DIVES_AKURU = 190,
+  KHITAN_SMALL_SCRIPT = 191,
+  YEZIDI = 192,
+  CYPRO_MINOAN = 193,
+  OLD_UYGHUR = 194,
+  TANGSA = 195,
+  TOTO = 196,
+  VITHKUQI = 197,
+  KAWI = 198,
+  NAG_MUNDARI = 199,
+  ARABIC_NASTALIQ = 200,
+  GARAY = 201,
+  GURUNG_KHEMA = 202,
+  KIRAT_RAI = 203,
+  OL_ONAL = 204,
+  SUNUWAR = 205,
+  TODHRI = 206,
+  TULU_TIGALARI = 207,
+  BERIA_ERFE = 208,
+  SIDETIC = 209,
+  TAI_YO = 210,
+  TOLONG_SIKI = 211,
+  TRADITIONAL_HAN_WITH_LATIN = 212,
 
-  NUM_SCRIPT_CODES = 185,
+  NUM_SCRIPT_CODES = 213,
 
   INVALID = -1
 };

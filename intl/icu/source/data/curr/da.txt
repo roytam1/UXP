@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 da{
     Currencies{
         ADP{
@@ -404,7 +405,7 @@ da{
         }
         HKD{
             "HK$",
-            "Hongkong dollar",
+            "hongkongsk dollar",
         }
         HNL{
             "HNL",
@@ -528,7 +529,7 @@ da{
         }
         LSL{
             "LSL",
-            "Lesothisk loti",
+            "lesothisk loti",
         }
         LTL{
             "LTL",
@@ -806,9 +807,13 @@ da{
             "SKK",
             "Slovakisk koruna",
         }
+        SLE{
+            "SLE",
+            "sierraleonsk leone",
+        }
         SLL{
             "SLL",
-            "sierraleonsk leone",
+            "sierraleonsk leone (1964—2022)",
         }
         SOS{
             "SOS",
@@ -892,7 +897,7 @@ da{
         }
         TTD{
             "TTD",
-            "dollar fra Trinidad og Tobago",
+            "trinidadisk dollar",
         }
         TWD{
             "NT$",
@@ -919,7 +924,7 @@ da{
             "ugandisk shilling",
         }
         USD{
-            "$",
+            "US$",
             "amerikansk dollar",
         }
         USN{
@@ -990,6 +995,10 @@ da{
             "EC$",
             "østkaribisk dollar",
         }
+        XCG{
+            "Cg.",
+            "caribiske gylden",
+        }
         XDR{
             "XDR",
             "SDR",
@@ -1007,7 +1016,7 @@ da{
             "Fransk UIC-franc",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "CFA-franc BCEAO",
         }
         XPD{
@@ -1082,6 +1091,10 @@ da{
             "ZWD",
             "Zimbabwisk dollar (1980–2008)",
         }
+        ZWG{
+            "ZWG",
+            "Zimbabwe Gold",
+        }
         ZWL{
             "ZWL",
             "Zimbabwisk dollar (2009)",
@@ -1092,104 +1105,13 @@ da{
         }
     }
     Currencies%narrow{
-        AOA{"Kz"}
-        ARS{"$"}
-        AUD{"$"}
-        BAM{"KM"}
-        BBD{"$"}
-        BDT{"৳"}
-        BMD{"$"}
-        BND{"$"}
-        BOB{"Bs"}
-        BRL{"R$"}
-        BSD{"$"}
-        BWP{"P"}
-        BYN{"р."}
-        BZD{"$"}
-        CAD{"$"}
-        CLP{"$"}
-        CNY{"¥"}
-        COP{"$"}
-        CRC{"₡"}
-        CUC{"$"}
-        CUP{"$"}
-        CZK{"Kč"}
+        BYN{"Br."}
         DKK{"kr."}
-        DOP{"$"}
-        EGP{"E£"}
-        EUR{"€"}
-        FJD{"$"}
-        FKP{"£"}
-        GBP{"£"}
-        GEL{"₾"}
-        GIP{"£"}
-        GNF{"FG"}
-        GTQ{"Q"}
-        GYD{"$"}
-        HKD{"$"}
-        HNL{"L"}
-        HRK{"kn"}
-        HUF{"Ft"}
-        IDR{"Rp"}
-        ILS{"₪"}
-        INR{"₹"}
         ISK{"kr."}
-        JMD{"$"}
-        JPY{"¥"}
-        KHR{"៛"}
-        KMF{"CF"}
-        KPW{"₩"}
-        KRW{"₩"}
-        KYD{"$"}
-        KZT{"₸"}
-        LAK{"₭"}
-        LBP{"L£"}
-        LKR{"Rs"}
-        LRD{"$"}
-        MGA{"Ar"}
-        MMK{"K"}
-        MNT{"₮"}
-        MUR{"Rs"}
-        MXN{"$"}
-        MYR{"RM"}
-        NAD{"$"}
-        NGN{"₦"}
-        NIO{"C$"}
         NOK{"kr."}
-        NPR{"Rs"}
-        NZD{"$"}
-        PHP{"₱"}
-        PKR{"Rs"}
-        PLN{"zł"}
-        PYG{"₲"}
         RON{"L"}
-        RUB{"₽"}
-        RWF{"RF"}
-        SBD{"$"}
         SEK{"kr."}
-        SGD{"$"}
-        SHP{"£"}
-        SRD{"$"}
-        SSP{"£"}
-        STN{"Db"}
-        SYP{"£"}
-        THB{"฿"}
-        TOP{"T$"}
-        TRY{"₺"}
-        TTD{"$"}
         TWD{"NT$"}
-        UAH{"₴"}
-        USD{"$"}
-        UYU{"$"}
-        VEF{"Bs"}
-        VND{"₫"}
-        XCD{"$"}
-        ZAR{"R"}
-        ZMW{"ZK"}
-    }
-    Currencies%variant{
-        GEL{"₾"}
-        TRY{"TL"}
     }
     CurrencyPlurals{
         ADP{
@@ -1215,10 +1137,6 @@ da{
         AMD{
             one{"armensk dram"}
             other{"armenske dram"}
-        }
-        ANG{
-            one{"Nederlandsk Antiller-gylden"}
-            other{"Nederlandske Antiller-gylden"}
         }
         AOA{
             one{"angolansk kwanza"}
@@ -1396,25 +1314,9 @@ da{
             one{"congolesisk franc"}
             other{"congolesiske franc"}
         }
-        CHE{
-            one{"WIR euro"}
-            other{"WIR euro"}
-        }
-        CHF{
-            one{"schweizerfranc"}
-            other{"schweizerfranc"}
-        }
-        CHW{
-            one{"WIR franc"}
-            other{"WIR franc"}
-        }
         CLP{
             one{"chilensk peso"}
             other{"chilenske pesos"}
-        }
-        CNH{
-            one{"kinesisk yuan (offshore)"}
-            other{"kinesisk yuan (offshore)"}
         }
         CNY{
             one{"kinesisk yuan"}
@@ -1437,11 +1339,11 @@ da{
             other{"Tjekkoslovakiske hard koruna"}
         }
         CUC{
-            one{"cubanske konvertible pesos"}
+            one{"cubansk konvertibel peso"}
             other{"cubanske konvertible pesos"}
         }
         CUP{
-            one{"cubanske pesos"}
+            one{"cubansk peso"}
             other{"cubanske pesos"}
         }
         CVE{
@@ -1454,7 +1356,7 @@ da{
         }
         CZK{
             one{"tjekkisk koruna"}
-            other{"tjekkiske koruna"}
+            other{"tjekkiske korunaer"}
         }
         DDM{
             one{"Østtysk mark"}
@@ -1512,10 +1414,6 @@ da{
             one{"etiopisk birr"}
             other{"etiopiske birr"}
         }
-        EUR{
-            one{"euro"}
-            other{"euro"}
-        }
         FIM{
             one{"Finsk mark"}
             other{"Finske mark"}
@@ -1523,10 +1421,6 @@ da{
         FJD{
             one{"fijiansk dollar"}
             other{"fijianske dollar"}
-        }
-        FKP{
-            one{"pund fra Falklandsøerne"}
-            other{"pund fra Falklandsøerne"}
         }
         FRF{
             one{"Fransk franc"}
@@ -1593,8 +1487,8 @@ da{
             other{"guyanske dollar"}
         }
         HKD{
-            one{"Hongkong dollar"}
-            other{"Hongkong dollar"}
+            one{"hongkongsk dollar"}
+            other{"hongkongske dollar"}
         }
         HNL{
             one{"honduransk lempira"}
@@ -1614,7 +1508,7 @@ da{
         }
         HUF{
             one{"ungarsk forint"}
-            other{"ungarske forint"}
+            other{"ungarske forinter"}
         }
         IDR{
             one{"indonesisk rupiah"}
@@ -1694,7 +1588,7 @@ da{
         }
         KYD{
             one{"caymansk dollar"}
-            other{"caymansk dollar"}
+            other{"caymanske dollar"}
         }
         KZT{
             one{"kasakhisk tenge"}
@@ -1717,8 +1611,8 @@ da{
             other{"liberiske dollar"}
         }
         LSL{
-            one{"Lesothisk loti"}
-            other{"Lesothiske loti"}
+            one{"lesothisk loti"}
+            other{"lesothiske loti"}
         }
         LTL{
             one{"Litauisk litas"}
@@ -1728,17 +1622,9 @@ da{
             one{"Litauisk talonas"}
             other{"Litauiske talonas"}
         }
-        LUC{
-            one{"Luxembourgsk konvertibel franc"}
-            other{"Luxembourgsk konvertibel franc"}
-        }
         LUF{
             one{"Luxembourgsk franc"}
             other{"Luxembourgske franc"}
-        }
-        LUL{
-            one{"Luxembourgsk finansiel franc"}
-            other{"Luxembourgsk finansiel franc"}
         }
         LVL{
             one{"Lettisk lat"}
@@ -1762,7 +1648,7 @@ da{
         }
         MDL{
             one{"moldovisk leu"}
-            other{"moldoviske leu"}
+            other{"moldoviske lei"}
         }
         MGA{
             one{"madagaskisk ariary"}
@@ -1878,7 +1764,7 @@ da{
         }
         OMR{
             one{"omansk rial"}
-            other{"omanske rial"}
+            other{"omanske rialer"}
         }
         PAB{
             one{"panamansk balboa"}
@@ -1984,10 +1870,6 @@ da{
             one{"singaporeansk dollar"}
             other{"singaporeanske dollar"}
         }
-        SHP{
-            one{"pund fra Saint Helena"}
-            other{"pund fra Saint Helena"}
-        }
         SIT{
             one{"Slovensk tolar"}
             other{"Slovenske tolar"}
@@ -1996,9 +1878,13 @@ da{
             one{"Slovakisk koruna"}
             other{"Slovakiske koruna"}
         }
-        SLL{
+        SLE{
             one{"sierraleonsk leone"}
             other{"sierraleonske leone"}
+        }
+        SLL{
+            one{"sierraleonsk leone (1964—2022)"}
+            other{"sierraleonske leone (1964—2022)"}
         }
         SOS{
             one{"somalisk shilling"}
@@ -2015,14 +1901,6 @@ da{
         SSP{
             one{"sydsudansk pund"}
             other{"sydsudanske pund"}
-        }
-        STD{
-            one{"dobra fra Sao Tome og Principe (1977–2017)"}
-            other{"dobra fra Sao Tome og Principe (1977–2017)"}
-        }
-        STN{
-            one{"dobra fra Sao Tome og Principe"}
-            other{"dobra fra Sao Tome og Principe"}
         }
         SUR{
             one{"Sovjetisk rubel"}
@@ -2068,10 +1946,6 @@ da{
             one{"tongansk paʻanga"}
             other{"tonganske paʻanga"}
         }
-        TPE{
-            one{"Escudo fra Timor"}
-            other{"Escudo fra Timor"}
-        }
         TRL{
             one{"Tyrkisk lire (1922–2005)"}
             other{"Tyrkiske lire (1922–2005)"}
@@ -2081,8 +1955,8 @@ da{
             other{"tyrkiske lira"}
         }
         TTD{
-            one{"dollar fra Trinidad og Tobago"}
-            other{"dollar fra Trinidad og Tobago"}
+            one{"trinidadisk dollar"}
+            other{"trinidadiske dollar"}
         }
         TWD{
             one{"ny taiwansk dollar"}
@@ -2157,12 +2031,16 @@ da{
             other{"samoanske tala"}
         }
         XAF{
-            one{"beninsk CFA-franc"}
+            one{"centralafrikansk CFA-franc"}
             other{"CFA-franc (BEAC)"}
         }
         XCD{
             one{"østkaribisk dollar"}
             other{"østkaribiske dollar"}
+        }
+        XCG{
+            one{"caribiske gylden"}
+            other{"caribiske gylden"}
         }
         XFO{
             one{"Fransk guldfranc"}
@@ -2171,14 +2049,6 @@ da{
         XFU{
             one{"Fransk UIC-franc"}
             other{"Franske UIC-franc"}
-        }
-        XOF{
-            one{"CFA-franc BCEAO"}
-            other{"CFA-franc BCEAO"}
-        }
-        XPF{
-            one{"CFP-franc"}
-            other{"CFP-franc"}
         }
         XTS{
             one{"testvaluta"}
@@ -2236,6 +2106,10 @@ da{
             one{"Zimbabwisk dollar (1980–2008)"}
             other{"Zimbabwiske dollar (1980–2008)"}
         }
+        ZWG{
+            one{"Zimbabwe Gold"}
+            other{"Zimbabwe Gold"}
+        }
         ZWL{
             one{"Zimbabwisk dollar (2009)"}
             other{"Zimbabwiske dollar (2009)"}
@@ -2245,9 +2119,4 @@ da{
             other{"Zimbabwiske dollar (2008)"}
         }
     }
-    CurrencyUnitPatterns{
-        one{"{0} {1}"}
-        other{"{0} {1}"}
-    }
-    Version{"2.1.43.65"}
 }

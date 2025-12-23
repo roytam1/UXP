@@ -1,16 +1,359 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 is{
-    Version{"2.1.44.91"}
     zoneStrings{
+        "Africa:Algiers"{
+            ec{"Algeirsborg"}
+        }
+        "Africa:Bissau"{
+            ec{"Bissá"}
+        }
+        "Africa:Cairo"{
+            ec{"Kaíró"}
+        }
+        "Africa:Djibouti"{
+            ec{"Djibútí"}
+        }
+        "Africa:Johannesburg"{
+            ec{"Jóhannesarborg"}
+        }
+        "Africa:Sao_Tome"{
+            ec{"Saó Tóme"}
+        }
+        "Africa:Tripoli"{
+            ec{"Trípólí"}
+        }
+        "Africa:Tunis"{
+            ec{"Túnisborg"}
+        }
+        "America:Anguilla"{
+            ec{"Angvilla"}
+        }
+        "America:Antigua"{
+            ec{"Antígva"}
+        }
+        "America:Aruba"{
+            ec{"Arúba"}
+        }
+        "America:Bahia_Banderas"{
+            ec{"Bahia Banderas"}
+        }
+        "America:Belize"{
+            ec{"Belís"}
+        }
+        "America:Cancun"{
+            ec{"Kankún"}
+        }
+        "America:Cayman"{
+            ec{"Cayman-eyjar"}
+        }
+        "America:Costa_Rica"{
+            ec{"Kostaríka"}
+        }
+        "America:Dominica"{
+            ec{"Dóminíka"}
+        }
+        "America:Guadeloupe"{
+            ec{"Gvadelúp"}
+        }
+        "America:Guatemala"{
+            ec{"Gvatemala"}
+        }
+        "America:Guyana"{
+            ec{"Gvæjana"}
+        }
+        "America:Jamaica"{
+            ec{"Jamaíka"}
+        }
+        "America:Martinique"{
+            ec{"Martiník"}
+        }
+        "America:Merida"{
+            ec{"Merida"}
+        }
+        "America:Mexico_City"{
+            ec{"Mexíkóborg"}
+        }
+        "America:Puerto_Rico"{
+            ec{"Púertó Ríkó"}
+        }
+        "America:St_Barthelemy"{
+            ec{"Sankti Bartólómeusareyjar"}
+        }
+        "America:St_Kitts"{
+            ec{"Sankti Kitts"}
+        }
+        "America:St_Lucia"{
+            ec{"Sankti Lúsía"}
+        }
+        "America:St_Thomas"{
+            ec{"Sankti Thomas"}
+        }
+        "America:St_Vincent"{
+            ec{"Sankti Vinsent"}
+        }
+        "America:Tortola"{
+            ec{"Tortóla"}
+        }
+        "Asia:Baghdad"{
+            ec{"Bagdad"}
+        }
+        "Asia:Bahrain"{
+            ec{"Barein"}
+        }
+        "Asia:Baku"{
+            ec{"Bakú"}
+        }
+        "Asia:Beirut"{
+            ec{"Beirút"}
+        }
+        "Asia:Brunei"{
+            ec{"Brúnei"}
+        }
+        "Asia:Calcutta"{
+            ec{"Kalkútta"}
+        }
+        "Asia:Colombo"{
+            ec{"Kólombó"}
+        }
+        "Asia:Damascus"{
+            ec{"Damaskus"}
+        }
+        "Asia:Dhaka"{
+            ec{"Dakka"}
+        }
+        "Asia:Jakarta"{
+            ec{"Djakarta"}
+        }
+        "Asia:Jerusalem"{
+            ec{"Jerúsalem"}
+        }
+        "Asia:Kabul"{
+            ec{"Kabúl"}
+        }
+        "Asia:Kamchatka"{
+            ec{"Kamtsjatka"}
+        }
+        "Asia:Katmandu"{
+            ec{"Katmandú"}
+        }
+        "Asia:Kuala_Lumpur"{
+            ec{"Kúala Lúmpúr"}
+        }
+        "Asia:Kuwait"{
+            ec{"Kúveit"}
+        }
+        "Asia:Macau"{
+            ec{"Makaó"}
+        }
+        "Asia:Nicosia"{
+            ec{"Níkósía"}
+        }
+        "Asia:Pyongyang"{
+            ec{"Pjongjang"}
+        }
+        "Asia:Qatar"{
+            ec{"Katar"}
+        }
+        "Asia:Qostanay"{
+            ec{"Kostanay"}
+        }
+        "Asia:Rangoon"{
+            ec{"Rangún"}
+        }
+        "Asia:Riyadh"{
+            ec{"Ríjad"}
+        }
+        "Asia:Saigon"{
+            ec{"Ho Chi Minh-borg"}
+        }
+        "Asia:Seoul"{
+            ec{"Seúl"}
+        }
+        "Asia:Shanghai"{
+            ec{"Sjanghæ"}
+        }
+        "Asia:Singapore"{
+            ec{"Singapúr"}
+        }
+        "Asia:Tehran"{
+            ec{"Teheran"}
+        }
+        "Asia:Tokyo"{
+            ec{"Tókýó"}
+        }
+        "Asia:Ulaanbaatar"{
+            ec{"Úlan Bator"}
+        }
+        "Asia:Yerevan"{
+            ec{"Jerevan"}
+        }
+        "Atlantic:Azores"{
+            ec{"Azoreyjar"}
+        }
+        "Atlantic:Bermuda"{
+            ec{"Bermúda"}
+        }
+        "Atlantic:Canary"{
+            ec{"Kanaríeyjar"}
+        }
+        "Atlantic:Cape_Verde"{
+            ec{"Grænhöfðaeyjar"}
+        }
+        "Atlantic:Faeroe"{
+            ec{"Færeyjar"}
+        }
+        "Atlantic:Reykjavik"{
+            ec{"Reykjavík"}
+        }
+        "Atlantic:South_Georgia"{
+            ec{"Suður-Georgía"}
+        }
+        "Atlantic:St_Helena"{
+            ec{"Sankti Helena"}
+        }
         "Etc:UTC"{
             ls{"Samræmdur alþjóðlegur tími"}
+        }
+        "Etc:Unknown"{
+            ec{"Óþekkt borg"}
+        }
+        "Europe:Athens"{
+            ec{"Aþena"}
+        }
+        "Europe:Belgrade"{
+            ec{"Belgrad"}
+        }
+        "Europe:Berlin"{
+            ec{"Berlín"}
+        }
+        "Europe:Brussels"{
+            ec{"Brussel"}
+        }
+        "Europe:Bucharest"{
+            ec{"Búkarest"}
+        }
+        "Europe:Budapest"{
+            ec{"Búdapest"}
+        }
+        "Europe:Copenhagen"{
+            ec{"Kaupmannahöfn"}
         }
         "Europe:Dublin"{
             ld{"Sumartími á Írlandi"}
         }
+        "Europe:Gibraltar"{
+            ec{"Gíbraltar"}
+        }
+        "Europe:Isle_of_Man"{
+            ec{"Mön"}
+        }
+        "Europe:Istanbul"{
+            ec{"Istanbúl"}
+        }
+        "Europe:Kiev"{
+            ec{"Kænugarður"}
+        }
+        "Europe:Lisbon"{
+            ec{"Lissabon"}
+        }
         "Europe:London"{
+            ec{"Lundúnir"}
             ld{"Sumartími í Bretlandi"}
+        }
+        "Europe:Luxembourg"{
+            ec{"Lúxemborg"}
+        }
+        "Europe:Madrid"{
+            ec{"Madríd"}
+        }
+        "Europe:Mariehamn"{
+            ec{"Maríuhöfn"}
+        }
+        "Europe:Monaco"{
+            ec{"Mónakó"}
+        }
+        "Europe:Moscow"{
+            ec{"Moskva"}
+        }
+        "Europe:Oslo"{
+            ec{"Osló"}
+        }
+        "Europe:Paris"{
+            ec{"París"}
+        }
+        "Europe:Prague"{
+            ec{"Prag"}
+        }
+        "Europe:Rome"{
+            ec{"Róm"}
+        }
+        "Europe:San_Marino"{
+            ec{"San Marínó"}
+        }
+        "Europe:Sarajevo"{
+            ec{"Sarajevó"}
+        }
+        "Europe:Sofia"{
+            ec{"Sófía"}
+        }
+        "Europe:Stockholm"{
+            ec{"Stokkhólmur"}
+        }
+        "Europe:Tirane"{
+            ec{"Tírana"}
+        }
+        "Europe:Vatican"{
+            ec{"Vatíkanið"}
+        }
+        "Europe:Vienna"{
+            ec{"Vín"}
+        }
+        "Europe:Vilnius"{
+            ec{"Vilníus"}
+        }
+        "Europe:Warsaw"{
+            ec{"Varsjá"}
+        }
+        "Indian:Christmas"{
+            ec{"Jólaey"}
+        }
+        "Indian:Cocos"{
+            ec{"Kókoseyjar"}
+        }
+        "Indian:Maldives"{
+            ec{"Maldíveyjar"}
+        }
+        "Indian:Mauritius"{
+            ec{"Máritíus"}
+        }
+        "Pacific:Easter"{
+            ec{"Páskaeyja"}
+        }
+        "Pacific:Enderbury"{
+            ec{"Kanton-eyja"}
+        }
+        "Pacific:Fiji"{
+            ec{"Fídjí"}
+        }
+        "Pacific:Guam"{
+            ec{"Gvam"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
+        }
+        "Pacific:Marquesas"{
+            ec{"Marquesas-eyjar"}
+        }
+        "Pacific:Nauru"{
+            ec{"Nárú"}
+        }
+        "Pacific:Palau"{
+            ec{"Palá"}
+        }
+        "Pacific:Tahiti"{
+            ec{"Tahítí"}
         }
         "meta:Afghanistan"{
             ls{"Afganistantími"}
@@ -25,9 +368,7 @@ is{
             ls{"Suður-Afríkutími"}
         }
         "meta:Africa_Western"{
-            ld{"Sumartími í Vestur-Afríku"}
-            lg{"Vestur-Afríkutími"}
-            ls{"Staðaltími í Vestur-Afríku"}
+            ls{"Vestur-Afríkutími"}
         }
         "meta:Alaska"{
             ld{"Sumartími í Alaska"}
@@ -166,11 +507,6 @@ is{
             lg{"Kínatími"}
             ls{"Staðaltími í Kína"}
         }
-        "meta:Choibalsan"{
-            ld{"Sumartími í Choibalsan"}
-            lg{"Tími í Choibalsan"}
-            ls{"Staðaltími í Choibalsan"}
-        }
         "meta:Christmas"{
             ls{"Jólaeyjartími"}
         }
@@ -199,7 +535,7 @@ is{
             ls{"Tími á Dumont-d’Urville"}
         }
         "meta:East_Timor"{
-            ls{"Tíminn á Tímor-Leste"}
+            ls{"Tími á Tímor-Leste"}
         }
         "meta:Easter"{
             ld{"Sumartími á Páskaeyju"}
@@ -276,6 +612,9 @@ is{
         "meta:Guyana"{
             ls{"Gvæjanatími"}
         }
+        "meta:Hawaii"{
+            ls{"Staðaltími á Havaí og Aleúta"}
+        }
         "meta:Hawaii_Aleutian"{
             ld{"Sumartími á Havaí og Aleúta"}
             lg{"Tími á Havaí og Aleúta"}
@@ -334,6 +673,9 @@ is{
             lg{"Tími í Petropavlovsk-Kamchatski"}
             ls{"Staðaltími í Petropavlovsk-Kamchatski"}
         }
+        "meta:Kazakhstan"{
+            ls{"Tími í Kasakstan"}
+        }
         "meta:Kazakhstan_Eastern"{
             ls{"Tími í Austur-Kasakstan"}
         }
@@ -364,9 +706,6 @@ is{
             lg{"Tími á Lord Howe-eyju"}
             ls{"Staðaltími á Lord Howe-eyju"}
         }
-        "meta:Macquarie"{
-            ls{"Macquarie-eyjartími"}
-        }
         "meta:Magadan"{
             ld{"Sumartími í Magadan"}
             lg{"Tími í Magadan"}
@@ -391,11 +730,6 @@ is{
         }
         "meta:Mawson"{
             ls{"Mawson-tími"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"Sumartími í Norðvestur-Mexíkó"}
-            lg{"Tími í Norðvestur-Mexíkó"}
-            ls{"Staðaltími í Norðvestur-Mexíkó"}
         }
         "meta:Mexico_Pacific"{
             ld{"Sumartími í Mexíkó á Kyrrahafssvæðinu"}
@@ -440,7 +774,9 @@ is{
             ls{"Niue-tími"}
         }
         "meta:Norfolk"{
-            ls{"Tími á Norfolk-eyju"}
+            ld{"Sumartími á Norfolk-eyju"}
+            lg{"Tími á Norfolk-eyju"}
+            ls{"Staðaltími á Norfolk-eyju"}
         }
         "meta:Noronha"{
             ld{"Sumartími í Fernando de Noronha"}
@@ -454,7 +790,7 @@ is{
         }
         "meta:Omsk"{
             ld{"Sumartími í Omsk"}
-            lg{"Tíminn í Omsk"}
+            lg{"Tími í Omsk"}
             ls{"Staðaltími í Omsk"}
         }
         "meta:Pakistan"{
@@ -507,9 +843,9 @@ is{
             ls{"Rothera-tími"}
         }
         "meta:Sakhalin"{
-            ld{"Sumartími í Sakhalin"}
-            lg{"Tími í Sakhalin"}
-            ls{"Staðaltími í Sakhalin"}
+            ld{"Sumartími á Sakhalin"}
+            lg{"Tími á Sakhalin"}
+            ls{"Staðaltími á Sakhalin"}
         }
         "meta:Samara"{
             ld{"Sumartími í Samara"}
@@ -608,7 +944,7 @@ is{
         }
         "meta:Yakutsk"{
             ld{"Sumartími í Yakutsk"}
-            lg{"Tíminn í Yakutsk"}
+            lg{"Tími í Yakutsk"}
             ls{"Staðaltími í Yakutsk"}
         }
         "meta:Yekaterinburg"{
@@ -616,11 +952,9 @@ is{
             lg{"Tími í Yekaterinburg"}
             ls{"Staðaltími í Yekaterinborg"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
-        regionFormat{"{0}"}
+        "meta:Yukon"{
+            ls{"Tími í Júkon"}
+        }
         regionFormatDaylight{"{0} (sumartími)"}
         regionFormatStandard{"{0} (staðaltími)"}
     }

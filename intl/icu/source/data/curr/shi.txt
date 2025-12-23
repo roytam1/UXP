@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
 shi{
     Currencies{
         AED{
@@ -174,9 +175,13 @@ shi{
             "SHP",
             "ⴰⵊⵏⵉⵀ ⵏ ⵙⴰⵏⵜⵉⵍⵉⵏ",
         }
+        SLE{
+            "SLE",
+            "ⵍⵉⵢⵓⵏ",
+        }
         SLL{
             "SLL",
-            "ⵍⵉⵢⵓⵏ",
+            "ⵍⵉⵢⵓⵏ (1964—2022)",
         }
         SOS{
             "SOS",
@@ -215,7 +220,7 @@ shi{
             "ⴼⵔⴰⵏⴽ ⵚⵉⴼⴰ",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "ⴼⵔⴰⵏⴽ ⵚⵉⴼⴰ ⴱⵉⵙⴰⵡ",
         }
         ZAR{
@@ -235,5 +240,4 @@ shi{
             "ⴰⴷⵓⵍⴰⵔ ⵏ ⵣⵉⵎⴱⴰⴱⵡⵉ",
         }
     }
-    Version{"2.1.39.11"}
 }
