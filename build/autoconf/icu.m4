@@ -28,9 +28,7 @@ if test -n "$USE_ICU"; then
     fi
     MOZ_ICU_VERSION="$version"
 
-    # TODO: the l is actually endian-dependent
-    # We could make this set as 'l' or 'b' for little or big, respectively,
-    # but we'd need to check in a big-endian version of the file.
+    ICU_DATA_FILE_BIG="icudt${version}b.dat"
     ICU_DATA_FILE="icudt${version}l.dat"
 
     dnl We won't build ICU data as a separate file when building
@@ -46,6 +44,7 @@ fi
 
 AC_SUBST(MOZ_ICU_VERSION)
 AC_SUBST(USE_ICU)
+AC_SUBST(ICU_DATA_FILE_BIG)
 AC_SUBST(ICU_DATA_FILE)
 AC_SUBST(MOZ_ICU_DATA_ARCHIVE)
 AC_SUBST(MOZ_SHARED_ICU)

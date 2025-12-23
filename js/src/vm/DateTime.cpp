@@ -343,8 +343,10 @@ js::ResyncICUDefaultTimeZone()
 #if defined(ICU_TZ_HAS_RECREATE_DEFAULT)
     TZInfo.acquire();
     if (TZInfo.status == IcuTimeZoneInfo::NeedsUpdate) {
-        icu::TimeZone::recreateDefault();
-        TZInfo.status = IcuTimeZoneInfo::Valid;
+        if (icu::TimeZone *defaultZone = icu::TimeZone::detectHostTimeZone()) {
+            icu::TimeZone::adoptDefault(defaultZone);
+            TZInfo.status = IcuTimeZoneInfo::Valid;
+        }
     }
     TZInfo.release();
 #endif

@@ -502,6 +502,14 @@ set_config('INTEL_ARCHITECTURE', delayed_getattr(target_variables,
                                                  'INTEL_ARCHITECTURE'))
 set_config('TARGET_CPU', delayed_getattr(target, 'raw_cpu'))
 set_config('TARGET_OS', delayed_getattr(target, 'raw_os'))
+set_config('TARGET_ENDIANNESS', delayed_getattr(target, 'endianness'))
+
+@depends(target)
+def target_is_big_endian(target):
+    if target.endianness == 'big':
+        return True
+
+set_define('TARGET_ENDIAN_BIG', target_is_big_endian)
 
 
 @depends(host)
