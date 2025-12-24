@@ -2999,6 +2999,12 @@ CSS_PROP_POSITION(
     kImageLayerPositionKTable,
     offsetof(nsStylePosition, mObjectPosition),
     eStyleAnimType_Custom)
+CSS_PROP_SHORTHAND(
+    inset-block,
+    inset_block,
+    InsetBlock,
+    CSS_PROPERTY_PARSE_FUNCTION,
+    "")
 CSS_PROP_LOGICAL(
     inset-block-end,
     inset_block_end,
@@ -3032,6 +3038,12 @@ CSS_PROP_LOGICAL(
     Position,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_None)
+CSS_PROP_SHORTHAND(
+    inset-inline,
+    inset_inline,
+    InsetInline,
+    CSS_PROPERTY_PARSE_FUNCTION,
+    "")
 CSS_PROP_LOGICAL(
     inset-inline-end,
     inset_inline_end,

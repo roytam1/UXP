@@ -1555,6 +1555,8 @@ Declaration::GetPropertyValueInternal(
       }
       MOZ_FALLTHROUGH;
     }
+    case eCSSProperty_inset_block:
+    case eCSSProperty_inset_inline:
     case eCSSProperty_margin_block:
     case eCSSProperty_margin_inline:
     case eCSSProperty_padding_block:
