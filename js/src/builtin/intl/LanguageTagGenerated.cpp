@@ -488,9 +488,9 @@ void js::intl::LanguageTag::performComplexRegionMappings() {
     else if (language().equalTo("auz") ||
              language().equalTo("kaa") ||
              language().equalTo("sog") ||
-             (language().equalTo("und") && script().equalTo("Sogo")) ||
              (language().equalTo("und") && script().equalTo("Chrs")) ||
              (language().equalTo("und") && script().equalTo("Sogd")) ||
+             (language().equalTo("und") && script().equalTo("Sogo")) ||
              language().equalTo("uz") ||
              language().equalTo("xco")) {
       setRegion("UZ");
@@ -533,9 +533,9 @@ void js::intl::LanguageTag::performComplexRegionMappings() {
         language().equalTo("sdb") ||
         language().equalTo("sdf") ||
         language().equalTo("syr") ||
-        (language().equalTo("und") && script().equalTo("Xsux")) ||
+        (language().equalTo("und") && script().equalTo("Hatr")) ||
         (language().equalTo("und") && script().equalTo("Syrc")) ||
-        (language().equalTo("und") && script().equalTo("Hatr"))) {
+        (language().equalTo("und") && script().equalTo("Xsux"))) {
       setRegion("IQ");
     }
     else {
@@ -652,9 +652,9 @@ void js::intl::LanguageTag::performComplexRegionMappings() {
     else if (language().equalTo("auz") ||
              language().equalTo("kaa") ||
              language().equalTo("sog") ||
-             (language().equalTo("und") && script().equalTo("Sogo")) ||
              (language().equalTo("und") && script().equalTo("Chrs")) ||
              (language().equalTo("und") && script().equalTo("Sogd")) ||
+             (language().equalTo("und") && script().equalTo("Sogo")) ||
              language().equalTo("uz") ||
              language().equalTo("xco")) {
       setRegion("UZ");
