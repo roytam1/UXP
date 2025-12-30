@@ -1334,6 +1334,30 @@ nsPresContext::ScreenSizeInchesForFontInflation(bool* aChanged)
   return deviceSizeInches;
 }
 
+// CheckOverflow() is only called on viewport elements (roots and <body> elements, see
+// GetPropagatedScrollStylesForViewport() below).
+// if this ever changes, we need to pass a bool here to indicate whether we are a root/<body> or not,
+// and adjust logic as-necessary.
+// XXX: this only checks overflow-x; it's unclear whether viewport checks truly only need to be
+// checked for y-scrolling, or if the same should apply for x-scrolling. It's certainly the common
+// case for sites specifying `clip` on whole-doc elements.
+//
+// Logic breakdown:
+// https://www.w3.org/TR/2025/WD-css-overflow-3-20251007/#overflow-propagation
+// "user agents must instead apply the overflow-* values of the first [visible html/body] child
+//  element to the viewport. The element from which the value is propagated must then have a
+//  used overflow value of `visible`." AND
+// "If `visible` is applied to the viewport, it must be interpreted as `auto`.
+//  If `clip` is applied to the viewport, it must be interpreted as `hidden`."
+// This is a lot of unnecessary juggling in the spec, but goes like this:
+// 1. Webmaster sets overflow-x to `clip` on root doc or <body>
+// 2. Spec says this should now apply to the viewport, not the element, triggering special handling (4)
+// 3. The other axis must now be set to `visible` instead of `unset` (so far, so good, consistent behavior)
+//    `visible` is an "unscrollable property" which would mandate ScrollStyles(hidden, hidden) here.
+// 4. **However**, because it's the viewport, overflow-y must be changed **again** to `auto`
+// So if unspecified, the spec says `unset` (unscrollable because clip) -> `visible` (unscrollable) ->
+// `auto` (scrollable) if propagated to the viewport (but not any other element where it remains unscrollable).
+// See Issue #2583
 static bool
 CheckOverflow(const nsStyleDisplay* aDisplay, ScrollStyles* aStyles)
 {
@@ -1352,7 +1376,8 @@ CheckOverflow(const nsStyleDisplay* aDisplay, ScrollStyles* aStyles)
 
   if (aDisplay->mOverflowX == NS_STYLE_OVERFLOW_CLIP) {
     *aStyles = ScrollStyles(NS_STYLE_OVERFLOW_HIDDEN,
-                               NS_STYLE_OVERFLOW_HIDDEN, aDisplay);
+                            NS_STYLE_OVERFLOW_AUTO,
+                            aDisplay);
   } else {
     *aStyles = ScrollStyles(aDisplay);
   }
