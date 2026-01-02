@@ -122,24 +122,28 @@ this.ForgetAboutSite = {
     }));
 
     // Passwords
-    promises.push(Task.spawn(function*() {
-      let lm = Cc["@mozilla.org/login-manager;1"].
-               getService(Ci.nsILoginManager);
-      // Clear all passwords for domain
-      let logins = lm.getAllLogins();
-      for (let i = 0; i < logins.length; i++) {
-        if (hasRootDomain(logins[i].hostname, aDomain)) {
-          lm.removeLogin(logins[i]);
+    if (Services.prefs.getBoolPref("privacy.forgetaboutsite.clearPasswords", false) == true) {
+      promises.push(Task.spawn(function*() {
+        let lm = Cc["@mozilla.org/login-manager;1"].
+                 getService(Ci.nsILoginManager);
+        // Clear all passwords for domain
+        let logins = lm.getAllLogins();
+        for (let i = 0; i < logins.length; i++) {
+          if (hasRootDomain(logins[i].hostname, aDomain)) {
+            lm.removeLogin(logins[i]);
+          }
         }
-      }
-    }).catch(ex => {
-      // XXX:
-      // Is there a better way to do this rather than this hacky comparison?
-      // Copied this from toolkit/components/passwordmgr/crypto-SDR.js
-      if (!ex.message.includes("User canceled master password entry")) {
-        throw new Error("Exception occured in clearing passwords: " + ex);
-      }
-    }));
+      }).catch(ex => {
+        // XXX:
+        // Is there a better way to do this rather than this hacky comparison?
+        // Copied this from toolkit/components/passwordmgr/crypto-SDR.js
+        if (!ex.message.includes("User canceled master password entry")) {
+          throw new Error("Exception occured in clearing passwords: " + ex);
+        }
+      }));
+    } else {
+      Services.console.logStringMessage("**NOTE** Forget about site: passwords not cleared for domain " + aDomain);
+    }
 
     // Permissions
     let pm = Cc["@mozilla.org/permissionmanager;1"].
