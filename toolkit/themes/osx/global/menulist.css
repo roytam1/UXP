@@ -6,7 +6,7 @@
 @namespace html url("http://www.w3.org/1999/xhtml");
 
 menulist {
-  -moz-appearance: menulist;
+  appearance: menulist;
   margin: 5px 2px 3px;
   color: -moz-DialogText;
   text-shadow: none;
@@ -17,7 +17,7 @@ menulist:not([popuponly="true"]) {
 }
 
 .menulist-label-box {
-  -moz-appearance: menulist-text;
+  appearance: menulist-text;
   -moz-box-align: center;
   -moz-box-pack: center;
   margin-bottom: 1px;
@@ -52,7 +52,7 @@ menulist[disabled="true"] > .menulist-dropmarker {
 /* ::::: editable menulists ::::: */
 
 menulist[editable="true"] {
-  -moz-appearance: menulist-textfield;
+  appearance: menulist-textfield;
   margin: 4px 2px;
 }
 

@@ -8,7 +8,7 @@
 /* File Field Widget */
 filefield {
   margin: 2px 4px;
-  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .fileFieldContentBox {
@@ -29,7 +29,7 @@ filefield {
 }
 
 .fileFieldLabel {
-  -moz-appearance: none;
+  appearance: none;
   background-color: transparent;
   border: none;
   margin: 0px;

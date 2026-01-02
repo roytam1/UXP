@@ -5,7 +5,7 @@
 %include shared.inc
 
 #topBar {
-  -moz-appearance: toolbar;
+  appearance: toolbar;
 }
 
 .viewGroupWrapper {
@@ -21,7 +21,7 @@
 #viewGroup > toolbarbutton {
   -moz-box-orient: vertical;
   -moz-box-align: center;
-  -moz-appearance: toolbarbutton;
+  appearance: toolbarbutton;
   font: menu;
   text-shadow: @loweredShadow@;
   margin: 0;

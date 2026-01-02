@@ -11,7 +11,7 @@
 
 /* Page background */
 *|*:root {
-  -moz-appearance: none;
+  appearance: none;
   padding: 18px;
   background-repeat: repeat;
   color: -moz-dialogText;
@@ -91,7 +91,7 @@ html|html {
   *|button,
   menulist,
   colorpicker[type="button"] {
-    -moz-appearance: none;
+    appearance: none;
     color: black;
     padding: 0 5px;
     background: linear-gradient(rgba(251, 252, 253, 0.95), transparent 49%, 

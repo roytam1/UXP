@@ -11,7 +11,7 @@
 /* ::::: radio ::::: */
 
 radio {
-  -moz-appearance: radio-container;
+  appearance: radio-container;
   -moz-box-align: center;
   margin: 2px 4px;
   padding-top: 1px;
@@ -61,7 +61,7 @@ radio[disabled="true"]:-moz-system-metric(windows-classic) {
 /* ::::: checkmark image ::::: */
 
 .radio-check-box1 {
-  -moz-appearance: radio;
+  appearance: radio;
   margin: 1px 0px;
   border-top: 1px solid ThreeDShadow;
   border-right: 1px solid ThreeDHighlight;

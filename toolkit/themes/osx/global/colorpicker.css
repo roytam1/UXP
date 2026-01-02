@@ -12,7 +12,7 @@ colorpicker[type="button"] {
   border: 1px solid #a7a7a7;
   background-color: ThreeDFace;
   padding: 3px;
-  -moz-appearance: button-bevel;
+  appearance: button-bevel;
 }
 
 .colorpicker-button-colorbox {

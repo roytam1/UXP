@@ -69,7 +69,7 @@
 }
 
 #select-header .select-cell {
-  -moz-appearance: treeheadercell;
+  appearance: treeheadercell;
   box-sizing: border-box;
 }
 

@@ -16,7 +16,7 @@
 }
 
 .alertCloseButton {
-  -moz-appearance: none;
+  appearance: none;
   height: 16px;
   padding: 4px 2px;
   width: 16px;

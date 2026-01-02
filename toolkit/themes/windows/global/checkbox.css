@@ -11,7 +11,7 @@
 /* ::::: checkbox ::::: */
 
 checkbox {
-  -moz-appearance: checkbox-container;
+  appearance: checkbox-container;
   -moz-box-align: center;
   margin: 2px 4px;
   padding-top: 1px;
@@ -58,7 +58,7 @@ checkbox[disabled="true"]:-moz-system-metric(windows-classic) {
 /* ::::: checkmark image ::::: */
 
 .checkbox-check {
-  -moz-appearance: checkbox;
+  appearance: checkbox;
   -moz-box-align: center;
   border: 2px solid;
   -moz-border-top-colors: ThreeDShadow ThreeDDarkShadow;

@@ -1681,7 +1681,7 @@ nsPresContext::ThemeChangedInternal()
   // :-moz-system-metric selectors (which requires eRestyle_Subtree).
   // Changes in theme can change system colors (whose changes are
   // properly reflected in computed style data), system fonts (whose
-  // changes are not), and -moz-appearance (whose changes likewise are
+  // changes are not), and appearance (whose changes likewise are
   // not), so we need to reflow.
   MediaFeatureValuesChanged(eRestyle_Subtree, NS_STYLE_HINT_REFLOW);
 

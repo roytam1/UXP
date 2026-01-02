@@ -12,7 +12,7 @@
 /* :::::::::: menulist :::::::::: */
 
 menulist {
-  -moz-appearance: menulist;
+  appearance: menulist;
   margin: 2px 4px;
   border: 2px solid;
   -moz-border-top-colors: ThreeDShadow ThreeDDarkShadow;

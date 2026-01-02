@@ -44,7 +44,7 @@ html|html,
 xul|page,
 xul|window {
   font: message-box;
-  -moz-appearance: none;
+  appearance: none;
   background-color: var(--in-content-page-background);
   color: var(--in-content-page-color);
 }
@@ -70,7 +70,7 @@ html|hr {
 }
 
 xul|caption {
-  -moz-appearance: none;
+  appearance: none;
   margin: 0;
 }
 
@@ -102,7 +102,7 @@ xul|prefpane > xul|*.content-box {
 /* groupboxes */
 
 xul|groupbox {
-  -moz-appearance: none;
+  appearance: none;
   border: none;
   margin: 15px 0 0;
   padding-inline-start: 0;
@@ -120,7 +120,7 @@ xul|groupbox xul|description {
 /* tabpanels and tabs */
 
 xul|tabpanels {
-  -moz-appearance: none;
+  appearance: none;
   font-size: 1.25rem;
   line-height: 22px;
   border: none;
@@ -142,7 +142,7 @@ xul|*.tabs-right {
 }
 
 xul|tab {
-  -moz-appearance: none;
+  appearance: none;
   margin-top: 0;
   padding: 4px 20px;
   min-height: 44px;
@@ -183,7 +183,7 @@ html|button {
 html|select,
 xul|colorpicker[type="button"],
 xul|menulist {
-  -moz-appearance: none;
+  appearance: none;
   min-height: 30px;
   color: var(--in-content-text-color);
   border: 1px solid var(--in-content-box-border-color);
@@ -251,7 +251,7 @@ xul|menulist > xul|*.menulist-label-box > xul|*.menulist-icon[src] {
 }
 
 xul|button[type="menu"] > xul|*.button-box > xul|*.button-menu-dropmarker {
-  -moz-appearance: none;
+  appearance: none;
   margin: 1px 0;
   margin-inline-start: 10px;
   padding: 0;
@@ -359,7 +359,7 @@ xul|*.spinbuttons-down[disabled="true"] > xul|*.button-box > xul|*.button-icon {
 }
 
 xul|menulist:not([editable="true"]) > xul|*.menulist-dropmarker {
-  -moz-appearance: none;
+  appearance: none;
   margin-inline-end: 4px;
   padding: 0;
   border: none;
@@ -378,7 +378,7 @@ xul|menulist[disabled="true"]:not([editable="true"]) > xul|*.menulist-dropmarker
 
 xul|menulist > xul|menupopup,
 xul|button[type="menu"] > xul|menupopup {
-  -moz-appearance: none;
+  appearance: none;
   border: 1px solid var(--in-content-box-border-color);
   border-radius: 2px;
   background-color: var(--in-content-box-background);
@@ -388,7 +388,7 @@ xul|menulist > xul|menupopup xul|menu,
 xul|menulist > xul|menupopup xul|menuitem,
 xul|button[type="menu"] > xul|menupopup xul|menu,
 xul|button[type="menu"] > xul|menupopup xul|menuitem {
-  -moz-appearance: none;
+  appearance: none;
   font-size: 1em;
   color: var(--in-content-text-color);
   padding-top: 0.2em;
@@ -425,7 +425,7 @@ xul|button[type="menu"] > xul|menupopup > xul|menuitem[disabled="true"] {
 
 xul|menulist > xul|menupopup xul|menuseparator,
 xul|button[type="menu"] > xul|menupopup xul|menuseparator {
-  -moz-appearance: none;
+  appearance: none;
   margin: 0;
   padding: 0;
   border-top: 1px solid var(--in-content-box-border-color);
@@ -437,7 +437,7 @@ xul|button[type="menu"] > xul|menupopup xul|menuseparator {
 html|input[type="text"],
 html|textarea,
 xul|textbox {
-  -moz-appearance: none;
+  appearance: none;
   color: var(--in-content-text-color);
   border: 1px solid var(--in-content-box-border-color);
   -moz-border-top-colors: none !important;
@@ -532,7 +532,7 @@ xul|checkbox {
 
 xul|*.checkbox-check,
 html|input[type="checkbox"] + html|label:before {
-  -moz-appearance: none;
+  appearance: none;
   width: 23px;
   height: 23px;
   border-radius: 2px;
@@ -583,7 +583,7 @@ xul|radio {
 }
 
 xul|*.radio-check {
-  -moz-appearance: none;
+  appearance: none;
   width: 23px;
   height: 23px;
   border: 1px solid var(--in-content-box-border-color);
@@ -615,7 +615,7 @@ xul|*.radio-label-box {
 /* Category List */
 
 *|*#categories {
-  -moz-appearance: none;
+  appearance: none;
   background-color: var(--in-content-category-background);
   padding-top: 39px;
   margin: 0;
@@ -623,7 +623,7 @@ xul|*.radio-label-box {
 }
 
 *|*.category {
-  -moz-appearance: none;
+  appearance: none;
   color: var(--in-content-category-text);
   border-inline-end-width: 0;
   padding-inline-start: 15px;
@@ -684,7 +684,7 @@ xul|*.radio-label-box {
 /* File fields */
 
 xul|filefield {
-  -moz-appearance: none;
+  appearance: none;
   background-color: transparent;
   border: none;
   padding: 0;
@@ -729,7 +729,7 @@ xul|filefield + xul|button {
 
 xul|richlistbox,
 xul|listbox {
-  -moz-appearance: none;
+  appearance: none;
   margin-inline-start: 0;
   background-color: var(--in-content-box-background);
   border: 1px solid var(--in-content-box-border-color);
@@ -759,7 +759,7 @@ xul|listbox xul|listitem[selected="true"] {
 /* Trees */
 
 xul|tree {
-  -moz-appearance: none;
+  appearance: none;
   font-size: 1em;
   border: 1px solid var(--in-content-box-border-color);
   background-color: var(--in-content-box-background);
@@ -773,7 +773,7 @@ xul|richlistbox:-moz-focusring {
 
 xul|listheader,
 xul|treecols {
-  -moz-appearance: none;
+  appearance: none;
   border: none;
   border-bottom: 1px solid var(--in-content-border-color);
   padding: 0;
@@ -785,7 +785,7 @@ xul|treecols {
 
 xul|treecol:not([hideheader="true"]),
 xul|treecolpicker {
-  -moz-appearance: none;
+  appearance: none;
   border: none;
   background-color: var(--in-content-box-background-hover);
   color: #808080;

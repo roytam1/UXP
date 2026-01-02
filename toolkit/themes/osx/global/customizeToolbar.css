@@ -4,7 +4,7 @@
 
 #palette-box {
   margin-top: 2px;
-  -moz-appearance: listbox;
+  appearance: listbox;
   margin: 0 0 10px;
 }
 
@@ -18,7 +18,7 @@
 }
 
 #main-box > separator {
-  -moz-appearance: none;
+  appearance: none;
   border-bottom: none;
 } 
 

@@ -108,7 +108,7 @@
 /* ::::: toolbars ::::: */
 
 #ToolbarEval {
-  -moz-appearance: none;
+  appearance: none;
   background: @scopeBarBackground@;
   border-bottom: @scopeBarSeparatorBorder@;
   padding: 2px;
@@ -126,7 +126,7 @@
 #ButtonEval {
   margin: 0 4px;
   padding: 1px 10px;
-  -moz-appearance: none;
+  appearance: none;
   border-radius: 10000px;
   border: @roundButtonBorder@;
   background: @roundButtonBackground@;
@@ -157,7 +157,7 @@ toolbarseparator {
 #Console\:clear {
   -moz-box-orient: vertical;
   -moz-box-align: center;
-  -moz-appearance: toolbarbutton;
+  appearance: toolbarbutton;
   font: menu;
   text-shadow: @loweredShadow@;
   margin: 4px 0 9px;

@@ -34,12 +34,12 @@ wizardpage {
 /* Don't use top margin - it can cause a scrollbar on some pages */
 .wizard-buttons {
   padding: 0;
-  -moz-appearance: statusbar;
+  appearance: statusbar;
   -moz-window-dragging: drag;
 }
 
 .wizard-buttons button {
-  -moz-appearance: toolbarbutton;
+  appearance: toolbarbutton;
   color: ButtonText;
   min-height: 22px;
   margin: 0 6px;
@@ -88,7 +88,7 @@ wizardpage {
 #pauseButton {
   list-style-image: url(chrome://mozapps/skin/update/buttons.png);
   -moz-image-region: rect(48px, 16px, 64px, 0px);
-  -moz-appearance: none;
+  appearance: none;
   background-color: transparent;
   border: none;
   min-height: 16px;
@@ -161,7 +161,7 @@ update {
 }
 
 #historyItems {
-  -moz-appearance: listbox;
+  appearance: listbox;
   height: 200px;
   margin: 1px 5px 4px 5px;
 }

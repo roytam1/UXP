@@ -48,7 +48,7 @@ page,
 dialog,
 wizard,
 prefwindow {
-  -moz-appearance: window;
+  appearance: window;
   background-color: -moz-Dialog;
   color: -moz-DialogText;
   font: message-box;
@@ -98,7 +98,7 @@ iframe {
 /* ::::: statusbar ::::: */
 
 statusbar {
-  -moz-appearance: statusbar;
+  appearance: statusbar;
   border-top: 1px solid ThreeDLightShadow;
   border-left: 1px solid ThreeDShadow;
   border-right: 1px solid ThreeDHighlight;
@@ -108,7 +108,7 @@ statusbar {
 }
 
 statusbarpanel {
-  -moz-appearance: statusbarpanel;
+  appearance: statusbarpanel;
   -moz-box-align: center;
   -moz-box-pack: center;
   border-left: 1px solid ThreeDHighlight;
@@ -121,7 +121,7 @@ statusbarpanel {
 .statusbar-resizerpanel {
   -moz-box-align: end;
   -moz-box-pack: end;
-  -moz-appearance: resizerpanel;
+  appearance: resizerpanel;
   padding: 0;
   border: none;
 }
@@ -157,7 +157,7 @@ toolbar[mode="text"] .toolbarbutton-text {
 :root:-moz-lwtheme,
 [lwthemefooter="true"],
 statusbarpanel:-moz-lwtheme {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 sidebarheader:-moz-lwtheme {
@@ -219,7 +219,7 @@ separator.groove[orient="vertical"] {
 }
     
 .plain {
-  -moz-appearance: none;
+  appearance: none;
   margin: 0 !important;
   border: none;
   padding: 0;
@@ -306,7 +306,7 @@ popupnotificationcontent {
   background-image: url("chrome://global/skin/icons/autoscroll.png");
   background-color: transparent;
   background-position: right top;
-  -moz-appearance: none;
+  appearance: none;
 }
 
 .autoscroller[scrolldir="NS"] {
@@ -321,7 +321,7 @@ popupnotificationcontent {
 
 %ifdef MOZ_AUSTRALIS
 .close-icon {
-  -moz-appearance: none;
+  appearance: none;
   height: 16px;
   width: 16px;
   background-image: -moz-image-rect(url("chrome://global/skin/icons/close.svg"), 0, 16, 16, 0);

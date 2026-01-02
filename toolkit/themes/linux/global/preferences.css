@@ -37,7 +37,7 @@ prefwindow[type="child"] .prefWindow-dlgbuttons {
 }
 
 radio[pane] {
-  -moz-appearance: none;
+  appearance: none;
   min-width: 4.5em;
   margin: 0;
   padding: 3px;
@@ -45,7 +45,7 @@ radio[pane] {
 }
 
 .paneSelector {
-  -moz-appearance: listbox;
+  appearance: listbox;
   margin: 8px 8px 0 8px;
   padding: 0;
 }

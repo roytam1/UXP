@@ -43,7 +43,7 @@ prefwindow[type="child"] .prefWindow-dlgbuttons {
 }
 
 radio[pane] {
-  -moz-appearance: none;
+  appearance: none;
   margin: 0px 1px 0px 1px;
   padding: 1px 3px 1px 3px;
   min-width: 4.5em;
@@ -65,12 +65,12 @@ radio[pane] {
 radio[pane]:hover {
   background-color: #E0E8F6;
   color: black;
-  -moz-appearance: none;
+  appearance: none;
 }
 
 radio[pane][selected="true"] {
   background-color: #C1D2EE;
   color: black; 
-  -moz-appearance: none;
+  appearance: none;
 }
 

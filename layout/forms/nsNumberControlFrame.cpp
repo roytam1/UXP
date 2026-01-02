@@ -418,7 +418,7 @@ nsNumberControlFrame::CreateAnonymousContent(nsTArray<ContentInfo>& aElements)
 
   if (StyleDisplay()->mAppearance == NS_THEME_TEXTFIELD) {
     // The author has elected to hide the spinner by setting this
-    // -moz-appearance. We will reframe if it changes.
+    // appearance. We will reframe if it changes.
     return rv;
   }
 

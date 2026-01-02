@@ -5,7 +5,7 @@
 @namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
 listbox {
-  -moz-appearance: listbox;
+  appearance: listbox;
   margin: 2px 4px;
   background-color: #FFFFFF;
   color: -moz-FieldText;
@@ -37,7 +37,7 @@ listbox:focus > listitem[selected="true"] {
 /* ::::: listheader ::::: */
 
 listheader { 
-  -moz-appearance: treeheadercell;
+  appearance: treeheadercell;
   -moz-box-align: center;
   border: 2px solid;
   -moz-border-top-colors: ThreeDHighlight ThreeDLightShadow;
@@ -91,7 +91,7 @@ listheader[sortable="true"]:hover:active {
 /* ::::: listcell checkbox ::::: */
 
 .listcell-check {
-  -moz-appearance: checkbox;
+  appearance: checkbox;
   -moz-box-align: center;
   margin: 0px 2px;
   border: 1px solid -moz-DialogText;

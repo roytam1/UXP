@@ -35,7 +35,7 @@ toolbarbutton[disabled="true"][open="true"] {
 /* ::::: toolbarbutton menu ::::: */
 
 .toolbarbutton-menu-dropmarker {
-  -moz-appearance: none !important;
+  appearance: none !important;
   border: none !important;
   background-color: transparent !important;
   list-style-image: url("chrome://global/skin/arrow/arrow-dn.png");
@@ -107,7 +107,7 @@ toolbar[mode="icons"] > *|* > .toolbarbutton-badge {
 /* .......... dropmarker .......... */
 
 .toolbarbutton-menubutton-dropmarker {
-  -moz-appearance: none;
+  appearance: none;
   border: none;
   background-color: transparent !important;
   list-style-image: url("chrome://global/skin/arrow/arrow-dn.png");

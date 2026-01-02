@@ -11,7 +11,7 @@
 @namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
 #alertNotification {
-  -moz-appearance: none;
+  appearance: none;
   background: transparent;
 }
 
@@ -23,7 +23,7 @@
 }
 
 .alertCloseButton {
-  -moz-appearance: none;
+  appearance: none;
   padding: 0;
   margin: 2px;
   border: none;
