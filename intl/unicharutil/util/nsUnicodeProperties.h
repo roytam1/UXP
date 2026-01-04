@@ -180,18 +180,34 @@ IsDefaultIgnorable(uint32_t aCh)
 inline EmojiPresentation
 GetEmojiPresentation(uint32_t aCh, bool bExt = false)
 {
+  // tr51 Annex A
+
+  // "Implementations must not [...] assume that all Emoji_Component
+  //  characters are also Emoji"
   if (u_hasBinaryProperty(aCh, UCHAR_EMOJI_COMPONENT)) {
     return EmojiComponent;
   }
+  // "All characters in emoji sequences are either Emoji
+  //  or Emoji_Component"
+  // Anything that wasn't caught by Emoji_Component and
+  // isn't caught by Emoji must be text.
   if (!u_hasBinaryProperty(aCh, UCHAR_EMOJI)) {
     return TextOnly;
   }
+  // "If Emoji=No, then Emoji_Presentation=No"
+  // Emoji=No was filtered out above, so Emoji_Presentation may be Yes?
   if (u_hasBinaryProperty(aCh, UCHAR_EMOJI_PRESENTATION)) {
     return EmojiDefault;
   }
+  // "Characters that are used to future-proof segmentation"
+  // Emoji=Yes, Emoji_Presentation=No, what about Extended_Pictographic?
+  // Apply only when part of a cluster.
   if (bExt && u_hasBinaryProperty(aCh, UCHAR_EXTENDED_PICTOGRAPHIC)) {
     return EmojiDefault;
   }
+  // Still an emoji, but...
+  // Not Emoji_Presentation
+  // Not Extended_Pictographic in an extended setting
   return TextDefault;
 }
 
