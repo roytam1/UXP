@@ -275,10 +275,10 @@ ClusterIterator::Next()
             IsClusterExtender(ch) ||
             IsEmojiClusterExtender(ch) ||
             (baseIsEmoji && prevWasZwj &&
-             ((GetEmojiPresentation(ch) == EmojiDefault) ||
-              (GetEmojiPresentation(ch) == EmojiComponent) ||
-              (GetEmojiPresentation(ch) == TextDefault &&
-               GetEmojiPresentation(aExtCh) == EmojiComponent)));
+             ((GetEmojiPresentation(ch, true) == EmojiDefault) ||
+              (GetEmojiPresentation(ch, true) == EmojiComponent) ||
+              (GetEmojiPresentation(ch, true) == TextDefault &&
+               GetEmojiPresentation(aExtCh, true) == EmojiComponent)));
         if (!extendCluster) {
             break;
         }
@@ -346,7 +346,7 @@ ClusterReverseIterator::Next()
             }
             break;
         }
-        nextWasComponent = (GetEmojiPresentation(ch) == EmojiComponent);
+        nextWasComponent = (GetEmojiPresentation(ch, true) == EmojiComponent);
     } while ((mPos - tRel) > mLimit);
     mPos -= tPos;
 
