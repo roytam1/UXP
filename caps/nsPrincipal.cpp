@@ -464,6 +464,18 @@ nsPrincipal::Write(nsIObjectOutputStream* aStream)
   rv = aStream->WriteStringZ(suffix.get());
   NS_ENSURE_SUCCESS(rv, rv);
 
+  // This is an ugly hack to prevent re-entrancy calls into nsPrincipal::Write()
+  // because of repeat CSP processing.
+  // We refcount the context and if found 3+ refcounts on the same, skip writing
+  // the mCSP compound object.
+  // TODO: figure out exactly why this happens and fix the root cause.
+  nsCSPContext* CSPContext = static_cast<nsCSPContext*>(mCSP.get());
+  if(CSPContext) {
+    int8_t CSPDepth = CSPContext->AddRef();
+    CSPContext->Release();
+    if(CSPDepth > 2) return NS_OK;
+  }
+
   rv = NS_WriteOptionalCompoundObject(aStream, mCSP,
                                       NS_GET_IID(nsIContentSecurityPolicy),
                                       true);
