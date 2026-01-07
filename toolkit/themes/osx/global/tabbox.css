@@ -18,7 +18,7 @@ tabbox {
 }
 
 tabpanels {
-  -moz-appearance: tabpanels;
+  appearance: tabpanels;
   padding: 33px 15px 15px;
 }
 
@@ -34,7 +34,7 @@ tabbox > tabs {
 }
 
 tab {
-  -moz-appearance: tab;
+  appearance: tab;
 }
 
 tab:-moz-focusring {
@@ -90,7 +90,7 @@ tabs.tabs-bottom > .tabs-left {
 
 tabbox.tabs-bottom > tabs > tab,
 tabs.tabs-bottom > tab {
-  -moz-appearance: none;
+  appearance: none;
   margin: -1px 0 0;
   padding: 0 0 2px 0;
   position: relative;
@@ -144,5 +144,5 @@ tabbox.tabs-bottom,
 tabbox.tabs-bottom > tabpanels,
 tabbox.tabs-bottom > tabs > tab[visuallyselected=true] > .tab-middle,
 tabs.tabs-bottom > tab[visuallyselected=true] > .tab-middle {
-  -moz-appearance: dialog;
+  appearance: dialog;
 }

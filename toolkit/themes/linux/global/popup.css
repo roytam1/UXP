@@ -8,7 +8,7 @@
 
 menupopup,
 panel {
-  -moz-appearance: menupopup;
+  appearance: menupopup;
   min-width: 1px;
   color: MenuText;
 }
@@ -16,7 +16,7 @@ panel {
 /* ::::: arrow panel ::::: */
 
 panel[type="arrow"] {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 panel[type="arrow"][side="top"],
@@ -78,7 +78,7 @@ panel[type="arrow"][side="right"] {
 /* ::::: tooltip ::::: */
 
 tooltip {
-  -moz-appearance: tooltip;
+  appearance: tooltip;
   margin-top: 21px;
   max-width: 40em;
   color: InfoText;

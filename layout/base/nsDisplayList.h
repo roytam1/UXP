@@ -653,7 +653,7 @@ public:
    * display list, except for themed widgets which are transformed or have
    * effects applied to them (e.g. CSS opacity or filters).
    *
-   * @param aWidgetType the -moz-appearance value for the themed widget
+   * @param aWidgetType the appearance value for the themed widget
    * @param aRect the device-pixel rect relative to the widget's displayRoot
    * for the themed widget
    */
@@ -1068,7 +1068,7 @@ public:
   void SetGlassDisplayItem(nsDisplayItem* aItem) {
     if (mGlassDisplayItem) {
       // Web pages or extensions could trigger this by using
-      // -moz-appearance:win-borderless-glass etc on their own elements.
+      // appearance:win-borderless-glass etc on their own elements.
       // Keep the first one, since that will be the background of the root
       // window
       NS_WARNING("Multiple glass backgrounds found?");

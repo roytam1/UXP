@@ -6,22 +6,22 @@
 
 .autorepeatbutton-up > .autorepeatbutton-icon,
 .scrollbutton-up > .toolbarbutton-icon {
-  -moz-appearance: button-arrow-up;
+  appearance: button-arrow-up;
 }
 
 .autorepeatbutton-down > .autorepeatbutton-icon,
 .scrollbutton-down > .toolbarbutton-icon {
-  -moz-appearance: button-arrow-down;
+  appearance: button-arrow-down;
 }
 
 .autorepeatbutton-up[orient="horizontal"] > .autorepeatbutton-icon,
 .scrollbutton-up[orient="horizontal"] > .toolbarbutton-icon {
-  -moz-appearance: button-arrow-previous;
+  appearance: button-arrow-previous;
 }
 
 .autorepeatbutton-down[orient="horizontal"] > .autorepeatbutton-icon,
 .scrollbutton-down[orient="horizontal"] > .toolbarbutton-icon {
-  -moz-appearance: button-arrow-next;
+  appearance: button-arrow-next;
 }
 
 :-moz-any(.scrollbutton-up, .scrollbutton-down) > .toolbarbutton-text {

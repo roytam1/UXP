@@ -21,7 +21,7 @@ scrollbar {
 
 scrollbar[orient="vertical"] 
 {
-   -moz-appearance: scrollbar-vertical;
+   appearance: scrollbar-vertical;
   border-left: none;
   border-right: none;
   border-top: 1px solid #555555;
@@ -62,7 +62,7 @@ scrollbarbutton:hover:active, scrollbarbutton[active="true"] {
 /* ::::: square at the corner of two scrollbars ::::: */
 
 scrollcorner { 
-  /* XXX -moz-appearance: scrollcorner; */
+  /* XXX appearance: scrollcorner; */
   -moz-binding: url(chrome://global/content/bindings/scrollbar.xml#scrollbar-base);
   width: 16px;
   cursor: default;
@@ -72,7 +72,7 @@ scrollcorner {
 /* ..... increment .... */
 
 scrollbarbutton[type="increment"] {
-  -moz-appearance: scrollbarbutton-right;
+  appearance: scrollbarbutton-right;
   background-image: url("chrome://global/skin/arrow/arrow-rit.gif")
 }
 
@@ -81,7 +81,7 @@ scrollbarbutton[type="increment"][disabled="true"] {
 }
 
 scrollbar[orient="vertical"] > scrollbarbutton[type="increment"] {
-  -moz-appearance: scrollbarbutton-down;
+  appearance: scrollbarbutton-down;
   background-image: url("chrome://global/skin/arrow/arrow-dn.gif")
 }
 
@@ -92,7 +92,7 @@ scrollbar[orient="vertical"] > scrollbarbutton[type="increment"][disabled="true"
 /* ..... decrement .... */
 
 scrollbarbutton[type="decrement"] {
-  -moz-appearance: scrollbarbutton-left;
+  appearance: scrollbarbutton-left;
    background-image: url("chrome://global/skin/arrow/arrow-lft.gif")
 }
 
@@ -101,7 +101,7 @@ scrollbarbutton[type="decrement"][disabled="true"] {
 }
 
 scrollbar[orient="vertical"] > scrollbarbutton[type="decrement"] {
-  -moz-appearance: scrollbarbutton-up;
+  appearance: scrollbarbutton-up;
    background-image: url("chrome://global/skin/arrow/arrow-up.gif")
 }
 
@@ -116,7 +116,7 @@ scrollbar[orient="vertical"] > scrollbarbutton[type="decrement"][disabled="true"
   /* ::::: scrollbar ::::: */
 
   html|div scrollbar {
-    -moz-appearance: scrollbar-horizontal;
+    appearance: scrollbar-horizontal;
     -moz-binding: url("chrome://global/content/bindings/scrollbar.xml#scrollbar");
     cursor: default;
     background: url("chrome://global/skin/scrollbar/slider.gif") scrollbar;
@@ -124,7 +124,7 @@ scrollbar[orient="vertical"] > scrollbarbutton[type="decrement"][disabled="true"
 
   html|div scrollbar[orient="vertical"] 
   {
-     -moz-appearance: scrollbar-vertical;
+     appearance: scrollbar-vertical;
   }
 
   /* ::::: borders for thumb and buttons ::::: */
@@ -142,12 +142,12 @@ scrollbar[orient="vertical"] > scrollbarbutton[type="decrement"][disabled="true"
   /* ::::: thumb (horizontal) ::::: */
 
   html|div thumb {
-    -moz-appearance: scrollbarthumb-vertical;
+    appearance: scrollbarthumb-vertical;
     min-height: 8px;
   }
 
   html|div thumb[orient="horizontal"] {
-    -moz-appearance: scrollbarthumb-horizontal;
+    appearance: scrollbarthumb-horizontal;
     min-width: 8px;
   }
 
@@ -170,7 +170,7 @@ scrollbar[orient="vertical"] > scrollbarbutton[type="decrement"][disabled="true"
   /* ..... increment .... */
 
   html|div scrollbarbutton[type="increment"] {
-    -moz-appearance: scrollbarbutton-right;
+    appearance: scrollbarbutton-right;
     background-image: url("chrome://global/skin/arrow/arrow-rit.gif")
   }
 
@@ -179,7 +179,7 @@ scrollbar[orient="vertical"] > scrollbarbutton[type="decrement"][disabled="true"
   }
 
   html|div scrollbar[orient="vertical"] > scrollbarbutton[type="increment"] {
-    -moz-appearance: scrollbarbutton-down;
+    appearance: scrollbarbutton-down;
     background-image: url("chrome://global/skin/arrow/arrow-dn.gif")
   }
 
@@ -190,7 +190,7 @@ scrollbar[orient="vertical"] > scrollbarbutton[type="decrement"][disabled="true"
   /* ..... decrement .... */
 
   html|div scrollbarbutton[type="decrement"] {
-    -moz-appearance: scrollbarbutton-left;
+    appearance: scrollbarbutton-left;
      background-image: url("chrome://global/skin/arrow/arrow-lft.gif")
   }
 
@@ -199,7 +199,7 @@ scrollbar[orient="vertical"] > scrollbarbutton[type="decrement"][disabled="true"
   }
 
   html|div scrollbar[orient="vertical"] > scrollbarbutton[type="decrement"] {
-    -moz-appearance: scrollbarbutton-up;
+    appearance: scrollbarbutton-up;
      background-image: url("chrome://global/skin/arrow/arrow-up.gif")
   }
 

@@ -25,7 +25,7 @@ prefwindow[type="child"] > prefpane {
 .paneSelector {
   font: message-box;
   padding: 1px 4px;
-  -moz-appearance: toolbar;
+  appearance: toolbar;
   margin: 0;
 }
 
@@ -34,7 +34,7 @@ radio[pane] {
   border-width: 0 2px;
   padding: 5px 4px 3px;
   margin: 0;
-  -moz-appearance: none;
+  appearance: none;
   text-shadow: rgba(255, 255, 255, 0.4) 0 1px;
 }
 

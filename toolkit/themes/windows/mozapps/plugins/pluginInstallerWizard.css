@@ -1,5 +1,5 @@
 #licenseContainer, #pluginList {
-  -moz-appearance: listbox;
+  appearance: listbox;
   margin: 2px 4px;
   border: 2px solid;
   -moz-border-top-colors: ThreeDShadow ThreeDDarkShadow;

@@ -3,7 +3,7 @@
 <?xml-stylesheet href="data:text/css,
 vbox { height: 50px; }
 box {
-  -moz-appearance: checkbox;
+  appearance: checkbox;
   margin-left: 2px;
   margin-top: 1px;
 }

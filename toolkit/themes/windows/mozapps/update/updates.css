@@ -62,7 +62,7 @@ wizardpage {
 #pauseButton {
   list-style-image: url(chrome://mozapps/skin/update/downloadButtons.png);
   -moz-image-region: rect(0px, 48px, 16px, 32px);
-  -moz-appearance: none;
+  appearance: none;
   background-color: transparent;
   border: none;
   min-width: 0;
@@ -137,7 +137,7 @@ update {
 }
 
 #historyItems {
-  -moz-appearance: listbox;
+  appearance: listbox;
   height: 200px;
   margin: 1px 5px 4px 5px;
 }

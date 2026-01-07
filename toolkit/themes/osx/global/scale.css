@@ -5,7 +5,7 @@
 @namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
 .scale-slider {
-  -moz-appearance: scale-horizontal;
+  appearance: scale-horizontal;
   background: url("chrome://global/skin/scale/scale-tray-horiz.gif") 0% 50% repeat-x;
   margin: 2px 4px;
   width: 100px;
@@ -13,7 +13,7 @@
 
 .scale-slider[orient="vertical"]
 {
-  -moz-appearance: scale-vertical;
+  appearance: scale-vertical;
   background: url("chrome://global/skin/scale/scale-tray-vert.gif") 50% 0% repeat-y;
   margin: 4px 2px;
   width: auto;
@@ -21,7 +21,7 @@
 }
 
 .scale-thumb {
-  -moz-appearance: scalethumb-horizontal;
+  appearance: scalethumb-horizontal;
   border: 2px solid;
   -moz-border-top-colors: ThreeDLightShadow ThreeDHighlight;
   -moz-border-right-colors: ThreeDDarkShadow ThreeDShadow;
@@ -33,7 +33,7 @@
 }
 
 .scale-thumb[orient="vertical"] {
-  -moz-appearance: scalethumb-vertical;
+  appearance: scalethumb-vertical;
   min-width: 15px;
   min-height: 30px;
 }

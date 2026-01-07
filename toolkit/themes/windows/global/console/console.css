@@ -211,11 +211,11 @@ toolbar#ToolbarMode .toolbarbutton-text {
 @media not all and (-moz-os-version: windows-win10),
        not all and (-moz-os-version: windows-win11) {
   #ToolbarMode {
-    -moz-appearance: -moz-win-browsertabbar-toolbox;
+    appearance: -moz-win-browsertabbar-toolbox;
   }
 
   #ToolbarEval {
-    -moz-appearance: toolbox;
+    appearance: toolbox;
   }
 }
 %endif

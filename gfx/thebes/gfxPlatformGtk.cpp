@@ -212,7 +212,7 @@ gfxPlatformGtk::GetCommonFallbackFonts(uint32_t aCh, uint32_t aNextCh,
                                        nsTArray<const char*>& aFontList)
 {
     EmojiPresentation emoji = GetEmojiPresentation(aCh);
-    EmojiPresentation eNext = GetEmojiPresentation(aNextCh);
+    EmojiPresentation eNext = GetEmojiPresentation(aNextCh, true);
     if (aNextCh != kVariationSelector15 &&
         emoji != EmojiPresentation::TextOnly &&
         (emoji != EmojiPresentation::TextDefault ||

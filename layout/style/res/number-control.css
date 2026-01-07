@@ -8,7 +8,7 @@
  */
 
 input[type="number"] {
-  -moz-appearance: number-input;
+  appearance: number-input;
   /* Has to revert some properties applied by the generic input rule. */
   -moz-binding: none;
   inline-size: 20ch; /* It'd be nice if this matched the default inline-size

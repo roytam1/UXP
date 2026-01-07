@@ -3193,8 +3193,8 @@ nsStyleDisplay::CalcDifference(const nsStyleDisplay& aNewData) const
       (mAppearance != NS_THEME_TEXTFIELD &&
        aNewData.mAppearance == NS_THEME_TEXTFIELD)) {
     // This is for <input type=number> where we allow authors to specify a
-    // |-moz-appearance:textfield| to get a control without a spinner. (The
-    // spinner is present for |-moz-appearance:number-input| but also other
+    // |appearance:textfield| to get a control without a spinner. (The
+    // spinner is present for |appearance:number-input| but also other
     // values such as 'none'.) We need to reframe since we want to use
     // nsTextControlFrame instead of nsNumberControlFrame if the author
     // specifies 'textfield'.

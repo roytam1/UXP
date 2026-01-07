@@ -13,7 +13,7 @@
 /* colorpicker button */
 
 colorpicker[type="button"] {
-  -moz-appearance: button;
+  appearance: button;
   width: 38px;
   height: 24px;
   padding: 3px;

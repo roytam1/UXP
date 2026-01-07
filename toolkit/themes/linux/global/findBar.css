@@ -26,13 +26,13 @@ findbar[hidden] {
 /* find-next button */
 
 .findbar-find-next > .toolbarbutton-icon {
-  -moz-appearance: button-arrow-next;
+  appearance: button-arrow-next;
 }
 
 /* find-previous button */
 
 .findbar-find-previous > .toolbarbutton-icon {
-  -moz-appearance: button-arrow-previous;
+  appearance: button-arrow-previous;
 }
 
 /* highlight button */
@@ -74,7 +74,7 @@ findbar[hidden] {
 }
 
 .findbar-textbox {
-  -moz-appearance: none;
+  appearance: none;
   border: 1px solid ThreeDShadow;
   box-shadow: 0 0 1px 0 ThreeDShadow inset;
   margin: 0;

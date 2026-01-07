@@ -11,13 +11,13 @@
 }
 
 .arrow {
-  -moz-appearance: treetwisty;
+  appearance: treetwisty;
   width: 20px;
   height: 20px;
 }
 
 .arrow[open] {
-  -moz-appearance: treetwistyopen;
+  appearance: treetwistyopen;
 }
 
 .arrow[invisible] {

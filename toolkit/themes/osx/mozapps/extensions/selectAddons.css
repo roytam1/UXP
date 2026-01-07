@@ -73,7 +73,7 @@
 }
 
 #select-header .select-cell {
-  -moz-appearance: treeheadercell;
+  appearance: treeheadercell;
   border: 2px solid;
   -moz-border-top-colors: ThreeDHighlight ThreeDLightShadow;
   -moz-border-right-colors: ThreeDDarkShadow ThreeDShadow;
@@ -150,12 +150,12 @@
 
 #footer {
   padding: 15px 12px;
-  -moz-appearance: statusbar;
+  appearance: statusbar;
   -moz-window-dragging: drag;
 }
 
 button {
-  -moz-appearance: toolbarbutton;
+  appearance: toolbarbutton;
   min-height: 22px;
   margin: 0 6px;
   padding: 0;

@@ -6,7 +6,7 @@
 @namespace xul url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
 .datetime-input-box-wrapper {
-  -moz-appearance: none;
+  appearance: none;
   display: inline-flex;
   flex: 1;
   cursor: default;
@@ -22,7 +22,7 @@
 }
 
 .datetime-input {
-  -moz-appearance: none;
+  appearance: none;
   text-align: center;
   padding: 0;
   border: 0;

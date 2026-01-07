@@ -11,7 +11,7 @@
 /* ::::: radio ::::: */
 
 radio {
-  -moz-appearance: radio-container;
+  appearance: radio-container;
   margin: 2px 4px;
   border-left: 2px transparent;
   border-right: 2px transparent;
@@ -27,7 +27,7 @@ radio {
    mark. */
 
 .radio-spacer-box {
-  -moz-appearance: radio;
+  appearance: radio;
   -moz-box-align: center;
   margin: 2px;
   border-right: 2px solid transparent;
@@ -38,7 +38,7 @@ radio {
 }
 
 .radio-label-box {
-  -moz-appearance: radio-label;
+  appearance: radio-label;
 }
 
 .radio-icon[src] {

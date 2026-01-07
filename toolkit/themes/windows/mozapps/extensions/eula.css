@@ -34,7 +34,7 @@
 }
 
 #eula {
-  -moz-appearance: none;
+  appearance: none;
   color: -moz-FieldText;
   background-color: -moz-Field;
   margin: 1em;

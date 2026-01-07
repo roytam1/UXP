@@ -461,9 +461,9 @@ CSS_PROP_DISPLAY(
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_None)
 CSS_PROP_DISPLAY(
-    -moz-appearance,
     appearance,
-    CSS_PROP_DOMPROP_PREFIXED(Appearance),
+    appearance,
+    Appearance,
     CSS_PROPERTY_PARSE_VALUE,
     "",
     VARIANT_HK,
