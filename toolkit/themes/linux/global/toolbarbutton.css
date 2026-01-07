@@ -11,7 +11,7 @@
 /* ::::: toolbarbutton ::::: */
 
 toolbarbutton {
-  -moz-appearance: toolbarbutton;
+  appearance: toolbarbutton;
   -moz-box-align: center;
   -moz-box-pack: center;
   margin: 0;
@@ -70,7 +70,7 @@ toolbarbutton:-moz-lwtheme:not(:hover):not([checked="true"]):not([open="true"]):
 /* ::::: toolbarbutton menu ::::: */
 
 .toolbarbutton-menu-dropmarker {
-  -moz-appearance: toolbarbutton-dropdown !important;
+  appearance: toolbarbutton-dropdown !important;
   list-style-image: none;
   -moz-image-region: auto;
   padding: 0;
@@ -85,7 +85,7 @@ toolbarbutton:-moz-lwtheme:not(:hover):not([checked="true"]):not([open="true"]):
 
 toolbarbutton[type="menu-button"] {
   -moz-box-align: stretch;
-  -moz-appearance: dualbutton;
+  appearance: dualbutton;
   -moz-box-orient: horizontal !important;
 }
 
@@ -132,7 +132,7 @@ toolbarbutton[type="menu-button"][disabled="true"]:hover:active {
 
 .toolbarbutton-menubutton-dropmarker {
   margin: 0 3px;
-  -moz-appearance: toolbarbutton-dropdown !important;
+  appearance: toolbarbutton-dropdown !important;
   list-style-image: none;
   -moz-image-region: auto;
 }

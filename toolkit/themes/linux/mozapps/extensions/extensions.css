@@ -116,7 +116,7 @@
 /*** category selector ***/
 
 #categories {
-  -moz-appearance: none;
+  appearance: none;
   border: none;
   -moz-margin-end: -1px;
   background-color: transparent;
@@ -125,7 +125,7 @@
 }
 
 .category {
-  -moz-appearance: none;
+  appearance: none;
   border-width: 1px;
   -moz-border-end-width: 0;
   border-style: solid;
@@ -310,7 +310,7 @@
 /*** sorters ***/
 
 .sort-controls {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 .sorter[checkState="1"] .button-icon {
@@ -361,7 +361,7 @@
 /*** list ***/
 
 .list {
-  -moz-appearance: none;
+  appearance: none;
   margin: 0;
   border: none;
   background-color: transparent;
@@ -555,7 +555,7 @@
 }
 
 .addon .relnotes-toggle {
-  -moz-appearance: none;
+  appearance: none;
   border: none;
   background: transparent;
   font-weight: bold;
@@ -821,7 +821,7 @@ setting[type="radio"] > radiogroup {
 }
 
 .download-progress .cancel {
-  -moz-appearance: none;
+  appearance: none;
   background-color: ButtonFace;
   padding-bottom: 1px;
   -moz-padding-start: 2px;
@@ -903,7 +903,7 @@ setting[type="radio"] > radiogroup {
 }
 
 .button-link {
-  -moz-appearance: none;
+  appearance: none;
   background: transparent;
   border: none;
   text-decoration: underline;

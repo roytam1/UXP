@@ -29,7 +29,7 @@ tabmodalprompt {
 }
 
 button {
-  -moz-appearance: none;
+  appearance: none;
   padding: 2px 0;
   margin: 0;
   margin-inline-start: 8px;

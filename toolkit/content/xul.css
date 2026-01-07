@@ -302,7 +302,7 @@ toolbar[type="menubar"][autohide="true"] {
 toolbar[type="menubar"][autohide="true"][inactive="true"]:not([customizing="true"]) {
   min-height: 0 !important;
   height: 0 !important;
-  -moz-appearance: none !important;
+  appearance: none !important;
   border-style: none !important;
 }
 %endif
@@ -942,7 +942,7 @@ menulist {
 
 menulist[popuponly="true"] {
   -moz-binding: url("chrome://global/content/bindings/menulist.xml#menulist-popuponly");
-  -moz-appearance: none !important;
+  appearance: none !important;
   margin: 0 !important;
   height: 0 !important;
   border: 0 !important;

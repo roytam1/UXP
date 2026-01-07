@@ -21,11 +21,11 @@ xul|menulist {
 
 xul|button > xul|*.button-box,
 xul|menulist > xul|*.menulist-label-box {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 xul|button[type="menu"] > xul|*.button-box > xul|*.button-menu-dropmarker {
-  -moz-appearance: none !important;
+  appearance: none !important;
 }
 
 xul|*.help-button > xul|*.button-box > xul|*.button-icon {
@@ -75,7 +75,7 @@ xul|*.radio-check[selected] {
 }
 
 xul|*.radio-label-box {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 /* Override OS-theme-based color to make it visible
@@ -86,7 +86,7 @@ xul|checkbox:not([disabled="true"]):hover {
 }
 
 xul|*.numberbox-input-box {
-  -moz-appearance: none;
+  appearance: none;
   border-width: 0;
 }
 
@@ -102,7 +102,7 @@ xul|checkbox:-moz-focusring > xul|*.checkbox-label-box {
 }
 
 xul|spinbuttons {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 xul|treechildren::-moz-tree-row(multicol, odd) {

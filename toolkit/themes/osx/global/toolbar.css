@@ -5,40 +5,40 @@
 @namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
 toolbox {
-  /* Setting -moz-appearance:toolbox causes sheets to attach under the
+  /* Setting appearance:toolbox causes sheets to attach under the
    * toolbox and has no other effects. It doesn't render anything. */
-  -moz-appearance: toolbox;
+  appearance: toolbox;
 }
 
 toolbar {
   min-width: 1px;
   min-height: 20px;
-  -moz-appearance: toolbar;
+  appearance: toolbar;
 }
 
 %ifdef MOZ_AUSTRALIS
 menubar:-moz-lwtheme,
 toolbar:-moz-lwtheme {
-  -moz-appearance: none;
+  appearance: none;
   background: none;
   border-color: transparent;
 }
 %else
 menubar:-moz-lwtheme,
 toolbar:-moz-lwtheme {
-  -moz-appearance: none;
+  appearance: none;
   background: none;
   border-style: none;
 }
 %endif
 
 menubar {
-  -moz-appearance: dialog; /* For content menubars, "toolbar" is too dark, so we use "dialog". */
+  appearance: dialog; /* For content menubars, "toolbar" is too dark, so we use "dialog". */
   min-width: 1px;
 }
 
 toolbarseparator {
-  -moz-appearance: none;
+  appearance: none;
   margin: 3px 4px;
   background: url("chrome://global/skin/toolbar/toolbar-separator.png") transparent repeat-y;
   padding: 0;

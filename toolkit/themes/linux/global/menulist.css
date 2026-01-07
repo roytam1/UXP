@@ -12,7 +12,7 @@
 /* :::::::::: menulist :::::::::: */
 
 menulist {
-  -moz-appearance: menulist;
+  appearance: menulist;
   margin: 2px 4px;
   color: -moz-DialogText;
   font: menu;
@@ -20,7 +20,7 @@ menulist {
 }
 
 .menulist-label-box {
-  -moz-appearance: menulist-text;
+  appearance: menulist-text;
   -moz-box-align: center;
   -moz-box-pack: center;
   color: inherit;
@@ -58,12 +58,12 @@ menulist[disabled="true"]:hover:active {
 /* ::::: editable menulists ::::: */
 
 menulist[editable="true"] {
-  -moz-appearance: none;
+  appearance: none;
   color: -moz-FieldText;
 }
 
 .menulist-editable-box {
-  -moz-appearance: menulist-textfield;
+  appearance: menulist-textfield;
   padding-top: 3px;
   padding-bottom: 3px;
   padding-inline-start: 2px;
@@ -72,7 +72,7 @@ menulist[editable="true"] {
 
 menulist[editable="true"] > .menulist-dropmarker {
   display: -moz-box;
-  -moz-appearance: menulist-button;
+  appearance: menulist-button;
 %if MOZ_WIDGET_GTK == 3
   min-width: 2.5em;
   min-height: 2.25em;

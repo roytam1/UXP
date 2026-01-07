@@ -19,7 +19,7 @@ tree {
   -moz-border-left-colors: ThreeDShadow ThreeDDarkShadow;
   background-color: -moz-Field;
   color: -moz-FieldText;
-  -moz-appearance: listbox;
+  appearance: listbox;
 }
 
 /* ::::: tree focusring ::::: */
@@ -201,7 +201,7 @@ treechildren::-moz-tree-cell-text(progressmeter) {
 
 treecol,
 treecolpicker {
-  -moz-appearance: treeheadercell;
+  appearance: treeheadercell;
   -moz-box-align: center;
   -moz-box-pack: center;
   border: 2px solid;
@@ -228,7 +228,7 @@ treecolpicker:hover {
 }
 
 treecol[hideheader="true"] {
-  -moz-appearance: none;
+  appearance: none;
   border: none;
   padding: 0;
 }
@@ -290,7 +290,7 @@ treechildren::-moz-tree-column(insertafter) {
 /* ::::: sort direction indicator :::::  */
 
 .treecol-sortdirection {
-  -moz-appearance: treeheadersortarrow;
+  appearance: treeheadersortarrow;
 }
 
 /* ::::: column picker :::::  */
@@ -302,7 +302,7 @@ treechildren::-moz-tree-column(insertafter) {
 /* ::::: twisty :::::  */
 
 treechildren::-moz-tree-twisty {
-  -moz-appearance: treetwisty;
+  appearance: treetwisty;
   padding-inline-end: 4px;
   padding-top: 1px;
   width: 9px; /* The image's width is 9 pixels */
@@ -310,7 +310,7 @@ treechildren::-moz-tree-twisty {
 }
 
 treechildren::-moz-tree-twisty(open) {
-  -moz-appearance: treetwistyopen;
+  appearance: treetwistyopen;
   width: 9px; /* The image's width is 9 pixels */
   list-style-image: url("chrome://global/skin/tree/twisty-open.png");
 }
@@ -353,7 +353,7 @@ treechildren::-moz-tree-cell-text(active, selected, editing) {
 }
 
 .tree-input {
-  -moz-appearance: none;
+  appearance: none;
   border: 1px solid Highlight;
   -moz-border-top-colors: Highlight;
   -moz-border-bottom-colors: Highlight;

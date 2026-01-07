@@ -23,7 +23,7 @@ menupopup,
 /* auto complete popups don't render well as vista menus */
 popup:not([type="autocomplete"])
 {
-  -moz-appearance: menupopup;
+  appearance: menupopup;
 }
 
 menupopup > menu > menupopup,

@@ -17,7 +17,7 @@
   background-color: transparent;
   background-repeat: no-repeat;
   background-position: center;
-  -moz-appearance: none;   /* Remove the native button appearance and styling */
+  appearance: none;   /* Remove the native button appearance and styling */
   margin: 0;
   padding: 0;
   min-height: 28px;
@@ -110,7 +110,7 @@
 
 .textTrackList {
   display: -moz-box;
-  -moz-appearance: none;
+  appearance: none;
   -moz-box-pack: end;
   -moz-box-align: end;
   padding: 0;
@@ -121,7 +121,7 @@
 }
 
 .textTrackList > html|*.textTrackItem {
-  -moz-appearance: none;
+  appearance: none;
   -moz-box-align: start;
   text-align: start;
   overflow: hidden;
@@ -192,7 +192,7 @@
   /* margin top/bottom: make bar 8px tall (control height = 28, minus 2 * 10 margin) */
   /* margin left/right: 1/2 of scrubber thumb width, for overhang. */
   margin: 10px 22px;
-  -moz-appearance: none;
+  appearance: none;
   border: none;
   background-color: transparent;
   min-width: 0;
@@ -208,20 +208,20 @@
    */
   background-color: rgba(255,255,255,.5);
   border-radius: 2.5px;
-  -moz-appearance: none;
+  appearance: none;
 }
 
 .progressBar .progress-bar {
   background-color: white;
   border-radius: 2.5px;
-  -moz-appearance: none;
+  appearance: none;
 }
 
 /* .scale-slider is an element inside the <scale> implementation. */
 .scrubber .scale-slider,
 .volumeControl .scale-slider {
   /* Hide the default horizontal bar. */
-  -moz-appearance: none;
+  appearance: none;
   background: none;
   margin: 0;
 }
@@ -235,7 +235,7 @@
 .scrubber .scale-thumb,
 .volumeControl .scale-thumb {
   /* Override the default thumb appearance with a custom image. */
-  -moz-appearance: none;
+  appearance: none;
   background: transparent;
   border: none;
 }

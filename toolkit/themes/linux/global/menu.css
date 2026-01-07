@@ -14,7 +14,7 @@ menu,
 menuitem,
 menucaption,
 .splitmenu-menuitem {
-  -moz-appearance: menuitem;
+  appearance: menuitem;
   -moz-box-align: center;
   max-width: 42em;
   color: MenuText;
@@ -142,7 +142,7 @@ menucaption > .menu-iconic-text {
   /* These next two rules are needed to prevent inheritance and thus ugliness */
   list-style-image: none;
   -moz-image-region: auto;
-  -moz-appearance: menuarrow;
+  appearance: menuarrow;
 }
 
 .menubar-left {
@@ -168,23 +168,23 @@ menulist > menupopup > menu > .menu-iconic-left {
 /* ::::: checkbox menuitem ::::: */
 
 menuitem[checked="true"] {
-  -moz-appearance: checkmenuitem !important;
+  appearance: checkmenuitem !important;
 }
 
 menuitem[type="checkbox"] {
-  -moz-appearance: checkmenuitem !important;
+  appearance: checkmenuitem !important;
 }
 
 /* ::::: radio menuitem ::::: */
 
 menuitem[type="radio"] {
-  -moz-appearance: radiomenuitem !important;
+  appearance: radiomenuitem !important;
 }
 
 /* ::::: menuseparator ::::: */
 
 menuseparator {
-  -moz-appearance: menuseparator;
+  appearance: menuseparator;
 }
 
 /* ::::: autocomplete ::::: */

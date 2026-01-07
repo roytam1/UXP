@@ -10,7 +10,7 @@
 @namespace html url("http://www.w3.org/1999/xhtml");
 
 textbox[type="number"] {
-  -moz-appearance: none;
+  appearance: none;
   padding: 0 !important;
   border: none;
   cursor: default;
@@ -23,7 +23,7 @@ html|*.numberbox-input {
 
 .numberbox-input-box {
   -moz-box-align: center;
-  -moz-appearance: spinner-textfield;
+  appearance: spinner-textfield;
   margin-right: -1px;
   border: 2px solid;
   -moz-border-top-colors: ThreeDShadow ThreeDDarkShadow;
@@ -34,5 +34,5 @@ html|*.numberbox-input {
 }
 
 textbox[hidespinbuttons="true"] > .numberbox-input-box {
-  -moz-appearance: textfield;
+  appearance: textfield;
 }

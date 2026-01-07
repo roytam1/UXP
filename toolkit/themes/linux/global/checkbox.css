@@ -11,7 +11,7 @@
 /* ::::: checkbox ::::: */
 
 checkbox {
-  -moz-appearance: checkbox-container;
+  appearance: checkbox-container;
   margin: 2px 4px;
   border-left: 2px transparent;
   border-right: 2px transparent;
@@ -27,7 +27,7 @@ checkbox {
    mark. */
 
 .checkbox-spacer-box {
-  -moz-appearance: checkbox;
+  appearance: checkbox;
   -moz-box-align: center;
   margin: 2px;
   border-right: 2px solid transparent;
@@ -38,7 +38,7 @@ checkbox {
 }
 
 .checkbox-label-box {
-  -moz-appearance: checkbox-label;
+  appearance: checkbox-label;
 }
 
 .checkbox-icon[src] {

@@ -13,7 +13,7 @@
 
 /* Page background */
 *|*:root {
-  -moz-appearance: none;
+  appearance: none;
   padding: 18px;
   background-image: /* Texture */
                     url("chrome://global/skin/inContentUI/background-texture.png"),
@@ -45,7 +45,7 @@ html|html {
 *|button,
 menulist,
 colorpicker[type="button"] {
-  -moz-appearance: none;
+  appearance: none;
   padding: 1px 4px;
   min-width: 60px;
   border-radius: 3px;
@@ -99,7 +99,7 @@ menulist > .menulist-label-box > .menulist-label {
 }
 
 menulist > .menulist-dropmarker {
-  -moz-appearance: none;
+  appearance: none;
   display: -moz-box;
   background: transparent;
   border: none;
@@ -115,7 +115,7 @@ colorpicker[type="button"] {
 }
 
 spinbuttons {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 spinbuttons > .spinbuttons-box > .spinbuttons-button {

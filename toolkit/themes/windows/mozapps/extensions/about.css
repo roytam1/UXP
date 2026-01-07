@@ -16,12 +16,12 @@
 
 @media (-moz-windows-compositor) {
   #genericAbout {
-    -moz-appearance: -moz-win-glass;
+    appearance: -moz-win-glass;
     background: transparent;
   }
 
   #clientBox {
-    -moz-appearance: -moz-win-exclude-glass;
+    appearance: -moz-win-exclude-glass;
   }
 }
 

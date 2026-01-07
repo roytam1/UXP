@@ -11,7 +11,7 @@ groupbox {
 }
 
 .groupbox-body {
-  -moz-appearance: groupbox;
+  appearance: groupbox;
   padding: 8px 8px 3px;
   margin: 0;
 }

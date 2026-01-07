@@ -83,7 +83,7 @@ label {
    need to match textfield background/border values here */
 
 input {
-  -moz-appearance: textfield;
+  appearance: textfield;
   /* The sum of border and padding on block-start and block-end
      must be the same here, for buttons, and for <select> (including its
      internal padding magic) */
@@ -146,7 +146,7 @@ textarea {
   cursor: text;
   resize: both;
   -moz-binding: url("chrome://global/content/platformHTMLBindings.xml#textAreas");
-  -moz-appearance: textfield-multiline;
+  appearance: textfield-multiline;
   text-indent: 0;
   user-select: text;
   text-shadow: none;
@@ -241,7 +241,7 @@ select {
   cursor: default;
   box-sizing: border-box;
   user-select: none;
-  -moz-appearance: menulist;
+  appearance: menulist;
   border-width: 2px;
   border-style: inset;
   text-indent: 0;
@@ -267,7 +267,7 @@ select[size][multiple] {
   vertical-align: text-bottom;
   padding-inline-start: 0;
   padding-inline-end: 0;
-  -moz-appearance: listbox;
+  appearance: listbox;
 }
 
 select[size="0"],
@@ -277,7 +277,7 @@ select[size="1"] {
   color: -moz-ComboboxText;
   vertical-align: baseline;
   padding: 0;
-  -moz-appearance: menulist;
+  appearance: menulist;
 }
 
 select > button {
@@ -287,7 +287,7 @@ select > button {
   background-image: url("arrow.gif") !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
-  -moz-appearance: menulist-button;
+  appearance: menulist-button;
 
   /* Make sure to size correctly if the combobox has a non-auto height. */
   block-size: 100% ! important;
@@ -439,7 +439,7 @@ optgroup:disabled {
 
 /* hidden inputs */
 input[type="hidden"] {
-  -moz-appearance: none;
+  appearance: none;
   display: none !important;
   padding: 0;
   border: 0;
@@ -450,7 +450,7 @@ input[type="hidden"] {
 
 /* image buttons */
 input[type="image"] {
-  -moz-appearance: none;
+  appearance: none;
   padding: 0;
   border: none;
   background-color: transparent;
@@ -478,7 +478,7 @@ input[type="file"] {
   color: inherit;
 
   /* Revert rules which apply on all inputs. */
-  -moz-appearance: none;
+  appearance: none;
   -moz-binding: none;
   cursor: default;
 
@@ -534,22 +534,22 @@ input[type="file"]:dir(rtl) > xul|label {
 
 /* radio buttons */
 input[type="radio"] {
-  -moz-appearance: radio;
+  appearance: radio;
   margin-block-start: 3px;
   margin-block-end: 0px;
   margin-inline-start: 5px;
   margin-inline-end: 3px;
-  border-radius: 100% !important;
+  border-radius: 100%;
 }
 
 /* check boxes */
 input[type="checkbox"] {
-  -moz-appearance: checkbox;
+  appearance: checkbox;
   margin-block-start: 3px;
   margin-block-end: 3px;
   margin-inline-start: 4px;
   margin-inline-end: 3px;
-  border-radius: 0 !important;
+  border-radius: 0;
 }
 
 /* common features of radio buttons and check boxes */
@@ -565,12 +565,12 @@ input[type="checkbox"] {
   inline-size: 13px;
   block-size: 13px;
   cursor: default;
-  padding: 0 !important;
+  padding: 0;
   -moz-binding: none;
-  /* same colors as |input| rule, but |!important| this time. */
-  background-color: -moz-Field ! important;
-  color: -moz-FieldText ! important;
-  border: 2px inset ThreeDLightShadow ! important;
+  /* same colors as |input| rule. */
+  background-color: -moz-Field;
+  color: -moz-FieldText;
+  border: 2px inset ThreeDLightShadow;
 }
 
 input[type="radio"]:disabled,
@@ -582,10 +582,10 @@ input[type="checkbox"]:disabled:active,
 input[type="checkbox"]:disabled:hover,
 input[type="checkbox"]:disabled:hover:active {
   padding: 1px;
-  border: 1px inset ThreeDShadow ! important;
-  /* same as above, but !important */
-  color: GrayText ! important;
-  background-color: ThreeDFace ! important;
+  border: 1px inset ThreeDShadow;
+  /* same as above */
+  color: GrayText;
+  background-color: ThreeDFace;
   cursor: inherit;
 }
 
@@ -601,8 +601,8 @@ input[type="radio"]:-moz-focusring {
 
 input[type="checkbox"]:hover:active,
 input[type="radio"]:hover:active {
-  background-color: ThreeDFace ! important;
-  border-style: inset !important;
+  background-color: ThreeDFace;
+  border-style: inset;
 }
 
 input[type="search"] {
@@ -621,7 +621,7 @@ input[type="color"]:-moz-system-metric(color-picker-available),
 input[type="reset"],
 input[type="button"],
 input[type="submit"] {
-  -moz-appearance: button;
+  appearance: button;
   /* The sum of border and padding on block-start and block-end
      must be the same here, for text inputs, and for <select>.
      Note -moz-focus-inner padding does not affect button size. */
@@ -855,11 +855,11 @@ output:-moz-ui-invalid {
 }
 
 progress {
-  -moz-appearance: progressbar;
+  appearance: progressbar;
   display: inline-block;
   vertical-align: -0.2em;
 
-  /* Default style in case of there is -moz-appearance: none; */
+  /* Default style in case of there is appearance: none; */
   border: 2px solid;
   /* #e6e6e6 is a light gray. */
   -moz-border-top-colors: ThreeDShadow #e6e6e6;
@@ -877,16 +877,16 @@ progress {
   overflow: visible ! important;
   box-sizing: border-box ! important;
 
-  -moz-appearance: progresschunk;
+  appearance: progresschunk;
   height: 100%;
   width: 100%;
 
-  /* Default style in case of there is -moz-appearance: none; */
+  /* Default style in case of there is appearance: none; */
   background-color: #0064b4; /* blue */
 }
 
 meter {
-  -moz-appearance: meterbar;
+  appearance: meterbar;
   display: inline-block;
   vertical-align: -0.2em;
 
@@ -900,7 +900,7 @@ meter {
   position: static ! important;
   overflow: visible ! important;
 
-  -moz-appearance: meterchunk;
+  appearance: meterchunk;
   height: 100%;
   width: 100%;
 }
@@ -919,7 +919,7 @@ meter {
 }
 
 input[type=range] {
-  -moz-appearance: range;
+  appearance: range;
   display: inline-block;
   inline-size: 12em;
   block-size: 1.3em;
@@ -1033,10 +1033,10 @@ input[type=range]::-moz-range-progress {
  * properties are ignored.
  */
 input[type=range]::-moz-range-thumb {
-  /* Native theming is atomic for range. Set -moz-appearance on the range
-   * to get rid of it. The thumb's -moz-appearance is fixed.
+  /* Native theming is atomic for range. Set appearance on the range
+   * to get rid of it. The thumb's appearance is fixed.
    */
-  -moz-appearance: range-thumb !important;
+  appearance: range-thumb !important;
   /* Prevent styling that would change the type of frame we construct. */
   display: inline-block !important;
   float: none !important;
@@ -1066,7 +1066,7 @@ input[type=number]::-moz-number-text {
   display: block; /* Flex items must be block-level. Normally we do fixup in
                      the style system to ensure this, but that fixup is disabled
                      inside of form controls. So, we hardcode display here. */
-  -moz-appearance: none;
+  appearance: none;
   /* work around autofocus bug 939248 on initial load */
   -moz-user-modify: read-write;
   /* This pseudo-element is also an 'input' element (nested inside and
@@ -1108,7 +1108,7 @@ input[type=number]::-moz-number-spin-box {
 
 input[type=number]::-moz-number-spin-up {
   writing-mode: horizontal-tb;
-  -moz-appearance: spinner-upbutton;
+  appearance: spinner-upbutton;
   display: block; /* bug 926670 */
   flex: none;
   cursor: default;
@@ -1126,7 +1126,7 @@ input[type=number]::-moz-number-spin-up {
 
 input[type=number]::-moz-number-spin-down {
   writing-mode: horizontal-tb;
-  -moz-appearance: spinner-downbutton;
+  appearance: spinner-downbutton;
   display: block; /* bug 926670 */
   flex: none;
   cursor: default;

@@ -1021,7 +1021,7 @@ nsNativeThemeWin::GetThemePartAndState(nsIFrame* aFrame, uint8_t aWidgetType,
     case NS_THEME_PROGRESSBAR:
     case NS_THEME_PROGRESSBAR_VERTICAL: {
       // Note IsVerticalProgress only tests for orient css attrribute,
-      // NS_THEME_PROGRESSBAR_VERTICAL is dedicated to -moz-appearance:
+      // NS_THEME_PROGRESSBAR_VERTICAL is dedicated to appearance:
       // progressbar-vertical.
       bool vertical = IsVerticalProgress(aFrame) ||
                       aWidgetType == NS_THEME_PROGRESSBAR_VERTICAL;

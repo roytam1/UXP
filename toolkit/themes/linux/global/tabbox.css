@@ -19,7 +19,7 @@ tabs {
 /* ::::: tabpanels ::::: */
 
 tabpanels {
-  -moz-appearance: tabpanels;
+  appearance: tabpanels;
   border: 2px solid;
   -moz-border-right-colors: ThreeDDarkShadow ThreeDShadow;
   -moz-border-bottom-colors: ThreeDDarkShadow ThreeDShadow;
@@ -34,7 +34,7 @@ tabpanels {
 
 tab {
   position: relative;
-  -moz-appearance: tab;
+  appearance: tab;
   margin-top: 2px;
   border: 2px solid;
   border-bottom: none;

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Appearance styling test</title>
+    <style>
+      input[type="checkbox"] {
+        appearance: none; /* remove default appearance on browsers */
+        width: 20px;
+        height: 20px;
+        border: 2px solid #333;
+        border-radius: 8px;
+        outline: none;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: 500ms;
+      }
+      input[type="checkbox"]:checked {
+        background: #A0FFA0;
+        border-radius: 4px;
+      }
+      input[type="checkbox"]:checked:before {
+        content: "\2714"; /* Unicode checkmark symbol */
+        display: block;
+        text-align: center;
+        font-size: 14px;
+        line-height: 16px;
+        color: #fff;
+        background-color: #333;
+        border-radius: 2px;
+        width: 20px;
+        height: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <input type="checkbox" id="myCheckbox" name="myCheckbox" />
+    <label for="myCheckbox">Checkbox</label>
+  </body>
+</html>
