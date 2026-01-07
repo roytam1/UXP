@@ -11,7 +11,7 @@
 /* :::::::::: button :::::::::: */
 
 button {
-  /*-moz-appearance: button;*/
+  /*appearance: button;*/
   margin: 3px 7px 3px 7px;
   min-width: 6.3em;
   border: 1px solid;
@@ -86,7 +86,7 @@ button[type="menu-button"] {
 
 .button-menu-dropmarker,
 .button-menubutton-dropmarker {
-  -moz-appearance: none !important;
+  appearance: none !important;
   margin: 1px;
   background-color: transparent !important;
   border: none !important;

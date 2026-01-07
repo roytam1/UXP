@@ -11,7 +11,7 @@
 
 /* Page background */
 *|*:root {
-  -moz-appearance: none;
+  appearance: none;
   padding: 18px;
   background-color: Window;
   background-image: /* Texture */

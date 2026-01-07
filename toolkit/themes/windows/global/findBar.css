@@ -7,7 +7,7 @@
 .findbar-closebutton {
   border: none;
   padding: 3px 5px;
-  -moz-appearance: none;
+  appearance: none;
 }
 
 .findbar-closebutton:-moz-lwtheme-brighttext {
@@ -110,7 +110,7 @@ findbar[hidden] {
 }
 
 .findbar-textbox {
-  -moz-appearance: none;
+  appearance: none;
   border: 1px solid ThreeDShadow;
   border-radius: 2px;
   margin: 0;

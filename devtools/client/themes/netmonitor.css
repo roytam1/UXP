@@ -148,7 +148,7 @@
 }
 
 .requests-menu-header-button {
-  -moz-appearance: none;
+  appearance: none;
   background-color: transparent;
   border-image: linear-gradient(transparent 15%,
                                 var(--theme-splitter-color) 15%,

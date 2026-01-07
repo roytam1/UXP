@@ -19,7 +19,7 @@ namespace mozilla {
 struct ScrollStyles
 {
   // Always one of NS_STYLE_OVERFLOW_SCROLL, NS_STYLE_OVERFLOW_HIDDEN,
-  // or NS_STYLE_OVERFLOW_AUTO.
+  // NS_STYLE_OVERFLOW_CLIP or NS_STYLE_OVERFLOW_AUTO.
   uint8_t mHorizontal;
   uint8_t mVertical;
   // Always one of NS_STYLE_SCROLL_BEHAVIOR_AUTO or

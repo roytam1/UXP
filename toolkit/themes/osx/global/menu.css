@@ -7,7 +7,7 @@
 menu,
 menuitem,
 menucaption {
-  -moz-appearance: menuitem;
+  appearance: menuitem;
   -moz-box-align: center;
   color: MenuText;
   font: -moz-pull-down-menu;
@@ -88,13 +88,13 @@ menuitem[src] > .menu-iconic-left > .menu-iconic-icon {
 
 .menu-right {
   list-style-image: none;
-  -moz-appearance: menuarrow;
+  appearance: menuarrow;
 }
 
 /* ::::: menu/menuitems in menubar ::::: */
 
 menubar > menu {
-  -moz-appearance: none;
+  appearance: none;
   padding: 2px 5px 2px 7px;
   margin: 1px 0;
 }
@@ -105,7 +105,7 @@ menubar > menu[_moz-menuactive="true"] {
 }
 
 menubar > menu[_moz-menuactive="true"][open="true"] {
-  -moz-appearance: menuitem;
+  appearance: menuitem;
   color: -moz-mac-menutextselect;
 }
 
@@ -149,7 +149,7 @@ menulist > menupopup > menu {
 
 menulist[editable="true"] > menupopup > menuitem,
 menulist[editable="true"] > menupopup > menucaption {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 menulist[editable="true"] > menupopup > :-moz-any(menuitem, menucaption) > .menu-iconic-left {
@@ -160,7 +160,7 @@ menulist[editable="true"] > menupopup > :-moz-any(menuitem, menucaption) > .menu
 
 :not(menulist) > menupopup > menuitem[checked="true"],
 :not(menulist) > menupopup > menuitem[selected="true"] {
-  -moz-appearance: checkmenuitem;
+  appearance: checkmenuitem;
 }
 
 menulist:not([editable="true"]) > menupopup > menuitem[checked="true"]::before,
@@ -174,7 +174,7 @@ menulist:not([editable="true"]) > menupopup > menuitem[selected="true"]::before 
 /* ::::: menuseparator ::::: */
 
 menuseparator {
-  -moz-appearance: menuseparator;
+  appearance: menuseparator;
   margin: 5px 0;
   padding: 1px 0;
 }

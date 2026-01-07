@@ -12,7 +12,7 @@ datepicker, timepicker {
 }
 
 .datetimepicker-input-box {
-  -moz-appearance: textfield;
+  appearance: textfield;
   cursor: text;
   margin-right: 4px;
   margin-bottom: 2px;
@@ -96,7 +96,7 @@ timepicker[disabled="true"] {
 }
 
 .datepicker-button {
-  -moz-appearance: none;
+  appearance: none;
   min-width: 8px;
   padding: 0px;
 }

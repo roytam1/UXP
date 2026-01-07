@@ -51,7 +51,7 @@ public:
    * Draw the actual theme background.
    * @param aContext the context to draw into
    * @param aFrame the frame for the widget that we're drawing
-   * @param aWidgetType the -moz-appearance value to draw
+   * @param aWidgetType the appearance value to draw
    * @param aRect the rectangle defining the area occupied by the widget
    * @param aDirtyRect the rectangle that needs to be drawn
    */
@@ -148,8 +148,8 @@ public:
   /**
    * ThemeGeometryType values are used for describing themed nsIFrames in
    * calls to nsIWidget::UpdateThemeGeometries. We don't simply pass the
-   * -moz-appearance value ("widget type") of the frame because the widget may
-   * want to treat different frames with the same -moz-appearance differently
+   * appearance value ("widget type") of the frame because the widget may
+   * want to treat different frames with the same appearance differently
    * based on other properties of the frame. So we give the theme a first look
    * at the frame in nsITheme::ThemeGeometryTypeForWidget and pass the
    * returned ThemeGeometryType along to the widget.

@@ -11,20 +11,20 @@
 /* ::::: toolbox ::::: */
 
 toolbox {
-  -moz-appearance: toolbox;
+  appearance: toolbox;
 }
 
 /* ::::: menubar & toolbar ::::: */
 
 toolbar {
-  -moz-appearance: toolbar;
+  appearance: toolbar;
   min-width: 1px;
   min-height: 20px;
   padding: 2px 0px;
 }
 
 menubar, toolbar[type="menubar"] {
-  -moz-appearance: menubar;
+  appearance: menubar;
   color: -moz-menubartext;
   min-width: 1px;
   min-height: 20px;
@@ -35,13 +35,13 @@ menubar, toolbar[type="menubar"] {
 %ifdef MOZ_AUSTRALIS
 menubar:-moz-lwtheme,
 toolbar:-moz-lwtheme {
-  -moz-appearance: none;
+  appearance: none;
   color: inherit;
 }
 %else
 menubar:-moz-lwtheme,
 toolbar:-moz-lwtheme {
-  -moz-appearance: none;
+  appearance: none;
   color: inherit;
   border-style: none;
 }
@@ -49,13 +49,13 @@ toolbar:-moz-lwtheme {
 
 /* in browser.xul, the menubar is inside a toolbar... */
 toolbaritem > menubar {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 /* ::::: toolbar decorations ::::: */
 
 toolbarseparator {
-  -moz-appearance: separator;
+  appearance: separator;
   margin : 0;
   border: 0;
   min-width: 2px;

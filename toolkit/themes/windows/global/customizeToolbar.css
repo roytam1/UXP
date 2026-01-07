@@ -13,7 +13,7 @@ dialog {
 }
 
 #palette-box {
-  -moz-appearance: listbox;
+  appearance: listbox;
   margin: 0 0 10px;
 }
 

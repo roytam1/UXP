@@ -2066,7 +2066,7 @@ nsTreeBodyFrame::GetTwistyRect(int32_t aRowIndex,
   // determine the twisty rect's true width.  This is done by examining the style context for
   // a width first.  If it has one, we use that.  If it doesn't, we use the image's natural width.
   // If the image hasn't loaded and if no width is specified, then we just bail. If there is
-  // a -moz-appearance involved, adjust the rect by the minimum widget size provided by
+  // an `appearance` involved, adjust the rect by the minimum widget size provided by
   // the theme implementation.
   aImageRect = GetImageSize(aRowIndex, aColumn, true, aTwistyContext);
   if (aImageRect.height > aTwistyRect.height)
@@ -2855,8 +2855,8 @@ nsTreeBodyFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
   // properly, we also need the tree to be themed as a source list.
   if (selection && treeFrame && theme &&
       treeFrame->StyleDisplay()->mAppearance == NS_THEME_MAC_SOURCE_LIST) {
-    // Loop through our onscreen rows. If the row is selected and a
-    // -moz-appearance is provided, RegisterThemeGeometry might be necessary.
+    // Loop through our onscreen rows. If the row is selected and an
+    // `appearance` is provided, RegisterThemeGeometry might be necessary.
     const auto end = std::min(mRowCount, LastVisibleRow() + 1);
     for (auto i = FirstVisibleRow(); i < end; i++) {
       bool isSelected;
@@ -3197,7 +3197,7 @@ nsTreeBodyFrame::PaintSeparator(int32_t              aRowIndex,
 
   DrawResult result = DrawResult::SUCCESS;
 
-  // use -moz-appearance if provided.
+  // use appearance if provided.
   if (useTheme) {
     nsRect dirty;
     dirty.IntersectRect(aSeparatorRect, aDirtyRect);

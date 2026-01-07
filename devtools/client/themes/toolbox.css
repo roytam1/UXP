@@ -41,7 +41,7 @@
 /* Toolbox tabbar */
 
 .devtools-tabbar {
-  -moz-appearance: none;
+  appearance: none;
   min-height: 24px;
   border: 0px solid;
   border-bottom-width: 1px;
@@ -67,7 +67,7 @@
 /* Toolbox tabs */
 
 .devtools-tab {
-  -moz-appearance: none;
+  appearance: none;
   -moz-binding: url("chrome://global/content/bindings/general.xml#control-item");
   -moz-box-align: center;
   min-width: 32px;
@@ -224,7 +224,7 @@
 
 #toolbox-controls > button,
 #toolbox-dock-buttons > button {
-  -moz-appearance: none;
+  appearance: none;
   border: none;
   margin: 0 4px;
   min-width: 16px;

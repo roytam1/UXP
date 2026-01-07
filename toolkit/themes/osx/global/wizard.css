@@ -13,7 +13,7 @@ wizard {
 }
 
 .wizard-header {
-  -moz-appearance: dialog;
+  appearance: dialog;
 }
 
 .wizard-header-box-1 {
@@ -44,7 +44,7 @@ wizard[branded="true"] .wizard-header-icon {
 
 .wizard-page-box {
   padding: 15px 23px;
-  -moz-appearance: dialog;
+  appearance: dialog;
 }
 
 .wizard-buttons-separator {

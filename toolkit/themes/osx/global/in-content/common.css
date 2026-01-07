@@ -67,7 +67,7 @@ xul|*.radio-icon {
 }
 
 xul|*.numberbox-input-box {
-  -moz-appearance: none;
+  appearance: none;
   border-width: 0;
 }
 
@@ -98,7 +98,7 @@ xul|radio[focused="true"] > .radio-check {
 }
 
 xul|spinbuttons {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 xul|*.spinbuttons-up {

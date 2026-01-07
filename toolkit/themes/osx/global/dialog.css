@@ -13,7 +13,7 @@
 }
 
 dialog { 
-  -moz-appearance: dialog;
+  appearance: dialog;
   padding: 14px;
 }
 

@@ -6,7 +6,7 @@
 
 menupopup,
 panel {
-  -moz-appearance: menupopup;
+  appearance: menupopup;
   background-color: Menu;
 }
 
@@ -19,11 +19,11 @@ menupopup > menu > menupopup {
 }
 
 panel[titlebar] {
-  -moz-appearance: none; /* to disable rounded corners */
+  appearance: none; /* to disable rounded corners */
 }
 
 panel[type="arrow"] {
-  -moz-appearance: none;
+  appearance: none;
   background: transparent;
 }
 
@@ -40,7 +40,7 @@ panel[type="arrow"][side="right"] {
 }
 
 .panel-arrowcontent {
-  -moz-appearance: none;
+  appearance: none;
   background: var(--arrowpanel-background);
   border-radius: var(--arrowpanel-border-radius);
   box-shadow: 0 0 0 1px var(--arrowpanel-border-color);
@@ -101,7 +101,7 @@ panel[type="arrow"][side="right"] {
 /* ::::: tooltip ::::: */
 
 tooltip {
-  -moz-appearance: tooltip;
+  appearance: tooltip;
   margin-top: 18px;
   padding: 2px 3px;
   max-width: 40em;
@@ -129,7 +129,7 @@ menulist > menupopup:not([position]) {
 }
 
 menulist[editable="true"] > menupopup {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 menulist > menupopup > .popup-internal-box {

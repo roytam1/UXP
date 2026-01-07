@@ -6,7 +6,7 @@
 @namespace html url("http://www.w3.org/1999/xhtml");
 
 textbox {
-  -moz-appearance: textfield;
+  appearance: textfield;
   cursor: text;
   margin: 4px;
   border: 3px solid;
@@ -58,7 +58,7 @@ textbox[disabled="true"] {
 } 
 
 textbox.plain {
-  -moz-appearance: none !important;
+  appearance: none !important;
   background-color: transparent;
   padding: 0px !important;
   margin: 0px !important;
@@ -73,7 +73,7 @@ textbox.plain html|*.textbox-textarea {
 /* ::::: search box ::::: */
 
 textbox[type="search"] {
-  -moz-appearance: searchfield;
+  appearance: searchfield;
   padding: 1px;
   font-size: 12px;
 }

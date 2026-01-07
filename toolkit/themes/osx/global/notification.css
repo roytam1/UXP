@@ -71,7 +71,7 @@ notificationbox[notificationside="bottom"] > notification {
 }
 
 .messageCloseButton {
-  -moz-appearance: none;
+  appearance: none;
   padding: 0;
   margin: 0 2px;
   border: none;
@@ -127,7 +127,7 @@ notification[type="info"] .close-icon:not(:hover) {
 }
 
 .popup-notification-menubutton {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 .popup-notification-menubutton:not([type="menu-button"]):-moz-focusring,
@@ -140,7 +140,7 @@ notification[type="info"] .close-icon:not(:hover) {
 .popup-notification-menubutton:not([type="menu-button"]),
 .popup-notification-menubutton > .button-menubutton-button,
 .popup-notification-menubutton > .button-menubutton-dropmarker {
-  -moz-appearance: none;
+  appearance: none;
   color: #434343;
   border-radius: 4px;
   border: 1px solid #b5b5b5;
@@ -154,7 +154,7 @@ notification[type="info"] .close-icon:not(:hover) {
 }
 
 .popup-notification-menubutton > .button-menubutton-button {
-  -moz-appearance: none;
+  appearance: none;
   margin: 0;
   padding-top: 2px;
   padding-bottom: 2px;

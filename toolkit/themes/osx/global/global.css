@@ -30,7 +30,7 @@ page,
 dialog,
 wizard,
 prefwindow { 
-  -moz-appearance: dialog;
+  appearance: dialog;
   background-color: #FFFFFF;
   color: -moz-DialogText;
   font: message-box;
@@ -99,7 +99,7 @@ statusbar {
   margin: 0px !important;
   /* need to use padding-inline-end when/if bug 631729 gets fixed: */
   padding: 0px 16px 1px 1px;
-  -moz-appearance: statusbar;
+  appearance: statusbar;
   text-shadow: rgba(255, 255, 255, 0.4) 0 1px;
 }
 
@@ -117,7 +117,7 @@ statusbarpanel {
 
 :root:-moz-lwtheme,
 [lwthemefooter="true"] {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 :root:-moz-lwtheme-darktext {
@@ -129,7 +129,7 @@ statusbarpanel {
 }
 
 statusbar:-moz-lwtheme {
-  -moz-appearance: none;
+  appearance: none;
   background: none;
   border-style: none;
   text-shadow: inherit;
@@ -176,7 +176,7 @@ separator.groove[orient="vertical"] {
 }
     
 .plain {
-  -moz-appearance: none;
+  appearance: none;
   margin: 0 !important;
   border: none;
   padding: 0;
@@ -249,7 +249,7 @@ notification > button {
   padding: 1px 10px;
   min-width: 60px;
   min-height: 16px;
-  -moz-appearance: none;
+  appearance: none;
   border-radius: 10000px;
   border: @roundButtonBorder@;
   text-shadow: @loweredShadow@;
@@ -289,7 +289,7 @@ popupnotificationcontent {
   background-image: url("chrome://global/skin/icons/autoscroll.png");
   background-color: transparent;
   background-position: right top;
-  -moz-appearance: none;
+  appearance: none;
   -moz-window-shadow: none;
 }
 
@@ -316,7 +316,7 @@ popupnotificationcontent {
    * clears everything under it.
    * Without help from native theming this effect wouldn't be achievable.
    */
-  -moz-appearance: menuitem;
+  appearance: menuitem;
 }
 
 .popup-internal-box > .autorepeatbutton-up {
@@ -325,7 +325,7 @@ popupnotificationcontent {
 }
 
 .popup-internal-box > .autorepeatbutton-up > .autorepeatbutton-icon {
-  -moz-appearance: button-arrow-up;
+  appearance: button-arrow-up;
 }
 
 .popup-internal-box > .autorepeatbutton-down {
@@ -334,7 +334,7 @@ popupnotificationcontent {
 }
 
 .popup-internal-box > .autorepeatbutton-down > .autorepeatbutton-icon {
-  -moz-appearance: button-arrow-down;
+  appearance: button-arrow-down;
 }
 
 .popup-internal-box > autorepeatbutton[disabled="true"] {

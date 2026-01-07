@@ -9,7 +9,7 @@ tree {
   margin: 0px 4px;
   color: -moz-DialogText;
   background-color: #FFFFFF;
-  -moz-appearance: listbox;
+  appearance: listbox;
 }
 
 /* ::::: tree focusring ::::: */
@@ -157,14 +157,14 @@ treechildren::-moz-tree-progressmeter {
 
 treechildren::-moz-tree-cell-text(progressmeter) {
   margin: 2px 4px;
-  -moz-appearance: progressbar;
+  appearance: progressbar;
 }
 
 /* ::::: tree columns ::::: */
 
 treecol,
 treecolpicker { 
-  -moz-appearance: treeheadercell;
+  appearance: treeheadercell;
   -moz-box-align: center;
   -moz-box-pack: center;
   border: 2px solid;
@@ -186,7 +186,7 @@ treecolpicker {
 }
 
 treecol[hideheader="true"] {
-  -moz-appearance: none;
+  appearance: none;
   border: none;
   padding: 0;
   max-height: 0px;
@@ -246,16 +246,16 @@ treechildren::-moz-tree-column(insertafter) {
 /* ::::: twisty :::::  */
 
 treechildren::-moz-tree-twisty {
-  -moz-appearance: treetwisty;
+  appearance: treetwisty;
   padding-inline-end: 2px;
 }
 
 treechildren::-moz-tree-twisty(open) {
-  -moz-appearance: treetwistyopen;
+  appearance: treetwistyopen;
 }
 
 treechildren::-moz-tree-twisty(Name, separator) {
-  -moz-appearance: none;
+  appearance: none;
 }
 
 treechildren::-moz-tree-indentation {
@@ -276,7 +276,7 @@ treechildren.gridlines::-moz-tree-row {
 /* ::::: editable tree ::::: */
 
 .tree-input {
-  -moz-appearance: none;
+  appearance: none;
   border-width: 0;
   box-shadow: @focusRingShadow@;
   margin: 0;
