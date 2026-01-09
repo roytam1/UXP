@@ -2632,7 +2632,7 @@ NS_IMETHODIMP nsDownload::SetRedirects(nsIArray* aRedirects) {
   return NS_OK;
 }
 
-#ifdef MOZ_ENABLE_GIO
+#ifdef MOZ_WIDGET_GTK
 static void gio_set_metadata_done(GObject *source_obj, GAsyncResult *res, gpointer user_data)
 {
   GError *err = nullptr;
@@ -2778,7 +2778,7 @@ nsDownload::SetState(DownloadState aState)
             }
 #endif
           }
-#ifdef MOZ_ENABLE_GIO
+#ifdef MOZ_WIDGET_GTK
           // Use GIO to store the source URI for later display in the file manager.
           GFile* gio_file = g_file_new_for_path(NS_ConvertUTF16toUTF8(path).get());
           nsCString source_uri;

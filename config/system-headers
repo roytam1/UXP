@@ -1053,9 +1053,7 @@ hunspell.hxx
 #if MOZ_SYSTEM_BZ2==1
 bzlib.h
 #endif
-#ifdef MOZ_ENABLE_GIO
 gio/gio.h
-#endif
 sys/event.h
 #ifdef MOZ_ENABLE_LIBPROXY
 proxy.h
