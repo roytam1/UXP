@@ -28,7 +28,7 @@
 #define jit_ExecutableAllocator_h
 
 #include "mozilla/Maybe.h"
-#include "mozilla/XorShift128PlusRNG.h"
+#include "mozilla/Xoroshiro128PlusPlusRNG.h"
 
 #include <limits>
 #include <stddef.h> // for ptrdiff_t
