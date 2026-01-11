@@ -7,7 +7,7 @@
 #define MOZ_EXPAT_H_
 
 #include "expat_config.h"
-#include "lib/expat.h"
+#include "expat.h"
 #include "mozilla/Types.h"
 
 MOZ_BEGIN_EXTERN_C

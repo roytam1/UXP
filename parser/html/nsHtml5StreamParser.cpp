@@ -19,7 +19,7 @@
 #include "mozilla/UniquePtrExtensions.h"
 #include "nsHtml5Highlighter.h"
 #include "expat_config.h"
-#include "expat.h"
+#include "moz_expat.h"
 #include "nsINestedURI.h"
 #include "nsCharsetSource.h"
 #include "nsIWyciwygChannel.h"

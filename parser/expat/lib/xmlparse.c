@@ -453,16 +453,16 @@ typedef struct accounting {
   unsigned long long activationThresholdBytes;
 } ACCOUNTING;
 
-typedef struct entity_stats {
-/* BEGIN MOZILLA CHANGE (don't report debug information) */
+/* BEGIN MCP CHANGE (don't report debug information) */
 #if 0
+typedef struct entity_stats {
   unsigned int countEverOpened;
   unsigned int currentDepth;
   unsigned int maximumDepthSeen;
   unsigned long debugLevel;
-#endif
-/* END MOZILLA CHANGE */
 } ENTITY_STATS;
+#endif
+/* END MCP CHANGE */
 #endif /* XML_GE == 1 */
 
 typedef enum XML_Error PTRCALL Processor(XML_Parser parser, const char *start,
@@ -614,7 +614,11 @@ static ELEMENT_TYPE *getElementType(XML_Parser parser, const ENCODING *enc,
 static XML_Char *copyString(const XML_Char *s,
                             const XML_Memory_Handling_Suite *memsuite);
 
+/* BEGIN MCP CHANGE (we already set a salt through XML_SetHashSalt) */
+#if 0
 static unsigned long generate_hash_secret_salt(XML_Parser parser);
+#endif
+/* END MCP CHANGE */
 static XML_Bool startParsing(XML_Parser parser);
 
 static XML_Parser parserCreate(const XML_Char *encodingName,
@@ -797,7 +801,11 @@ struct XML_ParserStruct {
   unsigned long m_hash_secret_salt;
 #if XML_GE == 1
   ACCOUNTING m_accounting;
+/* BEGIN MCP CHANGE (don't report debug information) */
+#if 0
   ENTITY_STATS m_entity_stats;
+#endif
+/* END MCP CHANGE */
 #endif
 /* BEGIN MOZILLA CHANGE (Report opening tag of mismatched closing tag) */
   const XML_Char* m_mismatch;
@@ -1001,10 +1009,10 @@ ENTROPY_DEBUG(const char *label, unsigned long entropy) {
 #endif
 /* END MOZILLA CHANGE */
 
+/* BEGIN MCP CHANGE (we already set a salt through XML_SetHashSalt) */
+#if 0
 static unsigned long
 generate_hash_secret_salt(XML_Parser parser) {
-/* BEGIN MOZILLA CHANGE (we already set a salt through XML_SetHashSalt) */
-#if 0
   unsigned long entropy;
   (void)parser;
 
@@ -1044,11 +1052,9 @@ generate_hash_secret_salt(XML_Parser parser) {
                          entropy * (unsigned long)2305843009213693951ULL);
   }
 #endif
-#else
-  abort();
-#endif
-/* END MOZILLA CHANGE */
 }
+#endif
+/* END MCP CHANGE */
 
 static unsigned long
 get_hash_secret_salt(XML_Parser parser) {
@@ -1102,9 +1108,13 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
 
 static XML_Bool /* only valid for root parser */
 startParsing(XML_Parser parser) {
+/* BEGIN MCP CHANGE (we already set a salt through XML_SetHashSalt) */
+#if 0
   /* hash functions must be initialized before setContext() is called */
   if (parser->m_hash_secret_salt == 0)
     parser->m_hash_secret_salt = generate_hash_secret_salt(parser);
+#endif
+/* END MCP CHANGE */
   if (parser->m_ns) {
     /* implicit context only set for root parser, since child
        parsers (i.e. external entity parsers) will inherit it
@@ -1334,12 +1344,12 @@ parserInit(XML_Parser parser, const XML_Char *encodingName) {
   parser->m_accounting.activationThresholdBytes
       = EXPAT_BILLION_LAUGHS_ATTACK_PROTECTION_ACTIVATION_THRESHOLD_DEFAULT;
 
-  memset(&parser->m_entity_stats, 0, sizeof(ENTITY_STATS));
-/* BEGIN MOZILLA CHANGE (don't report debug information) */
+/* BEGIN MCP CHANGE (don't report debug information) */
 #if 0
+  memset(&parser->m_entity_stats, 0, sizeof(ENTITY_STATS));
   parser->m_entity_stats.debugLevel = getDebugLevel("EXPAT_ENTITY_DEBUG", 0u);
 #endif
-/* END MOZILLA CHANGE */
+/* END MCP CHANGE */
 #endif
 }
 
