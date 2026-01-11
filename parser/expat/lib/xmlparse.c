@@ -624,9 +624,7 @@ static ELEMENT_TYPE *getElementType(XML_Parser parser, const ENCODING *enc,
 
 static XML_Char *copyString(const XML_Char *s, XML_Parser parser);
 
-#ifndef MOZILLA_CLIENT /* we already set a salt through XML_SetHashSalt */
 static unsigned long generate_hash_secret_salt(XML_Parser parser);
-#endif
 static XML_Bool startParsing(XML_Parser parser);
 
 static XML_Parser parserCreate(const XML_Char *encodingName,
@@ -1071,7 +1069,6 @@ static const XML_Char implicitContext[]
        ASCII_s,     ASCII_p,     ASCII_a,      ASCII_c,      ASCII_e,
        '\0'};
 
-#ifndef MOZILLA_CLIENT /* we already set a salt through XML_SetHashSalt */
 /* To avoid warnings about unused functions: */
 #if ! defined(HAVE_ARC4RANDOM_BUF) && ! defined(HAVE_ARC4RANDOM)
 
@@ -1230,10 +1227,12 @@ gather_time_entropy(void) {
 
 static unsigned long
 ENTROPY_DEBUG(const char *label, unsigned long entropy) {
+#ifndef MOZILLA_CLIENT /* don't report debug information */
   if (getDebugLevel("EXPAT_ENTROPY_DEBUG", 0) >= 1u) {
     fprintf(stderr, "expat: Entropy: %s --> 0x%0*lx (%lu bytes)\n", label,
             (int)sizeof(entropy) * 2, entropy, (unsigned long)sizeof(entropy));
   }
+#endif
   return entropy;
 }
 
@@ -1279,7 +1278,6 @@ generate_hash_secret_salt(XML_Parser parser) {
   }
 #endif
 }
-#endif /* MOZILLA_CLIENT */
 
 static unsigned long
 get_hash_secret_salt(XML_Parser parser) {
@@ -1356,11 +1354,9 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
 
 static XML_Bool /* only valid for root parser */
 startParsing(XML_Parser parser) {
-#ifndef MOZILLA_CLIENT /* we already set a salt through XML_SetHashSalt */
   /* hash functions must be initialized before setContext() is called */
   if (parser->m_hash_secret_salt == 0)
     parser->m_hash_secret_salt = generate_hash_secret_salt(parser);
-#endif
   if (parser->m_ns) {
     /* implicit context only set for root parser, since child
        parsers (i.e. external entity parsers) will inherit it
