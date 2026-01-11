@@ -51,13 +51,31 @@ void
 MOZ_XML_SetDoctypeDeclHandler(XML_Parser parser,
                               XML_StartDoctypeDeclHandler start,
                               XML_EndDoctypeDeclHandler end);
+void
+MOZ_XML_SetUnparsedEntityDeclHandler(XML_Parser parser,
+                                     XML_UnparsedEntityDeclHandler handler);
+
+void
+MOZ_XML_SetNotationDeclHandler(XML_Parser parser,
+                               XML_NotationDeclHandler handler);
+
+void
+MOZ_XML_SetNamespaceDeclHandler(XML_Parser parser,
+                                XML_StartNamespaceDeclHandler start,
+                                XML_EndNamespaceDeclHandler end);
 
 void
 MOZ_XML_SetExternalEntityRefHandler(XML_Parser parser,
                                     XML_ExternalEntityRefHandler handler);
 
 void
+MOZ_XML_SetExternalEntityRefHandlerArg(XML_Parser parser, void *arg);
+
+void
 MOZ_XML_SetReturnNSTriplet(XML_Parser parser, int do_nst);
+
+void
+MOZ_XML_SetUserData(XML_Parser parser, void *p);
 
 enum XML_Status
 MOZ_XML_SetBase(XML_Parser parser, const XML_Char *base);

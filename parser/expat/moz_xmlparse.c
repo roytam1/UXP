@@ -65,14 +65,43 @@ MOZ_XML_SetDoctypeDeclHandler(XML_Parser parser,
 }
 
 void
+MOZ_XML_SetUnparsedEntityDeclHandler(XML_Parser parser,
+                                     XML_UnparsedEntityDeclHandler handler) {
+  XML_SetUnparsedEntityDeclHandler(parser, handler);
+}
+
+void
+MOZ_XML_SetNotationDeclHandler(XML_Parser parser,
+                               XML_NotationDeclHandler handler) {
+  XML_SetNotationDeclHandler(parser, handler);
+}
+
+void
+MOZ_XML_SetNamespaceDeclHandler(XML_Parser parser,
+                                XML_StartNamespaceDeclHandler start,
+                                XML_EndNamespaceDeclHandler end) {
+  XML_SetNamespaceDeclHandler(parser, start, end);
+}
+
+void
 MOZ_XML_SetExternalEntityRefHandler(XML_Parser parser,
                                     XML_ExternalEntityRefHandler handler) {
   XML_SetExternalEntityRefHandler(parser, handler);
 }
 
 void
+MOZ_XML_SetExternalEntityRefHandlerArg(XML_Parser parser, void *arg) {
+  XML_SetExternalEntityRefHandlerArg(parser, arg);
+}
+
+void
 MOZ_XML_SetReturnNSTriplet(XML_Parser parser, int do_nst) {
   XML_SetReturnNSTriplet(parser, do_nst);
+}
+
+void
+MOZ_XML_SetUserData(XML_Parser parser, void *p) {
+  XML_SetUserData(parser, p);
 }
 
 enum XML_Status
