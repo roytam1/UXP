@@ -195,6 +195,7 @@ typedef char ICHAR;
 
 #endif
 
+#ifndef MOZILLA_CLIENT /* typedef XML_Char to char16_t */
 #ifdef XML_UNICODE
 
 #  ifdef XML_UNICODE_WCHAR_T
@@ -211,6 +212,7 @@ typedef char ICHAR;
 #  define XML_L(x) x
 
 #endif
+#endif /* MOZILLA_CLIENT */
 
 /* Round up n to be a multiple of sz, where sz is a power of 2. */
 #define ROUND_UP(n, sz) (((n) + ((sz) - 1)) & ~((sz) - 1))
@@ -265,6 +267,9 @@ typedef struct {
 #define INIT_ATTS_SIZE 16
 #define INIT_ATTS_VERSION 0xFFFFFFFF
 #define INIT_BLOCK_SIZE 1024
+#ifdef MOZILLA_CLIENT /* Avoid slop in poolGrow() allocations */
+#define INIT_BLOCK_SIZE ((int)(1024 - (offsetof(BLOCK, s) / sizeof(XML_Char))))
+#endif
 #define INIT_BUFFER_SIZE 1024
 
 #define EXPAND_SPARE 24
@@ -448,7 +453,9 @@ typedef unsigned long long XmlBigCount;
 typedef struct accounting {
   XmlBigCount countBytesDirect;
   XmlBigCount countBytesIndirect;
+#ifndef MOZILLA_CLIENT /* don't report debug information */
   unsigned long debugLevel;
+#endif
   float maximumAmplificationFactor; // >=1.0
   unsigned long long activationThresholdBytes;
 } ACCOUNTING;
@@ -461,12 +468,14 @@ typedef struct MALLOC_TRACKER {
   XmlBigCount activationThresholdBytes;
 } MALLOC_TRACKER;
 
+#ifndef MOZILLA_CLIENT /* don't report debug information */
 typedef struct entity_stats {
   unsigned int countEverOpened;
   unsigned int currentDepth;
   unsigned int maximumDepthSeen;
   unsigned long debugLevel;
 } ENTITY_STATS;
+#endif /* MOZILLA_CLIENT */
 #endif /* XML_GE == 1 */
 
 typedef enum XML_Error PTRCALL Processor(XML_Parser parser, const char *start,
@@ -503,6 +512,14 @@ static enum XML_Error doProlog(XML_Parser parser, const ENCODING *enc,
                                enum XML_Account account);
 static enum XML_Error processEntity(XML_Parser parser, ENTITY *entity,
                                     XML_Bool betweenDecl, enum EntityType type);
+#ifdef MOZILLA_CLIENT
+/* Bug 1746996 - Ensure that storeRawNames is always called */
+static enum XML_Error doContentInternal(XML_Parser parser, int startTagLevel,
+                                        const ENCODING *enc, const char *start,
+                                        const char *end, const char **endPtr,
+                                        XML_Bool haveMore,
+                                        enum XML_Account account);
+#endif
 static enum XML_Error doContent(XML_Parser parser, int startTagLevel,
                                 const ENCODING *enc, const char *start,
                                 const char *end, const char **endPtr,
@@ -565,8 +582,10 @@ static XML_Bool setContext(XML_Parser parser, const XML_Char *context);
 static void FASTCALL normalizePublicId(XML_Char *s);
 
 static DTD *dtdCreate(XML_Parser parser);
+#ifndef MOZILLA_CLIENT /* unused API */
 /* do not call if m_parentParser != NULL */
 static void dtdReset(DTD *p, XML_Parser parser);
+#endif
 static void dtdDestroy(DTD *p, XML_Bool isDocEntity, XML_Parser parser);
 static int dtdCopy(XML_Parser oldParser, DTD *newDtd, const DTD *oldDtd,
                    XML_Parser parser);
@@ -575,7 +594,9 @@ static int copyEntityTable(XML_Parser oldParser, HASH_TABLE *newTable,
 static NAMED *lookup(XML_Parser parser, HASH_TABLE *table, KEY name,
                      size_t createSize);
 static void FASTCALL hashTableInit(HASH_TABLE *table, XML_Parser parser);
+#ifndef MOZILLA_CLIENT /* unused API */
 static void FASTCALL hashTableClear(HASH_TABLE *table);
+#endif
 static void FASTCALL hashTableDestroy(HASH_TABLE *table);
 static void FASTCALL hashTableIterInit(HASH_TABLE_ITER *iter,
                                        const HASH_TABLE *table);
@@ -603,7 +624,9 @@ static ELEMENT_TYPE *getElementType(XML_Parser parser, const ENCODING *enc,
 
 static XML_Char *copyString(const XML_Char *s, XML_Parser parser);
 
+#ifndef MOZILLA_CLIENT /* we already set a salt through XML_SetHashSalt */
 static unsigned long generate_hash_secret_salt(XML_Parser parser);
+#endif
 static XML_Bool startParsing(XML_Parser parser);
 
 static XML_Parser parserCreate(const XML_Char *encodingName,
@@ -617,18 +640,22 @@ static void parserInit(XML_Parser parser, const XML_Char *encodingName);
 static float accountingGetCurrentAmplification(XML_Parser rootParser);
 static void accountingReportStats(XML_Parser originParser, const char *epilog);
 static void accountingOnAbort(XML_Parser originParser);
+#ifndef MOZILLA_CLIENT /* don't report debug information */
 static void accountingReportDiff(XML_Parser rootParser,
                                  unsigned int levelsAwayFromRootParser,
                                  const char *before, const char *after,
                                  ptrdiff_t bytesMore, int source_line,
                                  enum XML_Account account);
+#endif
 static XML_Bool accountingDiffTolerated(XML_Parser originParser, int tok,
                                         const char *before, const char *after,
                                         int source_line,
                                         enum XML_Account account);
 
+#ifndef MOZILLA_CLIENT /* don't report debug information */
 static void entityTrackingReportStats(XML_Parser parser, ENTITY *entity,
                                       const char *action, int sourceLine);
+#endif
 static void entityTrackingOnOpen(XML_Parser parser, ENTITY *entity,
                                  int sourceLine);
 static void entityTrackingOnClose(XML_Parser parser, ENTITY *entity,
@@ -638,8 +665,10 @@ static void entityTrackingOnClose(XML_Parser parser, ENTITY *entity,
 static XML_Parser getRootParserOf(XML_Parser parser,
                                   unsigned int *outLevelDiff);
 
+#ifndef MOZILLA_CLIENT /* don't report debug information */
 static unsigned long getDebugLevel(const char *variableName,
                                    unsigned long defaultDebugLevel);
+#endif
 
 #define poolStart(pool) ((pool)->start)
 #define poolLength(pool) ((pool)->ptr - (pool)->start)
@@ -780,7 +809,12 @@ struct XML_ParserStruct {
 #if XML_GE == 1
   ACCOUNTING m_accounting;
   MALLOC_TRACKER m_alloc_tracker;
+#ifndef MOZILLA_CLIENT /* don't report debug information */
   ENTITY_STATS m_entity_stats;
+#endif /* MOZILLA_CLIENT */
+#endif /* XML_GE == 1 */
+#ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
+  const XML_Char* m_mismatch;
 #endif
   XML_Bool m_reenter;
 };
@@ -1012,6 +1046,7 @@ expat_realloc(XML_Parser parser, void *ptr, size_t size, int sourceLine) {
 }
 #endif // XML_GE == 1
 
+#ifndef MOZILLA_CLIENT /* unused API */
 XML_Parser XMLCALL
 XML_ParserCreate(const XML_Char *encodingName) {
   return XML_ParserCreate_MM(encodingName, NULL, NULL);
@@ -1022,6 +1057,7 @@ XML_ParserCreateNS(const XML_Char *encodingName, XML_Char nsSep) {
   XML_Char tmp[2] = {nsSep, 0};
   return XML_ParserCreate_MM(encodingName, NULL, tmp);
 }
+#endif
 
 // "xml=http://www.w3.org/XML/1998/namespace"
 static const XML_Char implicitContext[]
@@ -1035,6 +1071,7 @@ static const XML_Char implicitContext[]
        ASCII_s,     ASCII_p,     ASCII_a,      ASCII_c,      ASCII_e,
        '\0'};
 
+#ifndef MOZILLA_CLIENT /* we already set a salt through XML_SetHashSalt */
 /* To avoid warnings about unused functions: */
 #if ! defined(HAVE_ARC4RANDOM_BUF) && ! defined(HAVE_ARC4RANDOM)
 
@@ -1242,6 +1279,7 @@ generate_hash_secret_salt(XML_Parser parser) {
   }
 #endif
 }
+#endif /* MOZILLA_CLIENT */
 
 static unsigned long
 get_hash_secret_salt(XML_Parser parser) {
@@ -1318,9 +1356,11 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
 
 static XML_Bool /* only valid for root parser */
 startParsing(XML_Parser parser) {
+#ifndef MOZILLA_CLIENT /* we already set a salt through XML_SetHashSalt */
   /* hash functions must be initialized before setContext() is called */
   if (parser->m_hash_secret_salt == 0)
     parser->m_hash_secret_salt = generate_hash_secret_salt(parser);
+#endif
   if (parser->m_ns) {
     /* implicit context only set for root parser, since child
        parsers (i.e. external entity parsers) will inherit it
@@ -1403,8 +1443,10 @@ parserCreate(const XML_Char *encodingName,
   // Initialize .m_alloc_tracker
   memset(&parser->m_alloc_tracker, 0, sizeof(MALLOC_TRACKER));
   if (parentParser == NULL) {
+#ifndef MOZILLA_CLIENT /* don't report debug information */
     parser->m_alloc_tracker.debugLevel
         = getDebugLevel("EXPAT_MALLOC_DEBUG", 0u);
+#endif
     parser->m_alloc_tracker.maximumAmplificationFactor
         = EXPAT_ALLOC_TRACKER_MAXIMUM_AMPLIFICATION_DEFAULT;
     parser->m_alloc_tracker.activationThresholdBytes
@@ -1530,6 +1572,10 @@ parserCreate(const XML_Char *encodingName,
     parser->m_internalEncoding = XmlGetInternalEncoding();
   }
 
+#ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
+  parser->m_mismatch = NULL;
+#endif
+
   return parser;
 }
 
@@ -1612,17 +1658,22 @@ parserInit(XML_Parser parser, const XML_Char *encodingName) {
 
 #if XML_GE == 1
   memset(&parser->m_accounting, 0, sizeof(ACCOUNTING));
+#ifndef MOZILLA_CLIENT /* don't report debug information */
   parser->m_accounting.debugLevel = getDebugLevel("EXPAT_ACCOUNTING_DEBUG", 0u);
+#endif
   parser->m_accounting.maximumAmplificationFactor
       = EXPAT_BILLION_LAUGHS_ATTACK_PROTECTION_MAXIMUM_AMPLIFICATION_DEFAULT;
   parser->m_accounting.activationThresholdBytes
       = EXPAT_BILLION_LAUGHS_ATTACK_PROTECTION_ACTIVATION_THRESHOLD_DEFAULT;
 
+#ifndef MOZILLA_CLIENT /* don't report debug information */
   memset(&parser->m_entity_stats, 0, sizeof(ENTITY_STATS));
   parser->m_entity_stats.debugLevel = getDebugLevel("EXPAT_ENTITY_DEBUG", 0u);
-#endif
+#endif /* MOZILLA_CLIENT */
+#endif /* XML_GE == 1 */
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 /* moves list of bindings to m_freeBindingList */
 static void FASTCALL
 moveToFreeBindingList(XML_Parser parser, BINDING *bindings) {
@@ -1692,6 +1743,7 @@ XML_ParserReset(XML_Parser parser, const XML_Char *encodingName) {
   dtdReset(parser->m_dtd, parser);
   return XML_TRUE;
 }
+#endif /* MOZILLA_CLIENT */
 
 static XML_Bool
 parserBusy(XML_Parser parser) {
@@ -1706,6 +1758,7 @@ parserBusy(XML_Parser parser) {
   }
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 enum XML_Status XMLCALL
 XML_SetEncoding(XML_Parser parser, const XML_Char *encodingName) {
   if (parser == NULL)
@@ -1731,6 +1784,7 @@ XML_SetEncoding(XML_Parser parser, const XML_Char *encodingName) {
   }
   return XML_STATUS_OK;
 }
+#endif /* MOZILLA_CLIENT */
 
 XML_Parser XMLCALL
 XML_ExternalEntityParserCreate(XML_Parser oldParser, const XML_Char *context,
@@ -2017,6 +2071,7 @@ XML_UseParserAsHandlerArg(XML_Parser parser) {
     parser->m_handlerArg = parser;
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 enum XML_Error XMLCALL
 XML_UseForeignDTD(XML_Parser parser, XML_Bool useDTD) {
   if (parser == NULL)
@@ -2030,8 +2085,9 @@ XML_UseForeignDTD(XML_Parser parser, XML_Bool useDTD) {
 #else
   UNUSED_P(useDTD);
   return XML_ERROR_FEATURE_REQUIRES_XML_DTD;
-#endif
+#endif /* XML_DTD */
 }
+#endif /* MOZILLA_CLIENT */
 
 void XMLCALL
 XML_SetReturnNSTriplet(XML_Parser parser, int do_nst) {
@@ -2106,6 +2162,7 @@ XML_SetElementHandler(XML_Parser parser, XML_StartElementHandler start,
   parser->m_endElementHandler = end;
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 void XMLCALL
 XML_SetStartElementHandler(XML_Parser parser, XML_StartElementHandler start) {
   if (parser != NULL)
@@ -2117,6 +2174,7 @@ XML_SetEndElementHandler(XML_Parser parser, XML_EndElementHandler end) {
   if (parser != NULL)
     parser->m_endElementHandler = end;
 }
+#endif
 
 void XMLCALL
 XML_SetCharacterDataHandler(XML_Parser parser,
@@ -2148,6 +2206,7 @@ XML_SetCdataSectionHandler(XML_Parser parser,
   parser->m_endCdataSectionHandler = end;
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 void XMLCALL
 XML_SetStartCdataSectionHandler(XML_Parser parser,
                                 XML_StartCdataSectionHandler start) {
@@ -2169,6 +2228,7 @@ XML_SetDefaultHandler(XML_Parser parser, XML_DefaultHandler handler) {
   parser->m_defaultHandler = handler;
   parser->m_defaultExpandInternalEntities = XML_FALSE;
 }
+#endif /* MOZILLA_CLIENT */
 
 void XMLCALL
 XML_SetDefaultHandlerExpand(XML_Parser parser, XML_DefaultHandler handler) {
@@ -2187,6 +2247,7 @@ XML_SetDoctypeDeclHandler(XML_Parser parser, XML_StartDoctypeDeclHandler start,
   parser->m_endDoctypeDeclHandler = end;
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 void XMLCALL
 XML_SetStartDoctypeDeclHandler(XML_Parser parser,
                                XML_StartDoctypeDeclHandler start) {
@@ -2199,6 +2260,7 @@ XML_SetEndDoctypeDeclHandler(XML_Parser parser, XML_EndDoctypeDeclHandler end) {
   if (parser != NULL)
     parser->m_endDoctypeDeclHandler = end;
 }
+#endif
 
 void XMLCALL
 XML_SetUnparsedEntityDeclHandler(XML_Parser parser,
@@ -2223,6 +2285,7 @@ XML_SetNamespaceDeclHandler(XML_Parser parser,
   parser->m_endNamespaceDeclHandler = end;
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 void XMLCALL
 XML_SetStartNamespaceDeclHandler(XML_Parser parser,
                                  XML_StartNamespaceDeclHandler start) {
@@ -2243,6 +2306,7 @@ XML_SetNotStandaloneHandler(XML_Parser parser,
   if (parser != NULL)
     parser->m_notStandaloneHandler = handler;
 }
+#endif /* MOZILLA_CLIENT */
 
 void XMLCALL
 XML_SetExternalEntityRefHandler(XML_Parser parser,
@@ -2261,6 +2325,7 @@ XML_SetExternalEntityRefHandlerArg(XML_Parser parser, void *arg) {
     parser->m_externalEntityRefHandlerArg = parser;
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 void XMLCALL
 XML_SetSkippedEntityHandler(XML_Parser parser,
                             XML_SkippedEntityHandler handler) {
@@ -2294,6 +2359,7 @@ XML_SetEntityDeclHandler(XML_Parser parser, XML_EntityDeclHandler handler) {
   if (parser != NULL)
     parser->m_entityDeclHandler = handler;
 }
+#endif /* MOZILLA_CLIENT */
 
 void XMLCALL
 XML_SetXmlDeclHandler(XML_Parser parser, XML_XmlDeclHandler handler) {
@@ -2726,6 +2792,10 @@ XML_ResumeParser(XML_Parser parser) {
   XmlUpdatePosition(parser->m_encoding, parser->m_positionPtr,
                     parser->m_bufferPtr, &parser->m_position);
   parser->m_positionPtr = parser->m_bufferPtr;
+#ifdef MOZILLA_CLIENT /* always set m_eventPtr/m_eventEndPtr */
+  parser->m_eventPtr = parser->m_bufferPtr;
+  parser->m_eventEndPtr = parser->m_bufferPtr;
+#endif
   return result;
 }
 
@@ -2751,9 +2821,14 @@ XML_GetCurrentByteIndex(XML_Parser parser) {
   if (parser->m_eventPtr)
     return (XML_Index)(parser->m_parseEndByteIndex
                        - (parser->m_parseEndPtr - parser->m_eventPtr));
+#ifdef MOZILLA_CLIENT /* fix XML_GetCurrentByteIndex */
+  return parser->m_parseEndByteIndex;
+#else
   return -1;
+#endif
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 int XMLCALL
 XML_GetCurrentByteCount(XML_Parser parser) {
   if (parser == NULL)
@@ -2782,6 +2857,7 @@ XML_GetInputContext(XML_Parser parser, int *offset, int *size) {
 #endif /* XML_CONTEXT_BYTES > 0 */
   return (const char *)0;
 }
+#endif /* MOZILLA_CLIENT */
 
 XML_Size XMLCALL
 XML_GetCurrentLineNumber(XML_Parser parser) {
@@ -2807,6 +2883,7 @@ XML_GetCurrentColumnNumber(XML_Parser parser) {
   return parser->m_position.columnNumber;
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 void XMLCALL
 XML_FreeContentModel(XML_Parser parser, XML_Content *model) {
   if (parser == NULL)
@@ -3052,11 +3129,12 @@ XML_GetFeatureList(void) {
       {XML_FEATURE_ALLOC_TRACKER_ACTIVATION_THRESHOLD_DEFAULT,
        XML_L("XML_AT_ACT_THRES"),
        (long int)EXPAT_ALLOC_TRACKER_ACTIVATION_THRESHOLD_DEFAULT},
-#endif
+#endif /* XML_GE == 1 */
       {XML_FEATURE_END, NULL, 0}};
 
   return features;
 }
+#endif /* MOZILLA_CLIENT */
 
 #if XML_GE == 1
 XML_Bool XMLCALL
@@ -3104,6 +3182,22 @@ XML_SetAllocTrackerActivationThreshold(
   return XML_TRUE;
 }
 #endif /* XML_GE == 1 */
+
+#ifdef MOZILLA_CLIENT
+/* Report opening tag of mismatched closing tag */
+const XML_Char * XMLCALL
+MOZ_XML_GetMismatchedTag(XML_Parser parser)
+{
+  return parser->m_mismatch;
+}
+
+/* Report whether the parser is currently expanding an entity */
+XML_Bool XMLCALL
+MOZ_XML_ProcessingEntityValue(XML_Parser parser)
+{
+  return parser->m_openInternalEntities != NULL;
+}
+#endif
 
 XML_Bool XMLCALL
 XML_SetReparseDeferralEnabled(XML_Parser parser, XML_Bool enabled) {
@@ -3175,10 +3269,12 @@ contentProcessor(XML_Parser parser, const char *start, const char *end,
       parser, parser->m_parentParser ? 1 : 0, parser->m_encoding, start, end,
       endPtr, (XML_Bool)! parser->m_parsingStatus.finalBuffer,
       XML_ACCOUNT_DIRECT);
+#ifndef MOZILLA_CLIENT /* Bug 1746996 - Ensure that storeRawNames is always called */
   if (result == XML_ERROR_NONE) {
     if (! storeRawNames(parser))
       return XML_ERROR_NO_MEMORY;
   }
+#endif
   return result;
 }
 
@@ -3296,6 +3392,23 @@ externalEntityContentProcessor(XML_Parser parser, const char *start,
       = doContent(parser, 1, parser->m_encoding, start, end, endPtr,
                   (XML_Bool)! parser->m_parsingStatus.finalBuffer,
                   XML_ACCOUNT_ENTITY_EXPANSION);
+#ifndef MOZILLA_CLIENT /* Bug 1746996 - Ensure that storeRawNames is always called */
+  if (result == XML_ERROR_NONE) {
+    if (! storeRawNames(parser))
+      return XML_ERROR_NO_MEMORY;
+  }
+#endif
+  return result;
+}
+
+#ifdef MOZILLA_CLIENT
+/* Bug 1746996 - Ensure that storeRawNames is always called */
+static enum XML_Error
+doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
+          const char *s, const char *end, const char **nextPtr,
+          XML_Bool haveMore, enum XML_Account account) {
+  enum XML_Error result = doContentInternal(parser, startTagLevel, enc, s, end,
+                                            nextPtr, haveMore, account);
   if (result == XML_ERROR_NONE) {
     if (! storeRawNames(parser))
       return XML_ERROR_NO_MEMORY;
@@ -3303,10 +3416,17 @@ externalEntityContentProcessor(XML_Parser parser, const char *start,
   return result;
 }
 
+
+static enum XML_Error
+doContentInternal(XML_Parser parser, int startTagLevel, const ENCODING *enc,
+                  const char *s, const char *end, const char **nextPtr,
+                  XML_Bool haveMore, enum XML_Account account) {
+#else
 static enum XML_Error
 doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
           const char *s, const char *end, const char **nextPtr,
           XML_Bool haveMore, enum XML_Account account) {
+#endif /* MOZILLA_CLIENT */
   /* save one level of indirection */
   DTD *const dtd = parser->m_dtd;
 
@@ -3422,9 +3542,14 @@ doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
       } else if (! entity) {
         if (parser->m_skippedEntityHandler)
           parser->m_skippedEntityHandler(parser->m_handlerArg, name, 0);
+#ifdef MOZILLA_CLIENT
+/* Bug 35984 - Undeclared entities are ignored when external DTD not found */
+        return XML_ERROR_UNDEFINED_ENTITY;
+#else
         else if (parser->m_defaultHandler)
           reportDefault(parser, enc, s, next);
         break;
+#endif
       }
       if (entity->open)
         return XML_ERROR_RECURSIVE_ENTITY_REF;
@@ -3585,6 +3710,33 @@ doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
         len = XmlNameLength(enc, rawName);
         if (len != tag->rawNameLength
             || memcmp(tag->rawName, rawName, len) != 0) {
+#ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
+          /* This code is copied from the |if (parser->m_endElementHandler)|
+             block below
+          */
+          const XML_Char *localPart;
+          const XML_Char *prefix;
+          XML_Char *uri;
+          localPart = tag->name.localPart;
+          if (parser->m_ns && localPart) {
+            /* localPart and prefix may have been overwritten in
+               tag->name.str, since this points to the binding->uri
+               buffer which gets reused; so we have to add them again
+            */
+            uri = (XML_Char *)tag->name.str + tag->name.uriLen;
+            /* don't need to check for space - already done in storeAtts() */
+            while (*localPart)
+              *uri++ = *localPart++;
+            prefix = tag->name.prefix;
+            if (parser->m_ns_triplets && prefix) {
+              *uri++ = parser->m_namespaceSeparator;
+              while (*prefix)
+                *uri++ = *prefix++;
+            }
+            *uri = XML_T('\0');
+          }
+          parser->m_mismatch = tag->name.str;
+#endif /* MOZILLA_CLIENT */
           *eventPP = rawName;
           return XML_ERROR_TAG_MISMATCH;
         }
@@ -3831,6 +3983,9 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
   int n;
   XML_Char *uri;
   int nPrefixes = 0;
+#ifdef MOZILLA_CLIENT /* Include xmlns attributes in attributes array */
+  int nXMLNSDeclarations = 0;
+#endif
   BINDING *binding;
   const XML_Char *localPart;
 
@@ -3988,7 +4143,13 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
                                            appAtts[attIndex], bindingsPtr);
         if (result)
           return result;
+#ifdef MOZILLA_CLIENT /* Include xmlns attributes in attributes array */
+        attIndex++;
+        nXMLNSDeclarations++;
+        (attId->name)[-1] = 3;
+#else
         --attIndex;
+#endif
       } else {
         /* deal with other prefixed names later */
         attIndex++;
@@ -4020,6 +4181,12 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
                                              da->value, bindingsPtr);
           if (result)
             return result;
+#ifdef MOZILLA_CLIENT /* Include xmlns attributes in attributes array */
+          (da->id->name)[-1] = 3;
+          nXMLNSDeclarations++;
+          appAtts[attIndex++] = da->id->name;
+          appAtts[attIndex++] = da->value;
+#endif
         } else {
           (da->id->name)[-1] = 2;
           nPrefixes++;
@@ -4038,7 +4205,11 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
   /* expand prefixed attribute names, check for duplicates,
      and clear flags that say whether attributes were specified */
   i = 0;
+#ifdef MOZILLA_CLIENT /* Include xmlns attributes in attributes array */
+  if (nPrefixes || nXMLNSDeclarations) {
+#else
   if (nPrefixes) {
+#endif
     unsigned int j; /* hash table index */
     unsigned long version = parser->m_nsAttsVersion;
 
@@ -4048,6 +4219,9 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
     }
 
     unsigned int nsAttsSize = 1u << parser->m_nsAttsPower;
+#ifdef MOZILLA_CLIENT /* Include xmlns attributes in attributes array */
+    if (nPrefixes) {
+#endif
     unsigned char oldNsAttsPower = parser->m_nsAttsPower;
     /* size of hash table must be at least 2 * (# of prefixed attributes) */
     if ((nPrefixes << 1)
@@ -4096,6 +4270,9 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
         parser->m_nsAtts[--j].version = version;
     }
     parser->m_nsAttsVersion = --version;
+#ifdef MOZILLA_CLIENT /* Include xmlns attributes in attributes array */
+    }
+#endif
 
     /* expand prefixed names and check for duplicates */
     for (; i < attIndex; i += 2) {
@@ -4195,10 +4372,61 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
         parser->m_nsAtts[j].hash = uriHash;
         parser->m_nsAtts[j].uriName = s;
 
+#ifdef MOZILLA_CLIENT /* Include xmlns attributes in attributes array) */
+        if (! --nPrefixes && ! nXMLNSDeclarations) {
+#else
         if (! --nPrefixes) {
+#endif
           i += 2;
           break;
         }
+#ifdef MOZILLA_CLIENT /* Include xmlns attributes in attributes array */
+      } else if (s[-1] == 3) { /* xmlns attribute */
+        static const XML_Char xmlnsNamespace[] = {
+          ASCII_h, ASCII_t, ASCII_t, ASCII_p, ASCII_COLON, ASCII_SLASH, ASCII_SLASH,
+          ASCII_w, ASCII_w, ASCII_w, ASCII_PERIOD, ASCII_w, ASCII_3, ASCII_PERIOD,
+          ASCII_o, ASCII_r, ASCII_g, ASCII_SLASH, ASCII_2, ASCII_0, ASCII_0, ASCII_0,
+          ASCII_SLASH, ASCII_x, ASCII_m, ASCII_l, ASCII_n, ASCII_s, ASCII_SLASH, '\0'
+        };
+        static const XML_Char xmlnsPrefix[] = {
+          ASCII_x, ASCII_m, ASCII_l, ASCII_n, ASCII_s, '\0'
+        };
+
+        ((XML_Char *)s)[-1] = 0;  /* clear flag */
+        if (! poolAppendString(&parser->m_tempPool, xmlnsNamespace)
+            || ! poolAppendChar(&parser->m_tempPool, parser->m_namespaceSeparator))
+          return XML_ERROR_NO_MEMORY;
+        s += sizeof(xmlnsPrefix) / sizeof(xmlnsPrefix[0]) - 1;
+        if (*s == XML_T(':')) {
+          ++s;
+          do {  /* copies null terminator */
+            if (! poolAppendChar(&parser->m_tempPool, *s))
+              return XML_ERROR_NO_MEMORY;
+          } while (*s++);
+          if (parser->m_ns_triplets) { /* append namespace separator and prefix */
+            parser->m_tempPool.ptr[-1] = parser->m_namespaceSeparator;
+            if (! poolAppendString(&parser->m_tempPool, xmlnsPrefix)
+                || ! poolAppendChar(&parser->m_tempPool, '\0'))
+              return XML_ERROR_NO_MEMORY;
+          }
+        }
+        else {
+          /* xlmns attribute without a prefix. */
+          if (! poolAppendString(&parser->m_tempPool, xmlnsPrefix)
+              || ! poolAppendChar(&parser->m_tempPool, '\0'))
+            return XML_ERROR_NO_MEMORY;
+        }
+
+        /* store expanded name in attribute list */
+        s = poolStart(&parser->m_tempPool);
+        poolFinish(&parser->m_tempPool);
+        appAtts[i] = s;
+
+        if (! --nXMLNSDeclarations && ! nPrefixes) {
+          i += 2;
+          break;
+        }
+#endif
       } else                     /* not prefixed */
         ((XML_Char *)s)[-1] = 0; /* clear flag */
     }
@@ -6047,7 +6275,11 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
           entity->open = XML_TRUE;
           entityTrackingOnOpen(parser, entity, __LINE__);
           if (! parser->m_externalEntityRefHandler(
+#ifdef MOZILLA_CLIENT /* Bug 191482 - Add external entity inclusions to internalSubset */
+                  parser->m_externalEntityRefHandlerArg, entity->name, entity->base,
+#else
                   parser->m_externalEntityRefHandlerArg, 0, entity->base,
+#endif
                   entity->systemId, entity->publicId)) {
             entityTrackingOnClose(parser, entity, __LINE__);
             entity->open = XML_FALSE;
@@ -6693,7 +6925,12 @@ appendAttributeValue(XML_Parser parser, const ENCODING *enc, XML_Bool isCdata,
         if ((pool == &parser->m_tempPool) && parser->m_defaultHandler)
           reportDefault(parser, enc, ptr, next);
         */
+#ifdef MOZILLA_CLIENT
+/* Bug 35984 - Undeclared entities are ignored when external DTD not found */
+        return XML_ERROR_UNDEFINED_ENTITY;
+#else
         break;
+#endif
       }
       if (entity->open) {
         if (enc == parser->m_encoding) {
@@ -7518,6 +7755,7 @@ dtdCreate(XML_Parser parser) {
   return p;
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 static void
 dtdReset(DTD *p, XML_Parser parser) {
   HASH_TABLE_ITER iter;
@@ -7558,6 +7796,7 @@ dtdReset(DTD *p, XML_Parser parser) {
   p->hasParamEntityRefs = XML_FALSE;
   p->standalone = XML_FALSE;
 }
+#endif /* MOZILLA_CLIENT */
 
 static void
 dtdDestroy(DTD *p, XML_Bool isDocEntity, XML_Parser parser) {
@@ -7912,6 +8151,7 @@ lookup(XML_Parser parser, HASH_TABLE *table, KEY name, size_t createSize) {
   return table->v[i];
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 static void FASTCALL
 hashTableClear(HASH_TABLE *table) {
   size_t i;
@@ -7921,6 +8161,7 @@ hashTableClear(HASH_TABLE *table) {
   }
   table->used = 0;
 }
+#endif
 
 static void FASTCALL
 hashTableDestroy(HASH_TABLE *table) {
@@ -8475,6 +8716,7 @@ accountingGetCurrentAmplification(XML_Parser rootParser) {
 
 static void
 accountingReportStats(XML_Parser originParser, const char *epilog) {
+#ifndef MOZILLA_CLIENT /* don't report debug information */
   const XML_Parser rootParser = getRootParserOf(originParser, NULL);
   assert(! rootParser->m_parentParser);
 
@@ -8490,6 +8732,7 @@ accountingReportStats(XML_Parser originParser, const char *epilog) {
           (void *)rootParser, rootParser->m_accounting.countBytesDirect,
           rootParser->m_accounting.countBytesIndirect,
           (double)amplificationFactor, epilog);
+#endif
 }
 
 static void
@@ -8497,6 +8740,7 @@ accountingOnAbort(XML_Parser originParser) {
   accountingReportStats(originParser, " ABORTING\n");
 }
 
+#ifndef MOZILLA_CLIENT /* don't report debug information */
 static void
 accountingReportDiff(XML_Parser rootParser,
                      unsigned int levelsAwayFromRootParser, const char *before,
@@ -8533,6 +8777,7 @@ accountingReportDiff(XML_Parser rootParser,
   }
   fprintf(stderr, "\"\n");
 }
+#endif /* MOZILLA_CLIENT */
 
 static XML_Bool
 accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
@@ -8580,15 +8825,18 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
         || (amplificationFactor
             <= rootParser->m_accounting.maximumAmplificationFactor);
 
+#ifndef MOZILLA_CLIENT /* don't report debug information */
   if (rootParser->m_accounting.debugLevel >= 2u) {
     accountingReportStats(rootParser, "");
     accountingReportDiff(rootParser, levelsAwayFromRootParser, before, after,
                          bytesMore, source_line, account);
   }
+#endif
 
   return tolerated;
 }
 
+#ifndef MOZILLA_CLIENT /* unused API */
 unsigned long long
 testingAccountingGetCountBytesDirect(XML_Parser parser) {
   if (! parser)
@@ -8602,7 +8850,9 @@ testingAccountingGetCountBytesIndirect(XML_Parser parser) {
     return 0;
   return parser->m_accounting.countBytesIndirect;
 }
+#endif
 
+#ifndef MOZILLA_CLIENT /* don't report debug information */
 static void
 entityTrackingReportStats(XML_Parser rootParser, ENTITY *entity,
                           const char *action, int sourceLine) {
@@ -8626,9 +8876,11 @@ entityTrackingReportStats(XML_Parser rootParser, ENTITY *entity,
       entity->is_param ? "%" : "&", entityName, action, entity->textLen,
       sourceLine);
 }
+#endif /* MOZILLA_CLIENT */
 
 static void
 entityTrackingOnOpen(XML_Parser originParser, ENTITY *entity, int sourceLine) {
+#ifndef MOZILLA_CLIENT /* don't report debug information */
   const XML_Parser rootParser = getRootParserOf(originParser, NULL);
   assert(! rootParser->m_parentParser);
 
@@ -8640,15 +8892,18 @@ entityTrackingOnOpen(XML_Parser originParser, ENTITY *entity, int sourceLine) {
   }
 
   entityTrackingReportStats(rootParser, entity, "OPEN ", sourceLine);
+#endif
 }
 
 static void
 entityTrackingOnClose(XML_Parser originParser, ENTITY *entity, int sourceLine) {
+#ifndef MOZILLA_CLIENT /* don't report debug information */
   const XML_Parser rootParser = getRootParserOf(originParser, NULL);
   assert(! rootParser->m_parentParser);
 
   entityTrackingReportStats(rootParser, entity, "CLOSE", sourceLine);
   rootParser->m_entity_stats.currentDepth--;
+#endif
 }
 
 #endif /* XML_GE == 1 */
@@ -8670,6 +8925,7 @@ getRootParserOf(XML_Parser parser, unsigned int *outLevelDiff) {
 
 #if XML_GE == 1
 
+#ifndef MOZILLA_CLIENT /* don't report debug information */
 const char *
 unsignedCharToPrintable(unsigned char c) {
   switch (c) {
@@ -9193,9 +9449,11 @@ unsignedCharToPrintable(unsigned char c) {
   assert(0); /* never gets here */
   // LCOV_EXCL_STOP
 }
+#endif /* MOZILLA_CLIENT */
 
 #endif /* XML_GE == 1 */
 
+#ifndef MOZILLA_CLIENT /* don't report debug information */
 static unsigned long
 getDebugLevel(const char *variableName, unsigned long defaultDebugLevel) {
   const char *const valueOrNull = getenv(variableName);
@@ -9214,3 +9472,4 @@ getDebugLevel(const char *variableName, unsigned long defaultDebugLevel) {
 
   return debugLevel;
 }
+#endif /* MOZILLA_CLIENT */
