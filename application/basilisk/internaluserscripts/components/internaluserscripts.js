@@ -34,23 +34,39 @@ InternalUserscriptsService.prototype = {
       this._startup();
     } else if (topic === "quit-application") {
       this._shutdown();
+    } else if (topic === "nsPref:changed" && data === PREF_ENABLED) {
+      this._updateObserverState();
     } else if (topic === "document-element-inserted") {
       this._inject(subject && subject.defaultView);
     }
   },
 
   _startup: function() {
-    if (!Services.prefs.getBoolPref(PREF_ENABLED, true)) {
-      return;
-    }
-
-    Services.obs.addObserver(this, "document-element-inserted", false);
     Services.obs.addObserver(this, "quit-application", false);
+    Services.prefs.addObserver(PREF_ENABLED, this, false);
+    this._updateObserverState();
   },
 
   _shutdown: function() {
     try { Services.obs.removeObserver(this, "document-element-inserted"); } catch (e) {}
     try { Services.obs.removeObserver(this, "quit-application"); } catch (e) {}
+    try { Services.prefs.removeObserver(PREF_ENABLED, this); } catch (e) {}
+    this._observingDocuments = false;
+  },
+
+  _updateObserverState: function() {
+    let enabled = true;
+    try {
+      enabled = Services.prefs.getBoolPref(PREF_ENABLED, true);
+    } catch (e) {}
+
+    if (enabled && !this._observingDocuments) {
+      Services.obs.addObserver(this, "document-element-inserted", false);
+      this._observingDocuments = true;
+    } else if (!enabled && this._observingDocuments) {
+      try { Services.obs.removeObserver(this, "document-element-inserted"); } catch (e) {}
+      this._observingDocuments = false;
+    }
   },
 
   _inject: function(win) {

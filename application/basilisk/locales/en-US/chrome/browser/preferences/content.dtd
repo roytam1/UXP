@@ -48,6 +48,8 @@
 
 <!ENTITY  javascriptWasm.label           "Enable WebAssembly (WASM)">
 <!ENTITY  javascriptWasm.accesskey       "y">
+<!ENTITY  javascriptInternalUserscripts.label      "Enable internal user scripts (polyfills)">
+<!ENTITY  javascriptInternalUserscripts.accesskey  "I">
 #ifdef MOZ_WEBRTC
 <!ENTITY  javascriptWebrtc.label           "Enable WebRTC">
 <!ENTITY  javascriptWebrtc.accesskey       "R">
