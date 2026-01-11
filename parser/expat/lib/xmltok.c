@@ -1653,6 +1653,6 @@ XmlInitUnknownEncodingNS(void *mem,
 
 /* BEGIN MOZILLA CHANGE (Mozilla extensions for QName checking) */
 #ifdef MOZILLA_CLIENT
-#include "moz_extensions.c"
+#include "../moz_extensions.c"
 #endif /* MOZILLA_CLIENT */
 /* END MOZILLA CHANGE */
