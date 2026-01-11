@@ -1,17 +1,15 @@
 diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 --- a/lib/xmlparse.c
 +++ b/lib/xmlparse.c
-@@ -2357,7 +2357,13 @@ XML_GetCurrentByteIndex(XML_Parser parse
+@@ -2773,7 +2773,11 @@
    if (parser->m_eventPtr)
      return (XML_Index)(parser->m_parseEndByteIndex
                         - (parser->m_parseEndPtr - parser->m_eventPtr));
-+/* BEGIN MOZILLA CHANGE (fix XML_GetCurrentByteIndex) */
-+#if 0
-   return -1;
-+#else
++#ifdef MOZILLA_CLIENT /* fix XML_GetCurrentByteIndex */
 +  return parser->m_parseEndByteIndex;
++#else
+   return -1;
 +#endif
-+/* END MOZILLA CHANGE */
  }
 
  int XMLCALL

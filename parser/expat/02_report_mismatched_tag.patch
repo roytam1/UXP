@@ -1,47 +1,47 @@
 diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 --- a/lib/xmlparse.c
 +++ b/lib/xmlparse.c
-@@ -764,6 +764,9 @@ struct XML_ParserStruct {
-   ACCOUNTING m_accounting;
+@@ -787,6 +787,9 @@
+   MALLOC_TRACKER m_alloc_tracker;
    ENTITY_STATS m_entity_stats;
  #endif
-+/* BEGIN MOZILLA CHANGE (Report opening tag of mismatched closing tag) */
++#ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
 +  const XML_Char* m_mismatch;
-+/* END MOZILLA CHANGE */
++#endif
+   XML_Bool m_reenter;
  };
 
- #define MALLOC(parser, s) (parser->m_mem.malloc_fcn((s)))
-@@ -1189,6 +1192,10 @@ parserCreate(const XML_Char *encodingNam
+@@ -1535,6 +1538,10 @@
      parser->m_internalEncoding = XmlGetInternalEncoding();
    }
 
-+/* BEGIN MOZILLA CHANGE (Report opening tag of mismatched closing tag) */
++#ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
 +  parser->m_mismatch = NULL;
-+/* END MOZILLA CHANGE */
++#endif
 +
    return parser;
  }
 
-@@ -2645,6 +2652,14 @@ XML_SetBillionLaughsAttackProtectionActi
+@@ -3110,6 +3117,14 @@
  }
  #endif /* XML_GE == 1 */
 
-+/* BEGIN MOZILLA CHANGE (Report opening tag of mismatched closing tag) */
++#ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
 +const XML_Char * XMLCALL
 +MOZ_XML_GetMismatchedTag(XML_Parser parser)
 +{
 +  return parser->m_mismatch;
 +}
-+/* END MOZILLA CHANGE */
++#endif
 +
  XML_Bool XMLCALL
  XML_SetReparseDeferralEnabled(XML_Parser parser, XML_Bool enabled) {
    if (parser != NULL && (enabled == XML_TRUE || enabled == XML_FALSE)) {
-@@ -3117,6 +3132,33 @@ doContent(XML_Parser parser, int startTa
+@@ -3590,6 +3605,33 @@
          len = XmlNameLength(enc, rawName);
          if (len != tag->rawNameLength
              || memcmp(tag->rawName, rawName, len) != 0) {
-+/* BEGIN MOZILLA CHANGE (Report opening tag of mismatched closing tag) */
++#ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
 +          /* This code is copied from the |if (parser->m_endElementHandler)|
 +             block below
 +          */
@@ -67,7 +67,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 +            *uri = XML_T('\0');
 +          }
 +          parser->m_mismatch = tag->name.str;
-+/* END MOZILLA CHANGE */
++#endif /* MOZILLA_CLIENT */
            *eventPP = rawName;
            return XML_ERROR_TAG_MISMATCH;
          }
