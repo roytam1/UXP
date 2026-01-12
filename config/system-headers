@@ -424,7 +424,6 @@ fstream
 fstream.h
 ft2build.h
 fts.h
-gconf/gconf-client.h
 Gdiplus.h
 gdk/gdk.h
 gdk/gdkkeysyms.h
