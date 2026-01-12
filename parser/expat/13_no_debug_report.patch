@@ -26,7 +26,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
  #endif /* XML_GE == 1 */
 
  typedef enum XML_Error PTRCALL Processor(XML_Parser parser, const char *start,
-@@ -632,18 +636,22 @@
+@@ -630,18 +634,22 @@
  static float accountingGetCurrentAmplification(XML_Parser rootParser);
  static void accountingReportStats(XML_Parser originParser, const char *epilog);
  static void accountingOnAbort(XML_Parser originParser);
@@ -49,7 +49,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
  static void entityTrackingOnOpen(XML_Parser parser, ENTITY *entity,
                                   int sourceLine);
  static void entityTrackingOnClose(XML_Parser parser, ENTITY *entity,
-@@ -653,8 +661,10 @@
+@@ -651,8 +659,10 @@
  static XML_Parser getRootParserOf(XML_Parser parser,
                                    unsigned int *outLevelDiff);
 
@@ -60,7 +60,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 
  #define poolStart(pool) ((pool)->start)
  #define poolLength(pool) ((pool)->ptr - (pool)->start)
-@@ -795,8 +805,10 @@
+@@ -793,8 +803,10 @@
  #if XML_GE == 1
    ACCOUNTING m_accounting;
    MALLOC_TRACKER m_alloc_tracker;
@@ -72,7 +72,20 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
  #ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
    const XML_Char* m_mismatch;
  #endif
-@@ -1638,15 +1650,19 @@
+@@ -1209,10 +1221,12 @@
+
+ static unsigned long
+ ENTROPY_DEBUG(const char *label, unsigned long entropy) {
++#ifndef MOZILLA_CLIENT /* don't report debug information */
+   if (getDebugLevel("EXPAT_ENTROPY_DEBUG", 0) >= 1u) {
+     fprintf(stderr, "expat: Entropy: %s --> 0x%0*lx (%lu bytes)\n", label,
+             (int)sizeof(entropy) * 2, entropy, (unsigned long)sizeof(entropy));
+   }
++#endif
+   return entropy;
+ }
+
+@@ -1632,15 +1646,19 @@
 
  #if XML_GE == 1
    memset(&parser->m_accounting, 0, sizeof(ACCOUNTING));
@@ -93,7 +106,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
  }
 
  /* moves list of bindings to m_freeBindingList */
-@@ -8668,6 +8684,7 @@
+@@ -8662,6 +8680,7 @@
 
  static void
  accountingReportStats(XML_Parser originParser, const char *epilog) {
@@ -101,7 +114,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
    const XML_Parser rootParser = getRootParserOf(originParser, NULL);
    assert(! rootParser->m_parentParser);
 
-@@ -8683,6 +8700,7 @@
+@@ -8677,6 +8696,7 @@
            (void *)rootParser, rootParser->m_accounting.countBytesDirect,
            rootParser->m_accounting.countBytesIndirect,
            (double)amplificationFactor, epilog);
@@ -109,7 +122,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
  }
 
  static void
-@@ -8690,6 +8708,7 @@
+@@ -8684,6 +8704,7 @@
    accountingReportStats(originParser, " ABORTING\n");
  }
 
@@ -117,7 +130,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
  static void
  accountingReportDiff(XML_Parser rootParser,
                       unsigned int levelsAwayFromRootParser, const char *before,
-@@ -8726,6 +8745,7 @@
+@@ -8720,6 +8741,7 @@
    }
    fprintf(stderr, "\"\n");
  }
@@ -125,7 +138,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 
  static XML_Bool
  accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
-@@ -8773,11 +8793,13 @@
+@@ -8767,11 +8789,13 @@
          || (amplificationFactor
              <= rootParser->m_accounting.maximumAmplificationFactor);
 
@@ -139,7 +152,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 
    return tolerated;
  }
-@@ -8796,6 +8818,7 @@
+@@ -8790,6 +8814,7 @@
    return parser->m_accounting.countBytesIndirect;
  }
 
@@ -147,7 +160,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
  static void
  entityTrackingReportStats(XML_Parser rootParser, ENTITY *entity,
                            const char *action, int sourceLine) {
-@@ -8819,9 +8842,11 @@
+@@ -8813,9 +8838,11 @@
        entity->is_param ? "%" : "&", entityName, action, entity->textLen,
        sourceLine);
  }
@@ -159,7 +172,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
    const XML_Parser rootParser = getRootParserOf(originParser, NULL);
    assert(! rootParser->m_parentParser);
 
-@@ -8833,15 +8858,18 @@
+@@ -8827,15 +8854,18 @@
    }
 
    entityTrackingReportStats(rootParser, entity, "OPEN ", sourceLine);
@@ -178,7 +191,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
  }
 
  #endif /* XML_GE == 1 */
-@@ -8863,6 +8891,7 @@
+@@ -8857,6 +8887,7 @@
 
  #if XML_GE == 1
 
@@ -186,7 +199,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
  const char *
  unsignedCharToPrintable(unsigned char c) {
    switch (c) {
-@@ -9386,9 +9415,11 @@
+@@ -9380,9 +9411,11 @@
    assert(0); /* never gets here */
    // LCOV_EXCL_STOP
  }
@@ -198,7 +211,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
  static unsigned long
  getDebugLevel(const char *variableName, unsigned long defaultDebugLevel) {
    const char *const valueOrNull = getenv(variableName);
-@@ -9407,3 +9438,4 @@
+@@ -9401,3 +9434,4 @@
 
    return debugLevel;
  }

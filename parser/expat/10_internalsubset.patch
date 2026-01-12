@@ -1,7 +1,7 @@
 diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 --- a/lib/xmlparse.c
 +++ b/lib/xmlparse.c
-@@ -6231,7 +6231,11 @@
+@@ -6225,7 +6225,11 @@
            entity->open = XML_TRUE;
            entityTrackingOnOpen(parser, entity, __LINE__);
            if (! parser->m_externalEntityRefHandler(

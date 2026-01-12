@@ -1,7 +1,7 @@
 diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 --- a/lib/xmlparse.c
 +++ b/lib/xmlparse.c
-@@ -3498,9 +3498,14 @@
+@@ -3492,9 +3492,14 @@
        } else if (! entity) {
          if (parser->m_skippedEntityHandler)
            parser->m_skippedEntityHandler(parser->m_handlerArg, name, 0);
@@ -16,7 +16,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
        }
        if (entity->open)
          return XML_ERROR_RECURSIVE_ENTITY_REF;
-@@ -6796,7 +6801,12 @@
+@@ -6790,7 +6795,12 @@
          if ((pool == &parser->m_tempPool) && parser->m_defaultHandler)
            reportDefault(parser, enc, ptr, next);
          */

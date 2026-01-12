@@ -1,7 +1,7 @@
 diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 --- a/lib/xmlparse.c
 +++ b/lib/xmlparse.c
-@@ -3939,6 +3939,9 @@
+@@ -3933,6 +3933,9 @@
    int n;
    XML_Char *uri;
    int nPrefixes = 0;
@@ -11,7 +11,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
    BINDING *binding;
    const XML_Char *localPart;
 
-@@ -4096,7 +4099,13 @@
+@@ -4090,7 +4093,13 @@
                                             appAtts[attIndex], bindingsPtr);
          if (result)
            return result;
@@ -25,7 +25,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
        } else {
          /* deal with other prefixed names later */
          attIndex++;
-@@ -4128,6 +4137,12 @@
+@@ -4122,6 +4131,12 @@
                                               da->value, bindingsPtr);
            if (result)
              return result;
@@ -38,7 +38,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
          } else {
            (da->id->name)[-1] = 2;
            nPrefixes++;
-@@ -4146,7 +4161,11 @@
+@@ -4140,7 +4155,11 @@
    /* expand prefixed attribute names, check for duplicates,
       and clear flags that say whether attributes were specified */
    i = 0;
@@ -50,7 +50,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
      unsigned int j; /* hash table index */
      unsigned long version = parser->m_nsAttsVersion;
 
-@@ -4156,6 +4175,9 @@
+@@ -4150,6 +4169,9 @@
      }
 
      unsigned int nsAttsSize = 1u << parser->m_nsAttsPower;
@@ -60,7 +60,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
      unsigned char oldNsAttsPower = parser->m_nsAttsPower;
      /* size of hash table must be at least 2 * (# of prefixed attributes) */
      if ((nPrefixes << 1)
-@@ -4204,6 +4226,9 @@
+@@ -4198,6 +4220,9 @@
          parser->m_nsAtts[--j].version = version;
      }
      parser->m_nsAttsVersion = --version;
@@ -70,7 +70,7 @@ diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 
      /* expand prefixed names and check for duplicates */
      for (; i < attIndex; i += 2) {
-@@ -4303,10 +4328,61 @@
+@@ -4297,10 +4322,61 @@
          parser->m_nsAtts[j].hash = uriHash;
          parser->m_nsAtts[j].uriName = s;
 

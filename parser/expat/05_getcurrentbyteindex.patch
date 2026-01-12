@@ -1,7 +1,7 @@
 diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 --- a/lib/xmlparse.c
 +++ b/lib/xmlparse.c
-@@ -2773,7 +2773,11 @@
+@@ -2767,7 +2767,11 @@
    if (parser->m_eventPtr)
      return (XML_Index)(parser->m_parseEndByteIndex
                         - (parser->m_parseEndPtr - parser->m_eventPtr));

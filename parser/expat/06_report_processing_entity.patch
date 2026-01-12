@@ -1,7 +1,7 @@
 diff --git a/lib/xmlparse.c b/lib/xmlparse.c
 --- a/lib/xmlparse.c
 +++ b/lib/xmlparse.c
-@@ -3131,12 +3131,20 @@
+@@ -3125,12 +3125,20 @@
  }
  #endif /* XML_GE == 1 */
 
