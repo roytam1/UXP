@@ -125,9 +125,6 @@ DIRS += [
     '/other-licenses/snappy',
 ]
 
-if CONFIG['MOZ_GIO_COMPONENT']:
-    DIRS += ['/extensions/gio']
-
 DIRS += [
     '/toolkit/library/StaticXULComponentsEnd',
     '/toolkit/library',

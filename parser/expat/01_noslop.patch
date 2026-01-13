@@ -1,0 +1,13 @@
+diff --git a/lib/xmlparse.c b/lib/xmlparse.c
+--- a/lib/xmlparse.c
++++ b/lib/xmlparse.c
+@@ -267,6 +267,9 @@
+ #define INIT_ATTS_SIZE 16
+ #define INIT_ATTS_VERSION 0xFFFFFFFF
+ #define INIT_BLOCK_SIZE 1024
++#ifdef MOZILLA_CLIENT /* Avoid slop in poolGrow() allocations */
++#define INIT_BLOCK_SIZE ((int)(1024 - (offsetof(BLOCK, s) / sizeof(XML_Char))))
++#endif
+ #define INIT_BUFFER_SIZE 1024
+
+ #define EXPAND_SPARE 24
