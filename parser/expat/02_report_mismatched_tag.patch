@@ -1,0 +1,73 @@
+diff --git a/lib/xmlparse.c b/lib/xmlparse.c
+--- a/lib/xmlparse.c
++++ b/lib/xmlparse.c
+@@ -787,6 +787,9 @@
+   MALLOC_TRACKER m_alloc_tracker;
+   ENTITY_STATS m_entity_stats;
+ #endif
++#ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
++  const XML_Char* m_mismatch;
++#endif
+   XML_Bool m_reenter;
+ };
+
+@@ -1535,6 +1538,10 @@
+     parser->m_internalEncoding = XmlGetInternalEncoding();
+   }
+
++#ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
++  parser->m_mismatch = NULL;
++#endif
++
+   return parser;
+ }
+
+@@ -3110,6 +3117,14 @@
+ }
+ #endif /* XML_GE == 1 */
+
++#ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
++const XML_Char * XMLCALL
++MOZ_XML_GetMismatchedTag(XML_Parser parser)
++{
++  return parser->m_mismatch;
++}
++#endif
++
+ XML_Bool XMLCALL
+ XML_SetReparseDeferralEnabled(XML_Parser parser, XML_Bool enabled) {
+   if (parser != NULL && (enabled == XML_TRUE || enabled == XML_FALSE)) {
+@@ -3590,6 +3605,33 @@
+         len = XmlNameLength(enc, rawName);
+         if (len != tag->rawNameLength
+             || memcmp(tag->rawName, rawName, len) != 0) {
++#ifdef MOZILLA_CLIENT /* Report opening tag of mismatched closing tag */
++          /* This code is copied from the |if (parser->m_endElementHandler)|
++             block below
++          */
++          const XML_Char *localPart;
++          const XML_Char *prefix;
++          XML_Char *uri;
++          localPart = tag->name.localPart;
++          if (parser->m_ns && localPart) {
++            /* localPart and prefix may have been overwritten in
++               tag->name.str, since this points to the binding->uri
++               buffer which gets reused; so we have to add them again
++            */
++            uri = (XML_Char *)tag->name.str + tag->name.uriLen;
++            /* don't need to check for space - already done in storeAtts() */
++            while (*localPart)
++              *uri++ = *localPart++;
++            prefix = tag->name.prefix;
++            if (parser->m_ns_triplets && prefix) {
++              *uri++ = parser->m_namespaceSeparator;
++              while (*prefix)
++                *uri++ = *prefix++;
++            }
++            *uri = XML_T('\0');
++          }
++          parser->m_mismatch = tag->name.str;
++#endif /* MOZILLA_CLIENT */
+           *eventPP = rawName;
+           return XML_ERROR_TAG_MISMATCH;
+         }

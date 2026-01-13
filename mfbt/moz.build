@@ -103,7 +103,7 @@ EXPORTS.mozilla = [
     'Vector.h',
     'WeakPtr.h',
     'WrappingOperations.h',
-    'XorShift128PlusRNG.h',
+    'Xoroshiro128PlusPlusRNG.h',
 ]
 
 if CONFIG['OS_ARCH'] == 'WINNT':

@@ -91,7 +91,7 @@ fi
 MOZ_CHROME_FILE_FORMAT=omni
 
 # Set the default top-level extensions
-MOZ_EXTENSIONS_DEFAULT=" gio"
+#MOZ_EXTENSIONS_DEFAULT=" gio"
 
 # Include bundled fonts
 if test "$OS_ARCH" = "WINNT" -o \

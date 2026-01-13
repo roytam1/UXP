@@ -358,7 +358,6 @@ MOZ_XML_GetCurrentByteIndex
 MOZ_XML_GetCurrentColumnNumber
 MOZ_XML_GetCurrentLineNumber
 MOZ_XML_GetErrorCode
-MOZ_XML_GetIdAttributeIndex
 MOZ_XML_GetMismatchedTag
 MOZ_XML_GetSpecifiedAttributeCount
 MOZ_XML_Parse

@@ -1,0 +1,39 @@
+diff --git a/lib/expat_external.h b/lib/expat_external.h
+--- a/lib/expat_external.h
++++ b/lib/expat_external.h
+@@ -138,6 +138,7 @@
+ #    endif
+ #  endif
+
++#ifndef MOZILLA_CLIENT /* typedef XML_Char to char16_t */
+ #  ifdef XML_UNICODE /* Information is UTF-16 encoded. */
+ #    ifdef XML_UNICODE_WCHAR_T
+ typedef wchar_t XML_Char;
+@@ -150,6 +151,7 @@
+ typedef char XML_Char;
+ typedef char XML_LChar;
+ #  endif   /* XML_UNICODE */
++#endif /* MOZILLA_CLIENT */
+
+ #  ifdef XML_LARGE_SIZE /* Use large integers for file/stream positions. */
+ typedef long long XML_Index;
+diff --git a/lib/xmlparse.c b/lib/xmlparse.c
+--- a/lib/xmlparse.c
++++ b/lib/xmlparse.c
+@@ -195,6 +195,7 @@
+
+ #endif
+
++#ifndef MOZILLA_CLIENT /* typedef XML_Char to char16_t */
+ #ifdef XML_UNICODE
+
+ #  ifdef XML_UNICODE_WCHAR_T
+@@ -211,6 +212,7 @@
+ #  define XML_L(x) x
+
+ #endif
++#endif /* MOZILLA_CLIENT */
+
+ /* Round up n to be a multiple of sz, where sz is a power of 2. */
+ #define ROUND_UP(n, sz) (((n) + ((sz) - 1)) & ~((sz) - 1))
+
