@@ -12055,17 +12055,20 @@ CodeGenerator::visitRandom(LRandom* ins)
 
     FloatRegister output = ToFloatRegister(ins->output());
     Register tempReg = ToRegister(ins->temp0());
-    // Helper registers for intermediate and final results
-    Register64 imr1Reg(ToRegister(ins->temp1()));
-    Register64 imr2Reg(ToRegister(ins->temp2()));
-    Register64 resultReg(ToRegister(ins->temp3()));
-
 #ifdef JS_PUNBOX64
-    Register64 s0Reg(ToRegister(ins->temp4()));
-    Register64 s1Reg(ToRegister(ins->temp5()));
+    Register64 s0Reg(ToRegister(ins->temp1()));
+    Register64 s1Reg(ToRegister(ins->temp2()));
+    // Helper registers for intermediate and final results
+    Register64 imr1Reg(ToRegister(ins->temp3()));
+    Register64 imr2Reg(ToRegister(ins->temp4()));
+    Register64 resultReg(ToRegister(ins->temp5()));
 #else
-    Register64 s0Reg(ToRegister(ins->temp4()), ToRegister(ins->temp5()));
-    Register64 s1Reg(ToRegister(ins->temp6()), ToRegister(ins->temp7()));
+    Register64 s0Reg(ToRegister(ins->temp1()), ToRegister(ins->temp2()));
+    Register64 s1Reg(ToRegister(ins->temp3()), ToRegister(ins->temp4()));
+    // Helper registers for intermediate and final results
+    Register64 imr1Reg(ToRegister(ins->temp5()), ToRegister(ins->temp6()));
+    Register64 imr2Reg(ToRegister(ins->temp7()), ToRegister(ins->temp8()));
+    Register64 resultReg(ToRegister(ins->temp9()), ToRegister(ins->temp10()));
 #endif
 
     const void* rng = gen->compartment->addressOfRandomNumberGenerator();
@@ -12085,14 +12088,22 @@ CodeGenerator::visitRandom(LRandom* ins)
     // const uint64_t result = rotl(s0 + s1, 17) + s0;
     masm.move64(s0Reg, imr1Reg);
     masm.add64(s1Reg, imr1Reg);
+#ifdef JS_PUNBOX64
     masm.rotateLeft64(Imm32(17), imr1Reg, resultReg);
+#else
+    masm.rotateLeft64(Imm32(17), imr1Reg, resultReg, tempReg);
+#endif
     masm.add64(s0Reg, resultReg);
     
     // s1 ^= s0;
     masm.xor64(s0Reg, s1Reg);
     
     // mState[0] = rotl(s0, 49) ^ s1 ^ (s1 << 21); // a, b
+#ifdef JS_PUNBOX64
     masm.rotateLeft64(Imm32(49), s0Reg, imr1Reg);   // imr = s0 rotl 49
+#else
+    masm.rotateLeft64(Imm32(49), s0Reg, imr1Reg, tempReg);   // imr = s0 rotl 49
+#endif
     masm.xor64(s1Reg, imr1Reg);                     // imr ^ s1
     masm.move64(s1Reg, imr2Reg);                    // imr2 = s1
     masm.lshift64(Imm32(21), imr2Reg);              // imr2 << 21
@@ -12100,7 +12111,11 @@ CodeGenerator::visitRandom(LRandom* ins)
     masm.store64(imr1Reg, state0Addr);
 
     // mState[1] = rotl(s1, 28); // c
+#ifdef JS_PUNBOX64
     masm.rotateLeft64(Imm32(28), s1Reg, imr1Reg);
+#else
+    masm.rotateLeft64(Imm32(28), s1Reg, imr1Reg, tempReg);
+#endif
     masm.store64(imr1Reg, state1Addr);
 
     // See comment in Xoroshiro128PlusPlusRNG::nextDouble().
