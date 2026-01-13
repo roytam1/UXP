@@ -1,0 +1,73 @@
+diff --git a/lib/xmlparse.c b/lib/xmlparse.c
+--- a/lib/xmlparse.c
++++ b/lib/xmlparse.c
+@@ -508,6 +508,14 @@
+                                enum XML_Account account);
+ static enum XML_Error processEntity(XML_Parser parser, ENTITY *entity,
+                                     XML_Bool betweenDecl, enum EntityType type);
++#ifdef MOZILLA_CLIENT
++/* Bug 1746996 - Ensure that storeRawNames is always called */
++static enum XML_Error doContentInternal(XML_Parser parser, int startTagLevel,
++                                        const ENCODING *enc, const char *start,
++                                        const char *end, const char **endPtr,
++                                        XML_Bool haveMore,
++                                        enum XML_Account account);
++#endif
+ static enum XML_Error doContent(XML_Parser parser, int startTagLevel,
+                                 const ENCODING *enc, const char *start,
+                                 const char *end, const char **endPtr,
+@@ -3211,10 +3219,12 @@
+       parser, parser->m_parentParser ? 1 : 0, parser->m_encoding, start, end,
+       endPtr, (XML_Bool)! parser->m_parsingStatus.finalBuffer,
+       XML_ACCOUNT_DIRECT);
++#ifndef MOZILLA_CLIENT /* Bug 1746996 - Ensure that storeRawNames is always called */
+   if (result == XML_ERROR_NONE) {
+     if (! storeRawNames(parser))
+       return XML_ERROR_NO_MEMORY;
+   }
++#endif
+   return result;
+ }
+
+@@ -3332,6 +3342,23 @@
+       = doContent(parser, 1, parser->m_encoding, start, end, endPtr,
+                   (XML_Bool)! parser->m_parsingStatus.finalBuffer,
+                   XML_ACCOUNT_ENTITY_EXPANSION);
++#ifndef MOZILLA_CLIENT /* Bug 1746996 - Ensure that storeRawNames is always called */
++  if (result == XML_ERROR_NONE) {
++    if (! storeRawNames(parser))
++      return XML_ERROR_NO_MEMORY;
++  }
++#endif
++  return result;
++}
++
++#ifdef MOZILLA_CLIENT
++/* Bug 1746996 - Ensure that storeRawNames is always called */
++static enum XML_Error
++doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
++          const char *s, const char *end, const char **nextPtr,
++          XML_Bool haveMore, enum XML_Account account) {
++  enum XML_Error result = doContentInternal(parser, startTagLevel, enc, s, end,
++                                            nextPtr, haveMore, account);
+   if (result == XML_ERROR_NONE) {
+     if (! storeRawNames(parser))
+       return XML_ERROR_NO_MEMORY;
+@@ -3339,10 +3366,17 @@
+   return result;
+ }
+
++
++static enum XML_Error
++doContentInternal(XML_Parser parser, int startTagLevel, const ENCODING *enc,
++                  const char *s, const char *end, const char **nextPtr,
++                  XML_Bool haveMore, enum XML_Account account) {
++#else
+ static enum XML_Error
+ doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
+           const char *s, const char *end, const char **nextPtr,
+           XML_Bool haveMore, enum XML_Account account) {
++#endif /* MOZILLA_CLIENT */
+   /* save one level of indirection */
+   DTD *const dtd = parser->m_dtd;
+

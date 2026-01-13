@@ -1,0 +1,12 @@
+This directory contains build files for the Expat XML parser
+library.
+
+Any patches or additional configuration to be applied to the
+upstream source should be kept here in the parser/expat
+directory.
+
+The upstream expat git repository is:
+
+     https://github.com/libexpat/libexpat
+
+The version used was tagged release version 2.7.3.

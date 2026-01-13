@@ -1,0 +1,30 @@
+diff --git a/lib/xmlparse.c b/lib/xmlparse.c
+--- a/lib/xmlparse.c
++++ b/lib/xmlparse.c
+@@ -1439,8 +1439,10 @@
+   // Initialize .m_alloc_tracker
+   memset(&parser->m_alloc_tracker, 0, sizeof(MALLOC_TRACKER));
+   if (parentParser == NULL) {
++#ifndef MOZILLA_CLIENT /* don't report debug information */
+     parser->m_alloc_tracker.debugLevel
+         = getDebugLevel("EXPAT_MALLOC_DEBUG", 0u);
++#endif
+     parser->m_alloc_tracker.maximumAmplificationFactor
+         = EXPAT_ALLOC_TRACKER_MAXIMUM_AMPLIFICATION_DEFAULT;
+     parser->m_alloc_tracker.activationThresholdBytes
+@@ -1737,6 +1739,7 @@
+   dtdReset(parser->m_dtd, parser);
+   return XML_TRUE;
+ }
++#endif /* MOZILLA_CLIENT */
+
+ static XML_Bool
+ parserBusy(XML_Parser parser) {
+@@ -1751,6 +1754,7 @@
+   }
+ }
+
++#ifndef MOZILLA_CLIENT /* unused API */
+ enum XML_Status XMLCALL
+ XML_SetEncoding(XML_Parser parser, const XML_Char *encodingName) {
+   if (parser == NULL)

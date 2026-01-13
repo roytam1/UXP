@@ -360,7 +360,7 @@ nsExpatDriver::nsExpatDriver()
 nsExpatDriver::~nsExpatDriver()
 {
   if (mExpatParser) {
-    XML_ParserFree(mExpatParser);
+    MOZ_XML_ParserFree(mExpatParser);
   }
 }
 
@@ -375,7 +375,7 @@ nsExpatDriver::HandleStartElement(const char16_t *aValue,
   // attrs (twice that number, actually), so we have to check for default attrs
   // ourselves.
   uint32_t attrArrayLength;
-  for (attrArrayLength = XML_GetSpecifiedAttributeCount(mExpatParser);
+  for (attrArrayLength = MOZ_XML_GetSpecifiedAttributeCount(mExpatParser);
        aAtts[attrArrayLength];
        attrArrayLength += 2) {
     // Just looping till we find out what the length is
@@ -394,8 +394,8 @@ nsExpatDriver::HandleStartElement(const char16_t *aValue,
 
     nsresult rv = mSink->
       HandleStartElement(aValue, aAtts, attrArrayLength,
-                         XML_GetCurrentLineNumber(mExpatParser),
-                         XML_GetCurrentColumnNumber(mExpatParser));
+                         MOZ_XML_GetCurrentLineNumber(mExpatParser),
+                         MOZ_XML_GetCurrentColumnNumber(mExpatParser));
     MaybeStopParser(rv);
   }
 }
@@ -674,7 +674,7 @@ ExternalDTDStreamReaderFunc(nsIUnicharInputStream* aIn,
                             uint32_t *aWriteCount)
 {
   // Pass the buffer to expat for parsing.
-  if (XML_Parse((XML_Parser)aClosure, (const char *)aFromSegment,
+  if (MOZ_XML_Parse((XML_Parser)aClosure, (const char *)aFromSegment,
                 aCount * sizeof(char16_t), 0) == XML_STATUS_OK) {
     *aWriteCount = aCount;
 
@@ -725,10 +725,10 @@ nsExpatDriver::HandleExternalEntityRef(const char16_t *openEntityNames,
 
   int result = 1;
   if (uniIn) {
-    XML_Parser entParser = XML_ExternalEntityParserCreate(mExpatParser, 0,
-                                                          kUTF16);
+    XML_Parser entParser = MOZ_XML_ExternalEntityParserCreate(mExpatParser, 0,
+                                                              kUTF16);
     if (entParser) {
-      XML_SetBase(entParser, absURL.get());
+      MOZ_XML_SetBase(entParser, absURL.get());
 
       mInExternalDTD = true;
 
@@ -738,11 +738,11 @@ nsExpatDriver::HandleExternalEntityRef(const char16_t *openEntityNames,
                                  uint32_t(-1), &totalRead);
       } while (NS_SUCCEEDED(rv) && totalRead > 0);
 
-      result = XML_Parse(entParser, nullptr, 0, 1);
+      result = MOZ_XML_Parse(entParser, nullptr, 0, 1);
 
       mInExternalDTD = false;
 
-      XML_ParserFree(entParser);
+      MOZ_XML_ParserFree(entParser);
     }
   }
 
@@ -888,7 +888,7 @@ AppendErrorPointer(const int32_t aColNumber,
 nsresult
 nsExpatDriver::HandleError()
 {
-  int32_t code = XML_GetErrorCode(mExpatParser);
+  int32_t code = MOZ_XML_GetErrorCode(mExpatParser);
   NS_ASSERTION(code > XML_ERROR_NONE, "unexpected XML error code");
 
   // Map Expat error code to an error string
@@ -947,11 +947,11 @@ nsExpatDriver::HandleError()
   }
 
   // Adjust the column number so that it is one based rather than zero based.
-  uint32_t colNumber = XML_GetCurrentColumnNumber(mExpatParser) + 1;
-  uint32_t lineNumber = XML_GetCurrentLineNumber(mExpatParser);
+  uint32_t colNumber = MOZ_XML_GetCurrentColumnNumber(mExpatParser) + 1;
+  uint32_t lineNumber = MOZ_XML_GetCurrentLineNumber(mExpatParser);
 
   nsAutoString errorText;
-  CreateErrorText(description.get(), XML_GetBase(mExpatParser), lineNumber,
+  CreateErrorText(description.get(), MOZ_XML_GetBase(mExpatParser), lineNumber,
                   colNumber, errorText);
 
   NS_ASSERTION(mSink, "no sink?");
@@ -1013,25 +1013,25 @@ nsExpatDriver::ParseBuffer(const char16_t *aBuffer,
                "Useless call, we won't call Expat");
   NS_PRECONDITION(!BlockedOrInterrupted() || !aBuffer,
                   "Non-null buffer when resuming");
-  NS_PRECONDITION(XML_GetCurrentByteIndex(mExpatParser) % sizeof(char16_t) == 0,
+  NS_PRECONDITION(MOZ_XML_GetCurrentByteIndex(mExpatParser) % sizeof(char16_t) == 0,
                   "Consumed part of a char16_t?");
 
   if (mExpatParser && (mInternalState == NS_OK || BlockedOrInterrupted())) {
-    int32_t parserBytesBefore = XML_GetCurrentByteIndex(mExpatParser);
+    int32_t parserBytesBefore = MOZ_XML_GetCurrentByteIndex(mExpatParser);
     NS_ASSERTION(parserBytesBefore >= 0, "Unexpected value");
 
     XML_Status status;
     if (BlockedOrInterrupted()) {
       mInternalState = NS_OK; // Resume in case we're blocked.
-      status = XML_ResumeParser(mExpatParser);
+      status = MOZ_XML_ResumeParser(mExpatParser);
     }
     else {
-      status = XML_Parse(mExpatParser,
-                         reinterpret_cast<const char*>(aBuffer),
-                         aLength * sizeof(char16_t), aIsFinal);
+      status = MOZ_XML_Parse(mExpatParser,
+                             reinterpret_cast<const char*>(aBuffer),
+                             aLength * sizeof(char16_t), aIsFinal);
     }
 
-    int32_t parserBytesConsumed = XML_GetCurrentByteIndex(mExpatParser);
+    int32_t parserBytesConsumed = MOZ_XML_GetCurrentByteIndex(mExpatParser);
 
     NS_ASSERTION(parserBytesConsumed >= 0, "Unexpected value");
     NS_ASSERTION(parserBytesConsumed >= parserBytesBefore,
@@ -1134,7 +1134,7 @@ nsExpatDriver::ConsumeToken(nsScanner& aScanner, bool& aFlushTokens)
       // the error occurred).
 
       // The length of the last line that Expat has parsed.
-      XML_Size lastLineLength = XML_GetCurrentColumnNumber(mExpatParser);
+      XML_Size lastLineLength = MOZ_XML_GetCurrentColumnNumber(mExpatParser);
 
       if (lastLineLength <= consumed) {
         // The length of the last line was less than what expat consumed, so
@@ -1175,7 +1175,7 @@ nsExpatDriver::ConsumeToken(nsScanner& aScanner, bool& aFlushTokens)
     }
 
     if (NS_FAILED(mInternalState)) {
-      if (XML_GetErrorCode(mExpatParser) != XML_ERROR_NONE) {
+      if (MOZ_XML_GetErrorCode(mExpatParser) != XML_ERROR_NONE) {
         NS_ASSERTION(mInternalState == NS_ERROR_HTMLPARSER_STOPPARSING,
                      "Unexpected error");
 
@@ -1252,18 +1252,18 @@ nsExpatDriver::WillBuildModel(const CParserContext& aParserContext,
 
   static const char16_t kExpatSeparator[] = { kExpatSeparatorChar, '\0' };
 
-  mExpatParser = XML_ParserCreate_MM(kUTF16, &memsuite, kExpatSeparator);
+  mExpatParser = MOZ_XML_ParserCreate_MM(kUTF16, &memsuite, kExpatSeparator);
   NS_ENSURE_TRUE(mExpatParser, NS_ERROR_FAILURE);
 
-  XML_SetReturnNSTriplet(mExpatParser, XML_TRUE);
+  MOZ_XML_SetReturnNSTriplet(mExpatParser, XML_TRUE);
 
 #ifdef XML_DTD
-  XML_SetParamEntityParsing(mExpatParser, XML_PARAM_ENTITY_PARSING_ALWAYS);
+  MOZ_XML_SetParamEntityParsing(mExpatParser, XML_PARAM_ENTITY_PARSING_ALWAYS);
 #endif
 
   mURISpec = aParserContext.mScanner->GetFilename();
 
-  XML_SetBase(mExpatParser, mURISpec.get());
+  MOZ_XML_SetBase(mExpatParser, mURISpec.get());
 
   nsCOMPtr<nsIDocument> doc = do_QueryInterface(mOriginalSink->GetTarget());
   if (doc) {
@@ -1285,41 +1285,41 @@ nsExpatDriver::WillBuildModel(const CParserContext& aParserContext,
   }
 
   // Set up the callbacks
-  XML_SetXmlDeclHandler(mExpatParser, Driver_HandleXMLDeclaration); 
-  XML_SetElementHandler(mExpatParser, Driver_HandleStartElement,
-                        Driver_HandleEndElement);
-  XML_SetCharacterDataHandler(mExpatParser, Driver_HandleCharacterData);
-  XML_SetProcessingInstructionHandler(mExpatParser,
-                                      Driver_HandleProcessingInstruction);
-  XML_SetDefaultHandlerExpand(mExpatParser, Driver_HandleDefault);
-  XML_SetExternalEntityRefHandler(mExpatParser,
-                                  (XML_ExternalEntityRefHandler)
-                                          Driver_HandleExternalEntityRef);
-  XML_SetExternalEntityRefHandlerArg(mExpatParser, this);
-  XML_SetCommentHandler(mExpatParser, Driver_HandleComment);
-  XML_SetCdataSectionHandler(mExpatParser, Driver_HandleStartCdataSection,
-                             Driver_HandleEndCdataSection);
+  MOZ_XML_SetXmlDeclHandler(mExpatParser, Driver_HandleXMLDeclaration); 
+  MOZ_XML_SetElementHandler(mExpatParser, Driver_HandleStartElement,
+                            Driver_HandleEndElement);
+  MOZ_XML_SetCharacterDataHandler(mExpatParser, Driver_HandleCharacterData);
+  MOZ_XML_SetProcessingInstructionHandler(mExpatParser,
+                                          Driver_HandleProcessingInstruction);
+  MOZ_XML_SetDefaultHandlerExpand(mExpatParser, Driver_HandleDefault);
+  MOZ_XML_SetExternalEntityRefHandler(mExpatParser,
+                                      (XML_ExternalEntityRefHandler)
+                                              Driver_HandleExternalEntityRef);
+  MOZ_XML_SetExternalEntityRefHandlerArg(mExpatParser, this);
+  MOZ_XML_SetCommentHandler(mExpatParser, Driver_HandleComment);
+  MOZ_XML_SetCdataSectionHandler(mExpatParser, Driver_HandleStartCdataSection,
+                                 Driver_HandleEndCdataSection);
 
-  XML_SetParamEntityParsing(mExpatParser,
-                            XML_PARAM_ENTITY_PARSING_UNLESS_STANDALONE);
-  XML_SetDoctypeDeclHandler(mExpatParser, Driver_HandleStartDoctypeDecl,
-                            Driver_HandleEndDoctypeDecl);
+  MOZ_XML_SetParamEntityParsing(mExpatParser,
+                                XML_PARAM_ENTITY_PARSING_UNLESS_STANDALONE);
+  MOZ_XML_SetDoctypeDeclHandler(mExpatParser, Driver_HandleStartDoctypeDecl,
+                                Driver_HandleEndDoctypeDecl);
 
   // If the sink is an nsIExtendedExpatSink,
   // register some addtional handlers.
   mExtendedSink = do_QueryInterface(mSink);
   if (mExtendedSink) {
-    XML_SetNamespaceDeclHandler(mExpatParser,
-                                Driver_HandleStartNamespaceDecl,
-                                Driver_HandleEndNamespaceDecl);
-    XML_SetUnparsedEntityDeclHandler(mExpatParser,
-                                     Driver_HandleUnparsedEntityDecl);
-    XML_SetNotationDeclHandler(mExpatParser,
-                               Driver_HandleNotationDecl);
+    MOZ_XML_SetNamespaceDeclHandler(mExpatParser,
+                                    Driver_HandleStartNamespaceDecl,
+                                    Driver_HandleEndNamespaceDecl);
+    MOZ_XML_SetUnparsedEntityDeclHandler(mExpatParser,
+                                         Driver_HandleUnparsedEntityDecl);
+    MOZ_XML_SetNotationDeclHandler(mExpatParser,
+                                   Driver_HandleNotationDecl);
   }
 
   // Set up the user data.
-  XML_SetUserData(mExpatParser, this);
+  MOZ_XML_SetUserData(mExpatParser, this);
 
   return mInternalState;
 }
@@ -1351,7 +1351,7 @@ nsExpatDriver::Terminate()
 {
   // XXX - not sure what happens to the unparsed data.
   if (mExpatParser) {
-    XML_StopParser(mExpatParser, XML_FALSE);
+    MOZ_XML_StopParser(mExpatParser, XML_FALSE);
   }
   mInternalState = NS_ERROR_HTMLPARSER_STOPPARSING;
 }
@@ -1403,7 +1403,7 @@ nsExpatDriver::MaybeStopParser(nsresult aState)
     // with false as the last argument). If the parser should be blocked or
     // interrupted we need to pause Expat (by calling XML_StopParser with
     // true as the last argument).
-    XML_StopParser(mExpatParser, BlockedOrInterrupted());
+    MOZ_XML_StopParser(mExpatParser, BlockedOrInterrupted());
   }
   else if (NS_SUCCEEDED(mInternalState)) {
     // Only clobber mInternalState with the success code if we didn't block or

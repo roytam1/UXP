@@ -7,7 +7,7 @@
 #define mozilla_FastBernoulliTrial_h
 
 #include "mozilla/Assertions.h"
-#include "mozilla/XorShift128PlusRNG.h"
+#include "mozilla/Xoroshiro128PlusPlusRNG.h"
 
 #include <cmath>
 #include <stdint.h>
@@ -303,7 +303,7 @@ class FastBernoulliTrial {
   double mInvLogNotProbability;
 
   /* Our random number generator. */
-  non_crypto::XorShift128PlusRNG mGenerator;
+  non_crypto::Xoroshiro128PlusPlusRNG mGenerator;
 
   /* The number of times |trial| should return false before next returning true. */
   size_t mSkipCount;

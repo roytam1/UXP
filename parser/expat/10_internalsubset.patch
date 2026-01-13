@@ -1,0 +1,15 @@
+diff --git a/lib/xmlparse.c b/lib/xmlparse.c
+--- a/lib/xmlparse.c
++++ b/lib/xmlparse.c
+@@ -6225,7 +6225,11 @@
+           entity->open = XML_TRUE;
+           entityTrackingOnOpen(parser, entity, __LINE__);
+           if (! parser->m_externalEntityRefHandler(
++#ifdef MOZILLA_CLIENT /* Bug 191482 - Add external entity inclusions to internalSubset */
++                  parser->m_externalEntityRefHandlerArg, entity->name, entity->base,
++#else
+                   parser->m_externalEntityRefHandlerArg, 0, entity->base,
++#endif
+                   entity->systemId, entity->publicId)) {
+             entityTrackingOnClose(parser, entity, __LINE__);
+             entity->open = XML_FALSE;

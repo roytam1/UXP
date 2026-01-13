@@ -3,9 +3,19 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-DIRS += ['lib']
-
 EXPORTS += [
     'expat_config.h',
+    'lib/expat.h',
+    'lib/expat_external.h',
+    'moz_expat.h',
 ]
 
+SOURCES += [
+    'lib/xmlrole.c',
+    'moz_xmlparse.c',
+    'moz_xmltok.c',
+]
+
+FINAL_LIBRARY = 'gkmedias'
+
+DEFINES['HAVE_EXPAT_CONFIG_H'] = True
