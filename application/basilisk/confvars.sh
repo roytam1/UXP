@@ -31,7 +31,7 @@ else
     MOZ_APP_VERSION_DISPLAY=`cat ${_topsrcdir}/$MOZ_BUILD_APP/config/version_display.txt`
 fi
 
-MOZ_EXTENSIONS_DEFAULT=" gio"
+#MOZ_EXTENSIONS_DEFAULT=" gio"
 
 # MOZ_APP_DISPLAYNAME will be set by branding/configure.sh
 # MOZ_BRANDING_DIRECTORY is the default branding directory used when none is
