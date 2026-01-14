@@ -49,6 +49,15 @@ struct ScopedDelete {
   void operator()(SEC_PKCS12DecoderContext* dcx) {
     SEC_PKCS12DecoderFinish(dcx);
   }
+  void operator()(SEC_PKCS7DecoderContext* dcx) {
+    SEC_PKCS7ContentInfo* cinfo = SEC_PKCS7DecoderFinish(dcx);
+    if (cinfo) {
+      SEC_PKCS7DestroyContentInfo(cinfo);
+    }
+  }
+  void operator()(SEC_PKCS7ContentInfo* cinfo) {
+    SEC_PKCS7DestroyContentInfo(cinfo);
+  }
 };
 
 template <class T>
@@ -86,6 +95,8 @@ SCOPED(SECKEYPrivateKeyList);
 SCOPED(SECKEYPublicKey);
 SCOPED(SECMODModule);
 SCOPED(SEC_PKCS12DecoderContext);
+SCOPED(SEC_PKCS7DecoderContext);
+SCOPED(SEC_PKCS7ContentInfo);
 
 #undef SCOPED
 
