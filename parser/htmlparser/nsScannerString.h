@@ -414,6 +414,7 @@ class nsScannerIterator
 
               NS_ASSERTION(one_hop>0, "Infinite loop: can't advance a reading iterator beyond the end of a string");
                 // perhaps I should |break| if |!one_hop|?
+              if(!one_hop) break;
 
               mPosition += one_hop;
               normalize_forward();
@@ -427,6 +428,7 @@ class nsScannerIterator
 
               NS_ASSERTION(one_hop<0, "Infinite loop: can't advance (backward) a reading iterator beyond the end of a string");
                 // perhaps I should |break| if |!one_hop|?
+              if(!one_hop) break;
 
               mPosition += one_hop;
               n -= one_hop;

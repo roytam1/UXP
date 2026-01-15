@@ -212,6 +212,7 @@ ReleaseData(void* aData)
 
 cairo_surface_t*
 CopyToImageSurface(unsigned char *aData,
+                   const IntSize& aSize,
                    const IntRect &aRect,
                    int32_t aStride,
                    SurfaceFormat aFormat)
@@ -231,18 +232,24 @@ CopyToImageSurface(unsigned char *aData,
   }
 
   unsigned char* surfData = cairo_image_surface_get_data(surf);
-  int surfStride = cairo_image_surface_get_stride(surf);
-  int32_t pixelWidth = BytesPerPixel(aFormat);
+  size_t surfStride = cairo_image_surface_get_stride(surf);
+  size_t pixelWidth = BytesPerPixel(aFormat);
+  size_t rowDataWidth = size_t(aRect.width) * pixelWidth;
+  if (rowDataWidth > surfStride || rowDataWidth > size_t(aStride) ||
+      !IntRect(IntPoint(), aSize).Contains(aRect)) {
+    cairo_surface_destroy(surf);
+    return nullptr;
+  }
 
-  unsigned char* source = aData +
-                          aRect.y * aStride +
-                          aRect.x * pixelWidth;
+  const unsigned char* sourceRow = aData + 
+                                   size_t(aRect.Y()) * size_t(aStride) +
+                                   size_t(aRect.X()) * pixelWidth;
+  unsigned char* destRow = surfData;
 
-  MOZ_ASSERT(aStride >= aRect.width * pixelWidth);
   for (int32_t y = 0; y < aRect.height; ++y) {
-    memcpy(surfData + y * surfStride,
-           source + y * aStride,
-           aRect.width * pixelWidth);
+    memcpy(destRow, sourceRow, rowDataWidth);
+    sourceRow += aStride;
+    destRow += surfStride;
   }
   cairo_surface_mark_dirty(surf);
   return surf;
@@ -267,17 +274,18 @@ cairo_surface_t* GetAsImageSurface(cairo_surface_t* aSurface)
 }
 
 cairo_surface_t* CreateSubImageForData(unsigned char* aData,
+                                       const IntSize& aSize,
                                        const IntRect& aRect,
                                        int aStride,
                                        SurfaceFormat aFormat)
 {
-  if (!aData) {
-    gfxWarning() << "DrawTargetCairo.CreateSubImageForData null aData";
+  if (!aData || aStride < 0 || !IntRect(IntPoint(), aSize).Contains(aRect)) {
+    gfxWarning() << "DrawTargetCairo.CreateSubImageForData invalid data";
     return nullptr;
   }
-  unsigned char *data = aData +
-                        aRect.y * aStride +
-                        aRect.x * BytesPerPixel(aFormat);
+  unsigned char* data = aData + 
+                        size_t(aRect.Y()) * size_t(aStride) +
+                        size_t(aRect.X()) * size_t(BytesPerPixel(aFormat));
 
   cairo_surface_t *image =
     cairo_image_surface_create_for_data(data,
@@ -304,6 +312,8 @@ cairo_surface_t* ExtractSubImage(cairo_surface_t* aSurface,
   cairo_surface_t* image = GetAsImageSurface(aSurface);
   if (image) {
     image = CreateSubImageForData(cairo_image_surface_get_data(image),
+                                  IntSize(cairo_image_surface_get_width(image),
+                                          cairo_image_surface_get_height(image)),
                                   aSubImage,
                                   cairo_image_surface_get_stride(image),
                                   aFormat);
@@ -384,7 +394,7 @@ GetCairoSurfaceForSourceSurface(SourceSurface *aSurface,
   }
 
   cairo_surface_t* surf =
-    CreateSubImageForData(map.mData, subimage,
+    CreateSubImageForData(map.mData, data->GetSize(), subimage,
                           map.mStride, data->GetFormat());
 
   // In certain scenarios, requesting larger than 8k image fails.  Bug 803568
@@ -399,6 +409,7 @@ GetCairoSurfaceForSourceSurface(SourceSurface *aSurface,
       // data.
       cairo_surface_t* result =
         CopyToImageSurface(map.mData,
+                           data->GetSize(),
                            subimage,
                            map.mStride,
                            data->GetFormat());
@@ -1709,8 +1720,11 @@ DrawTargetCairo::CreateSourceSurfaceFromData(unsigned char *aData,
     return nullptr;
   }
 
-  cairo_surface_t* surf = CopyToImageSurface(aData, IntRect(IntPoint(), aSize),
-                                             aStride, aFormat);
+  cairo_surface_t* surf = CopyToImageSurface(aData,
+                                             aSize,
+                                             IntRect(IntPoint(), aSize),
+                                             aStride,
+                                             aFormat);
   if (!surf) {
     return nullptr;
   }
