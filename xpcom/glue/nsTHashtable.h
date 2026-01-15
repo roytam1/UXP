@@ -329,6 +329,19 @@ private:
   nsTHashtable<EntryType>& operator=(nsTHashtable<EntryType>& aToEqual) = delete;
 };
 
+namespace detail {
+
+// Helper type which wraps the access to EntryType::ALLOW_MEMMOVE. This is done
+// to ensure that the MOZ_NEEDS_MEMMOVABLE_TYPE attribute is applied to the
+// entry if we're going to use FixedSizeEntryMover, performing extra
+// compile-time checks against the use of non-memmoveable types.
+template <class EntryType, bool = EntryType::ALLOW_MEMMOVE>
+struct MOZ_NEEDS_MEMMOVABLE_TYPE CheckAllowMemmove : std::true_type {};
+template <class EntryType>
+struct CheckAllowMemmove<EntryType, false> : std::false_type {};
+
+} // namespace detail
+
 //
 // template definitions
 //
