@@ -733,9 +733,15 @@ CompareNetwork::OnStreamComplete(nsIStreamLoader* aLoader, nsISupports* aContext
     }
     return NS_OK;
   }
+  
+  nsresult rv = NS_ERROR_DOM_ABORT_ERR;
+  if (aLen > GetWorkerScriptMaxSizeInBytes()) {
+    mManager->NetworkFinished(rv);
+    return NS_OK;
+  }
 
   nsCOMPtr<nsIRequest> request;
-  nsresult rv = aLoader->GetRequest(getter_AddRefs(request));
+  rv = aLoader->GetRequest(getter_AddRefs(request));
   if (NS_WARN_IF(NS_FAILED(rv))) {
     mManager->NetworkFinished(rv);
     return NS_OK;

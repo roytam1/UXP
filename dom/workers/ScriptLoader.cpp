@@ -1120,6 +1120,11 @@ private:
     // May be null.
     nsIDocument* parentDoc = mWorkerPrivate->GetDocument();
 
+    if (aStringLen > GetWorkerScriptMaxSizeInBytes()) {
+      // XXX ReportToConsole
+      return NS_ERROR_DOM_ABORT_ERR;
+    }
+
     // Use the regular ScriptLoader for this grunt work! Should be just fine
     // because we're running on the main thread.
     // Unlike <script> tags, Worker scripts are always decoded as UTF-8,
