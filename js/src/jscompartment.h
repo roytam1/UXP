@@ -11,7 +11,7 @@
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/Tuple.h"
 #include "mozilla/Variant.h"
-#include "mozilla/Xoroshiro128PlusPlusRNG.h"
+#include "mozilla/XorShift128PlusRNG.h"
 
 #include "builtin/RegExp.h"
 #include "gc/Barrier.h"
@@ -688,13 +688,13 @@ struct JSCompartment
     js::DtoaCache dtoaCache;
 
     // Random number generator for Math.random().
-    mozilla::Maybe<mozilla::non_crypto::Xoroshiro128PlusPlusRNG> randomNumberGenerator;
+    mozilla::Maybe<mozilla::non_crypto::XorShift128PlusRNG> randomNumberGenerator;
 
     // Initialize randomNumberGenerator if needed.
     void ensureRandomNumberGenerator();
 
   private:
-    mozilla::non_crypto::Xoroshiro128PlusPlusRNG randomKeyGenerator_;
+    mozilla::non_crypto::XorShift128PlusRNG randomKeyGenerator_;
 
   public:
     js::HashNumber randomHashCode();
