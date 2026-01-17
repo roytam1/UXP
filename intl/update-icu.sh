@@ -54,6 +54,7 @@ for patch in \
  suppress-warnings.diff \
  bug-1198952-workaround-make-3.82-bug.diff \
  suppress-non-dll-interface.diff \
+ bug-2010411-patch-cldr-hv-en-root.diff \
 ; do
   echo "Applying local patch $patch"
   patch -d ${icu_dir}/../../ -p1 --no-backup-if-mismatch < ${icu_dir}/../icu-patches/$patch
