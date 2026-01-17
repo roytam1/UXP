@@ -482,6 +482,7 @@ MacroAssembler::rshift64Arithmetic(Register shift, Register64 srcDest)
 void
 MacroAssembler::rotateLeft64(Register count, Register64 src, Register64 dest, Register temp)
 {
+    MOZ_ASSERT(src == dest, "defineReuseInput");
     MOZ_ASSERT(count == ecx, "defineFixed(ecx)");
 
     Label done;
@@ -500,6 +501,7 @@ MacroAssembler::rotateLeft64(Register count, Register64 src, Register64 dest, Re
 void
 MacroAssembler::rotateRight64(Register count, Register64 src, Register64 dest, Register temp)
 {
+    MOZ_ASSERT(src == dest, "defineReuseInput");
     MOZ_ASSERT(count == ecx, "defineFixed(ecx)");
 
     Label done;
@@ -518,6 +520,8 @@ MacroAssembler::rotateRight64(Register count, Register64 src, Register64 dest, R
 void
 MacroAssembler::rotateLeft64(Imm32 count, Register64 src, Register64 dest, Register temp)
 {
+    MOZ_ASSERT(src == dest, "defineReuseInput");
+
     int32_t amount = count.value & 0x3f;
     if ((amount & 0x1f) != 0) {
         movl(dest.high, temp);
@@ -532,6 +536,8 @@ MacroAssembler::rotateLeft64(Imm32 count, Register64 src, Register64 dest, Regis
 void
 MacroAssembler::rotateRight64(Imm32 count, Register64 src, Register64 dest, Register temp)
 {
+    MOZ_ASSERT(src == dest, "defineReuseInput");
+
     int32_t amount = count.value & 0x3f;
     if ((amount & 0x1f) != 0) {
         movl(dest.high, temp);

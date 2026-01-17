@@ -10,7 +10,7 @@
 #include "mozilla/DebugOnly.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/TaggedAnonymousMemory.h"
-#include "mozilla/Xoroshiro128PlusPlusRNG.h"
+#include "mozilla/XorShift128PlusRNG.h"
 
 #include "jsfriendapi.h"
 #include "jsmath.h"
@@ -441,7 +441,7 @@ class ProcessExecutableMemory
     // Page where we should try to allocate next.
     size_t cursor_;
 
-    mozilla::Maybe<mozilla::non_crypto::Xoroshiro128PlusPlusRNG> rng_;
+    mozilla::Maybe<mozilla::non_crypto::XorShift128PlusRNG> rng_;
     PageBitSet<MaxCodePages> pages_;
 
   public:
@@ -467,7 +467,7 @@ class ProcessExecutableMemory
         base_ = static_cast<uint8_t*>(p);
 
         mozilla::Array<uint64_t, 2> seed;
-        GenerateXoroshiro128PlusPlusSeed(seed);
+        GenerateXorShift128PlusSeed(seed);
         rng_.emplace(seed[0], seed[1]);
         return true;
     }

@@ -737,9 +737,9 @@ js::GenerateRandomSeed()
 }
 
 void
-js::GenerateXoroshiro128PlusPlusSeed(mozilla::Array<uint64_t, 2>& seed)
+js::GenerateXorShift128PlusSeed(mozilla::Array<uint64_t, 2>& seed)
 {
-    // Xoroshiro128PlusPlusRNG must be initialized with a non-zero seed.
+    // XorShift128PlusRNG must be initialized with a non-zero seed.
     do {
         seed[0] = GenerateRandomSeed();
         seed[1] = GenerateRandomSeed();
@@ -751,7 +751,7 @@ JSCompartment::ensureRandomNumberGenerator()
 {
     if (randomNumberGenerator.isNothing()) {
         mozilla::Array<uint64_t, 2> seed;
-        GenerateXoroshiro128PlusPlusSeed(seed);
+        GenerateXorShift128PlusSeed(seed);
         randomNumberGenerator.emplace(seed[0], seed[1]);
     }
 }

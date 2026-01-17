@@ -765,13 +765,13 @@ JSRuntime::removeUnhandledRejectedPromise(JSContext* cx, js::HandleObject promis
                                                    PromiseRejectionHandlingState::Handled, data);
 }
 
-mozilla::non_crypto::Xoroshiro128PlusPlusRNG&
+mozilla::non_crypto::XorShift128PlusRNG&
 JSRuntime::randomKeyGenerator()
 {
     MOZ_ASSERT(CurrentThreadCanAccessRuntime(this));
     if (randomKeyGenerator_.isNothing()) {
         mozilla::Array<uint64_t, 2> seed;
-        GenerateXoroshiro128PlusPlusSeed(seed);
+        GenerateXorShift128PlusSeed(seed);
         randomKeyGenerator_.emplace(seed[0], seed[1]);
     }
     return randomKeyGenerator_.ref();
@@ -784,11 +784,11 @@ JSRuntime::randomHashCodeScrambler()
     return mozilla::HashCodeScrambler(rng.next(), rng.next());
 }
 
-mozilla::non_crypto::Xoroshiro128PlusPlusRNG
+mozilla::non_crypto::XorShift128PlusRNG
 JSRuntime::forkRandomKeyGenerator()
 {
     auto& rng = randomKeyGenerator();
-    return mozilla::non_crypto::Xoroshiro128PlusPlusRNG(rng.next(), rng.next());
+    return mozilla::non_crypto::XorShift128PlusRNG(rng.next(), rng.next());
 }
 
 void
