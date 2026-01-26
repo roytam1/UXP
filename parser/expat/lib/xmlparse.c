@@ -2573,6 +2573,10 @@ XML_ParseBuffer(XML_Parser parser, int len, int isFinal) {
   XmlUpdatePosition(parser->m_encoding, parser->m_positionPtr,
                     parser->m_bufferPtr, &parser->m_position);
   parser->m_positionPtr = parser->m_bufferPtr;
+#ifdef MOZILLA_CLIENT /* always set m_eventPtr/m_eventEndPtr */
+  parser->m_eventPtr = parser->m_bufferPtr;
+  parser->m_eventEndPtr = parser->m_bufferPtr;
+#endif
   return result;
 }
 
