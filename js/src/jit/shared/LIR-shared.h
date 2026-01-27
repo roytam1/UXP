@@ -8220,9 +8220,9 @@ class LArrowNewTarget : public LInstructionHelper<BOX_PIECES, 1, 0>
 
 // Math.random().
 #ifdef JS_PUNBOX64
-# define LRANDOM_NUM_TEMPS 6
+# define LRANDOM_NUM_TEMPS 4
 #else
-# define LRANDOM_NUM_TEMPS 11
+# define LRANDOM_NUM_TEMPS 7
 #endif
 
 class LRandom : public LInstructionHelper<1, 0, LRANDOM_NUM_TEMPS>
@@ -8230,12 +8230,10 @@ class LRandom : public LInstructionHelper<1, 0, LRANDOM_NUM_TEMPS>
   public:
     LIR_HEADER(Random)
     LRandom(const LDefinition &temp0, const LDefinition &temp1,
-            const LDefinition &temp2, const LDefinition &temp3,
-            const LDefinition &temp4, const LDefinition &temp5
+            const LDefinition &temp2, const LDefinition &temp3
 #ifndef JS_PUNBOX64
-            , const LDefinition &temp6, const LDefinition &temp7
-            , const LDefinition &temp8, const LDefinition &temp9
-            , const LDefinition &temp10
+            , const LDefinition &temp4, const LDefinition &temp5
+            , const LDefinition &temp6
 #endif
             )
     {
@@ -8243,14 +8241,10 @@ class LRandom : public LInstructionHelper<1, 0, LRANDOM_NUM_TEMPS>
         setTemp(1, temp1);
         setTemp(2, temp2);
         setTemp(3, temp3);
+#ifndef JS_PUNBOX64
         setTemp(4, temp4);
         setTemp(5, temp5);
-#ifndef JS_PUNBOX64
         setTemp(6, temp6);
-        setTemp(7, temp7);
-        setTemp(8, temp8);
-        setTemp(9, temp9);
-        setTemp(10, temp10);
 #endif
     }
     const LDefinition* temp0() {
@@ -8265,27 +8259,15 @@ class LRandom : public LInstructionHelper<1, 0, LRANDOM_NUM_TEMPS>
     const LDefinition* temp3() {
         return getTemp(3);
     }
+#ifndef JS_PUNBOX64
     const LDefinition* temp4() {
         return getTemp(4);
     }
     const LDefinition* temp5() {
         return getTemp(5);
     }
-#ifndef JS_PUNBOX64
     const LDefinition* temp6() {
         return getTemp(6);
-    }
-    const LDefinition* temp7() {
-        return getTemp(7);
-    }
-    const LDefinition* temp8() {
-        return getTemp(8);
-    }
-    const LDefinition* temp9() {
-        return getTemp(9);
-    }
-    const LDefinition* temp10() {
-        return getTemp(10);
     }
 #endif
 
