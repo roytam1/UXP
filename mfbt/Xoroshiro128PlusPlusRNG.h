@@ -37,7 +37,10 @@ namespace non_crypto {
  *
  */
 class Xoroshiro128PlusPlusRNG {
-  uint64_t mState[2];
+  /*
+   * mState[2] is used for temporary storage in JIT code.
+   */
+  uint64_t mState[3];
 
  public:
   /*
@@ -109,6 +112,7 @@ class Xoroshiro128PlusPlusRNG {
     MOZ_ASSERT(aState0 || aState1);
     mState[0] = aState0;
     mState[1] = aState1;
+    mState[2] = 0;
   }
 
   static size_t offsetOfState0() {
@@ -116,6 +120,9 @@ class Xoroshiro128PlusPlusRNG {
   }
   static size_t offsetOfState1() {
     return offsetof(Xoroshiro128PlusPlusRNG, mState[1]);
+  }
+  static size_t offsetOfState2() {
+    return offsetof(Xoroshiro128PlusPlusRNG, mState[2]);
   }
 };
 
