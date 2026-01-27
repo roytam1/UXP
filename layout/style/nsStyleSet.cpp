@@ -1113,29 +1113,35 @@ FileRulesFromAllChildProcessors(
   nsRuleNode*& aLastRN,
   nsTArray<nsRuleNode*>& aLastRNs,
   nsTArray<bool>& aHaveImportantOriginRules,
-  bool& aHaveAnyImportantOriginRules)
+  bool& aHaveAnyImportantOriginRules,
+  bool skipOrigin)
 {
-  if (!aParentProcessor) {
-    return;
-  }
-
-  nsTArray<nsCOMPtr<nsIStyleRuleProcessor>>* processors =
-    aParentProcessor->GetChildRuleProcessors();
-  if (!processors) {
+  if (aParentProcessor && !skipOrigin) {
+    nsTArray<nsCOMPtr<nsIStyleRuleProcessor>>* processors =
+      aParentProcessor->GetChildRuleProcessors();
+    if (processors) {
+      for (uint32_t i = 0; i < processors->Length(); i++) {
+        if (i > 0) {
+          aRuleWalker->SetLevel(aLevel, false, true);
+        }
+        nsCOMPtr<nsIStyleRuleProcessor> processor = (*processors)[i];
+        (*aCollectorFunc)(processor, aData);
+        TrackRuleNodeForCurrentOrigin(aRuleWalker,
+                                      aLastRN,
+                                      aLastRNs,
+                                      aHaveImportantOriginRules,
+                                      aHaveAnyImportantOriginRules);
+      }
+      return;
+    }
     (*aCollectorFunc)(aParentProcessor, aData);
-    return;
   }
 
-  for (nsCOMPtr<nsIStyleRuleProcessor> processor : *processors) {
-    aRuleWalker->SetLevel(aLevel, false, true);
-    (*aCollectorFunc)(processor, aData);
-
-    TrackRuleNodeForCurrentOrigin(aRuleWalker,
-                                  aLastRN,
-                                  aLastRNs,
-                                  aHaveImportantOriginRules,
-                                  aHaveAnyImportantOriginRules);
-  }
+  TrackRuleNodeForCurrentOrigin(aRuleWalker,
+                                aLastRN,
+                                aLastRNs,
+                                aHaveImportantOriginRules,
+                                aHaveAnyImportantOriginRules);
 }
 
 // Enumerate the rules in a way that cares about the order of the rules.
@@ -1172,6 +1178,7 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
   // this will be either the root or one of the restriction rules.
   nsRuleNode* lastRestrictionRN = aRuleWalker->CurrentNode();
 
+  aRuleWalker->SetLevel(SheetType::Agent, false, true);
   nsRuleNode* lastAgentRN = nullptr;
   nsTArray<nsRuleNode*> lastAgentRNs;
   nsTArray<bool> haveImportantAgentRules;
@@ -1184,29 +1191,24 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
                                   lastAgentRN,
                                   lastAgentRNs,
                                   haveImportantAgentRules,
-                                  haveAnyImportantAgentRules);
-  if (!lastAgentRN) {
-    lastAgentRN = aRuleWalker->CurrentNode();
-  }
+                                  haveAnyImportantAgentRules,
+                                  false);
 
+  aRuleWalker->SetLevel(SheetType::User, false, true);
   nsRuleNode* lastUserRN = nullptr;
   nsTArray<nsRuleNode*> lastUserRNs;
   nsTArray<bool> haveImportantUserRules;
   bool haveAnyImportantUserRules = false;
-  if (!skipUserStyles) { // NOTE: different
-    FileRulesFromAllChildProcessors(mRuleProcessors[SheetType::User],
-                                    aCollectorFunc,
-                                    aData,
-                                    aRuleWalker,
-                                    SheetType::User,
-                                    lastUserRN,
-                                    lastUserRNs,
-                                    haveImportantUserRules,
-                                    haveAnyImportantUserRules);
-  }
-  if (!lastUserRN) {
-    lastUserRN = aRuleWalker->CurrentNode();
-  }
+  FileRulesFromAllChildProcessors(mRuleProcessors[SheetType::User],
+                                  aCollectorFunc,
+                                  aData,
+                                  aRuleWalker,
+                                  SheetType::User,
+                                  lastUserRN,
+                                  lastUserRNs,
+                                  haveImportantUserRules,
+                                  haveAnyImportantUserRules,
+                                  skipUserStyles); // NOTE: different
 
   aRuleWalker->SetLevel(SheetType::PresHint, false, false);
   if (mRuleProcessors[SheetType::PresHint])
@@ -1219,36 +1221,27 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
 
   aRuleWalker->SetLevel(SheetType::Doc, false, true);
   bool cutOffInheritance = false;
-  nsRuleNode* lastDocRN = nullptr;
-  nsTArray<nsRuleNode*> lastDocRNs;
-  nsTArray<bool> haveImportantDocRules;
-  bool haveAnyImportantDocRules = false;
   if (mBindingManager && aElement) {
     // We can supply additional document-level sheets that should be walked.
     mBindingManager->WalkRules(aCollectorFunc,
                                static_cast<ElementDependentRuleProcessorData*>(aData),
                                &cutOffInheritance);
-    TrackRuleNodeForCurrentOrigin(aRuleWalker,
+  }
+
+  nsRuleNode* lastDocRN = nullptr;
+  nsTArray<nsRuleNode*> lastDocRNs;
+  nsTArray<bool> haveImportantDocRules;
+  bool haveAnyImportantDocRules = false;
+  FileRulesFromAllChildProcessors(mRuleProcessors[SheetType::Doc],
+                                  aCollectorFunc,
+                                  aData,
+                                  aRuleWalker,
+                                  SheetType::Doc,
                                   lastDocRN,
                                   lastDocRNs,
                                   haveImportantDocRules,
-                                  haveAnyImportantDocRules);
-  }
-
-  if (!skipUserStyles && !cutOffInheritance) { // NOTE: different
-    FileRulesFromAllChildProcessors(mRuleProcessors[SheetType::Doc],
-                                    aCollectorFunc,
-                                    aData,
-                                    aRuleWalker,
-                                    SheetType::Doc,
-                                    lastDocRN,
-                                    lastDocRNs,
-                                    haveImportantDocRules,
-                                    haveAnyImportantDocRules);
-  }
-  if (!lastDocRN) {
-    lastDocRN = aRuleWalker->CurrentNode();
-  }
+                                  haveAnyImportantDocRules,
+                                  skipUserStyles || cutOffInheritance); // NOTE: different
 
   nsTArray<nsRuleNode*> lastScopedRNs;
   nsTArray<bool> haveImportantScopedRules;

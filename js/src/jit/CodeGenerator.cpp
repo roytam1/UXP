@@ -12051,65 +12051,84 @@ CodeGenerator::visitDebugCheckSelfHosted(LDebugCheckSelfHosted* ins)
 void
 CodeGenerator::visitRandom(LRandom* ins)
 {
-    using mozilla::non_crypto::XorShift128PlusRNG;
+    using mozilla::non_crypto::Xoroshiro128PlusPlusRNG;
 
     FloatRegister output = ToFloatRegister(ins->output());
     Register tempReg = ToRegister(ins->temp0());
-
 #ifdef JS_PUNBOX64
     Register64 s0Reg(ToRegister(ins->temp1()));
     Register64 s1Reg(ToRegister(ins->temp2()));
+    // Helper registers for intermediate and final results
+    Register64 imrReg(ToRegister(ins->temp3()));
 #else
     Register64 s0Reg(ToRegister(ins->temp1()), ToRegister(ins->temp2()));
     Register64 s1Reg(ToRegister(ins->temp3()), ToRegister(ins->temp4()));
+    // Helper registers for intermediate and final results
+    Register64 imrReg(ToRegister(ins->temp5()), ToRegister(ins->temp6()));
 #endif
 
     const void* rng = gen->compartment->addressOfRandomNumberGenerator();
     masm.movePtr(ImmPtr(rng), tempReg);
 
-    static_assert(sizeof(XorShift128PlusRNG) == 2 * sizeof(uint64_t),
-                  "Code below assumes XorShift128PlusRNG contains two uint64_t values");
+    static_assert(sizeof(Xoroshiro128PlusPlusRNG) == 3 * sizeof(uint64_t),
+                  "Code below assumes Xoroshiro128PlusPlusRNG contains three uint64_t values");
 
-    Address state0Addr(tempReg, XorShift128PlusRNG::offsetOfState0());
-    Address state1Addr(tempReg, XorShift128PlusRNG::offsetOfState1());
+    Address state0Addr(tempReg, Xoroshiro128PlusPlusRNG::offsetOfState0());
+    Address state1Addr(tempReg, Xoroshiro128PlusPlusRNG::offsetOfState1());
+    Address state2Addr(tempReg, Xoroshiro128PlusPlusRNG::offsetOfState2());
 
-    // uint64_t s1 = mState[0];
-    masm.load64(state0Addr, s1Reg);
-
-    // s1 ^= s1 << 23;
-    masm.move64(s1Reg, s0Reg);
-    masm.lshift64(Imm32(23), s1Reg);
+    // const uint64_t s0 = mState[0];
+    masm.load64(state0Addr, s0Reg);
+    // uint64_t s1 = mState[1];
+    masm.load64(state1Addr, s1Reg);
+    
+    // const uint64_t result = rotl(s0 + s1, 17) + s0;
+    masm.move64(s0Reg, imrReg);
+    masm.add64(s1Reg, imrReg);
+#ifdef JS_PUNBOX64
+    masm.rotateLeft64(Imm32(17), imrReg, imrReg);
+#else
+    masm.Push(tempReg);
+    masm.rotateLeft64(Imm32(17), imrReg, imrReg, tempReg);
+    masm.Pop(tempReg);
+#endif
+    masm.add64(s0Reg, imrReg);
+    masm.store64(imrReg, state2Addr);
+    
+    // s1 ^= s0;
     masm.xor64(s0Reg, s1Reg);
+    
+    // mState[1] = rotl(s1, 28); // c
+#ifdef JS_PUNBOX64
+    masm.rotateLeft64(Imm32(28), s1Reg, imrReg);
+#else
+    masm.Push(tempReg);
+    masm.rotateLeft64(Imm32(28), s1Reg, imrReg, tempReg);
+    masm.Pop(tempReg);
+#endif
+    masm.store64(imrReg, state1Addr);
 
-    // s1 ^= s1 >> 17
-    masm.move64(s1Reg, s0Reg);
-    masm.rshift64(Imm32(17), s1Reg);
-    masm.xor64(s0Reg, s1Reg);
-
-    // const uint64_t s0 = mState[1];
-    masm.load64(state1Addr, s0Reg);
-
-    // mState[0] = s0;
+    // mState[0] = rotl(s0, 49) ^ s1 ^ (s1 << 21); // a, b
+#ifdef JS_PUNBOX64
+    masm.rotateLeft64(Imm32(49), s0Reg, s0Reg);    // imr = s0 rotl 49
+#else
+    masm.Push(tempReg);
+    masm.rotateLeft64(Imm32(49), s0Reg, s0Reg, tempReg);   // imr = s0 rotl 49
+    masm.Pop(tempReg);
+#endif
+    masm.move64(s1Reg, imrReg);                    // imr = s1
+    masm.lshift64(Imm32(21), imrReg);              // imr << 21
+    masm.xor64(imrReg, s0Reg);                     // s0 ^= imr
+    masm.xor64(s1Reg, s0Reg);                      // s0 ^= s1
     masm.store64(s0Reg, state0Addr);
 
-    // s1 ^= s0
-    masm.xor64(s0Reg, s1Reg);
+    masm.load64(state2Addr, s1Reg);
 
-    // s1 ^= s0 >> 26
-    masm.rshift64(Imm32(26), s0Reg);
-    masm.xor64(s0Reg, s1Reg);
-
-    // mState[1] = s1
-    masm.store64(s1Reg, state1Addr);
-
-    // s1 += mState[0]
-    masm.load64(state0Addr, s0Reg);
-    masm.add64(s0Reg, s1Reg);
-
-    // See comment in XorShift128PlusRNG::nextDouble().
+    // See comment in Xoroshiro128PlusPlusRNG::nextDouble().
     static const int MantissaBits = FloatingPoint<double>::kExponentShift + 1;
     static const double ScaleInv = double(1) / (1ULL << MantissaBits);
 
+    // Mask the result bits to mantissa size
     masm.and64(Imm64((1ULL << MantissaBits) - 1), s1Reg);
 
     if (masm.convertUInt64ToDoubleNeedsTemp())

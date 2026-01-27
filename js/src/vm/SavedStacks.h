@@ -177,7 +177,7 @@ class SavedStacks {
 
     // Set the sampling random number generator's state to |state0| and
     // |state1|. One or the other must be non-zero. See the comments for
-    // mozilla::non_crypto::XorShift128PlusRNG::setState for details.
+    // mozilla::non_crypto::Xoroshiro128PlusPlusRNG::setState for details.
     void setRNGState(uint64_t state0, uint64_t state1) { bernoulli.setRandomState(state0, state1); }
 
     size_t sizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf);
