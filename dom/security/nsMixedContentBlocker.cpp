@@ -334,16 +334,23 @@ nsMixedContentBlocker::AsyncOnChannelRedirect(nsIChannel* aOldChannel,
   return NS_OK;
 }
 
-bool nsMixedContentBlocker::IsPotentiallyTrustworthyLoopbackURL(nsIURI* aURL) {
-  nsAutoCString host;
-  nsresult rv = aURL->GetHost(host);
-  NS_ENSURE_SUCCESS(rv, false);
-
-  return host.EqualsLiteral("127.0.0.1") || host.EqualsLiteral("::1") ||
-         host.EqualsLiteral("localhost");
+bool
+nsMixedContentBlocker::IsPotentiallyTrustworthyLoopbackHost(const nsACString& aAsciiHost) {
+  return aAsciiHost.EqualsLiteral("127.0.0.1") ||
+         aAsciiHost.EqualsLiteral("::1") ||
+         aAsciiHost.EqualsLiteral("localhost");
 }
 
-bool nsMixedContentBlocker::IsPotentiallyTrustworthyOrigin(nsIURI* aURI) {
+bool
+nsMixedContentBlocker::IsPotentiallyTrustworthyLoopbackURL(nsIURI* aURL) {
+  nsAutoCString asciiHost;
+  nsresult rv = aURL->GetAsciiHost(asciiHost);
+  NS_ENSURE_SUCCESS(rv, false);
+  return IsPotentiallyTrustworthyLoopbackHost(asciiHost);
+}
+
+bool
+nsMixedContentBlocker::IsPotentiallyTrustworthyOrigin(nsIURI* aURI) {
   // The following implements:
   // https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy
 

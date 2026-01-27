@@ -327,6 +327,7 @@ LIRGeneratorARM64::visitRandom(MRandom* ins)
 {
     LRandom *lir = new(alloc()) LRandom(temp(),
                                         temp(),
+                                        temp(),
                                         temp());
     defineFixed(lir, ins, LFloatReg(ReturnDoubleReg));
 }
