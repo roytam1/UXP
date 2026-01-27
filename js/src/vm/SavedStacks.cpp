@@ -1595,7 +1595,7 @@ SavedStacks::chooseSamplingProbability(JSCompartment* compartment)
 
     if (!bernoulliSeeded) {
         mozilla::Array<uint64_t, 2> seed;
-        GenerateXorShift128PlusSeed(seed);
+        GenerateXoroshiro128PlusPlusSeed(seed);
         bernoulli.setRandomState(seed[0], seed[1]);
         bernoulliSeeded = true;
     }
