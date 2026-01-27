@@ -17,6 +17,7 @@
 #include "mozilla/dom/MessageEventBinding.h"
 #include "mozilla/dom/nsCSPContext.h"
 #include "mozilla/dom/nsCSPUtils.h"
+#include "mozilla/dom/nsMixedContentBlocker.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/WorkerPrivate.h"
 #include "mozilla/dom/WorkerRunnable.h"
@@ -1604,10 +1605,10 @@ WebSocketImpl::Init(JSContext* aCx,
                         mInnerWindowID);
   }
 
-  // Don't allow https:// to open ws://
+  // Don't allow https:// to open ws://, except when explicitly preffed or a loopback address.
   if (!mIsServerSide && !mSecure &&
-      !Preferences::GetBool("network.websocket.allowInsecureFromHTTPS",
-                            false)) {
+      !Preferences::GetBool("network.websocket.allowInsecureFromHTTPS", false) &&
+      !nsMixedContentBlocker::IsPotentiallyTrustworthyLoopbackHost(mAsciiHost)) {
     // Confirmed we are opening plain ws:// and want to prevent this from a
     // secure context (e.g. https).
     nsCOMPtr<nsIPrincipal> principal;

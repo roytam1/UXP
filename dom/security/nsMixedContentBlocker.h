@@ -44,6 +44,7 @@ public:
 
   // See:
   // https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy
+  static bool IsPotentiallyTrustworthyLoopbackHost(const nsACString& aAsciiHost);
   static bool IsPotentiallyTrustworthyLoopbackURL(nsIURI* aURL);
   static bool IsPotentiallyTrustworthyOrigin(nsIURI* aURI);
 
