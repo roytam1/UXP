@@ -278,7 +278,7 @@ js::intl_FormatRelativeTime(JSContext* cx, unsigned argc, Value* vp)
                        ? ureldatefmt_format
                        : ureldatefmt_formatNumeric;
             return fmt(rtf, t, relDateTimeUnit, chars, size, status);
-        });
+        }, true);
     if (!str)
         return false;
 

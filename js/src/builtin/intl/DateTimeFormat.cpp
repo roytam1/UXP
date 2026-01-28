@@ -959,7 +959,7 @@ intl_FormatDateTime(JSContext* cx, UDateFormat* df, double x, MutableHandleValue
 
     JSString* str = CallICU(cx, [df, x](UChar* chars, int32_t size, UErrorCode* status) {
         return udat_format(df, x, chars, size, nullptr, status);
-    });
+    }, true);
     if (!str)
         return false;
 
@@ -1079,7 +1079,7 @@ intl_FormatToPartsDateTime(JSContext* cx, UDateFormat* df, double x, MutableHand
     RootedString overallResult(cx);
     overallResult = CallICU(cx, [df, x, fpositer](UChar* chars, int32_t size, UErrorCode* status) {
         return udat_formatForFields(df, x, chars, size, fpositer, status);
-    });
+    }, true);
     if (!overallResult)
         return false;
 
