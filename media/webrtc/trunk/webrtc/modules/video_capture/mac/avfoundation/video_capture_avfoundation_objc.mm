@@ -17,10 +17,169 @@
 
 #import "webrtc/modules/video_capture/mac/avfoundation/video_capture_avfoundation_objc.h"
 
+#include <vector>
+
+#include "libyuv.h"
+#include "webrtc/common_video/libyuv/include/webrtc_libyuv.h"
 #include "webrtc/system_wrappers/interface/trace.h"
 
 using namespace webrtc;
 using namespace videocapturemodule;
+
+namespace {
+
+bool ConvertCVPixelBufferToI420(CVImageBufferRef videoFrame,
+                                webrtc::RawVideoType rawType,
+                                int width,
+                                int height,
+                                std::vector<uint8_t>& i420) {
+  if (!videoFrame || width <= 0 || height <= 0) {
+    return false;
+  }
+
+  const size_t i420_size = CalcBufferSize(kI420, width, height);
+  if (!i420_size) {
+    return false;
+  }
+
+  i420.resize(i420_size);
+
+  const int dst_stride_y = width;
+  const int dst_stride_u = (width + 1) / 2;
+  const int dst_stride_v = (width + 1) / 2;
+  uint8_t* dst_y = i420.data();
+  uint8_t* dst_u = dst_y + dst_stride_y * height;
+  uint8_t* dst_v = dst_u + dst_stride_u * ((height + 1) / 2);
+
+  int result = -1;
+  switch (rawType) {
+    case kVideoNV12: {
+      if (!CVPixelBufferIsPlanar(videoFrame) ||
+          CVPixelBufferGetPlaneCount(videoFrame) < 2) {
+        break;
+      }
+      const uint8_t* src_y =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddressOfPlane(videoFrame, 0));
+      const uint8_t* src_uv =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddressOfPlane(videoFrame, 1));
+      const int src_stride_y = CVPixelBufferGetBytesPerRowOfPlane(videoFrame, 0);
+      const int src_stride_uv = CVPixelBufferGetBytesPerRowOfPlane(videoFrame, 1);
+      result = libyuv::NV12ToI420(src_y, src_stride_y,
+                                  src_uv, src_stride_uv,
+                                  dst_y, dst_stride_y,
+                                  dst_u, dst_stride_u,
+                                  dst_v, dst_stride_v,
+                                  width, height);
+      break;
+    }
+    case kVideoI420: {
+      if (!CVPixelBufferIsPlanar(videoFrame) ||
+          CVPixelBufferGetPlaneCount(videoFrame) < 3) {
+        break;
+      }
+      const uint8_t* src_y =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddressOfPlane(videoFrame, 0));
+      const uint8_t* src_u =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddressOfPlane(videoFrame, 1));
+      const uint8_t* src_v =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddressOfPlane(videoFrame, 2));
+      const int src_stride_y = CVPixelBufferGetBytesPerRowOfPlane(videoFrame, 0);
+      const int src_stride_u = CVPixelBufferGetBytesPerRowOfPlane(videoFrame, 1);
+      const int src_stride_v = CVPixelBufferGetBytesPerRowOfPlane(videoFrame, 2);
+      result = libyuv::I420Copy(src_y, src_stride_y,
+                                src_u, src_stride_u,
+                                src_v, src_stride_v,
+                                dst_y, dst_stride_y,
+                                dst_u, dst_stride_u,
+                                dst_v, dst_stride_v,
+                                width, height);
+      break;
+    }
+    case kVideoUYVY: {
+      const uint8_t* src =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddress(videoFrame));
+      const int src_stride = CVPixelBufferGetBytesPerRow(videoFrame);
+      result = libyuv::UYVYToI420(src, src_stride,
+                                  dst_y, dst_stride_y,
+                                  dst_u, dst_stride_u,
+                                  dst_v, dst_stride_v,
+                                  width, height);
+      break;
+    }
+    case kVideoYUY2: {
+      const uint8_t* src =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddress(videoFrame));
+      const int src_stride = CVPixelBufferGetBytesPerRow(videoFrame);
+      result = libyuv::YUY2ToI420(src, src_stride,
+                                  dst_y, dst_stride_y,
+                                  dst_u, dst_stride_u,
+                                  dst_v, dst_stride_v,
+                                  width, height);
+      break;
+    }
+    case kVideoARGB: {
+      const uint8_t* src =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddress(videoFrame));
+      const int src_stride = CVPixelBufferGetBytesPerRow(videoFrame);
+      result = libyuv::ARGBToI420(src, src_stride,
+                                  dst_y, dst_stride_y,
+                                  dst_u, dst_stride_u,
+                                  dst_v, dst_stride_v,
+                                  width, height);
+      break;
+    }
+    case kVideoBGRA: {
+      const uint8_t* src =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddress(videoFrame));
+      const int src_stride = CVPixelBufferGetBytesPerRow(videoFrame);
+      result = libyuv::BGRAToI420(src, src_stride,
+                                  dst_y, dst_stride_y,
+                                  dst_u, dst_stride_u,
+                                  dst_v, dst_stride_v,
+                                  width, height);
+      break;
+    }
+    case kVideoRGB24: {
+      const uint8_t* src =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddress(videoFrame));
+      const int src_stride = CVPixelBufferGetBytesPerRow(videoFrame);
+      result = libyuv::RGB24ToI420(src, src_stride,
+                                   dst_y, dst_stride_y,
+                                   dst_u, dst_stride_u,
+                                   dst_v, dst_stride_v,
+                                   width, height);
+      break;
+    }
+    case kVideoRGB565: {
+      const uint8_t* src =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddress(videoFrame));
+      const int src_stride = CVPixelBufferGetBytesPerRow(videoFrame);
+      result = libyuv::RGB565ToI420(src, src_stride,
+                                    dst_y, dst_stride_y,
+                                    dst_u, dst_stride_u,
+                                    dst_v, dst_stride_v,
+                                    width, height);
+      break;
+    }
+    case kVideoARGB1555: {
+      const uint8_t* src =
+          static_cast<const uint8_t*>(CVPixelBufferGetBaseAddress(videoFrame));
+      const int src_stride = CVPixelBufferGetBytesPerRow(videoFrame);
+      result = libyuv::ARGB1555ToI420(src, src_stride,
+                                      dst_y, dst_stride_y,
+                                      dst_u, dst_stride_u,
+                                      dst_v, dst_stride_v,
+                                      width, height);
+      break;
+    }
+    default:
+      break;
+  }
+
+  return result == 0;
+}
+
+}  // namespace
 
 @implementation VideoCaptureMacAVFoundationObjC
 
@@ -264,17 +423,29 @@ using namespace videocapturemodule;
     _owner->IncomingFrame((unsigned char*)baseAddress, frameSize,
                             tempCaptureCapability, 0);
   } else {
-    // Get a CMSampleBuffer's Core Video image buffer for the media data
+    // Get a CMSampleBuffer's Core Video image buffer for the media data.
     CVImageBufferRef videoFrame = CMSampleBufferGetImageBuffer(sampleBuffer);
 
     if (CVPixelBufferLockBaseAddress(videoFrame, kCVPixelBufferLock_ReadOnly) == kCVReturnSuccess) {
-      void* baseAddress = CVPixelBufferGetBaseAddress(videoFrame);
-      size_t bytesPerRow = CVPixelBufferGetBytesPerRow(videoFrame);
-      size_t frameHeight = CVPixelBufferGetHeight(videoFrame);
-      size_t frameSize = bytesPerRow * frameHeight;
+      std::vector<uint8_t> i420;
+      bool converted = ConvertCVPixelBufferToI420(videoFrame, rawType,
+                                                  dimensions.width,
+                                                  dimensions.height,
+                                                  i420);
+      if (converted) {
+        tempCaptureCapability.rawType = webrtc::kVideoI420;
+        _owner->IncomingFrame(i420.data(), i420.size(),
+                              tempCaptureCapability, 0);
+      } else {
+        void* baseAddress = CVPixelBufferGetBaseAddress(videoFrame);
+        size_t bytesPerRow = CVPixelBufferGetBytesPerRow(videoFrame);
+        size_t frameHeight = CVPixelBufferGetHeight(videoFrame);
+        size_t frameSize = bytesPerRow * frameHeight;
 
-      _owner->IncomingFrame((unsigned char*)baseAddress, frameSize,
-                            tempCaptureCapability, 0);
+        _owner->IncomingFrame((unsigned char*)baseAddress, frameSize,
+                              tempCaptureCapability, 0);
+      }
+
       CVPixelBufferUnlockBaseAddress(videoFrame, kCVPixelBufferLock_ReadOnly);
     }
   }
