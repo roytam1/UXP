@@ -146,13 +146,21 @@ CallICU(JSContext* cx, Vector<CharT, InlineCapacity>& chars, const ICUStringFunc
 
 template <typename ICUStringFunction>
 static JSString*
-CallICU(JSContext* cx, const ICUStringFunction& strFn)
+CallICU(JSContext* cx, const ICUStringFunction& strFn, bool wsCompat = false)
 {
     Vector<char16_t, INITIAL_CHAR_BUFFER_SIZE> chars(cx);
 
     int32_t size = CallICU(cx, chars, strFn);
     if (size < 0)
         return nullptr;
+
+    if (wsCompat) {
+        for (char16_t& c : chars) {
+            if (c == 0x202F || c == 0x2009) {
+                c = 0x0020;
+            }
+        }
+    }
 
     return NewStringCopyN<CanGC>(cx, chars.begin(), size_t(size));
 }

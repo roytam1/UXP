@@ -17,6 +17,7 @@
       'type': 'static_library',
       'dependencies': [
         'webrtc_utility',
+        '<(webrtc_root)/common.gyp:webrtc_common',
         '<(webrtc_root)/common_video/common_video.gyp:common_video',
         '<(webrtc_root)/system_wrappers/system_wrappers.gyp:system_wrappers',
       ],
@@ -62,21 +63,22 @@
           'dependencies': [
             'video_capture_module',
             '<(webrtc_root)/common.gyp:webrtc_common',
-           ],
-          'cflags_mozilla': [
-            '$(NSPR_CFLAGS)',
+          ],
+          'include_dirs': [
+            '<(libyuv_dir)/include',
+          ],
+	  'cflags_mozilla': [
+	    '$(NSPR_CFLAGS)',
           ],
           'conditions': [
-            ['OS!="android"', {
-            }],
-            ['include_v4l2_video_capture==1', {
+           ['include_v4l2_video_capture==1', {
               'sources': [
                 'linux/device_info_linux.cc',
                 'linux/device_info_linux.h',
                 'linux/video_capture_linux.cc',
                 'linux/video_capture_linux.h',
               ],
-            }],
+            }],  # linux
             ['OS=="mac"', {
               'sources': [
                 'mac/avfoundation/video_capture_avfoundation.h',
@@ -249,4 +251,3 @@
     }],
   ],
 }
-
