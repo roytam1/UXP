@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#include <cstdlib>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -27,8 +28,11 @@
 #endif
 
 #include <new>
+#include <vector>
 
 #include "webrtc/modules/video_capture/linux/video_capture_linux.h"
+#include "libyuv.h"
+#include "webrtc/common_video/libyuv/include/webrtc_libyuv.h"
 #include "webrtc/system_wrappers/interface/critical_section_wrapper.h"
 #include "webrtc/system_wrappers/interface/ref_count.h"
 #include "webrtc/system_wrappers/interface/trace.h"
@@ -37,6 +41,81 @@ namespace webrtc
 {
 namespace videocapturemodule
 {
+
+namespace {
+
+bool ConvertV4L2FrameToI420(const uint8_t* src,
+                            size_t src_length,
+                            RawVideoType raw_type,
+                            int width,
+                            int height,
+                            size_t stride,
+                            std::vector<uint8_t>& i420) {
+    if (!src || width <= 0 || height == 0) {
+        return false;
+    }
+
+    const int abs_height = std::abs(height);
+    const size_t i420_size = CalcBufferSize(kI420, width, abs_height);
+    if (!i420_size) {
+        return false;
+    }
+
+    i420.resize(i420_size);
+    const int dst_stride_y = width;
+    const int dst_stride_u = (width + 1) / 2;
+    const int dst_stride_v = (width + 1) / 2;
+    uint8_t* dst_y = i420.data();
+    uint8_t* dst_u = dst_y + dst_stride_y * abs_height;
+    uint8_t* dst_v = dst_u + dst_stride_u * ((abs_height + 1) / 2);
+
+    int result = -1;
+    switch (raw_type) {
+        case kVideoYUY2: {
+            const int src_stride = stride ? static_cast<int>(stride) : width * 2;
+            result = libyuv::YUY2ToI420(src, src_stride,
+                                        dst_y, dst_stride_y,
+                                        dst_u, dst_stride_u,
+                                        dst_v, dst_stride_v,
+                                        width, height);
+            break;
+        }
+        case kVideoUYVY: {
+            const int src_stride = stride ? static_cast<int>(stride) : width * 2;
+            result = libyuv::UYVYToI420(src, src_stride,
+                                        dst_y, dst_stride_y,
+                                        dst_u, dst_stride_u,
+                                        dst_v, dst_stride_v,
+                                        width, height);
+            break;
+        }
+        case kVideoI420: {
+            const int src_stride_y = stride ? static_cast<int>(stride) : width;
+            const int src_stride_u = (src_stride_y + 1) / 2;
+            const int src_stride_v = (src_stride_y + 1) / 2;
+            if (src_length < static_cast<size_t>(src_stride_y * abs_height)) {
+                return false;
+            }
+            const uint8_t* src_y = src;
+            const uint8_t* src_u = src_y + src_stride_y * abs_height;
+            const uint8_t* src_v = src_u + src_stride_u * ((abs_height + 1) / 2);
+            result = libyuv::I420Copy(src_y, src_stride_y,
+                                      src_u, src_stride_u,
+                                      src_v, src_stride_v,
+                                      dst_y, dst_stride_y,
+                                      dst_u, dst_stride_u,
+                                      dst_v, dst_stride_v,
+                                      width, height);
+            break;
+        }
+        default:
+            return false;
+    }
+
+    return result == 0;
+}
+
+}  // namespace
 VideoCaptureModule* VideoCaptureImpl::Create(const int32_t id,
                                              const char* deviceUniqueId)
 {
@@ -61,6 +140,7 @@ VideoCaptureModuleV4L2::VideoCaptureModuleV4L2(const int32_t id)
       _currentWidth(-1),
       _currentHeight(-1),
       _currentFrameRate(-1),
+      _currentStride(0),
       _captureStarted(false),
       _captureVideoType(kVideoI420),
       _pool(NULL)
@@ -245,6 +325,7 @@ int32_t VideoCaptureModuleV4L2::StartCapture(
     // initialize current width and height
     _currentWidth = video_fmt.fmt.pix.width;
     _currentHeight = video_fmt.fmt.pix.height;
+    _currentStride = video_fmt.fmt.pix.bytesperline;
     _captureDelay = 120;
 
     // Trying to set frame rate, before check driver capability.
@@ -478,9 +559,32 @@ bool VideoCaptureModuleV4L2::CaptureProcess()
         frameInfo.height = _currentHeight;
         frameInfo.rawType = _captureVideoType;
 
-        // convert to to I420 if needed
-        IncomingFrame((unsigned char*) _pool[buf.index].start,
-                      buf.bytesused, frameInfo);
+        const bool is_mjpeg = (_captureVideoType == kVideoMJPEG);
+        const size_t expected_size = is_mjpeg
+            ? buf.bytesused
+            : CalcBufferSize(RawVideoTypeToCommonVideoVideoType(_captureVideoType),
+                             _currentWidth, std::abs(_currentHeight));
+
+        if (!is_mjpeg && (buf.bytesused != expected_size)) {
+            std::vector<uint8_t> i420;
+            if (ConvertV4L2FrameToI420(
+                    reinterpret_cast<uint8_t*>(_pool[buf.index].start),
+                    buf.bytesused,
+                    _captureVideoType,
+                    _currentWidth,
+                    _currentHeight,
+                    _currentStride,
+                    i420)) {
+                frameInfo.rawType = kVideoI420;
+                IncomingFrame(i420.data(), i420.size(), frameInfo);
+            } else {
+                IncomingFrame((unsigned char*) _pool[buf.index].start,
+                              buf.bytesused, frameInfo);
+            }
+        } else {
+            IncomingFrame((unsigned char*) _pool[buf.index].start,
+                          buf.bytesused, frameInfo);
+        }
         // enqueue the buffer again
         if (ioctl(_deviceFd, VIDIOC_QBUF, &buf) == -1)
         {

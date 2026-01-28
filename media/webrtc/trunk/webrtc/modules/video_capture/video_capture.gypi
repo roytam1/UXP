@@ -64,6 +64,9 @@
             'video_capture_module',
             '<(webrtc_root)/common.gyp:webrtc_common',
           ],
+          'include_dirs': [
+            '<(libyuv_dir)/include',
+          ],
 	  'cflags_mozilla': [
 	    '$(NSPR_CFLAGS)',
           ],
@@ -275,4 +278,3 @@
     }],
   ],
 }
-

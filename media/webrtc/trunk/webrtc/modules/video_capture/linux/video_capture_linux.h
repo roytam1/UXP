@@ -49,6 +49,7 @@ private:
     int32_t _currentWidth;
     int32_t _currentHeight;
     int32_t _currentFrameRate;
+    size_t _currentStride;
     bool _captureStarted;
     RawVideoType _captureVideoType;
     struct Buffer

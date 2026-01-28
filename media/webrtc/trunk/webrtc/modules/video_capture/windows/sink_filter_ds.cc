@@ -11,10 +11,14 @@
 #include "webrtc/modules/video_capture/windows/sink_filter_ds.h"
 
 #include "webrtc/modules/video_capture/windows/help_functions_ds.h"
+#include "libyuv.h"
+#include "webrtc/common_video/libyuv/include/webrtc_libyuv.h"
 #include "webrtc/system_wrappers/interface/trace.h"
 
+#include <cstdlib>
 #include <Dvdmedia.h> // VIDEOINFOHEADER2
 #include <initguid.h>
+#include <vector>
 
 #define DELETE_RESET(p) { delete (p) ; (p) = NULL ;}
 
@@ -28,6 +32,112 @@ namespace webrtc
 {
 namespace videocapturemodule
 {
+
+namespace {
+
+bool ConvertDSFrameToI420(const uint8_t* src,
+                          int32_t length,
+                          const VideoCaptureCapability& frameInfo,
+                          std::vector<uint8_t>& i420) {
+    if (!src || frameInfo.width <= 0 || frameInfo.height == 0) {
+        return false;
+    }
+
+    const int src_width = frameInfo.width;
+    const int src_height = frameInfo.height;
+    const int abs_height = std::abs(src_height);
+    const size_t i420_size = CalcBufferSize(kI420, src_width, abs_height);
+    if (!i420_size) {
+        return false;
+    }
+
+    i420.resize(i420_size);
+    const int dst_stride_y = src_width;
+    const int dst_stride_u = (src_width + 1) / 2;
+    const int dst_stride_v = (src_width + 1) / 2;
+    uint8_t* dst_y = i420.data();
+    uint8_t* dst_u = dst_y + dst_stride_y * abs_height;
+    uint8_t* dst_v = dst_u + dst_stride_u * ((abs_height + 1) / 2);
+
+    int src_stride = 0;
+    int result = -1;
+
+    switch (frameInfo.rawType) {
+        case kVideoYUY2: {
+            if (length % abs_height == 0) {
+                src_stride = length / abs_height;
+            } else {
+                src_stride = ((src_width * 2 + 3) & ~3);
+            }
+            result = libyuv::YUY2ToI420(src, src_stride,
+                                        dst_y, dst_stride_y,
+                                        dst_u, dst_stride_u,
+                                        dst_v, dst_stride_v,
+                                        src_width, src_height);
+            break;
+        }
+        case kVideoUYVY: {
+            if (length % abs_height == 0) {
+                src_stride = length / abs_height;
+            } else {
+                src_stride = ((src_width * 2 + 3) & ~3);
+            }
+            result = libyuv::UYVYToI420(src, src_stride,
+                                        dst_y, dst_stride_y,
+                                        dst_u, dst_stride_u,
+                                        dst_v, dst_stride_v,
+                                        src_width, src_height);
+            break;
+        }
+        case kVideoRGB24: {
+            if (length % abs_height == 0) {
+                src_stride = length / abs_height;
+            } else {
+                src_stride = ((src_width * 3 + 3) & ~3);
+            }
+            result = libyuv::RGB24ToI420(src, src_stride,
+                                         dst_y, dst_stride_y,
+                                         dst_u, dst_stride_u,
+                                         dst_v, dst_stride_v,
+                                         src_width, src_height);
+            break;
+        }
+        case kVideoI420: {
+            // Infer stride for planar I420 if buffer is padded.
+            const int64_t denom = static_cast<int64_t>(3) * abs_height;
+            if (denom <= 0 || (static_cast<int64_t>(length) * 2) % denom != 0) {
+                return false;
+            }
+            const int src_stride_y =
+                static_cast<int>((static_cast<int64_t>(length) * 2) / denom);
+            const int src_stride_u = (src_stride_y + 1) / 2;
+            const int src_stride_v = (src_stride_y + 1) / 2;
+            const int64_t min_size =
+                static_cast<int64_t>(src_stride_y) * abs_height +
+                static_cast<int64_t>(src_stride_u) * ((abs_height + 1) / 2) * 2;
+            if (min_size > length) {
+                return false;
+            }
+            const uint8_t* src_y = src;
+            const uint8_t* src_u = src_y + src_stride_y * abs_height;
+            const uint8_t* src_v = src_u + src_stride_u * ((abs_height + 1) / 2);
+            result = libyuv::I420Copy(src_y, src_stride_y,
+                                      src_u, src_stride_u,
+                                      src_v, src_stride_v,
+                                      dst_y, dst_stride_y,
+                                      dst_u, dst_stride_u,
+                                      dst_v, dst_stride_v,
+                                      src_width, src_height);
+            break;
+        }
+        default:
+            return false;
+    }
+
+    return result == 0;
+}
+
+}  // namespace
 
 typedef struct tagTHREADNAME_INFO
 {
@@ -497,7 +607,26 @@ void CaptureSinkFilter::ProcessCapturedFrame(unsigned char* pBuffer,
     //  we have the receiver lock
     if (mState == State_Running)
     {
-        _captureObserver.IncomingFrame(pBuffer, length, frameInfo);
+        const bool is_mjpeg = (frameInfo.rawType == kVideoMJPEG);
+        const size_t expected_size = is_mjpeg
+            ? length
+            : CalcBufferSize(RawVideoTypeToCommonVideoVideoType(frameInfo.rawType),
+                             frameInfo.width, std::abs(frameInfo.height));
+
+        if (!is_mjpeg && static_cast<size_t>(length) != expected_size) {
+            std::vector<uint8_t> i420;
+            if (ConvertDSFrameToI420(pBuffer, length, frameInfo, i420)) {
+                VideoCaptureCapability converted = frameInfo;
+                converted.rawType = kVideoI420;
+                _captureObserver.IncomingFrame(i420.data(),
+                                               static_cast<int32_t>(i420.size()),
+                                               converted);
+            } else {
+                _captureObserver.IncomingFrame(pBuffer, length, frameInfo);
+            }
+        } else {
+            _captureObserver.IncomingFrame(pBuffer, length, frameInfo);
+        }
 
         // trying to hold it since it's only a memcpy
         // IMPROVEMENT if this work move critsect
