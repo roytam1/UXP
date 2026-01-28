@@ -390,7 +390,7 @@ js::intl_ComputeDisplayNames(JSContext* cx, unsigned argc, Value* vp)
 
             JSString* word = CallICU(cx, [fmt, symbolType, index](UChar* chars, int32_t size, UErrorCode* status) {
                 return udat_getSymbols(fmt, symbolType, index, chars, size, status);
-            });
+            }, true);
             if (!word)
                 return false;
 
