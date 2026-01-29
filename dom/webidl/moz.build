@@ -412,6 +412,7 @@ WEBIDL_FILES = [
     'StorageType.webidl',
     'StyleSheet.webidl',
     'StyleSheetList.webidl',
+    'SubmitEvent.webidl',
     'SubtleCrypto.webidl',
     'SVGAElement.webidl',
     'SVGAngle.webidl',
