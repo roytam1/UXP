@@ -40,6 +40,7 @@
 #include "mozilla/dom/ScrollAreaEvent.h"
 #include "mozilla/dom/SimpleGestureEvent.h"
 #include "mozilla/dom/StorageEvent.h"
+#include "mozilla/dom/SubmitEvent.h"
 #include "mozilla/dom/TimeEvent.h"
 #include "mozilla/dom/TouchEvent.h"
 #include "mozilla/dom/TransitionEvent.h"
@@ -1066,6 +1067,12 @@ EventDispatcher::CreateEvent(EventTarget* aOwner,
     case eAnimationEventClass:
       return NS_NewDOMAnimationEvent(aOwner, aPresContext,
                                      aEvent->AsAnimationEvent());
+    case eFormEventClass:
+      if (aEvent->mMessage == eFormSubmit) {
+        return NS_NewDOMSubmitEvent(aOwner, aPresContext,
+                                    aEvent->AsFormEvent());
+      }
+      return NS_NewDOMEvent(aOwner, aPresContext, aEvent);
     default:
       // For all other types of events, create a vanilla event object.
       return NS_NewDOMEvent(aOwner, aPresContext, aEvent);
