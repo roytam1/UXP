@@ -1,0 +1,80 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test for SubmitEvent and submitter</title>
+  <script type="application/javascript" src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<pre id="test">
+<script type="application/javascript">
+var hasSimpleTest = typeof SimpleTest !== "undefined";
+function finishIfPossible() {
+  if (hasSimpleTest) {
+    SimpleTest.finish();
+  }
+}
+function okMaybe(cond, msg) {
+  if (hasSimpleTest) {
+    ok(cond, msg);
+  } else {
+    console.log((cond ? "OK: " : "FAIL: ") + msg);
+  }
+}
+function isMaybe(a, b, msg) {
+  if (hasSimpleTest) {
+    is(a, b, msg);
+  } else {
+    console.log((a === b ? "OK: " : "FAIL: ") + msg + " (got " + a + " expected " + b + ")");
+  }
+}
+if (hasSimpleTest) {
+  SimpleTest.waitForExplicitFinish();
+}
+
+function testConstructor() {
+  okMaybe("SubmitEvent" in window, "SubmitEvent constructor exists");
+
+  var button = document.createElement("button");
+  var ev = new SubmitEvent("submit", { submitter: button, bubbles: true, cancelable: true });
+  isMaybe(ev.type, "submit", "constructor type matches");
+  okMaybe(!ev.isTrusted, "constructed SubmitEvent is not trusted");
+  isMaybe(ev.submitter, button, "constructor submitter matches");
+
+  var ev2 = new SubmitEvent("submit");
+  isMaybe(ev2.submitter, null, "default submitter is null");
+}
+
+function testDispatch() {
+  var form = document.createElement("form");
+  var button = document.createElement("button");
+  button.type = "submit";
+  button.textContent = "Submit";
+  form.appendChild(button);
+  document.body.appendChild(form);
+
+  form.addEventListener("submit", function(e) {
+    okMaybe(e instanceof SubmitEvent, "submit event is SubmitEvent");
+    isMaybe(e.submitter, button, "submitter is the clicked button");
+    e.preventDefault();
+    form.remove();
+    finishIfPossible();
+  });
+
+  if (hasSimpleTest) {
+    SimpleTest.executeSoon(function() {
+      button.click();
+    });
+  } else {
+    setTimeout(function() {
+      button.click();
+    }, 0);
+  }
+}
+
+testConstructor();
+testDispatch();
+</script>
+</pre>
+</body>
+</html>
