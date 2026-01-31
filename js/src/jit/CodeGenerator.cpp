@@ -12114,9 +12114,7 @@ CodeGenerator::visitRandom(LRandom* ins)
 #ifdef JS_PUNBOX64
     masm.rotateLeft64(Imm32(49), s0Reg, s0Reg);    // s0 rotl 49
 #else
-    masm.Push(tempReg);
-    masm.rotateLeft64(Imm32(49), s0Reg, s0Reg, tempReg);   // s0 rotl 49
-    masm.Pop(tempReg);
+    masm.rotateLeft64(Imm32(49), s0Reg, s0Reg, imrReg.low);   // s0 rotl 49
 #endif
     masm.move64(s1Reg, imrReg);                    // imr = s1
     masm.lshift64(Imm32(21), imrReg);              // imr << 21
