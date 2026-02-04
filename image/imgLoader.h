@@ -341,7 +341,16 @@ public:
   nsresult InitCache();
 
   bool RemoveFromCache(const ImageCacheKey& aKey);
-  bool RemoveFromCache(imgCacheEntry* entry);
+
+  // Enumeration describing if a given entry is in the cache queue or not.
+  // There are some cases we know the entry is definitely not in the queue.
+  enum class QueueState {
+    MaybeExists,
+    AlreadyRemoved
+  };
+
+  bool RemoveFromCache(imgCacheEntry* entry,
+                       QueueState aQueueState = QueueState::MaybeExists);
 
   bool PutIntoCache(const ImageCacheKey& aKey, imgCacheEntry* aEntry);
 

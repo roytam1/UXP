@@ -989,6 +989,12 @@ imgCacheQueue::GetNumElements() const
   return mQueue.size();
 }
 
+bool
+imgCacheQueue::Contains(imgCacheEntry* aEntry) const
+{
+  return mQueue.Contains(aEntry);
+}
+
 imgCacheQueue::iterator
 imgCacheQueue::begin()
 {
@@ -1569,7 +1575,9 @@ imgLoader::CheckCacheLimits(imgCacheTable& cache, imgCacheQueue& queue)
     }
 
     if (entry) {
-      RemoveFromCache(entry);
+      // We just popped this entry from the queue, so pass AlreadyRemoved
+      // to avoid searching the queue again in RemoveFromCache.
+      RemoveFromCache(entry, QueueState::AlreadyRemoved);
     }
   }
 }
@@ -1870,7 +1878,7 @@ imgLoader::RemoveFromCache(const ImageCacheKey& aKey)
 }
 
 bool
-imgLoader::RemoveFromCache(imgCacheEntry* entry)
+imgLoader::RemoveFromCache(imgCacheEntry* entry, QueueState aQueueState)
 {
   LOG_STATIC_FUNC(gImgLog, "imgLoader::RemoveFromCache entry");
 
@@ -1884,6 +1892,8 @@ imgLoader::RemoveFromCache(imgCacheEntry* entry)
                                "imgLoader::RemoveFromCache", "entry's uri",
                                key.Spec());
 
+    cache.Remove(key);
+
     if (queue.IsDirty()) {
       queue.Refresh();
     }
@@ -1894,10 +1904,15 @@ imgLoader::RemoveFromCache(imgCacheEntry* entry)
       if (mCacheTracker) {
         mCacheTracker->RemoveObject(entry);
       }
-      queue.Remove(entry);
+      // Only search the queue to remove the entry if its possible it might
+      // be in the queue.  If we know its not in the queue this would be
+      // wasted work.
+      MOZ_ASSERT_IF(aQueueState == QueueState::AlreadyRemoved,
+                    !queue.Contains(entry));
+      if (aQueueState == QueueState::MaybeExists) {
+        queue.Remove(entry);
+      }
     }
-
-    cache.Remove(key);
 
     entry->SetEvicted(true);
     request->SetIsInCache(false);
