@@ -253,6 +253,29 @@ function ArraySort(comparefn) {
     return MergeSort(O, len, comparefn);
 }
 
+// ES2023 22.1.3.30 Array.prototype.toSorted ( comparefn )
+function ArrayToSorted(comparefn) {
+    if (comparefn !== undefined) {
+        if (!IsCallable(comparefn)) {
+            ThrowTypeError(JSMSG_NOT_FUNCTION, DecompileArg(0, comparefn));
+        }
+    }
+
+    var O = ToObject(this);
+    var len = ToLength(O.length);
+
+    var A = ArraySpeciesCreate(O, len);
+    for (var k = 0; k < len; k++) {
+        if (k in O)
+            _DefineDataProperty(A, k, O[k]);
+        else
+            delete A[k];
+    }
+
+    callFunction(std_Array_sort, A, comparefn);
+    return A;
+}
+
 /* ES5 15.4.4.18. */
 function ArrayForEach(callbackfn/*, thisArg*/) {
     /* Step 1. */
