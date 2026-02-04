@@ -203,7 +203,8 @@ public:
   uint32_t GetSize() const;
   void UpdateSize(int32_t diff);
   uint32_t GetNumElements() const;
-  typedef std::vector<RefPtr<imgCacheEntry> > queueContainer;
+  bool Contains(imgCacheEntry* aEntry) const;
+  typedef nsTArray<RefPtr<imgCacheEntry> > queueContainer;
   typedef queueContainer::iterator iterator;
   typedef queueContainer::const_iterator const_iterator;
 
