@@ -264,15 +264,51 @@ function ArrayToSorted(comparefn) {
     var O = ToObject(this);
     var len = ToLength(O.length);
 
-    var A = ArraySpeciesCreate(O, len);
+    var items = new List();
+    var itemsLen = 0;
     for (var k = 0; k < len; k++) {
         if (k in O)
-            _DefineDataProperty(A, k, O[k]);
-        else
-            delete A[k];
+            items[itemsLen++] = O[k];
     }
 
-    callFunction(std_Array_sort, A, comparefn);
+    var wrappedCompareFn = comparefn;
+    var sortCompare;
+    if (wrappedCompareFn === undefined) {
+        sortCompare = function(x, y) {
+            if (x === undefined)
+                return y === undefined ? 0 : 1;
+            if (y === undefined)
+                return -1;
+
+            var xString = ToString(x);
+            var yString = ToString(y);
+            if (xString < yString)
+                return -1;
+            if (xString > yString)
+                return 1;
+            return 0;
+        };
+    } else {
+        sortCompare = function(x, y) {
+            if (x === undefined)
+                return y === undefined ? 0 : 1;
+            if (y === undefined)
+                return -1;
+
+            var v = ToNumber(wrappedCompareFn(x, y));
+            return v !== v ? 0 : v;
+        };
+    }
+
+    if (itemsLen > 1)
+        MergeSort(items, itemsLen, sortCompare);
+
+    var A = ArraySpeciesCreate(O, 0);
+    A.length = len;
+
+    for (var j = 0; j < itemsLen; j++)
+        _DefineDataProperty(A, j, items[j]);
+
     return A;
 }
 
