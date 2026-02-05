@@ -265,10 +265,9 @@ function ArrayToSorted(comparefn) {
     var len = ToLength(O.length);
 
     var items = new List();
-    var itemsLen = 0;
+    var itemsLen = len;
     for (var k = 0; k < len; k++) {
-        if (k in O)
-            items[itemsLen++] = O[k];
+        items[k] = O[k];
     }
 
     var wrappedCompareFn = comparefn;
@@ -303,9 +302,7 @@ function ArrayToSorted(comparefn) {
     if (itemsLen > 1)
         MergeSort(items, itemsLen, sortCompare);
 
-    var A = ArraySpeciesCreate(O, 0);
-    A.length = len;
-
+    var A = ArraySpeciesCreate(O, len);
     for (var j = 0; j < itemsLen; j++)
         _DefineDataProperty(A, j, items[j]);
 
