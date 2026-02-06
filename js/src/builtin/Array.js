@@ -261,15 +261,18 @@ function ArrayToSorted(comparefn) {
         }
     }
 
+    // Step 1: Let O be ? ToObject(this). Let len be ? ToLength(O.length).
     var O = ToObject(this);
     var len = ToLength(O.length);
 
+    // Step 2: Snapshot values in ascending index order into a List.
     var items = new List();
     var itemsLen = len;
     for (var k = 0; k < len; k++) {
         items[k] = O[k];
     }
 
+    // Step 3: Create SortCompare per spec.
     var wrappedCompareFn = comparefn;
     var sortCompare;
     if (wrappedCompareFn === undefined) {
@@ -299,9 +302,11 @@ function ArrayToSorted(comparefn) {
         };
     }
 
+    // Step 4: Sort the snapshot List using SortCompare.
     if (itemsLen > 1)
         MergeSort(items, itemsLen, sortCompare);
 
+    // Step 5: Create result array and write sorted values.
     var A = ArraySpeciesCreate(O, len);
     for (var j = 0; j < itemsLen; j++)
         _DefineDataProperty(A, j, items[j]);
