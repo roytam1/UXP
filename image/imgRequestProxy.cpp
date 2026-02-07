@@ -342,8 +342,14 @@ imgRequestProxy::CancelAndForgetObserver(nsresult aStatus)
   bool oldIsInLoadGroup = mIsInLoadGroup;
   mIsInLoadGroup = false;
 
-  if (GetOwner()) {
-    GetOwner()->RemoveProxy(this, aStatus);
+  imgRequest* owner = GetOwner();
+  if (owner) {
+    imgCacheValidator* validator = owner->GetValidator();
+    if (validator) {
+      validator->RemoveProxy(this);
+    }
+
+    owner->RemoveProxy(this, aStatus);
   }
 
   mIsInLoadGroup = oldIsInLoadGroup;
