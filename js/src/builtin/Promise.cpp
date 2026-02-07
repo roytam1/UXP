@@ -19,6 +19,7 @@
 #include "vm/ArrayObject.h"
 #include "vm/AsyncFunction.h"
 #include "vm/AsyncIteration.h"
+#include "builtin/ModuleObject.h"
 #include "vm/ErrorObject.h"
 
 #include "jsobjinlines.h"
@@ -43,6 +44,10 @@ enum PromiseHandler {
     // ES 2018 draft 25.5.5.4-5.
     PromiseHandlerAsyncFunctionAwaitedFulfilled,
     PromiseHandlerAsyncFunctionAwaitedRejected,
+
+    // Top-level await in modules.
+    PromiseHandlerAsyncModuleAwaitedFulfilled,
+    PromiseHandlerAsyncModuleAwaitedRejected,
 
     // Async Iteration proposal 4.1.
     PromiseHandlerAsyncGeneratorAwaitedFulfilled,
@@ -637,6 +642,8 @@ enum ReactionRecordSlots {
     //
     // - When the REACTION_FLAG_ASYNC_GENERATOR flag is set, this slot store
     //   the async generator function for this promise reaction.
+    // - When the REACTION_FLAG_ASYNC_MODULE flag is set, this slot stores
+    //   the module object for this promise reaction.
     // - When the REACTION_FLAG_DEFAULT_RESOLVING_HANDLER flag is set, this
     //   slot stores the promise to resolve when conceptually "calling" the
     //   OnFulfilled or OnRejected handlers.
@@ -653,7 +660,8 @@ class PromiseReactionRecord : public NativeObject
     static constexpr uint32_t REACTION_FLAG_DEFAULT_RESOLVING_HANDLER = 0x4;
     static constexpr uint32_t REACTION_FLAG_ASYNC_FUNCTION = 0x8;
     static constexpr uint32_t REACTION_FLAG_ASYNC_GENERATOR = 0x10;
-    static constexpr uint32_t REACTION_FLAG_DEBUGGER_DUMMY = 0x20;
+    static constexpr uint32_t REACTION_FLAG_ASYNC_MODULE = 0x20;
+    static constexpr uint32_t REACTION_FLAG_DEBUGGER_DUMMY = 0x40;
 
     void setFlagOnInitialState(uint32_t flag) {
         int32_t flags = this->flags();
@@ -733,6 +741,19 @@ class PromiseReactionRecord : public NativeObject
         MOZ_ASSERT(isAsyncGenerator());
         const Value& generator = getFixedSlot(ReactionRecordSlot_GeneratorOrPromiseToResolve);
         return &generator.toObject().as<AsyncGeneratorObject>();
+    }
+    void setIsAsyncModule(ModuleObject* module) {
+        setFlagOnInitialState(REACTION_FLAG_ASYNC_MODULE);
+        setFixedSlot(ReactionRecordSlot_GeneratorOrPromiseToResolve, ObjectValue(*module));
+    }
+    bool isAsyncModule() {
+        int32_t flags = this->flags();
+        return flags & REACTION_FLAG_ASYNC_MODULE;
+    }
+    ModuleObject* asyncModule() {
+        MOZ_ASSERT(isAsyncModule());
+        const Value& module = getFixedSlot(ReactionRecordSlot_GeneratorOrPromiseToResolve);
+        return &module.toObject().as<ModuleObject>();
     }
     void setIsDebuggerDummy() {
         setFlagOnInitialState(REACTION_FLAG_DEBUGGER_DUMMY);
@@ -1514,6 +1535,32 @@ AsyncFunctionPromiseReactionJob(JSContext* cx, Handle<PromiseReactionRecord*> re
 }
 
 static MOZ_MUST_USE bool
+AsyncModulePromiseReactionJob(JSContext* cx, Handle<PromiseReactionRecord*> reaction,
+                              MutableHandleValue rval)
+{
+    MOZ_ASSERT(reaction->isAsyncModule());
+
+    RootedValue handlerVal(cx, reaction->handler());
+    RootedValue argument(cx, reaction->handlerArg());
+    Rooted<ModuleObject*> module(cx, reaction->asyncModule());
+
+    int32_t handlerNum = handlerVal.toInt32();
+
+    // Resume module evaluation after an awaited promise settles.
+    if (handlerNum == PromiseHandlerAsyncModuleAwaitedFulfilled) {
+        if (!AsyncModuleAwaitedFulfilled(cx, module, argument))
+            return false;
+    } else {
+        MOZ_ASSERT(handlerNum == PromiseHandlerAsyncModuleAwaitedRejected);
+        if (!AsyncModuleAwaitedRejected(cx, module, argument))
+            return false;
+    }
+
+    rval.setUndefined();
+    return true;
+}
+
+static MOZ_MUST_USE bool
 AsyncGeneratorPromiseReactionJob(JSContext* cx, Handle<PromiseReactionRecord*> reaction,
                                  MutableHandleValue rval)
 {
@@ -1609,6 +1656,8 @@ PromiseReactionJob(JSContext* cx, unsigned argc, Value* vp)
         return DefaultResolvingPromiseReactionJob(cx, reaction, args.rval());
     if (reaction->isAsyncFunction())
         return AsyncFunctionPromiseReactionJob(cx, reaction, args.rval());
+    if (reaction->isAsyncModule())
+        return AsyncModulePromiseReactionJob(cx, reaction, args.rval());
     if (reaction->isAsyncGenerator())
         return AsyncGeneratorPromiseReactionJob(cx, reaction, args.rval());
     if (reaction->isDebuggerDummy())
@@ -3997,6 +4046,18 @@ js::AsyncFunctionAwait(JSContext* cx, Handle<PromiseObject*> resultPromise, Hand
     return InternalAwait(cx, value, resultPromise, onFulfilled, onRejected, extra);
 }
 
+MOZ_MUST_USE bool
+js::AsyncModuleAwait(JSContext* cx, Handle<ModuleObject*> module, HandleValue value)
+{
+    RootedValue onFulfilled(cx, Int32Value(PromiseHandlerAsyncModuleAwaitedFulfilled));
+    RootedValue onRejected(cx, Int32Value(PromiseHandlerAsyncModuleAwaitedRejected));
+
+    auto extra = [&](Handle<PromiseReactionRecord*> reaction) {
+        reaction->setIsAsyncModule(module);
+    };
+    return InternalAwait(cx, value, nullptr, onFulfilled, onRejected, extra);
+}
+
 // Async Iteration proposal 4.1 Await steps 2-9.
 MOZ_MUST_USE bool
 js::AsyncGeneratorAwait(JSContext* cx, Handle<AsyncGeneratorObject*> asyncGenObj,
@@ -4576,6 +4637,14 @@ PerformPromiseThen(JSContext* cx, Handle<PromiseObject*> promise, HandleValue on
         return false;
 
     return PerformPromiseThenWithReaction(cx, promise, reaction);
+}
+
+MOZ_MUST_USE bool
+js::PerformPromiseThenWithoutResult(JSContext* cx, Handle<PromiseObject*> promise,
+                                    HandleValue onFulfilled, HandleValue onRejected)
+{
+    Rooted<PromiseCapability> resultCapability(cx);
+    return PerformPromiseThen(cx, promise, onFulfilled, onRejected, resultCapability);
 }
 
 static MOZ_MUST_USE bool

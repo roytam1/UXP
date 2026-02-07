@@ -28,6 +28,8 @@
 #include "jsnum.h"
 #include "jsobj.h"
 #include "jsopcode.h"
+
+#include "builtin/ModuleObject.h"
 #include "jsprf.h"
 #include "jsscript.h"
 #include "jsstr.h"
@@ -394,6 +396,10 @@ js::RunScript(JSContext* cx, RunState& state)
 
     state.script()->ensureNonLazyCanonicalFunction();
 
+    if (state.script()->hasTopLevelAwait()) {
+        return Interpret(cx, state);
+    }
+
     if (jit::IsIonEnabled(cx)) {
         jit::MethodStatus status = jit::CanEnter(cx, state);
         if (status == jit::Method_Error)
@@ -753,6 +759,97 @@ js::Execute(JSContext* cx, HandleScript script, JSObject& envChainArg, Value* rv
 
     return ExecuteKernel(cx, script, *envChain, NullValue(),
                          NullFramePtr() /* evalInFrame */, rval);
+}
+
+class ModuleResumeState final : public RunState
+{
+    RootedObject envChain_;
+    Rooted<ArrayObject*> stack_;
+    uint32_t resumeOffset_;
+    uint32_t resumeStackDepth_;
+    RootedValue resumeValue_;
+    bool startInError_;
+    Value* result_;
+
+  public:
+    ModuleResumeState(JSContext* cx, JSScript* script, HandleObject envChain,
+                      Handle<ArrayObject*> stack, uint32_t resumeOffset,
+                      ModuleResumeKind kind, HandleValue value, Value* result)
+      : RunState(cx, Execute, script),
+        envChain_(cx, envChain),
+        stack_(cx, stack),
+        resumeOffset_(resumeOffset),
+        resumeStackDepth_(0),
+        resumeValue_(cx, value),
+        startInError_(kind == ModuleResumeKind::Throw),
+        result_(result)
+    {}
+
+    InterpreterFrame* pushInterpreterFrame(JSContext* cx) override {
+        InterpreterFrame* fp =
+            cx->runtime()->interpreterStack().pushExecuteFrame(cx, script_, UndefinedValue(),
+                                                              envChain_, NullFramePtr());
+        if (!fp)
+            return nullptr;
+
+        if (stack_) {
+            uint32_t len = stack_->getDenseInitializedLength();
+            MOZ_ASSERT(len >= script_->nfixed());
+            const Value* src = stack_->getDenseElements();
+            // Restore locals from the saved stack snapshot.
+            uint32_t nfixed = script_->nfixed();
+            for (uint32_t i = 0; i < nfixed; ++i)
+                fp->unaliasedLocal(i) = src[i];
+            resumeStackDepth_ = len - script_->nfixed();
+        } else {
+            MOZ_ASSERT(script_->nfixed() == 0);
+            resumeStackDepth_ = 0;
+        }
+
+        return fp;
+    }
+
+    void setReturnValue(const Value& v) override {
+        if (result_)
+            *result_ = v;
+    }
+
+    void initInterpreterRegs(InterpreterRegs& regs) override {
+        regs.pc = regs.fp()->script()->offsetToPC(resumeOffset_);
+        MOZ_ASSERT(regs.spForStackDepth(resumeStackDepth_ + 1));
+        if (stack_) {
+            uint32_t nfixed = script_->nfixed();
+            const Value* src = stack_->getDenseElements();
+            Value* base = regs.spForStackDepth(0);
+            // Restore operand stack for resume.
+            if (resumeStackDepth_ != 0)
+                mozilla::PodCopy(base, src + nfixed, resumeStackDepth_);
+            regs.sp = base + resumeStackDepth_;
+        } else {
+            regs.sp = regs.spForStackDepth(0);
+        }
+        regs.sp[0] = resumeValue_;
+        regs.sp++;
+    }
+
+    bool startInError() const override { return startInError_; }
+};
+
+bool
+js::ResumeModuleExecution(JSContext* cx, HandleScript script, HandleObject envChain,
+                          Handle<ArrayObject*> stack, uint32_t resumeOffset,
+                          ModuleResumeKind kind, HandleValue value, Value* rval)
+{
+    MOZ_ASSERT(script->module());
+    MOZ_ASSERT(envChain);
+
+    script->ensureNonLazyCanonicalFunction();
+
+    if (kind == ModuleResumeKind::Throw)
+        cx->setPendingExceptionAndCaptureStack(value);
+
+    ModuleResumeState state(cx, script, envChain, stack, resumeOffset, kind, value, rval);
+    return Interpret(cx, state);
 }
 
 /*
@@ -1680,6 +1777,7 @@ Interpret(JSContext* cx, RunState& state)
 
     ActivationEntryMonitor entryMonitor(cx, entryFrame);
     InterpreterActivation activation(state, cx, entryFrame);
+    state.initInterpreterRegs(activation.regs());
 
     /* The script is used frequently, so keep a local copy. */
     RootedScript script(cx);
@@ -1733,6 +1831,9 @@ Interpret(JSContext* cx, RunState& state)
     // Increment the coverage for the main entry point.
     INIT_COVERAGE();
     COUNT_COVERAGE_MAIN();
+
+    if (state.startInError())
+        goto error;
 
     // Enter the interpreter loop starting at the current pc.
     ADVANCE_AND_DISPATCH(0);
@@ -3918,16 +4019,42 @@ CASE(JSOP_YIELD)
 CASE(JSOP_AWAIT)
 {
     MOZ_ASSERT(!cx->isExceptionPending());
-    MOZ_ASSERT(REGS.fp()->isFunctionFrame());
-    ReservedRooted<JSObject*> obj(&rootObject0, &REGS.sp[-1].toObject());
-    if (!GeneratorObject::normalSuspend(cx, obj, REGS.fp(), REGS.pc,
-                                        REGS.spForStackDepth(0), REGS.stackDepth() - 2))
+    if (REGS.fp()->isFunctionFrame()) {
+        ReservedRooted<JSObject*> obj(&rootObject0, &REGS.sp[-1].toObject());
+        if (!GeneratorObject::normalSuspend(cx, obj, REGS.fp(), REGS.pc,
+                                            REGS.spForStackDepth(0), REGS.stackDepth() - 2))
+        {
+            goto error;
+        }
+
+        REGS.sp--;
+        POP_RETURN_VALUE();
+
+        goto successful_return_continuation;
+    }
+
+    MOZ_ASSERT(REGS.fp()->isModuleFrame());
+    // Module frames suspend on await without a generator object.
+    RootedModuleObject module(cx, REGS.fp()->script()->module());
+    MOZ_ASSERT(module);
+
+    POP_RETURN_VALUE();
+
+    uint32_t nvalues = REGS.fp()->script()->nfixed() + REGS.stackDepth();
+    uint32_t yieldAndAwaitIndex = GET_UINT24(REGS.pc);
+    RootedObject envChain(cx, REGS.fp()->environmentChain());
+    // Copy locals+stack to preserve interpreter state across await.
+    Value* slots = nullptr;
+    if (REGS.fp()->script()->nfixed() != 0) {
+        slots = &REGS.fp()->unaliasedLocal(0);
+    } else {
+        slots = REGS.spForStackDepth(0);
+    }
+    if (!ModuleObject::suspend(cx, module, envChain, yieldAndAwaitIndex,
+                               slots, nvalues))
     {
         goto error;
     }
-
-    REGS.sp--;
-    POP_RETURN_VALUE();
 
     goto successful_return_continuation;
 }

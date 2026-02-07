@@ -622,6 +622,8 @@ class MOZ_STACK_CLASS ModuleSharedContext : public SharedContext
 {
     RootedModuleObject module_;
     RootedScope enclosingScope_;
+    // True if this module contains top-level await (module evaluation is async).
+    bool hasTopLevelAwait_;
 
   public:
     Rooted<ModuleScope::Data*> bindings;
@@ -632,6 +634,9 @@ class MOZ_STACK_CLASS ModuleSharedContext : public SharedContext
 
     HandleModuleObject module() const { return module_; }
     Scope* compilationEnclosingScope() const override { return enclosingScope_; }
+
+    bool hasTopLevelAwait() const { return hasTopLevelAwait_; }
+    void setHasTopLevelAwait() { hasTopLevelAwait_ = true; }
 };
 
 inline ModuleSharedContext*

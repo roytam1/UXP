@@ -961,6 +961,7 @@ ModuleSharedContext::ModuleSharedContext(ExclusiveContext* cx, ModuleObject* mod
   : SharedContext(cx, Kind::Module, Directives(true), false),
     module_(cx, module),
     enclosingScope_(cx, enclosingScope),
+    hasTopLevelAwait_(false),
     bindings(cx),
     builder(builder)
 {
@@ -6456,14 +6457,17 @@ Parser<ParseHandler>::forStatement(YieldHandling yieldHandling)
         }
     }
 
-    if (pc->isAsync()) {
+    if (pc->isAsync() || pc->sc()->isModuleContext()) {
         bool matched;
         if (!tokenStream.matchToken(&matched, TOK_AWAIT))
             return null();
 
         if (matched) {
+            // Top-level for-await-of is allowed in modules (TLA).
             iflags |= JSITER_FORAWAITOF;
             iterKind = IteratorKind::Async;
+            if (pc->sc()->isModuleContext())
+                pc->sc()->asModuleContext()->setHasTopLevelAwait();
         }
     }
 
@@ -8409,7 +8413,7 @@ Parser<ParseHandler>::statement(YieldHandling yieldHandling)
 
       default: {
         // Avoid getting next token with None.
-        if (tt == TOK_AWAIT && pc->isAsync())
+        if (tt == TOK_AWAIT && (pc->isAsync() || pc->sc()->isModuleContext()))
             return expressionStatement(yieldHandling);
 
         if (!TokenKindIsPossibleIdentifier(tt))
@@ -8619,7 +8623,7 @@ Parser<ParseHandler>::statementListItem(YieldHandling yieldHandling,
 
       default: {
         // Avoid getting next token with None.
-        if (tt == TOK_AWAIT && pc->isAsync())
+        if (tt == TOK_AWAIT && (pc->isAsync() || pc->sc()->isModuleContext()))
             return expressionStatement(yieldHandling);
 
         if (!TokenKindIsPossibleIdentifier(tt))
@@ -9616,11 +9620,14 @@ Parser<ParseHandler>::unaryExpr(YieldHandling yieldHandling, TripledotHandling t
       }
 
       case TOK_AWAIT: {
-        if (pc->isAsync()) {
+        if (pc->isAsync() || pc->sc()->isModuleContext()) {
+            // Treat module contexts as suspendable for top-level await.
             Node kid = unaryExpr(yieldHandling, tripledotHandling, possibleError, invoked);
             if (!kid)
                 return null();
             pc->lastAwaitOffset = begin;
+            if (pc->sc()->isModuleContext())
+                pc->sc()->asModuleContext()->setHasTopLevelAwait();
             return handler.newAwaitExpression(begin, kid);
         }
       }
