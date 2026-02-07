@@ -465,16 +465,28 @@ public:
                                         uint32_t aModifiers);
 
   /**
-  * Does device have touch support
-  */
+   * Does device have touch support
+   */
   static uint32_t IsTouchDeviceSupportPresent();
 
   /**
-  * The maximum number of simultaneous touch contacts supported by the device.
-  * In the case of devices with multiple digitizers (e.g. multiple touch screens),
-  * the value will be the maximum of the set of maximum supported contacts by
-  * each individual digitizer.
-  */
+   * Returns the windows power platform role, which is useful for detecting tablets.
+   */
+  typedef POWER_PLATFORM_ROLE (WINAPI* PowerDeterminePlatformRoleEx)(ULONG Version);
+  static POWER_PLATFORM_ROLE GetPowerPlatformRole();
+
+  /**
+   * Whether there is a touchscreen, course or fine pointer,
+   * hover-capable pointer, or hover-incapable pointer.
+   */
+  static void GetPointerCapabilities(PointerCapabilities& aCaps);
+
+  /**
+   * The maximum number of simultaneous touch contacts supported by the device.
+   * In the case of devices with multiple digitizers (e.g. multiple touch screens),
+   * the value will be the maximum of the set of maximum supported contacts by
+   * each individual digitizer.
+   */
   static uint32_t GetMaxTouchPoints();
 
   /**
