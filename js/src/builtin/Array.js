@@ -253,6 +253,67 @@ function ArraySort(comparefn) {
     return MergeSort(O, len, comparefn);
 }
 
+// ES2023 22.1.3.30 Array.prototype.toSorted ( comparefn )
+function ArrayToSorted(comparefn) {
+    if (comparefn !== undefined) {
+        if (!IsCallable(comparefn)) {
+            ThrowTypeError(JSMSG_NOT_FUNCTION, DecompileArg(0, comparefn));
+        }
+    }
+
+    // Step 1: Let O be ? ToObject(this). Let len be ? ToLength(O.length).
+    var O = ToObject(this);
+    var len = ToLength(O.length);
+
+    // Step 2: Snapshot values in ascending index order into a List.
+    var items = new List();
+    var itemsLen = len;
+    for (var k = 0; k < len; k++) {
+        items[k] = O[k];
+    }
+
+    // Step 3: Create SortCompare per spec.
+    var wrappedCompareFn = comparefn;
+    var sortCompare;
+    if (wrappedCompareFn === undefined) {
+        sortCompare = function(x, y) {
+            if (x === undefined)
+                return y === undefined ? 0 : 1;
+            if (y === undefined)
+                return -1;
+
+            var xString = ToString(x);
+            var yString = ToString(y);
+            if (xString < yString)
+                return -1;
+            if (xString > yString)
+                return 1;
+            return 0;
+        };
+    } else {
+        sortCompare = function(x, y) {
+            if (x === undefined)
+                return y === undefined ? 0 : 1;
+            if (y === undefined)
+                return -1;
+
+            var v = ToNumber(wrappedCompareFn(x, y));
+            return v !== v ? 0 : v;
+        };
+    }
+
+    // Step 4: Sort the snapshot List using SortCompare.
+    if (itemsLen > 1)
+        MergeSort(items, itemsLen, sortCompare);
+
+    // Step 5: Create result array and write sorted values.
+    var A = ArraySpeciesCreate(O, len);
+    for (var j = 0; j < itemsLen; j++)
+        _DefineDataProperty(A, j, items[j]);
+
+    return A;
+}
+
 /* ES5 15.4.4.18. */
 function ArrayForEach(callbackfn/*, thisArg*/) {
     /* Step 1. */
