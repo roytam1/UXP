@@ -397,6 +397,8 @@ js::RunScript(JSContext* cx, RunState& state)
     state.script()->ensureNonLazyCanonicalFunction();
 
     if (state.script()->hasTopLevelAwait()) {
+        // TLA modules can suspend/resume via interpreter-only state snapshots.
+        // JITs don't support resuming module frames yet, so force interpreter.
         return Interpret(cx, state);
     }
 
