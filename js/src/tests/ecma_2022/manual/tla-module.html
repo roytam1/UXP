@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Top-Level Await Smoke Test</title>
+<style>
+  body { font-family: sans-serif; padding: 24px; }
+  .ok { color: #0a7a0a; }
+  .fail { color: #b00020; }
+</style>
+<h1>Top-Level Await Smoke Test</h1>
+<p id="status">Running…</p>
+<script type="module">
+  const status = document.getElementById("status");
+
+  // Use a blob module so we can report a syntax error if TLA isn't supported.
+  const source = `
+    let fired = false;
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        fired = true;
+        resolve();
+      }, 0);
+    });
+    if (!fired) throw new Error("await did not suspend");
+    globalThis.__tla_ok = true;
+    export const ok = true;
+  `;
+
+  const blob = new Blob([source], { type: "text/javascript" });
+  const url = URL.createObjectURL(blob);
+
+  import(url).then(() => {
+    URL.revokeObjectURL(url);
+    if (globalThis.__tla_ok) {
+      status.textContent = "OK: top-level await suspended and resumed";
+      status.className = "ok";
+    } else {
+      status.textContent = "FAIL: module loaded without completing TLA";
+      status.className = "fail";
+    }
+  }).catch((e) => {
+    URL.revokeObjectURL(url);
+    status.textContent = "FAIL: " + e;
+    status.className = "fail";
+  });
+</script>
