@@ -661,6 +661,7 @@ function InnerModuleEvaluation(module, stack, index)
     // Step 11
     let promise;
     if (dependencyPromises.length > 0) {
+        // Defer execution until all async dependency evaluations settle.
         promise = AwaitDependencies(dependencyPromises);
         promise = callContentFunction(promise.then, promise, function() {
             return ExecuteModule(module);
@@ -692,6 +693,7 @@ function InnerModuleEvaluation(module, stack, index)
 
     if (promise !== undefined) {
         if (cycleModules !== undefined) {
+            // For async cycles, finalize status transitions after promise settle.
             let onFulfilled = function() {
                 for (let i = 0; i < cycleModules.length; i++)
                     ModuleSetStatus(cycleModules[i], MODULE_STATUS_EVALUATED);

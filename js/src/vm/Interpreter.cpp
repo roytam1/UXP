@@ -845,6 +845,8 @@ js::ResumeModuleExecution(JSContext* cx, HandleScript script, HandleObject envCh
 
     script->ensureNonLazyCanonicalFunction();
 
+    // If resuming with a throw, seed the pending exception for the interpreter
+    // to pick up at the await resumption point.
     if (kind == ModuleResumeKind::Throw)
         cx->setPendingExceptionAndCaptureStack(value);
 
@@ -4035,6 +4037,7 @@ CASE(JSOP_AWAIT)
 
     MOZ_ASSERT(REGS.fp()->isModuleFrame());
     // Module frames suspend on await without a generator object.
+    // We persist state on the ModuleObject and let promise reactions resume.
     RootedModuleObject module(cx, REGS.fp()->script()->module());
     MOZ_ASSERT(module);
 

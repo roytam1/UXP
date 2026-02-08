@@ -4049,6 +4049,8 @@ js::AsyncFunctionAwait(JSContext* cx, Handle<PromiseObject*> resultPromise, Hand
 MOZ_MUST_USE bool
 js::AsyncModuleAwait(JSContext* cx, Handle<ModuleObject*> module, HandleValue value)
 {
+    // Use InternalAwait with module-specific reactions so resume happens on
+    // module evaluation instead of a generator object.
     RootedValue onFulfilled(cx, Int32Value(PromiseHandlerAsyncModuleAwaitedFulfilled));
     RootedValue onRejected(cx, Int32Value(PromiseHandlerAsyncModuleAwaitedRejected));
 

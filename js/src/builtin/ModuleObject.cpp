@@ -1058,6 +1058,8 @@ ModuleObject::suspend(JSContext* cx, HandleModuleObject self, HandleObject envCh
     MOZ_ASSERT(!self->isAsyncEvaluating());
     MOZ_ASSERT(envChain);
 
+    // Snapshot the interpreter's locals+operand stack so we can resume exactly
+    // at the await point without re-executing prior bytecode.
     ArrayObject* stack = nullptr;
     if (nvalues != 0) {
         // Snapshot locals+stack for resumption after await.
@@ -1091,7 +1093,8 @@ ModuleObject::resume(JSContext* cx, HandleModuleObject self, bool throwOnResume,
     RootedValue rval(cx);
     ModuleResumeKind resumeKind =
         throwOnResume ? ModuleResumeKind::Throw : ModuleResumeKind::Normal;
-    // Resume interpreter at the await point (normal or throwing).
+    // Resume interpreter at the await point (normal or throwing). This mirrors
+    // generator resumption but uses module evaluation state instead of a genobj.
     if (!ResumeModuleExecution(cx, script, envChain, stack, resumeOffset,
                                resumeKind, value, rval.address()))
     {
@@ -1108,6 +1111,8 @@ ModuleObject::resume(JSContext* cx, HandleModuleObject self, bool throwOnResume,
     }
 
     if (self->isAsyncEvaluating()) {
+        // The resumed code hit another top-level await. Chain the new await
+        // onto the same evaluation promise.
         RootedValue awaitValue(cx, rval);
         if (!AsyncModuleAwait(cx, self, awaitValue))
             return false;
@@ -1136,8 +1141,8 @@ ModuleObject::execute(JSContext* cx, HandleModuleObject self, MutableHandleValue
 
     RootedScript script(cx, self->script());
 
-    // The top-level script if a module is only ever executed once. Clear the
-    // reference to prevent us keeping this alive unnecessarily.
+    // The top-level script in a module is executed only once. If it doesn't
+    // suspend, clear the reference to allow GC. For TLA, keep it until resolve.
     bool hasTopLevelAwait = script->hasTopLevelAwait();
     Rooted<PromiseObject*> evalPromise(cx);
     if (hasTopLevelAwait) {
@@ -1169,6 +1174,7 @@ ModuleObject::execute(JSContext* cx, HandleModuleObject self, MutableHandleValue
                 return false;
             cx->setPendingException(exc, nullptr);
         }
+        // Execution failed before any await continuation. Script is done.
         self->setReservedSlot(ScriptSlot, UndefinedValue());
         return false;
     }
@@ -1185,6 +1191,7 @@ ModuleObject::execute(JSContext* cx, HandleModuleObject self, MutableHandleValue
     }
 
     MOZ_ASSERT(hasTopLevelAwait);
+    // Initial suspension: await the value and return the evaluation promise.
     RootedValue awaitValue(cx, rval.get());
     if (!AsyncModuleAwait(cx, self, awaitValue))
         return false;
@@ -1877,6 +1884,8 @@ js::FinishDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, Han
             return RejectPromiseWithPendingError(cx, promise);
         }
 
+        // Dynamic import should resolve/reject when the in-flight module
+        // evaluation completes.
         RootedAtom funName(cx, cx->names().empty);
         RootedFunction onFulfilled(
             cx, NewNativeFunction(cx, DynamicImportResolve, 0, funName,

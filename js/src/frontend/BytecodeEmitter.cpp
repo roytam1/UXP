@@ -6511,7 +6511,7 @@ BytecodeEmitter::emitAwaitInScope(EmitterScope& currentScope)
     if (sc->isModuleContext()) {
         // JSOP_AWAIT's stack model assumes [promise, gen] -> [resolved].
         // In modules we don't push a generator, so compensate for the extra
-        // stack pop to keep stackDepth accurate.
+        // stack pop to keep stackDepth accurate (avoids bogus "script too large").
         stackDepth++;
         if ((uint32_t)stackDepth > maxStackDepth)
             maxStackDepth = stackDepth;
