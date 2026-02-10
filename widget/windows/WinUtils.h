@@ -39,7 +39,7 @@
 
 // Starting with version 10.0.22621.0 of the Windows SDK the AR_STATE enum and
 // types are only defined when building for Windows 8 instead of Windows 7.
-#if (WDK_NTDDI_VERSION >= 0x0A00000C) && (WINVER < 0x0602)
+#ifndef WM_GESTURE
 
 enum tagAR_STATE {
   AR_ENABLED = 0x0,
@@ -57,7 +57,7 @@ typedef enum tagAR_STATE AR_STATE;
 
 using PAR_STATE = enum tagAR_STATE*;
 
-#endif  // (WDK_NTDDI_VERSION >= 0x0A00000C) && (WINVER < 0x0602)
+#endif  // !defined(WM_GESTURE)
 
 /**
  * NS_INLINE_DECL_IUNKNOWN_REFCOUNTING should be used for defining and
