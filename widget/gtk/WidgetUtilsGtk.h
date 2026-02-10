@@ -16,6 +16,9 @@ class WidgetUtilsGTK
 public:
   /* See WidgetUtils::IsTouchDeviceSupportPresent(). */
   static int32_t IsTouchDeviceSupportPresent();
+
+  /* See WidgetUtils::GetPointerCapabilities(). */
+  static void GetPointerCapabilities(PointerCapabilities& aCaps);
 };
 
 }  // namespace widget

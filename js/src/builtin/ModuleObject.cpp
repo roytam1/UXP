@@ -14,9 +14,13 @@
 #include "vm/SelfHosting.h"
 #include "vm/AsyncFunction.h"
 #include "vm/AsyncIteration.h"
+#include "vm/Interpreter.h"
+#include "vm/ArrayObject.h"
 
 #include "jsobjinlines.h"
 #include "jsscriptinlines.h"
+#include "jsfun.h"
+#include "jsarray.h"
 
 using namespace js;
 using namespace js::frontend;
@@ -884,6 +888,17 @@ ModuleObject::evaluationError() const
     return getReservedSlot(EvaluationErrorSlot);
 }
 
+PromiseObject*
+ModuleObject::evaluationPromise() const
+{
+    Value value = getReservedSlot(AsyncEvaluationPromiseSlot);
+    if (value.isObject())
+        return &value.toObject().as<PromiseObject>();
+
+    MOZ_ASSERT(value.isUndefined());
+    return nullptr;
+}
+
 JSObject*
 ModuleObject::metaObject() const
 {
@@ -901,6 +916,55 @@ ModuleObject::setMetaObject(JSObject* obj)
     MOZ_ASSERT(obj);
     MOZ_ASSERT(!metaObject());
     setReservedSlot(MetaObjectSlot, ObjectValue(*obj));
+}
+
+bool
+ModuleObject::isAsyncEvaluating() const
+{
+    return getReservedSlot(AsyncEvaluationYieldIndexSlot).isInt32();
+}
+
+uint32_t
+ModuleObject::asyncEvaluationYieldIndex() const
+{
+    return getReservedSlot(AsyncEvaluationYieldIndexSlot).toInt32();
+}
+
+JSObject*
+ModuleObject::asyncEvaluationEnvironment() const
+{
+    Value value = getReservedSlot(AsyncEvaluationEnvironmentSlot);
+    if (value.isObject())
+        return &value.toObject();
+
+    MOZ_ASSERT(value.isUndefined());
+    return nullptr;
+}
+
+ArrayObject*
+ModuleObject::asyncEvaluationStack() const
+{
+    Value value = getReservedSlot(AsyncEvaluationStackSlot);
+    if (value.isObject())
+        return &value.toObject().as<ArrayObject>();
+
+    MOZ_ASSERT(value.isUndefined());
+    return nullptr;
+}
+
+void
+ModuleObject::clearAsyncEvaluationState()
+{
+    setReservedSlot(AsyncEvaluationEnvironmentSlot, UndefinedValue());
+    setReservedSlot(AsyncEvaluationStackSlot, UndefinedValue());
+    setReservedSlot(AsyncEvaluationYieldIndexSlot, UndefinedValue());
+}
+
+void
+ModuleObject::setEvaluationPromise(PromiseObject* promise)
+{
+    MOZ_ASSERT(promise);
+    setReservedSlot(AsyncEvaluationPromiseSlot, ObjectValue(*promise));
 }
 
 Scope*
@@ -987,18 +1051,113 @@ ModuleObject::instantiateFunctionDeclarations(JSContext* cx, HandleModuleObject 
 }
 
 /* static */ bool
+ModuleObject::suspend(JSContext* cx, HandleModuleObject self, HandleObject envChain,
+                      uint32_t yieldAndAwaitIndex, Value* vp, uint32_t nvalues)
+{
+    MOZ_ASSERT(self->script()->hasTopLevelAwait());
+    MOZ_ASSERT(!self->isAsyncEvaluating());
+    MOZ_ASSERT(envChain);
+
+    // Snapshot the interpreter's locals+operand stack so we can resume exactly
+    // at the await point without re-executing prior bytecode.
+    ArrayObject* stack = nullptr;
+    if (nvalues != 0) {
+        // Snapshot locals+stack for resumption after await.
+        stack = NewDenseCopiedArray(cx, nvalues, vp);
+        if (!stack)
+            return false;
+        self->setReservedSlot(AsyncEvaluationStackSlot, ObjectValue(*stack));
+    } else {
+        self->setReservedSlot(AsyncEvaluationStackSlot, UndefinedValue());
+    }
+
+    self->setReservedSlot(AsyncEvaluationYieldIndexSlot, Int32Value(yieldAndAwaitIndex));
+    self->setReservedSlot(AsyncEvaluationEnvironmentSlot, ObjectValue(*envChain));
+    return true;
+}
+
+/* static */ bool
+ModuleObject::resume(JSContext* cx, HandleModuleObject self, bool throwOnResume,
+                     HandleValue value)
+{
+    MOZ_ASSERT(self->isAsyncEvaluating());
+
+    RootedScript script(cx, self->script());
+    RootedObject envChain(cx, self->asyncEvaluationEnvironment());
+    Rooted<ArrayObject*> stack(cx, self->asyncEvaluationStack());
+    uint32_t yieldAndAwaitIndex = self->asyncEvaluationYieldIndex();
+    uint32_t resumeOffset = script->yieldAndAwaitOffsets()[yieldAndAwaitIndex];
+
+    self->clearAsyncEvaluationState();
+
+    RootedValue rval(cx);
+    ModuleResumeKind resumeKind =
+        throwOnResume ? ModuleResumeKind::Throw : ModuleResumeKind::Normal;
+    // Resume interpreter at the await point (normal or throwing). This mirrors
+    // generator resumption but uses module evaluation state instead of a genobj.
+    if (!ResumeModuleExecution(cx, script, envChain, stack, resumeOffset,
+                               resumeKind, value, rval.address()))
+    {
+        Rooted<PromiseObject*> promise(cx, self->evaluationPromise());
+        if (promise) {
+            RootedValue exc(cx);
+            if (!GetAndClearException(cx, &exc))
+                return false;
+            if (!PromiseObject::reject(cx, promise, exc))
+                return false;
+        }
+        self->setReservedSlot(ScriptSlot, UndefinedValue());
+        return true;
+    }
+
+    if (self->isAsyncEvaluating()) {
+        // The resumed code hit another top-level await. Chain the new await
+        // onto the same evaluation promise.
+        RootedValue awaitValue(cx, rval);
+        if (!AsyncModuleAwait(cx, self, awaitValue))
+            return false;
+        return true;
+    }
+
+    Rooted<PromiseObject*> promise(cx, self->evaluationPromise());
+    if (promise) {
+        RootedValue undefinedValue(cx, UndefinedValue());
+        if (!PromiseObject::resolve(cx, promise, undefinedValue))
+            return false;
+    }
+
+    self->setReservedSlot(ScriptSlot, UndefinedValue());
+    return true;
+}
+
+/* static */ bool
 ModuleObject::execute(JSContext* cx, HandleModuleObject self, MutableHandleValue rval)
 {
 #ifdef DEBUG
     MOZ_ASSERT(self->status() == MODULE_STATUS_EVALUATING);
     MOZ_ASSERT(IsFrozen(cx, self));
 #endif
+    MOZ_ASSERT(!self->isAsyncEvaluating());
 
     RootedScript script(cx, self->script());
 
-    // The top-level script if a module is only ever executed once. Clear the
-    // reference to prevent us keeping this alive unnecessarily.
-    self->setReservedSlot(ScriptSlot, UndefinedValue());
+    // The top-level script in a module is executed only once. If it doesn't
+    // suspend, clear the reference to allow GC. For TLA, keep it until resolve.
+    bool hasTopLevelAwait = script->hasTopLevelAwait();
+    Rooted<PromiseObject*> evalPromise(cx);
+    if (hasTopLevelAwait) {
+        // Async module evaluation returns/awaits this promise.
+        evalPromise = self->evaluationPromise();
+        if (!evalPromise) {
+            RootedObject promiseObj(cx, JS::NewPromiseObject(cx, nullptr));
+            if (!promiseObj)
+                return false;
+            evalPromise = &promiseObj->as<PromiseObject>();
+            self->setEvaluationPromise(evalPromise);
+        }
+    } else {
+        self->setReservedSlot(ScriptSlot, UndefinedValue());
+    }
 
     RootedModuleEnvironmentObject scope(cx, self->environment());
     if (!scope) {
@@ -1006,7 +1165,38 @@ ModuleObject::execute(JSContext* cx, HandleModuleObject self, MutableHandleValue
         return false;
     }
 
-    return Execute(cx, script, *scope, rval.address());
+    if (!Execute(cx, script, *scope, rval.address())) {
+        if (evalPromise) {
+            RootedValue exc(cx);
+            if (!GetAndClearException(cx, &exc))
+                return false;
+            if (!PromiseObject::reject(cx, evalPromise, exc))
+                return false;
+            cx->setPendingException(exc, nullptr);
+        }
+        // Execution failed before any await continuation. Script is done.
+        self->setReservedSlot(ScriptSlot, UndefinedValue());
+        return false;
+    }
+
+    if (!self->isAsyncEvaluating()) {
+        if (evalPromise) {
+            RootedValue undefinedValue(cx, UndefinedValue());
+            if (!PromiseObject::resolve(cx, evalPromise, undefinedValue))
+                return false;
+            self->setReservedSlot(ScriptSlot, UndefinedValue());
+            rval.setObject(*evalPromise);
+        }
+        return true;
+    }
+
+    MOZ_ASSERT(hasTopLevelAwait);
+    // Initial suspension: await the value and return the evaluation promise.
+    RootedValue awaitValue(cx, rval.get());
+    if (!AsyncModuleAwait(cx, self, awaitValue))
+        return false;
+    rval.setObject(*evalPromise);
+    return true;
 }
 
 /* static */ ModuleNamespaceObject*
@@ -1619,6 +1809,50 @@ js::StartDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, Hand
     return promise;
 }
 
+enum DynamicImportHandlerSlots {
+    DynamicImportSlot_Promise = 0,
+    DynamicImportSlot_Module,
+    DynamicImportSlotCount
+};
+
+static bool
+DynamicImportResolve(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    RootedFunction callee(cx, &args.callee().as<JSFunction>());
+    Rooted<PromiseObject*> promise(
+        cx, &callee->getExtendedSlot(DynamicImportSlot_Promise).toObject().as<PromiseObject>());
+    RootedModuleObject module(
+        cx, &callee->getExtendedSlot(DynamicImportSlot_Module).toObject().as<ModuleObject>());
+
+    RootedObject ns(cx, ModuleObject::GetOrCreateModuleNamespace(cx, module));
+    if (!ns)
+        return false;
+
+    RootedValue value(cx, ObjectValue(*ns));
+    if (!PromiseObject::resolve(cx, promise, value))
+        return false;
+
+    args.rval().setUndefined();
+    return true;
+}
+
+static bool
+DynamicImportReject(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    RootedFunction callee(cx, &args.callee().as<JSFunction>());
+    Rooted<PromiseObject*> promise(
+        cx, &callee->getExtendedSlot(DynamicImportSlot_Promise).toObject().as<PromiseObject>());
+
+    RootedValue reason(cx, args.get(0));
+    if (!PromiseObject::reject(cx, promise, reason))
+        return false;
+
+    args.rval().setUndefined();
+    return true;
+}
+
 bool
 js::FinishDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, HandleString specifier,
                               HandleObject promiseArg)
@@ -1638,6 +1872,42 @@ js::FinishDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, Han
     }
 
     RootedModuleObject module(cx, &result->as<ModuleObject>());
+    if (module->status() == MODULE_STATUS_EVALUATED_ERROR) {
+        RootedValue error(cx, module->evaluationError());
+        return PromiseObject::reject(cx, promise, error);
+    }
+
+    if (module->status() == MODULE_STATUS_EVALUATING) {
+        Rooted<PromiseObject*> evalPromise(cx, module->evaluationPromise());
+        if (!evalPromise) {
+            JS_ReportErrorASCII(cx, "Missing module evaluation promise");
+            return RejectPromiseWithPendingError(cx, promise);
+        }
+
+        // Dynamic import should resolve/reject when the in-flight module
+        // evaluation completes.
+        RootedAtom funName(cx, cx->names().empty);
+        RootedFunction onFulfilled(
+            cx, NewNativeFunction(cx, DynamicImportResolve, 0, funName,
+                                  gc::AllocKind::FUNCTION_EXTENDED, GenericObject));
+        if (!onFulfilled)
+            return false;
+
+        RootedFunction onRejected(
+            cx, NewNativeFunction(cx, DynamicImportReject, 1, funName,
+                                  gc::AllocKind::FUNCTION_EXTENDED, GenericObject));
+        if (!onRejected)
+            return false;
+
+        onFulfilled->setExtendedSlot(DynamicImportSlot_Promise, ObjectValue(*promise));
+        onFulfilled->setExtendedSlot(DynamicImportSlot_Module, ObjectValue(*module));
+        onRejected->setExtendedSlot(DynamicImportSlot_Promise, ObjectValue(*promise));
+
+        RootedValue onFulfilledVal(cx, ObjectValue(*onFulfilled));
+        RootedValue onRejectedVal(cx, ObjectValue(*onRejected));
+        return PerformPromiseThenWithoutResult(cx, evalPromise, onFulfilledVal, onRejectedVal);
+    }
+
     if (module->status() != MODULE_STATUS_EVALUATED) {
         JS_ReportErrorASCII(cx, "Unevaluated or errored module returned by module resolve hook");
         return RejectPromiseWithPendingError(cx, promise);
@@ -1650,4 +1920,16 @@ js::FinishDynamicModuleImport(JSContext* cx, HandleValue referencingPrivate, Han
 
     RootedValue value(cx, ObjectValue(*ns));
     return PromiseObject::resolve(cx, promise, value);
+}
+
+MOZ_MUST_USE bool
+js::AsyncModuleAwaitedFulfilled(JSContext* cx, HandleModuleObject module, HandleValue value)
+{
+    return ModuleObject::resume(cx, module, /* throwOnResume = */ false, value);
+}
+
+MOZ_MUST_USE bool
+js::AsyncModuleAwaitedRejected(JSContext* cx, HandleModuleObject module, HandleValue reason)
+{
+    return ModuleObject::resume(cx, module, /* throwOnResume = */ true, reason);
 }
