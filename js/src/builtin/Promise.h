@@ -168,6 +168,11 @@ AsyncFunctionThrown(JSContext* cx, Handle<PromiseObject*> resultPromise);
 MOZ_MUST_USE bool
 AsyncFunctionAwait(JSContext* cx, Handle<PromiseObject*> resultPromise, HandleValue value);
 
+class ModuleObject;
+
+MOZ_MUST_USE bool
+AsyncModuleAwait(JSContext* cx, Handle<ModuleObject*> module, HandleValue value);
+
 class AsyncGeneratorObject;
 
 MOZ_MUST_USE bool
@@ -184,6 +189,10 @@ AsyncGeneratorReject(JSContext* cx, Handle<AsyncGeneratorObject*> asyncGenObj,
 MOZ_MUST_USE bool
 AsyncGeneratorEnqueue(JSContext* cx, HandleValue asyncGenVal, CompletionKind completionKind,
                       HandleValue completionValue, MutableHandleValue result);
+
+MOZ_MUST_USE bool
+PerformPromiseThenWithoutResult(JSContext* cx, Handle<PromiseObject*> promise,
+                                HandleValue onFulfilled, HandleValue onRejected);
 
 bool
 AsyncFromSyncIteratorMethod(JSContext* cx, CallArgs& args, CompletionKind completionKind);

@@ -58,6 +58,19 @@ static const nsCSSProps::KTableEntry kPrefersMotionKeywords[] = {
   { eCSSKeyword_UNKNOWN,                 -1 },
 };
 
+static const nsCSSProps::KTableEntry kHoverKeywords[] = {
+  { eCSSKeyword_none,                    NS_STYLE_HOVER_NONE },
+  { eCSSKeyword_hover,                   NS_STYLE_HOVER_HOVER },
+  { eCSSKeyword_UNKNOWN,                 -1 }
+};
+
+static const nsCSSProps::KTableEntry kPointerKeywords[] = {
+  { eCSSKeyword_none,                    NS_STYLE_POINTER_NONE },
+  { eCSSKeyword_coarse,                  NS_STYLE_POINTER_COARSE },
+  { eCSSKeyword_fine,                    NS_STYLE_POINTER_FINE },
+  { eCSSKeyword_UNKNOWN,                 -1 }
+};
+
 #ifdef XP_WIN
 struct WindowsThemeName {
   LookAndFeel::WindowsTheme id;
@@ -324,6 +337,98 @@ GetScan(nsPresContext* aPresContext, const nsMediaFeature*,
   // Since Gecko doesn't support the 'tv' media type, the 'scan'
   // feature is never present.
   aResult.Reset();
+  return NS_OK;
+}
+
+static void
+GetPointerCapabilities(nsPresContext* aPresContext,
+                       mozilla::widget::PointerCapabilities& aCaps)
+{
+  aCaps.haveCoarsePointer = false;
+  aCaps.haveFinePointer = false;
+  aCaps.haveHoverCapablePointer = false;
+  aCaps.haveHoverIncapablePointer = false;
+  aCaps.haveTouchscreen = false;
+
+  if (!aPresContext) {
+    return;
+  }
+
+  nsCOMPtr<nsISupports> container;
+
+  nsRootPresContext* root = aPresContext->GetRootPresContext();
+  if (root && root->Document()) {
+    container = root->Document()->GetContainer();
+    nsCOMPtr<nsIBaseWindow> baseWindow = do_QueryInterface(container);
+    if (baseWindow) {
+      nsCOMPtr<nsIWidget> mainWidget;
+      baseWindow->GetMainWidget(getter_AddRefs(mainWidget));
+      mainWidget->GetPointerCapabilities(aCaps);
+    }
+  }
+}
+
+static nsresult
+GetAnyHover(nsPresContext* aPresContext, const nsMediaFeature*,
+            nsCSSValue& aResult)
+{
+  mozilla::widget::PointerCapabilities caps;
+  GetPointerCapabilities(aPresContext, caps);
+  if (caps.haveHoverCapablePointer) {
+    aResult.SetIntValue(NS_STYLE_HOVER_HOVER, eCSSUnit_Enumerated);
+  }
+  if ((!caps.haveCoarsePointer && !caps.haveFinePointer) ||
+      caps.haveHoverIncapablePointer) {
+    aResult.SetIntValue(NS_STYLE_HOVER_NONE, eCSSUnit_Enumerated);
+  }
+  return NS_OK;
+}
+
+static nsresult
+GetHover(nsPresContext* aPresContext, const nsMediaFeature*,
+         nsCSSValue& aResult)
+{
+  mozilla::widget::PointerCapabilities caps;
+  GetPointerCapabilities(aPresContext, caps);
+  if (caps.haveHoverCapablePointer) {
+    aResult.SetIntValue(NS_STYLE_HOVER_HOVER, eCSSUnit_Enumerated);
+  } else {
+    aResult.SetIntValue(NS_STYLE_HOVER_NONE, eCSSUnit_Enumerated);
+  }
+  return NS_OK;
+}
+
+static nsresult
+GetAnyPointer(nsPresContext* aPresContext, const nsMediaFeature*,
+              nsCSSValue& aResult)
+{
+  mozilla::widget::PointerCapabilities caps;
+  GetPointerCapabilities(aPresContext, caps);
+  if (caps.haveCoarsePointer) {
+    aResult.SetIntValue(NS_STYLE_POINTER_COARSE, eCSSUnit_Enumerated);
+  }
+  if (caps.haveFinePointer) {
+    aResult.SetIntValue(NS_STYLE_POINTER_FINE, eCSSUnit_Enumerated);
+  }
+  if (!caps.haveFinePointer && !caps.haveCoarsePointer) {
+    aResult.SetIntValue(NS_STYLE_POINTER_NONE, eCSSUnit_Enumerated);
+  }
+  return NS_OK;
+}
+
+static nsresult
+GetPointer(nsPresContext* aPresContext, const nsMediaFeature*,
+           nsCSSValue& aResult)
+{
+  mozilla::widget::PointerCapabilities caps;
+  GetPointerCapabilities(aPresContext, caps);
+  if (caps.haveFinePointer) {
+    aResult.SetIntValue(NS_STYLE_POINTER_FINE, eCSSUnit_Enumerated);
+  } else if (caps.haveCoarsePointer) {
+    aResult.SetIntValue(NS_STYLE_POINTER_COARSE, eCSSUnit_Enumerated);
+  } else {
+    aResult.SetIntValue(NS_STYLE_POINTER_NONE, eCSSUnit_Enumerated);
+  }
   return NS_OK;
 }
 
@@ -692,6 +797,41 @@ nsMediaFeatures::features[] = {
     nsMediaFeature::eNoRequirements,
     { kDisplayModeKeywords },
     GetDisplayMode
+  },
+
+  // media interaction features
+  {
+    &nsGkAtoms::any_hover,
+    nsMediaFeature::eMinMaxNotAllowed,
+    nsMediaFeature::eEnumerated,
+    nsMediaFeature::eNoRequirements,
+    { kHoverKeywords },
+    GetAnyHover
+  },
+  {
+    &nsGkAtoms::hover,
+    nsMediaFeature::eMinMaxNotAllowed,
+    nsMediaFeature::eEnumerated,
+    nsMediaFeature::eNoRequirements,
+    { kHoverKeywords },
+    GetHover
+  },
+  {
+    &nsGkAtoms::any_pointer,
+    nsMediaFeature::eMinMaxNotAllowed,
+    nsMediaFeature::eEnumerated,
+    nsMediaFeature::eNoRequirements,
+    { kPointerKeywords },
+    GetAnyPointer
+  },
+
+  {
+    &nsGkAtoms::pointer,
+    nsMediaFeature::eMinMaxNotAllowed,
+    nsMediaFeature::eEnumerated,
+    nsMediaFeature::eNoRequirements,
+    { kPointerKeywords },
+    GetPointer
   },
 
   // Webkit extensions that we support for de-facto web compatibility

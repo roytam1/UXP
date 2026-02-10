@@ -114,6 +114,24 @@ WidgetUtils::IsTouchDeviceSupportPresent()
 
 // static
 void
+WidgetUtils::GetPointerCapabilities(PointerCapabilities& aCaps)
+{
+#ifdef XP_WIN
+  WinUtils::GetPointerCapabilities(aCaps);
+#elif MOZ_WIDGET_GTK == 3
+  WidgetUtilsGTK::GetPointerCapabilities(aCaps);
+#else
+  // Assume a mouse.
+  aCaps.haveCoarsePointer = false;
+  aCaps.haveFinePointer = true;
+  aCaps.haveHoverCapablePointer = true;
+  aCaps.haveHoverIncapablePointer = false;
+  aCaps.haveTouchscreen = false;
+#endif
+}
+
+// static
+void
 WidgetUtils::SendBidiKeyboardInfoToContent()
 {
   nsCOMPtr<nsIBidiKeyboard> bidiKeyboard = nsContentUtils::GetBidiKeyboard();

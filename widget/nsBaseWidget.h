@@ -212,6 +212,7 @@ public:
   virtual void            UpdateThemeGeometries(const nsTArray<ThemeGeometry>& aThemeGeometries) override {}
   virtual void            SetModal(bool aModal) override {}
   virtual uint32_t        GetMaxTouchPoints() const override;
+  virtual void            GetPointerCapabilities(PointerCapabilities& aCaps) const override;
   virtual void            SetWindowClass(const nsAString& xulWinType)
                             override {}
   virtual nsresult        SetWindowClipRegion(const nsTArray<LayoutDeviceIntRect>& aRects, bool aIntersectWithExisting) override;

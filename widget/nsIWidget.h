@@ -316,6 +316,22 @@ private:
   static nsDataHashtable<nsUint64HashKey, nsCOMPtr<nsIObserver>> sSavedObservers;
 };
 
+struct PointerCapabilities {
+  bool haveCoarsePointer;
+  bool haveFinePointer;
+  bool haveHoverCapablePointer;
+  bool haveHoverIncapablePointer;
+  bool haveTouchscreen;
+  
+  PointerCapabilities()
+    : haveCoarsePointer(false)
+    , haveFinePointer(false)
+    , haveHoverCapablePointer(false)
+    , haveHoverIncapablePointer(false)
+    , haveTouchscreen(false) 
+  {}
+};
+
 } // namespace widget
 } // namespace mozilla
 
@@ -345,9 +361,9 @@ class nsIWidget : public nsISupports
     typedef mozilla::widget::InputContextAction InputContextAction;
     typedef mozilla::widget::NativeIMEContext NativeIMEContext;
     typedef mozilla::widget::SizeConstraints SizeConstraints;
+    typedef mozilla::widget::PointerCapabilities PointerCapabilities;
     typedef mozilla::widget::TextEventDispatcher TextEventDispatcher;
-    typedef mozilla::widget::TextEventDispatcherListener
-      TextEventDispatcherListener;
+    typedef mozilla::widget::TextEventDispatcherListener TextEventDispatcherListener;
     typedef mozilla::LayoutDeviceIntMargin LayoutDeviceIntMargin;
     typedef mozilla::LayoutDeviceIntPoint LayoutDeviceIntPoint;
     typedef mozilla::LayoutDeviceIntRect LayoutDeviceIntRect;
@@ -662,6 +678,12 @@ class nsIWidget : public nsISupports
      * each individual digitizer.
      */
     virtual uint32_t GetMaxTouchPoints() const = 0;
+
+    /**
+     * Whether there is a touchscreen, course or fine pointer,
+     * hover-capable pointer, or hover-incapable pointer.
+     */
+    virtual void GetPointerCapabilities(PointerCapabilities& aCaps) const = 0;
 
     /**
      * Returns whether the window is visible

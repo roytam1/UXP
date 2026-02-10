@@ -1272,6 +1272,15 @@ enum class StyleDisplay : uint8_t {
 #define NS_STYLE_PREFERS_FULL_MOTION            0
 #define NS_STYLE_PREFERS_REDUCED_MOTION         1
 
+// hover
+#define NS_STYLE_HOVER_NONE                     0
+#define NS_STYLE_HOVER_HOVER                    1
+
+// pointer
+#define NS_STYLE_POINTER_NONE                   0
+#define NS_STYLE_POINTER_COARSE                 1
+#define NS_STYLE_POINTER_FINE                   2
+
 } // namespace mozilla
 
 #endif /* nsStyleConsts_h___ */

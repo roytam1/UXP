@@ -359,6 +359,7 @@ js::XDRScript(XDRState<mode>* xdr, HandleScope scriptEnclosingScope,
         IsLegacyGenerator,
         IsStarGenerator,
         IsAsync,
+        HasTopLevelAwait,
         HasRest,
         IsExprBody,
         OwnSource,
@@ -477,6 +478,8 @@ js::XDRScript(XDRState<mode>* xdr, HandleScope scriptEnclosingScope,
             scriptBits |= (1 << IsStarGenerator);
         if (script->asyncKind() == AsyncFunction)
             scriptBits |= (1 << IsAsync);
+        if (script->hasTopLevelAwait())
+            scriptBits |= (1 << HasTopLevelAwait);
         if (script->hasRest())
             scriptBits |= (1 << HasRest);
         if (script->isExprBody())
@@ -656,6 +659,8 @@ js::XDRScript(XDRState<mode>* xdr, HandleScope scriptEnclosingScope,
 
         if (scriptBits & (1 << IsAsync))
             script->setAsyncKind(AsyncFunction);
+        if (scriptBits & (1 << HasTopLevelAwait))
+            script->setHasTopLevelAwait(true);
         if (scriptBits & (1 << HasRest))
             script->setHasRest();
         if (scriptBits & (1 << IsExprBody))
@@ -2889,6 +2894,7 @@ JSScript::initFromModuleContext(ExclusiveContext* cx, HandleScript script,
 
     script->isGeneratorExp_ = false;
     script->setGeneratorKind(NotGenerator);
+    script->setHasTopLevelAwait(modulesc->hasTopLevelAwait());
 
     // Since modules are only run once, mark the script so that initializers
     // created within it may be given more precise types.
@@ -3567,6 +3573,7 @@ js::detail::CopyScript(JSContext* cx, HandleScript src, HandleScript dst,
     dst->needsHomeObject_ = src->needsHomeObject();
     dst->isDefaultClassConstructor_ = src->isDefaultClassConstructor();
     dst->isAsync_ = src->asyncKind() == AsyncFunction;
+    dst->hasTopLevelAwait_ = src->hasTopLevelAwait();
     dst->hasRest_ = src->hasRest_;
     dst->isExprBody_ = src->isExprBody_;
 

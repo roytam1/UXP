@@ -84,6 +84,11 @@ public:
   * Does device have touch support
   */
   static uint32_t IsTouchDeviceSupportPresent();
+  
+  /**
+  * Get pointer capabilities of device (mouse/touch)
+  */
+  static void GetPointerCapabilities(PointerCapabilities& aCaps);
 
   /**
    * Send bidi keyboard information to content process

@@ -6491,7 +6491,7 @@ BytecodeEmitter::emitYield(UnaryNode* yieldNode)
 bool
 BytecodeEmitter::emitAwaitInInnermostScope(UnaryNode* awaitNode)
 {
-    MOZ_ASSERT(sc->isFunctionBox());
+    MOZ_ASSERT(sc->isFunctionBox() || sc->isModuleContext());
     MOZ_ASSERT(awaitNode->getOp() == JSOP_AWAIT);
 
     if (!emitTree(awaitNode->kid()))
@@ -6502,10 +6502,20 @@ BytecodeEmitter::emitAwaitInInnermostScope(UnaryNode* awaitNode)
 bool
 BytecodeEmitter::emitAwaitInScope(EmitterScope& currentScope)
 {
-    if (!emitGetDotGeneratorInScope(currentScope))
-        return false;
+    if (!sc->isModuleContext()) {
+        if (!emitGetDotGeneratorInScope(currentScope))
+            return false;
+    }
     if (!emitYieldOp(JSOP_AWAIT))
         return false;
+    if (sc->isModuleContext()) {
+        // JSOP_AWAIT's stack model assumes [promise, gen] -> [resolved].
+        // In modules we don't push a generator, so compensate for the extra
+        // stack pop to keep stackDepth accurate (avoids bogus "script too large").
+        stackDepth++;
+        if ((uint32_t)stackDepth > maxStackDepth)
+            maxStackDepth = stackDepth;
+    }
     return true;
 }
 
