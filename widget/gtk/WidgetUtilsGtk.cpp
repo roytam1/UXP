@@ -11,16 +11,34 @@ namespace widget {
 
 int32_t WidgetUtilsGTK::IsTouchDeviceSupportPresent()
 {
+    PointerCapabilities caps;
+    GetPointerCapabilities(caps);
+    return caps.haveTouchscreen ? 1 : 0;
+}
+
+void WidgetUtilsGTK::GetPointerCapabilities(PointerCapabilities& aCaps)
+{
+    aCaps.haveCoarsePointer = false;
+    aCaps.haveFinePointer = false;
+    aCaps.haveHoverCapablePointer = false;
+    aCaps.haveHoverIncapablePointer = false;
+    aCaps.haveTouchscreen = false;
+
 #if GTK_CHECK_VERSION(3,4,0)
-    int32_t result = 0;
     GdkDisplay* display = gdk_display_get_default();
     if (!display) {
-        return 0;
+        // Assume a mouse.
+        aCaps.haveFinePointer = true;
+        aCaps.haveHoverCapablePointer = true;
+        return;
     }
 
     GdkDeviceManager* manager = gdk_display_get_device_manager(display);
     if (!manager) {
-        return 0;
+        // Assume a mouse.
+        aCaps.haveFinePointer = true;
+        aCaps.haveHoverCapablePointer = true;
+        return;
     }
 
     GList* devices =
@@ -29,8 +47,29 @@ int32_t WidgetUtilsGTK::IsTouchDeviceSupportPresent()
 
     while (devices) {
         GdkDevice* device = static_cast<GdkDevice*>(devices->data);
-        if (gdk_device_get_source(device) == GDK_SOURCE_TOUCHSCREEN) {
-            result = 1;
+        switch (gdk_device_get_source(device)) {
+          case GDK_SOURCE_MOUSE:
+          case GDK_SOURCE_TOUCHPAD:
+          case GDK_SOURCE_TRACKPOINT:
+            aCaps.haveFinePointer = true;
+            aCaps.haveHoverCapablePointer = true;
+            break;
+
+          case GDK_SOURCE_PEN:
+          case GDK_SOURCE_ERASER:
+          case GDK_SOURCE_CURSOR:
+          case GDK_SOURCE_TABLET_PAD:
+            aCaps.haveCoarsePointer = true;
+            aCaps.haveHoverIncapablePointer = true;
+            break;
+
+          case GDK_SOURCE_TOUCHSCREEN:
+            aCaps.haveCoarsePointer = true;
+            aCaps.haveHoverIncapablePointer = true;
+            aCaps.haveTouchscreen = true;
+            break;
+
+          case GDK_SOURCE_KEYBOARD:
             break;
         }
         devices = devices->next;
@@ -39,10 +78,10 @@ int32_t WidgetUtilsGTK::IsTouchDeviceSupportPresent()
    if (list) {
        g_list_free(list);
    }
-
-   return result;
 #else
-   return 0;
+   // Assume a mouse.
+   aCaps.haveFinePointer = true;
+   aCaps.haveHoverCapablePointer = true;
 #endif
 }
 

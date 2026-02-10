@@ -1123,6 +1123,10 @@ class JSScript : public js::gc::TenuredCell
 
     bool isAsync_:1;
 
+    // Script (module) contains top-level await.
+    // Module script contains top-level await; evaluation can suspend.
+    bool hasTopLevelAwait_:1;
+
     bool hasRest_:1;
     bool isExprBody_:1;
 
@@ -1435,6 +1439,14 @@ class JSScript : public js::gc::TenuredCell
 
     void setAsyncKind(js::FunctionAsyncKind kind) {
         isAsync_ = kind == js::AsyncFunction;
+    }
+
+    bool hasTopLevelAwait() const {
+        return hasTopLevelAwait_;
+    }
+
+    void setHasTopLevelAwait(bool hasTopLevelAwait) {
+        hasTopLevelAwait_ = hasTopLevelAwait;
     }
 
     bool hasRest() const {

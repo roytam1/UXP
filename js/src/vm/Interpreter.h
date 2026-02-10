@@ -20,6 +20,7 @@
 namespace js {
 
 class EnvironmentIter;
+class ArrayObject;
 
 /*
  * Convert null/undefined |thisv| into the current global object for the
@@ -233,6 +234,8 @@ class RunState
 
     virtual InterpreterFrame* pushInterpreterFrame(JSContext* cx) = 0;
     virtual void setReturnValue(const Value& v) = 0;
+    virtual void initInterpreterRegs(InterpreterRegs& regs) {}
+    virtual bool startInError() const { return false; }
 
     bool maybeCreateThisForConstructor(JSContext* cx);
 
@@ -242,6 +245,16 @@ class RunState
     RunState(const InvokeState& other) = delete;
     void operator=(const RunState& other) = delete;
 };
+
+enum class ModuleResumeKind {
+    Normal,
+    Throw
+};
+
+extern bool
+ResumeModuleExecution(JSContext* cx, HandleScript script, HandleObject envChain,
+                      Handle<ArrayObject*> stack, uint32_t resumeOffset,
+                      ModuleResumeKind kind, HandleValue value, Value* rval);
 
 // Eval or global script.
 class ExecuteState : public RunState

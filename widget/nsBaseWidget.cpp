@@ -1605,6 +1605,17 @@ nsBaseWidget::GetAttention(int32_t aCycleCount) {
     return NS_OK;
 }
 
+void
+nsBaseWidget::GetPointerCapabilities(PointerCapabilities& aCaps) const
+{
+  // Assume a mouse.
+  aCaps.haveCoarsePointer = false;
+  aCaps.haveFinePointer = true;
+  aCaps.haveHoverCapablePointer = true;
+  aCaps.haveHoverIncapablePointer = false;
+  aCaps.haveTouchscreen = false;
+}
+
 bool
 nsBaseWidget::HasPendingInputEvent()
 {

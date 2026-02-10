@@ -37,6 +37,28 @@
 #include "mozilla/EventForwards.h"
 #include "mozilla/UniquePtr.h"
 
+// Starting with version 10.0.22621.0 of the Windows SDK the AR_STATE enum and
+// types are only defined when building for Windows 8 instead of Windows 7.
+#ifndef WM_GESTURE
+
+enum tagAR_STATE {
+  AR_ENABLED = 0x0,
+  AR_DISABLED = 0x1,
+  AR_SUPPRESSED = 0x2,
+  AR_REMOTESESSION = 0x4,
+  AR_MULTIMON = 0x8,
+  AR_NOSENSOR = 0x10,
+  AR_NOT_SUPPORTED = 0x20,
+  AR_DOCKED = 0x40,
+  AR_LAPTOP = 0x80
+};
+
+typedef enum tagAR_STATE AR_STATE;
+
+using PAR_STATE = enum tagAR_STATE*;
+
+#endif  // !defined(WM_GESTURE)
+
 /**
  * NS_INLINE_DECL_IUNKNOWN_REFCOUNTING should be used for defining and
  * implementing AddRef() and Release() of IUnknown interface.
@@ -465,16 +487,28 @@ public:
                                         uint32_t aModifiers);
 
   /**
-  * Does device have touch support
-  */
+   * Does device have touch support
+   */
   static uint32_t IsTouchDeviceSupportPresent();
 
   /**
-  * The maximum number of simultaneous touch contacts supported by the device.
-  * In the case of devices with multiple digitizers (e.g. multiple touch screens),
-  * the value will be the maximum of the set of maximum supported contacts by
-  * each individual digitizer.
-  */
+   * Returns the windows power platform role, which is useful for detecting tablets.
+   */
+  typedef POWER_PLATFORM_ROLE (WINAPI* PowerDeterminePlatformRoleEx)(ULONG Version);
+  static POWER_PLATFORM_ROLE GetPowerPlatformRole();
+
+  /**
+   * Whether there is a touchscreen, course or fine pointer,
+   * hover-capable pointer, or hover-incapable pointer.
+   */
+  static void GetPointerCapabilities(PointerCapabilities& aCaps);
+
+  /**
+   * The maximum number of simultaneous touch contacts supported by the device.
+   * In the case of devices with multiple digitizers (e.g. multiple touch screens),
+   * the value will be the maximum of the set of maximum supported contacts by
+   * each individual digitizer.
+   */
   static uint32_t GetMaxTouchPoints();
 
   /**
