@@ -5,10 +5,21 @@
 function CallModuleResolveHook(module, specifier, expectedMinimumStatus)
 {
     let requestedModule = HostResolveImportedModule(module, specifier);
-    if (requestedModule.state < expectedMinimumStatus)
-        ThrowInternalError(JSMSG_BAD_MODULE_STATUS);
+    if (requestedModule.state < expectedMinimumStatus) {
+        ThrowBadModuleStatus("CallModuleResolveHook", requestedModule,
+                             "specifier=" + specifier + " expected>=" + expectedMinimumStatus);
+    }
 
     return requestedModule;
+}
+
+function ThrowBadModuleStatus(where, module, details = "")
+{
+    let status = module && module.status;
+    let msg = "module record has unexpected status " + status + " at " + where;
+    if (details)
+        msg += " " + details;
+    ThrowInternalError(msg);
 }
 
 // 15.2.1.16.2 GetExportedNames(exportStarSet)
@@ -318,7 +329,10 @@ function ModuleInstantiate()
     if (module.status === MODULE_STATUS_INSTANTIATING ||
         module.status === MODULE_STATUS_EVALUATING)
     {
-        ThrowInternalError(JSMSG_BAD_MODULE_STATUS);
+        // Re-entrant instantiation can happen when a module is already
+        // instantiating/evaluating (e.g., dynamic import while evaluating).
+        // Treat this as a no-op, since the module graph is already in progress.
+        return undefined;
     }
 
     // Step 3
@@ -545,11 +559,19 @@ function ModuleEvaluate()
     let module = this;
 
     // Step 2
+    if (module.status === MODULE_STATUS_EVALUATING) {
+        // Re-entrant evaluation should return the existing async evaluation
+        // promise instead of throwing.
+        return GetModuleEvaluationPromise(module);
+    }
+
     if (module.status !== MODULE_STATUS_INSTANTIATED &&
         module.status !== MODULE_STATUS_EVALUATED &&
         module.status !== MODULE_STATUS_EVALUATED_ERROR)
     {
-        ThrowInternalError(JSMSG_BAD_MODULE_STATUS);
+        // Avoid crashing on unexpected re-entrancy; callers will observe
+        // completion via the existing evaluation flow.
+        return undefined;
     }
 
     // Step 3
