@@ -155,6 +155,12 @@ MediaQueryList::GetOnchange()
 void
 MediaQueryList::SetOnchange(EventHandlerNonNull* aCallback)
 {
+  if (aCallback && !mMatchesValid) {
+    MOZ_ASSERT(!HasListeners(),
+               "when listeners present, must keep mMatches current");
+    RecomputeMatches();
+  }
+
   if (NS_IsMainThread()) {
     SetEventHandler(nsGkAtoms::onchange, EmptyString(), aCallback);
   } else {
