@@ -192,7 +192,8 @@ InterpreterFrame::prologue(JSContext* cx)
 {
     RootedScript script(cx, this->script());
 
-    MOZ_ASSERT(cx->interpreterRegs().pc == script->code());
+    MOZ_ASSERT(cx->interpreterRegs().pc == script->code() ||
+               (isModuleFrame() && script->hasTopLevelAwait()));
 
     if (isEvalFrame()) {
         if (!script->bodyScope()->hasEnvironment()) {

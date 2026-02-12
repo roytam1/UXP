@@ -1810,7 +1810,7 @@ class JSScript : public js::gc::TenuredCell
     bool hasTrynotes() const     { return hasArray(TRYNOTES); }
     bool hasScopeNotes() const   { return hasArray(SCOPENOTES); }
     bool hasYieldAndAwaitOffsets() const {
-        return isStarGenerator() || isLegacyGenerator() || isAsync();
+        return isStarGenerator() || isLegacyGenerator() || isAsync() || hasTopLevelAwait();
     }
 
 #define OFF(fooOff, hasFoo, t)   (fooOff() + (hasFoo() ? sizeof(t) : 0))
