@@ -81,7 +81,12 @@ BytecodeAnalysis::init(TempAllocator& alloc, GSNCache& gsn)
 
         unsigned nuses = GetUseCount(script_, offset);
         unsigned ndefs = GetDefCount(script_, offset);
-
+        if (MOZ_UNLIKELY(op == JSOP_AWAIT) && script_->module()) {
+            // Top-level await in modules has no generator object on stack.
+            MOZ_ASSERT(nuses == 2);
+            nuses = 1;
+        }
+        
         MOZ_ASSERT(stackDepth >= nuses);
         stackDepth -= nuses;
         stackDepth += ndefs;
