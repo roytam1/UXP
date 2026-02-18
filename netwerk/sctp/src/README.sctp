@@ -1,5 +1,5 @@
-This code is imported from the usrsctp library. The current code is version
-0.9.5.0.
+This code is imported from the usrsctp library. The current code is based on
+master commit fd070e05a7474f38c7fecdf4d4b6005d2547ee00 (2025-10-16).
 
 The project is accessed on GitHub at the following location:
 

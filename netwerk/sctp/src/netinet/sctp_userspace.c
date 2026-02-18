@@ -96,37 +96,48 @@ sctp_userspace_set_threadname(const char *name)
 
 #if !defined(_WIN32) && !defined(__native_client__)
 int
-sctp_userspace_get_mtu_from_ifn(uint32_t if_index, int af)
+sctp_userspace_get_mtu_from_ifn(uint32_t if_index)
 {
+#if defined(INET) || defined(INET6)
 	struct ifreq ifr;
 	int fd;
+#endif
+	int mtu;
 
-	memset(&ifr, 0, sizeof(struct ifreq));
-	if (if_indextoname(if_index, ifr.ifr_name) != NULL) {
-		/* TODO can I use the raw socket here and not have to open a new one with each query? */
-		if ((fd = socket(af, SOCK_DGRAM, 0)) < 0)
-			return (0);
-		if (ioctl(fd, SIOCGIFMTU, &ifr) < 0) {
-			close(fd);
-			return (0);
-		}
-		close(fd);
-		return ifr.ifr_mtu;
+	if (if_index == 0xffffffff) {
+		mtu = 1280;
 	} else {
-		return (0);
+		mtu = 0;
+#if defined(INET) || defined(INET6)
+		memset(&ifr, 0, sizeof(struct ifreq));
+		if (if_indextoname(if_index, ifr.ifr_name) != NULL) {
+			/* TODO can I use the raw socket here and not have to open a new one with each query? */
+#if defined(INET)
+			if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0) {
+#else
+			if ((fd = socket(AF_INET6, SOCK_DGRAM, 0)) >= 0) {
+#endif
+				if (ioctl(fd, SIOCGIFMTU, &ifr) >= 0) {
+					mtu = ifr.ifr_mtu;
+				}
+				close(fd);
+			}
+		}
+#endif
 	}
+	return (mtu);
 }
 #endif
 
 #if defined(__native_client__)
 int
-sctp_userspace_get_mtu_from_ifn(uint32_t if_index, int af)
+sctp_userspace_get_mtu_from_ifn(uint32_t if_index)
 {
 	return 1280;
 }
 #endif
 
-#if defined(__APPLE__) || defined(__DragonFly__) || defined(__linux__) || defined(__native_client__) || defined(__NetBSD__) || defined(_WIN32) || defined(__Fuchsia__) || defined(__EMSCRIPTEN__)
+#if defined(__APPLE__) || defined(__DragonFly__) || defined(__linux__) || defined(__native_client__) || defined(__NetBSD__) || defined(__QNX__) || defined(_WIN32) || defined(__Fuchsia__) || defined(__EMSCRIPTEN__)
 int
 timingsafe_bcmp(const void *b1, const void *b2, size_t n)
 {
@@ -141,43 +152,51 @@ timingsafe_bcmp(const void *b1, const void *b2, size_t n)
 
 #ifdef _WIN32
 int
-sctp_userspace_get_mtu_from_ifn(uint32_t if_index, int af)
+sctp_userspace_get_mtu_from_ifn(uint32_t if_index)
 {
+#if defined(INET) || defined(INET6)
 	PIP_ADAPTER_ADDRESSES pAdapterAddrs, pAdapt;
 	DWORD AdapterAddrsSize, Err;
-	int ret;
+#endif
+	int mtu;
 
-	ret = 0;
-	AdapterAddrsSize = 0;
-	pAdapterAddrs = NULL;
-	if ((Err = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, NULL, &AdapterAddrsSize)) != 0) {
-		if ((Err != ERROR_BUFFER_OVERFLOW) && (Err != ERROR_INSUFFICIENT_BUFFER)) {
-			SCTPDBG(SCTP_DEBUG_USR, "GetAdaptersAddresses() sizing failed with error code %d, AdapterAddrsSize = %d\n", Err, AdapterAddrsSize);
-			ret = -1;
+	if (if_index == 0xffffffff) {
+		mtu = 1280;
+	} else {
+		mtu = 0;
+#if defined(INET) || defined(INET6)
+		AdapterAddrsSize = 0;
+		pAdapterAddrs = NULL;
+		if ((Err = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, NULL, &AdapterAddrsSize)) != 0) {
+			if ((Err != ERROR_BUFFER_OVERFLOW) && (Err != ERROR_INSUFFICIENT_BUFFER)) {
+				SCTPDBG(SCTP_DEBUG_USR, "GetAdaptersAddresses() sizing failed with error code %d, AdapterAddrsSize = %d\n", Err, AdapterAddrsSize);
+				mtu = -1;
+				goto cleanup;
+			}
+		}
+		if ((pAdapterAddrs = (PIP_ADAPTER_ADDRESSES) GlobalAlloc(GPTR, AdapterAddrsSize)) == NULL) {
+			SCTPDBG(SCTP_DEBUG_USR, "Memory allocation error!\n");
+			mtu = -1;
 			goto cleanup;
 		}
-	}
-	if ((pAdapterAddrs = (PIP_ADAPTER_ADDRESSES) GlobalAlloc(GPTR, AdapterAddrsSize)) == NULL) {
-		SCTPDBG(SCTP_DEBUG_USR, "Memory allocation error!\n");
-		ret = -1;
-		goto cleanup;
-	}
-	if ((Err = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, pAdapterAddrs, &AdapterAddrsSize)) != ERROR_SUCCESS) {
-		SCTPDBG(SCTP_DEBUG_USR, "GetAdaptersAddresses() failed with error code %d\n", Err);
-		ret = -1;
-		goto cleanup;
-	}
-	for (pAdapt = pAdapterAddrs; pAdapt; pAdapt = pAdapt->Next) {
-		if (pAdapt->IfIndex == if_index) {
-			ret = pAdapt->Mtu;
-			break;
+		if ((Err = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, pAdapterAddrs, &AdapterAddrsSize)) != ERROR_SUCCESS) {
+			SCTPDBG(SCTP_DEBUG_USR, "GetAdaptersAddresses() failed with error code %d\n", Err);
+			mtu = -1;
+			goto cleanup;
 		}
+		for (pAdapt = pAdapterAddrs; pAdapt; pAdapt = pAdapt->Next) {
+			if (pAdapt->IfIndex == if_index) {
+				mtu = pAdapt->Mtu;
+				break;
+			}
+		}
+	cleanup:
+		if (pAdapterAddrs != NULL) {
+			GlobalFree(pAdapterAddrs);
+		}
+#endif
 	}
-cleanup:
-	if (pAdapterAddrs != NULL) {
-		GlobalFree(pAdapterAddrs);
-	}
-	return (ret);
+	return (mtu);
 }
 
 void

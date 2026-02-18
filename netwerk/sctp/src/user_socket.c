@@ -60,9 +60,12 @@
 #endif
 userland_mutex_t accept_mtx;
 userland_cond_t accept_cond;
-#ifdef _WIN32
+#if defined(_WIN32)
 #include <time.h>
 #include <sys/timeb.h>
+#if !defined(_MSC_VER)
+#include <minmax.h>
+#endif
 #endif
 
 MALLOC_DEFINE(M_PCB, "sctp_pcb", "sctp pcb");
@@ -251,7 +254,7 @@ sofree(struct socket *so)
 
 	ACCEPT_LOCK_ASSERT();
 	SOCK_LOCK_ASSERT(so);
-	/* SS_NOFDREF unset in accept call.  this condition seems irrelevent
+	/* SS_NOFDREF unset in accept call.  this condition seems irrelevant
 	 *  for __Userspace__...
 	 */
 	if (so->so_count != 0 ||
@@ -296,7 +299,7 @@ sofree(struct socket *so)
 	 * necessary from sorflush().
 	 *
 	 * Notice that the socket buffer and kqueue state are torn down
-	 * before calling pru_detach.  This means that protocols shold not
+	 * before calling pru_detach.  This means that protocols should not
 	 * assume they can perform socket wakeups, etc, in their detach code.
 	 */
 	sodealloc(so);
@@ -308,22 +311,7 @@ sofree(struct socket *so)
 void
 soabort(struct socket *so)
 {
-#if defined(INET6)
-	struct sctp_inpcb *inp;
-#endif
-
-#if defined(INET6)
-	inp = (struct sctp_inpcb *)so->so_pcb;
-	if (inp->sctp_flags & SCTP_PCB_FLAGS_BOUND_V6) {
-		sctp6_abort(so);
-	} else {
-#if defined(INET)
-		sctp_abort(so);
-#endif
-	}
-#elif defined(INET)
 	sctp_abort(so);
-#endif
 	ACCEPT_LOCK();
 	SOCK_LOCK(so);
 	sofree(so);
@@ -1878,7 +1866,7 @@ soconnect(struct socket *so, struct sockaddr *nam)
 	 * Otherwise, if connected, try to disconnect first.  This allows
 	 * user to disconnect by connecting to, e.g., a null address.
 	 */
-	if (so->so_state & (SS_ISCONNECTED|SS_ISCONNECTING) && (error = sodisconnect(so))) {
+	if (so->so_state & (SS_ISCONNECTED|SS_ISCONNECTING) && (sodisconnect(so) != 0)) {
 		error = EISCONN;
 	} else {
 		/*
@@ -2210,7 +2198,7 @@ usrsctp_getsockopt(struct socket *so, int level, int option_name,
 				int *buf_size;
 
 				buf_size = (int *)option_value;
-				*buf_size = so->so_rcv.sb_hiwat;;
+				*buf_size = so->so_rcv.sb_hiwat;
 				*option_len = (socklen_t)sizeof(int);
 				return (0);
 			}
@@ -2695,22 +2683,26 @@ usrsctp_getpaddrs(struct socket *so, sctp_assoc_t id, struct sockaddr **raddrs)
 {
 	struct sctp_getaddresses *addrs;
 	struct sockaddr *sa;
-	sctp_assoc_t asoc;
 	caddr_t lim;
 	socklen_t opt_len;
+	uint32_t size_of_addresses;
 	int cnt;
 
 	if (raddrs == NULL) {
 		errno = EFAULT;
 		return (-1);
 	}
-	asoc = id;
-	opt_len = (socklen_t)sizeof(sctp_assoc_t);
-	if (usrsctp_getsockopt(so, IPPROTO_SCTP, SCTP_GET_REMOTE_ADDR_SIZE, &asoc, &opt_len) != 0) {
-		return (-1);
+	/* When calling getsockopt(), the value contains the assoc_id. */
+	size_of_addresses = (uint32_t)id;
+	opt_len = (socklen_t)sizeof(uint32_t);
+	if (usrsctp_getsockopt(so, IPPROTO_SCTP, SCTP_GET_REMOTE_ADDR_SIZE, &size_of_addresses, &opt_len) != 0) {
+		if (errno == ENOENT) {
+			return (0);
+		} else {
+			return (-1);
+		}
 	}
-	/* size required is returned in 'asoc' */
-	opt_len = (socklen_t)((size_t)asoc + sizeof(struct sctp_getaddresses));
+	opt_len = (socklen_t)((size_t)size_of_addresses + sizeof(struct sctp_getaddresses));
 	addrs = calloc(1, (size_t)opt_len);
 	if (addrs == NULL) {
 		errno = ENOMEM;
@@ -2770,10 +2762,10 @@ int
 usrsctp_getladdrs(struct socket *so, sctp_assoc_t id, struct sockaddr **raddrs)
 {
 	struct sctp_getaddresses *addrs;
-	caddr_t lim;
 	struct sockaddr *sa;
-	size_t size_of_addresses;
+	caddr_t lim;
 	socklen_t opt_len;
+	uint32_t size_of_addresses;
 	int cnt;
 
 	if (raddrs == NULL) {
@@ -2781,13 +2773,8 @@ usrsctp_getladdrs(struct socket *so, sctp_assoc_t id, struct sockaddr **raddrs)
 		return (-1);
 	}
 	size_of_addresses = 0;
-	opt_len = (socklen_t)sizeof(int);
+	opt_len = (socklen_t)sizeof(uint32_t);
 	if (usrsctp_getsockopt(so, IPPROTO_SCTP, SCTP_GET_LOCAL_ADDR_SIZE, &size_of_addresses, &opt_len) != 0) {
-		errno = ENOMEM;
-		return (-1);
-	}
-	if (size_of_addresses == 0) {
-		errno = ENOTCONN;
 		return (-1);
 	}
 	opt_len = (socklen_t)(size_of_addresses + sizeof(struct sctp_getaddresses));
@@ -2800,8 +2787,11 @@ usrsctp_getladdrs(struct socket *so, sctp_assoc_t id, struct sockaddr **raddrs)
 	/* Now lets get the array of addresses */
 	if (usrsctp_getsockopt(so, IPPROTO_SCTP, SCTP_GET_LOCAL_ADDRESSES, addrs, &opt_len) != 0) {
 		free(addrs);
-		errno = ENOMEM;
 		return (-1);
+	}
+	if (size_of_addresses == 0) {
+		free(addrs);
+		return (0);
 	}
 	*raddrs = &addrs->addr[0].sa;
 	cnt = 0;
@@ -2850,14 +2840,13 @@ usrsctp_freeladdrs(struct sockaddr *addrs)
 #ifdef INET
 void
 sctp_userspace_ip_output(int *result, struct mbuf *o_pak,
-                         sctp_route_t *ro, void *stcb,
+                         sctp_route_t *ro, void *inp,
                          uint32_t vrf_id)
 {
 	struct mbuf *m;
 	struct mbuf *m_orig;
 	int iovcnt;
 	int len;
-	int send_count;
 	struct ip *ip;
 	struct udphdr *udp;
 	struct sockaddr_in dst;
@@ -2930,16 +2919,13 @@ sctp_userspace_ip_output(int *result, struct mbuf *o_pak,
 		m_adj(m, sizeof(struct ip) + sizeof(struct udphdr));
 	}
 
-	send_count = 0;
 	for (iovcnt = 0; m != NULL && iovcnt < MAXLEN_MBUF_CHAIN; m = m->m_next, iovcnt++) {
 #if !defined(_WIN32)
 		send_iovec[iovcnt].iov_base = (caddr_t)m->m_data;
 		send_iovec[iovcnt].iov_len = SCTP_BUF_LEN(m);
-		send_count += send_iovec[iovcnt].iov_len;
 #else
 		send_iovec[iovcnt].buf = (caddr_t)m->m_data;
 		send_iovec[iovcnt].len = SCTP_BUF_LEN(m);
-		send_count += send_iovec[iovcnt].len;
 #endif
 	}
 
@@ -2995,14 +2981,13 @@ free_mbuf:
 
 #if defined(INET6)
 void sctp_userspace_ip6_output(int *result, struct mbuf *o_pak,
-                                            struct route_in6 *ro, void *stcb,
+                                            struct route_in6 *ro, void *inp,
                                             uint32_t vrf_id)
 {
 	struct mbuf *m;
 	struct mbuf *m_orig;
 	int iovcnt;
 	int len;
-	int send_count;
 	struct ip6_hdr *ip6;
 	struct udphdr *udp;
 	struct sockaddr_in6 dst;
@@ -3073,19 +3058,16 @@ void sctp_userspace_ip6_output(int *result, struct mbuf *o_pak,
 	if (use_udp_tunneling) {
 		m_adj(m, sizeof(struct ip6_hdr) + sizeof(struct udphdr));
 	} else {
-	  m_adj(m, sizeof(struct ip6_hdr));
+		m_adj(m, sizeof(struct ip6_hdr));
 	}
 
-	send_count = 0;
 	for (iovcnt = 0; m != NULL && iovcnt < MAXLEN_MBUF_CHAIN; m = m->m_next, iovcnt++) {
 #if !defined(_WIN32)
 		send_iovec[iovcnt].iov_base = (caddr_t)m->m_data;
 		send_iovec[iovcnt].iov_len = SCTP_BUF_LEN(m);
-		send_count += send_iovec[iovcnt].iov_len;
 #else
 		send_iovec[iovcnt].buf = (caddr_t)m->m_data;
 		send_iovec[iovcnt].len = SCTP_BUF_LEN(m);
-		send_count += send_iovec[iovcnt].len;
 #endif
 	}
 	if (m != NULL) {
@@ -3175,8 +3157,7 @@ usrsctp_deregister_address(void *addr)
 	sconn.sconn_addr = addr;
 	sctp_del_addr_from_vrf(SCTP_DEFAULT_VRFID,
 	                       (struct sockaddr *)&sconn,
-	                       0xffffffff,
-	                       "conn");
+	                       NULL, 0xffffffff);
 }
 
 #define PREAMBLE_FORMAT "\n%c %02d:%02d:%02d.%06ld "
@@ -3500,6 +3481,7 @@ USRSCTP_SYSCTL_SET_DEF(sctp_steady_step, SCTPCTL_RTTVAR_STEADYS)
 USRSCTP_SYSCTL_SET_DEF(sctp_use_dccc_ecn, SCTPCTL_RTTVAR_DCCCECN)
 USRSCTP_SYSCTL_SET_DEF(sctp_buffer_splitting, SCTPCTL_BUFFER_SPLITTING)
 USRSCTP_SYSCTL_SET_DEF(sctp_initial_cwnd, SCTPCTL_INITIAL_CWND)
+USRSCTP_SYSCTL_SET_DEF(sctp_ootb_with_zero_cksum, SCTPCTL_OOTB_WITH_ZERO_CKSUM)
 #ifdef SCTP_DEBUG
 USRSCTP_SYSCTL_SET_DEF(sctp_debug_on, SCTPCTL_DEBUG)
 #endif
@@ -3582,6 +3564,7 @@ USRSCTP_SYSCTL_GET_DEF(sctp_steady_step)
 USRSCTP_SYSCTL_GET_DEF(sctp_use_dccc_ecn)
 USRSCTP_SYSCTL_GET_DEF(sctp_buffer_splitting)
 USRSCTP_SYSCTL_GET_DEF(sctp_initial_cwnd)
+USRSCTP_SYSCTL_GET_DEF(sctp_ootb_with_zero_cksum)
 #ifdef SCTP_DEBUG
 USRSCTP_SYSCTL_GET_DEF(sctp_debug_on)
 #endif

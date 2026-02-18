@@ -32,11 +32,6 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(__FreeBSD__) && !defined(__Userspace__)
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctp_uio.h 365071 2020-09-01 21:19:14Z mjg $");
-#endif
-
 #ifndef _NETINET_SCTP_UIO_H_
 #define _NETINET_SCTP_UIO_H_
 
@@ -810,6 +805,10 @@ struct sctp_get_nonce_values {
 	uint32_t gn_local_tag;
 };
 
+/* Values for SCTP_ACCEPT_ZERO_CHECKSUM */
+#define SCTP_EDMID_NONE             0
+#define SCTP_EDMID_LOWER_LAYER_DTLS 1
+
 /* Debugging logs */
 struct sctp_str_log {
 	void *stcb; /* FIXME: LP64 issue */
@@ -1104,8 +1103,10 @@ struct sctpstat {
 	uint32_t  sctps_send_burst_avoid; /* Unused */
 	uint32_t  sctps_send_cwnd_avoid;  /* Send cwnd full  avoidance, already max burst inflight to net */
 	uint32_t  sctps_fwdtsn_map_over;  /* number of map array over-runs via fwd-tsn's */
-	uint32_t  sctps_queue_upd_ecne;  /* Number of times we queued or updated an ECN chunk on send queue */
-	uint32_t  sctps_reserved[31];     /* Future ABI compat - remove int's from here when adding new */
+	uint32_t  sctps_queue_upd_ecne;   /* Number of times we queued or updated an ECN chunk on send queue */
+	uint32_t  sctps_recvzerocrc;      /* Number of accepted packets with zero CRC */
+	uint32_t  sctps_sendzerocrc;      /* Number of packets sent with zero CRC */
+	uint32_t  sctps_reserved[29];     /* Future ABI compat - remove int's from here when adding new */
 };
 
 #define SCTP_STAT_INCR(_x) SCTP_STAT_INCR_BY(_x,1)
@@ -1277,7 +1278,7 @@ int
 sctp_lower_sosend(struct socket *so,
     struct sockaddr *addr,
     struct uio *uio,
-    struct mbuf *i_pak,
+    struct mbuf *top,
     struct mbuf *control,
     int flags,
     struct sctp_sndrcvinfo *srcv
