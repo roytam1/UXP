@@ -1583,6 +1583,9 @@ MediaFormatReader::Update(TrackType aTrack)
   if (decoder.mError && !decoder.HasFatalError()) {
     decoder.mDecodePending = false;
 
+    MOZ_RELEASE_ASSERT(!decoder.HasInternalSeekPending(),
+                       "No error can occur while an internal seek is pending");
+
     nsCString error;
     bool decodingFailedWithHardware =
       decoder.mError.ref() == NS_ERROR_DOM_MEDIA_DECODE_ERR &&
