@@ -1587,18 +1587,19 @@ MediaFormatReader::Update(TrackType aTrack)
                        "No error can occur while an internal seek is pending");
 
     nsCString error;
-    bool decodingFailedWithHardware =
+    bool firstFrameDecodingFailedWithHardware =
+      decoder.mFirstFrameTime &&
       decoder.mError.ref() == NS_ERROR_DOM_MEDIA_DECODE_ERR &&
       decoder.mDecoder && decoder.mDecoder->IsHardwareAccelerated(error) &&
       !decoder.mHardwareDecodingDisabled;
     bool needsNewDecoder =
       decoder.mError.ref() == NS_ERROR_DOM_MEDIA_NEED_NEW_DECODER ||
-      decodingFailedWithHardware;
+      firstFrameDecodingFailedWithHardware;
     if (!needsNewDecoder && ++decoder.mNumOfConsecutiveError > decoder.mMaxConsecutiveError) {
       NotifyError(aTrack, decoder.mError.ref());
       return;
     }
-    if (decodingFailedWithHardware) {
+    if (firstFrameDecodingFailedWithHardware) {
       decoder.mHardwareDecodingDisabled = true;
     }
     decoder.mError.reset();
