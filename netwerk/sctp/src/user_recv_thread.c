@@ -56,7 +56,7 @@
 #endif
 #endif
 #endif
-#if defined(HAVE_NET_ROUTE_H)
+#if defined(HAVE_NET_ROUTE_H) || defined(__FreeBSD__) || defined(__DragonFly__)
 # include <net/route.h>
 #elif defined(__APPLE__)
 /* Apple SDKs for iOS, tvOS, watchOS, etc. don't ship this header */
