@@ -276,6 +276,41 @@ HTMLFormElement::Submit()
   return rv.StealNSResult();
 }
 
+// https://html.spec.whatwg.org/multipage/forms.html#dom-form-requestsubmit
+void
+HTMLFormElement::RequestSubmit(nsGenericHTMLElement* aSubmitter,
+                               ErrorResult& aRv) {
+  // 1. If submitter is not null, then:
+  if (aSubmitter) {
+    nsCOMPtr<nsIFormControl> fc = do_QueryObject(aSubmitter);
+
+    // 1.1. If submitter is not a submit button, then throw a TypeError.
+    if (!fc || !fc->IsSubmitControl()) {
+      aRv.ThrowTypeError<MSG_NOT_SUBMIT_BUTTON>();
+      return;
+    }
+
+    // 1.2. If submitter's form owner is not this form element, then throw a
+    //      "NotFoundError" DOMException.
+    if (fc->GetFormElement() != this) {
+      aRv.Throw(NS_ERROR_DOM_NOT_FOUND_ERR);
+      return;
+    }
+  }
+
+  // 2. Otherwise, set submitter to this form element.
+  // 3. Submit this form element, from submitter.
+  // We go through the presShell here for the corner case a submit event
+  // is pending while the window is being destroyed.
+  InternalFormEvent event(true, eFormSubmit);
+  event.mOriginator = aSubmitter;
+  nsEventStatus status = nsEventStatus_eIgnore;
+  nsCOMPtr<nsIPresShell> presShell = GetComposedDoc()->GetShell();
+  if (MOZ_LIKELY(presShell)) {
+    presShell->HandleDOMEventWithTarget(this, &event, &status);
+  }
+}
+
 NS_IMETHODIMP
 HTMLFormElement::Reset()
 {

@@ -1196,6 +1196,9 @@ pref("dom.forms.autocomplete.experimental", false);
 // Enables requestAutocomplete DOM API on forms.
 pref("dom.forms.requestAutocomplete", false);
 
+// Enables requestSubmit DOM API on forms.
+pref("dom.forms.requestsubmit.enabled", true);
+
 // Enable Directory API. By default, disabled.
 pref("dom.input.dirpicker", false);
 
