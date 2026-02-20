@@ -230,11 +230,12 @@ GetParametersForInner(nsTransformedTextRun* aTextRun, uint32_t* aFlags,
 // exhibit the behavior in question; multiple lang tags may map to the
 // same setting here, if the behavior is shared by other languages.
 enum LanguageSpecificCasingBehavior {
-  eLSCB_None,    // default non-lang-specific behavior
-  eLSCB_Dutch,   // treat "ij" digraph as a unit for capitalization
-  eLSCB_Greek,   // strip accent when uppercasing Greek vowels
-  eLSCB_Irish,   // keep prefix letters as lowercase when uppercasing Irish
-  eLSCB_Turkish  // preserve dotted/dotless-i distinction in uppercase
+  eLSCB_None,       // default non-lang-specific behavior
+  eLSCB_Dutch,      // treat "ij" digraph as a unit for capitalization
+  eLSCB_Greek,      // strip accent when uppercasing Greek vowels
+  eLSCB_Irish,      // keep prefix letters as lowercase when uppercasing Irish
+  eLSCB_Turkish,    // preserve dotted/dotless-i distinction in uppercase
+  eLSCB_Lithuanian  // retain dot on lowercase i/j when an accent is present
 };
 
 static LanguageSpecificCasingBehavior
@@ -258,6 +259,9 @@ GetCasingFor(const nsIAtom* aLang)
   }
   if (aLang == nsGkAtoms::ga) {
     return eLSCB_Irish;
+  }
+  if (aLang == nsGkAtoms::lt_) {
+    return eLSCB_Lithuanian;
   }
 
   // Is there a region subtag we should ignore?
@@ -298,6 +302,8 @@ nsCaseTransformTextRunFactory::TransformString(
   bool prevIsLetter = false;
   bool ntPrefix = false; // true immediately after a word-initial 'n' or 't'
                          // when doing Irish lowercasing
+  bool seenSoftDotted = false;  // true immediately after an I or J that is
+                                // converted to lowercase in Lithuanian mode
   uint32_t sigmaIndex = uint32_t(-1);
   nsIUGenCategory::nsUGenCategory cat;
 
@@ -362,6 +368,58 @@ nsCaseTransformTextRunFactory::TransformString(
         }
       }
 
+      if (languageSpecificCasing == eLSCB_Lithuanian) {
+        /* From SpecialCasing.txt:
+         * # Introduce an explicit dot above when lowercasing capital I's and J's
+         * # whenever there are more accents above.
+         * # (of the accents used in Lithuanian: grave, acute, tilde above, and ogonek)
+         *
+         * 0049; 0069 0307; 0049; 0049; lt More_Above; # LATIN CAPITAL LETTER I
+         * 004A; 006A 0307; 004A; 004A; lt More_Above; # LATIN CAPITAL LETTER J
+         * 012E; 012F 0307; 012E; 012E; lt More_Above; # LATIN CAPITAL LETTER I WITH OGONEK
+         * 00CC; 0069 0307 0300; 00CC; 00CC; lt; # LATIN CAPITAL LETTER I WITH GRAVE
+         * 00CD; 0069 0307 0301; 00CD; 00CD; lt; # LATIN CAPITAL LETTER I WITH ACUTE
+         * 0128; 0069 0307 0303; 0128; 0128; lt; # LATIN CAPITAL LETTER I WITH TILDE
+         */
+        if (ch == 'I' || ch == 'J' || ch == 0x012E) {
+          ch = ToLowerCase(ch);
+          prevIsLetter = true;
+          seenSoftDotted = true;
+          sigmaIndex = uint32_t(-1);
+          break;
+        }
+        if (ch == 0x00CC) {
+          aConvertedString.Append('i');
+          aConvertedString.Append(0x0307);
+          extraChars += 2;
+          ch = 0x0300;
+          prevIsLetter = true;
+          seenSoftDotted = false;
+          sigmaIndex = uint32_t(-1);
+          break;
+        }
+        if (ch == 0x00CD) {
+          aConvertedString.Append('i');
+          aConvertedString.Append(0x0307);
+          extraChars += 2;
+          ch = 0x0301;
+          prevIsLetter = true;
+          seenSoftDotted = false;
+          sigmaIndex = uint32_t(-1);
+          break;
+        }
+        if (ch == 0x0128) {
+          aConvertedString.Append('i');
+          aConvertedString.Append(0x0307);
+          extraChars += 2;
+          ch = 0x0303;
+          prevIsLetter = true;
+          seenSoftDotted = false;
+          sigmaIndex = uint32_t(-1);
+          break;
+        }
+      }
+
       cat = mozilla::unicode::GetGenCategory(ch);
 
       if (languageSpecificCasing == eLSCB_Irish &&
@@ -379,6 +437,15 @@ nsCaseTransformTextRunFactory::TransformString(
       } else {
         ntPrefix = false;
       }
+
+      if (seenSoftDotted && cat == nsIUGenCategory::kMark) {
+        // The seenSoftDotted flag will only be set in Lithuanian mode.
+        if (ch == 0x0300 || ch == 0x0301 || ch == 0x0303) {
+          aConvertedString.Append(0x0307);
+          ++extraChars;
+        }
+      }
+      seenSoftDotted = false;
 
       // Special lowercasing behavior for Greek Sigma: note that this is listed
       // as context-sensitive in Unicode's SpecialCasing.txt, but is *not* a
@@ -456,6 +523,26 @@ nsCaseTransformTextRunFactory::TransformString(
       if (languageSpecificCasing == eLSCB_Greek) {
         ch = mozilla::GreekCasing::UpperCase(ch, greekState);
         break;
+      }
+
+      if (languageSpecificCasing == eLSCB_Lithuanian) {
+        /*
+         * # Remove DOT ABOVE after "i" with upper or titlecase
+         *
+         * 0307; 0307; ; ; lt After_Soft_Dotted; # COMBINING DOT ABOVE
+         */
+        if (ch == 'i' || ch == 'j' || ch == 0x012F) {
+          seenSoftDotted = true;
+          ch = ToTitleCase(ch);
+          break;
+        }
+        if (seenSoftDotted) {
+          seenSoftDotted = false;
+          if (ch == 0x0307) {
+            ch = uint32_t(-1);
+            break;
+          }
+        }
       }
 
       if (languageSpecificCasing == eLSCB_Irish) {
@@ -550,6 +637,25 @@ nsCaseTransformTextRunFactory::TransformString(
             ch = 'I';
             capitalizeDutchIJ = true;
             break;
+          }
+          if (languageSpecificCasing == eLSCB_Lithuanian) {
+            /*
+             * # Remove DOT ABOVE after "i" with upper or titlecase
+             *
+             * 0307; 0307; ; ; lt After_Soft_Dotted; # COMBINING DOT ABOVE
+             */
+            if (ch == 'i' || ch == 'j' || ch == 0x012F) {
+              seenSoftDotted = true;
+              ch = ToTitleCase(ch);
+              break;
+            }
+            if (seenSoftDotted) {
+              seenSoftDotted = false;
+              if (ch == 0x0307) {
+                ch = uint32_t(-1);
+                break;
+              }
+            }
           }
 
           mcm = mozilla::unicode::SpecialTitle(ch);

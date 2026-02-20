@@ -91,11 +91,12 @@ WMFDecoderModule::CreateVideoDecoder(const CreateDecoderParams& aParams)
     return nullptr;
   }
 
-  nsAutoPtr<WMFVideoMFTManager> manager(
-    new WMFVideoMFTManager(aParams.VideoConfig(),
-                           aParams.mKnowsCompositor,
-                           aParams.mImageContainer,
-                           sDXVAEnabled));
+  nsAutoPtr<WMFVideoMFTManager> manager(new WMFVideoMFTManager(
+    aParams.VideoConfig(),
+    aParams.mKnowsCompositor,
+    aParams.mImageContainer,
+    sDXVAEnabled && !aParams.mOptions.contains(
+                      CreateDecoderParams::Option::HardwareDecoderNotAllowed)));
 
   if (!manager->Init()) {
     return nullptr;
