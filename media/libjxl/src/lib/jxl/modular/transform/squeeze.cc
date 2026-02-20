@@ -68,12 +68,19 @@ JXL_INLINE void FastUnsqueeze(const pixel_type *JXL_RESTRICT p_residual,
     auto absan = Abs(an);
     auto absBn = Abs(Sub(top, next_avg));
     // Compute a3 = absBa / 3
+#if (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)) || defined(__BIG_ENDIAN__)
+    auto a3eh = MulEven(absBa, onethird);
+    auto a3oh = MulOdd(absBa, onethird);
+
+    auto a3 = OddEven(DupEven(BitCast(d, a3oh)), BitCast(d, a3eh));
+#else
     auto a3e = BitCast(d, ShiftRight<32>(MulEven(absBa, onethird)));
     auto a3oi = MulEven(Reverse(d, absBa), onethird);
     auto a3o = BitCast(
         d, Reverse(hwy::HWY_NAMESPACE::Repartition<pixel_type_w, decltype(d)>(),
                    a3oi));
     auto a3 = OddEven(a3o, a3e);
+#endif
     a3 = Add(a3, Add(absBn, Set(d, 2)));
     auto absdiff = ShiftRight<2>(a3);
     auto skipdiff = Ne(Ba, Zero(d));

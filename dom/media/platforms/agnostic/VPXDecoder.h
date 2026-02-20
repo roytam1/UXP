@@ -53,6 +53,10 @@ public:
   // Return the frame dimensions for a sample for the specified codec.
   static nsIntSize GetFrameSize(Span<const uint8_t> aBuffer, Codec aCodec);
 
+  // Return the VP9 profile as per https://www.webmproject.org/vp9/profiles/
+  // Return negative value if error.
+  static int GetVP9Profile(Span<const uint8_t> aBuffer);
+
 private:
   void ProcessDecode(MediaRawData* aSample);
   MediaResult DoDecode(MediaRawData* aSample);
