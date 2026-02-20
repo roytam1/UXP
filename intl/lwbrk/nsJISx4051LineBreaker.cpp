@@ -396,11 +396,19 @@ IS_NONBREAKABLE_SPACE(char16_t u)
 static inline bool
 IS_HYPHEN(char16_t u)
 {
-  return (u == U_HYPHEN ||
-          u == 0x058A || // ARMENIAN HYPHEN
-          u == 0x2010 || // HYPHEN
-          u == 0x2012 || // FIGURE DASH
-          u == 0x2013);  // EN DASH
+  return (u == U_HYPHEN || u == 0x2010 ||  // HYPHEN
+          u == 0x2012 ||                   // FIGURE DASH
+          u == 0x2013 ||                   // EN DASH
+#if defined(ANDROID) || defined(XP_WIN)
+          /* Bug 1647377: On Android and Windows, we don't have a "platform"
+           * backend that supports Tibetan (nsRuleBreaker.cpp only knows about
+           * Thai, and ScriptBreak doesn't handle Tibetan well either), so
+           * instead we just treat the TSHEG like a hpyen to provide basic
+           * line-breaking possibilities.
+           */
+          u == 0x0F0B ||                   // TIBETAN MARK INTERSYLLABIC TSHEG
+#endif
+          u == 0x058A);                    // ARMENIAN HYPHEN
 }
 
 static int8_t
@@ -481,8 +489,10 @@ GetClass(uint32_t u)
         return GETCLASSFROMTABLE(gLBClass00, uint16_t(U_HYPHEN));
       }
     } else if (0x0F00 == h) {
-      if (0x08 == l || 0x0C == l || 0x12 == l) {
-        return CLASS_NON_BREAKABLE;
+      // Tibetan chars with class = BA
+      if (0x34 == l || 0x7f == l || 0x85 == l || 0xbe == l || 0xbf == l ||
+          0xd2 == l) {
+        return CLASS_BREAKABLE;
       }
     } else if (0x1800 == h) {
       if (0x0E == l) {
