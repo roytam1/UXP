@@ -244,10 +244,23 @@ ClusterIterator::Next()
         }
     }
 
-    bool baseIsEmoji = (GetEmojiPresentation(ch) == EmojiDefault) ||
-                       (GetEmojiPresentation(ch) == EmojiComponent) ||
-                       (GetEmojiPresentation(ch) == TextDefault &&
-                        GetEmojiPresentation(aNextCh) == EmojiComponent);
+    // Checking the emoji-presentation property of the base character is a bit
+    // expensive, so we do it lazily.
+    uint8_t baseIsEmojiStatus = 0;
+    uint32_t baseCh = ch;
+
+    auto baseIsEmoji = [&]() -> bool {
+        if (baseIsEmojiStatus == 0) {
+            EmojiPresentation basePres = GetEmojiPresentation(baseCh);
+            baseIsEmojiStatus =
+                (basePres == EmojiDefault) ||
+                (basePres == EmojiComponent) ||
+                (basePres == TextDefault &&
+                 GetEmojiPresentation(aNextCh) == EmojiComponent)
+                ? 1 : 2;
+        }
+        return baseIsEmojiStatus == 1;
+    };
     bool prevWasZwj = false;
 
     while (mPos < mLimit) {
@@ -274,7 +287,7 @@ ClusterIterator::Next()
         bool extendCluster =
             IsClusterExtender(ch) ||
             IsEmojiClusterExtender(ch) ||
-            (baseIsEmoji && prevWasZwj &&
+            (prevWasZwj && baseIsEmoji() &&
              ((GetEmojiPresentation(ch, true) == EmojiDefault) ||
               (GetEmojiPresentation(ch, true) == EmojiComponent) ||
               (GetEmojiPresentation(ch, true) == TextDefault &&
