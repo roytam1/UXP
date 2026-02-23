@@ -7,41 +7,37 @@
  *  in the file PATENTS.  All contributing project authors may
  *  be found in the AUTHORS file in the root of the source tree.
  */
+#include <limits.h>
+#include <stdio.h>
 
 #include "vpx_config.h"
-#include "vp8_rtcd.h"
-#include "./vpx_dsp_rtcd.h"
-#include "encodemb.h"
-#include "encodemv.h"
+
 #include "vp8/common/common.h"
-#include "onyx_int.h"
-#include "vp8/common/extend.h"
 #include "vp8/common/entropymode.h"
-#include "vp8/common/quant_common.h"
-#include "segmentation.h"
-#include "vp8/common/setupintrarecon.h"
-#include "encodeintra.h"
-#include "vp8/common/reconinter.h"
-#include "rdopt.h"
-#include "pickinter.h"
-#include "vp8/common/findnearmv.h"
-#include <stdio.h>
-#include <limits.h>
+#include "vp8/common/extend.h"
 #include "vp8/common/invtrans.h"
+#include "vp8/common/quant_common.h"
+#include "vp8/common/reconinter.h"
+#include "vp8/common/setupintrarecon.h"
+#include "vp8/common/threading.h"
+#include "vp8/encoder/bitstream.h"
+#include "vp8/encoder/encodeframe.h"
+#include "vp8/encoder/encodeintra.h"
+#include "vp8/encoder/encodemb.h"
+#include "vp8/encoder/onyx_int.h"
+#include "vp8/encoder/pickinter.h"
+#include "vp8/encoder/rdopt.h"
+#include "vp8_rtcd.h"
+#include "vpx/internal/vpx_codec_internal.h"
+#include "vpx_dsp_rtcd.h"
+#include "vpx_mem/vpx_mem.h"
 #include "vpx_ports/vpx_timer.h"
-#if CONFIG_REALTIME_ONLY & CONFIG_ONTHEFLY_BITPACKING
-#include "bitstream.h"
+
+#if CONFIG_MULTITHREAD
+#include "vp8/encoder/ethreading.h"
 #endif
-#include "encodeframe.h"
 
 extern void vp8_stuff_mb(VP8_COMP *cpi, MACROBLOCK *x, TOKENEXTRA **t);
-extern void vp8_calc_ref_frame_costs(int *ref_frame_cost, int prob_intra,
-                                     int prob_last, int prob_garf);
-extern void vp8_convert_rfct_to_prob(VP8_COMP *const cpi);
-extern void vp8cx_initialize_me_consts(VP8_COMP *cpi, int QIndex);
-extern void vp8_auto_select_speed(VP8_COMP *cpi);
-extern void vp8cx_init_mbrthread_data(VP8_COMP *cpi, MACROBLOCK *x,
-                                      MB_ROW_COMP *mbr_ei, int count);
 static void adjust_act_zbin(VP8_COMP *cpi, MACROBLOCK *x);
 
 #ifdef MODE_STATS
@@ -67,15 +63,14 @@ unsigned int b_modes[14] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
  * Eventually this should be replaced by custom no-reference routines,
  *  which will be faster.
  */
-static const unsigned char VP8_VAR_OFFS[16] = {
-  128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128
-};
+static const unsigned char VP8_VAR_OFFS[16] = { 128, 128, 128, 128, 128, 128,
+                                                128, 128, 128, 128, 128, 128,
+                                                128, 128, 128, 128 };
 
 /* Original activity measure from Tim T's code. */
-static unsigned int tt_activity_measure(VP8_COMP *cpi, MACROBLOCK *x) {
+static unsigned int tt_activity_measure(MACROBLOCK *x) {
   unsigned int act;
   unsigned int sse;
-  (void)cpi;
   /* TODO: This could also be done over smaller areas (8x8), but that would
    *  require extensive changes elsewhere, as lambda is assumed to be fixed
    *  over an entire MB in most of the code.
@@ -93,28 +88,21 @@ static unsigned int tt_activity_measure(VP8_COMP *cpi, MACROBLOCK *x) {
   return act;
 }
 
-/* Stub for alternative experimental activity measures. */
-static unsigned int alt_activity_measure(VP8_COMP *cpi, MACROBLOCK *x,
-                                         int use_dc_pred) {
-  return vp8_encode_intra(cpi, x, use_dc_pred);
-}
-
 /* Measure the activity of the current macroblock
  * What we measure here is TBD so abstracted to this function
  */
 #define ALT_ACT_MEASURE 1
-static unsigned int mb_activity_measure(VP8_COMP *cpi, MACROBLOCK *x,
-                                        int mb_row, int mb_col) {
+static unsigned int mb_activity_measure(MACROBLOCK *x, int mb_row, int mb_col) {
   unsigned int mb_activity;
 
   if (ALT_ACT_MEASURE) {
     int use_dc_pred = (mb_col || mb_row) && (!mb_col || !mb_row);
 
-    /* Or use and alternative. */
-    mb_activity = alt_activity_measure(cpi, x, use_dc_pred);
+    /* Or use an alternative. */
+    mb_activity = vp8_encode_intra(x, use_dc_pred);
   } else {
     /* Original activity measure from Tim T's code. */
-    mb_activity = tt_activity_measure(cpi, x);
+    mb_activity = tt_activity_measure(x);
   }
 
   if (mb_activity < VP8_ACTIVITY_AVG_MIN) mb_activity = VP8_ACTIVITY_AVG_MIN;
@@ -134,7 +122,7 @@ static void calc_av_activity(VP8_COMP *cpi, int64_t activity_sum) {
     unsigned int tmp;
 
     /* Create a list to sort to */
-    CHECK_MEM_ERROR(sortlist,
+    CHECK_MEM_ERROR(&cpi->common.error, sortlist,
                     vpx_calloc(sizeof(unsigned int), cpi->common.MBs));
 
     /* Copy map to sort list */
@@ -267,7 +255,7 @@ static void build_activity_map(VP8_COMP *cpi) {
       vp8_copy_mem16x16(x->src.y_buffer, x->src.y_stride, x->thismb, 16);
 
       /* measure activity */
-      mb_activity = mb_activity_measure(cpi, x, mb_row, mb_col);
+      mb_activity = mb_activity_measure(x, mb_row, mb_col);
 
       /* Keep frame sum */
       activity_sum += mb_activity;
@@ -344,11 +332,14 @@ static void encode_mb_row(VP8_COMP *cpi, VP8_COMMON *cm, int mb_row,
 
 #if CONFIG_MULTITHREAD
   const int nsync = cpi->mt_sync_range;
-  const int rightmost_col = cm->mb_cols + nsync;
-  const int *last_row_current_mb_col;
-  int *current_mb_col = &cpi->mt_current_mb_col[mb_row];
+  vpx_atomic_int rightmost_col = VPX_ATOMIC_INIT(cm->mb_cols + nsync);
+  const vpx_atomic_int *last_row_current_mb_col;
+  vpx_atomic_int *current_mb_col = NULL;
 
-  if ((cpi->b_multi_threaded != 0) && (mb_row != 0)) {
+  if (vpx_atomic_load_acquire(&cpi->b_multi_threaded) != 0) {
+    current_mb_col = &cpi->mt_current_mb_col[mb_row];
+  }
+  if (vpx_atomic_load_acquire(&cpi->b_multi_threaded) != 0 && mb_row != 0) {
     last_row_current_mb_col = &cpi->mt_current_mb_col[mb_row - 1];
   } else {
     last_row_current_mb_col = &rightmost_col;
@@ -418,15 +409,13 @@ static void encode_mb_row(VP8_COMP *cpi, VP8_COMMON *cm, int mb_row,
     vp8_copy_mem16x16(x->src.y_buffer, x->src.y_stride, x->thismb, 16);
 
 #if CONFIG_MULTITHREAD
-    if (cpi->b_multi_threaded != 0) {
+    if (vpx_atomic_load_acquire(&cpi->b_multi_threaded) != 0) {
       if (((mb_col - 1) % nsync) == 0) {
-        pthread_mutex_t *mutex = &cpi->pmutex[mb_row];
-        protected_write(mutex, current_mb_col, mb_col - 1);
+        vpx_atomic_store_release(current_mb_col, mb_col - 1);
       }
 
       if (mb_row && !(mb_col & (nsync - 1))) {
-        pthread_mutex_t *mutex = &cpi->pmutex[mb_row - 1];
-        sync_read(mutex, mb_col, last_row_current_mb_col, nsync);
+        vp8_atomic_spin_wait(mb_col, last_row_current_mb_col, nsync);
       }
     }
 #endif
@@ -455,13 +444,21 @@ static void encode_mb_row(VP8_COMP *cpi, VP8_COMMON *cm, int mb_row,
     x->active_ptr = cpi->active_map + map_index + mb_col;
 
     if (cm->frame_type == KEY_FRAME) {
-      *totalrate += vp8cx_encode_intra_macroblock(cpi, x, tp);
+      const int intra_rate_cost = vp8cx_encode_intra_macroblock(cpi, x, tp);
+      if (INT_MAX - *totalrate > intra_rate_cost)
+        *totalrate += intra_rate_cost;
+      else
+        *totalrate = INT_MAX;
 #ifdef MODE_STATS
       y_modes[xd->mbmi.mode]++;
 #endif
     } else {
-      *totalrate += vp8cx_encode_inter_macroblock(
+      const int inter_rate_cost = vp8cx_encode_inter_macroblock(
           cpi, x, tp, recon_yoffset, recon_uvoffset, mb_row, mb_col);
+      if (INT_MAX - *totalrate > inter_rate_cost)
+        *totalrate += inter_rate_cost;
+      else
+        *totalrate = INT_MAX;
 
 #ifdef MODE_STATS
       inter_y_modes[xd->mbmi.mode]++;
@@ -566,8 +563,9 @@ static void encode_mb_row(VP8_COMP *cpi, VP8_COMMON *cm, int mb_row,
                     xd->dst.u_buffer + 8, xd->dst.v_buffer + 8);
 
 #if CONFIG_MULTITHREAD
-  if (cpi->b_multi_threaded != 0) {
-    protected_write(&cpi->pmutex[mb_row], current_mb_col, rightmost_col);
+  if (vpx_atomic_load_acquire(&cpi->b_multi_threaded) != 0) {
+    vpx_atomic_store_release(current_mb_col,
+                             vpx_atomic_load_acquire(&rightmost_col));
   }
 #endif
 
@@ -635,12 +633,13 @@ static void init_encode_frame_mb_context(VP8_COMP *cpi) {
                              cpi->prob_last_coded, cpi->prob_gf_coded);
   }
 
-  xd->fullpixel_mask = 0xffffffff;
-  if (cm->full_pixel) xd->fullpixel_mask = 0xfffffff8;
+  xd->fullpixel_mask = ~0;
+  if (cm->full_pixel) xd->fullpixel_mask = ~7;
 
   vp8_zero(x->coef_counts);
   vp8_zero(x->ymode_count);
-  vp8_zero(x->uv_mode_count) x->prediction_error = 0;
+  vp8_zero(x->uv_mode_count);
+  x->prediction_error = 0;
   x->intra_error = 0;
   vp8_zero(x->count_mb_ref_frame_usage);
 }
@@ -748,30 +747,42 @@ void vp8_encode_frame(VP8_COMP *cpi) {
 #endif
 
   {
+#if CONFIG_INTERNAL_STATS
     struct vpx_usec_timer emr_timer;
     vpx_usec_timer_start(&emr_timer);
+#endif
 
 #if CONFIG_MULTITHREAD
-    if (cpi->b_multi_threaded) {
+    if (vpx_atomic_load_acquire(&cpi->b_multi_threaded)) {
       int i;
 
       vp8cx_init_mbrthread_data(cpi, x, cpi->mb_row_ei,
                                 cpi->encoding_thread_count);
 
-      for (i = 0; i < cm->mb_rows; ++i) cpi->mt_current_mb_col[i] = -1;
+      if (cpi->mt_current_mb_col_size != cm->mb_rows) {
+        vpx_free(cpi->mt_current_mb_col);
+        cpi->mt_current_mb_col = NULL;
+        cpi->mt_current_mb_col_size = 0;
+        CHECK_MEM_ERROR(
+            &cpi->common.error, cpi->mt_current_mb_col,
+            vpx_malloc(sizeof(*cpi->mt_current_mb_col) * cm->mb_rows));
+        cpi->mt_current_mb_col_size = cm->mb_rows;
+      }
+      for (i = 0; i < cm->mb_rows; ++i)
+        vpx_atomic_store_release(&cpi->mt_current_mb_col[i], -1);
 
       for (i = 0; i < cpi->encoding_thread_count; ++i) {
-        sem_post(&cpi->h_event_start_encoding[i]);
+        vp8_sem_post(&cpi->h_event_start_encoding[i]);
       }
 
       for (mb_row = 0; mb_row < cm->mb_rows;
            mb_row += (cpi->encoding_thread_count + 1)) {
-        vp8_zero(cm->left_context)
+        vp8_zero(cm->left_context);
 
 #if CONFIG_REALTIME_ONLY & CONFIG_ONTHEFLY_BITPACKING
-            tp = cpi->tok;
+        tp = cpi->tok;
 #else
-            tp = cpi->tok + mb_row * (cm->mb_cols * 16 * 24);
+        tp = cpi->tok + mb_row * (cm->mb_cols * 16 * 24);
 #endif
 
         encode_mb_row(cpi, cm, mb_row, x, xd, &tp, segment_counts, &totalrate);
@@ -794,7 +805,7 @@ void vp8_encode_frame(VP8_COMP *cpi) {
       }
       /* Wait for all the threads to finish. */
       for (i = 0; i < cpi->encoding_thread_count; ++i) {
-        sem_wait(&cpi->h_event_end_encoding[i]);
+        vp8_sem_wait(&cpi->h_event_end_encoding[i]);
       }
 
       for (mb_row = 0; mb_row < cm->mb_rows; ++mb_row) {
@@ -858,10 +869,10 @@ void vp8_encode_frame(VP8_COMP *cpi) {
 
       /* for each macroblock row in image */
       for (mb_row = 0; mb_row < cm->mb_rows; ++mb_row) {
-        vp8_zero(cm->left_context)
+        vp8_zero(cm->left_context);
 
 #if CONFIG_REALTIME_ONLY & CONFIG_ONTHEFLY_BITPACKING
-            tp = cpi->tok;
+        tp = cpi->tok;
 #endif
 
         encode_mb_row(cpi, cm, mb_row, x, xd, &tp, segment_counts, &totalrate);
@@ -885,8 +896,10 @@ void vp8_encode_frame(VP8_COMP *cpi) {
     }
 #endif
 
+#if CONFIG_INTERNAL_STATS
     vpx_usec_timer_mark(&emr_timer);
     cpi->time_encode_mb_row += vpx_usec_timer_elapsed(&emr_timer);
+#endif
   }
 
   // Work out the segment probabilities if segmentation is enabled

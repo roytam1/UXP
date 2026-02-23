@@ -10,7 +10,12 @@
 
 # List of tools to build.
 TOOLS-yes            += tiny_ssim.c
-tiny_ssim.SRCS       += vpx/vpx_integer.h
+tiny_ssim.SRCS       += vpx/vpx_integer.h y4minput.c y4minput.h \
+                        vpx/vpx_codec.h vpx/src/vpx_image.c
+tiny_ssim.SRCS       += vpx_mem/vpx_mem.c vpx_mem/vpx_mem.h
+tiny_ssim.SRCS       += vpx_dsp/ssim.h vpx_scale/yv12config.h
+tiny_ssim.SRCS       += vpx_ports/mem.h vpx_ports/mem.h
+tiny_ssim.SRCS       += vpx_mem/include/vpx_mem_intrnl.h
 tiny_ssim.GUID        = 3afa9b05-940b-4d68-b5aa-55157d8ed7b4
 tiny_ssim.DESCRIPTION = Generate SSIM/PSNR from raw .yuv files
 
@@ -23,7 +28,11 @@ tiny_ssim.DESCRIPTION = Generate SSIM/PSNR from raw .yuv files
 # Expand list of selected tools to build (as specified above)
 TOOLS           = $(addprefix tools/,$(call enabled,TOOLS))
 ALL_SRCS        = $(foreach ex,$(TOOLS),$($(notdir $(ex:.c=)).SRCS))
+CFLAGS += -I../include
 
+ifneq ($(CONFIG_CODEC_SRCS), yes)
+  CFLAGS += -I../include/vpx
+endif
 
 # Expand all tools sources into a variable containing all sources
 # for that tools (not just them main one specified in TOOLS)
@@ -39,15 +48,11 @@ DIST-SRCS-yes              += $(ALL_SRCS)
 OBJS-$(NOT_MSVS)           += $(call objs,$(ALL_SRCS))
 BINS-$(NOT_MSVS)           += $(addprefix $(BUILD_PFX),$(TOOLS:.c=$(EXE_SFX)))
 
-
 # Instantiate linker template for all tools.
 $(foreach bin,$(BINS-yes),\
     $(eval $(bin):)\
     $(eval $(call linker_template,$(bin),\
-        $(call objs,$($(notdir $(bin:$(EXE_SFX)=)).SRCS)) \
-				-lm\
-        )))
-
+        $(call objs,$($(notdir $(bin:$(EXE_SFX)=)).SRCS)) -lm)))
 
 # The following pairs define a mapping of locations in the distribution
 # tree to locations in the source/build trees.
@@ -74,6 +79,7 @@ $(1): $($(1:.$(VCPROJ_SFX)=).SRCS) vpx.$(VCPROJ_SFX)
             --ver=$$(CONFIG_VS_VERSION)\
             --proj-guid=$$($$(@:.$(VCPROJ_SFX)=).GUID)\
             --src-path-bare="$(SRC_PATH_BARE)" \
+            --as=$$(AS) \
             $$(if $$(CONFIG_STATIC_MSVCRT),--static-crt) \
             --out=$$@ $$(INTERNAL_CFLAGS) $$(CFLAGS) \
             $$(INTERNAL_LDFLAGS) $$(LDFLAGS) $$^
@@ -84,6 +90,13 @@ INSTALL-BINS-$(CONFIG_MSVS) += $(foreach p,$(VS_PLATFORMS),\
                                $(addprefix bin/$(p)/,$(TOOLS_BASENAME:.c=.exe)))
 $(foreach proj,$(call enabled,PROJECTS),\
     $(eval $(call vcproj_template,$(proj))))
+
+# Generate a list of all enabled sources, in particular for exporting to gyp
+# based build systems.
+tiny_ssim_srcs.txt:
+	@echo "    [CREATE] $@"
+	@echo $(tiny_ssim.SRCS) | xargs -n1 echo | LC_ALL=C sort -u > $@
+CLEAN-OBJS += tiny_ssim_srcs.txt
 
 #
 # Documentation Rules

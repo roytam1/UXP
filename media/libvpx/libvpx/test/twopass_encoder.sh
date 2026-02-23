@@ -37,7 +37,7 @@ twopass_encoder() {
 
   eval "${VPX_TEST_PREFIX}" "${encoder}" "${codec}" "${YUV_RAW_INPUT_WIDTH}" \
       "${YUV_RAW_INPUT_HEIGHT}" "${YUV_RAW_INPUT}" "${output_file}" 100 \
-      ${devnull}
+      ${devnull} || return 1
 
   [ -e "${output_file}" ] || return 1
 }
@@ -54,7 +54,10 @@ twopass_encoder_vp9() {
   fi
 }
 
-twopass_encoder_tests="twopass_encoder_vp8
-                       twopass_encoder_vp9"
 
-run_tests twopass_encoder_verify_environment "${twopass_encoder_tests}"
+if [ "$(vpx_config_option_enabled CONFIG_REALTIME_ONLY)" != "yes" ]; then
+  twopass_encoder_tests="twopass_encoder_vp8
+                         twopass_encoder_vp9"
+
+  run_tests twopass_encoder_verify_environment "${twopass_encoder_tests}"
+fi

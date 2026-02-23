@@ -1,12 +1,19 @@
 @ This file was created from a .asm file
 @  using the ads2gas.pl script.
-	.equ DO1STROUNDING, 0
-.equ ARCH_ARM ,  0
-.equ ARCH_MIPS ,  0
-.equ ARCH_X86 ,  0
-.equ ARCH_X86_64 ,  0
-.equ HAVE_NEON ,  0
+.syntax unified
+.equ VPX_ARCH_ARM ,  0
+.equ VPX_ARCH_AARCH64 ,  0
+.equ VPX_ARCH_MIPS ,  0
+.equ VPX_ARCH_X86 ,  0
+.equ VPX_ARCH_X86_64 ,  0
+.equ VPX_ARCH_PPC ,  0
+.equ VPX_ARCH_LOONGARCH ,  0
 .equ HAVE_NEON_ASM ,  0
+.equ HAVE_NEON ,  0
+.equ HAVE_NEON_DOTPROD ,  0
+.equ HAVE_NEON_I8MM ,  0
+.equ HAVE_SVE ,  0
+.equ HAVE_SVE2 ,  0
 .equ HAVE_MIPS32 ,  0
 .equ HAVE_DSPR2 ,  0
 .equ HAVE_MSA ,  0
@@ -19,6 +26,11 @@
 .equ HAVE_SSE4_1 ,  0
 .equ HAVE_AVX ,  0
 .equ HAVE_AVX2 ,  0
+.equ HAVE_AVX512 ,  0
+.equ HAVE_VSX ,  0
+.equ HAVE_MMI ,  0
+.equ HAVE_LSX ,  0
+.equ HAVE_LASX ,  0
 .equ HAVE_VPX_PORTS ,  1
 .equ HAVE_PTHREAD_H ,  1
 .equ CONFIG_DEPENDENCY_TRACKING ,  1
@@ -75,8 +87,11 @@
 .equ CONFIG_BETTER_HW_COMPATIBILITY ,  0
 .equ CONFIG_EXPERIMENTAL ,  0
 .equ CONFIG_SIZE_LIMIT ,  1
-.equ CONFIG_SPATIAL_SVC ,  0
+.equ CONFIG_ALWAYS_ADJUST_BPM ,  0
+.equ CONFIG_BITSTREAM_DEBUG ,  0
+.equ CONFIG_MISMATCH_DEBUG ,  0
 .equ CONFIG_FP_MB_STATS ,  0
 .equ CONFIG_EMULATE_HARDWARE ,  0
-.equ CONFIG_MISC_FIXES ,  0
-	.section	.note.GNU-stack,"",%progbits
+.equ CONFIG_NON_GREEDY_MV ,  0
+.equ CONFIG_COLLECT_COMPONENT_TIMING ,  0
+    .section .note.GNU-stack,"",%progbits

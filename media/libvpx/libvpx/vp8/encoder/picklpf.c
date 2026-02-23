@@ -12,12 +12,13 @@
 #include "./vpx_scale_rtcd.h"
 #include "vp8/common/onyxc_int.h"
 #include "onyx_int.h"
+#include "vp8/encoder/picklpf.h"
 #include "vp8/encoder/quantize.h"
 #include "vpx_mem/vpx_mem.h"
 #include "vpx_scale/vpx_scale.h"
 #include "vp8/common/alloccommon.h"
 #include "vp8/common/loopfilter.h"
-#if ARCH_ARM
+#if VPX_ARCH_ARM
 #include "vpx_ports/arm.h"
 #endif
 
@@ -49,6 +50,14 @@ static void yv12_copy_partial_frame(YV12_BUFFER_CONFIG *src_ybc,
   src_y = src_ybc->y_buffer + yoffset;
   dst_y = dst_ybc->y_buffer + yoffset;
 
+  // The border will be used in vp8_loop_filter_partial_frame so it needs to be
+  // extended to avoid a valgrind warning.
+  const unsigned char *const top_row = src_ybc->y_buffer;
+  for (int i = yoffset; i < 0; i += ystride, --linestocopy) {
+    memcpy(dst_y, top_row, ystride);
+    dst_y += ystride;
+    src_y += ystride;
+  }
   memcpy(dst_y, src_y, ystride * linestocopy);
 }
 

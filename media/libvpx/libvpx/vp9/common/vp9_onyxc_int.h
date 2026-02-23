@@ -8,12 +8,11 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef VP9_COMMON_VP9_ONYXC_INT_H_
-#define VP9_COMMON_VP9_ONYXC_INT_H_
+#ifndef VPX_VP9_COMMON_VP9_ONYXC_INT_H_
+#define VPX_VP9_COMMON_VP9_ONYXC_INT_H_
 
 #include "./vpx_config.h"
 #include "vpx/internal/vpx_codec_internal.h"
-#include "vpx_util/vpx_thread.h"
 #include "./vp9_rtcd.h"
 #include "vp9/common/vp9_alloccommon.h"
 #include "vp9/common/vp9_loopfilter.h"
@@ -37,13 +36,9 @@ extern "C" {
 #define REF_FRAMES_LOG2 3
 #define REF_FRAMES (1 << REF_FRAMES_LOG2)
 
-// 4 scratch frames for the new frames to support a maximum of 4 cores decoding
-// in parallel, 3 for scaled references on the encoder.
-// TODO(hkuang): Add ondemand frame buffers instead of hardcoding the number
-// of framebuffers.
-// TODO(jkoleszar): These 3 extra references could probably come from the
-// normal reference pool.
-#define FRAME_BUFFERS (REF_FRAMES + 7)
+// 1 scratch frame for the new frame, REFS_PER_FRAME for scaled references on
+// the encoder.
+#define FRAME_BUFFERS (REF_FRAMES + 1 + REFS_PER_FRAME)
 
 #define FRAME_CONTEXTS_LOG2 2
 #define FRAME_CONTEXTS (1 << FRAME_CONTEXTS_LOG2)
@@ -72,30 +67,22 @@ typedef struct {
   MV_REF *mvs;
   int mi_rows;
   int mi_cols;
+  uint8_t released;
+
+  // Note that frame_index/frame_coding_index are only set by set_frame_index()
+  // on the encoder side.
+
+  // TODO(angiebird): Set frame_index/frame_coding_index on the decoder side
+  // properly.
+  int frame_index;         // Display order in the video, it's equivalent to the
+                           // show_idx defined in EncodeFrameInfo.
+  int frame_coding_index;  // The coding order (starting from zero) of this
+                           // frame.
   vpx_codec_frame_buffer_t raw_frame_buffer;
   YV12_BUFFER_CONFIG buf;
-
-  // The Following variables will only be used in frame parallel decode.
-
-  // frame_worker_owner indicates which FrameWorker owns this buffer. NULL means
-  // that no FrameWorker owns, or is decoding, this buffer.
-  VPxWorker *frame_worker_owner;
-
-  // row and col indicate which position frame has been decoded to in real
-  // pixel unit. They are reset to -1 when decoding begins and set to INT_MAX
-  // when the frame is fully decoded.
-  int row;
-  int col;
 } RefCntBuffer;
 
 typedef struct BufferPool {
-// Protect BufferPool from being accessed by several FrameWorkers at
-// the same time during frame parallel decode.
-// TODO(hkuang): Try to use atomic variable instead of locking the whole pool.
-#if CONFIG_MULTITHREAD
-  pthread_mutex_t pool_mutex;
-#endif
-
   // Private data associated with the frame buffer callbacks.
   void *cb_priv;
 
@@ -148,6 +135,8 @@ typedef struct VP9Common {
   RefBuffer frame_refs[REFS_PER_FRAME];
 
   int new_fb_idx;
+
+  int cur_show_frame_fb_idx;
 
 #if CONFIG_VP9_POSTPROC
   YV12_BUFFER_CONFIG post_proc_buffer;
@@ -235,10 +224,6 @@ typedef struct VP9Common {
   struct loopfilter lf;
   struct segmentation seg;
 
-  // TODO(hkuang): Remove this as it is the same as frame_parallel_decode
-  // in pbi.
-  int frame_parallel_decode;  // frame-based threading.
-
   // Context probabilities for reference frame prediction
   MV_REFERENCE_FRAME comp_fixed_ref;
   MV_REFERENCE_FRAME comp_var_ref[2];
@@ -249,7 +234,14 @@ typedef struct VP9Common {
   unsigned int frame_context_idx; /* Context to use/update */
   FRAME_COUNTS counts;
 
+  // TODO(angiebird): current_video_frame/current_frame_coding_index into a
+  // structure
   unsigned int current_video_frame;
+  // Each show or no show frame is assigned with a coding index based on its
+  // coding order (starting from zero).
+
+  // Current frame's coding index.
+  int current_frame_coding_index;
   BITSTREAM_PROFILE profile;
 
   // VPX_BITS_8 in profile 0 or 1, VPX_BITS_10 or VPX_BITS_12 in profile 2 or 3.
@@ -267,26 +259,63 @@ typedef struct VP9Common {
   int byte_alignment;
   int skip_loop_filter;
 
-  // Private data associated with the frame buffer callbacks.
-  void *cb_priv;
-  vpx_get_frame_buffer_cb_fn_t get_fb_cb;
-  vpx_release_frame_buffer_cb_fn_t release_fb_cb;
-
-  // Handles memory for the codec.
-  InternalFrameBufferList int_frame_buffers;
-
   // External BufferPool passed from outside.
   BufferPool *buffer_pool;
 
   PARTITION_CONTEXT *above_seg_context;
   ENTROPY_CONTEXT *above_context;
   int above_context_alloc_cols;
+
+  int lf_row;
 } VP9_COMMON;
 
-// TODO(hkuang): Don't need to lock the whole pool after implementing atomic
-// frame reference count.
-void lock_buffer_pool(BufferPool *const pool);
-void unlock_buffer_pool(BufferPool *const pool);
+static INLINE void init_frame_indexes(VP9_COMMON *cm) {
+  cm->current_video_frame = 0;
+  cm->current_frame_coding_index = 0;
+}
+
+static INLINE void update_frame_indexes(VP9_COMMON *cm, int show_frame) {
+  if (show_frame) {
+    // Don't increment frame counters if this was an altref buffer
+    // update not a real frame
+    ++cm->current_video_frame;
+  }
+  ++cm->current_frame_coding_index;
+}
+
+typedef struct {
+  int frame_width;
+  int frame_height;
+  int render_frame_width;
+  int render_frame_height;
+  int mi_rows;
+  int mi_cols;
+  int mb_rows;
+  int mb_cols;
+  int num_mbs;
+  vpx_bit_depth_t bit_depth;
+} FRAME_INFO;
+
+static INLINE void init_frame_info(FRAME_INFO *frame_info,
+                                   const VP9_COMMON *cm) {
+  frame_info->frame_width = cm->width;
+  frame_info->frame_height = cm->height;
+  frame_info->render_frame_width = cm->render_width;
+  frame_info->render_frame_height = cm->render_height;
+  frame_info->mi_cols = cm->mi_cols;
+  frame_info->mi_rows = cm->mi_rows;
+  frame_info->mb_cols = cm->mb_cols;
+  frame_info->mb_rows = cm->mb_rows;
+  frame_info->num_mbs = cm->MBs;
+  frame_info->bit_depth = cm->bit_depth;
+  // TODO(angiebird): Figure out how to get subsampling_x/y here
+}
+
+static INLINE YV12_BUFFER_CONFIG *get_buf_frame(VP9_COMMON *cm, int index) {
+  if (index < 0 || index >= FRAME_BUFFERS) return NULL;
+  if (cm->error.error_code != VPX_CODEC_OK) return NULL;
+  return &cm->buffer_pool->frame_bufs[index].buf;
+}
 
 static INLINE YV12_BUFFER_CONFIG *get_ref_frame(VP9_COMMON *cm, int index) {
   if (index < 0 || index >= REF_FRAMES) return NULL;
@@ -303,7 +332,6 @@ static INLINE int get_free_fb(VP9_COMMON *cm) {
   RefCntBuffer *const frame_bufs = cm->buffer_pool->frame_bufs;
   int i;
 
-  lock_buffer_pool(cm->buffer_pool);
   for (i = 0; i < FRAME_BUFFERS; ++i)
     if (frame_bufs[i].ref_count == 0) break;
 
@@ -314,7 +342,6 @@ static INLINE int get_free_fb(VP9_COMMON *cm) {
     i = INVALID_IDX;
   }
 
-  unlock_buffer_pool(cm->buffer_pool);
   return i;
 }
 
@@ -342,7 +369,7 @@ static INLINE void set_partition_probs(const VP9_COMMON *const cm,
   xd->partition_probs =
       frame_is_intra_only(cm)
           ? &vp9_kf_partition_probs[0]
-          : (const vpx_prob(*)[PARTITION_TYPES - 1])cm->fc->partition_prob;
+          : (const vpx_prob(*)[PARTITION_TYPES - 1]) cm->fc->partition_prob;
 }
 
 static INLINE void vp9_init_macroblockd(VP9_COMMON *cm, MACROBLOCKD *xd,
@@ -437,4 +464,4 @@ static INLINE int partition_plane_context(const MACROBLOCKD *xd, int mi_row,
 }  // extern "C"
 #endif
 
-#endif  // VP9_COMMON_VP9_ONYXC_INT_H_
+#endif  // VPX_VP9_COMMON_VP9_ONYXC_INT_H_

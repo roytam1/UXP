@@ -11,10 +11,12 @@
 
 %include "vpx_ports/x86_abi_support.asm"
 
+SECTION .text
+
 ;void vpx_plane_add_noise_sse2(uint8_t *start, const int8_t *noise,
 ;                              int blackclamp, int whiteclamp,
 ;                              int width, int height, int pitch)
-global sym(vpx_plane_add_noise_sse2) PRIVATE
+globalsym(vpx_plane_add_noise_sse2)
 sym(vpx_plane_add_noise_sse2):
     push        rbp
     mov         rbp, rsp
@@ -26,13 +28,13 @@ sym(vpx_plane_add_noise_sse2):
     mov         rdx, 0x01010101
     mov         rax, arg(2)
     mul         rdx
-    movd        xmm3, rax
+    movq        xmm3, rax
     pshufd      xmm3, xmm3, 0  ; xmm3 is 16 copies of char in blackclamp
 
     mov         rdx, 0x01010101
     mov         rax, arg(3)
     mul         rdx
-    movd        xmm4, rax
+    movq        xmm4, rax
     pshufd      xmm4, xmm4, 0  ; xmm4 is 16 copies of char in whiteclamp
 
     movdqu      xmm5, xmm3     ; both clamp = black clamp + white clamp
