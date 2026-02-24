@@ -16,6 +16,9 @@ if CONFIG['CPU_ARCH'] == 'x86_64':
     EXPORTS.vpx += files['X64_EXPORTS']
     SOURCES += files['X64_SOURCES']
     if CONFIG['OS_TARGET'] == 'WINNT':
+        # Needed for x87 control-word helpers referenced from vpx_ports/x86.h
+        # when building with MSVC x64.
+        SOURCES += ['libvpx/vpx_ports/float_control_word.asm']
         ASFLAGS += [ '-I%s/media/libvpx/config/win/x64/' % TOPSRCDIR ]
         CFLAGS += [ '-I%s/media/libvpx/config/win/x64/' % TOPSRCDIR ]
     elif CONFIG['OS_TARGET'] == 'Darwin':
