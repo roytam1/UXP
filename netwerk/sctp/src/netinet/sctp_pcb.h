@@ -32,11 +32,6 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(__FreeBSD__) && !defined(__Userspace__)
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-#endif
-
 #ifndef _NETINET_SCTP_PCB_H_
 #define _NETINET_SCTP_PCB_H_
 
@@ -136,10 +131,10 @@ struct sctp_block_entry {
 };
 
 struct sctp_timewait {
-	uint32_t tv_sec_at_expire;	/* the seconds from boot to expire */
-        uint32_t v_tag;		        /* the vtag that can not be reused */
-        uint16_t lport;                 /* the local port used in vtag */
-        uint16_t rport;                 /* the remote port used in vtag */
+	time_t tv_sec_at_expire;	/* the seconds from boot to expire */
+	uint32_t v_tag;		        /* the vtag that can not be reused */
+	uint16_t lport;                 /* the local port used in vtag */
+	uint16_t rport;                 /* the remote port used in vtag */
 };
 
 struct sctp_tagblock {
@@ -352,8 +347,8 @@ struct sctp_base_info {
  * access /dev/random.
  */
 struct sctp_pcb {
-	unsigned int time_of_secret_change;	/* number of seconds from
-						 * timeval.tv_sec */
+	time_t time_of_secret_change;	/* number of seconds from
+					 * timeval.tv_sec */
 	uint32_t secret_key[SCTP_HOW_MANY_SECRETS][SCTP_NUMBER_OF_SECRETS];
 	unsigned int size_of_a_cookie;
 
@@ -496,7 +491,7 @@ struct sctp_inpcb {
 	uint8_t reconfig_supported;
 	uint8_t nrsack_supported;
 	uint8_t pktdrop_supported;
-	uint8_t zero_checksum;
+	uint8_t rcv_edmid;
 	struct sctp_nonpad_sndrcvinfo def_send;
 	/*-
 	 * These three are here for the sosend_dgram
@@ -686,18 +681,6 @@ struct sctp_vrf *sctp_allocate_vrf(int vrfid);
 struct sctp_vrf *sctp_find_vrf(uint32_t vrfid);
 void sctp_free_vrf(struct sctp_vrf *vrf);
 
-/*-
- * Change address state, can be used if
- * O/S supports telling transports about
- * changes to IFA/IFN's (link layer triggers).
- * If a ifn goes down, we will do src-addr-selection
- * and NOT use that, as a source address. This does
- * not stop the routing system from routing out
- * that interface, but we won't put it as a source.
- */
-void sctp_mark_ifa_addr_down(uint32_t vrf_id, struct sockaddr *addr, const char *if_name, uint32_t ifn_index);
-void sctp_mark_ifa_addr_up(uint32_t vrf_id, struct sockaddr *addr, const char *if_name, uint32_t ifn_index);
-
 struct sctp_ifa *
 sctp_add_addr_to_vrf(uint32_t vrfid,
 		     void *ifn, uint32_t ifn_index, uint32_t ifn_type,
@@ -705,13 +688,10 @@ sctp_add_addr_to_vrf(uint32_t vrfid,
 		     void *ifa, struct sockaddr *addr, uint32_t ifa_flags,
 		     int dynamic_add);
 
-void sctp_update_ifn_mtu(uint32_t ifn_index, uint32_t mtu);
-
-void sctp_free_ifn(struct sctp_ifn *sctp_ifnp);
 void sctp_free_ifa(struct sctp_ifa *sctp_ifap);
 
 void sctp_del_addr_from_vrf(uint32_t vrfid, struct sockaddr *addr,
-			    uint32_t ifn_index, const char *if_name);
+                            void *ifn, uint32_t ifn_index);
 
 struct sctp_nets *sctp_findnet(struct sctp_tcb *, struct sockaddr *);
 

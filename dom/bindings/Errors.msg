@@ -111,3 +111,4 @@ MSG_DEF(MSG_PMO_INVALID_MEMBERS, 0, JSEXN_TYPEERR, "PerformanceMeasureOptions ca
 MSG_DEF(MSG_PMO_CONSTRUCTOR_INACCESSIBLE, 0, JSEXN_TYPEERR, "Can't access PerformanceMark constructor, performance is null.")
 MSG_DEF(MSG_PMO_UNEXPECTED_START_TIME, 0, JSEXN_TYPEERR, "Expected startTime >= 0.")
 MSG_DEF(MSG_PMO_INVALID_ATTR_FOR_NON_GLOBAL, 1, JSEXN_TYPEERR, "Cannot get PerformanceTiming attribute values for non-Window global object. Given: {0}.")
+MSG_DEF(MSG_NOT_SUBMIT_BUTTON, 0, JSEXN_TYPEERR, "The submitter is not a submit button.")
