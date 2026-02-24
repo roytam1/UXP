@@ -81,6 +81,12 @@ function convert_srcs_to_project_files {
   # The actual ARM files end in .asm. We have rules to translate them to .S
   source_list=$(echo "$source_list" | sed s/\.asm\.s$/.asm/)
 
+  # Avoid basename collisions in Mozilla's object naming. Upstream has both
+  # vp8/common/x86/loopfilter_sse2.asm and vpx_dsp/x86/loopfilter_sse2.c.
+  # Route the C translation unit through a uniquely-named wrapper source.
+  source_list=$(echo "$source_list" | \
+    sed 's#^vpx_dsp/x86/loopfilter_sse2\.c$#vpx_dsp/x86/loopfilter_dsp_sse2.c#')
+
   # Exports - everything in vpx, vpx_mem, vpx_ports, vpx_scale
   local exports_list=$(echo "$source_list" | \
     egrep '^(vpx|vpx_mem|vpx_ports|vpx_scale)/.*h$')
