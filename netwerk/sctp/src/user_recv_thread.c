@@ -56,7 +56,7 @@
 #endif
 #endif
 #endif
-#if defined(HAVE_NET_ROUTE_H)
+#if defined(HAVE_NET_ROUTE_H) || defined(__FreeBSD__) || defined(__DragonFly__)
 # include <net/route.h>
 #elif defined(__APPLE__)
 /* Apple SDKs for iOS, tvOS, watchOS, etc. don't ship this header */
@@ -135,8 +135,7 @@ sctp_handle_ifamsg(unsigned char type, unsigned short index, struct sockaddr *sa
 		                           1);
 	} else {
 		sctp_del_addr_from_vrf(SCTP_DEFAULT_VRFID, ifa->ifa_addr,
-		                       if_nametoindex(ifa->ifa_name),
-		                       ifa->ifa_name);
+		                       NULL, if_nametoindex(ifa->ifa_name));
 	}
 	freeifaddrs(ifas);
 }
