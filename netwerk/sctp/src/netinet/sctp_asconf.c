@@ -40,11 +40,6 @@
 #endif
 #endif
 
-#if defined(__FreeBSD__) && !defined(__Userspace__)
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-#endif
-
 #include <netinet/sctp_os.h>
 #include <netinet/sctp_var.h>
 #include <netinet/sctp_sysctl.h>
@@ -1360,13 +1355,13 @@ sctp_asconf_queue_mgmt(struct sctp_tcb *stcb, struct sctp_ifa *ifa,
 #ifdef SCTP_DEBUG
 	if (SCTP_BASE_SYSCTL(sctp_debug_on) & SCTP_DEBUG_ASCONF2) {
 		if (type == SCTP_ADD_IP_ADDRESS) {
-			SCTP_PRINTF("asconf_queue_mgmt: inserted asconf ADD_IP_ADDRESS: ");
+			SCTPDBG(SCTP_DEBUG_ASCONF2, "asconf_queue_mgmt: inserted asconf ADD_IP_ADDRESS: ");
 			SCTPDBG_ADDR(SCTP_DEBUG_ASCONF2, &ifa->address.sa);
 		} else if (type == SCTP_DEL_IP_ADDRESS) {
-			SCTP_PRINTF("asconf_queue_mgmt: appended asconf DEL_IP_ADDRESS: ");
+			SCTPDBG(SCTP_DEBUG_ASCONF2, "asconf_queue_mgmt: appended asconf DEL_IP_ADDRESS: ");
 			SCTPDBG_ADDR(SCTP_DEBUG_ASCONF2, &ifa->address.sa);
 		} else {
-			SCTP_PRINTF("asconf_queue_mgmt: appended asconf SET_PRIM_ADDR: ");
+			SCTPDBG(SCTP_DEBUG_ASCONF2, "asconf_queue_mgmt: appended asconf SET_PRIM_ADDR: ");
 			SCTPDBG_ADDR(SCTP_DEBUG_ASCONF2, &ifa->address.sa);
 		}
 	}

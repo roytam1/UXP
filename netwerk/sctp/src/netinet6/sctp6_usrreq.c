@@ -32,11 +32,6 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(__FreeBSD__) && !defined(__Userspace__)
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-#endif
-
 #include <netinet/sctp_os.h>
 #ifdef INET6
 #if defined(__FreeBSD__) && !defined(__Userspace__)
@@ -653,7 +648,7 @@ sctp6_ctlinput(int cmd, struct sockaddr *pktdst, void *d)
 #endif
 
 /*
- * this routine can probably be collasped into the one in sctp_userreq.c
+ * this routine can probably be collapsed into the one in sctp_userreq.c
  * since they do the same thing and now we lookup with a sockaddr
  */
 #if defined(__FreeBSD__) && !defined(__Userspace__)
@@ -670,11 +665,9 @@ sctp6_getcred(SYSCTL_HANDLER_ARGS)
 
 	vrf_id = SCTP_DEFAULT_VRFID;
 
-#if defined(__FreeBSD__) && !defined(__Userspace__)
+	if (req->newptr == NULL)
+		return (EINVAL);
 	error = priv_check(req->td, PRIV_NETINET_GETCRED);
-#else
-	error = suser(req->p);
-#endif
 	if (error)
 		return (error);
 
@@ -731,73 +724,6 @@ SYSCTL_PROC(_net_inet6_sctp6, OID_AUTO, getcred,
     0, 0, sctp6_getcred, "S,ucred",
     "Get the ucred of a SCTP6 connection");
 #endif
-
-/* This is the same as the sctp_abort() could be made common */
-#if defined(__Userspace__)
-int
-#elif defined(__FreeBSD__) || defined(_WIN32)
-static void
-#else
-static int
-#endif
-sctp6_abort(struct socket *so)
-{
-#if defined(__FreeBSD__) && !defined(__Userspace__)
-	struct epoch_tracker et;
-#endif
-	struct sctp_inpcb *inp;
-	uint32_t flags;
-
-	inp = (struct sctp_inpcb *)so->so_pcb;
-	if (inp == NULL) {
-		SCTP_LTRACE_ERR_RET(inp, NULL, NULL, SCTP_FROM_SCTP6_USRREQ, EINVAL);
-#if (defined(__FreeBSD__) || defined(_WIN32)) && !defined(__Userspace__)
-		return;
-#else
-		return (EINVAL);
-#endif
-	}
-#if defined(__FreeBSD__) && !defined(__Userspace__)
-	NET_EPOCH_ENTER(et);
-#endif
- sctp_must_try_again:
-	flags = inp->sctp_flags;
-#ifdef SCTP_LOG_CLOSING
-	sctp_log_closing(inp, NULL, 17);
-#endif
-	if (((flags & SCTP_PCB_FLAGS_SOCKET_GONE) == 0) &&
-	    (atomic_cmpset_int(&inp->sctp_flags, flags, (flags | SCTP_PCB_FLAGS_SOCKET_GONE | SCTP_PCB_FLAGS_CLOSE_IP)))) {
-#ifdef SCTP_LOG_CLOSING
-		sctp_log_closing(inp, NULL, 16);
-#endif
-		sctp_inpcb_free(inp, SCTP_FREE_SHOULD_USE_ABORT,
-				SCTP_CALLED_AFTER_CMPSET_OFCLOSE);
-		SOCK_LOCK(so);
-		SCTP_SB_CLEAR(so->so_snd);
-		/* same for the rcv ones, they are only
-		 * here for the accounting/select.
-		 */
-		SCTP_SB_CLEAR(so->so_rcv);
-#if defined(__APPLE__) && !defined(__Userspace__)
-		so->so_usecount--;
-#else
-		/* Now null out the reference, we are completely detached. */
-		so->so_pcb = NULL;
-#endif
-		SOCK_UNLOCK(so);
-	} else {
-		flags = inp->sctp_flags;
-		if ((flags & SCTP_PCB_FLAGS_SOCKET_GONE) == 0) {
-			goto sctp_must_try_again;
-		}
-	}
-#if defined(__FreeBSD__) && !defined(__Userspace__)
-	NET_EPOCH_EXIT(et);
-	return;
-#else
-	return (0);
-#endif
-}
 
 #if defined(__Userspace__)
 int
@@ -1010,15 +936,6 @@ sctp6_detach(struct socket *so)
 
 #endif
 
-#if !defined(__Userspace__)
-static
-#endif
-int
-sctp6_disconnect(struct socket *so)
-{
-	return (sctp_disconnect(so));
-}
-
 int
 #if defined(__FreeBSD__) && !defined(__Userspace__)
 sctp_sendm(struct socket *so, int flags, struct mbuf *m, struct sockaddr *addr,
@@ -1185,8 +1102,8 @@ connected_type:
 		 * note with the current version this code will only be used
 		 * by OpenBSD, NetBSD and FreeBSD have methods for
 		 * re-defining sosend() to use sctp_sosend().  One can
-		 * optionaly switch back to this code (by changing back the
-		 * defininitions but this is not advisable.
+		 * optionally switch back to this code (by changing back the
+		 * definitions but this is not advisable.
 		 */
 #if defined(__FreeBSD__) && !defined(__Userspace__)
 		struct epoch_tracker et;
@@ -1742,7 +1659,7 @@ sctp6_getpeeraddr(struct socket *so, struct mbuf *nam)
 #define	SCTP6_PROTOSW							\
 	.pr_protocol =	IPPROTO_SCTP,					\
 	.pr_ctloutput =	sctp_ctloutput,					\
-	.pr_abort =	sctp6_abort,					\
+	.pr_abort =	sctp_abort,					\
 	.pr_accept =	sctp_accept,					\
 	.pr_attach =	sctp6_attach,					\
 	.pr_bind =	sctp6_bind,					\
@@ -1752,7 +1669,7 @@ sctp6_getpeeraddr(struct socket *so, struct mbuf *nam)
 	.pr_detach =	sctp6_close,					\
 	.pr_sopoll =	sopoll_generic,					\
 	.pr_flush =	sctp_flush,					\
-	.pr_disconnect = sctp6_disconnect,				\
+	.pr_disconnect = sctp_disconnect,				\
 	.pr_listen =	sctp_listen,					\
 	.pr_peeraddr =	sctp6_getpeeraddr,				\
 	.pr_send =	sctp6_send,					\
@@ -1775,7 +1692,7 @@ struct protosw sctp6_stream_protosw = {
 #else
 struct pr_usrreqs sctp6_usrreqs = {
 #if defined(__APPLE__) && !defined(__Userspace__)
-	.pru_abort = sctp6_abort,
+	.pru_abort = sctp_abort,
 	.pru_accept = sctp_accept,
 	.pru_attach = sctp6_attach,
 	.pru_bind = sctp6_bind,
@@ -1783,7 +1700,7 @@ struct pr_usrreqs sctp6_usrreqs = {
 	.pru_connect2 = pru_connect2_notsupp,
 	.pru_control = in6_control,
 	.pru_detach = sctp6_detach,
-	.pru_disconnect = sctp6_disconnect,
+	.pru_disconnect = sctp_disconnect,
 	.pru_listen = sctp_listen,
 	.pru_peeraddr = sctp6_getpeeraddr,
 	.pru_rcvd = NULL,
@@ -1796,7 +1713,7 @@ struct pr_usrreqs sctp6_usrreqs = {
 	.pru_soreceive = sctp_soreceive,
 	.pru_sopoll = sopoll
 #elif defined(_WIN32) && !defined(__Userspace__)
-	sctp6_abort,
+	sctp_abort,
 	sctp_accept,
 	sctp6_attach,
 	sctp6_bind,
@@ -1804,7 +1721,7 @@ struct pr_usrreqs sctp6_usrreqs = {
 	pru_connect2_notsupp,
 	NULL,
 	NULL,
-	sctp6_disconnect,
+	sctp_disconnect,
 	sctp_listen,
 	sctp6_getpeeraddr,
 	NULL,

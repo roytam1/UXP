@@ -19,3 +19,5 @@ sctp updated to version 9209 from SVN on Tue Mar 24 18:11:59 EDT 2015
 sctp updated to version 0e076261b832121cf120ddc04aaff87ac3a34d30 from git on Tue Nov 28 15:20:51 EST 2017
 sctp updated to version ea345b6d0c8a0f8701cf49445dba5ec8d34e2305 from git on Tue 30 Jun 14:01:18 CEST 2020
 sctp updated to version 8e12cd9e01fc94d2e84ea1afa351c845966e116e from git on Mon Oct 17 10:23:01 CDT 2022
+sctp updated to version 0.9.5.0 from https://github.com/sctplab/usrsctp/releases/tag/0.9.5.0 on Sat Aug 26 21:54:00 EDT 2023
+sctp updated to commit fd070e05a7474f38c7fecdf4d4b6005d2547ee00 from https://github.com/sctplab/usrsctp/commit/fd070e05a7474f38c7fecdf4d4b6005d2547ee00 on Wed Feb 18 18:05:35 EST 2026
