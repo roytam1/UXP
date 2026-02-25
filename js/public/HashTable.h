@@ -830,7 +830,7 @@ class HashTableEntry
         if (other->isLive()) {
             mozilla::Swap(*mem.addr(), *other->mem.addr());
         } else {
-            *other->mem.addr() = mozilla::Move(*mem.addr());
+            new (mozilla::KnownNotNull, other->mem.addr()) NonConstT(mozilla::Move(*mem.addr()));
             destroy();
         }
         mozilla::Swap(keyHash, other->keyHash);
