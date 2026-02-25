@@ -357,7 +357,7 @@ bool VideoSendStream::ReconfigureVideoEncoder(
       video_codec.codecSpecific.VP9 = *reinterpret_cast<const VideoCodecVP9*>(
                                           config.encoder_specific_settings);
       if (video_codec.mode == kScreensharing) {
-        video_codec.codecSpecific.VP9.flexibleMode = true;
+        video_codec.codecSpecific.VP9.flexibleMode = false;
         // For now VP9 screensharing use 1 temporal and 2 spatial layers.
         RTC_DCHECK_EQ(video_codec.codecSpecific.VP9.numberOfTemporalLayers, 1);
         RTC_DCHECK_EQ(video_codec.codecSpecific.VP9.numberOfSpatialLayers, 2);
