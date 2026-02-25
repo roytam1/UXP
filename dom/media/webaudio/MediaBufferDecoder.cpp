@@ -262,6 +262,9 @@ public:
   }
   void operator=(SpeexResamplerState* aResampler)
   {
+    if (mResampler) {
+      speex_resampler_destroy(mResampler);
+    }
     mResampler = aResampler;
   }
 
@@ -400,6 +403,28 @@ MediaDecodeTask::FinishDecode()
   while ((mediaData = mAudioQueue.PopFront())) {
     RefPtr<AudioData> audioData = mediaData->As<AudioData>();
     audioData->EnsureAudioBuffer(); // could lead to a copy :(
+
+    if (audioData->mChannels != channelCount) {
+      if (audioData->mChannels > channelCount) {
+        MOZ_LOG(gMediaDecoderLog,
+                LogLevel::Error,
+                ("MediaDecodeTask: Channel count increased from %u to %u mid-stream; "
+                 "this is fatal, stopping decode", channelCount, audioData->mChannels));
+        ReportFailureOnMainThread(WebAudioDecodeJob::InvalidContent);
+        return;
+      }
+        MOZ_LOG(gMediaDecoderLog,
+                LogLevel::Verbose,
+                ("MediaDecodeTask: Channel count changed from %u to %u mid-stream, reinitializing resampler",
+                 channelCount, audioData->mChannels));
+      channelCount = audioData->mChannels;
+      if (sampleRate != destSampleRate) {
+        resampler = speex_resampler_init(channelCount, sampleRate, destSampleRate,
+                                         SPEEX_RESAMPLER_QUALITY_DEFAULT, nullptr);
+        speex_resampler_skip_zeros(resampler);
+      }
+    }
+
     AudioDataValue* bufferData = static_cast<AudioDataValue*>
       (audioData->mAudioBuffer->Data());
 
