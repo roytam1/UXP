@@ -23,7 +23,7 @@ int vpx_rb_read_bit(struct vpx_read_bit_buffer *rb) {
     rb->bit_offset = off + 1;
     return bit;
   } else {
-    rb->error_handler(rb->error_handler_data);
+    if (rb->error_handler != NULL) rb->error_handler(rb->error_handler_data);
     return 0;
   }
 }
@@ -40,11 +40,5 @@ int vpx_rb_read_signed_literal(struct vpx_read_bit_buffer *rb, int bits) {
 }
 
 int vpx_rb_read_inv_signed_literal(struct vpx_read_bit_buffer *rb, int bits) {
-#if CONFIG_MISC_FIXES
-  const int nbits = sizeof(unsigned) * 8 - bits - 1;
-  const unsigned value = (unsigned)vpx_rb_read_literal(rb, bits + 1) << nbits;
-  return ((int)value) >> nbits;
-#else
   return vpx_rb_read_signed_literal(rb, bits);
-#endif
 }

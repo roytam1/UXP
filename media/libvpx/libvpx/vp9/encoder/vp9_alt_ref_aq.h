@@ -15,8 +15,8 @@
  *  for altref frames.  Go to alt_ref_aq_private.h for implmentation details.
  */
 
-#ifndef VP9_ENCODER_VP9_ALT_REF_AQ_H_
-#define VP9_ENCODER_VP9_ALT_REF_AQ_H_
+#ifndef VPX_VP9_ENCODER_VP9_ALT_REF_AQ_H_
+#define VPX_VP9_ENCODER_VP9_ALT_REF_AQ_H_
 
 #include "vpx/vpx_integer.h"
 
@@ -54,7 +54,7 @@ struct ALT_REF_AQ;
  *
  * \return Instance of the class
  */
-struct ALT_REF_AQ *vp9_alt_ref_aq_create();
+struct ALT_REF_AQ *vp9_alt_ref_aq_create(void);
 
 /*!\brief Upload segmentation_map to self object
  *
@@ -124,4 +124,4 @@ void vp9_alt_ref_aq_destroy(struct ALT_REF_AQ *const self);
 }  // extern "C"
 #endif
 
-#endif  // VP9_ENCODER_VP9_ALT_REF_AQ_H_
+#endif  // VPX_VP9_ENCODER_VP9_ALT_REF_AQ_H_

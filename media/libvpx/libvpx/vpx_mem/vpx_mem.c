@@ -16,11 +16,13 @@
 #include "include/vpx_mem_intrnl.h"
 #include "vpx/vpx_integer.h"
 
+#if !defined(VPX_MAX_ALLOCABLE_MEMORY)
 #if SIZE_MAX > (1ULL << 40)
 #define VPX_MAX_ALLOCABLE_MEMORY (1ULL << 40)
 #else
 // For 32-bit targets keep this below INT_MAX to avoid valgrind warnings.
 #define VPX_MAX_ALLOCABLE_MEMORY ((1ULL << 31) - (1 << 16))
+#endif
 #endif
 
 // Returns 0 in case of overflow of nmemb * size.
@@ -82,12 +84,3 @@ void vpx_free(void *memblk) {
     free(addr);
   }
 }
-
-#if CONFIG_VP9_HIGHBITDEPTH
-void *vpx_memset16(void *dest, int val, size_t length) {
-  size_t i;
-  uint16_t *dest16 = (uint16_t *)dest;
-  for (i = 0; i < length; i++) *dest16++ = val;
-  return dest;
-}
-#endif  // CONFIG_VP9_HIGHBITDEPTH

@@ -21,6 +21,7 @@
 #include "vpx_ports/vpx_once.h"
 #include "vpx_ports/vpx_timer.h"
 #include "vpx_scale/vpx_scale.h"
+#include "vpx_util/vpx_pthread.h"
 #include "vpx_util/vpx_thread.h"
 
 #include "vp9/common/vp9_alloccommon.h"
@@ -55,6 +56,94 @@ static void vp9_dec_setup_mi(VP9_COMMON *cm) {
          cm->mi_stride * (cm->mi_rows + 1) * sizeof(*cm->mi_grid_base));
 }
 
+void vp9_dec_alloc_row_mt_mem(RowMTWorkerData *row_mt_worker_data,
+                              VP9_COMMON *cm, int num_sbs, int max_threads,
+                              int num_jobs) {
+  int plane;
+  const size_t dqcoeff_size = (num_sbs << DQCOEFFS_PER_SB_LOG2) *
+                              sizeof(*row_mt_worker_data->dqcoeff[0]);
+  row_mt_worker_data->num_jobs = num_jobs;
+#if CONFIG_MULTITHREAD
+  {
+    int i;
+    CHECK_MEM_ERROR(
+        &cm->error, row_mt_worker_data->recon_sync_mutex,
+        vpx_malloc(sizeof(*row_mt_worker_data->recon_sync_mutex) * num_jobs));
+    if (row_mt_worker_data->recon_sync_mutex) {
+      for (i = 0; i < num_jobs; ++i) {
+        pthread_mutex_init(&row_mt_worker_data->recon_sync_mutex[i], NULL);
+      }
+    }
+
+    CHECK_MEM_ERROR(
+        &cm->error, row_mt_worker_data->recon_sync_cond,
+        vpx_malloc(sizeof(*row_mt_worker_data->recon_sync_cond) * num_jobs));
+    if (row_mt_worker_data->recon_sync_cond) {
+      for (i = 0; i < num_jobs; ++i) {
+        pthread_cond_init(&row_mt_worker_data->recon_sync_cond[i], NULL);
+      }
+    }
+  }
+#endif
+  row_mt_worker_data->num_sbs = num_sbs;
+  for (plane = 0; plane < 3; ++plane) {
+    CHECK_MEM_ERROR(&cm->error, row_mt_worker_data->dqcoeff[plane],
+                    vpx_memalign(32, dqcoeff_size));
+    memset(row_mt_worker_data->dqcoeff[plane], 0, dqcoeff_size);
+    CHECK_MEM_ERROR(&cm->error, row_mt_worker_data->eob[plane],
+                    vpx_calloc(num_sbs << EOBS_PER_SB_LOG2,
+                               sizeof(*row_mt_worker_data->eob[plane])));
+  }
+  CHECK_MEM_ERROR(&cm->error, row_mt_worker_data->partition,
+                  vpx_calloc(num_sbs * PARTITIONS_PER_SB,
+                             sizeof(*row_mt_worker_data->partition)));
+  CHECK_MEM_ERROR(&cm->error, row_mt_worker_data->recon_map,
+                  vpx_calloc(num_sbs, sizeof(*row_mt_worker_data->recon_map)));
+
+  // allocate memory for thread_data
+  if (row_mt_worker_data->thread_data == NULL) {
+    const size_t thread_size =
+        max_threads * sizeof(*row_mt_worker_data->thread_data);
+    CHECK_MEM_ERROR(&cm->error, row_mt_worker_data->thread_data,
+                    vpx_memalign(32, thread_size));
+  }
+}
+
+void vp9_dec_free_row_mt_mem(RowMTWorkerData *row_mt_worker_data) {
+  if (row_mt_worker_data != NULL) {
+    int plane;
+#if CONFIG_MULTITHREAD
+    int i;
+    if (row_mt_worker_data->recon_sync_mutex != NULL) {
+      for (i = 0; i < row_mt_worker_data->num_jobs; ++i) {
+        pthread_mutex_destroy(&row_mt_worker_data->recon_sync_mutex[i]);
+      }
+      vpx_free(row_mt_worker_data->recon_sync_mutex);
+      row_mt_worker_data->recon_sync_mutex = NULL;
+    }
+    if (row_mt_worker_data->recon_sync_cond != NULL) {
+      for (i = 0; i < row_mt_worker_data->num_jobs; ++i) {
+        pthread_cond_destroy(&row_mt_worker_data->recon_sync_cond[i]);
+      }
+      vpx_free(row_mt_worker_data->recon_sync_cond);
+      row_mt_worker_data->recon_sync_cond = NULL;
+    }
+#endif
+    for (plane = 0; plane < 3; ++plane) {
+      vpx_free(row_mt_worker_data->eob[plane]);
+      row_mt_worker_data->eob[plane] = NULL;
+      vpx_free(row_mt_worker_data->dqcoeff[plane]);
+      row_mt_worker_data->dqcoeff[plane] = NULL;
+    }
+    vpx_free(row_mt_worker_data->partition);
+    row_mt_worker_data->partition = NULL;
+    vpx_free(row_mt_worker_data->recon_map);
+    row_mt_worker_data->recon_map = NULL;
+    vpx_free(row_mt_worker_data->thread_data);
+    row_mt_worker_data->thread_data = NULL;
+  }
+}
+
 static int vp9_dec_alloc_mi(VP9_COMMON *cm, int mi_size) {
   cm->mip = vpx_calloc(mi_size, sizeof(*cm->mip));
   if (!cm->mip) return 1;
@@ -65,10 +154,16 @@ static int vp9_dec_alloc_mi(VP9_COMMON *cm, int mi_size) {
 }
 
 static void vp9_dec_free_mi(VP9_COMMON *cm) {
+#if CONFIG_VP9_POSTPROC
+  // MFQE allocates an additional mip and swaps it with cm->mip.
+  vpx_free(cm->postproc_state.prev_mip);
+  cm->postproc_state.prev_mip = NULL;
+#endif
   vpx_free(cm->mip);
   cm->mip = NULL;
   vpx_free(cm->mi_grid_base);
   cm->mi_grid_base = NULL;
+  cm->mi_alloc_size = 0;
 }
 
 VP9Decoder *vp9_decoder_create(BufferPool *const pool) {
@@ -87,9 +182,10 @@ VP9Decoder *vp9_decoder_create(BufferPool *const pool) {
 
   cm->error.setjmp = 1;
 
-  CHECK_MEM_ERROR(cm, cm->fc, (FRAME_CONTEXT *)vpx_calloc(1, sizeof(*cm->fc)));
+  CHECK_MEM_ERROR(&cm->error, cm->fc,
+                  (FRAME_CONTEXT *)vpx_calloc(1, sizeof(*cm->fc)));
   CHECK_MEM_ERROR(
-      cm, cm->frame_contexts,
+      &cm->error, cm->frame_contexts,
       (FRAME_CONTEXT *)vpx_calloc(FRAME_CONTEXTS, sizeof(*cm->frame_contexts)));
 
   pbi->need_resync = 1;
@@ -99,7 +195,7 @@ VP9Decoder *vp9_decoder_create(BufferPool *const pool) {
   memset(&cm->ref_frame_map, -1, sizeof(cm->ref_frame_map));
   memset(&cm->next_ref_frame_map, -1, sizeof(cm->next_ref_frame_map));
 
-  cm->current_video_frame = 0;
+  init_frame_indexes(cm);
   pbi->ready_for_new_data = 1;
   pbi->common.buffer_pool = pool;
 
@@ -115,6 +211,7 @@ VP9Decoder *vp9_decoder_create(BufferPool *const pool) {
   cm->error.setjmp = 0;
 
   vpx_get_worker_interface()->init(&pbi->lf_worker);
+  pbi->lf_worker.thread_name = "vpx lf worker";
 
   return pbi;
 }
@@ -139,6 +236,19 @@ void vp9_decoder_remove(VP9Decoder *pbi) {
     vp9_loop_filter_dealloc(&pbi->lf_row_sync);
   }
 
+  if (pbi->row_mt == 1) {
+    vp9_dec_free_row_mt_mem(pbi->row_mt_worker_data);
+    if (pbi->row_mt_worker_data != NULL) {
+      vp9_jobq_deinit(&pbi->row_mt_worker_data->jobq);
+      vpx_free(pbi->row_mt_worker_data->jobq_buf);
+#if CONFIG_MULTITHREAD
+      pthread_mutex_destroy(&pbi->row_mt_worker_data->recon_done_mutex);
+#endif
+    }
+    vpx_free(pbi->row_mt_worker_data);
+  }
+
+  vp9_remove_common(&pbi->common);
   vpx_free(pbi);
 }
 
@@ -169,7 +279,7 @@ vpx_codec_err_t vp9_copy_reference_dec(VP9Decoder *pbi,
       vpx_internal_error(&cm->error, VPX_CODEC_ERROR,
                          "Incorrect buffer dimensions");
     else
-      vp8_yv12_copy_frame(cfg, sd);
+      vpx_yv12_copy_frame(cfg, sd);
   } else {
     vpx_internal_error(&cm->error, VPX_CODEC_ERROR, "Invalid reference frame");
   }
@@ -217,7 +327,7 @@ vpx_codec_err_t vp9_set_reference_dec(VP9_COMMON *cm,
                        "Incorrect buffer dimensions");
   } else {
     // Overwrite the reference frame buffer.
-    vp8_yv12_copy_frame(sd, ref_buf);
+    vpx_yv12_copy_frame(sd, ref_buf);
   }
 
   return cm->error.error_code;
@@ -230,7 +340,6 @@ static void swap_frame_buffers(VP9Decoder *pbi) {
   BufferPool *const pool = cm->buffer_pool;
   RefCntBuffer *const frame_bufs = cm->buffer_pool->frame_bufs;
 
-  lock_buffer_pool(pool);
   for (mask = pbi->refresh_frame_flags; mask; mask >>= 1) {
     const int old_idx = cm->ref_frame_map[ref_index];
     // Current thread releases the holding of reference frame.
@@ -250,19 +359,52 @@ static void swap_frame_buffers(VP9Decoder *pbi) {
     decrease_ref_count(old_idx, frame_bufs, pool);
     cm->ref_frame_map[ref_index] = cm->next_ref_frame_map[ref_index];
   }
-  unlock_buffer_pool(pool);
   pbi->hold_ref_buf = 0;
   cm->frame_to_show = get_frame_new_buffer(cm);
 
-  if (!pbi->frame_parallel_decode || !cm->show_frame) {
-    lock_buffer_pool(pool);
-    --frame_bufs[cm->new_fb_idx].ref_count;
-    unlock_buffer_pool(pool);
-  }
+  --frame_bufs[cm->new_fb_idx].ref_count;
 
   // Invalidate these references until the next frame starts.
   for (ref_index = 0; ref_index < 3; ref_index++)
     cm->frame_refs[ref_index].idx = -1;
+}
+
+static void release_fb_on_decoder_exit(VP9Decoder *pbi) {
+  const VPxWorkerInterface *const winterface = vpx_get_worker_interface();
+  VP9_COMMON *volatile const cm = &pbi->common;
+  BufferPool *volatile const pool = cm->buffer_pool;
+  RefCntBuffer *volatile const frame_bufs = cm->buffer_pool->frame_bufs;
+  int i;
+
+  // Synchronize all threads immediately as a subsequent decode call may
+  // cause a resize invalidating some allocations.
+  winterface->sync(&pbi->lf_worker);
+  for (i = 0; i < pbi->num_tile_workers; ++i) {
+    winterface->sync(&pbi->tile_workers[i]);
+  }
+
+  // Release all the reference buffers if worker thread is holding them.
+  if (pbi->hold_ref_buf == 1) {
+    int ref_index = 0, mask;
+    for (mask = pbi->refresh_frame_flags; mask; mask >>= 1) {
+      const int old_idx = cm->ref_frame_map[ref_index];
+      // Current thread releases the holding of reference frame.
+      decrease_ref_count(old_idx, frame_bufs, pool);
+
+      // Release the reference frame in reference map.
+      if (mask & 1) {
+        decrease_ref_count(old_idx, frame_bufs, pool);
+      }
+      ++ref_index;
+    }
+
+    // Current thread releases the holding of reference frame.
+    for (; ref_index < REF_FRAMES && !cm->show_existing_frame; ++ref_index) {
+      const int old_idx = cm->ref_frame_map[ref_index];
+      decrease_ref_count(old_idx, frame_bufs, pool);
+    }
+    pbi->hold_ref_buf = 0;
+  }
 }
 
 int vp9_receive_compressed_data(VP9Decoder *pbi, size_t size,
@@ -292,14 +434,19 @@ int vp9_receive_compressed_data(VP9Decoder *pbi, size_t size,
   pbi->ready_for_new_data = 0;
 
   // Check if the previous frame was a frame without any references to it.
-  // Release frame buffer if not decoding in frame parallel mode.
-  if (!pbi->frame_parallel_decode && cm->new_fb_idx >= 0 &&
-      frame_bufs[cm->new_fb_idx].ref_count == 0)
+  if (cm->new_fb_idx >= 0 && frame_bufs[cm->new_fb_idx].ref_count == 0 &&
+      !frame_bufs[cm->new_fb_idx].released) {
     pool->release_fb_cb(pool->cb_priv,
                         &frame_bufs[cm->new_fb_idx].raw_frame_buffer);
+    frame_bufs[cm->new_fb_idx].released = 1;
+  }
+
   // Find a free frame buffer. Return error if can not find any.
   cm->new_fb_idx = get_free_fb(cm);
   if (cm->new_fb_idx == INVALID_IDX) {
+    pbi->ready_for_new_data = 1;
+    release_fb_on_decoder_exit(pbi);
+    vpx_clear_system_state();
     vpx_internal_error(&cm->error, VPX_CODEC_MEM_ERROR,
                        "Unable to find free frame buffer");
     return cm->error.error_code;
@@ -309,60 +456,14 @@ int vp9_receive_compressed_data(VP9Decoder *pbi, size_t size,
   cm->cur_frame = &pool->frame_bufs[cm->new_fb_idx];
 
   pbi->hold_ref_buf = 0;
-  if (pbi->frame_parallel_decode) {
-    VPxWorker *const worker = pbi->frame_worker_owner;
-    vp9_frameworker_lock_stats(worker);
-    frame_bufs[cm->new_fb_idx].frame_worker_owner = worker;
-    // Reset decoding progress.
-    pbi->cur_buf = &frame_bufs[cm->new_fb_idx];
-    pbi->cur_buf->row = -1;
-    pbi->cur_buf->col = -1;
-    vp9_frameworker_unlock_stats(worker);
-  } else {
-    pbi->cur_buf = &frame_bufs[cm->new_fb_idx];
-  }
+  pbi->cur_buf = &frame_bufs[cm->new_fb_idx];
 
   if (setjmp(cm->error.jmp)) {
-    const VPxWorkerInterface *const winterface = vpx_get_worker_interface();
-    int i;
-
     cm->error.setjmp = 0;
     pbi->ready_for_new_data = 1;
-
-    // Synchronize all threads immediately as a subsequent decode call may
-    // cause a resize invalidating some allocations.
-    winterface->sync(&pbi->lf_worker);
-    for (i = 0; i < pbi->num_tile_workers; ++i) {
-      winterface->sync(&pbi->tile_workers[i]);
-    }
-
-    lock_buffer_pool(pool);
-    // Release all the reference buffers if worker thread is holding them.
-    if (pbi->hold_ref_buf == 1) {
-      int ref_index = 0, mask;
-      for (mask = pbi->refresh_frame_flags; mask; mask >>= 1) {
-        const int old_idx = cm->ref_frame_map[ref_index];
-        // Current thread releases the holding of reference frame.
-        decrease_ref_count(old_idx, frame_bufs, pool);
-
-        // Release the reference frame in reference map.
-        if (mask & 1) {
-          decrease_ref_count(old_idx, frame_bufs, pool);
-        }
-        ++ref_index;
-      }
-
-      // Current thread releases the holding of reference frame.
-      for (; ref_index < REF_FRAMES && !cm->show_existing_frame; ++ref_index) {
-        const int old_idx = cm->ref_frame_map[ref_index];
-        decrease_ref_count(old_idx, frame_bufs, pool);
-      }
-      pbi->hold_ref_buf = 0;
-    }
+    release_fb_on_decoder_exit(pbi);
     // Release current frame.
     decrease_ref_count(cm->new_fb_idx, frame_bufs, pool);
-    unlock_buffer_pool(pool);
-
     vpx_clear_system_state();
     return -1;
   }
@@ -377,31 +478,16 @@ int vp9_receive_compressed_data(VP9Decoder *pbi, size_t size,
   if (!cm->show_existing_frame) {
     cm->last_show_frame = cm->show_frame;
     cm->prev_frame = cm->cur_frame;
-    if (cm->seg.enabled && !pbi->frame_parallel_decode)
-      vp9_swap_current_and_last_seg_map(cm);
+    if (cm->seg.enabled) vp9_swap_current_and_last_seg_map(cm);
   }
 
-  // Update progress in frame parallel decode.
-  if (pbi->frame_parallel_decode) {
-    // Need to lock the mutex here as another thread may
-    // be accessing this buffer.
-    VPxWorker *const worker = pbi->frame_worker_owner;
-    FrameWorkerData *const frame_worker_data = worker->data1;
-    vp9_frameworker_lock_stats(worker);
+  if (cm->show_frame) cm->cur_show_frame_fb_idx = cm->new_fb_idx;
 
-    if (cm->show_frame) {
-      cm->current_video_frame++;
-    }
-    frame_worker_data->frame_decoded = 1;
-    frame_worker_data->frame_context_ready = 1;
-    vp9_frameworker_signal_stats(worker);
-    vp9_frameworker_unlock_stats(worker);
-  } else {
-    cm->last_width = cm->width;
-    cm->last_height = cm->height;
-    if (cm->show_frame) {
-      cm->current_video_frame++;
-    }
+  // Update progress in frame parallel decode.
+  cm->last_width = cm->width;
+  cm->last_height = cm->height;
+  if (cm->show_frame) {
+    cm->current_video_frame++;
   }
 
   cm->error.setjmp = 0;
@@ -427,7 +513,7 @@ int vp9_get_raw_frame(VP9Decoder *pbi, YV12_BUFFER_CONFIG *sd,
 
 #if CONFIG_VP9_POSTPROC
   if (!cm->show_existing_frame) {
-    ret = vp9_post_proc_frame(cm, sd, flags);
+    ret = vp9_post_proc_frame(cm, sd, flags, cm->width);
   } else {
     *sd = *cm->frame_to_show;
     ret = 0;

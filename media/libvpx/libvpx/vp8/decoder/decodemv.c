@@ -8,6 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "decodemv.h"
 #include "treereader.h"
 #include "vp8/common/entropymv.h"
 #include "vp8/common/entropymode.h"
@@ -64,8 +65,7 @@ static int read_mvcomponent(vp8_reader *r, const MV_CONTEXT *mvc) {
   const vp8_prob *const p = (const vp8_prob *)mvc;
   int x = 0;
 
-  if (vp8_read(r, p[mvpis_short])) /* Large */
-  {
+  if (vp8_read(r, p[mvpis_short])) { /* Large */
     int i = 0;
 
     do {
@@ -173,7 +173,8 @@ const vp8_prob vp8_sub_mv_ref_prob3[8][VP8_SUBMVREFS - 1] = {
   { 208, 1, 1 }     /* SUBMVREF_LEFT_ABOVE_ZED  */
 };
 
-static const vp8_prob *get_sub_mv_ref_prob(const int left, const int above) {
+static const vp8_prob *get_sub_mv_ref_prob(const uint32_t left,
+                                           const uint32_t above) {
   int lez = (left == 0);
   int aez = (above == 0);
   int lea = (left == above);
@@ -284,8 +285,7 @@ static void read_mb_modes_mv(VP8D_COMP *pbi, MODE_INFO *mi,
                              MB_MODE_INFO *mbmi) {
   vp8_reader *const bc = &pbi->mbc[8];
   mbmi->ref_frame = (MV_REFERENCE_FRAME)vp8_read(bc, pbi->prob_intra);
-  if (mbmi->ref_frame) /* inter MB */
-  {
+  if (mbmi->ref_frame) { /* inter MB */
     enum { CNT_INTRA, CNT_NEAREST, CNT_NEAR, CNT_SPLITMV };
     int cnt[4];
     int *cntx = cnt;
@@ -372,9 +372,9 @@ static void read_mb_modes_mv(VP8D_COMP *pbi, MODE_INFO *mi,
         tmp = cnt[CNT_NEAREST];
         cnt[CNT_NEAREST] = cnt[CNT_NEAR];
         cnt[CNT_NEAR] = tmp;
-        tmp = near_mvs[CNT_NEAREST].as_int;
+        tmp = (int)near_mvs[CNT_NEAREST].as_int;
         near_mvs[CNT_NEAREST].as_int = near_mvs[CNT_NEAR].as_int;
-        near_mvs[CNT_NEAR].as_int = tmp;
+        near_mvs[CNT_NEAR].as_int = (uint32_t)tmp;
       }
 
       if (vp8_read(bc, vp8_mode_contexts[cnt[CNT_NEAREST]][1])) {
@@ -486,10 +486,7 @@ static void read_mb_features(vp8_reader *r, MB_MODE_INFO *mi, MACROBLOCKD *x) {
   }
 }
 
-static void decode_mb_mode_mvs(VP8D_COMP *pbi, MODE_INFO *mi,
-                               MB_MODE_INFO *mbmi) {
-  (void)mbmi;
-
+static void decode_mb_mode_mvs(VP8D_COMP *pbi, MODE_INFO *mi) {
   /* Read the Macroblock segmentation map if it is being updated explicitly
    * this frame (reset to 0 above by default)
    * By default on a key frame reset all MBs to segment 0
@@ -538,7 +535,7 @@ void vp8_decode_mode_mvs(VP8D_COMP *pbi) {
       int mb_num = mb_row * pbi->common.mb_cols + mb_col;
 #endif
 
-      decode_mb_mode_mvs(pbi, mi, &mi->mbmi);
+      decode_mb_mode_mvs(pbi, mi);
 
 #if CONFIG_ERROR_CONCEALMENT
       /* look for corruption. set mvs_corrupt_from_mb to the current

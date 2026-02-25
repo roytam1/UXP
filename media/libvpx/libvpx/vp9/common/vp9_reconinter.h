@@ -8,8 +8,8 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef VP9_COMMON_VP9_RECONINTER_H_
-#define VP9_COMMON_VP9_RECONINTER_H_
+#ifndef VPX_VP9_COMMON_VP9_RECONINTER_H_
+#define VPX_VP9_COMMON_VP9_RECONINTER_H_
 
 #include "vp9/common/vp9_filter.h"
 #include "vp9/common/vp9_onyxc_int.h"
@@ -26,19 +26,19 @@ static INLINE void inter_predictor(const uint8_t *src, int src_stride,
                                    const struct scale_factors *sf, int w, int h,
                                    int ref, const InterpKernel *kernel, int xs,
                                    int ys) {
-  sf->predict[subpel_x != 0][subpel_y != 0][ref](
-      src, src_stride, dst, dst_stride, kernel[subpel_x], xs, kernel[subpel_y],
-      ys, w, h);
+  sf->predict[subpel_x != 0][subpel_y != 0][ref](src, src_stride, dst,
+                                                 dst_stride, kernel, subpel_x,
+                                                 xs, subpel_y, ys, w, h);
 }
 
 #if CONFIG_VP9_HIGHBITDEPTH
 static INLINE void highbd_inter_predictor(
-    const uint8_t *src, int src_stride, uint8_t *dst, int dst_stride,
+    const uint16_t *src, int src_stride, uint16_t *dst, int dst_stride,
     const int subpel_x, const int subpel_y, const struct scale_factors *sf,
     int w, int h, int ref, const InterpKernel *kernel, int xs, int ys, int bd) {
   sf->highbd_predict[subpel_x != 0][subpel_y != 0][ref](
-      src, src_stride, dst, dst_stride, kernel[subpel_x], xs, kernel[subpel_y],
-      ys, w, h, bd);
+      src, src_stride, dst, dst_stride, kernel, subpel_x, xs, subpel_y, ys, w,
+      h, bd);
 }
 #endif  // CONFIG_VP9_HIGHBITDEPTH
 
@@ -61,24 +61,25 @@ void vp9_build_inter_predictors_sb(MACROBLOCKD *xd, int mi_row, int mi_col,
                                    BLOCK_SIZE bsize);
 
 void vp9_build_inter_predictor(const uint8_t *src, int src_stride, uint8_t *dst,
-                               int dst_stride, const MV *mv_q3,
+                               int dst_stride, const MV *src_mv,
                                const struct scale_factors *sf, int w, int h,
-                               int do_avg, const InterpKernel *kernel,
+                               int ref, const InterpKernel *kernel,
                                enum mv_precision precision, int x, int y);
 
 #if CONFIG_VP9_HIGHBITDEPTH
 void vp9_highbd_build_inter_predictor(
-    const uint8_t *src, int src_stride, uint8_t *dst, int dst_stride,
-    const MV *mv_q3, const struct scale_factors *sf, int w, int h, int do_avg,
+    const uint16_t *src, int src_stride, uint16_t *dst, int dst_stride,
+    const MV *src_mv, const struct scale_factors *sf, int w, int h, int ref,
     const InterpKernel *kernel, enum mv_precision precision, int x, int y,
     int bd);
 #endif
 
-static INLINE int scaled_buffer_offset(int x_offset, int y_offset, int stride,
-                                       const struct scale_factors *sf) {
+static INLINE int64_t scaled_buffer_offset(int x_offset, int y_offset,
+                                           int stride,
+                                           const struct scale_factors *sf) {
   const int x = sf ? sf->scale_value_x(x_offset, sf) : x_offset;
   const int y = sf ? sf->scale_value_y(y_offset, sf) : y_offset;
-  return y * stride + x;
+  return (int64_t)y * stride + x;
 }
 
 static INLINE void setup_pred_plane(struct buf_2d *dst, uint8_t *src,
@@ -103,4 +104,4 @@ void vp9_setup_pre_planes(MACROBLOCKD *xd, int idx,
 }  // extern "C"
 #endif
 
-#endif  // VP9_COMMON_VP9_RECONINTER_H_
+#endif  // VPX_VP9_COMMON_VP9_RECONINTER_H_

@@ -8,8 +8,8 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef VP9_COMMON_VP9_IDCT_H_
-#define VP9_COMMON_VP9_IDCT_H_
+#ifndef VPX_VP9_COMMON_VP9_IDCT_H_
+#define VPX_VP9_COMMON_VP9_IDCT_H_
 
 #include <assert.h>
 
@@ -57,25 +57,25 @@ void vp9_iht16x16_add(TX_TYPE tx_type, const tran_low_t *input, uint8_t *dest,
                       int stride, int eob);
 
 #if CONFIG_VP9_HIGHBITDEPTH
-void vp9_highbd_iwht4x4_add(const tran_low_t *input, uint8_t *dest, int stride,
+void vp9_highbd_iwht4x4_add(const tran_low_t *input, uint16_t *dest, int stride,
                             int eob, int bd);
-void vp9_highbd_idct4x4_add(const tran_low_t *input, uint8_t *dest, int stride,
+void vp9_highbd_idct4x4_add(const tran_low_t *input, uint16_t *dest, int stride,
                             int eob, int bd);
-void vp9_highbd_idct8x8_add(const tran_low_t *input, uint8_t *dest, int stride,
+void vp9_highbd_idct8x8_add(const tran_low_t *input, uint16_t *dest, int stride,
                             int eob, int bd);
-void vp9_highbd_idct16x16_add(const tran_low_t *input, uint8_t *dest,
+void vp9_highbd_idct16x16_add(const tran_low_t *input, uint16_t *dest,
                               int stride, int eob, int bd);
-void vp9_highbd_idct32x32_add(const tran_low_t *input, uint8_t *dest,
+void vp9_highbd_idct32x32_add(const tran_low_t *input, uint16_t *dest,
                               int stride, int eob, int bd);
 void vp9_highbd_iht4x4_add(TX_TYPE tx_type, const tran_low_t *input,
-                           uint8_t *dest, int stride, int eob, int bd);
+                           uint16_t *dest, int stride, int eob, int bd);
 void vp9_highbd_iht8x8_add(TX_TYPE tx_type, const tran_low_t *input,
-                           uint8_t *dest, int stride, int eob, int bd);
+                           uint16_t *dest, int stride, int eob, int bd);
 void vp9_highbd_iht16x16_add(TX_TYPE tx_type, const tran_low_t *input,
-                             uint8_t *dest, int stride, int eob, int bd);
+                             uint16_t *dest, int stride, int eob, int bd);
 #endif  // CONFIG_VP9_HIGHBITDEPTH
 #ifdef __cplusplus
 }  // extern "C"
 #endif
 
-#endif  // VP9_COMMON_VP9_IDCT_H_
+#endif  // VPX_VP9_COMMON_VP9_IDCT_H_

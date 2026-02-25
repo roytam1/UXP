@@ -10,16 +10,18 @@
 
 #include "vpx_config.h"
 #include "vp8_rtcd.h"
-#if !defined(WIN32) && CONFIG_OS_SUPPORT == 1
+#if !defined(_WIN32) && CONFIG_OS_SUPPORT == 1
 #include <unistd.h>
 #endif
 #include "onyxd_int.h"
 #include "vpx_mem/vpx_mem.h"
+#include "vpx_util/vpx_pthread.h"
+#include "vp8/common/common.h"
 #include "vp8/common/threading.h"
-
 #include "vp8/common/loopfilter.h"
 #include "vp8/common/extend.h"
 #include "vpx_ports/vpx_timer.h"
+#include "decoderthreading.h"
 #include "detokenize.h"
 #include "vp8/common/reconintra4x4.h"
 #include "vp8/common/reconinter.h"
@@ -29,14 +31,14 @@
 #include "error_concealment.h"
 #endif
 
-#define CALLOC_ARRAY(p, n) CHECK_MEM_ERROR((p), vpx_calloc(sizeof(*(p)), (n)))
-#define CALLOC_ARRAY_ALIGNED(p, n, algn)                            \
-  do {                                                              \
-    CHECK_MEM_ERROR((p), vpx_memalign((algn), sizeof(*(p)) * (n))); \
-    memset((p), 0, (n) * sizeof(*(p)));                             \
+#define CALLOC_ARRAY(p, n) \
+  CHECK_MEM_ERROR(&pbi->common.error, (p), vpx_calloc(sizeof(*(p)), (n)))
+#define CALLOC_ARRAY_ALIGNED(p, n, algn)                       \
+  do {                                                         \
+    CHECK_MEM_ERROR(&pbi->common.error, (p),                   \
+                    vpx_memalign((algn), sizeof(*(p)) * (n))); \
+    memset((p), 0, (n) * sizeof(*(p)));                        \
   } while (0)
-
-void vp8_mb_init_dequantizer(VP8D_COMP *pbi, MACROBLOCKD *xd);
 
 static void setup_decoding_thread_data(VP8D_COMP *pbi, MACROBLOCKD *xd,
                                        MB_ROW_DEC *mbrd, int count) {
@@ -55,7 +57,7 @@ static void setup_decoding_thread_data(VP8D_COMP *pbi, MACROBLOCKD *xd,
     mbd->dst = xd->dst;
 
     mbd->segmentation_enabled = xd->segmentation_enabled;
-    mbd->mb_segement_abs_delta = xd->mb_segement_abs_delta;
+    mbd->mb_segment_abs_delta = xd->mb_segment_abs_delta;
     memcpy(mbd->segment_feature_data, xd->segment_feature_data,
            sizeof(xd->segment_feature_data));
 
@@ -75,12 +77,13 @@ static void setup_decoding_thread_data(VP8D_COMP *pbi, MACROBLOCKD *xd,
     memcpy(mbd->dequant_y2, xd->dequant_y2, sizeof(xd->dequant_y2));
     memcpy(mbd->dequant_uv, xd->dequant_uv, sizeof(xd->dequant_uv));
 
-    mbd->fullpixel_mask = 0xffffffff;
+    mbd->fullpixel_mask = ~0;
 
-    if (pc->full_pixel) mbd->fullpixel_mask = 0xfffffff8;
+    if (pc->full_pixel) mbd->fullpixel_mask = ~7;
   }
 
-  for (i = 0; i < pc->mb_rows; ++i) pbi->mt_current_mb_col[i] = -1;
+  for (i = 0; i < pc->mb_rows; ++i)
+    vpx_atomic_store_release(&pbi->mt_current_mb_col[i], -1);
 }
 
 static void mt_decode_macroblock(VP8D_COMP *pbi, MACROBLOCKD *xd,
@@ -248,12 +251,13 @@ static void mt_decode_macroblock(VP8D_COMP *pbi, MACROBLOCKD *xd,
 
 static void mt_decode_mb_rows(VP8D_COMP *pbi, MACROBLOCKD *xd,
                               int start_mb_row) {
-  const int *last_row_current_mb_col;
-  int *current_mb_col;
+  const vpx_atomic_int *last_row_current_mb_col;
+  vpx_atomic_int *current_mb_col;
   int mb_row;
   VP8_COMMON *pc = &pbi->common;
   const int nsync = pbi->sync_range;
-  const int first_row_no_sync_above = pc->mb_cols + nsync;
+  const vpx_atomic_int first_row_no_sync_above =
+      VPX_ATOMIC_INIT(pc->mb_cols + nsync);
   int num_part = 1 << pbi->common.multi_token_partition;
   int last_mb_row = start_mb_row;
 
@@ -357,13 +361,11 @@ static void mt_decode_mb_rows(VP8D_COMP *pbi, MACROBLOCKD *xd,
 
     for (mb_col = 0; mb_col < pc->mb_cols; ++mb_col) {
       if (((mb_col - 1) % nsync) == 0) {
-        pthread_mutex_t *mutex = &pbi->pmutex[mb_row];
-        protected_write(mutex, current_mb_col, mb_col - 1);
+        vpx_atomic_store_release(current_mb_col, mb_col - 1);
       }
 
       if (mb_row && !(mb_col & (nsync - 1))) {
-        pthread_mutex_t *mutex = &pbi->pmutex[mb_row - 1];
-        sync_read(mutex, mb_col, last_row_current_mb_col, nsync);
+        vp8_atomic_spin_wait(mb_col, last_row_current_mb_col, nsync);
       }
 
       /* Distance of MB to the various image edges.
@@ -401,16 +403,32 @@ static void mt_decode_mb_rows(VP8D_COMP *pbi, MACROBLOCKD *xd,
       xd->dst.u_buffer = dst_buffer[1] + recon_uvoffset;
       xd->dst.v_buffer = dst_buffer[2] + recon_uvoffset;
 
-      xd->pre.y_buffer =
-          ref_buffer[xd->mode_info_context->mbmi.ref_frame][0] + recon_yoffset;
-      xd->pre.u_buffer =
-          ref_buffer[xd->mode_info_context->mbmi.ref_frame][1] + recon_uvoffset;
-      xd->pre.v_buffer =
-          ref_buffer[xd->mode_info_context->mbmi.ref_frame][2] + recon_uvoffset;
-
       /* propagate errors from reference frames */
       xd->corrupted |= ref_fb_corrupted[xd->mode_info_context->mbmi.ref_frame];
 
+      if (xd->corrupted) {
+        // Move current decoding marcoblock to the end of row for all rows
+        // assigned to this thread, such that other threads won't be waiting.
+        for (; mb_row < pc->mb_rows;
+             mb_row += (pbi->decoding_thread_count + 1)) {
+          current_mb_col = &pbi->mt_current_mb_col[mb_row];
+          vpx_atomic_store_release(current_mb_col, pc->mb_cols + nsync);
+        }
+        vpx_internal_error(&xd->error_info, VPX_CODEC_CORRUPT_FRAME,
+                           "Corrupted reference frame");
+      }
+
+      if (xd->mode_info_context->mbmi.ref_frame >= LAST_FRAME) {
+        const MV_REFERENCE_FRAME ref = xd->mode_info_context->mbmi.ref_frame;
+        xd->pre.y_buffer = ref_buffer[ref][0] + recon_yoffset;
+        xd->pre.u_buffer = ref_buffer[ref][1] + recon_uvoffset;
+        xd->pre.v_buffer = ref_buffer[ref][2] + recon_uvoffset;
+      } else {
+        // ref_frame is INTRA_FRAME, pre buffer should not be used.
+        xd->pre.y_buffer = 0;
+        xd->pre.u_buffer = 0;
+        xd->pre.v_buffer = 0;
+      }
       mt_decode_macroblock(pbi, xd, 0);
 
       xd->left_available = 1;
@@ -549,7 +567,7 @@ static void mt_decode_mb_rows(VP8D_COMP *pbi, MACROBLOCKD *xd,
     }
 
     /* last MB of row is ready just after extension is done */
-    protected_write(&pbi->pmutex[mb_row], current_mb_col, mb_col + nsync);
+    vpx_atomic_store_release(current_mb_col, mb_col + nsync);
 
     ++xd->mode_info_context; /* skip prediction column */
     xd->up_available = 1;
@@ -558,41 +576,48 @@ static void mt_decode_mb_rows(VP8D_COMP *pbi, MACROBLOCKD *xd,
     xd->mode_info_context += xd->mode_info_stride * pbi->decoding_thread_count;
   }
 
-  /* signal end of frame decoding if this thread processed the last mb_row */
-  if (last_mb_row == (pc->mb_rows - 1)) sem_post(&pbi->h_event_end_decoding);
+  /* signal end of decoding of current thread for current frame */
+  if (last_mb_row + (int)pbi->decoding_thread_count + 1 >= pc->mb_rows)
+    vp8_sem_post(&pbi->h_event_end_decoding);
 }
 
-static THREAD_FUNCTION thread_decoding_proc(void *p_data) {
+static THREADFN thread_decoding_proc(void *p_data) {
   int ithread = ((DECODETHREAD_DATA *)p_data)->ithread;
   VP8D_COMP *pbi = (VP8D_COMP *)(((DECODETHREAD_DATA *)p_data)->ptr1);
   MB_ROW_DEC *mbrd = (MB_ROW_DEC *)(((DECODETHREAD_DATA *)p_data)->ptr2);
   ENTROPY_CONTEXT_PLANES mb_row_left_context;
 
   while (1) {
-    if (protected_read(&pbi->mt_mutex, &pbi->b_multithreaded_rd) == 0) break;
+    if (vpx_atomic_load_acquire(&pbi->b_multithreaded_rd) == 0) break;
 
-    if (sem_wait(&pbi->h_event_start_decoding[ithread]) == 0) {
-      if (protected_read(&pbi->mt_mutex, &pbi->b_multithreaded_rd) == 0) {
+    if (vp8_sem_wait(&pbi->h_event_start_decoding[ithread]) == 0) {
+      if (vpx_atomic_load_acquire(&pbi->b_multithreaded_rd) == 0) {
         break;
       } else {
         MACROBLOCKD *xd = &mbrd->mbd;
         xd->left_context = &mb_row_left_context;
-
+        if (setjmp(xd->error_info.jmp)) {
+          xd->error_info.setjmp = 0;
+          // Signal the end of decoding for current thread.
+          vp8_sem_post(&pbi->h_event_end_decoding);
+          continue;
+        }
+        xd->error_info.setjmp = 1;
         mt_decode_mb_rows(pbi, xd, ithread + 1);
+        xd->error_info.setjmp = 0;
       }
     }
   }
 
-  return 0;
+  return THREAD_EXIT_SUCCESS;
 }
 
 void vp8_decoder_create_threads(VP8D_COMP *pbi) {
   int core_count = 0;
   unsigned int ithread;
 
-  pbi->b_multithreaded_rd = 0;
+  vpx_atomic_init(&pbi->b_multithreaded_rd, 0);
   pbi->allocated_decoding_thread_count = 0;
-  pthread_mutex_init(&pbi->mt_mutex, NULL);
 
   /* limit decoding threads to the max number of token partitions */
   core_count = (pbi->max_threads > 8) ? 8 : pbi->max_threads;
@@ -603,7 +628,7 @@ void vp8_decoder_create_threads(VP8D_COMP *pbi) {
   }
 
   if (core_count > 1) {
-    pbi->b_multithreaded_rd = 1;
+    vpx_atomic_init(&pbi->b_multithreaded_rd, 1);
     pbi->decoding_thread_count = core_count - 1;
 
     CALLOC_ARRAY(pbi->h_decoding_thread, pbi->decoding_thread_count);
@@ -611,13 +636,13 @@ void vp8_decoder_create_threads(VP8D_COMP *pbi) {
     CALLOC_ARRAY_ALIGNED(pbi->mb_row_di, pbi->decoding_thread_count, 32);
     CALLOC_ARRAY(pbi->de_thread_data, pbi->decoding_thread_count);
 
-    if (sem_init(&pbi->h_event_end_decoding, 0, 0)) {
+    if (vp8_sem_init(&pbi->h_event_end_decoding, 0, 0)) {
       vpx_internal_error(&pbi->common.error, VPX_CODEC_MEM_ERROR,
                          "Failed to initialize semaphore");
     }
 
     for (ithread = 0; ithread < pbi->decoding_thread_count; ++ithread) {
-      if (sem_init(&pbi->h_event_start_decoding[ithread], 0, 0)) break;
+      if (vp8_sem_init(&pbi->h_event_start_decoding[ithread], 0, 0)) break;
 
       vp8_setup_block_dptrs(&pbi->mb_row_di[ithread].mbd);
 
@@ -627,7 +652,7 @@ void vp8_decoder_create_threads(VP8D_COMP *pbi) {
 
       if (pthread_create(&pbi->h_decoding_thread[ithread], 0,
                          thread_decoding_proc, &pbi->de_thread_data[ithread])) {
-        sem_destroy(&pbi->h_event_start_decoding[ithread]);
+        vp8_sem_destroy(&pbi->h_event_start_decoding[ithread]);
         break;
       }
     }
@@ -638,7 +663,7 @@ void vp8_decoder_create_threads(VP8D_COMP *pbi) {
       /* the remainder of cleanup cases will be handled in
        * vp8_decoder_remove_threads(). */
       if (pbi->allocated_decoding_thread_count == 0) {
-        sem_destroy(&pbi->h_event_end_decoding);
+        vp8_sem_destroy(&pbi->h_event_end_decoding);
       }
       vpx_internal_error(&pbi->common.error, VPX_CODEC_MEM_ERROR,
                          "Failed to create threads");
@@ -648,16 +673,6 @@ void vp8_decoder_create_threads(VP8D_COMP *pbi) {
 
 void vp8mt_de_alloc_temp_buffers(VP8D_COMP *pbi, int mb_rows) {
   int i;
-
-  /* De-allocate mutex */
-  if (pbi->pmutex != NULL) {
-    for (i = 0; i < mb_rows; ++i) {
-      pthread_mutex_destroy(&pbi->pmutex[i]);
-    }
-
-    vpx_free(pbi->pmutex);
-    pbi->pmutex = NULL;
-  }
 
   vpx_free(pbi->mt_current_mb_col);
   pbi->mt_current_mb_col = NULL;
@@ -724,7 +739,7 @@ void vp8mt_alloc_temp_buffers(VP8D_COMP *pbi, int width, int prev_mb_rows) {
   int i;
   int uv_width;
 
-  if (protected_read(&pbi->mt_mutex, &pbi->b_multithreaded_rd)) {
+  if (vpx_atomic_load_acquire(&pbi->b_multithreaded_rd)) {
     vp8mt_de_alloc_temp_buffers(pbi, prev_mb_rows);
 
     /* our internal buffers are always multiples of 16 */
@@ -742,73 +757,73 @@ void vp8mt_alloc_temp_buffers(VP8D_COMP *pbi, int width, int prev_mb_rows) {
 
     uv_width = width >> 1;
 
-    /* Allocate mutex */
-    CHECK_MEM_ERROR(pbi->pmutex,
-                    vpx_malloc(sizeof(*pbi->pmutex) * pc->mb_rows));
-    if (pbi->pmutex) {
-      for (i = 0; i < pc->mb_rows; ++i) {
-        pthread_mutex_init(&pbi->pmutex[i], NULL);
-      }
-    }
-
-    /* Allocate an int for each mb row. */
-    CALLOC_ARRAY(pbi->mt_current_mb_col, pc->mb_rows);
+    /* Allocate a vpx_atomic_int for each mb row. */
+    CHECK_MEM_ERROR(&pc->error, pbi->mt_current_mb_col,
+                    vpx_malloc(sizeof(*pbi->mt_current_mb_col) * pc->mb_rows));
+    for (i = 0; i < pc->mb_rows; ++i)
+      vpx_atomic_init(&pbi->mt_current_mb_col[i], 0);
 
     /* Allocate memory for above_row buffers. */
     CALLOC_ARRAY(pbi->mt_yabove_row, pc->mb_rows);
-    for (i = 0; i < pc->mb_rows; ++i)
-      CHECK_MEM_ERROR(pbi->mt_yabove_row[i],
+    for (i = 0; i < pc->mb_rows; ++i) {
+      CHECK_MEM_ERROR(&pc->error, pbi->mt_yabove_row[i],
                       vpx_memalign(16, sizeof(unsigned char) *
                                            (width + (VP8BORDERINPIXELS << 1))));
+      vp8_zero_array(pbi->mt_yabove_row[i], width + (VP8BORDERINPIXELS << 1));
+    }
 
     CALLOC_ARRAY(pbi->mt_uabove_row, pc->mb_rows);
-    for (i = 0; i < pc->mb_rows; ++i)
-      CHECK_MEM_ERROR(pbi->mt_uabove_row[i],
+    for (i = 0; i < pc->mb_rows; ++i) {
+      CHECK_MEM_ERROR(&pc->error, pbi->mt_uabove_row[i],
                       vpx_memalign(16, sizeof(unsigned char) *
                                            (uv_width + VP8BORDERINPIXELS)));
+      vp8_zero_array(pbi->mt_uabove_row[i], uv_width + VP8BORDERINPIXELS);
+    }
 
     CALLOC_ARRAY(pbi->mt_vabove_row, pc->mb_rows);
-    for (i = 0; i < pc->mb_rows; ++i)
-      CHECK_MEM_ERROR(pbi->mt_vabove_row[i],
+    for (i = 0; i < pc->mb_rows; ++i) {
+      CHECK_MEM_ERROR(&pc->error, pbi->mt_vabove_row[i],
                       vpx_memalign(16, sizeof(unsigned char) *
                                            (uv_width + VP8BORDERINPIXELS)));
+      vp8_zero_array(pbi->mt_vabove_row[i], uv_width + VP8BORDERINPIXELS);
+    }
 
     /* Allocate memory for left_col buffers. */
     CALLOC_ARRAY(pbi->mt_yleft_col, pc->mb_rows);
     for (i = 0; i < pc->mb_rows; ++i)
-      CHECK_MEM_ERROR(pbi->mt_yleft_col[i],
+      CHECK_MEM_ERROR(&pc->error, pbi->mt_yleft_col[i],
                       vpx_calloc(sizeof(unsigned char) * 16, 1));
 
     CALLOC_ARRAY(pbi->mt_uleft_col, pc->mb_rows);
     for (i = 0; i < pc->mb_rows; ++i)
-      CHECK_MEM_ERROR(pbi->mt_uleft_col[i],
+      CHECK_MEM_ERROR(&pc->error, pbi->mt_uleft_col[i],
                       vpx_calloc(sizeof(unsigned char) * 8, 1));
 
     CALLOC_ARRAY(pbi->mt_vleft_col, pc->mb_rows);
     for (i = 0; i < pc->mb_rows; ++i)
-      CHECK_MEM_ERROR(pbi->mt_vleft_col[i],
+      CHECK_MEM_ERROR(&pc->error, pbi->mt_vleft_col[i],
                       vpx_calloc(sizeof(unsigned char) * 8, 1));
   }
 }
 
 void vp8_decoder_remove_threads(VP8D_COMP *pbi) {
   /* shutdown MB Decoding thread; */
-  if (protected_read(&pbi->mt_mutex, &pbi->b_multithreaded_rd)) {
+  if (vpx_atomic_load_acquire(&pbi->b_multithreaded_rd)) {
     int i;
-    protected_write(&pbi->mt_mutex, &pbi->b_multithreaded_rd, 0);
+    vpx_atomic_store_release(&pbi->b_multithreaded_rd, 0);
 
     /* allow all threads to exit */
     for (i = 0; i < pbi->allocated_decoding_thread_count; ++i) {
-      sem_post(&pbi->h_event_start_decoding[i]);
+      vp8_sem_post(&pbi->h_event_start_decoding[i]);
       pthread_join(pbi->h_decoding_thread[i], NULL);
     }
 
     for (i = 0; i < pbi->allocated_decoding_thread_count; ++i) {
-      sem_destroy(&pbi->h_event_start_decoding[i]);
+      vp8_sem_destroy(&pbi->h_event_start_decoding[i]);
     }
 
     if (pbi->allocated_decoding_thread_count) {
-      sem_destroy(&pbi->h_event_end_decoding);
+      vp8_sem_destroy(&pbi->h_event_end_decoding);
     }
 
     vpx_free(pbi->h_decoding_thread);
@@ -825,10 +840,9 @@ void vp8_decoder_remove_threads(VP8D_COMP *pbi) {
 
     vp8mt_de_alloc_temp_buffers(pbi, pbi->common.mb_rows);
   }
-  pthread_mutex_destroy(&pbi->mt_mutex);
 }
 
-void vp8mt_decode_mb_rows(VP8D_COMP *pbi, MACROBLOCKD *xd) {
+int vp8mt_decode_mb_rows(VP8D_COMP *pbi, MACROBLOCKD *xd) {
   VP8_COMMON *pc = &pbi->common;
   unsigned int i;
   int j;
@@ -871,10 +885,26 @@ void vp8mt_decode_mb_rows(VP8D_COMP *pbi, MACROBLOCKD *xd) {
                              pbi->decoding_thread_count);
 
   for (i = 0; i < pbi->decoding_thread_count; ++i) {
-    sem_post(&pbi->h_event_start_decoding[i]);
+    vp8_sem_post(&pbi->h_event_start_decoding[i]);
   }
 
-  mt_decode_mb_rows(pbi, xd, 0);
+  if (setjmp(xd->error_info.jmp)) {
+    xd->error_info.setjmp = 0;
+    xd->corrupted = 1;
+    // Wait for other threads to finish. This prevents other threads decoding
+    // the current frame while the main thread starts decoding the next frame,
+    // which causes a data race.
+    for (i = 0; i < pbi->decoding_thread_count; ++i)
+      vp8_sem_wait(&pbi->h_event_end_decoding);
+    return -1;
+  }
 
-  sem_wait(&pbi->h_event_end_decoding); /* add back for each frame */
+  xd->error_info.setjmp = 1;
+  mt_decode_mb_rows(pbi, xd, 0);
+  xd->error_info.setjmp = 0;
+
+  for (i = 0; i < pbi->decoding_thread_count + 1; ++i)
+    vp8_sem_wait(&pbi->h_event_end_decoding); /* add back for each frame */
+
+  return 0;
 }

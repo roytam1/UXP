@@ -8,16 +8,19 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef VP8_ENCODER_ONYX_INT_H_
-#define VP8_ENCODER_ONYX_INT_H_
+#ifndef VPX_VP8_ENCODER_ONYX_INT_H_
+#define VPX_VP8_ENCODER_ONYX_INT_H_
 
+#include <assert.h>
 #include <stdio.h>
+
 #include "vpx_config.h"
 #include "vp8/common/onyx.h"
 #include "treewriter.h"
 #include "tokenize.h"
 #include "vp8/common/onyxc_int.h"
 #include "vpx_dsp/variance.h"
+#include "vpx_util/vpx_pthread.h"
 #include "encodemb.h"
 #include "vp8/encoder/quantize.h"
 #include "vp8/common/entropy.h"
@@ -56,6 +59,9 @@ extern "C" {
 #define ZBIN_OQ_MAX 192
 
 #define VP8_TEMPORAL_ALT_REF !CONFIG_REALTIME_ONLY
+
+/* vp8 uses 10,000,000 ticks/second as time stamp */
+#define TICKS_PER_SEC 10000000
 
 typedef struct {
   int kf_indicated;
@@ -210,7 +216,7 @@ enum {
 typedef struct {
   /* Layer configuration */
   double framerate;
-  int target_bandwidth;
+  int target_bandwidth; /* bits per second */
 
   /* Layer specific coding parameters */
   int64_t starting_buffer_level;
@@ -226,7 +232,7 @@ typedef struct {
   int64_t bits_off_target;
 
   int64_t total_actual_bits;
-  int total_target_vs_actual;
+  int64_t total_target_vs_actual;
 
   int worst_quality;
   int active_worst_quality;
@@ -249,10 +255,15 @@ typedef struct {
 
   int filter_level;
 
+  int frames_since_last_drop_overshoot;
+
+  int force_maxqp;
+
   int last_frame_percent_intra;
 
   int count_mb_ref_frame_usage[MAX_REF_FRAMES];
 
+  int last_q[2];
 } LAYER_CONTEXT;
 
 typedef struct VP8_COMP {
@@ -331,7 +342,7 @@ typedef struct VP8_COMP {
 
   CODING_CONTEXT coding_context;
 
-  /* Rate targetting variables */
+  /* Rate targeting variables */
   int64_t last_prediction_error;
   int64_t last_intra_error;
 
@@ -350,7 +361,7 @@ typedef struct VP8_COMP {
   /* GF interval chosen when we coded the last GF */
   int current_gf_interval;
 
-  /* Total bits overspent becasue of GF boost (cumulative) */
+  /* Total bits overspent because of GF boost (cumulative) */
   int gf_overspend_bits;
 
   /* Used in the few frames following a GF to recover the extra bits
@@ -402,7 +413,7 @@ typedef struct VP8_COMP {
   int long_rolling_actual_bits;
 
   int64_t total_actual_bits;
-  int total_target_vs_actual; /* debug stats */
+  int64_t total_target_vs_actual; /* debug stats */
 
   int worst_quality;
   int active_worst_quality;
@@ -428,7 +439,7 @@ typedef struct VP8_COMP {
   int kf_boost;
   int last_boost;
 
-  int target_bandwidth;
+  int target_bandwidth; /* bits per second */
   struct vpx_codec_pkt_list *output_pkt_list;
 
 #if 0
@@ -471,9 +482,11 @@ typedef struct VP8_COMP {
   int zeromv_count;
   int lf_zeromv_pct;
 
+  unsigned char *skin_map;
+
   unsigned char *segmentation_map;
   signed char segment_feature_data[MB_LVL_MAX][MAX_MB_SEGMENTS];
-  int segment_encode_breakout[MAX_MB_SEGMENTS];
+  unsigned int segment_encode_breakout[MAX_MB_SEGMENTS];
 
   unsigned char *active_map;
   unsigned int active_map_enabled;
@@ -503,6 +516,8 @@ typedef struct VP8_COMP {
   int mse_source_denoised;
 
   int force_maxqp;
+  int frames_since_last_drop_overshoot;
+  int last_pred_err_mb;
 
   // GF update for 1 pass cbr.
   int gf_update_onepass_cbr;
@@ -511,11 +526,10 @@ typedef struct VP8_COMP {
 
 #if CONFIG_MULTITHREAD
   /* multithread data */
-  pthread_mutex_t *pmutex;
-  pthread_mutex_t mt_mutex; /* mutex for b_multi_threaded */
-  int *mt_current_mb_col;
+  vpx_atomic_int *mt_current_mb_col;
+  int mt_current_mb_col_size;
   int mt_sync_range;
-  int b_multi_threaded;
+  vpx_atomic_int b_multi_threaded;
   int encoding_thread_count;
   int b_lpf_running;
 
@@ -527,10 +541,10 @@ typedef struct VP8_COMP {
   LPFTHREAD_DATA lpf_thread_data;
 
   /* events */
-  sem_t *h_event_start_encoding;
-  sem_t *h_event_end_encoding;
-  sem_t h_event_start_lpf;
-  sem_t h_event_end_lpf;
+  vp8_sem_t *h_event_start_encoding;
+  vp8_sem_t *h_event_end_encoding;
+  vp8_sem_t h_event_start_lpf;
+  vp8_sem_t h_event_end_lpf;
 #endif
 
   TOKENLIST *tplist;
@@ -539,14 +553,15 @@ typedef struct VP8_COMP {
   unsigned char *partition_d_end[MAX_PARTITIONS];
 
   fractional_mv_step_fp *find_fractional_mv_step;
-  vp8_full_search_fn_t full_search_sad;
   vp8_refining_search_fn_t refining_search_sad;
   vp8_diamond_search_fn_t diamond_search_sad;
   vp8_variance_fn_ptr_t fn_ptr[BLOCK_MAX_SEGMENTS];
+#if CONFIG_INTERNAL_STATS
   uint64_t time_receive_data;
   uint64_t time_compress_data;
   uint64_t time_pick_lpf;
   uint64_t time_encode_mb_row;
+#endif
 
   int base_skip_false_prob[128];
 
@@ -610,7 +625,7 @@ typedef struct VP8_COMP {
   double totalp_v;
   double totalp;
   double total_sq_error2;
-  int bytes;
+  uint64_t bytes;
   double summed_quality;
   double summed_weights;
   unsigned int tot_recode_hits;
@@ -687,12 +702,33 @@ typedef struct VP8_COMP {
     int token_costs[BLOCK_TYPES][COEF_BANDS][PREV_COEF_CONTEXTS]
                    [MAX_ENTROPY_TOKENS];
   } rd_costs;
+
+  // Use the static threshold from ROI settings.
+  int use_roi_static_threshold;
+
+  int ext_refresh_frame_flags_pending;
+
+  // Always update correction factor used for rate control after each frame for
+  // realtime encoding.
+  int rt_always_update_correction_factor;
+
+  // Flag to indicate frame may be dropped due to large expected overshoot,
+  // and re-encoded on next frame at max_qp.
+  int rt_drop_recode_on_overshoot;
 } VP8_COMP;
 
 void vp8_initialize_enc(void);
 
 void vp8_alloc_compressor_data(VP8_COMP *cpi);
 int vp8_reverse_trans(int x);
+void vp8_reset_temporal_layer_change(VP8_COMP *cpi, const VP8_CONFIG *oxcf,
+                                     const int prev_num_layers);
+void vp8_init_temporal_layer_context(VP8_COMP *cpi, const VP8_CONFIG *oxcf,
+                                     const int layer,
+                                     double prev_layer_framerate);
+void vp8_update_layer_contexts(VP8_COMP *cpi);
+void vp8_save_layer_context(VP8_COMP *cpi);
+void vp8_restore_layer_context(VP8_COMP *cpi, const int layer);
 void vp8_new_framerate(VP8_COMP *cpi, double framerate);
 void vp8_loopfilter_frame(VP8_COMP *cpi, VP8_COMMON *cm);
 
@@ -703,26 +739,10 @@ void vp8_tokenize_mb(VP8_COMP *, MACROBLOCK *, TOKENEXTRA **);
 
 void vp8_set_speed_features(VP8_COMP *cpi);
 
-#if CONFIG_DEBUG
-#define CHECK_MEM_ERROR(lval, expr)                                         \
-  do {                                                                      \
-    lval = (expr);                                                          \
-    if (!lval)                                                              \
-      vpx_internal_error(&cpi->common.error, VPX_CODEC_MEM_ERROR,           \
-                         "Failed to allocate " #lval " at %s:%d", __FILE__, \
-                         __LINE__);                                         \
-  } while (0)
-#else
-#define CHECK_MEM_ERROR(lval, expr)                               \
-  do {                                                            \
-    lval = (expr);                                                \
-    if (!lval)                                                    \
-      vpx_internal_error(&cpi->common.error, VPX_CODEC_MEM_ERROR, \
-                         "Failed to allocate " #lval);            \
-  } while (0)
-#endif
+int vp8_check_drop_buffer(VP8_COMP *cpi);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
 
-#endif  // VP8_ENCODER_ONYX_INT_H_
+#endif  // VPX_VP8_ENCODER_ONYX_INT_H_

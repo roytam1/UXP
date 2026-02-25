@@ -8,8 +8,8 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef VPX_DSP_PROB_H_
-#define VPX_DSP_PROB_H_
+#ifndef VPX_VPX_DSP_PROB_H_
+#define VPX_VPX_DSP_PROB_H_
 
 #include <assert.h>
 
@@ -30,9 +30,9 @@ typedef uint8_t vpx_prob;
 
 typedef int8_t vpx_tree_index;
 
-#define TREE_SIZE(leaf_count) (2 * (leaf_count)-2)
+#define TREE_SIZE(leaf_count) (2 * (leaf_count) - 2)
 
-#define vpx_complement(x) (255 - x)
+#define vpx_complement(x) (255 - (x))
 
 #define MODE_MV_COUNT_SAT 20
 
@@ -48,7 +48,7 @@ typedef const vpx_tree_index vpx_tree[];
 static INLINE vpx_prob get_prob(unsigned int num, unsigned int den) {
   assert(den != 0);
   {
-    const int p = (int)(((int64_t)num * 256 + (den >> 1)) / den);
+    const int p = (int)(((uint64_t)num * 256 + (den >> 1)) / den);
     // (p > 255) ? 255 : (p < 1) ? 1 : p;
     const int clipped_prob = p | ((255 - p) >> 23) | (p == 0);
     return (vpx_prob)clipped_prob;
@@ -103,4 +103,4 @@ DECLARE_ALIGNED(16, extern const uint8_t, vpx_norm[256]);
 }  // extern "C"
 #endif
 
-#endif  // VPX_DSP_PROB_H_
+#endif  // VPX_VPX_DSP_PROB_H_

@@ -20,6 +20,7 @@
 #include "ratectrl.h"
 #include "vp8/common/quant_common.h"
 #include "segmentation.h"
+#include "temporal_filter.h"
 #include "vpx_mem/vpx_mem.h"
 #include "vp8/common/swapyv12buffer.h"
 #include "vp8/common/threading.h"
@@ -157,7 +158,8 @@ static int vp8_temporal_filter_find_matching_mb_c(VP8_COMP *cpi,
   /* Ignore mv costing by sending NULL cost arrays */
   bestsme =
       vp8_hex_search(x, b, d, &best_ref_mv1_full, &d->bmi.mv, step_param, sadpb,
-                     &cpi->fn_ptr[BLOCK_16X16], NULL, NULL, &best_ref_mv1);
+                     &cpi->fn_ptr[BLOCK_16X16], NULL, &best_ref_mv1);
+  (void)bestsme;  // Ignore unused return value.
 
 #if ALT_REF_SUBPEL_ENABLED
   /* Try sub-pixel MC? */

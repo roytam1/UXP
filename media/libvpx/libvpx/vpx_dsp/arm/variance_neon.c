@@ -9,391 +9,324 @@
  */
 
 #include <arm_neon.h>
+#include <assert.h>
 
 #include "./vpx_dsp_rtcd.h"
 #include "./vpx_config.h"
 
 #include "vpx/vpx_integer.h"
+#include "vpx_dsp/arm/mem_neon.h"
+#include "vpx_dsp/arm/sum_neon.h"
 #include "vpx_ports/mem.h"
 
-static INLINE int horizontal_add_s16x8(const int16x8_t v_16x8) {
-  const int32x4_t a = vpaddlq_s16(v_16x8);
-  const int64x2_t b = vpaddlq_s32(a);
-  const int32x2_t c = vadd_s32(vreinterpret_s32_s64(vget_low_s64(b)),
-                               vreinterpret_s32_s64(vget_high_s64(b)));
-  return vget_lane_s32(c, 0);
+// Process a block of width 4 two rows at a time.
+static INLINE void variance_4xh_neon(const uint8_t *src_ptr, int src_stride,
+                                     const uint8_t *ref_ptr, int ref_stride,
+                                     int h, uint32_t *sse, int *sum) {
+  int16x8_t sum_s16 = vdupq_n_s16(0);
+  int32x4_t sse_s32 = vdupq_n_s32(0);
+  int i = h;
+
+  // Number of rows we can process before 'sum_s16' overflows:
+  // 32767 / 255 ~= 128, but we use an 8-wide accumulator; so 256 4-wide rows.
+  assert(h <= 256);
+
+  do {
+    const uint8x8_t s = load_unaligned_u8(src_ptr, src_stride);
+    const uint8x8_t r = load_unaligned_u8(ref_ptr, ref_stride);
+    const int16x8_t diff = vreinterpretq_s16_u16(vsubl_u8(s, r));
+
+    sum_s16 = vaddq_s16(sum_s16, diff);
+
+    sse_s32 = vmlal_s16(sse_s32, vget_low_s16(diff), vget_low_s16(diff));
+    sse_s32 = vmlal_s16(sse_s32, vget_high_s16(diff), vget_high_s16(diff));
+
+    src_ptr += 2 * src_stride;
+    ref_ptr += 2 * ref_stride;
+    i -= 2;
+  } while (i != 0);
+
+  *sum = horizontal_add_int16x8(sum_s16);
+  *sse = (uint32_t)horizontal_add_int32x4(sse_s32);
 }
 
-static INLINE int horizontal_add_s32x4(const int32x4_t v_32x4) {
-  const int64x2_t b = vpaddlq_s32(v_32x4);
-  const int32x2_t c = vadd_s32(vreinterpret_s32_s64(vget_low_s64(b)),
-                               vreinterpret_s32_s64(vget_high_s64(b)));
-  return vget_lane_s32(c, 0);
+// Process a block of width 8 one row at a time.
+static INLINE void variance_8xh_neon(const uint8_t *src_ptr, int src_stride,
+                                     const uint8_t *ref_ptr, int ref_stride,
+                                     int h, uint32_t *sse, int *sum) {
+  int16x8_t sum_s16 = vdupq_n_s16(0);
+  int32x4_t sse_s32[2] = { vdupq_n_s32(0), vdupq_n_s32(0) };
+  int i = h;
+
+  // Number of rows we can process before 'sum_s16' overflows:
+  // 32767 / 255 ~= 128
+  assert(h <= 128);
+
+  do {
+    const uint8x8_t s = vld1_u8(src_ptr);
+    const uint8x8_t r = vld1_u8(ref_ptr);
+    const int16x8_t diff = vreinterpretq_s16_u16(vsubl_u8(s, r));
+
+    sum_s16 = vaddq_s16(sum_s16, diff);
+
+    sse_s32[0] = vmlal_s16(sse_s32[0], vget_low_s16(diff), vget_low_s16(diff));
+    sse_s32[1] =
+        vmlal_s16(sse_s32[1], vget_high_s16(diff), vget_high_s16(diff));
+
+    src_ptr += src_stride;
+    ref_ptr += ref_stride;
+  } while (--i != 0);
+
+  *sum = horizontal_add_int16x8(sum_s16);
+  *sse = (uint32_t)horizontal_add_int32x4(vaddq_s32(sse_s32[0], sse_s32[1]));
 }
 
-// w * h must be less than 2048 or local variable v_sum may overflow.
-static void variance_neon_w8(const uint8_t *a, int a_stride, const uint8_t *b,
-                             int b_stride, int w, int h, uint32_t *sse,
-                             int *sum) {
-  int i, j;
-  int16x8_t v_sum = vdupq_n_s16(0);
-  int32x4_t v_sse_lo = vdupq_n_s32(0);
-  int32x4_t v_sse_hi = vdupq_n_s32(0);
+// Process a block of width 16 one row at a time.
+static INLINE void variance_16xh_neon(const uint8_t *src_ptr, int src_stride,
+                                      const uint8_t *ref_ptr, int ref_stride,
+                                      int h, uint32_t *sse, int *sum) {
+  int16x8_t sum_s16[2] = { vdupq_n_s16(0), vdupq_n_s16(0) };
+  int32x4_t sse_s32[2] = { vdupq_n_s32(0), vdupq_n_s32(0) };
+  int i = h;
 
-  for (i = 0; i < h; ++i) {
-    for (j = 0; j < w; j += 8) {
-      const uint8x8_t v_a = vld1_u8(&a[j]);
-      const uint8x8_t v_b = vld1_u8(&b[j]);
-      const uint16x8_t v_diff = vsubl_u8(v_a, v_b);
-      const int16x8_t sv_diff = vreinterpretq_s16_u16(v_diff);
-      v_sum = vaddq_s16(v_sum, sv_diff);
-      v_sse_lo =
-          vmlal_s16(v_sse_lo, vget_low_s16(sv_diff), vget_low_s16(sv_diff));
-      v_sse_hi =
-          vmlal_s16(v_sse_hi, vget_high_s16(sv_diff), vget_high_s16(sv_diff));
-    }
-    a += a_stride;
-    b += b_stride;
+  // Number of rows we can process before 'sum_s16' accumulators overflow:
+  // 32767 / 255 ~= 128, so 128 16-wide rows.
+  assert(h <= 128);
+
+  do {
+    const uint8x16_t s = vld1q_u8(src_ptr);
+    const uint8x16_t r = vld1q_u8(ref_ptr);
+
+    const int16x8_t diff_l =
+        vreinterpretq_s16_u16(vsubl_u8(vget_low_u8(s), vget_low_u8(r)));
+    const int16x8_t diff_h =
+        vreinterpretq_s16_u16(vsubl_u8(vget_high_u8(s), vget_high_u8(r)));
+
+    sum_s16[0] = vaddq_s16(sum_s16[0], diff_l);
+    sum_s16[1] = vaddq_s16(sum_s16[1], diff_h);
+
+    sse_s32[0] =
+        vmlal_s16(sse_s32[0], vget_low_s16(diff_l), vget_low_s16(diff_l));
+    sse_s32[1] =
+        vmlal_s16(sse_s32[1], vget_high_s16(diff_l), vget_high_s16(diff_l));
+    sse_s32[0] =
+        vmlal_s16(sse_s32[0], vget_low_s16(diff_h), vget_low_s16(diff_h));
+    sse_s32[1] =
+        vmlal_s16(sse_s32[1], vget_high_s16(diff_h), vget_high_s16(diff_h));
+
+    src_ptr += src_stride;
+    ref_ptr += ref_stride;
+  } while (--i != 0);
+
+  *sum = horizontal_add_int16x8(vaddq_s16(sum_s16[0], sum_s16[1]));
+  *sse = (uint32_t)horizontal_add_int32x4(vaddq_s32(sse_s32[0], sse_s32[1]));
+}
+
+// Process a block of any size where the width is divisible by 16.
+static INLINE void variance_large_neon(const uint8_t *src_ptr, int src_stride,
+                                       const uint8_t *ref_ptr, int ref_stride,
+                                       int w, int h, int h_limit,
+                                       unsigned int *sse, int *sum) {
+  int32x4_t sum_s32 = vdupq_n_s32(0);
+  int32x4_t sse_s32[2] = { vdupq_n_s32(0), vdupq_n_s32(0) };
+
+  // 'h_limit' is the number of 'w'-width rows we can process before our 16-bit
+  // accumulator overflows. After hitting this limit we accumulate into 32-bit
+  // elements.
+  int h_tmp = h > h_limit ? h_limit : h;
+
+  int i = 0;
+  do {
+    int16x8_t sum_s16[2] = { vdupq_n_s16(0), vdupq_n_s16(0) };
+    do {
+      int j = 0;
+      do {
+        const uint8x16_t s = vld1q_u8(src_ptr + j);
+        const uint8x16_t r = vld1q_u8(ref_ptr + j);
+
+        const int16x8_t diff_l =
+            vreinterpretq_s16_u16(vsubl_u8(vget_low_u8(s), vget_low_u8(r)));
+        const int16x8_t diff_h =
+            vreinterpretq_s16_u16(vsubl_u8(vget_high_u8(s), vget_high_u8(r)));
+
+        sum_s16[0] = vaddq_s16(sum_s16[0], diff_l);
+        sum_s16[1] = vaddq_s16(sum_s16[1], diff_h);
+
+        sse_s32[0] =
+            vmlal_s16(sse_s32[0], vget_low_s16(diff_l), vget_low_s16(diff_l));
+        sse_s32[1] =
+            vmlal_s16(sse_s32[1], vget_high_s16(diff_l), vget_high_s16(diff_l));
+        sse_s32[0] =
+            vmlal_s16(sse_s32[0], vget_low_s16(diff_h), vget_low_s16(diff_h));
+        sse_s32[1] =
+            vmlal_s16(sse_s32[1], vget_high_s16(diff_h), vget_high_s16(diff_h));
+
+        j += 16;
+      } while (j < w);
+
+      src_ptr += src_stride;
+      ref_ptr += ref_stride;
+      i++;
+    } while (i < h_tmp);
+
+    sum_s32 = vpadalq_s16(sum_s32, sum_s16[0]);
+    sum_s32 = vpadalq_s16(sum_s32, sum_s16[1]);
+
+    h_tmp += h_limit;
+  } while (i < h);
+
+  *sum = horizontal_add_int32x4(sum_s32);
+  *sse = (uint32_t)horizontal_add_int32x4(vaddq_s32(sse_s32[0], sse_s32[1]));
+}
+
+static INLINE void variance_32xh_neon(const uint8_t *src, int src_stride,
+                                      const uint8_t *ref, int ref_stride, int h,
+                                      uint32_t *sse, int *sum) {
+  variance_large_neon(src, src_stride, ref, ref_stride, 32, h, 64, sse, sum);
+}
+
+static INLINE void variance_64xh_neon(const uint8_t *src, int src_stride,
+                                      const uint8_t *ref, int ref_stride, int h,
+                                      uint32_t *sse, int *sum) {
+  variance_large_neon(src, src_stride, ref, ref_stride, 64, h, 32, sse, sum);
+}
+
+void vpx_get8x8var_neon(const uint8_t *src_ptr, int src_stride,
+                        const uint8_t *ref_ptr, int ref_stride,
+                        unsigned int *sse, int *sum) {
+  variance_8xh_neon(src_ptr, src_stride, ref_ptr, ref_stride, 8, sse, sum);
+}
+
+void vpx_get16x16var_neon(const uint8_t *src_ptr, int src_stride,
+                          const uint8_t *ref_ptr, int ref_stride,
+                          unsigned int *sse, int *sum) {
+  variance_16xh_neon(src_ptr, src_stride, ref_ptr, ref_stride, 16, sse, sum);
+}
+
+#define VARIANCE_WXH_NEON(w, h, shift)                                        \
+  unsigned int vpx_variance##w##x##h##_neon(                                  \
+      const uint8_t *src, int src_stride, const uint8_t *ref, int ref_stride, \
+      unsigned int *sse) {                                                    \
+    int sum;                                                                  \
+    variance_##w##xh_neon(src, src_stride, ref, ref_stride, h, sse, &sum);    \
+    return *sse - (uint32_t)(((int64_t)sum * sum) >> shift);                  \
   }
 
-  *sum = horizontal_add_s16x8(v_sum);
-  *sse = (unsigned int)horizontal_add_s32x4(vaddq_s32(v_sse_lo, v_sse_hi));
+VARIANCE_WXH_NEON(4, 4, 4)
+VARIANCE_WXH_NEON(4, 8, 5)
+
+VARIANCE_WXH_NEON(8, 4, 5)
+VARIANCE_WXH_NEON(8, 8, 6)
+VARIANCE_WXH_NEON(8, 16, 7)
+
+VARIANCE_WXH_NEON(16, 8, 7)
+VARIANCE_WXH_NEON(16, 16, 8)
+VARIANCE_WXH_NEON(16, 32, 9)
+
+VARIANCE_WXH_NEON(32, 16, 9)
+VARIANCE_WXH_NEON(32, 32, 10)
+VARIANCE_WXH_NEON(32, 64, 11)
+
+VARIANCE_WXH_NEON(64, 32, 11)
+VARIANCE_WXH_NEON(64, 64, 12)
+
+#undef VARIANCE_WXH_NEON
+
+static INLINE unsigned int vpx_mse8xh_neon(const unsigned char *src_ptr,
+                                           int src_stride,
+                                           const unsigned char *ref_ptr,
+                                           int ref_stride, int h) {
+  uint32x4_t sse_u32[2] = { vdupq_n_u32(0), vdupq_n_u32(0) };
+
+  int i = h / 2;
+  do {
+    uint8x8_t s0, s1, r0, r1, diff0, diff1;
+    uint16x8_t sse0, sse1;
+
+    s0 = vld1_u8(src_ptr);
+    src_ptr += src_stride;
+    s1 = vld1_u8(src_ptr);
+    src_ptr += src_stride;
+    r0 = vld1_u8(ref_ptr);
+    ref_ptr += ref_stride;
+    r1 = vld1_u8(ref_ptr);
+    ref_ptr += ref_stride;
+
+    diff0 = vabd_u8(s0, r0);
+    diff1 = vabd_u8(s1, r1);
+
+    sse0 = vmull_u8(diff0, diff0);
+    sse_u32[0] = vpadalq_u16(sse_u32[0], sse0);
+    sse1 = vmull_u8(diff1, diff1);
+    sse_u32[1] = vpadalq_u16(sse_u32[1], sse1);
+  } while (--i != 0);
+
+  return horizontal_add_uint32x4(vaddq_u32(sse_u32[0], sse_u32[1]));
 }
 
-void vpx_get8x8var_neon(const uint8_t *a, int a_stride, const uint8_t *b,
-                        int b_stride, unsigned int *sse, int *sum) {
-  variance_neon_w8(a, a_stride, b, b_stride, 8, 8, sse, sum);
+static INLINE unsigned int vpx_mse16xh_neon(const unsigned char *src_ptr,
+                                            int src_stride,
+                                            const unsigned char *ref_ptr,
+                                            int ref_stride, int h) {
+  uint32x4_t sse_u32[2] = { vdupq_n_u32(0), vdupq_n_u32(0) };
+
+  int i = h;
+  do {
+    uint8x16_t s, r, diff;
+    uint16x8_t sse0, sse1;
+
+    s = vld1q_u8(src_ptr);
+    src_ptr += src_stride;
+    r = vld1q_u8(ref_ptr);
+    ref_ptr += ref_stride;
+
+    diff = vabdq_u8(s, r);
+
+    sse0 = vmull_u8(vget_low_u8(diff), vget_low_u8(diff));
+    sse_u32[0] = vpadalq_u16(sse_u32[0], sse0);
+    sse1 = vmull_u8(vget_high_u8(diff), vget_high_u8(diff));
+    sse_u32[1] = vpadalq_u16(sse_u32[1], sse1);
+  } while (--i != 0);
+
+  return horizontal_add_uint32x4(vaddq_u32(sse_u32[0], sse_u32[1]));
 }
 
-void vpx_get16x16var_neon(const uint8_t *a, int a_stride, const uint8_t *b,
-                          int b_stride, unsigned int *sse, int *sum) {
-  variance_neon_w8(a, a_stride, b, b_stride, 16, 16, sse, sum);
-}
-
-unsigned int vpx_variance8x8_neon(const uint8_t *a, int a_stride,
-                                  const uint8_t *b, int b_stride,
-                                  unsigned int *sse) {
-  int sum;
-  variance_neon_w8(a, a_stride, b, b_stride, 8, 8, sse, &sum);
-  return *sse - ((sum * sum) >> 6);
-}
-
-unsigned int vpx_variance16x16_neon(const uint8_t *a, int a_stride,
-                                    const uint8_t *b, int b_stride,
-                                    unsigned int *sse) {
-  int sum;
-  variance_neon_w8(a, a_stride, b, b_stride, 16, 16, sse, &sum);
-  return *sse - (((uint32_t)((int64_t)sum * sum)) >> 8);
-}
-
-unsigned int vpx_variance32x32_neon(const uint8_t *a, int a_stride,
-                                    const uint8_t *b, int b_stride,
-                                    unsigned int *sse) {
-  int sum;
-  variance_neon_w8(a, a_stride, b, b_stride, 32, 32, sse, &sum);
-  return *sse - (unsigned int)(((int64_t)sum * sum) >> 10);
-}
-
-unsigned int vpx_variance32x64_neon(const uint8_t *a, int a_stride,
-                                    const uint8_t *b, int b_stride,
-                                    unsigned int *sse) {
-  int sum1, sum2;
-  uint32_t sse1, sse2;
-  variance_neon_w8(a, a_stride, b, b_stride, 32, 32, &sse1, &sum1);
-  variance_neon_w8(a + (32 * a_stride), a_stride, b + (32 * b_stride), b_stride,
-                   32, 32, &sse2, &sum2);
-  *sse = sse1 + sse2;
-  sum1 += sum2;
-  return *sse - (unsigned int)(((int64_t)sum1 * sum1) >> 11);
-}
-
-unsigned int vpx_variance64x32_neon(const uint8_t *a, int a_stride,
-                                    const uint8_t *b, int b_stride,
-                                    unsigned int *sse) {
-  int sum1, sum2;
-  uint32_t sse1, sse2;
-  variance_neon_w8(a, a_stride, b, b_stride, 64, 16, &sse1, &sum1);
-  variance_neon_w8(a + (16 * a_stride), a_stride, b + (16 * b_stride), b_stride,
-                   64, 16, &sse2, &sum2);
-  *sse = sse1 + sse2;
-  sum1 += sum2;
-  return *sse - (unsigned int)(((int64_t)sum1 * sum1) >> 11);
-}
-
-unsigned int vpx_variance64x64_neon(const uint8_t *a, int a_stride,
-                                    const uint8_t *b, int b_stride,
-                                    unsigned int *sse) {
-  int sum1, sum2;
-  uint32_t sse1, sse2;
-
-  variance_neon_w8(a, a_stride, b, b_stride, 64, 16, &sse1, &sum1);
-  variance_neon_w8(a + (16 * a_stride), a_stride, b + (16 * b_stride), b_stride,
-                   64, 16, &sse2, &sum2);
-  sse1 += sse2;
-  sum1 += sum2;
-
-  variance_neon_w8(a + (16 * 2 * a_stride), a_stride, b + (16 * 2 * b_stride),
-                   b_stride, 64, 16, &sse2, &sum2);
-  sse1 += sse2;
-  sum1 += sum2;
-
-  variance_neon_w8(a + (16 * 3 * a_stride), a_stride, b + (16 * 3 * b_stride),
-                   b_stride, 64, 16, &sse2, &sum2);
-  *sse = sse1 + sse2;
-  sum1 += sum2;
-  return *sse - (unsigned int)(((int64_t)sum1 * sum1) >> 12);
-}
-
-unsigned int vpx_variance16x8_neon(const unsigned char *src_ptr,
-                                   int source_stride,
+unsigned int vpx_get4x4sse_cs_neon(const unsigned char *src_ptr, int src_stride,
                                    const unsigned char *ref_ptr,
-                                   int recon_stride, unsigned int *sse) {
-  int i;
-  int16x4_t d22s16, d23s16, d24s16, d25s16, d26s16, d27s16, d28s16, d29s16;
-  uint32x2_t d0u32, d10u32;
-  int64x1_t d0s64, d1s64;
-  uint8x16_t q0u8, q1u8, q2u8, q3u8;
-  uint16x8_t q11u16, q12u16, q13u16, q14u16;
-  int32x4_t q8s32, q9s32, q10s32;
-  int64x2_t q0s64, q1s64, q5s64;
+                                   int ref_stride) {
+  uint8x8_t s[2], r[2];
+  uint16x8_t abs_diff[2];
+  uint32x4_t sse;
 
-  q8s32 = vdupq_n_s32(0);
-  q9s32 = vdupq_n_s32(0);
-  q10s32 = vdupq_n_s32(0);
+  s[0] = load_u8(src_ptr, src_stride);
+  r[0] = load_u8(ref_ptr, ref_stride);
+  src_ptr += 2 * src_stride;
+  ref_ptr += 2 * ref_stride;
+  s[1] = load_u8(src_ptr, src_stride);
+  r[1] = load_u8(ref_ptr, ref_stride);
 
-  for (i = 0; i < 4; i++) {
-    q0u8 = vld1q_u8(src_ptr);
-    src_ptr += source_stride;
-    q1u8 = vld1q_u8(src_ptr);
-    src_ptr += source_stride;
-    __builtin_prefetch(src_ptr);
+  abs_diff[0] = vabdl_u8(s[0], r[0]);
+  abs_diff[1] = vabdl_u8(s[1], r[1]);
 
-    q2u8 = vld1q_u8(ref_ptr);
-    ref_ptr += recon_stride;
-    q3u8 = vld1q_u8(ref_ptr);
-    ref_ptr += recon_stride;
-    __builtin_prefetch(ref_ptr);
+  sse = vmull_u16(vget_low_u16(abs_diff[0]), vget_low_u16(abs_diff[0]));
+  sse = vmlal_u16(sse, vget_high_u16(abs_diff[0]), vget_high_u16(abs_diff[0]));
+  sse = vmlal_u16(sse, vget_low_u16(abs_diff[1]), vget_low_u16(abs_diff[1]));
+  sse = vmlal_u16(sse, vget_high_u16(abs_diff[1]), vget_high_u16(abs_diff[1]));
 
-    q11u16 = vsubl_u8(vget_low_u8(q0u8), vget_low_u8(q2u8));
-    q12u16 = vsubl_u8(vget_high_u8(q0u8), vget_high_u8(q2u8));
-    q13u16 = vsubl_u8(vget_low_u8(q1u8), vget_low_u8(q3u8));
-    q14u16 = vsubl_u8(vget_high_u8(q1u8), vget_high_u8(q3u8));
+  return horizontal_add_uint32x4(sse);
+}
 
-    d22s16 = vreinterpret_s16_u16(vget_low_u16(q11u16));
-    d23s16 = vreinterpret_s16_u16(vget_high_u16(q11u16));
-    q8s32 = vpadalq_s16(q8s32, vreinterpretq_s16_u16(q11u16));
-    q9s32 = vmlal_s16(q9s32, d22s16, d22s16);
-    q10s32 = vmlal_s16(q10s32, d23s16, d23s16);
-
-    d24s16 = vreinterpret_s16_u16(vget_low_u16(q12u16));
-    d25s16 = vreinterpret_s16_u16(vget_high_u16(q12u16));
-    q8s32 = vpadalq_s16(q8s32, vreinterpretq_s16_u16(q12u16));
-    q9s32 = vmlal_s16(q9s32, d24s16, d24s16);
-    q10s32 = vmlal_s16(q10s32, d25s16, d25s16);
-
-    d26s16 = vreinterpret_s16_u16(vget_low_u16(q13u16));
-    d27s16 = vreinterpret_s16_u16(vget_high_u16(q13u16));
-    q8s32 = vpadalq_s16(q8s32, vreinterpretq_s16_u16(q13u16));
-    q9s32 = vmlal_s16(q9s32, d26s16, d26s16);
-    q10s32 = vmlal_s16(q10s32, d27s16, d27s16);
-
-    d28s16 = vreinterpret_s16_u16(vget_low_u16(q14u16));
-    d29s16 = vreinterpret_s16_u16(vget_high_u16(q14u16));
-    q8s32 = vpadalq_s16(q8s32, vreinterpretq_s16_u16(q14u16));
-    q9s32 = vmlal_s16(q9s32, d28s16, d28s16);
-    q10s32 = vmlal_s16(q10s32, d29s16, d29s16);
+#define VPX_MSE_WXH_NEON(w, h)                                               \
+  unsigned int vpx_mse##w##x##h##_neon(                                      \
+      const unsigned char *src_ptr, int src_stride,                          \
+      const unsigned char *ref_ptr, int ref_stride, unsigned int *sse) {     \
+    *sse = vpx_mse##w##xh_neon(src_ptr, src_stride, ref_ptr, ref_stride, h); \
+    return *sse;                                                             \
   }
 
-  q10s32 = vaddq_s32(q10s32, q9s32);
-  q0s64 = vpaddlq_s32(q8s32);
-  q1s64 = vpaddlq_s32(q10s32);
+VPX_MSE_WXH_NEON(8, 8)
+VPX_MSE_WXH_NEON(8, 16)
+VPX_MSE_WXH_NEON(16, 8)
+VPX_MSE_WXH_NEON(16, 16)
 
-  d0s64 = vadd_s64(vget_low_s64(q0s64), vget_high_s64(q0s64));
-  d1s64 = vadd_s64(vget_low_s64(q1s64), vget_high_s64(q1s64));
-
-  q5s64 = vmull_s32(vreinterpret_s32_s64(d0s64), vreinterpret_s32_s64(d0s64));
-  vst1_lane_u32((uint32_t *)sse, vreinterpret_u32_s64(d1s64), 0);
-
-  d10u32 = vshr_n_u32(vreinterpret_u32_s64(vget_low_s64(q5s64)), 7);
-  d0u32 = vsub_u32(vreinterpret_u32_s64(d1s64), d10u32);
-
-  return vget_lane_u32(d0u32, 0);
-}
-
-unsigned int vpx_variance8x16_neon(const unsigned char *src_ptr,
-                                   int source_stride,
-                                   const unsigned char *ref_ptr,
-                                   int recon_stride, unsigned int *sse) {
-  int i;
-  uint8x8_t d0u8, d2u8, d4u8, d6u8;
-  int16x4_t d22s16, d23s16, d24s16, d25s16;
-  uint32x2_t d0u32, d10u32;
-  int64x1_t d0s64, d1s64;
-  uint16x8_t q11u16, q12u16;
-  int32x4_t q8s32, q9s32, q10s32;
-  int64x2_t q0s64, q1s64, q5s64;
-
-  q8s32 = vdupq_n_s32(0);
-  q9s32 = vdupq_n_s32(0);
-  q10s32 = vdupq_n_s32(0);
-
-  for (i = 0; i < 8; i++) {
-    d0u8 = vld1_u8(src_ptr);
-    src_ptr += source_stride;
-    d2u8 = vld1_u8(src_ptr);
-    src_ptr += source_stride;
-    __builtin_prefetch(src_ptr);
-
-    d4u8 = vld1_u8(ref_ptr);
-    ref_ptr += recon_stride;
-    d6u8 = vld1_u8(ref_ptr);
-    ref_ptr += recon_stride;
-    __builtin_prefetch(ref_ptr);
-
-    q11u16 = vsubl_u8(d0u8, d4u8);
-    q12u16 = vsubl_u8(d2u8, d6u8);
-
-    d22s16 = vreinterpret_s16_u16(vget_low_u16(q11u16));
-    d23s16 = vreinterpret_s16_u16(vget_high_u16(q11u16));
-    q8s32 = vpadalq_s16(q8s32, vreinterpretq_s16_u16(q11u16));
-    q9s32 = vmlal_s16(q9s32, d22s16, d22s16);
-    q10s32 = vmlal_s16(q10s32, d23s16, d23s16);
-
-    d24s16 = vreinterpret_s16_u16(vget_low_u16(q12u16));
-    d25s16 = vreinterpret_s16_u16(vget_high_u16(q12u16));
-    q8s32 = vpadalq_s16(q8s32, vreinterpretq_s16_u16(q12u16));
-    q9s32 = vmlal_s16(q9s32, d24s16, d24s16);
-    q10s32 = vmlal_s16(q10s32, d25s16, d25s16);
-  }
-
-  q10s32 = vaddq_s32(q10s32, q9s32);
-  q0s64 = vpaddlq_s32(q8s32);
-  q1s64 = vpaddlq_s32(q10s32);
-
-  d0s64 = vadd_s64(vget_low_s64(q0s64), vget_high_s64(q0s64));
-  d1s64 = vadd_s64(vget_low_s64(q1s64), vget_high_s64(q1s64));
-
-  q5s64 = vmull_s32(vreinterpret_s32_s64(d0s64), vreinterpret_s32_s64(d0s64));
-  vst1_lane_u32((uint32_t *)sse, vreinterpret_u32_s64(d1s64), 0);
-
-  d10u32 = vshr_n_u32(vreinterpret_u32_s64(vget_low_s64(q5s64)), 7);
-  d0u32 = vsub_u32(vreinterpret_u32_s64(d1s64), d10u32);
-
-  return vget_lane_u32(d0u32, 0);
-}
-
-unsigned int vpx_mse16x16_neon(const unsigned char *src_ptr, int source_stride,
-                               const unsigned char *ref_ptr, int recon_stride,
-                               unsigned int *sse) {
-  int i;
-  int16x4_t d22s16, d23s16, d24s16, d25s16, d26s16, d27s16, d28s16, d29s16;
-  int64x1_t d0s64;
-  uint8x16_t q0u8, q1u8, q2u8, q3u8;
-  int32x4_t q7s32, q8s32, q9s32, q10s32;
-  uint16x8_t q11u16, q12u16, q13u16, q14u16;
-  int64x2_t q1s64;
-
-  q7s32 = vdupq_n_s32(0);
-  q8s32 = vdupq_n_s32(0);
-  q9s32 = vdupq_n_s32(0);
-  q10s32 = vdupq_n_s32(0);
-
-  for (i = 0; i < 8; i++) {  // mse16x16_neon_loop
-    q0u8 = vld1q_u8(src_ptr);
-    src_ptr += source_stride;
-    q1u8 = vld1q_u8(src_ptr);
-    src_ptr += source_stride;
-    q2u8 = vld1q_u8(ref_ptr);
-    ref_ptr += recon_stride;
-    q3u8 = vld1q_u8(ref_ptr);
-    ref_ptr += recon_stride;
-
-    q11u16 = vsubl_u8(vget_low_u8(q0u8), vget_low_u8(q2u8));
-    q12u16 = vsubl_u8(vget_high_u8(q0u8), vget_high_u8(q2u8));
-    q13u16 = vsubl_u8(vget_low_u8(q1u8), vget_low_u8(q3u8));
-    q14u16 = vsubl_u8(vget_high_u8(q1u8), vget_high_u8(q3u8));
-
-    d22s16 = vreinterpret_s16_u16(vget_low_u16(q11u16));
-    d23s16 = vreinterpret_s16_u16(vget_high_u16(q11u16));
-    q7s32 = vmlal_s16(q7s32, d22s16, d22s16);
-    q8s32 = vmlal_s16(q8s32, d23s16, d23s16);
-
-    d24s16 = vreinterpret_s16_u16(vget_low_u16(q12u16));
-    d25s16 = vreinterpret_s16_u16(vget_high_u16(q12u16));
-    q9s32 = vmlal_s16(q9s32, d24s16, d24s16);
-    q10s32 = vmlal_s16(q10s32, d25s16, d25s16);
-
-    d26s16 = vreinterpret_s16_u16(vget_low_u16(q13u16));
-    d27s16 = vreinterpret_s16_u16(vget_high_u16(q13u16));
-    q7s32 = vmlal_s16(q7s32, d26s16, d26s16);
-    q8s32 = vmlal_s16(q8s32, d27s16, d27s16);
-
-    d28s16 = vreinterpret_s16_u16(vget_low_u16(q14u16));
-    d29s16 = vreinterpret_s16_u16(vget_high_u16(q14u16));
-    q9s32 = vmlal_s16(q9s32, d28s16, d28s16);
-    q10s32 = vmlal_s16(q10s32, d29s16, d29s16);
-  }
-
-  q7s32 = vaddq_s32(q7s32, q8s32);
-  q9s32 = vaddq_s32(q9s32, q10s32);
-  q10s32 = vaddq_s32(q7s32, q9s32);
-
-  q1s64 = vpaddlq_s32(q10s32);
-  d0s64 = vadd_s64(vget_low_s64(q1s64), vget_high_s64(q1s64));
-
-  vst1_lane_u32((uint32_t *)sse, vreinterpret_u32_s64(d0s64), 0);
-  return vget_lane_u32(vreinterpret_u32_s64(d0s64), 0);
-}
-
-unsigned int vpx_get4x4sse_cs_neon(const unsigned char *src_ptr,
-                                   int source_stride,
-                                   const unsigned char *ref_ptr,
-                                   int recon_stride) {
-  int16x4_t d22s16, d24s16, d26s16, d28s16;
-  int64x1_t d0s64;
-  uint8x8_t d0u8, d1u8, d2u8, d3u8, d4u8, d5u8, d6u8, d7u8;
-  int32x4_t q7s32, q8s32, q9s32, q10s32;
-  uint16x8_t q11u16, q12u16, q13u16, q14u16;
-  int64x2_t q1s64;
-
-  d0u8 = vld1_u8(src_ptr);
-  src_ptr += source_stride;
-  d4u8 = vld1_u8(ref_ptr);
-  ref_ptr += recon_stride;
-  d1u8 = vld1_u8(src_ptr);
-  src_ptr += source_stride;
-  d5u8 = vld1_u8(ref_ptr);
-  ref_ptr += recon_stride;
-  d2u8 = vld1_u8(src_ptr);
-  src_ptr += source_stride;
-  d6u8 = vld1_u8(ref_ptr);
-  ref_ptr += recon_stride;
-  d3u8 = vld1_u8(src_ptr);
-  src_ptr += source_stride;
-  d7u8 = vld1_u8(ref_ptr);
-  ref_ptr += recon_stride;
-
-  q11u16 = vsubl_u8(d0u8, d4u8);
-  q12u16 = vsubl_u8(d1u8, d5u8);
-  q13u16 = vsubl_u8(d2u8, d6u8);
-  q14u16 = vsubl_u8(d3u8, d7u8);
-
-  d22s16 = vget_low_s16(vreinterpretq_s16_u16(q11u16));
-  d24s16 = vget_low_s16(vreinterpretq_s16_u16(q12u16));
-  d26s16 = vget_low_s16(vreinterpretq_s16_u16(q13u16));
-  d28s16 = vget_low_s16(vreinterpretq_s16_u16(q14u16));
-
-  q7s32 = vmull_s16(d22s16, d22s16);
-  q8s32 = vmull_s16(d24s16, d24s16);
-  q9s32 = vmull_s16(d26s16, d26s16);
-  q10s32 = vmull_s16(d28s16, d28s16);
-
-  q7s32 = vaddq_s32(q7s32, q8s32);
-  q9s32 = vaddq_s32(q9s32, q10s32);
-  q9s32 = vaddq_s32(q7s32, q9s32);
-
-  q1s64 = vpaddlq_s32(q9s32);
-  d0s64 = vadd_s64(vget_low_s64(q1s64), vget_high_s64(q1s64));
-
-  return vget_lane_u32(vreinterpret_u32_s64(d0s64), 0);
-}
+#undef VPX_MSE_WXH_NEON
