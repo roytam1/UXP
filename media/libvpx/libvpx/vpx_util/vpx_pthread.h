@@ -20,6 +20,10 @@
 extern "C" {
 #endif
 
+// Set maximum decode threads to be 8 due to the limit of frame buffers
+// and not enough semaphores in the emulation layer on windows.
+#define MAX_DECODE_THREADS 8
+
 #if defined(_WIN32) && !HAVE_PTHREAD_H
 // Prevent leaking max/min macros.
 #undef NOMINMAX
@@ -30,12 +34,18 @@ extern "C" {
 #include <stddef.h>   // NOLINT
 #include <windows.h>  // NOLINT
 typedef HANDLE pthread_t;
-typedef SRWLOCK pthread_mutex_t;
+typedef CRITICAL_SECTION pthread_mutex_t;
 
 #if _WIN32_WINNT < 0x0600
-#error _WIN32_WINNT must target Windows Vista / Server 2008 or newer.
-#endif
+typedef struct {
+  HANDLE waiting_sem_;
+  HANDLE received_sem_;
+  HANDLE signal_event_;
+} pthread_cond_t;
+#else
+#define USE_WINDOWS_CONDITION_VARIABLE
 typedef CONDITION_VARIABLE pthread_cond_t;
+#endif
 
 #ifndef WINAPI_FAMILY_PARTITION
 #define WINAPI_PARTITION_DESKTOP 1
@@ -57,6 +67,11 @@ typedef CONDITION_VARIABLE pthread_cond_t;
 #define THREADFN unsigned int __stdcall
 #endif
 #define THREAD_EXIT_SUCCESS 0
+
+#if _WIN32_WINNT >= 0x0501  // Windows XP or greater
+#define WaitForSingleObject(obj, timeout) \
+  WaitForSingleObjectEx(obj, timeout, FALSE /*bAlertable*/)
+#endif
 
 static INLINE int pthread_create(pthread_t *const thread, const void *attr,
                                  unsigned int(__stdcall *start)(void *),
@@ -88,51 +103,110 @@ static INLINE int pthread_join(pthread_t thread, void **value_ptr) {
 static INLINE int pthread_mutex_init(pthread_mutex_t *const mutex,
                                      void *mutexattr) {
   (void)mutexattr;
-  InitializeSRWLock(mutex);
+#if _WIN32_WINNT >= 0x0600 // Windows Vista / Server 2008 or greater
+  InitializeCriticalSectionEx(mutex, 0 /*dwSpinCount*/, 0 /*Flags*/);
+#else
+  InitializeCriticalSection(mutex);
+#endif
   return 0;
 }
 
 static INLINE int pthread_mutex_lock(pthread_mutex_t *const mutex) {
-  AcquireSRWLockExclusive(mutex);
+  EnterCriticalSection(mutex);
   return 0;
 }
 
 static INLINE int pthread_mutex_unlock(pthread_mutex_t *const mutex) {
-  ReleaseSRWLockExclusive(mutex);
+  LeaveCriticalSection(mutex);
   return 0;
 }
 
 static INLINE int pthread_mutex_destroy(pthread_mutex_t *const mutex) {
-  (void)mutex;
+  DeleteCriticalSection(mutex);
   return 0;
 }
 
 // Condition
 static INLINE int pthread_cond_destroy(pthread_cond_t *const condition) {
+  int ok = 1;
+#ifdef USE_WINDOWS_CONDITION_VARIABLE
   (void)condition;
-  return 0;
+#else
+  ok &= (CloseHandle(condition->waiting_sem_) != 0);
+  ok &= (CloseHandle(condition->received_sem_) != 0);
+  ok &= (CloseHandle(condition->signal_event_) != 0);
+#endif
+  return !ok;
 }
 
 static INLINE int pthread_cond_init(pthread_cond_t *const condition,
                                     void *cond_attr) {
   (void)cond_attr;
+#ifdef USE_WINDOWS_CONDITION_VARIABLE
   InitializeConditionVariable(condition);
-  return 0;
-}
-
-static INLINE int pthread_cond_signal(pthread_cond_t *const condition) {
-  WakeConditionVariable(condition);
+#else
+  condition->waiting_sem_ = CreateSemaphore(NULL, 0, MAX_DECODE_THREADS, NULL);
+  condition->received_sem_ = CreateSemaphore(NULL, 0, MAX_DECODE_THREADS, NULL);
+  condition->signal_event_ = CreateEvent(NULL, FALSE, FALSE, NULL);
+  if (condition->waiting_sem_ == NULL || condition->received_sem_ == NULL ||
+      condition->signal_event_ == NULL) {
+    pthread_cond_destroy(condition);
+    return 1;
+  }
+#endif
   return 0;
 }
 
 static INLINE int pthread_cond_broadcast(pthread_cond_t *const condition) {
+  int ok = 1;
+#ifdef USE_WINDOWS_CONDITION_VARIABLE
   WakeAllConditionVariable(condition);
-  return 0;
+#else
+  while (WaitForSingleObject(condition->waiting_sem_, 0) == WAIT_OBJECT_0) {
+    // a thread is waiting in pthread_cond_wait: allow it to be notified
+    ok &= SetEvent(condition->signal_event_);
+    // wait until the event is consumed so the signaler cannot consume
+    // the event via its own pthread_cond_wait.
+    ok &= (WaitForSingleObject(condition->received_sem_, INFINITE) !=
+           WAIT_OBJECT_0);
+  }
+#endif
+  return !ok;
+}
+
+static INLINE int pthread_cond_signal(pthread_cond_t *const condition) {
+  int ok = 1;
+#ifdef USE_WINDOWS_CONDITION_VARIABLE
+  WakeConditionVariable(condition);
+#else
+  if (WaitForSingleObject(condition->waiting_sem_, 0) == WAIT_OBJECT_0) {
+    // a thread is waiting in pthread_cond_wait: allow it to be notified
+    ok = SetEvent(condition->signal_event_);
+    // wait until the event is consumed so the signaler cannot consume
+    // the event via its own pthread_cond_wait.
+    ok &= (WaitForSingleObject(condition->received_sem_, INFINITE) !=
+           WAIT_OBJECT_0);
+  }
+#endif
+  return !ok;
 }
 
 static INLINE int pthread_cond_wait(pthread_cond_t *const condition,
                                     pthread_mutex_t *const mutex) {
-  const int ok = SleepConditionVariableSRW(condition, mutex, INFINITE, 0);
+  int ok;
+#ifdef USE_WINDOWS_CONDITION_VARIABLE
+  ok = SleepConditionVariableCS(condition, mutex, INFINITE);
+#else
+  // note that there is a consumer available so the signal isn't dropped in
+  // pthread_cond_signal
+  if (!ReleaseSemaphore(condition->waiting_sem_, 1, NULL)) return 1;
+  // now unlock the mutex so pthread_cond_signal may be issued
+  pthread_mutex_unlock(mutex);
+  ok = (WaitForSingleObject(condition->signal_event_, INFINITE) ==
+        WAIT_OBJECT_0);
+  ok &= ReleaseSemaphore(condition->received_sem_, 1, NULL);
+  pthread_mutex_lock(mutex);
+#endif
   return !ok;
 }
 #else                 // _WIN32
