@@ -542,6 +542,7 @@ GetModuleArg(JSContext* cx, CallArgs args, const char* name, Module** module)
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_WASM_BAD_MOD_ARG);
         return false;
     }
+    *module = &unwrapped->as<WasmModuleObject>().module();
 
     return true;
 }
