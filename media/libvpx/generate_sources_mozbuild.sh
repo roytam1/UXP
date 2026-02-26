@@ -81,6 +81,12 @@ function convert_srcs_to_project_files {
   # The actual ARM files end in .asm. We have rules to translate them to .S
   source_list=$(echo "$source_list" | sed s/\.asm\.s$/.asm/)
 
+  # Avoid basename collisions in Mozilla's object naming. Upstream has both
+  # vp8/common/x86/loopfilter_sse2.asm and vpx_dsp/x86/loopfilter_sse2.c.
+  # Route the C translation unit through a uniquely-named wrapper source.
+  source_list=$(echo "$source_list" | \
+    sed 's#^vpx_dsp/x86/loopfilter_sse2\.c$#vpx_dsp/x86/loopfilter_dsp_sse2.c#')
+
   # Exports - everything in vpx, vpx_mem, vpx_ports, vpx_scale
   local exports_list=$(echo "$source_list" | \
     egrep '^(vpx|vpx_mem|vpx_ports|vpx_scale)/.*h$')
@@ -195,14 +201,24 @@ all_platforms="--enable-external-build --disable-examples --disable-install-docs
 all_platforms="${all_platforms} --enable-multi-res-encoding --size-limit=8192x4608 --enable-pic"
 x86_platforms="--enable-postproc --enable-vp9-postproc --as=yasm"
 arm_platforms="--enable-runtime-cpu-detect --enable-realtime-only"
+aarch64_platforms="--enable-runtime-cpu-detect --enable-realtime-only"
+mips64_platforms="--enable-runtime-cpu-detect --cpu=loongson3"
+ppc64le_platforms="--enable-runtime-cpu-detect --enable-vsx"
+other_arch_platforms="--enable-runtime-cpu-detect"
 gen_config_files linux/x64 "--target=x86_64-linux-gcc ${all_platforms} ${x86_platforms}"
 gen_config_files linux/ia32 "--target=x86-linux-gcc ${all_platforms} ${x86_platforms}"
 gen_config_files mac/x64 "--target=x86_64-darwin9-gcc ${all_platforms} ${x86_platforms}"
 gen_config_files mac/ia32 "--target=x86-darwin9-gcc ${all_platforms} ${x86_platforms}"
-gen_config_files win/x64 "--target=x86_64-win64-vs12 ${all_platforms} ${x86_platforms}"
+gen_config_files win/x64 "--target=x86_64-win64-vs17 ${all_platforms} ${x86_platforms}"
 gen_config_files win/ia32 "--target=x86-win32-gcc ${all_platforms} ${x86_platforms}"
 
 gen_config_files linux/arm "--target=armv7-linux-gcc ${all_platforms} ${arm_platforms}"
+gen_config_files linux/arm64 "--target=arm64-linux-gcc ${all_platforms} ${aarch64_platforms}"
+gen_config_files mac/arm64 "--target=arm64-darwin-gcc ${all_platforms} ${aarch64_platforms}"
+gen_config_files linux/mips32 "--target=mips32-linux-gcc ${all_platforms} ${other_arch_platforms}"
+gen_config_files linux/mips64 "--target=mips64-linux-gcc ${all_platforms} ${mips64_platforms}"
+gen_config_files linux/ppc64le "--target=ppc64le-linux-gcc ${all_platforms} ${ppc64le_platforms}"
+gen_config_files linux/loongarch64 "--target=loongarch64-linux-gcc ${all_platforms} ${other_arch_platforms}"
 
 gen_config_files generic "--target=generic-gnu ${all_platforms}"
 
@@ -224,6 +240,12 @@ gen_rtcd_header win/x64 x86_64
 gen_rtcd_header win/ia32 x86
 
 gen_rtcd_header linux/arm armv7
+gen_rtcd_header linux/arm64 arm64
+gen_rtcd_header mac/arm64 arm64
+gen_rtcd_header linux/mips32 mips32
+gen_rtcd_header linux/mips64 mips64
+gen_rtcd_header linux/ppc64le ppc64le
+gen_rtcd_header linux/loongarch64 loongarch64
 
 gen_rtcd_header generic generic
 
@@ -256,6 +278,36 @@ config=$(print_config linux/arm)
 make_clean
 make libvpx_srcs.txt target=libs $config > /dev/null
 convert_srcs_to_project_files libvpx_srcs.txt ARM
+
+echo "Generate AARCH64 source list."
+config=$(print_config linux/arm64)
+make_clean
+make libvpx_srcs.txt target=libs $config > /dev/null
+convert_srcs_to_project_files libvpx_srcs.txt AARCH64
+
+echo "Generate MIPS32 source list."
+config=$(print_config linux/mips32)
+make_clean
+make libvpx_srcs.txt target=libs $config > /dev/null
+convert_srcs_to_project_files libvpx_srcs.txt MIPS32
+
+echo "Generate MIPS64 source list."
+config=$(print_config linux/mips64)
+make_clean
+make libvpx_srcs.txt target=libs $config > /dev/null
+convert_srcs_to_project_files libvpx_srcs.txt MIPS64
+
+echo "Generate PPC64LE source list."
+config=$(print_config linux/ppc64le)
+make_clean
+make libvpx_srcs.txt target=libs $config > /dev/null
+convert_srcs_to_project_files libvpx_srcs.txt PPC64LE
+
+echo "Generate LOONGARCH64 source list."
+config=$(print_config linux/loongarch64)
+make_clean
+make libvpx_srcs.txt target=libs $config > /dev/null
+convert_srcs_to_project_files libvpx_srcs.txt LOONGARCH64
 
 echo "Generate generic source list."
 config=$(print_config generic)

@@ -11,10 +11,12 @@
 #include <arm_neon.h>
 #include <string.h>
 #include "./vpx_config.h"
+#include "./vp8_rtcd.h"
+#include "vpx_dsp/arm/mem_neon.h"
 #include "vpx_ports/mem.h"
 
 static const int8_t vp8_sub_pel_filters[8][8] = {
-  { 0, 0, 128, 0, 0, 0, 0, 0 },     /* note that 1/8 pel positionyys are */
+  { 0, 0, -128, 0, 0, 0, 0, 0 },    /* note that 1/8 pel positions are */
   { 0, -6, 123, 12, -1, 0, 0, 0 },  /*    just as per alpha -0.5 bicubic */
   { 2, -11, 108, 36, -8, 1, 0, 0 }, /* New 1/4 pel 6 tap filter */
   { 0, -9, 93, 50, -6, 0, 0, 0 },
@@ -40,35 +42,6 @@ static const uint8_t abs_filters[8][8] = {
 
 static INLINE uint8x8_t load_and_shift(const unsigned char *a) {
   return vreinterpret_u8_u64(vshl_n_u64(vreinterpret_u64_u8(vld1_u8(a)), 32));
-}
-
-static INLINE void store4x4(unsigned char *dst, int dst_stride,
-                            const uint8x8_t a0, const uint8x8_t a1) {
-  if (!((uintptr_t)dst & 0x3) && !(dst_stride & 0x3)) {
-    vst1_lane_u32((uint32_t *)dst, vreinterpret_u32_u8(a0), 0);
-    dst += dst_stride;
-    vst1_lane_u32((uint32_t *)dst, vreinterpret_u32_u8(a0), 1);
-    dst += dst_stride;
-    vst1_lane_u32((uint32_t *)dst, vreinterpret_u32_u8(a1), 0);
-    dst += dst_stride;
-    vst1_lane_u32((uint32_t *)dst, vreinterpret_u32_u8(a1), 1);
-  } else {
-    // Store to the aligned local buffer and memcpy instead of vget_lane_u8
-    // which is really really slow.
-    uint32_t output_buffer[4];
-    vst1_lane_u32(output_buffer, vreinterpret_u32_u8(a0), 0);
-    vst1_lane_u32(output_buffer + 1, vreinterpret_u32_u8(a0), 1);
-    vst1_lane_u32(output_buffer + 2, vreinterpret_u32_u8(a1), 0);
-    vst1_lane_u32(output_buffer + 3, vreinterpret_u32_u8(a1), 1);
-
-    memcpy(dst, output_buffer, 4);
-    dst += dst_stride;
-    memcpy(dst, output_buffer + 1, 4);
-    dst += dst_stride;
-    memcpy(dst, output_buffer + 2, 4);
-    dst += dst_stride;
-    memcpy(dst, output_buffer + 3, 4);
-  }
 }
 
 static INLINE void filter_add_accumulate(const uint8x16_t a, const uint8x16_t b,
@@ -180,7 +153,7 @@ static INLINE void yonly4x4(const unsigned char *src, int src_stride,
   e0 = vqrshrun_n_s16(d0, 7);
   e1 = vqrshrun_n_s16(d1, 7);
 
-  store4x4(dst, dst_stride, e0, e1);
+  store_unaligned_u8q(dst, dst_stride, vcombine_u8(e0, e1));
 }
 
 void vp8_sixtap_predict4x4_neon(unsigned char *src_ptr, int src_pixels_per_line,
@@ -297,7 +270,7 @@ void vp8_sixtap_predict4x4_neon(unsigned char *src_ptr, int src_pixels_per_line,
   b2 = vqrshrun_n_s16(e4567, 7);
 
   if (yoffset == 0) {  // firstpass_filter4x4_only
-    store4x4(dst_ptr, dst_pitch, b0, b2);
+    store_unaligned_u8q(dst_ptr, dst_pitch, vcombine_u8(b0, b2));
     return;
   }
 
@@ -411,7 +384,7 @@ void vp8_sixtap_predict4x4_neon(unsigned char *src_ptr, int src_pixels_per_line,
   e0 = vqrshrun_n_s16(d0, 7);
   e1 = vqrshrun_n_s16(d1, 7);
 
-  store4x4(dst_ptr, dst_pitch, e0, e1);
+  store_unaligned_u8q(dst_ptr, dst_pitch, vcombine_u8(e0, e1));
 }
 
 void vp8_sixtap_predict8x4_neon(unsigned char *src_ptr, int src_pixels_per_line,
@@ -808,7 +781,6 @@ void vp8_sixtap_predict8x4_neon(unsigned char *src_ptr, int src_pixels_per_line,
   vst1_u8(dst_ptr, d8u8);
   dst_ptr += dst_pitch;
   vst1_u8(dst_ptr, d9u8);
-  return;
 }
 
 void vp8_sixtap_predict8x8_neon(unsigned char *src_ptr, int src_pixels_per_line,
@@ -1277,7 +1249,6 @@ void vp8_sixtap_predict8x8_neon(unsigned char *src_ptr, int src_pixels_per_line,
     vst1_u8(dst_ptr, d9u8);
     dst_ptr += dst_pitch;
   }
-  return;
 }
 
 void vp8_sixtap_predict16x16_neon(unsigned char *src_ptr,
@@ -1531,7 +1502,9 @@ void vp8_sixtap_predict16x16_neon(unsigned char *src_ptr,
     src += src_pixels_per_line;
     d12u8 = vld1_u8(src);
     d13u8 = vld1_u8(src + 8);
-    d14u8 = vld1_u8(src + 16);
+    // Only 5 pixels are needed, avoid a potential out of bounds read.
+    d14u8 = vld1_u8(src + 13);
+    d14u8 = vext_u8(d14u8, d14u8, 3);
     src += src_pixels_per_line;
 
     __builtin_prefetch(src);
@@ -1753,5 +1726,4 @@ void vp8_sixtap_predict16x16_neon(unsigned char *src_ptr,
       dst += dst_pitch;
     }
   }
-  return;
 }

@@ -24,11 +24,11 @@ VP9_DX_SRCS-yes += decoder/vp9_decodeframe.h
 VP9_DX_SRCS-yes += decoder/vp9_detokenize.c
 VP9_DX_SRCS-yes += decoder/vp9_decodemv.h
 VP9_DX_SRCS-yes += decoder/vp9_detokenize.h
-VP9_DX_SRCS-yes += decoder/vp9_dthread.c
-VP9_DX_SRCS-yes += decoder/vp9_dthread.h
 VP9_DX_SRCS-yes += decoder/vp9_decoder.c
 VP9_DX_SRCS-yes += decoder/vp9_decoder.h
 VP9_DX_SRCS-yes += decoder/vp9_dsubexp.c
 VP9_DX_SRCS-yes += decoder/vp9_dsubexp.h
+VP9_DX_SRCS-yes += decoder/vp9_job_queue.c
+VP9_DX_SRCS-yes += decoder/vp9_job_queue.h
 
 VP9_DX_SRCS-yes := $(filter-out $(VP9_DX_SRCS_REMOVE-yes),$(VP9_DX_SRCS-yes))

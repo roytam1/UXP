@@ -8,8 +8,8 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef VP9_ENCODER_VP9_AQ_CYCLICREFRESH_H_
-#define VP9_ENCODER_VP9_AQ_CYCLICREFRESH_H_
+#ifndef VPX_VP9_ENCODER_VP9_AQ_CYCLICREFRESH_H_
+#define VPX_VP9_ENCODER_VP9_AQ_CYCLICREFRESH_H_
 
 #include "vpx/vpx_integer.h"
 #include "vp9/common/vp9_blockd.h"
@@ -66,6 +66,11 @@ struct CYCLIC_REFRESH {
   double low_content_avg;
   int qindex_delta[3];
   int reduce_refresh;
+  double weight_segment;
+  int apply_cyclic_refresh;
+  int counter_encode_maxq_scene_change;
+  int skip_flat_static_blocks;
+  int content_mode;
 };
 
 struct VP9_COMP;
@@ -100,18 +105,14 @@ void vp9_cyclic_refresh_update_sb_postencode(struct VP9_COMP *const cpi,
                                              int mi_row, int mi_col,
                                              BLOCK_SIZE bsize);
 
-// Update the segmentation map, and related quantities: cyclic refresh map,
-// refresh sb_index, and target number of blocks to be refreshed.
-void vp9_cyclic_refresh_update__map(struct VP9_COMP *const cpi);
-
-// Update the actual number of blocks that were applied the segment delta q.
+// From the just encoded frame: update the actual number of blocks that were
+// applied the segment delta q, and the amount of low motion in the frame.
+// Also check conditions for forcing golden update, or preventing golden
+// update if the period is up.
 void vp9_cyclic_refresh_postencode(struct VP9_COMP *const cpi);
 
 // Set golden frame update interval, for non-svc 1 pass CBR mode.
 void vp9_cyclic_refresh_set_golden_update(struct VP9_COMP *const cpi);
-
-// Check if we should not update golden reference, based on past refresh stats.
-void vp9_cyclic_refresh_check_golden_update(struct VP9_COMP *const cpi);
 
 // Set/update global/frame level refresh parameters.
 void vp9_cyclic_refresh_update_parameters(struct VP9_COMP *const cpi);
@@ -137,8 +138,10 @@ static INLINE int cyclic_refresh_segment_id(int segment_id) {
     return CR_SEGMENT_ID_BASE;
 }
 
+void vp9_cyclic_refresh_limit_q(const struct VP9_COMP *cpi, int *q);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
 
-#endif  // VP9_ENCODER_VP9_AQ_CYCLICREFRESH_H_
+#endif  // VPX_VP9_ENCODER_VP9_AQ_CYCLICREFRESH_H_

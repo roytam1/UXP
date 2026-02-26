@@ -8,8 +8,8 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef VP8_COMMON_ENTROPYMODE_H_
-#define VP8_COMMON_ENTROPYMODE_H_
+#ifndef VPX_VP8_COMMON_ENTROPYMODE_H_
+#define VPX_VP8_COMMON_ENTROPYMODE_H_
 
 #include "onyxc_int.h"
 #include "treecoder.h"
@@ -78,11 +78,11 @@ extern const vp8_prob vp8_kf_ymode_prob[VP8_YMODES - 1];
 
 void vp8_init_mbmode_probs(VP8_COMMON *x);
 void vp8_default_bmode_probs(vp8_prob dest[VP8_BINTRAMODES - 1]);
-void vp8_kf_default_bmode_probs(vp8_prob dest[VP8_BINTRAMODES][VP8_BINTRAMODES]
-                                             [VP8_BINTRAMODES - 1]);
+void vp8_kf_default_bmode_probs(
+    vp8_prob dest[VP8_BINTRAMODES][VP8_BINTRAMODES][VP8_BINTRAMODES - 1]);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif
 
-#endif  // VP8_COMMON_ENTROPYMODE_H_
+#endif  // VPX_VP8_COMMON_ENTROPYMODE_H_

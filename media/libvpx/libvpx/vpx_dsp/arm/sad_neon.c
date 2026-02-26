@@ -11,213 +11,381 @@
 #include <arm_neon.h>
 
 #include "./vpx_config.h"
+#include "./vpx_dsp_rtcd.h"
 
 #include "vpx/vpx_integer.h"
+#include "vpx_dsp/arm/mem_neon.h"
+#include "vpx_dsp/arm/sum_neon.h"
 
-unsigned int vpx_sad8x16_neon(unsigned char *src_ptr, int src_stride,
-                              unsigned char *ref_ptr, int ref_stride) {
-  uint8x8_t d0, d8;
-  uint16x8_t q12;
-  uint32x4_t q1;
-  uint64x2_t q3;
-  uint32x2_t d5;
-  int i;
+static INLINE unsigned int sad64xh_neon(const uint8_t *src_ptr, int src_stride,
+                                        const uint8_t *ref_ptr, int ref_stride,
+                                        int h) {
+  uint16x8_t sum[4] = { vdupq_n_u16(0), vdupq_n_u16(0), vdupq_n_u16(0),
+                        vdupq_n_u16(0) };
+  uint32x4_t sum_u32;
 
-  d0 = vld1_u8(src_ptr);
-  src_ptr += src_stride;
-  d8 = vld1_u8(ref_ptr);
-  ref_ptr += ref_stride;
-  q12 = vabdl_u8(d0, d8);
+  int i = h;
+  do {
+    uint8x16_t s0, s1, s2, s3, r0, r1, r2, r3;
+    uint8x16_t diff0, diff1, diff2, diff3;
 
-  for (i = 0; i < 15; i++) {
-    d0 = vld1_u8(src_ptr);
+    s0 = vld1q_u8(src_ptr);
+    r0 = vld1q_u8(ref_ptr);
+    diff0 = vabdq_u8(s0, r0);
+    sum[0] = vpadalq_u8(sum[0], diff0);
+
+    s1 = vld1q_u8(src_ptr + 16);
+    r1 = vld1q_u8(ref_ptr + 16);
+    diff1 = vabdq_u8(s1, r1);
+    sum[1] = vpadalq_u8(sum[1], diff1);
+
+    s2 = vld1q_u8(src_ptr + 32);
+    r2 = vld1q_u8(ref_ptr + 32);
+    diff2 = vabdq_u8(s2, r2);
+    sum[2] = vpadalq_u8(sum[2], diff2);
+
+    s3 = vld1q_u8(src_ptr + 48);
+    r3 = vld1q_u8(ref_ptr + 48);
+    diff3 = vabdq_u8(s3, r3);
+    sum[3] = vpadalq_u8(sum[3], diff3);
+
     src_ptr += src_stride;
-    d8 = vld1_u8(ref_ptr);
     ref_ptr += ref_stride;
-    q12 = vabal_u8(q12, d0, d8);
-  }
+  } while (--i != 0);
 
-  q1 = vpaddlq_u16(q12);
-  q3 = vpaddlq_u32(q1);
-  d5 = vadd_u32(vreinterpret_u32_u64(vget_low_u64(q3)),
-                vreinterpret_u32_u64(vget_high_u64(q3)));
+  sum_u32 = vpaddlq_u16(sum[0]);
+  sum_u32 = vpadalq_u16(sum_u32, sum[1]);
+  sum_u32 = vpadalq_u16(sum_u32, sum[2]);
+  sum_u32 = vpadalq_u16(sum_u32, sum[3]);
 
-  return vget_lane_u32(d5, 0);
+  return horizontal_add_uint32x4(sum_u32);
 }
 
-unsigned int vpx_sad4x4_neon(unsigned char *src_ptr, int src_stride,
-                             unsigned char *ref_ptr, int ref_stride) {
-  uint8x8_t d0, d8;
-  uint16x8_t q12;
-  uint32x2_t d1;
-  uint64x1_t d3;
-  int i;
+static INLINE unsigned int sad32xh_neon(const uint8_t *src_ptr, int src_stride,
+                                        const uint8_t *ref_ptr, int ref_stride,
+                                        int h) {
+  uint32x4_t sum = vdupq_n_u32(0);
 
-  d0 = vld1_u8(src_ptr);
-  src_ptr += src_stride;
-  d8 = vld1_u8(ref_ptr);
-  ref_ptr += ref_stride;
-  q12 = vabdl_u8(d0, d8);
+  int i = h;
+  do {
+    uint8x16_t s0 = vld1q_u8(src_ptr);
+    uint8x16_t r0 = vld1q_u8(ref_ptr);
+    uint8x16_t diff0 = vabdq_u8(s0, r0);
+    uint16x8_t sum0 = vpaddlq_u8(diff0);
 
-  for (i = 0; i < 3; i++) {
-    d0 = vld1_u8(src_ptr);
+    uint8x16_t s1 = vld1q_u8(src_ptr + 16);
+    uint8x16_t r1 = vld1q_u8(ref_ptr + 16);
+    uint8x16_t diff1 = vabdq_u8(s1, r1);
+    uint16x8_t sum1 = vpaddlq_u8(diff1);
+
+    sum = vpadalq_u16(sum, sum0);
+    sum = vpadalq_u16(sum, sum1);
+
     src_ptr += src_stride;
-    d8 = vld1_u8(ref_ptr);
     ref_ptr += ref_stride;
-    q12 = vabal_u8(q12, d0, d8);
-  }
+  } while (--i != 0);
 
-  d1 = vpaddl_u16(vget_low_u16(q12));
-  d3 = vpaddl_u32(d1);
-
-  return vget_lane_u32(vreinterpret_u32_u64(d3), 0);
+  return horizontal_add_uint32x4(sum);
 }
 
-unsigned int vpx_sad16x8_neon(unsigned char *src_ptr, int src_stride,
-                              unsigned char *ref_ptr, int ref_stride) {
-  uint8x16_t q0, q4;
-  uint16x8_t q12, q13;
-  uint32x4_t q1;
-  uint64x2_t q3;
-  uint32x2_t d5;
-  int i;
+static INLINE unsigned int sad16xh_neon(const uint8_t *src_ptr, int src_stride,
+                                        const uint8_t *ref_ptr, int ref_stride,
+                                        int h) {
+  uint16x8_t sum = vdupq_n_u16(0);
 
-  q0 = vld1q_u8(src_ptr);
-  src_ptr += src_stride;
-  q4 = vld1q_u8(ref_ptr);
-  ref_ptr += ref_stride;
-  q12 = vabdl_u8(vget_low_u8(q0), vget_low_u8(q4));
-  q13 = vabdl_u8(vget_high_u8(q0), vget_high_u8(q4));
+  int i = h;
+  do {
+    uint8x16_t s = vld1q_u8(src_ptr);
+    uint8x16_t r = vld1q_u8(ref_ptr);
 
-  for (i = 0; i < 7; i++) {
-    q0 = vld1q_u8(src_ptr);
+    uint8x16_t diff = vabdq_u8(s, r);
+    sum = vpadalq_u8(sum, diff);
+
     src_ptr += src_stride;
-    q4 = vld1q_u8(ref_ptr);
     ref_ptr += ref_stride;
-    q12 = vabal_u8(q12, vget_low_u8(q0), vget_low_u8(q4));
-    q13 = vabal_u8(q13, vget_high_u8(q0), vget_high_u8(q4));
+  } while (--i != 0);
+
+  return horizontal_add_uint16x8(sum);
+}
+
+static INLINE unsigned int sad8xh_neon(const uint8_t *src_ptr, int src_stride,
+                                       const uint8_t *ref_ptr, int ref_stride,
+                                       int h) {
+  uint16x8_t sum = vdupq_n_u16(0);
+
+  int i = h;
+  do {
+    uint8x8_t s = vld1_u8(src_ptr);
+    uint8x8_t r = vld1_u8(ref_ptr);
+
+    sum = vabal_u8(sum, s, r);
+
+    src_ptr += src_stride;
+    ref_ptr += ref_stride;
+  } while (--i != 0);
+
+  return horizontal_add_uint16x8(sum);
+}
+
+static INLINE unsigned int sad4xh_neon(const uint8_t *src_ptr, int src_stride,
+                                       const uint8_t *ref_ptr, int ref_stride,
+                                       int h) {
+  uint16x8_t sum = vdupq_n_u16(0);
+
+  int i = h / 2;
+  do {
+    uint8x8_t s = load_unaligned_u8(src_ptr, src_stride);
+    uint8x8_t r = load_unaligned_u8(ref_ptr, ref_stride);
+
+    sum = vabal_u8(sum, s, r);
+
+    src_ptr += 2 * src_stride;
+    ref_ptr += 2 * ref_stride;
+  } while (--i != 0);
+
+  return horizontal_add_uint16x8(sum);
+}
+
+#define SAD_WXH_NEON(w, h)                                                   \
+  unsigned int vpx_sad##w##x##h##_neon(const uint8_t *src, int src_stride,   \
+                                       const uint8_t *ref, int ref_stride) { \
+    return sad##w##xh_neon(src, src_stride, ref, ref_stride, (h));           \
   }
 
-  q12 = vaddq_u16(q12, q13);
-  q1 = vpaddlq_u16(q12);
-  q3 = vpaddlq_u32(q1);
-  d5 = vadd_u32(vreinterpret_u32_u64(vget_low_u64(q3)),
-                vreinterpret_u32_u64(vget_high_u64(q3)));
+SAD_WXH_NEON(4, 4)
+SAD_WXH_NEON(4, 8)
 
-  return vget_lane_u32(d5, 0);
-}
+SAD_WXH_NEON(8, 4)
+SAD_WXH_NEON(8, 8)
+SAD_WXH_NEON(8, 16)
 
-static INLINE unsigned int horizontal_long_add_16x8(const uint16x8_t vec_lo,
-                                                    const uint16x8_t vec_hi) {
-  const uint32x4_t vec_l_lo =
-      vaddl_u16(vget_low_u16(vec_lo), vget_high_u16(vec_lo));
-  const uint32x4_t vec_l_hi =
-      vaddl_u16(vget_low_u16(vec_hi), vget_high_u16(vec_hi));
-  const uint32x4_t a = vaddq_u32(vec_l_lo, vec_l_hi);
-  const uint64x2_t b = vpaddlq_u32(a);
-  const uint32x2_t c = vadd_u32(vreinterpret_u32_u64(vget_low_u64(b)),
-                                vreinterpret_u32_u64(vget_high_u64(b)));
-  return vget_lane_u32(c, 0);
-}
-static INLINE unsigned int horizontal_add_16x8(const uint16x8_t vec_16x8) {
-  const uint32x4_t a = vpaddlq_u16(vec_16x8);
-  const uint64x2_t b = vpaddlq_u32(a);
-  const uint32x2_t c = vadd_u32(vreinterpret_u32_u64(vget_low_u64(b)),
-                                vreinterpret_u32_u64(vget_high_u64(b)));
-  return vget_lane_u32(c, 0);
-}
+SAD_WXH_NEON(16, 8)
+SAD_WXH_NEON(16, 16)
+SAD_WXH_NEON(16, 32)
 
-unsigned int vpx_sad64x64_neon(const uint8_t *src, int src_stride,
-                               const uint8_t *ref, int ref_stride) {
-  int i;
-  uint16x8_t vec_accum_lo = vdupq_n_u16(0);
-  uint16x8_t vec_accum_hi = vdupq_n_u16(0);
-  for (i = 0; i < 64; ++i) {
-    const uint8x16_t vec_src_00 = vld1q_u8(src);
-    const uint8x16_t vec_src_16 = vld1q_u8(src + 16);
-    const uint8x16_t vec_src_32 = vld1q_u8(src + 32);
-    const uint8x16_t vec_src_48 = vld1q_u8(src + 48);
-    const uint8x16_t vec_ref_00 = vld1q_u8(ref);
-    const uint8x16_t vec_ref_16 = vld1q_u8(ref + 16);
-    const uint8x16_t vec_ref_32 = vld1q_u8(ref + 32);
-    const uint8x16_t vec_ref_48 = vld1q_u8(ref + 48);
-    src += src_stride;
-    ref += ref_stride;
-    vec_accum_lo = vabal_u8(vec_accum_lo, vget_low_u8(vec_src_00),
-                            vget_low_u8(vec_ref_00));
-    vec_accum_hi = vabal_u8(vec_accum_hi, vget_high_u8(vec_src_00),
-                            vget_high_u8(vec_ref_00));
-    vec_accum_lo = vabal_u8(vec_accum_lo, vget_low_u8(vec_src_16),
-                            vget_low_u8(vec_ref_16));
-    vec_accum_hi = vabal_u8(vec_accum_hi, vget_high_u8(vec_src_16),
-                            vget_high_u8(vec_ref_16));
-    vec_accum_lo = vabal_u8(vec_accum_lo, vget_low_u8(vec_src_32),
-                            vget_low_u8(vec_ref_32));
-    vec_accum_hi = vabal_u8(vec_accum_hi, vget_high_u8(vec_src_32),
-                            vget_high_u8(vec_ref_32));
-    vec_accum_lo = vabal_u8(vec_accum_lo, vget_low_u8(vec_src_48),
-                            vget_low_u8(vec_ref_48));
-    vec_accum_hi = vabal_u8(vec_accum_hi, vget_high_u8(vec_src_48),
-                            vget_high_u8(vec_ref_48));
+SAD_WXH_NEON(32, 16)
+SAD_WXH_NEON(32, 32)
+SAD_WXH_NEON(32, 64)
+
+SAD_WXH_NEON(64, 32)
+SAD_WXH_NEON(64, 64)
+
+#undef SAD_WXH_NEON
+
+#define SAD_SKIP_WXH_NEON(w, h)                                                \
+  unsigned int vpx_sad_skip_##w##x##h##_neon(                                  \
+      const uint8_t *src, int src_stride, const uint8_t *ref,                  \
+      int ref_stride) {                                                        \
+    return 2 *                                                                 \
+           sad##w##xh_neon(src, 2 * src_stride, ref, 2 * ref_stride, (h) / 2); \
   }
-  return horizontal_long_add_16x8(vec_accum_lo, vec_accum_hi);
+
+SAD_SKIP_WXH_NEON(4, 4)
+SAD_SKIP_WXH_NEON(4, 8)
+
+SAD_SKIP_WXH_NEON(8, 4)
+SAD_SKIP_WXH_NEON(8, 8)
+SAD_SKIP_WXH_NEON(8, 16)
+
+SAD_SKIP_WXH_NEON(16, 8)
+SAD_SKIP_WXH_NEON(16, 16)
+SAD_SKIP_WXH_NEON(16, 32)
+
+SAD_SKIP_WXH_NEON(32, 16)
+SAD_SKIP_WXH_NEON(32, 32)
+SAD_SKIP_WXH_NEON(32, 64)
+
+SAD_SKIP_WXH_NEON(64, 32)
+SAD_SKIP_WXH_NEON(64, 64)
+
+#undef SAD_SKIP_WXH_NEON
+
+static INLINE unsigned int sad64xh_avg_neon(const uint8_t *src_ptr,
+                                            int src_stride,
+                                            const uint8_t *ref_ptr,
+                                            int ref_stride, int h,
+                                            const uint8_t *second_pred) {
+  uint16x8_t sum[4] = { vdupq_n_u16(0), vdupq_n_u16(0), vdupq_n_u16(0),
+                        vdupq_n_u16(0) };
+  uint32x4_t sum_u32;
+
+  int i = h;
+  do {
+    uint8x16_t s0, s1, s2, s3, r0, r1, r2, r3, p0, p1, p2, p3;
+    uint8x16_t avg0, avg1, avg2, avg3, diff0, diff1, diff2, diff3;
+
+    s0 = vld1q_u8(src_ptr);
+    r0 = vld1q_u8(ref_ptr);
+    p0 = vld1q_u8(second_pred);
+    avg0 = vrhaddq_u8(r0, p0);
+    diff0 = vabdq_u8(s0, avg0);
+    sum[0] = vpadalq_u8(sum[0], diff0);
+
+    s1 = vld1q_u8(src_ptr + 16);
+    r1 = vld1q_u8(ref_ptr + 16);
+    p1 = vld1q_u8(second_pred + 16);
+    avg1 = vrhaddq_u8(r1, p1);
+    diff1 = vabdq_u8(s1, avg1);
+    sum[1] = vpadalq_u8(sum[1], diff1);
+
+    s2 = vld1q_u8(src_ptr + 32);
+    r2 = vld1q_u8(ref_ptr + 32);
+    p2 = vld1q_u8(second_pred + 32);
+    avg2 = vrhaddq_u8(r2, p2);
+    diff2 = vabdq_u8(s2, avg2);
+    sum[2] = vpadalq_u8(sum[2], diff2);
+
+    s3 = vld1q_u8(src_ptr + 48);
+    r3 = vld1q_u8(ref_ptr + 48);
+    p3 = vld1q_u8(second_pred + 48);
+    avg3 = vrhaddq_u8(r3, p3);
+    diff3 = vabdq_u8(s3, avg3);
+    sum[3] = vpadalq_u8(sum[3], diff3);
+
+    src_ptr += src_stride;
+    ref_ptr += ref_stride;
+    second_pred += 64;
+  } while (--i != 0);
+
+  sum_u32 = vpaddlq_u16(sum[0]);
+  sum_u32 = vpadalq_u16(sum_u32, sum[1]);
+  sum_u32 = vpadalq_u16(sum_u32, sum[2]);
+  sum_u32 = vpadalq_u16(sum_u32, sum[3]);
+
+  return horizontal_add_uint32x4(sum_u32);
 }
 
-unsigned int vpx_sad32x32_neon(const uint8_t *src, int src_stride,
-                               const uint8_t *ref, int ref_stride) {
-  int i;
-  uint16x8_t vec_accum_lo = vdupq_n_u16(0);
-  uint16x8_t vec_accum_hi = vdupq_n_u16(0);
+static INLINE unsigned int sad32xh_avg_neon(const uint8_t *src_ptr,
+                                            int src_stride,
+                                            const uint8_t *ref_ptr,
+                                            int ref_stride, int h,
+                                            const uint8_t *second_pred) {
+  uint32x4_t sum = vdupq_n_u32(0);
 
-  for (i = 0; i < 32; ++i) {
-    const uint8x16_t vec_src_00 = vld1q_u8(src);
-    const uint8x16_t vec_src_16 = vld1q_u8(src + 16);
-    const uint8x16_t vec_ref_00 = vld1q_u8(ref);
-    const uint8x16_t vec_ref_16 = vld1q_u8(ref + 16);
-    src += src_stride;
-    ref += ref_stride;
-    vec_accum_lo = vabal_u8(vec_accum_lo, vget_low_u8(vec_src_00),
-                            vget_low_u8(vec_ref_00));
-    vec_accum_hi = vabal_u8(vec_accum_hi, vget_high_u8(vec_src_00),
-                            vget_high_u8(vec_ref_00));
-    vec_accum_lo = vabal_u8(vec_accum_lo, vget_low_u8(vec_src_16),
-                            vget_low_u8(vec_ref_16));
-    vec_accum_hi = vabal_u8(vec_accum_hi, vget_high_u8(vec_src_16),
-                            vget_high_u8(vec_ref_16));
+  int i = h;
+  do {
+    uint8x16_t s0 = vld1q_u8(src_ptr);
+    uint8x16_t r0 = vld1q_u8(ref_ptr);
+    uint8x16_t p0 = vld1q_u8(second_pred);
+    uint8x16_t avg0 = vrhaddq_u8(r0, p0);
+    uint8x16_t diff0 = vabdq_u8(s0, avg0);
+    uint16x8_t sum0 = vpaddlq_u8(diff0);
+
+    uint8x16_t s1 = vld1q_u8(src_ptr + 16);
+    uint8x16_t r1 = vld1q_u8(ref_ptr + 16);
+    uint8x16_t p1 = vld1q_u8(second_pred + 16);
+    uint8x16_t avg1 = vrhaddq_u8(r1, p1);
+    uint8x16_t diff1 = vabdq_u8(s1, avg1);
+    uint16x8_t sum1 = vpaddlq_u8(diff1);
+
+    sum = vpadalq_u16(sum, sum0);
+    sum = vpadalq_u16(sum, sum1);
+
+    src_ptr += src_stride;
+    ref_ptr += ref_stride;
+    second_pred += 32;
+  } while (--i != 0);
+
+  return horizontal_add_uint32x4(sum);
+}
+
+static INLINE unsigned int sad16xh_avg_neon(const uint8_t *src_ptr,
+                                            int src_stride,
+                                            const uint8_t *ref_ptr,
+                                            int ref_stride, int h,
+                                            const uint8_t *second_pred) {
+  uint16x8_t sum = vdupq_n_u16(0);
+
+  int i = h;
+  do {
+    uint8x16_t s = vld1q_u8(src_ptr);
+    uint8x16_t r = vld1q_u8(ref_ptr);
+    uint8x16_t p = vld1q_u8(second_pred);
+
+    uint8x16_t avg = vrhaddq_u8(r, p);
+    uint8x16_t diff = vabdq_u8(s, avg);
+    sum = vpadalq_u8(sum, diff);
+
+    src_ptr += src_stride;
+    ref_ptr += ref_stride;
+    second_pred += 16;
+  } while (--i != 0);
+
+  return horizontal_add_uint16x8(sum);
+}
+
+static INLINE unsigned int sad8xh_avg_neon(const uint8_t *src_ptr,
+                                           int src_stride,
+                                           const uint8_t *ref_ptr,
+                                           int ref_stride, int h,
+                                           const uint8_t *second_pred) {
+  uint16x8_t sum = vdupq_n_u16(0);
+
+  int i = h;
+  do {
+    uint8x8_t s = vld1_u8(src_ptr);
+    uint8x8_t r = vld1_u8(ref_ptr);
+    uint8x8_t p = vld1_u8(second_pred);
+
+    uint8x8_t avg = vrhadd_u8(r, p);
+    sum = vabal_u8(sum, s, avg);
+
+    src_ptr += src_stride;
+    ref_ptr += ref_stride;
+    second_pred += 8;
+  } while (--i != 0);
+
+  return horizontal_add_uint16x8(sum);
+}
+
+static INLINE unsigned int sad4xh_avg_neon(const uint8_t *src_ptr,
+                                           int src_stride,
+                                           const uint8_t *ref_ptr,
+                                           int ref_stride, int h,
+                                           const uint8_t *second_pred) {
+  uint16x8_t sum = vdupq_n_u16(0);
+
+  int i = h / 2;
+  do {
+    uint8x8_t s = load_unaligned_u8(src_ptr, src_stride);
+    uint8x8_t r = load_unaligned_u8(ref_ptr, ref_stride);
+    uint8x8_t p = vld1_u8(second_pred);
+
+    uint8x8_t avg = vrhadd_u8(r, p);
+    sum = vabal_u8(sum, s, avg);
+
+    src_ptr += 2 * src_stride;
+    ref_ptr += 2 * ref_stride;
+    second_pred += 8;
+  } while (--i != 0);
+
+  return horizontal_add_uint16x8(sum);
+}
+
+#define SAD_WXH_AVG_NEON(w, h)                                             \
+  uint32_t vpx_sad##w##x##h##_avg_neon(const uint8_t *src, int src_stride, \
+                                       const uint8_t *ref, int ref_stride, \
+                                       const uint8_t *second_pred) {       \
+    return sad##w##xh_avg_neon(src, src_stride, ref, ref_stride, (h),      \
+                               second_pred);                               \
   }
-  return horizontal_add_16x8(vaddq_u16(vec_accum_lo, vec_accum_hi));
-}
 
-unsigned int vpx_sad16x16_neon(const uint8_t *src, int src_stride,
-                               const uint8_t *ref, int ref_stride) {
-  int i;
-  uint16x8_t vec_accum_lo = vdupq_n_u16(0);
-  uint16x8_t vec_accum_hi = vdupq_n_u16(0);
+SAD_WXH_AVG_NEON(4, 4)
+SAD_WXH_AVG_NEON(4, 8)
 
-  for (i = 0; i < 16; ++i) {
-    const uint8x16_t vec_src = vld1q_u8(src);
-    const uint8x16_t vec_ref = vld1q_u8(ref);
-    src += src_stride;
-    ref += ref_stride;
-    vec_accum_lo =
-        vabal_u8(vec_accum_lo, vget_low_u8(vec_src), vget_low_u8(vec_ref));
-    vec_accum_hi =
-        vabal_u8(vec_accum_hi, vget_high_u8(vec_src), vget_high_u8(vec_ref));
-  }
-  return horizontal_add_16x8(vaddq_u16(vec_accum_lo, vec_accum_hi));
-}
+SAD_WXH_AVG_NEON(8, 4)
+SAD_WXH_AVG_NEON(8, 8)
+SAD_WXH_AVG_NEON(8, 16)
 
-unsigned int vpx_sad8x8_neon(const uint8_t *src, int src_stride,
-                             const uint8_t *ref, int ref_stride) {
-  int i;
-  uint16x8_t vec_accum = vdupq_n_u16(0);
+SAD_WXH_AVG_NEON(16, 8)
+SAD_WXH_AVG_NEON(16, 16)
+SAD_WXH_AVG_NEON(16, 32)
 
-  for (i = 0; i < 8; ++i) {
-    const uint8x8_t vec_src = vld1_u8(src);
-    const uint8x8_t vec_ref = vld1_u8(ref);
-    src += src_stride;
-    ref += ref_stride;
-    vec_accum = vabal_u8(vec_accum, vec_src, vec_ref);
-  }
-  return horizontal_add_16x8(vec_accum);
-}
+SAD_WXH_AVG_NEON(32, 16)
+SAD_WXH_AVG_NEON(32, 32)
+SAD_WXH_AVG_NEON(32, 64)
+
+SAD_WXH_AVG_NEON(64, 32)
+SAD_WXH_AVG_NEON(64, 64)
+
+#undef SAD_WXH_AVG_NEON

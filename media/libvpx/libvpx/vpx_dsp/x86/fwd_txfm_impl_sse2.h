@@ -93,9 +93,9 @@ void FDCT4x4_2D(const int16_t *input, tran_low_t *output, int stride) {
 #if DCT_HIGH_BIT_DEPTH
   // Check inputs small enough to use optimised code
   cmp0 = _mm_xor_si128(_mm_cmpgt_epi16(in0, _mm_set1_epi16(0x3ff)),
-                       _mm_cmplt_epi16(in0, _mm_set1_epi16(0xfc00)));
+                       _mm_cmplt_epi16(in0, _mm_set1_epi16((int16_t)0xfc00)));
   cmp1 = _mm_xor_si128(_mm_cmpgt_epi16(in1, _mm_set1_epi16(0x3ff)),
-                       _mm_cmplt_epi16(in1, _mm_set1_epi16(0xfc00)));
+                       _mm_cmplt_epi16(in1, _mm_set1_epi16((int16_t)0xfc00)));
   test = _mm_movemask_epi8(_mm_or_si128(cmp0, cmp1));
   if (test) {
     vpx_highbd_fdct4x4_c(input, output, stride);
@@ -261,7 +261,7 @@ void FDCT8x8_2D(const int16_t *input, tran_low_t *output, int stride) {
   //    When we use them, in one case, they are all the same. In all others
   //    it's a pair of them that we need to repeat four times. This is done
   //    by constructing the 32 bit constant corresponding to that pair.
-  const __m128i k__cospi_p16_p16 = _mm_set1_epi16((int16_t)cospi_16_64);
+  const __m128i k__cospi_p16_p16 = _mm_set1_epi16(cospi_16_64);
   const __m128i k__cospi_p16_m16 = pair_set_epi16(cospi_16_64, -cospi_16_64);
   const __m128i k__cospi_p24_p08 = pair_set_epi16(cospi_24_64, cospi_8_64);
   const __m128i k__cospi_m08_p24 = pair_set_epi16(-cospi_8_64, cospi_24_64);
@@ -582,7 +582,7 @@ void FDCT16x16_2D(const int16_t *input, tran_low_t *output, int stride) {
   //    When we use them, in one case, they are all the same. In all others
   //    it's a pair of them that we need to repeat four times. This is done
   //    by constructing the 32 bit constant corresponding to that pair.
-  const __m128i k__cospi_p16_p16 = _mm_set1_epi16((int16_t)cospi_16_64);
+  const __m128i k__cospi_p16_p16 = _mm_set1_epi16(cospi_16_64);
   const __m128i k__cospi_p16_m16 = pair_set_epi16(cospi_16_64, -cospi_16_64);
   const __m128i k__cospi_p24_p08 = pair_set_epi16(cospi_24_64, cospi_8_64);
   const __m128i k__cospi_p08_m24 = pair_set_epi16(cospi_8_64, -cospi_24_64);
@@ -778,6 +778,7 @@ void FDCT16x16_2D(const int16_t *input, tran_low_t *output, int stride) {
             return;
           }
 #endif  // DCT_HIGH_BIT_DEPTH
+
           // Interleave to do the multiply by constants which gets us
           // into 32 bits.
           {
@@ -834,6 +835,7 @@ void FDCT16x16_2D(const int16_t *input, tran_low_t *output, int stride) {
               return;
             }
 #endif  // DCT_HIGH_BIT_DEPTH
+
             // Interleave to do the multiply by constants which gets us
             // into 32 bits.
             {

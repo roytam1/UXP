@@ -11,8 +11,9 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <tuple>
 
-#include "third_party/googletest/src/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "./vp9_rtcd.h"
 #include "./vpx_dsp_rtcd.h"
@@ -22,6 +23,7 @@
 #include "test/util.h"
 #include "vp9/common/vp9_entropy.h"
 #include "vp9/common/vp9_scan.h"
+#include "vpx_config.h"
 #include "vpx/vpx_codec.h"
 #include "vpx/vpx_integer.h"
 #include "vpx_ports/mem.h"
@@ -36,16 +38,16 @@ const double kPi = 3.141592653589793238462643383279502884;
 const int kSignBiasMaxDiff255 = 1500;
 const int kSignBiasMaxDiff15 = 10000;
 
-typedef void (*FdctFunc)(const int16_t *in, tran_low_t *out, int stride);
-typedef void (*IdctFunc)(const tran_low_t *in, uint8_t *out, int stride);
-typedef void (*FhtFunc)(const int16_t *in, tran_low_t *out, int stride,
-                        int tx_type);
-typedef void (*IhtFunc)(const tran_low_t *in, uint8_t *out, int stride,
-                        int tx_type);
+using FdctFunc = void (*)(const int16_t *in, tran_low_t *out, int stride);
+using IdctFunc = void (*)(const tran_low_t *in, uint8_t *out, int stride);
+using FhtFunc = void (*)(const int16_t *in, tran_low_t *out, int stride,
+                         int tx_type);
+using IhtFunc = void (*)(const tran_low_t *in, uint8_t *out, int stride,
+                         int tx_type);
 
-typedef std::tr1::tuple<FdctFunc, IdctFunc, int, vpx_bit_depth_t> Dct8x8Param;
-typedef std::tr1::tuple<FhtFunc, IhtFunc, int, vpx_bit_depth_t> Ht8x8Param;
-typedef std::tr1::tuple<IdctFunc, IdctFunc, int, vpx_bit_depth_t> Idct8x8Param;
+using Dct8x8Param = std::tuple<FdctFunc, IdctFunc, int, vpx_bit_depth_t>;
+using Ht8x8Param = std::tuple<FhtFunc, IhtFunc, int, vpx_bit_depth_t>;
+using Idct8x8Param = std::tuple<IdctFunc, IdctFunc, int, vpx_bit_depth_t>;
 
 void reference_8x8_dct_1d(const double in[8], double out[8]) {
   const double kInvSqrt2 = 0.707106781186547524400844362104;
@@ -88,52 +90,64 @@ void fht8x8_ref(const int16_t *in, tran_low_t *out, int stride, int tx_type) {
 
 #if CONFIG_VP9_HIGHBITDEPTH
 void idct8x8_10(const tran_low_t *in, uint8_t *out, int stride) {
-  vpx_highbd_idct8x8_64_add_c(in, out, stride, 10);
+  vpx_highbd_idct8x8_64_add_c(in, CAST_TO_SHORTPTR(out), stride, 10);
 }
 
 void idct8x8_12(const tran_low_t *in, uint8_t *out, int stride) {
-  vpx_highbd_idct8x8_64_add_c(in, out, stride, 12);
+  vpx_highbd_idct8x8_64_add_c(in, CAST_TO_SHORTPTR(out), stride, 12);
 }
 
 void iht8x8_10(const tran_low_t *in, uint8_t *out, int stride, int tx_type) {
-  vp9_highbd_iht8x8_64_add_c(in, out, stride, tx_type, 10);
+  vp9_highbd_iht8x8_64_add_c(in, CAST_TO_SHORTPTR(out), stride, tx_type, 10);
 }
 
 void iht8x8_12(const tran_low_t *in, uint8_t *out, int stride, int tx_type) {
-  vp9_highbd_iht8x8_64_add_c(in, out, stride, tx_type, 12);
+  vp9_highbd_iht8x8_64_add_c(in, CAST_TO_SHORTPTR(out), stride, tx_type, 12);
 }
 
 #if HAVE_SSE2
 
 void idct8x8_12_add_10_c(const tran_low_t *in, uint8_t *out, int stride) {
-  vpx_highbd_idct8x8_12_add_c(in, out, stride, 10);
+  vpx_highbd_idct8x8_12_add_c(in, CAST_TO_SHORTPTR(out), stride, 10);
 }
 
 void idct8x8_12_add_12_c(const tran_low_t *in, uint8_t *out, int stride) {
-  vpx_highbd_idct8x8_12_add_c(in, out, stride, 12);
+  vpx_highbd_idct8x8_12_add_c(in, CAST_TO_SHORTPTR(out), stride, 12);
 }
 
 void idct8x8_12_add_10_sse2(const tran_low_t *in, uint8_t *out, int stride) {
-  vpx_highbd_idct8x8_12_add_sse2(in, out, stride, 10);
+  vpx_highbd_idct8x8_12_add_sse2(in, CAST_TO_SHORTPTR(out), stride, 10);
 }
 
 void idct8x8_12_add_12_sse2(const tran_low_t *in, uint8_t *out, int stride) {
-  vpx_highbd_idct8x8_12_add_sse2(in, out, stride, 12);
+  vpx_highbd_idct8x8_12_add_sse2(in, CAST_TO_SHORTPTR(out), stride, 12);
 }
 
 void idct8x8_64_add_10_sse2(const tran_low_t *in, uint8_t *out, int stride) {
-  vpx_highbd_idct8x8_64_add_sse2(in, out, stride, 10);
+  vpx_highbd_idct8x8_64_add_sse2(in, CAST_TO_SHORTPTR(out), stride, 10);
 }
 
 void idct8x8_64_add_12_sse2(const tran_low_t *in, uint8_t *out, int stride) {
-  vpx_highbd_idct8x8_64_add_sse2(in, out, stride, 12);
+  vpx_highbd_idct8x8_64_add_sse2(in, CAST_TO_SHORTPTR(out), stride, 12);
 }
 #endif  // HAVE_SSE2
 #endif  // CONFIG_VP9_HIGHBITDEPTH
 
+// Visual Studio 2022 (cl.exe) < 17.12.3 targeting AArch64 with optimizations
+// enabled produces invalid code in RunExtremalCheck() and
+// RunInvAccuracyCheck(). See:
+// https://developercommunity.visualstudio.com/t/1770-preview-1:-Misoptimization-for-AR/10369786
+#if defined(_MSC_FULL_VER) && _MSC_FULL_VER < 194234435 && \
+    defined(_M_ARM64) && !defined(__clang__)
+#define AOM_WORK_AROUND_MSVC_BUG_10369786
+#endif
+
+#ifdef AOM_WORK_AROUND_MSVC_BUG_10369786
+#pragma optimize("", off)
+#endif
 class FwdTrans8x8TestBase {
  public:
-  virtual ~FwdTrans8x8TestBase() {}
+  virtual ~FwdTrans8x8TestBase() = default;
 
  protected:
   virtual void RunFwdTxfm(int16_t *in, tran_low_t *out, int stride) = 0;
@@ -169,7 +183,7 @@ class FwdTrans8x8TestBase {
     for (int j = 0; j < 64; ++j) {
       const int diff = abs(count_sign_block[j][0] - count_sign_block[j][1]);
       const int max_diff = kSignBiasMaxDiff255;
-      EXPECT_LT(diff, max_diff << (bit_depth_ - 8))
+      ASSERT_LT(diff, max_diff << (bit_depth_ - 8))
           << "Error: 8x8 FDCT/FHT has a sign bias > "
           << 1. * max_diff / count_test_block * 100 << "%"
           << " for input range [-255, 255] at index " << j
@@ -200,7 +214,7 @@ class FwdTrans8x8TestBase {
     for (int j = 0; j < 64; ++j) {
       const int diff = abs(count_sign_block[j][0] - count_sign_block[j][1]);
       const int max_diff = kSignBiasMaxDiff15;
-      EXPECT_LT(diff, max_diff << (bit_depth_ - 8))
+      ASSERT_LT(diff, max_diff << (bit_depth_ - 8))
           << "Error: 8x8 FDCT/FHT has a sign bias > "
           << 1. * max_diff / count_test_block * 100 << "%"
           << " for input range [-15, 15] at index " << j
@@ -257,7 +271,7 @@ class FwdTrans8x8TestBase {
 #if CONFIG_VP9_HIGHBITDEPTH
       } else {
         ASM_REGISTER_STATE_CHECK(
-            RunInvTxfm(test_temp_block, CONVERT_TO_BYTEPTR(dst16), pitch_));
+            RunInvTxfm(test_temp_block, CAST_TO_BYTEPTR(dst16), pitch_));
 #endif
       }
 
@@ -274,11 +288,11 @@ class FwdTrans8x8TestBase {
       }
     }
 
-    EXPECT_GE(1 << 2 * (bit_depth_ - 8), max_error)
+    ASSERT_GE(1 << 2 * (bit_depth_ - 8), max_error)
         << "Error: 8x8 FDCT/IDCT or FHT/IHT has an individual"
         << " roundtrip error > 1";
 
-    EXPECT_GE((count_test_block << 2 * (bit_depth_ - 8)) / 5, total_error)
+    ASSERT_GE((count_test_block << 2 * (bit_depth_ - 8)) / 5, total_error)
         << "Error: 8x8 FDCT/IDCT or FHT/IHT has average roundtrip "
         << "error > 1/5 per block";
   }
@@ -340,7 +354,7 @@ class FwdTrans8x8TestBase {
 #if CONFIG_VP9_HIGHBITDEPTH
       } else {
         ASM_REGISTER_STATE_CHECK(
-            RunInvTxfm(test_temp_block, CONVERT_TO_BYTEPTR(dst16), pitch_));
+            RunInvTxfm(test_temp_block, CAST_TO_BYTEPTR(dst16), pitch_));
 #endif
       }
 
@@ -359,17 +373,17 @@ class FwdTrans8x8TestBase {
         total_coeff_error += abs(coeff_diff);
       }
 
-      EXPECT_GE(1 << 2 * (bit_depth_ - 8), max_error)
+      ASSERT_GE(1 << 2 * (bit_depth_ - 8), max_error)
           << "Error: Extremal 8x8 FDCT/IDCT or FHT/IHT has"
-          << "an individual roundtrip error > 1";
+          << " an individual roundtrip error > 1";
 
-      EXPECT_GE((count_test_block << 2 * (bit_depth_ - 8)) / 5, total_error)
+      ASSERT_GE((count_test_block << 2 * (bit_depth_ - 8)) / 5, total_error)
           << "Error: Extremal 8x8 FDCT/IDCT or FHT/IHT has average"
           << " roundtrip error > 1/5 per block";
 
-      EXPECT_EQ(0, total_coeff_error)
+      ASSERT_EQ(0, total_coeff_error)
           << "Error: Extremal 8x8 FDCT/FHT has"
-          << "overflow issues in the intermediate steps > 1";
+          << " overflow issues in the intermediate steps > 1";
     }
   }
 
@@ -413,7 +427,7 @@ class FwdTrans8x8TestBase {
 #if CONFIG_VP9_HIGHBITDEPTH
       } else {
         ASM_REGISTER_STATE_CHECK(
-            RunInvTxfm(coeff, CONVERT_TO_BYTEPTR(dst16), pitch_));
+            RunInvTxfm(coeff, CAST_TO_BYTEPTR(dst16), pitch_));
 #endif
       }
 
@@ -425,7 +439,7 @@ class FwdTrans8x8TestBase {
         const int diff = dst[j] - src[j];
 #endif
         const uint32_t error = diff * diff;
-        EXPECT_GE(1u << 2 * (bit_depth_ - 8), error)
+        ASSERT_GE(1u << 2 * (bit_depth_ - 8), error)
             << "Error: 8x8 IDCT has error " << error << " at index " << j;
       }
     }
@@ -455,7 +469,7 @@ class FwdTrans8x8TestBase {
       for (int j = 0; j < kNumCoeffs; ++j) {
         const int32_t diff = coeff[j] - coeff_r[j];
         const uint32_t error = diff * diff;
-        EXPECT_GE(9u << 2 * (bit_depth_ - 8), error)
+        ASSERT_GE(9u << 2 * (bit_depth_ - 8), error)
             << "Error: 8x8 DCT has error " << error << " at index " << j;
       }
     }
@@ -497,9 +511,9 @@ class FwdTrans8x8TestBase {
         ASM_REGISTER_STATE_CHECK(RunInvTxfm(coeff, dst, pitch_));
 #if CONFIG_VP9_HIGHBITDEPTH
       } else {
-        ref_txfm(coeff, CONVERT_TO_BYTEPTR(ref16), pitch_);
+        ref_txfm(coeff, CAST_TO_BYTEPTR(ref16), pitch_);
         ASM_REGISTER_STATE_CHECK(
-            RunInvTxfm(coeff, CONVERT_TO_BYTEPTR(dst16), pitch_));
+            RunInvTxfm(coeff, CAST_TO_BYTEPTR(dst16), pitch_));
 #endif
       }
 
@@ -511,8 +525,8 @@ class FwdTrans8x8TestBase {
         const int diff = dst[j] - ref[j];
 #endif
         const uint32_t error = diff * diff;
-        EXPECT_EQ(0u, error) << "Error: 8x8 IDCT has error " << error
-                             << " at index " << j;
+        ASSERT_EQ(0u, error)
+            << "Error: 8x8 IDCT has error " << error << " at index " << j;
       }
     }
   }
@@ -522,13 +536,16 @@ class FwdTrans8x8TestBase {
   vpx_bit_depth_t bit_depth_;
   int mask_;
 };
+#ifdef AOM_WORK_AROUND_MSVC_BUG_10369786
+#pragma optimize("", on)
+#endif
 
 class FwdTrans8x8DCT : public FwdTrans8x8TestBase,
                        public ::testing::TestWithParam<Dct8x8Param> {
  public:
-  virtual ~FwdTrans8x8DCT() {}
+  ~FwdTrans8x8DCT() override = default;
 
-  virtual void SetUp() {
+  void SetUp() override {
     fwd_txfm_ = GET_PARAM(0);
     inv_txfm_ = GET_PARAM(1);
     tx_type_ = GET_PARAM(2);
@@ -538,13 +555,13 @@ class FwdTrans8x8DCT : public FwdTrans8x8TestBase,
     mask_ = (1 << bit_depth_) - 1;
   }
 
-  virtual void TearDown() { libvpx_test::ClearSystemState(); }
+  void TearDown() override { libvpx_test::ClearSystemState(); }
 
  protected:
-  void RunFwdTxfm(int16_t *in, tran_low_t *out, int stride) {
+  void RunFwdTxfm(int16_t *in, tran_low_t *out, int stride) override {
     fwd_txfm_(in, out, stride);
   }
-  void RunInvTxfm(tran_low_t *out, uint8_t *dst, int stride) {
+  void RunInvTxfm(tran_low_t *out, uint8_t *dst, int stride) override {
     inv_txfm_(out, dst, stride);
   }
 
@@ -565,9 +582,9 @@ TEST_P(FwdTrans8x8DCT, InvAccuracyCheck) { RunInvAccuracyCheck(); }
 class FwdTrans8x8HT : public FwdTrans8x8TestBase,
                       public ::testing::TestWithParam<Ht8x8Param> {
  public:
-  virtual ~FwdTrans8x8HT() {}
+  ~FwdTrans8x8HT() override = default;
 
-  virtual void SetUp() {
+  void SetUp() override {
     fwd_txfm_ = GET_PARAM(0);
     inv_txfm_ = GET_PARAM(1);
     tx_type_ = GET_PARAM(2);
@@ -577,13 +594,13 @@ class FwdTrans8x8HT : public FwdTrans8x8TestBase,
     mask_ = (1 << bit_depth_) - 1;
   }
 
-  virtual void TearDown() { libvpx_test::ClearSystemState(); }
+  void TearDown() override { libvpx_test::ClearSystemState(); }
 
  protected:
-  void RunFwdTxfm(int16_t *in, tran_low_t *out, int stride) {
+  void RunFwdTxfm(int16_t *in, tran_low_t *out, int stride) override {
     fwd_txfm_(in, out, stride, tx_type_);
   }
-  void RunInvTxfm(tran_low_t *out, uint8_t *dst, int stride) {
+  void RunInvTxfm(tran_low_t *out, uint8_t *dst, int stride) override {
     inv_txfm_(out, dst, stride, tx_type_);
   }
 
@@ -597,12 +614,13 @@ TEST_P(FwdTrans8x8HT, RoundTripErrorCheck) { RunRoundTripErrorCheck(); }
 
 TEST_P(FwdTrans8x8HT, ExtremalCheck) { RunExtremalCheck(); }
 
+#if HAVE_SSE2 && CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
 class InvTrans8x8DCT : public FwdTrans8x8TestBase,
                        public ::testing::TestWithParam<Idct8x8Param> {
  public:
-  virtual ~InvTrans8x8DCT() {}
+  ~InvTrans8x8DCT() override = default;
 
-  virtual void SetUp() {
+  void SetUp() override {
     ref_txfm_ = GET_PARAM(0);
     inv_txfm_ = GET_PARAM(1);
     thresh_ = GET_PARAM(2);
@@ -611,41 +629,44 @@ class InvTrans8x8DCT : public FwdTrans8x8TestBase,
     mask_ = (1 << bit_depth_) - 1;
   }
 
-  virtual void TearDown() { libvpx_test::ClearSystemState(); }
+  void TearDown() override { libvpx_test::ClearSystemState(); }
 
  protected:
-  void RunInvTxfm(tran_low_t *out, uint8_t *dst, int stride) {
+  void RunInvTxfm(tran_low_t *out, uint8_t *dst, int stride) override {
     inv_txfm_(out, dst, stride);
   }
-  void RunFwdTxfm(int16_t * /*out*/, tran_low_t * /*dst*/, int /*stride*/) {}
+  void RunFwdTxfm(int16_t * /*out*/, tran_low_t * /*dst*/,
+                  int /*stride*/) override {}
 
   IdctFunc ref_txfm_;
   IdctFunc inv_txfm_;
   int thresh_;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(InvTrans8x8DCT);
 
 TEST_P(InvTrans8x8DCT, CompareReference) {
   CompareInvReference(ref_txfm_, thresh_);
 }
+#endif  // HAVE_SSE2 && CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
 
-using std::tr1::make_tuple;
+using std::make_tuple;
 
 #if CONFIG_VP9_HIGHBITDEPTH
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     C, FwdTrans8x8DCT,
     ::testing::Values(
         make_tuple(&vpx_fdct8x8_c, &vpx_idct8x8_64_add_c, 0, VPX_BITS_8),
         make_tuple(&vpx_highbd_fdct8x8_c, &idct8x8_10, 0, VPX_BITS_10),
         make_tuple(&vpx_highbd_fdct8x8_c, &idct8x8_12, 0, VPX_BITS_12)));
 #else
-INSTANTIATE_TEST_CASE_P(C, FwdTrans8x8DCT,
-                        ::testing::Values(make_tuple(&vpx_fdct8x8_c,
-                                                     &vpx_idct8x8_64_add_c, 0,
-                                                     VPX_BITS_8)));
+INSTANTIATE_TEST_SUITE_P(C, FwdTrans8x8DCT,
+                         ::testing::Values(make_tuple(&vpx_fdct8x8_c,
+                                                      &vpx_idct8x8_64_add_c, 0,
+                                                      VPX_BITS_8)));
 #endif  // CONFIG_VP9_HIGHBITDEPTH
 
 #if CONFIG_VP9_HIGHBITDEPTH
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     C, FwdTrans8x8HT,
     ::testing::Values(
         make_tuple(&vp9_fht8x8_c, &vp9_iht8x8_64_add_c, 0, VPX_BITS_8),
@@ -661,7 +682,7 @@ INSTANTIATE_TEST_CASE_P(
         make_tuple(&vp9_fht8x8_c, &vp9_iht8x8_64_add_c, 2, VPX_BITS_8),
         make_tuple(&vp9_fht8x8_c, &vp9_iht8x8_64_add_c, 3, VPX_BITS_8)));
 #else
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     C, FwdTrans8x8HT,
     ::testing::Values(
         make_tuple(&vp9_fht8x8_c, &vp9_iht8x8_64_add_c, 0, VPX_BITS_8),
@@ -671,32 +692,28 @@ INSTANTIATE_TEST_CASE_P(
 #endif  // CONFIG_VP9_HIGHBITDEPTH
 
 #if HAVE_NEON && !CONFIG_EMULATE_HARDWARE
-#if CONFIG_VP9_HIGHBITDEPTH
-INSTANTIATE_TEST_CASE_P(NEON, FwdTrans8x8DCT,
-                        ::testing::Values(make_tuple(&vpx_fdct8x8_c,
-                                                     &vpx_idct8x8_64_add_neon,
-                                                     0, VPX_BITS_8)));
-#else   // !CONFIG_VP9_HIGHBITDEPTH
-INSTANTIATE_TEST_CASE_P(NEON, FwdTrans8x8DCT,
-                        ::testing::Values(make_tuple(&vpx_fdct8x8_neon,
-                                                     &vpx_idct8x8_64_add_neon,
-                                                     0, VPX_BITS_8)));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(NEON, FwdTrans8x8DCT,
+                         ::testing::Values(make_tuple(&vpx_fdct8x8_neon,
+                                                      &vpx_idct8x8_64_add_neon,
+                                                      0, VPX_BITS_8)));
+
+#if !CONFIG_VP9_HIGHBITDEPTH
+INSTANTIATE_TEST_SUITE_P(
     NEON, FwdTrans8x8HT,
     ::testing::Values(
         make_tuple(&vp9_fht8x8_c, &vp9_iht8x8_64_add_neon, 0, VPX_BITS_8),
         make_tuple(&vp9_fht8x8_c, &vp9_iht8x8_64_add_neon, 1, VPX_BITS_8),
         make_tuple(&vp9_fht8x8_c, &vp9_iht8x8_64_add_neon, 2, VPX_BITS_8),
         make_tuple(&vp9_fht8x8_c, &vp9_iht8x8_64_add_neon, 3, VPX_BITS_8)));
-#endif  // CONFIG_VP9_HIGHBITDEPTH
-#endif  // HAVE_NEON && !CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
+#endif  // !CONFIG_VP9_HIGHBITDEPTH
+#endif  // HAVE_NEON && !CONFIG_EMULATE_HARDWARE
 
 #if HAVE_SSE2 && !CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
-INSTANTIATE_TEST_CASE_P(SSE2, FwdTrans8x8DCT,
-                        ::testing::Values(make_tuple(&vpx_fdct8x8_sse2,
-                                                     &vpx_idct8x8_64_add_sse2,
-                                                     0, VPX_BITS_8)));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(SSE2, FwdTrans8x8DCT,
+                         ::testing::Values(make_tuple(&vpx_fdct8x8_sse2,
+                                                      &vpx_idct8x8_64_add_sse2,
+                                                      0, VPX_BITS_8)));
+INSTANTIATE_TEST_SUITE_P(
     SSE2, FwdTrans8x8HT,
     ::testing::Values(
         make_tuple(&vp9_fht8x8_sse2, &vp9_iht8x8_64_add_sse2, 0, VPX_BITS_8),
@@ -706,7 +723,7 @@ INSTANTIATE_TEST_CASE_P(
 #endif  // HAVE_SSE2 && !CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
 
 #if HAVE_SSE2 && CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SSE2, FwdTrans8x8DCT,
     ::testing::Values(make_tuple(&vpx_fdct8x8_sse2, &vpx_idct8x8_64_add_c, 0,
                                  VPX_BITS_8),
@@ -719,7 +736,7 @@ INSTANTIATE_TEST_CASE_P(
                       make_tuple(&vpx_highbd_fdct8x8_sse2,
                                  &idct8x8_64_add_12_sse2, 12, VPX_BITS_12)));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SSE2, FwdTrans8x8HT,
     ::testing::Values(
         make_tuple(&vp9_fht8x8_sse2, &vp9_iht8x8_64_add_c, 0, VPX_BITS_8),
@@ -729,7 +746,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // Optimizations take effect at a threshold of 6201, so we use a value close to
 // that to test both branches.
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SSE2, InvTrans8x8DCT,
     ::testing::Values(
         make_tuple(&idct8x8_12_add_10_c, &idct8x8_12_add_10_sse2, 6225,
@@ -740,20 +757,20 @@ INSTANTIATE_TEST_CASE_P(
         make_tuple(&idct8x8_12, &idct8x8_64_add_12_sse2, 6225, VPX_BITS_12)));
 #endif  // HAVE_SSE2 && CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
 
-#if HAVE_SSSE3 && ARCH_X86_64 && !CONFIG_VP9_HIGHBITDEPTH && \
+#if HAVE_SSSE3 && VPX_ARCH_X86_64 && !CONFIG_VP9_HIGHBITDEPTH && \
     !CONFIG_EMULATE_HARDWARE
-INSTANTIATE_TEST_CASE_P(SSSE3, FwdTrans8x8DCT,
-                        ::testing::Values(make_tuple(&vpx_fdct8x8_ssse3,
-                                                     &vpx_idct8x8_64_add_ssse3,
-                                                     0, VPX_BITS_8)));
+INSTANTIATE_TEST_SUITE_P(SSSE3, FwdTrans8x8DCT,
+                         ::testing::Values(make_tuple(&vpx_fdct8x8_ssse3,
+                                                      &vpx_idct8x8_64_add_sse2,
+                                                      0, VPX_BITS_8)));
 #endif
 
 #if HAVE_MSA && !CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
-INSTANTIATE_TEST_CASE_P(MSA, FwdTrans8x8DCT,
-                        ::testing::Values(make_tuple(&vpx_fdct8x8_msa,
-                                                     &vpx_idct8x8_64_add_msa, 0,
-                                                     VPX_BITS_8)));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(MSA, FwdTrans8x8DCT,
+                         ::testing::Values(make_tuple(&vpx_fdct8x8_msa,
+                                                      &vpx_idct8x8_64_add_msa,
+                                                      0, VPX_BITS_8)));
+INSTANTIATE_TEST_SUITE_P(
     MSA, FwdTrans8x8HT,
     ::testing::Values(
         make_tuple(&vp9_fht8x8_msa, &vp9_iht8x8_64_add_msa, 0, VPX_BITS_8),
@@ -761,4 +778,18 @@ INSTANTIATE_TEST_CASE_P(
         make_tuple(&vp9_fht8x8_msa, &vp9_iht8x8_64_add_msa, 2, VPX_BITS_8),
         make_tuple(&vp9_fht8x8_msa, &vp9_iht8x8_64_add_msa, 3, VPX_BITS_8)));
 #endif  // HAVE_MSA && !CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
+
+#if HAVE_VSX && !CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
+INSTANTIATE_TEST_SUITE_P(VSX, FwdTrans8x8DCT,
+                         ::testing::Values(make_tuple(&vpx_fdct8x8_c,
+                                                      &vpx_idct8x8_64_add_vsx,
+                                                      0, VPX_BITS_8)));
+#endif  // HAVE_VSX && !CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
+
+#if HAVE_LSX && !CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
+INSTANTIATE_TEST_SUITE_P(LSX, FwdTrans8x8DCT,
+                         ::testing::Values(make_tuple(&vpx_fdct8x8_lsx,
+                                                      &vpx_idct8x8_64_add_c, 0,
+                                                      VPX_BITS_8)));
+#endif  // HAVE_LSX && !CONFIG_VP9_HIGHBITDEPTH && !CONFIG_EMULATE_HARDWARE
 }  // namespace

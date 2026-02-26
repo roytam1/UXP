@@ -67,7 +67,7 @@ y4m_input_720p() {
 # Echo default vpxenc real time encoding params. $1 is the codec, which defaults
 # to vp8 if unspecified.
 vpxenc_rt_params() {
-  local readonly codec="${1:-vp8}"
+  local codec="${1:-vp8}"
   echo "--codec=${codec}
     --buf-initial-sz=500
     --buf-optimal-sz=600
@@ -90,13 +90,22 @@ vpxenc_rt_params() {
     --undershoot-pct=50"
 }
 
+# Forces --passes to 1 with CONFIG_REALTIME_ONLY.
+vpxenc_passes_param() {
+  if [ "$(vpx_config_option_enabled CONFIG_REALTIME_ONLY)" = "yes" ]; then
+    echo "--passes=1"
+  else
+    echo "--passes=2"
+  fi
+}
+
 # Wrapper function for running vpxenc with pipe input. Requires that
 # LIBVPX_BIN_PATH points to the directory containing vpxenc. $1 is used as the
 # input file path and shifted away. All remaining parameters are passed through
 # to vpxenc.
 vpxenc_pipe() {
-  local readonly encoder="$(vpx_tool_path vpxenc)"
-  local readonly input="$1"
+  local encoder="$(vpx_tool_path vpxenc)"
+  local input="$1"
   shift
   cat "${input}" | eval "${VPX_TEST_PREFIX}" "${encoder}" - \
     --test-decode=fatal \
@@ -107,8 +116,8 @@ vpxenc_pipe() {
 # the directory containing vpxenc. $1 one is used as the input file path and
 # shifted away. All remaining parameters are passed through to vpxenc.
 vpxenc() {
-  local readonly encoder="$(vpx_tool_path vpxenc)"
-  local readonly input="$1"
+  local encoder="$(vpx_tool_path vpxenc)"
+  local input="$1"
   shift
   eval "${VPX_TEST_PREFIX}" "${encoder}" "${input}" \
     --test-decode=fatal \
@@ -117,12 +126,12 @@ vpxenc() {
 
 vpxenc_vp8_ivf() {
   if [ "$(vpxenc_can_encode_vp8)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp8.ivf"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp8.ivf"
     vpxenc $(yuv_input_hantro_collage) \
       --codec=vp8 \
       --limit="${TEST_FRAMES}" \
       --ivf \
-      --output="${output}"
+      --output="${output}" || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -134,11 +143,11 @@ vpxenc_vp8_ivf() {
 vpxenc_vp8_webm() {
   if [ "$(vpxenc_can_encode_vp8)" = "yes" ] && \
      [ "$(webm_io_available)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp8.webm"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp8.webm"
     vpxenc $(yuv_input_hantro_collage) \
       --codec=vp8 \
       --limit="${TEST_FRAMES}" \
-      --output="${output}"
+      --output="${output}" || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -150,10 +159,11 @@ vpxenc_vp8_webm() {
 vpxenc_vp8_webm_rt() {
   if [ "$(vpxenc_can_encode_vp8)" = "yes" ] && \
      [ "$(webm_io_available)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp8_rt.webm"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp8_rt.webm"
     vpxenc $(yuv_input_hantro_collage) \
       $(vpxenc_rt_params vp8) \
-      --output="${output}"
+      --output="${output}" || return 1
+
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
       return 1
@@ -164,12 +174,12 @@ vpxenc_vp8_webm_rt() {
 vpxenc_vp8_webm_2pass() {
   if [ "$(vpxenc_can_encode_vp8)" = "yes" ] && \
      [ "$(webm_io_available)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp8.webm"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp8.webm"
     vpxenc $(yuv_input_hantro_collage) \
       --codec=vp8 \
       --limit="${TEST_FRAMES}" \
       --output="${output}" \
-      --passes=2
+      --passes=2 || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -181,16 +191,16 @@ vpxenc_vp8_webm_2pass() {
 vpxenc_vp8_webm_lag10_frames20() {
   if [ "$(vpxenc_can_encode_vp8)" = "yes" ] && \
      [ "$(webm_io_available)" = "yes" ]; then
-    local readonly lag_total_frames=20
-    local readonly lag_frames=10
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp8_lag10_frames20.webm"
+    local lag_total_frames=20
+    local lag_frames=10
+    local output="${VPX_TEST_OUTPUT_DIR}/vp8_lag10_frames20.webm"
     vpxenc $(yuv_input_hantro_collage) \
       --codec=vp8 \
       --limit="${lag_total_frames}" \
       --lag-in-frames="${lag_frames}" \
       --output="${output}" \
       --auto-alt-ref=1 \
-      --passes=2
+      --passes=2 || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -201,12 +211,12 @@ vpxenc_vp8_webm_lag10_frames20() {
 
 vpxenc_vp8_ivf_piped_input() {
   if [ "$(vpxenc_can_encode_vp8)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp8_piped_input.ivf"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp8_piped_input.ivf"
     vpxenc_pipe $(yuv_input_hantro_collage) \
       --codec=vp8 \
       --limit="${TEST_FRAMES}" \
       --ivf \
-      --output="${output}"
+      --output="${output}" || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -217,12 +227,14 @@ vpxenc_vp8_ivf_piped_input() {
 
 vpxenc_vp9_ivf() {
   if [ "$(vpxenc_can_encode_vp9)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp9.ivf"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp9.ivf"
+    local passes=$(vpxenc_passes_param)
     vpxenc $(yuv_input_hantro_collage) \
       --codec=vp9 \
       --limit="${TEST_FRAMES}" \
+      "${passes}" \
       --ivf \
-      --output="${output}"
+      --output="${output}" || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -234,11 +246,13 @@ vpxenc_vp9_ivf() {
 vpxenc_vp9_webm() {
   if [ "$(vpxenc_can_encode_vp9)" = "yes" ] && \
      [ "$(webm_io_available)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp9.webm"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp9.webm"
+    local passes=$(vpxenc_passes_param)
     vpxenc $(yuv_input_hantro_collage) \
       --codec=vp9 \
       --limit="${TEST_FRAMES}" \
-      --output="${output}"
+      "${passes}" \
+      --output="${output}" || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -250,10 +264,10 @@ vpxenc_vp9_webm() {
 vpxenc_vp9_webm_rt() {
   if [ "$(vpxenc_can_encode_vp9)" = "yes" ] && \
      [ "$(webm_io_available)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp9_rt.webm"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp9_rt.webm"
     vpxenc $(yuv_input_hantro_collage) \
       $(vpxenc_rt_params vp9) \
-      --output="${output}"
+      --output="${output}" || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -265,11 +279,11 @@ vpxenc_vp9_webm_rt() {
 vpxenc_vp9_webm_rt_multithread_tiled() {
   if [ "$(vpxenc_can_encode_vp9)" = "yes" ] && \
      [ "$(webm_io_available)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp9_rt_multithread_tiled.webm"
-    local readonly tilethread_min=2
-    local readonly tilethread_max=4
-    local readonly num_threads="$(seq ${tilethread_min} ${tilethread_max})"
-    local readonly num_tile_cols="$(seq ${tilethread_min} ${tilethread_max})"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp9_rt_multithread_tiled.webm"
+    local tilethread_min=2
+    local tilethread_max=4
+    local num_threads="$(seq ${tilethread_min} ${tilethread_max})"
+    local num_tile_cols="$(seq ${tilethread_min} ${tilethread_max})"
 
     for threads in ${num_threads}; do
       for tile_cols in ${num_tile_cols}; do
@@ -277,27 +291,26 @@ vpxenc_vp9_webm_rt_multithread_tiled() {
           $(vpxenc_rt_params vp9) \
           --threads=${threads} \
           --tile-columns=${tile_cols} \
-          --output="${output}"
+          --output="${output}" || return 1
+
+        if [ ! -e "${output}" ]; then
+          elog "Output file does not exist."
+          return 1
+        fi
+        rm "${output}"
       done
     done
-
-    if [ ! -e "${output}" ]; then
-      elog "Output file does not exist."
-      return 1
-    fi
-
-    rm "${output}"
   fi
 }
 
 vpxenc_vp9_webm_rt_multithread_tiled_frameparallel() {
   if [ "$(vpxenc_can_encode_vp9)" = "yes" ] && \
      [ "$(webm_io_available)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp9_rt_mt_t_fp.webm"
-    local readonly tilethread_min=2
-    local readonly tilethread_max=4
-    local readonly num_threads="$(seq ${tilethread_min} ${tilethread_max})"
-    local readonly num_tile_cols="$(seq ${tilethread_min} ${tilethread_max})"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp9_rt_mt_t_fp.webm"
+    local tilethread_min=2
+    local tilethread_max=4
+    local num_threads="$(seq ${tilethread_min} ${tilethread_max})"
+    local num_tile_cols="$(seq ${tilethread_min} ${tilethread_max})"
 
     for threads in ${num_threads}; do
       for tile_cols in ${num_tile_cols}; do
@@ -306,28 +319,27 @@ vpxenc_vp9_webm_rt_multithread_tiled_frameparallel() {
           --threads=${threads} \
           --tile-columns=${tile_cols} \
           --frame-parallel=1 \
-          --output="${output}"
+          --output="${output}" || return 1
+
+        if [ ! -e "${output}" ]; then
+          elog "Output file does not exist."
+          return 1
+        fi
+        rm "${output}"
       done
     done
-
-    if [ ! -e "${output}" ]; then
-      elog "Output file does not exist."
-      return 1
-    fi
-
-    rm "${output}"
   fi
 }
 
 vpxenc_vp9_webm_2pass() {
   if [ "$(vpxenc_can_encode_vp9)" = "yes" ] && \
      [ "$(webm_io_available)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp9.webm"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp9.webm"
     vpxenc $(yuv_input_hantro_collage) \
       --codec=vp9 \
       --limit="${TEST_FRAMES}" \
       --output="${output}" \
-      --passes=2
+      --passes=2 || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -338,13 +350,15 @@ vpxenc_vp9_webm_2pass() {
 
 vpxenc_vp9_ivf_lossless() {
   if [ "$(vpxenc_can_encode_vp9)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp9_lossless.ivf"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp9_lossless.ivf"
+    local passes=$(vpxenc_passes_param)
     vpxenc $(yuv_input_hantro_collage) \
       --codec=vp9 \
       --limit="${TEST_FRAMES}" \
       --ivf \
       --output="${output}" \
-      --lossless=1
+      "${passes}" \
+      --lossless=1 || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -355,14 +369,16 @@ vpxenc_vp9_ivf_lossless() {
 
 vpxenc_vp9_ivf_minq0_maxq0() {
   if [ "$(vpxenc_can_encode_vp9)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp9_lossless_minq0_maxq0.ivf"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp9_lossless_minq0_maxq0.ivf"
+    local passes=$(vpxenc_passes_param)
     vpxenc $(yuv_input_hantro_collage) \
       --codec=vp9 \
       --limit="${TEST_FRAMES}" \
       --ivf \
       --output="${output}" \
+      "${passes}" \
       --min-q=0 \
-      --max-q=0
+      --max-q=0 || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -374,16 +390,17 @@ vpxenc_vp9_ivf_minq0_maxq0() {
 vpxenc_vp9_webm_lag10_frames20() {
   if [ "$(vpxenc_can_encode_vp9)" = "yes" ] && \
      [ "$(webm_io_available)" = "yes" ]; then
-    local readonly lag_total_frames=20
-    local readonly lag_frames=10
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp9_lag10_frames20.webm"
+    local lag_total_frames=20
+    local lag_frames=10
+    local output="${VPX_TEST_OUTPUT_DIR}/vp9_lag10_frames20.webm"
+    local passes=$(vpxenc_passes_param)
     vpxenc $(yuv_input_hantro_collage) \
       --codec=vp9 \
       --limit="${lag_total_frames}" \
       --lag-in-frames="${lag_frames}" \
       --output="${output}" \
-      --passes=2 \
-      --auto-alt-ref=1
+      "${passes}" \
+      --auto-alt-ref=1 || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -396,11 +413,13 @@ vpxenc_vp9_webm_lag10_frames20() {
 vpxenc_vp9_webm_non_square_par() {
   if [ "$(vpxenc_can_encode_vp9)" = "yes" ] && \
      [ "$(webm_io_available)" = "yes" ]; then
-    local readonly output="${VPX_TEST_OUTPUT_DIR}/vp9_non_square_par.webm"
+    local output="${VPX_TEST_OUTPUT_DIR}/vp9_non_square_par.webm"
+    local passes=$(vpxenc_passes_param)
     vpxenc $(y4m_input_non_square_par) \
       --codec=vp9 \
       --limit="${TEST_FRAMES}" \
-      --output="${output}"
+      "${passes}" \
+      --output="${output}" || return 1
 
     if [ ! -e "${output}" ]; then
       elog "Output file does not exist."
@@ -409,21 +428,62 @@ vpxenc_vp9_webm_non_square_par() {
   fi
 }
 
+vpxenc_vp9_webm_sharpness() {
+  if [ "$(vpxenc_can_encode_vp9)" = "yes" ]; then
+    local sharpnesses="0 1 2 3 4 5 6 7"
+    local output="${VPX_TEST_OUTPUT_DIR}/vpxenc_vp9_webm_sharpness.ivf"
+    local last_size=0
+    local this_size=0
+
+    for sharpness in ${sharpnesses}; do
+
+      vpxenc $(yuv_input_hantro_collage) \
+        --sharpness="${sharpness}" \
+        --codec=vp9 \
+        --limit=1 \
+        --cpu-used=2 \
+        --end-usage=q \
+        --cq-level=40 \
+        --output="${output}" \
+        "${passes}" || return 1
+
+      if [ ! -e "${output}" ]; then
+        elog "Output file does not exist."
+        return 1
+      fi
+
+      this_size=$(stat -c '%s' "${output}")
+      if [ "${this_size}" -lt "${last_size}" ]; then
+        elog "Higher sharpness value yielded lower file size."
+        echo "${this_size}" " < " "${last_size}"
+        return 1
+      fi
+      last_size="${this_size}"
+
+    done
+  fi
+}
+
 vpxenc_tests="vpxenc_vp8_ivf
               vpxenc_vp8_webm
               vpxenc_vp8_webm_rt
-              vpxenc_vp8_webm_2pass
-              vpxenc_vp8_webm_lag10_frames20
               vpxenc_vp8_ivf_piped_input
               vpxenc_vp9_ivf
               vpxenc_vp9_webm
               vpxenc_vp9_webm_rt
               vpxenc_vp9_webm_rt_multithread_tiled
               vpxenc_vp9_webm_rt_multithread_tiled_frameparallel
-              vpxenc_vp9_webm_2pass
               vpxenc_vp9_ivf_lossless
               vpxenc_vp9_ivf_minq0_maxq0
               vpxenc_vp9_webm_lag10_frames20
-              vpxenc_vp9_webm_non_square_par"
+              vpxenc_vp9_webm_non_square_par
+              vpxenc_vp9_webm_sharpness"
+
+if [ "$(vpx_config_option_enabled CONFIG_REALTIME_ONLY)" != "yes" ]; then
+  vpxenc_tests="$vpxenc_tests
+                vpxenc_vp8_webm_2pass
+                vpxenc_vp8_webm_lag10_frames20
+                vpxenc_vp9_webm_2pass"
+fi
 
 run_tests vpxenc_verify_environment "${vpxenc_tests}"
