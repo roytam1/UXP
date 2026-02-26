@@ -107,6 +107,7 @@ NS_INTERFACE_MAP_BEGIN(nsContentTreeOwner)
    NS_INTERFACE_MAP_ENTRY(nsIWebBrowserChrome3)
    NS_INTERFACE_MAP_ENTRY(nsIInterfaceRequestor)
    NS_INTERFACE_MAP_ENTRY(nsIWindowProvider)
+   NS_INTERFACE_MAP_ENTRY(nsISupportsWeakReference)
    // NOTE: This is using aggregation because there are some properties and
    // method on nsIBaseWindow (which we implement) and on
    // nsIEmbeddingSiteWindow (which we also implement) that have the same name.

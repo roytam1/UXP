@@ -528,10 +528,21 @@ GetModuleArg(JSContext* cx, CallArgs args, const char* name, Module** module)
     if (!args.requireAtLeast(cx, name, 1))
         return false;
 
-    if (!args[0].isObject() || !IsModuleObject(&args[0].toObject(), module)) {
+    if (!args[0].isObject()) {
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_WASM_BAD_MOD_ARG);
         return false;
     }
+    JSObject* unwrapped = CheckedUnwrap(&args[0].toObject());
+    if (!unwrapped || !unwrapped->is<WasmModuleObject>()) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_WASM_BAD_MOD_ARG);
+        return false;
+    }
+    Rooted<WasmModuleObject*> moduleObj(cx, &unwrapped->as<WasmModuleObject>());
+    if (!moduleObj) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_WASM_BAD_MOD_ARG);
+        return false;
+    }
+    *module = &unwrapped->as<WasmModuleObject>().module();
 
     return true;
 }
