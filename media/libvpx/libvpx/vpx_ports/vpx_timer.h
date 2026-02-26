@@ -47,9 +47,17 @@
 #endif
 #endif
 
+#if defined(__APPLE__) && !defined(__aarch64__)
+#include <mach/mach.h>
+#include <mach/clock.h>
+#include <mach/mach_time.h>
+#endif
+
 struct vpx_usec_timer {
 #if defined(_WIN32)
   LARGE_INTEGER begin, end;
+#elif defined(__APPLE__) && !defined(__aarch64__)
+  mach_timespec_t begin, end;
 #else
   struct timespec begin, end;
 #endif
@@ -58,6 +66,12 @@ struct vpx_usec_timer {
 static INLINE void vpx_usec_timer_start(struct vpx_usec_timer *t) {
 #if defined(_WIN32)
   QueryPerformanceCounter(&t->begin);
+#elif defined(__APPLE__) && !defined(__aarch64__)
+  clock_serv_t cclock;
+
+  host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
+  clock_get_time(cclock, &t->begin);
+  mach_port_deallocate(mach_task_self(), cclock);
 #elif defined(CLOCK_MONOTONIC_RAW)
   clock_gettime(CLOCK_MONOTONIC_RAW, &t->begin);
 #else
@@ -68,6 +82,12 @@ static INLINE void vpx_usec_timer_start(struct vpx_usec_timer *t) {
 static INLINE void vpx_usec_timer_mark(struct vpx_usec_timer *t) {
 #if defined(_WIN32)
   QueryPerformanceCounter(&t->end);
+#elif defined(__APPLE__) && !defined(__aarch64__)
+  clock_serv_t cclock;
+
+  host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
+  clock_get_time(cclock, &t->end);
+  mach_port_deallocate(mach_task_self(), cclock);
 #elif defined(CLOCK_MONOTONIC_RAW)
   clock_gettime(CLOCK_MONOTONIC_RAW, &t->end);
 #else
@@ -84,8 +104,11 @@ static INLINE int64_t vpx_usec_timer_elapsed(struct vpx_usec_timer *t) {
   QueryPerformanceFrequency(&freq);
   return diff.QuadPart * 1000000 / freq.QuadPart;
 #else
+#if defined(__APPLE__) && !defined(__aarch64__)
+  mach_timespec_t diff;
+#else
   struct timespec diff;
-
+#endif
   timersub_ns(&t->end, &t->begin, &diff);
   return (int64_t)diff.tv_sec * 1000000 + diff.tv_nsec / 1000;
 #endif

@@ -25,6 +25,10 @@
 #include "vpx_mem/vpx_mem.h"
 #include "vpx_util/vpx_pthread.h"
 
+#ifdef __APPLE__
+#include <AvailabilityMacros.h>
+#endif
+
 #if CONFIG_MULTITHREAD
 
 struct VPxWorkerImpl {
@@ -39,7 +43,7 @@ static void execute(VPxWorker *const worker);  // Forward declaration.
 
 static THREADFN thread_loop(void *ptr) {
   VPxWorker *const worker = (VPxWorker *)ptr;
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
   if (worker->thread_name != NULL) {
     // Apple's version of pthread_setname_np takes one argument and operates on
     // the current thread only. The maximum size of the thread_name buffer was
