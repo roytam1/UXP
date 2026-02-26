@@ -18,6 +18,7 @@
 #include "nsIInterfaceRequestorUtils.h"
 #include "nsIWebBrowserChrome3.h"
 #include "nsIWindowProvider.h"
+#include "nsWeakReference.h"
 
 class nsXULWindow;
 class nsSiteWindow;
@@ -26,7 +27,8 @@ class nsContentTreeOwner final : public nsIDocShellTreeOwner,
                                  public nsIBaseWindow,
                                  public nsIInterfaceRequestor,
                                  public nsIWebBrowserChrome3,
-                                 public nsIWindowProvider
+                                 public nsIWindowProvider,
+                                 public nsSupportsWeakReference
 {
 friend class nsXULWindow;
 friend class nsSiteWindow;

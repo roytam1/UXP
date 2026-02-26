@@ -9,30 +9,32 @@
  */
 
 #include <arm_neon.h>
+#include <string.h>
 
 #include "./vpx_dsp_rtcd.h"
 #include "vpx/vpx_integer.h"
 
 void vpx_convolve_copy_neon(const uint8_t *src, ptrdiff_t src_stride,
                             uint8_t *dst, ptrdiff_t dst_stride,
-                            const int16_t *filter_x, int filter_x_stride,
-                            const int16_t *filter_y, int filter_y_stride, int w,
+                            const InterpKernel *filter, int x0_q4,
+                            int x_step_q4, int y0_q4, int y_step_q4, int w,
                             int h) {
-  (void)filter_x;
-  (void)filter_x_stride;
-  (void)filter_y;
-  (void)filter_y_stride;
+  (void)filter;
+  (void)x0_q4;
+  (void)x_step_q4;
+  (void)y0_q4;
+  (void)y_step_q4;
 
   if (w < 8) {  // copy4
     do {
-      *(uint32_t *)dst = *(const uint32_t *)src;
+      memcpy(dst, src, 4);
       src += src_stride;
       dst += dst_stride;
-      *(uint32_t *)dst = *(const uint32_t *)src;
+      memcpy(dst, src, 4);
       src += src_stride;
       dst += dst_stride;
       h -= 2;
-    } while (h > 0);
+    } while (h != 0);
   } else if (w == 8) {  // copy8
     uint8x8_t s0, s1;
     do {
@@ -46,7 +48,7 @@ void vpx_convolve_copy_neon(const uint8_t *src, ptrdiff_t src_stride,
       vst1_u8(dst, s1);
       dst += dst_stride;
       h -= 2;
-    } while (h > 0);
+    } while (h != 0);
   } else if (w < 32) {  // copy16
     uint8x16_t s0, s1;
     do {
@@ -60,7 +62,7 @@ void vpx_convolve_copy_neon(const uint8_t *src, ptrdiff_t src_stride,
       vst1q_u8(dst, s1);
       dst += dst_stride;
       h -= 2;
-    } while (h > 0);
+    } while (h != 0);
   } else if (w == 32) {  // copy32
     uint8x16_t s0, s1, s2, s3;
     do {
@@ -78,7 +80,7 @@ void vpx_convolve_copy_neon(const uint8_t *src, ptrdiff_t src_stride,
       vst1q_u8(dst + 16, s3);
       dst += dst_stride;
       h -= 2;
-    } while (h > 0);
+    } while (h != 0);
   } else {  // copy64
     uint8x16_t s0, s1, s2, s3;
     do {

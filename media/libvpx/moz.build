@@ -16,6 +16,9 @@ if CONFIG['CPU_ARCH'] == 'x86_64':
     EXPORTS.vpx += files['X64_EXPORTS']
     SOURCES += files['X64_SOURCES']
     if CONFIG['OS_TARGET'] == 'WINNT':
+        # Needed for x87 control-word helpers referenced from vpx_ports/x86.h
+        # when building with MSVC x64.
+        SOURCES += ['libvpx/vpx_ports/float_control_word.asm']
         ASFLAGS += [ '-I%s/media/libvpx/config/win/x64/' % TOPSRCDIR ]
         CFLAGS += [ '-I%s/media/libvpx/config/win/x64/' % TOPSRCDIR ]
     elif CONFIG['OS_TARGET'] == 'Darwin':
@@ -66,8 +69,37 @@ elif CONFIG['CPU_ARCH'] == 'arm':
         ASFLAGS += [
             '-no-integrated-as',
         ]
+elif CONFIG['CPU_ARCH'] == 'aarch64':
+    EXPORTS.vpx += files['AARCH64_EXPORTS']
+    SOURCES += files['AARCH64_SOURCES']
+    if CONFIG['OS_TARGET'] == 'Darwin':
+        ASFLAGS += [ '-I%s/media/libvpx/config/mac/arm64/' % TOPSRCDIR ]
+        CFLAGS += [ '-I%s/media/libvpx/config/mac/arm64/' % TOPSRCDIR ]
+    else: # Linux, BSDs, etc.
+        ASFLAGS += [ '-I%s/media/libvpx/config/linux/arm64/' % TOPSRCDIR ]
+        CFLAGS += [ '-I%s/media/libvpx/config/linux/arm64/' % TOPSRCDIR ]
+elif CONFIG['CPU_ARCH'] == 'mips32':
+    EXPORTS.vpx += files['MIPS32_EXPORTS']
+    SOURCES += files['MIPS32_SOURCES']
+    ASFLAGS += [ '-I%s/media/libvpx/config/linux/mips32/' % TOPSRCDIR ]
+    CFLAGS += [ '-I%s/media/libvpx/config/linux/mips32/' % TOPSRCDIR ]
+elif CONFIG['CPU_ARCH'] == 'mips64':
+    EXPORTS.vpx += files['MIPS64_EXPORTS']
+    SOURCES += files['MIPS64_SOURCES']
+    ASFLAGS += [ '-I%s/media/libvpx/config/linux/mips64/' % TOPSRCDIR ]
+    CFLAGS += [ '-I%s/media/libvpx/config/linux/mips64/' % TOPSRCDIR ]
+elif CONFIG['CPU_ARCH'].startswith('ppc'):
+    EXPORTS.vpx += files['PPC64LE_EXPORTS']
+    SOURCES += files['PPC64LE_SOURCES']
+    ASFLAGS += [ '-I%s/media/libvpx/config/linux/ppc64le/' % TOPSRCDIR ]
+    CFLAGS += [ '-I%s/media/libvpx/config/linux/ppc64le/' % TOPSRCDIR ]
+elif CONFIG['CPU_ARCH'].startswith('loongarch64'):
+    EXPORTS.vpx += files['LOONGARCH64_EXPORTS']
+    SOURCES += files['LOONGARCH64_SOURCES']
+    ASFLAGS += [ '-I%s/media/libvpx/config/linux/loongarch64/' % TOPSRCDIR ]
+    CFLAGS += [ '-I%s/media/libvpx/config/linux/loongarch64/' % TOPSRCDIR ]
 else:
-    # Generic C-only configuration
+    # Generic C-only configuration used by unsupported targets.
     EXPORTS.vpx += files['GENERIC_EXPORTS']
     SOURCES += files['GENERIC_SOURCES']
     ASFLAGS += [ '-I%s/media/libvpx/config/generic/' % TOPSRCDIR ]
@@ -106,6 +138,30 @@ if CONFIG['CLANG_CL'] or not CONFIG['_MSC_VER']:
                 SOURCES[f].flags += ['-mavx']
             if 'avx2.c' in f:
                 SOURCES[f].flags += ['-mavx2']
+            if 'avx512.c' in f:
+                SOURCES[f].flags += [
+                    '-mavx512f',
+                    '-mavx512cd',
+                    '-mavx512bw',
+                    '-mavx512dq',
+                    '-mavx512vl',
+                ]
+            if 'neon_dotprod.c' in f:
+                SOURCES[f].flags += ['-march=armv8.2-a+dotprod']
+            if 'neon_i8mm.c' in f:
+                SOURCES[f].flags += ['-march=armv8.2-a+dotprod+i8mm']
+            if '_sve.c' in f:
+                SOURCES[f].flags += ['-march=armv8.2-a+dotprod+i8mm+sve']
+            if '_sve2.c' in f:
+                SOURCES[f].flags += ['-march=armv9-a+i8mm+sve2']
+            if '_vsx.c' in f:
+                SOURCES[f].flags += ['-maltivec', '-mvsx']
+            if '_msa.c' in f:
+                SOURCES[f].flags += ['-mmsa']
+            if '_lsx.c' in f:
+                SOURCES[f].flags += ['-mlsx']
+            if '_lasx.c' in f:
+                SOURCES[f].flags += ['-mlasx']
 
 # Suppress warnings in third-party code.
 if CONFIG['GNU_CC'] or CONFIG['CLANG_CL']:

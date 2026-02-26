@@ -16,38 +16,30 @@
 
 #include <math.h>
 
-#ifdef VP8_ENTROPY_STATS
-extern unsigned int active_section;
-#endif
-
 static void encode_mvcomponent(vp8_writer *const w, const int v,
                                const struct mv_context *mvc) {
   const vp8_prob *p = mvc->prob;
   const int x = v < 0 ? -v : v;
 
-  if (x < mvnum_short) /* Small */
-  {
+  if (x < mvnum_short) { /* Small */
     vp8_write(w, 0, p[mvpis_short]);
     vp8_treed_write(w, vp8_small_mvtree, p + MVPshort, x, 3);
 
     if (!x) return; /* no sign bit */
-  } else            /* Large */
-  {
+  } else {          /* Large */
     int i = 0;
 
     vp8_write(w, 1, p[mvpis_short]);
 
-    do
+    do {
       vp8_write(w, (x >> i) & 1, p[MVPbits + i]);
-
-    while (++i < 3);
+    } while (++i < 3);
 
     i = mvlong_width - 1; /* Skip bit 3, which is sometimes implicit */
 
-    do
+    do {
       vp8_write(w, (x >> i) & 1, p[MVPbits + i]);
-
-    while (--i > 3);
+    } while (--i > 3);
 
     if (x & 0xFFF0) vp8_write(w, (x >> 3) & 1, p[MVPbits + 3]);
   }
@@ -166,7 +158,7 @@ static void calc_prob(vp8_prob *p, const unsigned int ct[2]) {
   const unsigned int tot = ct[0] + ct[1];
 
   if (tot) {
-    const vp8_prob x = ((ct[0] * 255) / tot) & -2;
+    const vp8_prob x = ((ct[0] * 255) / tot) & ~1u;
     *p = x ? x : 1;
   }
 }
@@ -211,8 +203,11 @@ static void write_component_probs(vp8_writer *const w,
   (void)rc;
   vp8_copy_array(Pnew, default_mvc, MVPcount);
 
-  vp8_zero(is_short_ct) vp8_zero(sign_ct) vp8_zero(bit_ct) vp8_zero(short_ct)
-      vp8_zero(short_bct)
+  vp8_zero(is_short_ct);
+  vp8_zero(sign_ct);
+  vp8_zero(bit_ct);
+  vp8_zero(short_ct);
+  vp8_zero(short_bct);
 
   /* j=0 */
   {
@@ -311,9 +306,6 @@ void vp8_write_mvprobs(VP8_COMP *cpi) {
   vp8_writer *const w = cpi->bc;
   MV_CONTEXT *mvc = cpi->common.fc.mvc;
   int flags[2] = { 0, 0 };
-#ifdef VP8_ENTROPY_STATS
-  active_section = 4;
-#endif
   write_component_probs(w, &mvc[0], &vp8_default_mv_context[0],
                         &vp8_mv_update_probs[0], cpi->mb.MVcount[0], 0,
                         &flags[0]);
@@ -325,8 +317,4 @@ void vp8_write_mvprobs(VP8_COMP *cpi) {
     vp8_build_component_cost_table(
         cpi->mb.mvcost, (const MV_CONTEXT *)cpi->common.fc.mvc, flags);
   }
-
-#ifdef VP8_ENTROPY_STATS
-  active_section = 5;
-#endif
 }

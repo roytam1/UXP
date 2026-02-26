@@ -7,49 +7,52 @@
  *  in the file PATENTS.  All contributing project authors may
  *  be found in the AUTHORS file in the root of the source tree.
  */
+#include <stddef.h>
 
 #include "onyx_int.h"
+#include "vpx_util/vpx_pthread.h"
 #include "vp8/common/threading.h"
 #include "vp8/common/common.h"
 #include "vp8/common/extend.h"
 #include "bitstream.h"
 #include "encodeframe.h"
+#include "ethreading.h"
 
 #if CONFIG_MULTITHREAD
 
 extern void vp8cx_mb_init_quantizer(VP8_COMP *cpi, MACROBLOCK *x,
                                     int ok_to_skip);
 
-static THREAD_FUNCTION thread_loopfilter(void *p_data) {
+static THREADFN thread_loopfilter(void *p_data) {
   VP8_COMP *cpi = (VP8_COMP *)(((LPFTHREAD_DATA *)p_data)->ptr1);
   VP8_COMMON *cm = &cpi->common;
 
   while (1) {
-    if (protected_read(&cpi->mt_mutex, &cpi->b_multi_threaded) == 0) break;
+    if (vpx_atomic_load_acquire(&cpi->b_multi_threaded) == 0) break;
 
-    if (sem_wait(&cpi->h_event_start_lpf) == 0) {
+    if (vp8_sem_wait(&cpi->h_event_start_lpf) == 0) {
       /* we're shutting down */
-      if (protected_read(&cpi->mt_mutex, &cpi->b_multi_threaded) == 0) break;
+      if (vpx_atomic_load_acquire(&cpi->b_multi_threaded) == 0) break;
 
       vp8_loopfilter_frame(cpi, cm);
 
-      sem_post(&cpi->h_event_end_lpf);
+      vp8_sem_post(&cpi->h_event_end_lpf);
     }
   }
 
-  return 0;
+  return THREAD_EXIT_SUCCESS;
 }
 
-static THREAD_FUNCTION thread_encoding_proc(void *p_data) {
+static THREADFN thread_encoding_proc(void *p_data) {
   int ithread = ((ENCODETHREAD_DATA *)p_data)->ithread;
   VP8_COMP *cpi = (VP8_COMP *)(((ENCODETHREAD_DATA *)p_data)->ptr1);
   MB_ROW_COMP *mbri = (MB_ROW_COMP *)(((ENCODETHREAD_DATA *)p_data)->ptr2);
   ENTROPY_CONTEXT_PLANES mb_row_left_context;
 
   while (1) {
-    if (protected_read(&cpi->mt_mutex, &cpi->b_multi_threaded) == 0) break;
+    if (vpx_atomic_load_acquire(&cpi->b_multi_threaded) == 0) break;
 
-    if (sem_wait(&cpi->h_event_start_encoding[ithread]) == 0) {
+    if (vp8_sem_wait(&cpi->h_event_start_encoding[ithread]) == 0) {
       const int nsync = cpi->mt_sync_range;
       VP8_COMMON *cm = &cpi->common;
       int mb_row;
@@ -65,7 +68,7 @@ static THREAD_FUNCTION thread_encoding_proc(void *p_data) {
       int *totalrate = &mbri->totalrate;
 
       /* we're shutting down */
-      if (protected_read(&cpi->mt_mutex, &cpi->b_multi_threaded) == 0) break;
+      if (vpx_atomic_load_acquire(&cpi->b_multi_threaded) == 0) break;
 
       xd->mode_info_context = cm->mi + cm->mode_info_stride * (ithread + 1);
       xd->mode_info_stride = cm->mode_info_stride;
@@ -79,8 +82,8 @@ static THREAD_FUNCTION thread_encoding_proc(void *p_data) {
         int recon_y_stride = cm->yv12_fb[ref_fb_idx].y_stride;
         int recon_uv_stride = cm->yv12_fb[ref_fb_idx].uv_stride;
         int map_index = (mb_row * cm->mb_cols);
-        const int *last_row_current_mb_col;
-        int *current_mb_col = &cpi->mt_current_mb_col[mb_row];
+        const vpx_atomic_int *last_row_current_mb_col;
+        vpx_atomic_int *current_mb_col = &cpi->mt_current_mb_col[mb_row];
 
 #if (CONFIG_REALTIME_ONLY & CONFIG_ONTHEFLY_BITPACKING)
         vp8_writer *w = &cpi->bc[1 + (mb_row % num_part)];
@@ -107,13 +110,11 @@ static THREAD_FUNCTION thread_encoding_proc(void *p_data) {
         /* for each macroblock col in image */
         for (mb_col = 0; mb_col < cm->mb_cols; ++mb_col) {
           if (((mb_col - 1) % nsync) == 0) {
-            pthread_mutex_t *mutex = &cpi->pmutex[mb_row];
-            protected_write(mutex, current_mb_col, mb_col - 1);
+            vpx_atomic_store_release(current_mb_col, mb_col - 1);
           }
 
           if (mb_row && !(mb_col & (nsync - 1))) {
-            pthread_mutex_t *mutex = &cpi->pmutex[mb_row - 1];
-            sync_read(mutex, mb_col, last_row_current_mb_col, nsync);
+            vp8_atomic_spin_wait(mb_col, last_row_current_mb_col, nsync);
           }
 
 #if CONFIG_REALTIME_ONLY & CONFIG_ONTHEFLY_BITPACKING
@@ -285,7 +286,7 @@ static THREAD_FUNCTION thread_encoding_proc(void *p_data) {
         vp8_extend_mb_row(&cm->yv12_fb[dst_fb_idx], xd->dst.y_buffer + 16,
                           xd->dst.u_buffer + 8, xd->dst.v_buffer + 8);
 
-        protected_write(&cpi->pmutex[mb_row], current_mb_col, mb_col + nsync);
+        vpx_atomic_store_release(current_mb_col, mb_col + nsync);
 
         /* this is to account for the border */
         xd->mode_info_context++;
@@ -307,12 +308,12 @@ static THREAD_FUNCTION thread_encoding_proc(void *p_data) {
         x->gf_active_ptr += cm->mb_cols * cpi->encoding_thread_count;
       }
       /* Signal that this thread has completed processing its rows. */
-      sem_post(&cpi->h_event_end_encoding[ithread]);
+      vp8_sem_post(&cpi->h_event_end_encoding[ithread]);
     }
   }
 
   /* printf("exit thread %d\n", ithread); */
-  return 0;
+  return THREAD_EXIT_SUCCESS;
 }
 
 static void setup_mbby_copy(MACROBLOCK *mbdst, MACROBLOCK *mbsrc) {
@@ -403,7 +404,7 @@ static void setup_mbby_copy(MACROBLOCK *mbdst, MACROBLOCK *mbsrc) {
     zd->subpixel_predict8x8 = xd->subpixel_predict8x8;
     zd->subpixel_predict16x16 = xd->subpixel_predict16x16;
     zd->segmentation_enabled = xd->segmentation_enabled;
-    zd->mb_segement_abs_delta = xd->mb_segement_abs_delta;
+    zd->mb_segment_abs_delta = xd->mb_segment_abs_delta;
     memcpy(zd->segment_feature_data, xd->segment_feature_data,
            sizeof(xd->segment_feature_data));
 
@@ -471,8 +472,8 @@ void vp8cx_init_mbrthread_data(VP8_COMP *cpi, MACROBLOCK *x,
 
     setup_mbby_copy(&mbr_ei[i].mb, x);
 
-    mbd->fullpixel_mask = 0xffffffff;
-    if (cm->full_pixel) mbd->fullpixel_mask = 0xfffffff8;
+    mbd->fullpixel_mask = ~0;
+    if (cm->full_pixel) mbd->fullpixel_mask = ~7;
 
     vp8_zero(mb->coef_counts);
     vp8_zero(x->ymode_count);
@@ -488,17 +489,10 @@ void vp8cx_init_mbrthread_data(VP8_COMP *cpi, MACROBLOCK *x,
 
 int vp8cx_create_encoder_threads(VP8_COMP *cpi) {
   const VP8_COMMON *cm = &cpi->common;
-
-  cpi->b_multi_threaded = 0;
-  cpi->encoding_thread_count = 0;
-  cpi->b_lpf_running = 0;
-
-  pthread_mutex_init(&cpi->mt_mutex, NULL);
+  int th_count = 0;
 
   if (cm->processor_core_count > 1 && cpi->oxcf.multi_threaded > 1) {
-    int ithread;
-    int th_count = cpi->oxcf.multi_threaded - 1;
-    int rc = 0;
+    th_count = cpi->oxcf.multi_threaded - 1;
 
     /* don't allocate more threads than cores available */
     if (cpi->oxcf.multi_threaded > cm->processor_core_count) {
@@ -510,22 +504,27 @@ int vp8cx_create_encoder_threads(VP8_COMP *cpi) {
     if (th_count > ((cm->mb_cols / cpi->mt_sync_range) - 1)) {
       th_count = (cm->mb_cols / cpi->mt_sync_range) - 1;
     }
+  }
+  if (th_count == cpi->encoding_thread_count) return 0;
 
-    if (th_count == 0) return 0;
+  vp8cx_remove_encoder_threads(cpi);
+  if (th_count != 0) {
+    int ithread;
+    int rc = 0;
 
-    CHECK_MEM_ERROR(cpi->h_encoding_thread,
+    CHECK_MEM_ERROR(&cpi->common.error, cpi->h_encoding_thread,
                     vpx_malloc(sizeof(pthread_t) * th_count));
-    CHECK_MEM_ERROR(cpi->h_event_start_encoding,
-                    vpx_malloc(sizeof(sem_t) * th_count));
-    CHECK_MEM_ERROR(cpi->h_event_end_encoding,
-                    vpx_malloc(sizeof(sem_t) * th_count));
-    CHECK_MEM_ERROR(cpi->mb_row_ei,
+    CHECK_MEM_ERROR(&cpi->common.error, cpi->h_event_start_encoding,
+                    vpx_malloc(sizeof(vp8_sem_t) * th_count));
+    CHECK_MEM_ERROR(&cpi->common.error, cpi->h_event_end_encoding,
+                    vpx_malloc(sizeof(vp8_sem_t) * th_count));
+    CHECK_MEM_ERROR(&cpi->common.error, cpi->mb_row_ei,
                     vpx_memalign(32, sizeof(MB_ROW_COMP) * th_count));
     memset(cpi->mb_row_ei, 0, sizeof(MB_ROW_COMP) * th_count);
-    CHECK_MEM_ERROR(cpi->en_thread_data,
+    CHECK_MEM_ERROR(&cpi->common.error, cpi->en_thread_data,
                     vpx_malloc(sizeof(ENCODETHREAD_DATA) * th_count));
 
-    cpi->b_multi_threaded = 1;
+    vpx_atomic_store_release(&cpi->b_multi_threaded, 1);
     cpi->encoding_thread_count = th_count;
 
     /*
@@ -540,8 +539,8 @@ int vp8cx_create_encoder_threads(VP8_COMP *cpi) {
       vp8_setup_block_ptrs(&cpi->mb_row_ei[ithread].mb);
       vp8_setup_block_dptrs(&cpi->mb_row_ei[ithread].mb.e_mbd);
 
-      sem_init(&cpi->h_event_start_encoding[ithread], 0, 0);
-      sem_init(&cpi->h_event_end_encoding[ithread], 0, 0);
+      vp8_sem_init(&cpi->h_event_start_encoding[ithread], 0, 0);
+      vp8_sem_init(&cpi->h_event_end_encoding[ithread], 0, 0);
 
       ethd->ithread = ithread;
       ethd->ptr1 = (void *)cpi;
@@ -554,21 +553,27 @@ int vp8cx_create_encoder_threads(VP8_COMP *cpi) {
 
     if (rc) {
       /* shutdown other threads */
-      protected_write(&cpi->mt_mutex, &cpi->b_multi_threaded, 0);
+      vpx_atomic_store_release(&cpi->b_multi_threaded, 0);
       for (--ithread; ithread >= 0; ithread--) {
+        vp8_sem_post(&cpi->h_event_start_encoding[ithread]);
+        vp8_sem_post(&cpi->h_event_end_encoding[ithread]);
         pthread_join(cpi->h_encoding_thread[ithread], 0);
-        sem_destroy(&cpi->h_event_start_encoding[ithread]);
-        sem_destroy(&cpi->h_event_end_encoding[ithread]);
+        vp8_sem_destroy(&cpi->h_event_start_encoding[ithread]);
+        vp8_sem_destroy(&cpi->h_event_end_encoding[ithread]);
       }
 
       /* free thread related resources */
       vpx_free(cpi->h_event_start_encoding);
+      cpi->h_event_start_encoding = NULL;
       vpx_free(cpi->h_event_end_encoding);
+      cpi->h_event_end_encoding = NULL;
       vpx_free(cpi->h_encoding_thread);
+      cpi->h_encoding_thread = NULL;
       vpx_free(cpi->mb_row_ei);
+      cpi->mb_row_ei = NULL;
       vpx_free(cpi->en_thread_data);
-
-      pthread_mutex_destroy(&cpi->mt_mutex);
+      cpi->en_thread_data = NULL;
+      cpi->encoding_thread_count = 0;
 
       return -1;
     }
@@ -576,33 +581,37 @@ int vp8cx_create_encoder_threads(VP8_COMP *cpi) {
     {
       LPFTHREAD_DATA *lpfthd = &cpi->lpf_thread_data;
 
-      sem_init(&cpi->h_event_start_lpf, 0, 0);
-      sem_init(&cpi->h_event_end_lpf, 0, 0);
+      vp8_sem_init(&cpi->h_event_start_lpf, 0, 0);
+      vp8_sem_init(&cpi->h_event_end_lpf, 0, 0);
 
       lpfthd->ptr1 = (void *)cpi;
       rc = pthread_create(&cpi->h_filter_thread, 0, thread_loopfilter, lpfthd);
 
       if (rc) {
         /* shutdown other threads */
-        protected_write(&cpi->mt_mutex, &cpi->b_multi_threaded, 0);
+        vpx_atomic_store_release(&cpi->b_multi_threaded, 0);
         for (--ithread; ithread >= 0; ithread--) {
-          sem_post(&cpi->h_event_start_encoding[ithread]);
-          sem_post(&cpi->h_event_end_encoding[ithread]);
+          vp8_sem_post(&cpi->h_event_start_encoding[ithread]);
+          vp8_sem_post(&cpi->h_event_end_encoding[ithread]);
           pthread_join(cpi->h_encoding_thread[ithread], 0);
-          sem_destroy(&cpi->h_event_start_encoding[ithread]);
-          sem_destroy(&cpi->h_event_end_encoding[ithread]);
+          vp8_sem_destroy(&cpi->h_event_start_encoding[ithread]);
+          vp8_sem_destroy(&cpi->h_event_end_encoding[ithread]);
         }
-        sem_destroy(&cpi->h_event_end_lpf);
-        sem_destroy(&cpi->h_event_start_lpf);
+        vp8_sem_destroy(&cpi->h_event_end_lpf);
+        vp8_sem_destroy(&cpi->h_event_start_lpf);
 
         /* free thread related resources */
         vpx_free(cpi->h_event_start_encoding);
+        cpi->h_event_start_encoding = NULL;
         vpx_free(cpi->h_event_end_encoding);
+        cpi->h_event_end_encoding = NULL;
         vpx_free(cpi->h_encoding_thread);
+        cpi->h_encoding_thread = NULL;
         vpx_free(cpi->mb_row_ei);
+        cpi->mb_row_ei = NULL;
         vpx_free(cpi->en_thread_data);
-
-        pthread_mutex_destroy(&cpi->mt_mutex);
+        cpi->en_thread_data = NULL;
+        cpi->encoding_thread_count = 0;
 
         return -2;
       }
@@ -612,36 +621,45 @@ int vp8cx_create_encoder_threads(VP8_COMP *cpi) {
 }
 
 void vp8cx_remove_encoder_threads(VP8_COMP *cpi) {
-  if (protected_read(&cpi->mt_mutex, &cpi->b_multi_threaded)) {
+  if (vpx_atomic_load_acquire(&cpi->b_multi_threaded)) {
     /* shutdown other threads */
-    protected_write(&cpi->mt_mutex, &cpi->b_multi_threaded, 0);
+    vpx_atomic_store_release(&cpi->b_multi_threaded, 0);
     {
       int i;
 
       for (i = 0; i < cpi->encoding_thread_count; ++i) {
-        sem_post(&cpi->h_event_start_encoding[i]);
-        sem_post(&cpi->h_event_end_encoding[i]);
+        vp8_sem_post(&cpi->h_event_start_encoding[i]);
+        vp8_sem_post(&cpi->h_event_end_encoding[i]);
 
         pthread_join(cpi->h_encoding_thread[i], 0);
 
-        sem_destroy(&cpi->h_event_start_encoding[i]);
-        sem_destroy(&cpi->h_event_end_encoding[i]);
+        vp8_sem_destroy(&cpi->h_event_start_encoding[i]);
+        vp8_sem_destroy(&cpi->h_event_end_encoding[i]);
       }
 
-      sem_post(&cpi->h_event_start_lpf);
+      vp8_sem_post(&cpi->h_event_start_lpf);
       pthread_join(cpi->h_filter_thread, 0);
     }
 
-    sem_destroy(&cpi->h_event_end_lpf);
-    sem_destroy(&cpi->h_event_start_lpf);
+    vp8_sem_destroy(&cpi->h_event_end_lpf);
+    vp8_sem_destroy(&cpi->h_event_start_lpf);
+    cpi->b_lpf_running = 0;
 
     /* free thread related resources */
+    vpx_free(cpi->mt_current_mb_col);
+    cpi->mt_current_mb_col = NULL;
+    cpi->mt_current_mb_col_size = 0;
     vpx_free(cpi->h_event_start_encoding);
+    cpi->h_event_start_encoding = NULL;
     vpx_free(cpi->h_event_end_encoding);
+    cpi->h_event_end_encoding = NULL;
     vpx_free(cpi->h_encoding_thread);
+    cpi->h_encoding_thread = NULL;
     vpx_free(cpi->mb_row_ei);
+    cpi->mb_row_ei = NULL;
     vpx_free(cpi->en_thread_data);
+    cpi->en_thread_data = NULL;
+    cpi->encoding_thread_count = 0;
   }
-  pthread_mutex_destroy(&cpi->mt_mutex);
 }
 #endif

@@ -11,13 +11,15 @@
 
 %include "vpx_ports/x86_abi_support.asm"
 
+SECTION .text
+
 ;void copy_mem16x16_sse2(
 ;    unsigned char *src,
 ;    int src_stride,
 ;    unsigned char *dst,
 ;    int dst_stride
 ;    )
-global sym(vp8_copy_mem16x16_sse2) PRIVATE
+globalsym(vp8_copy_mem16x16_sse2)
 sym(vp8_copy_mem16x16_sse2):
     push        rbp
     mov         rbp, rsp

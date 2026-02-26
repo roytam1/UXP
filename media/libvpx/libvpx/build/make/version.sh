@@ -60,6 +60,9 @@ if [ ${bare} ]; then
     echo "${changelog_version}${git_version_id}" > $$.tmp
 else
     cat<<EOF>$$.tmp
+// This file is generated. Do not edit.
+#ifndef VPX_VERSION_H_
+#define VPX_VERSION_H_
 #define VERSION_MAJOR  $major_version
 #define VERSION_MINOR  $minor_version
 #define VERSION_PATCH  $patch_version
@@ -67,6 +70,7 @@ else
 #define VERSION_PACKED ((VERSION_MAJOR<<16)|(VERSION_MINOR<<8)|(VERSION_PATCH))
 #define ${id}_NOSP "${version_str}"
 #define ${id}      " ${version_str}"
+#endif  // VPX_VERSION_H_
 EOF
 fi
 if [ -n "$out_file" ]; then

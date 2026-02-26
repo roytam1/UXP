@@ -186,16 +186,19 @@ const vpx_prob vp9_kf_partition_probs[PARTITION_CONTEXTS]
                                        { 93, 24, 99 },   // a split, l not split
                                        { 85, 119, 44 },  // l split, a not split
                                        { 62, 59, 67 },   // a/l both split
+
                                        // 16x16 -> 8x8
                                        { 149, 53, 53 },  // a/l both not split
                                        { 94, 20, 48 },   // a split, l not split
                                        { 83, 53, 24 },   // l split, a not split
                                        { 52, 18, 18 },   // a/l both split
+
                                        // 32x32 -> 16x16
                                        { 150, 40, 39 },  // a/l both not split
                                        { 78, 12, 26 },   // a split, l not split
                                        { 67, 33, 11 },   // l split, a not split
                                        { 24, 7, 5 },     // a/l both split
+
                                        // 64x64 -> 32x32
                                        { 174, 35, 49 },  // a/l both not split
                                        { 68, 11, 27 },   // a split, l not split
@@ -260,13 +263,13 @@ const vpx_tree_index vp9_partition_tree[TREE_SIZE(PARTITION_TYPES)] = {
   -PARTITION_NONE, 2, -PARTITION_HORZ, 4, -PARTITION_VERT, -PARTITION_SPLIT
 };
 
-static const vpx_prob default_intra_inter_p[INTRA_INTER_CONTEXTS] = {
-  9, 102, 187, 225
-};
+static const vpx_prob default_intra_inter_p[INTRA_INTER_CONTEXTS] = { 9, 102,
+                                                                      187,
+                                                                      225 };
 
-static const vpx_prob default_comp_inter_p[COMP_INTER_CONTEXTS] = {
-  239, 183, 119, 96, 41
-};
+static const vpx_prob default_comp_inter_p[COMP_INTER_CONTEXTS] = { 239, 183,
+                                                                    119, 96,
+                                                                    41 };
 
 static const vpx_prob default_comp_ref_p[REF_CONTEXTS] = { 50, 126, 123, 221,
                                                            226 };
@@ -331,8 +334,8 @@ static void init_mode_probs(FRAME_CONTEXT *fc) {
   vp9_copy(fc->inter_mode_probs, default_inter_mode_probs);
 }
 
-const vpx_tree_index vp9_switchable_interp_tree[TREE_SIZE(SWITCHABLE_FILTERS)] =
-    { -EIGHTTAP, 2, -EIGHTTAP_SMOOTH, -EIGHTTAP_SHARP };
+const vpx_tree_index vp9_switchable_interp_tree[TREE_SIZE(
+    SWITCHABLE_FILTERS)] = { -EIGHTTAP, 2, -EIGHTTAP_SMOOTH, -EIGHTTAP_SHARP };
 
 void vp9_adapt_mode_probs(VP9_COMMON *cm) {
   int i, j;
@@ -378,7 +381,6 @@ void vp9_adapt_mode_probs(VP9_COMMON *cm) {
   }
 
   if (cm->tx_mode == TX_MODE_SELECT) {
-    int j;
     unsigned int branch_ct_8x8p[TX_SIZES - 3][2];
     unsigned int branch_ct_16x16p[TX_SIZES - 2][2];
     unsigned int branch_ct_32x32p[TX_SIZES - 1][2];
@@ -428,7 +430,7 @@ void vp9_setup_past_independence(VP9_COMMON *cm) {
   vp9_clearall_segfeatures(&cm->seg);
   cm->seg.abs_delta = SEGMENT_DELTADATA;
 
-  if (cm->last_frame_seg_map && !cm->frame_parallel_decode)
+  if (cm->last_frame_seg_map)
     memset(cm->last_frame_seg_map, 0, (cm->mi_rows * cm->mi_cols));
 
   if (cm->current_frame_seg_map)
@@ -457,7 +459,7 @@ void vp9_setup_past_independence(VP9_COMMON *cm) {
   }
 
   // prev_mip will only be allocated in encoder.
-  if (frame_is_intra_only(cm) && cm->prev_mip && !cm->frame_parallel_decode)
+  if (frame_is_intra_only(cm) && cm->prev_mip)
     memset(cm->prev_mip, 0,
            cm->mi_stride * (cm->mi_rows + 1) * sizeof(*cm->prev_mip));
 

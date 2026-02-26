@@ -1296,9 +1296,11 @@ void copy_horiz_transposed(const uint8_t *src, ptrdiff_t src_stride,
 }
 
 void vpx_convolve8_dspr2(const uint8_t *src, ptrdiff_t src_stride, uint8_t *dst,
-                         ptrdiff_t dst_stride, const int16_t *filter_x,
-                         int x_step_q4, const int16_t *filter_y, int y_step_q4,
+                         ptrdiff_t dst_stride, const InterpKernel *filter,
+                         int x0_q4, int32_t x_step_q4, int y0_q4, int y_step_q4,
                          int w, int h) {
+  const int16_t *const filter_x = filter[x0_q4];
+  const int16_t *const filter_y = filter[y0_q4];
   DECLARE_ALIGNED(32, uint8_t, temp[64 * 135]);
   int32_t intermediate_height = ((h * y_step_q4) >> 4) + 7;
   uint32_t pos = 38;
@@ -1320,7 +1322,7 @@ void vpx_convolve8_dspr2(const uint8_t *src, ptrdiff_t src_stride, uint8_t *dst,
   if (filter_x[3] == 0x80) {
     copy_horiz_transposed(src - src_stride * 3, src_stride, temp,
                           intermediate_height, w, intermediate_height);
-  } else if (((const int32_t *)filter_x)[0] == 0) {
+  } else if (vpx_get_filter_taps(filter_x) == 2) {
     vpx_convolve2_dspr2(src - src_stride * 3, src_stride, temp,
                         intermediate_height, filter_x, w, intermediate_height);
   } else {
@@ -1363,7 +1365,7 @@ void vpx_convolve8_dspr2(const uint8_t *src, ptrdiff_t src_stride, uint8_t *dst,
   /* copy the src to dst */
   if (filter_y[3] == 0x80) {
     copy_horiz_transposed(temp + 3, intermediate_height, dst, dst_stride, h, w);
-  } else if (((const int32_t *)filter_y)[0] == 0) {
+  } else if (vpx_get_filter_taps(filter_y) == 2) {
     vpx_convolve2_dspr2(temp + 3, intermediate_height, dst, dst_stride,
                         filter_y, h, w);
   } else {
@@ -1395,14 +1397,15 @@ void vpx_convolve8_dspr2(const uint8_t *src, ptrdiff_t src_stride, uint8_t *dst,
 
 void vpx_convolve_copy_dspr2(const uint8_t *src, ptrdiff_t src_stride,
                              uint8_t *dst, ptrdiff_t dst_stride,
-                             const int16_t *filter_x, int filter_x_stride,
-                             const int16_t *filter_y, int filter_y_stride,
-                             int w, int h) {
+                             const InterpKernel *filter, int x0_q4,
+                             int x_step_q4, int y0_q4, int y_step_q4, int w,
+                             int h) {
   int x, y;
-  (void)filter_x;
-  (void)filter_x_stride;
-  (void)filter_y;
-  (void)filter_y_stride;
+  (void)filter;
+  (void)x0_q4;
+  (void)x_step_q4;
+  (void)y0_q4;
+  (void)y_step_q4;
 
   /* prefetch data to cache memory */
   prefetch_load(src);
