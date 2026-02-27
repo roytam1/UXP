@@ -649,10 +649,11 @@ public:
   template<size_t Offset, size_t Count = dynamic_extent>
   MOZ_SPAN_GCC_CONSTEXPR Span<element_type, Count> Subspan() const
   {
-    MOZ_RELEASE_ASSERT(Offset <= size() &&
-      (Count == dynamic_extent || (Offset + Count <= size())));
+    const size_t len = size();
+    MOZ_RELEASE_ASSERT(Offset <= len &&
+                       (Count == dynamic_extent || (Count <= len - Offset)));
     return { data() + Offset,
-             Count == dynamic_extent ? size() - Offset : Count };
+             Count == dynamic_extent ? len - Offset : Count };
   }
 
   /**
@@ -682,11 +683,11 @@ public:
     index_type aStart,
     index_type aLength = dynamic_extent) const
   {
-    MOZ_RELEASE_ASSERT(aStart <= size() &&
-                       (aLength == dynamic_extent ||
-                        (aStart + aLength <= size())));
+    const size_t len = size();
+    MOZ_RELEASE_ASSERT(aStart <= len &&
+                       (aLength == dynamic_extent || (aLength <= len - aStart)));
     return { data() + aStart,
-             aLength == dynamic_extent ? size() - aStart : aLength };
+             aLength == dynamic_extent ? len - aStart : aLength };
   }
 
   /**

@@ -4,4 +4,4 @@ made were those applied by update.sh and the addition/update of
 Makefile.in files for the UXP build system.
 
 The upstream release used was https://gitlab.xiph.org/xiph/theora
-The git revision used was 7180717276af1ebc7da15c83162d6c5d6203aabf.
+The version used was tagged v1.2.0.

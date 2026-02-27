@@ -310,6 +310,8 @@ MOZ_WIN_MEM_TRY_BEGIN
       mFileData = mFileStart + headerSize;
       return NS_OK;
     }
+    // If we get here, the file was truncated.
+    return NS_ERROR_FILE_CORRUPTED;
   }
   mLen = mTotalLen;
   mFileData = mFileStart;
