@@ -314,6 +314,28 @@ function ArrayToSorted(comparefn) {
     return A;
 }
 
+// ES2023 22.1.3.29 Array.prototype.toReversed ( )
+function ArrayToReversed() {
+    // Step 1: Let O be ? ToObject(this value).
+    var O = ToObject(this);
+
+    // Step 2: Let len be ? LengthOfArrayLike(O).
+    var len = ToLength(O.length);
+
+    // Step 3: Let A be ! ArrayCreate(len).
+    var A = std_Array(len);
+
+    // Steps 4-5: Copy elements in reverse order.
+    for (var k = 0; k < len; k++) {
+        var from = len - k - 1;
+        var fromValue = O[from];
+        _DefineDataProperty(A, k, fromValue);
+    }
+
+    // Step 6.
+    return A;
+}
+
 /* ES5 15.4.4.18. */
 function ArrayForEach(callbackfn/*, thisArg*/) {
     /* Step 1. */

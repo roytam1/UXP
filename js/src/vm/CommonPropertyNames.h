@@ -427,6 +427,7 @@
     macro(toISOString, toISOString, "toISOString") \
     macro(toJSON, toJSON, "toJSON") \
     macro(toLocaleString, toLocaleString, "toLocaleString") \
+    macro(toReversed, toReversed, "toReversed") \
     macro(toSource, toSource, "toSource") \
     macro(toSorted, toSorted, "toSorted") \
     macro(toString, toString, "toString") \
