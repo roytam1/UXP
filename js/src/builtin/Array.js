@@ -265,14 +265,19 @@ function ArrayToSorted(comparefn) {
     var O = ToObject(this);
     var len = ToLength(O.length);
 
-    // Step 2: Snapshot values in ascending index order into a List.
+    // Step 2: Create the result array using ArrayCreate semantics.
+    // This intentionally doesn't use Symbol.species and also performs the
+    // array-length limit check before indexed value reads.
+    var A = std_Array(len);
+
+    // Step 3: Snapshot values in ascending index order into a List.
     var items = new List();
     var itemsLen = len;
     for (var k = 0; k < len; k++) {
         items[k] = O[k];
     }
 
-    // Step 3: Create SortCompare per spec.
+    // Step 4: Create SortCompare per spec.
     var wrappedCompareFn = comparefn;
     var sortCompare;
     if (wrappedCompareFn === undefined) {
@@ -302,15 +307,36 @@ function ArrayToSorted(comparefn) {
         };
     }
 
-    // Step 4: Sort the snapshot List using SortCompare.
+    // Step 5: Sort the snapshot List using SortCompare.
     if (itemsLen > 1)
         MergeSort(items, itemsLen, sortCompare);
 
-    // Step 5: Create result array and write sorted values.
-    var A = ArraySpeciesCreate(O, len);
+    // Step 6: Write sorted values into the pre-created result array.
     for (var j = 0; j < itemsLen; j++)
         _DefineDataProperty(A, j, items[j]);
 
+    return A;
+}
+
+// ES2023 22.1.3.29 Array.prototype.toReversed ( )
+function ArrayToReversed() {
+    // Step 1: Let O be ? ToObject(this value).
+    var O = ToObject(this);
+
+    // Step 2: Let len be ? LengthOfArrayLike(O).
+    var len = ToLength(O.length);
+
+    // Step 3: Let A be ! ArrayCreate(len).
+    var A = std_Array(len);
+
+    // Steps 4-5: Copy elements in reverse order.
+    for (var k = 0; k < len; k++) {
+        var from = len - k - 1;
+        var fromValue = O[from];
+        _DefineDataProperty(A, k, fromValue);
+    }
+
+    // Step 6.
     return A;
 }
 
