@@ -10,7 +10,9 @@
 #include "nsNetCID.h"
 #include "mozilla/Services.h"
 
-static nsresult GetBundle(const char * aPropFileName, nsIStringBundle **aBundle)
+static nsresult
+GetBundle(const char * aPropFileName,
+          nsIStringBundle **aBundle)
 {
   NS_ENSURE_ARG_POINTER(aPropFileName);
   NS_ENSURE_ARG_POINTER(aBundle);
@@ -26,7 +28,9 @@ static nsresult GetBundle(const char * aPropFileName, nsIStringBundle **aBundle)
 }
 
 nsresult
-nsParserMsgUtils::GetLocalizedStringByName(const char * aPropFileName, const char* aKey, nsString& oVal)
+nsParserMsgUtils::GetLocalizedStringByName(const char * aPropFileName,
+                                           const char* aKey,
+                                           nsString& oVal)
 {
   oVal.Truncate();
 
@@ -40,14 +44,16 @@ nsParserMsgUtils::GetLocalizedStringByName(const char * aPropFileName, const cha
     rv = bundle->GetStringFromName(key.get(), getter_Copies(valUni));
     if (NS_SUCCEEDED(rv) && valUni) {
       oVal.Assign(valUni);
-    }  
+    }
   }
 
   return rv;
 }
 
 nsresult
-nsParserMsgUtils::GetLocalizedStringByID(const char * aPropFileName, uint32_t aID, nsString& oVal)
+nsParserMsgUtils::GetLocalizedStringByID(const char * aPropFileName,
+                                         int32_t aID,
+                                         nsString& oVal)
 {
   oVal.Truncate();
 
@@ -58,7 +64,7 @@ nsParserMsgUtils::GetLocalizedStringByID(const char * aPropFileName, uint32_t aI
     rv = bundle->GetStringFromID(aID, getter_Copies(valUni));
     if (NS_SUCCEEDED(rv) && valUni) {
       oVal.Assign(valUni);
-    }  
+    }
   }
 
   return rv;
