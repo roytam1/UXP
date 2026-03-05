@@ -53,5 +53,35 @@ assertEq(accessLog.join(","), "0,1,2");
 // Comparator errors propagate.
 assertThrowsInstanceOf(() => [1, 2].toSorted(1), TypeError);
 
+// Symbol.species/constructor is ignored for toSorted result creation.
+let speciesIgnored = [2, 1];
+let constructorAccessed = false;
+Object.defineProperty(speciesIgnored, "constructor", {
+    get() {
+        constructorAccessed = true;
+        return {
+            [Symbol.species]: function() {
+                throw new Error("should not be called");
+            }
+        };
+    }
+});
+let speciesIgnoredResult = speciesIgnored.toSorted();
+assertEq(constructorAccessed, false);
+assertEq(Array.isArray(speciesIgnoredResult), true);
+assertEq(speciesIgnoredResult.join(","), "1,2");
+
+// Length limit check happens before indexed reads.
+let indexedRead = false;
+let tooLong = {
+    length: 4294967296,
+    get 0() {
+        indexedRead = true;
+        throw new Error("index getter should not run");
+    }
+};
+assertThrowsInstanceOf(() => Array.prototype.toSorted.call(tooLong), RangeError);
+assertEq(indexedRead, false);
+
 if (typeof reportCompare === "function")
     reportCompare(0, 0);

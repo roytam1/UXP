@@ -888,13 +888,14 @@ AppendErrorPointer(const int32_t aColNumber,
 nsresult
 nsExpatDriver::HandleError()
 {
-  int32_t code = MOZ_XML_GetErrorCode(mExpatParser);
+  XML_Error code = MOZ_XML_GetErrorCode(mExpatParser);
   NS_ASSERTION(code > XML_ERROR_NONE, "unexpected XML error code");
 
   // Map Expat error code to an error string
   // XXX Deal with error returns.
   nsAutoString description;
-  nsParserMsgUtils::GetLocalizedStringByID(XMLPARSER_PROPERTIES, code,
+  nsParserMsgUtils::GetLocalizedStringByID(XMLPARSER_PROPERTIES,
+                                           static_cast<int32_t>(code),
                                            description);
 
   if (code == XML_ERROR_TAG_MISMATCH) {

@@ -58,6 +58,10 @@ if CONFIG['CPU_ARCH'] == 'arm' and CONFIG['HAVE_ARM_NEON']:
     SOURCES += [
         'yuv_convert_arm.cpp',
     ]
+    if CONFIG['CC_TYPE'] == 'clang':
+        SOURCES['yuv_convert_arm.cpp'].flags += [
+            '-fno-integrated-as'
+        ]
 
 LOCAL_INCLUDES += ['/media/libyuv/include']
 
