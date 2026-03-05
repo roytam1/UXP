@@ -696,7 +696,7 @@ CreateFilteredListFromArrayLike(JSContext* cx, HandleValue v, AutoIdVector& prop
 }
 
 
-// ES8 rev 0c1bd3004329336774cbc90de727cd0cf5f11e93 9.5.11 Proxy.[[OwnPropertyKeys]]()
+// ES2018 9.5.11 Proxy.[[OwnPropertyKeys]]()
 bool
 ScriptedProxyHandler::ownPropertyKeys(JSContext* cx, HandleObject proxy, AutoIdVector& props) const
 {
@@ -732,27 +732,45 @@ ScriptedProxyHandler::ownPropertyKeys(JSContext* cx, HandleObject proxy, AutoIdV
         return false;
 
     // Step 9.
+    Rooted<GCHashSet<jsid>> uncheckedResultKeys(cx, GCHashSet<jsid>(cx));
+    if (!uncheckedResultKeys.init(trapResult.length()))
+        return false;
+
+    for (size_t i = 0, len = trapResult.length(); i < len; i++) {
+        MOZ_ASSERT(!JSID_IS_VOID(trapResult[i]));
+
+        auto ptr = uncheckedResultKeys.lookupForAdd(trapResult[i]);
+        if (ptr) {
+            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_OWNKEYS_DUPLICATE);
+            return false;
+        }
+
+        if (!uncheckedResultKeys.add(ptr, trapResult[i]))
+            return false;
+    }
+
+    // Step 10.
     bool extensibleTarget;
     if (!IsExtensible(cx, target, &extensibleTarget))
         return false;
 
-    // Steps 10-11.
+    // Steps 11-12.
     AutoIdVector targetKeys(cx);
     if (!GetPropertyKeys(cx, target, JSITER_OWNONLY | JSITER_HIDDEN | JSITER_SYMBOLS, &targetKeys))
         return false;
 
-    // Steps 12-13.
+    // Steps 13-14.
     AutoIdVector targetConfigurableKeys(cx);
     AutoIdVector targetNonconfigurableKeys(cx);
 
-    // Step 14.
+    // Step 15.
     Rooted<PropertyDescriptor> desc(cx);
     for (size_t i = 0; i < targetKeys.length(); ++i) {
-        // Step 14a.
+        // Step 15a.
         if (!GetOwnPropertyDescriptor(cx, target, targetKeys[i], &desc))
             return false;
 
-        // Steps 14b-c.
+        // Steps 15b-c.
         if (desc.object() && !desc.configurable()) {
             if (!targetNonconfigurableKeys.append(targetKeys[i]))
                 return false;
@@ -762,23 +780,9 @@ ScriptedProxyHandler::ownPropertyKeys(JSContext* cx, HandleObject proxy, AutoIdV
         }
     }
 
-    // Step 15.
+    // Step 16.
     if (extensibleTarget && targetNonconfigurableKeys.empty())
         return props.appendAll(trapResult);
-
-    // Step 16.
-    // The algorithm below always removes all occurences of the same key
-    // at once, so we can use a set here.
-    Rooted<GCHashSet<jsid>> uncheckedResultKeys(cx, GCHashSet<jsid>(cx));
-    if (!uncheckedResultKeys.init(trapResult.length()))
-        return false;
-
-    for (size_t i = 0, len = trapResult.length(); i < len; i++) {
-        MOZ_ASSERT(!JSID_IS_VOID(trapResult[i]));
-
-        if (!uncheckedResultKeys.put(trapResult[i]))
-            return false;
-    }
 
     // Step 17.
     for (size_t i = 0; i < targetNonconfigurableKeys.length(); ++i) {

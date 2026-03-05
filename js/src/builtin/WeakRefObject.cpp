@@ -162,6 +162,7 @@ WeakRefObject::trace(JSTracer* trc, JSObject* obj)
 /* static */ void
 WeakRefObject::finalize(FreeOp* fop, JSObject* obj)
 {
+    MOZ_ASSERT(!fop->maybeOffMainThread());
     if (Referent* data = GetReferent(obj))
         fop->delete_(data);
 }
@@ -184,8 +185,7 @@ static const ClassOps WeakRefObjectClassOps = {
 const Class WeakRefObject::class_ = {
     "WeakRef",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_HAS_CACHED_PROTO(JSProto_WeakRef) |
-    JSCLASS_BACKGROUND_FINALIZE,
+    JSCLASS_HAS_CACHED_PROTO(JSProto_WeakRef),
     &WeakRefObjectClassOps
 };
 
