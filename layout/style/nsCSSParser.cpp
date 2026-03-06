@@ -186,17 +186,12 @@ OKLabToSRGBColor(float aL, float aA, float aB, float aAlpha)
   uint8_t alpha =
     nsStyleUtil::FloatToColorComponent(mozilla::clamped(aAlpha, 0.0f, 1.0f));
 
-  // Treat values extremely close to the endpoints as the endpoints to avoid
-  // tiny floating-point representation differences for percentage inputs.
+  // Treat values extremely close to zero as zero to avoid tiny floating-point
+  // representation differences for percentage inputs.
   static constexpr float kLightnessEndpointEpsilon = 0.000002f;
 
-  // If lightness is at either endpoint, the color is black/white regardless
-  // of chroma and hue (or a/b).
   if (lightness <= kLightnessEndpointEpsilon) {
     return NS_RGBA(0, 0, 0, alpha);
-  }
-  if (lightness >= 1.0f - kLightnessEndpointEpsilon) {
-    return NS_RGBA(255, 255, 255, alpha);
   }
 
   float lRoot = lightness + 0.3963377774f * aA + 0.2158037573f * aB;
