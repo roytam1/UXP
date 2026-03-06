@@ -183,6 +183,21 @@ OKLabToSRGBColor(float aL, float aA, float aB, float aAlpha)
 {
   // Per CSS Color, the lightness component for Oklab/Oklch is clamped.
   float lightness = mozilla::clamped(aL, 0.0f, 1.0f);
+  uint8_t alpha =
+    nsStyleUtil::FloatToColorComponent(mozilla::clamped(aAlpha, 0.0f, 1.0f));
+
+  // Treat values extremely close to the endpoints as the endpoints to avoid
+  // tiny floating-point representation differences for percentage inputs.
+  static constexpr float kLightnessEndpointEpsilon = 0.000002f;
+
+  // If lightness is at either endpoint, the color is black/white regardless
+  // of chroma and hue (or a/b).
+  if (lightness <= kLightnessEndpointEpsilon) {
+    return NS_RGBA(0, 0, 0, alpha);
+  }
+  if (lightness >= 1.0f - kLightnessEndpointEpsilon) {
+    return NS_RGBA(255, 255, 255, alpha);
+  }
 
   float lRoot = lightness + 0.3963377774f * aA + 0.2158037573f * aB;
   float mRoot = lightness - 0.1055613458f * aA - 0.0638541728f * aB;
@@ -204,7 +219,7 @@ OKLabToSRGBColor(float aL, float aA, float aB, float aAlpha)
     NSToIntRound(r * 255.0f),
     NSToIntRound(g * 255.0f),
     NSToIntRound(b * 255.0f),
-    nsStyleUtil::FloatToColorComponent(mozilla::clamped(aAlpha, 0.0f, 1.0f)));
+    alpha);
 }
 
 static_assert(css::eAuthorSheetFeatures == 0 &&
