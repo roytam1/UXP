@@ -16,6 +16,7 @@
 #include "builtin/intl/ICUHeader.h"
 #include "js/RootingAPI.h"
 #include "js/Vector.h"
+#include "unicode/uchar.h"
 #include "vm/String.h"
 
 #include "jscntxt.h"
@@ -156,7 +157,7 @@ CallICU(JSContext* cx, const ICUStringFunction& strFn, bool wsCompat = false)
 
     if (wsCompat) {
         for (char16_t& c : chars) {
-            if (c == 0x202F || c == 0x2009) {
+            if (u_isUWhiteSpace(static_cast<UChar32>(c))) {
                 c = 0x0020;
             }
         }

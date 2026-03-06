@@ -965,7 +965,7 @@ ParseDate(const CharT* s, size_t length, ClippedTime* result)
 
         // CLDR 42 has opened the door to whitespace,
         // so let's normalize them all to standard spaces.
-        if (u_hasBinaryProperty(static_cast<UChar32>(c), UCHAR_WHITE_SPACE)) {
+        if (u_isUWhiteSpace(static_cast<UChar32>(c))) {
             c = ' ';
         }
 
@@ -1006,7 +1006,7 @@ ParseDate(const CharT* s, size_t length, ClippedTime* result)
             }
 
             // CLDR 42 reprise.
-            if (u_hasBinaryProperty(static_cast<UChar32>(c), UCHAR_WHITE_SPACE)) {
+            if (u_isUWhiteSpace(static_cast<UChar32>(c))) {
                 c = ' ';
             }
 
