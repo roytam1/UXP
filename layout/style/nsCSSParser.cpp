@@ -1442,6 +1442,7 @@ protected:
   };
   bool ParseLinearGradient(nsCSSValue& aValue, uint8_t aFlags);
   bool ParseRadialGradient(nsCSSValue& aValue, uint8_t aFlags);
+  CSSParseResult ParseGradientInterpolationMethod();
   bool IsLegacyGradientLine(const nsCSSTokenType& aType,
                             const nsString& aId);
   bool ParseGradientColorStops(nsCSSValueGradient* aGradient,
@@ -11126,6 +11127,58 @@ CSSParserImpl::ParseColorStop(nsCSSValueGradient* aGradient)
   return true;
 }
 
+CSSParseResult
+CSSParserImpl::ParseGradientInterpolationMethod()
+{
+  if (!GetToken(true)) {
+    return CSSParseResult::NotFound;
+  }
+
+  if (mToken.mType != eCSSToken_Ident ||
+      !mToken.mIdent.LowerCaseEqualsLiteral("in")) {
+    UngetToken();
+    return CSSParseResult::NotFound;
+  }
+
+  if (!GetToken(true) || mToken.mType != eCSSToken_Ident) {
+    return CSSParseResult::Error;
+  }
+
+  bool isPolarColorSpace = false;
+  if (mToken.mIdent.LowerCaseEqualsLiteral("srgb") ||
+      mToken.mIdent.LowerCaseEqualsLiteral("oklab")) {
+    isPolarColorSpace = false;
+  } else if (mToken.mIdent.LowerCaseEqualsLiteral("hsl") ||
+             mToken.mIdent.LowerCaseEqualsLiteral("oklch")) {
+    isPolarColorSpace = true;
+  } else {
+    return CSSParseResult::Error;
+  }
+
+  if (!isPolarColorSpace || !GetToken(true)) {
+    return CSSParseResult::Ok;
+  }
+
+  if (mToken.mType != eCSSToken_Ident) {
+    UngetToken();
+    return CSSParseResult::Ok;
+  }
+
+  if (mToken.mIdent.LowerCaseEqualsLiteral("shorter") ||
+      mToken.mIdent.LowerCaseEqualsLiteral("longer") ||
+      mToken.mIdent.LowerCaseEqualsLiteral("increasing") ||
+      mToken.mIdent.LowerCaseEqualsLiteral("decreasing")) {
+    if (!GetToken(true) || mToken.mType != eCSSToken_Ident ||
+        !mToken.mIdent.LowerCaseEqualsLiteral("hue")) {
+      return CSSParseResult::Error;
+    }
+    return CSSParseResult::Ok;
+  }
+
+  UngetToken();
+  return CSSParseResult::Ok;
+}
+
 // Helper for ParseLinearGradient -- returns true iff aPosition represents a
 // box-position value which was parsed with only edge keywords.
 // e.g. "left top", or "bottom", but not "left 10px"
@@ -11213,9 +11266,24 @@ CSSParserImpl::ParseLinearGradient(nsCSSValue& aValue,
     // expression as <angle>? <color-stop-list>
     UngetToken();
 
-    // <angle> ,
+    // <angle>? [ in <color-space> [<hue-interpolation-method> hue]? ]? ,
     if (ParseSingleTokenVariant(cssGradient->mAngle,
-                                VARIANT_ANGLE_OR_ZERO, nullptr) &&
+                                VARIANT_ANGLE_OR_ZERO, nullptr)) {
+      CSSParseResult interpolationResult = ParseGradientInterpolationMethod();
+      if (interpolationResult == CSSParseResult::Error ||
+          !ExpectSymbol(',', true)) {
+        SkipUntil(')');
+        return false;
+      }
+      return ParseGradientColorStops(cssGradient, aValue);
+    }
+
+    CSSParseResult interpolationResult = ParseGradientInterpolationMethod();
+    if (interpolationResult == CSSParseResult::Error) {
+      SkipUntil(')');
+      return false;
+    }
+    if (interpolationResult == CSSParseResult::Ok &&
         !ExpectSymbol(',', true)) {
       SkipUntil(')');
       return false;

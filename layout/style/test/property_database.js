@@ -122,6 +122,10 @@ var validGradientAndElementValues = [
   "linear-gradient(10deg, red, blue)",
   "linear-gradient(1turn, red, blue)",
   "linear-gradient(.414rad, red, blue)",
+  "linear-gradient(90deg in srgb, yellow, purple)",
+  "linear-gradient(90deg in hsl, yellow, purple)",
+  "linear-gradient(90deg in oklch, yellow, purple)",
+  "linear-gradient(in oklab, yellow, purple)",
 
   "linear-gradient(.414rad, red, 50%, blue)",
   "linear-gradient(.414rad, red, 0%, blue)",
