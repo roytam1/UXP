@@ -181,9 +181,12 @@ LinearSRGBToEncoded(float aValue)
 static nscolor
 OKLabToSRGBColor(float aL, float aA, float aB, float aAlpha)
 {
-  float lRoot = aL + 0.3963377774f * aA + 0.2158037573f * aB;
-  float mRoot = aL - 0.1055613458f * aA - 0.0638541728f * aB;
-  float sRoot = aL - 0.0894841775f * aA - 1.2914855480f * aB;
+  // Per CSS Color, the lightness component for Oklab/Oklch is clamped.
+  float lightness = mozilla::clamped(aL, 0.0f, 1.0f);
+
+  float lRoot = lightness + 0.3963377774f * aA + 0.2158037573f * aB;
+  float mRoot = lightness - 0.1055613458f * aA - 0.0638541728f * aB;
+  float sRoot = lightness - 0.0894841775f * aA - 1.2914855480f * aB;
 
   float l = lRoot * lRoot * lRoot;
   float m = mRoot * mRoot * mRoot;
