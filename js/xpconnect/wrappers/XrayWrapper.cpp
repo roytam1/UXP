@@ -609,6 +609,11 @@ JSXrayTraits::resolveOwnProperty(JSContext* cx, const Wrapper& jsWrapper,
                 return true;
             }
 
+            // The optional .cause property can have any value.
+            if (id == GetJSIDByIndex(cx, XPCJSContext::IDX_CAUSE)) {
+                return getOwnPropertyFromWrapperIfSafe(cx, wrapper, id, desc);
+            }
+
             if (key == JSProto_AggregateError &&
                 id == GetJSIDByIndex(cx, XPCJSContext::IDX_ERRORS)) {
                 return getOwnPropertyFromWrapperIfSafe(cx, wrapper, id, desc);
