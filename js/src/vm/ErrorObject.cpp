@@ -469,6 +469,15 @@ js::ErrorObject::init(JSContext* cx, Handle<ErrorObject*> obj, JSExnType type,
         MOZ_ASSERT(messageShape->slot() == MESSAGE_SLOT);
     }
 
+    // Similar to the .message property, .cause is present only in some error
+    // objects -- |new Error("f", {cause: cause})| -- but not in other --
+    // |Error.prototype|, |new Error()|, |new Error("f")|.
+    if (cause.isSome()) {
+        if (!obj->addDataProperty(cx, cx->names().cause, CAUSE_SLOT, 0)) {
+            return false;
+        }
+    }
+
     MOZ_ASSERT(obj->lookupPure(NameToId(cx->names().fileName))->slot() == FILENAME_SLOT);
     MOZ_ASSERT(obj->lookupPure(NameToId(cx->names().lineNumber))->slot() == LINENUMBER_SLOT);
     MOZ_ASSERT(obj->lookupPure(NameToId(cx->names().columnNumber))->slot() ==
