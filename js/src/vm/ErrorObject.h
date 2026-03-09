@@ -7,6 +7,7 @@
 #define vm_ErrorObject_h_
 
 #include "mozilla/ArrayUtils.h"
+#include "mozilla/Maybe.h"
 
 #include "vm/NativeObject.h"
 #include "vm/SavedStacks.h"
@@ -26,7 +27,7 @@ class ErrorObject : public NativeObject
     static bool
     init(JSContext* cx, Handle<ErrorObject*> obj, JSExnType type,
          ScopedJSFreePtr<JSErrorReport>* errorReport, HandleString fileName, HandleObject stack,
-         uint32_t lineNumber, uint32_t columnNumber, HandleString message);
+         uint32_t lineNumber, uint32_t columnNumber, HandleString message, Handle<mozilla::Maybe<JS::Value>> cause);
 
     static const ClassSpec classSpecs[JSEXN_ERROR_LIMIT];
     static const Class protoClasses[JSEXN_ERROR_LIMIT];
@@ -39,8 +40,9 @@ class ErrorObject : public NativeObject
     static const uint32_t LINENUMBER_SLOT       = FILENAME_SLOT + 1;
     static const uint32_t COLUMNNUMBER_SLOT     = LINENUMBER_SLOT + 1;
     static const uint32_t MESSAGE_SLOT          = COLUMNNUMBER_SLOT + 1;
+    static const uint32_t CAUSE_SLOT            = MESSAGE_SLOT + 1;
 
-    static const uint32_t RESERVED_SLOTS = MESSAGE_SLOT + 1;
+    static const uint32_t RESERVED_SLOTS = CAUSE_SLOT + 1;
 
   public:
     static const Class classes[JSEXN_ERROR_LIMIT];
@@ -61,7 +63,7 @@ class ErrorObject : public NativeObject
     static ErrorObject*
     create(JSContext* cx, JSExnType type, HandleObject stack, HandleString fileName,
            uint32_t lineNumber, uint32_t columnNumber, ScopedJSFreePtr<JSErrorReport>* report,
-           HandleString message, HandleObject proto = nullptr);
+           HandleString message, Handle<mozilla::Maybe<JS::Value>> cause, HandleObject proto = nullptr);
 
     /*
      * Assign the initial error shape to the empty object.  (This shape does
@@ -92,6 +94,14 @@ class ErrorObject : public NativeObject
     JSString * getMessage() const {
         const HeapSlot& slot = getReservedSlotRef(MESSAGE_SLOT);
         return slot.isString() ? slot.toString() : nullptr;
+    }
+
+    mozilla::Maybe<Value> getCause() const {
+      const auto& value = getReservedSlot(CAUSE_SLOT);
+      if (value.isMagic(JS_ERROR_WITHOUT_CAUSE)) {
+        return mozilla::Nothing();
+      }
+      return mozilla::Some(value);
     }
 
     // Getter and setter for the Error.prototype.stack accessor.
