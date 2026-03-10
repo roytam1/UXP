@@ -20,6 +20,7 @@
 #include "mozilla/dom/IIRFilterNodeBinding.h"
 #include "mozilla/dom/HTMLMediaElement.h"
 #include "mozilla/dom/OfflineAudioContextBinding.h"
+#include "mozilla/dom/PannerNodeBinding.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/WaveShaperNodeBinding.h"
 
@@ -428,13 +429,7 @@ AudioContext::CreateDelay(double aMaxDelayTime, ErrorResult& aRv)
 already_AddRefed<PannerNode>
 AudioContext::CreatePanner(ErrorResult& aRv)
 {
-  if (CheckClosed(aRv)) {
-    return nullptr;
-  }
-
-  RefPtr<PannerNode> pannerNode = new PannerNode(this);
-  mPannerNodes.PutEntry(pannerNode);
-  return pannerNode.forget();
+  return PannerNode::Create(*this, PannerOptions(), aRv);
 }
 
 already_AddRefed<ConvolverNode>
