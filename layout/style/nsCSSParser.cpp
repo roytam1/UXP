@@ -696,7 +696,7 @@ private:
         if (c == '{') {
           return true;
         }
-        if (c == ':' || c == ';' || c == '}') {
+        if (c == ';' || c == '}') {
           return false;
         }
       }
