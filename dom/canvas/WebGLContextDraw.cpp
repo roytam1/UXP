@@ -9,6 +9,7 @@
 #include "mozilla/CheckedInt.h"
 #include "mozilla/UniquePtrExtensions.h"
 #include "nsPrintfCString.h"
+#include "WebGLActiveInfo.h"
 #include "WebGLBuffer.h"
 #include "WebGLContextUtils.h"
 #include "WebGLFramebuffer.h"
@@ -26,6 +27,30 @@ namespace mozilla {
 
 // For a Tegra workaround.
 static const int MAX_DRAW_CALLS_SINCE_FLUSH = 100;
+
+static uint8_t
+NumUsedLocationsByElemTypeForDraw(GLenum elemType)
+{
+    switch (elemType) {
+    case LOCAL_GL_FLOAT_MAT2:
+    case LOCAL_GL_FLOAT_MAT2x3:
+    case LOCAL_GL_FLOAT_MAT2x4:
+        return 2;
+
+    case LOCAL_GL_FLOAT_MAT3x2:
+    case LOCAL_GL_FLOAT_MAT3:
+    case LOCAL_GL_FLOAT_MAT3x4:
+        return 3;
+
+    case LOCAL_GL_FLOAT_MAT4x2:
+    case LOCAL_GL_FLOAT_MAT4x3:
+    case LOCAL_GL_FLOAT_MAT4:
+        return 4;
+
+    default:
+        return 1;
+    }
+}
 
 ////////////////////////////////////////
 
@@ -331,6 +356,7 @@ class ScopedDrawHelper final
 {
     WebGLContext* const mWebGL;
     bool mDidFake;
+    std::vector<GLuint> mDisabledUnusedAttribs;
 
 public:
     ScopedDrawHelper(WebGLContext* webgl, const char* funcName, uint32_t firstVertex,
@@ -367,10 +393,42 @@ public:
         }
         mDidFake = true;
 
+        const auto& linkInfo = mWebGL->mActiveProgramLinkInfo;
+
+#ifdef XP_MACOSX
+        if (mWebGL->gl->WorkAroundDriverBugs()) {
+            std::vector<bool> isActiveAttrib(mWebGL->mBoundVertexArray->mAttribs.Length(),
+                                             false);
+            for (const auto& progAttrib : linkInfo->attribs) {
+                const auto loc = progAttrib.mLoc;
+                if (loc < 0) {
+                    continue;
+                }
+
+                const auto usedLocs =
+                    NumUsedLocationsByElemTypeForDraw(progAttrib.mActiveInfo->mElemType);
+                for (uint32_t i = 0; i < usedLocs; ++i) {
+                    const auto usedLoc = static_cast<uint32_t>(loc) + i;
+                    if (usedLoc < isActiveAttrib.size()) {
+                        isActiveAttrib[usedLoc] = true;
+                    }
+                }
+            }
+
+            for (uint32_t i = 0; i < mWebGL->mBoundVertexArray->mAttribs.Length(); ++i) {
+                const auto& attrib = mWebGL->mBoundVertexArray->mAttribs[i];
+                if (!attrib.mEnabled || isActiveAttrib[i]) {
+                    continue;
+                }
+
+                mWebGL->gl->fDisableVertexAttribArray(i);
+                mDisabledUnusedAttribs.push_back(i);
+            }
+        }
+#endif
+
         ////
         // Check UBO sizes.
-
-        const auto& linkInfo = mWebGL->mActiveProgramLinkInfo;
 
         for (const auto& cur : linkInfo->uniformBlocks) {
             const auto& dataSize = cur->mDataSize;
@@ -476,6 +534,10 @@ public:
     ~ScopedDrawHelper() {
         if (mDidFake) {
             mWebGL->UndoFakeVertexAttrib0();
+        }
+
+        for (const auto loc : mDisabledUnusedAttribs) {
+            mWebGL->gl->fEnableVertexAttribArray(loc);
         }
     }
 };
@@ -607,7 +669,7 @@ WebGLContext::DrawArraysInstanced(GLenum mode, GLint first, GLsizei vertCount,
         return;
 
     MakeContextCurrent();
-    
+
     if (vertCount > mMaxVertIdsPerDraw) {
       ErrorOutOfMemory(
           "Context's max vertCount is %u, but %u requested. [webgl.max-vert-ids-per-draw]", mMaxVertIdsPerDraw, vertCount);

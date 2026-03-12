@@ -1691,8 +1691,11 @@ Reject(JSContext* cx, const CompileArgs& args, UniqueChars error, Handle<Promise
     if (!message)
         return false;
 
+    // There's no error |cause| available here.
+    auto cause = JS::NothingHandleValue;
+
     RootedObject errorObj(cx,
-        ErrorObject::create(cx, JSEXN_WASMCOMPILEERROR, stack, filename, line, column, nullptr, message));
+        ErrorObject::create(cx, JSEXN_WASMCOMPILEERROR, stack, filename, line, column, nullptr, message, cause));
     if (!errorObj)
         return false;
 

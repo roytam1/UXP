@@ -1,17 +1,24 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html>
-<head>
-  <title>Test for miscellaneous computed style issues</title>
-  <script type="application/javascript" src="/tests/SimpleTest/SimpleTest.js"></script>
-  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
-</head>
-<body>
-<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=">Mozilla Bug </a>
-<p id="display"></p>
-<div id="content" style="display: none">
-  
-</div>
-<pre id="test">
+    <head>
+        <title>Test for miscellaneous computed style issues</title>
+        <script
+            type="application/javascript"
+            src="/tests/SimpleTest/SimpleTest.js"
+        ></script>
+        <link
+            rel="stylesheet"
+            type="text/css"
+            href="/tests/SimpleTest/test.css"
+        />
+    </head>
+    <body>
+        <a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id="
+            >Mozilla Bug
+        </a>
+        <p id="display"></p>
+        <div id="content" style="display: none"></div>
+        <pre id="test">
 <script type="application/javascript">
 
 /** Test for miscellaneous computed style issues **/
@@ -392,6 +399,16 @@ var noframe_container = document.getElementById("content");
     ["hsla(0deg 0% 0% / 0.5)", "rgba(0, 0, 0, 0.5)"],
     ["hsl(0 0% 0% / 1)", "rgb(0, 0, 0)"],
     ["hsl(0 0% 0% / 0.5)", "rgba(0, 0, 0, 0.5)"],
+    ["oklab(0 0 0 / 1)", "rgb(0, 0, 0)"],
+    ["oklab(0 0 0 / 0.5)", "rgba(0, 0, 0, 0.5)"],
+    ["oklab(150% 0.5 0.2 / 1)", "rgb(255, 0, 0)"],
+    ["oklch(0 0 0 / 1)", "rgb(0, 0, 0)"],
+    ["oklch(0 0 0 / 0.5)", "rgba(0, 0, 0, 0.5)"],
+    ["oklch(0.0001% 0.2 45 / 1)", "rgb(0, 0, 0)"],
+    ["oklch(99.9999% 0.2 45 / 1)", "rgb(255, 207, 132)"],
+    ["oklch(0% 1.1 60 / 1)", "rgb(0, 0, 0)"],
+    ["oklch(100% 110 60 / 1)", "rgb(0, 255, 0)"],
+    ["oklch(150% 0.5 50 / 1)", "rgb(255, 0, 0)"],
   ];
 
   var p = document.createElement("p");
@@ -409,5 +426,5 @@ var noframe_container = document.getElementById("content");
 
 </script>
 </pre>
-</body>
+    </body>
 </html>

@@ -60,6 +60,12 @@ function IsTypedArrayEnsuringArrayBuffer(arg) {
         return true;
     }
 
+    if (IsObject(arg) && IsPossiblyWrappedTypedArray(arg)) {
+        if (PossiblyWrappedTypedArrayHasDetachedBuffer(arg))
+            ThrowTypeError(JSMSG_TYPED_ARRAY_DETACHED);
+        return false;
+    }
+
     callFunction(CallTypedArrayMethodIfWrapped, arg, "GetAttachedArrayBufferMethod");
     return false;
 }
@@ -155,6 +161,15 @@ function TypedArraySpeciesCreateWithBuffer(exemplar, buffer, byteOffset, length)
 
     // Step 4.
     return TypedArrayCreateWithBuffer(C, buffer, byteOffset, length);
+}
+
+// ES2024 23.2.4.5 TypedArrayCreateSameType ( exemplar, argumentList )
+function TypedArrayCreateSameType(exemplar, length) {
+    // Step 1.
+    var defaultConstructor = _ConstructorForTypedArray(exemplar);
+
+    // Step 2.
+    return TypedArrayCreateWithLength(defaultConstructor, length);
 }
 
 // ES6 draft 20150304 %TypedArray%.prototype.copyWithin
@@ -846,6 +861,38 @@ function TypedArrayReverse() {
 
     // Step 9.
     return O;
+}
+
+// ES2023 23.2.3.32 %TypedArray%.prototype.toReversed ( )
+function TypedArrayToReversed() {
+    // Step 1.
+    var O = this;
+
+    // Step 2.
+    // This function is not generic.
+    // We want to make sure that we have an attached buffer, per spec prose.
+    var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
+
+    // If we got here, `this` is either a typed array or a wrapper for one.
+
+    // Step 3.
+    var len;
+    if (isTypedArray)
+        len = TypedArrayLength(O);
+    else
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
+
+    // Step 4.
+    var A = TypedArrayCreateSameType(O, len);
+
+    // Steps 5-6.
+    for (var k = 0; k < len; k++) {
+        var from = len - k - 1;
+        A[k] = O[from];
+    }
+
+    // Step 7.
+    return A;
 }
 
 // ES6 draft 20150220 22.2.3.22.1 %TypedArray%.prototype.set(array [, offset])
