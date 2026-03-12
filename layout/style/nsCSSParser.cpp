@@ -611,6 +611,103 @@ private:
   }
 
   static bool
+  StartsPotentialTypeSelector(char16_t aChar)
+  {
+    return (aChar >= 'a' && aChar <= 'z') ||
+           (aChar >= 'A' && aChar <= 'Z') ||
+           aChar == '_' ||
+           aChar == '\\' ||
+           aChar >= 0x80;
+  }
+
+  bool
+  LooksLikeTypeSelectorRule() const
+  {
+    if (AtEnd() || !StartsPotentialTypeSelector(Peek())) {
+      return false;
+    }
+
+    uint32_t pos = mPos;
+    int32_t parenDepth = 0;
+    int32_t bracketDepth = 0;
+    bool inComment = false;
+    char16_t stringQuote = 0;
+
+    while (pos < mInput.Length()) {
+      char16_t c = mInput.CharAt(pos);
+
+      if (inComment) {
+        if (c == '*' && pos + 1 < mInput.Length() &&
+            mInput.CharAt(pos + 1) == '/') {
+          inComment = false;
+          ++pos;
+        }
+        ++pos;
+        continue;
+      }
+
+      if (stringQuote) {
+        if (c == '\\' && pos + 1 < mInput.Length()) {
+          pos += 2;
+          continue;
+        }
+        if (c == stringQuote) {
+          stringQuote = 0;
+        }
+        ++pos;
+        continue;
+      }
+
+      if (c == '/' && pos + 1 < mInput.Length() &&
+          mInput.CharAt(pos + 1) == '*') {
+        inComment = true;
+        pos += 2;
+        continue;
+      }
+
+      if (c == '"' || c == '\'') {
+        stringQuote = c;
+        ++pos;
+        continue;
+      }
+
+      if (c == '(') {
+        ++parenDepth;
+        ++pos;
+        continue;
+      }
+      if (c == ')' && parenDepth > 0) {
+        --parenDepth;
+        ++pos;
+        continue;
+      }
+      if (c == '[') {
+        ++bracketDepth;
+        ++pos;
+        continue;
+      }
+      if (c == ']' && bracketDepth > 0) {
+        --bracketDepth;
+        ++pos;
+        continue;
+      }
+
+      if (parenDepth == 0 && bracketDepth == 0) {
+        if (c == '{') {
+          return true;
+        }
+        if (c == ':' || c == ';' || c == '}') {
+          return false;
+        }
+      }
+
+      ++pos;
+    }
+
+    return false;
+  }
+
+  static bool
   IsAtRuleNameChar(char16_t aChar)
   {
     return (aChar >= 'a' && aChar <= 'z') ||
@@ -999,7 +1096,7 @@ private:
         continue;
       }
 
-      if (StartsNestedSelector(c)) {
+      if (StartsNestedSelector(c) || LooksLikeTypeSelectorRule()) {
         FlushDeclarations(aSelectors, declarations, aOutput);
         if (!ParseQualifiedRule(aOutput, &aSelectors)) {
           return false;
