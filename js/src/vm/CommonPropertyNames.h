@@ -67,6 +67,7 @@
     macro(case, case_, "case") \
     macro(caseFirst, caseFirst, "caseFirst") \
     macro(catch, catch_, "catch") \
+    macro(cause, cause, "cause") \
     macro(class, class_, "class") \
     macro(close, close, "close") \
     macro(collation, collation, "collation") \

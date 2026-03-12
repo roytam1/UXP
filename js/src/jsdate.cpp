@@ -36,6 +36,7 @@
 
 #include "js/Conversions.h"
 #include "js/Date.h"
+#include "unicode/uchar.h"
 #include "vm/DateTime.h"
 #include "vm/GlobalObject.h"
 #include "vm/Interpreter.h"
@@ -961,7 +962,13 @@ ParseDate(const CharT* s, size_t length, ClippedTime* result)
     while (i < length) {
         int c = s[i];
         i++;
-        
+
+        // CLDR 42 has opened the door to whitespace,
+        // so let's normalize them all to standard spaces.
+        if (u_isUWhiteSpace(static_cast<UChar32>(c))) {
+            c = ' ';
+        }
+
         // Spaces, ASCII control characters, and commas are ignored.
         if (c <= ' ' || c == ',')
             continue;
@@ -996,6 +1003,11 @@ ParseDate(const CharT* s, size_t length, ClippedTime* result)
             while (i < length && '0' <= (c = s[i]) && c <= '9') {
                 n = n * 10 + c - '0';
                 i++;
+            }
+
+            // CLDR 42 reprise.
+            if (u_isUWhiteSpace(static_cast<UChar32>(c))) {
+                c = ' ';
             }
 
             /*

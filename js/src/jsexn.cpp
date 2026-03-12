@@ -10,6 +10,7 @@
 #include "jsexn.h"
 
 #include "mozilla/ArrayUtils.h"
+#include "mozilla/Maybe.h"
 #include "mozilla/PodOperations.h"
 #include "mozilla/Sprintf.h"
 
@@ -329,6 +330,9 @@ js::ErrorToException(JSContext* cx, JSErrorReport* reportp,
     uint32_t lineNumber = reportp->lineno;
     uint32_t columnNumber = reportp->column;
 
+    // Error reports don't provide a |cause|, so we default to |Nothing| here.
+    auto cause = JS::NothingHandleValue;
+
     RootedObject stack(cx);
     if (!CaptureStack(cx, &stack))
         return;
@@ -338,7 +342,7 @@ js::ErrorToException(JSContext* cx, JSErrorReport* reportp,
         return;
 
     RootedObject errObject(cx, ErrorObject::create(cx, exnType, stack, fileName,
-                                                   lineNumber, columnNumber, &report, messageStr));
+                                                   lineNumber, columnNumber, &report, messageStr, cause));
     if (!errObject)
         return;
 
@@ -660,13 +664,21 @@ js::CopyErrorObject(JSContext* cx, Handle<ErrorObject*> err)
     RootedObject stack(cx, err->stack());
     if (!cx->compartment()->wrap(cx, &stack))
         return nullptr;
+    Rooted<mozilla::Maybe<Value>> cause(cx, mozilla::Nothing());
+    if (auto maybeCause = err->getCause()) {
+      RootedValue errorCause(cx, maybeCause.value());
+      if (!cx->compartment()->wrap(cx, &errorCause)) {
+        return nullptr;
+      }
+      cause = mozilla::Some(errorCause.get());
+    }
     uint32_t lineNumber = err->lineNumber();
     uint32_t columnNumber = err->columnNumber();
     JSExnType errorType = err->type();
 
     // Create the Error object.
     return ErrorObject::create(cx, errorType, stack, fileName,
-                               lineNumber, columnNumber, &copyReport, message);
+                               lineNumber, columnNumber, &copyReport, message, cause);
 }
 
 JS_PUBLIC_API(bool)
@@ -681,9 +693,13 @@ JS::CreateError(JSContext* cx, JSExnType type, HandleObject stack, HandleString 
     if (report)
         rep = CopyErrorReport(cx, report);
 
+    // The public API doesn't (yet) support a |cause| argument, so we default to
+    // |Nothing()| here.
+    auto cause = JS::NothingHandleValue;
+
     RootedObject obj(cx,
         js::ErrorObject::create(cx, type, stack, fileName,
-                                lineNumber, columnNumber, &rep, message));
+                                lineNumber, columnNumber, &rep, message, cause));
     if (!obj)
         return false;
 

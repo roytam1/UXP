@@ -166,6 +166,57 @@ struct ReducePercentageCalcOps : ReduceNumberCalcOps
   }
 };
 
+static constexpr float kOKLabPercentScaleAB = 0.4f;
+static constexpr double kRadiansPerDegree = 0.01745329251994329576923690768489;
+
+static inline float
+LinearSRGBToEncoded(float aValue)
+{
+  if (aValue <= 0.0031308f) {
+    return 12.92f * aValue;
+  }
+  return 1.055f * std::pow(aValue, 1.0f / 2.4f) - 0.055f;
+}
+
+static nscolor
+OKLabToSRGBColor(float aL, float aA, float aB, float aAlpha)
+{
+  // Per CSS Color, the lightness component for Oklab/Oklch is clamped.
+  float lightness = mozilla::clamped(aL, 0.0f, 1.0f);
+  uint8_t alpha =
+    nsStyleUtil::FloatToColorComponent(mozilla::clamped(aAlpha, 0.0f, 1.0f));
+
+  // Treat values extremely close to zero as zero to avoid tiny floating-point
+  // representation differences for percentage inputs.
+  static constexpr float kLightnessEndpointEpsilon = 0.000002f;
+
+  if (lightness <= kLightnessEndpointEpsilon) {
+    return NS_RGBA(0, 0, 0, alpha);
+  }
+
+  float lRoot = lightness + 0.3963377774f * aA + 0.2158037573f * aB;
+  float mRoot = lightness - 0.1055613458f * aA - 0.0638541728f * aB;
+  float sRoot = lightness - 0.0894841775f * aA - 1.2914855480f * aB;
+
+  float l = lRoot * lRoot * lRoot;
+  float m = mRoot * mRoot * mRoot;
+  float s = sRoot * sRoot * sRoot;
+
+  float linearR =  4.0767416621f * l - 3.3077115913f * m + 0.2309699292f * s;
+  float linearG = -1.2684380046f * l + 2.6097574011f * m - 0.3413193965f * s;
+  float linearB = -0.0041960863f * l - 0.7034186147f * m + 1.7076147010f * s;
+
+  float r = mozilla::clamped(LinearSRGBToEncoded(linearR), 0.0f, 1.0f);
+  float g = mozilla::clamped(LinearSRGBToEncoded(linearG), 0.0f, 1.0f);
+  float b = mozilla::clamped(LinearSRGBToEncoded(linearB), 0.0f, 1.0f);
+
+  return NS_RGBA(
+    NSToIntRound(r * 255.0f),
+    NSToIntRound(g * 255.0f),
+    NSToIntRound(b * 255.0f),
+    alpha);
+}
+
 static_assert(css::eAuthorSheetFeatures == 0 &&
               css::eUserSheetFeatures == 1 &&
               css::eAgentSheetFeatures == 2,
@@ -1235,6 +1286,10 @@ protected:
                      ComponentType& aA);
   bool ParseHSLColor(float& aHue, float& aSaturation, float& aLightness,
                      float& aOpacity);
+  bool ParseOKLabColor(nscolor& aColor);
+  bool ParseOKLCHColor(nscolor& aColor);
+  bool ParseOKLabComponent(float& aComponent, float aPercentScale,
+                           Maybe<char> aSeparator);
 
   // The ParseColorOpacityAndCloseParen methods below attempt to parse an
   // optional [ separator <alpha-value> ] expression, followed by a
@@ -1400,6 +1455,7 @@ protected:
   };
   bool ParseLinearGradient(nsCSSValue& aValue, uint8_t aFlags);
   bool ParseRadialGradient(nsCSSValue& aValue, uint8_t aFlags);
+  CSSParseResult ParseGradientInterpolationMethod();
   bool IsLegacyGradientLine(const nsCSSTokenType& aType,
                             const nsString& aId);
   bool ParseGradientColorStops(nsCSSValueGradient* aGradient,
@@ -7609,6 +7665,22 @@ CSSParserImpl::ParseColor(nsCSSValue& aValue)
         SkipUntil(')');
         return CSSParseResult::Error;
       }
+      else if (mToken.mIdent.LowerCaseEqualsLiteral("oklab")) {
+        if (ParseOKLabColor(rgba)) {
+          aValue.SetColorValue(rgba);
+          return CSSParseResult::Ok;
+        }
+        SkipUntil(')');
+        return CSSParseResult::Error;
+      }
+      else if (mToken.mIdent.LowerCaseEqualsLiteral("oklch")) {
+        if (ParseOKLCHColor(rgba)) {
+          aValue.SetColorValue(rgba);
+          return CSSParseResult::Ok;
+        }
+        SkipUntil(')');
+        return CSSParseResult::Error;
+      }
       break;
     }
     default:
@@ -7807,6 +7879,84 @@ CSSParserImpl::ParseHSLColor(float& aHue, float& aSaturation, float& aLightness,
   }
 
   return false;
+}
+
+bool
+CSSParserImpl::ParseOKLabComponent(float& aComponent, float aPercentScale,
+                                   Maybe<char> aSeparator)
+{
+  if (!GetToken(true)) {
+    REPORT_UNEXPECTED_EOF(PEColorComponentEOF);
+    return false;
+  }
+
+  float value;
+  if (mToken.mType == eCSSToken_Number) {
+    value = mToken.mNumber;
+  } else if (mToken.mType == eCSSToken_Percentage) {
+    value = mToken.mNumber * aPercentScale;
+  } else {
+    REPORT_UNEXPECTED_TOKEN(PEExpectedNumberOrPercent);
+    UngetToken();
+    return false;
+  }
+
+  if (aSeparator && !ExpectSymbol(*aSeparator, true)) {
+    REPORT_UNEXPECTED_TOKEN_CHAR(PEColorComponentBadTerm, *aSeparator);
+    return false;
+  }
+
+  aComponent = value;
+  return true;
+}
+
+bool
+CSSParserImpl::ParseOKLabColor(nscolor& aColor)
+{
+  const char commaSeparator = ',';
+  float l, a, b, alpha;
+
+  if (!ParseOKLabComponent(l, 1.0f, Nothing())) {
+    return false;
+  }
+
+  bool hasComma = ExpectSymbol(commaSeparator, true);
+  const char separatorBeforeAlpha = hasComma ? commaSeparator : '/';
+  if (!ParseOKLabComponent(a, kOKLabPercentScaleAB,
+                           hasComma ? Some(commaSeparator) : Nothing()) ||
+      !ParseOKLabComponent(b, kOKLabPercentScaleAB, Nothing()) ||
+      !ParseColorOpacityAndCloseParen(alpha, separatorBeforeAlpha)) {
+    return false;
+  }
+
+  aColor = OKLabToSRGBColor(l, a, b, alpha);
+  return true;
+}
+
+bool
+CSSParserImpl::ParseOKLCHColor(nscolor& aColor)
+{
+  const char commaSeparator = ',';
+  float l, chroma, hue, alpha;
+
+  if (!ParseOKLabComponent(l, 1.0f, Nothing())) {
+    return false;
+  }
+
+  bool hasComma = ExpectSymbol(commaSeparator, true);
+  const char separatorBeforeAlpha = hasComma ? commaSeparator : '/';
+  if (!ParseOKLabComponent(chroma, kOKLabPercentScaleAB,
+                           hasComma ? Some(commaSeparator) : Nothing()) ||
+      !ParseHue(hue) ||
+      !ParseColorOpacityAndCloseParen(alpha, separatorBeforeAlpha)) {
+    return false;
+  }
+
+  double hueRadians = hue * kRadiansPerDegree;
+  float a = chroma * std::cos(hueRadians);
+  float b = chroma * std::sin(hueRadians);
+  aColor = OKLabToSRGBColor(l, a, b, alpha);
+  return true;
 }
 
 
@@ -8757,6 +8907,8 @@ CSSParserImpl::ParseVariant(nsCSSValue& aValue,
           tk->mIdent.LowerCaseEqualsLiteral("hsl") ||
           tk->mIdent.LowerCaseEqualsLiteral("rgba") ||
           tk->mIdent.LowerCaseEqualsLiteral("hsla") ||
+          tk->mIdent.LowerCaseEqualsLiteral("oklab") ||
+          tk->mIdent.LowerCaseEqualsLiteral("oklch") ||
           tk->mIdent.LowerCaseEqualsLiteral("color-mix"))))
     {
       // Put token back so that parse color can get it
@@ -10988,6 +11140,58 @@ CSSParserImpl::ParseColorStop(nsCSSValueGradient* aGradient)
   return true;
 }
 
+CSSParseResult
+CSSParserImpl::ParseGradientInterpolationMethod()
+{
+  if (!GetToken(true)) {
+    return CSSParseResult::NotFound;
+  }
+
+  if (mToken.mType != eCSSToken_Ident ||
+      !mToken.mIdent.LowerCaseEqualsLiteral("in")) {
+    UngetToken();
+    return CSSParseResult::NotFound;
+  }
+
+  if (!GetToken(true) || mToken.mType != eCSSToken_Ident) {
+    return CSSParseResult::Error;
+  }
+
+  bool isPolarColorSpace = false;
+  if (mToken.mIdent.LowerCaseEqualsLiteral("srgb") ||
+      mToken.mIdent.LowerCaseEqualsLiteral("oklab")) {
+    isPolarColorSpace = false;
+  } else if (mToken.mIdent.LowerCaseEqualsLiteral("hsl") ||
+             mToken.mIdent.LowerCaseEqualsLiteral("oklch")) {
+    isPolarColorSpace = true;
+  } else {
+    return CSSParseResult::Error;
+  }
+
+  if (!isPolarColorSpace || !GetToken(true)) {
+    return CSSParseResult::Ok;
+  }
+
+  if (mToken.mType != eCSSToken_Ident) {
+    UngetToken();
+    return CSSParseResult::Ok;
+  }
+
+  if (mToken.mIdent.LowerCaseEqualsLiteral("shorter") ||
+      mToken.mIdent.LowerCaseEqualsLiteral("longer") ||
+      mToken.mIdent.LowerCaseEqualsLiteral("increasing") ||
+      mToken.mIdent.LowerCaseEqualsLiteral("decreasing")) {
+    if (!GetToken(true) || mToken.mType != eCSSToken_Ident ||
+        !mToken.mIdent.LowerCaseEqualsLiteral("hue")) {
+      return CSSParseResult::Error;
+    }
+    return CSSParseResult::Ok;
+  }
+
+  UngetToken();
+  return CSSParseResult::Ok;
+}
+
 // Helper for ParseLinearGradient -- returns true iff aPosition represents a
 // box-position value which was parsed with only edge keywords.
 // e.g. "left top", or "bottom", but not "left 10px"
@@ -11075,9 +11279,24 @@ CSSParserImpl::ParseLinearGradient(nsCSSValue& aValue,
     // expression as <angle>? <color-stop-list>
     UngetToken();
 
-    // <angle> ,
+    // <angle>? [ in <color-space> [<hue-interpolation-method> hue]? ]? ,
     if (ParseSingleTokenVariant(cssGradient->mAngle,
-                                VARIANT_ANGLE_OR_ZERO, nullptr) &&
+                                VARIANT_ANGLE_OR_ZERO, nullptr)) {
+      CSSParseResult interpolationResult = ParseGradientInterpolationMethod();
+      if (interpolationResult == CSSParseResult::Error ||
+          !ExpectSymbol(',', true)) {
+        SkipUntil(')');
+        return false;
+      }
+      return ParseGradientColorStops(cssGradient, aValue);
+    }
+
+    CSSParseResult interpolationResult = ParseGradientInterpolationMethod();
+    if (interpolationResult == CSSParseResult::Error) {
+      SkipUntil(')');
+      return false;
+    }
+    if (interpolationResult == CSSParseResult::Ok &&
         !ExpectSymbol(',', true)) {
       SkipUntil(')');
       return false;

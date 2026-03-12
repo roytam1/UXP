@@ -221,6 +221,12 @@ typedef enum JSWhyMagic
     /** for local use */
     JS_GENERIC_MAGIC,
 
+    /**
+     * When an error object is created without the error cause argument, we set
+     * the error's cause slot to this magic value.
+     */
+    JS_ERROR_WITHOUT_CAUSE,
+
     JS_WHY_MAGIC_COUNT
 } JSWhyMagic;
 
@@ -1535,6 +1541,7 @@ extern JS_PUBLIC_DATA(const HandleValue) NullHandleValue;
 extern JS_PUBLIC_DATA(const HandleValue) UndefinedHandleValue;
 extern JS_PUBLIC_DATA(const HandleValue) TrueHandleValue;
 extern JS_PUBLIC_DATA(const HandleValue) FalseHandleValue;
+extern JS_PUBLIC_DATA(const Handle<mozilla::Maybe<Value>>) NothingHandleValue;
 
 } // namespace JS
 

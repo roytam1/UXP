@@ -58,7 +58,7 @@ PrintTarget::MakeDrawTarget(const IntSize& aSize,
 
   // This should not be called outside of BeginPage()/EndPage() calls since
   // some backends can only provide a valid DrawTarget at that time.
-  MOZ_ASSERT(mHasActivePage, "We can't guarantee a valid DrawTarget");
+  NS_WARNING_ASSERTION(mHasActivePage, "We can't guarantee a valid DrawTarget without an active page. Content may be missing.");
 
   if (cairo_surface_status(mCairoSurface)) {
     return nullptr;
