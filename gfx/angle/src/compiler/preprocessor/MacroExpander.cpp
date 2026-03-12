@@ -220,7 +220,8 @@ bool MacroExpander::expandMacro(const Macro &macro,
         assert(macro.type == Macro::kTypeFunc);
         std::vector<MacroArg> args;
         args.reserve(macro.parameters.size());
-        if (!collectMacroArgs(macro, identifier, &args, &replacementLocation))
+        if (replacements->size() == 0 ||
+            !collectMacroArgs(macro, identifier, &args, &replacementLocation))
             return false;
 
         replaceMacroParams(macro, args, replacements);

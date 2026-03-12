@@ -926,7 +926,9 @@ void vpx_subtract_block_neon(int rows, int cols, int16_t *diff_ptr, ptrdiff_t di
 
 uint64_t vpx_sum_squares_2d_i16_c(const int16_t *src, int stride, int size);
 uint64_t vpx_sum_squares_2d_i16_neon(const int16_t *src, int stride, int size);
+#if HAVE_SVE
 uint64_t vpx_sum_squares_2d_i16_sve(const int16_t *src, int stride, int size);
+#endif
 RTCD_EXTERN uint64_t (*vpx_sum_squares_2d_i16)(const int16_t *src, int stride, int size);
 
 void vpx_tm_predictor_16x16_c(uint8_t *dst, ptrdiff_t stride, const uint8_t *above, const uint8_t *left);
@@ -1160,7 +1162,9 @@ static void setup_rtcd_internal(void)
     vpx_sse = vpx_sse_neon;
     if (flags & HAS_NEON_DOTPROD) vpx_sse = vpx_sse_neon_dotprod;
     vpx_sum_squares_2d_i16 = vpx_sum_squares_2d_i16_neon;
+#if HAVE_SVE
     if (flags & HAS_SVE) vpx_sum_squares_2d_i16 = vpx_sum_squares_2d_i16_sve;
+#endif
     vpx_variance16x16 = vpx_variance16x16_neon;
     if (flags & HAS_NEON_DOTPROD) vpx_variance16x16 = vpx_variance16x16_neon_dotprod;
     vpx_variance16x32 = vpx_variance16x32_neon;
