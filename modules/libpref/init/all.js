@@ -2711,6 +2711,9 @@ pref("layout.css.resizeobserver.enabled", true);
 // Is support for cascade layers enabled?
 pref("layout.css.cascade-layers.enabled", true);
 
+// Is support for basic CSS nesting lowering enabled?
+pref("layout.css.nesting.enabled", false);
+
 // Should rules in imported style sheets be added based on the order
 // of appearance of their respective @import rules in the parent
 // style sheet? Otherwise, they are added before rules preceding
@@ -3216,7 +3219,7 @@ pref("ui.mouse.radius.inputSource.touchOnly", true);
 
 #ifdef XP_WIN
 
-// Be as uniform as possible, use Twemoji everywhere. 
+// Be as uniform as possible, use Twemoji everywhere.
 // Optional: prefix with `Segoe UI Emoji` to use Win8+ Segoe UI font emoji where available.
 pref("font.name-list.emoji", "Twemoji Mozilla");
 
@@ -4731,7 +4734,7 @@ pref("media.ondevicechange.fakeDeviceChangeEvent.enabled", false);
 // those platforms we don't handle touch events anyway so it's conceptually
 // a no-op.
 pref("layout.css.touch_action.enabled", true);
- 
+
 // WHATWG computed intrinsic aspect ratio for an img element
 // https://html.spec.whatwg.org/multipage/rendering.html#attributes-for-embedded-content-and-images
 // Are the width and height attributes on image-like elements mapped to the
@@ -5245,7 +5248,7 @@ pref("plugins.navigator_hide_disabled_flash", false);
 pref("dom.mozBrowserFramesEnabled", false);
 
 // Thick caret when behind CJK characters
-pref("layout.cjkthickcaret", true); 
+pref("layout.cjkthickcaret", true);
 
 // Is support for 'color-adjust' CSS property enabled?
 pref("layout.css.color-adjust.enabled", true);
