@@ -3,17 +3,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef CSSNestingLowerer_h
-#define CSSNestingLowerer_h
+#ifndef CSSNestingFlattener_h
+#define CSSNestingFlattener_h
 
 class nsAString;
 
 namespace mozilla {
 namespace css {
 
-bool LowerBasicCSSNesting(const nsAString& aInput, nsAString& aOutput);
+bool FlattenBasicCSSNesting(const nsAString& aInput, nsAString& aOutput);
 
 } // namespace css
 } // namespace mozilla
 
-#endif // CSSNestingLowerer_h
+#endif // CSSNestingFlattener_h

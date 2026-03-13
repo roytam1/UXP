@@ -18,7 +18,7 @@
 #include <regex>     // for std::regex and std::regex_match
 
 #include "nsCSSParser.h"
-#include "CSSNestingLowerer.h"
+#include "CSSNestingFlattener.h"
 #include "nsAlgorithm.h"
 #include "nsCSSProps.h"
 #include "nsCSSKeywords.h"
@@ -1841,11 +1841,11 @@ CSSParserImpl::ParseSheet(const nsAString& aInput,
                "Sheet principal does not match passed principal");
 #endif
 
-  nsAutoString loweredInput;
+  nsAutoString flattenedInput;
   const nsAString* input = &aInput;
   if (sNestingEnabled &&
-      mozilla::css::LowerBasicCSSNesting(aInput, loweredInput)) {
-    input = &loweredInput;
+      mozilla::css::FlattenBasicCSSNesting(aInput, flattenedInput)) {
+    input = &flattenedInput;
   }
 
   nsCSSScanner scanner(*input, aLineNumber);

@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "CSSNestingLowerer.h"
+#include "CSSNestingFlattener.h"
 
 #include "mozilla/Assertions.h"
 #include "nsString.h"
@@ -14,22 +14,22 @@ namespace css {
 
 namespace {
 
-class CSSNestingLowerer final
+class CSSNestingFlattener final
 {
   using SelectorList = nsTArray<nsString>;
 
 public:
-  explicit CSSNestingLowerer(const nsAString& aInput)
+  explicit CSSNestingFlattener(const nsAString& aInput)
     : mInput(aInput)
     , mPos(0)
     , mSawNesting(false)
   {
   }
 
-  bool Lower(nsAString& aOutput)
+  bool Flatten(nsAString& aOutput)
   {
-    nsAutoString lowered;
-    if (!ProcessStylesheet(lowered, false)) {
+    nsAutoString flattened;
+    if (!ProcessStylesheet(flattened, false)) {
       return false;
     }
 
@@ -38,7 +38,7 @@ public:
       return false;
     }
 
-    aOutput.Assign(lowered);
+    aOutput.Assign(flattened);
     return true;
   }
 
@@ -952,10 +952,10 @@ private:
 } // namespace
 
 bool
-LowerBasicCSSNesting(const nsAString& aInput, nsAString& aOutput)
+FlattenBasicCSSNesting(const nsAString& aInput, nsAString& aOutput)
 {
-  CSSNestingLowerer lowerer(aInput);
-  return lowerer.Lower(aOutput);
+  CSSNestingFlattener flattener(aInput);
+  return flattener.Flatten(aOutput);
 }
 
 } // namespace css
