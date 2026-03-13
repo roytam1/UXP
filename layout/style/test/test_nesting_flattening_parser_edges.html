@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Test CSS Nesting Lowering Parser Edges</title>
+  <title>Test CSS Nesting Flattening Parser Edges</title>
   <script src="/tests/SimpleTest/SimpleTest.js"></script>
   <link rel="stylesheet" href="/tests/SimpleTest/test.css">
 </head>
@@ -71,7 +71,7 @@ function runChecks(style, report) {
 
   var payload = propOf(window, scope, "--payload");
   report(payload.indexOf("alpha") !== -1 && payload.indexOf("beta") !== -1,
-         "custom property payload should survive lowering",
+         "custom property payload should survive flattening",
          payload,
          "contains alpha and beta");
 
