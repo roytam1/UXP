@@ -43,8 +43,6 @@ public:
   }
 
 private:
-  static constexpr auto kCSSWhitespace = " \t\r\n\f";
-
   static bool
   IsCSSWhitespace(char16_t aChar)
   {
