@@ -2712,7 +2712,7 @@ pref("layout.css.resizeobserver.enabled", true);
 pref("layout.css.cascade-layers.enabled", true);
 
 // Is support for basic CSS nesting lowering enabled?
-pref("layout.css.nesting.enabled", false);
+pref("layout.css.nesting.enabled", true);
 
 // Should rules in imported style sheets be added based on the order
 // of appearance of their respective @import rules in the parent
