@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test for Basic CSS Nesting Flattening</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css">
+</head>
+<body>
+<div id="scope" class="scope order">
+  <span id="desc" class="desc"></span>
+</div>
+<div id="button" class="button active"></div>
+<pre id="standalone-log"></pre>
+<script>
+"use strict";
+
+function colorOf(win, element, property) {
+  return win.getComputedStyle(element).getPropertyValue(property);
+}
+
+function appendTestSheet() {
+  var style = document.createElement("style");
+  style.textContent =
+    ".scope {\n" +
+    "  color: rgb(1, 2, 3);\n" +
+    "  .desc {\n" +
+    "    color: rgb(4, 5, 6);\n" +
+    "  }\n" +
+    "  span {\n" +
+    "    border-left-style: solid;\n" +
+    "    border-left-color: rgb(19, 20, 21);\n" +
+    "  }\n" +
+    "  span:first-child, span:last-child {\n" +
+    "    border-bottom-style: solid;\n" +
+    "    border-bottom-color: rgb(22, 23, 24);\n" +
+    "  }\n" +
+    "  background-color: rgb(7, 8, 9);\n" +
+    "}\n" +
+    "\n" +
+    ".button {\n" +
+    "  &.active {\n" +
+    "    color: rgb(10, 11, 12);\n" +
+    "  }\n" +
+    "}\n" +
+    "\n" +
+    ".order {\n" +
+    "  border-top-style: solid;\n" +
+    "  @media all {\n" +
+    "    & {\n" +
+    "      border-top-color: rgb(13, 14, 15);\n" +
+    "    }\n" +
+    "  }\n" +
+    "  border-right-style: solid;\n" +
+    "  border-right-color: rgb(16, 17, 18);\n" +
+    "}\n";
+  document.head.appendChild(style);
+  return style;
+}
+
+function runChecks(style, report) {
+  var scope = document.getElementById("scope");
+  var desc = document.getElementById("desc");
+  var button = document.getElementById("button");
+
+  report(colorOf(window, scope, "color") === "rgb(1, 2, 3)",
+         "outer rule declarations should apply",
+         colorOf(window, scope, "color"),
+         "rgb(1, 2, 3)");
+  report(colorOf(window, desc, "color") === "rgb(4, 5, 6)",
+         "nested descendant rule should be flattened",
+         colorOf(window, desc, "color"),
+         "rgb(4, 5, 6)");
+  report(colorOf(window, desc, "border-left-color") === "rgb(19, 20, 21)",
+         "nested type selector rule should be flattened",
+         colorOf(window, desc, "border-left-color"),
+         "rgb(19, 20, 21)");
+  report(colorOf(window, desc, "border-bottom-color") === "rgb(22, 23, 24)",
+         "nested type selector pseudos should be flattened",
+         colorOf(window, desc, "border-bottom-color"),
+         "rgb(22, 23, 24)");
+  report(colorOf(window, scope, "background-color") === "rgb(7, 8, 9)",
+         "declarations after a nested rule should preserve order",
+         colorOf(window, scope, "background-color"),
+         "rgb(7, 8, 9)");
+  report(colorOf(window, button, "color") === "rgb(10, 11, 12)",
+         "ampersand selectors should be expanded",
+         colorOf(window, button, "color"),
+         "rgb(10, 11, 12)");
+  report(colorOf(window, scope, "border-top-color") === "rgb(13, 14, 15)",
+         "nested group rules should target the parent selector",
+         colorOf(window, scope, "border-top-color"),
+         "rgb(13, 14, 15)");
+  report(colorOf(window, scope, "border-right-color") === "rgb(16, 17, 18)",
+         "declarations after nested group rules should still apply",
+         colorOf(window, scope, "border-right-color"),
+         "rgb(16, 17, 18)");
+  report(style.sheet.cssRules.length === 9,
+         "flattening should produce flat top-level rules",
+         String(style.sheet.cssRules.length),
+         "9");
+}
+
+function runStandalone() {
+  var log = document.getElementById("standalone-log");
+  var lines = [
+    "Standalone mode.",
+    "This page only demonstrates nesting if layout.css.nesting.enabled is already true in the browser.",
+    ""
+  ];
+  var style = appendTestSheet();
+
+  runChecks(style, function(pass, message, actual, expected) {
+    lines.push((pass ? "PASS" : "FAIL") + ": " + message);
+    if (!pass) {
+      lines.push("  expected: " + expected);
+      lines.push("  actual:   " + actual);
+    }
+  });
+
+  log.textContent = lines.join("\n");
+}
+
+function runMochitest() {
+  SimpleTest.waitForExplicitFinish();
+  SpecialPowers.pushPrefEnv({
+    set: [["layout.css.nesting.enabled", true]]
+  }, function() {
+    var style = appendTestSheet();
+
+    runChecks(style, function(pass, message, actual, expected) {
+      is(actual, expected, message);
+    });
+
+    SimpleTest.finish();
+  });
+}
+
+if (typeof SimpleTest !== "undefined" && typeof SpecialPowers !== "undefined") {
+  runMochitest();
+} else {
+  runStandalone();
+}
+</script>
+</body>
+</html>

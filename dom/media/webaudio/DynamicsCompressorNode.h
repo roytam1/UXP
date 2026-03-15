@@ -13,14 +13,24 @@ namespace mozilla {
 namespace dom {
 
 class AudioContext;
+struct DynamicsCompressorOptions;
 
 class DynamicsCompressorNode final : public AudioNode
 {
 public:
-  explicit DynamicsCompressorNode(AudioContext* aContext);
+  static already_AddRefed<DynamicsCompressorNode>
+  Create(AudioContext& aAudioContext, const DynamicsCompressorOptions& aOptions,
+         ErrorResult& aRv);
 
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(DynamicsCompressorNode, AudioNode)
+
+  static already_AddRefed<DynamicsCompressorNode>
+  Constructor(const GlobalObject& aGlobal, AudioContext& aAudioContext,
+              const DynamicsCompressorOptions& aOptions, ErrorResult& aRv)
+  {
+    return Create(aAudioContext, aOptions, aRv);
+  }
 
   JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
@@ -69,10 +79,10 @@ public:
     mReduction = aReduction;
   }
 
-protected:
-  virtual ~DynamicsCompressorNode();
-
 private:
+  explicit DynamicsCompressorNode(AudioContext* aContext);
+  ~DynamicsCompressorNode() = default;
+
   RefPtr<AudioParam> mThreshold;
   RefPtr<AudioParam> mKnee;
   RefPtr<AudioParam> mRatio;
@@ -85,4 +95,3 @@ private:
 } // namespace mozilla
 
 #endif
-

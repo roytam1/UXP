@@ -81,6 +81,7 @@ class nsDisplayTableBackgroundSet {
   nsDisplayTableBackgroundSet(nsDisplayListBuilder* aBuilder, nsIFrame* aTable)
       : mBuilder(aBuilder) {
     mPrevTableBackgroundSet = mBuilder->SetTableBackgroundSet(this);
+    mBuilder->FindReferenceFrameFor(aTable, &mToReferenceFrame);
     mDirtyRect = mBuilder->GetDirtyRect();
   }
 

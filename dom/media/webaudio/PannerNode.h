@@ -19,13 +19,24 @@ namespace dom {
 
 class AudioContext;
 class AudioBufferSourceNode;
+struct PannerOptions;
 
 class PannerNode final : public AudioNode,
                          public SupportsWeakPtr<PannerNode>
 {
 public:
+  static already_AddRefed<PannerNode>
+  Create(AudioContext& aAudioContext, const PannerOptions& aOptions,
+         ErrorResult& aRv);
+
   MOZ_DECLARE_WEAKREFERENCE_TYPENAME(PannerNode)
-  explicit PannerNode(AudioContext* aContext);
+
+  static already_AddRefed<PannerNode>
+  Constructor(const GlobalObject& aGlobal, AudioContext& aAudioContext,
+              const PannerOptions& aOptions, ErrorResult& aRv)
+  {
+    return Create(aAudioContext, aOptions, aRv);
+  }
 
   JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
@@ -229,10 +240,10 @@ public:
   size_t SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const override;
   size_t SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const override;
 
-protected:
-  virtual ~PannerNode();
-
 private:
+  explicit PannerNode(AudioContext* aContext);
+  ~PannerNode();
+
   friend class AudioListener;
   friend class PannerNodeEngine;
   enum EngineParameters {
@@ -292,4 +303,3 @@ private:
 } // namespace mozilla
 
 #endif
-
