@@ -316,6 +316,8 @@ public:
   IMPL_EVENT_HANDLER(mozinterruptbegin)
   IMPL_EVENT_HANDLER(mozinterruptend)
 
+  bool CheckClosed(ErrorResult& aRv);
+
 private:
   void DisconnectFromWindow();
   void RemoveFromDecodeQueue(WebAudioDecodeJob* aDecodeJob);
@@ -325,8 +327,6 @@ private:
   NS_DECL_NSIMEMORYREPORTER
 
   friend struct ::mozilla::WebAudioDecodeJob;
-
-  bool CheckClosed(ErrorResult& aRv);
 
   nsTArray<MediaStream*> GetAllStreams() const;
 
