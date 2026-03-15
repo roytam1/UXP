@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test CSS Nesting Flattening Parser Edges</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css">
+</head>
+<body>
+<div id="scope" class="scope">
+  <span id="firstSpan" class="desc"></span>
+  <span id="middleSpan" class="middle"></span>
+  <span id="escapedSpan" class="1foo"></span>
+  <svg id="svgRoot" xmlns="http://www.w3.org/2000/svg" width="10" height="10">
+    <rect id="nsRect" width="10" height="10"></rect>
+  </svg>
+</div>
+<div id="afterMalformed" class="after-malformed"></div>
+<div id="afterTarget" class="after-target"></div>
+<pre id="standalone-log"></pre>
+<script>
+"use strict";
+
+function propOf(win, element, property) {
+  return win.getComputedStyle(element).getPropertyValue(property);
+}
+
+function appendTestSheet() {
+  var style = document.createElement("style");
+  style.textContent =
+    "@namespace svg url(http://www.w3.org/2000/svg);\n" +
+    ".scope {\n" +
+    "  --payload: { alpha: 1; beta: 2; };\n" +
+    "  color: rgb(1, 2, 3);\n" +
+    "  span:first-of-type, span:last-of-type {\n" +
+    "    color: rgb(30, 31, 32);\n" +
+    "  }\n" +
+    "  .\\31 foo {\n" +
+    "    border-left-style: solid;\n" +
+    "    border-left-color: rgb(40, 41, 42);\n" +
+    "  }\n" +
+    "  svg|rect {\n" +
+    "    stroke: rgb(50, 51, 52);\n" +
+    "    stroke-width: 1px;\n" +
+    "  }\n" +
+    "}\n" +
+    "\n" +
+    ".after-malformed {\n" +
+    "  color: rgb(60, 61, 62);\n" +
+    "  : {\n" +
+    "    color: rgb(70, 71, 72);\n" +
+    "  }\n" +
+    "  background-color: rgb(80, 81, 82);\n" +
+    "}\n" +
+    "\n" +
+    ".after-target {\n" +
+    "  color: rgb(90, 91, 92);\n" +
+    "}\n";
+  document.head.appendChild(style);
+  return style;
+}
+
+function runChecks(style, report) {
+  var scope = document.getElementById("scope");
+  var firstSpan = document.getElementById("firstSpan");
+  var middleSpan = document.getElementById("middleSpan");
+  var escapedSpan = document.getElementById("escapedSpan");
+  var rect = document.getElementById("nsRect");
+  var afterMalformed = document.getElementById("afterMalformed");
+  var afterTarget = document.getElementById("afterTarget");
+
+  var payload = propOf(window, scope, "--payload");
+  report(payload.indexOf("alpha") !== -1 && payload.indexOf("beta") !== -1,
+         "custom property payload should survive flattening",
+         payload,
+         "contains alpha and beta");
+
+  report(propOf(window, scope, "color") === "rgb(1, 2, 3)",
+         "base declaration should apply",
+         propOf(window, scope, "color"),
+         "rgb(1, 2, 3)");
+  report(propOf(window, firstSpan, "color") === "rgb(30, 31, 32)",
+         "nested pseudo selector should style first span",
+         propOf(window, firstSpan, "color"),
+         "rgb(30, 31, 32)");
+  report(propOf(window, escapedSpan, "color") === "rgb(30, 31, 32)",
+         "nested pseudo selector should style last span",
+         propOf(window, escapedSpan, "color"),
+         "rgb(30, 31, 32)");
+  report(propOf(window, middleSpan, "color") === "rgb(1, 2, 3)",
+         "middle span should keep inherited scope color",
+         propOf(window, middleSpan, "color"),
+         "rgb(1, 2, 3)");
+
+  report(propOf(window, escapedSpan, "border-left-color") === "rgb(40, 41, 42)",
+         "escaped class selector should match",
+         propOf(window, escapedSpan, "border-left-color"),
+         "rgb(40, 41, 42)");
+
+  report(propOf(window, rect, "stroke") === "rgb(50, 51, 52)",
+         "namespace selector should match nested SVG rect",
+         propOf(window, rect, "stroke"),
+         "rgb(50, 51, 52)");
+
+  report(propOf(window, afterMalformed, "color") === "rgb(60, 61, 62)",
+         "declaration before malformed nested selector should apply",
+         propOf(window, afterMalformed, "color"),
+         "rgb(60, 61, 62)");
+  report(propOf(window, afterMalformed, "background-color") === "rgb(80, 81, 82)",
+         "declaration after malformed nested selector should still apply",
+         propOf(window, afterMalformed, "background-color"),
+         "rgb(80, 81, 82)");
+  report(propOf(window, afterTarget, "color") === "rgb(90, 91, 92)",
+         "subsequent top-level rules should still parse",
+         propOf(window, afterTarget, "color"),
+         "rgb(90, 91, 92)");
+}
+
+function runStandalone() {
+  var log = document.getElementById("standalone-log");
+  var lines = [
+    "Standalone mode.",
+    "This page only demonstrates nesting if layout.css.nesting.enabled is already true in the browser.",
+    ""
+  ];
+  var style = appendTestSheet();
+
+  runChecks(style, function(pass, message, actual, expected) {
+    lines.push((pass ? "PASS" : "FAIL") + ": " + message);
+    if (!pass) {
+      lines.push("  expected: " + expected);
+      lines.push("  actual:   " + actual);
+    }
+  });
+
+  log.textContent = lines.join("\n");
+}
+
+function runMochitest() {
+  SimpleTest.waitForExplicitFinish();
+  SpecialPowers.pushPrefEnv({
+    set: [["layout.css.nesting.enabled", true]]
+  }, function() {
+    var style = appendTestSheet();
+
+    runChecks(style, function(pass, message, actual, expected) {
+      ok(pass, message + " (expected: " + expected + ", actual: " + actual + ")");
+    });
+
+    SimpleTest.finish();
+  });
+}
+
+if (typeof SimpleTest !== "undefined" && typeof SpecialPowers !== "undefined") {
+  runMochitest();
+} else {
+  runStandalone();
+}
+</script>
+</body>
+</html>

@@ -15,15 +15,25 @@ namespace mozilla {
 namespace dom {
 
 class AudioContext;
+struct OscillatorOptions;
 
 class OscillatorNode final : public AudioNode,
                              public MainThreadMediaStreamListener
 {
 public:
-  explicit OscillatorNode(AudioContext* aContext);
+  static already_AddRefed<OscillatorNode>
+  Create(AudioContext& aAudioContext, const OscillatorOptions& aOptions,
+         ErrorResult& aRv);
 
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(OscillatorNode, AudioNode)
+
+  static already_AddRefed<OscillatorNode>
+  Constructor(const GlobalObject& aGlobal, AudioContext& aAudioContext,
+              const OscillatorOptions& aOptions, ErrorResult& aRv)
+  {
+    return Create(aAudioContext, aOptions, aRv);
+  }
 
   JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
@@ -81,14 +91,13 @@ public:
   size_t SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const override;
   size_t SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const override;
 
-protected:
-  virtual ~OscillatorNode();
-
 private:
+  explicit OscillatorNode(AudioContext* aContext);
+  ~OscillatorNode() = default;
+
   void SendTypeToStream();
   void SendPeriodicWaveToStream();
 
-private:
   OscillatorType mType;
   RefPtr<PeriodicWave> mPeriodicWave;
   RefPtr<AudioParam> mFrequency;
@@ -100,4 +109,3 @@ private:
 } // namespace mozilla
 
 #endif
-
