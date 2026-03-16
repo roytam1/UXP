@@ -345,6 +345,60 @@ function ArrayWith(index, value) {
   return A;
 }
 
+// ES2023 22.1.3.35 Array.prototype.toSpliced ( start, deleteCount, ...items )
+function ArrayToSpliced(start, deleteCount) {
+  // Step 1.
+  var O = ToObject(this);
+
+  // Step 2.
+  var len = ToLength(O.length);
+
+  // Step 3.
+  var relativeStart = ToInteger(start);
+  var actualStart =
+    relativeStart < 0
+      ? std_Math_max(len + relativeStart, 0)
+      : std_Math_min(relativeStart, len);
+
+  // Step 4.
+  var insertCount = arguments.length > 2 ? arguments.length - 2 : 0;
+
+  // Step 5.
+  var actualDeleteCount;
+  if (arguments.length === 0) {
+    actualDeleteCount = 0;
+  } else if (arguments.length === 1) {
+    actualDeleteCount = len - actualStart;
+  } else {
+    var dc = ToInteger(deleteCount);
+    actualDeleteCount = std_Math_min(std_Math_max(dc, 0), len - actualStart);
+  }
+
+  // Steps 6-8.
+  var newLen = len + insertCount - actualDeleteCount;
+  if (newLen > MAX_NUMERIC_INDEX) ThrowTypeError(JSMSG_TOO_LONG_ARRAY);
+  var A = std_Array(newLen);
+
+  // Steps 9-10.
+  var k = 0;
+  for (; k < actualStart; k++) {
+    _DefineDataProperty(A, k, O[k]);
+  }
+
+  // Step 11.
+  for (var i = 2; i < arguments.length; i++) {
+    _DefineDataProperty(A, k++, arguments[i]);
+  }
+
+  // Steps 12-13.
+  for (var from = actualStart + actualDeleteCount; from < len; from++) {
+    _DefineDataProperty(A, k++, O[from]);
+  }
+
+  // Step 14.
+  return A;
+}
+
 /* ES5 15.4.4.18. */
 function ArrayForEach(callbackfn /*, thisArg*/) {
   /* Step 1. */

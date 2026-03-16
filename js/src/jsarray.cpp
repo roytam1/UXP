@@ -3209,6 +3209,7 @@ static const JSFunctionSpec array_methods[] = {
     JS_SELF_HOSTED_FN("findLast",    "ArrayFindLast",    1,0),
     JS_SELF_HOSTED_FN("findLastIndex", "ArrayFindLastIndex", 1,0),
     JS_SELF_HOSTED_FN("toReversed",  "ArrayToReversed",  0,0),
+    JS_SELF_HOSTED_FN("toSpliced",   "ArrayToSpliced",   2,0),
     JS_SELF_HOSTED_FN("toSorted",    "ArrayToSorted",    1,0),
     JS_SELF_HOSTED_FN("with",        "ArrayWith",        2,0),
     
@@ -3383,6 +3384,7 @@ array_proto_finish(JSContext* cx, JS::HandleObject ctor, JS::HandleObject proto)
         !DefineProperty(cx, unscopables, cx->names().includes, value) ||
         !DefineProperty(cx, unscopables, cx->names().keys, value) ||
         !DefineProperty(cx, unscopables, cx->names().toReversed, value) ||
+        !DefineProperty(cx, unscopables, cx->names().toSpliced, value) ||
         !DefineProperty(cx, unscopables, cx->names().values, value) ||
         !DefineProperty(cx, unscopables, cx->names().toSorted, value) ||
         !DefineProperty(cx, unscopables, cx->names().with, value))
