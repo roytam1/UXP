@@ -430,6 +430,7 @@
     macro(toLocaleString, toLocaleString, "toLocaleString") \
     macro(toReversed, toReversed, "toReversed") \
     macro(toSource, toSource, "toSource") \
+    macro(toSpliced, toSpliced, "toSpliced") \
     macro(toSorted, toSorted, "toSorted") \
     macro(toString, toString, "toString") \
     macro(toUTCString, toUTCString, "toUTCString") \
