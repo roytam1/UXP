@@ -1938,8 +1938,8 @@ END_CASE(JSOP_LABEL)
 
 CASE(JSOP_LOOPENTRY)
     COUNT_COVERAGE();
-    // Attempt on-stack replacement with Baseline code.
-    if (jit::IsBaselineEnabled(cx)) {
+    // If not TLA module, attempt on-stack replacement with Baseline code.
+    if (jit::IsBaselineEnabled(cx) && !state.script()->hasTopLevelAwait()) {
         jit::MethodStatus status = jit::CanEnterBaselineAtBranch(cx, REGS.fp(), false);
         if (status == jit::Method_Error)
             goto error;
