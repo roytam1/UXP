@@ -133,6 +133,7 @@ interface mixin MozFrameLoaderOwner {
 };
 
 XULElement includes GlobalEventHandlers;
+XULElement includes ElementCSSInlineStyle;
 XULElement includes TouchEventHandlers;
 XULElement includes MozFrameLoaderOwner;
 XULElement includes OnErrorEventHandlerForNodes;

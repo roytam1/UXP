@@ -16,8 +16,6 @@ interface SVGElement : Element {
   [Constant]
   readonly attribute SVGAnimatedString className;
   [SameObject] readonly attribute DOMStringMap dataset;
-  [PutForwards=cssText, Constant]
-  readonly attribute CSSStyleDeclaration style;
 
   readonly attribute SVGSVGElement? ownerSVGElement;
   readonly attribute SVGElement? viewportElement;
@@ -30,5 +28,6 @@ interface SVGElement : Element {
 
 SVGElement includes GlobalEventHandlers;
 SVGElement includes DocumentAndElementEventHandlers;
+SVGElement includes ElementCSSInlineStyle;
 SVGElement includes TouchEventHandlers;
 SVGElement includes OnErrorEventHandlerForNodes;
