@@ -15,18 +15,13 @@ interface SVGElement : Element {
 
   [Constant]
   readonly attribute SVGAnimatedString className;
-  [SameObject] readonly attribute DOMStringMap dataset;
 
   readonly attribute SVGSVGElement? ownerSVGElement;
   readonly attribute SVGElement? viewportElement;
-
-  [SetterThrows, Pure]
-        attribute long tabIndex;
-  [Throws] void focus();
-  [Throws] void blur();
 };
 
 SVGElement includes GlobalEventHandlers;
+SVGElement includes HTMLOrForeignElement;
 SVGElement includes DocumentAndElementEventHandlers;
 SVGElement includes ElementCSSInlineStyle;
 SVGElement includes TouchEventHandlers;

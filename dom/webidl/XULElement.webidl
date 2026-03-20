@@ -97,10 +97,6 @@ interface XULElement : Element {
   readonly attribute BoxObject?                 boxObject;
 
   [Throws]
-  void                      focus();
-  [Throws]
-  void                      blur();
-  [Throws]
   void                      click();
   void                      doCommand();
 
@@ -134,6 +130,7 @@ interface mixin MozFrameLoaderOwner {
 
 XULElement includes GlobalEventHandlers;
 XULElement includes ElementCSSInlineStyle;
+XULElement includes HTMLOrForeignElement;
 XULElement includes TouchEventHandlers;
 XULElement includes MozFrameLoaderOwner;
 XULElement includes OnErrorEventHandlerForNodes;

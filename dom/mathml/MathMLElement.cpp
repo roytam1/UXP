@@ -435,8 +435,7 @@ MathMLElement::ParseNumericValue(const nsString& aString,
     number.Append(c);
   }
 
-  if (/*StaticPrefs::mathml_legacy_number_syntax_disabled() &&*/ gotDot &&
-      str[i - 1] == '.') {
+  if (gotDot && str[i - 1] == '.') {
     if (!(aFlags & PARSE_SUPPRESS_WARNINGS)) {
       ReportLengthParseError(aString, aDocument);
     }

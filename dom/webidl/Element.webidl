@@ -169,6 +169,23 @@ interface mixin ElementCSSInlineStyle {
   readonly attribute CSSStyleDeclaration style;
 };
 
+// https://html.spec.whatwg.org/#focus-management-apis
+dictionary FocusOptions {
+  boolean preventScroll = false;
+};
+
+interface mixin HTMLOrForeignElement {
+  [SameObject] readonly attribute DOMStringMap dataset;
+  // See bug 1389421
+  // attribute DOMString nonce; // intentionally no [CEReactions]
+
+  // See bug 1575154
+  // [CEReactions] attribute boolean autofocus;
+  [CEReactions, SetterThrows, Pure] attribute long tabIndex;
+  [Throws] void focus(optional FocusOptions options);
+  [Throws] void blur();
+};
+
 // http://dev.w3.org/csswg/cssom-view/
 enum ScrollLogicalPosition { "start", "center", "end", "nearest" };
 dictionary ScrollIntoViewOptions : ScrollOptions {

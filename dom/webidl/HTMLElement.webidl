@@ -22,8 +22,6 @@ interface HTMLElement : Element {
   //         attribute boolean translate;
   [CEReactions, SetterThrows, Pure]
            attribute DOMString dir;
-  [Constant]
-  readonly attribute DOMStringMap dataset;
 
   [CEReactions, GetterThrows, Pure]
            attribute [TreatNullAs=EmptyString] DOMString innerText;
@@ -32,12 +30,6 @@ interface HTMLElement : Element {
   [CEReactions, SetterThrows, Pure]
            attribute boolean hidden;
   void click();
-  [CEReactions, SetterThrows, Pure]
-           attribute long tabIndex;
-  [Throws]
-  void focus();
-  [Throws]
-  void blur();
   [CEReactions, SetterThrows, Pure]
            attribute DOMString accessKey;
   [Pure]
@@ -92,6 +84,7 @@ interface mixin TouchEventHandlers {
 };
 
 HTMLElement includes GlobalEventHandlers;
+HTMLElement includes HTMLOrForeignElement;
 HTMLElement includes DocumentAndElementEventHandlers;
 HTMLElement includes ElementCSSInlineStyle;
 HTMLElement includes TouchEventHandlers;
