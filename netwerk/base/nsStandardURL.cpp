@@ -26,6 +26,7 @@
 #include "prprf.h"
 #include "nsReadableUtils.h"
 #include "nsPrintfCString.h"
+#include "mozilla/Preferences.h" //fixes up dependency issues in non-unified building
 
 using mozilla::dom::EncodingUtils;
 using namespace mozilla::ipc;
@@ -1105,6 +1106,58 @@ nsStandardURL::ParseURL(const char *spec, int32_t specLen)
 nsresult
 nsStandardURL::ParsePath(const char *spec, uint32_t pathPos, int32_t pathLen)
 {
+// Cloudflare Image Resizing compatibility (pref-controlled)
+//
+// This feature detects the "/cdn-cgi/image/" marker in the URL path and
+// treats everything after it as opaque path data. Cloudflare's Image
+// Resizing service expects clients to preserve the entire suffix exactly.
+//
+// Because this code runs in a hot path (URL parsing), we avoid calling
+// Preferences::GetBool() repeatedly. Instead, we use AddBoolVarCache()
+// to cache the pref value once and read it cheaply thereafter.
+
+// Cached preference: true = enable Cloudflare Image Resizing fixup
+static bool sCloudflareImageResizingEnabled = true;
+static bool sCloudflareImageResizingPrefCached = false;
+
+if (!sCloudflareImageResizingPrefCached) {
+  Preferences::AddBoolVarCache(
+    &sCloudflareImageResizingEnabled,
+    "network.url.cloudflare_image_resizing.enabled",
+    true // default if pref does not exist
+  );
+  sCloudflareImageResizingPrefCached = true;
+}
+
+if (sCloudflareImageResizingEnabled) {
+
+  // Extract the full path substring from the full URL spec.
+  nsDependentCSubstring fullPath(spec + pathPos, pathLen);
+
+  // Prepare iterators for scanning the path.
+  nsACString::const_iterator begin, end;
+  fullPath.BeginReading(begin);
+  fullPath.EndReading(end);
+
+  // Search for the Cloudflare Image Resizing marker.
+  nsACString::const_iterator cfPos = begin;
+  if (FindInReadable(NS_LITERAL_CSTRING("/cdn-cgi/image/"), cfPos, end)) {
+
+    // Compute how far into the path the marker was found.
+    uint32_t offset = cfPos.get() - begin.get();
+
+    // Rewrite the internal path representation so that the path
+    // begins at the Cloudflare marker. Everything before it is ignored.
+    mPath.mPos = pathPos + offset;
+    mPath.mLen = pathLen - offset;
+
+    // We handled the path; no further parsing needed.
+    return NS_OK;
+  }
+}
+
+
+
     LOG(("ParsePath: %s pathpos %d len %d\n",spec,pathPos,pathLen));
 
     if (pathLen > net_GetURLMaxLength()) {
