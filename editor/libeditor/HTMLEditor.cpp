@@ -132,6 +132,7 @@ HTMLEditor::HTMLEditor()
   , mPositionedObjectBorderTop(0)
   , mGridSize(0)
 {
+  mIsHTMLEditorClass = true;
 }
 
 HTMLEditor::~HTMLEditor()
@@ -501,7 +502,7 @@ HTMLEditor::InitRules()
     // instantiate the rules for the html editor
     mRules = new HTMLEditRules();
   }
-  return mRules->Init(static_cast<TextEditor*>(this));
+  return mRules->Init(this);
 }
 
 NS_IMETHODIMP

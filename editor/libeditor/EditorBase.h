@@ -114,6 +114,7 @@ class DeleteNodeTransaction;
 class DeleteTextTransaction;
 class EditAggregateTransaction;
 class ErrorResult;
+class HTMLEditor;
 class InsertNodeTransaction;
 class InsertTextTransaction;
 class JoinNodeTransaction;
@@ -121,6 +122,7 @@ class PlaceholderTransaction;
 class RemoveStyleSheetTransaction;
 class SplitNodeTransaction;
 class TextComposition;
+class TextEditor;
 struct EditorDOMPoint;
 
 namespace dom {
@@ -1113,14 +1115,32 @@ protected:
   bool mIsInEditAction;
   // Whether caret is hidden forcibly.
   bool mHidingCaret;
+  // Whether we are an HTML editor class.
+  bool mIsHTMLEditorClass;
 
   friend bool NSCanUnload(nsISupports* serviceMgr);
   friend class AutoRules;
   friend class AutoSelectionRestorer;
   friend class AutoTransactionsConserveSelection;
   friend class RangeUpdater;
+  friend class nsIEditor;
 };
 
 } // namespace mozilla
+
+// nsIEditor helper functions.
+// Here because of code context.
+mozilla::EditorBase*
+nsIEditor::AsEditorBase()
+{
+  return static_cast<mozilla::EditorBase*>(this);
+}
+
+const mozilla::EditorBase*
+nsIEditor::AsEditorBase() const
+{
+  return static_cast<const mozilla::EditorBase*>(this);
+}
+
 
 #endif // #ifndef mozilla_EditorBase_h
