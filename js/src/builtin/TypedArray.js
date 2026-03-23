@@ -37,6 +37,10 @@ function TypedArrayLengthMethod() {
     return TypedArrayLength(this);
 }
 
+function TypedArrayContentTypeIsBigIntMethod() {
+    return IsBigInt64TypedArray(this) || IsBigUint64TypedArray(this);
+}
+
 function GetAttachedArrayBuffer(tarray) {
     var buffer = ViewedArrayBufferIfReified(tarray);
     if (IsDetachedBuffer(buffer))
@@ -892,6 +896,61 @@ function TypedArrayToReversed() {
     }
 
     // Step 7.
+    return A;
+}
+
+// ES2023 23.2.3.36 %TypedArray%.prototype.with ( index, value )
+function TypedArrayWith(index, value) {
+    // Step 1.
+    var O = this;
+
+    // Step 2.
+    // This function is not generic.
+    // We want to make sure that we have an attached buffer, per spec prose.
+    var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
+
+    // If we got here, `this` is either a typed array or a wrapper for one.
+
+    // Step 3.
+    var len;
+    if (isTypedArray)
+        len = TypedArrayLength(O);
+    else
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
+
+    // Steps 4-6.
+    var relativeIndex = ToInteger(index);
+    var actualIndex = relativeIndex >= 0 ? relativeIndex : len + relativeIndex;
+
+    // Steps 7-8.
+    var isBigIntContentType;
+    if (isTypedArray) {
+        isBigIntContentType = callFunction(TypedArrayContentTypeIsBigIntMethod, O);
+    } else {
+        isBigIntContentType = callFunction(CallTypedArrayMethodIfWrapped, O,
+                                           "TypedArrayContentTypeIsBigIntMethod");
+    }
+    var numericValue = isBigIntContentType ? ToBigInt(value) : ToNumber(value);
+
+    // Step 9.
+    if (actualIndex < 0 || actualIndex >= len)
+        ThrowRangeError(JSMSG_BAD_INDEX);
+
+    // Step 10.
+    var A = TypedArrayCreateSameType(O, len);
+
+    // Steps 11-12.
+    for (var k = 0; k < len; k++) {
+        var fromValue;
+        if (k === actualIndex) {
+            fromValue = numericValue;
+        } else {
+            fromValue = O[k];
+        }
+        A[k] = fromValue;
+    }
+
+    // Step 13.
     return A;
 }
 
