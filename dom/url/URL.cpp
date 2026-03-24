@@ -57,7 +57,84 @@ CreateObjectURLInternal(const GlobalObject& aGlobal, T aObject,
   CopyASCIItoUTF16(url, aResult);
 }
 
-// The URL implementation for the main-thread
+bool
+IsRootRelativePathInput(const nsAString& aURL)
+{
+  return !aURL.IsEmpty() && aURL.CharAt(0) == '/' &&
+         (aURL.Length() == 1 || aURL.CharAt(1) != '/');
+}
+
+bool
+BuildRootRelativeFallbackSpec(const nsAString& aURL, nsIURI* aBase,
+                              nsACString& aFallbackSpec)
+{
+  MOZ_ASSERT(aBase);
+  MOZ_ASSERT(IsRootRelativePathInput(aURL));
+
+  nsAutoCString baseSpec;
+  if (NS_FAILED(aBase->GetSpec(baseSpec)) || baseSpec.IsEmpty()) {
+    return false;
+  }
+
+  int32_t colon = baseSpec.FindChar(':');
+  if (colon <= 0) {
+    return false;
+  }
+
+  uint32_t afterColon = static_cast<uint32_t>(colon + 1);
+  if (afterColon >= baseSpec.Length() || baseSpec.CharAt(afterColon) != '/') {
+    // Opaque paths (for example mailto:test@example.com) are not valid bases
+    // for root-relative URL input.
+    return false;
+  }
+
+  nsAutoCString input;
+  if (!AppendUTF16toUTF8(aURL, input, fallible)) {
+    return false;
+  }
+
+  // Preserve authority when present (scheme://authority/path -> scheme://authority/input)
+  if (afterColon + 1 < baseSpec.Length() && baseSpec.CharAt(afterColon + 1) == '/') {
+    uint32_t authorityEnd = afterColon + 2;
+    while (authorityEnd < baseSpec.Length()) {
+      char c = baseSpec.CharAt(authorityEnd);
+      if (c == '/' || c == '?' || c == '#') {
+        break;
+      }
+      ++authorityEnd;
+    }
+
+    aFallbackSpec.Assign(Substring(baseSpec, 0, authorityEnd));
+    aFallbackSpec.Append(input);
+    return true;
+  }
+
+  // Single-slash hierarchical base (scheme:/path -> scheme:/input)
+  aFallbackSpec.Assign(Substring(baseSpec, 0, afterColon));
+  aFallbackSpec.Append(input);
+  return true;
+}
+
+bool
+TryResolveRootRelativeAgainstBase(const nsAString& aURL, nsIURI* aBase,
+                                  nsIURI** aOutURI)
+{
+  MOZ_ASSERT(aOutURI);
+
+  if (!aBase || !IsRootRelativePathInput(aURL)) {
+    return false;
+  }
+
+  nsAutoCString fallbackSpec;
+  if (!BuildRootRelativeFallbackSpec(aURL, aBase, fallbackSpec)) {
+    return false;
+  }
+
+  nsresult rv = NS_NewURI(aOutURI, fallbackSpec, nullptr, nullptr,
+                          nsContentUtils::GetIOService());
+  return NS_SUCCEEDED(rv);
+}
+
 class URLMainThread final : public URL
 {
 public:
@@ -229,7 +306,8 @@ URLMainThread::Constructor(nsISupports* aParent, const nsAString& aURL,
   nsCOMPtr<nsIURI> uri;
   nsresult rv = NS_NewURI(getter_AddRefs(uri), aURL, nullptr, aBase,
                           nsContentUtils::GetIOService());
-  if (NS_FAILED(rv)) {
+  if (NS_FAILED(rv) &&
+      !TryResolveRootRelativeAgainstBase(aURL, aBase, getter_AddRefs(uri))) {
     // No need to warn in this case. It's common to use the URL constructor
     // to determine if a URL is valid and an exception will be propagated.
     aRv.ThrowTypeError<MSG_INVALID_URL>(aURL);
@@ -1714,30 +1792,14 @@ URL::IsValidURL(const GlobalObject& aGlobal, const nsAString& aURL,
 bool
 URL::CanParse(const GlobalObject& aGlobal, const nsAString& aURL,
               const Optional<nsAString>& aBase) {
-  nsCOMPtr<nsIURI> baseUri;
-  if (aBase.WasPassed()) {
-    // Don't use NS_ConvertUTF16toUTF8 because that doesn't let us handle OOM.
-    nsAutoCString base;
-    if (!AppendUTF16toUTF8(aBase.Value(), base, fallible)) {
-      // Just return false with OOM errors as no ErrorResult.
-      return false;
-    }
-
-    nsresult rv = NS_NewURI(getter_AddRefs(baseUri), base);
-    if (NS_FAILED(rv)) {
-      // Invalid base URL, return false.
-      return false;
-    }
-  }
-
-  nsAutoCString urlStr;
-  if (!AppendUTF16toUTF8(aURL, urlStr, fallible)) {
-    // Just return false with OOM errors as no ErrorResult.
+  ErrorResult rv;
+  RefPtr<URL> parsed = URL::Constructor(aGlobal, aURL, aBase, rv);
+  if (rv.Failed() || !parsed) {
+    rv.SuppressException();
     return false;
   }
 
-  nsCOMPtr<nsIURI> uri;
-  return NS_SUCCEEDED(NS_NewURI(getter_AddRefs(uri), urlStr, nullptr, baseUri));
+  return true;
 }
 
 URLSearchParams*

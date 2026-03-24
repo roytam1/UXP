@@ -1108,4 +1108,20 @@ private:
 
 } // namespace mozilla
 
+// nsIEditor helper functions.
+// Here because of code context.
+mozilla::HTMLEditor*
+nsIEditor::AsHTMLEditor()
+{
+  return static_cast<mozilla::EditorBase*>(this)->mIsHTMLEditorClass ?
+           static_cast<mozilla::HTMLEditor*>(this) : nullptr;
+}
+
+const mozilla::HTMLEditor*
+nsIEditor::AsHTMLEditor() const
+{
+  return static_cast<const mozilla::EditorBase*>(this)->mIsHTMLEditorClass ?
+           static_cast<const mozilla::HTMLEditor*>(this) : nullptr;
+}
+
 #endif // #ifndef mozilla_HTMLEditor_h

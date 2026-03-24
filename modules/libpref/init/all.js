@@ -1977,6 +1977,12 @@ pref("network.predictor.max-resources-per-entry", 100);
 pref("network.predictor.max-uri-length", 500);
 pref("network.predictor.cleaned-up", false);
 
+// Cloudflare Image Resizing compatibility.
+// When enabled, URLs containing the "/cdn-cgi/image/" marker will have
+// everything after that marker treated as opaque path data. This matches
+// Cloudflare's expectations for Image Resizing URLs.
+pref("network.url.cloudflare_image_resizing.enabled", true);
+
 // The following prefs pertain to the negotiate-auth extension (see bug 17578),
 // which provides transparent Kerberos or NTLM authentication using the SPNEGO
 // protocol.  Each pref is a comma-separated list of keys, where each key has
