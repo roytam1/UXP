@@ -98,6 +98,10 @@ assertThrowsInstanceOf(() => {
 }, TypeError);
 
 assertThrowsInstanceOf(() => {
+    array.with(POISON, POISON);
+}, TypeError);
+
+assertThrowsInstanceOf(() => {
     array.every(POISON);
 }, TypeError);
 

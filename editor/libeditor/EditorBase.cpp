@@ -142,6 +142,7 @@ EditorBase::EditorBase()
   , mDispatchInputEvent(true)
   , mIsInEditAction(false)
   , mHidingCaret(false)
+  , mIsHTMLEditorClass(false)
 {
 }
 

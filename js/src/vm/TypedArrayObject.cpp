@@ -1629,6 +1629,7 @@ TypedArrayObject::protoFunctions[] = {
     JS_SELF_HOSTED_FN("reduceRight", "TypedArrayReduceRight", 1, 0),
     JS_SELF_HOSTED_FN("reverse", "TypedArrayReverse", 0, 0),
     JS_SELF_HOSTED_FN("toReversed", "TypedArrayToReversed", 0, 0),
+    JS_SELF_HOSTED_FN("with", "TypedArrayWith", 2, 0),
     JS_SELF_HOSTED_FN("slice", "TypedArraySlice", 2, 0),
     JS_SELF_HOSTED_FN("some", "TypedArraySome", 1, 0),
     JS_SELF_HOSTED_FN("sort", "TypedArraySort", 1, 0),

@@ -247,4 +247,18 @@ protected:
 
 } // namespace mozilla
 
+// nsIEditor helper functions.
+// Here because of code context.
+mozilla::TextEditor*
+nsIEditor::AsTextEditor()
+{
+  return static_cast<mozilla::TextEditor*>(this);
+}
+
+const mozilla::TextEditor*
+nsIEditor::AsTextEditor() const
+{
+  return static_cast<const mozilla::TextEditor*>(this);
+}
+
 #endif // #ifndef mozilla_TextEditor_h

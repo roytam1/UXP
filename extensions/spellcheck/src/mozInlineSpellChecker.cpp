@@ -97,9 +97,6 @@ using namespace mozilla::dom;
 #define INLINESPELL_STARTED_TOPIC "inlineSpellChecker-spellCheck-started"
 #define INLINESPELL_ENDED_TOPIC "inlineSpellChecker-spellCheck-ended"
 
-static bool ContentIsDescendantOf(nsINode* aPossibleDescendant,
-                                    nsINode* aPossibleAncestor);
-
 static const char kMaxSpellCheckSelectionSize[] = "extensions.spellcheck.inline.max-misspellings";
 
 mozInlineSpellStatus::mozInlineSpellStatus(mozInlineSpellChecker* aSpellChecker)
@@ -238,7 +235,7 @@ mozInlineSpellStatus::InitForNavigation(
   NS_ENSURE_SUCCESS(rv, rv);
   nsCOMPtr<nsINode> currentAnchor = do_QueryInterface(aOldAnchorNode, &rv);
   NS_ENSURE_SUCCESS(rv, rv);
-  if (root && currentAnchor && ! ContentIsDescendantOf(currentAnchor, root)) {
+  if (root && currentAnchor && !nsContentUtils::ContentIsShadowIncludingDescendantOf(currentAnchor, root)) {
     *aContinue = false;
     return NS_OK;
   }
@@ -1490,8 +1487,11 @@ nsresult mozInlineSpellChecker::DoSpellCheck(mozInlineSpellWordUtil& aWordUtil,
       return NS_OK;
     }
 
-    aWordUtil.SetEnd(endNode, endOffset);
-    aWordUtil.SetPosition(beginNode, beginOffset);
+    nsresult rv = aWordUtil.SetPositionAndEnd(beginNode, beginOffset, endNode, endOffset);
+    if (NS_FAILED(rv)) {
+      // Just bail out and don't try to spell-check this
+      return NS_OK;
+    }
   }
 
   // aWordUtil.SetPosition flushes pending notifications, check editor again.
@@ -1838,24 +1838,6 @@ nsresult mozInlineSpellChecker::SaveCurrentSelectionPosition()
   selection->GetFocusOffset(&mCurrentSelectionOffset);
 
   return NS_OK;
-}
-
-// This is a copy of nsContentUtils::ContentIsDescendantOf. Another crime
-// for XPCOM's rap sheet
-bool // static
-ContentIsDescendantOf(nsINode* aPossibleDescendant,
-                      nsINode* aPossibleAncestor)
-{
-  NS_PRECONDITION(aPossibleDescendant, "The possible descendant is null!");
-  NS_PRECONDITION(aPossibleAncestor, "The possible ancestor is null!");
-
-  do {
-    if (aPossibleDescendant == aPossibleAncestor)
-      return true;
-    aPossibleDescendant = aPossibleDescendant->GetParentNode();
-  } while (aPossibleDescendant);
-
-  return false;
 }
 
 // mozInlineSpellChecker::HandleNavigationEvent

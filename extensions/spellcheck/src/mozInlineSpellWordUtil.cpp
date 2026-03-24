@@ -23,6 +23,8 @@
 #include "nsIFrame.h"
 #include <algorithm>
 #include "mozilla/BinarySearch.h"
+#include "mozilla/HTMLEditor.h"
+#include "mozilla/dom/ShadowRoot.h"
 
 using namespace mozilla;
 
@@ -69,8 +71,10 @@ mozInlineSpellWordUtil::Init(nsWeakPtr aWeakEditor)
   mDOMDocument = domDoc;
   mDocument = do_QueryInterface(domDoc);
 
-  // Find the root node for the editor. For contenteditable we'll need something
-  // cleverer here.
+  mIsContentEditableOrDesignMode = !!editor->AsHTMLEditor();
+
+  // Find the root node for the editor. For contenteditable the mRootNode could
+  // change to shadow root if the begin and end are inside the shadowDOM.
   nsCOMPtr<nsIDOMElement> rootElt;
   rv = editor->GetRootElement(getter_AddRefs(rootElt));
   NS_ENSURE_SUCCESS(rv, rv);
@@ -154,7 +158,7 @@ FindNextTextNode(nsINode* aNode, int32_t aOffset, nsINode* aRoot)
   return checkNode;
 }
 
-// mozInlineSpellWordUtil::SetEnd
+// mozInlineSpellWordUtil::SetPositionAndEnd
 //
 //    We have two ranges "hard" and "soft". The hard boundary is simply
 //    the scope of the root node. The soft boundary is that which is set
@@ -172,13 +176,37 @@ FindNextTextNode(nsINode* aNode, int32_t aOffset, nsINode* aRoot)
 //    position.
 
 nsresult
-mozInlineSpellWordUtil::SetEnd(nsINode* aEndNode, int32_t aEndOffset)
+mozInlineSpellWordUtil::SetPositionAndEnd(nsINode* aPositionNode,
+                                          int32_t aPositionOffset,
+                                          nsINode* aEndNode,
+                                          int32_t aEndOffset)
 {
+  MOZ_ASSERT(aPositionNode, "Null begin node?");
   NS_PRECONDITION(aEndNode, "Null end node?");
 
   NS_ASSERTION(mRootNode, "Not initialized");
 
+  // Find a appropriate root if we are dealing with contenteditable nodes which
+  // are in the shadow DOM. See UXP Issue #3011
+  if (mIsContentEditableOrDesignMode) {
+    nsINode* rootNode = aPositionNode->SubtreeRoot();
+    if (rootNode != aEndNode->SubtreeRoot()) {
+      return NS_ERROR_FAILURE;
+    }
+
+    if (mozilla::dom::ShadowRoot::FromNode(rootNode)) {
+      mRootNode = rootNode;
+    }
+  }
+
   InvalidateWords();
+
+  if (!IsTextNode(aPositionNode)) {
+    // Start at the start of the first text node after aNode/aOffset.
+    aPositionNode = FindNextTextNode(aPositionNode, aPositionOffset, mRootNode);
+    aPositionOffset = 0;
+  }
+  mSoftBegin = NodeOffset(aPositionNode, aPositionOffset);
 
   if (!IsTextNode(aEndNode)) {
     // End at the start of the first text node after aEndNode/aEndOffset.
@@ -186,20 +214,6 @@ mozInlineSpellWordUtil::SetEnd(nsINode* aEndNode, int32_t aEndOffset)
     aEndOffset = 0;
   }
   mSoftEnd = NodeOffset(aEndNode, aEndOffset);
-  return NS_OK;
-}
-
-nsresult
-mozInlineSpellWordUtil::SetPosition(nsINode* aNode, int32_t aOffset)
-{
-  InvalidateWords();
-
-  if (!IsTextNode(aNode)) {
-    // Start at the start of the first text node after aNode/aOffset.
-    aNode = FindNextTextNode(aNode, aOffset, mRootNode);
-    aOffset = 0;
-  }
-  mSoftBegin = NodeOffset(aNode, aOffset);
 
   nsresult rv = EnsureWords();
   if (NS_FAILED(rv)) {
@@ -207,8 +221,10 @@ mozInlineSpellWordUtil::SetPosition(nsINode* aNode, int32_t aOffset)
   }
   
   int32_t textOffset = MapDOMPositionToSoftTextOffset(mSoftBegin);
-  if (textOffset < 0)
+  if (textOffset < 0) {
     return NS_OK;
+  }
+
   mNextWordIndex = FindRealWordContaining(textOffset, HINT_END, true);
   return NS_OK;
 }
