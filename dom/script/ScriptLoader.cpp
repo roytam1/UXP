@@ -613,14 +613,6 @@ ScriptLoader::CreateModuleScript(ModuleLoadRequest* aRequest)
 
   nsresult rv;
   {
-    // Update our current script.
-    Maybe<AutoCurrentScriptUpdater> masterScriptUpdater;
-    nsCOMPtr<nsIDocument> master = mDocument->MasterDocument();
-    if (master != mDocument) {
-      masterScriptUpdater.emplace(master->ScriptLoader(),
-                                  aRequest->Element());
-    }
-
     JSContext* cx = aes.cx();
     JS::Rooted<JSObject*> module(cx);
 
