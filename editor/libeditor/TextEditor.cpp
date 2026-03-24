@@ -10,6 +10,7 @@
 #include "gfxFontUtils.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/EditorUtils.h" // AutoEditBatch, AutoRules
+#include "mozilla/HTMLEditor.h"
 #include "mozilla/mozalloc.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/TextEditRules.h"
