@@ -93,14 +93,15 @@ HTMLLabelElement::GetForm() const
 }
 
 void
-HTMLLabelElement::Focus(ErrorResult& aError)
+HTMLLabelElement::Focus(const FocusOptions& aOptions,
+                        ErrorResult& aError)
 {
   // retarget the focus method at the for content
   nsIFocusManager* fm = nsFocusManager::GetFocusManager();
   if (fm) {
     nsCOMPtr<nsIDOMElement> elem = do_QueryObject(GetLabeledElement());
     if (elem)
-      fm->SetFocus(elem, 0);
+      fm->SetFocus(elem, nsFocusManager::FocusOptionsToFocusManagerFlags(aOptions));
   }
 }
 

@@ -59,7 +59,7 @@ interface CanvasRenderingContext2D {
   DOMMatrix getTransform();
   [Throws, LenientFloat]
   void setTransform(double a, double b, double c, double d, double e, double f);
-  [Throws, LenientFloat]
+  [Throws]
   void setTransform(optional DOMMatrix2DInit transform);
   [Throws]
   void resetTransform();
@@ -239,11 +239,10 @@ interface CanvasRenderingContext2D {
   [ChromeOnly]
   void demote();
 };
-CanvasRenderingContext2D implements CanvasDrawingStyles;
-CanvasRenderingContext2D implements CanvasPathMethods;
+CanvasRenderingContext2D includes CanvasDrawingStyles;
+CanvasRenderingContext2D includes CanvasPathMethods;
 
-[NoInterfaceObject]
-interface CanvasDrawingStyles {
+interface mixin CanvasDrawingStyles {
   // line caps/joins
            [LenientFloat]
            attribute double lineWidth; // (default 1)
@@ -265,8 +264,7 @@ interface CanvasDrawingStyles {
            attribute DOMString textBaseline; // "top", "hanging", "middle", "alphabetic", "ideographic", "bottom" (default: "alphabetic")
 };
 
-[NoInterfaceObject]
-interface CanvasPathMethods {
+interface mixin CanvasPathMethods {
   // shared path API methods
   void closePath();
   [LenientFloat]
@@ -342,4 +340,4 @@ interface Path2D
 {
   [Throws] void addPath(Path2D path, optional DOMMatrix2DInit transformation);
 };
-Path2D implements CanvasPathMethods;
+Path2D includes CanvasPathMethods;

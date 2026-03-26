@@ -15,9 +15,7 @@
 
 interface StackFrame;
 
-[NoInterfaceObject,
- Exposed=(Window,Worker)]
-interface ExceptionMembers
+interface mixin ExceptionMembers
 {
   // A custom message set by the thrower.  LenientThis so it can be
   // gotten on the prototype, which Error.prototype.toString will do
@@ -68,7 +66,7 @@ interface Exception {
   stringifier;
 };
 
-Exception implements ExceptionMembers;
+Exception includes ExceptionMembers;
 
 // XXXkhuey this is an 'exception', not an interface, but we don't have any
 // parser or codegen mechanisms for dealing with exceptions.
@@ -107,4 +105,4 @@ interface DOMException {
 
 // XXXkhuey copy all of Gecko's non-standard stuff onto DOMException, but leave
 // the prototype chain sane.
-DOMException implements ExceptionMembers;
+DOMException includes ExceptionMembers;

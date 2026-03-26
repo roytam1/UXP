@@ -14,6 +14,6 @@ interface SVGViewElement : SVGElement {
   readonly attribute SVGStringList viewTarget;
 };
 
-SVGViewElement implements SVGFitToViewBox;
-SVGViewElement implements SVGZoomAndPanValues;
+SVGViewElement includes SVGFitToViewBox;
+SVGViewElement includes SVGZoomAndPanValues;
 

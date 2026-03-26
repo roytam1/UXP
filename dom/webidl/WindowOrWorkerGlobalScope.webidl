@@ -11,8 +11,8 @@
  */
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#windoworworkerglobalscope-mixin
-[NoInterfaceObject, Exposed=(Window,Worker)]
-interface WindowOrWorkerGlobalScope {
+[Exposed=(Window,Worker)]
+interface mixin WindowOrWorkerGlobalScope {
   // .origin on Window or Worker globals
   [Replaceable] readonly attribute USVString origin;
 
@@ -51,24 +51,25 @@ interface WindowOrWorkerGlobalScope {
 };
 
 // https://fetch.spec.whatwg.org/#fetch-method
-partial interface WindowOrWorkerGlobalScope {
-  [NewObject] Promise<Response> fetch(RequestInfo input, optional RequestInit init);
+partial interface mixin WindowOrWorkerGlobalScope {
+  [NewObject, NeedsCallerType]
+  Promise<Response> fetch(RequestInfo input, optional RequestInit init);
 };
 
 // https://w3c.github.io/webappsec-secure-contexts/#monkey-patching-global-object
-partial interface WindowOrWorkerGlobalScope {
+partial interface mixin WindowOrWorkerGlobalScope {
   readonly attribute boolean isSecureContext;
 };
 
 // http://w3c.github.io/IndexedDB/#factory-interface
-partial interface WindowOrWorkerGlobalScope {
+partial interface mixin WindowOrWorkerGlobalScope {
    // readonly attribute IDBFactory indexedDB;
    [Throws]
    readonly attribute IDBFactory? indexedDB;
 };
 
 // https://w3c.github.io/ServiceWorker/#self-caches
-partial interface WindowOrWorkerGlobalScope {
+partial interface mixin WindowOrWorkerGlobalScope {
   [Throws, Func="mozilla::dom::cache::CacheStorage::PrefEnabled", SameObject]
   readonly attribute CacheStorage caches;
 };

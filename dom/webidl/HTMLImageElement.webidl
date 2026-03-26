@@ -55,7 +55,7 @@ partial interface HTMLImageElement {
            [CEReactions, SetterThrows]
            attribute DOMString longDesc;
 
-  [CEReactions, TreatNullAs=EmptyString,SetterThrows] attribute DOMString border;
+  [CEReactions, SetterThrows] attribute [TreatNullAs=EmptyString] DOMString border;
 };
 
 // [Update me: not in whatwg spec yet]
@@ -77,8 +77,7 @@ partial interface HTMLImageElement {
   readonly attribute long y;
 };
 
-[NoInterfaceObject]
-interface MozImageLoadingContent {
+interface mixin MozImageLoadingContent {
   // Mirrored chrome-only nsIImageLoadingContent methods.  Please make sure
   // to update this list if nsIImageLoadingContent changes.
   [ChromeOnly]
@@ -108,4 +107,4 @@ interface MozImageLoadingContent {
   void forceImageState(boolean aForce, unsigned long long aState);
 };
 
-HTMLImageElement implements MozImageLoadingContent;
+HTMLImageElement includes MozImageLoadingContent;

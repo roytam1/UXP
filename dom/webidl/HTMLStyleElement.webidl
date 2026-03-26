@@ -21,5 +21,5 @@ interface HTMLStyleElement : HTMLElement {
            [SetterThrows, Pure]
            attribute boolean scoped;
 };
-HTMLStyleElement implements LinkStyle;
+HTMLStyleElement includes LinkStyle;
 

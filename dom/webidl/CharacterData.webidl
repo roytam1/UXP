@@ -11,8 +11,8 @@
  */
 
 interface CharacterData : Node {
-  [TreatNullAs=EmptyString, Pure, SetterThrows]
-  attribute DOMString data;
+  [Pure, SetterThrows]
+  attribute [TreatNullAs=EmptyString] DOMString data;
   [Pure]
   readonly attribute unsigned long length;
   [Throws]
@@ -27,5 +27,5 @@ interface CharacterData : Node {
   void replaceData(unsigned long offset, unsigned long count, DOMString data);
 };
 
-CharacterData implements ChildNode;
-CharacterData implements NonDocumentTypeChildNode;
+CharacterData includes ChildNode;
+CharacterData includes NonDocumentTypeChildNode;

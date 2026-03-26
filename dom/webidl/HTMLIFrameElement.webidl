@@ -45,10 +45,10 @@ partial interface HTMLIFrameElement {
   [CEReactions, SetterThrows, Pure]
            attribute DOMString longDesc;
 
-  [CEReactions, TreatNullAs=EmptyString, SetterThrows, Pure]
-           attribute DOMString marginHeight;
-  [CEReactions, TreatNullAs=EmptyString, SetterThrows, Pure]
-           attribute DOMString marginWidth;
+  [CEReactions, SetterThrows, Pure]
+           attribute [TreatNullAs=EmptyString] DOMString marginHeight;
+  [CEReactions, SetterThrows, Pure]
+           attribute [TreatNullAs=EmptyString] DOMString marginWidth;
 };
 
 partial interface HTMLIFrameElement {
@@ -59,9 +59,9 @@ partial interface HTMLIFrameElement {
 
 partial interface HTMLIFrameElement {
   // nsIDOMMozBrowserFrame
-  [ChromeOnly,SetterThrows]
+  [ChromeOnly, SetterThrows]
            attribute boolean mozbrowser;
 };
 
-HTMLIFrameElement implements MozFrameLoaderOwner;
+HTMLIFrameElement includes MozFrameLoaderOwner;
 HTMLIFrameElement implements BrowserElement;

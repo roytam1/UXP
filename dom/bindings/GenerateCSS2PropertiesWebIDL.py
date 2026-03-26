@@ -13,7 +13,7 @@ from mozbuild import shellutil
 # (whether camelCase, _underscorePrefixed, etc.) and the given array of
 # extended attributes.
 def generateLine(propName, extendedAttrs):
-    return "  [%s] attribute DOMString %s;\n" % (", ".join(extendedAttrs),
+    return "  [%s] attribute [TreatNullAs=EmptyString] DOMString %s;\n" % (", ".join(extendedAttrs),
                                                  propName)
 def generate(output, idlFilename, preprocessorHeader):
     print(idlFilename)
@@ -30,7 +30,7 @@ def generate(output, idlFilename, preprocessorHeader):
             continue
         # Unfortunately, even some of the getters here are fallible
         # (e.g. on nsComputedDOMStyle).
-        extendedAttrs = ["Throws", "TreatNullAs=EmptyString"]
+        extendedAttrs = ["Throws"]
         if pref is not "":
             extendedAttrs.append('Pref="%s"' % pref)
 

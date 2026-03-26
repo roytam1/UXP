@@ -4,10 +4,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 
-#include "nsMathMLElement.h"
+#include "mozilla/dom/MathMLElement.h"
+
 #include "base/compiler_specific.h"
 #include "mozilla/ArrayUtils.h"
 #include "nsGkAtoms.h"
+#include "nsIContentInlines.h"
 #include "nsITableCellLayout.h" // for MAX_COLSPAN / MAX_ROWSPAN
 #include "nsCRT.h"
 #include "nsLayoutStylesheetCache.h"
@@ -26,7 +28,8 @@
 
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/EventStates.h"
-#include "mozilla/dom/ElementBinding.h"
+#include "mozilla/EventListenerManager.h" // for EventListenerManager
+#include "mozilla/dom/MathMLElementBinding.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -34,7 +37,7 @@ using namespace mozilla::dom;
 //----------------------------------------------------------------------
 // nsISupports methods:
 
-NS_IMPL_ISUPPORTS_INHERITED(nsMathMLElement, nsMathMLElementBase,
+NS_IMPL_ISUPPORTS_INHERITED(MathMLElement, MathMLElementBase,
                             nsIDOMElement, nsIDOMNode, Link)
 
 static nsresult
@@ -75,28 +78,28 @@ ReportParseErrorNoTag(const nsString& aValue,
                          "AttributeParsingErrorNoTag", argv, 2);
 }
 
-nsMathMLElement::nsMathMLElement(already_AddRefed<mozilla::dom::NodeInfo>& aNodeInfo)
-: nsMathMLElementBase(aNodeInfo),
+MathMLElement::MathMLElement(already_AddRefed<mozilla::dom::NodeInfo>& aNodeInfo)
+: MathMLElementBase(aNodeInfo),
   ALLOW_THIS_IN_INITIALIZER_LIST(Link(this)),
   mIncrementScriptLevel(false)
 {
 }
 
-nsMathMLElement::nsMathMLElement(already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo)
-: nsMathMLElementBase(aNodeInfo),
+MathMLElement::MathMLElement(already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo)
+: MathMLElementBase(aNodeInfo),
   ALLOW_THIS_IN_INITIALIZER_LIST(Link(this)),
   mIncrementScriptLevel(false)
 {
 }
 
 nsresult
-nsMathMLElement::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
-                            nsIContent* aBindingParent,
-                            bool aCompileEventHandlers)
+MathMLElement::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
+                          nsIContent* aBindingParent,
+                          bool aCompileEventHandlers)
 {
   Link::ResetLinkState(false, Link::ElementHasHref());
 
-  nsresult rv = nsMathMLElementBase::BindToTree(aDocument, aParent,
+  nsresult rv = MathMLElementBase::BindToTree(aDocument, aParent,
                                                 aBindingParent,
                                                 aCompileEventHandlers);
   NS_ENSURE_SUCCESS(rv, rv);
@@ -130,7 +133,7 @@ nsMathMLElement::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
 }
 
 void
-nsMathMLElement::UnbindFromTree(bool aDeep, bool aNullParent)
+MathMLElement::UnbindFromTree(bool aDeep, bool aNullParent)
 {
   // If this link is ever reinserted into a document, it might
   // be under a different xml:base, so forget the cached state now.
@@ -141,14 +144,14 @@ nsMathMLElement::UnbindFromTree(bool aDeep, bool aNullParent)
     doc->UnregisterPendingLinkUpdate(this);
   }
 
-  nsMathMLElementBase::UnbindFromTree(aDeep, aNullParent);
+  MathMLElementBase::UnbindFromTree(aDeep, aNullParent);
 }
 
 bool
-nsMathMLElement::ParseAttribute(int32_t aNamespaceID,
-                                nsIAtom* aAttribute,
-                                const nsAString& aValue,
-                                nsAttrValue& aResult)
+MathMLElement::ParseAttribute(int32_t aNamespaceID,
+                              nsIAtom* aAttribute,
+                              const nsAString& aValue,
+                              nsAttrValue& aResult)
 {
   MOZ_ASSERT(IsMathMLElement());
   if (aNamespaceID == kNameSpaceID_None) {
@@ -166,6 +169,9 @@ nsMathMLElement::ParseAttribute(int32_t aNamespaceID,
         aAttribute == nsGkAtoms::mathbackground_) {
       return aResult.ParseColor(aValue);
     }
+    if (aAttribute == nsGkAtoms::tabindex) {
+      return aResult.ParseIntValue(aValue);
+    }
     if (mNodeInfo->Equals(nsGkAtoms::mtd_)) {
       if (aAttribute == nsGkAtoms::columnspan_) {
         aResult.ParseClampedNonNegativeInt(aValue, 1, 1, MAX_COLSPAN);
@@ -178,8 +184,8 @@ nsMathMLElement::ParseAttribute(int32_t aNamespaceID,
     }
   }
 
-  return nsMathMLElementBase::ParseAttribute(aNamespaceID, aAttribute,
-                                             aValue, aResult);
+  return MathMLElementBase::ParseAttribute(aNamespaceID, aAttribute,
+                                           aValue, aResult);
 }
 
 static Element::MappedAttributeEntry sMtableStyles[] = {
@@ -218,7 +224,7 @@ static Element::MappedAttributeEntry sDirStyles[] = {
 };
 
 bool
-nsMathMLElement::IsAttributeMapped(const nsIAtom* aAttribute) const
+MathMLElement::IsAttributeMapped(const nsIAtom* aAttribute) const
 {
   MOZ_ASSERT(IsMathMLElement());
 
@@ -287,7 +293,7 @@ nsMathMLElement::IsAttributeMapped(const nsIAtom* aAttribute) const
 }
 
 nsMapRuleToAttributesFunc
-nsMathMLElement::GetAttributeMappingFunction() const
+MathMLElement::GetAttributeMappingFunction() const
 {
   // It doesn't really matter what our tag is here, because only attributes
   // that satisfy IsAttributeMapped will be stored in the mapped attributes
@@ -296,9 +302,9 @@ nsMathMLElement::GetAttributeMappingFunction() const
 }
 
 /* static */ bool
-nsMathMLElement::ParseNamedSpaceValue(const nsString& aString,
-                                      nsCSSValue&     aCSSValue,
-                                      uint32_t        aFlags)
+MathMLElement::ParseNamedSpaceValue(const nsString& aString,
+                                    nsCSSValue&     aCSSValue,
+                                    uint32_t        aFlags)
 {
    int32_t i = 0;
    // See if it is one of the 'namedspace' (ranging -7/18em, -6/18, ... 7/18em)
@@ -378,10 +384,10 @@ nsMathMLElement::ParseNamedSpaceValue(const nsString& aString,
 //   number)"
 //
 /* static */ bool
-nsMathMLElement::ParseNumericValue(const nsString& aString,
-                                   nsCSSValue&     aCSSValue,
-                                   uint32_t        aFlags,
-                                   nsIDocument*    aDocument)
+MathMLElement::ParseNumericValue(const nsString& aString,
+                                 nsCSSValue&     aCSSValue,
+                                 uint32_t        aFlags,
+                                 nsIDocument*    aDocument)
 {
   nsAutoString str(aString);
   str.CompressWhitespace(); // aString is const in this code...
@@ -427,6 +433,13 @@ nsMathMLElement::ParseNumericValue(const nsString& aString,
       break;
     }
     number.Append(c);
+  }
+
+  if (gotDot && str[i - 1] == '.') {
+    if (!(aFlags & PARSE_SUPPRESS_WARNINGS)) {
+      ReportLengthParseError(aString, aDocument);
+    }
+    return false;  // Number ending with a dot.
   }
 
   // Convert number to floating point
@@ -499,8 +512,8 @@ nsMathMLElement::ParseNumericValue(const nsString& aString,
 }
 
 void
-nsMathMLElement::MapMathMLAttributesInto(const nsMappedAttributes* aAttributes,
-                                         nsRuleData* aData)
+MathMLElement::MapMathMLAttributesInto(const nsMappedAttributes* aAttributes,
+                                       nsRuleData* aData)
 {
   if (aData->mSIDs & NS_STYLE_INHERIT_BIT(Font)) {
     // scriptsizemultiplier
@@ -918,7 +931,7 @@ nsMathMLElement::MapMathMLAttributesInto(const nsMappedAttributes* aAttributes,
 }
 
 nsresult
-nsMathMLElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
+MathMLElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   nsresult rv = Element::GetEventTargetParent(aVisitor);
   NS_ENSURE_SUCCESS(rv, rv);
@@ -927,30 +940,30 @@ nsMathMLElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 }
 
 nsresult
-nsMathMLElement::PostHandleEvent(EventChainPostVisitor& aVisitor)
+MathMLElement::PostHandleEvent(EventChainPostVisitor& aVisitor)
 {
   return PostHandleEventForLinks(aVisitor);
 }
 
-NS_IMPL_ELEMENT_CLONE(nsMathMLElement)
+NS_IMPL_ELEMENT_CLONE(MathMLElement)
 
 EventStates
-nsMathMLElement::IntrinsicState() const
+MathMLElement::IntrinsicState() const
 {
-  return Link::LinkState() | nsMathMLElementBase::IntrinsicState() |
+  return Link::LinkState() | MathMLElementBase::IntrinsicState() |
     (mIncrementScriptLevel ?
        NS_EVENT_STATE_INCREMENT_SCRIPT_LEVEL : EventStates());
 }
 
 bool
-nsMathMLElement::IsNodeOfType(uint32_t aFlags) const
+MathMLElement::IsNodeOfType(uint32_t aFlags) const
 {
   return !(aFlags & ~eCONTENT);
 }
 
 void
-nsMathMLElement::SetIncrementScriptLevel(bool aIncrementScriptLevel,
-                                         bool aNotify)
+MathMLElement::SetIncrementScriptLevel(bool aIncrementScriptLevel,
+                                       bool aNotify)
 {
   if (aIncrementScriptLevel == mIncrementScriptLevel)
     return;
@@ -961,26 +974,55 @@ nsMathMLElement::SetIncrementScriptLevel(bool aIncrementScriptLevel,
   UpdateState(true);
 }
 
-bool
-nsMathMLElement::IsFocusableInternal(int32_t* aTabIndex, bool aWithMouse)
+int32_t
+MathMLElement::TabIndexDefault()
 {
   nsCOMPtr<nsIURI> uri;
-  if (IsLink(getter_AddRefs(uri))) {
+  return IsLink(getter_AddRefs(uri)) ? 0 : -1;
+}
+
+// XXX Bug 1586011: Share logic with other element classes.
+bool
+MathMLElement::IsFocusableInternal(int32_t* aTabIndex, bool aWithMouse)
+{
+  nsIDocument* doc = GetComposedDoc();
+  if (!doc || doc->HasFlag(NODE_IS_EDITABLE)) {
+    // In designMode documents we only allow focusing the document.
     if (aTabIndex) {
-      *aTabIndex = ((sTabFocusModel & eTabFocus_linksMask) == 0 ? -1 : 0);
+      *aTabIndex = -1;
     }
-    return true;
+    return false;
   }
 
+  int32_t tabIndex = TabIndex();
   if (aTabIndex) {
+    *aTabIndex = tabIndex;
+  }
+
+  nsCOMPtr<nsIURI> uri;
+  if (!IsLink(getter_AddRefs(uri))) {
+    // If a tabindex is specified at all we're focusable
+    return HasAttr(kNameSpaceID_None, nsGkAtoms::tabindex);
+  }
+
+  // Links that are in an editable region should never be focusable, even if
+  // they are in a contenteditable="false" region.
+  if (nsContentUtils::IsNodeInEditableRegion(this)) {
+    if (aTabIndex) {
+      *aTabIndex = -1;
+    }
+    return false;
+  }
+
+  if (aTabIndex && (sTabFocusModel & eTabFocus_linksMask) == 0) {
     *aTabIndex = -1;
   }
 
-  return false;
+  return true;
 }
 
 bool
-nsMathMLElement::IsLink(nsIURI** aURI) const
+MathMLElement::IsLink(nsIURI** aURI) const
 {
   // http://www.w3.org/TR/2010/REC-MathML3-20101021/chapter6.html#interf.link
   // The REC says that the following elements should not be linking elements:
@@ -1051,7 +1093,7 @@ nsMathMLElement::IsLink(nsIURI** aURI) const
 }
 
 void
-nsMathMLElement::GetLinkTarget(nsAString& aTarget)
+MathMLElement::GetLinkTarget(nsAString& aTarget)
 {
   const nsAttrValue* target = mAttrsAndChildren.GetAttr(nsGkAtoms::target,
                                                         kNameSpaceID_XLink);
@@ -1077,14 +1119,59 @@ nsMathMLElement::GetLinkTarget(nsAString& aTarget)
 }
 
 already_AddRefed<nsIURI>
-nsMathMLElement::GetHrefURI() const
+MathMLElement::GetHrefURI() const
 {
   nsCOMPtr<nsIURI> hrefURI;
   return IsLink(getter_AddRefs(hrefURI)) ? hrefURI.forget() : nullptr;
 }
 
+// XXX Bug 1586014: Share logic with other element classes.
+void
+MathMLElement::RecompileScriptEventListeners() {
+  int32_t i, count = mAttrsAndChildren.AttrCount();
+  for (i = 0; i < count; ++i) {
+    const nsAttrName* name = mAttrsAndChildren.AttrNameAt(i);
+
+    // Eventlistenener-attributes are always in the null namespace
+    if (!name->IsAtom()) {
+      continue;
+    }
+
+    nsIAtom* attr = name->Atom();
+    if (!IsEventAttributeName(attr)) {
+      continue;
+    }
+
+    nsAutoString value;
+    GetAttr(kNameSpaceID_None, attr, value);
+    SetEventHandler(attr, value, true);
+  }
+}
+
+bool
+MathMLElement::IsEventAttributeNameInternal(nsIAtom* aName) {
+  // The intent is to align MathML event attributes on HTML5, so the flag
+  // EventNameType_HTML is used here.
+  return nsContentUtils::IsEventAttributeName(aName, EventNameType_HTML);
+}
+
 nsresult
-nsMathMLElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
+MathMLElement::BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
+                             const nsAttrValueOrString* aValue,
+                             bool aNotify) {
+  if (aNamespaceID == kNameSpaceID_None) {
+    if (!aValue && IsEventAttributeName(aName)) {
+      if (EventListenerManager* manager = GetExistingListenerManager()) {
+        manager->RemoveEventHandler(aName, EmptyString());
+      }
+    }
+  }
+
+  return MathMLElementBase::BeforeSetAttr(aNamespaceID, aName, aValue, aNotify);
+}
+
+nsresult
+MathMLElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                               const nsAttrValue* aValue,
                               const nsAttrValue* aOldValue,
                               nsIPrincipal* aSubjectPrincipal,
@@ -1105,13 +1192,22 @@ nsMathMLElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
     Link::ResetLinkState(aNotify, aValue || Link::ElementHasHref());
   }
 
-  return nsMathMLElementBase::AfterSetAttr(aNameSpaceID, aName, aValue,
-                                           aOldValue, aSubjectPrincipal,
-                                           aNotify);
+  if (aNameSpaceID == kNameSpaceID_None) {
+    if (IsEventAttributeName(aName) && aValue) {
+      MOZ_ASSERT(aValue->Type() == nsAttrValue::eString,
+                 "Expected string value for script body");
+      nsresult rv = SetEventHandler(aName, aValue->GetStringValue());
+      NS_ENSURE_SUCCESS(rv, rv);
+    }
+  }
+
+  return MathMLElementBase::AfterSetAttr(aNameSpaceID, aName, aValue,
+                                         aOldValue, aSubjectPrincipal,
+                                         aNotify);
 }
 
 JSObject*
-nsMathMLElement::WrapNode(JSContext *aCx, JS::Handle<JSObject*> aGivenProto)
+MathMLElement::WrapNode(JSContext *aCx, JS::Handle<JSObject*> aGivenProto)
 {
-  return ElementBinding::Wrap(aCx, this, aGivenProto);
+  return MathMLElementBinding::Wrap(aCx, this, aGivenProto);
 }

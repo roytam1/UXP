@@ -18,8 +18,7 @@ dictionary AnimationFilter {
   boolean subtree = false;
 };
 
-[NoInterfaceObject]
-interface Animatable {
+interface mixin Animatable {
   [Func="nsDocument::IsElementAnimateEnabled", Throws]
   Animation animate(object? keyframes,
                     optional UnrestrictedDoubleOrKeyframeAnimationOptions options);

@@ -150,8 +150,9 @@ public:
     // If something is focused in the same document, ignore autofocus.
     if (!fm->GetFocusedContent() ||
         fm->GetFocusedContent()->OwnerDoc() != document) {
-      mozilla::ErrorResult rv;
-      mElement->Focus(rv);
+      FocusOptions options;
+      ErrorResult rv;
+      mElement->Focus(options, rv);
       return rv.StealNSResult();
     }
 

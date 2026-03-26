@@ -155,9 +155,6 @@ partial interface Document {
 
   // Gecko extensions?
                 attribute EventHandler onwheel;
-                attribute EventHandler oncopy;
-                attribute EventHandler oncut;
-                attribute EventHandler onpaste;
                 attribute EventHandler onbeforescriptexecute;
                 attribute EventHandler onafterscriptexecute;
 
@@ -440,11 +437,12 @@ partial interface Document {
   [Func="IsChromeOrXBL"] readonly attribute boolean inlineScriptAllowedByCSP;
 };
 
-Document implements XPathEvaluator;
-Document implements GlobalEventHandlers;
-Document implements TouchEventHandlers;
-Document implements ParentNode;
-Document implements OnErrorEventHandlerForNodes;
-Document implements GeometryUtils;
-Document implements FontFaceSource;
-Document implements DocumentOrShadowRoot;
+Document includes XPathEvaluatorMixin;
+Document includes GlobalEventHandlers;
+Document includes DocumentAndElementEventHandlers;
+Document includes TouchEventHandlers;
+Document includes ParentNode;
+Document includes OnErrorEventHandlerForNodes;
+Document includes GeometryUtils;
+Document includes FontFaceSource;
+Document includes DocumentOrShadowRoot;
