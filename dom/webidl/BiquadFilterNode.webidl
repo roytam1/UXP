@@ -46,5 +46,5 @@ interface BiquadFilterNode : AudioNode {
 };
 
 // Mozilla extension
-BiquadFilterNode implements AudioNodePassThrough;
+BiquadFilterNode includes AudioNodePassThrough;
 

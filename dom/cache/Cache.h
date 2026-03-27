@@ -28,6 +28,7 @@ class RequestOrUSVString;
 class Response;
 template<typename T> class Optional;
 template<typename T> class Sequence;
+enum class CallerType : uint32_t;
 
 namespace cache {
 
@@ -50,10 +51,11 @@ public:
            const CacheQueryOptions& aOptions, ErrorResult& aRv);
   already_AddRefed<Promise>
   Add(JSContext* aContext, const RequestOrUSVString& aRequest,
-      ErrorResult& aRv);
+      CallerType aCallerType, ErrorResult& aRv);
   already_AddRefed<Promise>
   AddAll(JSContext* aContext,
-         const Sequence<OwningRequestOrUSVString>& aRequests, ErrorResult& aRv);
+         const Sequence<OwningRequestOrUSVString>& aRequests,
+         CallerType aCallerType, ErrorResult& aRv);
   already_AddRefed<Promise>
   Put(JSContext* aCx, const RequestOrUSVString& aRequest, Response& aResponse,
       ErrorResult& aRv);
@@ -97,7 +99,7 @@ private:
 
   already_AddRefed<Promise>
   AddAll(const GlobalObject& aGlobal, nsTArray<RefPtr<Request>>&& aRequestList,
-         ErrorResult& aRv);
+         CallerType aCallerType, ErrorResult& aRv);
 
   already_AddRefed<Promise>
   PutAll(JSContext* aCx, const nsTArray<RefPtr<Request>>& aRequestList,

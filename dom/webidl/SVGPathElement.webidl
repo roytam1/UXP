@@ -52,5 +52,5 @@ interface SVGPathElement : SVGGeometryElement {
   SVGPathSegCurvetoQuadraticSmoothRel createSVGPathSegCurvetoQuadraticSmoothRel(float x, float y);
 };
 
-SVGPathElement implements SVGAnimatedPathData;
+SVGPathElement includes SVGAnimatedPathData;
 

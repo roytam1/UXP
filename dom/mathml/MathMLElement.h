@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef nsMathMLElement_h
-#define nsMathMLElement_h
+#ifndef mozilla_dom_MathMLElement_h_
+#define mozilla_dom_MathMLElement_h_
 
 #include "mozilla/Attributes.h"
 #include "mozilla/dom/ElementInlines.h"
@@ -15,28 +15,30 @@
 
 class nsCSSValue;
 
-typedef nsMappedAttributeElement nsMathMLElementBase;
-
 namespace mozilla {
 class EventChainPostVisitor;
 class EventChainPreVisitor;
-} // namespace mozilla
+namespace dom {
+
+typedef nsMappedAttributeElement MathMLElementBase;
 
 /*
  * The base class for MathML elements.
  */
-class nsMathMLElement final : public nsMathMLElementBase,
-                              public nsIDOMElement,
-                              public mozilla::dom::Link
+class MathMLElement final : public MathMLElementBase,
+                            public nsIDOMElement,
+                            public mozilla::dom::Link
 {
 public:
-  explicit nsMathMLElement(already_AddRefed<mozilla::dom::NodeInfo>& aNodeInfo);
-  explicit nsMathMLElement(already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo);
+  explicit MathMLElement(already_AddRefed<mozilla::dom::NodeInfo>& aNodeInfo);
+  explicit MathMLElement(already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo);
 
-  // Implementation of nsISupports is inherited from nsMathMLElementBase
+  // Implementation of nsISupports is inherited from MathMLElementBase
   NS_DECL_ISUPPORTS_INHERITED
 
-  // Forward implementations of parent interfaces of nsMathMLElement to 
+  NS_IMPL_FROMCONTENT(MathMLElement, kNameSpaceID_MathML)
+
+  // Forward implementations of parent interfaces of MathMLElement to 
   // our base class
   NS_FORWARD_NSIDOMNODE_TO_NSINODE
   NS_FORWARD_NSIDOMELEMENT_TO_GENERIC
@@ -88,6 +90,7 @@ public:
     return mIncrementScriptLevel;
   }
 
+  int32_t TabIndexDefault() final;
   virtual bool IsFocusableInternal(int32_t* aTabIndex, bool aWithMouse) override;
   virtual bool IsLink(nsIURI** aURI) const override;
   virtual void GetLinkTarget(nsAString& aTarget) override;
@@ -95,11 +98,16 @@ public:
 
   virtual nsIDOMNode* AsDOMNode() override { return this; }
 
+  void RecompileScriptEventListeners() override;
+  bool IsEventAttributeNameInternal(nsIAtom* aName);
+
 protected:
-  virtual ~nsMathMLElement() {}
+  virtual ~MathMLElement() {}
 
   virtual JSObject* WrapNode(JSContext *aCx, JS::Handle<JSObject*> aGivenProto) override;
 
+  nsresult BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
+                         const nsAttrValueOrString* aValue, bool aNotify) override;
   virtual nsresult AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
                                 const nsAttrValue* aOldValue,
@@ -110,4 +118,7 @@ private:
   bool mIncrementScriptLevel;
 };
 
-#endif // nsMathMLElement_h
+}  // namespace dom
+}  // namespace mozilla
+
+#endif  // mozilla_dom_MathMLElement_h_

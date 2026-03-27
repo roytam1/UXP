@@ -216,7 +216,7 @@ public:
   /**
    * Make focus on this element.
    */
-  virtual void Focus(mozilla::ErrorResult& aError);
+  virtual void Focus(const FocusOptions& aOptions, ErrorResult& aError);
 
   /**
    * Show blur and clear focus.

@@ -13,4 +13,4 @@
 interface SVGUnitTypes {
 };
 
-SVGUnitTypes implements SVGUnitTypeValues;
+SVGUnitTypes includes SVGUnitTypeValues;

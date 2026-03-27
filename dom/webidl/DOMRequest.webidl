@@ -5,8 +5,8 @@
 
 enum DOMRequestReadyState { "pending", "done" };
 
-[Exposed=(Window,Worker,System), NoInterfaceObject]
-interface DOMRequestShared {
+[Exposed=(Window,Worker)]
+interface mixin DOMRequestShared {
   readonly attribute DOMRequestReadyState readyState;
 
   readonly attribute any result;
@@ -26,4 +26,4 @@ interface DOMRequest : EventTarget {
            [TreatNonCallableAsNull] optional AnyCallback? rejectCallback = null);
 };
 
-DOMRequest implements DOMRequestShared;
+DOMRequest includes DOMRequestShared;

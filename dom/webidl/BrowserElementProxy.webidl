@@ -11,5 +11,5 @@
  ChromeOnly]
 interface BrowserElementProxy : EventTarget {
 };
-BrowserElementProxy implements BrowserElementCommon;
-BrowserElementProxy implements BrowserElementPrivileged;
+BrowserElementProxy includes BrowserElementCommon;
+BrowserElementProxy includes BrowserElementPrivileged;

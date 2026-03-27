@@ -70,8 +70,8 @@ partial interface HTMLObjectElement {
   [CEReactions, Pure, SetterThrows]
            attribute DOMString codeType;
 
-  [CEReactions, TreatNullAs=EmptyString, Pure, SetterThrows]
-           attribute DOMString border;
+  [CEReactions, Pure, SetterThrows]
+           attribute [TreatNullAs=EmptyString] DOMString border;
 };
 
 partial interface HTMLObjectElement {
@@ -80,8 +80,7 @@ partial interface HTMLObjectElement {
   Document? getSVGDocument();
 };
 
-[NoInterfaceObject]
-interface MozObjectLoadingContent {
+interface mixin MozObjectLoadingContent {
   // Mirrored chrome-only scriptable nsIObjectLoadingContent methods.  Please
   // make sure to update this list if nsIObjectLoadingContent changes.  Also,
   // make sure everything on here is [ChromeOnly].
@@ -220,6 +219,6 @@ dictionary MozPluginParameter {
   DOMString value = "";
 };
 
-HTMLObjectElement implements MozImageLoadingContent;
-HTMLObjectElement implements MozFrameLoaderOwner;
-HTMLObjectElement implements MozObjectLoadingContent;
+HTMLObjectElement includes MozImageLoadingContent;
+HTMLObjectElement includes MozFrameLoaderOwner;
+HTMLObjectElement includes MozObjectLoadingContent;

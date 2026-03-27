@@ -7,8 +7,7 @@
 
 [ArrayClass]
 interface MediaList {
-  [TreatNullAs=EmptyString]
-           attribute DOMString        mediaText;
+           attribute [TreatNullAs=EmptyString] DOMString        mediaText;
 
   readonly attribute unsigned long    length;
   getter DOMString?  item(unsigned long index);

@@ -48,6 +48,7 @@
 
 #include "mozilla/ContentEvents.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/ElementBinding.h"
 #include "mozilla/dom/ShadowRoot.h"
 #include "mozilla/dom/HTMLInputElement.h"
 #include "mozilla/dom/HTMLSlotElement.h"
@@ -3003,6 +3004,11 @@ nsFocusManager::DetermineElementToMoveFocus(nsPIDOMWindowOuter* aWindow,
   }
 
   return NS_OK;
+}
+
+uint32_t nsFocusManager::FocusOptionsToFocusManagerFlags(
+    const mozilla::dom::FocusOptions& aOptions) {
+  return aOptions.mPreventScroll ? nsIFocusManager::FLAG_NOSCROLL : 0;
 }
 
 static bool

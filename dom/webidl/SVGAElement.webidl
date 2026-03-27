@@ -17,5 +17,5 @@ interface SVGAElement : SVGGraphicsElement {
   attribute DOMString download;
 };
 
-SVGAElement implements SVGURIReference;
+SVGAElement includes SVGURIReference;
 

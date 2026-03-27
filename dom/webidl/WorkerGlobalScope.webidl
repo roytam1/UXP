@@ -37,8 +37,8 @@ partial interface WorkerGlobalScope {
   readonly attribute WorkerNavigator navigator;
 };
 
-WorkerGlobalScope implements GlobalCrypto;
-WorkerGlobalScope implements WindowOrWorkerGlobalScope;
+WorkerGlobalScope includes GlobalCrypto;
+WorkerGlobalScope includes WindowOrWorkerGlobalScope;
 
 // Not implemented yet: bug 1072107.
 // WorkerGlobalScope implements FontFaceSource;

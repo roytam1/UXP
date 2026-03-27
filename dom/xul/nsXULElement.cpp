@@ -1720,7 +1720,8 @@ NS_IMETHODIMP
 nsXULElement::Focus()
 {
     ErrorResult rv;
-    Focus(rv);
+    FocusOptions options;
+    Focus(options, rv);
     return rv.StealNSResult();
 }
 

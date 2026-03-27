@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "nsMathMLmspaceFrame.h"
-#include "nsMathMLElement.h"
+#include "mozilla/dom/MathMLElement.h"
 #include "mozilla/gfx/2D.h"
 #include <algorithm>
 
@@ -53,7 +53,7 @@ nsMathMLmspaceFrame::ProcessAttributes(nsPresContext* aPresContext)
   mContent->GetAttr(kNameSpaceID_None, nsGkAtoms::width, value);
   if (!value.IsEmpty()) {
     ParseNumericValue(value, &mWidth,
-                      nsMathMLElement::PARSE_ALLOW_NEGATIVE,
+                      mozilla::dom::MathMLElement::PARSE_ALLOW_NEGATIVE,
                       aPresContext, mStyleContext, fontSizeInflation);
   }
 
