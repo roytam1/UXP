@@ -7,9 +7,9 @@
 interface WorkerNavigator {
 };
 
-WorkerNavigator implements NavigatorID;
-WorkerNavigator implements NavigatorLanguage;
-WorkerNavigator implements NavigatorOnLine;
-WorkerNavigator implements NavigatorConcurrentHardware;
-WorkerNavigator implements NavigatorStorage;
-WorkerNavigator implements NavigatorGlobalPrivacyControl;
+WorkerNavigator includes NavigatorID;
+WorkerNavigator includes NavigatorLanguage;
+WorkerNavigator includes NavigatorOnLine;
+WorkerNavigator includes NavigatorConcurrentHardware;
+WorkerNavigator includes NavigatorStorage;
+WorkerNavigator includes NavigatorGlobalPrivacyControl;

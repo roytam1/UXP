@@ -29,7 +29,7 @@ interface BrowserElementAudioChannel : EventTarget {
   DOMRequest isActive();
 };
 
-partial interface BrowserElementPrivileged {
+interface mixin BrowserElementPrivileged {
   [Pure, Cached, Throws,
    Pref="dom.mozBrowserFramesEnabled",
    ChromeOnly]

@@ -26,7 +26,7 @@ interface Worker : EventTarget {
   attribute EventHandler onmessage;
 };
 
-Worker implements AbstractWorker;
+Worker includes AbstractWorker;
 
 [Constructor(DOMString scriptURL),
  Func="mozilla::dom::workers::ChromeWorkerPrivate::WorkerAvailable",

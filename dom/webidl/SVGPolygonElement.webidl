@@ -13,5 +13,5 @@
 interface SVGPolygonElement : SVGGraphicsElement {
 };
 
-SVGPolygonElement implements SVGAnimatedPoints;
+SVGPolygonElement includes SVGAnimatedPoints;
 

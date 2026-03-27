@@ -89,8 +89,8 @@ interface HTMLInputElement : HTMLElement {
            attribute DOMString type;
   [CEReactions, Pure, SetterThrows]
            attribute DOMString defaultValue;
-  [CEReactions, Pure, TreatNullAs=EmptyString, Throws]
-           attribute DOMString value;
+  [CEReactions, Pure, SetterThrows]
+           attribute [TreatNullAs=EmptyString] DOMString value;
   [Throws, Func="HTMLInputElement::ValueAsDateEnabled"]
            attribute Date? valueAsDate;
   [Pure, SetterThrows]
@@ -226,14 +226,13 @@ partial interface HTMLInputElement {
   void chooseDirectory();
 };
 
-[NoInterfaceObject]
-interface MozPhonetic {
+interface mixin MozPhonetic {
   [Pure, ChromeOnly]
   readonly attribute DOMString phonetic;
 };
 
-HTMLInputElement implements MozImageLoadingContent;
-HTMLInputElement implements MozPhonetic;
+HTMLInputElement includes MozImageLoadingContent;
+HTMLInputElement includes MozPhonetic;
 
 // Webkit/Blink
 partial interface HTMLInputElement {

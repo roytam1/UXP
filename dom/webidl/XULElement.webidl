@@ -97,10 +97,6 @@ interface XULElement : Element {
   readonly attribute BoxObject?                 boxObject;
 
   [Throws]
-  void                      focus();
-  [Throws]
-  void                      blur();
-  [Throws]
   void                      click();
   void                      doCommand();
 
@@ -112,13 +108,10 @@ interface XULElement : Element {
   NodeList            getElementsByAttributeNS(DOMString namespaceURI,
                                                DOMString name,
                                                DOMString value);
-  [Constant]
-  readonly attribute CSSStyleDeclaration style;
 };
 
 // And the things from nsIFrameLoaderOwner
-[NoInterfaceObject]
-interface MozFrameLoaderOwner {
+interface mixin MozFrameLoaderOwner {
   [ChromeOnly]
   readonly attribute MozFrameLoader? frameLoader;
 
@@ -135,7 +128,9 @@ interface MozFrameLoaderOwner {
   void swapFrameLoaders(HTMLIFrameElement aOtherLoaderOwner);
 };
 
-XULElement implements GlobalEventHandlers;
-XULElement implements TouchEventHandlers;
-XULElement implements MozFrameLoaderOwner;
-XULElement implements OnErrorEventHandlerForNodes;
+XULElement includes GlobalEventHandlers;
+XULElement includes ElementCSSInlineStyle;
+XULElement includes HTMLOrForeignElement;
+XULElement includes TouchEventHandlers;
+XULElement includes MozFrameLoaderOwner;
+XULElement includes OnErrorEventHandlerForNodes;

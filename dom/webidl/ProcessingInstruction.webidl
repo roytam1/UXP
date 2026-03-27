@@ -13,3 +13,6 @@
 interface ProcessingInstruction : CharacterData {
   readonly attribute DOMString target;
 };
+
+// https://drafts.csswg.org/cssom/#requirements-on-user-agents-implementing-the-xml-stylesheet-processing-instruction
+// ProcessingInstruction includes LinkStyle;

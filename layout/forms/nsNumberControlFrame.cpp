@@ -308,7 +308,11 @@ public:
   NS_IMETHOD Run() override
   {
     if (mNumber->AsElement()->State().HasState(NS_EVENT_STATE_FOCUS)) {
-      HTMLInputElement::FromContent(mTextField)->Focus();
+      // This job shouldn't be triggered by a WebIDL interface, hence the
+      // default options can be used.
+      FocusOptions options;
+      ErrorResult rv;
+      HTMLInputElement::FromContent(mTextField)->Focus(options, rv);
     }
 
     return NS_OK;
@@ -595,7 +599,11 @@ nsNumberControlFrame::HandleFocusEvent(WidgetEvent* aEvent)
   if (aEvent->mOriginalTarget != mTextField) {
     // Move focus to our text field
     RefPtr<HTMLInputElement> textField = HTMLInputElement::FromContent(mTextField);
-    textField->Focus();
+    // Use default FocusOptions, because this method isn't supposed to be called
+    // from a WebIDL interface.
+    FocusOptions options;
+    ErrorResult rv;
+    textField->Focus(options, rv);
   }
 }
 

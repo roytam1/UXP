@@ -10,4 +10,4 @@ interface DOMCursor : EventTarget {
   void continue();
 };
 
-DOMCursor implements DOMRequestShared;
+DOMCursor includes DOMRequestShared;

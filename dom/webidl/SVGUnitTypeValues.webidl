@@ -10,8 +10,7 @@
  * liability, trademark and document use rules apply.
  */
 
-[NoInterfaceObject]
-interface SVGUnitTypeValues {
+interface mixin SVGUnitTypeValues {
   // Unit Types
   const unsigned short SVG_UNIT_TYPE_UNKNOWN = 0;
   const unsigned short SVG_UNIT_TYPE_USERSPACEONUSE = 1;

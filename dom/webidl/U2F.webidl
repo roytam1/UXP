@@ -10,8 +10,7 @@
  * https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment-20150514/fido-u2f-javascript-api.html
  */
 
-[NoInterfaceObject]
-interface GlobalU2F {
+interface mixin GlobalU2F {
   [Throws, Pref="security.webauth.u2f"]
   readonly attribute U2F u2f;
 };

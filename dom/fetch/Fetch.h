@@ -35,6 +35,7 @@ class InternalRequest;
 class OwningBlobOrArrayBufferViewOrArrayBufferOrFormDataOrURLSearchParamsOrUSVString;
 struct ReadableStream;
 class RequestOrUSVString;
+enum class CallerType : uint32_t;
 
 namespace workers {
 class WorkerPrivate;
@@ -42,7 +43,8 @@ class WorkerPrivate;
 
 already_AddRefed<Promise>
 FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
-             const RequestInit& aInit, ErrorResult& aRv);
+             const RequestInit& aInit, CallerType aCallerType,
+             ErrorResult& aRv);
 
 nsresult
 UpdateRequestReferrer(nsIGlobalObject* aGlobal, InternalRequest* aRequest);

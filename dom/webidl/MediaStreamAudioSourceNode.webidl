@@ -21,5 +21,5 @@ interface MediaStreamAudioSourceNode : AudioNode {
 };
 
 // Mozilla extensions
-MediaStreamAudioSourceNode implements AudioNodePassThrough;
+MediaStreamAudioSourceNode includes AudioNodePassThrough;
 

@@ -20,7 +20,7 @@
 #include "mozilla/Likely.h"
 #include "nsIScriptError.h"
 #include "nsContentUtils.h"
-#include "nsMathMLElement.h"
+#include "mozilla/dom/MathMLElement.h"
 
 using namespace mozilla;
 using namespace mozilla::gfx;
@@ -1337,7 +1337,7 @@ nsMathMLContainerFrame::SetIncrementScriptLevel(int32_t aChildIndex, bool aIncre
   nsIContent* content = child->GetContent();
   if (!content->IsMathMLElement())
     return;
-  nsMathMLElement* element = static_cast<nsMathMLElement*>(content);
+  mozilla::dom::MathMLElement* element = static_cast<mozilla::dom::MathMLElement*>(content);
 
   if (element->GetIncrementScriptLevel() == aIncrement)
     return;

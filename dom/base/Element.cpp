@@ -308,12 +308,18 @@ Element::TabIndex()
 }
 
 void
-Element::Focus(mozilla::ErrorResult& aError)
+Element::Focus(const FocusOptions& aOptions, ErrorResult& aError)
 {
   nsCOMPtr<nsIDOMElement> domElement = do_QueryInterface(this);
   nsIFocusManager* fm = nsFocusManager::GetFocusManager();
+  // Also other browsers seem to have the hack to not re-focus (and flush) when
+  // the element is already focused.
+  // Until https://github.com/whatwg/html/issues/4512 is clarified, we'll
+  // maintain interoperatibility by not re-focusing, independent of aOptions.
+  // I.e., `focus({ preventScroll: true})` followed by `focus( { preventScroll:
+  // false })` won't re-focus.
   if (fm && domElement) {
-    aError = fm->SetFocus(domElement, 0);
+    aError = fm->SetFocus(domElement, nsFocusManager::FocusOptionsToFocusManagerFlags(aOptions));
   }
 }
 

@@ -613,14 +613,6 @@ ScriptLoader::CreateModuleScript(ModuleLoadRequest* aRequest)
 
   nsresult rv;
   {
-    // Update our current script.
-    Maybe<AutoCurrentScriptUpdater> masterScriptUpdater;
-    nsCOMPtr<nsIDocument> master = mDocument->MasterDocument();
-    if (master != mDocument) {
-      masterScriptUpdater.emplace(master->ScriptLoader(),
-                                  aRequest->Element());
-    }
-
     JSContext* cx = aes.cx();
     JS::Rooted<JSObject*> module(cx);
 
@@ -2323,8 +2315,14 @@ ScriptLoader::EvaluateScript(ScriptLoadRequest* aRequest)
     return NS_ERROR_FAILURE;
   }
 
+  // Update our current script.
+  // This must be destroyed after destroying nsAutoMicroTask.
+  nsIScriptElement* currentScript =
+      aRequest->IsModuleRequest() ? nullptr : aRequest->Element();
+  AutoCurrentScriptUpdater scriptUpdater(this, currentScript);
+
   // New script entry point required, due to the "Create a script" sub-step of
-  // http://www.whatwg.org/specs/web-apps/current-work/#execute-the-script-block
+  // http://html.spec.whatwg.org/multipage/#execute-the-script-block
   nsAutoMicroTask mt;
   AutoEntryScript aes(globalObject, "<script> element", true);
   JSContext* cx = aes.cx();
@@ -2382,9 +2380,6 @@ ScriptLoader::EvaluateScript(ScriptLoadRequest* aRequest)
         FinishDynamicImport(cx, request, rv);
       }
     } else {
-      // Update our current script.
-      AutoCurrentScriptUpdater scriptUpdater(this, aRequest->Element());
-
       JS::CompileOptions options(cx);
       rv = FillCompileOptionsForRequest(aes, aRequest, global, &options);
 

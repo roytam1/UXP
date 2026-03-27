@@ -25,7 +25,7 @@ interface ServiceWorker : EventTarget {
   void postMessage(any message, optional StructuredSerializeOptions options);
 };
 
-ServiceWorker implements AbstractWorker;
+ServiceWorker includes AbstractWorker;
 
 enum ServiceWorkerState {
   "installing",

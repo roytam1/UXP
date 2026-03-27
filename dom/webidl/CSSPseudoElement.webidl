@@ -22,4 +22,4 @@ interface CSSPseudoElement {
 };
 
 // https://w3c.github.io/web-animations/#extensions-to-the-pseudoelement-interface
-CSSPseudoElement implements Animatable;
+CSSPseudoElement includes Animatable;
