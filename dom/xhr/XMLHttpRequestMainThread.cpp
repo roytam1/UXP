@@ -3544,6 +3544,13 @@ XMLHttpRequestMainThread::ShouldBlockAuthPrompt()
   // Verify that it's ok to prompt for credentials here, per spec
   // http://xhr.spec.whatwg.org/#the-send%28%29-method
 
+  // Privileged add-ons can still issue synchronous XHR from chrome context.
+  // Showing a blocking HTTP auth dialog in that path can deadlock the UI when
+  // extension code is already running inside a nested event loop.
+  if (mFlagSynchronous && IsSystemXHR()) {
+    return true;
+  }
+
   if (mAuthorRequestHeaders.Has("authorization")) {
     return true;
   }
