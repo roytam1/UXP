@@ -6988,12 +6988,20 @@ AddonInternal.prototype = {
       aPlatformVersion = Services.appinfo.platformVersion;
 
     let version;
-    if (app.id == Services.appinfo.ID)
-      version = aAppVersion;
+    if (app.id == Services.appinfo.ID) {
+      // For WebExtensions, report as Firefox 128.0 for compatibility
+      if (this.type == "extension") {
+        version = "128.0";
+      } else {
+        version = aAppVersion;
+      }
+    }
     else if (app.id == TOOLKIT_ID)
       version = aPlatformVersion
-    else if (app.id == WEBEXTENSIONS_ID)
-      version = WEBEXTENSIONS_VERSION
+    else if (app.id == WEBEXTENSIONS_ID) {
+      // For WebExtensions, report as Firefox 128.0
+      version = "128.0";
+    }
 
     // Only extensions and dictionaries can be compatible by default; themes
     // and language packs always use strict compatibility checking.
