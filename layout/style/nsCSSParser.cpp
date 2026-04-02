@@ -1239,6 +1239,7 @@ protected:
                      ComponentType& aA);
   bool ParseHSLColor(float& aHue, float& aSaturation, float& aLightness,
                      float& aOpacity);
+  bool ParseLCHColor(nscolor& aColor);
   bool ParseOKLabColor(nscolor& aColor);
   bool ParseOKLCHColor(nscolor& aColor);
   bool ParseOKLabComponent(float& aComponent, float aPercentScale,
@@ -7625,6 +7626,14 @@ CSSParserImpl::ParseColor(nsCSSValue& aValue)
         SkipUntil(')');
         return CSSParseResult::Error;
       }
+      else if (mToken.mIdent.LowerCaseEqualsLiteral("lch")) {
+        if (ParseLCHColor(rgba)) {
+          aValue.SetColorValue(rgba);
+          return CSSParseResult::Ok;
+        }
+        SkipUntil(')');
+        return CSSParseResult::Error;
+      }
       else if (mToken.mIdent.LowerCaseEqualsLiteral("oklab")) {
         if (ParseOKLabColor(rgba)) {
           aValue.SetColorValue(rgba);
@@ -7867,6 +7876,22 @@ CSSParserImpl::ParseOKLabComponent(float& aComponent, float aPercentScale,
   }
 
   aComponent = value;
+  return true;
+}
+
+bool
+CSSParserImpl::ParseLCHColor(nscolor& aColor)
+{
+  float l, chroma, hue, alpha;
+
+  if (!ParseOKLabComponent(l, kLabLightnessMax, Nothing()) ||
+      !ParseOKLabComponent(chroma, kLchPercentScaleC, Nothing()) ||
+      !ParseHue(hue) ||
+      !ParseColorOpacityAndCloseParen(alpha, '/')) {
+    return false;
+  }
+
+  aColor = LchToSRGBColor(l, chroma, hue, alpha);
   return true;
 }
 
@@ -8864,6 +8889,7 @@ CSSParserImpl::ParseVariant(nsCSSValue& aValue,
           tk->mIdent.LowerCaseEqualsLiteral("hsl") ||
           tk->mIdent.LowerCaseEqualsLiteral("rgba") ||
           tk->mIdent.LowerCaseEqualsLiteral("hsla") ||
+          tk->mIdent.LowerCaseEqualsLiteral("lch") ||
           tk->mIdent.LowerCaseEqualsLiteral("oklab") ||
           tk->mIdent.LowerCaseEqualsLiteral("oklch") ||
           tk->mIdent.LowerCaseEqualsLiteral("color-mix"))))
@@ -11119,7 +11145,8 @@ CSSParserImpl::ParseGradientInterpolationMethod()
       mToken.mIdent.LowerCaseEqualsLiteral("oklab")) {
     isPolarColorSpace = false;
   } else if (mToken.mIdent.LowerCaseEqualsLiteral("hsl") ||
-             mToken.mIdent.LowerCaseEqualsLiteral("oklch")) {
+             mToken.mIdent.LowerCaseEqualsLiteral("oklch") ||
+             mToken.mIdent.LowerCaseEqualsLiteral("lch")) {
     isPolarColorSpace = true;
   } else {
     return CSSParseResult::Error;
