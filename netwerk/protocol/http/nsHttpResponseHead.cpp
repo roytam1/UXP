@@ -625,10 +625,13 @@ nsHttpResponseHead::ParseHeaderLine_locked(const nsACString &line, bool original
             LOG(("invalid content-length! %s\n", val.get()));
         }
     } else if (hdr == nsHttp::Content_Type) {
-        LOG(("ParseContentType [type=%s]\n", val.get()));
-        bool dummy;
-        net_ParseContentType(val,
-                             mContentType, mContentCharset, &dummy);
+        if (mStatus == 304) {
+          LOG(("Non-compliant Content-type value ignored"));
+        } else {
+          LOG(("ParseContentType [type=%s]\n", val.get()));
+          bool dummy;
+          net_ParseContentType(val, mContentType, mContentCharset, &dummy);
+        }
     } else if (hdr == nsHttp::Cache_Control) {
         // Re-parse merged header in its entirety. See Issue #2852
         ParseCacheControl(mHeaders.PeekHeader(hdr));

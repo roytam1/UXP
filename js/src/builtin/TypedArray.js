@@ -899,6 +899,73 @@ function TypedArrayToReversed() {
     return A;
 }
 
+// ES2023 23.2.3.33 %TypedArray%.prototype.toSorted ( comparator )
+function TypedArrayToSorted(comparator) {
+    // Step 1.
+    if (comparator !== undefined && !IsCallable(comparator))
+        ThrowTypeError(JSMSG_NOT_FUNCTION, DecompileArg(0, comparator));
+
+    // Step 2.
+    var O = this;
+
+    // Step 3.
+    // This function is not generic.
+    // We want to make sure that we have an attached buffer, per spec prose.
+    var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
+
+    // If we got here, `this` is either a typed array or a wrapper for one.
+
+    // Step 4.
+    var len;
+    if (isTypedArray)
+        len = TypedArrayLength(O);
+    else
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
+
+    // Step 5.
+    var A = TypedArrayCreateSameType(O, len);
+
+    // Step 8.
+    var sortedList = new List();
+    for (var k = 0; k < len; k++) {
+        sortedList[k] = O[k];
+    }
+
+    if (len > 1) {
+        // Steps 6-7.
+        var sortCompare;
+        if (comparator === undefined) {
+            var isBigIntContentType;
+            if (isTypedArray) {
+                isBigIntContentType = callFunction(TypedArrayContentTypeIsBigIntMethod, O);
+            } else {
+                isBigIntContentType = callFunction(CallTypedArrayMethodIfWrapped, O,
+                                                   "TypedArrayContentTypeIsBigIntMethod");
+            }
+            sortCompare = isBigIntContentType ? TypedArrayCompareBigInt : TypedArrayCompare;
+        } else {
+            var wrappedComparator = comparator;
+            sortCompare = function(x, y) {
+                // CompareTypedArrayElements step 2.a.
+                var v = ToNumber(callContentFunction(wrappedComparator, undefined, x, y));
+
+                // CompareTypedArrayElements step 2.b.
+                return Number_isNaN(v) ? 0 : v;
+            };
+        }
+
+        MergeSort(sortedList, len, sortCompare);
+    }
+
+    // Steps 9-10.
+    for (var j = 0; j < len; j++) {
+        A[j] = sortedList[j];
+    }
+
+    // Step 11.
+    return A;
+}
+
 // ES2023 23.2.3.36 %TypedArray%.prototype.with ( index, value )
 function TypedArrayWith(index, value) {
     // Step 1.

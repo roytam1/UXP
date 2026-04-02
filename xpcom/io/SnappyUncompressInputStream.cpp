@@ -22,7 +22,7 @@ static size_t CompressedBufferLength()
   static size_t kCompressedBufferLength =
       detail::SnappyFrameUtils::MaxCompressedBufferLength(snappy::kBlockSize);
 
-  MOZ_ASSERT(kCompressedBufferLength > 0);
+  MOZ_ASSERT(kCompressedBufferLength > detail::SnappyFrameUtils::kHeaderLength);
   return kCompressedBufferLength;
 }
 
@@ -269,6 +269,9 @@ SnappyUncompressInputStream::ParseNextChunk(uint32_t* aBytesReadOut)
   // Read at least that much from the base stream.
   uint32_t readLength = mNextChunkDataLength;
   MOZ_ASSERT(readLength <= CompressedBufferLength());
+  if (readLength > CompressedBufferLength() - kHeaderLength) {
+    return NS_ERROR_CORRUPTED_CONTENT;
+  }
 
   // However, if there is enough data in the base stream, also read the next
   // chunk header.  This helps optimize the stream by avoiding many small reads.
