@@ -403,10 +403,6 @@ static_library("rtc_base") {
 
     if (is_linux) {
       sources += [
-        "dbus.cc",
-        "dbus.h",
-        "libdbusglibsymboltable.cc",
-        "libdbusglibsymboltable.h",
         "linuxfdwalk.c",
         "linuxfdwalk.h",
       ]

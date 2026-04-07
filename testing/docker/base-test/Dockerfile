@@ -44,7 +44,6 @@ RUN apt-get update && apt-get install -y --force-yes \
   libcanberra-pulse \
   libcurl4-openssl-dev \
   libdbus-1-dev \
-  libdbus-glib-1-dev \
   libdrm-intel1:i386 \
   libdrm-nouveau1a:i386 \
   libdrm-radeon1:i386 \

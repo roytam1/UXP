@@ -58,7 +58,7 @@ chromeos_dev_list="libbluetooth-dev libpulse-dev"
 # Packages need for development
 dev_list="apache2.2-bin bison curl elfutils fakeroot flex g++ gperf
           language-pack-fr libapache2-mod-php5 libasound2-dev libbz2-dev
-          libcairo2-dev libcups2-dev libcurl4-gnutls-dev libdbus-glib-1-dev
+          libcairo2-dev libcups2-dev libcurl4-gnutls-dev
           libelf-dev libgconf2-dev libgl1-mesa-dev libglib2.0-dev
           libglu1-mesa-dev libgnome-keyring-dev libgtk2.0-dev
           libkrb5-dev libnspr4-dev libnss3-dev libpam0g-dev libsctp-dev
@@ -80,7 +80,7 @@ fi
 chromeos_lib_list="libpulse0 libbz2-1.0 libcurl4-gnutls-dev"
 
 # Full list of required run-time libraries
-lib_list="libatk1.0-0 libc6 libasound2 libcairo2 libcups2 libdbus-glib-1-2
+lib_list="libatk1.0-0 libc6 libasound2 libcairo2 libcups2
           libexpat1 libfontconfig1 libfreetype6 libglib2.0-0 libgnome-keyring0
           libgtk2.0-0 libpam0g libpango1.0-0 libpcre3 libpixman-1-0
           libpng12-0 libstdc++6 libsqlite3-0 libudev0 libx11-6 libxau6 libxcb1
@@ -89,7 +89,7 @@ lib_list="libatk1.0-0 libc6 libasound2 libcairo2 libcups2 libdbus-glib-1-2
           $chromeos_lib_list"
 
 # Debugging symbols for all of the run-time libraries
-dbg_list="libatk1.0-dbg libc6-dbg libcairo2-dbg libdbus-glib-1-2-dbg
+dbg_list="libatk1.0-dbg libc6-dbg libcairo2-dbg
           libfontconfig1-dbg libglib2.0-0-dbg libgtk2.0-0-dbg
           libpango1.0-0-dbg libpcre3-dbg libpixman-1-0-dbg
           libsqlite3-0-dbg

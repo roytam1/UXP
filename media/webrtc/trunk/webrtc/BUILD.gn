@@ -61,26 +61,11 @@ config("common_inherited_config") {
   }
 }
 
-if (rtc_have_dbus_glib) {
-  pkg_config("dbus-glib") {
-    packages = [ "dbus-glib-1" ]
-  }
-}
-
 config("common_config") {
   cflags = []
   cflags_cc = []
   if (rtc_restrict_logging) {
     defines = [ "WEBRTC_RESTRICT_LOGGING" ]
-  }
-
-  if (rtc_have_dbus_glib) {
-    defines += [ "HAVE_DBUS_GLIB" ]
-    # TODO(kjellander): Investigate this, it seems like include <dbus/dbus.h>
-    # is still not found even if the execution of
-    # build/config/linux/pkg-config.py dbus-glib-1 returns correct include
-    # dirs on Linux.
-    all_dependent_configs = [ "dbus-glib" ]
   }
 
   if (build_with_chromium) {

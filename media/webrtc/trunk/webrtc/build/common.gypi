@@ -107,9 +107,6 @@
     'build_openmax_dl%': 1,
     'build_opus%': 1,
 
-    # Disable by default
-    'have_dbus_glib%': 0,
-
     # Enable to use the Mozilla internal settings.
     'build_with_mozilla%': 0,
 
@@ -203,14 +200,6 @@
         'defines': [
           # Changes settings for Mozilla build.
           'WEBRTC_MOZILLA_BUILD',
-         ],
-      }],
-      ['have_dbus_glib==1', {
-        'defines': [
-          'HAVE_DBUS_GLIB',
-         ],
-         'cflags': [
-           '<!@(pkg-config --cflags dbus-glib-1)',
          ],
       }],
       ['rtc_relative_path==1', {
@@ -510,4 +499,3 @@
     },
   }, # target_defaults
 }
-

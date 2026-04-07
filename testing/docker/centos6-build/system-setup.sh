@@ -50,10 +50,6 @@ install check-devel.i686
 install check-devel.x86_64
 install check.i686
 install check.x86_64
-install dbus-glib-devel.i686
-install dbus-glib-devel.x86_64
-install dbus-glib.i686
-install dbus-glib.x86_64
 install fontconfig-devel.i686
 install fontconfig-devel.x86_64
 install fontconfig.i686
