@@ -45,7 +45,7 @@ struct GLFormats
     GLsizei samples;
 };
 
-enum class CreateContextFlags : int8_t {
+enum class CreateContextFlags : uint8_t {
     NONE = 0,
     REQUIRE_COMPAT_PROFILE = 1 << 0,
     // Force the use of hardware backed GL, don't allow software implementations.
@@ -56,6 +56,9 @@ enum class CreateContextFlags : int8_t {
     PREFER_ES3 = 1 << 3,
 
     NO_VALIDATION = 1 << 4,
+    //PREFER_ROBUSTNESS = 1 << 5, /* reserved for now */
+    
+    HIGH_POWER = 1 << 6,
 };
 MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(CreateContextFlags)
 

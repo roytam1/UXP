@@ -13,8 +13,36 @@
 #include <gio/gio.h>
 #include <gtk/gtk.h>
 #ifdef MOZ_ENABLE_DBUS
-#include <dbus/dbus-glib.h>
-#include <dbus/dbus-glib-lowlevel.h>
+#include <dbus/dbus.h>
+#include "mozilla/ipc/DBusConnectionDelete.h"
+#include "mozilla/ipc/DBusMessageRefPtr.h"
+#include "mozilla/UniquePtr.h"
+#endif
+
+#ifdef MOZ_ENABLE_DBUS
+namespace {
+
+bool
+IsFileManagerUnavailableError(const DBusError* aError)
+{
+  return dbus_error_has_name(aError, DBUS_ERROR_SERVICE_UNKNOWN) ||
+         dbus_error_has_name(aError, DBUS_ERROR_UNKNOWN_METHOD) ||
+         dbus_error_has_name(aError, DBUS_ERROR_UNKNOWN_INTERFACE) ||
+         dbus_error_has_name(aError, DBUS_ERROR_UNKNOWN_OBJECT) ||
+         dbus_error_has_name(aError, DBUS_ERROR_NAME_HAS_NO_OWNER);
+}
+
+bool
+IsFileManagerUnavailableReply(DBusMessage* aMessage)
+{
+  return dbus_message_is_error(aMessage, DBUS_ERROR_SERVICE_UNKNOWN) ||
+         dbus_message_is_error(aMessage, DBUS_ERROR_UNKNOWN_METHOD) ||
+         dbus_message_is_error(aMessage, DBUS_ERROR_UNKNOWN_INTERFACE) ||
+         dbus_message_is_error(aMessage, DBUS_ERROR_UNKNOWN_OBJECT) ||
+         dbus_message_is_error(aMessage, DBUS_ERROR_NAME_HAS_NO_OWNER);
+}
+
+} // anonymous namespace
 #endif
 
 
@@ -368,48 +396,84 @@ nsGIOService::OrgFreedesktopFileManager1ShowItems(const nsACString& aPath)
 #ifndef MOZ_ENABLE_DBUS
   return NS_ERROR_FAILURE;
 #else
-  GError* error = nullptr;
   static bool org_freedesktop_FileManager1_exists = true;
 
   if (!org_freedesktop_FileManager1_exists) {
     return NS_ERROR_NOT_AVAILABLE;
   }
 
-  DBusGConnection* dbusGConnection = dbus_g_bus_get(DBUS_BUS_SESSION, &error);
+  DBusError error;
+  dbus_error_init(&error);
 
-  if (!dbusGConnection) {
-    if (error) {
-      g_printerr("Failed to open connection to session bus: %s\n", error->message);
-      g_error_free(error);
-    }
+  mozilla::UniquePtr<DBusConnection, mozilla::DBusConnectionDelete>
+    connection(dbus_bus_get_private(DBUS_BUS_SESSION, &error));
+
+  if (dbus_error_is_set(&error)) {
+    g_printerr("Failed to open connection to session bus: %s\n", error.message);
+    dbus_error_free(&error);
     return NS_ERROR_FAILURE;
   }
 
-  char *uri = g_filename_to_uri(PromiseFlatCString(aPath).get(), nullptr, nullptr);
+  if (!connection) {
+    return NS_ERROR_FAILURE;
+  }
+
+  dbus_connection_set_exit_on_disconnect(connection.get(), false);
+
+  char* uri = g_filename_to_uri(PromiseFlatCString(aPath).get(), nullptr, nullptr);
   if (uri == nullptr) {
     return NS_ERROR_FAILURE;
   }
 
-  DBusConnection* dbusConnection = dbus_g_connection_get_connection(dbusGConnection);
-  // Make sure we do not exit the entire program if DBus connection get lost.
-  dbus_connection_set_exit_on_disconnect(dbusConnection, false);
+  RefPtr<DBusMessage> msg = already_AddRefed<DBusMessage>(
+    dbus_message_new_method_call("org.freedesktop.FileManager1",
+                                 "/org/freedesktop/FileManager1",
+                                 "org.freedesktop.FileManager1",
+                                 "ShowItems"));
+  if (!msg) {
+    g_free(uri);
+    return NS_ERROR_FAILURE;
+  }
 
-  DBusGProxy* dbusGProxy = dbus_g_proxy_new_for_name(dbusGConnection,
-                                                     "org.freedesktop.FileManager1",
-                                                     "/org/freedesktop/FileManager1",
-                                                     "org.freedesktop.FileManager1");
+  const char* startupId = "";
+  DBusMessageIter iter;
+  DBusMessageIter uris;
+  dbus_message_iter_init_append(msg, &iter);
 
-  const char *uris[2] = { uri, nullptr };
-  gboolean rv_dbus_call = dbus_g_proxy_call (dbusGProxy, "ShowItems", nullptr, G_TYPE_STRV, uris,
-                                             G_TYPE_STRING, "", G_TYPE_INVALID, G_TYPE_INVALID);
+  if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+                                        DBUS_TYPE_STRING_AS_STRING, &uris) ||
+      !dbus_message_iter_append_basic(&uris, DBUS_TYPE_STRING, &uri) ||
+      !dbus_message_iter_close_container(&iter, &uris) ||
+      !dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &startupId)) {
+    g_free(uri);
+    return NS_ERROR_FAILURE;
+  }
 
-  g_object_unref(dbusGProxy);
-  dbus_g_connection_unref(dbusGConnection);
+  RefPtr<DBusMessage> reply = already_AddRefed<DBusMessage>(
+    dbus_connection_send_with_reply_and_block(connection.get(), msg, -1, &error));
   g_free(uri);
 
-  if (!rv_dbus_call) {
+  if (dbus_error_is_set(&error)) {
+    bool unavailable = IsFileManagerUnavailableError(&error);
+    dbus_error_free(&error);
+    if (unavailable) {
+      org_freedesktop_FileManager1_exists = false;
+      return NS_ERROR_NOT_AVAILABLE;
+    }
+    return NS_ERROR_FAILURE;
+  }
+
+  if (!reply) {
+    return NS_ERROR_FAILURE;
+  }
+
+  if (IsFileManagerUnavailableReply(reply)) {
     org_freedesktop_FileManager1_exists = false;
     return NS_ERROR_NOT_AVAILABLE;
+  }
+
+  if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
+    return NS_ERROR_FAILURE;
   }
 
   return NS_OK;

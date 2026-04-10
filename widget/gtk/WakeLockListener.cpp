@@ -8,10 +8,8 @@
 #include "WakeLockListener.h"
 
 #include <dbus/dbus.h>
-#include <dbus/dbus-glib-lowlevel.h>
 
 #include "mozilla/ipc/DBusMessageRefPtr.h"
-#include "mozilla/ipc/DBusPendingCallRefPtr.h"
 
 #define FREEDESKTOP_SCREENSAVER_TARGET    "org.freedesktop.ScreenSaver"
 #define FREEDESKTOP_SCREENSAVER_OBJECT    "/ScreenSaver"
@@ -45,7 +43,6 @@ public:
     , mDesktopEnvironment(FreeDesktop)
     , mInhibitRequest(0)
     , mShouldInhibit(false)
-    , mWaitingForReply(false)
   {
   }
 
@@ -58,10 +55,7 @@ private:
 
   bool SendFreeDesktopInhibitMessage();
   bool SendGNOMEInhibitMessage();
-  bool SendMessage(DBusMessage* aMessage);
-
-  static void ReceiveInhibitReply(DBusPendingCall* aPending, void* aUserData);
-  void InhibitFailed();
+  bool SendMessage(DBusMessage* aMessage, uint32_t* aInhibitRequest);
   void InhibitSucceeded(uint32_t aInhibitRequest);
 
   nsCString mTopic;
@@ -72,24 +66,33 @@ private:
   uint32_t mInhibitRequest;
 
   bool mShouldInhibit;
-  bool mWaitingForReply;
 };
 
 
 bool
-WakeLockTopic::SendMessage(DBusMessage* aMessage)
+WakeLockTopic::SendMessage(DBusMessage* aMessage, uint32_t* aInhibitRequest)
 {
-  // send message and get a handle for a reply
-  RefPtr<DBusPendingCall> reply;
-  dbus_connection_send_with_reply(mConnection, aMessage,
-                                  reply.StartAssignment(),
-                                  DBUS_TIMEOUT);
-  if (!reply) {
+  DBusError error;
+  dbus_error_init(&error);
+
+  RefPtr<DBusMessage> reply = already_AddRefed<DBusMessage>(
+    dbus_connection_send_with_reply_and_block(mConnection, aMessage,
+                                              DBUS_TIMEOUT, &error));
+  if (dbus_error_is_set(&error)) {
+    dbus_error_free(&error);
     return false;
   }
 
-  dbus_pending_call_set_notify(reply, &ReceiveInhibitReply, this, NULL);
+  if (!reply || dbus_message_get_type(reply) != DBUS_MESSAGE_TYPE_METHOD_RETURN) {
+    return false;
+  }
 
+  if (!dbus_message_get_args(reply, nullptr, DBUS_TYPE_UINT32,
+                             aInhibitRequest, DBUS_TYPE_INVALID)) {
+    return false;
+  }
+
+  InhibitSucceeded(*aInhibitRequest);
   return true;
 }
 
@@ -113,7 +116,8 @@ WakeLockTopic::SendFreeDesktopInhibitMessage()
                            DBUS_TYPE_STRING, &topic,
                            DBUS_TYPE_INVALID);
 
-  return SendMessage(message);
+  uint32_t inhibitRequest;
+  return SendMessage(message, &inhibitRequest);
 }
 
 bool
@@ -140,32 +144,34 @@ WakeLockTopic::SendGNOMEInhibitMessage()
                            DBUS_TYPE_UINT32, &flags,
                            DBUS_TYPE_INVALID);
 
-  return SendMessage(message);
+  uint32_t inhibitRequest;
+  return SendMessage(message, &inhibitRequest);
 }
 
 
 bool
 WakeLockTopic::SendInhibit()
 {
-  bool sendOk = false;
-
-  switch (mDesktopEnvironment)
-  {
-  case FreeDesktop:
-    sendOk = SendFreeDesktopInhibitMessage();
-    break;
-  case GNOME:
-    sendOk = SendGNOMEInhibitMessage();
-    break;
-  case Unsupported:
-    return false;
+  while (true) {
+    switch (mDesktopEnvironment)
+    {
+    case FreeDesktop:
+      if (SendFreeDesktopInhibitMessage()) {
+        return true;
+      }
+      mDesktopEnvironment = GNOME;
+      break;
+    case GNOME:
+      if (SendGNOMEInhibitMessage()) {
+        return true;
+      }
+      mDesktopEnvironment = Unsupported;
+      mShouldInhibit = false;
+      return false;
+    case Unsupported:
+      return false;
+    }
   }
-
-  if (sendOk) {
-    mWaitingForReply = true;
-  }
-
-  return sendOk;
 }
 
 bool
@@ -212,14 +218,6 @@ WakeLockTopic::InhibitScreensaver()
   }
 
   mShouldInhibit = true;
-
-  if (mWaitingForReply) {
-    // We already have a screensaver inhibit request pending. This can happen
-    // if InhibitScreensaver is called, then UninhibitScreensaver, then
-    // InhibitScreensaver again quickly.
-    return NS_OK;
-  }
-
   return SendInhibit() ? NS_OK : NS_ERROR_FAILURE;
 }
 
@@ -233,78 +231,13 @@ WakeLockTopic::UninhibitScreensaver()
 
   mShouldInhibit = false;
 
-  if (mWaitingForReply) {
-    // If we're still waiting for a response to our inhibit request, we can't
-    // do anything until we get a dbus message back. The callbacks below will
-    // check |mShouldInhibit| and act accordingly.
-    return NS_OK;
-  }
-
   return SendUninhibit() ? NS_OK : NS_ERROR_FAILURE;
-}
-
-void
-WakeLockTopic::InhibitFailed()
-{
-  mWaitingForReply = false;
-
-  if (mDesktopEnvironment == FreeDesktop) {
-    mDesktopEnvironment = GNOME;
-  } else {
-    NS_ASSERTION(mDesktopEnvironment == GNOME, "Unknown desktop environment");
-    mDesktopEnvironment = Unsupported;
-    mShouldInhibit = false;
-  }
-
-  if (!mShouldInhibit) {
-    // We were interrupted by UninhibitScreensaver() before we could find the
-    // correct desktop environment.
-    return;
-  }
-
-  SendInhibit();
 }
 
 void
 WakeLockTopic::InhibitSucceeded(uint32_t aInhibitRequest)
 {
-  mWaitingForReply = false;
   mInhibitRequest = aInhibitRequest;
-
-  if (!mShouldInhibit) {
-    // We successfully inhibited the screensaver, but UninhibitScreensaver()
-    // was called while we were waiting for a reply.
-    SendUninhibit();
-  }
-}
-
-/* static */ void
-WakeLockTopic::ReceiveInhibitReply(DBusPendingCall* pending, void* user_data)
-{
-  if (!WakeLockListener::GetSingleton(false)) {
-    // The WakeLockListener (and therefore our topic) was deleted while we were
-    // waiting for a reply.
-    return;
-  }
-
-  WakeLockTopic* self = static_cast<WakeLockTopic*>(user_data);
-
-  RefPtr<DBusMessage> msg = already_AddRefed<DBusMessage>(
-    dbus_pending_call_steal_reply(pending));
-  if (!msg) {
-    return;
-  }
-
-  if (dbus_message_get_type(msg) == DBUS_MESSAGE_TYPE_METHOD_RETURN) {
-    uint32_t inhibitRequest;
-
-    if (dbus_message_get_args(msg, nullptr, DBUS_TYPE_UINT32,
-                              &inhibitRequest, DBUS_TYPE_INVALID)) {
-      self->InhibitSucceeded(inhibitRequest);
-    }
-  } else {
-    self->InhibitFailed();
-  }
 }
 
 
@@ -314,7 +247,6 @@ WakeLockListener::WakeLockListener()
 {
   if (mConnection) {
     dbus_connection_set_exit_on_disconnect(mConnection, false);
-    dbus_connection_setup_with_g_main(mConnection, nullptr);
   }
 }
 
