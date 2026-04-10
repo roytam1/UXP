@@ -88,19 +88,26 @@ using namespace mozilla::gl;
 using namespace mozilla::layers;
 
 WebGLContextOptions::WebGLContextOptions()
-    : alpha(true)
-    , depth(true)
-    , stencil(false)
-    , premultipliedAlpha(true)
-    , antialias(true)
-    , preserveDrawingBuffer(false)
-    , failIfMajorPerformanceCaveat(false)
 {
     // Set default alpha state based on preference.
     if (gfxPrefs::WebGLDefaultNoAlpha())
         alpha = false;
 }
 
+bool
+WebGLContextOptions::operator==(const WebGLContextOptions& r) const
+{
+    bool eq = true;
+    eq &= (alpha == r.alpha);
+    eq &= (depth == r.depth);
+    eq &= (stencil == r.stencil);
+    eq &= (premultipliedAlpha == r.premultipliedAlpha);
+    eq &= (antialias == r.antialias);
+    eq &= (preserveDrawingBuffer == r.preserveDrawingBuffer);
+    eq &= (failIfMajorPerformanceCaveat == r.failIfMajorPerformanceCaveat);
+    eq &= (powerPreference == r.powerPreference);
+    return eq;
+}
 
 /*static*/ const uint32_t WebGLContext::kMinMaxColorAttachments = 4;
 /*static*/ const uint32_t WebGLContext::kMinMaxDrawBuffers = 4;
@@ -375,6 +382,7 @@ WebGLContext::SetContextOptions(JSContext* cx, JS::Handle<JS::Value> options,
     newOpts.antialias = attributes.mAntialias;
     newOpts.preserveDrawingBuffer = attributes.mPreserveDrawingBuffer;
     newOpts.failIfMajorPerformanceCaveat = attributes.mFailIfMajorPerformanceCaveat;
+    newOpts.powerPreference = attributes.mPowerPreference;
 
     if (attributes.mAlpha.WasPassed())
         newOpts.alpha = attributes.mAlpha.Value();
@@ -393,7 +401,7 @@ WebGLContext::SetContextOptions(JSContext* cx, JS::Handle<JS::Value> options,
                newOpts.preserveDrawingBuffer ? 1 : 0);
 #endif
 
-    if (mOptionsFrozen && newOpts != mOptions) {
+    if (mOptionsFrozen && !(newOpts == mOptions)) {
         // Error if the options are already frozen, and the ones that were asked for
         // aren't the same as what they were originally.
         return NS_ERROR_FAILURE;
@@ -690,6 +698,16 @@ WebGLContext::CreateAndInitGL(bool forceEnabled,
         flags |= gl::CreateContextFlags::PREFER_ES3;
     } else {
         flags |= gl::CreateContextFlags::REQUIRE_COMPAT_PROFILE;
+    }
+
+    switch (mOptions.powerPreference) {
+      case dom::WebGLPowerPreference::Low_power:
+        break;
+      case dom::WebGLPowerPreference::High_performance:
+      default:
+        // Default to high-performance if queried.
+        flags |= gl::CreateContextFlags::HIGH_POWER;
+        break;
     }
 
     //////
@@ -1377,6 +1395,7 @@ WebGLContext::GetContextAttributes(dom::Nullable<dom::WebGLContextAttributes>& r
     result.mPremultipliedAlpha = mOptions.premultipliedAlpha;
     result.mPreserveDrawingBuffer = mOptions.preserveDrawingBuffer;
     result.mFailIfMajorPerformanceCaveat = mOptions.failIfMajorPerformanceCaveat;
+    result.mPowerPreference = mOptions.powerPreference;
 }
 
 NS_IMETHODIMP
