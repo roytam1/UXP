@@ -137,30 +137,17 @@ void AssertUintParamCorrect(gl::GLContext* gl, GLenum pname, GLuint shadow);
 
 struct WebGLContextOptions
 {
-    // these are defaults
+    bool alpha = true;
+    bool depth = true;
+    bool stencil = false;
+    bool premultipliedAlpha = true;
+    bool antialias = true;
+    bool preserveDrawingBuffer = false;
+    bool failIfMajorPerformanceCaveat = false;
+    dom::WebGLPowerPreference powerPreference = dom::WebGLPowerPreference::Default;
+
     WebGLContextOptions();
-
-    bool operator==(const WebGLContextOptions& other) const {
-        return
-            alpha == other.alpha &&
-            depth == other.depth &&
-            stencil == other.stencil &&
-            premultipliedAlpha == other.premultipliedAlpha &&
-            antialias == other.antialias &&
-            preserveDrawingBuffer == other.preserveDrawingBuffer;
-    }
-
-    bool operator!=(const WebGLContextOptions& other) const {
-        return !operator==(other);
-    }
-
-    bool alpha;
-    bool depth;
-    bool stencil;
-    bool premultipliedAlpha;
-    bool antialias;
-    bool preserveDrawingBuffer;
-    bool failIfMajorPerformanceCaveat;
+    bool operator==(const WebGLContextOptions&) const;
 };
 
 // From WebGLContextUtils
