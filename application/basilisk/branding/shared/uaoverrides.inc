@@ -14,10 +14,9 @@
 
 // %OS_SLICE% macro is resolved at runtime, see MoonchildProductions/UXP/issues/1473
 
-// Special-case AMO
-// We send the native UA slice now, since they no longer offer any compatible extensions for us.
-// This will result in an "only with Firefox" message which suits us fine, because it's the truth.
-pref("@GUAO_PREF@.addons.mozilla.org","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @APP_SLICE@");
+// Special-case Cuckflare
+// With Lun3r useragent they send a challenge that fucks up the browser JS system. So we fake PM.
+pref("@GUAO_PREF@.cloudflare.com","Mozilla/5.0 (%OS_SLICE% rv:@UXP_VERSION@) @UXP_DATE_SLICE@ @PALE_MOON_SLICE@");
 
 // Required for domains that are unresponsive to requests from users (or likely to be)
 pref("@GUAO_PREF@.aol.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Basilisk)");
@@ -66,9 +65,10 @@ pref("@GUAO_PREF@.mewe.com", "Mozilla/5.0 (%OS_SLICE% rv:102.0) Gecko/20100101 F
 
 // UA-sniffing domains that are "app/vendor-specific" and do not like Basilisk
 pref("@GUAO_PREF@.web.whatsapp.com","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36");
-pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ @UXP_VERSION_SLICE@ Firefox/68.0 @APP_SLICE@");
-pref("@GUAO_PREF@.studio.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ @UXP_VERSION_SLICE@ Firefox/68.0 @APP_SLICE@");
-pref("@GUAO_PREF@.gaming.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:71.0) @GK_SLICE@ Firefox/71.0");
+pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (%OS_SLICE%; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0");
+pref("@GUAO_PREF@.studio.youtube.com","Mozilla/5.0 (%OS_SLICE%; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0");
+pref("@GUAO_PREF@.gaming.youtube.com", "Mozilla/5.0 (%OS_SLICE%; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0");
+pref("@GUAO_PREF@.yeezy.com", "Mozilla/5.0 (%OS_SLICE%; Win64; x64; rv:52.0) Gecko/20100101 Firefox/52.0");
 
 // The following domains do not like the Goanna slice
 pref("@GUAO_PREF@.bab.la","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
@@ -81,8 +81,11 @@ pref("@GUAO_PREF@.yuku.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@
 
 // Domains Basilisk overrides that are not in the Pale Moon overrides
 pref("@GUAO_PREF@.twitter.com","Mozilla/5.0 (%OS_SLICE% rv:102.0) @GK_SLICE@ Firefox/102.0 @APP_SLICE@");
+pref("@GUAO_PREF@.x.com","Mozilla/5.0 (%OS_SLICE% rv:102.0) @GK_SLICE@ Firefox/102.0 @APP_SLICE@");
 pref("@GUAO_PREF@.slack.com","Mozilla/5.0 (%OS_SLICE% rv:120.0) @GK_SLICE@ Firefox/120.0 @APP_SLICE@");
+pref("@GUAO_PREF@.apple.com","Mozilla/5.0 (%OS_SLICE% rv:128.0) @GK_SLICE@ Firefox/128.0");
 // There are multiple addons on the Pale Moon addons site that work with Basilisk that are not listed on the Basilisk addons site.
 pref("@GUAO_PREF@.addons.palemoon.org","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @UXP_VERSION_SLICE@ @FX_SLICE@ @PALE_MOON_SLICE@");
-
+// Same goes for upstream Firefox addons on the Mozilla addons site since this fork has (some) WebExtensions support now
+pref("@GUAO_PREF@.addons.mozilla.org", "Mozilla/5.0 (%OS_SLICE%; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0");
 // ============================================================================
