@@ -1146,7 +1146,7 @@ class StaticStrings
     }
 
     template <typename CharT>
-    JSAtom* lookup(const CharT* chars, size_t length) {
+    MOZ_ALWAYS_INLINE JSAtom* lookup(const CharT* chars, size_t length) {
         switch (length) {
           case 1: {
             char16_t c = chars[0];
@@ -1194,7 +1194,12 @@ class StaticStrings
 
     static const SmallChar toSmallChar[];
 
-    JSAtom* getLength2(char16_t c1, char16_t c2);
+    MOZ_ALWAYS_INLINE JSAtom* getLength2(char16_t c1, char16_t c2) {
+        MOZ_ASSERT(fitsInSmallChar(c1));
+        MOZ_ASSERT(fitsInSmallChar(c2));
+        size_t index = (size_t(toSmallChar[c1]) << 6) + toSmallChar[c2];
+        return length2StaticTable[index];
+    }
     JSAtom* getLength2(uint32_t u) {
         MOZ_ASSERT(u < 100);
         return getLength2('0' + u / 10, '0' + u % 10);
