@@ -94,7 +94,9 @@ extensions.registerSchemaAPI("runtime", "addon_parent", context => {
 
       getBrowserInfo: function() {
         const {name, vendor, version, appBuildID} = Services.appinfo;
-        const info = {name, vendor, version, buildID: appBuildID};
+        // Override version for WebExtensions compatibility with modern extensions
+        // Report as Firefox 128.0 to extensions while maintaining actual UXP identity
+        const info = {name: "Firefox", vendor, version: "128.0", buildID: appBuildID};
         return Promise.resolve(info);
       },
 

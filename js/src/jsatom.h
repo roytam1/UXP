@@ -80,12 +80,12 @@ struct AtomHasher
 
         HashNumber hash;
 
-        Lookup(const char16_t* chars, size_t length)
+        MOZ_ALWAYS_INLINE Lookup(const char16_t* chars, size_t length)
           : twoByteChars(chars), isLatin1(false), length(length), atom(nullptr)
         {
             hash = mozilla::HashString(chars, length);
         }
-        Lookup(const JS::Latin1Char* chars, size_t length)
+        MOZ_ALWAYS_INLINE Lookup(const JS::Latin1Char* chars, size_t length)
           : latin1Chars(chars), isLatin1(true), length(length), atom(nullptr)
         {
             hash = mozilla::HashString(chars, length);
@@ -94,7 +94,7 @@ struct AtomHasher
     };
 
     static HashNumber hash(const Lookup& l) { return l.hash; }
-    static inline bool match(const AtomStateEntry& entry, const Lookup& lookup);
+    static MOZ_ALWAYS_INLINE bool match(const AtomStateEntry& entry, const Lookup& lookup);
     static void rekey(AtomStateEntry& k, const AtomStateEntry& newKey) { k = newKey; }
 };
 
@@ -113,7 +113,7 @@ public:
 
     ~FrozenAtomSet() { js_delete(mSet); }
 
-    AtomSet::Ptr readonlyThreadsafeLookup(const AtomSet::Lookup& l) const;
+    MOZ_ALWAYS_INLINE AtomSet::Ptr readonlyThreadsafeLookup(const AtomSet::Lookup& l) const;
 
     size_t sizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf) const {
         return mSet->sizeOfIncludingThis(mallocSizeOf);
