@@ -289,7 +289,7 @@ nsLocaleService::GetLocaleFromAcceptLanguage(const char *acceptLanguage, nsILoca
         PR_sscanf(cPtr1,";q=%f",&qvalue[countLang]);
         *cPtr1 = '\0';
       }
-      if (strlen(cPtr)<NSILOCALE_MAX_ACCEPT_LANGUAGE) {     /* ignore if too long */
+      if (strlen(cPtr)<NSILOCALE_MAX_ACCEPT_LENGTH) {       /* ignore if too long */
         qvalue[countLang] -= (bias += 0.0001f); /* to insure original order */
         ptrLanguage[countLang++] = cPtr;
         if (countLang>=NSILOCALE_MAX_ACCEPT_LANGUAGE) break; /* quit if too many */
@@ -321,8 +321,8 @@ nsLocaleService::GetLocaleFromAcceptLanguage(const char *acceptLanguage, nsILoca
     cPtr = nsCRT::strtok(input.get(),",",&cPtr2);
     while (cPtr) {
       if (strlen(cPtr)<NSILOCALE_MAX_ACCEPT_LENGTH) {        /* ignore if too long */
+        if (countLang>=NSILOCALE_MAX_ACCEPT_LANGUAGE) break; /* quit if too many */
         PL_strncpyz(acceptLanguageList[countLang++],cPtr,NSILOCALE_MAX_ACCEPT_LENGTH);
-        if (countLang>=NSILOCALE_MAX_ACCEPT_LENGTH) break; /* quit if too many */
       }
       cPtr = nsCRT::strtok(cPtr2,",",&cPtr2);
     }

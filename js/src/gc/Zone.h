@@ -355,9 +355,13 @@ struct Zone : public JS::shadow::Zone,
                                              js::MovableCellHasher<JSObject*>,
                                              js::SystemAllocPolicy>;
     JS::WeakCache<TypeDescrObjectSet> typeDescrObjects;
-	
+
     bool addTypeDescrObject(JSContext* cx, HandleObject obj);
 
+    // Set of atoms recently used by this Zone. Purged on GC.
+    js::AtomSet atomCache_;
+
+    js::AtomSet& atomCache() { return atomCache_; }
 
     // Malloc counter to measure memory pressure for GC scheduling. It runs from
     // gcMaxMallocBytes down to zero. This counter should be used only when it's
