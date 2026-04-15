@@ -1111,6 +1111,8 @@ NS_IMETHODIMP
 nsExternalHelperAppService::SetProtocolHandlerDefaults(nsIHandlerInfo *aHandlerInfo,
                                                        bool aOSHandlerExists)
 {
+  NS_ENSURE_ARG_POINTER(aHandlerInfo);
+
   // this type isn't in our database, so we've only got an OS default handler,
   // if one exists
 

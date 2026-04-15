@@ -124,6 +124,7 @@ var validGradientAndElementValues = [
   "linear-gradient(.414rad, red, blue)",
   "linear-gradient(90deg in srgb, yellow, purple)",
   "linear-gradient(90deg in hsl, yellow, purple)",
+  "linear-gradient(90deg in lch, yellow, purple)",
   "linear-gradient(90deg in oklch, yellow, purple)",
   "linear-gradient(in oklab, yellow, purple)",
 
@@ -4294,7 +4295,8 @@ var gCSSProperties = {
       "hsl(0rad, 0%, 0%)",
       "hsl(0turn, 0%, 0%)",
       "hsl(1turn, 0%, 0%)",
-      /* oklab() and oklch(). */
+      /* lch(), oklab(), and oklch(). */
+      "lch(0 0 0)",
       "oklab(0 0 0)",
       "oklch(0 0 0)",
     ],
@@ -4319,6 +4321,7 @@ var gCSSProperties = {
       "hsl(0.5grad 400% 500% / 9.0)",
       "hsl(33rad 100% 90% / 4)",
       "hsl(0.33turn, 40%, 40%, 10%)",
+      "lch(70% 50 180deg / 40%)",
       "oklab(100% 0 0)",
       "oklab(60% 0.1 -0.1 / 75%)",
       "oklch(70% 0.2 180deg / 40%)",
@@ -4353,6 +4356,8 @@ var gCSSProperties = {
       "rgb(0, 0, 0 /)",
       "hsl(0 0% 0% /)",
       "hsl(0, 0%, 0% /)",
+      "lch(0, 0 0)",
+      "lch(0 0 / 1)",
       "oklab(0, 0 0)",
       "oklab(0 0 / 1)",
       "oklch(0, 0 0)",

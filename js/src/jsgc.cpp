@@ -3419,6 +3419,9 @@ GCRuntime::purgeRuntime(AutoLockForExclusiveAccess& lock)
     for (GCCompartmentsIter comp(rt); !comp.done(); comp.next())
         comp->purge();
 
+    for (GCZonesIter zone(rt); !zone.done(); zone.next())
+        zone->atomCache().clearAndShrink();
+
     freeUnusedLifoBlocksAfterSweeping(&rt->tempLifoAlloc);
 
     rt->interpreterStack().purge(rt);

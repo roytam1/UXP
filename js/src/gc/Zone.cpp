@@ -32,6 +32,7 @@ JS::Zone::Zone(JSRuntime* rt)
     gcGrayRoots(),
     gcWeakKeys(SystemAllocPolicy(), rt->randomHashCodeScrambler()),
     typeDescrObjects(this, SystemAllocPolicy()),
+    atomCache_(),
     gcMallocBytes(0),
     gcMallocGCTriggered(false),
     usage(&rt->gc.usage),
@@ -82,7 +83,8 @@ bool Zone::init(bool isSystemArg)
     return uniqueIds_.init() &&
            gcZoneGroupEdges.init() &&
            gcWeakKeys.init() &&
-           typeDescrObjects.init();
+           typeDescrObjects.init() &&
+           atomCache().init();
 }
 
 void
