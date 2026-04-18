@@ -6,7 +6,7 @@
 @depends(target)
 def force_system_ffi(target):
     # Pre-emptively move to system ffi for non-tier one platforms.
-    if target.cpu not in ('x86', 'x86_64', 'arm', 'aarch64'):
+    if target.cpu not in ('x86', 'x86_64', 'arm', 'aarch64', 'loongarch64'):
         return True
 
 imply_option('--with-system-ffi', force_system_ffi, "target")
@@ -27,7 +27,7 @@ add_old_configure_assignment('MOZ_SYSTEM_FFI', depends_if(system_ffi)(lambda _: 
 # Target selection, based on ffi/configure.ac.
 @depends_when(target, when=building_ffi)
 def ffi_target(target):
-    if target.cpu not in ('x86', 'x86_64', 'arm', 'aarch64'):
+    if target.cpu not in ('x86', 'x86_64', 'arm', 'aarch64', 'loongarch64'):
         die('Building libffi from the tree is not supported on this platform. '
             'Use --with-system-ffi instead.')
 
@@ -50,6 +50,9 @@ def ffi_target(target):
     elif target.cpu == 'aarch64':
         target_dir = 'aarch64'
         target_name = 'AARCH64'
+    elif target.cpu == 'loongarch64':
+        target_dir = 'loongarch64'
+        target_name = 'LOONGARCH64'
     else:
         target_dir = 'x86'
         target_name = target.cpu.upper()
