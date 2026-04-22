@@ -15,6 +15,7 @@
 #include "DXVA2Manager.h"
 #include "nsThreadUtils.h"
 #include "Layers.h"
+#include "mozilla/CheckedInt.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/layers/LayersTypes.h"
 #include "MediaInfo.h"
@@ -760,6 +761,10 @@ WMFVideoMFTManager::CreateBasicVideoFrame(IMFSample* aSample,
     NS_ENSURE_TRUE(SUCCEEDED(hr), hr);
     stride = mVideoStride;
   }
+  if (stride <= 0) {
+    LOG("CreateBasicVideoFrame: invalid stride %ld", stride);
+    return E_FAIL;
+  }
 
   // YV12, planar format: [YYYY....][VVVV....][UUUU....]
   // i.e., Y, then V, then U.
@@ -782,9 +787,16 @@ WMFVideoMFTManager::CreateBasicVideoFrame(IMFSample* aSample,
   if (videoHeight % 16 != 0) {
     padding = 16 - (videoHeight % 16);
   }
-  uint32_t y_size = stride * (videoHeight + padding);
-  uint32_t v_size = stride * (videoHeight + padding) / 4;
-  uint32_t halfStride = (stride + 1) / 2;
+  mozilla::CheckedInt<uint32_t> y_size_checked =
+      mozilla::CheckedInt<uint32_t>(static_cast<uint32_t>(stride)) *
+      (videoHeight + padding);
+  if (!y_size_checked.isValid()) {
+    LOG("CreateBasicVideoFrame: plane size too large");
+    return E_FAIL;
+  }
+  uint32_t y_size = y_size_checked.value();
+  uint32_t v_size = y_size / 4;
+  uint32_t halfStride = static_cast<uint32_t>((static_cast<int64_t>(stride) + 1) / 2);
   uint32_t halfHeight = (videoHeight + 1) / 2;
   uint32_t halfWidth = (videoWidth + 1) / 2;
 
