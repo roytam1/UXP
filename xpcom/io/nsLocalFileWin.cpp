@@ -3020,6 +3020,7 @@ nsLocalFile::IsExecutable(bool* aResult)
       "air",         // Adobe AIR installer
       "app",         // executable application
       "application", // from bug 348763
+      "appref-ms",   // ClickOnce link
       "appx",
       "appxbundle",
       "asp",
@@ -3080,6 +3081,7 @@ nsLocalFile::IsExecutable(bool* aResult)
       "scf",         // Windows explorer command
       "scr",
       "sct",
+      "search-ms",   // Windows Saved Search
       "settingcontent-ms",
       "shb",
       "shs",
