@@ -2409,7 +2409,6 @@ then
     if test "$MOZ_ENABLE_DBUS"
     then
         PKG_CHECK_MODULES(MOZ_DBUS, dbus-1 >= $DBUS_VERSION)
-        PKG_CHECK_MODULES(MOZ_DBUS_GLIB, dbus-glib-1 >= $DBUS_VERSION)
         AC_DEFINE(MOZ_ENABLE_DBUS)
     fi
 fi
