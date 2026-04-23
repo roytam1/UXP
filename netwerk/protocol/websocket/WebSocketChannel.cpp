@@ -1443,7 +1443,7 @@ WebSocketChannel::BeginOpenInternal()
 bool
 WebSocketChannel::IsPersistentFramePtr()
 {
-  return (mFramePtr >= mBuffer && mFramePtr < mBuffer + mBufferSize);
+  return (mFramePtr >= mBuffer && mFramePtr <= mBuffer + mBufferSize);
 }
 
 // Extends the internal buffer by count and returns the total
@@ -1491,7 +1491,7 @@ WebSocketChannel::UpdateReadBuffer(uint8_t *buffer, uint32_t count,
     mFramePtr = mBuffer + (mFramePtr - old);
   }
 
-  ::memcpy(mBuffer + mBuffered, buffer, count);
+  ::memmove(mBuffer + mBuffered, buffer, count);
   mBuffered += count;
 
   if (available)
