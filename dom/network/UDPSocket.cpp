@@ -172,6 +172,8 @@ UDPSocket::CloseWithReason(nsresult aReason)
     return;
   }
 
+  RefPtr<UDPSocket> kungFuDeathGrip(this);
+
   if (mOpened) {
     if (mReadyState == SocketReadyState::Opening) {
       // reject openedPromise with AbortError if socket is closed without error
