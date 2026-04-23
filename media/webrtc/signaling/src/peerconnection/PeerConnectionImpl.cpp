@@ -3375,7 +3375,15 @@ static bool isFailed(PCImplIceConnectionState state) {
 void PeerConnectionImpl::IceConnectionStateChange(
     NrIceCtx* ctx,
     NrIceCtx::ConnectionState state) {
-  PC_AUTO_ENTER_API_CALL_VOID_RETURN(false);
+  MOZ_ASSERT(NS_IsMainThread(), "Wrong thread");
+
+  // Let connection be the RTCPeerConnection object associated with this ICE
+  // Agent.
+  RefPtr<PeerConnectionImpl> connection(this);
+
+  if (IsClosed()) {
+    return;
+  }
 
   CSFLogDebug(logTag, "%s", __FUNCTION__);
 
@@ -3442,7 +3450,12 @@ PeerConnectionImpl::IceGatheringStateChange(
     NrIceCtx* ctx,
     NrIceCtx::GatheringState state)
 {
-  PC_AUTO_ENTER_API_CALL_VOID_RETURN(false);
+  MOZ_ASSERT(NS_IsMainThread(), "Wrong thread");
+  RefPtr<PeerConnectionImpl> kungFuDeathGrip(this);
+
+  if (IsClosed()) {
+    return;
+  }
 
   CSFLogDebug(logTag, "%s", __FUNCTION__);
 
