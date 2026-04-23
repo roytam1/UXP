@@ -108,9 +108,6 @@
     'build_protobuf%': 1,
     'build_ssl%': 1,
 
-    # Disable by default
-    'have_dbus_glib%': 0,
-
     # Make it possible to provide custom locations for some libraries.
     'libvpx_dir%': '<(DEPTH)/third_party/libvpx_new',
     'libyuv_dir%': '<(DEPTH)/third_party/libyuv',
@@ -235,14 +232,6 @@
         'defines': [
           # Changes settings for Mozilla build.
           'WEBRTC_MOZILLA_BUILD',
-         ],
-      }],
-      ['have_dbus_glib==1', {
-        'defines': [
-          'HAVE_DBUS_GLIB',
-         ],
-         'cflags': [
-           '<!@(pkg-config --cflags dbus-glib-1)',
          ],
       }],
       ['rtc_relative_path==1', {
@@ -539,4 +528,3 @@
     },
   }, # target_defaults
 }
-

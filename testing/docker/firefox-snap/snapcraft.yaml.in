@@ -29,7 +29,6 @@ parts:
     source: source
     stage-packages:
       - libxt6
-      - libdbus-glib-1-2
       - libasound2
       - libpulse0
       - libgl1-mesa-dri

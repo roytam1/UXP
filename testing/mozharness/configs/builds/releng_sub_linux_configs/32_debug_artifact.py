@@ -96,7 +96,7 @@ config = {
         # -devel packages dependencies. So manually install the dependencies
         # of the above packages.
         'ORBit2-devel.i686', 'atk-devel.i686', 'cairo-devel.i686',
-        'check-devel.i686', 'dbus-devel.i686', 'dbus-glib-devel.i686',
+        'check-devel.i686', 'dbus-devel.i686',
         'fontconfig-devel.i686', 'glib2-devel.i686',
         'hal-devel.i686', 'libICE-devel.i686', 'libIDL-devel.i686',
         'libSM-devel.i686', 'libXau-devel.i686', 'libXcomposite-devel.i686',
