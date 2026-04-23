@@ -58,7 +58,7 @@ config = {
         "gmp-devel", "nspr", "nspr-devel",
 
         # For building the browser
-        "dbus-devel", "dbus-glib-devel", "hal-devel",
+        "dbus-devel", "hal-devel",
         "libICE-devel", "libIDL-devel",
 
         # For mach resource-usage

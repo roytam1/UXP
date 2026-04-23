@@ -256,7 +256,7 @@ class GlobalHelperThreadState
     void waitForAllThreads();
 
     template <typename T>
-    bool checkTaskThreadLimit(size_t maxThreads) const;
+    bool checkTaskThreadLimit(size_t maxThreads, bool isMaster = false) const;
 
   private:
 
