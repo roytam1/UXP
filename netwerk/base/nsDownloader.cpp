@@ -109,6 +109,7 @@ nsDownloader::OnDataAvailable(nsIRequest *request, nsISupports *ctxt,
                               nsIInputStream *inStr, 
                               uint64_t sourceOffset, uint32_t count)
 {
+    RefPtr<nsDownloader> self(this);
     uint32_t n;  
     return inStr->ReadSegments(ConsumeData, this, count, &n);
 }

@@ -41,7 +41,7 @@ public:
       mRequest->Resume();
   }
 private:
-  nsIRequest *mRequest;
+  nsCOMPtr<nsIRequest> mRequest;
 };
 
 // Used to suspend data events from mPump within a function scope.  This is

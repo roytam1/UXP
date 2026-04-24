@@ -124,16 +124,22 @@ nsSyncStreamListener::Close()
 NS_IMETHODIMP
 nsSyncStreamListener::Available(uint64_t *result)
 {
-    if (NS_FAILED(mStatus))
-        return mStatus;
+  // Nested event loop can run code that drops the last external reference.
+  RefPtr<nsSyncStreamListener> self(this);
 
-    mStatus = mPipeIn->Available(result);
-    if (NS_SUCCEEDED(mStatus) && (*result == 0) && !mDone) {
-        mStatus = WaitForData();
-        if (NS_SUCCEEDED(mStatus))
-            mStatus = mPipeIn->Available(result);
-    }
+  if (NS_FAILED(mStatus)) {
     return mStatus;
+  }
+
+  mStatus = mPipeIn->Available(result);
+  if (NS_SUCCEEDED(mStatus) && (*result == 0) && !mDone) {
+    mStatus = WaitForData();
+    if (NS_SUCCEEDED(mStatus)) {
+      mStatus = mPipeIn->Available(result);
+    }
+  }
+
+  return mStatus;
 }
 
 NS_IMETHODIMP
