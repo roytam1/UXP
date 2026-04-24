@@ -160,9 +160,9 @@ PathExpr::evalDescendants(Expr* aStep, const txXPathNode& aNode,
 
     resNodes->addAndTransfer(newSet);
 
-    bool filterWS = aContext->isStripSpaceAllowed(aNode);
+    bool filterWS = aContext->isStripSpaceAllowed(eContext.getContextNode());
 
-    txXPathTreeWalker walker(aNode);
+    txXPathTreeWalker walker(eContext.getContextNode());
     if (!walker.moveToFirstChild()) {
         return NS_OK;
     }
