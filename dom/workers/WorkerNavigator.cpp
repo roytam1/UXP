@@ -36,7 +36,7 @@ WorkerNavigator::Create(bool aOnLine)
   RuntimeService* rts = RuntimeService::GetService();
   MOZ_ASSERT(rts);
 
-  const RuntimeService::NavigatorProperties& properties =
+  RuntimeService::NavigatorProperties properties =
     rts->GetNavigatorProperties();
 
   RefPtr<WorkerNavigator> navigator =

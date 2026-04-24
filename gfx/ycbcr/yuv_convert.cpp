@@ -153,8 +153,8 @@ void ConvertYCbCrToRGB32(const uint8_t* y_buf,
     }
     case YV12: {
       src_y = y_buf + y_pitch * pic_y + pic_x;
-      src_u = u_buf + (uv_pitch * pic_y + pic_x) / 2;
-      src_v = v_buf + (uv_pitch * pic_y + pic_x) / 2;
+      src_u = u_buf + uv_pitch * (pic_y / 2) + pic_x / 2;
+      src_v = v_buf + uv_pitch * (pic_y / 2) + pic_x / 2;
 
       fConvertYUVToARGB = libyuv::I420ToARGBMatrix;
       break;
