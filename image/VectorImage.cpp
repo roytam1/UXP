@@ -1283,6 +1283,10 @@ VectorImage::OnSVGDocumentError()
 
   mError = true;
 
+  // ProgressTracker::SyncNotifyProgress may release us, so ensure we
+  // stick around long enough to complete our work.
+  RefPtr<VectorImage> kungFuDeathGrip(this);
+
   if (mProgressTracker) {
     // Notify observers about the error and unblock page load.
     Progress progress = FLAG_ONLOAD_UNBLOCKED | FLAG_HAS_ERROR;
