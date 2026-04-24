@@ -2803,10 +2803,10 @@ sftk_CloseAllSessions(SFTKSlot *slot, PRBool logout)
                 SKIP_AFTER_FORK(PZ_Unlock(lock));
                 SKIP_AFTER_FORK(PZ_Lock(slot->slotLock));
                 --slot->sessionCount;
-                SKIP_AFTER_FORK(PZ_Unlock(slot->slotLock));
                 if (session->info.flags & CKF_RW_SESSION) {
-                    (void)PR_ATOMIC_DECREMENT(&slot->rwSessionCount);
+                    --slot->rwSessionCount;
                 }
+                SKIP_AFTER_FORK(PZ_Unlock(slot->slotLock));
             } else {
                 SKIP_AFTER_FORK(PZ_Unlock(lock));
             }
@@ -3523,9 +3523,9 @@ NSC_GetTokenInfo(CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR pInfo)
     PORT_Memcpy(pInfo->model, "NSS 3           ", 16);
     PORT_Memcpy(pInfo->serialNumber, "0000000000000000", 16);
     PORT_Memcpy(pInfo->utcTime, "0000000000000000", 16);
-    pInfo->ulMaxSessionCount = 0;   /* arbitrarily large */
-    pInfo->ulMaxRwSessionCount = 0; /* arbitrarily large */
-    PZ_Lock(slot->slotLock);        /* Protect sessionCount / rwSessioncount */
+    pInfo->ulMaxSessionCount = CK_EFFECTIVELY_INFINITE;
+    pInfo->ulMaxRwSessionCount = CK_EFFECTIVELY_INFINITE;
+    PR_Lock(slot->slotLock); /* Protect sessionCount / rwSessioncount */
     pInfo->ulSessionCount = slot->sessionCount;
     pInfo->ulRwSessionCount = slot->rwSessionCount;
     PZ_Unlock(slot->slotLock);      /* Unlock before sftk_getKeyDB */
@@ -4023,10 +4023,10 @@ NSC_OpenSession(CK_SLOT_ID slotID, CK_FLAGS flags,
     }
     PZ_Lock(slot->slotLock);
     ++slot->sessionCount;
-    PZ_Unlock(slot->slotLock);
     if (session->info.flags & CKF_RW_SESSION) {
-        (void)PR_ATOMIC_INCREMENT(&slot->rwSessionCount);
+        ++slot->rwSessionCount;
     }
+    PZ_Unlock(slot->slotLock);
 
     do {
         PZLock *lock;
@@ -4086,12 +4086,12 @@ NSC_CloseSession(CK_SESSION_HANDLE hSession)
                 sftkdb_ClearPassword(handle);
             }
         }
+        if (session->info.flags & CKF_RW_SESSION) {
+            --slot->rwSessionCount;
+        }
         PZ_Unlock(slot->slotLock);
         if (handle) {
             sftk_freeDB(handle);
-        }
-        if (session->info.flags & CKF_RW_SESSION) {
-            (void)PR_ATOMIC_DECREMENT(&slot->rwSessionCount);
         }
         sftk_DestroySession(session);
         session = NULL;

@@ -120,7 +120,12 @@ bool NetAddrToString(const NetAddr *addr, char *buf, uint32_t bufSize)
   }
 #if defined(XP_UNIX)
   else if (addr->raw.family == AF_LOCAL) {
-    if (bufSize < sizeof(addr->local.path)) {
+    // local.path is NOT guaranteed to be NUL-terminated: PR_Accept casts
+    // PRNetAddr* to struct sockaddr* and Linux sun_path is 108 bytes vs
+    // our 104, so a peer bound to a >=104-char path fills the whole field
+    // with non-NUL data. We must write our own terminator, so require
+    // strictly more than sizeof(path) bytes.
+    if (bufSize <= sizeof(addr->local.path)) {
       // Many callers don't bother checking our return value, so
       // null-terminate just in case.
       if (bufSize > 0) {
@@ -135,6 +140,7 @@ bool NetAddrToString(const NetAddr *addr, char *buf, uint32_t bufSize)
     // using the destination's size may cause us to read off the end of the
     // source.
     memcpy(buf, addr->local.path, sizeof(addr->local.path));
+    buf[sizeof(addr->local.path)] = '\0';
     return true;
   }
 #endif

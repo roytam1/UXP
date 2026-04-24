@@ -3947,21 +3947,30 @@ nsCookieService::CheckPath(nsCookieAttributes &aCookie,
 bool
 nsCookieService::CheckHiddenPrefix(nsCookieAttributes &aCookie) {
   // If a cookie is nameless, then its value must not start with
-  // `__Host-` or `__Secure-`
+  // known magic prefixes.
   if (aCookie.name.Length() != 0) {
     return true;
   }
 
-  static const char kSecure[] = "__Secure-";
-  static const char kHost[]   = "__Host-";
-  static const int kSecureLen = sizeof( kSecure ) - 1;
-  static const int kHostLen   = sizeof( kHost ) - 1;
+  static const char kSecure[]   = "__Secure-";
+  static const char kHost[]     = "__Host-";
+  static const char kHttp[]     = "__Http-";
+  static const char kHostHttp[] = "__Host-Http-";
+  static const int kSecureLen   = sizeof(kSecure) - 1;
+  static const int kHostLen     = sizeof(kHost) - 1;
+  static const int kHttpLen     = sizeof(kHttp) - 1;
+  static const int kHostHttpLen = sizeof(kHostHttp) - 1;
 
-  // As of RFC 6265 bis-11 draft, this should be a case *in*sensitive match.
-  bool isSecure = nsCRT::strncasecmp(aCookie.value.get(), kSecure, kSecureLen) == 0;
-  bool isHost   = nsCRT::strncasecmp(aCookie.value.get(), kHost, kHostLen) == 0;
+  // Clarification for case matching:
+  // Per RFC 6265bis section 5.4, UAs MUST match these prefixes case-insensitively,
+  // even though section 4.1.3 describes them with "case-sensitive match" language.
+  // That wording, however, applies to server-side semantics, not UA-enforcement!
+  bool isSecure   = nsCRT::strncasecmp(aCookie.value.get(), kSecure, kSecureLen) == 0;
+  bool isHost     = nsCRT::strncasecmp(aCookie.value.get(), kHost, kHostLen) == 0;
+  bool isHttp     = nsCRT::strncasecmp(aCookie.value.get(), kHttp, kHttpLen) == 0;
+  bool isHostHttp = nsCRT::strncasecmp(aCookie.value.get(), kHostHttp, kHostHttpLen) == 0;
   
-  if (isSecure || isHost) {
+  if (isSecure || isHost || isHttp || isHostHttp) {
     return false;
   }
 
@@ -3980,39 +3989,75 @@ bool
 nsCookieService::CheckPrefixes(nsCookieAttributes &aCookie,
                                bool aSecureRequest)
 {
-  static const char kSecure[] = "__Secure-";
-  static const char kHost[]   = "__Host-";
-  static const int kSecureLen = sizeof( kSecure ) - 1;
-  static const int kHostLen   = sizeof( kHost ) - 1;
+  static const char kSecure[]   = "__Secure-";
+  static const char kHost[]     = "__Host-";
+  static const char kHttp[]     = "__Http-";
+  static const char kHostHttp[] = "__Host-Http-";
+  static const int kSecureLen   = sizeof(kSecure) - 1;
+  static const int kHostLen     = sizeof(kHost) - 1;
+  static const int kHttpLen     = sizeof(kHttp) - 1;
+  static const int kHostHttpLen = sizeof(kHostHttp) - 1;
 
-  // As of RFC 6265 bis-11 draft, this should be a case *in*sensitive match.
-  bool isSecure = nsCRT::strncasecmp(aCookie.value.get(), kSecure, kSecureLen) == 0;
-  bool isHost   = nsCRT::strncasecmp(aCookie.value.get(), kHost, kHostLen) == 0;
+  // Clarification for case matching:
+  // Per RFC 6265bis section 5.4, UAs MUST match these prefixes case-insensitively,
+  // even though section 4.1.3 describes them with "case-sensitive match" language.
+  // That wording, however, applies to server-side semantics, not UA-enforcement!
+  bool isSecure   = nsCRT::strncasecmp(aCookie.value.get(), kSecure, kSecureLen) == 0;
+  bool isHost     = nsCRT::strncasecmp(aCookie.value.get(), kHost, kHostLen) == 0;
+  bool isHttp     = nsCRT::strncasecmp(aCookie.value.get(), kHttp, kHttpLen) == 0;
+  bool isHostHttp = nsCRT::strncasecmp(aCookie.value.get(), kHostHttp, kHostHttpLen) == 0;
 
-  if ( !isSecure && !isHost ) {
+  if (!isSecure && !isHost && !isHttp && !isHostHttp) {
     // not one of the magic prefixes: carry on
     return true;
   }
 
-  if ( !aSecureRequest || !aCookie.isSecure ) {
-    // the magic prefixes may only be used from a secure request and
-    // the secure attribute must be set on the cookie
+  if (!aSecureRequest || !aCookie.isSecure) {
+    // All of the magic prefixes may only be used from a secure request and
+    // the secure attribute must be set on the cookie.
     return false;
   }
 
-  if ( isHost ) {
+  // Note: order matters here; we must check in most-specific-first order.
+  
+  if (isHostHttp) {
+    // The host-http prefix requires that the path is "/", that the cookie
+    // is HTTP-only, and that the cookie had no domain attribute.
+    // CheckDomain() and CheckPath() MUST be run first to make sure invalid
+    // attributes are rejected and to regularlize them.
+    // In particular, all explicit domain attributes result in a host
+    // that starts with a dot, and if the host doesn't start with a dot it
+    // correctly matches the true host.
+    if (aCookie.host[0] == '.' ||
+        !aCookie.isHttpOnly ||
+        !aCookie.path.EqualsLiteral( "/" )) {
+      return false;
+    }
+  }
+  
+  if (isHttp) {
+    // The http prefix requires that the cookie is HTTP-only.
+    if (!aCookie.isHttpOnly) {
+      return false;
+    }
+  }  
+  
+  if (isHost) {
     // The host prefix requires that the path is "/" and that the cookie
     // had no domain attribute. CheckDomain() and CheckPath() MUST be run
     // first to make sure invalid attributes are rejected and to regularlize
-    // them. In particular all explicit domain attributes result in a host
+    // them. In particular, all explicit domain attributes result in a host
     // that starts with a dot, and if the host doesn't start with a dot it
     // correctly matches the true host.
-    if ( aCookie.host[0] == '.' ||
-         !aCookie.path.EqualsLiteral( "/" )) {
+    if (aCookie.host[0] == '.' ||
+        !aCookie.path.EqualsLiteral( "/" )) {
       return false;
     }
   }
 
+  // isSecure: we already checked the prerequisites for this at the start,
+  // so no further checking is needed. This can never fail at this point.
+  
   return true;
 }
 
