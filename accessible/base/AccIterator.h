@@ -55,7 +55,7 @@ private:
   {
     explicit IteratorState(Accessible* aParent, IteratorState* mParentState = nullptr);
 
-    Accessible* mParent;
+    RefPtr<Accessible> mParent;
     int32_t mIndex;
     IteratorState* mParentState;
   };
