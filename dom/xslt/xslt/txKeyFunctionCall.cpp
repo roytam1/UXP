@@ -221,15 +221,21 @@ txKeyHash::getKeyNodes(const txExpandedName& aKeyName,
     nsresult rv = xslKey->indexSubtreeRoot(aRoot, mKeyValues, aEs);
     NS_ENSURE_SUCCESS(rv, rv);
     
-    indexEntry->mIndexed = true;
+    // Re-fetch index entry.
+    indexEntry = mIndexedKeys.GetEntry(indexKey);
+
+    if (MOZ_LIKELY(indexEntry)) {
+        indexEntry->mIndexed = true;
+    } else {
+        return NS_ERROR_OUT_OF_MEMORY;
+    }
 
     // Now that the key is indexed we can get its value.
     valueEntry = mKeyValues.GetEntry(valueKey);
     if (valueEntry) {
         *aResult = valueEntry->mNodeSet;
         NS_ADDREF(*aResult);
-    }
-    else {
+    } else {
         *aResult = mEmptyNodeSet;
         NS_ADDREF(*aResult);
     }
