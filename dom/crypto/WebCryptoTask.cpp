@@ -1118,6 +1118,11 @@ public:
       }
 
       mSaltLength = params.mSaltLength;
+      // Reject absurdly large salt values.
+      if (mSaltLength > 8192) {
+        mEarlyRv = NS_ERROR_DOM_OPERATION_ERR;
+        return;
+      }
     } else if (algName.EqualsLiteral(WEBCRYPTO_ALG_ECDSA)) {
       mAlgorithm = Algorithm::ECDSA;
       CHECK_KEY_ALGORITHM(aKey.Algorithm(), WEBCRYPTO_ALG_ECDSA);
