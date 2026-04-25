@@ -325,7 +325,7 @@ NewFunctionForwarder(JSContext* cx, HandleId idArg, HandleObject callable,
                      FunctionForwarderOptions& options, MutableHandleValue vp)
 {
     RootedId id(cx, idArg);
-    if (id == JSID_VOIDHANDLE)
+    if (!JSID_IS_STRING(id))
         id = GetJSIDByIndex(cx, XPCJSContext::IDX_EMPTYSTRING);
 
     // If our callable is a (possibly wrapped) function, we can give
@@ -410,14 +410,21 @@ ExportFunction(JSContext* cx, HandleValue vfunction, HandleValue vscope, HandleV
             // copy the name from the function being imported.
             JSFunction* fun = JS_GetObjectFunction(funObj);
             RootedString funName(cx, JS_GetFunctionId(fun));
-            if (!funName)
-                funName = JS_AtomizeAndPinString(cx, "");
+            if (!funName) {
+                funName = JS_GetEmptyString(cx);
+            }
 
-            if (!JS_StringToId(cx, funName, &id))
+            if (!JS_StringToId(cx, funName, &id)) {
                 return false;
+            }
         }
         MOZ_ASSERT(JSID_IS_STRING(id));
 
+        if (!JSID_IS_STRING(id)) {
+          JS_ReportErrorASCII(cx, "defineAs must be a string");
+          return false;
+        }
+        
         // The function forwarder will live in the target compartment. Since
         // this function will be referenced from its private slot, to avoid a
         // GC hazard, we must wrap it to the same compartment.
