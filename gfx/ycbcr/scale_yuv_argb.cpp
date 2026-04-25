@@ -1137,7 +1137,8 @@ int YUVToARGBScale(const uint8_t* src_y, int src_stride_y,
                    enum FilterMode filtering)
 {
   if (!src_y || !src_u || !src_v ||
-      src_width == 0 || src_height == 0 ||
+      src_width <= 0 || src_height <= 0 ||
+      src_width > 32768 || src_height > 32768 ||
       !dst_argb || dst_width <= 0 || dst_height <= 0) {
     return -1;
   }
