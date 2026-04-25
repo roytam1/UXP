@@ -611,6 +611,12 @@ MappedArgumentsObject::obj_defineProperty(JSContext* cx, HandleObject obj, Handl
         newArgDesc.setSetter(MappedArgSetter);
     }
 
+    // Ensure the arguments object has RareArgumentsData so that step 8 is
+    // infallible.
+    if (isMapped && !argsobj->getOrCreateRareData(cx)) {
+        return false;
+    }
+
     // Steps 5-6. NativeDefineProperty will lookup [[Value]] for us.
     if (!NativeDefineProperty(cx, obj.as<NativeObject>(), id, newArgDesc, result))
         return false;
@@ -622,8 +628,8 @@ MappedArgumentsObject::obj_defineProperty(JSContext* cx, HandleObject obj, Handl
     if (isMapped) {
         unsigned arg = unsigned(JSID_TO_INT(id));
         if (desc.isAccessorDescriptor()) {
-            if (!argsobj->markElementDeleted(cx, arg))
-                return false;
+            bool ok = argsobj->markElementDeleted(cx, arg);
+            MOZ_RELEASE_ASSERT(ok, "shouldn't fail after getOrCreateRareData");
         } else {
             if (desc.hasValue()) {
                 RootedFunction callee(cx, &argsobj->callee());
@@ -635,8 +641,8 @@ MappedArgumentsObject::obj_defineProperty(JSContext* cx, HandleObject obj, Handl
                     TypeScript::SetArgument(cx, script, arg, desc.value());
             }
             if (desc.hasWritable() && !desc.writable()) {
-                if (!argsobj->markElementDeleted(cx, arg))
-                    return false;
+                bool ok = argsobj->markElementDeleted(cx, arg);
+                MOZ_RELEASE_ASSERT(ok, "shouldn't fail after getOrCreateRareData");
             }
         }
     }
