@@ -1632,8 +1632,12 @@ EventListenerManager::GetTypedEventHandler(nsIAtom* aEventName,
 
   JSEventHandler* jsEventHandler = listener->GetJSEventHandler();
 
+  Maybe<RefPtr<JSEventHandler>> pin;
   if (listener->mHandlerIsString) {
-    CompileEventHandlerInternal(listener, nullptr, nullptr);
+    pin.emplace(jsEventHandler);
+    if (NS_FAILED(CompileEventHandlerInternal(listener, nullptr, nullptr))) {
+      listener = nullptr;
+    }
   }
 
   const TypedEventHandler& typedHandler =
