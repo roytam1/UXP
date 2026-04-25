@@ -6,7 +6,7 @@
 MY_TEMP_DIR=`mktemp -d -t brotli_update.XXXXXX` || exit 1
 
 git clone https://github.com/google/brotli ${MY_TEMP_DIR}/brotli
-git -C ${MY_TEMP_DIR}/brotli checkout v1.0.9
+git -C ${MY_TEMP_DIR}/brotli checkout 4792c8e4c4235f6b501f13dbd07a8b4b253eee21
 
 COMMIT=$(git -C ${MY_TEMP_DIR}/brotli rev-parse HEAD)
 perl -p -i -e "s/\[commit [0-9a-f]{40}\]/[commit ${COMMIT}]/" README.mozilla;
