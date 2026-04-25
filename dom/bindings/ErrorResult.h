@@ -164,6 +164,7 @@ public:
 
   void Throw(nsresult rv) {
     MOZ_ASSERT(NS_FAILED(rv), "Please don't try throwing success");
+    ClearUnionData();
     AssignErrorCode(rv);
   }
 
@@ -324,6 +325,7 @@ public:
   // Throw() here because people can easily pass success codes to
   // this.
   void operator=(nsresult rv) {
+    ClearUnionData();
     AssignErrorCode(rv);
   }
 
@@ -393,6 +395,7 @@ private:
   }
 
   void AssignErrorCode(nsresult aRv) {
+    MOZ_ASSERT(mUnionState == HasNothing);
     MOZ_ASSERT(aRv != NS_ERROR_TYPE_ERR, "Use ThrowTypeError()");
     MOZ_ASSERT(aRv != NS_ERROR_RANGE_ERR, "Use ThrowRangeError()");
     MOZ_ASSERT(!IsErrorWithMessage(), "Don't overwrite errors with message");
