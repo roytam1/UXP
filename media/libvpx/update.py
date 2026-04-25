@@ -46,6 +46,8 @@ def apply_patches():
     os.system("patch -p1 < vp9_svc.patch")
     # Cherrypick fix from upstream
     os.system("patch -p3 < bug1480092.patch")
+    # Bug 2029423 Resetr post_proc state
+    os.system("patch -p3 < reset_post_proc_state.patch")
 
 def update_readme(commit):
     with open('README_MOZILLA') as f:
