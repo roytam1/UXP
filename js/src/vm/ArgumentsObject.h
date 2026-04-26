@@ -284,6 +284,20 @@ class ArgumentsObject : public NativeObject
     bool markElementDeleted(JSContext* cx, uint32_t i);
 
     /*
+     * Return true if the index is a valid element index for this arguments
+     * object.
+     *
+     * Returning true here doesn't imply that the element value can be read
+     * through |ArgumentsObject::element()|. For example, unmapped arguments
+     * objects can have an element index property redefined without having marked
+     * the element as deleted. Instead, use |maybeGetElement()| or manually check
+     * for |hasOverriddenElement()|.
+     */
+    bool isElement(uint32_t i) const {
+        return i < initialLength() && !isElementDeleted(i);
+    }
+
+    /*
      * An ArgumentsObject serves two roles:
      *  - a real object, accessed through regular object operations, e.g..,
      *    GetElement corresponding to 'arguments[i]';

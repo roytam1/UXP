@@ -690,7 +690,7 @@ UnmappedArgSetter(JSContext* cx, HandleObject obj, HandleId id, MutableHandleVal
 
     if (JSID_IS_INT(id)) {
         unsigned arg = unsigned(JSID_TO_INT(id));
-        if (arg < argsobj->initialLength()) {
+        if (argsobj->isElement(arg)) {
             argsobj->setElement(cx, arg, vp);
             return result.succeed();
         }
