@@ -17,6 +17,7 @@
 #ifndef mozilla_image_RasterImage_h
 #define mozilla_image_RasterImage_h
 
+#include "mozilla/Atomics.h"
 #include "Image.h"
 #include "nsCOMPtr.h"
 #include "imgIContainer.h"
@@ -384,10 +385,10 @@ private: // data
   /// If this has a value, we're waiting for SetSize() to send the load event.
   Maybe<Progress>            mLoadProgress;
 
-  nsCOMPtr<nsIProperties>   mProperties;
+  nsCOMPtr<nsIProperties>    mProperties;
 
   /// If this image is animated, a FrameAnimator which manages its animation.
-  UniquePtr<FrameAnimator> mFrameAnimator;
+  UniquePtr<FrameAnimator>   mFrameAnimator;
 
   /// Animation timeline and other state for animation images.
   Maybe<AnimationState> mAnimationState;
@@ -400,7 +401,9 @@ private: // data
 
   // How many times we've decoded this image.
   // This is currently only used for statistics
-  int32_t                        mDecodeCount;
+  int32_t                    mDecodeCount;
+  
+  Atomic<bool>               mIsBeingDestroyed{false};
 
   // A weak pointer to our ImageContainer, which stays alive only as long as
   // the layer system needs it.
@@ -414,7 +417,7 @@ private: // data
   DrawResult mLastImageContainerDrawResult;
 
 #ifdef DEBUG
-  uint32_t                       mFramesNotified;
+  uint32_t                   mFramesNotified;
 #endif
 
   // The source data for this image.
