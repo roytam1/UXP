@@ -256,6 +256,8 @@ nsXMLPrettyPrinter::ContentRemoved(nsIDocument* aDocument,
 void
 nsXMLPrettyPrinter::NodeWillBeDestroyed(const nsINode* aNode)
 {
+    MOZ_DIAGNOSTIC_ASSERT(mDocument == aNode);
+    mDocument->RemoveMutationObserver(this);
     mDocument = nullptr;
     NS_RELEASE_THIS();
 }

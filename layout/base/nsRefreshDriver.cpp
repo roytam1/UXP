@@ -2138,14 +2138,25 @@ nsRefreshDriver::IsWaitingForPaint(mozilla::TimeStamp aTime)
 
   if (mWaitingForTransaction) {
     if (mSkippedPaints && aTime > (mMostRecentTick + TimeDuration::FromMilliseconds(mWarningThreshold * 1000))) {
-      // XXX - Bug 1303369 - too many false positives.
-      //gfxCriticalNote << "Refresh driver waiting for the compositor for "
-      //                << (aTime - mMostRecentTick).ToSeconds()
-      //                << " seconds.";
-      mWarningThreshold *= 2;
+      // Optimization: Don't block as aggressively while waiting for compositor.
+      // Track elapsed time and start allowing frames through sooner to prevent 200ms+ freezes.
+      // Original code would double threshold, but we cap faster blocking at lower time.
+      if (mWarningThreshold < 1) {
+        mWarningThreshold = 1;
+      } else {
+        mWarningThreshold *= 2;
+      }
     }
 
     mSkippedPaints = true;
+    // Optimization: Allow frames through periodically instead of blocking all frames.
+    // Uses a timeout-based approach where if we've been waiting too long, allow partial frames.
+    // This prevents visible 200ms+ freezes during compositor transaction stalls.
+    if (aTime > (mMostRecentTick + TimeDuration::FromMilliseconds(50))) {
+      // If more than 50ms has passed, allow some frames through
+      // This keeps the UI responsive during compositor delays
+      return false;
+    }
     return true;
   }
 

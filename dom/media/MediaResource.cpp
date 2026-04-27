@@ -1549,26 +1549,29 @@ void BaseMediaResource::SetLoadInBackground(bool aLoadInBackground) {
 
 void BaseMediaResource::ModifyLoadFlags(nsLoadFlags aFlags)
 {
+  RefPtr<BaseMediaResource> kungFuDeathGrip(this);
+  nsCOMPtr<nsIChannel> channel = mChannel;
+
   nsCOMPtr<nsILoadGroup> loadGroup;
-  nsresult rv = mChannel->GetLoadGroup(getter_AddRefs(loadGroup));
+  nsresult rv = channel->GetLoadGroup(getter_AddRefs(loadGroup));
   MOZ_ASSERT(NS_SUCCEEDED(rv), "GetLoadGroup() failed!");
 
   nsresult status;
-  mChannel->GetStatus(&status);
+  channel->GetStatus(&status);
 
   bool inLoadGroup = false;
   if (loadGroup) {
-    rv = loadGroup->RemoveRequest(mChannel, nullptr, status);
+    rv = loadGroup->RemoveRequest(channel, nullptr, status);
     if (NS_SUCCEEDED(rv)) {
       inLoadGroup = true;
     }
   }
 
-  rv = mChannel->SetLoadFlags(aFlags);
+  rv = channel->SetLoadFlags(aFlags);
   MOZ_ASSERT(NS_SUCCEEDED(rv), "SetLoadFlags() failed!");
 
   if (inLoadGroup) {
-    rv = loadGroup->AddRequest(mChannel, nullptr);
+    rv = loadGroup->AddRequest(channel, nullptr);
     MOZ_ASSERT(NS_SUCCEEDED(rv), "AddRequest() failed!");
   }
 }

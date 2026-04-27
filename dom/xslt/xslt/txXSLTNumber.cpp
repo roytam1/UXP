@@ -109,7 +109,7 @@ txXSLTNumber::getValueList(Expr* aValueExpr, txPattern* aCountPattern,
 
     txPattern* countPattern = aCountPattern;
     bool ownsCountPattern = false;
-    const txXPathNode& currNode = aContext->getContextNode();
+    txXPathNode currNode(aContext->getContextNode());
 
     // Parse count- and from-attributes
 
