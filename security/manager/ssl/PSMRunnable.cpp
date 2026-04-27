@@ -22,7 +22,9 @@ SyncRunnableBase::DispatchToMainThreadAndWait()
     mozilla::MonitorAutoLock lock(monitor);
     rv = NS_DispatchToMainThread(this);
     if (NS_SUCCEEDED(rv)) {
-      lock.Wait();
+      while (!mDone) {
+        lock.Wait();
+      }
     }
   }
 
@@ -33,7 +35,9 @@ NS_IMETHODIMP
 SyncRunnableBase::Run()
 {
   RunOnTargetThread();
-  mozilla::MonitorAutoLock(monitor).Notify();
+  mozilla::MonitorAutoLock lock(monitor);
+  mDone = true;
+  lock.Notify();
   return NS_OK;
 }
 

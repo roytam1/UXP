@@ -317,6 +317,7 @@ public:
   void GarbageCollect(uint32_t aReason) const;
 
   void NurseryWrapperAdded(nsWrapperCache* aCache);
+  void NurseryWrapperRemovedSlow(nsWrapperCache* aCache);
   void NurseryWrapperPreserved(JSObject* aWrapper);
   void JSObjectsTenured();
 

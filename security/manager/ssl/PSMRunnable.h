@@ -25,6 +25,7 @@ protected:
   virtual void RunOnTargetThread() = 0;
 private:
   mozilla::Monitor monitor;
+  bool mDone = false;
 };
 
 class NotifyObserverRunnable : public Runnable

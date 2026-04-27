@@ -321,6 +321,26 @@ ssl3_ExtensionAdvertised(const sslSocket *ss, PRUint16 ex_type)
                                   xtnData->numAdvertised, ex_type);
 }
 
+void
+ssl3_RecordExtensionNegotiated(const sslSocket *ss, TLSExtensionData *xtnData,
+                               PRUint16 ex_type)
+{
+    /* Record that an extension was negotiated during a full TLS handshake.
+     * This function must NOT be used to track extensions carried in
+     * post-handshake messages (e.g. CertificateRequest during PHA);
+     * their negotiation state should instead be stored in dedicated fields on
+     * TLSExtensionData or sslSocket (e.g. xtnData->compressionAlg for
+     * certificate compression). */
+    PORT_Assert(!ss->firstHsDone ||
+                ss->opt.enableRenegotiation != SSL_RENEGOTIATE_NEVER);
+    PORT_Assert(!arrayContainsExtension(xtnData->negotiated,
+                                        xtnData->numNegotiated, ex_type));
+    PORT_Assert(xtnData->numNegotiated < SSL_MAX_EXTENSIONS);
+    if (xtnData->numNegotiated < SSL_MAX_EXTENSIONS) {
+        xtnData->negotiated[xtnData->numNegotiated++] = ex_type;
+    }
+}
+
 /* Go through hello extensions in |b| and deserialize
  * them into the list in |ss->ssl3.hs.remoteExtensions|.
  * The only checking we do in this point is for duplicates.

@@ -18,6 +18,7 @@ typedef nsIDOMNode txXPathNodeType;
 class txXPathNode
 {
 public:
+    txXPathNode(const txXPathNode& aNode);
     bool operator==(const txXPathNode& aNode) const;
     bool operator!=(const txXPathNode& aNode) const
     {
@@ -30,8 +31,6 @@ private:
     friend class txXPathNativeNode;
     friend class txXPathNodeUtils;
     friend class txXPathTreeWalker;
-
-    txXPathNode(const txXPathNode& aNode);
 
     explicit txXPathNode(nsIDocument* aDocument) : mNode(aDocument),
                                                    mRefCountRoot(0),

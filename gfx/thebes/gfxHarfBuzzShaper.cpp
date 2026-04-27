@@ -554,15 +554,17 @@ gfxHarfBuzzShaper::FindGlyf(hb_codepoint_t aGlyph, bool *aEmptyGlyf) const
     uint32_t len;
     const char* data = hb_blob_get_data(mLocaTable, &len);
     if (mLocaLongOffsets) {
-        if ((aGlyph + 1) * sizeof(AutoSwap_PRUint32) > len) {
+        // We read offsets[aGlyph] and offsets[aGlyph + 1], so require aGlyph + 2 entries.
+        if ((aGlyph + 2) * sizeof(AutoSwap_PRUint32) > len) {
             return nullptr;
         }
         const AutoSwap_PRUint32* offsets =
             reinterpret_cast<const AutoSwap_PRUint32*>(data);
         offset = offsets[aGlyph];
-        *aEmptyGlyf = (offset == uint16_t(offsets[aGlyph + 1]));
+        *aEmptyGlyf = (offset == uint32_t(offsets[aGlyph + 1]));
     } else {
-        if ((aGlyph + 1) * sizeof(AutoSwap_PRUint16) > len) {
+        // Ditto aGlyph + 2 entries.
+        if ((aGlyph + 2) * sizeof(AutoSwap_PRUint16) > len) {
             return nullptr;
         }
         const AutoSwap_PRUint16* offsets =
@@ -1155,8 +1157,8 @@ AddOpenTypeFeature(const uint32_t& aTag, uint32_t& aValue, void *aUserArg)
  * gfxFontShaper override to initialize the text run using HarfBuzz
  */
 
-static hb_font_funcs_t* sHBFontFuncs = nullptr;
-static hb_unicode_funcs_t* sHBUnicodeFuncs = nullptr;
+static hb_font_funcs_t * sHBFontFuncs = nullptr;
+static hb_unicode_funcs_t * sHBUnicodeFuncs = nullptr;
 static const hb_script_t sMathScript =
     hb_ot_tag_to_script(HB_TAG('m','a','t','h'));
 
@@ -1171,61 +1173,55 @@ gfxHarfBuzzShaper::Initialize()
 
     mUseFontGlyphWidths = mFont->ProvidesGlyphWidths();
 
-    // Function callback pointers; these are local statics to ensure thread-safe
-    // initialization on first use.
-    static hb_font_funcs_t* sHBFontFuncs = [] {
-        auto* funcs = hb_font_funcs_create();
-        hb_font_funcs_set_nominal_glyph_func(funcs,
+    if (!sHBFontFuncs) {
+        // static function callback pointers, initialized by the first
+        // harfbuzz shaper used
+        sHBFontFuncs = hb_font_funcs_create();
+        hb_font_funcs_set_nominal_glyph_func(sHBFontFuncs,
                                              HBGetNominalGlyph,
                                              nullptr, nullptr);
-        hb_font_funcs_set_variation_glyph_func(funcs,
+        hb_font_funcs_set_variation_glyph_func(sHBFontFuncs,
                                                HBGetVariationGlyph,
                                                nullptr, nullptr);
-        hb_font_funcs_set_glyph_h_advance_func(funcs,
+        hb_font_funcs_set_glyph_h_advance_func(sHBFontFuncs,
                                                HBGetGlyphHAdvance,
                                                nullptr, nullptr);
-        hb_font_funcs_set_glyph_v_advance_func(funcs,
+        hb_font_funcs_set_glyph_v_advance_func(sHBFontFuncs,
                                                HBGetGlyphVAdvance,
                                                nullptr, nullptr);
-        hb_font_funcs_set_glyph_v_origin_func(funcs,
+        hb_font_funcs_set_glyph_v_origin_func(sHBFontFuncs,
                                               HBGetGlyphVOrigin,
                                               nullptr, nullptr);
-        hb_font_funcs_set_glyph_extents_func(funcs,
+        hb_font_funcs_set_glyph_extents_func(sHBFontFuncs,
                                              HBGetGlyphExtents,
                                              nullptr, nullptr);
-        hb_font_funcs_set_glyph_contour_point_func(funcs,
+        hb_font_funcs_set_glyph_contour_point_func(sHBFontFuncs,
                                                    HBGetContourPoint,
                                                    nullptr, nullptr);
-        hb_font_funcs_set_glyph_h_kerning_func(funcs,
+        hb_font_funcs_set_glyph_h_kerning_func(sHBFontFuncs,
                                                HBGetHKerning,
                                                nullptr, nullptr);
-        return funcs;
-    }();
 
-    static hb_unicode_funcs_t* sHBUnicodeFuncs = [] {
-        auto* funcs = hb_unicode_funcs_create(hb_unicode_funcs_get_empty());
-        hb_unicode_funcs_set_mirroring_func(funcs,
+        sHBUnicodeFuncs =
+            hb_unicode_funcs_create(hb_unicode_funcs_get_empty());
+        hb_unicode_funcs_set_mirroring_func(sHBUnicodeFuncs,
                                             HBGetMirroring,
                                             nullptr, nullptr);
-        hb_unicode_funcs_set_script_func(funcs,
-                                         HBGetScript,
+        hb_unicode_funcs_set_script_func(sHBUnicodeFuncs, HBGetScript,
                                          nullptr, nullptr);
-        hb_unicode_funcs_set_general_category_func(funcs,
+        hb_unicode_funcs_set_general_category_func(sHBUnicodeFuncs,
                                                    HBGetGeneralCategory,
                                                    nullptr, nullptr);
-        hb_unicode_funcs_set_combining_class_func(funcs,
+        hb_unicode_funcs_set_combining_class_func(sHBUnicodeFuncs,
                                                   HBGetCombiningClass,
                                                   nullptr, nullptr);
-        hb_unicode_funcs_set_compose_func(funcs,
+        hb_unicode_funcs_set_compose_func(sHBUnicodeFuncs,
                                           HBUnicodeCompose,
                                           nullptr, nullptr);
-        hb_unicode_funcs_set_decompose_func(funcs,
+        hb_unicode_funcs_set_decompose_func(sHBUnicodeFuncs,
                                             HBUnicodeDecompose,
                                             nullptr, nullptr);
-        return funcs;
-    }();
-             
-    if (!sNormalizer) {
+
         UErrorCode error = U_ZERO_ERROR;
         sNormalizer = unorm2_getNFCInstance(&error);
         MOZ_ASSERT(U_SUCCESS(error), "failed to get ICU normalizer");
