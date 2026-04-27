@@ -2658,9 +2658,9 @@ FilterNodeDisplacementMapSoftware::Render(const IntRect& aRect)
       uint32_t mapIndex = y * mapStride + 4 * x;
       uint32_t targIndex = y * targetStride + 4 * x;
       int32_t sourceX = x +
-        scaleOver255 * mapData[mapIndex + xChannel] + scaleAdjustment;
+        int32_t(scaleOver255 * mapData[mapIndex + xChannel] + scaleAdjustment);
       int32_t sourceY = y +
-        scaleOver255 * mapData[mapIndex + yChannel] + scaleAdjustment;
+        int32_t(scaleOver255 * mapData[mapIndex + yChannel] + scaleAdjustment);
       *(uint32_t*)(targetData + targIndex) =
         ColorAtPoint(sourceData, sourceStride, sourceX, sourceY);
     }
