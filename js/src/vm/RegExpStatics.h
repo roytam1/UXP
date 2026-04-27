@@ -351,6 +351,7 @@ RegExpStatics::updateFromMatchPairs(JSContext* cx, JSLinearString* input, MatchP
 
     if (!matches.initArrayFrom(newPairs)) {
         ReportOutOfMemory(cx);
+        clear();
         return false;
     }
 
