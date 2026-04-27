@@ -295,13 +295,21 @@ public:
     aFound = !!item;
     return item;
   }
-  virtual void GetSupportedNames(nsTArray<nsString>& aNames) override;
+  virtual void GetSupportedNames(nsTArray<nsString>& aNames) override {
+    GetSupportedNames(aNames, nullptr);
+  }
 
   // nsContentList public methods
   uint32_t Length(bool aDoFlush);
   nsIContent* Item(uint32_t aIndex, bool aDoFlush);
   mozilla::dom::Element*
   NamedItem(const nsAString& aName, bool aDoFlush);
+
+  // Used by HTMLAllCollection to limit the elements whose name attribute is
+  // considered. The filter MUST NOT cause any flushes.
+  using FilterElementWithName = bool (*)(nsIContent*);
+  void GetSupportedNames(nsTArray<nsString>& aNames,
+                         FilterElementWithName aFilter);
 
   // nsIMutationObserver
   NS_DECL_NSIMUTATIONOBSERVER_ATTRIBUTECHANGED

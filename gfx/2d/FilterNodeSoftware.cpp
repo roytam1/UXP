@@ -2658,9 +2658,9 @@ FilterNodeDisplacementMapSoftware::Render(const IntRect& aRect)
       uint32_t mapIndex = y * mapStride + 4 * x;
       uint32_t targIndex = y * targetStride + 4 * x;
       int32_t sourceX = x +
-        scaleOver255 * mapData[mapIndex + xChannel] + scaleAdjustment;
+        int32_t(scaleOver255 * mapData[mapIndex + xChannel] + scaleAdjustment);
       int32_t sourceY = y +
-        scaleOver255 * mapData[mapIndex + yChannel] + scaleAdjustment;
+        int32_t(scaleOver255 * mapData[mapIndex + yChannel] + scaleAdjustment);
       *(uint32_t*)(targetData + targIndex) =
         ColorAtPoint(sourceData, sourceStride, sourceX, sourceY);
     }
@@ -3405,7 +3405,7 @@ SpotLightSoftware::GetColor(uint32_t aLightColor, const Point3D &aVectorToLight)
     uint8_t colorC[4];
   };
 
-  Float dot = -aVectorToLight.DotProduct(mVectorFromFocusPointToLight);
+  Float dot = std::clamp(-aVectorToLight.DotProduct(mVectorFromFocusPointToLight), 0.0f, 1.0f);
   if (!mPowCache.HasPowerTable()) {
     dot *= (dot >= mLimitingConeCos);
     color = aLightColor;
@@ -3414,7 +3414,7 @@ SpotLightSoftware::GetColor(uint32_t aLightColor, const Point3D &aVectorToLight)
     colorC[B8G8R8A8_COMPONENT_BYTEOFFSET_B] *= dot;
   } else {
     color = aLightColor;
-    uint16_t doti = dot * (dot >= 0) * (1 << PowCache::sInputIntPrecisionBits);
+    uint16_t doti = dot * (1 << PowCache::sInputIntPrecisionBits);
     uint32_t tmp = mPowCache.Pow(doti) * (dot >= mLimitingConeCos);
     MOZ_ASSERT(tmp <= (1 << PowCache::sOutputIntPrecisionBits), "pow() result must not exceed 1.0");
     colorC[B8G8R8A8_COMPONENT_BYTEOFFSET_R] = uint8_t((colorC[B8G8R8A8_COMPONENT_BYTEOFFSET_R] * tmp) >> PowCache::sOutputIntPrecisionBits);
@@ -3660,8 +3660,8 @@ SpecularLightingSoftware::LightPixel(const Point3D &aNormal,
 {
   Point3D vectorToEye(0, 0, 1);
   Point3D halfwayVector = Normalized(aVectorToLight + vectorToEye);
-  Float dotNH = aNormal.DotProduct(halfwayVector);
-  uint16_t dotNHi = uint16_t(dotNH * (dotNH >= 0) * (1 << PowCache::sInputIntPrecisionBits));
+  Float dotNH = std::clamp(aNormal.DotProduct(halfwayVector), 0.0f, 1.0f);
+  uint16_t dotNHi = uint16_t(dotNH * (1 << PowCache::sInputIntPrecisionBits));
   // The exponent for specular is in [1,128] range, so we don't need to check and
   // optimize for the "default power table" scenario here.
   MOZ_ASSERT(mPowCache.HasPowerTable());

@@ -57,6 +57,7 @@ DataStruct::~DataStruct()
 {
   if (mCacheFD) {
     PR_Close(mCacheFD);
+    mCacheFD = nullptr;
   }
 }
 

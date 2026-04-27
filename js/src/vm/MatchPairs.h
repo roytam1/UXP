@@ -76,7 +76,10 @@ class MatchPairs
     virtual bool allocOrExpandArray(size_t pairCount) = 0;
 
     bool initArrayFrom(MatchPairs& copyFrom);
-    void forgetArray() { pairs_ = nullptr; }
+    void forgetArray() {
+        pairs_ = nullptr;
+        pairCount_ = 0;
+    }
 
     void checkAgainst(size_t inputLength) {
 #ifdef DEBUG

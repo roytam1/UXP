@@ -131,6 +131,8 @@ public:
     SetWrapperJSObject(nullptr);
   }
 
+  void ClearWrapperOnWrapFailure();
+
   /**
    * Update the wrapper if the object it contains is moved.
    *

@@ -82,12 +82,12 @@ public:
     typedef const txIndexedKeyHashKey* KeyTypePointer;
 
     explicit txIndexedKeyHashEntry(KeyTypePointer aKey)
-        : mKey(*aKey),
-          mIndexed(false) { }
+        : mKey(*aKey) { }
 
     txIndexedKeyHashEntry(const txIndexedKeyHashEntry& entry)
-        : mKey(entry.mKey),
-          mIndexed(entry.mIndexed) { }
+        : mKey(entry.mKey)
+        , mIndexed(entry.mIndexed)
+        , mIsBeingIndexed(entry.mIsBeingIndexed) { }
 
     bool KeyEquals(KeyTypePointer aKey) const;
 
@@ -98,7 +98,8 @@ public:
     enum { ALLOW_MEMMOVE = true };
 
     txIndexedKeyHashKey mKey;
-    bool mIndexed;
+    bool mIndexed = false;
+    bool mIsBeingIndexed = false;
 };
 
 typedef nsTHashtable<txIndexedKeyHashEntry> txIndexedKeyHash;
