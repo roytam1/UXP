@@ -93,7 +93,7 @@ CopyAndPackAudio(AVFrame* aFrame, uint32_t aNumChannels, uint32_t aNumAFrames)
     // Planar audio data. Convert it from 32 bits Float to S16
     // and pack it into something we can understand.
     AudioDataValue* tmp = audio.get();
-    float** data = reinterpret_cast<float**>(aFrame->data);
+    float** data = reinterpret_cast<float**>(aFrame->extended_data);
     for (uint32_t frame = 0; frame < aNumAFrames; frame++) {
       for (uint32_t channel = 0; channel < aNumChannels; channel++) {
         *tmp++ = FloatToAudioSample<int16_t>(data[channel][frame]);
@@ -149,7 +149,7 @@ CopyAndPackAudio(AVFrame* aFrame, uint32_t aNumChannels, uint32_t aNumAFrames)
 #else
     // Planar audio data. Pack it into something we can understand.
     AudioDataValue* tmp = audio.get();
-    AudioDataValue** data = reinterpret_cast<AudioDataValue**>(aFrame->data);
+    AudioDataValue** data = reinterpret_cast<AudioDataValue**>(aFrame->extended_data);
     for (uint32_t frame = 0; frame < aNumAFrames; frame++) {
       for (uint32_t channel = 0; channel < aNumChannels; channel++) {
         *tmp++ = data[channel][frame];
