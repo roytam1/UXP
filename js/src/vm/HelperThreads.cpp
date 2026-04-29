@@ -72,7 +72,11 @@ static size_t
 ThreadCountForCPUCount(size_t cpuCount)
 {
     // Create additional threads on top of the number of cores available, to
-    // provide some excess capacity in case threads pause each other.
+    // provide some excess capacity in case threads pause each other and for mixed
+    // helper-thread workloads.
+    // Note that cpuCount here is the number of logical processors and threadCount
+    // calculated here just adds some extra capacity on top. Use threadCount
+    // with care as it may end up deadlocking.
     static const uint32_t EXCESS_THREADS = 4;
     return cpuCount + EXCESS_THREADS;
 }
@@ -215,21 +219,14 @@ js::CancelOffThreadIonCompile(CompilationSelector selector, bool discardLazyLink
     bool cancelled;
     do {
         cancelled = false;
-        bool unpaused = false;
         for (auto& helper : *HelperThreadState().threads) {
             if (helper.ionBuilder() &&
                 CompiledScriptMatches(selector, helper.ionBuilder()->script()))
             {
                 helper.ionBuilder()->cancel();
-                if (helper.pause) {
-                    helper.pause = false;
-                    unpaused = true;
-                }
                 cancelled = true;
             }
         }
-        if (unpaused)
-            HelperThreadState().notifyAll(GlobalHelperThreadState::PAUSE, lock);
         if (cancelled)
             HelperThreadState().wait(lock, GlobalHelperThreadState::CONSUMER);
     } while (cancelled);
@@ -926,12 +923,6 @@ GlobalHelperThreadState::maxIonCompilationThreads() const
 }
 
 size_t
-GlobalHelperThreadState::maxUnpausedIonCompilationThreads() const
-{
-    return 1;
-}
-
-size_t
 GlobalHelperThreadState::maxWasmCompilationThreads() const
 {
     if (IsHelperThreadSimulatingOOM(js::oom::THREAD_TYPE_ASMJS))
@@ -1002,6 +993,8 @@ GlobalHelperThreadState::canStartPromiseTask(const AutoLockHelperThreadState& lo
 static bool
 IonBuilderHasHigherPriority(jit::IonBuilder* first, jit::IonBuilder* second)
 {
+    // Return true if priority(first) > priority(second).
+    //
     // This method can return whatever it wants, though it really ought to be a
     // total order. The ordering is allowed to race (change on the fly), however.
 
@@ -1032,14 +1025,10 @@ GlobalHelperThreadState::canStartIonFreeTask(const AutoLockHelperThreadState& lo
 }
 
 jit::IonBuilder*
-GlobalHelperThreadState::highestPriorityPendingIonCompile(const AutoLockHelperThreadState& lock,
-                                                          bool remove /* = false */)
+GlobalHelperThreadState::highestPriorityPendingIonCompile(const AutoLockHelperThreadState& lock)
 {
     auto& worklist = ionWorklist(lock);
-    if (worklist.empty()) {
-        MOZ_ASSERT(!remove);
-        return nullptr;
-    }
+    MOZ_ASSERT(!worklist.empty());
 
     // Get the highest priority IonBuilder which has not started compilation yet.
     size_t index = 0;
@@ -1048,81 +1037,8 @@ GlobalHelperThreadState::highestPriorityPendingIonCompile(const AutoLockHelperTh
             index = i;
     }
     jit::IonBuilder* builder = worklist[index];
-    if (remove)
-        worklist.erase(&worklist[index]);
+    worklist.erase(&worklist[index]);
     return builder;
-}
-
-HelperThread*
-GlobalHelperThreadState::lowestPriorityUnpausedIonCompileAtThreshold(
-    const AutoLockHelperThreadState& lock)
-{
-    // Get the lowest priority IonBuilder which has started compilation and
-    // isn't paused, unless there are still fewer than the maximum number of
-    // such builders permitted.
-    size_t numBuilderThreads = 0;
-    HelperThread* thread = nullptr;
-    for (auto& thisThread : *threads) {
-        if (thisThread.ionBuilder() && !thisThread.pause) {
-            numBuilderThreads++;
-            if (!thread ||
-                IonBuilderHasHigherPriority(thread->ionBuilder(), thisThread.ionBuilder()))
-            {
-                thread = &thisThread;
-            }
-        }
-    }
-    if (numBuilderThreads < maxUnpausedIonCompilationThreads())
-        return nullptr;
-    return thread;
-}
-
-HelperThread*
-GlobalHelperThreadState::highestPriorityPausedIonCompile(const AutoLockHelperThreadState& lock)
-{
-    // Get the highest priority IonBuilder which has started compilation but
-    // which was subsequently paused.
-    HelperThread* thread = nullptr;
-    for (auto& thisThread : *threads) {
-        if (thisThread.pause) {
-            // Currently, only threads with IonBuilders can be paused.
-            MOZ_ASSERT(thisThread.ionBuilder());
-            if (!thread ||
-                IonBuilderHasHigherPriority(thisThread.ionBuilder(), thread->ionBuilder()))
-            {
-                thread = &thisThread;
-            }
-        }
-    }
-    return thread;
-}
-
-bool
-GlobalHelperThreadState::pendingIonCompileHasSufficientPriority(
-    const AutoLockHelperThreadState& lock)
-{
-    // Can't compile anything if there are no scripts to compile.
-    if (!canStartIonCompile(lock))
-        return false;
-
-    // Count the number of threads currently compiling scripts, and look for
-    // the thread with the lowest priority.
-    HelperThread* lowestPriorityThread = lowestPriorityUnpausedIonCompileAtThreshold(lock);
-
-    // If the number of threads building scripts is less than the maximum, the
-    // compilation can start immediately.
-    if (!lowestPriorityThread)
-        return true;
-
-    // If there is a builder in the worklist with higher priority than some
-    // builder currently being compiled, then that current compilation can be
-    // paused, so allow the compilation.
-    if (IonBuilderHasHigherPriority(highestPriorityPendingIonCompile(lock),
-                                    lowestPriorityThread->ionBuilder()))
-        return true;
-
-    // Compilation will have to wait until one of the active compilations finishes.
-    return false;
 }
 
 bool
@@ -1557,22 +1473,9 @@ HelperThread::handleIonWorkload(AutoLockHelperThreadState& locked)
 
     // Find the IonBuilder in the worklist with the highest priority, and
     // remove it from the worklist.
-    jit::IonBuilder* builder =
-        HelperThreadState().highestPriorityPendingIonCompile(locked, /* remove = */ true);
-
-    // If there are now too many threads with active IonBuilders, indicate to
-    // the one with the lowest priority that it should pause. Note that due to
-    // builder priorities changing since pendingIonCompileHasSufficientPriority
-    // was called, the builder we are pausing may actually be higher priority
-    // than the one we are about to start. Oh well.
-    HelperThread* other = HelperThreadState().lowestPriorityUnpausedIonCompileAtThreshold(locked);
-    if (other) {
-        MOZ_ASSERT(other->ionBuilder() && !other->pause);
-        other->pause = true;
-    }
+    jit::IonBuilder* builder = HelperThreadState().highestPriorityPendingIonCompile(locked);
 
     currentTask.emplace(builder);
-    builder->setPauseFlag(&pause);
 
     JSRuntime* rt = builder->script()->compartment()->runtimeFromAnyThread();
 
@@ -1594,7 +1497,6 @@ HelperThread::handleIonWorkload(AutoLockHelperThreadState& locked)
 
     FinishOffThreadIonCompile(builder, locked);
     currentTask.reset();
-    pause = false;
 
     // Ping the main thread so that the compiled code can be incorporated
     // at the next interrupt callback. Don't interrupt Ion code for this, as
@@ -1604,43 +1506,6 @@ HelperThread::handleIonWorkload(AutoLockHelperThreadState& locked)
 
     // Notify the main thread in case it is waiting for the compilation to finish.
     HelperThreadState().notifyAll(GlobalHelperThreadState::CONSUMER, locked);
-
-    // When finishing Ion compilation jobs, we can start unpausing compilation
-    // threads that were paused to restrict the number of active compilations.
-    // Only unpause one at a time, to make sure we don't exceed the restriction.
-    // Since threads are currently only paused for Ion compilations, this
-    // strategy will eventually unpause all paused threads, regardless of how
-    // many there are, since each thread we unpause will eventually finish and
-    // end up back here.
-    if (HelperThread* other = HelperThreadState().highestPriorityPausedIonCompile(locked)) {
-        MOZ_ASSERT(other->ionBuilder() && other->pause);
-
-        // Only unpause the other thread if there isn't a higher priority
-        // builder which this thread or another can start on.
-        jit::IonBuilder* builder = HelperThreadState().highestPriorityPendingIonCompile(locked);
-        if (!builder || IonBuilderHasHigherPriority(other->ionBuilder(), builder)) {
-            other->pause = false;
-
-            // Notify all paused threads, to make sure the one we just
-            // unpaused wakes up.
-            HelperThreadState().notifyAll(GlobalHelperThreadState::PAUSE, locked);
-        }
-    }
-}
-
-static HelperThread*
-CurrentHelperThread()
-{
-    auto threadId = ThisThread::GetId();
-    HelperThread* thread = nullptr;
-    for (auto& thisThread : *HelperThreadState().threads) {
-        if (thisThread.thread.isSome() && threadId == thisThread.thread->get_id()) {
-            thread = &thisThread;
-            break;
-        }
-    }
-    MOZ_ASSERT(thread);
-    return thread;
 }
 
 void
@@ -1658,17 +1523,18 @@ HelperThread::handleIonFreeWorkload(AutoLockHelperThreadState& locked)
     }
 }
 
-void
-js::PauseCurrentHelperThread()
+HelperThread*
+js::CurrentHelperThread()
 {
-    TraceLoggerThread* logger = TraceLoggerForCurrentThread();
-    AutoTraceLog logPaused(logger, TraceLogger_IonCompilationPaused);
+    if (!HelperThreadState().threads)
+        return nullptr;
 
-    HelperThread* thread = CurrentHelperThread();
-
-    AutoLockHelperThreadState lock;
-    while (thread->pause)
-        HelperThreadState().wait(lock, GlobalHelperThreadState::PAUSE);
+    auto threadId = ThisThread::GetId();
+    for (auto& thisThread : *HelperThreadState().threads) {
+        if (thisThread.thread.isSome() && threadId == thisThread.thread->get_id())
+            return &thisThread;
+    }
+    return nullptr;
 }
 
 void
@@ -1962,7 +1828,7 @@ HelperThread::threadLoop()
                 task = js::oom::THREAD_TYPE_GCPARALLEL;
             else if (HelperThreadState().canStartGCHelperTask(lock))
                 task = js::oom::THREAD_TYPE_GCHELPER;
-            else if (HelperThreadState().pendingIonCompileHasSufficientPriority(lock))
+            else if (HelperThreadState().canStartIonCompile(lock))
                 task = js::oom::THREAD_TYPE_ION;
             else if (HelperThreadState().canStartWasmCompile(lock))
                 task = js::oom::THREAD_TYPE_ASMJS;
