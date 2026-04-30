@@ -395,8 +395,14 @@ FileReader::ReadFileContent(Blob& aBlob,
     return;
   }
 
+  CheckedInt<size_t> size(mTotal);
+  if (!size.isValid()) {
+    aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
+    return;
+  }
+
   if (mDataFormat == FILE_AS_ARRAYBUFFER) {
-    mFileData = js_pod_malloc<char>(mTotal);
+    mFileData = js_pod_malloc<char>(size.value());
     if (!mFileData) {
       NS_WARNING("Preallocation failed for ReadFileData");
       aRv.Throw(NS_ERROR_OUT_OF_MEMORY);

@@ -9,6 +9,7 @@
 #include <algorithm>
 
 #include "mozilla/Assertions.h"
+#include "mozilla/CheckedInt.h"
 #include "mozilla/EndianUtils.h"
 #include "nsAutoPtr.h"
 #include "VideoUtils.h"
@@ -602,8 +603,12 @@ MP3TrackDemuxer::OffsetFromFrameIndex(int64_t aFrameIndex) const {
   const auto& vbr = mParser.VBRInfo();
 
   if (vbr.IsComplete()) {
-    offset = mFirstFrameOffset + aFrameIndex * vbr.NumBytes().value() /
-             vbr.NumAudioFrames().value();
+    CheckedInt<int64_t> product = CheckedInt<int64_t>(aFrameIndex) * vbr.NumBytes().value();
+    if (product.isValid()) {
+      offset = mFirstFrameOffset + product.value() / vbr.NumAudioFrames().value();
+    } else {
+      offset = StreamLength();
+    }
   } else if (AverageFrameLength() > 0) {
     offset = mFirstFrameOffset + aFrameIndex * AverageFrameLength();
   }

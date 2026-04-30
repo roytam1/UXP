@@ -1948,8 +1948,13 @@ gl::Error Renderer11::drawLineLoop(const gl::ContextState &data,
     GetLineLoopIndices(indices, type, static_cast<GLuint>(count),
                        glState.isPrimitiveRestartEnabled(), &mScratchIndexDataBuffer);
 
-    unsigned int spaceNeeded =
-        static_cast<unsigned int>(sizeof(GLuint) * mScratchIndexDataBuffer.size());
+    uint64_t spaceNeeded64 = sizeof(GLuint) * mScratchIndexDataBuffer.size();
+    if (spaceNeeded64 > std::numeric_limits<unsigned int>::max())
+    {
+        return gl::Error(GL_OUT_OF_MEMORY, "Failed to create a 32-bit looping index buffer for a GL_LINE_LOOP of <32-bit element type; too many indices required.");
+    }
+    unsigned int spaceNeeded = static_cast<unsigned int>(spaceNeeded64);
+
     gl::Error error = mLineLoopIB->reserveBufferSpace(spaceNeeded, GL_UNSIGNED_INT);
     if (error.isError())
     {
@@ -2054,8 +2059,13 @@ gl::Error Renderer11::drawTriangleFan(const gl::ContextState &data,
     GetTriFanIndices(indexPointer, type, count, data.getState().isPrimitiveRestartEnabled(),
                      &mScratchIndexDataBuffer);
 
-    const unsigned int spaceNeeded =
-        static_cast<unsigned int>(mScratchIndexDataBuffer.size() * sizeof(unsigned int));
+    uint64_t spaceNeeded64 = mScratchIndexDataBuffer.size() * sizeof(unsigned int);
+    if (spaceNeeded64 > std::numeric_limits<unsigned int>::max())
+    {
+        return gl::Error(GL_OUT_OF_MEMORY, "Failed to create a 32-bit scratch index buffer for GL_TRIANGLE_FAN; too many indices required.");
+    }
+    unsigned int spaceNeeded = static_cast<unsigned int>(spaceNeeded64);
+
     gl::Error error = mTriangleFanIB->reserveBufferSpace(spaceNeeded, GL_UNSIGNED_INT);
     if (error.isError())
     {
