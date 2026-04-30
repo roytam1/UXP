@@ -6367,10 +6367,6 @@ AddonInternal.prototype = {
     let version;
     if (app.id == Services.appinfo.ID) {
       version = aAppVersion;
-      // For WebExtensions, report as Firefox 128.0 for compatibility
-      if (this.type == "extension") {
-        version = "128.0";
-      }
 #ifdef MOZ_PHOENIX_EXTENSIONS
       this.native = true;
     }
@@ -6382,15 +6378,10 @@ AddonInternal.prototype = {
 #endif
     }
     else if (app.id == TOOLKIT_ID) {
-      // For WebExtensions against toolkit, report as Firefox 128.0
-      if (this.type == "extension") {
-        version = "128.0";
-      } else {
-        version = aPlatformVersion;
-      }
 #ifdef MOZ_PHOENIX_EXTENSIONS
       this.native = true;
 #endif
+      version = aPlatformVersion;
     }
 
     // Only extensions and dictionaries can be compatible by default; themes
