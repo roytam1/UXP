@@ -2210,26 +2210,17 @@ ReparentWrapper(JSContext* aCx, JS::Handle<JSObject*> aObjArg, ErrorResult& aErr
                                     js::GetReservedOrProxyPrivateSlot(aObj, DOM_OBJECT_SLOT));
   js::SetReservedOrProxyPrivateSlot(aObj, DOM_OBJECT_SLOT, JS::PrivateValue(nullptr));
 
+  aObj = xpc::TransplantObject(aCx, aObj, newobj);
+  if (!aObj) {
+    MOZ_CRASH();
+  }
+
   nsWrapperCache* cache = nullptr;
   CallQueryInterface(native, &cache);
   bool preserving = cache->PreservingWrapper();
   cache->SetPreservingWrapper(false);
   cache->SetWrapper(aObj);
   cache->SetPreservingWrapper(preserving);
-
-  aObj = xpc::TransplantObject(aCx, aObj, newobj);
-  if (!aObj) {
-    MOZ_CRASH();
-  }
-
-  // Update the wrapper cache again if transplanting didn't use newobj but
-  // returned some other object.
-  if (aObj != newobj) {
-    preserving = cache->PreservingWrapper();
-    cache->SetPreservingWrapper(false);
-    cache->SetWrapper(aObj);
-    cache->SetPreservingWrapper(preserving);
-  }
 
   if (propertyHolder) {
     JS::Rooted<JSObject*> copyTo(aCx);
