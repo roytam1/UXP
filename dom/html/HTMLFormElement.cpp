@@ -305,7 +305,9 @@ HTMLFormElement::RequestSubmit(nsGenericHTMLElement* aSubmitter,
   InternalFormEvent event(true, eFormSubmit);
   event.mOriginator = aSubmitter;
   nsEventStatus status = nsEventStatus_eIgnore;
-  nsCOMPtr<nsIPresShell> presShell = GetComposedDoc()->GetShell();
+  nsCOMPtr<nsIDocument> document = GetComposedDoc();
+  if(!document) return;
+  nsCOMPtr<nsIPresShell> presShell = document->GetShell();
   if (MOZ_LIKELY(presShell)) {
     presShell->HandleDOMEventWithTarget(this, &event, &status);
   }
