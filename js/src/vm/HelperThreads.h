@@ -83,7 +83,7 @@ class GlobalHelperThreadState
     // The lists below are all protected by |lock|.
 
     // Ion compilation worklist and finished jobs.
-    IonBuilderVector ionWorklist_, ionFinishedList_;
+    IonBuilderVector ionWorklist_, ionFinishedList_, ionFreeList_;
 
     // wasm worklist and finished jobs.
     wasm::IonCompileTaskPtrVector wasmWorklist_, wasmFinishedList_;
@@ -117,7 +117,6 @@ class GlobalHelperThreadState
 
   public:
     size_t maxIonCompilationThreads() const;
-    size_t maxUnpausedIonCompilationThreads() const;
     size_t maxWasmCompilationThreads() const;
     size_t maxParseThreads() const;
     size_t maxCompressionThreads() const;
@@ -139,10 +138,6 @@ class GlobalHelperThreadState
 
         // For notifying threads doing work that they may be able to make progress.
         PRODUCER,
-
-        // For notifying threads doing work which are paused that they may be
-        // able to resume making progress.
-        PAUSE
     };
 
     void wait(AutoLockHelperThreadState& locked, CondVar which,
@@ -163,6 +158,9 @@ class GlobalHelperThreadState
     }
     IonBuilderVector& ionFinishedList(const AutoLockHelperThreadState&) {
         return ionFinishedList_;
+    }
+    IonBuilderVector& ionFreeList(const AutoLockHelperThreadState&) {
+        return ionFreeList_;
     }
 
     wasm::IonCompileTaskPtrVector& wasmWorklist(const AutoLockHelperThreadState&) {
@@ -201,20 +199,13 @@ class GlobalHelperThreadState
     bool canStartWasmCompile(const AutoLockHelperThreadState& lock);
     bool canStartPromiseTask(const AutoLockHelperThreadState& lock);
     bool canStartIonCompile(const AutoLockHelperThreadState& lock);
+    bool canStartIonFreeTask(const AutoLockHelperThreadState& lock);
     bool canStartParseTask(const AutoLockHelperThreadState& lock);
     bool canStartCompressionTask(const AutoLockHelperThreadState& lock);
     bool canStartGCHelperTask(const AutoLockHelperThreadState& lock);
     bool canStartGCParallelTask(const AutoLockHelperThreadState& lock);
 
-    // Unlike the methods above, the value returned by this method can change
-    // over time, even if the helper thread state lock is held throughout.
-    bool pendingIonCompileHasSufficientPriority(const AutoLockHelperThreadState& lock);
-
-    jit::IonBuilder* highestPriorityPendingIonCompile(const AutoLockHelperThreadState& lock,
-                                                      bool remove = false);
-    HelperThread* lowestPriorityUnpausedIonCompileAtThreshold(
-        const AutoLockHelperThreadState& lock);
-    HelperThread* highestPriorityPausedIonCompile(const AutoLockHelperThreadState& lock);
+    jit::IonBuilder* highestPriorityPendingIonCompile(const AutoLockHelperThreadState& lock);
 
     uint32_t harvestFailedWasmJobs(const AutoLockHelperThreadState&) {
         uint32_t n = numWasmFailedJobs;
@@ -269,13 +260,11 @@ class GlobalHelperThreadState
     /* Condvars for threads waiting/notifying each other. */
     js::ConditionVariable consumerWakeup;
     js::ConditionVariable producerWakeup;
-    js::ConditionVariable pauseWakeup;
 
     js::ConditionVariable& whichWakeup(CondVar which) {
         switch (which) {
           case CONSUMER: return consumerWakeup;
           case PRODUCER: return producerWakeup;
-          case PAUSE: return pauseWakeup;
           default: MOZ_CRASH("Invalid CondVar in |whichWakeup|");
         }
     }
@@ -301,13 +290,6 @@ struct HelperThread
      * or written with the helper thread state lock held.
      */
     bool terminate;
-
-    /*
-     * Indicate to a thread that it should pause execution. This is only
-     * written with the helper thread state lock held, but may be read from
-     * without the lock held.
-     */
-    mozilla::Atomic<bool, mozilla::Relaxed> pause;
 
     /* The current task being executed by this thread, if any. */
     mozilla::Maybe<mozilla::Variant<jit::IonBuilder*,
@@ -369,6 +351,7 @@ struct HelperThread
     void handleWasmWorkload(AutoLockHelperThreadState& locked);
     void handlePromiseTaskWorkload(AutoLockHelperThreadState& locked);
     void handleIonWorkload(AutoLockHelperThreadState& locked);
+    void handleIonFreeWorkload(AutoLockHelperThreadState& locked);
     void handleParseWorkload(AutoLockHelperThreadState& locked, uintptr_t stackLimit);
     void handleCompressionWorkload(AutoLockHelperThreadState& locked);
     void handleGCHelperWorkload(AutoLockHelperThreadState& locked);
@@ -394,11 +377,11 @@ EnsureHelperThreadsInitialized();
 void
 SetFakeCPUCount(size_t count);
 
-// Pause the current thread until it's pause flag is unset.
-void
-PauseCurrentHelperThread();
+// Get the current helper thread, or null.
+HelperThread*
+CurrentHelperThread();
 
-/* Perform MIR optimization and LIR generation on a single function. */
+// Enqueues a wasm compilation task.
 bool
 StartOffThreadWasmCompile(wasm::IonCompileTask* task);
 
@@ -417,6 +400,12 @@ StartPromiseTask(JSContext* cx, UniquePtr<PromiseTask> task);
  */
 bool
 StartOffThreadIonCompile(JSContext* cx, jit::IonBuilder* builder);
+
+/*
+ * Schedule deletion of Ion compilation data.
+ */
+bool
+StartOffThreadIonFree(jit::IonBuilder* builder, const AutoLockHelperThreadState& lock);
 
 struct AllCompilations {};
 struct ZonesInState { JSRuntime* runtime; JS::Zone::GCState state; };

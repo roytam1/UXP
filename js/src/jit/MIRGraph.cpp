@@ -28,7 +28,6 @@ MIRGenerator::MIRGenerator(CompileCompartment* compartment, const JitCompileOpti
     shouldForceAbort_(false),
     abortedPreliminaryGroups_(*alloc_),
     error_(false),
-    pauseBuild_(nullptr),
     cancelBuild_(false),
     wasmMaxStackArgBytes_(0),
     performsCall_(false),
