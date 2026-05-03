@@ -22,7 +22,6 @@
     _(InlinedScripts)                                 \
     _(IonAnalysis)                                    \
     _(IonCompilation)                                 \
-    _(IonCompilationPaused)                           \
     _(IonLinking)                                     \
     _(IonMonkey)                                      \
     _(IrregexpCompile)                                \
