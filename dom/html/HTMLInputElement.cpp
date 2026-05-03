@@ -4122,6 +4122,7 @@ HTMLInputElement::StartRangeThumbDrag(WidgetGUIEvent* aEvent)
   // of the thumb.
   nsIPresShell::SetCapturingContent(this, CAPTURE_IGNOREALLOWED);
   nsRangeFrame* rangeFrame = do_QueryFrame(GetPrimaryFrame());
+  if(!rangeFrame) return;
 
   // Before we change the value, record the current value so that we'll
   // correctly send a 'change' event if appropriate. We need to do this here
