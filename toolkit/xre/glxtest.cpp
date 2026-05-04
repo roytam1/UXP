@@ -43,6 +43,14 @@
 
 #include "mozilla/Unused.h"
 
+#if defined(__OpenBSD__) || defined(__NetBSD__)
+# define LIBGL_FILENAME "libGL.so"
+# define LIBGL_FILENAME_FALLBACK "libGL.so.1"
+#else
+# define LIBGL_FILENAME "libGL.so.1"
+# define LIBGL_FILENAME_FALLBACK "libGL.so"
+#endif
+
 // stuff from glx.h
 typedef struct __GLXcontextRec *GLXContext;
 typedef XID GLXPixmap;
@@ -189,7 +197,7 @@ try_egltest(std::string* aError)
 {
   static const EGLint configAttribs[] = {
     EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
-    EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+    EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
     EGL_RED_SIZE, 8,
     EGL_GREEN_SIZE, 8,
     EGL_BLUE_SIZE, 8,
@@ -202,7 +210,6 @@ try_egltest(std::string* aError)
     EGL_NONE
   };
   static const EGLint contextAttribs[] = {
-    EGL_CONTEXT_CLIENT_VERSION, 2,
     EGL_NONE
   };
 
@@ -211,8 +218,8 @@ try_egltest(std::string* aError)
     return false;
   }
 
-  void* libgles = nullptr;
-  if (!load_library("libGLESv2.so", "libGLESv2.so.2", &libgles, aError)) {
+  void* libgl = nullptr;
+  if (!load_library(LIBGL_FILENAME, LIBGL_FILENAME_FALLBACK, &libgl, aError)) {
     dlclose(libegl);
     return false;
   }
@@ -242,7 +249,7 @@ try_egltest(std::string* aError)
   PFNEGLDESTROYSURFACE eglDestroySurface = cast<PFNEGLDESTROYSURFACE>(dlsym(libegl, "eglDestroySurface"));
   PFNEGLTERMINATE eglTerminate = cast<PFNEGLTERMINATE>(dlsym(libegl, "eglTerminate"));
   PFNEGLGETERROR eglGetError = cast<PFNEGLGETERROR>(dlsym(libegl, "eglGetError"));
-  PFNGLGETSTRING glGetString = cast<PFNGLGETSTRING>(dlsym(libgles, "glGetString"));
+  PFNGLGETSTRING glGetString = cast<PFNGLGETSTRING>(dlsym(libgl, "glGetString"));
 
   if (!eglGetDisplay ||
       !eglInitialize ||
@@ -257,8 +264,8 @@ try_egltest(std::string* aError)
       !eglGetError ||
       !glGetString)
   {
-    *aError = "EGL probe couldn't find required EGL/GLES symbols";
-    dlclose(libgles);
+    *aError = "EGL probe couldn't find required EGL/OpenGL symbols";
+    dlclose(libgl);
     dlclose(libegl);
     return false;
   }
@@ -266,7 +273,7 @@ try_egltest(std::string* aError)
   Display* dpy = XOpenDisplay(nullptr);
   if (!dpy) {
     *aError = "Unable to open a connection to the X server";
-    dlclose(libgles);
+    dlclose(libgl);
     dlclose(libegl);
     return false;
   }
@@ -296,8 +303,8 @@ try_egltest(std::string* aError)
     goto egltest_error;
   }
 
-  if (!eglBindAPI(EGL_OPENGL_ES_API)) {
-    *aError = "EGL probe could not bind the OpenGL ES API";
+  if (!eglBindAPI(EGL_OPENGL_API)) {
+    *aError = "EGL probe could not bind the OpenGL API";
     goto egltest_error;
   }
 
@@ -364,7 +371,7 @@ try_egltest(std::string* aError)
   XSync(dpy, False);
 #endif
 
-  dlclose(libgles);
+  dlclose(libgl);
   dlclose(libegl);
 
   write_to_pipe(buf, length);
@@ -384,7 +391,7 @@ egltest_error:
 #else
   XSync(dpy, False);
 #endif
-  dlclose(libgles);
+  dlclose(libgl);
   dlclose(libegl);
   return false;
 }
@@ -454,14 +461,10 @@ void glxtest()
   }
 
   ///// Open libGL and load needed symbols /////
-#if defined(__OpenBSD__) || defined(__NetBSD__)
-  #define LIBGL_FILENAME "libGL.so"
-#else
-  #define LIBGL_FILENAME "libGL.so.1"
-#endif
-  void *libgl = dlopen(LIBGL_FILENAME, RTLD_LAZY);
-  if (!libgl)
-    fatal_error("Unable to load " LIBGL_FILENAME);
+  void* libgl = nullptr;
+  std::string libglError;
+  if (!load_library(LIBGL_FILENAME, LIBGL_FILENAME_FALLBACK, &libgl, &libglError))
+    fatal_error(libglError.c_str());
   
   typedef void* (* PFNGLXGETPROCADDRESS) (const char *);
   PFNGLXGETPROCADDRESS glXGetProcAddress = cast<PFNGLXGETPROCADDRESS>(dlsym(libgl, "glXGetProcAddress"));
