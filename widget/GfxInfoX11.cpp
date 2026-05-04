@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <ctype.h>
 #include <errno.h>
 #include <sys/utsname.h>
 #include "nsCRTGlue.h"
@@ -27,6 +28,7 @@ pid_t glxtest_pid = 0;
 nsresult
 GfxInfo::Init()
 {
+    mGLImplementation.Truncate();
     mGLMajorVersion = 0;
     mMajorVersion = 0;
     mMinorVersion = 0;
@@ -111,6 +113,8 @@ GfxInfo::GetData()
                 stringToFill->Assign(line);
                 stringToFill = nullptr;
             }
+            else if(!strcmp(line, "PROVIDER"))
+                stringToFill = &mGLImplementation;
             else if(!strcmp(line, "VENDOR"))
                 stringToFill = &mVendor;
             else if(!strcmp(line, "RENDERER"))
@@ -124,6 +128,10 @@ GfxInfo::GetData()
 
     if (!strcmp(textureFromPixmap.get(), "TRUE"))
         mHasTextureFromPixmap = true;
+
+    if (mGLImplementation.IsEmpty()) {
+        mGLImplementation.AssignLiteral("GLX");
+    }
 
     // only useful for Linux kernel version check for FGLRX driver.
     // assumes X client == X server, which is sad.
@@ -151,13 +159,14 @@ GfxInfo::GetData()
         mOSRelease.Assign(spoofedOSRelease);
 
     if (error ||
+        mGLImplementation.IsEmpty() ||
         mVendor.IsEmpty() ||
         mRenderer.IsEmpty() ||
         mVersion.IsEmpty() ||
         mOS.IsEmpty() ||
         mOSRelease.IsEmpty())
     {
-        mAdapterDescription.AppendLiteral("GLXtest process failed");
+        mAdapterDescription.AppendLiteral("X11 GL probe failed");
         if (waiting_for_glxtest_process_failed)
             mAdapterDescription.AppendPrintf(" (waitpid failed with errno=%d for pid %d)", waitpid_errno, glxtest_pid);
         if (exited_with_error_code)
@@ -175,9 +184,14 @@ GfxInfo::GetData()
     mAdapterDescription.Append(mVendor);
     mAdapterDescription.AppendLiteral(" -- ");
     mAdapterDescription.Append(mRenderer);
+    mAdapterDescription.AppendLiteral(" (");
+    mAdapterDescription.Append(mGLImplementation);
+    mAdapterDescription.Append(')');
 
     nsAutoCString note;
-    note.AppendLiteral("OpenGL: ");
+    note.AppendLiteral("OpenGL (");
+    note.Append(mGLImplementation);
+    note.AppendLiteral("): ");
     note.Append(mAdapterDescription);
     note.AppendLiteral(" -- ");
     note.Append(mVersion);
@@ -194,8 +208,13 @@ GfxInfo::GetData()
 #define strcasestr PL_strcasestr
 #endif    
 
-    // determine the major OpenGL version. That's the first integer in the version string.
-    mGLMajorVersion = strtol(mVersion.get(), 0, 10);
+    // Determine the major GL version from the first digit sequence in the
+    // version string. EGL/GLES strings commonly begin with "OpenGL ES ".
+    const char* versionString = mVersion.get();
+    while (*versionString && !isdigit(*versionString)) {
+        versionString++;
+    }
+    mGLMajorVersion = strtol(versionString, nullptr, 10);
 
     // determine driver type (vendor) and where in the version string
     // the actual driver version numbers should be expected to be found (whereToReadVersionNumbers)
