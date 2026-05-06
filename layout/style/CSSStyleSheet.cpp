@@ -130,6 +130,106 @@ int32_t DoCompare(Numeric a, Numeric b)
   return 1;
 }
 
+struct MediaQueryTypedCalcLengthResult
+{
+  double mValue;
+  int32_t mExponent;
+};
+
+static bool
+EvaluateMediaQueryTypedCalcLength(nsPresContext* aPresContext,
+                                  const nsCSSValue& aValue,
+                                  MediaQueryTypedCalcLengthResult& aResult)
+{
+  switch (aValue.GetUnit()) {
+    case eCSSUnit_Calc: {
+      nsCSSValue::Array* array = aValue.GetArrayValue();
+      MOZ_ASSERT(array->Count() == 1, "unexpected length");
+      return EvaluateMediaQueryTypedCalcLength(aPresContext, array->Item(0),
+                                               aResult);
+    }
+
+    case eCSSUnit_Calc_Plus:
+    case eCSSUnit_Calc_Minus: {
+      nsCSSValue::Array* array = aValue.GetArrayValue();
+      MOZ_ASSERT(array->Count() == 2, "unexpected length");
+      MediaQueryTypedCalcLengthResult lhs;
+      MediaQueryTypedCalcLengthResult rhs;
+      if (!EvaluateMediaQueryTypedCalcLength(aPresContext, array->Item(0), lhs) ||
+          !EvaluateMediaQueryTypedCalcLength(aPresContext, array->Item(1), rhs) ||
+          lhs.mExponent != rhs.mExponent) {
+        return false;
+      }
+      aResult.mExponent = lhs.mExponent;
+      aResult.mValue = aValue.GetUnit() == eCSSUnit_Calc_Plus
+                         ? lhs.mValue + rhs.mValue
+                         : lhs.mValue - rhs.mValue;
+      return true;
+    }
+
+    case eCSSUnit_Calc_Times_L:
+    case eCSSUnit_Calc_Times_R:
+    case eCSSUnit_Calc_Divided: {
+      nsCSSValue::Array* array = aValue.GetArrayValue();
+      MOZ_ASSERT(array->Count() == 2, "unexpected length");
+      MediaQueryTypedCalcLengthResult lhs;
+      MediaQueryTypedCalcLengthResult rhs;
+      if (!EvaluateMediaQueryTypedCalcLength(aPresContext, array->Item(0), lhs) ||
+          !EvaluateMediaQueryTypedCalcLength(aPresContext, array->Item(1), rhs)) {
+        return false;
+      }
+      if (aValue.GetUnit() == eCSSUnit_Calc_Divided) {
+        if (rhs.mValue == 0.0) {
+          return false;
+        }
+        aResult.mValue = lhs.mValue / rhs.mValue;
+        aResult.mExponent = lhs.mExponent - rhs.mExponent;
+      } else {
+        aResult.mValue = lhs.mValue * rhs.mValue;
+        aResult.mExponent = lhs.mExponent + rhs.mExponent;
+      }
+      return true;
+    }
+
+    case eCSSUnit_Number:
+      aResult.mValue = aValue.GetFloatValue();
+      aResult.mExponent = 0;
+      return true;
+
+    default:
+      break;
+  }
+
+  if (!aValue.IsLengthUnit()) {
+    return false;
+  }
+
+  aResult.mValue = double(nsRuleNode::CalcLengthWithInitialFont(aPresContext,
+                                                                aValue));
+  aResult.mExponent = 1;
+  return true;
+}
+
+static bool
+ComputeMediaQueryTypedCalcLength(nsPresContext* aPresContext,
+                                 const nsCSSValue& aValue,
+                                 nscoord& aResult)
+{
+  if (aValue.IsLengthUnit()) {
+    aResult = nsRuleNode::CalcLengthWithInitialFont(aPresContext, aValue);
+    return true;
+  }
+
+  MediaQueryTypedCalcLengthResult result;
+  if (!EvaluateMediaQueryTypedCalcLength(aPresContext, aValue, result) ||
+      result.mExponent != 1) {
+    return false;
+  }
+
+  aResult = NSToCoordFloorClamped(result.mValue);
+  return true;
+}
+
 bool
 nsMediaExpression::Matches(nsPresContext *aPresContext,
                            const nsCSSValue& aActualValue) const
@@ -165,8 +265,11 @@ nsMediaExpression::Matches(nsPresContext *aPresContext,
                      "bad required value");
         nscoord actualCoord = nsRuleNode::CalcLengthWithInitialFont(
                                 aPresContext, actual);
-        nscoord requiredCoord = nsRuleNode::CalcLengthWithInitialFont(
-                                  aPresContext, required);
+        nscoord requiredCoord;
+        if (!ComputeMediaQueryTypedCalcLength(aPresContext, required,
+                                              requiredCoord)) {
+          return false;
+        }
         cmp = DoCompare(actualCoord, requiredCoord);
       }
       break;

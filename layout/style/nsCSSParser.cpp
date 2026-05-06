@@ -263,6 +263,65 @@ RoundFloatToCSSInteger(float aValue)
 }
 
 static bool
+GetCalcLengthTypedArithmeticExponent(const nsCSSValue& aValue,
+                                     int32_t& aExponent)
+{
+  switch (aValue.GetUnit()) {
+    case eCSSUnit_Calc: {
+      nsCSSValue::Array* array = aValue.GetArrayValue();
+      MOZ_ASSERT(array->Count() == 1, "unexpected length");
+      return GetCalcLengthTypedArithmeticExponent(array->Item(0), aExponent);
+    }
+
+    case eCSSUnit_Calc_Plus:
+    case eCSSUnit_Calc_Minus: {
+      nsCSSValue::Array* array = aValue.GetArrayValue();
+      MOZ_ASSERT(array->Count() == 2, "unexpected length");
+      int32_t lhsExponent;
+      int32_t rhsExponent;
+      if (!GetCalcLengthTypedArithmeticExponent(array->Item(0), lhsExponent) ||
+          !GetCalcLengthTypedArithmeticExponent(array->Item(1), rhsExponent) ||
+          lhsExponent != rhsExponent) {
+        return false;
+      }
+      aExponent = lhsExponent;
+      return true;
+    }
+
+    case eCSSUnit_Calc_Times_L:
+    case eCSSUnit_Calc_Times_R:
+    case eCSSUnit_Calc_Divided: {
+      nsCSSValue::Array* array = aValue.GetArrayValue();
+      MOZ_ASSERT(array->Count() == 2, "unexpected length");
+      int32_t lhsExponent;
+      int32_t rhsExponent;
+      if (!GetCalcLengthTypedArithmeticExponent(array->Item(0), lhsExponent) ||
+          !GetCalcLengthTypedArithmeticExponent(array->Item(1), rhsExponent)) {
+        return false;
+      }
+      aExponent = aValue.GetUnit() == eCSSUnit_Calc_Divided
+                    ? lhsExponent - rhsExponent
+                    : lhsExponent + rhsExponent;
+      return true;
+    }
+
+    case eCSSUnit_Number:
+      aExponent = 0;
+      return true;
+
+    default:
+      break;
+  }
+
+  if (aValue.IsLengthUnit()) {
+    aExponent = 1;
+    return true;
+  }
+
+  return false;
+}
+
+static bool
 NormalizeCalcForVariant(nsCSSValue& aValue,
                         uint32_t aPropertyVariantMask,
                         uint32_t aResultVariantMask)
@@ -1728,6 +1787,7 @@ protected:
   // not be set to false if any nsCSSValues created during parsing can escape
   // out of the parser.
   bool mSheetPrincipalRequired;
+  bool mCalcAllowsTypedArithmetic;
 
   // This enum helps us track whether we've unprefixed "display: -webkit-box"
   // (treating it as "display: flex") in an earlier declaration within a series
@@ -1832,6 +1892,7 @@ CSSParserImpl::CSSParserImpl()
     mInFailingSupportsRule(false),
     mSuppressErrors(false),
     mSheetPrincipalRequired(true),
+    mCalcAllowsTypedArithmetic(false),
     mWebkitBoxUnprefixState(eNotParsingDecls),
     mNextFree(nullptr)
 {
@@ -3999,8 +4060,12 @@ CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery)
   bool rv = false;
   switch (feature->mValueType) {
     case nsMediaFeature::eLength:
-      rv = ParseSingleTokenNonNegativeVariant(expr->mValue, VARIANT_LCALC,
-                                              nullptr);
+      {
+        AutoRestore<bool> autoRestore(mCalcAllowsTypedArithmetic);
+        mCalcAllowsTypedArithmetic = true;
+        rv = ParseSingleTokenNonNegativeVariant(expr->mValue, VARIANT_LCALC,
+                                                nullptr);
+      }
       break;
     case nsMediaFeature::eInteger:
     case nsMediaFeature::eBoolInteger:
@@ -14838,6 +14903,25 @@ CSSParserImpl::ParseCalc(nsCSSValue& aValue, uint32_t aVariantMask,
     if (!ParseCalcAdditiveExpression(arr->Item(0), resultVariantMask))
       break;
 
+    if (mCalcAllowsTypedArithmetic) {
+      int32_t exponent;
+      if (!GetCalcLengthTypedArithmeticExponent(arr->Item(0), exponent)) {
+        break;
+      }
+
+      if (aVariantMask & VARIANT_NUMBER) {
+        if (exponent == 0) {
+          resultVariantMask = VARIANT_NUMBER;
+        } else if (exponent == 1) {
+          resultVariantMask &= ~int32_t(VARIANT_NUMBER);
+        } else {
+          break;
+        }
+      } else if (exponent != 1) {
+        break;
+      }
+    }
+
     if (!ExpectSymbol(')', true))
       break;
 
@@ -14918,13 +15002,16 @@ CSSParserImpl::ParseCalcMultiplicativeExpression(nsCSSValue& aValue,
                                                  bool *aHadFinalWS)
 {
   MOZ_ASSERT(aVariantMask != 0, "unexpected variant mask");
+  bool allowTypedArithmetic = mCalcAllowsTypedArithmetic;
   bool gotValue = false; // already got the part with the unit
   bool afterDivision = false;
 
   nsCSSValue *storage = &aValue;
   for (;;) {
     uint32_t variantMask;
-    if (afterDivision || gotValue) {
+    if (allowTypedArithmetic) {
+      variantMask = aVariantMask | VARIANT_NUMBER;
+    } else if (afterDivision || gotValue) {
       variantMask = VARIANT_NUMBER;
     } else {
       variantMask = aVariantMask | VARIANT_NUMBER;
@@ -14945,7 +15032,7 @@ CSSParserImpl::ParseCalcMultiplicativeExpression(nsCSSValue& aValue,
       if (number == 0.0 && afterDivision)
         return false;
       storage->SetFloatValue(number, eCSSUnit_Number);
-    } else {
+    } else if (!allowTypedArithmetic) {
       gotValue = true;
 
       if (storage != &aValue) {
@@ -14967,7 +15054,10 @@ CSSParserImpl::ParseCalcMultiplicativeExpression(nsCSSValue& aValue,
     }
     nsCSSUnit unit;
     if (mToken.IsSymbol('*')) {
-      unit = gotValue ? eCSSUnit_Calc_Times_R : eCSSUnit_Calc_Times_L;
+      unit = allowTypedArithmetic
+               ? eCSSUnit_Calc_Times_R
+               : (gotValue ? eCSSUnit_Calc_Times_R
+                           : eCSSUnit_Calc_Times_L);
       afterDivision = false;
     } else if (mToken.IsSymbol('/')) {
       unit = eCSSUnit_Calc_Divided;
@@ -14986,6 +15076,23 @@ CSSParserImpl::ParseCalcMultiplicativeExpression(nsCSSValue& aValue,
 
   // Adjust aVariantMask (see comments above function) to reflect which
   // option we took.
+  if (allowTypedArithmetic) {
+    int32_t exponent;
+    if (!GetCalcLengthTypedArithmeticExponent(aValue, exponent)) {
+      return false;
+    }
+
+    if (aVariantMask & VARIANT_NUMBER) {
+      if (exponent == 0) {
+        aVariantMask = VARIANT_NUMBER;
+      } else {
+        aVariantMask &= ~int32_t(VARIANT_NUMBER);
+      }
+    }
+
+    return true;
+  }
+
   if (aVariantMask & VARIANT_NUMBER) {
     if (gotValue) {
       aVariantMask &= ~int32_t(VARIANT_NUMBER);

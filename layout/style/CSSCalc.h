@@ -318,11 +318,7 @@ SerializeCalcInternal(const typename CalcOps::input_type& aValue, CalcOps &aOps)
     if (needParens) {
       aOps.Append("(");
     }
-    if (unit == eCSSUnit_Calc_Times_L) {
-      aOps.AppendNumber(array->Item(0));
-    } else {
-      SerializeCalcInternal(array->Item(0), aOps);
-    }
+    SerializeCalcInternal(array->Item(0), aOps);
     if (needParens) {
       aOps.Append(")");
     }
@@ -340,11 +336,7 @@ SerializeCalcInternal(const typename CalcOps::input_type& aValue, CalcOps &aOps)
     if (needParens) {
       aOps.Append("(");
     }
-    if (unit == eCSSUnit_Calc_Times_L) {
-      SerializeCalcInternal(array->Item(1), aOps);
-    } else {
-      aOps.AppendNumber(array->Item(1));
-    }
+    SerializeCalcInternal(array->Item(1), aOps);
     if (needParens) {
       aOps.Append(")");
     }

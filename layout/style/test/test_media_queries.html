@@ -316,6 +316,21 @@ function run() {
   }
 
   change_state(function() {
+    iframe_style.width = "100px";
+    iframe_style.height = "10px";
+  });
+  should_apply("all and (width: calc(100px / 1em * 1em))");
+  should_apply("all and (width: calc((50vh * 5em) / 4px))");
+  should_apply("all and (width: calc(10vw / 10px * 1000vh))");
+  should_apply("all and (width: calc(8000vh * 1vw / 1em * 8px / 40vh))");
+  should_not_apply("all and (width: calc(100px / 1em * 2em))");
+
+  change_state(function() {
+    iframe_style.width = width_val + "px";
+    iframe_style.height = height_val + "px";
+  });
+
+  change_state(function() {
     iframe_style.width = "0";
   });
   should_apply("all and (height)");
