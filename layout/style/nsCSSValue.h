@@ -773,7 +773,6 @@ public:
   float GetFloatValue() const
   {
     MOZ_ASSERT(eCSSUnit_Number <= mUnit, "not a float value");
-    MOZ_ASSERT(!mozilla::IsNaN(mValue.mFloat));
     return mValue.mFloat;
   }
 
@@ -2026,4 +2025,3 @@ private:
 } // namespace mozilla
 
 #endif /* nsCSSValue_h___ */
-
