@@ -3999,7 +3999,7 @@ CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery)
   bool rv = false;
   switch (feature->mValueType) {
     case nsMediaFeature::eLength:
-      rv = ParseSingleTokenNonNegativeVariant(expr->mValue, VARIANT_LENGTH,
+      rv = ParseSingleTokenNonNegativeVariant(expr->mValue, VARIANT_LCALC,
                                               nullptr);
       break;
     case nsMediaFeature::eInteger:

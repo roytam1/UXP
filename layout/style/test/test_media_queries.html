@@ -237,6 +237,7 @@ function run() {
     expression_should_be_parseable(feature + ": 0");
     expression_should_be_parseable(feature + ": 0px");
     expression_should_be_parseable(feature + ": 0em");
+    expression_should_be_parseable(feature + ": calc(0px + 0em)");
     expression_should_be_parseable(feature + ": -0");
     expression_should_be_parseable("min-" + feature + ": -0");
     expression_should_be_parseable("max-" + feature + ": -0");
@@ -244,6 +245,7 @@ function run() {
     expression_should_be_parseable(feature + ": 1px");
     expression_should_be_parseable(feature + ": 0.001mm");
     expression_should_be_parseable(feature + ": 100000px");
+    expression_should_not_be_parseable(feature + ": calc(1px + 1%)");
     expression_should_not_be_parseable(feature + ": -1px");
     expression_should_not_be_parseable("min-" + feature + ": -1px");
     expression_should_not_be_parseable("max-" + feature + ": -1px");
@@ -263,8 +265,9 @@ function run() {
 
   var content_div = document.getElementById("content");
   content_div.style.font = "initial";
-  var em_size =
-    getComputedStyle(content_div, "").fontSize.match(/^(\d+)px$/)[1];
+  var em_size = parseFloat(
+    getComputedStyle(content_div, "").fontSize.match(/^(\d+)px$/)[1]
+  );
 
   // in this test, assume the common underlying implementation is correct
   var width_val = 117; // pick two not-too-round numbers
@@ -282,7 +285,11 @@ function run() {
   for (feature in features) {
     var value = features[feature];
     should_apply("all and (" + feature + ": " + value + "px)");
+    should_apply("all and (" + feature + ": calc(" +
+                 (value - em_size) + "px + 1em))");
     should_not_apply("all and (" + feature + ": " + (value + 1) + "px)");
+    should_not_apply("all and (" + feature + ": calc(" +
+                     (value - em_size + 1) + "px + 1em))");
     should_not_apply("all and (" + feature + ": " + (value - 1) + "px)");
     should_apply("all and (min-" + feature + ": " + value + "px)");
     should_not_apply("all and (min-" + feature + ": " + (value + 1) + "px)");
