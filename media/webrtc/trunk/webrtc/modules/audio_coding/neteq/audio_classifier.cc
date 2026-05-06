@@ -30,9 +30,15 @@ AudioClassifier::AudioClassifier()
       // to be deleted.
       celt_mode_(opus_custom_mode_create(kDefaultSampleRateHz,
                                          kDefaultFrameSizeSamples,
-                                         NULL)) {
+                                         NULL)) 
+#ifndef MOZ_SAMPLE_TYPE_FLOAT32
+                                         , analysis_state_() 
+#endif
+{
   assert(celt_mode_);
+#ifdef MOZ_SAMPLE_TYPE_FLOAT32
   tonality_analysis_init(&analysis_state_);
+#endif
 }
 
 AudioClassifier::~AudioClassifier() {}
@@ -51,6 +57,7 @@ bool AudioClassifier::Analysis(const int16_t* input,
   // Also uses a down-mixing function downmix_int, defined in
   // "third_party/opus/src/src/opus_private.h", with
   // constants c1 = 0, and c2 = -2.
+#ifdef MOZ_SAMPLE_TYPE_FLOAT32
   run_analysis(&analysis_state_,
                celt_mode_,
                input,
@@ -65,6 +72,7 @@ bool AudioClassifier::Analysis(const int16_t* input,
                &analysis_info_);
   music_probability_ = analysis_info_.music_prob;
   is_music_ = music_probability_ > kDefaultThreshold;
+#endif
   return is_music_;
 }
 
