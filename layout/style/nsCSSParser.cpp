@@ -170,6 +170,153 @@ struct ReducePercentageCalcOps : ReduceNumberCalcOps
   }
 };
 
+struct ReduceDimensionCalcOps : public mozilla::css::BasicFloatCalcOps,
+                                public mozilla::css::CSSValueInputCalcOps,
+                                public mozilla::css::NumbersAlreadyNormalizedOps
+{
+  enum class DimensionType {
+    Angle,
+    Time,
+    Frequency,
+  };
+
+  explicit ReduceDimensionCalcOps(DimensionType aDimensionType)
+    : mDimensionType(aDimensionType)
+  {
+  }
+
+  result_type ComputeLeafValue(const nsCSSValue& aValue)
+  {
+    switch (mDimensionType) {
+      case DimensionType::Angle:
+        MOZ_ASSERT(aValue.IsAngularUnit(), "unexpected unit");
+        return aValue.GetAngleValueInDegrees();
+
+      case DimensionType::Time:
+        MOZ_ASSERT(aValue.IsTimeUnit(), "unexpected unit");
+        return aValue.GetUnit() == eCSSUnit_Seconds
+                 ? aValue.GetFloatValue()
+                 : aValue.GetFloatValue() / float(PR_MSEC_PER_SEC);
+
+      case DimensionType::Frequency:
+        MOZ_ASSERT(aValue.IsFrequencyUnit(), "unexpected unit");
+        return aValue.GetUnit() == eCSSUnit_Kilohertz
+                 ? aValue.GetFloatValue() * 1000.0f
+                 : aValue.GetFloatValue();
+    }
+
+    MOZ_ASSERT_UNREACHABLE("unexpected dimension type");
+    return 0.0f;
+  }
+
+  DimensionType mDimensionType;
+};
+
+static uint32_t
+GetCalcParseVariantMask(uint32_t aVariantMask)
+{
+  uint32_t calcVariantMask = 0;
+
+  if (aVariantMask & VARIANT_LENGTH) {
+    calcVariantMask |= VARIANT_LENGTH | (aVariantMask & VARIANT_ABSOLUTE_DIMENSION);
+  }
+  if (aVariantMask & VARIANT_PERCENT) {
+    calcVariantMask |= VARIANT_PERCENT;
+  }
+  if (aVariantMask & VARIANT_ANGLE) {
+    calcVariantMask |= VARIANT_ANGLE;
+  }
+  if (aVariantMask & VARIANT_TIME) {
+    calcVariantMask |= VARIANT_TIME;
+  }
+  if (aVariantMask & VARIANT_FREQUENCY) {
+    calcVariantMask |= VARIANT_FREQUENCY;
+  }
+  if (aVariantMask & (VARIANT_NUMBER | VARIANT_INTEGER)) {
+    calcVariantMask |= VARIANT_NUMBER;
+  }
+  if (aVariantMask & VARIANT_OPACITY) {
+    calcVariantMask |= VARIANT_PN;
+  }
+
+  return calcVariantMask;
+}
+
+static bool
+ShouldPreserveCalcValue(uint32_t aVariantMask)
+{
+  return (aVariantMask & VARIANT_LENGTH) != 0 ||
+         ((aVariantMask & VARIANT_PERCENT) != 0 &&
+          (aVariantMask & (VARIANT_NUMBER | VARIANT_INTEGER |
+                           VARIANT_OPACITY)) == 0);
+}
+
+static int32_t
+RoundFloatToCSSInteger(float aValue)
+{
+  double rounded = std::floor(double(aValue) + 0.5);
+  rounded = mozilla::clamped(
+    rounded,
+    double(std::numeric_limits<int32_t>::min()),
+    double(std::numeric_limits<int32_t>::max()));
+  return int32_t(rounded);
+}
+
+static bool
+NormalizeCalcForVariant(nsCSSValue& aValue,
+                        uint32_t aPropertyVariantMask,
+                        uint32_t aResultVariantMask)
+{
+  if (ShouldPreserveCalcValue(aPropertyVariantMask)) {
+    return true;
+  }
+
+  if (aResultVariantMask == VARIANT_NUMBER) {
+    ReduceNumberCalcOps ops;
+    float value = mozilla::css::ComputeCalc(aValue, ops);
+
+    if (aPropertyVariantMask & VARIANT_INTEGER) {
+      aValue.SetIntValue(RoundFloatToCSSInteger(value), eCSSUnit_Integer);
+    } else {
+      aValue.SetFloatValue(value, eCSSUnit_Number);
+    }
+    return true;
+  }
+
+  if (aResultVariantMask & VARIANT_PERCENT) {
+    ReducePercentageCalcOps ops;
+    float value = mozilla::css::ComputeCalc(aValue, ops);
+
+    if (aPropertyVariantMask & VARIANT_OPACITY) {
+      aValue.SetFloatValue(value, eCSSUnit_Number);
+    } else {
+      aValue.SetPercentValue(value);
+    }
+    return true;
+  }
+
+  if (aResultVariantMask & VARIANT_ANGLE) {
+    ReduceDimensionCalcOps ops(ReduceDimensionCalcOps::DimensionType::Angle);
+    aValue.SetFloatValue(mozilla::css::ComputeCalc(aValue, ops), eCSSUnit_Degree);
+    return true;
+  }
+
+  if (aResultVariantMask & VARIANT_TIME) {
+    ReduceDimensionCalcOps ops(ReduceDimensionCalcOps::DimensionType::Time);
+    aValue.SetFloatValue(mozilla::css::ComputeCalc(aValue, ops), eCSSUnit_Seconds);
+    return true;
+  }
+
+  if (aResultVariantMask & VARIANT_FREQUENCY) {
+    ReduceDimensionCalcOps ops(ReduceDimensionCalcOps::DimensionType::Frequency);
+    aValue.SetFloatValue(mozilla::css::ComputeCalc(aValue, ops), eCSSUnit_Hertz);
+    return true;
+  }
+
+  MOZ_ASSERT_UNREACHABLE("unsupported calc result type");
+  return false;
+}
+
 static_assert(css::eAuthorSheetFeatures == 0 &&
               css::eUserSheetFeatures == 1 &&
               css::eAgentSheetFeatures == 2,
@@ -980,7 +1127,8 @@ protected:
   bool ParseBorderStyle();
   bool ParseBorderWidth();
 
-  bool ParseCalc(nsCSSValue &aValue, uint32_t aVariantMask);
+  bool ParseCalc(nsCSSValue& aValue, uint32_t aVariantMask,
+                 uint32_t* aResultVariantMask = nullptr);
   bool ParseCalcAdditiveExpression(nsCSSValue& aValue,
                                    uint32_t& aVariantMask);
   bool ParseCalcMultiplicativeExpression(nsCSSValue& aValue,
@@ -8584,14 +8732,18 @@ CSSParserImpl::ParseNonNegativeVariant(nsCSSValue& aValue,
                                VARIANT_NUMBER |
                                VARIANT_LENGTH |
                                VARIANT_PERCENT |
+                               VARIANT_FREQUENCY |
                                VARIANT_OPACITY |
+                               VARIANT_TIME |
                                VARIANT_INTEGER)) == 0,
              "need to update code below to handle additional variants");
 
   CSSParseResult result = ParseVariant(aValue, aVariantMask, aKeywordTable);
   if (result == CSSParseResult::Ok) {
     if (eCSSUnit_Number == aValue.GetUnit() ||
-        aValue.IsLengthUnit()){
+        aValue.IsLengthUnit() ||
+        aValue.IsFrequencyUnit() ||
+        aValue.IsTimeUnit()) {
       if (aValue.GetFloatValue() < 0) {
         UngetToken();
         return CSSParseResult::NotFound;
@@ -8953,12 +9105,14 @@ CSSParserImpl::ParseVariant(nsCSSValue& aValue,
       return CSSParseResult::Ok;
     }
   }
-  if ((aVariantMask & VARIANT_CALC) &&
+  uint32_t calcVariantMask = GetCalcParseVariantMask(aVariantMask);
+  if (calcVariantMask &&
+      (((aVariantMask & VARIANT_CALC) != 0) ||
+       !ShouldPreserveCalcValue(calcVariantMask)) &&
       IsCalcFunctionToken(*tk)) {
-    // calc() currently allows only lengths and percents and number inside it.
-    // And note that in current implementation, number cannot be mixed with
-    // length and percent.
-    if (!ParseCalc(aValue, aVariantMask & VARIANT_LPN)) {
+    uint32_t calcResultVariantMask = calcVariantMask;
+    if (!ParseCalc(aValue, calcVariantMask, &calcResultVariantMask) ||
+        !NormalizeCalcForVariant(aValue, aVariantMask, calcResultVariantMask)) {
       return CSSParseResult::Error;
     }
     return CSSParseResult::Ok;
@@ -14663,7 +14817,8 @@ CSSParserImpl::ParseBorderColors(nsCSSPropertyID aProperty)
 
 // Parse the top level of a calc() expression.
 bool
-CSSParserImpl::ParseCalc(nsCSSValue &aValue, uint32_t aVariantMask)
+CSSParserImpl::ParseCalc(nsCSSValue& aValue, uint32_t aVariantMask,
+                         uint32_t* aResultVariantMask)
 {
   // Parsing calc expressions requires, in a number of cases, looking
   // for a token that is *either* a value of the property or a number.
@@ -14678,14 +14833,18 @@ CSSParserImpl::ParseCalc(nsCSSValue &aValue, uint32_t aVariantMask)
   do {
     // The toplevel of a calc() is always an nsCSSValue::Array of length 1.
     RefPtr<nsCSSValue::Array> arr = nsCSSValue::Array::Create(1);
+    uint32_t resultVariantMask = aVariantMask;
 
-    if (!ParseCalcAdditiveExpression(arr->Item(0), aVariantMask))
+    if (!ParseCalcAdditiveExpression(arr->Item(0), resultVariantMask))
       break;
 
     if (!ExpectSymbol(')', true))
       break;
 
     aValue.SetArrayValue(arr, eCSSUnit_Calc);
+    if (aResultVariantMask) {
+      *aResultVariantMask = resultVariantMask;
+    }
     mUnitlessLengthQuirk = oldUnitlessLengthQuirk;
     return true;
   } while (false);
