@@ -87,6 +87,25 @@ function parse2dMatrix(transformValue) {
 
   div.remove();
 })();
+
+(function testNestedCalcSpecifiedSerialization() {
+  const div = appendTestNode();
+  const cases = [
+    ["left", "calc(calc(20px) + calc(80px))", "calc(100px)"],
+    ["left", "calc(calc(2) * calc(50px))", "calc(100px)"],
+    ["left", "calc(calc(150px * 2 / 3))", "calc(100px)"],
+    ["left", "calc(50px + calc(40%))", "calc(40% + 50px)"],
+    ["border", "calc(calc(10px)) solid pink", "calc(10px) solid pink"],
+  ];
+
+  for (const [property, input, expected] of cases) {
+    div.style.setProperty(property, input, "");
+    is(div.style.getPropertyValue(property), expected,
+       `${property} should canonicalize nested calc() serialization`);
+  }
+
+  div.remove();
+})();
 </script>
     </pre>
   </body>
