@@ -7242,7 +7242,7 @@ nsTextFrame::GetCharacterOffsetAtFramePointInternal(nsPoint aPoint,
         gfxFontUtils::IsRegionalIndicator
           (SURROGATE_TO_UCS4(frag->CharAt(offs), frag->CharAt(offs + 1)))) {
       allowSplitLigature = false;
-      if (extraCluster.GetSkippedOffset() > 1 &&
+      if (extraCluster.GetSkippedOffset() >= skippedRange.start + 2 &&
           !mTextRun->IsLigatureGroupStart(extraCluster.GetSkippedOffset())) {
         // CountCharsFit() left us in the middle of the flag; back up over the
         // first character of the ligature, and adjust fitWidth accordingly.
