@@ -1743,7 +1743,8 @@ _cairo_pdf_surface_emit_smask (cairo_pdf_surface_t	*surface,
     unsigned long alpha_size;
     uint32_t *pixel32;
     uint8_t *pixel8;
-    int i, x, y;
+    int x, y;
+    unsigned long i;
     cairo_bool_t opaque;
     uint8_t a;
 
@@ -1755,10 +1756,10 @@ _cairo_pdf_surface_emit_smask (cairo_pdf_surface_t	*surface,
     stream_ret->id = 0;
 
     if (image->format == CAIRO_FORMAT_A1) {
-	alpha_size = (image->width + 7) / 8 * image->height;
+	alpha_size = (unsigned long) ((image->width + 7) / 8) * image->height;
 	alpha = _cairo_malloc_ab ((image->width+7) / 8, image->height);
     } else {
-	alpha_size = image->height * image->width;
+	alpha_size = (unsigned long) image->height * image->width;
 	alpha = _cairo_malloc_ab (image->height, image->width);
     }
 
@@ -1841,7 +1842,8 @@ _cairo_pdf_surface_emit_image (cairo_pdf_surface_t     *surface,
     char *rgb;
     unsigned long rgb_size;
     uint32_t *pixel;
-    int i, x, y;
+    int x, y;
+    unsigned long i;
     cairo_pdf_resource_t smask = {0}; /* squelch bogus compiler warning */
     cairo_bool_t need_smask;
     const char *interpolate = "true";
@@ -1856,7 +1858,7 @@ _cairo_pdf_surface_emit_image (cairo_pdf_surface_t     *surface,
 	    image->format == CAIRO_FORMAT_A8 ||
 	    image->format == CAIRO_FORMAT_A1);
 
-    rgb_size = image->height * image->width * 3;
+    rgb_size = (unsigned long) image->height * image->width * 3;
     rgb = _cairo_malloc_abc (image->width, image->height, 3);
     if (unlikely (rgb == NULL)) {
 	status = _cairo_error (CAIRO_STATUS_NO_MEMORY);
