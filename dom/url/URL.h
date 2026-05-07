@@ -149,7 +149,7 @@ public:
   virtual void
   SetSearch(const nsAString& aSearch, ErrorResult& aRv);
 
-  URLSearchParams* SearchParams();
+  already_AddRefed<URLSearchParams> SearchParams();
 
   virtual void
   GetHash(nsAString& aHost, ErrorResult& aRv) const = 0;
