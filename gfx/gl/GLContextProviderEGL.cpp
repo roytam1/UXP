@@ -13,13 +13,23 @@
 
 #if defined(XP_UNIX)
 
-    #define GLES2_LIB "libGLESv2.so"
-    #define GLES2_LIB2 "libGLESv2.so.2"
+    #if defined(MOZ_X11)
+        #if defined(__OpenBSD__) || defined(__NetBSD__)
+            #define EGL_OPENGL_LIB "libGL.so"
+            #define EGL_OPENGL_LIB2 "libGL.so.1"
+        #else
+            #define EGL_OPENGL_LIB "libGL.so.1"
+            #define EGL_OPENGL_LIB2 "libGL.so"
+        #endif
+    #else
+        #define EGL_OPENGL_LIB "libGLESv2.so"
+        #define EGL_OPENGL_LIB2 "libGLESv2.so.2"
+    #endif
 
 #elif defined(XP_WIN)
     #include "nsIFile.h"
 
-    #define GLES2_LIB "libGLESv2.dll"
+    #define EGL_OPENGL_LIB "libGLESv2.dll"
 
     #ifndef WIN32_LEAN_AND_MEAN
         #define WIN32_LEAN_AND_MEAN 1
@@ -102,6 +112,45 @@ using namespace mozilla::widget;
 static bool
 CreateConfig(EGLConfig* aConfig, nsIWidget* aWidget);
 
+static bool
+UseDesktopOpenGLForEGL()
+{
+#ifdef MOZ_X11
+    return true;
+#else
+    return false;
+#endif
+}
+
+static EGLint
+GetEGLRenderableType(CreateContextFlags flags)
+{
+    if (UseDesktopOpenGLForEGL()) {
+        return LOCAL_EGL_OPENGL_BIT;
+    }
+
+    return bool(flags & CreateContextFlags::PREFER_ES3)
+           ? LOCAL_EGL_OPENGL_ES3_BIT_KHR
+           : LOCAL_EGL_OPENGL_ES2_BIT;
+}
+
+static bool
+BindContextAPI(nsACString* const out_failureId)
+{
+    const EGLenum api = UseDesktopOpenGLForEGL()
+                        ? LOCAL_EGL_OPENGL_API
+                        : LOCAL_EGL_OPENGL_ES_API;
+    if (sEGLLibrary.fBindAPI(api) == LOCAL_EGL_FALSE) {
+        *out_failureId = NS_LITERAL_CSTRING("FEATURE_FAILURE_EGL_BIND_API");
+        NS_WARNING(UseDesktopOpenGLForEGL()
+                   ? "Failed to bind API to OpenGL!"
+                   : "Failed to bind API to GLES!");
+        return false;
+    }
+
+    return true;
+}
+
 // append three zeros at the end of attribs list to work around
 // EGL implementation bugs that iterate until they find 0, instead of
 // EGL_NONE. See bug 948406.
@@ -172,8 +221,12 @@ GLContextEGL::GLContextEGL(CreateContextFlags flags, const SurfaceCaps& caps,
     , mShareWithEGLImage(false)
     , mOwnsContext(true)
 {
-    // any EGL contexts will always be GLESv2
-    SetProfileVersion(ContextProfile::OpenGLES, 200);
+    // X11 uses desktop OpenGL-over-EGL. Other EGL paths still use GLES/ANGLE.
+    if (UseDesktopOpenGLForEGL()) {
+        SetProfileVersion(ContextProfile::OpenGLCompatibility, 200);
+    } else {
+        SetProfileVersion(ContextProfile::OpenGLES, 200);
+    }
 
 #ifdef DEBUG
     printf_stderr("Initializing context %p surface %p on display %p\n", mContext, mSurface, EGL_DISPLAY());
@@ -202,10 +255,10 @@ GLContextEGL::~GLContextEGL()
 bool
 GLContextEGL::Init()
 {
-        if (!OpenLibrary(GLES2_LIB)) {
+        if (!OpenLibrary(EGL_OPENGL_LIB)) {
 #if defined(XP_UNIX)
-            if (!OpenLibrary(GLES2_LIB2)) {
-                NS_WARNING("Couldn't load GLES2 LIB.");
+            if (!OpenLibrary(EGL_OPENGL_LIB2)) {
+                NS_WARNING("Couldn't load EGL GL library.");
                 return false;
             }
 #endif
@@ -451,9 +504,7 @@ GLContextEGL::CreateGLContext(CreateContextFlags flags,
                 EGLSurface surface,
                 nsACString* const out_failureId)
 {
-    if (sEGLLibrary.fBindAPI(LOCAL_EGL_OPENGL_ES_API) == LOCAL_EGL_FALSE) {
-        *out_failureId = NS_LITERAL_CSTRING("FEATURE_FAILURE_EGL_ES");
-        NS_WARNING("Failed to bind API to GLES!");
+    if (!BindContextAPI(out_failureId)) {
         return nullptr;
     }
 
@@ -462,11 +513,14 @@ GLContextEGL::CreateGLContext(CreateContextFlags flags,
 
     nsTArray<EGLint> contextAttribs;
 
-    contextAttribs.AppendElement(LOCAL_EGL_CONTEXT_CLIENT_VERSION);
-    if (flags & CreateContextFlags::PREFER_ES3)
-        contextAttribs.AppendElement(3);
-    else
-        contextAttribs.AppendElement(2);
+    if (!UseDesktopOpenGLForEGL()) {
+        contextAttribs.AppendElement(LOCAL_EGL_CONTEXT_CLIENT_VERSION);
+        if (flags & CreateContextFlags::PREFER_ES3) {
+            contextAttribs.AppendElement(3);
+        } else {
+            contextAttribs.AppendElement(2);
+        }
+    }
 
     if (sEGLLibrary.HasRobustness()) {
 //    contextAttribs.AppendElement(LOCAL_EGL_CONTEXT_ROBUST_ACCESS_EXT);
@@ -550,70 +604,52 @@ TRY_AGAIN_POWER_OF_TWO:
     return surface;
 }
 
-static const EGLint kEGLConfigAttribsOffscreenPBuffer[] = {
-    LOCAL_EGL_SURFACE_TYPE,    LOCAL_EGL_PBUFFER_BIT,
-    LOCAL_EGL_RENDERABLE_TYPE, LOCAL_EGL_OPENGL_ES2_BIT,
-    // Old versions of llvmpipe seem to need this to properly create the pbuffer (bug 981856)
-    LOCAL_EGL_RED_SIZE,        8,
-    LOCAL_EGL_GREEN_SIZE,      8,
-    LOCAL_EGL_BLUE_SIZE,       8,
-    LOCAL_EGL_ALPHA_SIZE,      0,
-    EGL_ATTRIBS_LIST_SAFE_TERMINATION_WORKING_AROUND_BUGS
-};
+static void
+AppendWindowConfigAttribs(int32_t depth, nsTArray<EGLint>* out)
+{
+    out->AppendElement(LOCAL_EGL_SURFACE_TYPE);
+    out->AppendElement(LOCAL_EGL_WINDOW_BIT);
 
-static const EGLint kEGLConfigAttribsRGB16[] = {
-    LOCAL_EGL_SURFACE_TYPE,    LOCAL_EGL_WINDOW_BIT,
-    LOCAL_EGL_RENDERABLE_TYPE, LOCAL_EGL_OPENGL_ES2_BIT,
-    LOCAL_EGL_RED_SIZE,        5,
-    LOCAL_EGL_GREEN_SIZE,      6,
-    LOCAL_EGL_BLUE_SIZE,       5,
-    LOCAL_EGL_ALPHA_SIZE,      0,
-    EGL_ATTRIBS_LIST_SAFE_TERMINATION_WORKING_AROUND_BUGS
-};
+    out->AppendElement(LOCAL_EGL_RENDERABLE_TYPE);
+    out->AppendElement(GetEGLRenderableType(CreateContextFlags::NONE));
 
-static const EGLint kEGLConfigAttribsRGB24[] = {
-    LOCAL_EGL_SURFACE_TYPE,    LOCAL_EGL_WINDOW_BIT,
-    LOCAL_EGL_RENDERABLE_TYPE, LOCAL_EGL_OPENGL_ES2_BIT,
-    LOCAL_EGL_RED_SIZE,        8,
-    LOCAL_EGL_GREEN_SIZE,      8,
-    LOCAL_EGL_BLUE_SIZE,       8,
-    LOCAL_EGL_ALPHA_SIZE,      0,
-    EGL_ATTRIBS_LIST_SAFE_TERMINATION_WORKING_AROUND_BUGS
-};
+    out->AppendElement(LOCAL_EGL_RED_SIZE);
+    out->AppendElement(depth == 16 ? 5 : 8);
 
-static const EGLint kEGLConfigAttribsRGBA32[] = {
-    LOCAL_EGL_SURFACE_TYPE,    LOCAL_EGL_WINDOW_BIT,
-    LOCAL_EGL_RENDERABLE_TYPE, LOCAL_EGL_OPENGL_ES2_BIT,
-    LOCAL_EGL_RED_SIZE,        8,
-    LOCAL_EGL_GREEN_SIZE,      8,
-    LOCAL_EGL_BLUE_SIZE,       8,
-    LOCAL_EGL_ALPHA_SIZE,      8,
-    EGL_ATTRIBS_LIST_SAFE_TERMINATION_WORKING_AROUND_BUGS
-};
+    out->AppendElement(LOCAL_EGL_GREEN_SIZE);
+    out->AppendElement(depth == 16 ? 6 : 8);
+
+    out->AppendElement(LOCAL_EGL_BLUE_SIZE);
+    out->AppendElement(depth == 16 ? 5 : 8);
+
+    out->AppendElement(LOCAL_EGL_ALPHA_SIZE);
+    out->AppendElement(depth == 32 ? 8 : 0);
+
+    for (size_t i = 0; i < MOZ_ARRAY_LENGTH(gTerminationAttribs); ++i) {
+        out->AppendElement(gTerminationAttribs[i]);
+    }
+}
 
 static bool
 CreateConfig(EGLConfig* aConfig, int32_t depth, nsIWidget* aWidget)
 {
     EGLConfig configs[64];
-    const EGLint* attribs;
     EGLint ncfg = ArrayLength(configs);
+    nsTArray<EGLint> attribs;
 
     switch (depth) {
         case 16:
-            attribs = kEGLConfigAttribsRGB16;
-            break;
         case 24:
-            attribs = kEGLConfigAttribsRGB24;
-            break;
         case 32:
-            attribs = kEGLConfigAttribsRGBA32;
             break;
         default:
             NS_ERROR("Unknown pixel depth");
             return false;
     }
 
-    if (!sEGLLibrary.fChooseConfig(EGL_DISPLAY(), attribs,
+    AppendWindowConfigAttribs(depth, &attribs);
+
+    if (!sEGLLibrary.fChooseConfig(EGL_DISPLAY(), attribs.Elements(),
                                    configs, ncfg, &ncfg) ||
         ncfg < 1) {
         return false;
@@ -727,17 +763,13 @@ GLContextProviderEGL::CreateForWindow(nsIWidget* aWidget, bool aForceAccelerated
 
 static void
 FillContextAttribs(bool alpha, bool depth, bool stencil, bool bpp16,
-                   bool es3, nsTArray<EGLint>* out)
+                   CreateContextFlags flags, nsTArray<EGLint>* out)
 {
     out->AppendElement(LOCAL_EGL_SURFACE_TYPE);
     out->AppendElement(LOCAL_EGL_PBUFFER_BIT);
 
     out->AppendElement(LOCAL_EGL_RENDERABLE_TYPE);
-    if (es3) {
-        out->AppendElement(LOCAL_EGL_OPENGL_ES3_BIT_KHR);
-    } else {
-        out->AppendElement(LOCAL_EGL_OPENGL_ES2_BIT);
-    }
+    out->AppendElement(GetEGLRenderableType(flags));
 
     out->AppendElement(LOCAL_EGL_RED_SIZE);
     if (bpp16) {
@@ -797,7 +829,7 @@ ChooseConfig(GLLibraryEGL* egl, CreateContextFlags flags, const SurfaceCaps& min
 {
     nsTArray<EGLint> configAttribList;
     FillContextAttribs(minCaps.alpha, minCaps.depth, minCaps.stencil, minCaps.bpp16,
-                       bool(flags & CreateContextFlags::PREFER_ES3), &configAttribList);
+                       flags, &configAttribList);
 
     const EGLint* configAttribs = configAttribList.Elements();
 
