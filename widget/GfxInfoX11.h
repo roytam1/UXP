@@ -64,6 +64,7 @@ protected:
   virtual const nsTArray<GfxDriverInfo>& GetGfxDriverInfo() override;
 
 private:
+  nsCString mGLImplementation;
   nsCString mVendor;
   nsCString mRenderer;
   nsCString mVersion;

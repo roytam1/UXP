@@ -53,7 +53,18 @@ EXPORTS += [
 if CONFIG['MOZ_X11']:
     EXPORTS += [
         'GLContextGLX.h',
+        'GLContextProviderX11.h',
         'GLXLibrary.h',
+    ]
+    # GLContextProviderX11.cpp falls back to GLX, so keep the GLX provider
+    # available on all X11 builds even when EGL is the preferred provider.
+    # GLContextProviderGLX.cpp must stay out of UNIFIED_SOURCES because it
+    # includes X11 headers that cause conflicts there.
+    SOURCES += [
+        'GLContextProviderGLX.cpp',
+    ]
+    UNIFIED_SOURCES += [
+        'GLContextProviderX11.cpp',
     ]
 
 # Win32 is a special snowflake, for ANGLE
@@ -103,11 +114,8 @@ elif gl_provider == 'EAGL':
         'GLContextEAGL.h',
     ]
 
-elif gl_provider == 'GLX':
-    # GLContextProviderGLX.cpp needs to be kept out of UNIFIED_SOURCES
-    # as it includes X11 headers which cause conflicts.
+if CONFIG['MOZ_X11'] and gl_provider == 'GLX':
     SOURCES += [
-        'GLContextProviderGLX.cpp',
         'SharedSurfaceGLX.cpp'
     ]
     EXPORTS += [

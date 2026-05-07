@@ -711,7 +711,8 @@ gl::ErrorOrResult<Buffer11::BufferStorage *> Buffer11::getConstantBufferRangeSto
                                              return a.second.lruCount < b.second.lruCount;
                                          });
 
-            ASSERT(iter->second.storage != newStorage);
+            if (iter->second.storage == newStorage)
+                break;
             ASSERT(mConstantBufferStorageAdditionalSize >= iter->second.storage->getSize());
 
             mConstantBufferStorageAdditionalSize -= iter->second.storage->getSize();
@@ -1140,8 +1141,15 @@ gl::ErrorOrResult<ID3D11Buffer *> Buffer11::EmulatedIndexedStorage::getNativeSto
         ANGLE_TRY_RESULT(attribute.computeOffset(startVertex), offset);
 
         // Expand the memory storage upon request and cache the results.
-        unsigned int expandedDataSize =
-            static_cast<unsigned int>((indexInfo->srcCount * attribute.stride) + offset);
+        angle::CheckedNumeric<unsigned int> checkedExpandedDataSize(indexInfo->srcCount);
+        checkedExpandedDataSize *= attribute.stride;
+        checkedExpandedDataSize += offset;
+        if (!checkedExpandedDataSize.IsValid()) {
+            return gl::Error(
+                GL_OUT_OF_MEMORY,
+                "Error resizing buffer in Buffer11::EmulatedIndexedStorage::getNativeStorage");
+        }
+        unsigned int expandedDataSize = checkedExpandedDataSize.ValueOrDie();
         MemoryBuffer expandedData;
         if (!expandedData.resize(expandedDataSize))
         {
