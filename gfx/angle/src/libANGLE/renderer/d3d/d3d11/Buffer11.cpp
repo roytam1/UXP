@@ -711,7 +711,8 @@ gl::ErrorOrResult<Buffer11::BufferStorage *> Buffer11::getConstantBufferRangeSto
                                              return a.second.lruCount < b.second.lruCount;
                                          });
 
-            ASSERT(iter->second.storage != newStorage);
+            if (iter->second.storage == newStorage)
+                break;
             ASSERT(mConstantBufferStorageAdditionalSize >= iter->second.storage->getSize());
 
             mConstantBufferStorageAdditionalSize -= iter->second.storage->getSize();
