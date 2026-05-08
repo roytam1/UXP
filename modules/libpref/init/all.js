@@ -4451,7 +4451,7 @@ pref("layers.acceleration.force", false);
 
 // Preferred X11 GL context provider. "auto" prefers EGL and falls back to GLX,
 // "egl" forces EGL, and "glx" forces the legacy GLX path. Restart required.
-pref("gfx.x11.gl-provider", "auto");
+pref("gfx.x11.gl-provider", "glx");
 
 // Preference that when switched at runtime will run a series of benchmarks
 // and output the result to stderr.
