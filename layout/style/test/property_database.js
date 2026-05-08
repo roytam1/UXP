@@ -4332,6 +4332,10 @@ var gCSSProperties = {
       "oklab(100% 0 0)",
       "oklab(60% 0.1 -0.1 / 75%)",
       "oklch(70% 0.2 180deg / 40%)",
+      "color-mix(in oklab, red, blue)",
+      "color-mix(in oklch, red, blue)",
+      "color-mix(in oklab, oklab(0.1 0.2 0.3), oklab(0.5 0.6 0.7))",
+      "color-mix(in oklch, oklch(0.1 0.2 30), oklch(0.5 0.6 70))",
     ],
     invalid_values: [
       "#f",

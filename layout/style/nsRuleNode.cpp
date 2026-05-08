@@ -43,6 +43,7 @@
 #include "nsIStyleRule.h"
 #include "nsBidiUtils.h"
 #include "nsStyleStructInlines.h"
+#include "nsCSSNonSRGBColorSpace.h"
 #include "nsCSSProps.h"
 #include "nsTArray.h"
 #include "nsContentUtils.h"
@@ -1152,6 +1153,137 @@ SetPairCoords(const nsCSSValue& aValue,
   return cX;
 }
 
+static void
+GetColorMixPremultipliedWeights(float aAlpha1, float aAlpha2,
+                                float aWeight1, float aWeight2,
+                                float& aPremultipliedWeight1,
+                                float& aPremultipliedWeight2,
+                                float& aAlpha)
+{
+  float alphaWeight1 = aWeight1 * aAlpha1;
+  float alphaWeight2 = aWeight2 * aAlpha2;
+
+  aAlpha = alphaWeight1 + alphaWeight2;
+  if (aAlpha <= 0.0f) {
+    aPremultipliedWeight1 = 0.0f;
+    aPremultipliedWeight2 = 0.0f;
+    return;
+  }
+
+  aPremultipliedWeight1 = alphaWeight1 / aAlpha;
+  aPremultipliedWeight2 = alphaWeight2 / aAlpha;
+}
+
+static css::OklabColor
+OklchToOklabColor(const css::OklchColor& aColor)
+{
+  float hueRadians = aColor.mHue * css::kRadiansPerDegree;
+  return {
+    aColor.mL,
+    aColor.mChroma * std::cos(hueRadians),
+    aColor.mChroma * std::sin(hueRadians)
+  };
+}
+
+static void
+GetColorMixColorComponents(const nsCSSValue& aValue, nscolor aResolvedColor,
+                           css::OklabColor& aOklab,
+                           css::OklchColor& aOklch,
+                           float& aAlpha)
+{
+  nsCSSUnit unit = aValue.GetUnit();
+  if (unit == eCSSUnit_OklabColor) {
+    const nsCSSValueFloatColor* color = aValue.GetFloatColorValue();
+    aOklab = { color->Comp1(), color->Comp2(), color->Comp3() };
+    aOklch = css::OklabToOklchColor(aOklab);
+    aAlpha = mozilla::clamped(color->Alpha(), 0.0f, 1.0f);
+    return;
+  }
+
+  if (unit == eCSSUnit_OklchColor) {
+    const nsCSSValueFloatColor* color = aValue.GetFloatColorValue();
+    aOklch = { color->Comp1(), color->Comp2(), color->Comp3() };
+    aOklab = OklchToOklabColor(aOklch);
+    aAlpha = mozilla::clamped(color->Alpha(), 0.0f, 1.0f);
+    return;
+  }
+
+  aOklab = css::SRGBToOklabColor(aResolvedColor);
+  aOklch = css::OklabToOklchColor(aOklab);
+  aAlpha = NS_GET_A(aResolvedColor) / 255.0f;
+}
+
+static float
+InterpolateColorMixHue(float aHue1, float aHue2, float aWeight1,
+                       float aWeight2)
+{
+  float hueDiff = aHue2 - aHue1;
+  if (hueDiff > 180.0f) {
+    aHue1 += 360.0f;
+  } else if (hueDiff < -180.0f) {
+    aHue2 += 360.0f;
+  }
+
+  float hue = aHue1 * aWeight1 + aHue2 * aWeight2;
+  hue = std::fmod(hue, 360.0f);
+  if (hue < 0.0f) {
+    hue += 360.0f;
+  }
+  return hue;
+}
+
+static nscolor
+MixColorsInOklab(const css::OklabColor& aColor1, float aAlpha1,
+                 const css::OklabColor& aColor2, float aAlpha2,
+                 float aWeight1, float aWeight2, float aAlphaMultiplier)
+{
+  float premultipliedWeight1, premultipliedWeight2, alpha;
+  GetColorMixPremultipliedWeights(aAlpha1, aAlpha2, aWeight1, aWeight2,
+                                  premultipliedWeight1, premultipliedWeight2,
+                                  alpha);
+  alpha *= aAlphaMultiplier;
+  if (alpha <= 0.0f) {
+    return NS_RGBA(0, 0, 0, 0);
+  }
+
+  return css::OklabToSRGBColor(
+    aColor1.mL * premultipliedWeight1 + aColor2.mL * premultipliedWeight2,
+    aColor1.mA * premultipliedWeight1 + aColor2.mA * premultipliedWeight2,
+    aColor1.mB * premultipliedWeight1 + aColor2.mB * premultipliedWeight2,
+    alpha);
+}
+
+static nscolor
+MixColorsInOklch(css::OklchColor aColor1, float aAlpha1,
+                 css::OklchColor aColor2, float aAlpha2,
+                 float aWeight1, float aWeight2, float aAlphaMultiplier)
+{
+  if (aColor1.mChroma <= css::kOklchPowerlessChromaEpsilon) {
+    aColor1.mHue = aColor2.mHue;
+  }
+  if (aColor2.mChroma <= css::kOklchPowerlessChromaEpsilon) {
+    aColor2.mHue = aColor1.mHue;
+  }
+
+  float premultipliedWeight1, premultipliedWeight2, alpha;
+  GetColorMixPremultipliedWeights(aAlpha1, aAlpha2, aWeight1, aWeight2,
+                                  premultipliedWeight1, premultipliedWeight2,
+                                  alpha);
+  alpha *= aAlphaMultiplier;
+  if (alpha <= 0.0f) {
+    return NS_RGBA(0, 0, 0, 0);
+  }
+
+  float hue = InterpolateColorMixHue(aColor1.mHue, aColor2.mHue,
+                                     aWeight1, aWeight2);
+  return css::OklchToSRGBColor(
+    aColor1.mL * premultipliedWeight1 + aColor2.mL * premultipliedWeight2,
+    aColor1.mChroma * premultipliedWeight1 +
+      aColor2.mChroma * premultipliedWeight2,
+    hue,
+    alpha);
+}
+
 static bool
 SetColor(const nsCSSValue& aValue,
          const nscolor aParentColor,
@@ -1240,22 +1372,29 @@ SetColor(const nsCSSValue& aValue,
     const mozilla::css::ColorMixValue* colorMix = aValue.GetColorMixValue();
     if (colorMix) {
       nscolor color1, color2;
+      bool resolvedColor1, resolvedColor2;
       
       // XXX: This is a hack to avoid recursive calls to SetColor when either color resolves
       // to NS_COLOR_CURRENTCOLOR, as it would result in re-evaluation of the color.
       // Instead of recursing, we reach up to set either color to the parent color, instead.
       if (colorMix->mColor1.GetUnit() == eCSSUnit_EnumColor && colorMix->mColor1.GetIntValue() == NS_COLOR_CURRENTCOLOR) {
         color1 = aParentColor;
+        resolvedColor1 = true;
       } else {
-        SetColor(colorMix->mColor1, aParentColor, aPresContext, aContext, color1, aConditions);
+        resolvedColor1 =
+          SetColor(colorMix->mColor1, aParentColor, aPresContext, aContext,
+                   color1, aConditions);
       }
       if (colorMix->mColor2.GetUnit() == eCSSUnit_EnumColor && colorMix->mColor2.GetIntValue() == NS_COLOR_CURRENTCOLOR) {
         color2 = aParentColor;
+        resolvedColor2 = true;
       } else {
-        SetColor(colorMix->mColor2, aParentColor, aPresContext, aContext, color2, aConditions);
+        resolvedColor2 =
+          SetColor(colorMix->mColor2, aParentColor, aPresContext, aContext,
+                   color2, aConditions);
       }
 
-      if (color1 && color2) {
+      if (resolvedColor1 && resolvedColor2) {
         // interpolate each RGBA component with proper percentage handling
         float w1 = colorMix->mWeight1;
         float w2 = colorMix->mWeight2;
@@ -1272,9 +1411,18 @@ SetColor(const nsCSSValue& aValue,
             w1 = w2 = 0.5f;
             sum = 1.0f;
           }
+          float alphaMultiplier = std::min(sum, 1.0f);
           
           float norm1 = w1 / sum;
           float norm2 = w2 / sum;
+
+          css::OklabColor oklab1, oklab2;
+          css::OklchColor oklch1, oklch2;
+          float oklabAlpha1, oklabAlpha2;
+          GetColorMixColorComponents(colorMix->mColor1, color1, oklab1,
+                                     oklch1, oklabAlpha1);
+          GetColorMixColorComponents(colorMix->mColor2, color2, oklab2,
+                                     oklch2, oklabAlpha2);
           
           if (colorMix->mColorSpace == mozilla::css::ColorMixColorSpace::HSL) {
             // HSL color space mixing
@@ -1347,9 +1495,22 @@ SetColor(const nsCSSValue& aValue,
             
             // Convert back to RGB
             nscolor hslResult = NS_HSL2RGB(h, s, l);
-            uint8_t aInt = (uint8_t)mozilla::clamped(a * 255.0f + 0.5f, 0.0f, 255.0f);
+            uint8_t aInt = (uint8_t)mozilla::clamped(
+              a * alphaMultiplier * 255.0f + 0.5f, 0.0f, 255.0f);
             
             aResult = NS_RGBA(NS_GET_R(hslResult), NS_GET_G(hslResult), NS_GET_B(hslResult), aInt);
+            result = true;
+          } else if (colorMix->mColorSpace ==
+                     mozilla::css::ColorMixColorSpace::Oklab) {
+            aResult = MixColorsInOklab(oklab1, oklabAlpha1,
+                                       oklab2, oklabAlpha2,
+                                       norm1, norm2, alphaMultiplier);
+            result = true;
+          } else if (colorMix->mColorSpace ==
+                     mozilla::css::ColorMixColorSpace::Oklch) {
+            aResult = MixColorsInOklch(oklch1, oklabAlpha1,
+                                       oklch2, oklabAlpha2,
+                                       norm1, norm2, alphaMultiplier);
             result = true;
           } else {
             // sRGB color space mixing with proper alpha premultiplication
@@ -1400,7 +1561,8 @@ SetColor(const nsCSSValue& aValue,
             uint8_t rInt = (uint8_t)mozilla::clamped(r + 0.5f, 0.0f, 255.0f);
             uint8_t gInt = (uint8_t)mozilla::clamped(g + 0.5f, 0.0f, 255.0f);
             uint8_t bInt = (uint8_t)mozilla::clamped(b + 0.5f, 0.0f, 255.0f);
-            uint8_t aInt = (uint8_t)mozilla::clamped(a * 255.0f + 0.5f, 0.0f, 255.0f);
+            uint8_t aInt = (uint8_t)mozilla::clamped(
+              a * alphaMultiplier * 255.0f + 0.5f, 0.0f, 255.0f);
             
             aResult = NS_RGBA(rInt, gInt, bInt, aInt);
             result = true;

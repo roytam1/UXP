@@ -406,14 +406,19 @@ var noframe_container = document.getElementById("content");
     ["lch(150% 50 60 / 1)", "rgb(255, 255, 255)"],
     ["oklab(0 0 0 / 1)", "rgb(0, 0, 0)"],
     ["oklab(0 0 0 / 0.5)", "rgba(0, 0, 0, 0.5)"],
-    ["oklab(150% 0.5 0.2 / 1)", "rgb(255, 0, 0)"],
+    ["oklab(150% 0.5 0.2 / 1)", "rgb(255, 255, 255)"],
     ["oklch(0 0 0 / 1)", "rgb(0, 0, 0)"],
     ["oklch(0 0 0 / 0.5)", "rgba(0, 0, 0, 0.5)"],
     ["oklch(0.0001% 0.2 45 / 1)", "rgb(0, 0, 0)"],
-    ["oklch(99.9999% 0.2 45 / 1)", "rgb(255, 207, 132)"],
+    ["oklch(99.9999% 0.2 45 / 1)", "rgb(255, 251, 242)"],
     ["oklch(0% 1.1 60 / 1)", "rgb(0, 0, 0)"],
-    ["oklch(100% 110 60 / 1)", "rgb(0, 255, 0)"],
-    ["oklch(150% 0.5 50 / 1)", "rgb(255, 0, 0)"],
+    ["oklch(100% 110 60 / 1)", "rgb(255, 255, 255)"],
+    ["oklch(150% 0.5 50 / 1)", "rgb(255, 255, 255)"],
+    ["color-mix(in oklab, red, blue)", "rgb(140, 83, 162)"],
+    ["color-mix(in oklch, red, blue)", "rgb(183, 0, 190)"],
+    ["color-mix(in oklab, red, transparent)", "rgba(255, 0, 0, 0.5)"],
+    ["color-mix(in oklab, oklab(0.1 0.2 0.3), oklab(0.5 0.6 0.7))", "rgb(83, 24, 0)"],
+    ["color-mix(in oklch, oklch(0.1 0.2 30), oklch(0.5 0.6 70))", "rgb(84, 23, 0)"],
   ];
 
   var p = document.createElement("p");

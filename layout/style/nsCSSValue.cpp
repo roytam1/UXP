@@ -18,6 +18,7 @@
 #include "gfxFontConstants.h"
 #include "imgIRequest.h"
 #include "imgRequestProxy.h"
+#include "nsCSSNonSRGBColorSpace.h"
 #include "nsIDocument.h"
 #include "nsNetUtil.h"
 #include "nsPresContext.h"
@@ -1965,6 +1966,12 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
       case mozilla::css::ColorMixColorSpace::HSL:
         aResult.AppendLiteral("hsl");
         break;
+      case mozilla::css::ColorMixColorSpace::Oklab:
+        aResult.AppendLiteral("oklab");
+        break;
+      case mozilla::css::ColorMixColorSpace::Oklch:
+        aResult.AppendLiteral("oklch");
+        break;
     }
     
     // append color1 and color2
@@ -2272,6 +2279,8 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     case eCSSUnit_PercentageRGBAColor:   break;
     case eCSSUnit_HSLColor:              break;
     case eCSSUnit_HSLAColor:             break;
+    case eCSSUnit_OklabColor:            break;
+    case eCSSUnit_OklchColor:            break;
     case eCSSUnit_ComplexColor:          break;
     case eCSSUnit_ColorMix:              break;
     case eCSSUnit_Percent:      aResult.Append(char16_t('%'));    break;
@@ -2480,6 +2489,8 @@ nsCSSValue::SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
     case eCSSUnit_PercentageRGBAColor:
     case eCSSUnit_HSLColor:
     case eCSSUnit_HSLAColor:
+    case eCSSUnit_OklabColor:
+    case eCSSUnit_OklchColor:
       n += mValue.mFloatColor->SizeOfIncludingThis(aMallocSizeOf);
       break;
 
@@ -3476,6 +3487,16 @@ nsCSSValueFloatColor::GetColorValue(nsCSSUnit aUnit) const
       NSToIntRound(mozilla::clamped(mAlpha, 0.0f, 1.0f) * 255.0f));
   }
 
+  if (aUnit == eCSSUnit_OklabColor) {
+    return css::OklabToSRGBColor(mComponent1, mComponent2, mComponent3,
+                                 mAlpha);
+  }
+
+  if (aUnit == eCSSUnit_OklchColor) {
+    return css::OklchToSRGBColor(mComponent1, mComponent2, mComponent3,
+                                 mAlpha);
+  }
+
   // HSL color
   MOZ_ASSERT(aUnit == eCSSUnit_HSLColor ||
              aUnit == eCSSUnit_HSLAColor);
@@ -3504,8 +3525,14 @@ nsCSSValueFloatColor::AppendToString(nsCSSUnit aUnit, nsAString& aResult) const
   bool showAlpha = (mAlpha != 1.0f);
   bool isHSL = (aUnit == eCSSUnit_HSLColor ||
                 aUnit == eCSSUnit_HSLAColor);
+  bool isOklab = aUnit == eCSSUnit_OklabColor;
+  bool isOklch = aUnit == eCSSUnit_OklchColor;
 
-  if (isHSL) {
+  if (isOklab) {
+    aResult.AppendLiteral("oklab");
+  } else if (isOklch) {
+    aResult.AppendLiteral("oklch");
+  } else if (isHSL) {
     aResult.AppendLiteral("hsl");
   } else {
     aResult.AppendLiteral("rgb");
@@ -3515,22 +3542,38 @@ nsCSSValueFloatColor::AppendToString(nsCSSUnit aUnit, nsAString& aResult) const
   } else {
     aResult.Append('(');
   }
-  if (isHSL) {
+  if (isOklab || isOklch) {
+    aResult.AppendFloat(mComponent1);
+    aResult.Append(' ');
+    aResult.AppendFloat(mComponent2);
+    aResult.Append(' ');
+    aResult.AppendFloat(mComponent3);
+  } else if (isHSL) {
     aResult.AppendFloat(mComponent1 * 360.0f);
     aResult.AppendLiteral(", ");
   } else {
     aResult.AppendFloat(mComponent1 * 100.0f);
     aResult.AppendLiteral("%, ");
   }
-  aResult.AppendFloat(mComponent2 * 100.0f);
-  aResult.AppendLiteral("%, ");
-  aResult.AppendFloat(mComponent3 * 100.0f);
-  if (showAlpha) {
+  if (!isOklab && !isOklch) {
+    aResult.AppendFloat(mComponent2 * 100.0f);
     aResult.AppendLiteral("%, ");
+    aResult.AppendFloat(mComponent3 * 100.0f);
+  }
+  if (showAlpha) {
+    if (isOklab || isOklch) {
+      aResult.AppendLiteral(" / ");
+    } else {
+      aResult.AppendLiteral("%, ");
+    }
     aResult.AppendFloat(mAlpha);
     aResult.Append(')');
   } else {
-    aResult.AppendLiteral("%)");
+    if (isOklab || isOklch) {
+      aResult.Append(')');
+    } else {
+      aResult.AppendLiteral("%)");
+    }
   }
 }
 
