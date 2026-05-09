@@ -8322,7 +8322,9 @@ nsRuleNode::ComputeOutlineData(void* aStartStruct,
                SETCOORD_LH | SETCOORD_INITIAL_ZERO | SETCOORD_CALC_LENGTH_ONLY |
                  SETCOORD_UNSET_INITIAL,
                aContext, mPresContext, conditions)) {
-    outline->mOutlineOffset = tempCoord.GetCoordValue();
+    outline->mOutlineOffset =
+      NS_ROUND_OFFSET_TO_PIXELS(tempCoord.GetCoordValue(),
+                                mPresContext->AppUnitsPerDevPixel());
   } else {
     NS_ASSERTION(outlineOffsetValue->GetUnit() == eCSSUnit_Null,
                  "unexpected unit");

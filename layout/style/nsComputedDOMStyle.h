@@ -344,6 +344,7 @@ private:
   already_AddRefed<CSSValue> DoGetBorderBottomWidth();
   already_AddRefed<CSSValue> DoGetBorderLeftWidth();
   already_AddRefed<CSSValue> DoGetBorderRightWidth();
+  already_AddRefed<CSSValue> DoGetBorderWidth();
   already_AddRefed<CSSValue> DoGetBorderTopColor();
   already_AddRefed<CSSValue> DoGetBorderBottomColor();
   already_AddRefed<CSSValue> DoGetBorderLeftColor();

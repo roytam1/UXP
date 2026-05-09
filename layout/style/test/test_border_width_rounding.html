@@ -42,8 +42,37 @@ function checkWidth(property, setupProperty, setupValue) {
   });
 }
 
+function checkOffset(property) {
+  tests.forEach(function(test) {
+    var specified = test[0];
+    var expected = test[1];
+    var div = document.createElement("div");
+    div.style[property] = specified;
+    display.appendChild(div);
+
+    is(document.defaultView.getComputedStyle(div, "")[property], expected,
+       property + " computes " + specified + " as " + expected);
+
+    display.removeChild(div);
+  });
+
+  tests.forEach(function(test) {
+    var specified = test[0];
+    var expected = test[0] == "0px" ? "0px" : "-" + test[1];
+    var div = document.createElement("div");
+    div.style[property] = "-" + specified;
+    display.appendChild(div);
+
+    is(document.defaultView.getComputedStyle(div, "")[property], expected,
+       property + " computes -" + specified + " as " + expected);
+
+    display.removeChild(div);
+  });
+}
+
 checkWidth("borderWidth", "borderStyle", "solid");
 checkWidth("outlineWidth", "outlineStyle", "solid");
+checkOffset("outlineOffset");
 
 </script>
 </pre>

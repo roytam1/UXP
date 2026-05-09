@@ -3194,6 +3194,66 @@ nsComputedDOMStyle::DoGetBorderRightWidth()
 }
 
 already_AddRefed<CSSValue>
+nsComputedDOMStyle::DoGetBorderWidth()
+{
+  nscoord widths[4];
+  if (mInnerFrame) {
+    AssertFlushedPendingReflows();
+    const nsMargin& usedBorder = mInnerFrame->GetUsedBorder();
+    NS_FOR_CSS_SIDES(side) {
+      widths[side] = usedBorder.Side(side);
+    }
+  } else {
+    const nsStyleBorder* border = StyleBorder();
+    NS_FOR_CSS_SIDES(side) {
+      widths[side] = border->GetComputedBorderWidth(side);
+    }
+  }
+
+  RefPtr<nsDOMCSSValueList> valueList = GetROCSSValueList(false);
+
+  RefPtr<nsROCSSPrimitiveValue> top = new nsROCSSPrimitiveValue;
+  top->SetAppUnits(widths[eSideTop]);
+  valueList->AppendCSSValue(top.forget());
+
+  if (widths[eSideRight] == widths[eSideLeft]) {
+    if (widths[eSideTop] == widths[eSideBottom]) {
+      if (widths[eSideTop] == widths[eSideRight]) {
+        return valueList.forget();
+      }
+
+      RefPtr<nsROCSSPrimitiveValue> right = new nsROCSSPrimitiveValue;
+      right->SetAppUnits(widths[eSideRight]);
+      valueList->AppendCSSValue(right.forget());
+      return valueList.forget();
+    }
+
+    RefPtr<nsROCSSPrimitiveValue> right = new nsROCSSPrimitiveValue;
+    right->SetAppUnits(widths[eSideRight]);
+    valueList->AppendCSSValue(right.forget());
+
+    RefPtr<nsROCSSPrimitiveValue> bottom = new nsROCSSPrimitiveValue;
+    bottom->SetAppUnits(widths[eSideBottom]);
+    valueList->AppendCSSValue(bottom.forget());
+    return valueList.forget();
+  }
+
+  RefPtr<nsROCSSPrimitiveValue> right = new nsROCSSPrimitiveValue;
+  right->SetAppUnits(widths[eSideRight]);
+  valueList->AppendCSSValue(right.forget());
+
+  RefPtr<nsROCSSPrimitiveValue> bottom = new nsROCSSPrimitiveValue;
+  bottom->SetAppUnits(widths[eSideBottom]);
+  valueList->AppendCSSValue(bottom.forget());
+
+  RefPtr<nsROCSSPrimitiveValue> left = new nsROCSSPrimitiveValue;
+  left->SetAppUnits(widths[eSideLeft]);
+  valueList->AppendCSSValue(left.forget());
+
+  return valueList.forget();
+}
+
+already_AddRefed<CSSValue>
 nsComputedDOMStyle::DoGetBorderTopColor()
 {
   return GetBorderColorFor(eSideTop);
@@ -6842,5 +6902,4 @@ nsComputedDOMStyle::DoGetOverflowBlockEnd()
 {
   return DoGetOverflowBlock();
 }
-
 
