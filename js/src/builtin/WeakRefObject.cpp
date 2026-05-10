@@ -13,6 +13,7 @@
 #include "vm/GlobalObject.h"
 #include "vm/Symbol.h"
 
+#include "jswrapper.h"
 #include "jsobjinlines.h"
 
 #include "vm/Interpreter-inl.h"
@@ -30,6 +31,30 @@ static MOZ_ALWAYS_INLINE bool
 IsWeakRef(HandleValue v)
 {
     return v.isObject() && v.toObject().is<WeakRefObject>();
+}
+
+static bool
+GetPrototypeFromWeakRefConstructor(JSContext* cx, HandleObject newTarget,
+                                   MutableHandleObject proto)
+{
+    if (!GetPrototypeFromConstructor(cx, newTarget, proto))
+        return false;
+    if (proto)
+        return true;
+
+    RootedObject realmObject(cx, CheckedUnwrap(newTarget, /* stopAtWindowProxy = */ false));
+    if (!realmObject)
+        return false;
+
+    {
+        JSAutoCompartment ac(cx, realmObject);
+        Rooted<GlobalObject*> global(cx, &realmObject->global());
+        if (!GlobalObject::ensureConstructor(cx, global, JSProto_WeakRef))
+            return false;
+        proto.set(&global->getPrototype(JSProto_WeakRef).toObject());
+    }
+
+    return cx->compartment()->wrap(cx, proto);
 }
 
 static bool
@@ -155,7 +180,7 @@ WeakRefObject::construct(JSContext* cx, unsigned argc, Value* vp)
 
     RootedObject proto(cx);
     RootedObject newTarget(cx, &args.newTarget().toObject());
-    if (!GetPrototypeFromConstructor(cx, newTarget, &proto))
+    if (!GetPrototypeFromWeakRefConstructor(cx, newTarget, &proto))
         return false;
 
     Rooted<WeakRefObject*> obj(cx, WeakRefObject::create(cx, target, proto));
