@@ -126,8 +126,8 @@ WeakRefObject::create(JSContext* cx, HandleValue target, HandleObject proto /* =
     return obj;
 }
 
-static bool
-CanBeHeldWeakly(HandleValue target)
+bool
+js::CanBeHeldWeakly(HandleValue target)
 {
     if (target.isObject())
         return true;

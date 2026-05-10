@@ -211,6 +211,7 @@
 # include "jswin.h"
 #endif
 
+#include "builtin/FinalizationRegistryObject.h"
 #include "gc/FindSCCs.h"
 #include "gc/GCInternals.h"
 #include "gc/GCTrace.h"
@@ -4029,6 +4030,8 @@ GCRuntime::markWeakReferences(gcstats::Phase phase)
     }
     MOZ_ASSERT(marker.isDrained());
 
+    traceFinalizationRegistryWeakRefs<ZoneIterT>();
+
     marker.leaveWeakMarkingMode();
 }
 
@@ -4036,6 +4039,33 @@ void
 GCRuntime::markWeakReferencesInCurrentGroup(gcstats::Phase phase)
 {
     markWeakReferences<GCZoneGroupIter>(phase);
+}
+
+template <class ZoneIterT>
+void
+GCRuntime::traceFinalizationRegistryWeakRefs()
+{
+    for (ZoneIterT zone(rt); !zone.done(); zone.next()) {
+        for (size_t i = 0; i < zone->finalizationRegistries.length(); i++) {
+            WeakRef<JSObject*>& registry = zone->finalizationRegistries[i];
+            if (registry.unbarrieredGet())
+                TraceWeakEdge(&marker, &registry, "FinalizationRegistry registry");
+        }
+    }
+
+    for (ZonesIter zone(rt, WithAtoms); !zone.done(); zone.next()) {
+        for (size_t i = 0; i < zone->finalizationRegistries.length(); i++) {
+            JSObject* registry = zone->finalizationRegistries[i].unbarrieredGet();
+            if (registry && registry->is<FinalizationRegistryObject>())
+                registry->as<FinalizationRegistryObject>().traceWeakEdgesForCollectedZones(&marker);
+        }
+    }
+}
+
+void
+GCRuntime::traceFinalizationRegistryWeakRefsInCurrentGroup()
+{
+    traceFinalizationRegistryWeakRefs<GCZoneGroupIter>();
 }
 
 template <class ZoneIterT, class CompartmentIterT>
@@ -4749,6 +4779,8 @@ GCRuntime::beginSweepingZoneGroup(AutoLockForExclusiveAccess& lock)
             oomUnsafe.crash("clearing weak keys in beginSweepingZoneGroup()");
     }
 
+    sweepFinalizationRegistries();
+
     {
         gcstats::AutoPhase ap(stats, gcstats::PHASE_FINALIZE_START);
         callFinalizeCallbacks(&fop, JSFINALIZE_GROUP_START);
@@ -4901,6 +4933,23 @@ GCRuntime::beginSweepingZoneGroup(AutoLockForExclusiveAccess& lock)
     {
         gcstats::AutoPhase ap(stats, gcstats::PHASE_FINALIZE_END);
         callFinalizeCallbacks(&fop, JSFINALIZE_GROUP_END);
+    }
+}
+
+void
+GCRuntime::sweepFinalizationRegistries()
+{
+    for (ZonesIter zone(rt, WithAtoms); !zone.done(); zone.next()) {
+        for (size_t i = 0; i < zone->finalizationRegistries.length();) {
+            JSObject* obj = zone->finalizationRegistries[i].unbarrieredGet();
+            if (!obj || !obj->is<FinalizationRegistryObject>()) {
+                zone->finalizationRegistries.erase(zone->finalizationRegistries.begin() + i);
+                continue;
+            }
+
+            obj->as<FinalizationRegistryObject>().sweepAfterGC(rt);
+            i++;
+        }
     }
 }
 
@@ -6094,6 +6143,13 @@ GCRuntime::collect(bool nonincrementalByAPI, SliceBudget budget, JS::gcreason::R
          */
         repeat = (poked && cleanUpEverything) || wasReset || repeatForDeadZone;
     } while (repeat);
+
+    if (rt->isBeingDestroyed()) {
+        rt->clearFinalizationRegistryCleanupJobs();
+    } else if (!rt->drainFinalizationRegistryCleanupJobs(rt->contextFromMainThread())) {
+        AutoEnterOOMUnsafeRegion oomUnsafe;
+        oomUnsafe.crash("draining FinalizationRegistry cleanup jobs");
+    }
 
     if (reason == JS::gcreason::COMPARTMENT_REVIVED)
         maybeDoCycleCollection();
