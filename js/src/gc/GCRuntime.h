@@ -13,6 +13,7 @@
 #include "jsgc.h"
 
 #include "gc/Heap.h"
+#include "gc/IdleGC.h"
 #include "gc/Nursery.h"
 #include "gc/Statistics.h"
 #include "gc/StoreBuffer.h"
@@ -650,6 +651,13 @@ class GCRuntime
     void onOutOfMallocMemory();
     void onOutOfMallocMemory(const AutoLockGC& lock);
 
+    /* Idle-time GC notifications. */
+    void notifyJSExecutionStart();
+    void notifyJSExecutionEnd();
+    IdleGCManager& idleGCMgr() {
+        return idleGC;
+    }
+
     size_t maxMallocBytesAllocated() { return maxMallocBytes; }
 
     uint64_t nextCellUniqueId() {
@@ -1020,6 +1028,9 @@ class GCRuntime
     /* GC scheduling state and parameters. */
     GCSchedulingTunables tunables;
     GCSchedulingState schedulingState;
+
+    /* Idle-time garbage collection manager. */
+    IdleGCManager idleGC;
 
     MemProfiler mMemProfiler;
 

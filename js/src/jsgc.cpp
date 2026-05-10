@@ -214,6 +214,7 @@
 #include "gc/FindSCCs.h"
 #include "gc/GCInternals.h"
 #include "gc/GCTrace.h"
+#include "gc/IdleGC.h"
 #include "gc/Marking.h"
 #include "gc/Memory.h"
 #include "gc/Policy.h"
@@ -6005,6 +6006,10 @@ GCRuntime::checkIfGCAllowedInCurrentState(JS::gcreason::Reason reason)
     if (rt->isBeingDestroyed() && !IsShutdownGC(reason))
         return false;
 
+    // Check if the system is idle enough for GC, unless this is a critical GC
+    if (!IdleGCManager::shouldBypassIdleCheck(reason) && !idleGC.isIdleEnough())
+        return false;
+
     return true;
 }
 
@@ -6169,6 +6174,18 @@ GCRuntime::notifyDidPaint()
     }
 
     interFrameGC = false;
+}
+
+void
+GCRuntime::notifyJSExecutionStart()
+{
+    idleGC.notifyJSExecutionStart();
+}
+
+void
+GCRuntime::notifyJSExecutionEnd()
+{
+    idleGC.notifyJSExecutionEnd();
 }
 
 static bool
