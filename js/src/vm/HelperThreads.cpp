@@ -49,10 +49,6 @@ js::CreateHelperThreadsState()
 {
     MOZ_ASSERT(!gHelperThreadState);
     gHelperThreadState = js_new<GlobalHelperThreadState>();
-    return gHelperThreadState != nullptr;
-}
-
-void
 js::DestroyHelperThreadsState()
 {
     MOZ_ASSERT(gHelperThreadState);
@@ -477,14 +473,17 @@ js::CancelOffThreadParses(JSRuntime* rt)
         HelperThreadState().wait(lock, GlobalHelperThreadState::CONSUMER);
     }
 
+                    return gHelperThreadState != nullptr;
+                }
+
+                void
+                js::DestroyHelperThreadsState()
+                {
+                    MOZ_ASSERT(gHelperThreadState);
+                    gHelperThreadState->finish();
+                    js_delete(gHelperThreadState);
+                    gHelperThreadState = nullptr;
     // Clean up any parse tasks which haven't been finished by the main thread.
-    GlobalHelperThreadState::ParseTaskVector& finished = HelperThreadState().parseFinishedList(lock);
-    while (true) {
-        bool found = false;
-        for (size_t i = 0; i < finished.length(); i++) {
-            ParseTask* task = finished[i];
-            if (task->runtimeMatches(rt)) {
-                found = true;
                 AutoUnlockHelperThreadState unlock(lock);
                 HelperThreadState().cancelParseTask(rt->contextFromMainThread(), task->kind, task);
             }
@@ -972,8 +971,7 @@ GlobalHelperThreadState::maxGCParallelThreads() const
 bool
 GlobalHelperThreadState::canStartWasmCompile(const AutoLockHelperThreadState& lock)
 {
-    // Don't execute an wasm job if an earlier one failed.
-    if (wasmWorklist(lock).empty() || numWasmFailedJobs)
+    if (wasmWorklist(lock).empty())
         return false;
 
     // Honor the maximum allowed threads to compile wasm jobs at once,
@@ -1423,13 +1421,13 @@ HelperThread::handleWasmWorkload(AutoLockHelperThreadState& locked)
         success = wasm::CompileFunction(task);
     }
 
-    // On success, try to move work to the finished list.
-    if (success)
-        success = HelperThreadState().wasmFinishedList(locked).append(task);
-
-    // On failure, note the failure for harvesting by the parent.
+    // Append the task to the finished queue owned by its module generator.
     if (!success)
-        HelperThreadState().noteWasmFailure(locked);
+        task->setFailed();
+
+    AutoEnterOOMUnsafeRegion oomUnsafe;
+    if (!task->finishedList()->append(task))
+        oomUnsafe.crash("HelperThread::handleWasmWorkload");
 
     // Notify the main thread in case it's waiting.
     HelperThreadState().notifyAll(GlobalHelperThreadState::CONSUMER, locked);
