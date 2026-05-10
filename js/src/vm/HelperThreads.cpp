@@ -49,6 +49,10 @@ js::CreateHelperThreadsState()
 {
     MOZ_ASSERT(!gHelperThreadState);
     gHelperThreadState = js_new<GlobalHelperThreadState>();
+    return gHelperThreadState != nullptr;
+}
+
+void
 js::DestroyHelperThreadsState()
 {
     MOZ_ASSERT(gHelperThreadState);
@@ -473,24 +477,6 @@ js::CancelOffThreadParses(JSRuntime* rt)
         HelperThreadState().wait(lock, GlobalHelperThreadState::CONSUMER);
     }
 
-                    return gHelperThreadState != nullptr;
-                }
-
-                void
-                js::DestroyHelperThreadsState()
-                {
-                    MOZ_ASSERT(gHelperThreadState);
-                    gHelperThreadState->finish();
-                    js_delete(gHelperThreadState);
-                    gHelperThreadState = nullptr;
-    // Clean up any parse tasks which haven't been finished by the main thread.
-                AutoUnlockHelperThreadState unlock(lock);
-                HelperThreadState().cancelParseTask(rt->contextFromMainThread(), task->kind, task);
-            }
-        }
-        if (!found)
-            break;
-    }
 }
 
 bool

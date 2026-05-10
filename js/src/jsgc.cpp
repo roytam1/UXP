@@ -4523,10 +4523,8 @@ PrepareWeakCacheTasks(JSRuntime* rt)
     WeakCacheTaskVector out;
     for (GCZoneGroupIter zone(rt); !zone.done(); zone.next()) {
         for (JS::WeakCache<void*>* cache : zone->weakCaches_) {
-            if (!out.append(SweepWeakCacheTask(rt, *cache))) {
-                SweepWeakCachesFromMainThread(rt);
-                return WeakCacheTaskVector();
-            }
+            if (!out.emplaceBack(rt, *cache))
+                return out;
         }
     }
     return out;
