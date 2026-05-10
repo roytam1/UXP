@@ -678,6 +678,10 @@ class GCRuntime
 
     void requestMinorGC(JS::gcreason::Reason reason);
 
+    // Zone relocation for compacting GC (can be called from helper threads)
+    MOZ_MUST_USE bool relocateArenas(Zone* zone, JS::gcreason::Reason reason,
+                                      Arena*& relocatedListOut, SliceBudget& sliceBudget);
+
 #ifdef DEBUG
     bool onBackgroundThread() { return helperState.onBackgroundThread(); }
 #endif // DEBUG
@@ -976,8 +980,6 @@ class GCRuntime
     void endCompactPhase(JS::gcreason::Reason reason);
     void sweepTypesAfterCompacting(Zone* zone);
     void sweepZoneAfterCompacting(Zone* zone);
-    MOZ_MUST_USE bool relocateArenas(Zone* zone, JS::gcreason::Reason reason,
-                                     Arena*& relocatedListOut, SliceBudget& sliceBudget);
     void updateTypeDescrObjects(MovingTracer* trc, Zone* zone);
     void updateCellPointers(MovingTracer* trc, Zone* zone, AllocKinds kinds, size_t bgTaskCount);
     void updateAllCellPointers(MovingTracer* trc, Zone* zone);
