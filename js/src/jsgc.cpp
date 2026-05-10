@@ -5998,6 +5998,12 @@ GCRuntime::checkCanCallAPI()
 bool
 GCRuntime::checkIfGCAllowedInCurrentState(JS::gcreason::Reason reason)
 {
+    auto isTabCloseReason = [](JS::gcreason::Reason r) {
+        return r == JS::gcreason::PAGE_HIDE ||
+               r == JS::gcreason::POST_COMPARTMENT ||
+               r == JS::gcreason::NSJSCONTEXT_DESTROY;
+    };
+
     if (rt->mainThread.suppressGC)
         return false;
 
@@ -6006,8 +6012,10 @@ GCRuntime::checkIfGCAllowedInCurrentState(JS::gcreason::Reason reason)
     if (rt->isBeingDestroyed() && !IsShutdownGC(reason))
         return false;
 
-    // Check if the system is idle enough for GC, unless this is a critical GC
-    if (!IdleGCManager::shouldBypassIdleCheck(reason) && !idleGC.isIdleEnough())
+    // Allow fast tab-close cleanup even when the runtime is otherwise busy.
+    if (!isTabCloseReason(reason) &&
+        !IdleGCManager::shouldBypassIdleCheck(reason) &&
+        !idleGC.isIdleEnough())
         return false;
 
     return true;
@@ -6087,8 +6095,16 @@ js::AutoEnqueuePendingParseTasksAfterGC::~AutoEnqueuePendingParseTasksAfterGC()
 SliceBudget
 GCRuntime::defaultBudget(JS::gcreason::Reason reason, int64_t millis)
 {
+    auto isTabCloseReason = [](JS::gcreason::Reason r) {
+        return r == JS::gcreason::PAGE_HIDE ||
+               r == JS::gcreason::POST_COMPARTMENT ||
+               r == JS::gcreason::NSJSCONTEXT_DESTROY;
+    };
+
     if (millis == 0) {
-        if (reason == JS::gcreason::ALLOC_TRIGGER)
+        if (isTabCloseReason(reason))
+            millis = 3;
+        else if (reason == JS::gcreason::ALLOC_TRIGGER)
             millis = defaultSliceBudget();
         else if (schedulingState.inHighFrequencyGCMode() && tunables.isDynamicMarkSliceEnabled())
             millis = defaultSliceBudget() * IGC_MARK_SLICE_MULTIPLIER;
