@@ -13146,6 +13146,10 @@ CSSParserImpl::ParsePropertyByFunction(nsCSSPropertyID aPropID)
   case eCSSProperty_border_top_right_radius:
   case eCSSProperty_border_bottom_right_radius:
   case eCSSProperty_border_bottom_left_radius:
+  case eCSSProperty_border_start_start_radius:
+  case eCSSProperty_border_start_end_radius:
+  case eCSSProperty_border_end_start_radius:
+  case eCSSProperty_border_end_end_radius:
   case eCSSProperty__moz_outline_radius_topLeft:
   case eCSSProperty__moz_outline_radius_topRight:
   case eCSSProperty__moz_outline_radius_bottomRight:
