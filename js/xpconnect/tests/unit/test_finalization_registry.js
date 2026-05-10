@@ -58,6 +58,19 @@ add_task(function* test_register_validation_and_unregister() {
   do_check_eq(registry.unregister(symbolToken), true);
 });
 
+add_task(function* test_proto_from_constructor_realm() {
+  let other = new Components.utils.Sandbox("http://example.com", { freshZone: true });
+  Components.utils.evalInSandbox("var newTarget = new Function();", other);
+
+  for (let proto of [undefined, null, true, "", Symbol(), 1]) {
+    other.newTarget.prototype = proto;
+    let registry = Reflect.construct(FinalizationRegistry, [function() {}],
+                                     other.newTarget);
+    do_check_true(Object.getPrototypeOf(registry) ===
+                  other.FinalizationRegistry.prototype);
+  }
+});
+
 add_task(function* test_cleanup_callback_after_gc() {
   let cleaned = [];
   let registry = new FinalizationRegistry(value => cleaned.push(value));

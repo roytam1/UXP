@@ -38,6 +38,30 @@ NormalizeWeakObject(JSObject* obj)
     return obj;
 }
 
+static bool
+GetPrototypeFromFinalizationRegistryConstructor(JSContext* cx, HandleObject newTarget,
+                                                MutableHandleObject proto)
+{
+    if (!GetPrototypeFromConstructor(cx, newTarget, proto))
+        return false;
+    if (proto)
+        return true;
+
+    RootedObject realmObject(cx, CheckedUnwrap(newTarget, /* stopAtWindowProxy = */ false));
+    if (!realmObject)
+        return false;
+
+    {
+        JSAutoCompartment ac(cx, realmObject);
+        Rooted<GlobalObject*> global(cx, &realmObject->global());
+        if (!GlobalObject::ensureConstructor(cx, global, JSProto_FinalizationRegistry))
+            return false;
+        proto.set(&global->getPrototype(JSProto_FinalizationRegistry).toObject());
+    }
+
+    return cx->compartment()->wrap(cx, proto);
+}
+
 struct WeakCell {
     WeakCellKind kind;
     WeakRef<JSObject*> object;
@@ -416,7 +440,7 @@ FinalizationRegistryObject::construct(JSContext* cx, unsigned argc, Value* vp)
 
     RootedObject proto(cx);
     RootedObject newTarget(cx, &args.newTarget().toObject());
-    if (!GetPrototypeFromConstructor(cx, newTarget, &proto))
+    if (!GetPrototypeFromFinalizationRegistryConstructor(cx, newTarget, &proto))
         return false;
 
     Rooted<FinalizationRegistryObject*> obj(cx,
