@@ -999,7 +999,7 @@ class JS_PUBLIC_API(ContextOptions) {
         strictMode_(false),
         extraWarnings_(false),
         arrayProtoValues_(true),
-        weakRefs_(false)
+        streams_(false)
     {
     }
 
@@ -1139,13 +1139,12 @@ class JS_PUBLIC_API(ContextOptions) {
         return *this;
     }
 
-    bool weakRefs() const { return weakRefs_; }
+    bool weakRefs() const { return true; }
     ContextOptions& setWeakRefs(bool flag) {
-        weakRefs_ = flag;
+        (void) flag;
         return *this;
     }
     ContextOptions& toggleWeakRefs() {
-        weakRefs_ = !weakRefs_;
         return *this;
     }
 
@@ -1166,7 +1165,6 @@ class JS_PUBLIC_API(ContextOptions) {
     bool extraWarnings_ : 1;
     bool arrayProtoValues_ : 1;
     bool streams_ : 1;
-    bool weakRefs_ : 1;
 };
 
 JS_PUBLIC_API(ContextOptions&)
@@ -1186,6 +1184,13 @@ InitSelfHostedCode(JSContext* cx);
  */
 JS_PUBLIC_API(void)
 AssertObjectBelongsToCurrentThread(JSObject* obj);
+
+/**
+ * Clear objects and symbols that WeakRef.prototype.deref kept alive for the
+ * current synchronous JavaScript execution.
+ */
+JS_PUBLIC_API(void)
+ClearWeakRefKeptObjects(JSContext* cx);
 
 } /* namespace JS */
 

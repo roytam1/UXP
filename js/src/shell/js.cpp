@@ -676,7 +676,9 @@ RunFile(JSContext* cx, const char* filename, FILE* file, bool compileOnly)
             AnalyzeEntrainedVariables(cx, script);
     #endif
     if (!compileOnly) {
-        if (!JS_ExecuteScript(cx, script))
+        bool ok = JS_ExecuteScript(cx, script);
+        JS::ClearWeakRefKeptObjects(cx);
+        if (!ok)
             return false;
         int64_t t2 = PRMJ_Now() - t1;
         if (printTiming)
@@ -857,6 +859,7 @@ DrainJobQueue(JSContext* cx)
     }
     sc->jobQueue.clear();
     sc->drainingJobQueue = false;
+    JS::ClearWeakRefKeptObjects(cx);
     return true;
 }
 

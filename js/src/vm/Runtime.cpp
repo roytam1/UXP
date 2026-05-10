@@ -194,6 +194,7 @@ JSRuntime::JSRuntime(JSRuntime* parentRuntime)
     simulator_(nullptr),
 #endif
     scriptAndCountsVector(nullptr),
+    weakRefKeptObjects(nullptr),
     lcovOutput(),
     NaNValue(DoubleNaNValue()),
     negativeInfinityValue(DoubleValue(NegativeInfinity<double>())),
@@ -372,6 +373,8 @@ JSRuntime::destroyRuntime()
     MOZ_ASSERT(!isHeapBusy());
     MOZ_ASSERT(childRuntimeCount == 0);
 
+    clearWeakRefKeptObjects();
+
     fx.destroyInstance();
 
     sharedIntlData.destroyInstance();
@@ -458,6 +461,61 @@ JSRuntime::destroyRuntime()
     if (ownerThreadNative_)
         CloseHandle((HANDLE)ownerThreadNative_);
 #endif
+}
+
+static bool
+SameWeakRefKeptObject(const JS::Value& kept, JS::HandleValue target)
+{
+    MOZ_ASSERT(kept.isObject() || kept.isSymbol());
+    MOZ_ASSERT(target.isObject() || target.isSymbol());
+
+    if (kept.isObject())
+        return target.isObject() && &kept.toObject() == &target.toObject();
+
+    return target.isSymbol() && kept.toSymbol() == target.toSymbol();
+}
+
+bool
+JSRuntime::addWeakRefKeptObject(JSContext* cx, JS::HandleValue target)
+{
+    MOZ_ASSERT(cx->runtime() == this);
+    MOZ_ASSERT(target.isObject() || target.isSymbol());
+    MOZ_ASSERT(!isHeapBusy());
+
+    if (!weakRefKeptObjects) {
+        auto* keptObjects =
+            cx->new_<JS::PersistentRooted<js::WeakRefKeptObjectVector>>(
+                cx, js::WeakRefKeptObjectVector(js::SystemAllocPolicy()));
+        if (!keptObjects)
+            return false;
+
+        weakRefKeptObjects = keptObjects;
+    }
+
+    for (size_t i = 0; i < weakRefKeptObjects->length(); i++) {
+        const JS::Value& kept = (*weakRefKeptObjects)[i];
+        if (SameWeakRefKeptObject(kept, target))
+            return true;
+    }
+
+    if (!weakRefKeptObjects->append(target.get())) {
+        ReportOutOfMemory(cx);
+        return false;
+    }
+
+    return true;
+}
+
+void
+JSRuntime::clearWeakRefKeptObjects()
+{
+    MOZ_ASSERT(!isHeapBusy());
+
+    if (!weakRefKeptObjects)
+        return;
+
+    defaultFreeOp()->delete_(weakRefKeptObjects);
+    weakRefKeptObjects = nullptr;
 }
 
 void
