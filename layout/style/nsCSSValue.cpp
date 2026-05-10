@@ -1693,7 +1693,6 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     aResult.Append(')');
   }
   else if (IsCalcUnit()) {
-    MOZ_ASSERT(GetUnit() == eCSSUnit_Calc, "unexpected unit");
     if (!AppendNormalizedLengthPercentCalcToString(*this, aProperty, aResult,
                                                    aSerialization)) {
       CSSValueSerializeCalcOps ops(aProperty, aResult, aSerialization);
@@ -2266,6 +2265,9 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     case eCSSUnit_Calc_Times_L: break;
     case eCSSUnit_Calc_Times_R: break;
     case eCSSUnit_Calc_Divided: break;
+    case eCSSUnit_Calc_Min:     break;
+    case eCSSUnit_Calc_Max:     break;
+    case eCSSUnit_Calc_Clamp:   break;
     case eCSSUnit_Integer:      break;
     case eCSSUnit_Enumerated:   break;
     case eCSSUnit_EnumColor:             break;
@@ -2398,6 +2400,9 @@ nsCSSValue::SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
     case eCSSUnit_Calc_Times_L:
     case eCSSUnit_Calc_Times_R:
     case eCSSUnit_Calc_Divided:
+    case eCSSUnit_Calc_Min:
+    case eCSSUnit_Calc_Max:
+    case eCSSUnit_Calc_Clamp:
       break;
 
     // URL

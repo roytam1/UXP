@@ -7,6 +7,8 @@
 
 #include "mozilla/CSSStyleSheet.h"
 
+#include <algorithm>
+
 #include "nsIAtom.h"
 #include "nsCSSRuleProcessor.h"
 #include "mozilla/MemoryReporting.h"
@@ -188,6 +190,53 @@ EvaluateMediaQueryTypedCalcLength(nsPresContext* aPresContext,
         aResult.mValue = lhs.mValue * rhs.mValue;
         aResult.mExponent = lhs.mExponent + rhs.mExponent;
       }
+      return true;
+    }
+
+    case eCSSUnit_Calc_Min:
+    case eCSSUnit_Calc_Max:
+    case eCSSUnit_Calc_Clamp: {
+      nsCSSValue::Array* array = aValue.GetArrayValue();
+      MOZ_ASSERT(aValue.GetUnit() != eCSSUnit_Calc_Clamp ||
+                 array->Count() == 3, "unexpected length");
+      MOZ_ASSERT(aValue.GetUnit() == eCSSUnit_Calc_Clamp ||
+                 array->Count() >= 1, "unexpected length");
+
+      MediaQueryTypedCalcLengthResult result;
+      if (!EvaluateMediaQueryTypedCalcLength(aPresContext, array->Item(0),
+                                             result)) {
+        return false;
+      }
+
+      if (aValue.GetUnit() == eCSSUnit_Calc_Clamp) {
+        MediaQueryTypedCalcLengthResult center;
+        MediaQueryTypedCalcLengthResult max;
+        if (!EvaluateMediaQueryTypedCalcLength(aPresContext, array->Item(1),
+                                               center) ||
+            !EvaluateMediaQueryTypedCalcLength(aPresContext, array->Item(2),
+                                               max) ||
+            result.mExponent != center.mExponent ||
+            result.mExponent != max.mExponent) {
+          return false;
+        }
+        aResult.mExponent = result.mExponent;
+        aResult.mValue = std::max(result.mValue,
+                                  std::min(center.mValue, max.mValue));
+        return true;
+      }
+
+      for (uint32_t i = 1; i < array->Count(); ++i) {
+        MediaQueryTypedCalcLengthResult item;
+        if (!EvaluateMediaQueryTypedCalcLength(aPresContext, array->Item(i),
+                                               item) ||
+            result.mExponent != item.mExponent) {
+          return false;
+        }
+        result.mValue = aValue.GetUnit() == eCSSUnit_Calc_Min
+                          ? std::min(result.mValue, item.mValue)
+                          : std::max(result.mValue, item.mValue);
+      }
+      aResult = result;
       return true;
     }
 

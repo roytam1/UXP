@@ -348,6 +348,31 @@ GetCalcLengthTypedArithmeticExponent(const nsCSSValue& aValue,
       return true;
     }
 
+    case eCSSUnit_Calc_Min:
+    case eCSSUnit_Calc_Max:
+    case eCSSUnit_Calc_Clamp: {
+      nsCSSValue::Array* array = aValue.GetArrayValue();
+      MOZ_ASSERT(aValue.GetUnit() != eCSSUnit_Calc_Clamp ||
+                 array->Count() == 3, "unexpected length");
+      MOZ_ASSERT(aValue.GetUnit() == eCSSUnit_Calc_Clamp ||
+                 array->Count() >= 1, "unexpected length");
+
+      int32_t exponent;
+      if (!GetCalcLengthTypedArithmeticExponent(array->Item(0), exponent)) {
+        return false;
+      }
+      for (uint32_t i = 1; i < array->Count(); ++i) {
+        int32_t itemExponent;
+        if (!GetCalcLengthTypedArithmeticExponent(array->Item(i),
+                                                  itemExponent) ||
+            itemExponent != exponent) {
+          return false;
+        }
+      }
+      aExponent = exponent;
+      return true;
+    }
+
     case eCSSUnit_Number:
       aExponent = 0;
       return true;
@@ -427,6 +452,35 @@ NormalizeCalcForVariant(nsCSSValue& aValue,
   }
 
   MOZ_ASSERT_UNREACHABLE("unsupported calc result type");
+  return false;
+}
+
+static bool
+MergeCalcFunctionVariantMask(uint32_t& aMergedMask, uint32_t aItemMask)
+{
+  MOZ_ASSERT(aItemMask != 0, "unexpected empty item mask");
+  if (aMergedMask == 0) {
+    aMergedMask = aItemMask;
+    return true;
+  }
+
+  const bool mergedIsNumber = (aMergedMask & VARIANT_NUMBER) != 0;
+  const bool itemIsNumber = (aItemMask & VARIANT_NUMBER) != 0;
+  if (mergedIsNumber || itemIsNumber) {
+    return mergedIsNumber == itemIsNumber;
+  }
+
+  const uint32_t lengthPercentMask = VARIANT_LENGTH | VARIANT_PERCENT;
+  if ((aMergedMask & lengthPercentMask) && (aItemMask & lengthPercentMask)) {
+    aMergedMask = (aMergedMask | aItemMask) & lengthPercentMask;
+    return true;
+  }
+
+  if ((aMergedMask & aItemMask) != 0) {
+    aMergedMask &= aItemMask;
+    return true;
+  }
+
   return false;
 }
 
@@ -1251,6 +1305,8 @@ protected:
                                          uint32_t& aVariantMask,
                                          bool *aHadFinalWS);
   bool ParseCalcTerm(nsCSSValue& aValue, uint32_t& aVariantMask);
+  bool ParseCalcMinMaxClampFunction(nsCSSValue& aValue,
+                                    uint32_t& aVariantMask);
   bool ParseCalcNumberExpressionValue(float& aValue);
   bool ParseCalcNumberFunction(nsCSSValue& aValue, uint32_t& aVariantMask);
   bool RequireWhitespace();
@@ -13694,7 +13750,8 @@ CSSParserImpl::IsCalcFunctionToken(const nsCSSToken& aToken) const
 {
   return aToken.mType == eCSSToken_Function &&
          (aToken.mIdent.LowerCaseEqualsLiteral("calc") ||
-          aToken.mIdent.LowerCaseEqualsLiteral("-moz-calc"));
+          aToken.mIdent.LowerCaseEqualsLiteral("-moz-calc") ||
+          IsCalcNumberFunctionName(aToken.mIdent));
 }
 
 // Parse one item of the background shorthand property.
@@ -15038,8 +15095,16 @@ CSSParserImpl::ParseCalc(nsCSSValue& aValue, uint32_t aVariantMask,
     RefPtr<nsCSSValue::Array> arr = nsCSSValue::Array::Create(1);
     uint32_t resultVariantMask = aVariantMask;
 
-    if (!ParseCalcAdditiveExpression(arr->Item(0), resultVariantMask))
+    const bool isMinMaxClamp =
+      mToken.mType == eCSSToken_Function &&
+      IsCalcNumberFunctionName(mToken.mIdent);
+    if (isMinMaxClamp) {
+      if (!ParseCalcMinMaxClampFunction(arr->Item(0), resultVariantMask)) {
+        break;
+      }
+    } else if (!ParseCalcAdditiveExpression(arr->Item(0), resultVariantMask)) {
       break;
+    }
 
     if (mCalcAllowsTypedArithmetic) {
       int32_t exponent;
@@ -15060,8 +15125,9 @@ CSSParserImpl::ParseCalc(nsCSSValue& aValue, uint32_t aVariantMask,
       }
     }
 
-    if (!ExpectSymbol(')', true))
+    if (!isMinMaxClamp && !ExpectSymbol(')', true)) {
       break;
+    }
 
     aValue.SetArrayValue(arr, eCSSUnit_Calc);
     if (aResultVariantMask) {
@@ -15271,20 +15337,20 @@ CSSParserImpl::ParseCalcTerm(nsCSSValue& aValue, uint32_t& aVariantMask)
   MOZ_ASSERT(aVariantMask != 0, "unexpected variant mask");
   if (!GetToken(true))
     return false;
+  if (mToken.mType == eCSSToken_Function &&
+      IsCalcNumberFunctionName(mToken.mIdent)) {
+    if (!ParseCalcMinMaxClampFunction(aValue, aVariantMask)) {
+      SkipUntil(')');
+      return false;
+    }
+    return true;
+  }
   // Either an additive expression in parentheses...
   if (mToken.IsSymbol('(') ||
       // Treat nested calc() as plain parenthesis.
       IsCalcFunctionToken(mToken)) {
     if (!ParseCalcAdditiveExpression(aValue, aVariantMask) ||
         !ExpectSymbol(')', true)) {
-      SkipUntil(')');
-      return false;
-    }
-    return true;
-  }
-  if (mToken.mType == eCSSToken_Function &&
-      IsCalcNumberFunctionName(mToken.mIdent)) {
-    if (!ParseCalcNumberFunction(aValue, aVariantMask)) {
       SkipUntil(')');
       return false;
     }
@@ -15321,6 +15387,63 @@ CSSParserImpl::ParseCalcTerm(nsCSSValue& aValue, uint32_t& aVariantMask)
       aVariantMask &= ~int32_t(VARIANT_NUMBER);
     }
   }
+  return true;
+}
+
+bool
+CSSParserImpl::ParseCalcMinMaxClampFunction(nsCSSValue& aValue,
+                                            uint32_t& aVariantMask)
+{
+  MOZ_ASSERT(mToken.mType == eCSSToken_Function, "expected function token");
+  MOZ_ASSERT(IsCalcNumberFunctionName(mToken.mIdent),
+             "unexpected calc() math function");
+
+  nsCSSUnit unit;
+  if (mToken.mIdent.LowerCaseEqualsLiteral("min")) {
+    unit = eCSSUnit_Calc_Min;
+  } else if (mToken.mIdent.LowerCaseEqualsLiteral("max")) {
+    unit = eCSSUnit_Calc_Max;
+  } else {
+    MOZ_ASSERT(mToken.mIdent.LowerCaseEqualsLiteral("clamp"),
+               "unexpected calc() math function");
+    unit = eCSSUnit_Calc_Clamp;
+  }
+
+  AutoTArray<nsCSSValue, 4> arguments;
+  uint32_t mergedVariantMask = 0;
+
+  for (;;) {
+    nsCSSValue* argument = arguments.AppendElement();
+    uint32_t argumentVariantMask = aVariantMask;
+    if (!ParseCalcAdditiveExpression(*argument, argumentVariantMask) ||
+        !MergeCalcFunctionVariantMask(mergedVariantMask,
+                                      argumentVariantMask)) {
+      return false;
+    }
+
+    if (!ExpectSymbol(',', true)) {
+      break;
+    }
+  }
+
+  const uint32_t argumentCount = arguments.Length();
+  if ((unit == eCSSUnit_Calc_Clamp && argumentCount != 3) ||
+      (unit != eCSSUnit_Calc_Clamp && argumentCount == 0) ||
+      !ExpectSymbol(')', true)) {
+    return false;
+  }
+
+  if (unit != eCSSUnit_Calc_Clamp && argumentCount == 1) {
+    aValue = arguments[0];
+  } else {
+    RefPtr<nsCSSValue::Array> array = nsCSSValue::Array::Create(argumentCount);
+    for (uint32_t i = 0; i < argumentCount; ++i) {
+      array->Item(i) = arguments[i];
+    }
+    aValue.SetArrayValue(array, unit);
+  }
+
+  aVariantMask = mergedVariantMask;
   return true;
 }
 

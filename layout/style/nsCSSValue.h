@@ -477,6 +477,11 @@ enum nsCSSUnit {
   eCSSUnit_Calc_Times_L = 33,     // (nsCSSValue::Array*) num * val within calc
   eCSSUnit_Calc_Times_R = 34,     // (nsCSSValue::Array*) val * num within calc
   eCSSUnit_Calc_Divided = 35,     // (nsCSSValue::Array*) / within calc
+  // Min and Max have arrays with one or more elements. Clamp has an array
+  // with exactly 3 elements: lower bound, center, upper bound.
+  eCSSUnit_Calc_Min     = 36,     // (nsCSSValue::Array*) min() node
+  eCSSUnit_Calc_Max     = 37,     // (nsCSSValue::Array*) max() node
+  eCSSUnit_Calc_Clamp   = 38,     // (nsCSSValue::Array*) clamp() node
 
   eCSSUnit_URL          = 40,     // (nsCSSValue::URL*) value
   eCSSUnit_Image        = 41,     // (nsCSSValue::Image*) value
@@ -713,12 +718,12 @@ public:
   bool      IsTimeUnit() const  
     { return eCSSUnit_Seconds <= mUnit && mUnit <= eCSSUnit_Milliseconds; }
   bool      IsCalcUnit() const
-    { return eCSSUnit_Calc <= mUnit && mUnit <= eCSSUnit_Calc_Divided; }
+    { return eCSSUnit_Calc <= mUnit && mUnit <= eCSSUnit_Calc_Clamp; }
 
   bool      UnitHasStringValue() const
     { return eCSSUnit_String <= mUnit && mUnit <= eCSSUnit_Element; }
   bool      UnitHasArrayValue() const
-    { return eCSSUnit_Array <= mUnit && mUnit <= eCSSUnit_Calc_Divided; }
+    { return eCSSUnit_Array <= mUnit && mUnit <= eCSSUnit_Calc_Clamp; }
 
   // Checks for the nsCSSValue being of a particular type of color unit:
   //

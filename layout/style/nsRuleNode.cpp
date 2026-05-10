@@ -798,6 +798,16 @@ CalcLengthTowardZero(const nsCSSValue& aValue,
                         AppUnitRounding::TowardZero);
 }
 
+already_AddRefed<nsStyleCoord::CalcNode>
+nsRuleNode::ComputedCalc::ToCalcNode() const
+{
+  if (mNode) {
+    RefPtr<nsStyleCoord::CalcNode> node = mNode;
+    return node.forget();
+  }
+  return nsStyleCoord::CalcNode::CreateLeaf(mLength, mPercent, mHasPercent);
+}
+
 /* static */ nscoord
 nsRuleNode::CalcLengthWithInitialFont(nsPresContext* aPresContext,
                                       const nsCSSValue& aValue)
@@ -830,27 +840,42 @@ struct LengthPercentPairCalcOps : public css::NumbersAlreadyNormalizedOps
   {
     if (aValue.GetUnit() == eCSSUnit_Percent) {
       mHasPercent = true;
-      return result_type(0, aValue.GetPercentValue());
+      return result_type(0, aValue.GetPercentValue(), true);
     }
     return result_type(CalcLength(aValue, mContext, mPresContext,
                                   mConditions),
-                       0.0f);
+                       0.0f, false);
   }
 
   result_type
   MergeAdditive(nsCSSUnit aCalcFunction,
                 result_type aValue1, result_type aValue2)
   {
+    if (aValue1.HasNode() || aValue2.HasNode()) {
+      RefPtr<nsStyleCoord::CalcNode> node =
+        nsStyleCoord::CalcNode::Create(
+          aCalcFunction == eCSSUnit_Calc_Plus
+            ? nsStyleCoord::CalcNode::Type::Add
+            : nsStyleCoord::CalcNode::Type::Subtract);
+      node->mChildren.AppendElement(aValue1.ToCalcNode());
+      node->mChildren.AppendElement(aValue2.ToCalcNode());
+      node->mHasPercent = node->HasPercent();
+      mHasPercent = mHasPercent || node->mHasPercent;
+      return result_type(node.forget());
+    }
+
     if (aCalcFunction == eCSSUnit_Calc_Plus) {
       return result_type(NSCoordSaturatingAdd(aValue1.mLength,
                                               aValue2.mLength),
-                         aValue1.mPercent + aValue2.mPercent);
+                         aValue1.mPercent + aValue2.mPercent,
+                         aValue1.mHasPercent || aValue2.mHasPercent);
     }
     MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Minus,
                "min() and max() are not allowed in calc() on transform");
     return result_type(NSCoordSaturatingSubtract(aValue1.mLength,
                                                  aValue2.mLength, 0),
-                       aValue1.mPercent - aValue2.mPercent);
+                       aValue1.mPercent - aValue2.mPercent,
+                       aValue1.mHasPercent || aValue2.mHasPercent);
   }
 
   result_type
@@ -859,8 +884,19 @@ struct LengthPercentPairCalcOps : public css::NumbersAlreadyNormalizedOps
   {
     MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Times_L,
                "unexpected unit");
+    if (aValue2.HasNode()) {
+      RefPtr<nsStyleCoord::CalcNode> node =
+        nsStyleCoord::CalcNode::Create(nsStyleCoord::CalcNode::Type::Multiply);
+      node->mChildren.AppendElement(aValue2.ToCalcNode());
+      node->mNumber = aValue1;
+      node->mHasPercent = node->HasPercent();
+      mHasPercent = mHasPercent || node->mHasPercent;
+      return result_type(node.forget());
+    }
+
     return result_type(NSCoordSaturatingMultiply(aValue2.mLength, aValue1),
-                       aValue1 * aValue2.mPercent);
+                       aValue1 * aValue2.mPercent,
+                       aValue2.mHasPercent);
   }
 
   result_type
@@ -871,10 +907,89 @@ struct LengthPercentPairCalcOps : public css::NumbersAlreadyNormalizedOps
                aCalcFunction == eCSSUnit_Calc_Divided,
                "unexpected unit");
     if (aCalcFunction == eCSSUnit_Calc_Divided) {
+      if (aValue1.HasNode()) {
+        RefPtr<nsStyleCoord::CalcNode> node =
+          nsStyleCoord::CalcNode::Create(nsStyleCoord::CalcNode::Type::Divide);
+        node->mChildren.AppendElement(aValue1.ToCalcNode());
+        node->mNumber = aValue2;
+        node->mHasPercent = node->HasPercent();
+        mHasPercent = mHasPercent || node->mHasPercent;
+        return result_type(node.forget());
+      }
       aValue2 = 1.0f / aValue2;
+    } else if (aValue1.HasNode()) {
+      RefPtr<nsStyleCoord::CalcNode> node =
+        nsStyleCoord::CalcNode::Create(nsStyleCoord::CalcNode::Type::Multiply);
+      node->mChildren.AppendElement(aValue1.ToCalcNode());
+      node->mNumber = aValue2;
+      node->mHasPercent = node->HasPercent();
+      mHasPercent = mHasPercent || node->mHasPercent;
+      return result_type(node.forget());
     }
     return result_type(NSCoordSaturatingMultiply(aValue1.mLength, aValue2),
-                       aValue1.mPercent * aValue2);
+                       aValue1.mPercent * aValue2,
+                       aValue1.mHasPercent);
+  }
+
+  result_type
+  MergeMinMax(nsCSSUnit aCalcFunction,
+              result_type aValue1, result_type aValue2)
+  {
+    const bool hasNode = aValue1.HasNode() || aValue2.HasNode();
+    const bool hasPercent = aValue1.mHasPercent || aValue2.mHasPercent;
+    if (!hasNode && !hasPercent) {
+      if (aCalcFunction == eCSSUnit_Calc_Min) {
+        return result_type(std::min(aValue1.mLength, aValue2.mLength),
+                           0.0f, false);
+      }
+      MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Max, "unexpected unit");
+      return result_type(std::max(aValue1.mLength, aValue2.mLength),
+                         0.0f, false);
+    }
+
+    RefPtr<nsStyleCoord::CalcNode> node =
+      nsStyleCoord::CalcNode::Create(
+        aCalcFunction == eCSSUnit_Calc_Min
+          ? nsStyleCoord::CalcNode::Type::Min
+          : nsStyleCoord::CalcNode::Type::Max);
+    if (aValue1.HasNode() &&
+        aValue1.mNode->mType == node->mType) {
+      node->mChildren.AppendElements(aValue1.mNode->mChildren);
+    } else {
+      node->mChildren.AppendElement(aValue1.ToCalcNode());
+    }
+    if (aValue2.HasNode() &&
+        aValue2.mNode->mType == node->mType) {
+      node->mChildren.AppendElements(aValue2.mNode->mChildren);
+    } else {
+      node->mChildren.AppendElement(aValue2.ToCalcNode());
+    }
+    node->mHasPercent = node->HasPercent();
+    mHasPercent = mHasPercent || node->mHasPercent;
+    return result_type(node.forget());
+  }
+
+  result_type
+  MergeClamp(result_type aMin, result_type aCenter, result_type aMax)
+  {
+    const bool hasNode = aMin.HasNode() || aCenter.HasNode() || aMax.HasNode();
+    const bool hasPercent = aMin.mHasPercent ||
+                            aCenter.mHasPercent ||
+                            aMax.mHasPercent;
+    if (!hasNode && !hasPercent) {
+      return result_type(std::max(aMin.mLength,
+                                  std::min(aCenter.mLength, aMax.mLength)),
+                         0.0f, false);
+    }
+
+    RefPtr<nsStyleCoord::CalcNode> node =
+      nsStyleCoord::CalcNode::Create(nsStyleCoord::CalcNode::Type::Clamp);
+    node->mChildren.AppendElement(aMin.ToCalcNode());
+    node->mChildren.AppendElement(aCenter.ToCalcNode());
+    node->mChildren.AppendElement(aMax.ToCalcNode());
+    node->mHasPercent = node->HasPercent();
+    mHasPercent = mHasPercent || node->mHasPercent;
+    return result_type(node.forget());
   }
 
 };
@@ -892,7 +1007,8 @@ SpecifiedCalcToComputedCalc(const nsCSSValue& aValue, nsStyleCoord& aCoord,
 
   calcObj->mLength = vals.mLength;
   calcObj->mPercent = vals.mPercent;
-  calcObj->mHasPercent = ops.mHasPercent;
+  calcObj->mHasPercent = vals.mHasPercent || ops.mHasPercent;
+  calcObj->mNode = vals.mNode;
 
   aCoord.SetCalcValue(calcObj);
 }
@@ -915,8 +1031,7 @@ nsRuleNode::ComputeComputedCalc(const nsStyleCoord& aValue,
                                 nscoord aPercentageBasis)
 {
   nsStyleCoord::Calc* calc = aValue.GetCalcValue();
-  return calc->mLength +
-         NSToCoordFloorClamped(aPercentageBasis * calc->mPercent);
+  return calc->Resolve(aPercentageBasis);
 }
 
 /* static */ nscoord
@@ -5108,6 +5223,34 @@ struct LengthNumberCalcOps : public css::NumbersAlreadyNormalizedOps
     return result;
   }
 
+  result_type
+  MergeMinMax(nsCSSUnit aCalcFunction,
+              result_type aValue1, result_type aValue2)
+  {
+    MOZ_ASSERT(aValue1.mIsNumber == aValue2.mIsNumber);
+    LengthNumberCalcObj result;
+    result.mIsNumber = aValue1.mIsNumber;
+    if (aCalcFunction == eCSSUnit_Calc_Min) {
+      result.mValue = std::min(aValue1.mValue, aValue2.mValue);
+      return result;
+    }
+    MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Max, "unexpected unit");
+    result.mValue = std::max(aValue1.mValue, aValue2.mValue);
+    return result;
+  }
+
+  result_type
+  MergeClamp(result_type aMin, result_type aCenter, result_type aMax)
+  {
+    MOZ_ASSERT(aMin.mIsNumber == aCenter.mIsNumber &&
+               aCenter.mIsNumber == aMax.mIsNumber);
+    LengthNumberCalcObj result;
+    result.mIsNumber = aCenter.mIsNumber;
+    result.mValue = std::max(aMin.mValue,
+                             std::min(aCenter.mValue, aMax.mValue));
+    return result;
+  }
+
   result_type ComputeLeafValue(const nsCSSValue& aValue)
   {
     LengthNumberCalcObj result;
@@ -5195,6 +5338,38 @@ struct LengthPercentNumberCalcOps : public css::NumbersAlreadyNormalizedOps
     result.mLength = aValue1.mLength * aValue2;
     result.mPercent = aValue1.mPercent * aValue2;
     result.mIsNumber = aValue1.mIsNumber;
+    return result;
+  }
+
+  result_type
+  MergeMinMax(nsCSSUnit aCalcFunction,
+              result_type aValue1, result_type aValue2)
+  {
+    MOZ_ASSERT(aValue1.mIsNumber == aValue2.mIsNumber);
+    result_type result;
+    result.mIsNumber = aValue1.mIsNumber;
+    if (aCalcFunction == eCSSUnit_Calc_Min) {
+      result.mLength = std::min(aValue1.mLength, aValue2.mLength);
+      result.mPercent = std::min(aValue1.mPercent, aValue2.mPercent);
+    } else {
+      MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Max, "unexpected unit");
+      result.mLength = std::max(aValue1.mLength, aValue2.mLength);
+      result.mPercent = std::max(aValue1.mPercent, aValue2.mPercent);
+    }
+    return result;
+  }
+
+  result_type
+  MergeClamp(result_type aMin, result_type aCenter, result_type aMax)
+  {
+    MOZ_ASSERT(aMin.mIsNumber == aCenter.mIsNumber &&
+               aCenter.mIsNumber == aMax.mIsNumber);
+    result_type result;
+    result.mIsNumber = aCenter.mIsNumber;
+    result.mLength = std::max(aMin.mLength,
+                              std::min(aCenter.mLength, aMax.mLength));
+    result.mPercent = std::max(aMin.mPercent,
+                               std::min(aCenter.mPercent, aMax.mPercent));
     return result;
   }
 

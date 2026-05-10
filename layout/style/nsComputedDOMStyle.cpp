@@ -1900,6 +1900,94 @@ nsComputedDOMStyle::DoGetBackgroundColor()
 }
 
 static void
+AppendCalcNodeToString(const nsStyleCoord::CalcNode* aNode,
+                       nsROCSSPrimitiveValue* aPrimitive,
+                       nsAString& aResult);
+
+static void
+AppendCalcLeafToString(const nsStyleCoord::CalcNode* aNode,
+                       nsROCSSPrimitiveValue* aPrimitive,
+                       nsAString& aResult)
+{
+  nsAutoString tmp;
+
+  if (!aNode->mHasPercent) {
+    aPrimitive->SetAppUnits(aNode->mLength);
+    aPrimitive->GetCssText(tmp);
+    aResult.Append(tmp);
+    return;
+  }
+
+  aResult.AppendLiteral("calc(");
+  aPrimitive->SetAppUnits(aNode->mLength);
+  aPrimitive->GetCssText(tmp);
+  aResult.Append(tmp);
+  aResult.AppendLiteral(" + ");
+  aPrimitive->SetPercent(aNode->mPercent);
+  aPrimitive->GetCssText(tmp);
+  aResult.Append(tmp);
+  aResult.Append(')');
+}
+
+static void
+AppendCalcNodeToString(const nsStyleCoord::CalcNode* aNode,
+                       nsROCSSPrimitiveValue* aPrimitive,
+                       nsAString& aResult)
+{
+  using Type = nsStyleCoord::CalcNode::Type;
+
+  switch (aNode->mType) {
+    case Type::Leaf:
+      AppendCalcLeafToString(aNode, aPrimitive, aResult);
+      return;
+    case Type::Add:
+    case Type::Subtract:
+      aResult.AppendLiteral("calc(");
+      AppendCalcNodeToString(aNode->mChildren[0], aPrimitive, aResult);
+      aResult.Append(aNode->mType == Type::Add
+                       ? NS_LITERAL_STRING(" + ")
+                       : NS_LITERAL_STRING(" - "));
+      AppendCalcNodeToString(aNode->mChildren[1], aPrimitive, aResult);
+      aResult.Append(')');
+      return;
+    case Type::Multiply:
+    case Type::Divide: {
+      nsAutoString tmp;
+      aResult.AppendLiteral("calc(");
+      AppendCalcNodeToString(aNode->mChildren[0], aPrimitive, aResult);
+      aResult.Append(aNode->mType == Type::Multiply
+                       ? NS_LITERAL_STRING(" * ")
+                       : NS_LITERAL_STRING(" / "));
+      aPrimitive->SetNumber(aNode->mNumber);
+      aPrimitive->GetCssText(tmp);
+      aResult.Append(tmp);
+      aResult.Append(')');
+      return;
+    }
+    case Type::Min:
+    case Type::Max:
+    case Type::Clamp:
+      if (aNode->mType == Type::Min) {
+        aResult.AppendLiteral("min(");
+      } else if (aNode->mType == Type::Max) {
+        aResult.AppendLiteral("max(");
+      } else {
+        aResult.AppendLiteral("clamp(");
+      }
+      for (uint32_t i = 0; i < aNode->mChildren.Length(); ++i) {
+        if (i != 0) {
+          aResult.AppendLiteral(", ");
+        }
+        AppendCalcNodeToString(aNode->mChildren[i], aPrimitive, aResult);
+      }
+      aResult.Append(')');
+      return;
+  }
+
+  MOZ_ASSERT_UNREACHABLE("unexpected calc node type");
+}
+
+static void
 SetValueToCalc(const nsStyleCoord::CalcValue* aCalc,
                nsROCSSPrimitiveValue*         aValue)
 {
@@ -1922,6 +2010,21 @@ SetValueToCalc(const nsStyleCoord::CalcValue* aCalc,
 
   result.Append(')');
 
+  aValue->SetString(result); // not really SetString
+}
+
+static void
+SetValueToCalc(const nsStyleCoord::Calc* aCalc,
+               nsROCSSPrimitiveValue*    aValue)
+{
+  if (!aCalc->HasCalcNode()) {
+    SetValueToCalc(static_cast<const nsStyleCoord::CalcValue*>(aCalc), aValue);
+    return;
+  }
+
+  RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
+  nsAutoString result;
+  AppendCalcNodeToString(aCalc->mNode, val, result);
   aValue->SetString(result); // not really SetString
 }
 
