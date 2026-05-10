@@ -1170,6 +1170,8 @@ protected:
 
   // Property specific parsing routines
   bool ParseImageLayers(const nsCSSPropertyID aTable[]);
+  bool ParseAspectRatio(nsCSSValue& aValue);
+  bool ParseAspectRatioRatio(nsCSSValue& aValue);
 
   struct ImageLayersShorthandParseState {
     nsCSSValue&  mColor;
@@ -13256,6 +13258,59 @@ CSSParserImpl::ParsePropertyByFunction(nsCSSPropertyID aPropID)
 #define BG_CLR    (BG_CENTER | BG_LEFT | BG_RIGHT)
 #define BG_LR     (BG_LEFT | BG_RIGHT)
 
+bool
+CSSParserImpl::ParseAspectRatioRatio(nsCSSValue& aValue)
+{
+  nsCSSValue width;
+  if (!ParseNonNegativeNumber(width)) {
+    return false;
+  }
+
+  float w = width.GetFloatValue();
+  float h = 1.0f;
+  if (ExpectSymbol('/', true)) {
+    nsCSSValue height;
+    if (!ParseNonNegativeNumber(height)) {
+      return false;
+    }
+    h = height.GetFloatValue();
+  }
+
+  // Degenerate ratios behave as auto in layout.
+  aValue.SetFloatValue(w == 0.0f || h == 0.0f ? 0.0f : w / h,
+                       eCSSUnit_Number);
+  return true;
+}
+
+bool
+CSSParserImpl::ParseAspectRatio(nsCSSValue& aValue)
+{
+  if (ParseSingleTokenVariant(aValue, VARIANT_INHERIT, nullptr)) {
+    return true;
+  }
+
+  nsCSSValue autoValue;
+  bool hasAuto = ParseSingleTokenVariant(autoValue, VARIANT_AUTO, nullptr);
+
+  nsCSSValue ratioValue;
+  bool hasRatio = ParseAspectRatioRatio(ratioValue);
+  if (!hasAuto && !hasRatio) {
+    return false;
+  }
+
+  if (hasRatio) {
+    if (!hasAuto) {
+      // The grammar is "auto || <ratio>", so auto may appear after the ratio.
+      ParseSingleTokenVariant(autoValue, VARIANT_AUTO, nullptr);
+    }
+    aValue = ratioValue;
+    return true;
+  }
+
+  aValue.SetAutoValue();
+  return true;
+}
+
 CSSParseResult
 CSSParserImpl::ParseBoxProperty(nsCSSValue& aValue,
                                 nsCSSPropertyID aPropID)
@@ -13294,6 +13349,8 @@ CSSParserImpl::ParseSingleValuePropertyByFunction(nsCSSValue& aValue,
   switch (aPropID) {
     case eCSSProperty_clip_path:
       return ParseClipPath(aValue);
+    case eCSSProperty_aspect_ratio:
+      return ParseAspectRatio(aValue);
     case eCSSProperty_contain:
       return ParseContain(aValue);
     case eCSSProperty_font_family:

@@ -1167,6 +1167,14 @@ var gCSSProperties = {
     other_values: ["url(foo.xml)"],
     invalid_values: [],
   },
+  "aspect-ratio": {
+    domProp: "aspectRatio",
+    inherited: false,
+    type: CSS_TYPE_LONGHAND,
+    initial_values: ["auto"],
+    other_values: ["1", "2"],
+    invalid_values: ["none", "-1", "1px", "1 / -1", "1 /", "auto auto"],
+  },
   "-moz-border-bottom-colors": {
     domProp: "MozBorderBottomColors",
     inherited: false,

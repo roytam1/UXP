@@ -226,6 +226,7 @@ private:
    */
 
   already_AddRefed<CSSValue> DoGetAppearance();
+  already_AddRefed<CSSValue> DoGetAspectRatio();
 
   /* Box properties */
   already_AddRefed<CSSValue> DoGetBoxAlign();

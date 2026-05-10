@@ -9304,11 +9304,16 @@ nsRuleNode::ComputePositionData(void* aStartStruct,
              SETCOORD_UNSET_INITIAL,
            aContext, mPresContext, conditions);
 
-  // aspect-ratio: float, initial
-  SetFactor(*aRuleData->ValueForAspectRatio(),
-           pos->mAspectRatio, conditions,
-           parentPos->mAspectRatio, 0.0f,
-           SETFCT_UNSET_INITIAL | SETFCT_POSITIVE | SETFCT_NONE);
+  // aspect-ratio: auto | <ratio>
+  const nsCSSValue* aspectRatio = aRuleData->ValueForAspectRatio();
+  if (aspectRatio->GetUnit() == eCSSUnit_Auto) {
+    pos->mAspectRatio = 0.0f;
+  } else {
+    SetFactor(*aspectRatio,
+              pos->mAspectRatio, conditions,
+              parentPos->mAspectRatio, 0.0f,
+              SETFCT_UNSET_INITIAL | SETFCT_POSITIVE | SETFCT_NONE);
+  }
 
   // box-sizing: enum, inherit, initial
   SetValue(*aRuleData->ValueForBoxSizing(),

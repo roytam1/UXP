@@ -4652,7 +4652,10 @@ nsFrame::GetIntrinsicSize()
 /* virtual */ AspectRatio
 nsFrame::GetIntrinsicRatio()
 {
-  return AspectRatio();
+  const nsStylePosition* stylePos = StylePosition();
+  return stylePos->mAspectRatio == 0.0f
+         ? AspectRatio()
+         : AspectRatio(stylePos->mAspectRatio);
 }
 
 void
@@ -4721,9 +4724,16 @@ nsFrame::ComputeSize(nsRenderingContext* aRenderingContext,
                      const LogicalSize&  aPadding,
                      ComputeSizeFlags    aFlags)
 {
-  MOZ_ASSERT(!GetIntrinsicRatio(),
-             "Please override this method and call "
-             "nsFrame::ComputeSizeWithIntrinsicDimensions instead.");
+  AspectRatio intrinsicRatio = GetIntrinsicRatio();
+  if (intrinsicRatio) {
+    return ComputeSizeWithIntrinsicDimensions(aRenderingContext, aWM,
+                                              GetIntrinsicSize(),
+                                              intrinsicRatio,
+                                              aCBSize, aMargin,
+                                              aBorder, aPadding,
+                                              aFlags);
+  }
+
   LogicalSize result = ComputeAutoSize(aRenderingContext, aWM,
                                        aCBSize, aAvailableISize,
                                        aMargin, aBorder, aPadding,
