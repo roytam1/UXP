@@ -2723,7 +2723,7 @@ fi
 AC_SUBST(MOZ_RAW)
 
 dnl ========================================================
-dnl = Enable Libaom AV1 Codec
+dnl = Enable dav1d AV1 Codec
 dnl ========================================================
 MOZ_ARG_ENABLE_BOOL(av1,
 [  --enable-av1           Enable dav1d for av1 video support],
