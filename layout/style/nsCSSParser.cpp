@@ -6998,6 +6998,8 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
     if (hybridPseudoElementType == CSSPseudoElementType::slotted) {
       pseudoClassType = CSSPseudoClassType::slotted;
       aFlags |= SelectorParsingFlags::eDisallowCombinators;
+    } else if (hybridPseudoElementType == CSSPseudoElementType::part) {
+      pseudoClassType = CSSPseudoClassType::part;
     }
   }
 
@@ -7150,6 +7152,28 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
         UngetToken();
         return eSelectorParsingStatus_Error;
       }
+      else if (hybridPseudoElementType != CSSPseudoElementType::NotPseudo) {
+        aSelector.SetHybridPseudoType(hybridPseudoElementType);
+        // Ensure hybrid pseudo-elements are rejected if they're not allowed.
+        if (disallowPseudoElements) {
+          UngetToken();
+          return eSelectorParsingStatus_Error;
+        }
+
+        if (nsCSSPseudoClasses::HasStringArg(pseudoClassType)) {
+          parsingStatus =
+            ParsePseudoClassWithIdentArg(aSelector, pseudoClassType);
+        }
+        else if (nsCSSPseudoClasses::HasSelectorListArg(pseudoClassType)) {
+          parsingStatus = ParsePseudoClassWithSelectorListArg(aSelector,
+                                                              pseudoClassType,
+                                                              flags);
+        }
+        else {
+          MOZ_ASSERT(false, "unexpected hybrid pseudo-element");
+          parsingStatus = eSelectorParsingStatus_Error;
+        }
+      }
       else if (nsCSSPseudoClasses::HasStringArg(pseudoClassType)) {
         parsingStatus =
           ParsePseudoClassWithIdentArg(aSelector, pseudoClassType);
@@ -7161,14 +7185,6 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
       else {
         MOZ_ASSERT(nsCSSPseudoClasses::HasSelectorListArg(pseudoClassType),
                    "unexpected pseudo with function token");
-        if (hybridPseudoElementType != CSSPseudoElementType::NotPseudo) {
-          aSelector.SetHybridPseudoType(hybridPseudoElementType);
-          // Ensure hybrid pseudo-elements are rejected if they're not allowed.
-          if (disallowPseudoElements) {
-            UngetToken();
-            return eSelectorParsingStatus_Error;
-          }
-        }
         parsingStatus = ParsePseudoClassWithSelectorListArg(aSelector,
                                                             pseudoClassType,
                                                             flags);
