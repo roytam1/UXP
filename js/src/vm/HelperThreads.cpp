@@ -477,6 +477,23 @@ js::CancelOffThreadParses(JSRuntime* rt)
         HelperThreadState().wait(lock, GlobalHelperThreadState::CONSUMER);
     }
 
+    // Clean up any parse tasks which haven't been finished by the main thread.
+    GlobalHelperThreadState::ParseTaskVector& finished =
+        HelperThreadState().parseFinishedList(lock);
+    while (true) {
+        bool found = false;
+        for (size_t i = 0; i < finished.length(); i++) {
+            ParseTask* task = finished[i];
+            if (task->runtimeMatches(rt)) {
+                found = true;
+                AutoUnlockHelperThreadState unlock(lock);
+                HelperThreadState().cancelParseTask(rt->contextFromMainThread(),
+                                                    task->kind, task);
+            }
+        }
+        if (!found)
+            break;
+    }
 }
 
 bool

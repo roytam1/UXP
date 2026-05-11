@@ -5,36 +5,36 @@
 
 /**
  * IDLE-TIME GARBAGE COLLECTION SYSTEM
- * 
+ *
  * Overview
  * --------
  * This system implements idle-time-only garbage collection, deferring GC work
  * to periods when the JavaScript engine is not actively processing code.
  * This improves perceived responsiveness by avoiding GC pauses during critical
  * execution windows.
- * 
+ *
  * Architecture
  * -----------
- * 
+ *
  * The system consists of several key components:
- * 
+ *
  * 1. IdleGCManager (gc/IdleGC.h, gc/IdleGC.cpp)
  *    - Tracks when the JS engine is executing vs. idle
- *    - Maintains timestamp of last execution activity  
+ *    - Maintains timestamp of last execution activity
  *    - Checks if sufficient idle time has passed
  *    - Configurable idle threshold (default: 100ms)
  *    - Can determine which GC reasons should bypass idle checks
- * 
+ *
  * 2. GCRuntime Integration (gc/GCRuntime.h)
  *    - Contains an IdleGCManager instance
  *    - Provides public methods: notifyJSExecutionStart/End()
  *    - Modified checkIfGCAllowedInCurrentState() to check idle status
- * 
+ *
  * 3. Activity Tracking (vm/Runtime.cpp)
  *    - triggerActivityCallback() now notifies IdleGCManager
  *    - Called when JS enters/exits request (execution boundary)
  *    - Updated in jsapi.cpp's StartRequest/StopRequest functions
- * 
+ *
  * 4. Public API (jsapi.h, jsapi.cpp)
  *    - JS_SetIdleGCEnabled() / JS_IsIdleGCEnabled()
  *    - JS_SetIdleGCThreshold() / JS_GetIdleGCThreshold()
@@ -43,18 +43,18 @@
  *
  * Behavior
  * --------
- * 
+ *
  * Normal GC Trigger (Idle GC Enabled):
- * 
+ *
  *   1. JS code executes → notifyJSExecutionStart() called
  *   2. JS code finishes → notifyJSExecutionEnd() called, timestamp recorded
  *   3. GC needed → checkIfGCAllowedInCurrentState() checks idle status
  *   4a. If idle >= threshold → GC proceeds normally
  *   4b. If still executing/idle < threshold → GC is deferred
  *   5. Once idle threshold is met, next GC request proceeds
- * 
+ *
  * Critical GC Triggers (Always Proceed):
- * 
+ *
  *   The following GC reasons bypass idle checking:
  *   - OUT_OF_MEMORY: Memory pressure conditions
  *   - ALLOC_TRIGGER: Allocation threshold exceeded
@@ -65,63 +65,63 @@
  *   - EVICT_NURSERY: Nursery eviction
  *   - SHUTDOWN_CC, DESTROY_RUNTIME, LAST_DITCH: Shutdown GCs
  *   - DESTROY_ZONE, COMPARTMENT_REVOKED: Zone/compartment destruction
- * 
+ *
  * Configuration
  * -------------
- * 
+ *
  * Idle GC Enabled (default: true):
  *   - Enables idle-time-only GC mode
  *   - Can be toggled dynamically via JS_SetIdleGCEnabled()
- * 
+ *
  * Idle Threshold (default: 100ms):
  *   - Minimum idle time before GC is permitted
  *   - Configurable via JS_SetIdleGCThreshold(ms)
  *   - Typical values: 50-200ms depending on application
- * 
+ *
  * Integration Examples
  * --------------------
- * 
+ *
  * Browser Integration:
- * 
+ *
  *   // When browser loads configuration
  *   JS_SetIdleGCEnabled(cx, true);
  *   JS_SetIdleGCThreshold(cx, 100);  // 100ms idle threshold
- * 
+ *
  *   // Monitor idle GC effectiveness (optional)
  *   uint64_t idleTime = JS_GetIdleTimeSinceLastExecution(cx);
  *   if (idleTime > JS_GetIdleGCThreshold(cx)) {
  *       // System is idle, GC would be allowed if triggered
  *   }
- * 
+ *
  * Disabling for Specific Scenarios:
- * 
+ *
  *   // During initialization when nothing is "idle" yet
  *   JS_SetIdleGCEnabled(cx, false);
  *   // ... do initial setup ...
  *   JS_SetIdleGCEnabled(cx, true);  // Re-enable for normal operation
- * 
+ *
  * Performance Considerations
  * --------------------------
- * 
+ *
  * Benefits:
  *   - Reduced jank during active JS execution
  *   - GC pauses moved to idle periods where users won't notice
  *   - Especially effective for interactive applications
  *   - Improves Time-to-Interactive and First Input Delay metrics
- * 
+ *
  * Tradeoffs:
  *   - May accumulate more garbage before collection
  *   - Requires predictable idle periods (not suitable for all workloads)
  *   - Critical memory pressure GCs still proceed immediately
- * 
+ *
  * Tuning:
  *   - Lower threshold (50ms) = more frequent GC, less memory overhead
  *   - Higher threshold (200ms) = less GC overhead, more memory usage
  *   - Optimal value depends on application's execution pattern
- * 
+ *
  * Testing
  * -------
- * 
+ *
  * Unit Tests:
  *   // Test idle detection
  *   JS_SetIdleGCThreshold(cx, 100);
@@ -132,30 +132,30 @@
  *   cx->runtime()->gc.notifyJSExecutionEnd();
  *   // ... wait 150ms ...
  *   MOZ_ASSERT(cx->runtime()->gc.idleGCMgr().isIdleEnough());
- * 
+ *
  * Integration Tests:
  *   - Verify GC is deferred during active execution
  *   - Verify GC proceeds after idle period
  *   - Verify critical GC reasons bypass idle check
  *   - Measure latency improvements
- * 
+ *
  * Implementation Notes
  * --------------------
- * 
+ *
  * Thread Safety:
  *   - IdleGCManager uses mozilla::Atomic for thread-safe state
  *   - TimeStamp operations are atomic
  *   - No additional locking needed beyond existing GC locks
- * 
+ *
  * Compatibility:
  *   - Works with both incremental and non-incremental GC
  *   - Compatible with generational GC
  *   - Works with zone GC and full GC
  *   - Respects existing GC suppression mechanisms
- * 
+ *
  * Future Enhancements
  * -------------------
- * 
+ *
  * Potential improvements:
  *   - Adaptive idle threshold based on historical GC times
  *   - Per-zone idle configuration
@@ -163,7 +163,7 @@
  *   - Metrics/telemetry for idle GC effectiveness
  *   - Machine learning-based prediction of idle periods
  *   - Cooperative GC scheduling with other subsystems
- * 
+ *
  */
 
 #include "gc/IdleGC.h"

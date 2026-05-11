@@ -1747,7 +1747,7 @@ JS_SetIdleGCThreshold(JSContext* cx, uint64_t milliseconds);
 extern JS_PUBLIC_API(uint64_t)
 JS_GetIdleGCThreshold(JSContext* cx);
 
-/**  
+/**
  * Get the current idle time since the last JS execution.
  */
 extern JS_PUBLIC_API(uint64_t)
