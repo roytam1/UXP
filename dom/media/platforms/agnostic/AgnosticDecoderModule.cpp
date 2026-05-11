@@ -13,7 +13,7 @@
 #include "TheoraDecoder.h"
 
 #ifdef MOZ_AV1
-#include "AOMDecoder.h"
+#include "Dav1dDecoder.h"
 #endif
 
 namespace mozilla {
@@ -30,7 +30,7 @@ AgnosticDecoderModule::SupportsMimeType(const nsACString& aMimeType,
     TheoraDecoder::IsTheora(aMimeType);
 #ifdef MOZ_AV1
   if (MediaPrefs::AV1Enabled()) {
-    supports |= AOMDecoder::IsAV1(aMimeType);
+    supports |= Dav1dDecoder::IsAV1(aMimeType);
   }
 #endif
   MOZ_LOG(sPDMLog, LogLevel::Debug, ("Agnostic decoder %s requested type",
@@ -47,9 +47,9 @@ AgnosticDecoderModule::CreateVideoDecoder(const CreateDecoderParams& aParams)
     m = new VPXDecoder(aParams);
   }
 #ifdef MOZ_AV1
-  else if (AOMDecoder::IsAV1(aParams.mConfig.mMimeType) &&
+  else if (Dav1dDecoder::IsAV1(aParams.mConfig.mMimeType) &&
            MediaPrefs::AV1Enabled()) {
-    m = new AOMDecoder(aParams);
+    m = new Dav1dDecoder(aParams);
   }
 #endif
   else if (TheoraDecoder::IsTheora(aParams.mConfig.mMimeType)) {

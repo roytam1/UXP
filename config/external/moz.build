@@ -30,7 +30,6 @@ if CONFIG['MOZ_WEBM_ENCODER']:
 external_dirs += ['media/libvpx']
 
 if CONFIG['MOZ_AV1']:
-    external_dirs += ['media/libaom']
     external_dirs += ['media/libdav1d']
 
 external_dirs += ['media/libpng']

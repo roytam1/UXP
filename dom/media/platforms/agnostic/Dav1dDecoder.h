@@ -3,21 +3,23 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#if !defined(AOMDecoder_h_)
-#define AOMDecoder_h_
+#if !defined(Dav1dDecoder_h_)
+#define Dav1dDecoder_h_
 
 #include "PlatformDecoderModule.h"
 #include "mozilla/Span.h"
 
 #include <stdint.h>
-#include "aom/aom_decoder.h"
+
+typedef struct Dav1dContext Dav1dContext;
+typedef struct Dav1dPicture Dav1dPicture;
 
 namespace mozilla {
 
-class AOMDecoder : public MediaDataDecoder
+class Dav1dDecoder : public MediaDataDecoder
 {
 public:
-  explicit AOMDecoder(const CreateDecoderParams& aParams);
+  explicit Dav1dDecoder(const CreateDecoderParams& aParams);
 
   RefPtr<InitPromise> Init() override;
   void Input(MediaRawData* aSample) override;
@@ -26,23 +28,22 @@ public:
   void Shutdown() override;
   const char* GetDescriptionName() const override
   {
-    return "libaom (AV1) video decoder";
+    return "dav1d (AV1) video decoder";
   }
 
   // Return true if aMimeType is a one of the strings used
   // by our demuxers to identify AV1 streams.
   static bool IsAV1(const nsACString& aMimeType);
 
-  // Return true if a sample is a keyframe.
-  static bool IsKeyframe(Span<const uint8_t> aBuffer);
-
-  // Return the frame dimensions for a sample.
+  // Return the frame dimensions from a sequence header, when one is present.
   static nsIntSize GetFrameSize(Span<const uint8_t> aBuffer);
 
 private:
-  ~AOMDecoder();
+  ~Dav1dDecoder();
   void ProcessDecode(MediaRawData* aSample);
   MediaResult DoDecode(MediaRawData* aSample);
+  MediaResult DrainOutput();
+  MediaResult OutputPicture(const Dav1dPicture& aPicture);
   void ProcessDrain();
 
   const RefPtr<layers::ImageContainer> mImageContainer;
@@ -50,12 +51,11 @@ private:
   MediaDataDecoderCallback* mCallback;
   Atomic<bool> mIsFlushing;
 
-  // AOM decoder state
-  aom_codec_ctx_t mCodec;
+  Dav1dContext* mDecoder;
 
   const VideoInfo& mInfo;
 };
 
 } // namespace mozilla
 
-#endif // AOMDecoder_h_
+#endif // Dav1dDecoder_h_
