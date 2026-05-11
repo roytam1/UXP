@@ -115,6 +115,12 @@ LOCAL_INCLUDES += [
     '/media/libdav1d/src/include/dav1d',
 ]
 
+# Make dav1d's MSVC compatibility headers available to MSVC builds so
+# including <stdatomic.h> picks up the local compat header instead of
+# the system header which requires C11.
+if CONFIG['_MSC_VER'] and not CONFIG['CLANG_CL']:
+    LOCAL_INCLUDES += ['/media/libdav1d/src/include/compat/msvc']
+
 FINAL_LIBRARY = 'gkmedias'
 
 # We allow warnings for third-party code that can be updated from upstream.
