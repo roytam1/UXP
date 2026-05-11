@@ -66,6 +66,13 @@ bitdepth_sources = [
 SOURCES += common_sources
 SOURCES += bitdepth_sources
 
+if CONFIG['CPU_ARCH'].startswith('x86'):
+    DIRS += ['x86']
+elif CONFIG['CPU_ARCH'] in ('arm', 'aarch64'):
+    DIRS += ['arm']
+elif CONFIG['CPU_ARCH'] == 'ppc64' and CONFIG['TARGET_ENDIANNESS'] == 'little':
+    DIRS += ['ppc']
+
 if CONFIG['OS_TARGET'] == 'WINNT':
     SOURCES += [
         '/media/libdav1d/src/src/win32/thread.c',

@@ -36,7 +36,10 @@
 #  define ARCH_LOONGARCH64 0
 #endif
 
-#if defined(__powerpc64__) && defined(_LITTLE_ENDIAN)
+#if defined(__powerpc64__) && \
+    (defined(_LITTLE_ENDIAN) || defined(__LITTLE_ENDIAN__) || \
+     (defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && \
+      __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__))
 #  define ARCH_PPC64LE 1
 #else
 #  define ARCH_PPC64LE 0
@@ -58,12 +61,36 @@
 #define CONFIG_16BPC 1
 #define CONFIG_LOG 0
 #define CONFIG_MACOS_KPERF 0
-#if ARCH_LOONGARCH64
+#if ARCH_AARCH64 || ARCH_ARM || ARCH_LOONGARCH64 || ARCH_PPC64LE || ARCH_X86
 #  define HAVE_ASM 1
 #else
 #  define HAVE_ASM 0
 #endif
 #define TRIM_DSP_FUNCTIONS 0
+
+#define HAVE_AS_FUNC 0
+#if ARCH_AARCH64
+#  define HAVE_AS_ARCH_DIRECTIVE 1
+#  define AS_ARCH_LEVEL armv8-a
+#  define HAVE_AS_ARCHEXT_DOTPROD_DIRECTIVE 1
+#  define HAVE_AS_ARCHEXT_I8MM_DIRECTIVE 1
+#  define HAVE_AS_ARCHEXT_SVE_DIRECTIVE 1
+#  define HAVE_AS_ARCHEXT_SVE2_DIRECTIVE 1
+#  define HAVE_DOTPROD 1
+#  define HAVE_I8MM 1
+#  define HAVE_SVE 1
+#  define HAVE_SVE2 1
+#else
+#  define HAVE_AS_ARCH_DIRECTIVE 0
+#  define HAVE_AS_ARCHEXT_DOTPROD_DIRECTIVE 0
+#  define HAVE_AS_ARCHEXT_I8MM_DIRECTIVE 0
+#  define HAVE_AS_ARCHEXT_SVE_DIRECTIVE 0
+#  define HAVE_AS_ARCHEXT_SVE2_DIRECTIVE 0
+#  define HAVE_DOTPROD 0
+#  define HAVE_I8MM 0
+#  define HAVE_SVE 0
+#  define HAVE_SVE2 0
+#endif
 
 #define HAVE_ALIGNED_ALLOC 0
 #define HAVE_DLSYM 0

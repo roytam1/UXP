@@ -1,0 +1,55 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+vsx_sources = [
+    'ppc_cdef_vsx_16bpc.c',
+    'ppc_cdef_vsx_8bpc.c',
+    'ppc_looprestoration_vsx_16bpc.c',
+    'ppc_looprestoration_vsx_8bpc.c',
+]
+
+pwr9_sources = [
+    'ppc_itx_pwr9_16bpc.c',
+    'ppc_itx_pwr9_8bpc.c',
+    'ppc_loopfilter_pwr9_16bpc.c',
+    'ppc_loopfilter_pwr9_8bpc.c',
+    'ppc_mc_pwr9_16bpc.c',
+    'ppc_mc_pwr9_8bpc.c',
+]
+
+SOURCES += [
+    '/media/libdav1d/src/src/ppc/cpu.c',
+]
+SOURCES += pwr9_sources
+SOURCES += vsx_sources
+
+for f in pwr9_sources:
+    SOURCES[f].flags += [
+        '-mcpu=power9',
+    ]
+
+for f in vsx_sources:
+    SOURCES[f].flags += [
+        '-maltivec',
+        '-mvsx',
+    ]
+
+LOCAL_INCLUDES += [
+    '/media/libdav1d/config',
+    '/media/libdav1d/src',
+    '/media/libdav1d/src/include',
+    '/media/libdav1d/src/include/dav1d',
+]
+
+FINAL_LIBRARY = 'gkmedias'
+
+ALLOW_COMPILER_WARNINGS = True
+
+if CONFIG['GNU_CC'] or CONFIG['CLANG_CL']:
+    CFLAGS += [
+        '-Wno-sign-compare',
+        '-Wno-unused-function',
+        '-Wno-unused-parameter',
+    ]
