@@ -417,6 +417,8 @@ var noframe_container = document.getElementById("content");
     ["color-mix(in oklab, red, blue)", "rgb(140, 83, 162)"],
     ["color-mix(in oklch, red, blue)", "rgb(183, 0, 190)"],
     ["color-mix(in oklab, red, transparent)", "rgba(255, 0, 0, 0.5)"],
+    ["color-mix(in srgb, red, transparent calc(100% - 100%*1))", "rgb(255, 0, 0)"],
+    ["color-mix(in srgb, red, transparent calc(50%))", "rgba(255, 0, 0, 0.5)"],
     ["color-mix(in oklab, oklab(0.1 0.2 0.3), oklab(0.5 0.6 0.7))", "rgb(83, 24, 0)"],
     ["color-mix(in oklch, oklch(0.1 0.2 30), oklch(0.5 0.6 70))", "rgb(84, 23, 0)"],
   ];

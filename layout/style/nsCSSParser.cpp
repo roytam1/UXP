@@ -1553,6 +1553,7 @@ protected:
                       const nsCSSPropertyID aPropIDs[], int32_t aNumIDs);
 
   CSSParseResult ParseColor(nsCSSValue& aValue);
+  CSSParseResult ParseColorMixPercentage(float& aWeight);
 
   template<typename ComponentType>
   bool ParseRGBColor(ComponentType& aR,
@@ -7741,6 +7742,37 @@ CSSParserImpl::ParseDeclarationBlock(uint32_t aFlags, nsCSSContextType aContext)
 }
 
 CSSParseResult
+CSSParserImpl::ParseColorMixPercentage(float& aWeight)
+{
+  if (!GetToken(true)) {
+    return CSSParseResult::NotFound;
+  }
+
+  if (mToken.mType == eCSSToken_Percentage) {
+    aWeight = mToken.mNumber;
+  } else if (IsCalcFunctionToken(mToken)) {
+    nsCSSValue calcValue;
+    uint32_t calcResultVariantMask = VARIANT_PERCENT;
+    if (!ParseCalc(calcValue, VARIANT_PERCENT, &calcResultVariantMask) ||
+        !(calcResultVariantMask & VARIANT_PERCENT)) {
+      return CSSParseResult::Error;
+    }
+
+    ReducePercentageCalcOps ops;
+    aWeight = mozilla::css::ComputeCalc(calcValue, ops);
+  } else {
+    UngetToken();
+    return CSSParseResult::NotFound;
+  }
+
+  if (aWeight < 0.0f || aWeight > 1.0f) {
+    return CSSParseResult::Error;
+  }
+
+  return CSSParseResult::Ok;
+}
+
+CSSParseResult
 CSSParserImpl::ParseColor(nsCSSValue& aValue)
 {
   if (!GetToken(true)) {
@@ -7841,18 +7873,12 @@ CSSParserImpl::ParseColor(nsCSSValue& aValue)
         // parse optional weight for first color
         bool w1_specified = false;
         float w1 = 0.5f; // Default to 50%
-        if (GetToken(true)) {
-          if (mToken.mType == eCSSToken_Percentage) {
-            w1 = mToken.mNumber; // percentage tokens are already normalized (0.0-1.0)
-            w1_specified = true;
-            // Reject invalid percentages (outside 0-100% range)
-            if (w1 < 0.0f || w1 > 1.0f) {
-              SkipUntil(')');
-              return CSSParseResult::Error;
-            }
-          } else {
-            UngetToken();
-          }
+        CSSParseResult weightResult = ParseColorMixPercentage(w1);
+        if (weightResult == CSSParseResult::Ok) {
+          w1_specified = true;
+        } else if (weightResult == CSSParseResult::Error) {
+          SkipUntil(')');
+          return CSSParseResult::Error;
         }
         
         if (!ExpectSymbol(',', true)) {
@@ -7869,18 +7895,12 @@ CSSParserImpl::ParseColor(nsCSSValue& aValue)
         // parse optional weight for second color
         bool w2_specified = false;
         float w2 = 0.5f; // default to 50%
-        if (GetToken(true)) {
-          if (mToken.mType == eCSSToken_Percentage) {
-            w2 = mToken.mNumber; // percentage tokens are already normalized (0.0-1.0)
-            w2_specified = true;
-            // Reject invalid percentages (outside 0-100% range)
-            if (w2 < 0.0f || w2 > 1.0f) {
-              SkipUntil(')');
-              return CSSParseResult::Error;
-            }
-          } else {
-            UngetToken();
-          }
+        weightResult = ParseColorMixPercentage(w2);
+        if (weightResult == CSSParseResult::Ok) {
+          w2_specified = true;
+        } else if (weightResult == CSSParseResult::Error) {
+          SkipUntil(')');
+          return CSSParseResult::Error;
         }
         
         if (w1_specified && !w2_specified) {
