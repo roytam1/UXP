@@ -2726,7 +2726,7 @@ dnl ========================================================
 dnl = Enable Libaom AV1 Codec
 dnl ========================================================
 MOZ_ARG_ENABLE_BOOL(av1,
-[  --enable-av1           Enable libaom for av1 video support],
+[  --enable-av1           Enable dav1d for av1 video support],
     MOZ_AV1=1,
     MOZ_AV1=)
 
