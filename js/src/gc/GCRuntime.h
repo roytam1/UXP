@@ -974,6 +974,8 @@ class GCRuntime
     void sweepZones(FreeOp* fop, bool lastGC);
     void decommitAllWithoutUnlocking(const AutoLockGC& lock);
     void startDecommit();
+    bool sweepBackgroundFinalizePhaseInParallel(ZoneList& zones, const FinalizePhase& phase,
+                                                Arena** emptyArenas);
     void queueZonesForBackgroundSweep(ZoneList& zones);
     void sweepBackgroundThings(ZoneList& zones, LifoAlloc& freeBlocks);
     void assertBackgroundSweepingFinished();
@@ -987,7 +989,7 @@ class GCRuntime
     [[nodiscard]] bool relocateArenas(Zone* zone, JS::gcreason::Reason reason,
                                       Arena*& relocatedListOut, SliceBudget& sliceBudget);
     void updateTypeDescrObjects(MovingTracer* trc, Zone* zone);
-    void updateCellPointers(MovingTracer* trc, Zone* zone, AllocKinds kinds, size_t bgTaskCount);
+    void updateCellPointers(MovingTracer* trc, Zone* zone, AllocKinds kinds);
     void updateAllCellPointers(MovingTracer* trc, Zone* zone);
     void updatePointersToRelocatedCells(Zone* zone, AutoLockForExclusiveAccess& lock);
     void protectAndHoldArenas(Arena* arenaList);
