@@ -4149,9 +4149,7 @@ CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery)
       break;
     }
   }
-  if (!feature->mName ||
-      (expr->mRange != nsMediaExpression::eEqual &&
-       feature->mRangeType != nsMediaFeature::eMinMaxAllowed)) {
+  if (!feature->mName) {
     REPORT_UNEXPECTED_TOKEN(PEMQExpectedFeatureName);
     SkipUntil(')');
     return false;
@@ -4169,9 +4167,48 @@ CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery)
     return true;
   }
 
-  if (!mToken.IsSymbol(':')) {
+  bool usesRangeSyntax = false;
+  if (mToken.IsSymbol('<') || mToken.IsSymbol('>') || mToken.IsSymbol('=')) {
+    if (expr->mRange != nsMediaExpression::eEqual) {
+      REPORT_UNEXPECTED_TOKEN(PEMQExpectedFeatureNameEnd);
+      UngetToken();
+      SkipUntil(')');
+      return false;
+    }
+
+    usesRangeSyntax = true;
+    char16_t rangeSymbol = mToken.mSymbol;
+    bool inclusive = rangeSymbol == '=';
+
+    if (rangeSymbol != '=') {
+      if (!GetToken(true)) {
+        REPORT_UNEXPECTED_EOF(PEMQExpressionEOF);
+        return false;
+      }
+      if (mToken.IsSymbol('=')) {
+        inclusive = true;
+      } else {
+        UngetToken();
+      }
+    }
+
+    if (rangeSymbol == '>') {
+      expr->mRange = inclusive ? nsMediaExpression::eMin
+                               : nsMediaExpression::eMinExclusive;
+    } else if (rangeSymbol == '<') {
+      expr->mRange = inclusive ? nsMediaExpression::eMax
+                               : nsMediaExpression::eMaxExclusive;
+    }
+  } else if (!mToken.IsSymbol(':')) {
     REPORT_UNEXPECTED_TOKEN(PEMQExpectedFeatureNameEnd);
     UngetToken();
+    SkipUntil(')');
+    return false;
+  }
+
+  if ((expr->mRange != nsMediaExpression::eEqual || usesRangeSyntax) &&
+      feature->mRangeType != nsMediaFeature::eMinMaxAllowed) {
+    REPORT_UNEXPECTED_TOKEN(PEMQExpectedFeatureName);
     SkipUntil(')');
     return false;
   }

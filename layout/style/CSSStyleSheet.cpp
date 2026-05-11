@@ -436,6 +436,10 @@ nsMediaExpression::Matches(nsPresContext *aPresContext,
       return cmp != 1;
     case nsMediaExpression::eEqual:
       return cmp == 0;
+    case nsMediaExpression::eMinExclusive:
+      return cmp == 1;
+    case nsMediaExpression::eMaxExclusive:
+      return cmp == -1;
   }
   NS_NOTREACHED("unexpected mRange");
   return false;
@@ -640,7 +644,13 @@ nsMediaQuery::AppendToString(nsAString& aString) const
     aString.Append(nsDependentAtomString(*feature->mName));
 
     if (expr.mValue.GetUnit() != eCSSUnit_Null) {
-      aString.AppendLiteral(": ");
+      if (expr.mRange == nsMediaExpression::eMinExclusive) {
+        aString.AppendLiteral(" > ");
+      } else if (expr.mRange == nsMediaExpression::eMaxExclusive) {
+        aString.AppendLiteral(" < ");
+      } else {
+        aString.AppendLiteral(": ");
+      }
       switch (feature->mValueType) {
         case nsMediaFeature::eLength:
           NS_ASSERTION(expr.mValue.IsLengthUnit() || expr.mValue.IsCalcUnit(),

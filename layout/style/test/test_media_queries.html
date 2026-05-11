@@ -297,6 +297,12 @@ function run() {
     should_apply("all and (max-" + feature + ": " + value + "px)");
     should_apply("all and (max-" + feature + ": " + (value + 1) + "px)");
     should_not_apply("all and (max-" + feature + ": " + (value - 1) + "px)");
+    should_apply("all and (" + feature + " >= " + value + "px)");
+    should_not_apply("all and (" + feature + " > " + value + "px)");
+    should_apply("all and (" + feature + " > " + (value - 1) + "px)");
+    should_apply("all and (" + feature + " <= " + value + "px)");
+    should_not_apply("all and (" + feature + " < " + value + "px)");
+    should_apply("all and (" + feature + " < " + (value + 1) + "px)");
     should_not_apply("all and (min-" + feature + ": " +
                      (Math.ceil(value/em_size) + 1) + "em)");
     should_apply("all and (min-" + feature + ": " +
@@ -371,6 +377,9 @@ function run() {
   should_apply("(orientation: landscape)");
   should_not_apply("(orientation: portrait)");
   should_apply("not all and (orientation: portrait)");
+  expression_should_not_be_parseable("orientation > landscape");
+  expression_should_not_be_parseable("min-width > 1px");
+  expression_should_not_be_parseable("width >");
   // ratio that reduces to 59/80
   change_state(function() {
     iframe_style.height = "320px";
