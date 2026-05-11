@@ -58,13 +58,21 @@
 #define CONFIG_16BPC 1
 #define CONFIG_LOG 0
 #define CONFIG_MACOS_KPERF 0
-#define HAVE_ASM 0
+#if ARCH_LOONGARCH64
+#  define HAVE_ASM 1
+#else
+#  define HAVE_ASM 0
+#endif
 #define TRIM_DSP_FUNCTIONS 0
 
 #define HAVE_ALIGNED_ALLOC 0
 #define HAVE_DLSYM 0
 #define HAVE_ELF_AUX_INFO 0
-#define HAVE_GETAUXVAL 0
+#if defined(__linux__)
+#  define HAVE_GETAUXVAL 1
+#else
+#  define HAVE_GETAUXVAL 0
+#endif
 #define HAVE_MEMALIGN 0
 #define HAVE_POSIX_MEMALIGN 0
 #define HAVE_PTHREAD_GETAFFINITY_NP 0

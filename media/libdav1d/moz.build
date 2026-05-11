@@ -73,6 +73,25 @@ if CONFIG['OS_TARGET'] == 'WINNT':
 else:
     DEFINES['_GNU_SOURCE'] = True
 
+if CONFIG['CPU_ARCH'] == 'loongarch64':
+    SOURCES += [
+        '/media/libdav1d/moz/loongarch_cdef.S',
+        '/media/libdav1d/moz/loongarch_cpu.c',
+        '/media/libdav1d/moz/loongarch_ipred.S',
+        '/media/libdav1d/moz/loongarch_itx.S',
+        '/media/libdav1d/moz/loongarch_loopfilter.S',
+        '/media/libdav1d/moz/loongarch_looprestoration.S',
+        '/media/libdav1d/moz/loongarch_looprestoration_inner_16bpc.c',
+        '/media/libdav1d/moz/loongarch_looprestoration_inner_8bpc.c',
+        '/media/libdav1d/moz/loongarch_mc.S',
+        '/media/libdav1d/moz/loongarch_msac.S',
+        '/media/libdav1d/moz/loongarch_refmvs.S',
+    ]
+    ASFLAGS += [
+        '-I%s/dist/include' % OBJDIR,
+        '-I%s/media/libdav1d/src' % TOPSRCDIR,
+    ]
+
 EXPORTS.dav1d += [
     '/media/libdav1d/src/include/dav1d/common.h',
     '/media/libdav1d/src/include/dav1d/data.h',
