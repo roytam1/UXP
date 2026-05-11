@@ -76,6 +76,7 @@ dav1d_open
 dav1d_parse_sequence_header
 dav1d_send_data
 dav1d_get_picture
+dav1d_flush
 dav1d_close
 dav1d_data_create
 dav1d_data_unref
