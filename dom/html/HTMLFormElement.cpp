@@ -305,7 +305,12 @@ HTMLFormElement::RequestSubmit(nsGenericHTMLElement* aSubmitter,
   InternalFormEvent event(true, eFormSubmit);
   event.mOriginator = aSubmitter;
   nsEventStatus status = nsEventStatus_eIgnore;
-  nsCOMPtr<nsIPresShell> presShell = GetComposedDoc()->GetShell();
+  nsCOMPtr<nsIDocument> document = GetComposedDoc();
+  if (MOZ_UNLIKELY(!document)) {
+    aRv.Throw(NS_ERROR_DOM_NOT_FOUND_ERR);
+    return;
+  }
+  nsCOMPtr<nsIPresShell> presShell = document->GetShell();
   if (MOZ_LIKELY(presShell)) {
     presShell->HandleDOMEventWithTarget(this, &event, &status);
   }
