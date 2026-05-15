@@ -128,6 +128,7 @@ public:
 private: // methods
   friend class imgLoader;
   friend class imgCacheQueue;
+  friend class imgCacheExpirationTracker;
   void Touch(bool updateTime = true);
   void UpdateCache(int32_t diff = 0);
   void SetEvicted(bool evict)

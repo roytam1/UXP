@@ -4131,7 +4131,9 @@ HTMLInputElement::StartRangeThumbDrag(WidgetGUIEvent* aEvent)
   // have changed it by then).
   GetValue(mFocusedValue);
 
-  SetValueOfRangeForUserEvent(rangeFrame->GetValueAtEventPoint(aEvent));
+  if (rangeFrame) {
+    SetValueOfRangeForUserEvent(rangeFrame->GetValueAtEventPoint(aEvent));
+  }
 }
 
 void
@@ -4144,7 +4146,9 @@ HTMLInputElement::FinishRangeThumbDrag(WidgetGUIEvent* aEvent)
   }
   if (aEvent) {
     nsRangeFrame* rangeFrame = do_QueryFrame(GetPrimaryFrame());
-    SetValueOfRangeForUserEvent(rangeFrame->GetValueAtEventPoint(aEvent));
+    if (rangeFrame) {
+      SetValueOfRangeForUserEvent(rangeFrame->GetValueAtEventPoint(aEvent));
+    }
   }
   mIsDraggingRange = false;
   FireChangeEventIfNeeded();

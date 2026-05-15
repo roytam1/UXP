@@ -936,9 +936,9 @@ VectorImage::CreateSurfaceAndShow(const SVGDrawingParameters& aParams, BackendTy
   // are scaled repeatedly (a rather common scenario) that can quickly exhaust
   // the cache.
   // Similar to max image size calculations, this has a max cap and size check.
-  // max cap = 8000 (pixels); size check = 5% of cache
+  // max cap = 8000 (pixels); size check = 10% of cache
   int32_t maxDimension = 8000;
-  int32_t maxCacheElemSize = (gfxPrefs::ImageMemSurfaceCacheMaxSizeKB() * 1024) / 20;
+  int32_t maxCacheElemSize = (gfxPrefs::ImageMemSurfaceCacheMaxSizeKB() * 1024) / 10;
   
   bool bypassCache = bool(aParams.flags & FLAG_BYPASS_SURFACE_CACHE) ||
                      // Refuse to cache animated images:
