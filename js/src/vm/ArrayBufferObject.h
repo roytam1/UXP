@@ -323,7 +323,8 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared
 
   private:
     void changeViewContents(JSContext* cx, ArrayBufferViewObject* view,
-                            uint8_t* oldDataPointer, BufferContents newContents);
+                            uint8_t* oldDataPointer, BufferContents newContents,
+                            uint32_t newByteLength);
     void setFirstView(ArrayBufferViewObject* view);
 
     uint8_t* inlineDataPointer() const;
