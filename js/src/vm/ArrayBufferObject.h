@@ -128,15 +128,22 @@ typedef MutableHandle<ArrayBufferObjectMaybeShared*> MutableHandleArrayBufferObj
 class ArrayBufferObject : public ArrayBufferObjectMaybeShared
 {
     static bool byteLengthGetterImpl(JSContext* cx, const CallArgs& args);
+    static bool maxByteLengthGetterImpl(JSContext* cx, const CallArgs& args);
+    static bool resizableGetterImpl(JSContext* cx, const CallArgs& args);
+    static bool detachedGetterImpl(JSContext* cx, const CallArgs& args);
     static bool fun_slice_impl(JSContext* cx, const CallArgs& args);
+    static bool fun_resize_impl(JSContext* cx, const CallArgs& args);
+    static bool fun_transfer_impl(JSContext* cx, const CallArgs& args);
+    static bool fun_transferToFixedLength_impl(JSContext* cx, const CallArgs& args);
 
   public:
     static const uint8_t DATA_SLOT = 0;
     static const uint8_t BYTE_LENGTH_SLOT = 1;
     static const uint8_t FIRST_VIEW_SLOT = 2;
     static const uint8_t FLAGS_SLOT = 3;
+    static const uint8_t MAX_BYTE_LENGTH_SLOT = 4;
 
-    static const uint8_t RESERVED_SLOTS = 4;
+    static const uint8_t RESERVED_SLOTS = 5;
 
     static const size_t ARRAY_BUFFER_ALIGNMENT = 8;
 
@@ -189,7 +196,11 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared
 
         // This PLAIN or WASM buffer has been prepared for asm.js and cannot
         // henceforth be transferred/detached.
-        FOR_ASMJS           = 0x40
+        FOR_ASMJS           = 0x40,
+
+        // This buffer was created with [[ArrayBufferMaxByteLength]] and can
+        // be resized up to that maximum.
+        RESIZABLE           = 0x80
     };
 
     static_assert(JS_ARRAYBUFFER_DETACHED_FLAG == DETACHED,
@@ -230,8 +241,14 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared
     static const Class class_;
 
     static bool byteLengthGetter(JSContext* cx, unsigned argc, Value* vp);
+    static bool maxByteLengthGetter(JSContext* cx, unsigned argc, Value* vp);
+    static bool resizableGetter(JSContext* cx, unsigned argc, Value* vp);
+    static bool detachedGetter(JSContext* cx, unsigned argc, Value* vp);
 
     static bool fun_slice(JSContext* cx, unsigned argc, Value* vp);
+    static bool fun_resize(JSContext* cx, unsigned argc, Value* vp);
+    static bool fun_transfer(JSContext* cx, unsigned argc, Value* vp);
+    static bool fun_transferToFixedLength(JSContext* cx, unsigned argc, Value* vp);
 
     static bool fun_isView(JSContext* cx, unsigned argc, Value* vp);
 
@@ -243,7 +260,9 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared
                                      BufferContents contents,
                                      OwnsState ownsState = OwnsData,
                                      HandleObject proto = nullptr,
-                                     NewObjectKind newKind = GenericObject);
+                                     NewObjectKind newKind = GenericObject,
+                                     uint32_t maxByteLength = 0,
+                                     bool resizable = false);
     static ArrayBufferObject* create(JSContext* cx, uint32_t nbytes,
                                      HandleObject proto = nullptr,
                                      NewObjectKind newKind = GenericObject);
@@ -294,6 +313,8 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared
 
     void setNewData(FreeOp* fop, BufferContents newContents, OwnsState ownsState);
     void changeContents(JSContext* cx, BufferContents newContents, OwnsState ownsState);
+    void changeContentsForResize(JSContext* cx, BufferContents newContents,
+                                 OwnsState ownsState, uint32_t newByteLength);
 
     // Detach this buffer from its original memory.  (This necessarily makes
     // views of this buffer unusable for modifying that original memory.)
@@ -311,6 +332,7 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared
     uint8_t* dataPointer() const;
     SharedMem<uint8_t*> dataPointerShared() const;
     uint32_t byteLength() const;
+    uint32_t maxByteLength() const;
 
     BufferContents contents() const {
         return BufferContents(dataPointer(), bufferKind());
@@ -334,6 +356,7 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared
     bool isWasm() const { return bufferKind() == WASM; }
     bool isMapped() const { return bufferKind() == MAPPED; }
     bool isDetached() const { return flags() & DETACHED; }
+    bool isResizable() const { return flags() & RESIZABLE; }
     bool isPreparedForAsmJS() const { return flags() & FOR_ASMJS; }
 
     // WebAssembly support:
@@ -391,12 +414,17 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared
 
     void setIsDetached() { setFlags(flags() | DETACHED); }
     void setIsPreparedForAsmJS() { setFlags(flags() | FOR_ASMJS); }
+    void setIsResizable() { setFlags(flags() | RESIZABLE); }
 
-    void initialize(size_t byteLength, BufferContents contents, OwnsState ownsState) {
+    void initialize(size_t byteLength, BufferContents contents, OwnsState ownsState,
+                    uint32_t maxByteLength = 0, bool resizable = false) {
         setByteLength(byteLength);
         setFlags(0);
+        setFixedSlot(MAX_BYTE_LENGTH_SLOT, Int32Value(maxByteLength ? maxByteLength : byteLength));
         setFirstView(nullptr);
         setDataPointer(contents, ownsState);
+        if (resizable)
+            setIsResizable();
     }
 
     // Note: initialize() may be called after initEmpty(); initEmpty() must
@@ -404,6 +432,7 @@ class ArrayBufferObject : public ArrayBufferObjectMaybeShared
     void initEmpty() {
         setByteLength(0);
         setFlags(0);
+        setFixedSlot(MAX_BYTE_LENGTH_SLOT, Int32Value(0));
         setFirstView(nullptr);
         setDataPointer(BufferContents::createPlain(nullptr), DoesntOwnData);
     }

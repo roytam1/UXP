@@ -248,6 +248,7 @@
     macro(lookupSetter, lookupSetter, "__lookupSetter__") \
     macro(MapConstructorInit, MapConstructorInit, "MapConstructorInit") \
     macro(MapIterator, MapIterator, "Map Iterator") \
+    macro(maxByteLength, maxByteLength, "maxByteLength") \
     macro(maximumFractionDigits, maximumFractionDigits, "maximumFractionDigits") \
     macro(maximumSignificantDigits, maximumSignificantDigits, "maximumSignificantDigits") \
     macro(message, message, "message") \
