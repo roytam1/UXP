@@ -20,7 +20,7 @@
 namespace js {
 namespace jit {
 
-typedef uint32_t RecoverOffset;
+typedef uint64_t RecoverOffset;
 typedef uint32_t SnapshotOffset;
 typedef uint32_t BailoutId;
 
@@ -32,8 +32,8 @@ static const uint32_t MAX_BUFFER_SIZE = (1 << 30) - 1;
 // Maximum number of scripted arg slots.
 static const uint32_t SNAPSHOT_MAX_NARGS = 127;
 
-static const SnapshotOffset INVALID_RECOVER_OFFSET = uint32_t(-1);
-static const SnapshotOffset INVALID_SNAPSHOT_OFFSET = uint32_t(-1);
+static const RecoverOffset INVALID_RECOVER_OFFSET = RecoverOffset(-1);
+static const RecoverOffset INVALID_SNAPSHOT_OFFSET = SnapshotOffset(-1);
 
 // Different kinds of bailouts. When extending this enum, make sure to check
 // the bits reserved for bailout kinds in Bailouts.h

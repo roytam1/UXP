@@ -1087,7 +1087,6 @@ imgLoader::CreateNewProxyForRequest(imgRequest* aRequest,
 class imgCacheExpirationTracker final
   : public nsExpirationTracker<imgCacheEntry, 3>
 {
-  enum { TIMEOUT_SECONDS = 10 };
 public:
   imgCacheExpirationTracker();
 
@@ -1096,9 +1095,45 @@ protected:
 };
 
 imgCacheExpirationTracker::imgCacheExpirationTracker()
- : nsExpirationTracker<imgCacheEntry, 3>(TIMEOUT_SECONDS * 1000,
+ : nsExpirationTracker<imgCacheEntry, 3>(gfxPrefs::ImageCacheEntryTimeout(),
                                          "imgCacheExpirationTracker")
 { }
+
+static bool
+ShouldKeepRecentlyUsedAssetInCache(imgCacheEntry* aEntry)
+{
+  RefPtr<imgRequest> request = aEntry->GetRequest();
+  if (!request) {
+    return false;
+  }
+
+  const char* mimeType = request->GetMimeType();
+  if (!mimeType) {
+    return false;
+  }
+
+  // Keep small, frequently reused static image assets warm a bit longer.
+  if (!nsCRT::strcmp(mimeType, IMAGE_SVG_XML) ||
+      !nsCRT::strcmp(mimeType, IMAGE_JPG) ||
+      !nsCRT::strcmp(mimeType, IMAGE_JPEG) ||
+      !nsCRT::strcmp(mimeType, IMAGE_ICO) ||
+      !nsCRT::strcmp(mimeType, IMAGE_PNG) ||
+      !nsCRT::strcmp(mimeType, IMAGE_WEBP)) {
+    // XXX: Should we make these configurable too?
+    const uint32_t kMaxWarmAssetBytes = 128 * 1024; // <= 128 kiB entries only
+    const uint32_t kRecentUseGraceSeconds = 60;     // keep warm for 60 s
+
+    if (aEntry->GetDataSize() <= kMaxWarmAssetBytes) {
+      uint32_t now = SecondsFromPRTime(PR_Now());
+      uint32_t touched = aEntry->GetTouchedTime();
+      if (now >= touched && (now - touched) <= kRecentUseGraceSeconds) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
 
 void
 imgCacheExpirationTracker::NotifyExpired(imgCacheEntry* entry)
@@ -1106,6 +1141,12 @@ imgCacheExpirationTracker::NotifyExpired(imgCacheEntry* entry)
   // Hold on to a reference to this entry, because the expiration tracker
   // mechanism doesn't.
   RefPtr<imgCacheEntry> kungFuDeathGrip(entry);
+
+  if (ShouldKeepRecentlyUsedAssetInCache(entry)) {
+    entry->Touch();
+    entry->Loader()->VerifyCacheSizes();
+    return;
+  }
 
   if (MOZ_LOG_TEST(gImgLog, LogLevel::Debug)) {
     RefPtr<imgRequest> req = entry->GetRequest();
