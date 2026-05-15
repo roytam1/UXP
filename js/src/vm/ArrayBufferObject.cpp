@@ -1245,7 +1245,7 @@ js::WasmArrayBufferMaxSize(const ArrayBufferObjectMaybeShared* buf)
     if (buf->is<ArrayBufferObject>())
         return buf->as<ArrayBufferObject>().wasmMaxSize();
 
-    return Some(buf->as<SharedArrayBufferObject>().byteLength());
+    return Some(buf->as<SharedArrayBufferObject>().maxByteLength());
 }
 
 /* static */ bool
