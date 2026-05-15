@@ -38,6 +38,7 @@
 #include "builtin/SelfHostingDefines.h"
 #include "builtin/Stream.h"
 #include "builtin/TypedObject.h"
+#include "builtin/WeakRefObject.h"
 #include "builtin/WeakSetObject.h"
 #include "gc/Marking.h"
 #include "gc/Policy.h"
@@ -102,6 +103,14 @@ intrinsic_IsObject(JSContext* cx, unsigned argc, Value* vp)
     Value val = args[0];
     bool isObject = val.isObject();
     args.rval().setBoolean(isObject);
+    return true;
+}
+
+static bool
+intrinsic_CanBeHeldWeakly(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    args.rval().setBoolean(CanBeHeldWeakly(args.get(0)));
     return true;
 }
 
@@ -2320,6 +2329,7 @@ static const JSFunctionSpec intrinsic_functions[] = {
     // Helper funtions after this point.
     JS_INLINABLE_FN("ToObject",      intrinsic_ToObject,                1,0, IntrinsicToObject),
     JS_INLINABLE_FN("IsObject",      intrinsic_IsObject,                1,0, IntrinsicIsObject),
+    JS_FN("CanBeHeldWeakly",         intrinsic_CanBeHeldWeakly,         1,0),
     JS_INLINABLE_FN("IsArray",       intrinsic_IsArray,                 1,0, ArrayIsArray),
     JS_INLINABLE_FN("IsWrappedArrayConstructor", intrinsic_IsWrappedArrayConstructor, 1,0,
                     IntrinsicIsWrappedArrayConstructor),
