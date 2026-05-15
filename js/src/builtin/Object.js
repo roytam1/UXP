@@ -240,12 +240,16 @@ function ObjectGroupBy(items, callbackfn) {
   // Steps 5-8.
   for (var value of allowContentIter(items)) {
     // Step 6.a.
-    var key = callContentFunction(callbackfn, undefined, value, k);
+    if (k >= MAX_NUMERIC_INDEX)
+      ThrowTypeError(JSMSG_TOO_LONG_ARRAY);
 
     // Step 6.b.
+    var key = callContentFunction(callbackfn, undefined, value, k);
+
+    // Step 6.c.
     key = ToPropertyKey(key);
 
-    // Steps 6.c-d.
+    // Steps 6.d-e.
     var elements = groups[key];
     if (elements === undefined) {
       _DefineDataProperty(groups, key, [value]);
@@ -253,7 +257,7 @@ function ObjectGroupBy(items, callbackfn) {
       callFunction(std_Array_push, elements, value);
     }
 
-    // Step 6.e.
+    // Step 6.f.
     k++;
   }
 

@@ -654,6 +654,82 @@ function String_repeat(count) {
     return T;
 }
 
+// ES2024
+// String.prototype.isWellFormed ( )
+function String_isWellFormed() {
+    // Steps 1-2.
+    RequireObjectCoercible(this);
+    var S = ToString(this);
+
+    // Step 3.
+    var length = S.length;
+    for (var k = 0; k < length; k++) {
+        var c = callFunction(std_String_charCodeAt, S, k);
+        if (c >= 0xD800 && c <= 0xDBFF) {
+            if (k + 1 >= length)
+                return false;
+
+            var d = callFunction(std_String_charCodeAt, S, k + 1);
+            if (d < 0xDC00 || d > 0xDFFF)
+                return false;
+
+            k++;
+        } else if (c >= 0xDC00 && c <= 0xDFFF) {
+            return false;
+        }
+    }
+
+    // Step 4.
+    return true;
+}
+
+// ES2024
+// String.prototype.toWellFormed ( )
+function String_toWellFormed() {
+    // Steps 1-2.
+    RequireObjectCoercible(this);
+    var S = ToString(this);
+
+    // Step 3.
+    var length = S.length;
+    var result = "";
+    var copied = 0;
+
+    for (var k = 0; k < length; k++) {
+        var c = callFunction(std_String_charCodeAt, S, k);
+        var isUnpairedSurrogate = false;
+
+        if (c >= 0xD800 && c <= 0xDBFF) {
+            if (k + 1 < length) {
+                var d = callFunction(std_String_charCodeAt, S, k + 1);
+                if (d >= 0xDC00 && d <= 0xDFFF) {
+                    k++;
+                    continue;
+                }
+            }
+            isUnpairedSurrogate = true;
+        } else if (c >= 0xDC00 && c <= 0xDFFF) {
+            isUnpairedSurrogate = true;
+        }
+
+        if (isUnpairedSurrogate) {
+            if (copied < k)
+                result += callFunction(String_substring, S, copied, k);
+            result += "\uFFFD";
+            copied = k + 1;
+        }
+    }
+
+    if (copied === 0)
+        return S;
+
+    if (copied < length)
+        result += callFunction(String_substring, S, copied, length);
+
+    // Step 4.
+    return result;
+}
+
 // ES6 draft specification, section 21.1.3.27, version 2013-09-27.
 function String_iterator() {
     RequireObjectCoercible(this);

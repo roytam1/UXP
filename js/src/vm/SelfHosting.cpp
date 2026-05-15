@@ -271,6 +271,20 @@ intrinsic_GetBuiltinConstructor(JSContext* cx, unsigned argc, Value* vp)
 }
 
 static bool
+intrinsic_NewMap(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 0);
+
+    Rooted<MapObject*> map(cx, MapObject::create(cx));
+    if (!map)
+        return false;
+
+    args.rval().setObject(*map);
+    return true;
+}
+
+static bool
 intrinsic_SubstringKernel(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
@@ -2255,7 +2269,10 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_INLINABLE_FN("std_Math_min",              math_min,                     2,0, MathMin),
     JS_INLINABLE_FN("std_Math_abs",              math_abs,                     1,0, MathAbs),
 
+    JS_FN("std_Map_create",                      intrinsic_NewMap,             0,0),
+    JS_FN("std_Map_get",                         MapObject::get,               1,0),
     JS_FN("std_Map_has",                         MapObject::has,               1,0),
+    JS_FN("std_Map_set",                         MapObject::set,               2,0),
     JS_FN("std_Map_iterator",                    MapObject::entries,           0,0),
 
     JS_FN("std_Number_valueOf",                  num_valueOf,                  0,0),
