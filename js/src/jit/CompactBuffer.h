@@ -143,6 +143,13 @@ class CompactBufferWriter
             original >>= 7;
         } while (original);
     }
+    void writeUnsigned64(uint64_t value) {
+        do {
+            uint8_t byte = ((value & 0x7F) << 1) | (value > 0x7F);
+            writeByte(byte);
+            value >>= 7;
+        } while (value);
+    }
     void writeSigned(int32_t v) {
         bool isNegative = v < 0;
         uint32_t value = isNegative ? -v : v;
