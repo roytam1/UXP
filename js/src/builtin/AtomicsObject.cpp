@@ -47,6 +47,7 @@
 #include "builtin/AtomicsObject.h"
 
 #include "mozilla/Atomics.h"
+#include "mozilla/Casting.h"
 #include "mozilla/FloatingPoint.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/Unused.h"
@@ -59,6 +60,7 @@
 #include "jit/AtomicOperations.h"
 #include "jit/InlinableNatives.h"
 #include "js/Class.h"
+#include "vm/BigIntType.h"
 #include "vm/GlobalObject.h"
 #include "vm/HelperThreads.h"
 #include "vm/Time.h"
@@ -121,6 +123,68 @@ GetTypedArrayIndex(JSContext* cx, HandleValue v, Handle<TypedArrayObject*> view,
         return ReportOutOfRange(cx);
     *offset = uint32_t(index);
     return true;
+}
+
+static bool
+IsWaitableTypedArray(Scalar::Type viewType)
+{
+    return viewType == Scalar::Int32 || viewType == Scalar::BigInt64;
+}
+
+static uint32_t
+GetWaiterByteOffset(Handle<TypedArrayObject*> view, uint32_t offset)
+{
+    return view->byteOffset() + offset * TypedArrayElemSize(view->type());
+}
+
+static uint64_t
+BigIntToRawBits(Scalar::Type viewType, BigInt* value)
+{
+    if (viewType == Scalar::BigInt64)
+        return uint64_t(BigInt::toInt64(value));
+    MOZ_ASSERT(viewType == Scalar::BigUint64);
+    return BigInt::toUint64(value);
+}
+
+static bool
+BigIntToRawBits(JSContext* cx, Scalar::Type viewType, HandleValue value, uint64_t* bits)
+{
+    MOZ_ASSERT(Scalar::isBigIntType(viewType));
+
+    RootedBigInt bigint(cx, ToBigInt(cx, value));
+    if (!bigint)
+        return false;
+
+    *bits = BigIntToRawBits(viewType, bigint);
+    return true;
+}
+
+static bool
+SetBigIntResult(JSContext* cx, Scalar::Type viewType, uint64_t bits, MutableHandleValue result)
+{
+    MOZ_ASSERT(Scalar::isBigIntType(viewType));
+
+    BigInt* bigint = viewType == Scalar::BigInt64
+                     ? BigInt::createFromInt64(cx, mozilla::BitwiseCast<int64_t>(bits))
+                     : BigInt::createFromUint64(cx, bits);
+    if (!bigint)
+        return false;
+
+    result.setBigInt(bigint);
+    return true;
+}
+
+static bool
+WaitValueMatches(Handle<TypedArrayObject*> view, uint32_t offset, uint64_t expected)
+{
+    SharedMem<void*> viewData = view->viewDataShared();
+    if (view->type() == Scalar::BigInt64) {
+        return jit::AtomicOperations::loadSafeWhenRacy(viewData.cast<uint64_t*>() + offset) ==
+               expected;
+    }
+
+    return uint32_t(jit::AtomicOperations::loadSafeWhenRacy(viewData.cast<int32_t*>() + offset)) ==
+           uint32_t(expected);
 }
 
 static int32_t
@@ -193,6 +257,20 @@ js::atomics_compareExchange(JSContext* cx, unsigned argc, Value* vp)
     uint32_t offset;
     if (!GetTypedArrayIndex(cx, idxv, view, &offset))
         return false;
+
+    if (Scalar::isBigIntType(view->type())) {
+        uint64_t oldCandidate;
+        if (!BigIntToRawBits(cx, view->type(), oldv, &oldCandidate))
+            return false;
+        uint64_t newCandidate;
+        if (!BigIntToRawBits(cx, view->type(), newv, &newCandidate))
+            return false;
+
+        uint64_t result = jit::AtomicOperations::compareExchangeSeqCst(
+            view->viewDataShared().cast<uint64_t*>() + offset, oldCandidate, newCandidate);
+        return SetBigIntResult(cx, view->type(), result, r);
+    }
+
     int32_t oldCandidate;
     if (!ToInt32(cx, oldv, &oldCandidate))
         return false;
@@ -259,6 +337,22 @@ js::atomics_load(JSContext* cx, unsigned argc, Value* vp)
       case Scalar::Uint32: {
         uint32_t v = jit::AtomicOperations::loadSeqCst(viewData.cast<uint32_t*>() + offset);
         r.setNumber(v);
+        return true;
+      }
+      case Scalar::BigInt64: {
+        int64_t v = jit::AtomicOperations::loadSeqCst(viewData.cast<int64_t*>() + offset);
+        BigInt* bigint = BigInt::createFromInt64(cx, v);
+        if (!bigint)
+            return false;
+        r.setBigInt(bigint);
+        return true;
+      }
+      case Scalar::BigUint64: {
+        uint64_t v = jit::AtomicOperations::loadSeqCst(viewData.cast<uint64_t*>() + offset);
+        BigInt* bigint = BigInt::createFromUint64(cx, v);
+        if (!bigint)
+            return false;
+        r.setBigInt(bigint);
         return true;
       }
       default:
@@ -339,6 +433,25 @@ ExchangeOrStore(JSContext* cx, unsigned argc, Value* vp)
     uint32_t offset;
     if (!GetTypedArrayIndex(cx, idxv, view, &offset))
         return false;
+
+    if (Scalar::isBigIntType(view->type())) {
+        RootedBigInt bigint(cx, ToBigInt(cx, valv));
+        if (!bigint)
+            return false;
+
+        uint64_t value = BigIntToRawBits(view->type(), bigint);
+        if (op == DoStore) {
+            jit::AtomicOperations::storeSeqCst(view->viewDataShared().cast<uint64_t*>() + offset,
+                                               value);
+            r.setBigInt(bigint);
+            return true;
+        }
+
+        uint64_t result = jit::AtomicOperations::exchangeSeqCst(
+            view->viewDataShared().cast<uint64_t*>() + offset, value);
+        return SetBigIntResult(cx, view->type(), result, r);
+    }
+
     double integerValue;
     if (!ToInteger(cx, valv, &integerValue))
         return false;
@@ -382,6 +495,24 @@ AtomicsBinop(JSContext* cx, HandleValue objv, HandleValue idxv, HandleValue valv
     uint32_t offset;
     if (!GetTypedArrayIndex(cx, idxv, view, &offset))
         return false;
+
+    if (Scalar::isBigIntType(view->type())) {
+        uint64_t value;
+        if (!BigIntToRawBits(cx, view->type(), valv, &value))
+            return false;
+
+        SharedMem<uint64_t*> addr = view->viewDataShared().cast<uint64_t*>() + offset;
+        uint64_t old = jit::AtomicOperations::loadSeqCst(addr);
+        for (;;) {
+            uint64_t replacement = T::operate64(old, value);
+            uint64_t observed = jit::AtomicOperations::compareExchangeSeqCst(addr, old,
+                                                                             replacement);
+            if (observed == old)
+                return SetBigIntResult(cx, view->type(), old, r);
+            old = observed;
+        }
+    }
+
     int32_t numberValue;
     if (!ToInt32(cx, valv, &numberValue))
         return false;
@@ -436,6 +567,7 @@ class PerformAdd
 public:
     INTEGRAL_TYPES_FOR_EACH(jit::AtomicOperations::fetchAddSeqCst)
     static int32_t perform(int32_t x, int32_t y) { return x + y; }
+    static uint64_t operate64(uint64_t x, uint64_t y) { return x + y; }
 };
 
 bool
@@ -450,6 +582,7 @@ class PerformSub
 public:
     INTEGRAL_TYPES_FOR_EACH(jit::AtomicOperations::fetchSubSeqCst)
     static int32_t perform(int32_t x, int32_t y) { return x - y; }
+    static uint64_t operate64(uint64_t x, uint64_t y) { return x - y; }
 };
 
 bool
@@ -464,6 +597,7 @@ class PerformAnd
 public:
     INTEGRAL_TYPES_FOR_EACH(jit::AtomicOperations::fetchAndSeqCst)
     static int32_t perform(int32_t x, int32_t y) { return x & y; }
+    static uint64_t operate64(uint64_t x, uint64_t y) { return x & y; }
 };
 
 bool
@@ -478,6 +612,7 @@ class PerformOr
 public:
     INTEGRAL_TYPES_FOR_EACH(jit::AtomicOperations::fetchOrSeqCst)
     static int32_t perform(int32_t x, int32_t y) { return x | y; }
+    static uint64_t operate64(uint64_t x, uint64_t y) { return x | y; }
 };
 
 bool
@@ -492,6 +627,7 @@ class PerformXor
 public:
     INTEGRAL_TYPES_FOR_EACH(jit::AtomicOperations::fetchXorSeqCst)
     static int32_t perform(int32_t x, int32_t y) { return x ^ y; }
+    static uint64_t operate64(uint64_t x, uint64_t y) { return x ^ y; }
 };
 
 bool
@@ -736,7 +872,7 @@ class FutexWaiter
     bool isWaiting() const;
     void notify();
 
-    uint32_t    offset;                 // int32 element index within the SharedArrayBuffer
+    uint32_t    offset;                 // byte offset within the SharedArrayBuffer
     enum WaiterKind {
         Sync,
         Async
@@ -970,14 +1106,21 @@ js::atomics_wait(JSContext* cx, unsigned argc, Value* vp)
     Rooted<TypedArrayObject*> view(cx, nullptr);
     if (!GetSharedTypedArray(cx, objv, &view))
         return false;
-    if (view->type() != Scalar::Int32)
+    if (!IsWaitableTypedArray(view->type()))
         return ReportBadArrayType(cx);
     uint32_t offset;
     if (!GetTypedArrayIndex(cx, idxv, view, &offset))
         return false;
-    int32_t value;
-    if (!ToInt32(cx, valv, &value))
-        return false;
+    uint64_t value = 0;
+    if (view->type() == Scalar::BigInt64) {
+        if (!BigIntToRawBits(cx, view->type(), valv, &value))
+            return false;
+    } else {
+        int32_t int32Value;
+        if (!ToInt32(cx, valv, &int32Value))
+            return false;
+        value = uint32_t(int32Value);
+    }
     mozilla::Maybe<mozilla::TimeDuration> timeout;
     if (!GetWaitTimeout(cx, timeoutv, &timeout))
         return false;
@@ -989,8 +1132,7 @@ js::atomics_wait(JSContext* cx, unsigned argc, Value* vp)
     // and it provides the necessary memory fence.
     AutoLockFutexAPI lock;
 
-    SharedMem<int32_t*> addr = view->viewDataShared().cast<int32_t*>() + offset;
-    if (jit::AtomicOperations::loadSafeWhenRacy(addr) != value) {
+    if (!WaitValueMatches(view, offset, value)) {
         r.setString(cx->names().futexNotEqual);
         return true;
     }
@@ -998,7 +1140,7 @@ js::atomics_wait(JSContext* cx, unsigned argc, Value* vp)
     Rooted<SharedArrayBufferObject*> sab(cx, view->bufferShared());
     SharedArrayRawBuffer* sarb = sab->rawBufferObject();
 
-    FutexWaiter w(offset, rt);
+    FutexWaiter w(GetWaiterByteOffset(view, offset), rt);
     AddWaiter(sarb, &w);
 
     FutexRuntime::WaitResult result = FutexRuntime::FutexOK;
@@ -1031,14 +1173,21 @@ js::atomics_waitAsync(JSContext* cx, unsigned argc, Value* vp)
     Rooted<TypedArrayObject*> view(cx, nullptr);
     if (!GetSharedTypedArray(cx, objv, &view))
         return false;
-    if (view->type() != Scalar::Int32)
+    if (!IsWaitableTypedArray(view->type()))
         return ReportBadArrayType(cx);
     uint32_t offset;
     if (!GetTypedArrayIndex(cx, idxv, view, &offset))
         return false;
-    int32_t value;
-    if (!ToInt32(cx, valv, &value))
-        return false;
+    uint64_t value = 0;
+    if (view->type() == Scalar::BigInt64) {
+        if (!BigIntToRawBits(cx, view->type(), valv, &value))
+            return false;
+    } else {
+        int32_t int32Value;
+        if (!ToInt32(cx, valv, &int32Value))
+            return false;
+        value = uint32_t(int32Value);
+    }
     mozilla::Maybe<mozilla::TimeDuration> timeout;
     if (!GetWaitTimeout(cx, timeoutv, &timeout))
         return false;
@@ -1070,8 +1219,7 @@ js::atomics_waitAsync(JSContext* cx, unsigned argc, Value* vp)
     {
         AutoLockFutexAPI lock;
 
-        SharedMem<int32_t*> addr = view->viewDataShared().cast<int32_t*>() + offset;
-        if (jit::AtomicOperations::loadSafeWhenRacy(addr) != value) {
+        if (!WaitValueMatches(view, offset, value)) {
             immediateResult.setString(cx->names().futexNotEqual);
         } else if (timeout.isSome() && timeout->ToMilliseconds() == 0.0) {
             immediateResult.setString(cx->names().futexTimedOut);
@@ -1083,6 +1231,7 @@ js::atomics_waitAsync(JSContext* cx, unsigned argc, Value* vp)
                 return false;
             }
 
+            task->waiter()->offset = GetWaiterByteOffset(view, offset);
             AddWaiter(sarb, task->waiter());
             task->setInWaiterList();
             isAsync = true;
@@ -1111,11 +1260,12 @@ js::atomics_notify(JSContext* cx, unsigned argc, Value* vp)
     Rooted<TypedArrayObject*> view(cx, nullptr);
     if (!GetSharedTypedArray(cx, objv, &view))
         return false;
-    if (view->type() != Scalar::Int32)
+    if (!IsWaitableTypedArray(view->type()))
         return ReportBadArrayType(cx);
     uint32_t offset;
     if (!GetTypedArrayIndex(cx, idxv, view, &offset))
         return false;
+    offset = GetWaiterByteOffset(view, offset);
     double count;
     if (countv.isUndefined()) {
         count = mozilla::PositiveInfinity<double>();
