@@ -66,6 +66,23 @@ assertEq(sharedTracking.length, 8);
 sharedTracking[6] = 33;
 assertEq(new Uint8Array(gsab)[6], 33);
 
+var sharedDv = new DataView(gsab);
+assertEq(sharedDv.buffer, gsab);
+assertEq(sharedDv.byteOffset, 0);
+assertEq(sharedDv.byteLength, 8);
+sharedDv.setUint8(7, 99);
+assertEq(sharedTracking[7], 99);
+gsab.grow(12);
+assertEq(sharedDv.byteLength, 12);
+assertEq(sharedDv.getUint8(7), 99);
+
+var fixedSharedDv = new DataView(gsab, 4, 2);
+assertEq(fixedSharedDv.byteOffset, 4);
+assertEq(fixedSharedDv.byteLength, 2);
+gsab.grow(16);
+assertEq(fixedSharedDv.byteOffset, 4);
+assertEq(fixedSharedDv.byteLength, 2);
+
 function readLength(view) {
   return view.length;
 }

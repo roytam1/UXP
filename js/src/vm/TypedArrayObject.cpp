@@ -1874,7 +1874,7 @@ DataViewNewObjectKind(JSContext* cx, uint32_t byteLength, JSObject* proto)
 
 DataViewObject*
 DataViewObject::create(JSContext* cx, uint32_t byteOffset, uint32_t byteLength,
-                       Handle<ArrayBufferObject*> arrayBuffer, JSObject* protoArg,
+                       Handle<ArrayBufferObjectMaybeShared*> arrayBuffer, JSObject* protoArg,
                        bool lengthTracking)
 {
     if (arrayBuffer->isDetached()) {
@@ -1885,7 +1885,6 @@ DataViewObject::create(JSContext* cx, uint32_t byteOffset, uint32_t byteLength,
     MOZ_ASSERT(byteOffset <= INT32_MAX);
     MOZ_ASSERT(byteLength <= INT32_MAX);
     MOZ_ASSERT(byteOffset + byteLength < UINT32_MAX);
-    MOZ_ASSERT(!arrayBuffer || !arrayBuffer->is<SharedArrayBufferObject>());
 
     RootedObject proto(cx, protoArg);
     RootedObject obj(cx);
@@ -1921,18 +1920,25 @@ DataViewObject::create(JSContext* cx, uint32_t byteOffset, uint32_t byteLength,
                        Int32Value(lengthTracking ? TypedArrayObject::LENGTH_TRACKING
                                                  : int32_t(byteLength)));
     dvobj.setFixedSlot(TypedArrayObject::BUFFER_SLOT, ObjectValue(*arrayBuffer));
-    dvobj.initPrivate(arrayBuffer->dataPointer() + byteOffset);
+    auto dataPointer = arrayBuffer->dataPointerEither();
+    dvobj.initPrivate((dataPointer + byteOffset).unwrap(/*safe - stored as private data*/));
 
     // Include a barrier if the data view's data pointer is in the nursery, as
     // is done for typed arrays.
-    if (!IsInsideNursery(obj) && cx->runtime()->gc.nursery.isInside(arrayBuffer->dataPointer()))
+    if (arrayBuffer->is<ArrayBufferObject>() &&
+        !IsInsideNursery(obj) &&
+        cx->runtime()->gc.nursery.isInside(dataPointer))
+    {
         cx->runtime()->gc.storeBuffer.putWholeCell(obj);
+    }
 
     // Verify that the private slot is at the expected place
     MOZ_ASSERT(dvobj.numFixedSlots() == TypedArrayObject::DATA_SLOT);
 
-    if (!arrayBuffer->addView(cx, &dvobj))
-        return nullptr;
+    if (arrayBuffer->is<ArrayBufferObject>()) {
+        if (!arrayBuffer->as<ArrayBufferObject>().addView(cx, &dvobj))
+            return nullptr;
+    }
 
     return &dvobj;
 }
@@ -1942,28 +1948,35 @@ DataViewObject::getAndCheckConstructorArgs(JSContext* cx, JSObject* bufobj, cons
                                            uint32_t* byteOffsetPtr, uint32_t* byteLengthPtr,
                                            bool* lengthTrackingPtr)
 {
-    if (!IsArrayBuffer(bufobj)) {
+    if (!IsAnyArrayBuffer(bufobj)) {
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_NOT_EXPECTED_TYPE,
-                                  "DataView", "ArrayBuffer", bufobj->getClass()->name);
+                                  "DataView", "ArrayBuffer or SharedArrayBuffer",
+                                  bufobj->getClass()->name);
         return false;
     }
 
-    Rooted<ArrayBufferObject*> buffer(cx, &AsArrayBuffer(bufobj));
+    Rooted<ArrayBufferObjectMaybeShared*> buffer(cx, &bufobj->as<ArrayBufferObjectMaybeShared>());
     uint32_t byteOffset = 0;
     uint32_t byteLength = buffer->byteLength();
-    bool lengthTracking = buffer->isResizable() && !args.hasDefined(2);
+    bool isResizableOrGrowable =
+        (buffer->is<ArrayBufferObject>() && buffer->as<ArrayBufferObject>().isResizable()) ||
+        (buffer->is<SharedArrayBufferObject>() &&
+         buffer->as<SharedArrayBufferObject>().isGrowable());
+    bool lengthTracking = isResizableOrGrowable && !args.hasDefined(2);
 
     if (args.length() > 1) {
-        if (!ToUint32(cx, args[1], &byteOffset))
+        uint64_t offset;
+        if (!ToIndex(cx, args[1], &offset))
             return false;
-        if (byteOffset > INT32_MAX) {
+        if (offset > INT32_MAX) {
             JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_ARG_INDEX_OUT_OF_RANGE,
                                       "1");
             return false;
         }
+        byteOffset = uint32_t(offset);
     }
 
-    if (buffer->isDetached()) {
+    if (buffer->is<ArrayBufferObject>() && buffer->as<ArrayBufferObject>().isDetached()) {
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_DETACHED);
         return false;
     }
@@ -1977,16 +1990,18 @@ DataViewObject::getAndCheckConstructorArgs(JSContext* cx, JSObject* bufobj, cons
 
         if (args.get(2).isUndefined()) {
             byteLength -= byteOffset;
-            lengthTracking = buffer->isResizable();
+            lengthTracking = isResizableOrGrowable;
         } else {
-            if (!ToUint32(cx, args[2], &byteLength))
+            uint64_t viewByteLength;
+            if (!ToIndex(cx, args[2], &viewByteLength))
                 return false;
             lengthTracking = false;
-            if (byteLength > INT32_MAX) {
+            if (viewByteLength > INT32_MAX) {
                 JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
                                           JSMSG_ARG_INDEX_OUT_OF_RANGE, "2");
                 return false;
             }
+            byteLength = uint32_t(viewByteLength);
 
             MOZ_ASSERT(byteOffset + byteLength >= byteOffset,
                        "can't overflow: both numbers are less than INT32_MAX");
@@ -2026,7 +2041,7 @@ DataViewObject::constructSameCompartment(JSContext* cx, HandleObject bufobj, con
     if (!GetPrototypeFromConstructor(cx, newTarget, &proto))
         return false;
 
-    Rooted<ArrayBufferObject*> buffer(cx, &AsArrayBuffer(bufobj));
+    Rooted<ArrayBufferObjectMaybeShared*> buffer(cx, &bufobj->as<ArrayBufferObjectMaybeShared>());
     JSObject* obj = DataViewObject::create(cx, byteOffset, byteLength, buffer, proto,
                                            lengthTracking);
     if (!obj)
@@ -2226,7 +2241,7 @@ DataViewObject::read(JSContext* cx, Handle<DataViewObject*> obj,
     bool isLittleEndian = args.length() >= 2 && ToBoolean(args[1]);
 
     // Steps 6-7.
-    if (obj->arrayBuffer().isDetached()) {
+    if (obj->arrayBufferEither().isDetached()) {
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_DETACHED);
         return false;
     }
@@ -2325,7 +2340,7 @@ DataViewObject::write(JSContext* cx, Handle<DataViewObject*> obj,
     bool isLittleEndian = args.length() >= 3 && ToBoolean(args[2]);
 
     // Steps 7-8.
-    if (obj->arrayBuffer().isDetached()) {
+    if (obj->arrayBufferEither().isDetached()) {
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_DETACHED);
         return false;
     }

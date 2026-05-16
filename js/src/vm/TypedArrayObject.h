@@ -532,7 +532,7 @@ class DataViewObject : public NativeObject
     friend bool ArrayBufferObject::createDataViewForThisImpl(JSContext* cx, const CallArgs& args);
     static DataViewObject*
     create(JSContext* cx, uint32_t byteOffset, uint32_t byteLength,
-           Handle<ArrayBufferObject*> arrayBuffer, JSObject* proto,
+           Handle<ArrayBufferObjectMaybeShared*> arrayBuffer, JSObject* proto,
            bool lengthTracking = false);
 
   public:
@@ -560,12 +560,18 @@ class DataViewObject : public NativeObject
         if (isOutOfBounds())
             return 0;
         if (isLengthTracking())
-            return arrayBuffer().byteLength() - byteOffsetMaybeOutOfBounds();
+            return arrayBufferEither().byteLength() - byteOffsetMaybeOutOfBounds();
         return fixedByteLengthMaybeOutOfBounds();
     }
 
-    ArrayBufferObject& arrayBuffer() const {
-        return bufferValue(const_cast<DataViewObject*>(this)).toObject().as<ArrayBufferObject>();
+    ArrayBufferObjectMaybeShared& arrayBufferEither() const {
+        return bufferValue(const_cast<DataViewObject*>(this)).
+               toObject().as<ArrayBufferObjectMaybeShared>();
+    }
+
+    bool isSharedMemory() const {
+        return bufferValue(const_cast<DataViewObject*>(this)).
+               toObject().is<SharedArrayBufferObject>();
     }
 
     void* dataPointer() const {
@@ -590,7 +596,7 @@ class DataViewObject : public NativeObject
     }
 
     bool isOutOfBounds() const {
-        const ArrayBufferObject& buffer = arrayBuffer();
+        const ArrayBufferObjectMaybeShared& buffer = arrayBufferEither();
         if (buffer.isDetached())
             return true;
 

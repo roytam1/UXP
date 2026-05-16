@@ -1474,7 +1474,7 @@ ArrayBufferObject::createEmpty(JSContext* cx)
 bool
 ArrayBufferObject::createDataViewForThisImpl(JSContext* cx, const CallArgs& args)
 {
-    MOZ_ASSERT(IsArrayBuffer(args.thisv()));
+    MOZ_ASSERT(IsAnyArrayBuffer(args.thisv()));
 
     /*
      * This method is only called for |DataView(alienBuf, ...)| which calls
@@ -1487,7 +1487,8 @@ ArrayBufferObject::createDataViewForThisImpl(JSContext* cx, const CallArgs& args
     uint32_t byteOffset = args[0].toPrivateUint32();
     uint32_t byteLength = args[1].toPrivateUint32();
     bool lengthTracking = args[3].toBoolean();
-    Rooted<ArrayBufferObject*> buffer(cx, &args.thisv().toObject().as<ArrayBufferObject>());
+    Rooted<ArrayBufferObjectMaybeShared*> buffer(cx,
+        &args.thisv().toObject().as<ArrayBufferObjectMaybeShared>());
 
     /*
      * Pop off the passed-along prototype and delegate to normal DataViewObject
@@ -1505,7 +1506,7 @@ bool
 ArrayBufferObject::createDataViewForThis(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
-    return CallNonGenericMethod<IsArrayBuffer, createDataViewForThisImpl>(cx, args);
+    return CallNonGenericMethod<IsAnyArrayBuffer, createDataViewForThisImpl>(cx, args);
 }
 
 /* static */ ArrayBufferObject::BufferContents
@@ -1926,6 +1927,8 @@ ArrayBufferViewObject::dataPointerUnshared(const JS::AutoRequireNoGC& nogc)
 bool
 ArrayBufferViewObject::isSharedMemory()
 {
+    if (is<DataViewObject>())
+        return as<DataViewObject>().isSharedMemory();
     if (is<TypedArrayObject>())
         return as<TypedArrayObject>().isSharedMemory();
     return false;
@@ -1957,7 +1960,7 @@ ArrayBufferViewObject::bufferObject(JSContext* cx, Handle<ArrayBufferViewObject*
         return thisObject->as<TypedArrayObject>().bufferEither();
     }
     MOZ_ASSERT(thisObject->is<DataViewObject>());
-    return &thisObject->as<DataViewObject>().arrayBuffer();
+    return &thisObject->as<DataViewObject>().arrayBufferEither();
 }
 
 /* JS Friend API */
@@ -2208,7 +2211,7 @@ JS_GetArrayBufferViewData(JSObject* obj, bool* isSharedMemory, const JS::AutoChe
     if (!obj)
         return nullptr;
     if (obj->is<DataViewObject>()) {
-        *isSharedMemory = false;
+        *isSharedMemory = obj->as<DataViewObject>().isSharedMemory();
         return obj->as<DataViewObject>().dataPointer();
     }
     TypedArrayObject& ta = obj->as<TypedArrayObject>();
@@ -2278,7 +2281,7 @@ js::GetArrayBufferViewLengthAndData(JSObject* obj, uint32_t* length, bool* isSha
               : obj->as<TypedArrayObject>().byteLength();
 
     if (obj->is<DataViewObject>()) {
-        *isSharedMemory = false;
+        *isSharedMemory = obj->as<DataViewObject>().isSharedMemory();
         *data = static_cast<uint8_t*>(obj->as<DataViewObject>().dataPointer());
     }
     else {

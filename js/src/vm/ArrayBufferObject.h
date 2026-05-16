@@ -82,7 +82,7 @@ ArrayBufferObjectMaybeShared& AsAnyArrayBuffer(HandleValue val);
 class ArrayBufferObjectMaybeShared : public NativeObject
 {
   public:
-    uint32_t byteLength() {
+    uint32_t byteLength() const {
         return AnyArrayBufferByteLength(this);
     }
 
