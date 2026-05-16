@@ -1973,7 +1973,10 @@ function ArrayBufferSlice(start, end) {
         ThrowTypeError(JSMSG_TYPED_ARRAY_DETACHED);
 
     // Steps 19-21.
-    ArrayBufferCopyData(new_, 0, O, first | 0, newLen | 0, isWrapped);
+    var currentLen = ArrayBufferByteLength(O);
+    var copyLen = first >= currentLen ? 0 : std_Math_min(newLen, currentLen - first);
+    if (copyLen > 0)
+        ArrayBufferCopyData(new_, 0, O, first | 0, copyLen | 0, isWrapped);
 
     // Step 22.
     return new_;

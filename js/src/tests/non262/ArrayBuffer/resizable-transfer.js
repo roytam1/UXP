@@ -62,6 +62,33 @@ assertEq(fixedMoved.maxByteLength, 10);
 assertEq(fixedMoved.resizable, false);
 assertEq(new Uint8Array(fixedMoved)[0], 7);
 
+var sliceSource = new ArrayBuffer(8, { maxByteLength: 8 });
+var sliceSourceBytes = new Uint8Array(sliceSource);
+for (var i = 0; i < sliceSourceBytes.length; i++)
+  sliceSourceBytes[i] = i + 1;
+
+sliceSource.constructor = {
+  [Symbol.species]: function(byteLength) {
+    sliceSource.resize(4);
+    return new ArrayBuffer(byteLength);
+  }
+};
+
+var sliced = sliceSource.slice(2, 8);
+var slicedBytes = new Uint8Array(sliced);
+assertEq(sliced.byteLength, 6);
+assertEq(slicedBytes[0], 3);
+assertEq(slicedBytes[1], 4);
+assertEq(slicedBytes[2], 0);
+assertEq(slicedBytes[5], 0);
+
+sliceSource.resize(8);
+for (var i = 0; i < sliceSourceBytes.length; i++)
+  sliceSourceBytes[i] = i + 1;
+var zeroCopied = sliceSource.slice(6, 8);
+assertEq(zeroCopied.byteLength, 2);
+assertEq(new Uint8Array(zeroCopied)[0], 0);
+
 assertThrowsInstanceOf(() => new ArrayBuffer(4, { maxByteLength: 3 }), RangeError);
 
 if (typeof reportCompare === "function")
