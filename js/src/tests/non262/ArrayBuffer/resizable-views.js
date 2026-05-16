@@ -41,9 +41,9 @@ dv.setUint8(0, 44);
 assertEq(tracking[4], 44);
 
 rab.resize(3);
-assertEq(dv.byteOffset, 0);
-assertEq(dv.byteLength, 0);
-assertThrowsInstanceOf(() => dv.getUint8(0), RangeError);
+assertThrowsInstanceOf(() => dv.byteOffset, TypeError);
+assertThrowsInstanceOf(() => dv.byteLength, TypeError);
+assertThrowsInstanceOf(() => dv.getUint8(0), TypeError);
 
 rab.resize(6);
 assertEq(dv.byteOffset, 4);
@@ -52,11 +52,39 @@ assertEq(dv.getUint8(0), 0);
 
 var fixedDv = new DataView(rab, 4, 2);
 rab.resize(5);
-assertEq(fixedDv.byteOffset, 0);
-assertEq(fixedDv.byteLength, 0);
+assertThrowsInstanceOf(() => fixedDv.byteOffset, TypeError);
+assertThrowsInstanceOf(() => fixedDv.byteLength, TypeError);
+assertThrowsInstanceOf(() => fixedDv.getUint8(0), TypeError);
 rab.resize(6);
 assertEq(fixedDv.byteOffset, 4);
 assertEq(fixedDv.byteLength, 2);
+
+var ctorRab = new ArrayBuffer(8, { maxByteLength: 8 });
+var ShrinkingNewTarget = new Proxy(function() {}, {
+  get(target, prop, receiver) {
+    if (prop === "prototype") {
+      ctorRab.resize(2);
+      return DataView.prototype;
+    }
+    return Reflect.get(target, prop, receiver);
+  }
+});
+assertThrowsInstanceOf(() => Reflect.construct(DataView, [ctorRab, 4], ShrinkingNewTarget),
+                       RangeError);
+
+var fixedCtorRab = new ArrayBuffer(8, { maxByteLength: 8 });
+var FixedShrinkingNewTarget = new Proxy(function() {}, {
+  get(target, prop, receiver) {
+    if (prop === "prototype") {
+      fixedCtorRab.resize(5);
+      return DataView.prototype;
+    }
+    return Reflect.get(target, prop, receiver);
+  }
+});
+assertThrowsInstanceOf(() => Reflect.construct(DataView, [fixedCtorRab, 4, 2],
+                                               FixedShrinkingNewTarget),
+                       RangeError);
 
 var gsab = new SharedArrayBuffer(4, { maxByteLength: 16 });
 var sharedTracking = new Uint8Array(gsab);
