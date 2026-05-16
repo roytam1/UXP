@@ -365,13 +365,9 @@ IonBuilder::inlineNativeGetter(CallInfo& callInfo, JSFunction* target)
 
     // Try to optimize typed array lengths.
     if (TypedArrayObject::isOriginalLengthGetter(native)) {
-        Scalar::Type type = thisTypes->getTypedArrayType(constraints());
-        if (type == Scalar::MaxTypedArrayViewType)
-            return InliningStatus_NotInlined;
-
-        MInstruction* length = addTypedArrayLength(thisArg);
-        current->push(length);
-        return InliningStatus_Inlined;
+        // RAB/GSAB views can have dynamic length or temporarily become
+        // out-of-bounds. Let the property IC/VM path handle the getter.
+        return InliningStatus_NotInlined;
     }
 
     // Try to optimize RegExp getters.
@@ -2480,21 +2476,10 @@ IsTypedArrayObject(CompilerConstraintList* constraints, MDefinition* def)
 IonBuilder::InliningStatus
 IonBuilder::inlinePossiblyWrappedTypedArrayLength(CallInfo& callInfo)
 {
-    MOZ_ASSERT(!callInfo.constructing());
-    MOZ_ASSERT(callInfo.argc() == 1);
-    if (callInfo.getArg(0)->type() != MIRType::Object)
-        return InliningStatus_NotInlined;
-    if (getInlineReturnType() != MIRType::Int32)
-        return InliningStatus_NotInlined;
+    (void) callInfo;
 
-    if (!IsTypedArrayObject(constraints(), callInfo.getArg(0)))
-        return InliningStatus_NotInlined;
-
-    MInstruction* length = addTypedArrayLength(callInfo.getArg(0));
-    current->push(length);
-
-    callInfo.setImplicitlyUsedUnchecked();
-    return InliningStatus_Inlined;
+    // RAB/GSAB views require dynamic length semantics.
+    return InliningStatus_NotInlined;
 }
 
 IonBuilder::InliningStatus
@@ -3251,45 +3236,14 @@ bool
 IonBuilder::atomicsMeetsPreconditions(CallInfo& callInfo, Scalar::Type* arrayType,
                                       bool* requiresTagCheck, AtomicCheckResult checkResult)
 {
-    if (!JitSupportsAtomics())
-        return false;
+    (void) callInfo;
+    (void) arrayType;
+    (void) requiresTagCheck;
+    (void) checkResult;
 
-    if (callInfo.getArg(0)->type() != MIRType::Object)
-        return false;
-
-    if (callInfo.getArg(1)->type() != MIRType::Int32)
-        return false;
-
-    // Ensure that the first argument is a TypedArray that maps shared
-    // memory.
-    //
-    // Then check both that the element type is something we can
-    // optimize and that the return type is suitable for that element
-    // type.
-
-    TemporaryTypeSet* arg0Types = callInfo.getArg(0)->resultTypeSet();
-    if (!arg0Types)
-        return false;
-
-    TemporaryTypeSet::TypedArraySharedness sharedness;
-    *arrayType = arg0Types->getTypedArrayType(constraints(), &sharedness);
-    *requiresTagCheck = sharedness != TemporaryTypeSet::KnownShared;
-    switch (*arrayType) {
-      case Scalar::Int8:
-      case Scalar::Uint8:
-      case Scalar::Int16:
-      case Scalar::Uint16:
-      case Scalar::Int32:
-        return checkResult == DontCheckAtomicResult || getInlineReturnType() == MIRType::Int32;
-      case Scalar::Uint32:
-        // Bug 1077305: it would be attractive to allow inlining even
-        // if the inline return type is Int32, which it will frequently
-        // be.
-        return checkResult == DontCheckAtomicResult || getInlineReturnType() == MIRType::Double;
-      default:
-        // Excludes floating types and Uint8Clamped.
-        return false;
-    }
+    // Atomics bounds checks through addTypedArrayLengthAndData assume stable
+    // SharedArrayBuffer lengths. Avoid this path now that growable SAB exists.
+    return false;
 }
 
 void

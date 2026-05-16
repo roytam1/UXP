@@ -66,5 +66,58 @@ assertEq(sharedTracking.length, 8);
 sharedTracking[6] = 33;
 assertEq(new Uint8Array(gsab)[6], 33);
 
+function readLength(view) {
+  return view.length;
+}
+
+function readElement(view, index) {
+  return view[index];
+}
+
+function writeElement(view, index, value) {
+  view[index] = value;
+}
+
+var normal = new Uint8Array(4);
+normal[0] = 7;
+for (var i = 0; i < 2000; i++) {
+  assertEq(readLength(normal), 4);
+  assertEq(readElement(normal, 0), 7);
+  writeElement(normal, 1, 8);
+}
+
+var icRab = new ArrayBuffer(4, { maxByteLength: 8 });
+var icTracking = new Uint8Array(icRab);
+icTracking[0] = 9;
+assertEq(readLength(icTracking), 4);
+assertEq(readElement(icTracking, 0), 9);
+icRab.resize(0);
+assertEq(readLength(icTracking), 0);
+assertEq(readElement(icTracking, 0), undefined);
+writeElement(icTracking, 0, 1);
+icRab.resize(4);
+assertEq(readLength(icTracking), 4);
+assertEq(readElement(icTracking, 0), 0);
+writeElement(icTracking, 0, 12);
+assertEq(readElement(icTracking, 0), 12);
+
+var icFixed = new Uint8Array(icRab, 1, 2);
+assertEq(readLength(icFixed), 2);
+icRab.resize(2);
+assertEq(readLength(icFixed), 0);
+assertEq(readElement(icFixed, 0), undefined);
+writeElement(icFixed, 0, 55);
+icRab.resize(4);
+assertEq(readLength(icFixed), 2);
+assertEq(readElement(icFixed, 0), 0);
+
+var icGsab = new SharedArrayBuffer(4, { maxByteLength: 8 });
+var icSharedTracking = new Uint8Array(icGsab);
+assertEq(readLength(icSharedTracking), 4);
+icGsab.grow(8);
+assertEq(readLength(icSharedTracking), 8);
+writeElement(icSharedTracking, 5, 77);
+assertEq(readElement(icSharedTracking, 5), 77);
+
 if (typeof reportCompare === "function")
   reportCompare(true, true);

@@ -509,12 +509,19 @@ class TypedArrayObjectTemplate : public TypedArrayObject
             return nullptr;
 
         bool isSharedMemory = buffer && IsSharedArrayBuffer(buffer.get());
+        bool hasResizableOrGrowableBuffer =
+            buffer &&
+            ((buffer->is<ArrayBufferObject>() && buffer->as<ArrayBufferObject>().isResizable()) ||
+             (buffer->is<SharedArrayBufferObject>() &&
+              buffer->as<SharedArrayBufferObject>().isGrowable()));
 
         obj->setFixedSlot(TypedArrayObject::BUFFER_SLOT, ObjectOrNullValue(buffer));
         // This is invariant.  Self-hosting code that sets BUFFER_SLOT
         // (if it does) must maintain it, should it need to.
         if (isSharedMemory)
             obj->setIsSharedMemory();
+        if (hasResizableOrGrowableBuffer)
+            obj->setHasResizableOrGrowableBuffer();
 
         if (buffer) {
             obj->initViewData(buffer->dataPointerEither() + byteOffset);

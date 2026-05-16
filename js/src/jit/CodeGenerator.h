@@ -535,8 +535,7 @@ class CodeGenerator final : public CodeGeneratorSpecific
                                      Label* ifDoesntEmulateUndefined,
                                      Register scratch, OutOfLineTestObject* ool);
 
-    // Branch to target unless obj has an emptyObjectElements or emptyObjectElementsShared
-    // elements pointer.
+    // Branch to target unless obj has one of the empty elements pointers.
     void branchIfNotEmptyObjectElements(Register obj, Label* target);
 
     void emitStoreElementTyped(const LAllocation* value, MIRType valueType, MIRType elementType,

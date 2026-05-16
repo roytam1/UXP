@@ -1245,6 +1245,7 @@ GenerateTypedArrayLength(JSContext* cx, MacroAssembler& masm, IonCache::StubAtta
     masm.branchPtr(Assembler::AboveOrEqual, tmpReg,
                    ImmPtr(&TypedArrayObject::classes[Scalar::MaxTypedArrayViewType]),
                    failures);
+    GuardResizableOrGrowableTypedArray(masm, object, tmpReg, failures);
 
     // Load length.
     masm.loadTypedOrValue(Address(object, TypedArrayObject::lengthOffset()), output);
@@ -1642,6 +1643,9 @@ GetPropertyIC::tryAttachTypedArrayLength(JSContext* cx, HandleScript outerScript
         return true;
 
     if (!JSID_IS_ATOM(id, cx->names().length))
+        return true;
+
+    if (obj->as<TypedArrayObject>().hasResizableOrGrowableBuffer())
         return true;
 
     if (hasTypedArrayLengthStub(obj))
@@ -4038,6 +4042,12 @@ GetPropertyIC::canAttachTypedOrUnboxedArrayElement(JSObject* obj, const Value& i
     if (!obj->is<TypedArrayObject>() && !obj->is<UnboxedArrayObject>())
         return false;
 
+    if (obj->is<TypedArrayObject>() &&
+        obj->as<TypedArrayObject>().hasResizableOrGrowableBuffer())
+    {
+        return false;
+    }
+
     MOZ_ASSERT(idval.isInt32() || idval.isString());
 
     // Don't emit a stub if the access is out of bounds. We make to make
@@ -4092,6 +4102,9 @@ GenerateGetTypedOrUnboxedArrayElement(JSContext* cx, MacroAssembler& masm,
     // Decide to what type index the stub should be optimized
     Register tmpReg = output.scratchReg().gpr();
     MOZ_ASSERT(tmpReg != InvalidReg);
+    if (array->is<TypedArrayObject>())
+        GuardResizableOrGrowableTypedArray(masm, object, tmpReg, &failures);
+
     Register indexReg = tmpReg;
     if (idval.isString()) {
         MOZ_ASSERT(GetIndexFromString(idval.toString()) != UINT32_MAX);
@@ -4575,6 +4588,7 @@ GenerateSetTypedArrayElement(JSContext* cx, MacroAssembler& masm, IonCache::Stub
     if (!shape)
         return false;
     masm.branchTestObjShape(Assembler::NotEqual, object, shape, &failures);
+    GuardResizableOrGrowableTypedArray(masm, object, temp, &failures);
 
     // Ensure the index is an int32.
     Register indexReg;
@@ -4659,6 +4673,9 @@ SetPropertyIC::tryAttachTypedArrayElement(JSContext* cx, HandleScript outerScrip
     MOZ_ASSERT(canAttachStub());
 
     if (!IsTypedArrayElementSetInlineable(obj, idval, val))
+        return true;
+
+    if (obj->as<TypedArrayObject>().hasResizableOrGrowableBuffer())
         return true;
 
     *emitted = true;
