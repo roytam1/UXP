@@ -548,6 +548,8 @@ MSG_DEF(JSMSG_TOO_LONG_ARRAY,         0, JSEXN_TYPEERR, "Too long array")
 
 // Typed array
 MSG_DEF(JSMSG_BAD_INDEX,               0, JSEXN_RANGEERR, "invalid or out-of-range index")
+MSG_DEF(JSMSG_ARRAYBUFFER_NOT_RESIZABLE, 0, JSEXN_TYPEERR, "ArrayBuffer is not resizable")
+MSG_DEF(JSMSG_ARRAYBUFFER_CANNOT_DETACH, 0, JSEXN_TYPEERR, "ArrayBuffer cannot be detached")
 MSG_DEF(JSMSG_NON_ARRAY_BUFFER_RETURNED, 0, JSEXN_TYPEERR, "expected ArrayBuffer, but species constructor returned non-ArrayBuffer")
 MSG_DEF(JSMSG_SAME_ARRAY_BUFFER_RETURNED, 0, JSEXN_TYPEERR, "expected different ArrayBuffer, but species constructor returned same ArrayBuffer")
 MSG_DEF(JSMSG_SHORT_ARRAY_BUFFER_RETURNED, 2, JSEXN_TYPEERR, "expected ArrayBuffer with at least {0} bytes, but species constructor returns ArrayBuffer with {1} bytes")

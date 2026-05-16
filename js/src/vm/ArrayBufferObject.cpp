@@ -409,14 +409,14 @@ AllocateArrayBufferContents(JSContext* cx, uint32_t nbytes)
 static bool
 ReportArrayBufferNotResizable(JSContext* cx)
 {
-    JS_ReportErrorASCII(cx, "ArrayBuffer is not resizable");
+    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_ARRAYBUFFER_NOT_RESIZABLE);
     return false;
 }
 
 static bool
 ReportArrayBufferCannotDetach(JSContext* cx)
 {
-    JS_ReportErrorASCII(cx, "ArrayBuffer cannot be detached");
+    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_ARRAYBUFFER_CANNOT_DETACH);
     return false;
 }
 
@@ -1389,10 +1389,6 @@ ArrayBufferObject::create(JSContext* cx, uint32_t nbytes, BufferContents content
         return nullptr;
     }
 
-    // If we need to allocate data, try to use a larger object size class so
-    // that the array buffer's data can be allocated inline with the object.
-    // The extra space will be left unused by the object's fixed slots and
-    // available for the buffer's data, see NewObject().
     size_t reservedSlots = JSCLASS_RESERVED_SLOTS(&class_);
 
     size_t nslots = reservedSlots;
@@ -1409,18 +1405,10 @@ ArrayBufferObject::create(JSContext* cx, uint32_t nbytes, BufferContents content
         }
     } else {
         MOZ_ASSERT(ownsState == OwnsData);
-        size_t usableSlots = NativeObject::MAX_FIXED_SLOTS - reservedSlots;
-        if (nbytes <= usableSlots * sizeof(Value)) {
-            int newSlots = nbytes == 0 ? 0 : (nbytes - 1) / sizeof(Value) + 1;
-            MOZ_ASSERT(int(nbytes) <= newSlots * int(sizeof(Value)));
-            nslots = reservedSlots + newSlots;
-            contents = BufferContents::createPlain(nullptr);
-        } else {
-            contents = AllocateArrayBufferContents(cx, nbytes);
-            if (!contents)
-                return nullptr;
-            allocated = true;
-        }
+        contents = AllocateArrayBufferContents(cx, nbytes);
+        if (!contents)
+            return nullptr;
+        allocated = true;
     }
 
     MOZ_ASSERT(!(class_.flags & JSCLASS_HAS_PRIVATE));
