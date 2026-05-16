@@ -59,6 +59,47 @@ rab.resize(6);
 assertEq(fixedDv.byteOffset, 4);
 assertEq(fixedDv.byteLength, 2);
 
+var methodRab = new ArrayBuffer(4, { maxByteLength: 8 });
+var methodFixed = new Uint8Array(methodRab, 2, 2);
+methodRab.resize(2);
+[
+  () => methodFixed.at(0),
+  () => methodFixed.copyWithin(0, 0),
+  () => methodFixed.entries(),
+  () => methodFixed.every(x => true),
+  () => methodFixed.fill(1),
+  () => methodFixed.filter(x => true),
+  () => methodFixed.find(x => true),
+  () => methodFixed.findIndex(x => true),
+  () => methodFixed.findLast(x => true),
+  () => methodFixed.findLastIndex(x => true),
+  () => methodFixed.forEach(x => x),
+  () => methodFixed.includes(0),
+  () => methodFixed.indexOf(0),
+  () => methodFixed.join(","),
+  () => methodFixed.keys(),
+  () => methodFixed.lastIndexOf(0),
+  () => methodFixed.map(x => x),
+  () => methodFixed.reduce((a, b) => a + b, 0),
+  () => methodFixed.reduceRight((a, b) => a + b, 0),
+  () => methodFixed.reverse(),
+  () => methodFixed.set([1], 0),
+  () => methodFixed.slice(),
+  () => methodFixed.some(x => true),
+  () => methodFixed.sort(),
+  () => methodFixed.subarray(),
+  () => methodFixed.toLocaleString(),
+  () => methodFixed.toReversed(),
+  () => methodFixed.toSorted(),
+  () => methodFixed.toString(),
+  () => methodFixed.values(),
+  () => methodFixed.with(0, 1),
+  () => methodFixed[Symbol.iterator](),
+].forEach(fn => assertThrowsInstanceOf(fn, TypeError));
+
+methodRab.resize(4);
+assertEq(methodFixed.length, 2);
+
 var ctorRab = new ArrayBuffer(8, { maxByteLength: 8 });
 var ShrinkingNewTarget = new Proxy(function() {}, {
   get(target, prop, receiver) {

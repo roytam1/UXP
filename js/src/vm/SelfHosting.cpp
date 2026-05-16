@@ -1311,6 +1311,36 @@ intrinsic_PossiblyWrappedTypedArrayHasDetachedBuffer(JSContext* cx, unsigned arg
 }
 
 static bool
+intrinsic_TypedArrayIsOutOfBounds(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 1);
+
+    RootedObject obj(cx, &args[0].toObject());
+    MOZ_ASSERT(obj->is<TypedArrayObject>());
+    args.rval().setBoolean(obj->as<TypedArrayObject>().isOutOfBounds());
+    return true;
+}
+
+static bool
+intrinsic_PossiblyWrappedTypedArrayIsOutOfBounds(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 1);
+    MOZ_ASSERT(args[0].isObject());
+
+    JSObject* obj = CheckedUnwrap(&args[0].toObject());
+    if (!obj) {
+        JS_ReportErrorASCII(cx, "Permission denied to access object");
+        return false;
+    }
+
+    MOZ_ASSERT(obj->is<TypedArrayObject>());
+    args.rval().setBoolean(obj->as<TypedArrayObject>().isOutOfBounds());
+    return true;
+}
+
+static bool
 intrinsic_MoveTypedArrayElements(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
@@ -2489,6 +2519,10 @@ static const JSFunctionSpec intrinsic_functions[] = {
                     1, 0, IntrinsicPossiblyWrappedTypedArrayLength),
     JS_FN("PossiblyWrappedTypedArrayHasDetachedBuffer",
           intrinsic_PossiblyWrappedTypedArrayHasDetachedBuffer, 1, 0),
+    JS_FN("TypedArrayIsOutOfBounds",
+          intrinsic_TypedArrayIsOutOfBounds, 1, 0),
+    JS_FN("PossiblyWrappedTypedArrayIsOutOfBounds",
+          intrinsic_PossiblyWrappedTypedArrayIsOutOfBounds, 1, 0),
 
     JS_FN("MoveTypedArrayElements",  intrinsic_MoveTypedArrayElements,  4,0),
     JS_FN("SetFromTypedArrayApproach",intrinsic_SetFromTypedArrayApproach, 4, 0),
