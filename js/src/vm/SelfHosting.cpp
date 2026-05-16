@@ -1462,6 +1462,10 @@ intrinsic_SetFromTypedArrayApproach(JSContext* cx, unsigned argc, Value* vp)
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_DETACHED);
         return false;
     }
+    if (unsafeTypedArrayCrossCompartment->isOutOfBounds()) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_OUT_OF_BOUNDS);
+        return false;
+    }
 
     // Steps 21, 23.
     uint32_t unsafeSrcLengthCrossCompartment = unsafeTypedArrayCrossCompartment->length();

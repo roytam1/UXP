@@ -100,6 +100,15 @@ methodRab.resize(2);
 methodRab.resize(4);
 assertEq(methodFixed.length, 2);
 
+var sourceRab = new ArrayBuffer(4, { maxByteLength: 8 });
+var oobSource = new Uint8Array(sourceRab, 2, 2);
+sourceRab.resize(2);
+assertThrowsInstanceOf(() => new Uint8Array(oobSource), TypeError);
+assertThrowsInstanceOf(() => new Uint16Array(oobSource), TypeError);
+assertThrowsInstanceOf(() => new Uint8Array(4).set(oobSource), TypeError);
+sourceRab.resize(4);
+assertEq(new Uint8Array(oobSource).length, 2);
+
 var ctorRab = new ArrayBuffer(8, { maxByteLength: 8 });
 var ShrinkingNewTarget = new Proxy(function() {}, {
   get(target, prop, receiver) {

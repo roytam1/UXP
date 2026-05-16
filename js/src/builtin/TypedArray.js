@@ -1143,12 +1143,18 @@ function TypedArraySet(overloaded, offset = 0) {
     // Steps 9-10.
     var targetBuffer = GetAttachedArrayBuffer(target);
 
+    ThrowIfTypedArrayOutOfBounds(target);
+
     // Step 11.
     var targetLength = TypedArrayLength(target);
 
     // Steps 12 et seq.
-    if (IsPossiblyWrappedTypedArray(overloaded))
+    if (IsPossiblyWrappedTypedArray(overloaded)) {
+        if (PossiblyWrappedTypedArrayHasDetachedBuffer(overloaded))
+            ThrowTypeError(JSMSG_TYPED_ARRAY_DETACHED);
+        ThrowIfPossiblyWrappedTypedArrayOutOfBounds(overloaded);
         return SetFromTypedArray(target, overloaded, targetOffset, targetLength);
+    }
 
     return SetFromNonTypedArray(target, overloaded, targetOffset, targetLength, targetBuffer);
 }
