@@ -85,15 +85,26 @@ COLD int dav1d_pthread_join(pthread_t *const thread, void **const res) {
 COLD int dav1d_pthread_once(pthread_once_t *const once_control,
                             void (*const init_routine)(void))
 {
-    BOOL pending = FALSE;
-
-    if (InitOnceBeginInitialize(once_control, 0, &pending, NULL) != TRUE)
-        return 1;
-
-    if (pending == TRUE)
+    switch (InterlockedCompareExchange(&once_control->state, 1, 0)) {
+    /* Initial run */
+    case 0:
         init_routine();
-
-    return !InitOnceComplete(once_control, 0, NULL);
+        InterlockedExchange(&once_control->state, 2);
+        break;
+    /* Another thread is running init */
+    case 1:
+        while (1) {
+            MemoryBarrier();
+            if (once_control->state == 2)
+                break;
+            Sleep(0);
+        }
+        break;
+    /* Initialization complete */
+    case 2:
+        break;
+    }
+    return 0;
 }
 
 #endif

@@ -28,6 +28,7 @@
 
 SECTION_RODATA 64
 
+%if ARCH_X86_64
 %macro SMOOTH_WEIGHTS 1-*
 const smooth_weights_1d_16bpc ; sm_weights[] << 7
     %rep %0
@@ -57,8 +58,6 @@ SMOOTH_WEIGHTS   0,   0, 255, 128, 255, 149,  85,  64, \
                 38,  35,  32,  29,  27,  25,  22,  20, \
                 18,  16,  15,  13,  12,  10,   9,   8, \
                  7,   6,   6,   5,   5,   4,   4,   4
-
-%if ARCH_X86_64
 
 ipred_hv_shuf: db  6,  7,  6,  7,  0,  1,  2,  3,  2,  3,  2,  3,  8,  9, 10, 11
                db  4,  5,  4,  5,  4,  5,  6,  7,  0,  1,  0,  1, 12, 13, 14, 15

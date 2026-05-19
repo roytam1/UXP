@@ -83,7 +83,7 @@ COLD void dav1d_set_cpu_flags_mask(const unsigned mask) {
 
 COLD int dav1d_num_logical_processors(Dav1dContext *const c) {
 #ifdef _WIN32
-#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#if 0//WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
     GROUP_AFFINITY affinity;
     if (GetThreadGroupAffinity(GetCurrentThread(), &affinity)) {
         int num_processors = 1;

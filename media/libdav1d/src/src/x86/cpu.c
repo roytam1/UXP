@@ -35,6 +35,12 @@
 #include "src/cpu.h"
 #include "src/x86/cpu.h"
 
+#if defined(_WIN32)
+#include <windows.h>
+#else
+int GetVersion() { return 6; }
+#endif
+
 typedef struct {
     uint32_t eax, ebx, edx, ecx;
 } CpuidRegisters;
@@ -70,7 +76,7 @@ COLD unsigned dav1d_get_cpu_flags_x86(void) {
         }
 #if ARCH_X86_64
         /* We only support >128-bit SIMD on x86-64. */
-        if (X(r.ecx, 0x18000000)) /* OSXSAVE/AVX */ {
+        if ((GetVersion() & 0xFF > 5) && X(r.ecx, 0x18000000)) /* OSXSAVE/AVX */ {
             const uint64_t xcr0 = dav1d_cpu_xgetbv(0);
             if (X(xcr0, 0x00000006)) /* XMM/YMM */ {
                 if (cpu.max_leaf >= 7) {

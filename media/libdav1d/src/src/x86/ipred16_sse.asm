@@ -81,6 +81,41 @@ pw_2048:  times 4 dw 2048
     %endrep
 %endmacro
 
+%if !ARCH_X86_64
+%macro SMOOTH_WEIGHTS 1-*
+const smooth_weights_1d_16bpc ; sm_weights[] << 7
+    %rep %0
+        dw %1*128
+        %rotate 1
+    %endrep
+const smooth_weights_2d_16bpc ; sm_weights[], 256 - sm_weights[]
+    %rep %0
+        dw %1, 256-%1
+        %rotate 1
+    %endrep
+%endmacro
+
+SMOOTH_WEIGHTS   0,   0, 255, 128, 255, 149,  85,  64, \
+               255, 197, 146, 105,  73,  50,  37,  32, \
+               255, 225, 196, 170, 145, 123, 102,  84, \
+                68,  54,  43,  33,  26,  20,  17,  16, \
+               255, 240, 225, 210, 196, 182, 169, 157, \
+               145, 133, 122, 111, 101,  92,  83,  74, \
+                66,  59,  52,  45,  39,  34,  29,  25, \
+                21,  17,  14,  12,  10,   9,   8,   8, \
+               255, 248, 240, 233, 225, 218, 210, 203, \
+               196, 189, 182, 176, 169, 163, 156, 150, \
+               144, 138, 133, 127, 121, 116, 111, 106, \
+               101,  96,  91,  86,  82,  77,  73,  69, \
+                65,  61,  57,  54,  50,  47,  44,  41, \
+                38,  35,  32,  29,  27,  25,  22,  20, \
+                18,  16,  15,  13,  12,  10,   9,   8, \
+                 7,   6,   6,   5,   5,   4,   4,   4
+%else
+cextern smooth_weights_1d_16bpc
+cextern smooth_weights_2d_16bpc
+%endif
+
 %define ipred_dc_splat_16bpc_ssse3_table (ipred_dc_16bpc_ssse3_table + 10*4)
 %define ipred_dc_128_16bpc_ssse3_table   (ipred_dc_16bpc_ssse3_table + 15*4)
 %define ipred_cfl_splat_16bpc_ssse3_table (ipred_cfl_16bpc_ssse3_table + 8*4)
@@ -99,8 +134,6 @@ JMP_TABLE ipred_cfl_left_16bpc,   ssse3, h4, h8, h16, h32
 JMP_TABLE ipred_cfl_ac_444_16bpc, ssse3, w4, w8, w16, w32
 JMP_TABLE pal_pred_16bpc,         ssse3, w4, w8, w16, w32, w64
 
-cextern smooth_weights_1d_16bpc
-cextern smooth_weights_2d_16bpc
 cextern dr_intra_derivative
 cextern filter_intra_taps
 
