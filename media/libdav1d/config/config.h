@@ -2,6 +2,10 @@
 #ifndef MOZ_DAV1D_CONFIG_H
 #define MOZ_DAV1D_CONFIG_H
 
+#ifdef __APPLE__
+#define PREFIX 1
+#endif
+
 #if defined(__x86_64__) || defined(_M_X64)
 #  define ARCH_X86 1
 #  define ARCH_X86_64 1
