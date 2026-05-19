@@ -43,6 +43,22 @@ static const ObjectElements emptyElementsHeaderShared(0, 0, ObjectElements::Shar
 HeapSlot* const js::emptyObjectElementsShared =
     reinterpret_cast<HeapSlot*>(uintptr_t(&emptyElementsHeaderShared) + sizeof(ObjectElements));
 
+static const ObjectElements emptyElementsHeaderResizableOrGrowable(
+    0, 0, ObjectElements::RESIZABLE_OR_GROWABLE_BUFFER);
+
+/* Objects with no elements share one empty set of elements. */
+HeapSlot* const js::emptyObjectElementsResizableOrGrowable =
+    reinterpret_cast<HeapSlot*>(uintptr_t(&emptyElementsHeaderResizableOrGrowable) +
+                                sizeof(ObjectElements));
+
+static const ObjectElements emptyElementsHeaderSharedResizableOrGrowable(
+    0, 0, ObjectElements::SHARED_MEMORY | ObjectElements::RESIZABLE_OR_GROWABLE_BUFFER);
+
+/* Objects with no elements share one empty set of elements. */
+HeapSlot* const js::emptyObjectElementsSharedResizableOrGrowable =
+    reinterpret_cast<HeapSlot*>(uintptr_t(&emptyElementsHeaderSharedResizableOrGrowable) +
+                                sizeof(ObjectElements));
+
 
 #ifdef DEBUG
 
@@ -61,10 +77,12 @@ ObjectElements::ConvertElementsToDoubles(JSContext* cx, uintptr_t elementsPtr)
      * This function is infallible, but has a fallible interface so that it can
      * be called directly from Ion code. Only arrays can have their dense
      * elements converted to doubles, and arrays never have empty elements.
-     */
+    */
     HeapSlot* elementsHeapPtr = (HeapSlot*) elementsPtr;
     MOZ_ASSERT(elementsHeapPtr != emptyObjectElements &&
-               elementsHeapPtr != emptyObjectElementsShared);
+               elementsHeapPtr != emptyObjectElementsShared &&
+               elementsHeapPtr != emptyObjectElementsResizableOrGrowable &&
+               elementsHeapPtr != emptyObjectElementsSharedResizableOrGrowable);
 
     ObjectElements* header = ObjectElements::fromElements(elementsHeapPtr);
     MOZ_ASSERT(!header->shouldConvertDoubleElements());

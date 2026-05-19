@@ -12,6 +12,7 @@
 #include "builtin/MapObject.h"
 #include "builtin/SelfHostingDefines.h"
 #include "builtin/WeakMapObject.h"
+#include "builtin/WeakRefObject.h"
 #include "vm/GlobalObject.h"
 #include "vm/SelfHosting.h"
 
@@ -108,7 +109,6 @@ WeakSetObject::construct(JSContext* cx, unsigned argc, Value* vp)
 
         if (optimized) {
             RootedValue keyVal(cx);
-            RootedObject keyObject(cx);
             RootedValue placeholder(cx, BooleanValue(true));
             RootedObject map(cx, &obj->getReservedSlot(WEAKSET_MAP_SLOT).toObject());
             RootedArrayObject array(cx, &iterable.toObject().as<ArrayObject>());
@@ -116,7 +116,7 @@ WeakSetObject::construct(JSContext* cx, unsigned argc, Value* vp)
                 keyVal.set(array->getDenseElement(index));
                 MOZ_ASSERT(!keyVal.isMagic(JS_ELEMENTS_HOLE));
 
-                if (keyVal.isPrimitive()) {
+                if (!CanBeHeldWeakly(keyVal)) {
                     UniqueChars bytes =
                         DecompileValueGenerator(cx, JSDVG_SEARCH_STACK, keyVal, nullptr);
                     if (!bytes)
@@ -126,8 +126,7 @@ WeakSetObject::construct(JSContext* cx, unsigned argc, Value* vp)
                     return false;
                 }
 
-                keyObject = &keyVal.toObject();
-                if (!SetWeakMapEntry(cx, map, keyObject, placeholder))
+                if (!SetWeakMapEntryValue(cx, map, keyVal, placeholder))
                     return false;
             }
         } else {

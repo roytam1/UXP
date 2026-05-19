@@ -185,6 +185,11 @@ class ObjectElements
 
         // These elements are set to integrity level "frozen".
         FROZEN                      = 0x10,
+
+        // For TypedArrays only: this TypedArray views a resizable
+        // ArrayBuffer or growable SharedArrayBuffer. JIT fast paths with
+        // cached length/data assumptions must fall back for these objects.
+        RESIZABLE_OR_GROWABLE_BUFFER = 0x20,
     };
 
   private:
@@ -255,6 +260,10 @@ class ObjectElements
       : flags(SHARED_MEMORY), initializedLength(0), capacity(capacity), length(length)
     {}
 
+    constexpr ObjectElements(uint32_t capacity, uint32_t length, uint32_t flags)
+      : flags(flags), initializedLength(0), capacity(capacity), length(length)
+    {}
+
     HeapSlot* elements() {
         return reinterpret_cast<HeapSlot*>(uintptr_t(this) + sizeof(ObjectElements));
     }
@@ -267,6 +276,10 @@ class ObjectElements
 
     bool isSharedMemory() const {
         return flags & SHARED_MEMORY;
+    }
+
+    bool hasResizableOrGrowableBuffer() const {
+        return flags & RESIZABLE_OR_GROWABLE_BUFFER;
     }
 
     GCPtrNativeObject& ownerObject() const {
@@ -326,6 +339,8 @@ static_assert(ObjectElements::VALUES_PER_HEADER * sizeof(HeapSlot) == sizeof(Obj
  */
 extern HeapSlot* const emptyObjectElements;
 extern HeapSlot* const emptyObjectElementsShared;
+extern HeapSlot* const emptyObjectElementsResizableOrGrowable;
+extern HeapSlot* const emptyObjectElementsSharedResizableOrGrowable;
 
 struct Class;
 class GCMarker;
@@ -478,6 +493,12 @@ class NativeObject : public ShapedObject
     void setIsSharedMemory() {
         MOZ_ASSERT(elements_ == emptyObjectElements);
         elements_ = emptyObjectElementsShared;
+    }
+
+    void setHasResizableOrGrowableBuffer() {
+        MOZ_ASSERT(elements_ == emptyObjectElements || elements_ == emptyObjectElementsShared);
+        elements_ = isSharedMemory() ? emptyObjectElementsSharedResizableOrGrowable
+                                     : emptyObjectElementsResizableOrGrowable;
     }
 
     bool isInWholeCellBuffer() const {
@@ -1254,7 +1275,10 @@ class NativeObject : public ShapedObject
     }
 
     inline bool hasEmptyElements() const {
-        return elements_ == emptyObjectElements || elements_ == emptyObjectElementsShared;
+        return elements_ == emptyObjectElements ||
+               elements_ == emptyObjectElementsShared ||
+               elements_ == emptyObjectElementsResizableOrGrowable ||
+               elements_ == emptyObjectElementsSharedResizableOrGrowable;
     }
 
     /*

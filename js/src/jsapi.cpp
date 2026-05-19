@@ -627,6 +627,15 @@ JS::InitSelfHostedCode(JSContext* cx)
     return true;
 }
 
+JS_PUBLIC_API(void)
+JS::ClearWeakRefKeptObjects(JSContext* cx)
+{
+    MOZ_ASSERT(cx);
+    MOZ_ASSERT(!cx->runtime()->isHeapBusy());
+
+    cx->runtime()->clearWeakRefKeptObjects();
+}
+
 JS_PUBLIC_API(const char*)
 JS_GetImplementationVersion(void)
 {

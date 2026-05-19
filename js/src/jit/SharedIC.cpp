@@ -3609,6 +3609,17 @@ CheckForTypedObjectWithDetachedStorage(JSContext* cx, MacroAssembler& masm, Labe
 }
 
 void
+GuardResizableOrGrowableTypedArray(MacroAssembler& masm, Register obj, Register scratch,
+                                   Label* failure)
+{
+    masm.loadPtr(Address(obj, NativeObject::offsetOfElements()), scratch);
+    masm.branchTest32(Assembler::NonZero,
+                      Address(scratch, ObjectElements::offsetOfFlags()),
+                      Imm32(ObjectElements::RESIZABLE_OR_GROWABLE_BUFFER),
+                      failure);
+}
+
+void
 LoadTypedThingData(MacroAssembler& masm, TypedThingLayout layout, Register obj, Register result)
 {
     switch (layout) {

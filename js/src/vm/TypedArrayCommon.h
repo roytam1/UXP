@@ -761,16 +761,40 @@ class TypedArrayMethods
             if (!ToInt32(cx, args[1], &offset))
                 return false;
 
-            if (offset < 0 || uint32_t(offset) > target->length()) {
-                // the given offset is bogus
+            if (offset < 0) {
                 JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_BAD_INDEX);
                 return false;
             }
         }
 
+        if (target->hasDetachedBuffer()) {
+            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_DETACHED);
+            return false;
+        }
+        if (target->isOutOfBounds()) {
+            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_OUT_OF_BOUNDS);
+            return false;
+        }
+
+        uint32_t targetLength = target->length();
+        if (uint32_t(offset) > targetLength) {
+            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_BAD_INDEX);
+            return false;
+        }
+
         RootedObject arg0(cx, &args[0].toObject());
         if (arg0->is<TypedArrayObject>()) {
-            if (arg0->as<TypedArrayObject>().length() > target->length() - offset) {
+            Rooted<TypedArrayObject*> source(cx, &arg0->as<TypedArrayObject>());
+            if (source->hasDetachedBuffer()) {
+                JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_DETACHED);
+                return false;
+            }
+            if (source->isOutOfBounds()) {
+                JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_OUT_OF_BOUNDS);
+                return false;
+            }
+
+            if (source->length() > targetLength - offset) {
                 JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_BAD_ARRAY_LENGTH);
                 return false;
             }
@@ -782,7 +806,7 @@ class TypedArrayMethods
             if (!GetLengthProperty(cx, arg0, &len))
                 return false;
 
-            if (uint32_t(offset) > target->length() || len > target->length() - offset) {
+            if (len > targetLength - offset) {
                 JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_BAD_ARRAY_LENGTH);
                 return false;
             }
@@ -795,13 +819,32 @@ class TypedArrayMethods
         return true;
     }
 
-     static bool
-     setFromTypedArray(JSContext* cx, Handle<SomeTypedArray*> target, HandleObject source,
-                       uint32_t offset = 0)
-     {
-         MOZ_ASSERT(source->is<TypedArrayObject>(), "use setFromNonTypedArray");
+    static bool
+    setFromTypedArray(JSContext* cx, Handle<SomeTypedArray*> target, HandleObject source,
+                      uint32_t offset = 0)
+    {
+        MOZ_ASSERT(source->is<TypedArrayObject>(), "use setFromNonTypedArray");
 
-         bool isShared = target->isSharedMemory() || source->as<TypedArrayObject>().isSharedMemory();
+        if (target->hasDetachedBuffer()) {
+            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_DETACHED);
+            return false;
+        }
+        if (target->isOutOfBounds()) {
+            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_OUT_OF_BOUNDS);
+            return false;
+        }
+
+        Rooted<TypedArrayObject*> sourceArray(cx, &source->as<TypedArrayObject>());
+        if (sourceArray->hasDetachedBuffer()) {
+            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_DETACHED);
+            return false;
+        }
+        if (sourceArray->isOutOfBounds()) {
+            JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_OUT_OF_BOUNDS);
+            return false;
+        }
+
+        bool isShared = target->isSharedMemory() || sourceArray->isSharedMemory();
 
          switch (target->type()) {
            case Scalar::Int8:
