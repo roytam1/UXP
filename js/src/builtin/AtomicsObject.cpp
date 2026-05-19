@@ -47,10 +47,12 @@
 #include "builtin/AtomicsObject.h"
 
 #include "mozilla/Atomics.h"
+#include "mozilla/Casting.h"
 #include "mozilla/FloatingPoint.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/Unused.h"
 
+#include "builtin/Promise.h"
 #include "jsapi.h"
 #include "jsfriendapi.h"
 #include "jsnum.h"
@@ -58,7 +60,9 @@
 #include "jit/AtomicOperations.h"
 #include "jit/InlinableNatives.h"
 #include "js/Class.h"
+#include "vm/BigIntType.h"
 #include "vm/GlobalObject.h"
+#include "vm/HelperThreads.h"
 #include "vm/Time.h"
 #include "vm/TypedArrayObject.h"
 #include "wasm/WasmInstance.h"
@@ -119,6 +123,68 @@ GetTypedArrayIndex(JSContext* cx, HandleValue v, Handle<TypedArrayObject*> view,
         return ReportOutOfRange(cx);
     *offset = uint32_t(index);
     return true;
+}
+
+static bool
+IsWaitableTypedArray(Scalar::Type viewType)
+{
+    return viewType == Scalar::Int32 || viewType == Scalar::BigInt64;
+}
+
+static uint32_t
+GetWaiterByteOffset(Handle<TypedArrayObject*> view, uint32_t offset)
+{
+    return view->byteOffset() + offset * TypedArrayElemSize(view->type());
+}
+
+static uint64_t
+BigIntToRawBits(Scalar::Type viewType, BigInt* value)
+{
+    if (viewType == Scalar::BigInt64)
+        return uint64_t(BigInt::toInt64(value));
+    MOZ_ASSERT(viewType == Scalar::BigUint64);
+    return BigInt::toUint64(value);
+}
+
+static bool
+BigIntToRawBits(JSContext* cx, Scalar::Type viewType, HandleValue value, uint64_t* bits)
+{
+    MOZ_ASSERT(Scalar::isBigIntType(viewType));
+
+    RootedBigInt bigint(cx, ToBigInt(cx, value));
+    if (!bigint)
+        return false;
+
+    *bits = BigIntToRawBits(viewType, bigint);
+    return true;
+}
+
+static bool
+SetBigIntResult(JSContext* cx, Scalar::Type viewType, uint64_t bits, MutableHandleValue result)
+{
+    MOZ_ASSERT(Scalar::isBigIntType(viewType));
+
+    BigInt* bigint = viewType == Scalar::BigInt64
+                     ? BigInt::createFromInt64(cx, mozilla::BitwiseCast<int64_t>(bits))
+                     : BigInt::createFromUint64(cx, bits);
+    if (!bigint)
+        return false;
+
+    result.setBigInt(bigint);
+    return true;
+}
+
+static bool
+WaitValueMatches(Handle<TypedArrayObject*> view, uint32_t offset, uint64_t expected)
+{
+    SharedMem<void*> viewData = view->viewDataShared();
+    if (view->type() == Scalar::BigInt64) {
+        return jit::AtomicOperations::loadSafeWhenRacy(viewData.cast<uint64_t*>() + offset) ==
+               expected;
+    }
+
+    return uint32_t(jit::AtomicOperations::loadSafeWhenRacy(viewData.cast<int32_t*>() + offset)) ==
+           uint32_t(expected);
 }
 
 static int32_t
@@ -191,6 +257,20 @@ js::atomics_compareExchange(JSContext* cx, unsigned argc, Value* vp)
     uint32_t offset;
     if (!GetTypedArrayIndex(cx, idxv, view, &offset))
         return false;
+
+    if (Scalar::isBigIntType(view->type())) {
+        uint64_t oldCandidate;
+        if (!BigIntToRawBits(cx, view->type(), oldv, &oldCandidate))
+            return false;
+        uint64_t newCandidate;
+        if (!BigIntToRawBits(cx, view->type(), newv, &newCandidate))
+            return false;
+
+        uint64_t result = jit::AtomicOperations::compareExchangeSeqCst(
+            view->viewDataShared().cast<uint64_t*>() + offset, oldCandidate, newCandidate);
+        return SetBigIntResult(cx, view->type(), result, r);
+    }
+
     int32_t oldCandidate;
     if (!ToInt32(cx, oldv, &oldCandidate))
         return false;
@@ -257,6 +337,22 @@ js::atomics_load(JSContext* cx, unsigned argc, Value* vp)
       case Scalar::Uint32: {
         uint32_t v = jit::AtomicOperations::loadSeqCst(viewData.cast<uint32_t*>() + offset);
         r.setNumber(v);
+        return true;
+      }
+      case Scalar::BigInt64: {
+        int64_t v = jit::AtomicOperations::loadSeqCst(viewData.cast<int64_t*>() + offset);
+        BigInt* bigint = BigInt::createFromInt64(cx, v);
+        if (!bigint)
+            return false;
+        r.setBigInt(bigint);
+        return true;
+      }
+      case Scalar::BigUint64: {
+        uint64_t v = jit::AtomicOperations::loadSeqCst(viewData.cast<uint64_t*>() + offset);
+        BigInt* bigint = BigInt::createFromUint64(cx, v);
+        if (!bigint)
+            return false;
+        r.setBigInt(bigint);
         return true;
       }
       default:
@@ -337,6 +433,25 @@ ExchangeOrStore(JSContext* cx, unsigned argc, Value* vp)
     uint32_t offset;
     if (!GetTypedArrayIndex(cx, idxv, view, &offset))
         return false;
+
+    if (Scalar::isBigIntType(view->type())) {
+        RootedBigInt bigint(cx, ToBigInt(cx, valv));
+        if (!bigint)
+            return false;
+
+        uint64_t value = BigIntToRawBits(view->type(), bigint);
+        if (op == DoStore) {
+            jit::AtomicOperations::storeSeqCst(view->viewDataShared().cast<uint64_t*>() + offset,
+                                               value);
+            r.setBigInt(bigint);
+            return true;
+        }
+
+        uint64_t result = jit::AtomicOperations::exchangeSeqCst(
+            view->viewDataShared().cast<uint64_t*>() + offset, value);
+        return SetBigIntResult(cx, view->type(), result, r);
+    }
+
     double integerValue;
     if (!ToInteger(cx, valv, &integerValue))
         return false;
@@ -380,6 +495,24 @@ AtomicsBinop(JSContext* cx, HandleValue objv, HandleValue idxv, HandleValue valv
     uint32_t offset;
     if (!GetTypedArrayIndex(cx, idxv, view, &offset))
         return false;
+
+    if (Scalar::isBigIntType(view->type())) {
+        uint64_t value;
+        if (!BigIntToRawBits(cx, view->type(), valv, &value))
+            return false;
+
+        SharedMem<uint64_t*> addr = view->viewDataShared().cast<uint64_t*>() + offset;
+        uint64_t old = jit::AtomicOperations::loadSeqCst(addr);
+        for (;;) {
+            uint64_t replacement = T::operate64(old, value);
+            uint64_t observed = jit::AtomicOperations::compareExchangeSeqCst(addr, old,
+                                                                             replacement);
+            if (observed == old)
+                return SetBigIntResult(cx, view->type(), old, r);
+            old = observed;
+        }
+    }
+
     int32_t numberValue;
     if (!ToInt32(cx, valv, &numberValue))
         return false;
@@ -434,6 +567,7 @@ class PerformAdd
 public:
     INTEGRAL_TYPES_FOR_EACH(jit::AtomicOperations::fetchAddSeqCst)
     static int32_t perform(int32_t x, int32_t y) { return x + y; }
+    static uint64_t operate64(uint64_t x, uint64_t y) { return x + y; }
 };
 
 bool
@@ -448,6 +582,7 @@ class PerformSub
 public:
     INTEGRAL_TYPES_FOR_EACH(jit::AtomicOperations::fetchSubSeqCst)
     static int32_t perform(int32_t x, int32_t y) { return x - y; }
+    static uint64_t operate64(uint64_t x, uint64_t y) { return x - y; }
 };
 
 bool
@@ -462,6 +597,7 @@ class PerformAnd
 public:
     INTEGRAL_TYPES_FOR_EACH(jit::AtomicOperations::fetchAndSeqCst)
     static int32_t perform(int32_t x, int32_t y) { return x & y; }
+    static uint64_t operate64(uint64_t x, uint64_t y) { return x & y; }
 };
 
 bool
@@ -476,6 +612,7 @@ class PerformOr
 public:
     INTEGRAL_TYPES_FOR_EACH(jit::AtomicOperations::fetchOrSeqCst)
     static int32_t perform(int32_t x, int32_t y) { return x | y; }
+    static uint64_t operate64(uint64_t x, uint64_t y) { return x | y; }
 };
 
 bool
@@ -490,6 +627,7 @@ class PerformXor
 public:
     INTEGRAL_TYPES_FOR_EACH(jit::AtomicOperations::fetchXorSeqCst)
     static int32_t perform(int32_t x, int32_t y) { return x ^ y; }
+    static uint64_t operate64(uint64_t x, uint64_t y) { return x ^ y; }
 };
 
 bool
@@ -693,11 +831,13 @@ js::atomics_cmpxchg_asm_callout(wasm::Instance* instance, int32_t vt, int32_t of
 
 namespace js {
 
+class AtomicsWaitAsyncTask;
+
 // Represents one waiting worker.
 //
 // The type is declared opaque in SharedArrayObject.h.  Instances of
-// js::FutexWaiter are stack-allocated and linked onto a list across a
-// call to FutexRuntime::wait().
+// js::FutexWaiter are linked onto a list across a call to FutexRuntime::wait()
+// or an async wait task.
 //
 // The 'waiters' field of the SharedArrayRawBuffer points to the highest
 // priority waiter in the list, and lower priority nodes are linked through
@@ -711,14 +851,34 @@ class FutexWaiter
   public:
     FutexWaiter(uint32_t offset, JSRuntime* rt)
       : offset(offset),
+        kind(Sync),
         rt(rt),
+        asyncTask(nullptr),
         lower_pri(nullptr),
         back(nullptr)
     {
     }
 
-    uint32_t    offset;                 // int32 element index within the SharedArrayBuffer
+    FutexWaiter(uint32_t offset, AtomicsWaitAsyncTask* asyncTask)
+      : offset(offset),
+        kind(Async),
+        rt(nullptr),
+        asyncTask(asyncTask),
+        lower_pri(nullptr),
+        back(nullptr)
+    {
+    }
+
+    bool isWaiting() const;
+    void notify();
+
+    uint32_t    offset;                 // byte offset within the SharedArrayBuffer
+    enum WaiterKind {
+        Sync,
+        Async
+    } kind;
     JSRuntime*  rt;                    // The runtime of the waiter
+    AtomicsWaitAsyncTask* asyncTask;    // The async waiter task, if any
     FutexWaiter* lower_pri;             // Lower priority nodes in circular doubly-linked list of waiters
     FutexWaiter* back;                  // Other direction
 };
@@ -742,7 +902,194 @@ class AutoLockFutexAPI
     js::UniqueLock<js::Mutex>& unique() { return *unique_; }
 };
 
+static void
+AddWaiter(SharedArrayRawBuffer* sarb, FutexWaiter* waiter)
+{
+    if (FutexWaiter* waiters = sarb->waiters()) {
+        waiter->lower_pri = waiters;
+        waiter->back = waiters->back;
+        waiters->back->lower_pri = waiter;
+        waiters->back = waiter;
+    } else {
+        waiter->lower_pri = waiter->back = waiter;
+        sarb->setWaiters(waiter);
+    }
+}
+
+static void
+RemoveWaiter(SharedArrayRawBuffer* sarb, FutexWaiter* waiter)
+{
+    if (waiter->lower_pri == waiter) {
+        sarb->setWaiters(nullptr);
+    } else {
+        waiter->lower_pri->back = waiter->back;
+        waiter->back->lower_pri = waiter->lower_pri;
+        if (sarb->waiters() == waiter)
+            sarb->setWaiters(waiter->lower_pri);
+    }
+    waiter->lower_pri = nullptr;
+    waiter->back = nullptr;
+}
+
+class AtomicsWaitAsyncTask : public PromiseTask
+{
+    enum class State {
+        Waiting,
+        Notified,
+        TimedOut
+    };
+
+    SharedArrayRawBuffer* sarb_;
+    FutexWaiter waiter_;
+    mozilla::Maybe<mozilla::TimeDuration> timeout_;
+    ConditionVariable cond_;
+    State state_;
+    bool isInWaiterList_;
+
+  public:
+    AtomicsWaitAsyncTask(JSContext* cx, Handle<PromiseObject*> promise,
+                         SharedArrayRawBuffer* sarb, uint32_t offset,
+                         mozilla::Maybe<mozilla::TimeDuration>& timeout)
+      : PromiseTask(cx, promise),
+        sarb_(sarb),
+        waiter_(offset, this),
+        timeout_(timeout),
+        state_(State::Waiting),
+        isInWaiterList_(false)
+    {
+    }
+
+    ~AtomicsWaitAsyncTask() {
+        if (isInWaiterList_) {
+            AutoLockFutexAPI lock;
+            if (isInWaiterList_)
+                removeFromWaiterList();
+        }
+        sarb_->dropReference();
+    }
+
+    FutexWaiter* waiter() {
+        return &waiter_;
+    }
+
+    void setInWaiterList() {
+        isInWaiterList_ = true;
+    }
+
+    bool isWaiting() const {
+        return state_ == State::Waiting;
+    }
+
+    void notify() {
+        MOZ_ASSERT(isWaiting());
+        state_ = State::Notified;
+        cond_.notify_all();
+    }
+
+    void execute() override {
+        AutoLockFutexAPI lock;
+
+        const bool isTimed = timeout_.isSome();
+        auto finalEnd = timeout_.map([](mozilla::TimeDuration& timeout) {
+            return mozilla::TimeStamp::Now() + timeout;
+        });
+        auto maxSlice = mozilla::TimeDuration::FromSeconds(4000.0);
+
+        while (state_ == State::Waiting) {
+            if (isTimed) {
+                auto sliceEnd = finalEnd.map([&](mozilla::TimeStamp& finalEnd) {
+                    auto sliceEnd = mozilla::TimeStamp::Now() + maxSlice;
+                    if (finalEnd < sliceEnd)
+                        sliceEnd = finalEnd;
+                    return sliceEnd;
+                });
+
+                mozilla::Unused << cond_.wait_until(lock.unique(), *sliceEnd);
+                if (state_ == State::Waiting && mozilla::TimeStamp::Now() >= *finalEnd) {
+                    state_ = State::TimedOut;
+                    break;
+                }
+            } else {
+                cond_.wait(lock.unique());
+            }
+        }
+
+        if (isInWaiterList_)
+            removeFromWaiterList();
+    }
+
+  private:
+    void removeFromWaiterList() {
+        MOZ_ASSERT(isInWaiterList_);
+        RemoveWaiter(sarb_, &waiter_);
+        isInWaiterList_ = false;
+    }
+
+    bool finishPromise(JSContext* cx, Handle<PromiseObject*> promise) override {
+        RootedValue result(cx);
+        if (state_ == State::TimedOut)
+            result.setString(cx->names().futexTimedOut);
+        else
+            result.setString(cx->names().futexOK);
+        return PromiseObject::resolve(cx, promise, result);
+    }
+};
+
+bool
+FutexWaiter::isWaiting() const
+{
+    if (kind == Sync)
+        return rt->fx.isWaiting();
+    return asyncTask->isWaiting();
+}
+
+void
+FutexWaiter::notify()
+{
+    if (kind == Sync) {
+        rt->fx.notify(FutexRuntime::NotifyExplicit);
+        return;
+    }
+    asyncTask->notify();
+}
+
 } // namespace js
+
+static bool
+GetWaitTimeout(JSContext* cx, HandleValue timeoutv,
+               mozilla::Maybe<mozilla::TimeDuration>* timeout)
+{
+    timeout->reset();
+    if (!timeoutv.isUndefined()) {
+        double timeout_ms;
+        if (!ToNumber(cx, timeoutv, &timeout_ms))
+            return false;
+        if (!mozilla::IsNaN(timeout_ms)) {
+            if (timeout_ms < 0)
+                *timeout = mozilla::Some(mozilla::TimeDuration::FromSeconds(0.0));
+            else if (!mozilla::IsInfinite(timeout_ms))
+                *timeout = mozilla::Some(mozilla::TimeDuration::FromMilliseconds(timeout_ms));
+        }
+    }
+    return true;
+}
+
+static bool
+CreateWaitAsyncResult(JSContext* cx, bool isAsync, HandleValue value, MutableHandleValue rval)
+{
+    RootedPlainObject obj(cx, NewBuiltinClassInstance<PlainObject>(cx));
+    if (!obj)
+        return false;
+
+    RootedValue asyncValue(cx, BooleanValue(isAsync));
+    if (!NativeDefineDataProperty(cx, obj, cx->names().async, asyncValue, JSPROP_ENUMERATE))
+        return false;
+    if (!NativeDefineDataProperty(cx, obj, cx->names().value, value, JSPROP_ENUMERATE))
+        return false;
+
+    rval.setObject(*obj);
+    return true;
+}
 
 bool
 js::atomics_wait(JSContext* cx, unsigned argc, Value* vp)
@@ -759,26 +1106,24 @@ js::atomics_wait(JSContext* cx, unsigned argc, Value* vp)
     Rooted<TypedArrayObject*> view(cx, nullptr);
     if (!GetSharedTypedArray(cx, objv, &view))
         return false;
-    if (view->type() != Scalar::Int32)
+    if (!IsWaitableTypedArray(view->type()))
         return ReportBadArrayType(cx);
     uint32_t offset;
     if (!GetTypedArrayIndex(cx, idxv, view, &offset))
         return false;
-    int32_t value;
-    if (!ToInt32(cx, valv, &value))
-        return false;
-    mozilla::Maybe<mozilla::TimeDuration> timeout;
-    if (!timeoutv.isUndefined()) {
-        double timeout_ms;
-        if (!ToNumber(cx, timeoutv, &timeout_ms))
+    uint64_t value = 0;
+    if (view->type() == Scalar::BigInt64) {
+        if (!BigIntToRawBits(cx, view->type(), valv, &value))
             return false;
-        if (!mozilla::IsNaN(timeout_ms)) {
-            if (timeout_ms < 0)
-                timeout = mozilla::Some(mozilla::TimeDuration::FromSeconds(0.0));
-            else if (!mozilla::IsInfinite(timeout_ms))
-                timeout = mozilla::Some(mozilla::TimeDuration::FromMilliseconds(timeout_ms));
-        }
+    } else {
+        int32_t int32Value;
+        if (!ToInt32(cx, valv, &int32Value))
+            return false;
+        value = uint32_t(int32Value);
     }
+    mozilla::Maybe<mozilla::TimeDuration> timeout;
+    if (!GetWaitTimeout(cx, timeoutv, &timeout))
+        return false;
 
     if (!rt->fx.canWait())
         return ReportCannotWait(cx);
@@ -787,8 +1132,7 @@ js::atomics_wait(JSContext* cx, unsigned argc, Value* vp)
     // and it provides the necessary memory fence.
     AutoLockFutexAPI lock;
 
-    SharedMem<int32_t*> addr = view->viewDataShared().cast<int32_t*>() + offset;
-    if (jit::AtomicOperations::loadSafeWhenRacy(addr) != value) {
+    if (!WaitValueMatches(view, offset, value)) {
         r.setString(cx->names().futexNotEqual);
         return true;
     }
@@ -796,16 +1140,8 @@ js::atomics_wait(JSContext* cx, unsigned argc, Value* vp)
     Rooted<SharedArrayBufferObject*> sab(cx, view->bufferShared());
     SharedArrayRawBuffer* sarb = sab->rawBufferObject();
 
-    FutexWaiter w(offset, rt);
-    if (FutexWaiter* waiters = sarb->waiters()) {
-        w.lower_pri = waiters;
-        w.back = waiters->back;
-        waiters->back->lower_pri = &w;
-        waiters->back = &w;
-    } else {
-        w.lower_pri = w.back = &w;
-        sarb->setWaiters(&w);
-    }
+    FutexWaiter w(GetWaiterByteOffset(view, offset), rt);
+    AddWaiter(sarb, &w);
 
     FutexRuntime::WaitResult result = FutexRuntime::FutexOK;
     bool retval = rt->fx.wait(cx, lock.unique(), timeout, &result);
@@ -820,15 +1156,96 @@ js::atomics_wait(JSContext* cx, unsigned argc, Value* vp)
         }
     }
 
-    if (w.lower_pri == &w) {
-        sarb->setWaiters(nullptr);
-    } else {
-        w.lower_pri->back = w.back;
-        w.back->lower_pri = w.lower_pri;
-        if (sarb->waiters() == &w)
-            sarb->setWaiters(w.lower_pri);
-    }
+    RemoveWaiter(sarb, &w);
     return retval;
+}
+
+bool
+js::atomics_waitAsync(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    HandleValue objv = args.get(0);
+    HandleValue idxv = args.get(1);
+    HandleValue valv = args.get(2);
+    HandleValue timeoutv = args.get(3);
+    MutableHandleValue r = args.rval();
+
+    Rooted<TypedArrayObject*> view(cx, nullptr);
+    if (!GetSharedTypedArray(cx, objv, &view))
+        return false;
+    if (!IsWaitableTypedArray(view->type()))
+        return ReportBadArrayType(cx);
+    uint32_t offset;
+    if (!GetTypedArrayIndex(cx, idxv, view, &offset))
+        return false;
+    uint64_t value = 0;
+    if (view->type() == Scalar::BigInt64) {
+        if (!BigIntToRawBits(cx, view->type(), valv, &value))
+            return false;
+    } else {
+        int32_t int32Value;
+        if (!ToInt32(cx, valv, &int32Value))
+            return false;
+        value = uint32_t(int32Value);
+    }
+    mozilla::Maybe<mozilla::TimeDuration> timeout;
+    if (!GetWaitTimeout(cx, timeoutv, &timeout))
+        return false;
+
+    Rooted<PromiseObject*> promise(cx, PromiseObject::createSkippingExecutor(cx));
+    if (!promise)
+        return false;
+
+    RootedValue promiseValue(cx, ObjectValue(*promise));
+    RootedValue result(cx);
+    if (!CreateWaitAsyncResult(cx, true, promiseValue, &result))
+        return false;
+
+    Rooted<SharedArrayBufferObject*> sab(cx, view->bufferShared());
+    SharedArrayRawBuffer* sarb = sab->rawBufferObject();
+    if (!sarb->addReference()) {
+        JS_ReportErrorASCII(cx, "Reference count overflow on SharedArrayBuffer");
+        return false;
+    }
+
+    auto task = cx->make_unique<AtomicsWaitAsyncTask>(cx, promise, sarb, offset, timeout);
+    if (!task) {
+        sarb->dropReference();
+        return false;
+    }
+
+    bool isAsync = false;
+    RootedValue immediateResult(cx);
+    {
+        AutoLockFutexAPI lock;
+
+        if (!WaitValueMatches(view, offset, value)) {
+            immediateResult.setString(cx->names().futexNotEqual);
+        } else if (timeout.isSome() && timeout->ToMilliseconds() == 0.0) {
+            immediateResult.setString(cx->names().futexTimedOut);
+        } else {
+            if (!cx->startAsyncTaskCallback || !cx->finishAsyncTaskCallback ||
+                !CanUseExtraThreads())
+            {
+                JS_ReportErrorASCII(cx, "Atomics.waitAsync not supported in this runtime.");
+                return false;
+            }
+
+            task->waiter()->offset = GetWaiterByteOffset(view, offset);
+            AddWaiter(sarb, task->waiter());
+            task->setInWaiterList();
+            isAsync = true;
+        }
+    }
+
+    if (!isAsync)
+        return CreateWaitAsyncResult(cx, false, immediateResult, r);
+
+    if (!StartPromiseTask(cx, Move(task)))
+        return false;
+
+    r.set(result);
+    return true;
 }
 
 bool
@@ -843,11 +1260,12 @@ js::atomics_notify(JSContext* cx, unsigned argc, Value* vp)
     Rooted<TypedArrayObject*> view(cx, nullptr);
     if (!GetSharedTypedArray(cx, objv, &view))
         return false;
-    if (view->type() != Scalar::Int32)
+    if (!IsWaitableTypedArray(view->type()))
         return ReportBadArrayType(cx);
     uint32_t offset;
     if (!GetTypedArrayIndex(cx, idxv, view, &offset))
         return false;
+    offset = GetWaiterByteOffset(view, offset);
     double count;
     if (countv.isUndefined()) {
         count = mozilla::PositiveInfinity<double>();
@@ -870,9 +1288,9 @@ js::atomics_notify(JSContext* cx, unsigned argc, Value* vp)
         do {
             FutexWaiter* c = iter;
             iter = iter->lower_pri;
-            if (c->offset != offset || !c->rt->fx.isWaiting())
+            if (c->offset != offset || !c->isWaiting())
                 continue;
-            c->rt->fx.notify(FutexRuntime::NotifyExplicit);
+            c->notify();
             ++woken;
             --count;
         } while (count > 0 && iter != waiters);
@@ -1106,6 +1524,7 @@ const JSFunctionSpec AtomicsMethods[] = {
     JS_INLINABLE_FN("xor",                atomics_xor,                3,0, AtomicsXor),
     JS_INLINABLE_FN("isLockFree",         atomics_isLockFree,         1,0, AtomicsIsLockFree),
     JS_FN("wait",                         atomics_wait,               4,0),
+    JS_FN("waitAsync",                    atomics_waitAsync,          4,0),
     JS_FN("notify",                       atomics_notify,             3,0),
     JS_FN("wake",                         atomics_notify,             3,0), //Legacy name
     JS_FS_END

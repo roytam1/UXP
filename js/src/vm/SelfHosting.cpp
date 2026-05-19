@@ -38,6 +38,7 @@
 #include "builtin/SelfHostingDefines.h"
 #include "builtin/Stream.h"
 #include "builtin/TypedObject.h"
+#include "builtin/WeakRefObject.h"
 #include "builtin/WeakSetObject.h"
 #include "gc/Marking.h"
 #include "gc/Policy.h"
@@ -102,6 +103,14 @@ intrinsic_IsObject(JSContext* cx, unsigned argc, Value* vp)
     Value val = args[0];
     bool isObject = val.isObject();
     args.rval().setBoolean(isObject);
+    return true;
+}
+
+static bool
+intrinsic_CanBeHeldWeakly(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    args.rval().setBoolean(CanBeHeldWeakly(args.get(0)));
     return true;
 }
 
@@ -267,6 +276,20 @@ intrinsic_GetBuiltinConstructor(JSContext* cx, unsigned argc, Value* vp)
     if (!GetBuiltinConstructor(cx, key, &ctor))
         return false;
     args.rval().setObject(*ctor);
+    return true;
+}
+
+static bool
+intrinsic_NewMap(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 0);
+
+    Rooted<MapObject*> map(cx, MapObject::create(cx));
+    if (!map)
+        return false;
+
+    args.rval().setObject(*map);
     return true;
 }
 
@@ -1288,6 +1311,36 @@ intrinsic_PossiblyWrappedTypedArrayHasDetachedBuffer(JSContext* cx, unsigned arg
 }
 
 static bool
+intrinsic_TypedArrayIsOutOfBounds(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 1);
+
+    RootedObject obj(cx, &args[0].toObject());
+    MOZ_ASSERT(obj->is<TypedArrayObject>());
+    args.rval().setBoolean(obj->as<TypedArrayObject>().isOutOfBounds());
+    return true;
+}
+
+static bool
+intrinsic_PossiblyWrappedTypedArrayIsOutOfBounds(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 1);
+    MOZ_ASSERT(args[0].isObject());
+
+    JSObject* obj = CheckedUnwrap(&args[0].toObject());
+    if (!obj) {
+        JS_ReportErrorASCII(cx, "Permission denied to access object");
+        return false;
+    }
+
+    MOZ_ASSERT(obj->is<TypedArrayObject>());
+    args.rval().setBoolean(obj->as<TypedArrayObject>().isOutOfBounds());
+    return true;
+}
+
+static bool
 intrinsic_MoveTypedArrayElements(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
@@ -1407,6 +1460,10 @@ intrinsic_SetFromTypedArrayApproach(JSContext* cx, unsigned argc, Value* vp)
     // Steps 12-13.
     if (unsafeTypedArrayCrossCompartment->hasDetachedBuffer()) {
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_DETACHED);
+        return false;
+    }
+    if (unsafeTypedArrayCrossCompartment->isOutOfBounds()) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_OUT_OF_BOUNDS);
         return false;
     }
 
@@ -2255,7 +2312,10 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_INLINABLE_FN("std_Math_min",              math_min,                     2,0, MathMin),
     JS_INLINABLE_FN("std_Math_abs",              math_abs,                     1,0, MathAbs),
 
+    JS_FN("std_Map_create",                      intrinsic_NewMap,             0,0),
+    JS_FN("std_Map_get",                         MapObject::get,               1,0),
     JS_FN("std_Map_has",                         MapObject::has,               1,0),
+    JS_FN("std_Map_set",                         MapObject::set,               2,0),
     JS_FN("std_Map_iterator",                    MapObject::entries,           0,0),
 
     JS_FN("std_Number_valueOf",                  num_valueOf,                  0,0),
@@ -2303,6 +2363,7 @@ static const JSFunctionSpec intrinsic_functions[] = {
     // Helper funtions after this point.
     JS_INLINABLE_FN("ToObject",      intrinsic_ToObject,                1,0, IntrinsicToObject),
     JS_INLINABLE_FN("IsObject",      intrinsic_IsObject,                1,0, IntrinsicIsObject),
+    JS_FN("CanBeHeldWeakly",         intrinsic_CanBeHeldWeakly,         1,0),
     JS_INLINABLE_FN("IsArray",       intrinsic_IsArray,                 1,0, ArrayIsArray),
     JS_INLINABLE_FN("IsWrappedArrayConstructor", intrinsic_IsWrappedArrayConstructor, 1,0,
                     IntrinsicIsWrappedArrayConstructor),
@@ -2462,6 +2523,10 @@ static const JSFunctionSpec intrinsic_functions[] = {
                     1, 0, IntrinsicPossiblyWrappedTypedArrayLength),
     JS_FN("PossiblyWrappedTypedArrayHasDetachedBuffer",
           intrinsic_PossiblyWrappedTypedArrayHasDetachedBuffer, 1, 0),
+    JS_FN("TypedArrayIsOutOfBounds",
+          intrinsic_TypedArrayIsOutOfBounds, 1, 0),
+    JS_FN("PossiblyWrappedTypedArrayIsOutOfBounds",
+          intrinsic_PossiblyWrappedTypedArrayIsOutOfBounds, 1, 0),
 
     JS_FN("MoveTypedArrayElements",  intrinsic_MoveTypedArrayElements,  4,0),
     JS_FN("SetFromTypedArrayApproach",intrinsic_SetFromTypedArrayApproach, 4, 0),

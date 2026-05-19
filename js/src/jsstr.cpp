@@ -3305,6 +3305,8 @@ static const JSFunctionSpec string_methods[] = {
     JS_SELF_HOSTED_FN("toLocaleUpperCase", "String_toLocaleUpperCase", 0,0),
     JS_SELF_HOSTED_FN("localeCompare", "String_localeCompare", 1,0),
     JS_SELF_HOSTED_FN("repeat", "String_repeat",      1,0),
+    JS_SELF_HOSTED_FN("isWellFormed", "String_isWellFormed", 0,0),
+    JS_SELF_HOSTED_FN("toWellFormed", "String_toWellFormed", 0,0),
     JS_FN("normalize",         str_normalize,         0,0),
 
     /* Perl-ish methods (search is actually Python-esque). */

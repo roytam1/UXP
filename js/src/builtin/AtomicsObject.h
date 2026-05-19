@@ -35,6 +35,7 @@ MOZ_MUST_USE bool atomics_or(JSContext* cx, unsigned argc, Value* vp);
 MOZ_MUST_USE bool atomics_xor(JSContext* cx, unsigned argc, Value* vp);
 MOZ_MUST_USE bool atomics_isLockFree(JSContext* cx, unsigned argc, Value* vp);
 MOZ_MUST_USE bool atomics_wait(JSContext* cx, unsigned argc, Value* vp);
+MOZ_MUST_USE bool atomics_waitAsync(JSContext* cx, unsigned argc, Value* vp);
 MOZ_MUST_USE bool atomics_notify(JSContext* cx, unsigned argc, Value* vp);
 
 /* asm.js callouts */

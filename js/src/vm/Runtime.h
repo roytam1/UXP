@@ -360,6 +360,8 @@ class PerThreadData
 };
 
 using ScriptAndCountsVector = GCVector<ScriptAndCounts, 0, SystemAllocPolicy>;
+using WeakRefKeptObjectVector = JS::GCVector<JS::Value, 0, SystemAllocPolicy>;
+using FinalizationRegistryCleanupJobVector = JS::GCVector<JSObject*, 0, SystemAllocPolicy>;
 
 class AutoLockForExclusiveAccess;
 } // namespace js
@@ -886,6 +888,19 @@ struct JSRuntime : public JS::shadow::Runtime,
 
     /* Strong references on scripts held for PCCount profiling API. */
     JS::PersistentRooted<js::ScriptAndCountsVector>* scriptAndCountsVector;
+
+    /* Strong references to live WeakRef targets kept until the next job boundary. */
+    JS::PersistentRooted<js::WeakRefKeptObjectVector>* weakRefKeptObjects;
+
+    [[nodiscard]] bool addWeakRefKeptObject(JSContext* cx, JS::HandleValue target);
+    void clearWeakRefKeptObjects();
+
+    /* Cleanup jobs produced by FinalizationRegistry sweeping, enqueued after GC. */
+    JS::PersistentRooted<js::FinalizationRegistryCleanupJobVector>* finalizationRegistryCleanupJobs;
+
+    [[nodiscard]] bool enqueueFinalizationRegistryCleanupJob(JSContext* cx, JS::HandleObject job);
+    [[nodiscard]] bool drainFinalizationRegistryCleanupJobs(JSContext* cx);
+    void clearFinalizationRegistryCleanupJobs();
 
     /* Code coverage output. */
     js::coverage::LCovRuntime lcovOutput;

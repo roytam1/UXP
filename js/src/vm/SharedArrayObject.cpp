@@ -8,6 +8,7 @@
 #include "mozilla/Atomics.h"
 
 #include "jsfriendapi.h"
+#include "jsnum.h"
 #include "jsprf.h"
 
 #ifdef XP_WIN
@@ -104,15 +105,18 @@ SharedArrayAllocSize(uint32_t length)
 }
 
 SharedArrayRawBuffer*
-SharedArrayRawBuffer::New(JSContext* cx, uint32_t length)
+SharedArrayRawBuffer::New(JSContext* cx, uint32_t length, uint32_t maxLength, bool growable)
 {
     // The value (uint32_t)-1 is used as a signal in various places,
     // so guard against it on principle.
     MOZ_ASSERT(length != (uint32_t)-1);
+    MOZ_ASSERT(maxLength != (uint32_t)-1);
+    MOZ_ASSERT(maxLength >= length);
 
     // Add a page for the header and round to a page boundary.
-    uint32_t allocSize = SharedArrayAllocSize(length);
-    if (allocSize <= length)
+    uint32_t allocationLength = growable ? maxLength : length;
+    uint32_t allocSize = SharedArrayAllocSize(allocationLength);
+    if (allocSize <= allocationLength)
         return nullptr;
 
     // Test >= to guard against the case where multiple extant runtimes
@@ -127,7 +131,8 @@ SharedArrayRawBuffer::New(JSContext* cx, uint32_t length)
         }
     }
 
-    bool preparedForAsmJS = jit::JitOptions.asmJSAtomicsEnable && IsValidAsmJSHeapLength(length);
+    bool preparedForAsmJS =
+        !growable && jit::JitOptions.asmJSAtomicsEnable && IsValidAsmJSHeapLength(length);
 
     void* p = nullptr;
     if (preparedForAsmJS) {
@@ -161,8 +166,9 @@ SharedArrayRawBuffer::New(JSContext* cx, uint32_t length)
 
     uint8_t* buffer = reinterpret_cast<uint8_t*>(p) + gc::SystemPageSize();
     uint8_t* base = buffer - sizeof(SharedArrayRawBuffer);
-    SharedArrayRawBuffer* rawbuf = new (base) SharedArrayRawBuffer(buffer, length, preparedForAsmJS);
-    MOZ_ASSERT(rawbuf->length == length); // Deallocation needs this
+    SharedArrayRawBuffer* rawbuf =
+        new (base) SharedArrayRawBuffer(buffer, length, maxLength, growable, preparedForAsmJS);
+    MOZ_ASSERT(rawbuf->allocatedByteLength() == allocationLength); // Deallocation needs this.
     return rawbuf;
 }
 
@@ -201,7 +207,7 @@ SharedArrayRawBuffer::dropReference()
     MOZ_ASSERT(p.asValue() % gc::SystemPageSize() == 0);
 
     uint8_t* address = p.unwrap(/*safe - only reference*/);
-    uint32_t allocSize = SharedArrayAllocSize(this->length);
+    uint32_t allocSize = SharedArrayAllocSize(this->allocatedByteLength());
 
     if (this->preparedForAsmJS) {
         uint32_t mappedSize = SharedArrayMappedSize(allocSize);
@@ -221,6 +227,23 @@ SharedArrayRawBuffer::dropReference()
     numLive--;
 }
 
+bool
+SharedArrayRawBuffer::growTo(uint32_t newLength)
+{
+    MOZ_ASSERT(growable);
+    MOZ_ASSERT(newLength <= maxLength);
+
+    for (;;) {
+        uint32_t oldLength = length;
+        if (newLength < oldLength)
+            return false;
+        if (newLength == oldLength)
+            return true;
+        if (length.compareExchange(oldLength, newLength))
+            return true;
+    }
+}
+
 
 MOZ_ALWAYS_INLINE bool
 SharedArrayBufferObject::byteLengthGetterImpl(JSContext* cx, const CallArgs& args)
@@ -237,6 +260,112 @@ SharedArrayBufferObject::byteLengthGetter(JSContext* cx, unsigned argc, Value* v
     return CallNonGenericMethod<IsSharedArrayBuffer, byteLengthGetterImpl>(cx, args);
 }
 
+MOZ_ALWAYS_INLINE bool
+SharedArrayBufferObject::maxByteLengthGetterImpl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(IsSharedArrayBuffer(args.thisv()));
+    args.rval().setInt32(args.thisv().toObject().as<SharedArrayBufferObject>().maxByteLength());
+    return true;
+}
+
+bool
+SharedArrayBufferObject::maxByteLengthGetter(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<IsSharedArrayBuffer, maxByteLengthGetterImpl>(cx, args);
+}
+
+MOZ_ALWAYS_INLINE bool
+SharedArrayBufferObject::growableGetterImpl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(IsSharedArrayBuffer(args.thisv()));
+    args.rval().setBoolean(args.thisv().toObject().as<SharedArrayBufferObject>().isGrowable());
+    return true;
+}
+
+bool
+SharedArrayBufferObject::growableGetter(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<IsSharedArrayBuffer, growableGetterImpl>(cx, args);
+}
+
+static bool
+ReportSharedArrayBufferNotGrowable(JSContext* cx)
+{
+    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_SHARED_ARRAY_NOT_GROWABLE);
+    return false;
+}
+
+static bool
+ReportSharedArrayBufferLengthOutOfRange(JSContext* cx)
+{
+    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_SHARED_ARRAY_BAD_LENGTH);
+    return false;
+}
+
+static bool
+GetSharedArrayBufferMaxByteLengthOption(JSContext* cx, HandleValue options,
+                                        uint32_t byteLength, uint32_t* maxByteLength,
+                                        bool* growable)
+{
+    *maxByteLength = byteLength;
+    *growable = false;
+
+    if (!options.isObject())
+        return true;
+
+    RootedObject opts(cx, &options.toObject());
+    RootedValue maxByteLengthValue(cx);
+    if (!GetProperty(cx, opts, opts, cx->names().maxByteLength, &maxByteLengthValue))
+        return false;
+
+    if (maxByteLengthValue.isUndefined())
+        return true;
+
+    uint64_t max;
+    if (!ToIndex(cx, maxByteLengthValue, &max))
+        return false;
+
+    if (max > INT32_MAX || max < byteLength)
+        return ReportSharedArrayBufferLengthOutOfRange(cx);
+
+    *maxByteLength = uint32_t(max);
+    *growable = true;
+    return true;
+}
+
+MOZ_ALWAYS_INLINE bool
+SharedArrayBufferObject::fun_grow_impl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(IsSharedArrayBuffer(args.thisv()));
+
+    Rooted<SharedArrayBufferObject*> buffer(cx,
+        &args.thisv().toObject().as<SharedArrayBufferObject>());
+    if (!buffer->isGrowable())
+        return ReportSharedArrayBufferNotGrowable(cx);
+
+    uint64_t newByteLength;
+    if (!ToIndex(cx, args.get(0), &newByteLength))
+        return false;
+    if (newByteLength > INT32_MAX)
+        return ReportSharedArrayBufferLengthOutOfRange(cx);
+
+    uint32_t newLength = uint32_t(newByteLength);
+    if (newLength > buffer->maxByteLength() || !buffer->growTo(newLength))
+        return ReportSharedArrayBufferLengthOutOfRange(cx);
+
+    args.rval().setUndefined();
+    return true;
+}
+
+bool
+SharedArrayBufferObject::fun_grow(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<IsSharedArrayBuffer, fun_grow_impl>(cx, args);
+}
+
 bool
 SharedArrayBufferObject::class_constructor(JSContext* cx, unsigned argc, Value* vp)
 {
@@ -245,11 +374,19 @@ SharedArrayBufferObject::class_constructor(JSContext* cx, unsigned argc, Value* 
     if (!ThrowIfNotConstructing(cx, args, "SharedArrayBuffer"))
         return false;
 
+    uint64_t length64;
+    if (!ToIndex(cx, args.get(0), &length64))
+        return false;
     // Bugs 1068458, 1161298: Limit length to 2^31-1.
-    uint32_t length;
-    bool overflow_unused;
-    if (!ToLengthClamped(cx, args.get(0), &length, &overflow_unused) || length > INT32_MAX) {
-        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_SHARED_ARRAY_BAD_LENGTH);
+    if (length64 > INT32_MAX)
+        return ReportSharedArrayBufferLengthOutOfRange(cx);
+    uint32_t length = uint32_t(length64);
+
+    uint32_t maxByteLength;
+    bool growable;
+    if (!GetSharedArrayBufferMaxByteLengthOption(cx, args.get(1), length,
+                                                 &maxByteLength, &growable))
+    {
         return false;
     }
 
@@ -258,7 +395,7 @@ SharedArrayBufferObject::class_constructor(JSContext* cx, unsigned argc, Value* 
     if (!GetPrototypeFromConstructor(cx, newTarget, &proto))
         return false;
 
-    JSObject* bufobj = New(cx, length, proto);
+    JSObject* bufobj = New(cx, length, maxByteLength, growable, proto);
     if (!bufobj)
         return false;
     args.rval().setObject(*bufobj);
@@ -266,9 +403,10 @@ SharedArrayBufferObject::class_constructor(JSContext* cx, unsigned argc, Value* 
 }
 
 SharedArrayBufferObject*
-SharedArrayBufferObject::New(JSContext* cx, uint32_t length, HandleObject proto)
+SharedArrayBufferObject::New(JSContext* cx, uint32_t length, uint32_t maxLength, bool growable,
+                             HandleObject proto)
 {
-    SharedArrayRawBuffer* buffer = SharedArrayRawBuffer::New(cx, length);
+    SharedArrayRawBuffer* buffer = SharedArrayRawBuffer::New(cx, length, maxLength, growable);
     if (!buffer)
         return nullptr;
 
@@ -341,7 +479,7 @@ SharedArrayBufferObject::addSizeOfExcludingThis(JSObject* obj, mozilla::MallocSi
     // just live with the risk.
     const SharedArrayBufferObject& buf = obj->as<SharedArrayBufferObject>();
     info->objectsNonHeapElementsShared +=
-        buf.byteLength() / buf.rawBufferObject()->refcount();
+        buf.rawBufferObject()->allocatedByteLength() / buf.rawBufferObject()->refcount();
 }
 
 /* static */ void
@@ -409,12 +547,15 @@ static const JSPropertySpec static_properties[] = {
 };
 
 static const JSFunctionSpec prototype_functions[] = {
+    JS_FN("grow", SharedArrayBufferObject::fun_grow, 1, 0),
     JS_SELF_HOSTED_FN("slice", "SharedArrayBufferSlice", 2, 0),
     JS_FS_END
 };
 
 static const JSPropertySpec prototype_properties[] = {
     JS_PSG("byteLength", SharedArrayBufferObject::byteLengthGetter, 0),
+    JS_PSG("growable", SharedArrayBufferObject::growableGetter, 0),
+    JS_PSG("maxByteLength", SharedArrayBufferObject::maxByteLengthGetter, 0),
     JS_STRING_SYM_PS(toStringTag, "SharedArrayBuffer", JSPROP_READONLY),
     JS_PS_END
 };

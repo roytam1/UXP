@@ -44,7 +44,9 @@ class SharedArrayRawBuffer
 {
   private:
     mozilla::Atomic<uint32_t, mozilla::ReleaseAcquire> refcount_;
-    uint32_t length;
+    mozilla::Atomic<uint32_t, mozilla::ReleaseAcquire> length;
+    uint32_t maxLength;
+    bool growable;
     bool preparedForAsmJS;
 
     // A list of structures representing tasks waiting on some
@@ -52,9 +54,12 @@ class SharedArrayRawBuffer
     FutexWaiter* waiters_;
 
   protected:
-    SharedArrayRawBuffer(uint8_t* buffer, uint32_t length, bool preparedForAsmJS)
+    SharedArrayRawBuffer(uint8_t* buffer, uint32_t length, uint32_t maxLength, bool growable,
+                         bool preparedForAsmJS)
       : refcount_(1),
         length(length),
+        maxLength(maxLength),
+        growable(growable),
         preparedForAsmJS(preparedForAsmJS),
         waiters_(nullptr)
     {
@@ -62,7 +67,11 @@ class SharedArrayRawBuffer
     }
 
   public:
-    static SharedArrayRawBuffer* New(JSContext* cx, uint32_t length);
+    static SharedArrayRawBuffer* New(JSContext* cx, uint32_t length, uint32_t maxLength,
+                                     bool growable);
+    static SharedArrayRawBuffer* New(JSContext* cx, uint32_t length) {
+        return New(cx, length, length, false);
+    }
 
     // This may be called from multiple threads.  The caller must take
     // care of mutual exclusion.
@@ -84,6 +93,20 @@ class SharedArrayRawBuffer
     uint32_t byteLength() const {
         return length;
     }
+
+    uint32_t maxByteLength() const {
+        return growable ? maxLength : byteLength();
+    }
+
+    uint32_t allocatedByteLength() const {
+        return growable ? maxLength : byteLength();
+    }
+
+    bool isGrowable() const {
+        return growable;
+    }
+
+    [[nodiscard]] bool growTo(uint32_t newLength);
 
     bool isPreparedForAsmJS() const {
         return preparedForAsmJS;
@@ -117,6 +140,9 @@ class SharedArrayRawBuffer
 class SharedArrayBufferObject : public ArrayBufferObjectMaybeShared
 {
     static bool byteLengthGetterImpl(JSContext* cx, const CallArgs& args);
+    static bool maxByteLengthGetterImpl(JSContext* cx, const CallArgs& args);
+    static bool growableGetterImpl(JSContext* cx, const CallArgs& args);
+    static bool fun_grow_impl(JSContext* cx, const CallArgs& args);
 
   public:
     // RAWBUF_SLOT holds a pointer (as "private" data) to the
@@ -128,13 +154,23 @@ class SharedArrayBufferObject : public ArrayBufferObjectMaybeShared
     static const Class class_;
 
     static bool byteLengthGetter(JSContext* cx, unsigned argc, Value* vp);
+    static bool maxByteLengthGetter(JSContext* cx, unsigned argc, Value* vp);
+    static bool growableGetter(JSContext* cx, unsigned argc, Value* vp);
+    static bool fun_grow(JSContext* cx, unsigned argc, Value* vp);
 
     static bool class_constructor(JSContext* cx, unsigned argc, Value* vp);
 
     // Create a SharedArrayBufferObject with a new SharedArrayRawBuffer.
     static SharedArrayBufferObject* New(JSContext* cx,
                                         uint32_t length,
+                                        uint32_t maxLength,
+                                        bool growable,
                                         HandleObject proto = nullptr);
+    static SharedArrayBufferObject* New(JSContext* cx,
+                                        uint32_t length,
+                                        HandleObject proto = nullptr) {
+        return New(cx, length, length, false, proto);
+    }
 
     // Create a SharedArrayBufferObject using an existing SharedArrayRawBuffer.
     static SharedArrayBufferObject* New(JSContext* cx,
@@ -163,6 +199,15 @@ class SharedArrayBufferObject : public ArrayBufferObjectMaybeShared
 
     uint32_t byteLength() const {
         return rawBufferObject()->byteLength();
+    }
+    uint32_t maxByteLength() const {
+        return rawBufferObject()->maxByteLength();
+    }
+    bool isGrowable() const {
+        return rawBufferObject()->isGrowable();
+    }
+    [[nodiscard]] bool growTo(uint32_t newLength) {
+        return rawBufferObject()->growTo(newLength);
     }
     bool isPreparedForAsmJS() const {
         return rawBufferObject()->isPreparedForAsmJS();

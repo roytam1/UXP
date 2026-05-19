@@ -8,6 +8,150 @@
 #include "nsStyleCoord.h"
 #include "mozilla/HashFunctions.h"
 #include "mozilla/PodOperations.h"
+#include <algorithm>
+
+already_AddRefed<nsStyleCoord::CalcNode>
+nsStyleCoord::CalcNode::CreateLeaf(nscoord aLength, float aPercent,
+                                   bool aHasPercent)
+{
+  RefPtr<CalcNode> node = new CalcNode(Type::Leaf);
+  node->mLength = aLength;
+  node->mPercent = aPercent;
+  node->mHasPercent = aHasPercent;
+  return node.forget();
+}
+
+already_AddRefed<nsStyleCoord::CalcNode>
+nsStyleCoord::CalcNode::Create(Type aType)
+{
+  RefPtr<CalcNode> node = new CalcNode(aType);
+  return node.forget();
+}
+
+nsStyleCoord::CalcNode::CalcNode(Type aType)
+  : mType(aType)
+  , mLength(0)
+  , mPercent(0.0f)
+  , mNumber(0.0f)
+  , mHasPercent(false)
+{
+}
+
+bool
+nsStyleCoord::CalcNode::HasPercent() const
+{
+  if (mHasPercent) {
+    return true;
+  }
+  for (const RefPtr<CalcNode>& child : mChildren) {
+    if (child->HasPercent()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool
+nsStyleCoord::CalcNode::Equals(const CalcNode& aOther) const
+{
+  if (mType != aOther.mType ||
+      mLength != aOther.mLength ||
+      mPercent != aOther.mPercent ||
+      mNumber != aOther.mNumber ||
+      mHasPercent != aOther.mHasPercent ||
+      mChildren.Length() != aOther.mChildren.Length()) {
+    return false;
+  }
+
+  for (uint32_t i = 0; i < mChildren.Length(); ++i) {
+    if (!mChildren[i]->Equals(*aOther.mChildren[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+uint32_t
+nsStyleCoord::CalcNode::HashValue(uint32_t aHash) const
+{
+  aHash = mozilla::AddToHash(aHash, uint8_t(mType), mLength, mPercent,
+                             mNumber, mHasPercent);
+  for (const RefPtr<CalcNode>& child : mChildren) {
+    aHash = child->HashValue(aHash);
+  }
+  return aHash;
+}
+
+static nscoord
+ResolveCalcNode(const nsStyleCoord::CalcNode& aNode, nscoord aPercentageBasis)
+{
+  using Type = nsStyleCoord::CalcNode::Type;
+
+  switch (aNode.mType) {
+    case Type::Leaf:
+      return aNode.mLength +
+             NSToCoordFloorClamped(aPercentageBasis * aNode.mPercent);
+    case Type::Add:
+      MOZ_ASSERT(aNode.mChildren.Length() == 2, "unexpected child count");
+      return NSCoordSaturatingAdd(
+        ResolveCalcNode(*aNode.mChildren[0], aPercentageBasis),
+        ResolveCalcNode(*aNode.mChildren[1], aPercentageBasis));
+    case Type::Subtract:
+      MOZ_ASSERT(aNode.mChildren.Length() == 2, "unexpected child count");
+      return NSCoordSaturatingSubtract(
+        ResolveCalcNode(*aNode.mChildren[0], aPercentageBasis),
+        ResolveCalcNode(*aNode.mChildren[1], aPercentageBasis), 0);
+    case Type::Multiply:
+      MOZ_ASSERT(aNode.mChildren.Length() == 1, "unexpected child count");
+      return NSCoordSaturatingMultiply(
+        ResolveCalcNode(*aNode.mChildren[0], aPercentageBasis),
+        aNode.mNumber);
+    case Type::Divide:
+      MOZ_ASSERT(aNode.mChildren.Length() == 1, "unexpected child count");
+      return NSCoordSaturatingMultiply(
+        ResolveCalcNode(*aNode.mChildren[0], aPercentageBasis),
+        1.0f / aNode.mNumber);
+    case Type::Min: {
+      MOZ_ASSERT(!aNode.mChildren.IsEmpty(), "unexpected child count");
+      nscoord result = ResolveCalcNode(*aNode.mChildren[0], aPercentageBasis);
+      for (uint32_t i = 1; i < aNode.mChildren.Length(); ++i) {
+        result = std::min(result,
+                          ResolveCalcNode(*aNode.mChildren[i],
+                                          aPercentageBasis));
+      }
+      return result;
+    }
+    case Type::Max: {
+      MOZ_ASSERT(!aNode.mChildren.IsEmpty(), "unexpected child count");
+      nscoord result = ResolveCalcNode(*aNode.mChildren[0], aPercentageBasis);
+      for (uint32_t i = 1; i < aNode.mChildren.Length(); ++i) {
+        result = std::max(result,
+                          ResolveCalcNode(*aNode.mChildren[i],
+                                          aPercentageBasis));
+      }
+      return result;
+    }
+    case Type::Clamp:
+      MOZ_ASSERT(aNode.mChildren.Length() == 3, "unexpected child count");
+      return std::max(ResolveCalcNode(*aNode.mChildren[0], aPercentageBasis),
+                      std::min(ResolveCalcNode(*aNode.mChildren[1],
+                                               aPercentageBasis),
+                               ResolveCalcNode(*aNode.mChildren[2],
+                                               aPercentageBasis)));
+  }
+
+  MOZ_ASSERT_UNREACHABLE("unexpected calc node type");
+  return 0;
+}
+
+nscoord
+nsStyleCoord::Calc::Resolve(nscoord aPercentageBasis) const
+{
+  if (mNode) {
+    return ResolveCalcNode(*mNode, aPercentageBasis);
+  }
+  return mLength + NSToCoordFloorClamped(aPercentageBasis * mPercent);
+}
 
 nsStyleCoord::nsStyleCoord(nsStyleUnit aUnit)
   : mUnit(aUnit)
@@ -71,8 +215,15 @@ bool nsStyleCoord::operator==(const nsStyleCoord& aOther) const
     case eStyleUnit_Integer:
     case eStyleUnit_Enumerated:
       return mValue.mInt == aOther.mValue.mInt;
-    case eStyleUnit_Calc:
-      return *this->GetCalcValue() == *aOther.GetCalcValue();
+    case eStyleUnit_Calc: {
+      Calc* thisCalc = GetCalcValue();
+      Calc* otherCalc = aOther.GetCalcValue();
+      if (thisCalc->HasCalcNode() || otherCalc->HasCalcNode()) {
+        return thisCalc->HasCalcNode() == otherCalc->HasCalcNode() &&
+               thisCalc->mNode->Equals(*otherCalc->mNode);
+      }
+      return *thisCalc == *otherCalc;
+    }
   }
   MOZ_ASSERT(false, "unexpected unit");
   return false;
@@ -100,13 +251,17 @@ uint32_t nsStyleCoord::HashValue(uint32_t aHash = 0) const
     case eStyleUnit_Integer:
     case eStyleUnit_Enumerated:
       return mozilla::AddToHash(aHash, mValue.mInt);
-    case eStyleUnit_Calc:
+    case eStyleUnit_Calc: {
       Calc* calcValue = GetCalcValue();
+      if (calcValue->HasCalcNode()) {
+        return calcValue->mNode->HashValue(aHash);
+      }
       aHash = mozilla::AddToHash(aHash, calcValue->mLength);
       if (HasPercent()) {
         return mozilla::AddToHash(aHash, calcValue->mPercent);
       }
       return aHash;
+    }
   }
   MOZ_ASSERT(false, "unexpected unit");
   return aHash;

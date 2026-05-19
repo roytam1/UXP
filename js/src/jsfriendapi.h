@@ -1748,6 +1748,9 @@ JS_IsFloat64Array(JSObject* obj);
 extern JS_FRIEND_API(bool)
 JS_GetTypedArraySharedness(JSObject* obj);
 
+extern JS_FRIEND_API(uint32_t)
+JS_GetTypedArrayLength(JSObject* obj);
+
 /*
  * Test for specific typed array types (ArrayBufferView subtypes) and return
  * the unwrapped object if so, else nullptr.  Never throws.
@@ -1814,8 +1817,7 @@ inline void \
 Get ## Type ## ArrayLengthAndData(JSObject* obj, uint32_t* length, bool* isSharedMemory, type** data) \
 { \
     MOZ_ASSERT(GetObjectClass(obj) == detail::Type ## ArrayClassPtr); \
-    const JS::Value& lenSlot = GetReservedSlot(obj, detail::TypedArrayLengthSlot); \
-    *length = mozilla::AssertedCast<uint32_t>(lenSlot.toInt32()); \
+    *length = JS_GetTypedArrayLength(obj); \
     *isSharedMemory = JS_GetTypedArraySharedness(obj); \
     *data = static_cast<type*>(GetObjectPrivate(obj)); \
 }

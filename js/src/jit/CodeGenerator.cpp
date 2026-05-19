@@ -8889,9 +8889,17 @@ CodeGenerator::branchIfNotEmptyObjectElements(Register obj, Label* target)
                    Address(obj, NativeObject::offsetOfElements()),
                    ImmPtr(js::emptyObjectElements),
                    &emptyObj);
-    masm.branchPtr(Assembler::NotEqual,
+    masm.branchPtr(Assembler::Equal,
                    Address(obj, NativeObject::offsetOfElements()),
                    ImmPtr(js::emptyObjectElementsShared),
+                   &emptyObj);
+    masm.branchPtr(Assembler::Equal,
+                   Address(obj, NativeObject::offsetOfElements()),
+                   ImmPtr(js::emptyObjectElementsResizableOrGrowable),
+                   &emptyObj);
+    masm.branchPtr(Assembler::NotEqual,
+                   Address(obj, NativeObject::offsetOfElements()),
+                   ImmPtr(js::emptyObjectElementsSharedResizableOrGrowable),
                    target);
     masm.bind(&emptyObj);
 }

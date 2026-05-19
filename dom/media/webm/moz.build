@@ -24,6 +24,11 @@ if CONFIG['MOZ_WEBM_ENCODER']:
         'WebMWriter.cpp',
     ]
 
+if CONFIG['MOZ_AV1']:
+    LOCAL_INCLUDES += [
+        '/dom/media/platforms/agnostic',
+    ]
+
 CXXFLAGS += CONFIG['MOZ_LIBVPX_CFLAGS']
 
 FINAL_LIBRARY = 'xul'

@@ -3722,6 +3722,48 @@ Promise_static_resolve(JSContext* cx, unsigned argc, Value* vp)
     return true;
 }
 
+// ES2024
+// Promise.withResolvers ( )
+static bool
+Promise_static_withResolvers(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+
+    // Step 1.
+    if (!args.thisv().isObject()) {
+        ReportValueError(cx, JSMSG_NOT_CONSTRUCTOR, -1, args.thisv(), nullptr);
+        return false;
+    }
+    RootedObject C(cx, &args.thisv().toObject());
+
+    // Step 2.
+    Rooted<PromiseCapability> capability(cx);
+    if (!NewPromiseCapability(cx, C, &capability, false))
+        return false;
+
+    // Step 3.
+    RootedPlainObject obj(cx, NewBuiltinClassInstance<PlainObject>(cx));
+    if (!obj)
+        return false;
+
+    // Steps 4-7.
+    RootedValue promise(cx, ObjectValue(*capability.promise()));
+    if (!::JS_DefineProperty(cx, obj, "promise", promise, JSPROP_ENUMERATE))
+        return false;
+
+    RootedValue resolve(cx, ObjectValue(*capability.resolve()));
+    if (!::JS_DefineProperty(cx, obj, "resolve", resolve, JSPROP_ENUMERATE))
+        return false;
+
+    RootedValue reject(cx, ObjectValue(*capability.reject()));
+    if (!::JS_DefineProperty(cx, obj, "reject", reject, JSPROP_ENUMERATE))
+        return false;
+
+    // Step 8.
+    args.rval().setObject(*obj);
+    return true;
+}
+
 /**
  * Unforgeable version of ES2016, 25.4.4.5, Promise.resolve.
  */
@@ -5251,6 +5293,7 @@ static const JSFunctionSpec promise_static_methods[] = {
     JS_FN("race", Promise_static_race, 1, 0),
     JS_FN("reject", Promise_reject, 1, 0),
     JS_FN("resolve", Promise_static_resolve, 1, 0),
+    JS_FN("withResolvers", Promise_static_withResolvers, 0, 0),
     JS_FS_END
 };
 

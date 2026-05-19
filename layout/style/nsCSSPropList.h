@@ -470,19 +470,17 @@ CSS_PROP_DISPLAY(
     kAppearanceKTable,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
-#ifndef CSS_PROP_LIST_EXCLUDE_INTERNAL
 CSS_PROP_POSITION(
     aspect-ratio,
     aspect_ratio,
     AspectRatio,
-    CSS_PROPERTY_INTERNAL |
-        CSS_PROPERTY_PARSE_INACCESSIBLE,
+    CSS_PROPERTY_PARSE_VALUE |
+        CSS_PROPERTY_VALUE_PARSER_FUNCTION,
     "",
-    VARIANT_NUMBER,
+    0,
     nullptr,
     offsetof(nsStylePosition, mAspectRatio),
     eStyleAnimType_None)
-#endif // CSS_PROP_LIST_EXCLUDE_INTERNAL
 CSS_PROP_DISPLAY(
     backface-visibility,
     backface_visibility,
@@ -885,6 +883,43 @@ CSS_PROP_SHORTHAND(
     CSS_PROPERTY_PARSE_FUNCTION |
         CSS_PROPERTY_HASHLESS_COLOR_QUIRK,
     "")
+CSS_PROP_LOGICAL(
+    border-end-end-radius,
+    border_end_end_radius,
+    BorderEndEndRadius,
+    CSS_PROPERTY_PARSE_FUNCTION |
+        CSS_PROPERTY_APPLIES_TO_FIRST_LETTER |
+        CSS_PROPERTY_VALUE_NONNEGATIVE |
+        CSS_PROPERTY_STORES_CALC |
+        CSS_PROPERTY_LOGICAL |
+        CSS_PROPERTY_LOGICAL_CORNER |
+        CSS_PROPERTY_LOGICAL_BLOCK_AXIS |
+        CSS_PROPERTY_LOGICAL_END_EDGE,
+    "",
+    0,
+    nullptr,
+    BorderRadius,
+    Border,
+    CSS_PROP_NO_OFFSET,
+    eStyleAnimType_None)
+CSS_PROP_LOGICAL(
+    border-end-start-radius,
+    border_end_start_radius,
+    BorderEndStartRadius,
+    CSS_PROPERTY_PARSE_FUNCTION |
+        CSS_PROPERTY_APPLIES_TO_FIRST_LETTER |
+        CSS_PROPERTY_VALUE_NONNEGATIVE |
+        CSS_PROPERTY_STORES_CALC |
+        CSS_PROPERTY_LOGICAL |
+        CSS_PROPERTY_LOGICAL_CORNER |
+        CSS_PROPERTY_LOGICAL_BLOCK_AXIS,
+    "",
+    0,
+    nullptr,
+    BorderRadius,
+    Border,
+    CSS_PROP_NO_OFFSET,
+    eStyleAnimType_None)
 CSS_PROP_SHORTHAND(
     border-image,
     border_image,
@@ -1180,6 +1215,41 @@ CSS_PROP_TABLEBORDER(
     nullptr,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Custom)
+CSS_PROP_LOGICAL(
+    border-start-end-radius,
+    border_start_end_radius,
+    BorderStartEndRadius,
+    CSS_PROPERTY_PARSE_FUNCTION |
+        CSS_PROPERTY_APPLIES_TO_FIRST_LETTER |
+        CSS_PROPERTY_VALUE_NONNEGATIVE |
+        CSS_PROPERTY_STORES_CALC |
+        CSS_PROPERTY_LOGICAL |
+        CSS_PROPERTY_LOGICAL_CORNER |
+        CSS_PROPERTY_LOGICAL_END_EDGE,
+    "",
+    0,
+    nullptr,
+    BorderRadius,
+    Border,
+    CSS_PROP_NO_OFFSET,
+    eStyleAnimType_None)
+CSS_PROP_LOGICAL(
+    border-start-start-radius,
+    border_start_start_radius,
+    BorderStartStartRadius,
+    CSS_PROPERTY_PARSE_FUNCTION |
+        CSS_PROPERTY_APPLIES_TO_FIRST_LETTER |
+        CSS_PROPERTY_VALUE_NONNEGATIVE |
+        CSS_PROPERTY_STORES_CALC |
+        CSS_PROPERTY_LOGICAL |
+        CSS_PROPERTY_LOGICAL_CORNER,
+    "",
+    0,
+    nullptr,
+    BorderRadius,
+    Border,
+    CSS_PROP_NO_OFFSET,
+    eStyleAnimType_None)
 CSS_PROP_SHORTHAND(
     border-style,
     border_style,
@@ -1273,7 +1343,8 @@ CSS_PROP_SHORTHAND(
     border_width,
     BorderWidth,
     CSS_PROPERTY_PARSE_FUNCTION |
-        CSS_PROPERTY_UNITLESS_LENGTH_QUIRK,
+        CSS_PROPERTY_UNITLESS_LENGTH_QUIRK |
+        CSS_PROPERTY_GETCS_NEEDS_LAYOUT_FLUSH,
     "")
 CSS_PROP_POSITION(
     bottom,

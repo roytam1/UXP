@@ -11,7 +11,9 @@
 #include "gc/Nursery.h"
 #include "gc/Tracer.h"
 #include "vm/GlobalObject.h"
+#include "vm/Symbol.h"
 
+#include "jswrapper.h"
 #include "jsobjinlines.h"
 
 #include "vm/Interpreter-inl.h"
@@ -32,16 +34,63 @@ IsWeakRef(HandleValue v)
 }
 
 static bool
+GetPrototypeFromWeakRefConstructor(JSContext* cx, HandleObject newTarget,
+                                   MutableHandleObject proto)
+{
+    if (!GetPrototypeFromConstructor(cx, newTarget, proto))
+        return false;
+    if (proto)
+        return true;
+
+    RootedObject realmObject(cx, CheckedUnwrap(newTarget, /* stopAtWindowProxy = */ false));
+    if (!realmObject)
+        return false;
+
+    {
+        JSAutoCompartment ac(cx, realmObject);
+        Rooted<GlobalObject*> global(cx, &realmObject->global());
+        if (!GlobalObject::ensureConstructor(cx, global, JSProto_WeakRef))
+            return false;
+        proto.set(&global->getPrototype(JSProto_WeakRef).toObject());
+    }
+
+    return cx->compartment()->wrap(cx, proto);
+}
+
+static bool
 WeakRef_deref_impl(JSContext* cx, const CallArgs& args)
 {
     MOZ_ASSERT(IsWeakRef(args.thisv()));
 
     WeakRefObject::Referent* data = GetReferent(&args.thisv().toObject());
-    JSObject* target = data ? data->target.get() : nullptr;
-    if (target)
-        args.rval().setObject(*target);
-    else
+    if (!data) {
         args.rval().setUndefined();
+        return true;
+    }
+
+    if (data->isObject()) {
+        JSObject* target = data->objectTarget.get();
+        if (target) {
+            RootedValue kept(cx, ObjectValue(*target));
+            if (!cx->runtime()->addWeakRefKeptObject(cx, kept))
+                return false;
+            args.rval().set(kept);
+        } else {
+            args.rval().setUndefined();
+        }
+    } else {
+        MOZ_ASSERT(data->isSymbol());
+        JS::Symbol* target = data->symbolTarget.get();
+        if (target) {
+            RootedValue kept(cx, SymbolValue(target));
+            if (!cx->runtime()->addWeakRefKeptObject(cx, kept))
+                return false;
+            args.rval().set(kept);
+        } else {
+            args.rval().setUndefined();
+        }
+    }
+
     return true;
 }
 
@@ -83,18 +132,35 @@ InitWeakRefClass(JSContext* cx, HandleObject obj, bool defineMembers)
 }
 
 /* static */ WeakRefObject*
-WeakRefObject::create(JSContext* cx, HandleObject target, HandleObject proto /* = nullptr */)
+WeakRefObject::create(JSContext* cx, HandleValue target, HandleObject proto /* = nullptr */)
 {
     Rooted<WeakRefObject*> obj(cx, NewObjectWithClassProto<WeakRefObject>(cx, proto));
     if (!obj)
         return nullptr;
 
-    Referent* data = cx->new_<Referent>(target, cx->options().weakRefs());
+    Referent* data;
+    if (target.isObject())
+        data = cx->new_<Referent>(&target.toObject());
+    else
+        data = cx->new_<Referent>(target.toSymbol());
+
     if (!data)
         return nullptr;
 
     obj->setPrivate(data);
     return obj;
+}
+
+bool
+js::CanBeHeldWeakly(HandleValue target)
+{
+    if (target.isObject())
+        return true;
+
+    if (target.isSymbol())
+        return target.toSymbol()->code() != JS::SymbolCode::InSymbolRegistry;
+
+    return false;
 }
 
 /* static */ bool
@@ -105,26 +171,23 @@ WeakRefObject::construct(JSContext* cx, unsigned argc, Value* vp)
     if (!ThrowIfNotConstructing(cx, args, "WeakRef"))
         return false;
 
-    if (!args.get(0).isObject()) {
-        UniqueChars bytes =
-            DecompileValueGenerator(cx, JSDVG_SEARCH_STACK, args.get(0), nullptr);
-        if (!bytes)
-            return false;
-
-        JS_ReportErrorNumberLatin1(cx, GetErrorMessage, nullptr, JSMSG_NOT_NONNULL_OBJECT,
-                                   bytes.get());
+    if (!CanBeHeldWeakly(args.get(0))) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_NOT_WEAKREF_TARGET);
         return false;
     }
 
-    RootedObject target(cx, &args[0].toObject());
+    RootedValue target(cx, args[0]);
 
     RootedObject proto(cx);
     RootedObject newTarget(cx, &args.newTarget().toObject());
-    if (!GetPrototypeFromConstructor(cx, newTarget, &proto))
+    if (!GetPrototypeFromWeakRefConstructor(cx, newTarget, &proto))
         return false;
 
     Rooted<WeakRefObject*> obj(cx, WeakRefObject::create(cx, target, proto));
     if (!obj)
+        return false;
+
+    if (!cx->runtime()->addWeakRefKeptObject(cx, target))
         return false;
 
     args.rval().setObject(*obj);
@@ -142,19 +205,23 @@ WeakRefObject::deref(JSContext* cx, unsigned argc, Value* vp)
 WeakRefObject::trace(JSTracer* trc, JSObject* obj)
 {
     if (Referent* data = GetReferent(obj)) {
-        JSObject* target = data->target.unbarrieredGet();
-        if (!target)
-            return;
+        if (data->isObject()) {
+            JSObject* target = data->objectTarget.unbarrieredGet();
+            if (!target)
+                return;
 
-        // When pref-disabled, keep referent alive via strong trace so deref()
-        // stays usable as a stub without touching GC internals.
-        if (!data->enabled) {
-            TraceManuallyBarrieredEdge(trc, data->target.unsafeGet(), "WeakRef stub referent");
-        } else if (IsInsideNursery(target)) {
-            // Weak edges must be tenured; trace strongly while referent is in the nursery.
-            TraceManuallyBarrieredEdge(trc, data->target.unsafeGet(), "WeakRef nursery referent");
+            if (IsInsideNursery(target)) {
+                // Weak edges must be tenured; trace strongly while referent is in the nursery.
+                TraceManuallyBarrieredEdge(trc, data->objectTarget.unsafeGet(),
+                                           "WeakRef nursery referent");
+            } else {
+                TraceWeakEdge(trc, &data->objectTarget, "WeakRef referent");
+            }
         } else {
-            TraceWeakEdge(trc, &data->target, "WeakRef referent");
+            MOZ_ASSERT(data->isSymbol());
+            JS::Symbol* target = data->symbolTarget.unbarrieredGet();
+            if (target)
+                TraceWeakEdge(trc, &data->symbolTarget, "WeakRef symbol referent");
         }
     }
 }
@@ -162,7 +229,6 @@ WeakRefObject::trace(JSTracer* trc, JSObject* obj)
 /* static */ void
 WeakRefObject::finalize(FreeOp* fop, JSObject* obj)
 {
-    MOZ_ASSERT(!fop->maybeOffMainThread());
     if (Referent* data = GetReferent(obj))
         fop->delete_(data);
 }

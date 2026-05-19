@@ -209,11 +209,38 @@ MapSinglePropertyInto(nsCSSPropertyID aTargetProp,
  * property based on writing mode information obtained from aRuleData's
  * style context.
  */
+static inline int
+PhysicalCornerIndexForLogicalCorner(mozilla::Side aBlockSide,
+                                    mozilla::Side aInlineSide)
+{
+  // gBorderRadiusSubpropTable is in top-left, top-right, bottom-right,
+  // bottom-left order.
+  switch (aBlockSide) {
+    case eSideTop:
+      MOZ_ASSERT(aInlineSide == eSideLeft || aInlineSide == eSideRight);
+      return aInlineSide == eSideLeft ? 0 : 1;
+    case eSideRight:
+      MOZ_ASSERT(aInlineSide == eSideTop || aInlineSide == eSideBottom);
+      return aInlineSide == eSideTop ? 1 : 2;
+    case eSideBottom:
+      MOZ_ASSERT(aInlineSide == eSideLeft || aInlineSide == eSideRight);
+      return aInlineSide == eSideRight ? 2 : 3;
+    case eSideLeft:
+      MOZ_ASSERT(aInlineSide == eSideTop || aInlineSide == eSideBottom);
+      return aInlineSide == eSideTop ? 0 : 3;
+  }
+
+  MOZ_ASSERT_UNREACHABLE("unexpected physical side");
+  return 0;
+}
+
 static inline void
 EnsurePhysicalProperty(nsCSSPropertyID& aProperty, nsRuleData* aRuleData)
 {
   bool isAxisProperty =
     nsCSSProps::PropHasFlags(aProperty, CSS_PROPERTY_LOGICAL_AXIS);
+  bool isCornerProperty =
+    nsCSSProps::PropHasFlags(aProperty, CSS_PROPERTY_LOGICAL_CORNER);
   bool isBlock =
     nsCSSProps::PropHasFlags(aProperty, CSS_PROPERTY_LOGICAL_BLOCK_AXIS);
 
@@ -230,6 +257,23 @@ EnsurePhysicalProperty(nsCSSPropertyID& aProperty, nsRuleData* aRuleData)
     static_assert(eAxisVertical == 0 && eAxisHorizontal == 1,
                   "unexpected axis constant values");
     index = axis;
+  } else if (isCornerProperty) {
+    bool isInlineEnd =
+      nsCSSProps::PropHasFlags(aProperty, CSS_PROPERTY_LOGICAL_END_EDGE);
+
+    LogicalEdge blockEdge =
+      isBlock ? eLogicalEdgeEnd : eLogicalEdgeStart;
+    LogicalEdge inlineEdge =
+      isInlineEnd ? eLogicalEdgeEnd : eLogicalEdgeStart;
+
+    uint8_t wmBits = aRuleData->mStyleContext->StyleVisibility()->mWritingMode;
+    mozilla::Side blockSide =
+      WritingMode::PhysicalSideForBlockAxis(wmBits, blockEdge);
+
+    WritingMode wm(aRuleData->mStyleContext);
+    mozilla::Side inlineSide = wm.PhysicalSideForInlineAxis(inlineEdge);
+
+    index = PhysicalCornerIndexForLogicalCorner(blockSide, inlineSide);
   } else {
     bool isEnd =
       nsCSSProps::PropHasFlags(aProperty, CSS_PROPERTY_LOGICAL_END_EDGE);

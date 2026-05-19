@@ -1,0 +1,5 @@
+This directory contains dav1d 1.5.3 from VideoLAN:
+https://code.videolan.org/videolan/dav1d/-/tags/1.5.3
+
+Upstream source is stored in src/. Mozilla-specific build configuration lives
+in moz.build, config/, and moz/.

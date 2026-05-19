@@ -22,6 +22,7 @@
 # include <valgrind/memcheck.h>
 #endif
 
+#include <algorithm>
 #include "jsapi.h"
 #include "jsarray.h"
 #include "jscntxt.h"
@@ -45,6 +46,7 @@
 #include "vm/Interpreter.h"
 #include "vm/SelfHosting.h"
 #include "vm/SharedArrayObject.h"
+#include "vm/TypedArrayObject.h"
 #include "vm/WrapperObject.h"
 #include "wasm/WasmSignalHandlers.h"
 #include "wasm/WasmTypes.h"
@@ -170,12 +172,18 @@ static const JSPropertySpec static_properties[] = {
 
 
 static const JSFunctionSpec prototype_functions[] = {
+    JS_FN("resize", ArrayBufferObject::fun_resize, 1, 0),
     JS_SELF_HOSTED_FN("slice", "ArrayBufferSlice", 2, 0),
+    JS_FN("transfer", ArrayBufferObject::fun_transfer, 0, 0),
+    JS_FN("transferToFixedLength", ArrayBufferObject::fun_transferToFixedLength, 0, 0),
     JS_FS_END
 };
 
 static const JSPropertySpec prototype_properties[] = {
     JS_PSG("byteLength", ArrayBufferObject::byteLengthGetter, 0),
+    JS_PSG("detached", ArrayBufferObject::detachedGetter, 0),
+    JS_PSG("maxByteLength", ArrayBufferObject::maxByteLengthGetter, 0),
+    JS_PSG("resizable", ArrayBufferObject::resizableGetter, 0),
     JS_STRING_SYM_PS(toStringTag, "ArrayBuffer", JSPROP_READONLY),
     JS_PS_END
 };
@@ -252,6 +260,52 @@ ArrayBufferObject::byteLengthGetter(JSContext* cx, unsigned argc, Value* vp)
     return CallNonGenericMethod<IsArrayBuffer, byteLengthGetterImpl>(cx, args);
 }
 
+MOZ_ALWAYS_INLINE bool
+ArrayBufferObject::detachedGetterImpl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(IsArrayBuffer(args.thisv()));
+    args.rval().setBoolean(args.thisv().toObject().as<ArrayBufferObject>().isDetached());
+    return true;
+}
+
+bool
+ArrayBufferObject::detachedGetter(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<IsArrayBuffer, detachedGetterImpl>(cx, args);
+}
+
+MOZ_ALWAYS_INLINE bool
+ArrayBufferObject::maxByteLengthGetterImpl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(IsArrayBuffer(args.thisv()));
+    ArrayBufferObject& buffer = args.thisv().toObject().as<ArrayBufferObject>();
+    args.rval().setInt32(buffer.isDetached() ? 0 : int32_t(buffer.maxByteLength()));
+    return true;
+}
+
+bool
+ArrayBufferObject::maxByteLengthGetter(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<IsArrayBuffer, maxByteLengthGetterImpl>(cx, args);
+}
+
+MOZ_ALWAYS_INLINE bool
+ArrayBufferObject::resizableGetterImpl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(IsArrayBuffer(args.thisv()));
+    args.rval().setBoolean(args.thisv().toObject().as<ArrayBufferObject>().isResizable());
+    return true;
+}
+
+bool
+ArrayBufferObject::resizableGetter(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<IsArrayBuffer, resizableGetterImpl>(cx, args);
+}
+
 /*
  * ArrayBuffer.isView(obj); ES6 (Dec 2013 draft) 24.1.3.1
  */
@@ -261,6 +315,39 @@ ArrayBufferObject::fun_isView(JSContext* cx, unsigned argc, Value* vp)
     CallArgs args = CallArgsFromVp(argc, vp);
     args.rval().setBoolean(args.get(0).isObject() &&
                            JS_IsArrayBufferViewObject(&args.get(0).toObject()));
+    return true;
+}
+
+static bool
+GetArrayBufferMaxByteLengthOption(JSContext* cx, HandleValue options,
+                                  uint32_t byteLength, uint32_t* maxByteLength,
+                                  bool* resizable)
+{
+    *maxByteLength = byteLength;
+    *resizable = false;
+
+    if (!options.isObject())
+        return true;
+
+    RootedObject opts(cx, &options.toObject());
+    RootedValue maxByteLengthValue(cx);
+    if (!GetProperty(cx, opts, opts, cx->names().maxByteLength, &maxByteLengthValue))
+        return false;
+
+    if (maxByteLengthValue.isUndefined())
+        return true;
+
+    uint64_t max;
+    if (!ToIndex(cx, maxByteLengthValue, &max))
+        return false;
+
+    if (max > INT32_MAX || max < byteLength) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_BAD_ARRAY_LENGTH);
+        return false;
+    }
+
+    *maxByteLength = uint32_t(max);
+    *resizable = true;
     return true;
 }
 
@@ -287,12 +374,22 @@ ArrayBufferObject::class_constructor(JSContext* cx, unsigned argc, Value* vp)
     }
 
     // Step 3.
+    uint32_t maxByteLength;
+    bool resizable;
+    if (!GetArrayBufferMaxByteLengthOption(cx, args.get(1), uint32_t(byteLength),
+                                           &maxByteLength, &resizable))
+    {
+        return false;
+    }
+
+    // Step 4.
     RootedObject proto(cx);
     RootedObject newTarget(cx, &args.newTarget().toObject());
     if (!GetPrototypeFromConstructor(cx, newTarget, &proto))
         return false;
 
-    JSObject* bufobj = create(cx, uint32_t(byteLength), proto);
+    JSObject* bufobj = create(cx, uint32_t(byteLength), BufferContents::createPlain(nullptr),
+                              OwnsData, proto, GenericObject, maxByteLength, resizable);
     if (!bufobj)
         return false;
     args.rval().setObject(*bufobj);
@@ -302,11 +399,64 @@ ArrayBufferObject::class_constructor(JSContext* cx, unsigned argc, Value* vp)
 static ArrayBufferObject::BufferContents
 AllocateArrayBufferContents(JSContext* cx, uint32_t nbytes)
 {
-    uint8_t* p = cx->runtime()->pod_callocCanGC<uint8_t>(nbytes);
+    uint8_t* p = cx->runtime()->pod_callocCanGC<uint8_t>(nbytes ? nbytes : 1);
     if (!p)
         ReportOutOfMemory(cx);
 
     return ArrayBufferObject::BufferContents::create<ArrayBufferObject::PLAIN>(p);
+}
+
+static bool
+ReportArrayBufferNotResizable(JSContext* cx)
+{
+    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_ARRAYBUFFER_NOT_RESIZABLE);
+    return false;
+}
+
+static bool
+ReportArrayBufferCannotDetach(JSContext* cx)
+{
+    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_ARRAYBUFFER_CANNOT_DETACH);
+    return false;
+}
+
+static bool
+ReportArrayBufferLengthOutOfRange(JSContext* cx)
+{
+    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_BAD_ARRAY_LENGTH);
+    return false;
+}
+
+static bool
+ArrayBufferViewFits(ArrayBufferViewObject* view, uint32_t newByteLength)
+{
+    if (view->is<DataViewObject>()) {
+        DataViewObject& dataView = view->as<DataViewObject>();
+        uint32_t byteOffset = dataView.byteOffsetMaybeOutOfBounds();
+        if (byteOffset > newByteLength)
+            return false;
+        uint32_t byteLength = dataView.isLengthTracking()
+                              ? newByteLength - byteOffset
+                              : dataView.fixedByteLengthMaybeOutOfBounds();
+        return byteOffset <= newByteLength && byteLength <= newByteLength - byteOffset;
+    }
+
+    if (view->is<TypedArrayObject>()) {
+        TypedArrayObject& typedArray = view->as<TypedArrayObject>();
+        if (typedArray.isSharedMemory())
+            return true;
+        uint32_t byteOffset = typedArray.byteOffsetMaybeOutOfBounds();
+        if (byteOffset > newByteLength)
+            return false;
+        uint32_t byteLength = typedArray.isLengthTracking()
+                              ? newByteLength - byteOffset
+                              : typedArray.fixedLengthMaybeOutOfBounds() *
+                                typedArray.bytesPerElement();
+        return byteOffset <= newByteLength && byteLength <= newByteLength - byteOffset;
+    }
+
+    // Outline typed objects don't have a recoverable fixed byte range here.
+    return false;
 }
 
 static void
@@ -391,7 +541,8 @@ ArrayBufferObject::setNewData(FreeOp* fop, BufferContents newContents, OwnsState
 
 void
 ArrayBufferObject::changeViewContents(JSContext* cx, ArrayBufferViewObject* view,
-                                      uint8_t* oldDataPointer, BufferContents newContents)
+                                      uint8_t* oldDataPointer, BufferContents newContents,
+                                      uint32_t newByteLength)
 {
     MOZ_ASSERT(!view->isSharedMemory());
 
@@ -402,7 +553,18 @@ ArrayBufferObject::changeViewContents(JSContext* cx, ArrayBufferViewObject* view
     uint8_t* viewDataPointer = view->dataPointerUnshared(nogc);
     if (viewDataPointer) {
         MOZ_ASSERT(newContents);
-        ptrdiff_t offset = viewDataPointer - oldDataPointer;
+        uint32_t offset;
+        if (view->is<DataViewObject>()) {
+            offset = view->as<DataViewObject>().byteOffsetMaybeOutOfBounds();
+        } else if (view->is<TypedArrayObject>()) {
+            offset = view->as<TypedArrayObject>().byteOffsetMaybeOutOfBounds();
+        } else {
+            ptrdiff_t oldOffset = viewDataPointer - oldDataPointer;
+            MOZ_ASSERT(oldOffset >= 0);
+            offset = uint32_t(oldOffset);
+        }
+        if (offset > newByteLength)
+            offset = 0;
         viewDataPointer = static_cast<uint8_t*>(newContents.data()) + offset;
         view->setDataPointerUnshared(viewDataPointer);
     }
@@ -428,10 +590,180 @@ ArrayBufferObject::changeContents(JSContext* cx, BufferContents newContents,
     auto& innerViews = cx->compartment()->innerViews.get();
     if (InnerViewTable::ViewVector* views = innerViews.maybeViewsUnbarriered(this)) {
         for (size_t i = 0; i < views->length(); i++)
-            changeViewContents(cx, (*views)[i], oldDataPointer, newContents);
+            changeViewContents(cx, (*views)[i], oldDataPointer, newContents, byteLength());
     }
     if (firstView())
-        changeViewContents(cx, firstView(), oldDataPointer, newContents);
+        changeViewContents(cx, firstView(), oldDataPointer, newContents, byteLength());
+}
+
+void
+ArrayBufferObject::changeContentsForResize(JSContext* cx, BufferContents newContents,
+                                           OwnsState ownsState, uint32_t newByteLength)
+{
+    MOZ_RELEASE_ASSERT(!isWasm());
+    MOZ_ASSERT(!forInlineTypedObject());
+
+    uint8_t* oldDataPointer = dataPointer();
+    setNewData(cx->runtime()->defaultFreeOp(), newContents, ownsState);
+    setByteLength(newByteLength);
+
+    auto& innerViews = cx->compartment()->innerViews.get();
+    if (InnerViewTable::ViewVector* views = innerViews.maybeViewsUnbarriered(this)) {
+        for (size_t i = 0; i < views->length(); i++) {
+            ArrayBufferViewObject* view = (*views)[i];
+            if (view->is<DataViewObject>() || view->is<TypedArrayObject>())
+                changeViewContents(cx, view, oldDataPointer, newContents, newByteLength);
+            else if (ArrayBufferViewFits(view, newByteLength))
+                changeViewContents(cx, view, oldDataPointer, newContents, newByteLength);
+            else
+                NoteViewBufferWasDetached(view, newContents, cx);
+        }
+    }
+
+    if (firstView()) {
+        if (firstView()->is<DataViewObject>() || firstView()->is<TypedArrayObject>())
+            changeViewContents(cx, firstView(), oldDataPointer, newContents, newByteLength);
+        else if (ArrayBufferViewFits(firstView(), newByteLength))
+            changeViewContents(cx, firstView(), oldDataPointer, newContents, newByteLength);
+        else
+            NoteViewBufferWasDetached(firstView(), newContents, cx);
+    }
+}
+
+static bool
+ResizeArrayBuffer(JSContext* cx, Handle<ArrayBufferObject*> buffer, uint32_t newByteLength)
+{
+    if (!buffer->isResizable())
+        return ReportArrayBufferNotResizable(cx);
+
+    if (buffer->isDetached()) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_DETACHED);
+        return false;
+    }
+
+    if (newByteLength > buffer->maxByteLength())
+        return ReportArrayBufferLengthOutOfRange(cx);
+
+    if (!buffer->isPlain() || buffer->isPreparedForAsmJS() || buffer->forInlineTypedObject())
+        return ReportArrayBufferCannotDetach(cx);
+
+    if (newByteLength == buffer->byteLength())
+        return true;
+
+    ArrayBufferObject::BufferContents newContents = AllocateArrayBufferContents(cx, newByteLength);
+    if (!newContents)
+        return false;
+
+    uint32_t copyLength = std::min(newByteLength, buffer->byteLength());
+    if (copyLength > 0)
+        memcpy(newContents.data(), buffer->dataPointer(), copyLength);
+
+    buffer->changeContentsForResize(cx, newContents, ArrayBufferObject::OwnsData, newByteLength);
+    return true;
+}
+
+bool
+ArrayBufferObject::fun_resize_impl(JSContext* cx, const CallArgs& args)
+{
+    MOZ_ASSERT(IsArrayBuffer(args.thisv()));
+
+    Rooted<ArrayBufferObject*> buffer(cx, &args.thisv().toObject().as<ArrayBufferObject>());
+    if (!buffer->isResizable())
+        return ReportArrayBufferNotResizable(cx);
+
+    uint64_t newByteLength;
+    if (!ToIndex(cx, args.get(0), &newByteLength))
+        return false;
+    if (newByteLength > INT32_MAX)
+        return ReportArrayBufferLengthOutOfRange(cx);
+
+    if (!ResizeArrayBuffer(cx, buffer, uint32_t(newByteLength)))
+        return false;
+
+    args.rval().setUndefined();
+    return true;
+}
+
+bool
+ArrayBufferObject::fun_resize(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<IsArrayBuffer, fun_resize_impl>(cx, args);
+}
+
+static bool
+ArrayBufferTransfer(JSContext* cx, const CallArgs& args, bool preserveResizability)
+{
+    MOZ_ASSERT(IsArrayBuffer(args.thisv()));
+    Rooted<ArrayBufferObject*> buffer(cx, &args.thisv().toObject().as<ArrayBufferObject>());
+
+    uint32_t newByteLength = buffer->byteLength();
+    if (args.hasDefined(0)) {
+        uint64_t newLength;
+        if (!ToIndex(cx, args.get(0), &newLength))
+            return false;
+        if (newLength > INT32_MAX)
+            return ReportArrayBufferLengthOutOfRange(cx);
+        newByteLength = uint32_t(newLength);
+    }
+
+    if (buffer->isDetached()) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_TYPED_ARRAY_DETACHED);
+        return false;
+    }
+
+    if (buffer->isWasm() || buffer->isPreparedForAsmJS())
+        return ReportArrayBufferCannotDetach(cx);
+
+    bool newResizable = preserveResizability && buffer->isResizable();
+    uint32_t newMaxByteLength = newResizable ? buffer->maxByteLength() : newByteLength;
+    if (newResizable && newByteLength > newMaxByteLength)
+        return ReportArrayBufferLengthOutOfRange(cx);
+
+    Rooted<ArrayBufferObject*> newBuffer(cx,
+        ArrayBufferObject::create(cx, newByteLength, ArrayBufferObject::BufferContents::createPlain(nullptr),
+                                  ArrayBufferObject::OwnsData, nullptr, GenericObject,
+                                  newMaxByteLength, newResizable));
+    if (!newBuffer)
+        return false;
+
+    uint32_t copyLength = std::min(newByteLength, buffer->byteLength());
+    if (copyLength > 0)
+        memcpy(newBuffer->dataPointer(), buffer->dataPointer(), copyLength);
+
+    ArrayBufferObject::BufferContents detachedContents =
+        buffer->hasStealableContents() ? ArrayBufferObject::BufferContents::createPlain(nullptr)
+                                       : buffer->contents();
+    ArrayBufferObject::detach(cx, buffer, detachedContents);
+
+    args.rval().setObject(*newBuffer);
+    return true;
+}
+
+bool
+ArrayBufferObject::fun_transfer_impl(JSContext* cx, const CallArgs& args)
+{
+    return ArrayBufferTransfer(cx, args, true);
+}
+
+bool
+ArrayBufferObject::fun_transfer(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<IsArrayBuffer, fun_transfer_impl>(cx, args);
+}
+
+bool
+ArrayBufferObject::fun_transferToFixedLength_impl(JSContext* cx, const CallArgs& args)
+{
+    return ArrayBufferTransfer(cx, args, false);
+}
+
+bool
+ArrayBufferObject::fun_transferToFixedLength(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    return CallNonGenericMethod<IsArrayBuffer, fun_transferToFixedLength_impl>(cx, args);
 }
 
 /*
@@ -887,6 +1219,14 @@ ArrayBufferObject::byteLength() const
     return getSlot(BYTE_LENGTH_SLOT).toInt32();
 }
 
+uint32_t
+ArrayBufferObject::maxByteLength() const
+{
+    if (!isResizable())
+        return byteLength();
+    return getSlot(MAX_BYTE_LENGTH_SLOT).toInt32();
+}
+
 void
 ArrayBufferObject::setByteLength(uint32_t length)
 {
@@ -929,7 +1269,7 @@ js::WasmArrayBufferMaxSize(const ArrayBufferObjectMaybeShared* buf)
     if (buf->is<ArrayBufferObject>())
         return buf->as<ArrayBufferObject>().wasmMaxSize();
 
-    return Some(buf->as<SharedArrayBufferObject>().byteLength());
+    return Some(buf->as<SharedArrayBufferObject>().maxByteLength());
 }
 
 /* static */ bool
@@ -1035,9 +1375,12 @@ ArrayBufferObject*
 ArrayBufferObject::create(JSContext* cx, uint32_t nbytes, BufferContents contents,
                           OwnsState ownsState /* = OwnsData */,
                           HandleObject proto /* = nullptr */,
-                          NewObjectKind newKind /* = GenericObject */)
+                          NewObjectKind newKind /* = GenericObject */,
+                          uint32_t maxByteLength /* = 0 */,
+                          bool resizable /* = false */)
 {
     MOZ_ASSERT_IF(contents.kind() == MAPPED, contents);
+    MOZ_ASSERT_IF(resizable, maxByteLength >= nbytes);
 
     // 24.1.1.1, step 3 (Inlined 6.2.6.1 CreateByteDataBlock, step 2).
     // Refuse to allocate too large buffers, currently limited to ~2 GiB.
@@ -1046,10 +1389,6 @@ ArrayBufferObject::create(JSContext* cx, uint32_t nbytes, BufferContents content
         return nullptr;
     }
 
-    // If we need to allocate data, try to use a larger object size class so
-    // that the array buffer's data can be allocated inline with the object.
-    // The extra space will be left unused by the object's fixed slots and
-    // available for the buffer's data, see NewObject().
     size_t reservedSlots = JSCLASS_RESERVED_SLOTS(&class_);
 
     size_t nslots = reservedSlots;
@@ -1066,18 +1405,10 @@ ArrayBufferObject::create(JSContext* cx, uint32_t nbytes, BufferContents content
         }
     } else {
         MOZ_ASSERT(ownsState == OwnsData);
-        size_t usableSlots = NativeObject::MAX_FIXED_SLOTS - reservedSlots;
-        if (nbytes <= usableSlots * sizeof(Value)) {
-            int newSlots = (nbytes - 1) / sizeof(Value) + 1;
-            MOZ_ASSERT(int(nbytes) <= newSlots * int(sizeof(Value)));
-            nslots = reservedSlots + newSlots;
-            contents = BufferContents::createPlain(nullptr);
-        } else {
-            contents = AllocateArrayBufferContents(cx, nbytes);
-            if (!contents)
-                return nullptr;
-            allocated = true;
-        }
+        contents = AllocateArrayBufferContents(cx, nbytes);
+        if (!contents)
+            return nullptr;
+        allocated = true;
     }
 
     MOZ_ASSERT(!(class_.flags & JSCLASS_HAS_PRIVATE));
@@ -1098,9 +1429,10 @@ ArrayBufferObject::create(JSContext* cx, uint32_t nbytes, BufferContents content
     if (!contents) {
         void* data = obj->inlineDataPointer();
         memset(data, 0, nbytes);
-        obj->initialize(nbytes, BufferContents::createPlain(data), DoesntOwnData);
+        obj->initialize(nbytes, BufferContents::createPlain(data), DoesntOwnData,
+                        maxByteLength, resizable);
     } else {
-        obj->initialize(nbytes, contents, ownsState);
+        obj->initialize(nbytes, contents, ownsState, maxByteLength, resizable);
     }
 
     return obj;
@@ -1130,25 +1462,28 @@ ArrayBufferObject::createEmpty(JSContext* cx)
 bool
 ArrayBufferObject::createDataViewForThisImpl(JSContext* cx, const CallArgs& args)
 {
-    MOZ_ASSERT(IsArrayBuffer(args.thisv()));
+    MOZ_ASSERT(IsAnyArrayBuffer(args.thisv()));
 
     /*
      * This method is only called for |DataView(alienBuf, ...)| which calls
      * this as |createDataViewForThis.call(alienBuf, byteOffset, byteLength,
-     *                                     DataView.prototype)|,
-     * ergo there must be exactly 3 arguments.
+     *                                     DataView.prototype, lengthTracking)|,
+     * ergo there must be exactly 4 arguments.
      */
-    MOZ_ASSERT(args.length() == 3);
+    MOZ_ASSERT(args.length() == 4);
 
     uint32_t byteOffset = args[0].toPrivateUint32();
     uint32_t byteLength = args[1].toPrivateUint32();
-    Rooted<ArrayBufferObject*> buffer(cx, &args.thisv().toObject().as<ArrayBufferObject>());
+    bool lengthTracking = args[3].toBoolean();
+    Rooted<ArrayBufferObjectMaybeShared*> buffer(cx,
+        &args.thisv().toObject().as<ArrayBufferObjectMaybeShared>());
 
     /*
      * Pop off the passed-along prototype and delegate to normal DataViewObject
      * construction.
      */
-    JSObject* obj = DataViewObject::create(cx, byteOffset, byteLength, buffer, &args[2].toObject());
+    JSObject* obj = DataViewObject::create(cx, byteOffset, byteLength, buffer,
+                                           &args[2].toObject(), lengthTracking);
     if (!obj)
         return false;
     args.rval().setObject(*obj);
@@ -1159,7 +1494,7 @@ bool
 ArrayBufferObject::createDataViewForThis(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
-    return CallNonGenericMethod<IsArrayBuffer, createDataViewForThisImpl>(cx, args);
+    return CallNonGenericMethod<IsAnyArrayBuffer, createDataViewForThisImpl>(cx, args);
 }
 
 /* static */ ArrayBufferObject::BufferContents
@@ -1528,6 +1863,8 @@ ArrayBufferViewObject::trace(JSTracer* trc, JSObject* objArg)
                 // The data may or may not be inline with the buffer. The buffer
                 // can only move during a compacting GC, in which case its
                 // objectMoved hook has already updated the buffer's data pointer.
+                if (offset > buf.byteLength())
+                    offset = 0;
                 obj->initPrivate(buf.dataPointer() + offset);
             }
         }
@@ -1578,6 +1915,8 @@ ArrayBufferViewObject::dataPointerUnshared(const JS::AutoRequireNoGC& nogc)
 bool
 ArrayBufferViewObject::isSharedMemory()
 {
+    if (is<DataViewObject>())
+        return as<DataViewObject>().isSharedMemory();
     if (is<TypedArrayObject>())
         return as<TypedArrayObject>().isSharedMemory();
     return false;
@@ -1609,7 +1948,7 @@ ArrayBufferViewObject::bufferObject(JSContext* cx, Handle<ArrayBufferViewObject*
         return thisObject->as<TypedArrayObject>().bufferEither();
     }
     MOZ_ASSERT(thisObject->is<DataViewObject>());
-    return &thisObject->as<DataViewObject>().arrayBuffer();
+    return &thisObject->as<DataViewObject>().arrayBufferEither();
 }
 
 /* JS Friend API */
@@ -1860,7 +2199,7 @@ JS_GetArrayBufferViewData(JSObject* obj, bool* isSharedMemory, const JS::AutoChe
     if (!obj)
         return nullptr;
     if (obj->is<DataViewObject>()) {
-        *isSharedMemory = false;
+        *isSharedMemory = obj->as<DataViewObject>().isSharedMemory();
         return obj->as<DataViewObject>().dataPointer();
     }
     TypedArrayObject& ta = obj->as<TypedArrayObject>();
@@ -1930,7 +2269,7 @@ js::GetArrayBufferViewLengthAndData(JSObject* obj, uint32_t* length, bool* isSha
               : obj->as<TypedArrayObject>().byteLength();
 
     if (obj->is<DataViewObject>()) {
-        *isSharedMemory = false;
+        *isSharedMemory = obj->as<DataViewObject>().isSharedMemory();
         *data = static_cast<uint8_t*>(obj->as<DataViewObject>().dataPointer());
     }
     else {

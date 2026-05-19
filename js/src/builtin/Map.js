@@ -55,6 +55,49 @@ function MapForEach(callbackfn, thisArg = undefined) {
     }
 }
 
+// ES2024
+// Map.groupBy ( items, callbackfn )
+function MapGroupBy(items, callbackfn) {
+    // Step 1.
+    RequireObjectCoercible(items);
+
+    // Step 2.
+    if (!IsCallable(callbackfn))
+        ThrowTypeError(JSMSG_NOT_FUNCTION, DecompileArg(1, callbackfn));
+
+    // Step 3.
+    var groups = std_Map_create();
+
+    // Step 4.
+    var k = 0;
+
+    // Steps 5-8.
+    for (var value of allowContentIter(items)) {
+        // Step 6.a.
+        if (k >= MAX_NUMERIC_INDEX)
+            ThrowTypeError(JSMSG_TOO_LONG_ARRAY);
+
+        // Step 6.b.
+        var key = callContentFunction(callbackfn, undefined, value, k);
+
+        // Steps 6.c-d.
+        var elements;
+        if (callFunction(std_Map_has, groups, key)) {
+            elements = callFunction(std_Map_get, groups, key);
+            callFunction(std_Array_push, elements, value);
+        } else {
+            elements = [value];
+            callFunction(std_Map_set, groups, key, elements);
+        }
+
+        // Step 6.e.
+        k++;
+    }
+
+    // Step 9.
+    return groups;
+}
+
 var iteratorTemp = { mapIterationResultPair : null };
 
 function MapIteratorNext() {

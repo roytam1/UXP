@@ -52,6 +52,8 @@ class TypedArrayObject : public NativeObject
                   "right buffer slot");
 
     // Slot containing length of the view in number of typed elements.
+    // Length-tracking views on resizable/growable buffers store
+    // LENGTH_TRACKING here and compute their visible length from the buffer.
     static const size_t LENGTH_SLOT = 1;
     static_assert(LENGTH_SLOT == JS_TYPEDARRAYLAYOUT_LENGTH_SLOT,
                   "self-hosted code with burned-in constants must get the "
@@ -64,6 +66,8 @@ class TypedArrayObject : public NativeObject
                   "right byteOffset slot");
 
     static const size_t RESERVED_SLOTS = 3;
+
+    static const int32_t LENGTH_TRACKING = -1;
 
 #ifdef DEBUG
     static const uint8_t ZeroLengthArrayData = 0x4A;
@@ -139,15 +143,13 @@ class TypedArrayObject : public NativeObject
         return tarr->getFixedSlot(BUFFER_SLOT);
     }
     static Value byteOffsetValue(TypedArrayObject* tarr) {
-        Value v = tarr->getFixedSlot(BYTEOFFSET_SLOT);
-        MOZ_ASSERT(v.toInt32() >= 0);
-        return v;
+        return Int32Value(tarr->byteOffset());
     }
     static Value byteLengthValue(TypedArrayObject* tarr) {
-        return Int32Value(tarr->getFixedSlot(LENGTH_SLOT).toInt32() * tarr->bytesPerElement());
+        return Int32Value(tarr->byteLength());
     }
     static Value lengthValue(TypedArrayObject* tarr) {
-        return tarr->getFixedSlot(LENGTH_SLOT);
+        return Int32Value(tarr->length());
     }
 
     static bool
@@ -159,14 +161,70 @@ class TypedArrayObject : public NativeObject
     JSObject* bufferObject() const {
         return bufferValue(const_cast<TypedArrayObject*>(this)).toObjectOrNull();
     }
+    bool isLengthTracking() const {
+        return getFixedSlot(LENGTH_SLOT).toInt32() == LENGTH_TRACKING;
+    }
+    bool hasResizableOrGrowableBuffer() const {
+        if (!hasBuffer())
+            return false;
+        if (isSharedMemory())
+            return bufferShared()->isGrowable();
+        return bufferUnshared()->isResizable();
+    }
+    uint32_t byteOffsetMaybeOutOfBounds() const {
+        Value v = getFixedSlot(BYTEOFFSET_SLOT);
+        MOZ_ASSERT(v.toInt32() >= 0);
+        return v.toInt32();
+    }
+    uint32_t fixedLengthMaybeOutOfBounds() const {
+        int32_t length = getFixedSlot(LENGTH_SLOT).toInt32();
+        MOZ_ASSERT(length >= 0);
+        return length;
+    }
+    uint32_t bufferByteLength() const {
+        MOZ_ASSERT(hasBuffer());
+        if (isSharedMemory())
+            return bufferShared()->byteLength();
+        return bufferUnshared()->byteLength();
+    }
+    bool isOutOfBounds() const {
+        if (!hasBuffer())
+            return false;
+        if (hasDetachedBuffer())
+            return true;
+
+        uint32_t bufferByteLength = this->bufferByteLength();
+        uint32_t offset = byteOffsetMaybeOutOfBounds();
+        if (offset > bufferByteLength)
+            return true;
+
+        if (isLengthTracking())
+            return false;
+
+        uint32_t byteLength = fixedLengthMaybeOutOfBounds() * bytesPerElement();
+        return byteLength > bufferByteLength - offset;
+    }
     uint32_t byteOffset() const {
-        return byteOffsetValue(const_cast<TypedArrayObject*>(this)).toInt32();
+        if (isOutOfBounds())
+            return 0;
+        return byteOffsetMaybeOutOfBounds();
     }
     uint32_t byteLength() const {
-        return byteLengthValue(const_cast<TypedArrayObject*>(this)).toInt32();
+        return length() * bytesPerElement();
     }
     uint32_t length() const {
-        return lengthValue(const_cast<TypedArrayObject*>(this)).toInt32();
+        if (!isLengthTracking()) {
+            if (isOutOfBounds())
+                return 0;
+            return fixedLengthMaybeOutOfBounds();
+        }
+
+        if (isOutOfBounds())
+            return 0;
+
+        uint32_t bufferByteLength = this->bufferByteLength();
+        uint32_t offset = byteOffsetMaybeOutOfBounds();
+        return (bufferByteLength - offset) / bytesPerElement();
     }
 
     bool hasInlineElements() const;
@@ -466,28 +524,26 @@ class DataViewObject : public NativeObject
     defineGetter(JSContext* cx, PropertyName* name, HandleNativeObject proto);
 
     static bool getAndCheckConstructorArgs(JSContext* cx, JSObject* bufobj, const CallArgs& args,
-                                           uint32_t *byteOffset, uint32_t* byteLength);
+                                           uint32_t *byteOffset, uint32_t* byteLength,
+                                           bool* lengthTracking);
     static bool constructSameCompartment(JSContext* cx, HandleObject bufobj, const CallArgs& args);
     static bool constructWrapped(JSContext* cx, HandleObject bufobj, const CallArgs& args);
 
     friend bool ArrayBufferObject::createDataViewForThisImpl(JSContext* cx, const CallArgs& args);
     static DataViewObject*
     create(JSContext* cx, uint32_t byteOffset, uint32_t byteLength,
-           Handle<ArrayBufferObject*> arrayBuffer, JSObject* proto);
+           Handle<ArrayBufferObjectMaybeShared*> arrayBuffer, JSObject* proto,
+           bool lengthTracking = false);
 
   public:
     static const Class class_;
 
     static Value byteOffsetValue(DataViewObject* view) {
-        Value v = view->getFixedSlot(TypedArrayObject::BYTEOFFSET_SLOT);
-        MOZ_ASSERT(v.toInt32() >= 0);
-        return v;
+        return Int32Value(view->byteOffset());
     }
 
     static Value byteLengthValue(DataViewObject* view) {
-        Value v = view->getFixedSlot(TypedArrayObject::LENGTH_SLOT);
-        MOZ_ASSERT(v.toInt32() >= 0);
-        return v;
+        return Int32Value(view->byteLength());
     }
 
     static Value bufferValue(DataViewObject* view) {
@@ -495,19 +551,64 @@ class DataViewObject : public NativeObject
     }
 
     uint32_t byteOffset() const {
-        return byteOffsetValue(const_cast<DataViewObject*>(this)).toInt32();
+        if (isOutOfBounds())
+            return 0;
+        return byteOffsetMaybeOutOfBounds();
     }
 
     uint32_t byteLength() const {
-        return byteLengthValue(const_cast<DataViewObject*>(this)).toInt32();
+        if (isOutOfBounds())
+            return 0;
+        if (isLengthTracking())
+            return arrayBufferEither().byteLength() - byteOffsetMaybeOutOfBounds();
+        return fixedByteLengthMaybeOutOfBounds();
     }
 
-    ArrayBufferObject& arrayBuffer() const {
-        return bufferValue(const_cast<DataViewObject*>(this)).toObject().as<ArrayBufferObject>();
+    ArrayBufferObjectMaybeShared& arrayBufferEither() const {
+        return bufferValue(const_cast<DataViewObject*>(this)).
+               toObject().as<ArrayBufferObjectMaybeShared>();
+    }
+
+    bool isSharedMemory() const {
+        return bufferValue(const_cast<DataViewObject*>(this)).
+               toObject().is<SharedArrayBufferObject>();
     }
 
     void* dataPointer() const {
         return getPrivate();
+    }
+
+    bool isLengthTracking() const {
+        return getFixedSlot(TypedArrayObject::LENGTH_SLOT).toInt32() ==
+               TypedArrayObject::LENGTH_TRACKING;
+    }
+
+    uint32_t byteOffsetMaybeOutOfBounds() const {
+        Value v = getFixedSlot(TypedArrayObject::BYTEOFFSET_SLOT);
+        MOZ_ASSERT(v.toInt32() >= 0);
+        return v.toInt32();
+    }
+
+    uint32_t fixedByteLengthMaybeOutOfBounds() const {
+        int32_t length = getFixedSlot(TypedArrayObject::LENGTH_SLOT).toInt32();
+        MOZ_ASSERT(length >= 0);
+        return length;
+    }
+
+    bool isOutOfBounds() const {
+        const ArrayBufferObjectMaybeShared& buffer = arrayBufferEither();
+        if (buffer.isDetached())
+            return true;
+
+        uint32_t bufferByteLength = buffer.byteLength();
+        uint32_t offset = byteOffsetMaybeOutOfBounds();
+        if (offset > bufferByteLength)
+            return true;
+
+        if (isLengthTracking())
+            return false;
+
+        return fixedByteLengthMaybeOutOfBounds() > bufferByteLength - offset;
     }
 
     static bool class_constructor(JSContext* cx, unsigned argc, Value* vp);

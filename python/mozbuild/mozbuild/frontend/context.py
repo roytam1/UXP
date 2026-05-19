@@ -1803,6 +1803,17 @@ VARIABLES = {
         If yasm is not available on this system, or does not support the
         current target architecture, an error will be raised.
         """),
+
+    'USE_NASM': (bool, bool,
+        """Use the nasm assembler to assemble assembly files from SOURCES.
+
+        By default, the build will use the toolchain assembler, $(AS), to
+        assemble source files in assembly language (.s or .asm files). Setting
+        this value to ``True`` will cause it to use nasm instead.
+
+        If nasm is not available on this system, or does not support the
+        current target architecture, an error will be raised.
+        """),
 }
 
 # Sanity check: we don't want any variable above to have a list as storage type.

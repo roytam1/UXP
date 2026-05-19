@@ -627,6 +627,15 @@ JS::InitSelfHostedCode(JSContext* cx)
     return true;
 }
 
+JS_PUBLIC_API(void)
+JS::ClearWeakRefKeptObjects(JSContext* cx)
+{
+    MOZ_ASSERT(cx);
+    MOZ_ASSERT(!cx->runtime()->isHeapBusy());
+
+    cx->runtime()->clearWeakRefKeptObjects();
+}
+
 JS_PUBLIC_API(const char*)
 JS_GetImplementationVersion(void)
 {
@@ -1476,6 +1485,36 @@ JS_SetGCParametersBasedOnAvailableMemory(JSContext* cx, uint32_t availMem)
 
     for (size_t i = 0; i < NumGCConfigs; i++)
         JS_SetGCParameter(cx, config[i].key, config[i].value);
+}
+
+JS_PUBLIC_API(void)
+JS_SetIdleGCEnabled(JSContext* cx, bool enabled)
+{
+    cx->gc.idleGCMgr().setIdleGCEnabled(enabled);
+}
+
+JS_PUBLIC_API(bool)
+JS_IsIdleGCEnabled(JSContext* cx)
+{
+    return cx->gc.idleGCMgr().isIdleGCEnabled();
+}
+
+JS_PUBLIC_API(void)
+JS_SetIdleGCThreshold(JSContext* cx, uint64_t milliseconds)
+{
+    cx->gc.idleGCMgr().setIdleThresholdMs(milliseconds);
+}
+
+JS_PUBLIC_API(uint64_t)
+JS_GetIdleGCThreshold(JSContext* cx)
+{
+    return cx->gc.idleGCMgr().idleThresholdMs();
+}
+
+JS_PUBLIC_API(uint64_t)
+JS_GetIdleTimeSinceLastExecution(JSContext* cx)
+{
+    return cx->gc.idleGCMgr().idleTimeSinceLastExecution();
 }
 
 
