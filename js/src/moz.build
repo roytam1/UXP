@@ -120,6 +120,7 @@ EXPORTS.js += [
 main_deunified_sources = [
     'builtin/AtomicsObject.cpp',
     'builtin/Eval.cpp',
+    'builtin/FinalizationRegistryObject.cpp',
     'builtin/intl/Collator.cpp',
     'builtin/intl/CommonFunctions.cpp',
     'builtin/intl/DateTimeFormat.cpp',
@@ -172,6 +173,7 @@ main_deunified_sources = [
     'gc/Allocator.cpp',
     'gc/Barrier.cpp',
     'gc/GCTrace.cpp',
+    'gc/IdleGC.cpp',
     'gc/Iteration.cpp',
     'gc/Marking.cpp',
     'gc/Memory.cpp',

@@ -122,6 +122,8 @@ var validGradientAndElementValues = [
   "linear-gradient(10deg, red, blue)",
   "linear-gradient(1turn, red, blue)",
   "linear-gradient(.414rad, red, blue)",
+  "linear-gradient(calc(90deg / 2), red, blue)",
+  "linear-gradient(calc(calc(0.25turn) + 45deg), red, blue)",
   "linear-gradient(90deg in srgb, yellow, purple)",
   "linear-gradient(90deg in hsl, yellow, purple)",
   "linear-gradient(90deg in lch, yellow, purple)",
@@ -1005,7 +1007,8 @@ var gCSSProperties = {
     inherited: false,
     type: CSS_TYPE_LONGHAND,
     initial_values: ["0s", "0ms"],
-    other_values: ["1s", "250ms", "-100ms", "-1s", "1s, 250ms, 2.3s"],
+    other_values: ["1s", "250ms", "-100ms", "-1s", "1s, 250ms, 2.3s",
+                   "calc(250ms - 0.5s)", "calc(calc(500ms) - 250ms)"],
     invalid_values: ["0", "0px"],
   },
   "animation-direction": {
@@ -1030,7 +1033,8 @@ var gCSSProperties = {
     inherited: false,
     type: CSS_TYPE_LONGHAND,
     initial_values: ["0s", "0ms"],
-    other_values: ["1s", "250ms", "1s, 250ms, 2.3s"],
+    other_values: ["1s", "250ms", "1s, 250ms, 2.3s",
+                   "calc(calc(0.25s) + 250ms)"],
     invalid_values: ["0", "0px", "-1ms", "-2s"],
   },
   "animation-fill-mode": {
@@ -1162,6 +1166,14 @@ var gCSSProperties = {
     initial_values: ["none"],
     other_values: ["url(foo.xml)"],
     invalid_values: [],
+  },
+  "aspect-ratio": {
+    domProp: "aspectRatio",
+    inherited: false,
+    type: CSS_TYPE_LONGHAND,
+    initial_values: ["auto"],
+    other_values: ["1", "2"],
+    invalid_values: ["none", "-1", "1px", "1 / -1", "1 /", "auto auto"],
   },
   "-moz-border-bottom-colors": {
     domProp: "MozBorderBottomColors",
@@ -1612,6 +1624,154 @@ var gCSSProperties = {
     domProp: "borderTopRightRadius",
     inherited: false,
     type: CSS_TYPE_LONGHAND,
+    prerequisites: { width: "200px", height: "100px", display: "inline-block" },
+    initial_values: ["0", "0px", "calc(-2px)"],
+    other_values: [
+      "0%",
+      "3%",
+      "1px",
+      "2em", // circular
+      "3% 2%",
+      "1px 4px",
+      "2em 2pt", // elliptical
+      "calc(-1%)",
+      "calc(2px)",
+      "calc(50%)",
+      "calc(3*25px)",
+      "calc(3*25px) 5px",
+      "5px calc(3*25px)",
+      "calc(20%) calc(3*25px)",
+      "calc(25px*3)",
+      "calc(3*25px + 50%)",
+    ],
+    invalid_values: [
+      "-1px",
+      "4px -2px",
+      "inherit 2px",
+      "2px inherit",
+      "2",
+      "2px 2",
+      "2 2px",
+      "2px calc(0px + rubbish)",
+    ],
+  },
+  "border-end-end-radius": {
+    domProp: "borderEndEndRadius",
+    inherited: false,
+    type: CSS_TYPE_LONGHAND,
+    logical: true,
+    get_computed: logical_corner_prop_get_computed,
+    prerequisites: { width: "200px", height: "100px", display: "inline-block" },
+    initial_values: ["0", "0px", "calc(-2px)"],
+    other_values: [
+      "0%",
+      "3%",
+      "1px",
+      "2em", // circular
+      "3% 2%",
+      "1px 4px",
+      "2em 2pt", // elliptical
+      "calc(-1%)",
+      "calc(2px)",
+      "calc(50%)",
+      "calc(3*25px)",
+      "calc(3*25px) 5px",
+      "5px calc(3*25px)",
+      "calc(20%) calc(3*25px)",
+      "calc(25px*3)",
+      "calc(3*25px + 50%)",
+    ],
+    invalid_values: [
+      "-1px",
+      "4px -2px",
+      "inherit 2px",
+      "2px inherit",
+      "2",
+      "2px 2",
+      "2 2px",
+      "2px calc(0px + rubbish)",
+    ],
+  },
+  "border-end-start-radius": {
+    domProp: "borderEndStartRadius",
+    inherited: false,
+    type: CSS_TYPE_LONGHAND,
+    logical: true,
+    get_computed: logical_corner_prop_get_computed,
+    prerequisites: { width: "200px", height: "100px", display: "inline-block" },
+    initial_values: ["0", "0px", "calc(-2px)"],
+    other_values: [
+      "0%",
+      "3%",
+      "1px",
+      "2em", // circular
+      "3% 2%",
+      "1px 4px",
+      "2em 2pt", // elliptical
+      "calc(-1%)",
+      "calc(2px)",
+      "calc(50%)",
+      "calc(3*25px)",
+      "calc(3*25px) 5px",
+      "5px calc(3*25px)",
+      "calc(20%) calc(3*25px)",
+      "calc(25px*3)",
+      "calc(3*25px + 50%)",
+    ],
+    invalid_values: [
+      "-1px",
+      "4px -2px",
+      "inherit 2px",
+      "2px inherit",
+      "2",
+      "2px 2",
+      "2 2px",
+      "2px calc(0px + rubbish)",
+    ],
+  },
+  "border-start-end-radius": {
+    domProp: "borderStartEndRadius",
+    inherited: false,
+    type: CSS_TYPE_LONGHAND,
+    logical: true,
+    get_computed: logical_corner_prop_get_computed,
+    prerequisites: { width: "200px", height: "100px", display: "inline-block" },
+    initial_values: ["0", "0px", "calc(-2px)"],
+    other_values: [
+      "0%",
+      "3%",
+      "1px",
+      "2em", // circular
+      "3% 2%",
+      "1px 4px",
+      "2em 2pt", // elliptical
+      "calc(-1%)",
+      "calc(2px)",
+      "calc(50%)",
+      "calc(3*25px)",
+      "calc(3*25px) 5px",
+      "5px calc(3*25px)",
+      "calc(20%) calc(3*25px)",
+      "calc(25px*3)",
+      "calc(3*25px + 50%)",
+    ],
+    invalid_values: [
+      "-1px",
+      "4px -2px",
+      "inherit 2px",
+      "2px inherit",
+      "2",
+      "2px 2",
+      "2 2px",
+      "2px calc(0px + rubbish)",
+    ],
+  },
+  "border-start-start-radius": {
+    domProp: "borderStartStartRadius",
+    inherited: false,
+    type: CSS_TYPE_LONGHAND,
+    logical: true,
+    get_computed: logical_corner_prop_get_computed,
     prerequisites: { width: "200px", height: "100px", display: "inline-block" },
     initial_values: ["0", "0px", "calc(-2px)"],
     other_values: [
@@ -2854,6 +3014,9 @@ var gCSSProperties = {
       "translate(calc(5px - 10% * 3))",
       "translate(calc(5px - 3 * 10%), 50px)",
       "translate(-50px, calc(5px - 10% * 3))",
+      "rotate(calc(45deg + 45deg))",
+      "rotate(calc(calc(0.125turn) + 45deg))",
+      "scale(calc(1 + 0.5))",
       "translatez(1px)",
       "translatez(4em)",
       "translatez(-4px)",
@@ -4325,6 +4488,10 @@ var gCSSProperties = {
       "oklab(100% 0 0)",
       "oklab(60% 0.1 -0.1 / 75%)",
       "oklch(70% 0.2 180deg / 40%)",
+      "color-mix(in oklab, red, blue)",
+      "color-mix(in oklch, red, blue)",
+      "color-mix(in oklab, oklab(0.1 0.2 0.3), oklab(0.5 0.6 0.7))",
+      "color-mix(in oklch, oklch(0.1 0.2 30), oklch(0.5 0.6 70))",
     ],
     invalid_values: [
       "#f",
@@ -5572,7 +5739,8 @@ var gCSSProperties = {
       "3e+0",
       "3e-0",
     ],
-    other_values: ["0", "0.4", "0.0000", "-3", "3e-1", "-100%", "50%"],
+    other_values: ["0", "0.4", "0.0000", "-3", "3e-1", "-100%", "50%",
+                   "calc(25% * 2)", "calc(calc(0.25) + 0.25)"],
     invalid_values: ["0px", "1px"],
   },
   "-moz-orient": {
@@ -6401,7 +6569,8 @@ var gCSSProperties = {
     inherited: false,
     type: CSS_TYPE_LONGHAND,
     initial_values: ["0s", "0ms"],
-    other_values: ["1s", "250ms", "-100ms", "-1s", "1s, 250ms, 2.3s"],
+    other_values: ["1s", "250ms", "-100ms", "-1s", "1s, 250ms, 2.3s",
+                   "calc(250ms - 0.5s)", "calc(calc(500ms) - 250ms)"],
     invalid_values: ["0", "0px"],
   },
   "transition-duration": {
@@ -6409,7 +6578,8 @@ var gCSSProperties = {
     inherited: false,
     type: CSS_TYPE_LONGHAND,
     initial_values: ["0s", "0ms"],
-    other_values: ["1s", "250ms", "1s, 250ms, 2.3s"],
+    other_values: ["1s", "250ms", "1s, 250ms, 2.3s",
+                   "calc(calc(0.25s) + 250ms)"],
     invalid_values: ["0", "0px", "-1ms", "-2s"],
   },
   "transition-property": {
@@ -6773,7 +6943,7 @@ var gCSSProperties = {
     type: CSS_TYPE_LONGHAND,
     /* XXX requires position */
     initial_values: ["auto"],
-    other_values: ["0", "3", "-7000", "12000"],
+    other_values: ["0", "3", "-7000", "12000", "calc(2.5)"],
     invalid_values: ["3.0", "17.5", "3e1"],
   },
   "clip-path": {
@@ -7633,7 +7803,8 @@ var gCSSProperties = {
     inherited: false,
     type: CSS_TYPE_LONGHAND,
     initial_values: ["0"],
-    other_values: ["1", "99999", "-1", "-50"],
+    other_values: ["1", "99999", "-1", "-50", "calc(1.5)",
+                   "calc(calc(-2) + 1)"],
     invalid_values: ["0px", "1.0", "1.", "1%", "0.2", "3em", "stretch"],
   },
 
@@ -8880,6 +9051,54 @@ function logical_box_prop_get_computed(cs, property) {
   return cs.getPropertyValue(property);
 }
 
+function logical_corner_prop_get_computed(cs, property) {
+  // Use default for writing-mode in case the vertical text
+  // pref (which it lives behind) is turned off.
+  var writingMode = cs.getPropertyValue("writing-mode") || "horizontal-tb";
+  var direction = cs.getPropertyValue("direction");
+
+  var blockMappings = {
+    "horizontal-tb": { start: "top", end: "bottom" },
+    "vertical-rl": { start: "right", end: "left" },
+    "vertical-lr": { start: "left", end: "right" },
+    "sideways-rl": { start: "right", end: "left" },
+    "sideways-lr": { start: "left", end: "right" },
+  };
+
+  var inlineMappings = {
+    "horizontal-tb ltr": { start: "left", end: "right" },
+    "horizontal-tb rtl": { start: "right", end: "left" },
+    "vertical-.. ltr": { start: "top", end: "bottom" },
+    "vertical-.. rtl": { start: "bottom", end: "top" },
+    "sideways-lr ltr": { start: "bottom", end: "top" },
+    "sideways-lr rtl": { start: "top", end: "bottom" },
+    "sideways-rl ltr": { start: "top", end: "bottom" },
+    "sideways-rl rtl": { start: "bottom", end: "top" },
+  };
+
+  var blockMapping = blockMappings[writingMode];
+  var inlineMapping;
+
+  var key = `${writingMode} ${direction}`;
+  for (var k in inlineMappings) {
+    if (new RegExp(k).test(key)) {
+      inlineMapping = inlineMappings[k];
+      break;
+    }
+  }
+
+  var match = /^border-(start|end)-(start|end)-radius$/.exec(property);
+  if (!match || !blockMapping || !inlineMapping) {
+    throw "Unexpected logical corner property";
+  }
+
+  var blockSide = blockMapping[match[1]];
+  var inlineSide = inlineMapping[match[2]];
+  var verticalSide = /^(top|bottom)$/.test(blockSide) ? blockSide : inlineSide;
+  var horizontalSide = /^(left|right)$/.test(blockSide) ? blockSide : inlineSide;
+  return cs.getPropertyValue(`border-${verticalSide}-${horizontalSide}-radius`);
+}
+
 // Get the computed value for a property.  For shorthands, return the
 // computed values of all the subproperties, delimited by " ; ".
 function get_computed_value(cs, property) {
@@ -9293,6 +9512,8 @@ if (IsCSSPropertyPrefEnabled("layout.css.filters.enabled")) {
       "brightness(2)",
       "brightness(350%)",
       "brightness(4.567)",
+      "brightness(calc(25% * 2))",
+      "brightness(calc(calc(0.25) + 0.25))",
 
       "contrast(0)",
       "contrast(50%)",
@@ -9337,6 +9558,7 @@ if (IsCSSPropertyPrefEnabled("layout.css.filters.enabled")) {
       "hue-rotate(-1.6rad)",
       "hue-rotate(0.5turn)",
       "hue-rotate(-2turn)",
+      "hue-rotate(calc(90deg + 0.125turn))",
 
       "invert(0)",
       "invert(50%)",
@@ -11526,6 +11748,22 @@ if (IsCSSPropertyPrefEnabled("layout.css.unset-value.enabled")) {
     "2px unset",
   );
   gCSSProperties["border-top-right-radius"].invalid_values.push(
+    "unset 2px",
+    "2px unset",
+  );
+  gCSSProperties["border-end-end-radius"].invalid_values.push(
+    "unset 2px",
+    "2px unset",
+  );
+  gCSSProperties["border-end-start-radius"].invalid_values.push(
+    "unset 2px",
+    "2px unset",
+  );
+  gCSSProperties["border-start-end-radius"].invalid_values.push(
+    "unset 2px",
+    "2px unset",
+  );
+  gCSSProperties["border-start-start-radius"].invalid_values.push(
     "unset 2px",
     "2px unset",
   );

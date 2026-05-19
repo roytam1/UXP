@@ -5505,25 +5505,15 @@ jit::ElementAccessIsTypedArray(CompilerConstraintList* constraints,
                                MDefinition* obj, MDefinition* id,
                                Scalar::Type* arrayType)
 {
-    if (obj->mightBeType(MIRType::String))
-        return false;
+    (void) constraints;
+    (void) obj;
+    (void) id;
+    (void) arrayType;
 
-    if (id->type() != MIRType::Int32 && id->type() != MIRType::Double)
-        return false;
-
-    TemporaryTypeSet* types = obj->resultTypeSet();
-    if (!types)
-        return false;
-
-    *arrayType = types->getTypedArrayType(constraints);
-
-    // FIXME: https://bugzil.la/1536699
-    if (*arrayType == Scalar::MaxTypedArrayViewType ||
-        Scalar::isBigIntType(*arrayType)) {
-        return false;
-    }
-
-  return true;
+    // Resizable ArrayBuffer and growable SharedArrayBuffer views need dynamic
+    // length/out-of-bounds handling. This older MIR path assumes stable
+    // typed-array length/data slots, so keep element accesses on IC/VM paths.
+    return false;
 }
 
 bool

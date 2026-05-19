@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>Test logical border radius properties</title>
+<link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+
+<div id="test"></div>
+
+<script>
+var gTest = document.getElementById("test");
+
+[
+  "border-start-start-radius",
+  "border-start-end-radius",
+  "border-end-start-radius",
+  "border-end-end-radius",
+].forEach(function(property) {
+  ok(CSS.supports(property, "6px"), `${property} parses`);
+  ok(CSS.supports(property, "var(--input-corner-radius)"),
+     `${property} accepts variables`);
+  ok(!CSS.supports(property, "-1px"), `${property} rejects negative lengths`);
+});
+
+function reset(style) {
+  gTest.setAttribute("style",
+    "width: 200px; height: 100px; display: block; " +
+    "border-radius: 0; " + style);
+  return getComputedStyle(gTest);
+}
+
+function checkMapped(name, writingMode, expected) {
+  var cs = reset(
+    writingMode +
+    "border-start-start-radius: 3px; " +
+    "border-start-end-radius: 5px; " +
+    "border-end-end-radius: 7px; " +
+    "border-end-start-radius: 11px; ");
+
+  is(cs.borderTopLeftRadius, expected.topLeft, `${name}: top left`);
+  is(cs.borderTopRightRadius, expected.topRight, `${name}: top right`);
+  is(cs.borderBottomRightRadius, expected.bottomRight, `${name}: bottom right`);
+  is(cs.borderBottomLeftRadius, expected.bottomLeft, `${name}: bottom left`);
+}
+
+checkMapped("horizontal ltr",
+            "writing-mode: horizontal-tb; direction: ltr; ",
+            { topLeft: "3px", topRight: "5px",
+              bottomRight: "7px", bottomLeft: "11px" });
+checkMapped("horizontal rtl",
+            "writing-mode: horizontal-tb; direction: rtl; ",
+            { topLeft: "5px", topRight: "3px",
+              bottomRight: "11px", bottomLeft: "7px" });
+checkMapped("vertical-rl ltr",
+            "writing-mode: vertical-rl; direction: ltr; ",
+            { topLeft: "11px", topRight: "3px",
+              bottomRight: "5px", bottomLeft: "7px" });
+checkMapped("vertical-lr ltr",
+            "writing-mode: vertical-lr; direction: ltr; ",
+            { topLeft: "3px", topRight: "11px",
+              bottomRight: "7px", bottomLeft: "5px" });
+
+var cs = reset("writing-mode: horizontal-tb; direction: ltr; " +
+               "--input-corner-radius: 6px; " +
+               "border-start-start-radius: var(--input-corner-radius); ");
+is(cs.borderTopLeftRadius, "6px", "logical radius resolves CSS variables");
+
+cs = reset("writing-mode: horizontal-tb; direction: ltr; " +
+           "border-top-left-radius: 1px; " +
+           "border-start-start-radius: 6px; ");
+is(cs.borderTopLeftRadius, "6px", "logical corner wins later in declaration");
+
+cs = reset("writing-mode: horizontal-tb; direction: ltr; " +
+           "border-start-start-radius: 6px; " +
+           "border-top-left-radius: 1px; ");
+is(cs.borderTopLeftRadius, "1px", "physical corner wins later in declaration");
+</script>

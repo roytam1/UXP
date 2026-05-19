@@ -21,6 +21,64 @@ struct MyHeap
 
 BEGIN_TEST(testGCWeakRef)
 {
+    CHECK(cx->options().weakRefs());
+    cx->options().setWeakRefs(false);
+    CHECK(cx->options().weakRefs());
+
+    JS::RootedValue v(cx);
+    EXEC("var weakRefTarget = { x: 42 };\n"
+         "var weakRef = new WeakRef(weakRefTarget);\n"
+         "weakRefTarget = null;\n");
+
+    // The constructor keeps the target alive until the host clears kept
+    // objects. This must remain true even after callers try the old disabled
+    // option path above.
+    JS_GC(cx);
+    JS_GC(cx);
+    EVAL("weakRef.deref()", &v);
+    CHECK(v.isObject());
+
+    JS::ClearWeakRefKeptObjects(cx);
+    v = JS::UndefinedValue();
+    JS_GC(cx);
+    JS_GC(cx);
+    EVAL("weakRef.deref()", &v);
+    CHECK(v.isUndefined());
+
+    EXEC("var weakRefSymbol = Symbol('weak-ref-symbol');\n"
+         "var symbolRef = new WeakRef(weakRefSymbol);\n"
+         "if (symbolRef.deref() !== weakRefSymbol)\n"
+         "    throw new Error('WeakRef must accept unique symbols');\n"
+         "var registeredSymbolRejected = false;\n"
+         "try {\n"
+         "    new WeakRef(Symbol.for('weak-ref-symbol'));\n"
+         "} catch (e) {\n"
+         "    registeredSymbolRejected = e instanceof TypeError;\n"
+         "}\n"
+         "if (!registeredSymbolRejected)\n"
+         "    throw new Error('WeakRef must reject registered symbols');\n");
+
+    EXEC("var keptTarget = { y: 7 };\n"
+         "var keptRef = new WeakRef(keptTarget);\n");
+    JS::ClearWeakRefKeptObjects(cx);
+    EXEC("var keptResult = keptRef.deref();\n"
+         "if (keptResult !== keptTarget)\n"
+         "    throw new Error('WeakRef deref must return the target');\n"
+         "keptTarget = null;\n"
+         "keptResult = null;\n");
+
+    JS_GC(cx);
+    JS_GC(cx);
+    EVAL("keptRef.deref()", &v);
+    CHECK(v.isObject());
+
+    JS::ClearWeakRefKeptObjects(cx);
+    v = JS::UndefinedValue();
+    JS_GC(cx);
+    JS_GC(cx);
+    EVAL("keptRef.deref()", &v);
+    CHECK(v.isUndefined());
+
     // Create an object and add a property to it so that we can read the
     // property back later to verify that object internals are not garbage.
     JS::RootedObject obj(cx, JS_NewPlainObject(cx));
@@ -38,7 +96,6 @@ BEGIN_TEST(testGCWeakRef)
     // references.
     CHECK(heap.get().weak.unbarrieredGet() != nullptr);
     obj = heap.get().weak;
-    JS::RootedValue v(cx);
     CHECK(JS_GetProperty(cx, obj, "x", &v));
     CHECK(v.isInt32());
     CHECK(v.toInt32() == 42);
@@ -61,4 +118,3 @@ BEGIN_TEST(testGCWeakRef)
     return true;
 }
 END_TEST(testGCWeakRef)
-

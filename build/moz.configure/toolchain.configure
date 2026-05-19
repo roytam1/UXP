@@ -61,6 +61,44 @@ set_config('HAVE_YASM', have_yasm)
 # Until the YASM variable is not necessary in old-configure.
 add_old_configure_assignment('YASM', have_yasm)
 
+# nasm detection
+# ==============================================================
+nasm = check_prog('NASM', ['nasm'], allow_missing=True)
+
+@depends_if(nasm)
+@checking('nasm version')
+def nasm_version(nasm):
+    version = check_cmd_output(
+        nasm, '-v',
+        onerror=lambda: die('Failed to get nasm version.')
+    ).splitlines()[0].split()[2]
+    return Version(version)
+
+@depends(nasm, nasm_version)
+def have_nasm(nasm, version):
+    if nasm and version >= Version('2.14'):
+        return True
+
+set_config('HAVE_NASM', have_nasm)
+
+@depends(have_nasm, target)
+def nasm_asflags(have_nasm, target):
+    if have_nasm:
+        asflags = {
+            ('OSX', 'x86'): '-f macho32',
+            ('OSX', 'x86_64'): '-f macho64',
+            ('WINNT', 'x86'): '-f win32',
+            ('WINNT', 'x86_64'): '-f win64',
+        }.get((target.os, target.cpu), None)
+        if asflags is None:
+            if target.cpu == 'x86':
+                asflags = '-f elf32'
+            elif target.cpu == 'x86_64':
+                asflags = '-f elf64'
+        return asflags
+
+set_config('NASM_ASFLAGS', nasm_asflags)
+
 # Android NDK
 # ==============================================================
 

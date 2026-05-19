@@ -1479,6 +1479,8 @@ CycleCollectedJSContext::AfterProcessTask(uint32_t aRecursionDepth)
 
   // Step 4.2 Execute any events that were waiting for a stable state.
   ProcessStableStateQueue();
+
+  JS::ClearWeakRefKeptObjects(mJSContext);
 }
 
 void
@@ -1517,6 +1519,8 @@ CycleCollectedJSContext::AfterProcessMicrotasks()
       });
     RunInStableState(cleanupRunnable.forget());
   };
+
+  JS::ClearWeakRefKeptObjects(mJSContext);
 }
 
 uint32_t

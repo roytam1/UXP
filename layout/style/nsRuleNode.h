@@ -986,9 +986,22 @@ public:
   struct ComputedCalc {
     nscoord mLength;
     float mPercent;
+    bool mHasPercent;
+    RefPtr<nsStyleCoord::CalcNode> mNode;
 
     ComputedCalc(nscoord aLength, float aPercent)
-      : mLength(aLength), mPercent(aPercent) {}
+      : mLength(aLength), mPercent(aPercent),
+        mHasPercent(aPercent != 0.0f) {}
+
+    ComputedCalc(nscoord aLength, float aPercent, bool aHasPercent)
+      : mLength(aLength), mPercent(aPercent),
+        mHasPercent(aHasPercent) {}
+
+    explicit ComputedCalc(already_AddRefed<nsStyleCoord::CalcNode> aNode)
+      : mLength(0), mPercent(0.0f), mHasPercent(true), mNode(aNode) {}
+
+    bool HasNode() const { return !!mNode; }
+    already_AddRefed<nsStyleCoord::CalcNode> ToCalcNode() const;
   };
   static ComputedCalc
   SpecifiedCalcToComputedCalc(const nsCSSValue& aValue,

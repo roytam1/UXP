@@ -16,7 +16,11 @@ class WeakMapObject : public NativeObject
   public:
     static const Class class_;
 
-    ObjectValueMap* getMap() { return static_cast<ObjectValueMap*>(getPrivate()); }
+    struct Data;
+
+    Data* getData() { return static_cast<Data*>(getPrivate()); }
+    ObjectValueMap* getMap();
+    SymbolValueMap* getSymbolMap();
 };
 
 } // namespace js

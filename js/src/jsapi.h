@@ -999,7 +999,7 @@ class JS_PUBLIC_API(ContextOptions) {
         strictMode_(false),
         extraWarnings_(false),
         arrayProtoValues_(true),
-        weakRefs_(false)
+        streams_(false)
     {
     }
 
@@ -1139,13 +1139,12 @@ class JS_PUBLIC_API(ContextOptions) {
         return *this;
     }
 
-    bool weakRefs() const { return weakRefs_; }
+    bool weakRefs() const { return true; }
     ContextOptions& setWeakRefs(bool flag) {
-        weakRefs_ = flag;
+        (void) flag;
         return *this;
     }
     ContextOptions& toggleWeakRefs() {
-        weakRefs_ = !weakRefs_;
         return *this;
     }
 
@@ -1166,7 +1165,6 @@ class JS_PUBLIC_API(ContextOptions) {
     bool extraWarnings_ : 1;
     bool arrayProtoValues_ : 1;
     bool streams_ : 1;
-    bool weakRefs_ : 1;
 };
 
 JS_PUBLIC_API(ContextOptions&)
@@ -1186,6 +1184,13 @@ InitSelfHostedCode(JSContext* cx);
  */
 JS_PUBLIC_API(void)
 AssertObjectBelongsToCurrentThread(JSObject* obj);
+
+/**
+ * Clear objects and symbols that WeakRef.prototype.deref kept alive for the
+ * current synchronous JavaScript execution.
+ */
+JS_PUBLIC_API(void)
+ClearWeakRefKeptObjects(JSContext* cx);
 
 } /* namespace JS */
 
@@ -1718,6 +1723,40 @@ JS_GetGCParameter(JSContext* cx, JSGCParamKey key);
 
 extern JS_PUBLIC_API(void)
 JS_SetGCParametersBasedOnAvailableMemory(JSContext* cx, uint32_t availMem);
+
+/*
+ * Idle-time garbage collection control.
+ * These functions allow control over when GC occurs - specifically, whether
+ * GC should only run when the browser/application is not doing active JS work.
+ */
+
+/**
+ * Enable or disable idle-time-only GC mode.
+ * When enabled, GC is deferred until the JS engine has been idle for the
+ * configured threshold period (default: 100ms).
+ */
+extern JS_PUBLIC_API(void)
+JS_SetIdleGCEnabled(JSContext* cx, bool enabled);
+
+extern JS_PUBLIC_API(bool)
+JS_IsIdleGCEnabled(JSContext* cx);
+
+/**
+ * Set the minimum idle time (in milliseconds) before GC is permitted.
+ * Use this to configure how long the JS engine must be inactive before
+ * pending GC work can proceed.
+ */
+extern JS_PUBLIC_API(void)
+JS_SetIdleGCThreshold(JSContext* cx, uint64_t milliseconds);
+
+extern JS_PUBLIC_API(uint64_t)
+JS_GetIdleGCThreshold(JSContext* cx);
+
+/**
+ * Get the current idle time since the last JS execution.
+ */
+extern JS_PUBLIC_API(uint64_t)
+JS_GetIdleTimeSinceLastExecution(JSContext* cx);
 
 /**
  * Create a new JSString whose chars member refers to external memory, i.e.,

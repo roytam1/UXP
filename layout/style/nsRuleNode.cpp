@@ -13,6 +13,7 @@
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/DebugOnly.h"
+#include "mozilla/FloatingPoint.h"
 #include "mozilla/Function.h"
 #include "mozilla/dom/AnimationEffectReadOnlyBinding.h" // for PlaybackDirection
 #include "mozilla/Likely.h"
@@ -42,6 +43,7 @@
 #include "nsIStyleRule.h"
 #include "nsBidiUtils.h"
 #include "nsStyleStructInlines.h"
+#include "nsCSSNonSRGBColorSpace.h"
 #include "nsCSSProps.h"
 #include "nsTArray.h"
 #include "nsContentUtils.h"
@@ -319,6 +321,11 @@ nsRuleNode::EnsureInlineDisplay(StyleDisplay& display)
   }
 }
 
+enum class AppUnitRounding {
+  Default,
+  TowardZero
+};
+
 static nscoord CalcLengthWith(const nsCSSValue& aValue,
                               nscoord aFontSize,
                               const nsStyleFont* aStyleFont,
@@ -326,7 +333,9 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
                               nsPresContext* aPresContext,
                               bool aUseProvidedRootEmSize,
                               bool aUseUserFontSet,
-                              RuleNodeCacheConditions& aConditions);
+                              RuleNodeCacheConditions& aConditions,
+                              AppUnitRounding aRounding =
+                                AppUnitRounding::Default);
 
 struct CalcLengthCalcOps : public css::BasicCoordCalcOps,
                            public css::NumbersAlreadyNormalizedOps
@@ -339,18 +348,21 @@ struct CalcLengthCalcOps : public css::BasicCoordCalcOps,
   const bool mUseProvidedRootEmSize;
   const bool mUseUserFontSet;
   RuleNodeCacheConditions& mConditions;
+  const AppUnitRounding mRounding;
 
   CalcLengthCalcOps(nscoord aFontSize, const nsStyleFont* aStyleFont,
                     nsStyleContext* aStyleContext, nsPresContext* aPresContext,
                     bool aUseProvidedRootEmSize, bool aUseUserFontSet,
-                    RuleNodeCacheConditions& aConditions)
+                    RuleNodeCacheConditions& aConditions,
+                    AppUnitRounding aRounding)
     : mFontSize(aFontSize),
       mStyleFont(aStyleFont),
       mStyleContext(aStyleContext),
       mPresContext(aPresContext),
       mUseProvidedRootEmSize(aUseProvidedRootEmSize),
       mUseUserFontSet(aUseUserFontSet),
-      mConditions(aConditions)
+      mConditions(aConditions),
+      mRounding(aRounding)
   {
   }
 
@@ -358,13 +370,82 @@ struct CalcLengthCalcOps : public css::BasicCoordCalcOps,
   {
     return CalcLengthWith(aValue, mFontSize, mStyleFont,
                           mStyleContext, mPresContext, mUseProvidedRootEmSize,
-                          mUseUserFontSet, mConditions);
+                          mUseUserFontSet, mConditions, mRounding);
   }
 };
 
-static inline nscoord ScaleCoordRound(const nsCSSValue& aValue, float aFactor)
+static inline nscoord
+ScaleCoordWithRounding(const nsCSSValue& aValue, float aFactor,
+                       AppUnitRounding aRounding)
 {
+  if (aRounding == AppUnitRounding::TowardZero) {
+    return NSToCoordTruncClamped(aValue.GetFloatValue() * aFactor);
+  }
   return NSToCoordRoundWithClamp(aValue.GetFloatValue() * aFactor);
+}
+
+static inline nscoord
+CSSPixelsToAppUnitsWithRounding(float aPixels, AppUnitRounding aRounding)
+{
+  if (aRounding == AppUnitRounding::TowardZero) {
+    return NSToCoordTruncClamped(double(aPixels) *
+                                 nsPresContext::AppUnitsPerCSSPixel());
+  }
+  return nsPresContext::CSSPixelsToAppUnits(aPixels);
+}
+
+static nscoord
+GetFixedLengthWithRounding(const nsCSSValue& aValue,
+                           nsPresContext* aPresContext,
+                           AppUnitRounding aRounding)
+{
+  if (aRounding == AppUnitRounding::Default) {
+    return aValue.GetFixedLength(aPresContext);
+  }
+
+  MOZ_ASSERT(aValue.GetUnit() == eCSSUnit_PhysicalMillimeter,
+             "not a fixed length unit");
+  double inches = double(aValue.GetFloatValue()) / MM_PER_INCH_FLOAT;
+  return NSToCoordTruncClamped(
+    inches * aPresContext->DeviceContext()->AppUnitsPerPhysicalInch());
+}
+
+static nscoord
+GetPixelLengthWithRounding(const nsCSSValue& aValue,
+                           AppUnitRounding aRounding)
+{
+  MOZ_ASSERT(aValue.IsPixelLengthUnit(), "not a pixel length unit");
+
+  double scaleFactor;
+  switch (aValue.GetUnit()) {
+    case eCSSUnit_Pixel:
+      return CSSPixelsToAppUnitsWithRounding(aValue.GetFloatValue(),
+                                             aRounding);
+    case eCSSUnit_Pica:
+      scaleFactor = 16.0;
+      break;
+    case eCSSUnit_Point:
+      scaleFactor = 4.0 / 3.0;
+      break;
+    case eCSSUnit_Inch:
+      scaleFactor = 96.0;
+      break;
+    case eCSSUnit_Millimeter:
+      scaleFactor = 96.0 / 25.4;
+      break;
+    case eCSSUnit_Centimeter:
+      scaleFactor = 96.0 / 2.54;
+      break;
+    case eCSSUnit_Quarter:
+      scaleFactor = 96.0 / 101.6;
+      break;
+    default:
+      NS_ERROR("should never get here");
+      return 0;
+  }
+
+  return CSSPixelsToAppUnitsWithRounding(
+    float(double(aValue.GetFloatValue()) * scaleFactor), aRounding);
 }
 
 static inline nscoord ScaleViewportCoordTrunc(const nsCSSValue& aValue,
@@ -465,7 +546,8 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
                               // except when called from
                               // CalcLengthWithInitialFont.
                               bool aUseUserFontSet,
-                              RuleNodeCacheConditions& aConditions)
+                              RuleNodeCacheConditions& aConditions,
+                              AppUnitRounding aRounding)
 {
   NS_ASSERTION(aValue.IsLengthUnit() || aValue.IsCalcUnit(),
                "not a length or calc unit");
@@ -476,10 +558,10 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
   NS_ASSERTION(aPresContext, "Must have prescontext");
 
   if (aValue.IsFixedLengthUnit()) {
-    return aValue.GetFixedLength(aPresContext);
+    return GetFixedLengthWithRounding(aValue, aPresContext, aRounding);
   }
   if (aValue.IsPixelLengthUnit()) {
-    return aValue.GetPixelLength();
+    return GetPixelLengthWithRounding(aValue, aRounding);
   }
   if (aValue.IsCalcUnit()) {
     // For properties for which lengths are the *only* units accepted in
@@ -490,7 +572,7 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
     CalcLengthCalcOps ops(aFontSize, aStyleFont,
                           aStyleContext, aPresContext,
                           aUseProvidedRootEmSize, aUseUserFontSet,
-                          aConditions);
+                          aConditions, aRounding);
     return css::ComputeCalc(aValue, ops);
   }
   switch (aValue.GetUnit()) {
@@ -623,7 +705,7 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
         rootFontSize = rootStyleFont->mFont.size;
       }
 
-      return ScaleCoordRound(aValue, float(rootFontSize));
+      return ScaleCoordWithRounding(aValue, float(rootFontSize), aRounding);
     }
     default:
       // Fall through to the code for units that can't be stored in the
@@ -648,7 +730,7 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
       // CSS2.1 specifies that this unit scales to the computed font
       // size, not the em-width in the font metrics, despite the name.
       aConditions.SetFontSizeDependency(aFontSize);
-      return ScaleCoordRound(aValue, float(aFontSize));
+      return ScaleCoordWithRounding(aValue, float(aFontSize), aRounding);
     }
     case eCSSUnit_XHeight: {
       aPresContext->SetUsesExChUnits(true);
@@ -656,7 +738,7 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
         GetMetricsFor(aPresContext, aStyleContext, styleFont,
                       aFontSize, aUseUserFontSet);
       aConditions.SetUncacheable();
-      return ScaleCoordRound(aValue, float(fm->XHeight()));
+      return ScaleCoordWithRounding(aValue, float(fm->XHeight()), aRounding);
     }
     case eCSSUnit_Char: {
       aPresContext->SetUsesExChUnits(true);
@@ -668,8 +750,9 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
           GetMetrics(fm->Orientation()).zeroOrAveCharWidth;
 
       aConditions.SetUncacheable();
-      return ScaleCoordRound(aValue, ceil(aPresContext->AppUnitsPerDevPixel() *
-                                          zeroWidth));
+      return ScaleCoordWithRounding(
+        aValue, ceil(aPresContext->AppUnitsPerDevPixel() * zeroWidth),
+        aRounding);
     }
     default:
       NS_NOTREACHED("unexpected unit");
@@ -699,6 +782,30 @@ static inline nscoord CalcLength(const nsCSSValue& aValue,
 {
   return nsRuleNode::CalcLength(aValue, aStyleContext,
                                 aPresContext, aConditions);
+}
+
+static inline nscoord
+CalcLengthTowardZero(const nsCSSValue& aValue,
+                     nsStyleContext* aStyleContext,
+                     nsPresContext* aPresContext,
+                     RuleNodeCacheConditions& aConditions)
+{
+  NS_ASSERTION(aStyleContext, "Must have style data");
+
+  return CalcLengthWith(aValue, -1, nullptr,
+                        aStyleContext, aPresContext,
+                        false, true, aConditions,
+                        AppUnitRounding::TowardZero);
+}
+
+already_AddRefed<nsStyleCoord::CalcNode>
+nsRuleNode::ComputedCalc::ToCalcNode() const
+{
+  if (mNode) {
+    RefPtr<nsStyleCoord::CalcNode> node = mNode;
+    return node.forget();
+  }
+  return nsStyleCoord::CalcNode::CreateLeaf(mLength, mPercent, mHasPercent);
 }
 
 /* static */ nscoord
@@ -733,27 +840,42 @@ struct LengthPercentPairCalcOps : public css::NumbersAlreadyNormalizedOps
   {
     if (aValue.GetUnit() == eCSSUnit_Percent) {
       mHasPercent = true;
-      return result_type(0, aValue.GetPercentValue());
+      return result_type(0, aValue.GetPercentValue(), true);
     }
     return result_type(CalcLength(aValue, mContext, mPresContext,
                                   mConditions),
-                       0.0f);
+                       0.0f, false);
   }
 
   result_type
   MergeAdditive(nsCSSUnit aCalcFunction,
                 result_type aValue1, result_type aValue2)
   {
+    if (aValue1.HasNode() || aValue2.HasNode()) {
+      RefPtr<nsStyleCoord::CalcNode> node =
+        nsStyleCoord::CalcNode::Create(
+          aCalcFunction == eCSSUnit_Calc_Plus
+            ? nsStyleCoord::CalcNode::Type::Add
+            : nsStyleCoord::CalcNode::Type::Subtract);
+      node->mChildren.AppendElement(aValue1.ToCalcNode());
+      node->mChildren.AppendElement(aValue2.ToCalcNode());
+      node->mHasPercent = node->HasPercent();
+      mHasPercent = mHasPercent || node->mHasPercent;
+      return result_type(node.forget());
+    }
+
     if (aCalcFunction == eCSSUnit_Calc_Plus) {
       return result_type(NSCoordSaturatingAdd(aValue1.mLength,
                                               aValue2.mLength),
-                         aValue1.mPercent + aValue2.mPercent);
+                         aValue1.mPercent + aValue2.mPercent,
+                         aValue1.mHasPercent || aValue2.mHasPercent);
     }
     MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Minus,
                "min() and max() are not allowed in calc() on transform");
     return result_type(NSCoordSaturatingSubtract(aValue1.mLength,
                                                  aValue2.mLength, 0),
-                       aValue1.mPercent - aValue2.mPercent);
+                       aValue1.mPercent - aValue2.mPercent,
+                       aValue1.mHasPercent || aValue2.mHasPercent);
   }
 
   result_type
@@ -762,8 +884,19 @@ struct LengthPercentPairCalcOps : public css::NumbersAlreadyNormalizedOps
   {
     MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Times_L,
                "unexpected unit");
+    if (aValue2.HasNode()) {
+      RefPtr<nsStyleCoord::CalcNode> node =
+        nsStyleCoord::CalcNode::Create(nsStyleCoord::CalcNode::Type::Multiply);
+      node->mChildren.AppendElement(aValue2.ToCalcNode());
+      node->mNumber = aValue1;
+      node->mHasPercent = node->HasPercent();
+      mHasPercent = mHasPercent || node->mHasPercent;
+      return result_type(node.forget());
+    }
+
     return result_type(NSCoordSaturatingMultiply(aValue2.mLength, aValue1),
-                       aValue1 * aValue2.mPercent);
+                       aValue1 * aValue2.mPercent,
+                       aValue2.mHasPercent);
   }
 
   result_type
@@ -774,10 +907,89 @@ struct LengthPercentPairCalcOps : public css::NumbersAlreadyNormalizedOps
                aCalcFunction == eCSSUnit_Calc_Divided,
                "unexpected unit");
     if (aCalcFunction == eCSSUnit_Calc_Divided) {
+      if (aValue1.HasNode()) {
+        RefPtr<nsStyleCoord::CalcNode> node =
+          nsStyleCoord::CalcNode::Create(nsStyleCoord::CalcNode::Type::Divide);
+        node->mChildren.AppendElement(aValue1.ToCalcNode());
+        node->mNumber = aValue2;
+        node->mHasPercent = node->HasPercent();
+        mHasPercent = mHasPercent || node->mHasPercent;
+        return result_type(node.forget());
+      }
       aValue2 = 1.0f / aValue2;
+    } else if (aValue1.HasNode()) {
+      RefPtr<nsStyleCoord::CalcNode> node =
+        nsStyleCoord::CalcNode::Create(nsStyleCoord::CalcNode::Type::Multiply);
+      node->mChildren.AppendElement(aValue1.ToCalcNode());
+      node->mNumber = aValue2;
+      node->mHasPercent = node->HasPercent();
+      mHasPercent = mHasPercent || node->mHasPercent;
+      return result_type(node.forget());
     }
     return result_type(NSCoordSaturatingMultiply(aValue1.mLength, aValue2),
-                       aValue1.mPercent * aValue2);
+                       aValue1.mPercent * aValue2,
+                       aValue1.mHasPercent);
+  }
+
+  result_type
+  MergeMinMax(nsCSSUnit aCalcFunction,
+              result_type aValue1, result_type aValue2)
+  {
+    const bool hasNode = aValue1.HasNode() || aValue2.HasNode();
+    const bool hasPercent = aValue1.mHasPercent || aValue2.mHasPercent;
+    if (!hasNode && !hasPercent) {
+      if (aCalcFunction == eCSSUnit_Calc_Min) {
+        return result_type(std::min(aValue1.mLength, aValue2.mLength),
+                           0.0f, false);
+      }
+      MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Max, "unexpected unit");
+      return result_type(std::max(aValue1.mLength, aValue2.mLength),
+                         0.0f, false);
+    }
+
+    RefPtr<nsStyleCoord::CalcNode> node =
+      nsStyleCoord::CalcNode::Create(
+        aCalcFunction == eCSSUnit_Calc_Min
+          ? nsStyleCoord::CalcNode::Type::Min
+          : nsStyleCoord::CalcNode::Type::Max);
+    if (aValue1.HasNode() &&
+        aValue1.mNode->mType == node->mType) {
+      node->mChildren.AppendElements(aValue1.mNode->mChildren);
+    } else {
+      node->mChildren.AppendElement(aValue1.ToCalcNode());
+    }
+    if (aValue2.HasNode() &&
+        aValue2.mNode->mType == node->mType) {
+      node->mChildren.AppendElements(aValue2.mNode->mChildren);
+    } else {
+      node->mChildren.AppendElement(aValue2.ToCalcNode());
+    }
+    node->mHasPercent = node->HasPercent();
+    mHasPercent = mHasPercent || node->mHasPercent;
+    return result_type(node.forget());
+  }
+
+  result_type
+  MergeClamp(result_type aMin, result_type aCenter, result_type aMax)
+  {
+    const bool hasNode = aMin.HasNode() || aCenter.HasNode() || aMax.HasNode();
+    const bool hasPercent = aMin.mHasPercent ||
+                            aCenter.mHasPercent ||
+                            aMax.mHasPercent;
+    if (!hasNode && !hasPercent) {
+      return result_type(std::max(aMin.mLength,
+                                  std::min(aCenter.mLength, aMax.mLength)),
+                         0.0f, false);
+    }
+
+    RefPtr<nsStyleCoord::CalcNode> node =
+      nsStyleCoord::CalcNode::Create(nsStyleCoord::CalcNode::Type::Clamp);
+    node->mChildren.AppendElement(aMin.ToCalcNode());
+    node->mChildren.AppendElement(aCenter.ToCalcNode());
+    node->mChildren.AppendElement(aMax.ToCalcNode());
+    node->mHasPercent = node->HasPercent();
+    mHasPercent = mHasPercent || node->mHasPercent;
+    return result_type(node.forget());
   }
 
 };
@@ -795,7 +1007,8 @@ SpecifiedCalcToComputedCalc(const nsCSSValue& aValue, nsStyleCoord& aCoord,
 
   calcObj->mLength = vals.mLength;
   calcObj->mPercent = vals.mPercent;
-  calcObj->mHasPercent = ops.mHasPercent;
+  calcObj->mHasPercent = vals.mHasPercent || ops.mHasPercent;
+  calcObj->mNode = vals.mNode;
 
   aCoord.SetCalcValue(calcObj);
 }
@@ -818,8 +1031,7 @@ nsRuleNode::ComputeComputedCalc(const nsStyleCoord& aValue,
                                 nscoord aPercentageBasis)
 {
   nsStyleCoord::Calc* calc = aValue.GetCalcValue();
-  return calc->mLength +
-         NSToCoordFloorClamped(aPercentageBasis * calc->mPercent);
+  return calc->Resolve(aPercentageBasis);
 }
 
 /* static */ nscoord
@@ -1056,6 +1268,137 @@ SetPairCoords(const nsCSSValue& aValue,
   return cX;
 }
 
+static void
+GetColorMixPremultipliedWeights(float aAlpha1, float aAlpha2,
+                                float aWeight1, float aWeight2,
+                                float& aPremultipliedWeight1,
+                                float& aPremultipliedWeight2,
+                                float& aAlpha)
+{
+  float alphaWeight1 = aWeight1 * aAlpha1;
+  float alphaWeight2 = aWeight2 * aAlpha2;
+
+  aAlpha = alphaWeight1 + alphaWeight2;
+  if (aAlpha <= 0.0f) {
+    aPremultipliedWeight1 = 0.0f;
+    aPremultipliedWeight2 = 0.0f;
+    return;
+  }
+
+  aPremultipliedWeight1 = alphaWeight1 / aAlpha;
+  aPremultipliedWeight2 = alphaWeight2 / aAlpha;
+}
+
+static css::OklabColor
+OklchToOklabColor(const css::OklchColor& aColor)
+{
+  float hueRadians = aColor.mHue * css::kRadiansPerDegree;
+  return {
+    aColor.mL,
+    aColor.mChroma * std::cos(hueRadians),
+    aColor.mChroma * std::sin(hueRadians)
+  };
+}
+
+static void
+GetColorMixColorComponents(const nsCSSValue& aValue, nscolor aResolvedColor,
+                           css::OklabColor& aOklab,
+                           css::OklchColor& aOklch,
+                           float& aAlpha)
+{
+  nsCSSUnit unit = aValue.GetUnit();
+  if (unit == eCSSUnit_OklabColor) {
+    const nsCSSValueFloatColor* color = aValue.GetFloatColorValue();
+    aOklab = { color->Comp1(), color->Comp2(), color->Comp3() };
+    aOklch = css::OklabToOklchColor(aOklab);
+    aAlpha = mozilla::clamped(color->Alpha(), 0.0f, 1.0f);
+    return;
+  }
+
+  if (unit == eCSSUnit_OklchColor) {
+    const nsCSSValueFloatColor* color = aValue.GetFloatColorValue();
+    aOklch = { color->Comp1(), color->Comp2(), color->Comp3() };
+    aOklab = OklchToOklabColor(aOklch);
+    aAlpha = mozilla::clamped(color->Alpha(), 0.0f, 1.0f);
+    return;
+  }
+
+  aOklab = css::SRGBToOklabColor(aResolvedColor);
+  aOklch = css::OklabToOklchColor(aOklab);
+  aAlpha = NS_GET_A(aResolvedColor) / 255.0f;
+}
+
+static float
+InterpolateColorMixHue(float aHue1, float aHue2, float aWeight1,
+                       float aWeight2)
+{
+  float hueDiff = aHue2 - aHue1;
+  if (hueDiff > 180.0f) {
+    aHue1 += 360.0f;
+  } else if (hueDiff < -180.0f) {
+    aHue2 += 360.0f;
+  }
+
+  float hue = aHue1 * aWeight1 + aHue2 * aWeight2;
+  hue = std::fmod(hue, 360.0f);
+  if (hue < 0.0f) {
+    hue += 360.0f;
+  }
+  return hue;
+}
+
+static nscolor
+MixColorsInOklab(const css::OklabColor& aColor1, float aAlpha1,
+                 const css::OklabColor& aColor2, float aAlpha2,
+                 float aWeight1, float aWeight2, float aAlphaMultiplier)
+{
+  float premultipliedWeight1, premultipliedWeight2, alpha;
+  GetColorMixPremultipliedWeights(aAlpha1, aAlpha2, aWeight1, aWeight2,
+                                  premultipliedWeight1, premultipliedWeight2,
+                                  alpha);
+  alpha *= aAlphaMultiplier;
+  if (alpha <= 0.0f) {
+    return NS_RGBA(0, 0, 0, 0);
+  }
+
+  return css::OklabToSRGBColor(
+    aColor1.mL * premultipliedWeight1 + aColor2.mL * premultipliedWeight2,
+    aColor1.mA * premultipliedWeight1 + aColor2.mA * premultipliedWeight2,
+    aColor1.mB * premultipliedWeight1 + aColor2.mB * premultipliedWeight2,
+    alpha);
+}
+
+static nscolor
+MixColorsInOklch(css::OklchColor aColor1, float aAlpha1,
+                 css::OklchColor aColor2, float aAlpha2,
+                 float aWeight1, float aWeight2, float aAlphaMultiplier)
+{
+  if (aColor1.mChroma <= css::kOklchPowerlessChromaEpsilon) {
+    aColor1.mHue = aColor2.mHue;
+  }
+  if (aColor2.mChroma <= css::kOklchPowerlessChromaEpsilon) {
+    aColor2.mHue = aColor1.mHue;
+  }
+
+  float premultipliedWeight1, premultipliedWeight2, alpha;
+  GetColorMixPremultipliedWeights(aAlpha1, aAlpha2, aWeight1, aWeight2,
+                                  premultipliedWeight1, premultipliedWeight2,
+                                  alpha);
+  alpha *= aAlphaMultiplier;
+  if (alpha <= 0.0f) {
+    return NS_RGBA(0, 0, 0, 0);
+  }
+
+  float hue = InterpolateColorMixHue(aColor1.mHue, aColor2.mHue,
+                                     aWeight1, aWeight2);
+  return css::OklchToSRGBColor(
+    aColor1.mL * premultipliedWeight1 + aColor2.mL * premultipliedWeight2,
+    aColor1.mChroma * premultipliedWeight1 +
+      aColor2.mChroma * premultipliedWeight2,
+    hue,
+    alpha);
+}
+
 static bool
 SetColor(const nsCSSValue& aValue,
          const nscolor aParentColor,
@@ -1144,22 +1487,29 @@ SetColor(const nsCSSValue& aValue,
     const mozilla::css::ColorMixValue* colorMix = aValue.GetColorMixValue();
     if (colorMix) {
       nscolor color1, color2;
+      bool resolvedColor1, resolvedColor2;
       
       // XXX: This is a hack to avoid recursive calls to SetColor when either color resolves
       // to NS_COLOR_CURRENTCOLOR, as it would result in re-evaluation of the color.
       // Instead of recursing, we reach up to set either color to the parent color, instead.
       if (colorMix->mColor1.GetUnit() == eCSSUnit_EnumColor && colorMix->mColor1.GetIntValue() == NS_COLOR_CURRENTCOLOR) {
         color1 = aParentColor;
+        resolvedColor1 = true;
       } else {
-        SetColor(colorMix->mColor1, aParentColor, aPresContext, aContext, color1, aConditions);
+        resolvedColor1 =
+          SetColor(colorMix->mColor1, aParentColor, aPresContext, aContext,
+                   color1, aConditions);
       }
       if (colorMix->mColor2.GetUnit() == eCSSUnit_EnumColor && colorMix->mColor2.GetIntValue() == NS_COLOR_CURRENTCOLOR) {
         color2 = aParentColor;
+        resolvedColor2 = true;
       } else {
-        SetColor(colorMix->mColor2, aParentColor, aPresContext, aContext, color2, aConditions);
+        resolvedColor2 =
+          SetColor(colorMix->mColor2, aParentColor, aPresContext, aContext,
+                   color2, aConditions);
       }
 
-      if (color1 && color2) {
+      if (resolvedColor1 && resolvedColor2) {
         // interpolate each RGBA component with proper percentage handling
         float w1 = colorMix->mWeight1;
         float w2 = colorMix->mWeight2;
@@ -1176,9 +1526,18 @@ SetColor(const nsCSSValue& aValue,
             w1 = w2 = 0.5f;
             sum = 1.0f;
           }
+          float alphaMultiplier = std::min(sum, 1.0f);
           
           float norm1 = w1 / sum;
           float norm2 = w2 / sum;
+
+          css::OklabColor oklab1, oklab2;
+          css::OklchColor oklch1, oklch2;
+          float oklabAlpha1, oklabAlpha2;
+          GetColorMixColorComponents(colorMix->mColor1, color1, oklab1,
+                                     oklch1, oklabAlpha1);
+          GetColorMixColorComponents(colorMix->mColor2, color2, oklab2,
+                                     oklch2, oklabAlpha2);
           
           if (colorMix->mColorSpace == mozilla::css::ColorMixColorSpace::HSL) {
             // HSL color space mixing
@@ -1251,9 +1610,22 @@ SetColor(const nsCSSValue& aValue,
             
             // Convert back to RGB
             nscolor hslResult = NS_HSL2RGB(h, s, l);
-            uint8_t aInt = (uint8_t)mozilla::clamped(a * 255.0f + 0.5f, 0.0f, 255.0f);
+            uint8_t aInt = (uint8_t)mozilla::clamped(
+              a * alphaMultiplier * 255.0f + 0.5f, 0.0f, 255.0f);
             
             aResult = NS_RGBA(NS_GET_R(hslResult), NS_GET_G(hslResult), NS_GET_B(hslResult), aInt);
+            result = true;
+          } else if (colorMix->mColorSpace ==
+                     mozilla::css::ColorMixColorSpace::Oklab) {
+            aResult = MixColorsInOklab(oklab1, oklabAlpha1,
+                                       oklab2, oklabAlpha2,
+                                       norm1, norm2, alphaMultiplier);
+            result = true;
+          } else if (colorMix->mColorSpace ==
+                     mozilla::css::ColorMixColorSpace::Oklch) {
+            aResult = MixColorsInOklch(oklch1, oklabAlpha1,
+                                       oklch2, oklabAlpha2,
+                                       norm1, norm2, alphaMultiplier);
             result = true;
           } else {
             // sRGB color space mixing with proper alpha premultiplication
@@ -1304,7 +1676,8 @@ SetColor(const nsCSSValue& aValue,
             uint8_t rInt = (uint8_t)mozilla::clamped(r + 0.5f, 0.0f, 255.0f);
             uint8_t gInt = (uint8_t)mozilla::clamped(g + 0.5f, 0.0f, 255.0f);
             uint8_t bInt = (uint8_t)mozilla::clamped(b + 0.5f, 0.0f, 255.0f);
-            uint8_t aInt = (uint8_t)mozilla::clamped(a * 255.0f + 0.5f, 0.0f, 255.0f);
+            uint8_t aInt = (uint8_t)mozilla::clamped(
+              a * alphaMultiplier * 255.0f + 0.5f, 0.0f, 255.0f);
             
             aResult = NS_RGBA(rInt, gInt, bInt, aInt);
             result = true;
@@ -1778,6 +2151,17 @@ SetValue(const nsCSSValue& aValue, FieldT& aField,
 #define SETFCT_UNSET_INHERIT  0x00400000
 #define SETFCT_UNSET_INITIAL  0x00800000
 
+struct RuleNodeReduceNumberCalcOps : public css::BasicFloatCalcOps,
+                                     public css::CSSValueInputCalcOps,
+                                     public css::NumbersAlreadyNormalizedOps
+{
+  result_type ComputeLeafValue(const nsCSSValue& aValue)
+  {
+    MOZ_ASSERT(aValue.GetUnit() == eCSSUnit_Number, "unexpected unit");
+    return aValue.GetFloatValue();
+  }
+};
+
 static void
 SetFactor(const nsCSSValue& aValue, float& aField, RuleNodeCacheConditions& aConditions,
           float aParentValue, float aInitialValue, uint32_t aFlags = 0)
@@ -1788,6 +2172,9 @@ SetFactor(const nsCSSValue& aValue, float& aField, RuleNodeCacheConditions& aCon
 
   case eCSSUnit_Number:
     aField = aValue.GetFloatValue();
+    if (mozilla::IsNaN(aField)) {
+      aField = 0.0f;
+    }
     if (aFlags & SETFCT_POSITIVE) {
       NS_ASSERTION(aField >= 0.0f, "negative value for positive-only property");
       if (aField < 0.0f) {
@@ -1803,6 +2190,29 @@ SetFactor(const nsCSSValue& aValue, float& aField, RuleNodeCacheConditions& aCon
       }
     }
     return;
+
+  case eCSSUnit_Calc: {
+    RuleNodeReduceNumberCalcOps ops;
+    aField = css::ComputeCalc(aValue, ops);
+    if (mozilla::IsNaN(aField)) {
+      aField = 0.0f;
+    }
+    if (aFlags & SETFCT_POSITIVE) {
+      NS_ASSERTION(aField >= 0.0f, "negative value for positive-only property");
+      if (aField < 0.0f) {
+        aField = 0.0f;
+      }
+    }
+    if (aFlags & SETFCT_OPACITY) {
+      if (aField < 0.0f) {
+        aField = 0.0f;
+      }
+      if (aField > 1.0f) {
+        aField = 1.0f;
+      }
+    }
+    return;
+  }
 
   case eCSSUnit_Inherit:
     aConditions.SetUncacheable();
@@ -4813,6 +5223,34 @@ struct LengthNumberCalcOps : public css::NumbersAlreadyNormalizedOps
     return result;
   }
 
+  result_type
+  MergeMinMax(nsCSSUnit aCalcFunction,
+              result_type aValue1, result_type aValue2)
+  {
+    MOZ_ASSERT(aValue1.mIsNumber == aValue2.mIsNumber);
+    LengthNumberCalcObj result;
+    result.mIsNumber = aValue1.mIsNumber;
+    if (aCalcFunction == eCSSUnit_Calc_Min) {
+      result.mValue = std::min(aValue1.mValue, aValue2.mValue);
+      return result;
+    }
+    MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Max, "unexpected unit");
+    result.mValue = std::max(aValue1.mValue, aValue2.mValue);
+    return result;
+  }
+
+  result_type
+  MergeClamp(result_type aMin, result_type aCenter, result_type aMax)
+  {
+    MOZ_ASSERT(aMin.mIsNumber == aCenter.mIsNumber &&
+               aCenter.mIsNumber == aMax.mIsNumber);
+    LengthNumberCalcObj result;
+    result.mIsNumber = aCenter.mIsNumber;
+    result.mValue = std::max(aMin.mValue,
+                             std::min(aCenter.mValue, aMax.mValue));
+    return result;
+  }
+
   result_type ComputeLeafValue(const nsCSSValue& aValue)
   {
     LengthNumberCalcObj result;
@@ -4900,6 +5338,38 @@ struct LengthPercentNumberCalcOps : public css::NumbersAlreadyNormalizedOps
     result.mLength = aValue1.mLength * aValue2;
     result.mPercent = aValue1.mPercent * aValue2;
     result.mIsNumber = aValue1.mIsNumber;
+    return result;
+  }
+
+  result_type
+  MergeMinMax(nsCSSUnit aCalcFunction,
+              result_type aValue1, result_type aValue2)
+  {
+    MOZ_ASSERT(aValue1.mIsNumber == aValue2.mIsNumber);
+    result_type result;
+    result.mIsNumber = aValue1.mIsNumber;
+    if (aCalcFunction == eCSSUnit_Calc_Min) {
+      result.mLength = std::min(aValue1.mLength, aValue2.mLength);
+      result.mPercent = std::min(aValue1.mPercent, aValue2.mPercent);
+    } else {
+      MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Max, "unexpected unit");
+      result.mLength = std::max(aValue1.mLength, aValue2.mLength);
+      result.mPercent = std::max(aValue1.mPercent, aValue2.mPercent);
+    }
+    return result;
+  }
+
+  result_type
+  MergeClamp(result_type aMin, result_type aCenter, result_type aMax)
+  {
+    MOZ_ASSERT(aMin.mIsNumber == aCenter.mIsNumber &&
+               aCenter.mIsNumber == aMax.mIsNumber);
+    result_type result;
+    result.mIsNumber = aCenter.mIsNumber;
+    result.mLength = std::max(aMin.mLength,
+                              std::min(aCenter.mLength, aMax.mLength));
+    result.mPercent = std::max(aMin.mPercent,
+                               std::min(aCenter.mPercent, aMax.mPercent));
     return result;
   }
 
@@ -8022,13 +8492,11 @@ nsRuleNode::ComputeBorderData(void* aStartStruct,
                      "Unexpected enum value");
         border->SetBorderWidth(side,
                                (mPresContext->GetBorderWidthTable())[value.GetIntValue()]);
-      // OK to pass bad aParentCoord since we're not passing SETCOORD_INHERIT
-      } else if (SetCoord(value, coord, nsStyleCoord(),
-                        SETCOORD_LENGTH | SETCOORD_CALC_LENGTH_ONLY,
-                        aContext, mPresContext, conditions)) {
-        NS_ASSERTION(coord.GetUnit() == eStyleUnit_Coord, "unexpected unit");
+      } else if (value.IsLengthUnit() || value.IsCalcUnit()) {
         // clamp negative calc() to 0.
-        border->SetBorderWidth(side, std::max(coord.GetCoordValue(), 0));
+        border->SetBorderWidth(side,
+          std::max(CalcLengthTowardZero(value, aContext, mPresContext,
+                                        conditions), 0));
       } else if (eCSSUnit_Inherit == value.GetUnit()) {
         conditions.SetUncacheable();
         border->SetBorderWidth(side,
@@ -8306,6 +8774,11 @@ nsRuleNode::ComputeOutlineData(void* aStartStruct,
       eCSSUnit_Revert == outlineWidthValue->GetUnit()) {
     outline->mOutlineWidth =
       nsStyleCoord(NS_STYLE_BORDER_WIDTH_MEDIUM, eStyleUnit_Enumerated);
+  } else if (outlineWidthValue->IsLengthUnit() ||
+             outlineWidthValue->IsCalcUnit()) {
+    outline->mOutlineWidth.SetCoordValue(
+      CalcLengthTowardZero(*outlineWidthValue, aContext, mPresContext,
+                           conditions));
   } else {
     SetCoord(*outlineWidthValue, outline->mOutlineWidth,
              parentOutline->mOutlineWidth,
@@ -8316,13 +8789,21 @@ nsRuleNode::ComputeOutlineData(void* aStartStruct,
   // outline-offset: length, inherit
   nsStyleCoord tempCoord;
   const nsCSSValue* outlineOffsetValue = aRuleData->ValueForOutlineOffset();
-  if (SetCoord(*outlineOffsetValue, tempCoord,
+  if (outlineOffsetValue->IsLengthUnit() || outlineOffsetValue->IsCalcUnit()) {
+    outline->mOutlineOffset =
+      NS_ROUND_OFFSET_TO_PIXELS(
+        CalcLengthTowardZero(*outlineOffsetValue, aContext, mPresContext,
+                             conditions),
+        mPresContext->AppUnitsPerDevPixel());
+  } else if (SetCoord(*outlineOffsetValue, tempCoord,
                nsStyleCoord(parentOutline->mOutlineOffset,
                             nsStyleCoord::CoordConstructor),
                SETCOORD_LH | SETCOORD_INITIAL_ZERO | SETCOORD_CALC_LENGTH_ONLY |
                  SETCOORD_UNSET_INITIAL,
                aContext, mPresContext, conditions)) {
-    outline->mOutlineOffset = tempCoord.GetCoordValue();
+    outline->mOutlineOffset =
+      NS_ROUND_OFFSET_TO_PIXELS(tempCoord.GetCoordValue(),
+                                mPresContext->AppUnitsPerDevPixel());
   } else {
     NS_ASSERTION(outlineOffsetValue->GetUnit() == eCSSUnit_Null,
                  "unexpected unit");
@@ -8998,11 +9479,16 @@ nsRuleNode::ComputePositionData(void* aStartStruct,
              SETCOORD_UNSET_INITIAL,
            aContext, mPresContext, conditions);
 
-  // aspect-ratio: float, initial
-  SetFactor(*aRuleData->ValueForAspectRatio(),
-           pos->mAspectRatio, conditions,
-           parentPos->mAspectRatio, 0.0f,
-           SETFCT_UNSET_INITIAL | SETFCT_POSITIVE | SETFCT_NONE);
+  // aspect-ratio: auto | <ratio>
+  const nsCSSValue* aspectRatio = aRuleData->ValueForAspectRatio();
+  if (aspectRatio->GetUnit() == eCSSUnit_Auto) {
+    pos->mAspectRatio = 0.0f;
+  } else {
+    SetFactor(*aspectRatio,
+              pos->mAspectRatio, conditions,
+              parentPos->mAspectRatio, 0.0f,
+              SETFCT_UNSET_INITIAL | SETFCT_POSITIVE | SETFCT_NONE);
+  }
 
   // box-sizing: enum, inherit, initial
   SetValue(*aRuleData->ValueForBoxSizing(),

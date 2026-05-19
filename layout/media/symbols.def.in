@@ -71,15 +71,16 @@ vpx_codec_set_frame_buffer_functions
 vpx_codec_enc_init_multi_ver
 #endif
 #ifdef MOZ_AV1
-aom_codec_av1_dx
-aom_codec_dec_init_ver
-aom_codec_decode
-aom_codec_destroy
-aom_codec_err_to_string
-aom_codec_get_frame
-aom_codec_peek_stream_info
-aom_img_alloc
-aom_img_free
+dav1d_default_settings
+dav1d_open
+dav1d_parse_sequence_header
+dav1d_send_data
+dav1d_get_picture
+dav1d_flush
+dav1d_close
+dav1d_data_create
+dav1d_data_unref
+dav1d_picture_unref
 #endif
 #ifdef MOZ_JXL
 JxlDecoderCreate

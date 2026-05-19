@@ -1743,7 +1743,9 @@ nsCSSRendering::PaintBackground(const PaintBGParams& aParams)
 }
 
 static bool
-IsOpaqueBorderEdge(const nsStyleBorder& aBorder, mozilla::Side aSide)
+IsOpaqueBorderEdge(const nsStyleBorder& aBorder,
+                   const nsStyleColor& aColor,
+                   mozilla::Side aSide)
 {
   if (aBorder.GetComputedBorder().Side(aSide) == 0)
     return true;
@@ -1765,25 +1767,20 @@ IsOpaqueBorderEdge(const nsStyleBorder& aBorder, mozilla::Side aSide)
   if (aBorder.mBorderImageSource.GetType() != eStyleImageType_Null)
     return false;
 
-  StyleComplexColor color = aBorder.mBorderColor[aSide];
-  // We don't know the foreground color here, so if it's being used
-  // we must assume it might be transparent.
-  if (!color.IsNumericColor()) {
-    return false;
-  }
-  return NS_GET_A(color.mColor) == 255;
+  nscolor color = aColor.CalcComplexColor(aBorder.mBorderColor[aSide]);
+  return NS_GET_A(color) == 255;
 }
 
 /**
  * Returns true if all border edges are either missing or opaque.
  */
 static bool
-IsOpaqueBorder(const nsStyleBorder& aBorder)
+IsOpaqueBorder(const nsStyleBorder& aBorder, const nsStyleColor& aColor)
 {
   if (aBorder.mBorderColors)
     return false;
   NS_FOR_CSS_SIDES(i) {
-    if (!IsOpaqueBorderEdge(aBorder, i))
+    if (!IsOpaqueBorderEdge(aBorder, aColor, i))
       return false;
   }
   return true;
@@ -1916,7 +1913,7 @@ nsCSSRendering::GetImageLayerClip(const nsStyleImageLayers::Layer& aLayer,
    }
 
   bool isSolidBorder =
-      aWillPaintBorder && IsOpaqueBorder(aBorder);
+      aWillPaintBorder && IsOpaqueBorder(aBorder, *aForFrame->StyleColor());
   if (isSolidBorder && layerClip == StyleGeometryBox::Border) {
     // If we have rounded corners, we need to inflate the background
     // drawing area a bit to avoid seams between the border and

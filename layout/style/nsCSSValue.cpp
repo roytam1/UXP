@@ -6,6 +6,7 @@
 /* representation of simple property values within CSS declarations */
 
 #include "mozilla/ArrayUtils.h"
+#include "mozilla/FloatingPoint.h"
 
 #include "nsCSSValue.h"
 
@@ -17,6 +18,7 @@
 #include "gfxFontConstants.h"
 #include "imgIRequest.h"
 #include "imgRequestProxy.h"
+#include "nsCSSNonSRGBColorSpace.h"
 #include "nsIDocument.h"
 #include "nsNetUtil.h"
 #include "nsPresContext.h"
@@ -28,6 +30,25 @@
 
 using namespace mozilla;
 using namespace mozilla::css;
+
+static void
+AppendSerializedCSSFloat(float aValue, nsAString& aResult)
+{
+  if (mozilla::IsNaN(aValue)) {
+    aResult.AppendLiteral("NaN");
+    return;
+  }
+
+  if (mozilla::IsInfinite(aValue)) {
+    if (aValue < 0.0f) {
+      aResult.Append('-');
+    }
+    aResult.AppendLiteral("infinity");
+    return;
+  }
+
+  aResult.AppendFloat(aValue);
+}
 
 static bool
 IsLocalRefURL(nsStringBuffer* aString)
@@ -67,7 +88,6 @@ nsCSSValue::nsCSSValue(float aValue, nsCSSUnit aUnit)
   MOZ_ASSERT(eCSSUnit_Percent <= aUnit, "not a float value");
   if (eCSSUnit_Percent <= aUnit) {
     mValue.mFloat = aValue;
-    MOZ_ASSERT(!mozilla::IsNaN(mValue.mFloat));
   }
   else {
     mUnit = eCSSUnit_Null;
@@ -146,7 +166,6 @@ nsCSSValue::nsCSSValue(const nsCSSValue& aCopy)
   }
   else if (eCSSUnit_Percent <= mUnit) {
     mValue.mFloat = aCopy.mValue.mFloat;
-    MOZ_ASSERT(!mozilla::IsNaN(mValue.mFloat));
   }
   else if (UnitHasStringValue()) {
     mValue.mString = aCopy.mValue.mString;
@@ -483,7 +502,6 @@ void nsCSSValue::SetPercentValue(float aValue)
   Reset();
   mUnit = eCSSUnit_Percent;
   mValue.mFloat = aValue;
-  MOZ_ASSERT(!mozilla::IsNaN(mValue.mFloat));
 }
 
 void nsCSSValue::SetFloatValue(float aValue, nsCSSUnit aUnit)
@@ -493,7 +511,6 @@ void nsCSSValue::SetFloatValue(float aValue, nsCSSUnit aUnit)
   if (IsFloatUnit(aUnit)) {
     mUnit = aUnit;
     mValue.mFloat = aValue;
-    MOZ_ASSERT(!mozilla::IsNaN(mValue.mFloat));
   }
 }
 
@@ -1018,6 +1035,209 @@ private:
   nsCSSValue::Serialization mValueSerialization;
 };
 
+struct CSSValueReduceNumberCalcOps : public BasicFloatCalcOps,
+                                     public CSSValueInputCalcOps
+{
+  result_type ComputeLeafValue(const nsCSSValue& aValue)
+  {
+    MOZ_ASSERT(aValue.GetUnit() == eCSSUnit_Number, "unexpected unit");
+    return aValue.GetFloatValue();
+  }
+
+  float ComputeNumber(const nsCSSValue& aValue)
+  {
+    return css::ComputeCalc(aValue, *this);
+  }
+};
+
+struct CSSValueCalcLengthTerm {
+  nsCSSUnit mUnit;
+  float mValue;
+};
+
+struct CSSValueLengthPercentCalcAccumulator {
+  AutoTArray<CSSValueCalcLengthTerm, 8> mLengths;
+  float mPercent = 0.0f;
+  bool mSawPercent = false;
+
+  void AddLength(nsCSSUnit aUnit, float aValue)
+  {
+    for (CSSValueCalcLengthTerm& term : mLengths) {
+      if (term.mUnit == aUnit) {
+        term.mValue += aValue;
+        return;
+      }
+    }
+
+    CSSValueCalcLengthTerm& term = *mLengths.AppendElement();
+    term.mUnit = aUnit;
+    term.mValue = aValue;
+  }
+};
+
+static bool
+IsNearlyZero(float aValue)
+{
+  return aValue > -0.000001f && aValue < 0.000001f;
+}
+
+static bool
+ComputeCalcNumberValue(const nsCSSValue& aValue, float& aResult)
+{
+  if (aValue.GetUnit() == eCSSUnit_Number) {
+    aResult = aValue.GetFloatValue();
+    return true;
+  }
+
+  if (!aValue.IsCalcUnit()) {
+    return false;
+  }
+
+  CSSValueReduceNumberCalcOps ops;
+  aResult = css::ComputeCalc(aValue, ops);
+  return true;
+}
+
+static bool
+AccumulateCalcLengthPercentTerms(
+  const nsCSSValue& aValue,
+  float aScale,
+  CSSValueLengthPercentCalcAccumulator& aAccumulator)
+{
+  switch (aValue.GetUnit()) {
+    case eCSSUnit_Calc: {
+      const nsCSSValue::Array* array = aValue.GetArrayValue();
+      MOZ_ASSERT(array->Count() == 1, "unexpected length");
+      return AccumulateCalcLengthPercentTerms(array->Item(0), aScale,
+                                              aAccumulator);
+    }
+
+    case eCSSUnit_Calc_Plus:
+    case eCSSUnit_Calc_Minus: {
+      const nsCSSValue::Array* array = aValue.GetArrayValue();
+      MOZ_ASSERT(array->Count() == 2, "unexpected length");
+      if (!AccumulateCalcLengthPercentTerms(array->Item(0), aScale,
+                                            aAccumulator)) {
+        return false;
+      }
+      float rhsScale = aValue.GetUnit() == eCSSUnit_Calc_Plus
+                         ? aScale
+                         : -aScale;
+      return AccumulateCalcLengthPercentTerms(array->Item(1), rhsScale,
+                                              aAccumulator);
+    }
+
+    case eCSSUnit_Calc_Times_L:
+    case eCSSUnit_Calc_Times_R:
+    case eCSSUnit_Calc_Divided: {
+      const nsCSSValue::Array* array = aValue.GetArrayValue();
+      MOZ_ASSERT(array->Count() == 2, "unexpected length");
+
+      const nsCSSValue* value = &array->Item(0);
+      const nsCSSValue* factorValue = &array->Item(1);
+      if (aValue.GetUnit() == eCSSUnit_Calc_Times_L) {
+        value = &array->Item(1);
+        factorValue = &array->Item(0);
+      }
+
+      float factor;
+      if (!ComputeCalcNumberValue(*factorValue, factor)) {
+        return false;
+      }
+      if (aValue.GetUnit() == eCSSUnit_Calc_Divided) {
+        factor = 1.0f / factor;
+      }
+      return AccumulateCalcLengthPercentTerms(*value, aScale * factor,
+                                              aAccumulator);
+    }
+
+    case eCSSUnit_Percent:
+      aAccumulator.mSawPercent = true;
+      aAccumulator.mPercent += aScale * aValue.GetPercentValue();
+      return true;
+
+    default:
+      break;
+  }
+
+  if (aValue.IsLengthUnit()) {
+    aAccumulator.AddLength(aValue.GetUnit(), aScale * aValue.GetFloatValue());
+    return true;
+  }
+
+  return false;
+}
+
+static void
+AppendSerializedCalcLeafValue(nsCSSPropertyID aProperty,
+                              nsAString& aResult,
+                              nsCSSValue::Serialization aSerialization,
+                              nsCSSUnit aUnit,
+                              float aValue)
+{
+  nsCSSValue value;
+  if (aUnit == eCSSUnit_Percent) {
+    value.SetPercentValue(aValue);
+  } else {
+    value.SetFloatValue(aValue, aUnit);
+  }
+  value.AppendToString(aProperty, aResult, aSerialization);
+}
+
+static bool
+AppendNormalizedLengthPercentCalcToString(
+  const nsCSSValue& aValue,
+  nsCSSPropertyID aProperty,
+  nsAString& aResult,
+  nsCSSValue::Serialization aSerialization)
+{
+  CSSValueLengthPercentCalcAccumulator accumulator;
+  if (!AccumulateCalcLengthPercentTerms(aValue, 1.0f, accumulator)) {
+    return false;
+  }
+
+  AutoTArray<CSSValueCalcLengthTerm, 9> serializedTerms;
+  if (!IsNearlyZero(accumulator.mPercent) || accumulator.mSawPercent) {
+    CSSValueCalcLengthTerm& term = *serializedTerms.AppendElement();
+    term.mUnit = eCSSUnit_Percent;
+    term.mValue = accumulator.mPercent;
+  }
+
+  for (const CSSValueCalcLengthTerm& term : accumulator.mLengths) {
+    if (IsNearlyZero(term.mValue)) {
+      continue;
+    }
+    serializedTerms.AppendElement(term);
+  }
+
+  if (serializedTerms.IsEmpty()) {
+    CSSValueCalcLengthTerm& term = *serializedTerms.AppendElement();
+    term.mUnit = accumulator.mSawPercent ? eCSSUnit_Percent : eCSSUnit_Pixel;
+    term.mValue = 0.0f;
+  }
+
+  aResult.AppendLiteral("calc(");
+  AppendSerializedCalcLeafValue(aProperty, aResult, aSerialization,
+                                serializedTerms[0].mUnit,
+                                serializedTerms[0].mValue);
+
+  for (uint32_t i = 1; i < serializedTerms.Length(); ++i) {
+    const CSSValueCalcLengthTerm& term = serializedTerms[i];
+    if (term.mValue < 0.0f) {
+      aResult.AppendLiteral(" - ");
+      AppendSerializedCalcLeafValue(aProperty, aResult, aSerialization,
+                                    term.mUnit, -term.mValue);
+    } else {
+      aResult.AppendLiteral(" + ");
+      AppendSerializedCalcLeafValue(aProperty, aResult, aSerialization,
+                                    term.mUnit, term.mValue);
+    }
+  }
+
+  aResult.Append(')');
+  return true;
+}
+
 } // namespace
 
 void
@@ -1473,9 +1693,11 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     aResult.Append(')');
   }
   else if (IsCalcUnit()) {
-    MOZ_ASSERT(GetUnit() == eCSSUnit_Calc, "unexpected unit");
-    CSSValueSerializeCalcOps ops(aProperty, aResult, aSerialization);
-    css::SerializeCalc(*this, ops);
+    if (!AppendNormalizedLengthPercentCalcToString(*this, aProperty, aResult,
+                                                   aSerialization)) {
+      CSSValueSerializeCalcOps ops(aProperty, aResult, aSerialization);
+      css::SerializeCalc(*this, ops);
+    }
   }
   else if (eCSSUnit_Integer == unit) {
     aResult.AppendInt(GetIntValue(), 10);
@@ -1743,6 +1965,12 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
       case mozilla::css::ColorMixColorSpace::HSL:
         aResult.AppendLiteral("hsl");
         break;
+      case mozilla::css::ColorMixColorSpace::Oklab:
+        aResult.AppendLiteral("oklab");
+        break;
+      case mozilla::css::ColorMixColorSpace::Oklch:
+        aResult.AppendLiteral("oklch");
+        break;
     }
     
     // append color1 and color2
@@ -1767,10 +1995,10 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     aResult.Append(')');
   }
   else if (eCSSUnit_Percent == unit) {
-    aResult.AppendFloat(GetPercentValue() * 100.0f);
+    AppendSerializedCSSFloat(GetPercentValue() * 100.0f, aResult);
   }
   else if (eCSSUnit_Percent < unit) {  // length unit
-    aResult.AppendFloat(GetFloatValue());
+    AppendSerializedCSSFloat(GetFloatValue(), aResult);
   }
   else if (eCSSUnit_Gradient == unit) {
     nsCSSValueGradient* gradient = GetGradientValue();
@@ -2037,6 +2265,9 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     case eCSSUnit_Calc_Times_L: break;
     case eCSSUnit_Calc_Times_R: break;
     case eCSSUnit_Calc_Divided: break;
+    case eCSSUnit_Calc_Min:     break;
+    case eCSSUnit_Calc_Max:     break;
+    case eCSSUnit_Calc_Clamp:   break;
     case eCSSUnit_Integer:      break;
     case eCSSUnit_Enumerated:   break;
     case eCSSUnit_EnumColor:             break;
@@ -2050,6 +2281,8 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     case eCSSUnit_PercentageRGBAColor:   break;
     case eCSSUnit_HSLColor:              break;
     case eCSSUnit_HSLAColor:             break;
+    case eCSSUnit_OklabColor:            break;
+    case eCSSUnit_OklchColor:            break;
     case eCSSUnit_ComplexColor:          break;
     case eCSSUnit_ColorMix:              break;
     case eCSSUnit_Percent:      aResult.Append(char16_t('%'));    break;
@@ -2167,6 +2400,9 @@ nsCSSValue::SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
     case eCSSUnit_Calc_Times_L:
     case eCSSUnit_Calc_Times_R:
     case eCSSUnit_Calc_Divided:
+    case eCSSUnit_Calc_Min:
+    case eCSSUnit_Calc_Max:
+    case eCSSUnit_Calc_Clamp:
       break;
 
     // URL
@@ -2258,6 +2494,8 @@ nsCSSValue::SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
     case eCSSUnit_PercentageRGBAColor:
     case eCSSUnit_HSLColor:
     case eCSSUnit_HSLAColor:
+    case eCSSUnit_OklabColor:
+    case eCSSUnit_OklchColor:
       n += mValue.mFloatColor->SizeOfIncludingThis(aMallocSizeOf);
       break;
 
@@ -3254,6 +3492,16 @@ nsCSSValueFloatColor::GetColorValue(nsCSSUnit aUnit) const
       NSToIntRound(mozilla::clamped(mAlpha, 0.0f, 1.0f) * 255.0f));
   }
 
+  if (aUnit == eCSSUnit_OklabColor) {
+    return css::OklabToSRGBColor(mComponent1, mComponent2, mComponent3,
+                                 mAlpha);
+  }
+
+  if (aUnit == eCSSUnit_OklchColor) {
+    return css::OklchToSRGBColor(mComponent1, mComponent2, mComponent3,
+                                 mAlpha);
+  }
+
   // HSL color
   MOZ_ASSERT(aUnit == eCSSUnit_HSLColor ||
              aUnit == eCSSUnit_HSLAColor);
@@ -3282,8 +3530,14 @@ nsCSSValueFloatColor::AppendToString(nsCSSUnit aUnit, nsAString& aResult) const
   bool showAlpha = (mAlpha != 1.0f);
   bool isHSL = (aUnit == eCSSUnit_HSLColor ||
                 aUnit == eCSSUnit_HSLAColor);
+  bool isOklab = aUnit == eCSSUnit_OklabColor;
+  bool isOklch = aUnit == eCSSUnit_OklchColor;
 
-  if (isHSL) {
+  if (isOklab) {
+    aResult.AppendLiteral("oklab");
+  } else if (isOklch) {
+    aResult.AppendLiteral("oklch");
+  } else if (isHSL) {
     aResult.AppendLiteral("hsl");
   } else {
     aResult.AppendLiteral("rgb");
@@ -3293,22 +3547,38 @@ nsCSSValueFloatColor::AppendToString(nsCSSUnit aUnit, nsAString& aResult) const
   } else {
     aResult.Append('(');
   }
-  if (isHSL) {
+  if (isOklab || isOklch) {
+    aResult.AppendFloat(mComponent1);
+    aResult.Append(' ');
+    aResult.AppendFloat(mComponent2);
+    aResult.Append(' ');
+    aResult.AppendFloat(mComponent3);
+  } else if (isHSL) {
     aResult.AppendFloat(mComponent1 * 360.0f);
     aResult.AppendLiteral(", ");
   } else {
     aResult.AppendFloat(mComponent1 * 100.0f);
     aResult.AppendLiteral("%, ");
   }
-  aResult.AppendFloat(mComponent2 * 100.0f);
-  aResult.AppendLiteral("%, ");
-  aResult.AppendFloat(mComponent3 * 100.0f);
-  if (showAlpha) {
+  if (!isOklab && !isOklch) {
+    aResult.AppendFloat(mComponent2 * 100.0f);
     aResult.AppendLiteral("%, ");
+    aResult.AppendFloat(mComponent3 * 100.0f);
+  }
+  if (showAlpha) {
+    if (isOklab || isOklch) {
+      aResult.AppendLiteral(" / ");
+    } else {
+      aResult.AppendLiteral("%, ");
+    }
     aResult.AppendFloat(mAlpha);
     aResult.Append(')');
   } else {
-    aResult.AppendLiteral("%)");
+    if (isOklab || isOklch) {
+      aResult.Append(')');
+    } else {
+      aResult.AppendLiteral("%)");
+    }
   }
 }
 
