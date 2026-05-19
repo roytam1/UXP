@@ -1006,6 +1006,14 @@ class TreeMetadataEmitter(LoggingMixin):
             passthru.variables['ASFLAGS'] = context.config.substs.get('YASM_ASFLAGS')
             passthru.variables['AS_DASH_C_FLAG'] = ''
 
+        if context.get('USE_NASM') is True:
+            nasm = context.config.substs.get('NASM')
+            if not nasm or not context.config.substs.get('HAVE_NASM'):
+                raise SandboxValidationError('nasm 2.14 or later is not available', context)
+            passthru.variables['AS'] = nasm
+            passthru.variables['ASFLAGS'] = context.config.substs.get('NASM_ASFLAGS')
+            passthru.variables['AS_DASH_C_FLAG'] = ''
+
         for (symbol, cls) in [
                 ('ANDROID_RES_DIRS', AndroidResDirs),
                 ('ANDROID_EXTRA_RES_DIRS', AndroidExtraResDirs),

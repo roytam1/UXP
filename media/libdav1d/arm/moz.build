@@ -1,0 +1,79 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+SOURCES += [
+    '/media/libdav1d/src/src/arm/cpu.c',
+]
+
+if CONFIG['CPU_ARCH'] == 'aarch64':
+    SOURCES += [
+        '/media/libdav1d/src/src/arm/64/cdef.S',
+        '/media/libdav1d/src/src/arm/64/cdef16.S',
+        '/media/libdav1d/src/src/arm/64/filmgrain.S',
+        '/media/libdav1d/src/src/arm/64/filmgrain16.S',
+        '/media/libdav1d/src/src/arm/64/ipred.S',
+        '/media/libdav1d/src/src/arm/64/ipred16.S',
+        '/media/libdav1d/src/src/arm/64/itx.S',
+        '/media/libdav1d/src/src/arm/64/itx16.S',
+        '/media/libdav1d/src/src/arm/64/loopfilter.S',
+        '/media/libdav1d/src/src/arm/64/loopfilter16.S',
+        '/media/libdav1d/src/src/arm/64/looprestoration.S',
+        '/media/libdav1d/src/src/arm/64/looprestoration16.S',
+        '/media/libdav1d/src/src/arm/64/looprestoration_common.S',
+        '/media/libdav1d/src/src/arm/64/mc.S',
+        '/media/libdav1d/src/src/arm/64/mc16.S',
+        '/media/libdav1d/src/src/arm/64/mc16_sve.S',
+        '/media/libdav1d/src/src/arm/64/mc_dotprod.S',
+        '/media/libdav1d/src/src/arm/64/msac.S',
+        '/media/libdav1d/src/src/arm/64/refmvs.S',
+    ]
+else:
+    SOURCES += [
+        '/media/libdav1d/src/src/arm/32/cdef.S',
+        '/media/libdav1d/src/src/arm/32/cdef16.S',
+        '/media/libdav1d/src/src/arm/32/filmgrain.S',
+        '/media/libdav1d/src/src/arm/32/filmgrain16.S',
+        '/media/libdav1d/src/src/arm/32/ipred.S',
+        '/media/libdav1d/src/src/arm/32/ipred16.S',
+        '/media/libdav1d/src/src/arm/32/itx.S',
+        '/media/libdav1d/src/src/arm/32/itx16.S',
+        '/media/libdav1d/src/src/arm/32/loopfilter.S',
+        '/media/libdav1d/src/src/arm/32/loopfilter16.S',
+        '/media/libdav1d/src/src/arm/32/looprestoration.S',
+        '/media/libdav1d/src/src/arm/32/looprestoration16.S',
+        '/media/libdav1d/src/src/arm/32/looprestoration_common.S',
+        '/media/libdav1d/src/src/arm/32/mc.S',
+        '/media/libdav1d/src/src/arm/32/mc16.S',
+        '/media/libdav1d/src/src/arm/32/msac.S',
+        '/media/libdav1d/src/src/arm/32/refmvs.S',
+    ]
+
+ASFLAGS += [
+    '-I%s/media/libdav1d/config' % TOPSRCDIR,
+    '-I%s/media/libdav1d/src' % TOPSRCDIR,
+]
+
+if CONFIG['CPU_ARCH'] == 'arm' and CONFIG['CLANG_CXX']:
+    ASFLAGS += [
+        '-no-integrated-as',
+    ]
+
+LOCAL_INCLUDES += [
+    '/media/libdav1d/config',
+    '/media/libdav1d/src',
+    '/media/libdav1d/src/include',
+    '/media/libdav1d/src/include/dav1d',
+]
+
+FINAL_LIBRARY = 'gkmedias'
+
+ALLOW_COMPILER_WARNINGS = True
+
+if CONFIG['GNU_CC'] or CONFIG['CLANG_CL']:
+    CFLAGS += [
+        '-Wno-sign-compare',
+        '-Wno-unused-function',
+        '-Wno-unused-parameter',
+    ]
