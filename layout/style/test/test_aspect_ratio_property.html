@@ -1,0 +1,41 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test CSS aspect-ratio property</title>
+  <script type="application/javascript" src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<div id="container" style="position:absolute; left:0; top:0; width:120px;">
+  <div id="ratio" style="width:120px; aspect-ratio:3 / 2;"></div>
+  <div id="wrapper" style="position:relative; width:120px; aspect-ratio:1 / 1;">
+    <div style="position:absolute; inset:0;"></div>
+  </div>
+</div>
+<pre id="test">
+<script type="application/javascript">
+
+ok(CSS.supports("aspect-ratio", "1 / 1"),
+   "aspect-ratio accepts ratio syntax");
+ok(CSS.supports("aspect-ratio", "auto"),
+   "aspect-ratio accepts auto");
+ok(CSS.supports("aspect-ratio", "auto 16 / 9"),
+   "aspect-ratio accepts auto plus ratio");
+ok(!CSS.supports("aspect-ratio", "1px"),
+   "aspect-ratio rejects lengths");
+
+var ratio = document.getElementById("ratio");
+is(ratio.getBoundingClientRect().height, 80,
+   "aspect-ratio computes an automatic block size from inline size");
+
+var wrapper = document.getElementById("wrapper");
+is(wrapper.getBoundingClientRect().height, 120,
+   "aspect-ratio gives an empty wrapper with absolute children a block size");
+
+is(getComputedStyle(wrapper).aspectRatio, "1 / 1",
+   "computed aspect-ratio exposes a ratio value");
+
+</script>
+</pre>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Test calc() numeric type support</title>
+    <script src="/tests/SimpleTest/SimpleTest.js"></script>
+    <link rel="stylesheet" href="/tests/SimpleTest/test.css">
+  </head>
+  <body>
+    <div id="display"></div>
+    <pre id="test">
+<script>
+"use strict";
+
+function appendTestNode(tag = "div") {
+  const node = document.createElement(tag);
+  document.getElementById("display").appendChild(node);
+  return node;
+}
+
+function parse2dMatrix(transformValue) {
+  const match = /^matrix\(([^)]+)\)$/.exec(transformValue);
+  ok(match, `expected a 2d matrix, got "${transformValue}"`);
+  return match[1].split(",").map(value => parseFloat(value.trim()));
+}
+
+(function testNestedCalcLengthPercentage() {
+  const container = appendTestNode();
+  container.style.width = "200px";
+  container.style.position = "absolute";
+
+  const child = document.createElement("div");
+  child.style.width = "calc(calc(50% + 10px) - calc(5px + 10%))";
+  container.appendChild(child);
+
+  is(getComputedStyle(child).width, "85px",
+     "nested calc() should resolve length-percentage expressions correctly");
+
+  container.remove();
+})();
+
+(function testTimeCalc() {
+  const div = appendTestNode();
+  div.style.transitionDuration = "calc(calc(0.25s) + 250ms)";
+  div.style.animationDelay = "calc(250ms - 0.5s)";
+
+  is(getComputedStyle(div).transitionDuration, "0.5s",
+     "transition-duration should accept calc() time values");
+  is(getComputedStyle(div).animationDelay, "-0.25s",
+     "animation-delay should accept calc() time values");
+
+  div.remove();
+})();
+
+(function testNumericAndIntegerCalc() {
+  const div = appendTestNode();
+  div.style.opacity = "calc(25% * 2)";
+  div.style.order = "calc(1.5)";
+  div.style.zIndex = "calc(2.5)";
+
+  is(getComputedStyle(div).opacity, "0.5",
+     "opacity should accept calc() number/percent values");
+  is(getComputedStyle(div).order, "2",
+     "order should round calc() results to the nearest integer");
+  is(getComputedStyle(div).zIndex, "3",
+     "z-index should round calc() results to the nearest integer");
+
+  div.remove();
+})();
+
+(function testAngleAndNumberCalcInFunctions() {
+  const div = appendTestNode();
+  div.style.transform = "rotate(calc(45deg + 45deg)) scale(calc(1 + 0.5))";
+  div.style.filter = "hue-rotate(calc(90deg + 0.125turn)) brightness(calc(0.25 + 0.25))";
+  div.style.backgroundImage = "linear-gradient(calc(90deg / 2), red, blue)";
+
+  ok(div.style.filter !== "",
+     "filter should accept calc() in angle and number function arguments");
+  ok(div.style.backgroundImage !== "",
+     "gradients should accept calc() in angle arguments");
+
+  const matrix = parse2dMatrix(getComputedStyle(div).transform);
+  ok(Math.abs(matrix[0]) < 1e-6, "rotate(calc()) should zero out the xx entry");
+  ok(Math.abs(matrix[1] - 1.5) < 1e-6, "scale(calc()) should affect the xy entry");
+  ok(Math.abs(matrix[2] + 1.5) < 1e-6, "scale(calc()) should affect the yx entry");
+  ok(Math.abs(matrix[3]) < 1e-6, "rotate(calc()) should zero out the yy entry");
+
+  div.remove();
+})();
+
+(function testNestedCalcSpecifiedSerialization() {
+  const div = appendTestNode();
+  const cases = [
+    ["left", "calc(calc(20px) + calc(80px))", "calc(100px)"],
+    ["left", "calc(calc(2) * calc(50px))", "calc(100px)"],
+    ["left", "calc(calc(150px * 2 / 3))", "calc(100px)"],
+    ["left", "calc(50px + calc(40%))", "calc(40% + 50px)"],
+    ["border", "calc(calc(10px)) solid pink", "calc(10px) solid pink"],
+  ];
+
+  for (const [property, input, expected] of cases) {
+    div.style.setProperty(property, input, "");
+    is(div.style.getPropertyValue(property), expected,
+       `${property} should canonicalize nested calc() serialization`);
+  }
+
+  div.remove();
+})();
+
+(function testSpecialNumberCalcSpecifiedSerialization() {
+  const div = appendTestNode();
+  const cases = [
+    ["calc(NaN)", "calc(NaN)"],
+    ["calc(infinity)", "calc(infinity)"],
+    ["calc(-infinity)", "calc(-infinity)"],
+    ["calc(1 * NaN)", "calc(NaN)"],
+    ["calc(1 * infinity / infinity)", "calc(NaN)"],
+    ["calc(1 * 0 * infinity)", "calc(NaN)"],
+    ["calc(1 * (infinity + -infinity))", "calc(NaN)"],
+    ["calc(1 * (infinity - infinity))", "calc(NaN)"],
+    ["calc(1 * infinity)", "calc(infinity)"],
+    ["calc(1 * -infinity)", "calc(-infinity)"],
+    ["calc(1 * 1/infinity)", "calc(0)"],
+    ["calc(1 * infinity * infinity)", "calc(infinity)"],
+    ["calc(1 * max(INFinity*3, 0))", "calc(infinity)"],
+    ["calc(1 * min(inFInity*4, 0))", "calc(0)"],
+    ["calc(1 * max(nAn*2, 0))", "calc(NaN)"],
+    ["calc(1 * clamp(-INFINITY*20, 0, infiniTY*10))", "calc(0)"],
+    ["calc(1 * max(NaN, min(0,10)))", "calc(NaN)"],
+    ["calc(1 * clamp(NaN, 0, 10))", "calc(NaN)"],
+    ["calc(1 * max(0, min(10, NaN)))", "calc(NaN)"],
+    ["calc(1 * clamp(0, 10, NaN))", "calc(NaN)"],
+    ["calc(1 * max(0, min(NaN, 10)))", "calc(NaN)"],
+    ["calc(1 * clamp(0, NaN, 10))", "calc(NaN)"],
+    ["calc(1 * clamp(-Infinity, 0, infinity))", "calc(0)"],
+    ["calc(1 * clamp(-inFinity, infinity, 10))", "calc(10)"],
+  ];
+
+  for (const [input, expected] of cases) {
+    div.style.setProperty("opacity", input, "");
+    is(div.style.getPropertyValue("opacity"), expected,
+       `opacity should serialize ${input} as ${expected}`);
+  }
+
+  div.remove();
+})();
+</script>
+    </pre>
+  </body>
+</html>

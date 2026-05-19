@@ -6,6 +6,7 @@
 
 #include "nsCSSValue.h"
 #include "nsStyleCoord.h"
+#include <algorithm>
 #include <math.h>
 
 namespace mozilla {
@@ -46,6 +47,13 @@ namespace css {
  *                        result_type aValue1, float aValue2);
  *
  *   result_type
+ *   MergeMinMax(nsCSSUnit aCalcFunction,
+ *               result_type aValue1, result_type aValue2);
+ *
+ *   result_type
+ *   MergeClamp(result_type aMin, result_type aCenter, result_type aMax);
+ *
+ *   result_type
  *   ComputeLeafValue(const input_type& aValue);
  *
  *   float
@@ -70,6 +78,8 @@ namespace css {
  *   MergeAdditive for Plus and Minus
  *   MergeMultiplicativeL for Times_L (number * value)
  *   MergeMultiplicativeR for Times_R (value * number) and Divided
+ *   MergeMinMax for Min and Max
+ *   MergeClamp for Clamp
  */
 template <class CalcOps>
 static typename CalcOps::result_type
@@ -103,6 +113,25 @@ ComputeCalc(const typename CalcOps::input_type& aValue, CalcOps &aOps)
       typename CalcOps::result_type lhs = ComputeCalc(arr->Item(0), aOps);
       float rhs = aOps.ComputeNumber(arr->Item(1));
       return aOps.MergeMultiplicativeR(CalcOps::GetUnit(aValue), lhs, rhs);
+    }
+    case eCSSUnit_Calc_Min:
+    case eCSSUnit_Calc_Max: {
+      typename CalcOps::input_array_type *arr = aValue.GetArrayValue();
+      MOZ_ASSERT(arr->Count() >= 1, "unexpected length");
+      typename CalcOps::result_type result = ComputeCalc(arr->Item(0), aOps);
+      for (uint32_t i = 1; i < arr->Count(); ++i) {
+        typename CalcOps::result_type next = ComputeCalc(arr->Item(i), aOps);
+        result = aOps.MergeMinMax(CalcOps::GetUnit(aValue), result, next);
+      }
+      return result;
+    }
+    case eCSSUnit_Calc_Clamp: {
+      typename CalcOps::input_array_type *arr = aValue.GetArrayValue();
+      MOZ_ASSERT(arr->Count() == 3, "unexpected length");
+      typename CalcOps::result_type min = ComputeCalc(arr->Item(0), aOps);
+      typename CalcOps::result_type center = ComputeCalc(arr->Item(1), aOps);
+      typename CalcOps::result_type max = ComputeCalc(arr->Item(2), aOps);
+      return aOps.MergeClamp(min, center, max);
     }
     default: {
       return aOps.ComputeLeafValue(aValue);
@@ -168,6 +197,23 @@ struct BasicCoordCalcOps
     }
     return NSCoordSaturatingMultiply(aValue1, aValue2);
   }
+
+  result_type
+  MergeMinMax(nsCSSUnit aCalcFunction,
+              result_type aValue1, result_type aValue2)
+  {
+    if (aCalcFunction == eCSSUnit_Calc_Min) {
+      return std::min(aValue1, aValue2);
+    }
+    MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Max, "unexpected unit");
+    return std::max(aValue1, aValue2);
+  }
+
+  result_type
+  MergeClamp(result_type aMin, result_type aCenter, result_type aMax)
+  {
+    return std::max(aMin, std::min(aCenter, aMax));
+  }
 };
 
 struct BasicFloatCalcOps
@@ -205,6 +251,23 @@ struct BasicFloatCalcOps
     MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Divided,
                "unexpected unit");
     return aValue1 / aValue2;
+  }
+
+  result_type
+  MergeMinMax(nsCSSUnit aCalcFunction,
+              result_type aValue1, result_type aValue2)
+  {
+    if (aCalcFunction == eCSSUnit_Calc_Min) {
+      return std::min(aValue1, aValue2);
+    }
+    MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Max, "unexpected unit");
+    return std::max(aValue1, aValue2);
+  }
+
+  result_type
+  MergeClamp(result_type aMin, result_type aCenter, result_type aMax)
+  {
+    return std::max(aMin, std::min(aCenter, aMax));
   }
 };
 
@@ -255,8 +318,20 @@ template <class CalcOps>
 static void
 SerializeCalc(const typename CalcOps::input_type& aValue, CalcOps &aOps)
 {
-  aOps.Append("calc(");
   nsCSSUnit unit = CalcOps::GetUnit(aValue);
+  if (unit == eCSSUnit_Calc) {
+    const typename CalcOps::input_array_type *array = aValue.GetArrayValue();
+    MOZ_ASSERT(array->Count() == 1, "unexpected length");
+    nsCSSUnit childUnit = CalcOps::GetUnit(array->Item(0));
+    if (childUnit == eCSSUnit_Calc_Min ||
+        childUnit == eCSSUnit_Calc_Max ||
+        childUnit == eCSSUnit_Calc_Clamp) {
+      SerializeCalcInternal(array->Item(0), aOps);
+      return;
+    }
+  }
+
+  aOps.Append("calc(");
   if (unit == eCSSUnit_Calc) {
     const typename CalcOps::input_array_type *array = aValue.GetArrayValue();
     MOZ_ASSERT(array->Count() == 1, "unexpected length");
@@ -280,6 +355,14 @@ IsCalcMultiplicativeUnit(nsCSSUnit aUnit)
   return aUnit == eCSSUnit_Calc_Times_L ||
          aUnit == eCSSUnit_Calc_Times_R ||
          aUnit == eCSSUnit_Calc_Divided;
+}
+
+static inline bool
+IsCalcMinMaxClampUnit(nsCSSUnit aUnit)
+{
+  return aUnit == eCSSUnit_Calc_Min ||
+         aUnit == eCSSUnit_Calc_Max ||
+         aUnit == eCSSUnit_Calc_Clamp;
 }
 
 // Serialize a non-toplevel value in a calc() tree.  See big comment
@@ -318,11 +401,7 @@ SerializeCalcInternal(const typename CalcOps::input_type& aValue, CalcOps &aOps)
     if (needParens) {
       aOps.Append("(");
     }
-    if (unit == eCSSUnit_Calc_Times_L) {
-      aOps.AppendNumber(array->Item(0));
-    } else {
-      SerializeCalcInternal(array->Item(0), aOps);
-    }
+    SerializeCalcInternal(array->Item(0), aOps);
     if (needParens) {
       aOps.Append(")");
     }
@@ -340,14 +419,33 @@ SerializeCalcInternal(const typename CalcOps::input_type& aValue, CalcOps &aOps)
     if (needParens) {
       aOps.Append("(");
     }
-    if (unit == eCSSUnit_Calc_Times_L) {
-      SerializeCalcInternal(array->Item(1), aOps);
-    } else {
-      aOps.AppendNumber(array->Item(1));
-    }
+    SerializeCalcInternal(array->Item(1), aOps);
     if (needParens) {
       aOps.Append(")");
     }
+  } else if (IsCalcMinMaxClampUnit(unit)) {
+    const typename CalcOps::input_array_type *array = aValue.GetArrayValue();
+    MOZ_ASSERT(unit != eCSSUnit_Calc_Clamp || array->Count() == 3,
+               "unexpected length");
+    MOZ_ASSERT(unit == eCSSUnit_Calc_Clamp || array->Count() >= 1,
+               "unexpected length");
+
+    if (unit == eCSSUnit_Calc_Min) {
+      aOps.Append("min(");
+    } else if (unit == eCSSUnit_Calc_Max) {
+      aOps.Append("max(");
+    } else {
+      MOZ_ASSERT(unit == eCSSUnit_Calc_Clamp, "unexpected unit");
+      aOps.Append("clamp(");
+    }
+
+    for (uint32_t i = 0; i < array->Count(); ++i) {
+      if (i != 0) {
+        aOps.Append(", ");
+      }
+      SerializeCalcInternal(array->Item(i), aOps);
+    }
+    aOps.Append(")");
   } else {
     aOps.AppendLeafValue(aValue);
   }

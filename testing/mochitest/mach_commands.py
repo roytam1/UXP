@@ -27,6 +27,24 @@ from mach.decorators import (
 here = os.path.abspath(os.path.dirname(__file__))
 
 
+def load_source_module(module_name, path):
+    if module_name in sys.modules:
+        return sys.modules[module_name]
+
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(module_name, path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        return module
+    except ImportError:
+        import imp
+        with open(path, 'r') as fh:
+            return imp.load_module(module_name, fh, path,
+                                   ('.py', 'r', imp.PY_SOURCE))
+
+
 ENG_BUILD_REQUIRED = '''
 The mochitest command requires an engineering build. It may be the case that
 VARIANT=user or PRODUCTION=1 were set. Try re-building with VARIANT=eng:
@@ -175,11 +193,8 @@ class MochitestRunner(MozbuildObject):
         """
         # runtests.py is ambiguous, so we load the file/module manually.
         if 'mochitest' not in sys.modules:
-            import imp
             path = os.path.join(self.mochitest_dir, 'runtests.py')
-            with open(path, 'r') as fh:
-                imp.load_module('mochitest', fh, path,
-                                ('.py', 'r', imp.PY_SOURCE))
+            load_source_module('mochitest', path)
 
         import mochitest
 
@@ -219,11 +234,8 @@ class MochitestRunner(MozbuildObject):
         if host_ret != 0:
             return host_ret
 
-        import imp
         path = os.path.join(self.mochitest_dir, 'runtestsremote.py')
-        with open(path, 'r') as fh:
-            imp.load_module('runtestsremote', fh, path,
-                            ('.py', 'r', imp.PY_SOURCE))
+        load_source_module('runtestsremote', path)
         import runtestsremote
 
         options = Namespace(**kwargs)
@@ -273,11 +285,8 @@ def setup_argument_parser():
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
 
-        import imp
         path = os.path.join(build_obj.topobjdir, mochitest_dir, 'runtests.py')
-        with open(path, 'r') as fh:
-            imp.load_module('mochitest', fh, path,
-                            ('.py', 'r', imp.PY_SOURCE))
+        load_source_module('mochitest', path)
 
         from mochitest_options import MochitestArgumentParser
 

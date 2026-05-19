@@ -1,0 +1,82 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test fractional border and outline width rounding</title>
+  <script type="text/javascript" src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<div id="display"></div>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+var display = document.getElementById("display");
+
+var tests = [
+  ["0px", "0px"],
+  ["0.1px", "1px"],
+  ["0.25px", "1px"],
+  ["0.5px", "1px"],
+  ["0.9px", "1px"],
+  ["1px", "1px"],
+  ["1.25px", "1px"],
+  ["1.5px", "1px"],
+  ["2px", "2px"],
+  ["2.75px", "2px"],
+  ["2.999px", "2px"],
+  ["3px", "3px"],
+  ["3.001px", "3px"],
+];
+
+function checkWidth(property, setupProperty, setupValue) {
+  tests.forEach(function(test) {
+    var specified = test[0];
+    var expected = test[1];
+    var div = document.createElement("div");
+    div.style[setupProperty] = setupValue;
+    div.style[property] = specified;
+    display.appendChild(div);
+
+    is(document.defaultView.getComputedStyle(div, "")[property], expected,
+       property + " computes " + specified + " as " + expected);
+
+    display.removeChild(div);
+  });
+}
+
+function checkOffset(property) {
+  tests.forEach(function(test) {
+    var specified = test[0];
+    var expected = test[1];
+    var div = document.createElement("div");
+    div.style[property] = specified;
+    display.appendChild(div);
+
+    is(document.defaultView.getComputedStyle(div, "")[property], expected,
+       property + " computes " + specified + " as " + expected);
+
+    display.removeChild(div);
+  });
+
+  tests.forEach(function(test) {
+    var specified = test[0];
+    var expected = test[0] == "0px" ? "0px" : "-" + test[1];
+    var div = document.createElement("div");
+    div.style[property] = "-" + specified;
+    display.appendChild(div);
+
+    is(document.defaultView.getComputedStyle(div, "")[property], expected,
+       property + " computes -" + specified + " as " + expected);
+
+    display.removeChild(div);
+  });
+}
+
+checkWidth("borderWidth", "borderStyle", "solid");
+checkWidth("outlineWidth", "outlineStyle", "solid");
+checkOffset("outlineOffset");
+
+</script>
+</pre>
+</body>
+</html>

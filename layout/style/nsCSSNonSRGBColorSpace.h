@@ -6,6 +6,7 @@
 #ifndef nsCSSNonSRGBColorSpace_h___
 #define nsCSSNonSRGBColorSpace_h___
 
+#include <algorithm>
 #include <cmath>
 
 #include "mozilla/MathAlgorithms.h"
@@ -18,7 +19,46 @@ namespace css {
 static constexpr float kLabLightnessMax = 100.0f;
 static constexpr float kLchPercentScaleC = 150.0f;
 static constexpr float kOklabPercentScaleAB = 0.4f;
+static constexpr float kOklchPowerlessChromaEpsilon = 0.000004f;
 static constexpr double kRadiansPerDegree = 0.01745329251994329576923690768489;
+static constexpr double kDegreesPerRadian = 57.295779513082320876798154814105;
+
+struct OklabColor {
+  float mL;
+  float mA;
+  float mB;
+};
+
+struct OklchColor {
+  float mL;
+  float mChroma;
+  float mHue;
+};
+
+struct LinearSRGBColor {
+  float mR;
+  float mG;
+  float mB;
+};
+
+inline float
+NormalizeHue(float aHue)
+{
+  float hue = std::fmod(aHue, 360.0f);
+  if (hue < 0.0f) {
+    hue += 360.0f;
+  }
+  return hue;
+}
+
+inline float
+EncodedSRGBToLinear(float aValue)
+{
+  if (aValue <= 0.04045f) {
+    return aValue / 12.92f;
+  }
+  return std::pow((aValue + 0.055f) / 1.055f, 2.4f);
+}
 
 inline float
 LinearSRGBToEncoded(float aValue)
@@ -44,43 +84,159 @@ LinearSRGBToColor(float aLinearR, float aLinearG, float aLinearB,
     aAlpha);
 }
 
-inline nscolor
-OklabToSRGBColor(float aL, float aA, float aB, float aAlpha)
+inline LinearSRGBColor
+OklabToLinearSRGB(float aL, float aA, float aB)
 {
-  // Per CSS Color, the lightness component for Oklab/Oklch is clamped.
-  float lightness = mozilla::clamped(aL, 0.0f, 1.0f);
-  uint8_t alpha =
-    nsStyleUtil::FloatToColorComponent(mozilla::clamped(aAlpha, 0.0f, 1.0f));
-
-  // Treat values extremely close to zero as zero to avoid tiny floating-point
-  // representation differences for percentage inputs.
-  static constexpr float kLightnessEndpointEpsilon = 0.000002f;
-
-  if (lightness <= kLightnessEndpointEpsilon) {
-    return NS_RGBA(0, 0, 0, alpha);
-  }
-
-  float lRoot = lightness + 0.3963377774f * aA + 0.2158037573f * aB;
-  float mRoot = lightness - 0.1055613458f * aA - 0.0638541728f * aB;
-  float sRoot = lightness - 0.0894841775f * aA - 1.2914855480f * aB;
+  float lRoot = aL + 0.3963377774f * aA + 0.2158037573f * aB;
+  float mRoot = aL - 0.1055613458f * aA - 0.0638541728f * aB;
+  float sRoot = aL - 0.0894841775f * aA - 1.2914855480f * aB;
 
   float l = lRoot * lRoot * lRoot;
   float m = mRoot * mRoot * mRoot;
   float s = sRoot * sRoot * sRoot;
 
-  float linearR =  4.0767416621f * l - 3.3077115913f * m + 0.2309699292f * s;
-  float linearG = -1.2684380046f * l + 2.6097574011f * m - 0.3413193965f * s;
-  float linearB = -0.0041960863f * l - 0.7034186147f * m + 1.7076147010f * s;
+  return {
+    4.0767416361f * l - 3.3077115393f * m + 0.2309699032f * s,
+   -1.2684379733f * l + 2.6097573493f * m - 0.3413193760f * s,
+   -0.0041960761f * l - 0.7034186179f * m + 1.7076146941f * s
+  };
+}
 
-  return LinearSRGBToColor(linearR, linearG, linearB, alpha);
+inline OklabColor
+LinearSRGBToOklabColor(float aLinearR, float aLinearG, float aLinearB)
+{
+  float l = std::cbrt(0.4122214695f * aLinearR +
+                      0.5363325373f * aLinearG +
+                      0.0514459933f * aLinearB);
+  float m = std::cbrt(0.2119034958f * aLinearR +
+                      0.6806995506f * aLinearG +
+                      0.1073969535f * aLinearB);
+  float s = std::cbrt(0.0883024592f * aLinearR +
+                      0.2817188391f * aLinearG +
+                      0.6299787017f * aLinearB);
+
+  return {
+    0.2104542683f * l + 0.7936177747f * m - 0.0040720430f * s,
+    1.9779985324f * l - 2.4285922420f * m + 0.4505937096f * s,
+    0.0259040425f * l + 0.7827717125f * m - 0.8086757549f * s
+  };
+}
+
+inline OklabColor
+SRGBToOklabColor(nscolor aColor)
+{
+  float linearR = EncodedSRGBToLinear(NS_GET_R(aColor) / 255.0f);
+  float linearG = EncodedSRGBToLinear(NS_GET_G(aColor) / 255.0f);
+  float linearB = EncodedSRGBToLinear(NS_GET_B(aColor) / 255.0f);
+
+  return LinearSRGBToOklabColor(linearR, linearG, linearB);
+}
+
+inline OklchColor
+OklabToOklchColor(const OklabColor& aColor)
+{
+  float chroma = std::sqrt(aColor.mA * aColor.mA + aColor.mB * aColor.mB);
+  float hue = std::atan2(aColor.mB, aColor.mA) * kDegreesPerRadian;
+  if (hue < 0.0f) {
+    hue += 360.0f;
+  }
+
+  return { aColor.mL, chroma, hue };
+}
+
+inline nscolor
+OklabToSRGBColor(float aL, float aA, float aB, float aAlpha)
+{
+  // Per CSS Color, the lightness component for Oklab/Oklch is clamped at
+  // parsed-value time.
+  float lightness = mozilla::clamped(aL, 0.0f, 1.0f);
+  uint8_t alpha =
+    nsStyleUtil::FloatToColorComponent(mozilla::clamped(aAlpha, 0.0f, 1.0f));
+
+  OklabColor mapped = { lightness, aA, aB };
+  auto isInSRGBGamut = [](const OklabColor& aColor) {
+    LinearSRGBColor linear =
+      OklabToLinearSRGB(aColor.mL, aColor.mA, aColor.mB);
+    return linear.mR >= 0.0f && linear.mR <= 1.0f &&
+           linear.mG >= 0.0f && linear.mG <= 1.0f &&
+           linear.mB >= 0.0f && linear.mB <= 1.0f;
+  };
+  auto clippedOklab = [](const OklabColor& aColor) {
+    LinearSRGBColor linear =
+      OklabToLinearSRGB(aColor.mL, aColor.mA, aColor.mB);
+    return LinearSRGBToOklabColor(
+      mozilla::clamped(linear.mR, 0.0f, 1.0f),
+      mozilla::clamped(linear.mG, 0.0f, 1.0f),
+      mozilla::clamped(linear.mB, 0.0f, 1.0f));
+  };
+  auto deltaEOK = [](const OklabColor& aColor1, const OklabColor& aColor2) {
+    float deltaL = aColor1.mL - aColor2.mL;
+    float deltaA = aColor1.mA - aColor2.mA;
+    float deltaB = aColor1.mB - aColor2.mB;
+    return std::sqrt(deltaL * deltaL + deltaA * deltaA + deltaB * deltaB);
+  };
+
+  if (lightness <= 0.0f) {
+    mapped = { 0.0f, 0.0f, 0.0f };
+  } else if (lightness >= 1.0f) {
+    mapped = { 1.0f, 0.0f, 0.0f };
+  } else if (!isInSRGBGamut(mapped)) {
+    // CSS Color 4 binary search gamut mapping with local MINDE, targeting sRGB.
+    static constexpr float kJND = 0.02f;
+    static constexpr float kGamutMapEpsilon = 0.0001f;
+
+    OklchColor origin = OklabToOklchColor(mapped);
+    OklabColor clipped = clippedOklab(mapped);
+    float delta = deltaEOK(clipped, mapped);
+
+    if (delta < kJND) {
+      mapped = clipped;
+    } else {
+      float min = 0.0f;
+      float max = origin.mChroma;
+      bool minInGamut = true;
+      OklabColor current = mapped;
+
+      while (max - min > kGamutMapEpsilon) {
+        float chroma = (min + max) / 2.0f;
+        current.mL = origin.mL;
+        current.mA = chroma * std::cos(origin.mHue * kRadiansPerDegree);
+        current.mB = chroma * std::sin(origin.mHue * kRadiansPerDegree);
+
+        if (minInGamut && isInSRGBGamut(current)) {
+          min = chroma;
+          continue;
+        }
+
+        clipped = clippedOklab(current);
+        delta = deltaEOK(clipped, current);
+        if (delta < kJND) {
+          if (kJND - delta < kGamutMapEpsilon) {
+            mapped = clipped;
+            break;
+          }
+          minInGamut = false;
+          min = chroma;
+        } else {
+          max = chroma;
+        }
+        mapped = clipped;
+      }
+    }
+  }
+
+  LinearSRGBColor linear =
+    OklabToLinearSRGB(mapped.mL, mapped.mA, mapped.mB);
+  return LinearSRGBToColor(linear.mR, linear.mG, linear.mB, alpha);
 }
 
 inline nscolor
 OklchToSRGBColor(float aL, float aChroma, float aHue, float aAlpha)
 {
-  double hueRadians = aHue * kRadiansPerDegree;
-  float a = aChroma * std::cos(hueRadians);
-  float b = aChroma * std::sin(hueRadians);
+  float chroma = std::max(aChroma, 0.0f);
+  double hueRadians = NormalizeHue(aHue) * kRadiansPerDegree;
+  float a = chroma * std::cos(hueRadians);
+  float b = chroma * std::sin(hueRadians);
   return OklabToSRGBColor(aL, a, b, aAlpha);
 }
 

@@ -13,6 +13,7 @@
 #include "jsgc.h"
 
 #include "gc/Heap.h"
+#include "gc/IdleGC.h"
 #include "gc/Nursery.h"
 #include "gc/Statistics.h"
 #include "gc/StoreBuffer.h"
@@ -650,6 +651,13 @@ class GCRuntime
     void onOutOfMallocMemory();
     void onOutOfMallocMemory(const AutoLockGC& lock);
 
+    /* Idle-time GC notifications. */
+    void notifyJSExecutionStart();
+    void notifyJSExecutionEnd();
+    IdleGCManager& idleGCMgr() {
+        return idleGC;
+    }
+
     size_t maxMallocBytesAllocated() { return maxMallocBytes; }
 
     uint64_t nextCellUniqueId() {
@@ -966,6 +974,8 @@ class GCRuntime
     void sweepZones(FreeOp* fop, bool lastGC);
     void decommitAllWithoutUnlocking(const AutoLockGC& lock);
     void startDecommit();
+    bool sweepBackgroundFinalizePhaseInParallel(ZoneList& zones, const FinalizePhase& phase,
+                                                Arena** emptyArenas);
     void queueZonesForBackgroundSweep(ZoneList& zones);
     void sweepBackgroundThings(ZoneList& zones, LifoAlloc& freeBlocks);
     void assertBackgroundSweepingFinished();
@@ -976,10 +986,10 @@ class GCRuntime
     void endCompactPhase(JS::gcreason::Reason reason);
     void sweepTypesAfterCompacting(Zone* zone);
     void sweepZoneAfterCompacting(Zone* zone);
-    MOZ_MUST_USE bool relocateArenas(Zone* zone, JS::gcreason::Reason reason,
-                                     Arena*& relocatedListOut, SliceBudget& sliceBudget);
+    [[nodiscard]] bool relocateArenas(Zone* zone, JS::gcreason::Reason reason,
+                                      Arena*& relocatedListOut, SliceBudget& sliceBudget);
     void updateTypeDescrObjects(MovingTracer* trc, Zone* zone);
-    void updateCellPointers(MovingTracer* trc, Zone* zone, AllocKinds kinds, size_t bgTaskCount);
+    void updateCellPointers(MovingTracer* trc, Zone* zone, AllocKinds kinds);
     void updateAllCellPointers(MovingTracer* trc, Zone* zone);
     void updatePointersToRelocatedCells(Zone* zone, AutoLockForExclusiveAccess& lock);
     void protectAndHoldArenas(Arena* arenaList);
@@ -1018,6 +1028,9 @@ class GCRuntime
     /* GC scheduling state and parameters. */
     GCSchedulingTunables tunables;
     GCSchedulingState schedulingState;
+
+    /* Idle-time garbage collection manager. */
+    IdleGCManager idleGC;
 
     MemProfiler mMemProfiler;
 

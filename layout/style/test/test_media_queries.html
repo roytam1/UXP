@@ -237,6 +237,7 @@ function run() {
     expression_should_be_parseable(feature + ": 0");
     expression_should_be_parseable(feature + ": 0px");
     expression_should_be_parseable(feature + ": 0em");
+    expression_should_be_parseable(feature + ": calc(0px + 0em)");
     expression_should_be_parseable(feature + ": -0");
     expression_should_be_parseable("min-" + feature + ": -0");
     expression_should_be_parseable("max-" + feature + ": -0");
@@ -244,6 +245,7 @@ function run() {
     expression_should_be_parseable(feature + ": 1px");
     expression_should_be_parseable(feature + ": 0.001mm");
     expression_should_be_parseable(feature + ": 100000px");
+    expression_should_not_be_parseable(feature + ": calc(1px + 1%)");
     expression_should_not_be_parseable(feature + ": -1px");
     expression_should_not_be_parseable("min-" + feature + ": -1px");
     expression_should_not_be_parseable("max-" + feature + ": -1px");
@@ -263,8 +265,9 @@ function run() {
 
   var content_div = document.getElementById("content");
   content_div.style.font = "initial";
-  var em_size =
-    getComputedStyle(content_div, "").fontSize.match(/^(\d+)px$/)[1];
+  var em_size = parseFloat(
+    getComputedStyle(content_div, "").fontSize.match(/^(\d+)px$/)[1]
+  );
 
   // in this test, assume the common underlying implementation is correct
   var width_val = 117; // pick two not-too-round numbers
@@ -282,7 +285,11 @@ function run() {
   for (feature in features) {
     var value = features[feature];
     should_apply("all and (" + feature + ": " + value + "px)");
+    should_apply("all and (" + feature + ": calc(" +
+                 (value - em_size) + "px + 1em))");
     should_not_apply("all and (" + feature + ": " + (value + 1) + "px)");
+    should_not_apply("all and (" + feature + ": calc(" +
+                     (value - em_size + 1) + "px + 1em))");
     should_not_apply("all and (" + feature + ": " + (value - 1) + "px)");
     should_apply("all and (min-" + feature + ": " + value + "px)");
     should_not_apply("all and (min-" + feature + ": " + (value + 1) + "px)");
@@ -290,6 +297,12 @@ function run() {
     should_apply("all and (max-" + feature + ": " + value + "px)");
     should_apply("all and (max-" + feature + ": " + (value + 1) + "px)");
     should_not_apply("all and (max-" + feature + ": " + (value - 1) + "px)");
+    should_apply("all and (" + feature + " >= " + value + "px)");
+    should_not_apply("all and (" + feature + " > " + value + "px)");
+    should_apply("all and (" + feature + " > " + (value - 1) + "px)");
+    should_apply("all and (" + feature + " <= " + value + "px)");
+    should_not_apply("all and (" + feature + " < " + value + "px)");
+    should_apply("all and (" + feature + " < " + (value + 1) + "px)");
     should_not_apply("all and (min-" + feature + ": " +
                      (Math.ceil(value/em_size) + 1) + "em)");
     should_apply("all and (min-" + feature + ": " +
@@ -307,6 +320,21 @@ function run() {
     should_not_apply("all and (max-" + feature + ": " +
                      (Math.floor(value/em_size) - 1) + "rem)");
   }
+
+  change_state(function() {
+    iframe_style.width = "100px";
+    iframe_style.height = "10px";
+  });
+  should_apply("all and (width: calc(100px / 1em * 1em))");
+  should_apply("all and (width: calc((50vh * 5em) / 4px))");
+  should_apply("all and (width: calc(10vw / 10px * 1000vh))");
+  should_apply("all and (width: calc(8000vh * 1vw / 1em * 8px / 40vh))");
+  should_not_apply("all and (width: calc(100px / 1em * 2em))");
+
+  change_state(function() {
+    iframe_style.width = width_val + "px";
+    iframe_style.height = height_val + "px";
+  });
 
   change_state(function() {
     iframe_style.width = "0";
@@ -349,6 +377,9 @@ function run() {
   should_apply("(orientation: landscape)");
   should_not_apply("(orientation: portrait)");
   should_apply("not all and (orientation: portrait)");
+  expression_should_not_be_parseable("orientation > landscape");
+  expression_should_not_be_parseable("min-width > 1px");
+  expression_should_not_be_parseable("width >");
   // ratio that reduces to 59/80
   change_state(function() {
     iframe_style.height = "320px";

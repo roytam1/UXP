@@ -3239,6 +3239,15 @@ static const JSClass sandbox_class = {
     &sandbox_classOps
 };
 
+enum GlobalAppSlot {
+    GlobalAppSlotModuleMetadataHook,
+    GlobalAppSlotModuleDynamicImportHook,
+    GlobalAppSlotCount
+};
+
+static_assert(GlobalAppSlotCount <= JSCLASS_GLOBAL_APPLICATION_SLOTS,
+              "global application slots overflow");
+
 static void
 SetStandardCompartmentOptions(JS::CompartmentOptions& options)
 {
@@ -4067,7 +4076,7 @@ ParseModule(JSContext* cx, unsigned argc, Value* vp)
 
     const char16_t* chars = stableChars.twoByteRange().begin().get();
     JS::SourceBufferHolder srcBuf(chars, scriptContents->length(),
-                                  SourceBufferHolder::NoOwnership);
+                                  JS::SourceBufferHolder::NoOwnership);
 
     RootedObject module(cx, frontend::CompileModule(cx, options, srcBuf));
     if (!module)
@@ -4278,7 +4287,7 @@ AbortDynamicModuleImport(JSContext* cx, unsigned argc, Value* vp)
     RootedString specifier(cx, args[1].toString());
     Rooted<PromiseObject*> promise(cx, &args[2].toObject().as<PromiseObject>());
 
-    cx->setPendingException(args[3]);
+    cx->setPendingException(args[3], nullptr);
     return js::FinishDynamicModuleImport(cx, args[0], specifier, promise);
 }
 
@@ -8287,7 +8296,7 @@ main(int argc, char** argv, char** envp)
 
     JS::SetModuleResolveHook(cx->runtime(), ShellModuleResolveHook);
     JS::SetModuleDynamicImportHook(cx, ShellModuleDynamicImportHook);
-    JS::SetModuleMetadataHook(cx, ShellModuleMetadataHook);
+    JS::SetModuleMetadataHook(cx, CallModuleMetadataHook);
 
     result = Shell(cx, &op, envp);
 

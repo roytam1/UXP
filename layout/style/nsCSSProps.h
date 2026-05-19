@@ -155,7 +155,8 @@
 // example, the block-size logical property has this flag set, as it
 // represents the size in either the block or inline axis dimensions, and
 // has two corresponding physical properties, width and height.  Must not
-// be used in conjunction with CSS_PROPERTY_LOGICAL_END_EDGE.
+// be used in conjunction with CSS_PROPERTY_LOGICAL_END_EDGE or
+// CSS_PROPERTY_LOGICAL_CORNER.
 #define CSS_PROPERTY_LOGICAL_AXIS                 (1<<7)
 
 // This property allows calc() between lengths and percentages and
@@ -247,7 +248,9 @@ static_assert((CSS_PROPERTY_PARSE_PROPERTY_MASK &
 // sides (such as margin-block-start or margin-block-end).  Must only be
 // set if CSS_PROPERTY_LOGICAL is set.  When not set, the logical
 // property is for one of the two inline axis sides (such as
-// margin-inline-start or margin-inline-end).
+// margin-inline-start or margin-inline-end).  For logical corner
+// properties, this flag means the block-end edge; when not set, the
+// property is for the block-start edge.
 #define CSS_PROPERTY_LOGICAL_BLOCK_AXIS           (1<<25)
 
 // This property is a logical property for the "end" edge of the
@@ -255,8 +258,17 @@ static_assert((CSS_PROPERTY_PARSE_PROPERTY_MASK &
 // CSS_PROPERTY_LOGICAL_BLOCK_AXIS (such as margin-block-end or
 // margin-inline-end).  Must only be set if CSS_PROPERTY_LOGICAL is set.
 // When not set, the logical property is for the "start" edge (such as
-// margin-block-start or margin-inline-start).
+// margin-block-start or margin-inline-start).  For logical corner
+// properties, this flag means the inline-end edge; when not set, the
+// property is for the inline-start edge.
 #define CSS_PROPERTY_LOGICAL_END_EDGE             (1<<26)
+
+// This property is a logical corner property, such as
+// border-start-start-radius.  CSS_PROPERTY_LOGICAL_BLOCK_AXIS and
+// CSS_PROPERTY_LOGICAL_END_EDGE select the block and inline edges that
+// form the corner.  Must only be set if CSS_PROPERTY_LOGICAL is set, and
+// must not be used in conjunction with CSS_PROPERTY_LOGICAL_AXIS.
+#define CSS_PROPERTY_LOGICAL_CORNER               (1u<<31)
 
 // This property can be animated on the compositor.
 #define CSS_PROPERTY_CAN_ANIMATE_ON_COMPOSITOR    (1<<27)
@@ -584,7 +596,9 @@ public:
    *
    * When called with a property that has the CSS_PROPERTY_LOGICAL_AXIS
    * flag, the returned array will have two values preceding the sentinel;
-   * otherwise it will have four.
+   * otherwise it will have four.  For logical corner properties, the four
+   * properties are returned in top-left, top-right, bottom-right,
+   * bottom-left order.
    *
    * (Note that the running time of this function is proportional to the
    * number of logical longhand properties that exist.  If we start

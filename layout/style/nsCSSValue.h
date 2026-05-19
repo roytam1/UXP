@@ -477,6 +477,11 @@ enum nsCSSUnit {
   eCSSUnit_Calc_Times_L = 33,     // (nsCSSValue::Array*) num * val within calc
   eCSSUnit_Calc_Times_R = 34,     // (nsCSSValue::Array*) val * num within calc
   eCSSUnit_Calc_Divided = 35,     // (nsCSSValue::Array*) / within calc
+  // Min and Max have arrays with one or more elements. Clamp has an array
+  // with exactly 3 elements: lower bound, center, upper bound.
+  eCSSUnit_Calc_Min     = 36,     // (nsCSSValue::Array*) min() node
+  eCSSUnit_Calc_Max     = 37,     // (nsCSSValue::Array*) max() node
+  eCSSUnit_Calc_Clamp   = 38,     // (nsCSSValue::Array*) clamp() node
 
   eCSSUnit_URL          = 40,     // (nsCSSValue::URL*) value
   eCSSUnit_Image        = 41,     // (nsCSSValue::Image*) value
@@ -520,8 +525,10 @@ enum nsCSSUnit {
                                        // allowed.
   eCSSUnit_HSLColor            = 89,   // (nsCSSValueFloatColor*)
   eCSSUnit_HSLAColor           = 90,   // (nsCSSValueFloatColor*)
-  eCSSUnit_ComplexColor        = 91,   // (ComplexColorValue*)
-  eCSSUnit_ColorMix            = 92,   // (ColorMixValue*)
+  eCSSUnit_OklabColor          = 91,   // (nsCSSValueFloatColor*)
+  eCSSUnit_OklchColor          = 92,   // (nsCSSValueFloatColor*)
+  eCSSUnit_ComplexColor        = 93,   // (ComplexColorValue*)
+  eCSSUnit_ColorMix            = 94,   // (ColorMixValue*)
 
   eCSSUnit_Percent      = 100,     // (float) 1.0 == 100%) value is percentage of something
   eCSSUnit_Number       = 101,     // (float) value is numeric (usually multiplier, different behavior than percent)
@@ -711,12 +718,12 @@ public:
   bool      IsTimeUnit() const  
     { return eCSSUnit_Seconds <= mUnit && mUnit <= eCSSUnit_Milliseconds; }
   bool      IsCalcUnit() const
-    { return eCSSUnit_Calc <= mUnit && mUnit <= eCSSUnit_Calc_Divided; }
+    { return eCSSUnit_Calc <= mUnit && mUnit <= eCSSUnit_Calc_Clamp; }
 
   bool      UnitHasStringValue() const
     { return eCSSUnit_String <= mUnit && mUnit <= eCSSUnit_Element; }
   bool      UnitHasArrayValue() const
-    { return eCSSUnit_Array <= mUnit && mUnit <= eCSSUnit_Calc_Divided; }
+    { return eCSSUnit_Array <= mUnit && mUnit <= eCSSUnit_Calc_Clamp; }
 
   // Checks for the nsCSSValue being of a particular type of color unit:
   //
@@ -733,6 +740,8 @@ public:
   //       eCSSUnit_PercentageRGBAColor  -- rgba(%,%,%,float)
   //       eCSSUnit_HSLColor             -- hsl(float,%,%)
   //       eCSSUnit_HSLAColor            -- hsla(float,%,%,float)
+  //       eCSSUnit_OklabColor           -- oklab(float,float,float,float)
+  //       eCSSUnit_OklchColor           -- oklch(float,float,float,float)
   //
   //   - IsNumericColorUnit returns true for any of the above units.
   //
@@ -745,7 +754,7 @@ public:
   { return eCSSUnit_RGBColor <= aUnit && aUnit <= eCSSUnit_ShortHexColorAlpha; }
   static bool IsFloatColorUnit(nsCSSUnit aUnit)
   { return eCSSUnit_PercentageRGBColor <= aUnit &&
-           aUnit <= eCSSUnit_HSLAColor; }
+           aUnit <= eCSSUnit_OklchColor; }
   static bool IsNumericColorUnit(nsCSSUnit aUnit)
   { return IsIntegerColorUnit(aUnit) || IsFloatColorUnit(aUnit); }
 
@@ -773,7 +782,6 @@ public:
   float GetFloatValue() const
   {
     MOZ_ASSERT(eCSSUnit_Number <= mUnit, "not a float value");
-    MOZ_ASSERT(!mozilla::IsNaN(mValue.mFloat));
     return mValue.mFloat;
   }
 
@@ -1928,6 +1936,9 @@ private:
   //                                    [0, 1] for hue represents
   //                                    [0deg, 360deg].
   //
+  // OklabColor stores L in mComponent1, a in mComponent2, b in mComponent3.
+  // OklchColor stores L in mComponent1, C in mComponent2, H in mComponent3.
+  //
   // [-float::max(), float::max()] for PercentageRGBColor, PercentageRGBAColor.
   //                               1.0 means 100%.
   float mComponent1;
@@ -1994,7 +2005,9 @@ namespace css {
 
 enum class ColorMixColorSpace {
   sRGB,
-  HSL
+  HSL,
+  Oklab,
+  Oklch
 };
 
 struct ColorMixValue final
@@ -2026,4 +2039,3 @@ private:
 } // namespace mozilla
 
 #endif /* nsCSSValue_h___ */
-

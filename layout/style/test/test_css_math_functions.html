@@ -1,0 +1,47 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test CSS sizing math functions</title>
+  <script type="application/javascript" src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<div id="narrow" style="position:absolute; left:0; top:0; width:200px;">
+  <div id="min-fill" style="height:10px; width:min(500px, 100%);"></div>
+  <div id="max-half" style="height:10px; width:max(75px, 50%);"></div>
+  <div id="clamp-half" style="height:10px; width:clamp(80px, 50%, 120px);"></div>
+  <div id="nested" style="height:10px; width:calc(min(500px, 100%) - 20px);"></div>
+</div>
+<div id="wide" style="position:absolute; left:0; top:100px; width:700px;">
+  <div id="min-cap" style="height:10px; width:min(500px, 100%);"></div>
+</div>
+<pre id="test">
+<script type="application/javascript">
+
+ok(CSS.supports("width", "min(500px, 100%)"),
+   "width accepts min() with length and percentage");
+ok(CSS.supports("width", "max(75px, 50%)"),
+   "width accepts max() with length and percentage");
+ok(CSS.supports("width", "clamp(80px, 50%, 120px)"),
+   "width accepts clamp() with length and percentage");
+
+var probe = document.createElement("div");
+probe.style.width = "min(500px, 100%)";
+is(probe.style.width, "min(500px, 100%)",
+   "specified min() serializes without being dropped");
+
+is(document.getElementById("min-fill").getBoundingClientRect().width, 200,
+   "min() resolves percentage against a narrow containing block");
+is(document.getElementById("min-cap").getBoundingClientRect().width, 500,
+   "min() caps width when the containing block is wider than the length");
+is(document.getElementById("max-half").getBoundingClientRect().width, 100,
+   "max() resolves mixed length and percentage values");
+is(document.getElementById("clamp-half").getBoundingClientRect().width, 100,
+   "clamp() resolves mixed length and percentage values");
+is(document.getElementById("nested").getBoundingClientRect().width, 180,
+   "math functions can participate in calc() expressions");
+
+</script>
+</pre>
+</body>
+</html>

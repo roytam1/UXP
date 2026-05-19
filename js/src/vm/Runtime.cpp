@@ -673,6 +673,12 @@ JSRuntime::traceSharedIntlData(JSTracer* trc)
 void
 JSRuntime::triggerActivityCallback(bool active)
 {
+    if (active) {
+        gc.notifyJSExecutionStart();
+    } else {
+        gc.notifyJSExecutionEnd();
+    }
+
     if (!activityCallback)
         return;
 

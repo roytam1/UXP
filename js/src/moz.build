@@ -172,6 +172,7 @@ main_deunified_sources = [
     'gc/Allocator.cpp',
     'gc/Barrier.cpp',
     'gc/GCTrace.cpp',
+    'gc/IdleGC.cpp',
     'gc/Iteration.cpp',
     'gc/Marking.cpp',
     'gc/Memory.cpp',
