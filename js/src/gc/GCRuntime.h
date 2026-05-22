@@ -947,8 +947,6 @@ class GCRuntime
     IncrementalProgress drainMarkStack(SliceBudget& sliceBudget, gcstats::Phase phase);
     template <class CompartmentIterT> void markWeakReferences(gcstats::Phase phase);
     void markWeakReferencesInCurrentGroup(gcstats::Phase phase);
-    template <class ZoneIterT> void traceFinalizationRegistryWeakRefs();
-    void traceFinalizationRegistryWeakRefsInCurrentGroup();
     template <class ZoneIterT, class CompartmentIterT> void markGrayReferences(gcstats::Phase phase);
     void markBufferedGrayRoots(JS::Zone* zone);
     void markGrayReferencesInCurrentGroup(gcstats::Phase phase);
@@ -961,7 +959,6 @@ class GCRuntime
     void getNextZoneGroup();
     void endMarkingZoneGroup();
     void beginSweepingZoneGroup(AutoLockForExclusiveAccess& lock);
-    void sweepFinalizationRegistries();
     bool shouldReleaseObservedTypes();
     void endSweepingZoneGroup();
     IncrementalProgress performSweepActions(SliceBudget& sliceBudget, AutoLockForExclusiveAccess& lock);
