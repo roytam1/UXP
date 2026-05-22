@@ -149,6 +149,8 @@ public:
   // The XPCOM SetDisabled is fine for WebIDL.
 
   // WebIDL CSSStyleSheet API
+  static already_AddRefed<StyleSheet> Constructor(const dom::GlobalObject& aGlobal,
+                                                  ErrorResult& aRv);
   virtual css::Rule* GetDOMOwnerRule() const = 0;
   dom::CSSRuleList* GetCssRules(nsIPrincipal& aSubjectPrincipal,
                                 ErrorResult& aRv);
