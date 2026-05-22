@@ -11,8 +11,6 @@
 
 namespace js {
 
-bool CanBeHeldWeakly(HandleValue target);
-
 class WeakRefObject : public NativeObject
 {
   public:
