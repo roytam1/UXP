@@ -1487,36 +1487,6 @@ JS_SetGCParametersBasedOnAvailableMemory(JSContext* cx, uint32_t availMem)
         JS_SetGCParameter(cx, config[i].key, config[i].value);
 }
 
-JS_PUBLIC_API(void)
-JS_SetIdleGCEnabled(JSContext* cx, bool enabled)
-{
-    cx->gc.idleGCMgr().setIdleGCEnabled(enabled);
-}
-
-JS_PUBLIC_API(bool)
-JS_IsIdleGCEnabled(JSContext* cx)
-{
-    return cx->gc.idleGCMgr().isIdleGCEnabled();
-}
-
-JS_PUBLIC_API(void)
-JS_SetIdleGCThreshold(JSContext* cx, uint64_t milliseconds)
-{
-    cx->gc.idleGCMgr().setIdleThresholdMs(milliseconds);
-}
-
-JS_PUBLIC_API(uint64_t)
-JS_GetIdleGCThreshold(JSContext* cx)
-{
-    return cx->gc.idleGCMgr().idleThresholdMs();
-}
-
-JS_PUBLIC_API(uint64_t)
-JS_GetIdleTimeSinceLastExecution(JSContext* cx)
-{
-    return cx->gc.idleGCMgr().idleTimeSinceLastExecution();
-}
-
 
 JS_PUBLIC_API(JSString*)
 JS_NewExternalString(JSContext* cx, const char16_t* chars, size_t length,
