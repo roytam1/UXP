@@ -344,6 +344,11 @@ nsJARChannel::LookupFile(bool aAllowAsync)
     // have e.g. spaces in their filenames.
     NS_UnescapeURL(mJarEntry);
 
+    if (mJarEntry.FindChar('\0') != -1) {
+        // Refuse any entries with NULL in them.
+        return NS_ERROR_MALFORMED_URI;
+    }
+
     // try to get a nsIFile directly from the url, which will often succeed.
     {
         nsCOMPtr<nsIFileURL> fileURL = do_QueryInterface(mJarBaseURI);
