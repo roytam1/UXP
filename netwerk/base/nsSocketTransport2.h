@@ -9,6 +9,8 @@
 #define ENABLE_SOCKET_TRACING
 #endif
 
+#include <functional> // for std::function
+
 #include "mozilla/Atomics.h"
 #include "mozilla/Mutex.h"
 #include "nsSocketTransportService2.h"
@@ -386,11 +388,17 @@ private:
     nsCOMPtr<nsITransportEventSink> mEventSink;
     nsCOMPtr<nsISupports>           mSecInfo;
 
+    // Called just before the fd is closed in OnSocketDetached. Used by
+    // TLSServerSocket to clear NSS handshake callbacks and release refs
+    // that would otherwise leak if the handshake never completed.
+    std::function<void(PRFileDesc*)> mFDDetachCallback;
+
     nsSocketInputStream  mInput;
     nsSocketOutputStream mOutput;
 
     friend class nsSocketInputStream;
     friend class nsSocketOutputStream;
+    friend class TLSServerSocket;
 
     // socket timeouts are not protected by any lock.
     uint16_t mTimeouts[2];

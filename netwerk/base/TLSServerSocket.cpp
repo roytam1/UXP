@@ -92,10 +92,11 @@ TLSServerSocket::CreateClientTransport(PRFileDesc* aClientFD,
   SSL_AuthCertificateHook(aClientFD, AuthCertificateHook, nullptr);
   // Once the TLS handshake has completed, the server consumer is notified and
   // has access to various TLS state details.
-  // It's safe to pass info here because the socket transport holds it as
-  // |mSecInfo| which keeps it alive for the lifetime of the socket.
+  trans->mFDDetachCallback = [aliveRef = RefPtr{info}](PRFileDesc* fd) {
+    SSL_HandshakeCallback(fd, nullptr, nullptr);
+  };
   SSL_HandshakeCallback(aClientFD, TLSServerConnectionInfo::HandshakeCallback,
-                        info);
+                        info.get());
 
   // Notify the consumer of the new client so it can manage the streams.
   // Security details aren't known yet.  The security observer will be notified
@@ -436,9 +437,11 @@ TLSServerConnectionInfo::GetMacLength(uint32_t* aMacLength)
 void
 TLSServerConnectionInfo::HandshakeCallback(PRFileDesc* aFD, void* aArg)
 {
+  // aArg is a raw pointer kept alive by the ref captured in
+  // the transport's mFDDetachCallback (set in CreateClientTransport).
   RefPtr<TLSServerConnectionInfo> info =
     static_cast<TLSServerConnectionInfo*>(aArg);
-  nsISocketTransport* transport = info->mTransport;
+  RefPtr<nsISocketTransport> transport = info->mTransport;
   // No longer needed outside this function, so clear the weak ref
   info->mTransport = nullptr;
   nsresult rv = info->HandshakeCallback(aFD);
