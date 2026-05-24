@@ -9,6 +9,7 @@
 #define ENABLE_SOCKET_TRACING
 #endif
 
+#include "mozilla/Atomics.h"
 #include "mozilla/Mutex.h"
 #include "nsSocketTransportService2.h"
 #include "nsString.h"
@@ -294,7 +295,7 @@ private:
     bool mProxyTransparent;
     bool mProxyTransparentResolvesHost;
     bool mHttpsProxy;
-    uint32_t     mConnectionFlags;
+    Atomic<uint32_t, Relaxed> mConnectionFlags;
     bool mReuseAddrPort;
 
     // The origin attributes are used to create sockets.  The first party domain
