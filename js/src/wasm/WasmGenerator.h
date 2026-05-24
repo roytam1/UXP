@@ -104,11 +104,9 @@ class MOZ_STACK_CLASS ModuleGenerator
 
     // Parallel compilation
     bool                            parallel_;
-    bool                            parallelCompilationInProgressOnHelperThread_;
     uint32_t                        outstanding_;
     IonCompileTaskVector            tasks_;
     IonCompileTaskPtrVector         freeTasks_;
-    IonCompileTaskPtrVector         finishedTasks_;
 
     // Assertions
     DebugOnly<FunctionGenerator*>   activeFuncDef_;
