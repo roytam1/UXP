@@ -5338,7 +5338,6 @@ GCRuntime::compactPhase(JS::gcreason::Reason reason, SliceBudget& sliceBudget,
     gcstats::AutoPhase ap(stats, gcstats::PHASE_COMPACT);
 
     Arena* relocatedArenas = nullptr;
-
     while (!zonesToMaybeCompact.isEmpty()) {
         // TODO: JSScripts can move. If the sampler interrupts the GC in the
         // middle of relocating an arena, invalid JSScript pointers may be
