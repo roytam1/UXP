@@ -755,8 +755,6 @@ private:
     bool              mSkipDrawing; // true if the font group we used had a user font
                                     // download that's in progress, so we should hide text
                                     // until the download completes (or timeout fires)
-    bool              mReleasedFontGroup; // we already called NS_RELEASE on
-                                          // mFontGroup, so don't do it again
 
     // shaping state for handling variant fallback features
     // such as subscript/superscript variant glyphs
@@ -897,7 +895,6 @@ public:
         mUnderlineOffset = UNDERLINE_OFFSET_NOT_SET;
         mSkipDrawing = false;
         mHyphenWidth = -1;
-        mCachedEllipsisTextRun = nullptr;
     }
 
     // If there is a user font set, check to see whether the font list or any
@@ -911,17 +908,11 @@ public:
         return mSkipDrawing;
     }
 
-    class LazyReferenceDrawTargetGetter {
-    public:
-      virtual already_AddRefed<DrawTarget> GetRefDrawTarget() = 0;
-    };
-    // The gfxFontGroup keeps ownership of this textrun.
-    // It is only guaranteed to exist until the next call to GetEllipsisTextRun
-    // (which might use a different appUnitsPerDev value or flags) for the font
-    // group, or until UpdateUserFonts is called, or the fontgroup is destroyed.
-    // Get it/use it/forget it :) - don't keep a reference that might go stale.
-    gfxTextRun* GetEllipsisTextRun(int32_t aAppUnitsPerDevPixel, uint32_t aFlags,
-                                   LazyReferenceDrawTargetGetter& aRefDrawTargetGetter);
+    // Make a textrun for the ellipsis character (with fallback to "..." if
+    // ellipsis is not supported by the font).
+    already_AddRefed<gfxTextRun> MakeEllipsisTextRun(int32_t aAppUnitsPerDevPixel,
+                                                     uint32_t aFlags,
+                                                     DrawTarget* aRefDrawTarget);
 
 protected:
     // search through pref fonts for a character, return nullptr if no matching pref font
@@ -1092,10 +1083,6 @@ protected:
     uint64_t mCurrGeneration;  // track the current user font set generation, rebuild font list if needed
 
     gfxTextPerfMetrics *mTextPerf;
-
-    // Cache a textrun representing an ellipsis (useful for CSS text-overflow)
-    // at a specific appUnitsPerDevPixel size and orientation
-    RefPtr<gfxTextRun>   mCachedEllipsisTextRun;
 
     // cache the most recent pref font to avoid general pref font lookup
     RefPtr<gfxFontFamily> mLastPrefFamily;

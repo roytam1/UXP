@@ -147,7 +147,6 @@ gfxTextRun::gfxTextRun(const gfxTextRunFactory::Parameters *aParams,
     : gfxShapedText(aLength, aFlags, aParams->mAppUnitsPerDevUnit)
     , mUserData(aParams->mUserData)
     , mFontGroup(aFontGroup)
-    , mReleasedFontGroup(false)
     , mShapingState(eShapingState_Normal)
 {
     NS_ASSERTION(mAppUnitsPerDevUnit > 0, "Invalid app unit scale");
@@ -184,28 +183,16 @@ gfxTextRun::~gfxTextRun()
     mFlags = 0xFFFFFFFF;
 #endif
 
-    // The cached ellipsis textrun (if any) in a fontgroup will have already
-    // been told to release its reference to the group, so we mustn't do that
-    // again here.
-    if (!mReleasedFontGroup) {
 #ifdef DEBUG
-        gfxTextPerfMetrics *tp = mFontGroup->GetTextPerfMetrics();
-        if (tp) {
-            tp->current.textrunDestr++;
-        }
-#endif
-        NS_RELEASE(mFontGroup);
+    gfxTextPerfMetrics* tp = mFontGroup->GetTextPerfMetrics();
+    if (tp) {
+        tp->current.textrunDestr++;
     }
+#endif
+
+    NS_RELEASE(mFontGroup);
 
     MOZ_COUNT_DTOR(gfxTextRun);
-}
-
-void
-gfxTextRun::ReleaseFontGroup()
-{
-    NS_ASSERTION(!mReleasedFontGroup, "doubly released!");
-    NS_RELEASE(mFontGroup);
-    mReleasedFontGroup = true;
 }
 
 bool
@@ -2541,17 +2528,11 @@ gfxFontGroup::InitScriptRun(DrawTarget* aDrawTarget,
     }
 }
 
-gfxTextRun *
-gfxFontGroup::GetEllipsisTextRun(int32_t aAppUnitsPerDevPixel, uint32_t aFlags,
-                                 LazyReferenceDrawTargetGetter& aRefDrawTargetGetter)
-{
+already_AddRefed<gfxTextRun>
+gfxFontGroup::MakeEllipsisTextRun(int32_t aAppUnitsPerDevPixel, uint32_t aFlags,
+                                 DrawTarget* aRefDrawTarget) {
     MOZ_ASSERT(!(aFlags & ~TEXT_ORIENT_MASK),
                "flags here should only be used to specify orientation");
-    if (mCachedEllipsisTextRun &&
-        (mCachedEllipsisTextRun->GetFlags() & TEXT_ORIENT_MASK) == aFlags &&
-        mCachedEllipsisTextRun->GetAppUnitsPerDevUnit() == aAppUnitsPerDevPixel) {
-        return mCachedEllipsisTextRun.get();
-    }
 
     // Use a Unicode ellipsis if the font supports it,
     // otherwise use three ASCII periods as fallback.
@@ -2562,20 +2543,11 @@ gfxFontGroup::GetEllipsisTextRun(int32_t aAppUnitsPerDevPixel, uint32_t aFlags,
         : nsDependentString(kASCIIPeriodsChar,
                             ArrayLength(kASCIIPeriodsChar) - 1);
 
-    RefPtr<DrawTarget> refDT = aRefDrawTargetGetter.GetRefDrawTarget();
     Parameters params = {
-        refDT, nullptr, nullptr, nullptr, 0, aAppUnitsPerDevPixel
+        aRefDrawTarget, nullptr, nullptr, nullptr, 0, aAppUnitsPerDevPixel
     };
-    mCachedEllipsisTextRun =
-        MakeTextRun(ellipsis.get(), ellipsis.Length(), &params,
-                    aFlags | TEXT_IS_PERSISTENT, nullptr);
-    if (!mCachedEllipsisTextRun) {
-        return nullptr;
-    }
-    // don't let the presence of a cached ellipsis textrun prolong the
-    // fontgroup's life
-    mCachedEllipsisTextRun->ReleaseFontGroup();
-    return mCachedEllipsisTextRun.get();
+    return MakeTextRun(ellipsis.get(), ellipsis.Length(), &params,
+                       aFlags | TEXT_IS_PERSISTENT, nullptr);
 }
 
 already_AddRefed<gfxFont>
