@@ -41,3 +41,8 @@ Run in the ffmpeg original tree:
 $ for i in `cat $PATH_CENTRAL/media/ffvpx/FILES`; do diff $REV_LASTSYNC HEAD >> patch.diff; done
 Then apply patch.diff on the ffvpx tree.
 Compilation will reveal if any files are missing.
+
+========================
+
+After updating, apply patches:
+flac-alloc-failure.patch fix leak in flac decoder in case of alloc failure
