@@ -50,14 +50,15 @@ public:
     NS_IMETHOD Run() override
     {
         LOG(("nsOnStartRequestEvent::HandleEvent [req=%x]\n", mRequest.get()));
+        nsMainThreadPtrHandle<nsIRequestObserver> observer = mProxy->mObserver;
 
-        if (!mProxy->mObserver) {
+        if (!observer) {
             NS_NOTREACHED("already handled onStopRequest event (observer is null)");
             return NS_OK;
         }
 
         LOG(("handle startevent=%p\n", this));
-        nsresult rv = mProxy->mObserver->OnStartRequest(mRequest, mProxy->mContext);
+        nsresult rv = observer->OnStartRequest(mRequest, mProxy->mContext);
         if (NS_FAILED(rv)) {
             LOG(("OnStartRequest failed [rv=%x] canceling request!\n", rv));
             rv = mRequest->Cancel(rv);

@@ -226,10 +226,11 @@ JS::Utf8ToOneUcs4Char(const uint8_t* utf8Buffer, int utf8Length)
 }
 
 static void
-ReportInvalidCharacter(JSContext* cx, uint32_t offset)
-{
-    char buffer[10];
-    SprintfLiteral(buffer, "%u", offset);
+ReportInvalidCharacter(JSContext* cx, size_t offset) {
+    // Max roundtrip digits, +1 to include largest numbers, +1 for null terminator
+    constexpr size_t BUFFER_LENGTH = std::numeric_limits<size_t>::digits10 + 2;
+    char buffer[BUFFER_LENGTH];
+    SprintfLiteral(buffer, "%zu", offset);
     JS_ReportErrorFlagsAndNumberASCII(cx, JSREPORT_ERROR, GetErrorMessage, nullptr,
                                       JSMSG_MALFORMED_UTF8_CHAR, buffer);
 }
@@ -295,7 +296,7 @@ InflateUTF8StringToBuffer(ContextT* cx, const UTF8Chars src, CharT* dst, size_t*
     // |i| is the index into |src|, and |j| is the the index into |dst|.
     size_t srclen = src.length();
     uint32_t j = 0;
-    for (uint32_t i = 0; i < srclen; i++, j++) {
+    for (size_t i = 0; i < srclen; i++, j++) {
         uint32_t v = uint32_t(src[i]);
         if (!(v & 0x80)) {
             // ASCII code unit.  Simple copy.

@@ -310,6 +310,14 @@ private:
 
     static uint64_t ToInternalValue(PropertyType<T> aValue)
     {
+#if MOZ_BIG_ENDIAN
+      if (sizeof(PropertyType<T>) <= sizeof(uint32_t)) {
+          // make sure to lose the unimportant half on 32bit architectures
+          uint32_t v = 0;
+          memcpy(&v, &aValue, sizeof(aValue));
+          return v;
+      }
+#endif
       uint64_t v = 0;
       memcpy(&v, &aValue, sizeof(aValue));
       return v;
@@ -318,6 +326,13 @@ private:
     static PropertyType<T> FromInternalValue(uint64_t aInternalValue)
     {
       PropertyType<T> value;
+#if MOZ_BIG_ENDIAN
+      if (sizeof(value) <= sizeof(uint32_t)) {
+          uint32_t v32 = (uint32_t)aInternalValue;
+          memcpy(&value, &v32, sizeof(value));
+          return value;
+      }
+#endif
       memcpy(&value, &aInternalValue, sizeof(value));
       return value;
     }
