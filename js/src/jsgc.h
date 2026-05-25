@@ -804,7 +804,6 @@ class ArenaLists
 
     bool foregroundFinalize(FreeOp* fop, AllocKind thingKind, SliceBudget& sliceBudget,
                             SortedArenaList& sweepList);
-    void backgroundFinalizePhase(FreeOp* fop, const FinalizePhase& phase, Arena** empty);
     static void backgroundFinalize(FreeOp* fop, Arena* listHead, Arena** empty);
 
     // When finalizing arenas, whether to keep empty arenas on the list or

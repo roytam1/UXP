@@ -12,8 +12,10 @@
 #include "mozilla/CSSStyleSheet.h"
 
 #include "mozAutoDocUpdate.h"
+#include "nsContentUtils.h"
 #include "nsIMediaList.h"
 #include "nsNullPrincipal.h"
+#include "nsPIDOMWindow.h"
 
 using namespace mozilla::dom;
 
@@ -221,6 +223,40 @@ StyleSheet::DeleteRule(uint32_t aIndex)
 }
 
 // WebIDL CSSStyleSheet API
+
+/* static */ already_AddRefed<StyleSheet>
+StyleSheet::Constructor(const GlobalObject& aGlobal, ErrorResult& aRv)
+{
+  nsCOMPtr<nsPIDOMWindowInner> window =
+    do_QueryInterface(aGlobal.GetAsSupports());
+  if (!window) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
+
+  nsCOMPtr<nsIDocument> document = window->GetDoc();
+  if (!document) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
+
+  nsCOMPtr<nsIURI> documentURI = document->GetDocumentURI();
+  nsCOMPtr<nsIURI> baseURI = document->GetBaseURI();
+  nsIPrincipal* principal = nsContentUtils::ObjectPrincipal(aGlobal.Get());
+  if (!documentURI || !baseURI || !principal) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return nullptr;
+  }
+
+  RefPtr<StyleSheet> sheet =
+    new CSSStyleSheet(css::eAuthorSheetFeatures, CORS_NONE,
+                      document->GetReferrerPolicy());
+  sheet->SetURIs(documentURI, nullptr, baseURI);
+  sheet->SetPrincipal(principal);
+  sheet->SetComplete();
+
+  return sheet.forget();
+}
 
 dom::CSSRuleList*
 StyleSheet::GetCssRules(nsIPrincipal& aSubjectPrincipal,
