@@ -969,7 +969,8 @@ GlobalHelperThreadState::maxGCParallelThreads() const
 bool
 GlobalHelperThreadState::canStartWasmCompile(const AutoLockHelperThreadState& lock)
 {
-    if (wasmWorklist(lock).empty())
+    // Don't execute an wasm job if an earlier one failed.
+    if (wasmWorklist(lock).empty() || numWasmFailedJobs)
         return false;
 
     // Honor the maximum allowed threads to compile wasm jobs at once,
@@ -1419,13 +1420,13 @@ HelperThread::handleWasmWorkload(AutoLockHelperThreadState& locked)
         success = wasm::CompileFunction(task);
     }
 
-    // Append the task to the finished queue owned by its module generator.
-    if (!success)
-        task->setFailed();
+    // On success, try to move work to the finished list.
+    if (success)
+        success = HelperThreadState().wasmFinishedList(locked).append(task);
 
-    AutoEnterOOMUnsafeRegion oomUnsafe;
-    if (!task->finishedList()->append(task))
-        oomUnsafe.crash("HelperThread::handleWasmWorkload");
+    // On failure, note the failure for harvesting by the parent.
+    if (!success)
+        HelperThreadState().noteWasmFailure(locked);
 
     // Notify the main thread in case it's waiting.
     HelperThreadState().notifyAll(GlobalHelperThreadState::CONSUMER, locked);

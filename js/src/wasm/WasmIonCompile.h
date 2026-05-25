@@ -19,7 +19,6 @@
 #define wasm_ion_compile_h
 
 #include "jit/MacroAssembler.h"
-#include "vm/HelperThreads.h"
 #include "wasm/WasmTypes.h"
 
 namespace js {
@@ -107,8 +106,6 @@ class IonCompileTask
     UniqueFuncBytes            func_;
     CompileMode                mode_;
     Maybe<FuncCompileResults>  results_;
-    IonCompileTaskPtrVector*   finishedList_;
-    bool                       failed_;
 
     IonCompileTask(const IonCompileTask&) = delete;
     IonCompileTask& operator=(const IonCompileTask&) = delete;
@@ -116,26 +113,7 @@ class IonCompileTask
   public:
     IonCompileTask(const ModuleGeneratorData& mg, size_t defaultChunkSize)
       : mg_(mg), lifo_(defaultChunkSize), func_(nullptr), mode_(CompileMode::None)
-      , finishedList_(nullptr)
-      , failed_(false)
     {}
-
-    void setFinishedList(IonCompileTaskPtrVector* finishedList) {
-        finishedList_ = finishedList;
-    }
-
-    IonCompileTaskPtrVector* finishedList() const {
-        MOZ_ASSERT(finishedList_);
-        return finishedList_;
-    }
-
-    void setFailed() {
-        failed_ = true;
-    }
-
-    bool failed() const {
-        return failed_;
-    }
     LifoAlloc& lifo() {
         return lifo_;
     }
@@ -165,7 +143,6 @@ class IonCompileTask
         results_.reset();
         lifo_.releaseAll();
         mode_ = CompileMode::None;
-        failed_ = false;
     }
 };
 
