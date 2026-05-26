@@ -325,12 +325,12 @@ nsSynthVoiceRegistry::RemoveVoice(nsISpeechService* aService,
        (XRE_IsContentProcess()) ? "child" : "parent"));
 
   bool found = false;
-  VoiceData* retval = mUriVoiceMap.GetWeak(aUri, &found);
+  RefPtr<VoiceData> retval = mUriVoiceMap.GetWeak(aUri, &found);
 
-  if(NS_WARN_IF(!(found))) {
+  if(NS_WARN_IF(!found)) {
     return NS_ERROR_NOT_AVAILABLE;
   }
-  if(NS_WARN_IF(!(aService == retval->mService))) {
+  if(NS_WARN_IF(aService != retval->mService)) {
     return NS_ERROR_INVALID_ARG;
   }
 

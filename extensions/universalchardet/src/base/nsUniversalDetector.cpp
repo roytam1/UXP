@@ -8,7 +8,6 @@
 #include "nsUniversalDetector.h"
 
 #include "nsMBCSGroupProber.h"
-#include "nsEscCharsetProber.h"
 #include "nsLatin1Prober.h"
 
 nsUniversalDetector::nsUniversalDetector()
@@ -16,7 +15,6 @@ nsUniversalDetector::nsUniversalDetector()
   mDone = false;
   mBestGuess = -1;   //illegal value as signal
   mInTag = false;
-  mEscCharSetProber = nullptr;
 
   mStart = true;
   mDetectedCharset = nullptr;
@@ -33,8 +31,6 @@ nsUniversalDetector::~nsUniversalDetector()
 {
   for (int32_t i = 0; i < NUM_OF_CHARSET_PROBERS; i++)
     delete mCharSetProbers[i];
-
-  delete mEscCharSetProber;
 }
 
 void 
@@ -49,9 +45,6 @@ nsUniversalDetector::Reset()
   mGotData = false;
   mInputState = ePureAscii;
   mLastChar = '\0';
-
-  if (mEscCharSetProber)
-    mEscCharSetProber->Reset();
 
   uint32_t i;
   for (i = 0; i < NUM_OF_CHARSET_PROBERS; i++)
@@ -117,12 +110,6 @@ nsresult nsUniversalDetector::HandleData(const char* aBuf, uint32_t aLen)
         //adjust state
         mInputState = eHighbyte;
 
-        //kill mEscCharSetProber if it is active
-        if (mEscCharSetProber) {
-          delete mEscCharSetProber;
-          mEscCharSetProber = nullptr;
-        }
-
         //start multibyte and singlebyte charset prober
         if (nullptr == mCharSetProbers[0])
         {
@@ -140,12 +127,6 @@ nsresult nsUniversalDetector::HandleData(const char* aBuf, uint32_t aLen)
     }
     else
     {
-      //ok, just pure ascii so far
-      if ((ePureAscii == mInputState) && (aBuf[i] == '\033'))
-      {
-        //found escape character
-        mInputState = eEscAscii;
-      }
       mLastChar = aBuf[i];
     }
   }
@@ -153,19 +134,6 @@ nsresult nsUniversalDetector::HandleData(const char* aBuf, uint32_t aLen)
   nsProbingState st;
   switch (mInputState)
   {
-  case eEscAscii:
-    if (nullptr == mEscCharSetProber) {
-      mEscCharSetProber = new nsEscCharSetProber();
-      if (nullptr == mEscCharSetProber)
-        return NS_ERROR_OUT_OF_MEMORY;
-    }
-    st = mEscCharSetProber->HandleData(aBuf, aLen);
-    if (st == eFoundIt)
-    {
-      mDone = true;
-      mDetectedCharset = mEscCharSetProber->GetCharSetName();
-    }
-    break;
   case eHighbyte:
     for (i = 0; i < NUM_OF_CHARSET_PROBERS; i++)
     {
@@ -230,8 +198,6 @@ void nsUniversalDetector::DataEnd()
       if (maxProberConfidence > MINIMUM_THRESHOLD)
         Report(mCharSetProbers[maxProber]->GetCharSetName());
     }
-    break;
-  case eEscAscii:
     break;
   default:
     ;
