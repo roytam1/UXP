@@ -27,34 +27,15 @@
 namespace mozilla {
 namespace css {
 
-class LazyReferenceRenderingDrawTargetGetterFromFrame final :
-    public gfxFontGroup::LazyReferenceDrawTargetGetter {
-public:
-  typedef mozilla::gfx::DrawTarget DrawTarget;
-
-  explicit LazyReferenceRenderingDrawTargetGetterFromFrame(nsIFrame* aFrame)
-    : mFrame(aFrame) {}
-  virtual already_AddRefed<DrawTarget> GetRefDrawTarget() override
-  {
-    RefPtr<gfxContext> ctx =
-      mFrame->PresContext()->PresShell()->CreateReferenceRenderingContext();
-    RefPtr<DrawTarget> dt = ctx->GetDrawTarget();
-    return dt.forget();
-  }
-private:
-  nsIFrame* mFrame;
-};
-
-static gfxTextRun*
-GetEllipsisTextRun(nsIFrame* aFrame)
+static already_AddRefed<gfxTextRun>
+MakeEllipsisTextRun(nsIFrame* aFrame)
 {
-  RefPtr<nsFontMetrics> fm =
-    nsLayoutUtils::GetInflatedFontMetricsForFrame(aFrame);
-  LazyReferenceRenderingDrawTargetGetterFromFrame lazyRefDrawTargetGetter(aFrame);
-  return fm->GetThebesFontGroup()->GetEllipsisTextRun(
+  RefPtr<nsFontMetrics> fm = nsLayoutUtils::GetInflatedFontMetricsForFrame(aFrame);
+  RefPtr<gfxContext> ctx = aFrame->PresContext()->PresShell()->CreateReferenceRenderingContext();
+  return fm->GetThebesFontGroup()->MakeEllipsisTextRun(
     aFrame->PresContext()->AppUnitsPerDevPixel(),
     nsLayoutUtils::GetTextRunOrientFlagsForStyle(aFrame->StyleContext()),
-    lazyRefDrawTargetGetter);
+    ctx->GetDrawTarget());
 }
 
 static nsIFrame*
@@ -166,16 +147,22 @@ public:
   nsDisplayTextOverflowMarker(nsDisplayListBuilder* aBuilder, nsIFrame* aFrame,
                               const nsRect& aRect, nscoord aAscent,
                               const nsStyleTextOverflowSide* aStyle,
-                              uint32_t aIndex)
-    : nsDisplayItem(aBuilder, aFrame), mRect(aRect),
-      mStyle(aStyle), mAscent(aAscent), mIndex(aIndex) {
+                              uint32_t aIndex, gfxTextRun* aTextRun)
+    : nsDisplayItem(aBuilder, aFrame)
+    , mRect(aRect)
+    , mStyle(aStyle)
+    , mAscent(aAscent)
+    , mIndex(aIndex)
+    , mTextRun(aTextRun) {
     MOZ_COUNT_CTOR(nsDisplayTextOverflowMarker);
   }
+
 #ifdef NS_BUILD_REFCNT_LOGGING
   virtual ~nsDisplayTextOverflowMarker() {
     MOZ_COUNT_DTOR(nsDisplayTextOverflowMarker);
   }
 #endif
+
   virtual nsRect GetBounds(nsDisplayListBuilder* aBuilder,
                            bool* aSnap) override {
     *aSnap = false;
@@ -208,10 +195,11 @@ public:
                           nsPoint aOffsetFromRect);
   NS_DISPLAY_DECL_NAME("TextOverflow", TYPE_TEXT_OVERFLOW)
 private:
-  nsRect          mRect;   // in reference frame coordinates
+  nsRect          mRect; // in reference frame coordinates
   const nsStyleTextOverflowSide* mStyle;
   nscoord         mAscent; // baseline for the marker text in mRect
   uint32_t        mIndex;
+  RefPtr<gfxTextRun> mTextRun; // pre-cached textrun, if available
 };
 
 static void
@@ -259,21 +247,18 @@ nsDisplayTextOverflowMarker::PaintTextToContext(nsRenderingContext* aCtx,
   }
   pt += aOffsetFromRect;
 
-  if (mStyle->mType == NS_STYLE_TEXT_OVERFLOW_ELLIPSIS) {
-    gfxTextRun* textRun = GetEllipsisTextRun(mFrame);
-    if (textRun) {
-      NS_ASSERTION(!textRun->IsRightToLeft(),
-                   "Ellipsis textruns should always be LTR!");
-      gfxPoint gfxPt(pt.x, pt.y);
-      textRun->Draw(gfxTextRun::Range(textRun), gfxPt,
-                    gfxTextRun::DrawParams(aCtx->ThebesContext()));
-    }
-  } else {
-    RefPtr<nsFontMetrics> fm =
-      nsLayoutUtils::GetInflatedFontMetricsForFrame(mFrame);
-    nsLayoutUtils::DrawString(mFrame, *fm, aCtx, mStyle->mString.get(),
-                              mStyle->mString.Length(), pt);
+  if (mTextRun) {
+    gfxPoint gfxPt(pt.x, pt.y);
+    mTextRun->Draw(gfxTextRun::Range(mTextRun), gfxPt,
+                   gfxTextRun::DrawParams(aCtx->ThebesContext()));
+    return;
   }
+
+  MOZ_ASSERT(mStyle->mType != NS_STYLE_TEXT_OVERFLOW_ELLIPSIS);
+  RefPtr<nsFontMetrics> fm =
+      nsLayoutUtils::GetInflatedFontMetricsForFrame(mFrame);
+  nsLayoutUtils::DrawString(mFrame, *fm, aCtx, mStyle->mString.get(),
+                             mStyle->mString.Length(), pt);
 }
 
 TextOverflow::TextOverflow(nsDisplayListBuilder* aBuilder,
@@ -784,7 +769,10 @@ TextOverflow::CreateMarkers(const nsLineBox* aLine,
                markerRect, clipState);
     nsDisplayItem* marker = new (mBuilder)
       nsDisplayTextOverflowMarker(mBuilder, mBlock, markerRect,
-                                  aLine->GetLogicalAscent(), mIStart.mStyle, 0);
+                                  aLine->GetLogicalAscent(), mIStart.mStyle, 0,
+                                  mIStart.mStyle->mType == NS_STYLE_TEXT_OVERFLOW_ELLIPSIS ? 
+                                    GetEllipsisTextRun() :
+                                    nullptr);
     mMarkerList.AppendNewToTop(marker);
   }
 
@@ -801,9 +789,19 @@ TextOverflow::CreateMarkers(const nsLineBox* aLine,
                markerRect, clipState);
     nsDisplayItem* marker = new (mBuilder)
       nsDisplayTextOverflowMarker(mBuilder, mBlock, markerRect,
-                                  aLine->GetLogicalAscent(), mIEnd.mStyle, 1);
+                                  aLine->GetLogicalAscent(), mIEnd.mStyle, 1,
+                                  mIEnd.mStyle->mType == NS_STYLE_TEXT_OVERFLOW_ELLIPSIS ? 
+                                    GetEllipsisTextRun() :
+                                    nullptr);
     mMarkerList.AppendNewToTop(marker);
   }
+}
+
+gfxTextRun* TextOverflow::GetEllipsisTextRun() {
+  if (!mEllipsisTextRun) {
+    mEllipsisTextRun = MakeEllipsisTextRun(mBlock);
+  }
+  return mEllipsisTextRun;
 }
 
 void
@@ -814,7 +812,7 @@ TextOverflow::Marker::SetupString(nsIFrame* aFrame)
   }
 
   if (mStyle->mType == NS_STYLE_TEXT_OVERFLOW_ELLIPSIS) {
-    gfxTextRun* textRun = GetEllipsisTextRun(aFrame);
+    RefPtr<gfxTextRun> textRun = MakeEllipsisTextRun(aFrame);
     if (textRun) {
       mISize = textRun->GetAdvanceWidth();
     } else {

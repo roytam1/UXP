@@ -7,8 +7,6 @@ UNIFIED_SOURCES += [
     'CharDistribution.cpp',
     'JpCntx.cpp',
     'nsCharSetProber.cpp',
-    'nsEscCharsetProber.cpp',
-    'nsEscSM.cpp',
     'nsEUCJPProber.cpp',
     'nsLatin1Prober.cpp',
     'nsMBCSGroupProber.cpp',

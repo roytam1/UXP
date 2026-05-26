@@ -7,6 +7,7 @@
 #define AudioConverter_h
 
 #include "MediaInfo.h"
+#include "mozilla/CheckedInt.h"
 
 // Forward declaration
 typedef struct SpeexResamplerState_ SpeexResamplerState;
@@ -163,9 +164,15 @@ public:
     AlignedBuffer<Value>* outputBuffer = &temp1;
     AlignedBuffer<Value> temp2;
     if (!frames || mOut.Rate() > mIn.Rate()) {
+      uint32_t resampledFrames;
       // We are upsampling or about to drain, we can't work in place.
       // Allocate another temporary buffer where the upsampling will occur.
-      if (!temp2.SetLength(FramesOutToSamples(ResampleRecipientFrames(frames)))) {
+      if (!ResampleRecipientFrames(frames, &resampledFrames)) {
+        return AudioDataBuffer<Format, Value>(std::move(temp2));
+      }
+      CheckedInt<size_t> outputSamples =
+          CheckedInt<size_t>(resampledFrames) * mOut.Channels();
+      if (!outputSamples.isValid() || !temp2.SetLength(outputSamples.value())) {
         return AudioDataBuffer<Format, Value>(Move(temp2));
       }
       outputBuffer = &temp2;
@@ -229,7 +236,7 @@ private:
   // Resampler context.
   SpeexResamplerState* mResampler;
   size_t ResampleAudio(void* aOut, const void* aIn, size_t aFrames);
-  size_t ResampleRecipientFrames(size_t aFrames) const;
+  bool ResampleRecipientFrames(size_t aFrames, uint32_t* aOutFrames) const;
   void RecreateResampler();
   size_t DrainResampler(void* aOut);
 };

@@ -58,6 +58,8 @@ public:
   void GetVoices(nsTArray< RefPtr<SpeechSynthesisVoice> >& aResult);
 
   void ForceEnd();
+  
+  void DisconnectFromOwner() override;
 
   IMPL_EVENT_HANDLER(voiceschanged)
 
