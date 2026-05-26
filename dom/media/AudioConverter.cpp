@@ -7,6 +7,7 @@
 #include <speex/speex_resampler.h>
 #include <string.h>
 #include <cmath>
+#include "mozilla/CheckedInt.h"
 
 /*
  *  Parts derived from MythTV AudioConvert Class
@@ -262,8 +263,15 @@ AudioConverter::ResampleAudio(void* aOut, const void* aIn, size_t aFrames)
   if (!mResampler) {
     return 0;
   }
-  uint32_t outframes = ResampleRecipientFrames(aFrames);
-  uint32_t inframes = aFrames;
+  uint32_t outframes;
+  if (!ResampleRecipientFrames(aFrames, &outframes)) {
+    return 0;
+  }
+  CheckedUint32 inframesChecked(aFrames);
+  if (!inframesChecked.isValid()) {
+    return 0;
+  }
+  uint32_t inframes = inframesChecked.value();
 
   int error;
   if (mOut.Format() == AudioConfig::FORMAT_FLT) {
@@ -288,7 +296,7 @@ AudioConverter::ResampleAudio(void* aOut, const void* aIn, size_t aFrames)
     mResampler = nullptr;
     return 0;
   }
-  MOZ_ASSERT(inframes == aFrames, "Some frames will be dropped");
+  MOZ_ASSERT(static_cast<size_t>(inframes) == aFrames, "Some frames will be dropped");
   return outframes;
 }
 
@@ -373,17 +381,27 @@ AudioConverter::UpmixAudio(void* aOut, const void* aIn, size_t aFrames) const
   return aFrames;
 }
 
-size_t
-AudioConverter::ResampleRecipientFrames(size_t aFrames) const
-{
+bool AudioConverter::ResampleRecipientFrames(size_t aFrames,
+                                             uint32_t* aOutFrames) const {
   if (!aFrames && mIn.Rate() != mOut.Rate()) {
     if (!mResampler) {
-      return 0;
+      *aOutFrames = 0;
+      return true;
     }
     // We drain by pushing in get_input_latency() samples of 0
     aFrames = speex_resampler_get_input_latency(mResampler);
   }
-  return (uint64_t)aFrames * mOut.Rate() / mIn.Rate() + 1;
+  CheckedInt<uint64_t> numerator = CheckedInt<uint64_t>(aFrames) * mOut.Rate();
+  if (!numerator.isValid()) {
+    return false;
+  }
+  CheckedUint32 outFrames(numerator.value() / mIn.Rate());
+  outFrames += 1u;
+  if (!outFrames.isValid()) {
+    return false;
+  }
+  *aOutFrames = outFrames.value();
+  return true;
 }
 
 size_t

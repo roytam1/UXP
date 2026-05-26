@@ -404,9 +404,19 @@ AccessibleCaretManager::UpdateCaretsForSelectionMode(UpdateCaretsHint aHint)
 
   if (firstCaretResult == PositionChangedResult::Changed ||
       secondCaretResult == PositionChangedResult::Changed) {
+    nsWeakFrame weakStartFrame = startFrame;
+    nsWeakFrame weakEndFrame = endFrame;
+
     // Flush layout to make the carets intersection correct.
     FlushLayout();
     if (IsTerminated()) {
+      return;
+    }
+    if ((startFrame && !weakStartFrame.IsAlive()) ||
+        (endFrame && !weakEndFrame.IsAlive())) {
+      mFirstCaret.get()->SetAppearance(Appearance::NormalNotShown);
+      mSecondCaret.get()->SetAppearance(Appearance::NormalNotShown);
+      DispatchCaretStateChangedEvent(CaretChangedReason::Visibilitychange);
       return;
     }
   }

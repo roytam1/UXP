@@ -203,6 +203,8 @@ class TextOverflow {
                      bool aCreateIStart, bool aCreateIEnd,
                      const LogicalRect& aInsideMarkersArea);
 
+  gfxTextRun* GetEllipsisTextRun();
+  
   LogicalRect            mContentArea;
   nsDisplayListBuilder*  mBuilder;
   nsIFrame*              mBlock;
@@ -250,6 +252,8 @@ class TextOverflow {
 
   Marker mIStart; // the inline start marker
   Marker mIEnd; // the inline end marker
+  
+  RefPtr<gfxTextRun> mEllipsisTextRun; // Cached ellipsis textrun, if available
 };
 
 } // namespace css

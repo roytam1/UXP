@@ -25,8 +25,7 @@ const kAutoDetectors = [
 
 /**
  * This set contains encodings that are in the Encoding Standard, except:
- *  - XSS-dangerous encodings (except ISO-2022-JP which is assumed to be
- *    too common not to be included).
+ *  - XSS-dangerous encodings.
  *  - x-user-defined, which practically never makes sense as an end-user-chosen
  *    override.
  *  - Encodings that IE11 doesn't have in its correspoding menu.
@@ -65,7 +64,7 @@ const kEncodings = new Set([
   // Japanese
   "Shift_JIS",
   "EUC-JP",
-  "ISO-2022-JP",
+  // "ISO-2022-JP", // Intentionally not in menu.
   // Korean
   "EUC-KR",
   // Thai
