@@ -8614,14 +8614,18 @@ nsRuleNode::ComputeBorderData(void* aStartStruct,
   {
     const nsCSSPropertyID* subprops =
       nsCSSProps::SubpropertyEntryFor(eCSSProperty_border_radius);
+    const float RADIUS_MAX = 17895697; // CSS length clamp value
     NS_FOR_CSS_FULL_CORNERS(corner) {
       int cx = FullToHalfCorner(corner, false);
       int cy = FullToHalfCorner(corner, true);
-      const nsCSSValue& radius = *aRuleData->ValueFor(subprops[corner]);
+      nsCSSValue radius = *aRuleData->ValueFor(subprops[corner]);
       nsStyleCoord parentX = parentBorder->mBorderRadius.Get(cx);
       nsStyleCoord parentY = parentBorder->mBorderRadius.Get(cy);
       nsStyleCoord coordX, coordY;
-
+      // Clamp border radius to the max value so it will not wrap and cause artifacts.
+      if (radius.GetFloatValue() > RADIUS_MAX) {
+        radius.SetFloatValue(RADIUS_MAX, eCSSUnit_Number);
+      }
       if (SetPairCoords(radius, coordX, coordY, parentX, parentY,
                         SETCOORD_LPH | SETCOORD_INITIAL_ZERO |
                           SETCOORD_STORE_CALC | SETCOORD_UNSET_INITIAL,
