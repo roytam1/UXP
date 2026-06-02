@@ -976,6 +976,12 @@ CanUpperCaseSpecialCasing(Latin1Char charCode)
 static inline bool
 CanUpperCaseSpecialCasing(char16_t charCode)
 {
+    // Update mapping for U+00DF LATIN SMALL LETTER SHARP S inline,
+    // overriding Unicode data files to force the use of
+    // U+1E9E LATIN CAPITAL LETTER SHARP S.
+    if (charCode == unicode::LATIN_SMALL_LETTER_SHARP_S)
+        return true;
+
     return unicode::CanUpperCaseSpecialCasing(charCode);
 }
 
@@ -991,6 +997,11 @@ LengthUpperCaseSpecialCasing(Latin1Char charCode)
 static inline size_t
 LengthUpperCaseSpecialCasing(char16_t charCode)
 {
+    // U+00DF LATIN SMALL LETTER SHARP S is uppercased according to ICU or
+    // to U+1E9E LATIN CAPITAL LETTER SHARP S.
+    if (charCode == unicode::LATIN_SMALL_LETTER_SHARP_S)
+        return 1;
+
     MOZ_ASSERT(CanUpperCaseSpecialCasing(charCode));
 
     return unicode::LengthUpperCaseSpecialCasing(charCode);
@@ -1010,6 +1021,13 @@ AppendUpperCaseSpecialCasing(char16_t charCode, Latin1Char* elements, size_t* in
 static inline void
 AppendUpperCaseSpecialCasing(char16_t charCode, char16_t* elements, size_t* index)
 {
+    // U+00DF LATIN SMALL LETTER SHARP S is uppercased according to ICU or
+    // to U+1E9E LATIN CAPITAL LETTER SHARP S.
+    if (charCode == unicode::LATIN_SMALL_LETTER_SHARP_S) {
+        elements[(*index)++] = 0x1E9E;
+        return;
+    }
+
     unicode::AppendUpperCaseSpecialCasing(charCode, elements, index);
 }
 
@@ -1184,7 +1202,8 @@ ToUpperCase(JSContext* cx, JSLinearString* str)
         //
         // If the original string is Latin-1, it can -- unless the string
         // contains U+00B5 MICRO SIGN or U+00FF SMALL LETTER Y WITH DIAERESIS,
-        // the only Latin-1 codepoints that don't uppercase within Latin-1.
+        // the only Latin-1 codepoints that don't uppercase within Latin-1, or
+        // it contains U+00DF LATIN SMALL LETTER SHARP S, which we override.
         // Search for those codepoints to decide whether the new string can be
         // Latin-1.
         // If the original string is a two-byte string, its uppercase form is
@@ -1199,6 +1218,9 @@ ToUpperCase(JSContext* cx, JSLinearString* str)
                     c == unicode::LATIN_SMALL_LETTER_Y_WITH_DIAERESIS)
                 {
                     MOZ_ASSERT(unicode::ToUpperCase(c) > JSString::MAX_LATIN1_CHAR);
+                    resultIsLatin1 = false;
+                    break;
+                } else if (c == unicode::LATIN_SMALL_LETTER_SHARP_S) {
                     resultIsLatin1 = false;
                     break;
                 } else {
