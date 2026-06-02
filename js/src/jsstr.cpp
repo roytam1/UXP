@@ -1025,6 +1025,7 @@ ToUpperCaseImpl(DestChar* destChars, const SrcChar* srcChars, size_t startIndex,
     MOZ_ASSERT(srcLength <= destLength);
 
     size_t j = startIndex;
+    size_t upperLength = srcLength;
     for (size_t i = startIndex; i < srcLength; i++) {
         char16_t c = srcChars[i];
         if (!IsSame<DestChar, Latin1Char>::value) {
@@ -1040,9 +1041,10 @@ ToUpperCaseImpl(DestChar* destChars, const SrcChar* srcChars, size_t startIndex,
             }
         }
 
-        if (MOZ_UNLIKELY(c > 0x7f && CanUpperCaseSpecialCasing(static_cast<SrcChar>(c)))) {
+        if (MOZ_UNLIKELY(c > 0x7f && CanUpperCaseSpecialCasing(static_cast<DestChar>(c)))) {
             // Return if the output buffer is too small.
-            if (srcLength == destLength)
+            upperLength += (LengthUpperCaseSpecialCasing(static_cast<DestChar>(c)) - 1);
+            if (upperLength > destLength)
                 return i;
 
             AppendUpperCaseSpecialCasing(c, destChars, &j);
