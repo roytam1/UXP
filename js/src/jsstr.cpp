@@ -1073,14 +1073,18 @@ ToUpperCaseImpl(Latin1Char* destChars, const char16_t* srcChars, size_t startInd
 
 template <typename CharT>
 static size_t
-ToUpperCaseLength(const CharT* chars, size_t startIndex, size_t length)
+ToUpperCaseLength(const CharT* chars, size_t startIndex, size_t length, bool force16)
 {
     size_t upperLength = length;
     for (size_t i = startIndex; i < length; i++) {
         char16_t c = chars[i];
 
-        if (c > 0x7f && CanUpperCaseSpecialCasing(static_cast<CharT>(c)))
-            upperLength += LengthUpperCaseSpecialCasing(static_cast<CharT>(c)) - 1;
+        if (c > 0x7f &&
+            (force16 && CanUpperCaseSpecialCasing(c) ||
+             CanUpperCaseSpecialCasing(static_cast<CharT>(c))))
+            upperLength += (force16
+                ? LengthUpperCaseSpecialCasing(c)
+                : LengthUpperCaseSpecialCasing(static_cast<CharT>(c))) - 1;
     }
     return upperLength;
 }
@@ -1119,7 +1123,7 @@ ToUpperCase(JSContext* cx, const SrcChar* chars, size_t startIndex, size_t lengt
 
     size_t readChars = ToUpperCaseImpl(buf.get(), chars, startIndex, length, length);
     if (readChars < length) {
-        size_t actualLength = ToUpperCaseLength(chars, readChars, length);
+        size_t actualLength = ToUpperCaseLength(chars, readChars, length, !IsSame<DestChar, Latin1Char>::value);
 
         *resultLength = actualLength;
         DestCharPtr buf2 = ReallocChars(cx, Move(buf), length + 1, actualLength + 1);
