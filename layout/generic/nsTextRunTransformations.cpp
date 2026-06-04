@@ -318,7 +318,7 @@ nsCaseTransformTextRunFactory::TransformString(
                                      // in the output string
   uint32_t irishMarkSrc = uint32_t(-1); // corresponding location in source
                                         // string (may differ from output due to
-                                        // expansions like eszet -> 'SS')
+                                        // expansions)
 
   for (uint32_t i = 0; i < length; ++i, ++aOffsetInTextRun) {
     uint32_t ch = str[i];
@@ -604,6 +604,13 @@ nsCaseTransformTextRunFactory::TransformString(
         // to check for special uppercase (ß)
       }
 
+      // Updated mapping for Germen eszett, not currently reflected in the
+      // Unicode data files.
+      if (ch == 0x00DF) {
+        ch = 0x1E9E;
+        break;
+      }
+
       mcm = mozilla::unicode::SpecialUpper(ch);
       if (mcm) {
         int j = 0;
@@ -656,6 +663,12 @@ nsCaseTransformTextRunFactory::TransformString(
                 break;
               }
             }
+          }
+
+          // Updated mapping for Germen eszett as a capital letter.
+          if (ch == 0x00DF) {
+            ch = 0x1E9E;
+            break;
           }
 
           mcm = mozilla::unicode::SpecialTitle(ch);
