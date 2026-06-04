@@ -976,6 +976,12 @@ CanUpperCaseSpecialCasing(Latin1Char charCode)
 static inline bool
 CanUpperCaseSpecialCasing(char16_t charCode)
 {
+    // Update mapping for U+00DF LATIN SMALL LETTER SHARP S inline,
+    // overriding Unicode data files to force the use of
+    // U+1E9E LATIN CAPITAL LETTER SHARP S.
+    if (charCode == unicode::LATIN_SMALL_LETTER_SHARP_S)
+        return true;
+
     return unicode::CanUpperCaseSpecialCasing(charCode);
 }
 
@@ -991,6 +997,11 @@ LengthUpperCaseSpecialCasing(Latin1Char charCode)
 static inline size_t
 LengthUpperCaseSpecialCasing(char16_t charCode)
 {
+    // U+00DF LATIN SMALL LETTER SHARP S is uppercased according to ICU or
+    // to U+1E9E LATIN CAPITAL LETTER SHARP S.
+    if (charCode == unicode::LATIN_SMALL_LETTER_SHARP_S)
+        return 1;
+
     MOZ_ASSERT(CanUpperCaseSpecialCasing(charCode));
 
     return unicode::LengthUpperCaseSpecialCasing(charCode);
@@ -1010,6 +1021,13 @@ AppendUpperCaseSpecialCasing(char16_t charCode, Latin1Char* elements, size_t* in
 static inline void
 AppendUpperCaseSpecialCasing(char16_t charCode, char16_t* elements, size_t* index)
 {
+    // U+00DF LATIN SMALL LETTER SHARP S is uppercased according to ICU or
+    // to U+1E9E LATIN CAPITAL LETTER SHARP S.
+    if (charCode == unicode::LATIN_SMALL_LETTER_SHARP_S) {
+        elements[(*index)++] = 0x1E9E;
+        return;
+    }
+
     unicode::AppendUpperCaseSpecialCasing(charCode, elements, index);
 }
 
@@ -1025,6 +1043,7 @@ ToUpperCaseImpl(DestChar* destChars, const SrcChar* srcChars, size_t startIndex,
     MOZ_ASSERT(srcLength <= destLength);
 
     size_t j = startIndex;
+    size_t upperLength = srcLength;
     for (size_t i = startIndex; i < srcLength; i++) {
         char16_t c = srcChars[i];
         if (!IsSame<DestChar, Latin1Char>::value) {
@@ -1040,9 +1059,10 @@ ToUpperCaseImpl(DestChar* destChars, const SrcChar* srcChars, size_t startIndex,
             }
         }
 
-        if (MOZ_UNLIKELY(c > 0x7f && CanUpperCaseSpecialCasing(static_cast<SrcChar>(c)))) {
+        if (MOZ_UNLIKELY(c > 0x7f && CanUpperCaseSpecialCasing(static_cast<DestChar>(c)))) {
             // Return if the output buffer is too small.
-            if (srcLength == destLength)
+            upperLength += (LengthUpperCaseSpecialCasing(static_cast<DestChar>(c)) - 1);
+            if (upperLength > destLength)
                 return i;
 
             AppendUpperCaseSpecialCasing(c, destChars, &j);
@@ -1071,14 +1091,18 @@ ToUpperCaseImpl(Latin1Char* destChars, const char16_t* srcChars, size_t startInd
 
 template <typename CharT>
 static size_t
-ToUpperCaseLength(const CharT* chars, size_t startIndex, size_t length)
+ToUpperCaseLength(const CharT* chars, size_t startIndex, size_t length, bool force16)
 {
     size_t upperLength = length;
     for (size_t i = startIndex; i < length; i++) {
         char16_t c = chars[i];
 
-        if (c > 0x7f && CanUpperCaseSpecialCasing(static_cast<CharT>(c)))
-            upperLength += LengthUpperCaseSpecialCasing(static_cast<CharT>(c)) - 1;
+        if (c > 0x7f &&
+            (force16 && CanUpperCaseSpecialCasing(c) ||
+             CanUpperCaseSpecialCasing(static_cast<CharT>(c))))
+            upperLength += (force16
+                ? LengthUpperCaseSpecialCasing(c)
+                : LengthUpperCaseSpecialCasing(static_cast<CharT>(c))) - 1;
     }
     return upperLength;
 }
@@ -1117,7 +1141,7 @@ ToUpperCase(JSContext* cx, const SrcChar* chars, size_t startIndex, size_t lengt
 
     size_t readChars = ToUpperCaseImpl(buf.get(), chars, startIndex, length, length);
     if (readChars < length) {
-        size_t actualLength = ToUpperCaseLength(chars, readChars, length);
+        size_t actualLength = ToUpperCaseLength(chars, readChars, length, !IsSame<DestChar, Latin1Char>::value);
 
         *resultLength = actualLength;
         DestCharPtr buf2 = ReallocChars(cx, Move(buf), length + 1, actualLength + 1);
@@ -1178,7 +1202,8 @@ ToUpperCase(JSContext* cx, JSLinearString* str)
         //
         // If the original string is Latin-1, it can -- unless the string
         // contains U+00B5 MICRO SIGN or U+00FF SMALL LETTER Y WITH DIAERESIS,
-        // the only Latin-1 codepoints that don't uppercase within Latin-1.
+        // the only Latin-1 codepoints that don't uppercase within Latin-1, or
+        // it contains U+00DF LATIN SMALL LETTER SHARP S, which we override.
         // Search for those codepoints to decide whether the new string can be
         // Latin-1.
         // If the original string is a two-byte string, its uppercase form is
@@ -1193,6 +1218,9 @@ ToUpperCase(JSContext* cx, JSLinearString* str)
                     c == unicode::LATIN_SMALL_LETTER_Y_WITH_DIAERESIS)
                 {
                     MOZ_ASSERT(unicode::ToUpperCase(c) > JSString::MAX_LATIN1_CHAR);
+                    resultIsLatin1 = false;
+                    break;
+                } else if (c == unicode::LATIN_SMALL_LETTER_SHARP_S) {
                     resultIsLatin1 = false;
                     break;
                 } else {
