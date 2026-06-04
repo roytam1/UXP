@@ -195,6 +195,7 @@ JSRuntime::JSRuntime(JSRuntime* parentRuntime)
 #endif
     scriptAndCountsVector(nullptr),
     weakRefKeptObjects(nullptr),
+    finalizationRegistryCleanupJobs(nullptr),
     lcovOutput(),
     NaNValue(DoubleNaNValue()),
     negativeInfinityValue(DoubleValue(NegativeInfinity<double>())),
@@ -374,6 +375,7 @@ JSRuntime::destroyRuntime()
     MOZ_ASSERT(childRuntimeCount == 0);
 
     clearWeakRefKeptObjects();
+    clearFinalizationRegistryCleanupJobs();
 
     fx.destroyInstance();
 
@@ -516,6 +518,74 @@ JSRuntime::clearWeakRefKeptObjects()
 
     defaultFreeOp()->delete_(weakRefKeptObjects);
     weakRefKeptObjects = nullptr;
+}
+
+bool
+JSRuntime::enqueueFinalizationRegistryCleanupJob(JSContext* cx, JS::HandleObject job)
+{
+    MOZ_ASSERT(cx->runtime() == this);
+    MOZ_ASSERT(job);
+    MOZ_ASSERT(job->is<JSFunction>());
+    MOZ_ASSERT(isHeapBusy());
+
+    if (!finalizationRegistryCleanupJobs) {
+        auto* cleanupJobs =
+            cx->new_<JS::PersistentRooted<js::FinalizationRegistryCleanupJobVector>>(
+                cx, js::FinalizationRegistryCleanupJobVector(js::SystemAllocPolicy()));
+        if (!cleanupJobs)
+            return false;
+
+        finalizationRegistryCleanupJobs = cleanupJobs;
+    }
+
+    for (size_t i = 0; i < finalizationRegistryCleanupJobs->length(); i++) {
+        if ((*finalizationRegistryCleanupJobs)[i] == job)
+            return true;
+    }
+
+    if (!finalizationRegistryCleanupJobs->append(job)) {
+        ReportOutOfMemory(cx);
+        return false;
+    }
+
+    return true;
+}
+
+bool
+JSRuntime::drainFinalizationRegistryCleanupJobs(JSContext* cx)
+{
+    MOZ_ASSERT(cx->runtime() == this);
+    MOZ_ASSERT(!isHeapBusy());
+
+    if (!finalizationRegistryCleanupJobs)
+        return true;
+
+    if (!enqueuePromiseJobCallback) {
+        finalizationRegistryCleanupJobs->clear();
+        return true;
+    }
+
+    size_t length = finalizationRegistryCleanupJobs->length();
+    for (size_t i = 0; i < length; i++) {
+        RootedFunction job(cx, &(*finalizationRegistryCleanupJobs)[i]->as<JSFunction>());
+        if (!enqueuePromiseJob(cx, job, nullptr, nullptr))
+            return false;
+    }
+
+    finalizationRegistryCleanupJobs->clear();
+    return true;
+}
+
+void
+JSRuntime::clearFinalizationRegistryCleanupJobs()
+{
+    MOZ_ASSERT(!isHeapBusy());
+
+    if (!finalizationRegistryCleanupJobs)
+        return;
+
+    defaultFreeOp()->delete_(finalizationRegistryCleanupJobs);
+    finalizationRegistryCleanupJobs = nullptr;
 }
 
 void

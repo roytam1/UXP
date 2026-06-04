@@ -97,6 +97,7 @@
 IF_SAB(real,imaginary)(SharedArrayBuffer,     InitViaClassSpec, OCLASP(SharedArrayBuffer)) \
 IF_INTL(real,imaginary) (Intl,                InitIntlClass,          CLASP(Intl)) \
 IF_BDATA(real,imaginary)(TypedObject,         InitTypedObjectModuleObject,   OCLASP(TypedObjectModule)) \
+    real(FinalizationRegistry,  InitFinalizationRegistryClass, OCLASP(FinalizationRegistry)) \
     real(Reflect,               InitReflect,            nullptr) \
     real(WeakSet,               InitWeakSetClass,       OCLASP(WeakSet)) \
     real(TypedArray,            InitViaClassSpec,       &js::TypedArrayObject::sharedTypedArrayPrototypeClass) \
