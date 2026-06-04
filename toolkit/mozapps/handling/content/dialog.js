@@ -151,8 +151,39 @@ var dialog = {
       elm.setAttribute("type", "handler");
       elm.id = "os-default-handler";
       elm.setAttribute("name", this._handlerInfo.defaultDescription);
-      elm.setAttribute("image", "moz-icon://.exe?size=32");
+      try {
+        let wrk = Cc["@mozilla.org/windows-registry-key;1"]
+                    .createInstance(Ci.nsIWindowsRegKey);
 
+        wrk.open(wrk.ROOT_KEY_CLASSES_ROOT,
+                 "http\\shell\\open\\command",
+                 wrk.ACCESS_READ);
+
+        let cmd = wrk.readStringValue("");
+
+        wrk.close();
+
+        // extract path
+        let match = cmd.match(/"([^"]+\.exe)"/i);
+
+        if (!match)
+          match = cmd.match(/^([^\s]+\.exe)/i);
+
+        if (match) {
+          let exe = match[1].replace(/\\/g, "/");
+
+          elm.setAttribute(
+            "image",
+            "moz-icon://file:///" + exe + "?size=32"
+          );
+        }
+        else {
+          elm.setAttribute("image", "moz-icon://.exe?size=32");
+        }
+      }
+      catch (e) {
+        elm.setAttribute("image", "moz-icon://.exe?size=32");
+      }
       items.insertBefore(elm, items.firstChild);
       if (this._handlerInfo.preferredAction ==
           Ci.nsIHandlerInfo.useSystemDefault)
