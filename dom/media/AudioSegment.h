@@ -93,7 +93,7 @@ DeinterleaveAndConvertBuffer(const SrcT* aSourceBuffer,
 class SilentChannel
 {
 public:
-  static const int AUDIO_PROCESSING_FRAMES = 640; /* > 10ms of 48KHz audio */
+  static const int AUDIO_PROCESSING_FRAMES = 4096; /* > 10ms of 48KHz audio */
   static const uint8_t gZeroChannel[MAX_AUDIO_SAMPLE_SIZE*AUDIO_PROCESSING_FRAMES];
   // We take advantage of the fact that zero in float and zero in int have the
   // same all-zeros bit layout.
