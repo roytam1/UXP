@@ -66,10 +66,28 @@ struct WeakCell {
     WeakCellKind kind;
     WeakRef<JSObject*> object;
     WeakRef<JS::Symbol*> symbol;
+    bool enabled;
 
-    WeakCell() : kind(WeakCellKind::Empty), object(nullptr), symbol(nullptr) {}
-    explicit WeakCell(JSObject* obj) : kind(WeakCellKind::Object), object(obj), symbol(nullptr) {}
-    explicit WeakCell(JS::Symbol* sym) : kind(WeakCellKind::Symbol), object(nullptr), symbol(sym) {}
+    WeakCell()
+        : kind(WeakCellKind::Empty)
+        , object(nullptr)
+        , symbol(nullptr)
+        , enabled(true)
+    {}
+
+    explicit WeakCell(JSObject* obj, bool enabled)
+        : kind(WeakCellKind::Object)
+        , object(obj)
+        , symbol(nullptr)
+        , enabled(enabled)
+    {}
+
+    explicit WeakCell(JS::Symbol* sym, bool enabled)
+        : kind(WeakCellKind::Symbol)
+        , object(nullptr)
+        , symbol(sym)
+        , enabled(enabled)
+    {}
 
     void clear() {
         kind = WeakCellKind::Empty;
@@ -101,7 +119,9 @@ struct WeakCell {
             if (!target)
                 return;
 
-            if (IsInsideNursery(target)) {
+            if (!enabled) {
+              // Do nothing
+            } else if (IsInsideNursery(target)) {
                 TraceManuallyBarrieredEdge(trc, object.unsafeGet(), name);
             } else {
                 if (trc->isMarkingTracer() && !target->asTenured().zone()->isCollecting())
@@ -110,7 +130,7 @@ struct WeakCell {
             }
         } else if (kind == WeakCellKind::Symbol) {
             JS::Symbol* target = symbol.unbarrieredGet();
-            if (target) {
+            if (enabled && target) {
                 if (trc->isMarkingTracer() && !target->asTenured().zone()->isCollecting())
                     return;
                 TraceWeakEdge(trc, &symbol, name);
@@ -124,14 +144,16 @@ struct WeakCell {
             if (!target)
                 return;
 
-            if (IsInsideNursery(target)) {
+            if (!enabled) {
+              // Do nothing
+            } else if (IsInsideNursery(target)) {
                 TraceManuallyBarrieredEdge(trc, object.unsafeGet(), name);
             } else if (target->asTenured().zone()->isCollecting()) {
                 TraceWeakEdge(trc, &object, name);
             }
         } else if (kind == WeakCellKind::Symbol) {
             JS::Symbol* target = symbol.unbarrieredGet();
-            if (target && target->asTenured().zone()->isCollecting())
+            if (enabled && target && target->asTenured().zone()->isCollecting())
                 TraceWeakEdge(trc, &symbol, name);
         }
     }
@@ -143,22 +165,24 @@ struct FinalizationRecord {
     WeakCell unregisterToken;
     bool active;
     bool queued;
+    bool enabled;
 
     FinalizationRecord(HandleValue targetValue, HandleValue heldValue,
-                       HandleValue unregisterTokenValue)
+                       HandleValue unregisterTokenValue, bool enabled)
       : heldValue(heldValue),
         active(true),
-        queued(false)
+        queued(false),
+        enabled(enabled)
     {
         if (targetValue.isObject())
-            target = WeakCell(NormalizeWeakObject(&targetValue.toObject()));
+            target = WeakCell(NormalizeWeakObject(&targetValue.toObject()), enabled);
         else
-            target = WeakCell(targetValue.toSymbol());
+            target = WeakCell(targetValue.toSymbol(), enabled);
 
         if (unregisterTokenValue.isObject())
-            unregisterToken = WeakCell(NormalizeWeakObject(&unregisterTokenValue.toObject()));
+            unregisterToken = WeakCell(NormalizeWeakObject(&unregisterTokenValue.toObject()), enabled);
         else if (unregisterTokenValue.isSymbol())
-            unregisterToken = WeakCell(unregisterTokenValue.toSymbol());
+            unregisterToken = WeakCell(unregisterTokenValue.toSymbol(), enabled);
     }
 
     void trace(JSTracer* trc) {
@@ -217,13 +241,15 @@ struct FinalizationRegistryObject::Data {
     FinalizationRecordVector records;
     FinalizationRecordVector cleanupQueue;
     bool queuedForCleanup;
+    bool enabled;
 
-    explicit Data(JSObject* cleanupCallback)
+    explicit Data(JSObject* cleanupCallback, bool enabled)
       : cleanupCallback(cleanupCallback),
         cleanupJob(nullptr),
         records(SystemAllocPolicy()),
         cleanupQueue(SystemAllocPolicy()),
-        queuedForCleanup(false)
+        queuedForCleanup(false),
+        enabled(enabled)
     {}
 
     ~Data() {
@@ -232,11 +258,13 @@ struct FinalizationRegistryObject::Data {
     }
 
     void trace(JSTracer* trc) {
-        JS::TraceEdge(trc, &cleanupCallback, "FinalizationRegistry cleanup callback");
-        if (cleanupJob.unbarrieredGet())
-            JS::TraceEdge(trc, &cleanupJob, "FinalizationRegistry cleanup job");
-        for (size_t i = 0; i < records.length(); i++)
-            records[i]->trace(trc);
+        if (enabled) {
+          JS::TraceEdge(trc, &cleanupCallback, "FinalizationRegistry cleanup callback");
+          if (cleanupJob.unbarrieredGet())
+              JS::TraceEdge(trc, &cleanupJob, "FinalizationRegistry cleanup job");
+          for (size_t i = 0; i < records.length(); i++)
+              records[i]->trace(trc);
+        }
     }
 
     bool appendRecord(FinalizationRecord* record) {
@@ -317,7 +345,7 @@ FinalizationRegistry_register_impl(JSContext* cx, const CallArgs& args)
         unregisterToken.setUndefined();
     }
 
-    FinalizationRecord* record = cx->new_<FinalizationRecord>(target, heldValue, unregisterToken);
+    FinalizationRecord* record = cx->new_<FinalizationRecord>(target, heldValue, unregisterToken, cx->options().weakRefs());
     if (!record)
         return false;
 
@@ -401,7 +429,7 @@ FinalizationRegistryObject::create(JSContext* cx, HandleObject cleanupCallback,
     if (!obj)
         return nullptr;
 
-    Data* data = cx->new_<Data>(cleanupCallback);
+    Data* data = cx->new_<Data>(cleanupCallback, cx->options().weakRefs());
     if (!data)
         return nullptr;
 

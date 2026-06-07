@@ -140,9 +140,9 @@ WeakRefObject::create(JSContext* cx, HandleValue target, HandleObject proto /* =
 
     Referent* data;
     if (target.isObject())
-        data = cx->new_<Referent>(&target.toObject());
+        data = cx->new_<Referent>(&target.toObject(), cx->options().weakRefs());
     else
-        data = cx->new_<Referent>(target.toSymbol());
+        data = cx->new_<Referent>(target.toSymbol(), cx->options().weakRefs());
 
     if (!data)
         return nullptr;
@@ -210,7 +210,9 @@ WeakRefObject::trace(JSTracer* trc, JSObject* obj)
             if (!target)
                 return;
 
-            if (IsInsideNursery(target)) {
+            if (!data->enabled) {
+                // Pref disabled, don't do anything.
+            } else if (IsInsideNursery(target)) {
                 // Weak edges must be tenured; trace strongly while referent is in the nursery.
                 TraceManuallyBarrieredEdge(trc, data->objectTarget.unsafeGet(),
                                            "WeakRef nursery referent");
@@ -220,7 +222,7 @@ WeakRefObject::trace(JSTracer* trc, JSObject* obj)
         } else {
             MOZ_ASSERT(data->isSymbol());
             JS::Symbol* target = data->symbolTarget.unbarrieredGet();
-            if (target)
+            if (data->enabled && target)
                 TraceWeakEdge(trc, &data->symbolTarget, "WeakRef symbol referent");
         }
     }
