@@ -12,6 +12,7 @@
 #include "jscntxt.h"
 
 #include "ds/SplayTree.h"
+#include "gc/Barrier.h"
 #include "gc/FindSCCs.h"
 #include "gc/GCRuntime.h"
 #include "js/GCHashTable.h"
@@ -324,6 +325,10 @@ struct Zone : public JS::shadow::Zone,
     // preserved for re-scanning during sweeping.
     using WeakEdges = js::Vector<js::gc::TenuredCell**, 0, js::SystemAllocPolicy>;
     WeakEdges gcWeakRefs;
+
+    // FinalizationRegistry objects with weakly-held target cells in this zone.
+    using FinalizationRegistryVector = js::Vector<js::WeakRef<JSObject*>, 0, js::SystemAllocPolicy>;
+    FinalizationRegistryVector finalizationRegistries;
 
     // List of non-ephemeron weak containers to sweep during beginSweepingZoneGroup.
     mozilla::LinkedList<WeakCache<void*>> weakCaches_;

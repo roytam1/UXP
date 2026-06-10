@@ -61,22 +61,15 @@ template <typename SrcT, typename DestT>
 static void
 InterleaveAndConvertBuffer(const SrcT* const* aSourceChannels,
                            uint32_t aLength, float aVolume,
-                           uint32_t aChannelCount,
+                           uint32_t aChannels,
                            DestT* aOutput)
 {
-  for (size_t channel = 0; channel < aChannelCount; ++channel) {
-    DestT* output = aOutput;
-    if (aSourceChannels[channel]) {
-      for (size_t i = 0; i < aLength; ++i) {
-        float v = AudioSampleToFloat(aSourceChannels[channel][i])*aVolume;
-        *output = FloatToAudioSample<DestT>(v);
-        output += aChannelCount;
-      }
-    } else {
-      for (size_t i = 0; i < aLength; ++i) {
-        *output = static_cast<DestT>(0);
-        output += aChannelCount;
-      }
+  DestT* output = aOutput;
+  for (size_t i = 0; i < aLength; ++i) {
+    for (size_t channel = 0; channel < aChannels; ++channel) {
+      float v = AudioSampleToFloat(aSourceChannels[channel][i])*aVolume;
+      *output = FloatToAudioSample<DestT>(v);
+      ++output;
     }
   }
 }
@@ -100,7 +93,7 @@ DeinterleaveAndConvertBuffer(const SrcT* aSourceBuffer,
 class SilentChannel
 {
 public:
-  static const int AUDIO_PROCESSING_FRAMES = 640; /* > 10ms of 48KHz audio */
+  static const int AUDIO_PROCESSING_FRAMES = 4096; /* > 10ms of 48KHz audio */
   static const uint8_t gZeroChannel[MAX_AUDIO_SAMPLE_SIZE*AUDIO_PROCESSING_FRAMES];
   // We take advantage of the fact that zero in float and zero in int have the
   // same all-zeros bit layout.
@@ -415,7 +408,7 @@ void WriteChunk(AudioChunk& aChunk,
   if (channelData.Length() < aOutputChannels) {
     // Up-mix. Note that this might actually make channelData have more
     // than aOutputChannels temporarily.
-    AudioChannelsUpMix(&channelData, aOutputChannels, static_cast<const SrcT*>(nullptr));
+    AudioChannelsUpMix(&channelData, aOutputChannels, SilentChannel::ZeroChannel<SrcT>());
   }
   if (channelData.Length() > aOutputChannels) {
     // Down-mix.

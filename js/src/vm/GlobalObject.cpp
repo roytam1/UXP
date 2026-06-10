@@ -17,6 +17,7 @@
 #include "builtin/AtomicsObject.h"
 #include "builtin/BigInt.h"
 #include "builtin/Eval.h"
+#include "builtin/FinalizationRegistryObject.h"
 #include "builtin/MapObject.h"
 #include "builtin/ModuleObject.h"
 #include "builtin/Object.h"
@@ -538,6 +539,7 @@ GlobalObject::initSelfHostingBuiltins(JSContext* cx, Handle<GlobalObject*> globa
            InitBareBuiltinCtor(cx, global, JSProto_Uint8Array) &&
            InitBareBuiltinCtor(cx, global, JSProto_Int32Array) &&
            InitBareSymbolCtor(cx, global) &&
+           InitBareFinalizationRegistryCtor(cx, global) &&
            InitBareWeakMapCtor(cx, global) &&
            InitBareWeakRefCtor(cx, global) &&
            InitStopIterationClass(cx, global) &&
