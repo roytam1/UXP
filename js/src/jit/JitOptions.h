@@ -63,7 +63,6 @@ struct DefaultJitOptions
     bool disableCacheIR;
     bool disableSharedStubs;
     bool disableSincos;
-    bool disableSink;
     bool eagerCompilation;
     bool forceInlineCaches;
     bool limitScriptSize;
