@@ -196,7 +196,7 @@ public:
   {
     MOZ_ASSERT(!NS_IsMainThread());
 
-    int32_t written = PR_Write(mFD, mData, mLength);
+    int32_t written = mLength < INT32_MAX ? PR_Write(mFD, mData, mLength) : -1;
     if (NS_WARN_IF(written < 0 || uint32_t(written) != mLength)) {
       return NS_DispatchToMainThread(
         new ErrorPropagationRunnable(mBlobStorage, NS_ERROR_FAILURE));
