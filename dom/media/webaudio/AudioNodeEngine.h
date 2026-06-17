@@ -40,8 +40,8 @@ public:
   }
   /**
    * Create with buffers suitable for transfer to
-   * JS_NewArrayBufferWithContents().  The buffer contents are uninitialized
-   * and so should be set using GetDataForWrite().
+   * JS_NewArrayBufferWithContents().  The buffer contents are
+   * zero-initialized; callers should set them using GetDataForWrite().
    */
   static already_AddRefed<ThreadSharedFloatArrayBufferList>
   Create(uint32_t aChannelCount, size_t aLength, const mozilla::fallible_t&);
