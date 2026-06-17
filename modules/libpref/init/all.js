@@ -1339,6 +1339,9 @@ pref("javascript.options.dynamicImport", true);
 // Streams API
 pref("javascript.options.streams", true);
 
+// WeakRefs API
+pref("javascript.options.weakrefs", true);
+
 // advanced prefs
 pref("advanced.mailftp",                    false);
 pref("image.animation_mode",                "normal");

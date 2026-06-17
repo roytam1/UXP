@@ -86,9 +86,6 @@ class OptimizationInfo
     // Toggles whether sincos is used.
     bool sincos_;
 
-    // Toggles whether sink is used.
-    bool sink_;
-
     // Describes which register allocator to use.
     IonRegisterAllocator registerAllocator_;
 
@@ -192,10 +189,6 @@ class OptimizationInfo
 
     bool sincosEnabled() const {
         return sincos_ && !JitOptions.disableSincos;
-    }
-
-    bool sinkEnabled() const {
-        return sink_ && !JitOptions.disableSink;
     }
 
     bool eaaEnabled() const {
