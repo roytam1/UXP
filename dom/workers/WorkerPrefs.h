@@ -35,6 +35,7 @@ WORKER_SIMPLE_PREF("dom.serviceWorkers.openWindow.enabled", OpenWindowEnabled, O
 WORKER_SIMPLE_PREF("dom.storageManager.enabled", StorageManagerEnabled, STORAGEMANAGER_ENABLED)
 WORKER_SIMPLE_PREF("dom.push.enabled", PushEnabled, PUSH_ENABLED)
 WORKER_SIMPLE_PREF("dom.streams.enabled", StreamsEnabled, STREAMS_ENABLED)
+WORKER_SIMPLE_PREF("javascript.options.weakrefs", WeakRefsEnabled, WEAKREFS_ENABLED)
 WORKER_SIMPLE_PREF("dom.requestcontext.enabled", RequestContextEnabled, REQUESTCONTEXT_ENABLED)
 WORKER_SIMPLE_PREF("gfx.offscreencanvas.enabled", OffscreenCanvasEnabled, OFFSCREENCANVAS_ENABLED)
 WORKER_SIMPLE_PREF("dom.webkitBlink.dirPicker.enabled", WebkitBlinkDirectoryPickerEnabled, DOM_WEBKITBLINK_DIRPICKER_WEBKITBLINK)

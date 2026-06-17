@@ -7709,15 +7709,6 @@ SetContextOptions(JSContext* cx, const OptionParser& op)
             return OptionFailure("ion-sincos", str);
     }
 
-    if (const char* str = op.getStringOption("ion-sink")) {
-        if (strcmp(str, "on") == 0)
-            jit::JitOptions.disableSink = false;
-        else if (strcmp(str, "off") == 0)
-            jit::JitOptions.disableSink = true;
-        else
-            return OptionFailure("ion-sink", str);
-    }
-
     if (const char* str = op.getStringOption("ion-loop-unrolling")) {
         if (strcmp(str, "on") == 0)
             jit::JitOptions.disableLoopUnrolling = false;
@@ -8093,8 +8084,6 @@ main(int argc, char** argv, char** envp)
         || !op.addStringOption('\0', "ion-sincos", "on/off",
                                "Replace sin(x)/cos(x) to sincos(x) (default: off, on to enable)")
 #endif
-        || !op.addStringOption('\0', "ion-sink", "on/off",
-                               "Sink code motion (default: off, on to enable)")
         || !op.addStringOption('\0', "ion-loop-unrolling", "on/off",
                                "Loop unrolling (default: off, on to enable)")
         || !op.addStringOption('\0', "ion-instruction-reordering", "on/off",

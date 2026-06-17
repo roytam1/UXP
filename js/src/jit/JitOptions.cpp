@@ -130,9 +130,6 @@ DefaultJitOptions::DefaultJitOptions()
         SET_DEFAULT(disableSincos, true);
     #endif
 
-    // Toggles whether sink code motion is globally disabled.
-    SET_DEFAULT(disableSink, true);
-
     // Whether functions are compiled immediately.
     SET_DEFAULT(eagerCompilation, false);
 

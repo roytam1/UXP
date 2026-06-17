@@ -251,7 +251,7 @@ private:
     // Number of keepalive probes to send.
     int32_t     mKeepaliveProbeCount;
     // True if TCP keepalive is enabled globally.
-    bool        mKeepaliveEnabledPref;
+    Atomic<bool, Relaxed> mKeepaliveEnabledPref;
 
     Atomic<bool>                    mServingPendingQueue;
     Atomic<int32_t, Relaxed>        mMaxTimePerPollIter;

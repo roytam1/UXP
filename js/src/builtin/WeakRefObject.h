@@ -22,17 +22,27 @@ class WeakRefObject : public NativeObject
             Symbol
         };
 
-        explicit Referent(JSObject* obj)
-          : kind(Kind::Object), objectTarget(obj), symbolTarget(nullptr) {}
-        explicit Referent(JS::Symbol* sym)
-          : kind(Kind::Symbol), objectTarget(nullptr), symbolTarget(sym) {}
-
+        explicit Referent(JSObject* obj, bool enabled)
+          : kind(Kind::Object)
+          , objectTarget(obj)
+          , symbolTarget(nullptr)
+          , enabled(enabled)
+        {}
+        
+        explicit Referent(JS::Symbol* sym, bool enabled)
+          : kind(Kind::Symbol)
+          , objectTarget(nullptr)
+          , symbolTarget(sym)
+          , enabled(enabled)
+        {}
+        
         bool isObject() const { return kind == Kind::Object; }
         bool isSymbol() const { return kind == Kind::Symbol; }
 
         Kind kind;
         WeakRef<JSObject*> objectTarget;
         WeakRef<JS::Symbol*> symbolTarget;
+        bool enabled;
     };
 
     static const Class class_;
