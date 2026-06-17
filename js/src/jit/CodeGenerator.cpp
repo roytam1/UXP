@@ -2439,7 +2439,7 @@ static const VMFunction GetOrCreateModuleMetaObjectInfo =
 void
 CodeGenerator::visitModuleMetadata(LModuleMetadata* lir)
 {
-    pushArg(ImmPtr(lir->mir()->module()));
+    pushArg(ImmGCPtr(lir->mir()->module()));
     callVM(GetOrCreateModuleMetaObjectInfo, lir);
 }
 
