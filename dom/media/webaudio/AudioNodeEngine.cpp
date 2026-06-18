@@ -26,7 +26,7 @@ ThreadSharedFloatArrayBufferList::Create(uint32_t aChannelCount,
     new ThreadSharedFloatArrayBufferList(aChannelCount);
 
   for (uint32_t i = 0; i < aChannelCount; ++i) {
-    float* channelData = js_pod_malloc<float>(aLength);
+    float* channelData = js_pod_calloc<float>(aLength);
     if (!channelData) {
       return nullptr;
     }
