@@ -35,6 +35,14 @@ using namespace mozilla;
 
 nsIFile *nsFilePicker::mPrevDisplayDirectory = nullptr;
 
+// Use an application-defined response ID (non-negative) for the accept button
+// instead of GTK_RESPONSE_ACCEPT (-3). GTK's built-in negative response IDs
+// cause the button to be treated as the dialog's default widget, meaning it
+// activates on Enter. A non-negative ID prevents this, so a page that tricks
+// the user into holding Enter before the dialog appears cannot auto-confirm
+// an unintended file upload. See bug 2033848 and the equivalent Chrome fix.
+static const gint kFilePickerAccept = 0;
+
 void
 nsFilePicker::Shutdown()
 {
@@ -465,10 +473,6 @@ nsFilePicker::Open(nsIFilePickerShownCallback *aCallback)
     }
   }
 
-  if (GTK_IS_DIALOG(file_chooser)) {
-    gtk_dialog_set_default_response(GTK_DIALOG(file_chooser), GTK_RESPONSE_ACCEPT);
-  }
-
   int32_t count = mFilters.Length();
   for (int32_t i = 0; i < count; ++i) {
     // This is fun... the GTK file picker does not accept a list of filters
@@ -539,31 +543,32 @@ nsFilePicker::Done(void* file_chooser, gint response)
   int16_t result;
   switch (response) {
     case GTK_RESPONSE_OK:
-    case GTK_RESPONSE_ACCEPT:
-    ReadValuesFromFileChooser(file_chooser);
-    result = nsIFilePicker::returnOK;
-    if (mMode == nsIFilePicker::modeSave) {
-      nsCOMPtr<nsIFile> file;
-      GetFile(getter_AddRefs(file));
-      if (file) {
-        bool exists = false;
-        file->Exists(&exists);
-        if (exists)
-          result = nsIFilePicker::returnReplace;
+    case GTK_RESPONSE_ACCEPT: // emitted by GTK internally on double-click
+    case kFilePickerAccept:
+      ReadValuesFromFileChooser(file_chooser);
+      result = nsIFilePicker::returnOK;
+      if (mMode == nsIFilePicker::modeSave) {
+        nsCOMPtr<nsIFile> file;
+        GetFile(getter_AddRefs(file));
+        if (file) {
+          bool exists = false;
+          file->Exists(&exists);
+          if (exists)
+            result = nsIFilePicker::returnReplace;
+        }
       }
-    }
-    break;
+      break;
 
     case GTK_RESPONSE_CANCEL:
     case GTK_RESPONSE_CLOSE:
     case GTK_RESPONSE_DELETE_EVENT:
-    result = nsIFilePicker::returnCancel;
-    break;
+      result = nsIFilePicker::returnCancel;
+      break;
 
     default:
-    NS_WARNING("Unexpected response");
-    result = nsIFilePicker::returnCancel;
-    break;
+      NS_WARNING("Unexpected response");
+      result = nsIFilePicker::returnCancel;
+      break;
   }
 
   // A "response" signal won't be sent again but "destroy" will be.
@@ -624,9 +629,9 @@ nsFilePicker::GtkFileChooserNew(
   }
   GtkWidget *file_chooser = gtk_file_chooser_dialog_new(title, parent, action,
       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-      accept_label, GTK_RESPONSE_ACCEPT, nullptr);
+      accept_label, kFilePickerAccept, nullptr);
   gtk_dialog_set_alternative_button_order(GTK_DIALOG(file_chooser),
-          GTK_RESPONSE_ACCEPT, GTK_RESPONSE_CANCEL, -1);
+          kFilePickerAccept, GTK_RESPONSE_CANCEL, -1);
   return file_chooser;
 }
 
