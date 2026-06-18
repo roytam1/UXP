@@ -9,7 +9,7 @@ EXPORTS += [
     'pnglibconf.h'
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'png.c',
     'pngerror.c',
     'pngget.c',
@@ -28,7 +28,7 @@ UNIFIED_SOURCES += [
 
 if CONFIG['CPU_ARCH'] == 'arm':
     DEFINES['MOZ_PNG_USE_ARM_NEON'] = True
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'arm/arm_init.c',
         'arm/filter_neon_intrinsics.c'
     ]
@@ -39,7 +39,7 @@ if CONFIG['CPU_ARCH'] == 'arm':
 
 if CONFIG['INTEL_ARCHITECTURE']:
     DEFINES['MOZ_PNG_USE_INTEL_SSE'] = True
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'sse2/filter_sse2_intrinsics.c',
         'sse2/intel_init.c'
     ]

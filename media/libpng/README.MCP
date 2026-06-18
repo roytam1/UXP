@@ -1,0 +1,11 @@
+This version of libpng has been patched to add APNG support.
+libpng will (eventually) support this natively, as a departure from
+the developers' initial stance on animation support, but the intended
+release publication (using very similar code to our patches) is not
+yet ready.
+
+Once libpng 2.0.x (originally 1.8.x) is ready, our client-side patches
+can likely be discarded and we can lean on upstream's direct support
+from that point forward.
+The apng.patch and arm.patch files are primarily for reference/as a
+starting point for any libpng updates in the meantime.

@@ -1,11 +1,17 @@
 /* png.h - header file for PNG reference library
  *
- * libpng version 1.6.58
+ * libpng version 1.6.58+apng
  *
  * Copyright (c) 2018-2026 Cosmin Truta
  * Copyright (c) 1998-2002,2004,2006-2018 Glenn Randers-Pehrson
  * Copyright (c) 1996-1997 Andreas Dilger
  * Copyright (c) 1995-1996 Guy Eric Schalnat, Group 42, Inc.
+ *
+ * This modified version of libpng code adds animated PNG support and is
+ * released under the libpng license described below. The modifications are
+ * Copyright (c) 2006-2007 Andrew Smith, Copyright (c) 2008-2016 Max Stepin,
+ * and are delimited by "#ifdef PNG_APNG_SUPPORTED / #endif" directives
+ * surrounding them in the modified libpng source files.
  *
  * This code is released under the libpng license. (See LICENSE, below.)
  *
@@ -274,7 +280,7 @@
  */
 
 /* Version information for png.h - this should match the version in png.c */
-#define PNG_LIBPNG_VER_STRING "1.6.58"
+#define PNG_LIBPNG_VER_STRING "1.6.58+apng"
 #define PNG_HEADER_VERSION_STRING " libpng version " PNG_LIBPNG_VER_STRING "\n"
 
 /* The versions of shared library builds should stay in sync, going forward */
@@ -327,6 +333,10 @@
  */
 #   include "pnglibconf.h"
 #endif
+
+#define PNG_APNG_SUPPORTED
+#define PNG_READ_APNG_SUPPORTED
+#define PNG_WRITE_APNG_SUPPORTED
 
 #ifndef PNG_VERSION_INFO_ONLY
 /* Machine specific configuration. */
@@ -422,6 +432,17 @@ extern "C" {
  * constants.
  * See pngconf.h for base types that vary by machine/system
  */
+
+#ifdef PNG_APNG_SUPPORTED
+/* dispose_op flags from inside fcTL */
+#define PNG_DISPOSE_OP_NONE        0x00
+#define PNG_DISPOSE_OP_BACKGROUND  0x01
+#define PNG_DISPOSE_OP_PREVIOUS    0x02
+
+/* blend_op flags from inside fcTL */
+#define PNG_BLEND_OP_SOURCE        0x00
+#define PNG_BLEND_OP_OVER          0x01
+#endif /* APNG */
 
 /* This triggers a compiler error in png.c, if png.c and png.h
  * do not agree upon the version number.
@@ -756,8 +777,8 @@ typedef png_unknown_chunk * * png_unknown_chunkpp;
  * chunks with these names have been reserved.  Private definitions should
  * avoid them.
  */
-#define PNG_INFO_acTL 0x100000U /* PNGv3: 1.6.45: unknown */
-#define PNG_INFO_fcTL 0x200000U /* PNGv3: 1.6.45: unknown */
+#define PNG_INFO_acTL 0x100000U /* PNGv3: 1.6.58+apng */
+#define PNG_INFO_fcTL 0x200000U /* PNGv3: 1.6.58+apng */
 #define PNG_INFO_fdAT 0x400000U /* PNGv3: 1.6.45: unknown */
 
 /* This is used for the transformation routines, as some of them
@@ -801,6 +822,10 @@ typedef PNG_CALLBACK(void, *png_progressive_info_ptr,
    (png_structp, png_infop));
 typedef PNG_CALLBACK(void, *png_progressive_end_ptr,
    (png_structp, png_infop));
+#ifdef PNG_APNG_SUPPORTED
+typedef PNG_CALLBACK(void, *png_progressive_frame_ptr,
+   (png_structp, png_uint_32));
+#endif
 
 /* The following callback receives png_uint_32 row_number, int pass for the
  * png_bytep data of the row.  When transforming an interlaced image the
@@ -3506,6 +3531,75 @@ PNG_EXPORT(244, int, png_set_option, (png_structrp png_ptr, int option,
  *  END OF HARDWARE AND SOFTWARE OPTIONS
  ******************************************************************************/
 
+#ifdef PNG_APNG_SUPPORTED
+PNG_EXPORT(246, png_uint_32, png_get_acTL, (png_structp png_ptr,
+   png_infop info_ptr, png_uint_32 *num_frames, png_uint_32 *num_plays));
+
+PNG_EXPORT(247, png_uint_32, png_set_acTL, (png_structp png_ptr,
+   png_infop info_ptr, png_uint_32 num_frames, png_uint_32 num_plays));
+
+PNG_EXPORT(248, png_uint_32, png_get_num_frames, (png_structp png_ptr,
+   png_infop info_ptr));
+
+PNG_EXPORT(249, png_uint_32, png_get_num_plays, (png_structp png_ptr,
+   png_infop info_ptr));
+
+PNG_EXPORT(250, png_uint_32, png_get_next_frame_fcTL,
+   (png_structp png_ptr, png_infop info_ptr, png_uint_32 *width,
+   png_uint_32 *height, png_uint_32 *x_offset, png_uint_32 *y_offset,
+   png_uint_16 *delay_num, png_uint_16 *delay_den, png_byte *dispose_op,
+   png_byte *blend_op));
+
+PNG_EXPORT(251, png_uint_32, png_set_next_frame_fcTL,
+   (png_structp png_ptr, png_infop info_ptr, png_uint_32 width,
+   png_uint_32 height, png_uint_32 x_offset, png_uint_32 y_offset,
+   png_uint_16 delay_num, png_uint_16 delay_den, png_byte dispose_op,
+   png_byte blend_op));
+
+PNG_EXPORT(252, png_uint_32, png_get_next_frame_width,
+   (png_structp png_ptr, png_infop info_ptr));
+PNG_EXPORT(253, png_uint_32, png_get_next_frame_height,
+   (png_structp png_ptr, png_infop info_ptr));
+PNG_EXPORT(254, png_uint_32, png_get_next_frame_x_offset,
+   (png_structp png_ptr, png_infop info_ptr));
+PNG_EXPORT(255, png_uint_32, png_get_next_frame_y_offset,
+   (png_structp png_ptr, png_infop info_ptr));
+PNG_EXPORT(256, png_uint_16, png_get_next_frame_delay_num,
+   (png_structp png_ptr, png_infop info_ptr));
+PNG_EXPORT(257, png_uint_16, png_get_next_frame_delay_den,
+   (png_structp png_ptr, png_infop info_ptr));
+PNG_EXPORT(258, png_byte, png_get_next_frame_dispose_op,
+   (png_structp png_ptr, png_infop info_ptr));
+PNG_EXPORT(259, png_byte, png_get_next_frame_blend_op,
+   (png_structp png_ptr, png_infop info_ptr));
+PNG_EXPORT(260, png_byte, png_get_first_frame_is_hidden,
+   (png_structp png_ptr, png_infop info_ptr));
+PNG_EXPORT(261, png_uint_32, png_set_first_frame_is_hidden,
+   (png_structp png_ptr, png_infop info_ptr, png_byte is_hidden));
+
+#ifdef PNG_READ_APNG_SUPPORTED
+PNG_EXPORT(262, void, png_read_frame_head, (png_structp png_ptr,
+   png_infop info_ptr));
+#ifdef PNG_PROGRESSIVE_READ_SUPPORTED
+PNG_EXPORT(263, void, png_set_progressive_frame_fn, (png_structp png_ptr,
+   png_progressive_frame_ptr frame_info_fn,
+   png_progressive_frame_ptr frame_end_fn));
+#endif /* PROGRESSIVE_READ */
+#endif /* READ_APNG */
+
+#ifdef PNG_WRITE_APNG_SUPPORTED
+PNG_EXPORT(264, void, png_write_frame_head, (png_structp png_ptr,
+   png_infop info_ptr, png_bytepp row_pointers,
+   png_uint_32 width, png_uint_32 height,
+   png_uint_32 x_offset, png_uint_32 y_offset,
+   png_uint_16 delay_num, png_uint_16 delay_den, png_byte dispose_op,
+   png_byte blend_op));
+
+PNG_EXPORT(265, void, png_write_frame_tail, (png_structp png_ptr,
+   png_infop info_ptr));
+#endif /* WRITE_APNG */
+#endif /* APNG */
+
 /* Maintainer: Put new public prototypes here ^, in libpng.3, in project
  * defs, and in scripts/symbols.def.
  */
@@ -3514,7 +3608,11 @@ PNG_EXPORT(244, int, png_set_option, (png_structrp png_ptr, int option,
  * one to use is one more than this.)
  */
 #ifdef PNG_EXPORT_LAST_ORDINAL
+#ifdef PNG_APNG_SUPPORTED
+   PNG_EXPORT_LAST_ORDINAL(279);
+#else
    PNG_EXPORT_LAST_ORDINAL(259);
+#endif /* APNG */
 #endif
 
 #ifdef __cplusplus
