@@ -233,6 +233,16 @@ nsHtml5TreeOperation::AppendToDocument(nsIContent* aNode,
       return NS_OK;
     }
   }
+  if (MOZ_UNLIKELY(aNode->HasChildren()) &&
+      nsContentUtils::ContentIsDescendantOf(aNode->GetParentNode(), aNode)) {
+    // "If it is not possible to insert element at the adjusted insertion
+    // location, abort these steps."
+    return NS_OK;
+  }
+
+  AutoSetThrowOnDynamicMarkupInsertionCounter
+    throwOnDynamicMarkupInsertionCounter(aBuilder->GetDocument());
+
   nsresult rv = NS_OK;
 
   nsIDocument* doc = aBuilder->GetDocument();
@@ -246,11 +256,14 @@ nsHtml5TreeOperation::AppendToDocument(nsIContent* aNode,
   aNode->SetParserHasNotified();
   nsNodeUtils::ContentInserted(doc, aNode, childCount);
 
-  NS_ASSERTION(!nsContentUtils::IsSafeToRunScript(),
-               "Someone forgot to block scripts");
-  if (aNode->IsElement()) {
-    nsContentUtils::AddScriptRunner(
-        new nsDocElementCreatedNotificationRunner(doc));
+  if (nsContentUtils::IsSafeToRunScript()) {
+    // Scripts should have been blocked, don't add another script runner.
+    return rv;
+  } else {
+    if (aNode->IsElement()) {
+      nsContentUtils::AddScriptRunner(
+          new nsDocElementCreatedNotificationRunner(doc));
+    }
   }
   return rv;
 }
@@ -475,7 +488,7 @@ nsHtml5TreeOperation::CreateHTMLElement(
 
   if (willExecuteScript) { // This will cause custom element constructors to run
     AutoSetThrowOnDynamicMarkupInsertionCounter
-      throwOnDynamicMarkupInsertionCounter(document);
+      throwOnDynamicMarkupInsertionCounter(aBuilder->GetDocument());
     mozAutoPauseContentUpdate autoPauseContentUpdate(document);
     {
       nsAutoMicroTask mt;
