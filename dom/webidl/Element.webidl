@@ -34,7 +34,6 @@ interface Element : Node {
 
   [SameObject]
   readonly attribute NamedNodeMap attributes;
-  [Pure]
   sequence<DOMString> getAttributeNames();
   [Pure]
   DOMString? getAttribute(DOMString name);
@@ -159,7 +158,7 @@ interface Element : Node {
    * this property returns an object with computed values for grid
    * tracks and lines.
    */
-  [ChromeOnly, Pure]
+  [ChromeOnly]
   sequence<Grid> getGridFragments();
 };
 
