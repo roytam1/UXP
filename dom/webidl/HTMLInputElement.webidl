@@ -51,7 +51,7 @@ interface HTMLInputElement : HTMLElement {
            attribute boolean formNoValidate;
   [CEReactions, Pure, SetterThrows]
            attribute DOMString formTarget;
-  [CEReactions, Pure, SetterThrows]
+  [CEReactions, SetterThrows]
            attribute unsigned long height;
   [Pure]
            attribute boolean indeterminate;

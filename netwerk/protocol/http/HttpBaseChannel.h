@@ -440,7 +440,7 @@ protected:
   uint64_t                          mStartPos;
 
   nsresult                          mStatus;
-  uint32_t                          mLoadFlags;
+  Atomic<uint32_t, Relaxed>         mLoadFlags;
   uint32_t                          mCaps;
   uint32_t                          mClassOfService;
   int16_t                           mPriority;

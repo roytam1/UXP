@@ -23,7 +23,7 @@ interface HTMLElement : Element {
   [CEReactions, SetterThrows, Pure]
            attribute DOMString dir;
 
-  [CEReactions, GetterThrows, Pure]
+  [CEReactions, GetterThrows]
            attribute [TreatNullAs=EmptyString] DOMString innerText;
 
   // user interaction
