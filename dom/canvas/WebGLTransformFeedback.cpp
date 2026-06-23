@@ -39,6 +39,44 @@ WebGLTransformFeedback::Delete()
 
 ////////////////////////////////////////
 
+// Validation helper for beginning/resuming the TF and computing the
+// vertex capacity.
+bool
+WebGLTransformFeedback::PrepareTransformFeedback() {
+    const auto& prog = mContext->mCurrentProgram;
+    if (!prog ||
+        !prog->IsLinked() ||
+        !prog->LinkInfo()->componentsPerTFVert.size()) {
+        mContext->ErrorInvalidOperation("Current program not valid for transform feedback.");
+        return false;
+    }
+
+    const auto& linkInfo = prog->LinkInfo();
+    const auto& componentsPerTFVert = linkInfo->componentsPerTFVert;
+    
+    mActive_VertCapacity = 0;
+
+    size_t minVertCapacity = SIZE_MAX;
+    for (size_t i = 0; i < componentsPerTFVert.size(); i++) {
+        const auto& indexedBinding = mIndexedBindings[i];
+        const auto& componentsPerVert = componentsPerTFVert[i];
+
+        const auto& buffer = indexedBinding.mBufferBinding;
+        if (!buffer) {
+            mContext->ErrorInvalidOperation("No buffer attached to required transform feedback index %u.",
+                                            (uint32_t)i);
+            return false;
+        }
+
+        const size_t vertCapacity = buffer->ByteLength() / 4 / componentsPerVert;
+        minVertCapacity = std::min(minVertCapacity, vertCapacity);
+    }
+    
+    mActive_VertCapacity = minVertCapacity;
+    
+    return true;
+}
+
 void
 WebGLTransformFeedback::BeginTransformFeedback(GLenum primMode)
 {
@@ -59,35 +97,8 @@ WebGLTransformFeedback::BeginTransformFeedback(GLenum primMode)
         return;
     }
 
-    const auto& prog = mContext->mCurrentProgram;
-    if (!prog ||
-        !prog->IsLinked() ||
-        !prog->LinkInfo()->componentsPerTFVert.size())
-    {
-        mContext->ErrorInvalidOperation("%s: Current program not valid for transform"
-                                        " feedback.",
-                                        funcName);
+    if (!PrepareTransformFeedback()) {
         return;
-    }
-
-    const auto& linkInfo = prog->LinkInfo();
-    const auto& componentsPerTFVert = linkInfo->componentsPerTFVert;
-
-    size_t minVertCapacity = SIZE_MAX;
-    for (size_t i = 0; i < componentsPerTFVert.size(); i++) {
-        const auto& indexedBinding = mIndexedBindings[i];
-        const auto& componentsPerVert = componentsPerTFVert[i];
-
-        const auto& buffer = indexedBinding.mBufferBinding;
-        if (!buffer) {
-            mContext->ErrorInvalidOperation("%s: No buffer attached to required transform"
-                                            " feedback index %u.",
-                                            funcName, (uint32_t)i);
-            return;
-        }
-
-        const size_t vertCapacity = buffer->ByteLength() / 4 / componentsPerVert;
-        minVertCapacity = std::min(minVertCapacity, vertCapacity);
     }
 
     ////
@@ -101,10 +112,9 @@ WebGLTransformFeedback::BeginTransformFeedback(GLenum primMode)
     mIsActive = true;
     MOZ_ASSERT(!mIsPaused);
 
-    mActive_Program = prog;
+    mActive_Program = mContext->mCurrentProgram;
     mActive_PrimMode = primMode;
     mActive_VertPosition = 0;
-    mActive_VertCapacity = minVertCapacity;
 
     ////
 
@@ -170,6 +180,12 @@ WebGLTransformFeedback::ResumeTransformFeedback()
     if (mContext->mCurrentProgram != mActive_Program) {
         mContext->ErrorInvalidOperation("%s: Active program differs from original.",
                                         funcName);
+        return;
+    }
+
+    // Re-run prepare in case some of the buffers have been modified
+    // while the TF was paused.
+    if (!PrepareTransformFeedback()) {
         return;
     }
 

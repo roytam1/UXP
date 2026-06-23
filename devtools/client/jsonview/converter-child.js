@@ -210,10 +210,10 @@ function initialHTML(doc) {
   let style = doc.createElement("link");
   style.rel = "stylesheet";
   style.type = "text/css";
-  style.href = "css/main.css";
+  style.href = base.href +"css/main.css";
 
   let script = doc.createElement("script");
-  script.src = "lib/require.js";
+  script.src = base.href + "lib/require.js";
   script.dataset.main = "viewer-config";
   script.defer = true;
 
