@@ -528,7 +528,9 @@ ssl_DecodeResumptionToken(sslSessionID *sid, const PRUint8 *encodedToken,
         }
         SECItem tempItem = { siBuffer, (unsigned char *)readerBuffer.buf,
                              readerBuffer.len };
-        SECITEM_CopyItem(NULL, &sid->peerCertStatus.items[0], &tempItem);
+        if (SECITEM_CopyItem(NULL, &sid->peerCertStatus.items[0], &tempItem) != SECSuccess) {
+            return SECFailure;
+        }
     }
 
     if (sslRead_ReadVariable(&reader, 1, &readerBuffer) != SECSuccess) {
@@ -536,11 +538,15 @@ ssl_DecodeResumptionToken(sslSessionID *sid, const PRUint8 *encodedToken,
         return SECFailure;
     }
     if (readerBuffer.len) {
-        PORT_Assert(readerBuffer.buf);
         if (sid->peerID) {
             PORT_Free((void *)sid->peerID);
         }
-        sid->peerID = PORT_Strdup((const char *)readerBuffer.buf);
+        PORT_Assert(readerBuffer.buf);
+        sid->peerID = PORT_ZAlloc(readerBuffer.len + 1);
+        if (!sid->peerID) {
+            return SECFailure;
+        }
+        PORT_Memcpy((void *)sid->peerID, readerBuffer.buf, readerBuffer.len);
     }
 
     if (sslRead_ReadVariable(&reader, 1, &readerBuffer) != SECSuccess) {
@@ -552,7 +558,11 @@ ssl_DecodeResumptionToken(sslSessionID *sid, const PRUint8 *encodedToken,
             PORT_Free((void *)sid->urlSvrName);
         }
         PORT_Assert(readerBuffer.buf);
-        sid->urlSvrName = PORT_Strdup((const char *)readerBuffer.buf);
+        sid->urlSvrName = PORT_ZAlloc(readerBuffer.len + 1);
+        if (!sid->urlSvrName) {
+            return SECFailure;
+        }
+        PORT_Memcpy((void *)sid->urlSvrName, readerBuffer.buf, readerBuffer.len);
     }
 
     if (sslRead_ReadVariable(&reader, 3, &readerBuffer) != SECSuccess) {
@@ -566,6 +576,9 @@ ssl_DecodeResumptionToken(sslSessionID *sid, const PRUint8 *encodedToken,
         sid->localCert = CERT_NewTempCertificate(NULL, /* dbHandle */
                                                  &tempItem,
                                                  NULL, PR_FALSE, PR_TRUE);
+        if (!sid->localCert) {
+            return SECFailure;
+        }
     }
 
     if (sslRead_ReadNumber(&reader, 8, &sid->addr.pr_s6_addr64[0]) != SECSuccess) {

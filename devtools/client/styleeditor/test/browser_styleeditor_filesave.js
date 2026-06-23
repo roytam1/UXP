@@ -15,7 +15,7 @@ var NetUtil = tempScope.NetUtil;
 
 add_task(function* () {
   let htmlFile = yield copy(TESTCASE_URI_HTML, "simple.html");
-  yield copy(TESTCASE_URI_CSS, "simple.css");
+  const cssFile = await copy(TESTCASE_URI_CSS, "simple.css");
   let uri = Services.io.newFileURI(htmlFile);
   let filePath = uri.resolve("");
 
@@ -23,6 +23,12 @@ add_task(function* () {
 
   let editor = ui.editors[0];
   yield editor.getSourceEditor();
+
+  is(
+    editor.savedFile,
+    null,
+    "savedFile should not be pre-populated from the source file"
+  );
 
   info("Editing the style sheet.");
   let dirty = editor.sourceEditor.once("dirty-change");
@@ -35,11 +41,13 @@ add_task(function* () {
   ok(editor.summary.classList.contains("unsaved"),
      "Star icon is present in the corresponding summary.");
 
-  info("Saving the changes.");
+  info(
+    "Saving the changes with an explicit file (simulating a user-chosen save location)."
+  );
   dirty = editor.sourceEditor.once("dirty-change");
 
-  editor.saveToFile(null, function (file) {
-    ok(file, "file should get saved directly when using a file:// URI");
+  editor.saveToFile(cssFile, function (file) {
+    ok(file, "file should get saved when explicitly passing a file");
   });
 
   yield dirty;
@@ -47,6 +55,12 @@ add_task(function* () {
   is(editor.sourceEditor.isClean(), true, "Editor is clean.");
   ok(!editor.summary.classList.contains("unsaved"),
      "Star icon is not present in the corresponding summary.");
+
+  is(
+    editor.savedFile?.path,
+    cssFile.path,
+    "savedFile should now be set on the editor"
+  );
 });
 
 function copy(srcChromeURL, destFileName) {
