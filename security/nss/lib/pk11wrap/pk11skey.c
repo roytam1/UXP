@@ -1759,6 +1759,11 @@ pk11_ANSIX963Derive(PK11SymKey *sharedSecret,
     else
         SharedInfoLen = sharedData->len;
 
+    if (SharedInfoLen > PR_UINT32_MAX - 4) {
+        PORT_SetError(SEC_ERROR_INVALID_ARGS);
+        return NULL;
+    }
+
     bufferLen = SharedInfoLen + 4;
 
     /* Populate buffer with Counter || sharedData

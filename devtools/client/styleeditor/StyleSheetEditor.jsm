@@ -103,12 +103,6 @@ function StyleSheetEditor(styleSheet, win, file, isNew, walker, highlighter) {
     }
   };
 
-  this._styleSheetFilePath = null;
-  if (styleSheet.href &&
-      Services.io.extractScheme(this.styleSheet.href) == "file") {
-    this._styleSheetFilePath = this.styleSheet.href;
-  }
-
   this._onPropertyChange = this._onPropertyChange.bind(this);
   this._onError = this._onError.bind(this);
   this._onMediaRuleMatchesChange = this._onMediaRuleMatchesChange.bind(this);
@@ -664,8 +658,7 @@ StyleSheetEditor.prototype = {
     if (this._friendlyName) {
       defaultName = OS.Path.basename(this._friendlyName);
     }
-    showFilePicker(file || this._styleSheetFilePath, true, this._window,
-                   onFile, defaultName);
+    showFilePicker(file, true, this._window, onFile, defaultName);
   },
 
   /**
