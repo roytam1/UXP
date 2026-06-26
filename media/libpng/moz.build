@@ -45,6 +45,15 @@ if CONFIG['INTEL_ARCHITECTURE']:
         'sse2/intel_init.c'
     ]
 
+if CONFIG['CPU_ARCH'] == 'loongarch64':
+    DEFINES['PNG_LOONGARCH_LSX_OPT'] = 1
+    SOURCES += [
+        'loongarch/filter_lsx_intrinsics.c',
+        'loongarch/loongarch_lsx_init.c',
+    ]
+    SOURCES['loongarch/filter_lsx_intrinsics.c'].flags += ['-mlsx']
+    SOURCES['loongarch/loongarch_lsx_init.c'].flags += ['-mlsx']
+
 Library('mozpng')
 
 if CONFIG['GKMEDIAS_SHARED_LIBRARY']:
