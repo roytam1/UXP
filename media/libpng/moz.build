@@ -26,7 +26,7 @@ SOURCES += [
     'pngwutil.c'
 ]
 
-if CONFIG['CPU_ARCH'] == 'arm':
+if CONFIG['CPU_ARCH'] in ('arm','aarch64'):
     DEFINES['MOZ_PNG_USE_ARM_NEON'] = True
     SOURCES += [
         'arm/arm_init.c',
