@@ -10,6 +10,8 @@ const Cu = Components.utils;
 
 const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
+const PREF_INTERNAL_USERSCRIPTS_ENABLED = "browser.internal-userscripts.enabled";
+
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
@@ -168,6 +170,7 @@ BrowserGlue.prototype = {
         break;
       case "final-ui-startup":
         this._finalUIStartup();
+        this._syncInternalUserScripts();
         break;
       case "browser-delayed-startup-finished":
         this._onFirstWindowLoaded();
@@ -332,6 +335,11 @@ BrowserGlue.prototype = {
         Services.obs.removeObserver(this, "browser-search-service");
         this._syncSearchEngines();
         break;
+      case "nsPref:changed":
+        if (data == PREF_INTERNAL_USERSCRIPTS_ENABLED) {
+          this._syncInternalUserScripts();
+        }
+        break;
     }
   },
 
@@ -377,6 +385,7 @@ BrowserGlue.prototype = {
     os.addObserver(this, "profile-after-change", false);
     os.addObserver(this, "browser-search-engine-modified", false);
     os.addObserver(this, "browser-search-service", false);
+    Services.prefs.addObserver(PREF_INTERNAL_USERSCRIPTS_ENABLED, this, false);
   },
 
   // cleanup (called on application shutdown)
@@ -419,6 +428,7 @@ BrowserGlue.prototype = {
     } catch(ex) {
       // may have already been removed by the observer
     }
+    Services.prefs.removeObserver(PREF_INTERNAL_USERSCRIPTS_ENABLED, this);
   },
 
   // profile is available
@@ -623,6 +633,16 @@ BrowserGlue.prototype = {
     nb.appendNotification(message, "slow-startup",
                           "chrome://browser/skin/slowStartup-16.png",
                           nb.PRIORITY_INFO_LOW, buttons);
+  },
+
+  _syncInternalUserScripts: function () {
+    let enabled = true;
+    try {
+      enabled = Services.prefs.getBoolPref(PREF_INTERNAL_USERSCRIPTS_ENABLED);
+    } catch (ex) {}
+    // Internal userscripts service checks this pref on startup.
+    // Ensure it is always present.
+    Services.prefs.setBoolPref(PREF_INTERNAL_USERSCRIPTS_ENABLED, enabled);
   },
 
   // the first browser window has finished initializing
