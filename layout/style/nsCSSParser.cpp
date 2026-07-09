@@ -9129,7 +9129,8 @@ CSSParserImpl::ParseVariant(nsCSSValue& aValue,
           aValue.SetUnsetValue();
           return CSSParseResult::Ok;
         }
-        else if (eCSSKeyword_revert == keyword) {
+        else if (eCSSKeyword_revert == keyword ||
+                 eCSSKeyword_revert_layer == keyword) {
           aValue.SetRevertValue(mLevel);
           return CSSParseResult::Ok;
         }
@@ -9337,7 +9338,8 @@ CSSParserImpl::ParseVariant(nsCSSValue& aValue,
          tk->mIdent.LowerCaseEqualsLiteral("initial") ||
          (tk->mIdent.LowerCaseEqualsLiteral("unset") &&
           nsLayoutUtils::UnsetValueEnabled()) ||
-         tk->mIdent.LowerCaseEqualsLiteral("revert")))) {
+         tk->mIdent.LowerCaseEqualsLiteral("revert") ||
+         tk->mIdent.LowerCaseEqualsLiteral("revert-layer")))) {
     aValue.SetStringValue(tk->mIdent, eCSSUnit_Ident);
     return CSSParseResult::Ok;
   }
@@ -9413,6 +9415,7 @@ CSSParserImpl::ParseCustomIdent(nsCSSValue& aValue,
       keyword == eCSSKeyword_initial ||
       keyword == eCSSKeyword_unset ||
       keyword == eCSSKeyword_revert ||
+      keyword == eCSSKeyword_revert_layer ||
       keyword == eCSSKeyword_default ||
       (aPropertyKTable &&
         nsCSSProps::FindIndexOfKeyword(keyword, aPropertyKTable) >= 0)) {
@@ -13897,7 +13900,8 @@ CSSParserImpl::ParseImageLayersItem(
       if (keyword == eCSSKeyword_inherit ||
           keyword == eCSSKeyword_initial ||
           keyword == eCSSKeyword_unset ||
-          keyword == eCSSKeyword_revert) {
+          keyword == eCSSKeyword_revert ||
+          keyword == eCSSKeyword_revert_layer) {
         return false;
       } else if (keyword == eCSSKeyword_none) {
         if (haveImage)
@@ -16647,6 +16651,7 @@ CSSParserImpl::ParseFamily(nsCSSValue& aValue)
         }
         break;
       case eCSSKeyword_revert:
+      case eCSSKeyword_revert_layer:
         aValue.SetRevertValue(mLevel);
         return true;
       case eCSSKeyword__moz_use_system_font:
@@ -16683,6 +16688,7 @@ CSSParserImpl::ParseFamily(nsCSSValue& aValue)
         case eCSSKeyword_initial:
         case eCSSKeyword_default:
         case eCSSKeyword_revert:
+        case eCSSKeyword_revert_layer:
         case eCSSKeyword__moz_use_system_font:
           return false;
         case eCSSKeyword_unset:
@@ -18556,14 +18562,15 @@ CSSParserImpl::ParseTransitionProperty()
       }
       if (cur->mValue.GetUnit() == eCSSUnit_Ident) {
         nsDependentString str(cur->mValue.GetStringBufferValue());
-        // Exclude 'none', 'inherit', 'initial', 'unset', and 'revert'
-        // according to the same rules as for 'counter-reset' in CSS 2.1.
+        // Exclude CSS-wide keywords and 'none' according to the same rules
+        // as for 'counter-reset' in CSS 2.1.
         if (str.LowerCaseEqualsLiteral("none") ||
             str.LowerCaseEqualsLiteral("inherit") ||
             str.LowerCaseEqualsLiteral("initial") ||
             (str.LowerCaseEqualsLiteral("unset") &&
              nsLayoutUtils::UnsetValueEnabled()) ||
-            str.LowerCaseEqualsLiteral("revert")) {
+            str.LowerCaseEqualsLiteral("revert") ||
+            str.LowerCaseEqualsLiteral("revert-layer")) {
           return false;
         }
       }
@@ -19476,8 +19483,7 @@ CSSParserImpl::ParseValueWithVariables(CSSVariableDeclarations::Type* aType,
     }
   }
 
-  // Look for 'initial', 'inherit', 'unset', or 'revert' as the first
-  // non-white space token.
+  // Look for CSS-wide keywords as the first non-white space token.
   CSSVariableDeclarations::Type type = CSSVariableDeclarations::eTokenStream;
   if (mToken.mType == eCSSToken_Ident) {
     if (mToken.mIdent.LowerCaseEqualsLiteral("initial")) {
@@ -19486,7 +19492,8 @@ CSSParserImpl::ParseValueWithVariables(CSSVariableDeclarations::Type* aType,
       type = CSSVariableDeclarations::eInherit;
     } else if (mToken.mIdent.LowerCaseEqualsLiteral("unset")) {
       type = CSSVariableDeclarations::eUnset;
-    } else if (mToken.mIdent.LowerCaseEqualsLiteral("revert")) {
+    } else if (mToken.mIdent.LowerCaseEqualsLiteral("revert") ||
+               mToken.mIdent.LowerCaseEqualsLiteral("revert-layer")) {
       type = CSSVariableDeclarations::eRevert;
     }
   }
