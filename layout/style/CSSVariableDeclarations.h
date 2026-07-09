@@ -7,10 +7,13 @@
 #ifndef mozilla_CSSVariableDeclarations_h
 #define mozilla_CSSVariableDeclarations_h
 
+#include "nsClassHashtable.h"
 #include "nsDataHashtable.h"
+#include "nsTArray.h"
 
 namespace mozilla {
 class CSSVariableResolver;
+class CSSVariableValues;
 } // namespace mozilla
 struct nsRuleData;
 
@@ -142,15 +145,36 @@ public:
    */
   void AddVariablesToResolver(CSSVariableResolver* aResolver) const;
 
+  /**
+   * Applies stored lower-priority declarations for custom property values that
+   * resolved to 'revert-layer'.
+   */
+  void ResolveRevertLayerFallbacks(const CSSVariableValues* aInherited,
+                                   CSSVariableValues* aOutput) const;
+
   size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
 private:
+  struct RevertLayerFallback
+  {
+    nsString mValue;
+    nsString mSource;
+  };
+
+  struct RevertLayerFallbackList
+  {
+    nsTArray<RevertLayerFallback> mItems;
+  };
+
   /**
    * Adds all the variable declarations from aOther into this object.
    */
   void CopyVariablesFrom(const CSSVariableDeclarations& aOther);
 
   nsDataHashtable<nsStringHashKey, nsString> mVariables;
+  nsDataHashtable<nsStringHashKey, nsString> mRevertLayerSources;
+  nsClassHashtable<nsStringHashKey, RevertLayerFallbackList>
+    mRevertLayerFallbacks;
 };
 
 } // namespace mozilla

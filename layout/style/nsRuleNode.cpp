@@ -11212,6 +11212,8 @@ nsRuleNode::ComputeVariablesData(void* aStartStruct,
   CSSVariableResolver resolver(&variables->mVariables);
   resolver.Resolve(&parentVariables->mVariables,
                    aRuleData->mVariables);
+  aRuleData->mVariables->ResolveRevertLayerFallbacks(&parentVariables->mVariables,
+                                                     &variables->mVariables);
   conditions.SetUncacheable();
 
   COMPUTE_END_INHERITED(Variables, variables)

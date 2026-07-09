@@ -122,6 +122,21 @@ CSSVariableValues::Put(const nsAString& aName,
 }
 
 void
+CSSVariableValues::Remove(const nsAString& aName)
+{
+  size_t id;
+  if (!mVariableIDs.Get(aName, &id)) {
+    return;
+  }
+
+  mVariables.RemoveElementAt(id);
+  mVariableIDs.Clear();
+  for (size_t i = 0, n = mVariables.Length(); i < n; i++) {
+    mVariableIDs.Put(mVariables[i].mVariableName, i);
+  }
+}
+
+void
 CSSVariableValues::CopyVariablesFrom(const CSSVariableValues& aOther)
 {
   for (size_t i = 0, n = aOther.mVariables.Length(); i < n; i++) {
