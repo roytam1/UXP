@@ -490,6 +490,7 @@ enum nsCSSUnit {
   eCSSUnit_GridTemplateAreas   = 44,   // (GridTemplateAreasValue*)
                                        // for grid-template-areas
   eCSSUnit_Revert       = 45,     // (SheetType) value is the current cascade origin
+  eCSSUnit_RevertLayer  = 46,     // (int32_t) packed cascade layer rollback data
 
   eCSSUnit_Pair         = 50,     // (nsCSSValuePair*) pair of values
   eCSSUnit_Triplet      = 51,     // (nsCSSValueTriplet*) triplet of values
@@ -939,6 +940,9 @@ public:
     MOZ_ASSERT(mUnit == eCSSUnit_Revert, "not a cascade origin value");
     return mValue.mCascadeOrigin;
   }
+  mozilla::SheetType GetRevertLayerOriginValue() const;
+  bool GetRevertLayerImportanceValue() const;
+  int32_t GetRevertLayerLayerValue() const;
 
   void Reset()  // sets to null
   {
@@ -994,6 +998,10 @@ public:
   void SetInitialValue();
   void SetUnsetValue();
   void SetRevertValue(mozilla::SheetType aValue);
+  void SetRevertLayerValue();
+  void SetRevertLayerValue(mozilla::SheetType aLevel,
+                           bool aIsImportant,
+                           int32_t aLayer);
   void SetNoneValue();
   void SetAllValue();
   void SetNormalValue();
@@ -1837,6 +1845,8 @@ public:
            mShorthandPropertyID == aOther.mShorthandPropertyID &&
            mTokenStream.Equals(aOther.mTokenStream) &&
            mLevel == aOther.mLevel &&
+           mIsImportant == aOther.mIsImportant &&
+           mCascadeLayer == aOther.mCascadeLayer &&
            (mBaseURI == aOther.mBaseURI ||
             (mBaseURI && aOther.mBaseURI &&
              NS_SUCCEEDED(mBaseURI->Equals(aOther.mBaseURI, &eq)) &&
@@ -1886,6 +1896,8 @@ public:
   uint32_t mLineNumber;
   uint32_t mLineOffset;
   mozilla::SheetType mLevel;
+  bool mIsImportant;
+  int32_t mCascadeLayer;
 
 private:
   nsCSSValueTokenStream(const nsCSSValueTokenStream& aOther) = delete;

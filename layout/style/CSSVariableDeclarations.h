@@ -43,7 +43,8 @@ public:
     eInitial,      // 'initial'
     eInherit,      // 'inherit'
     eUnset,        // 'unset'
-    eRevert        // 'revert'
+    eRevert,       // 'revert'
+    eRevertLayer   // 'revert-layer'
   };
 
   /**
@@ -96,6 +97,15 @@ public:
    *   be part of the custom property name) whose value is to be set.
    */
   void PutRevert(const nsAString& aName);
+
+  /**
+   * Adds or modifies an existing entry in this set of variable declarations
+   * to have the value 'revert-layer'.
+   *
+   * @param aName The variable name (not including any "--" prefix that would
+   *   be part of the custom property name) whose value is to be set.
+   */
+  void PutRevertLayer(const nsAString& aName);
 
   /**
    * Adds or modifies an existing entry in this set of variable declarations
