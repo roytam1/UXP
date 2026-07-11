@@ -48,20 +48,20 @@ ShouldIgnoreColors(nsRuleData *aRuleData)
          !aRuleData->mPresContext->UseDocumentColors();
 }
 
-static const int32_t kCascadeLayerRankMax = 0x000fffff;
-static const int32_t kCascadeRankStride = kCascadeLayerRankMax + 1;
+static const int32_t kLayerIndexMax = 0x000fffff;
+static const int32_t kCascadeRankStride = kLayerIndexMax + 1;
 
 static int32_t
-CascadeLayerRank(bool aIsImportant, int32_t aCascadeLayer)
+LayerIndexRank(bool aIsImportant, int32_t aLayerIndex)
 {
-  MOZ_ASSERT(aCascadeLayer >= 0);
-  MOZ_ASSERT(aCascadeLayer <= kCascadeLayerRankMax);
-  return aIsImportant ? kCascadeLayerRankMax - aCascadeLayer : aCascadeLayer;
+  MOZ_ASSERT(aLayerIndex >= 0);
+  MOZ_ASSERT(aLayerIndex <= kLayerIndexMax);
+  return aIsImportant ? kLayerIndexMax - aLayerIndex : aLayerIndex;
 }
 
 static int32_t
 CascadePrecedenceRank(SheetType aLevel, bool aIsImportant,
-                      int32_t aCascadeLayer)
+                      int32_t aLayerIndex)
 {
   int32_t bucket = 0;
   bool isLayeredOrigin = false;
@@ -107,7 +107,7 @@ CascadePrecedenceRank(SheetType aLevel, bool aIsImportant,
   }
 
   return bucket * kCascadeRankStride +
-         (isLayeredOrigin ? CascadeLayerRank(aIsImportant, aCascadeLayer) : 0);
+         (isLayeredOrigin ? LayerIndexRank(aIsImportant, aLayerIndex) : 0);
 }
 
 static bool
@@ -116,15 +116,15 @@ ShouldIgnoreForRevertLayer(const nsCSSValue& aTargetValue,
 {
   SheetType sourceLevel = aTargetValue.GetRevertLayerOriginValue();
   bool sourceImportant = aTargetValue.GetRevertLayerImportanceValue();
-  int32_t sourceLayer = aTargetValue.GetRevertLayerLayerValue();
+  int32_t sourceLayerIndex = aTargetValue.GetRevertLayerLayerIndexValue();
   MOZ_ASSERT(sourceLevel != SheetType::Unknown,
              "revert-layer should have cascade metadata before mapping");
 
   int32_t candidateRank =
     CascadePrecedenceRank(aRuleData->mLevel, aRuleData->mIsImportantRule,
-                          aRuleData->mCascadeLayer);
+                          aRuleData->mLayerIndex);
   int32_t sourceRank =
-    CascadePrecedenceRank(sourceLevel, sourceImportant, sourceLayer);
+    CascadePrecedenceRank(sourceLevel, sourceImportant, sourceLayerIndex);
 
   if (candidateRank >= sourceRank) {
     return true;
@@ -140,7 +140,7 @@ ShouldIgnoreForRevertLayer(const nsCSSValue& aTargetValue,
   }
 
   int32_t normalBoundary =
-    CascadePrecedenceRank(sourceLevel, false, sourceLayer);
+    CascadePrecedenceRank(sourceLevel, false, sourceLayerIndex);
   return candidateRank >= normalBoundary;
 }
 
@@ -479,14 +479,14 @@ nsCSSCompressedDataBlock::MapRuleInfoInto(nsRuleData *aRuleData) const
       if (val->GetUnit() == eCSSUnit_TokenStream) {
         val->GetTokenStreamValue()->mLevel = aRuleData->mLevel;
         val->GetTokenStreamValue()->mIsImportant = aRuleData->mIsImportantRule;
-        val->GetTokenStreamValue()->mCascadeLayer = aRuleData->mCascadeLayer;
+        val->GetTokenStreamValue()->mLayerIndex = aRuleData->mLayerIndex;
       } else if (val->GetUnit() == eCSSUnit_Revert) {
         aRuleData->mConditions.SetUncacheable();
       } else if (val->GetUnit() == eCSSUnit_RevertLayer) {
         nsCSSValue revertLayer;
         revertLayer.SetRevertLayerValue(aRuleData->mLevel,
                                         aRuleData->mIsImportantRule,
-                                        aRuleData->mCascadeLayer);
+                                        aRuleData->mLayerIndex);
         aRuleData->mConditions.SetUncacheable();
         MapSinglePropertyInto(iProp, &revertLayer, target, aRuleData);
         continue;
@@ -935,7 +935,7 @@ nsCSSExpandedDataBlock::MapRuleInfoInto(nsCSSPropertyID aPropID,
     nsCSSValue revertLayer;
     revertLayer.SetRevertLayerValue(tokenStream->mLevel,
                                     tokenStream->mIsImportant,
-                                    tokenStream->mCascadeLayer);
+                                    tokenStream->mLayerIndex);
     aRuleData->mConditions.SetUncacheable();
     MapSinglePropertyInto(physicalProp, &revertLayer, dest, aRuleData);
     return;

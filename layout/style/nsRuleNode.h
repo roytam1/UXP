@@ -441,12 +441,12 @@ private:
   struct Key {
     nsIStyleRule* mRule;
     mozilla::SheetType mLevel;
-    int32_t mCascadeLayer;
+    int32_t mLayerIndex;
     bool mIsImportantRule;
 
     Key(nsIStyleRule* aRule, mozilla::SheetType aLevel,
-        bool aIsImportantRule, int32_t aCascadeLayer)
-      : mRule(aRule), mLevel(aLevel), mCascadeLayer(aCascadeLayer),
+        bool aIsImportantRule, int32_t aLayerIndex)
+      : mRule(aRule), mLevel(aLevel), mLayerIndex(aLayerIndex),
         mIsImportantRule(aIsImportantRule)
     {}
 
@@ -454,7 +454,7 @@ private:
     {
       return mRule == aOther.mRule &&
              mLevel == aOther.mLevel &&
-             mCascadeLayer == aOther.mCascadeLayer &&
+             mLayerIndex == aOther.mLayerIndex &&
              mIsImportantRule == aOther.mIsImportantRule;
     }
 
@@ -473,7 +473,7 @@ private:
   static const PLDHashTableOps ChildrenHashOps;
 
   Key GetKey() const {
-    return Key(mRule, GetLevel(), IsImportantRule(), GetCascadeLayer());
+    return Key(mRule, GetLevel(), IsImportantRule(), GetLayerIndex());
   }
 
   // The children of this node are stored in either a hashtable or list
@@ -532,7 +532,7 @@ private:
   uint32_t mDependentBits; // Used to cache the fact that we can look up
                            // cached data under a parent rule.
 
-  int32_t mCascadeLayer;
+  int32_t mLayerIndex;
 
   uint32_t mNoneBits; // Used to cache the fact that the branch to this
                       // node specifies no non-inherited data for a
@@ -803,7 +803,7 @@ protected:
 private:
   nsRuleNode(nsPresContext* aPresContext, nsRuleNode* aParent,
              nsIStyleRule* aRule, mozilla::SheetType aLevel,
-             bool aIsImportant, int32_t aCascadeLayer);
+             bool aIsImportant, int32_t aLayerIndex);
   ~nsRuleNode();
 
 public:
@@ -816,7 +816,7 @@ public:
 
   // Transition never returns null; on out of memory it'll just return |this|.
   nsRuleNode* Transition(nsIStyleRule* aRule, mozilla::SheetType aLevel,
-                         bool aIsImportantRule, int32_t aCascadeLayer);
+                         bool aIsImportantRule, int32_t aLayerIndex);
   nsRuleNode* GetParent() const { return mParent; }
   bool IsRoot() const { return mParent == nullptr; }
 
@@ -836,9 +836,9 @@ public:
     NS_ASSERTION(!IsRoot(), "can't call on root");
     return (mDependentBits & NS_RULE_NODE_IS_IMPORTANT) != 0;
   }
-  int32_t GetCascadeLayer() const {
+  int32_t GetLayerIndex() const {
     NS_ASSERTION(!IsRoot(), "can't call on root");
-    return mCascadeLayer;
+    return mLayerIndex;
   }
 
   /**

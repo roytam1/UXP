@@ -854,7 +854,7 @@ ReplaceAnimationRule(nsRuleNode *aOldRuleNode,
   for (uint32_t i = moreSpecificNodes.Length(); i-- != 0; ) {
     nsRuleNode *oldNode = moreSpecificNodes[i];
     n = n->Transition(oldNode->GetRule(), oldNode->GetLevel(),
-                      oldNode->IsImportantRule(), oldNode->GetCascadeLayer());
+                      oldNode->IsImportantRule(), oldNode->GetLayerIndex());
   }
 
   return n;
@@ -1124,7 +1124,7 @@ FileRulesFromAllChildProcessors(
         if (i > 0) {
           aRuleWalker->SetLevel(aLevel, false, true);
         }
-        aRuleWalker->SetCascadeLayer(i);
+        aRuleWalker->SetLayerIndex(i);
         nsCOMPtr<nsIStyleRuleProcessor> processor = (*processors)[i];
         (*aCollectorFunc)(processor, aData);
         TrackRuleNodeForCurrentOrigin(aRuleWalker,
@@ -1308,7 +1308,7 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
   if (haveAnyImportantDocRules) {
     for (uint32_t i = lastDocRNs.Length(); i-- != 0; ) {
       aRuleWalker->SetLevel(SheetType::Doc, true, false);
-      aRuleWalker->SetCascadeLayer(i);
+      aRuleWalker->SetLayerIndex(i);
       nsRuleNode* startRN = lastDocRNs[i];
       nsRuleNode* endRN = i == 0 ? lastSVGAttrAnimationRN : lastDocRNs[i - 1];
       if (haveImportantDocRules[i]) {
@@ -1354,7 +1354,7 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
   if (haveAnyImportantUserRules) {
     for (uint32_t i = lastUserRNs.Length(); i-- != 0;) {
       aRuleWalker->SetLevel(SheetType::User, true, false);
-      aRuleWalker->SetCascadeLayer(i);
+      aRuleWalker->SetLayerIndex(i);
       nsRuleNode* startRN = lastUserRNs[i];
       nsRuleNode* endRN = i == 0 ? lastAgentRN : lastUserRNs[i - 1];
       if (haveImportantUserRules[i]) {
@@ -1376,7 +1376,7 @@ nsStyleSet::FileRules(nsIStyleRuleProcessor::EnumFunc aCollectorFunc,
   if (haveAnyImportantAgentRules) {
     for (uint32_t i = lastAgentRNs.Length(); i-- != 0;) {
       aRuleWalker->SetLevel(SheetType::Agent, true, false);
-      aRuleWalker->SetCascadeLayer(i);
+      aRuleWalker->SetLayerIndex(i);
       nsRuleNode* startRN = lastAgentRNs[i];
       nsRuleNode* endRN = i == 0 ? lastRestrictionRN : lastAgentRNs[i - 1];
       if (haveImportantAgentRules[i]) {
@@ -1589,7 +1589,7 @@ nsStyleSet::ResolveStyleByAddingRules(nsStyleContext* aBaseContext,
 struct RuleNodeInfo {
   nsIStyleRule* mRule;
   SheetType mLevel;
-  int32_t mCascadeLayer;
+  int32_t mLayerIndex;
   bool mIsImportant;
   bool mIsAnimationRule;
 };
@@ -1662,7 +1662,7 @@ nsStyleSet::RuleNodeWithReplacement(Element* aElement,
     RuleNodeInfo* curRule = rules.AppendElement();
     curRule->mRule = ruleNode->GetRule();
     curRule->mLevel = ruleNode->GetLevel();
-    curRule->mCascadeLayer = ruleNode->GetCascadeLayer();
+    curRule->mLayerIndex = ruleNode->GetLayerIndex();
     curRule->mIsImportant = ruleNode->IsImportantRule();
     curRule->mIsAnimationRule = ruleNode->IsAnimationRule();
   }
@@ -1777,7 +1777,7 @@ nsStyleSet::RuleNodeWithReplacement(Element* aElement,
       }
 
       if (!doReplace) {
-        ruleWalker.SetCascadeLayer(ruleInfo.mCascadeLayer);
+        ruleWalker.SetLayerIndex(ruleInfo.mLayerIndex);
         ruleWalker.ForwardOnPossiblyCSSRule(ruleInfo.mRule);
         if (ruleInfo.mIsAnimationRule) {
           ruleWalker.CurrentNode()->SetIsAnimationRule();

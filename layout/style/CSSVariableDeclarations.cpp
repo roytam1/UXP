@@ -23,8 +23,8 @@
 static const int32_t kRevertLayerMask = 0x000fffff;
 static const int32_t kRevertLayerImportant = 0x00100000;
 static const int32_t kRevertLayerOriginShift = 21;
-static const int32_t kCascadeLayerRankMax = 0x000fffff;
-static const int32_t kCascadeRankStride = kCascadeLayerRankMax + 1;
+static const int32_t kLayerIndexMax = 0x000fffff;
+static const int32_t kCascadeRankStride = kLayerIndexMax + 1;
 
 namespace mozilla {
 
@@ -42,12 +42,13 @@ ValueMightResolveToRevertLayer(const nsString& aValue)
 }
 
 static int32_t
-PackRevertLayerData(SheetType aLevel, bool aIsImportant, int32_t aLayer)
+PackRevertLayerData(SheetType aLevel, bool aIsImportant,
+                    int32_t aLayerIndex)
 {
-  MOZ_ASSERT(aLayer >= 0 && aLayer <= kRevertLayerMask);
+  MOZ_ASSERT(aLayerIndex >= 0 && aLayerIndex <= kRevertLayerMask);
   return (uint32_t(aLevel) << kRevertLayerOriginShift) |
          (aIsImportant ? kRevertLayerImportant : 0) |
-         (aLayer & kRevertLayerMask);
+         (aLayerIndex & kRevertLayerMask);
 }
 
 static void
@@ -56,12 +57,12 @@ SetRevertLayerData(nsString& aValue, const nsRuleData* aRuleData)
   aValue.AssignLiteral(REVERT_LAYER_VALUE);
   aValue.AppendInt(PackRevertLayerData(aRuleData->mLevel,
                                        aRuleData->mIsImportantRule,
-                                       aRuleData->mCascadeLayer));
+                                       aRuleData->mLayerIndex));
 }
 
 static bool
 UnpackRevertLayerData(const nsString& aValue, SheetType& aLevel,
-                      bool& aIsImportant, int32_t& aLayer)
+                      bool& aIsImportant, int32_t& aLayerIndex)
 {
   if (!IsRevertLayerValue(aValue) ||
       aValue.Length() == NS_LITERAL_STRING(REVERT_LAYER_VALUE).Length()) {
@@ -79,21 +80,21 @@ UnpackRevertLayerData(const nsString& aValue, SheetType& aLevel,
 
   aLevel = SheetType(uint32_t(packed) >> kRevertLayerOriginShift);
   aIsImportant = (packed & kRevertLayerImportant) != 0;
-  aLayer = packed & kRevertLayerMask;
+  aLayerIndex = packed & kRevertLayerMask;
   return true;
 }
 
 static int32_t
-CascadeLayerRank(bool aIsImportant, int32_t aCascadeLayer)
+LayerIndexRank(bool aIsImportant, int32_t aLayerIndex)
 {
-  MOZ_ASSERT(aCascadeLayer >= 0);
-  MOZ_ASSERT(aCascadeLayer <= kCascadeLayerRankMax);
-  return aIsImportant ? kCascadeLayerRankMax - aCascadeLayer : aCascadeLayer;
+  MOZ_ASSERT(aLayerIndex >= 0);
+  MOZ_ASSERT(aLayerIndex <= kLayerIndexMax);
+  return aIsImportant ? kLayerIndexMax - aLayerIndex : aLayerIndex;
 }
 
 static int32_t
 CascadePrecedenceRank(SheetType aLevel, bool aIsImportant,
-                      int32_t aCascadeLayer)
+                      int32_t aLayerIndex)
 {
   int32_t bucket = 0;
   bool isLayeredOrigin = false;
@@ -139,22 +140,22 @@ CascadePrecedenceRank(SheetType aLevel, bool aIsImportant,
   }
 
   return bucket * kCascadeRankStride +
-         (isLayeredOrigin ? CascadeLayerRank(aIsImportant, aCascadeLayer) : 0);
+         (isLayeredOrigin ? LayerIndexRank(aIsImportant, aLayerIndex) : 0);
 }
 
 static bool
 ShouldIgnoreForRevertLayerData(SheetType aSourceLevel,
                                bool aSourceImportant,
-                               int32_t aSourceLayer,
+                               int32_t aSourceLayerIndex,
                                SheetType aCandidateLevel,
                                bool aCandidateImportant,
-                               int32_t aCandidateLayer)
+                               int32_t aCandidateLayerIndex)
 {
   int32_t candidateRank =
     CascadePrecedenceRank(aCandidateLevel, aCandidateImportant,
-                          aCandidateLayer);
+                          aCandidateLayerIndex);
   int32_t sourceRank =
-    CascadePrecedenceRank(aSourceLevel, aSourceImportant, aSourceLayer);
+    CascadePrecedenceRank(aSourceLevel, aSourceImportant, aSourceLayerIndex);
 
   if (candidateRank >= sourceRank) {
     return true;
@@ -170,7 +171,7 @@ ShouldIgnoreForRevertLayerData(SheetType aSourceLevel,
   }
 
   int32_t normalBoundary =
-    CascadePrecedenceRank(aSourceLevel, false, aSourceLayer);
+    CascadePrecedenceRank(aSourceLevel, false, aSourceLayerIndex);
   return candidateRank >= normalBoundary;
 }
 
@@ -178,19 +179,20 @@ static bool
 ShouldIgnoreForRevertLayerValue(const nsString& aTargetValue,
                                 SheetType aCandidateLevel,
                                 bool aCandidateImportant,
-                                int32_t aCandidateLayer)
+                                int32_t aCandidateLayerIndex)
 {
   SheetType sourceLevel;
   bool sourceImportant;
-  int32_t sourceLayer;
+  int32_t sourceLayerIndex;
   if (!UnpackRevertLayerData(aTargetValue, sourceLevel, sourceImportant,
-                             sourceLayer)) {
+                             sourceLayerIndex)) {
     return false;
   }
 
   return ShouldIgnoreForRevertLayerData(sourceLevel, sourceImportant,
-                                        sourceLayer, aCandidateLevel,
-                                        aCandidateImportant, aCandidateLayer);
+                                        sourceLayerIndex, aCandidateLevel,
+                                        aCandidateImportant,
+                                        aCandidateLayerIndex);
 }
 
 static bool
@@ -199,7 +201,7 @@ ShouldIgnoreForRevertLayerValue(const nsString& aTargetValue,
 {
   return ShouldIgnoreForRevertLayerValue(aTargetValue, aRuleData->mLevel,
                                          aRuleData->mIsImportantRule,
-                                         aRuleData->mCascadeLayer);
+                                         aRuleData->mLayerIndex);
 }
 
 static bool
@@ -208,14 +210,15 @@ ShouldIgnoreForRevertLayerSourceValue(const nsString& aTargetValue,
 {
   SheetType candidateLevel;
   bool candidateImportant;
-  int32_t candidateLayer;
+  int32_t candidateLayerIndex;
   if (!UnpackRevertLayerData(aCandidateValue, candidateLevel,
-                             candidateImportant, candidateLayer)) {
+                             candidateImportant, candidateLayerIndex)) {
     return false;
   }
 
   return ShouldIgnoreForRevertLayerValue(aTargetValue, candidateLevel,
-                                         candidateImportant, candidateLayer);
+                                         candidateImportant,
+                                         candidateLayerIndex);
 }
 
 static bool

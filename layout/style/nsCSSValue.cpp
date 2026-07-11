@@ -618,7 +618,7 @@ nsCSSValue::GetRevertLayerImportanceValue() const
 }
 
 int32_t
-nsCSSValue::GetRevertLayerLayerValue() const
+nsCSSValue::GetRevertLayerLayerIndexValue() const
 {
   MOZ_ASSERT(mUnit == eCSSUnit_RevertLayer, "not a revert-layer value");
   return mValue.mInt & kRevertLayerMask;
@@ -901,15 +901,15 @@ nsCSSValue::SetRevertLayerValue()
 void
 nsCSSValue::SetRevertLayerValue(mozilla::SheetType aLevel,
                                 bool aIsImportant,
-                                int32_t aLayer)
+                                int32_t aLayerIndex)
 {
-  MOZ_ASSERT(aLayer >= 0 && aLayer <= kRevertLayerMask,
+  MOZ_ASSERT(aLayerIndex >= 0 && aLayerIndex <= kRevertLayerMask,
              "cascade layer index is out of range");
   Reset();
   mUnit = eCSSUnit_RevertLayer;
   mValue.mInt = (uint32_t(aLevel) << kRevertLayerOriginShift) |
                 (aIsImportant ? kRevertLayerImportant : 0) |
-                (aLayer & kRevertLayerMask);
+                (aLayerIndex & kRevertLayerMask);
 }
 
 void nsCSSValue::SetNoneValue()
@@ -3509,7 +3509,7 @@ nsCSSValueTokenStream::nsCSSValueTokenStream()
   , mShorthandPropertyID(eCSSProperty_UNKNOWN)
   , mLevel(SheetType::Count)
   , mIsImportant(false)
-  , mCascadeLayer(0)
+  , mLayerIndex(0)
 {
   MOZ_COUNT_CTOR(nsCSSValueTokenStream);
 }

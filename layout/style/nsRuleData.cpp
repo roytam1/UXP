@@ -30,7 +30,7 @@ nsRuleData::nsRuleData(uint32_t aSIDs, nsCSSValue* aValueStorage,
   : mSIDs(aSIDs),
     mIsImportantRule(false),
     mLevel(mozilla::SheetType::Unknown),
-    mCascadeLayer(0),
+    mLayerIndex(0),
     mPresContext(aContext),
     mStyleContext(aStyleContext),
     mValueStorage(aValueStorage)

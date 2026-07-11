@@ -189,7 +189,7 @@ nsRuleNode::ChildrenHashHashKey(const void *aKey)
   const nsRuleNode::Key *key =
     static_cast<const nsRuleNode::Key*>(aKey);
   return PLDHashTable::HashVoidPtrKeyStub(key->mRule) ^
-         (uint32_t(key->mCascadeLayer) << 4) ^
+         (uint32_t(key->mLayerIndex) << 4) ^
          (uint32_t(key->mLevel) << 1) ^
          (key->mIsImportantRule ? 1 : 0);
 }
@@ -2280,14 +2280,14 @@ nsRuleNode::CreateRootNode(nsPresContext* aPresContext)
 
 nsRuleNode::nsRuleNode(nsPresContext* aContext, nsRuleNode* aParent,
                        nsIStyleRule* aRule, SheetType aLevel,
-                       bool aIsImportant, int32_t aCascadeLayer)
+                       bool aIsImportant, int32_t aLayerIndex)
   : mPresContext(aContext),
     mParent(aParent),
     mRule(aRule),
     mNextSibling(nullptr),
     mDependentBits((uint32_t(aLevel) << NS_RULE_NODE_LEVEL_SHIFT) |
                    (aIsImportant ? NS_RULE_NODE_IS_IMPORTANT : 0)),
-    mCascadeLayer(aCascadeLayer),
+    mLayerIndex(aLayerIndex),
     mNoneBits(aParent ? aParent->mNoneBits & NS_RULE_NODE_HAS_ANIMATION_DATA :
                         0),
     mRefCnt(0)
@@ -2301,7 +2301,8 @@ nsRuleNode::nsRuleNode(nsPresContext* aContext, nsRuleNode* aParent,
 
   NS_ASSERTION(IsRoot() || GetLevel() == aLevel, "not enough bits");
   NS_ASSERTION(IsRoot() || IsImportantRule() == aIsImportant, "yikes");
-  NS_ASSERTION(IsRoot() || GetCascadeLayer() == aCascadeLayer, "bad layer");
+  NS_ASSERTION(IsRoot() || GetLayerIndex() == aLayerIndex,
+               "bad layer index");
   aContext->StyleSet()->RuleNodeUnused(this, /* aMayGC = */ false);
 
   // nsStyleSet::GetContext depends on there being only one animation
@@ -2326,7 +2327,7 @@ nsRuleNode::~nsRuleNode()
 
 nsRuleNode*
 nsRuleNode::Transition(nsIStyleRule* aRule, SheetType aLevel,
-                       bool aIsImportantRule, int32_t aCascadeLayer)
+                       bool aIsImportantRule, int32_t aLayerIndex)
 {
 #ifdef DEBUG
   {
@@ -2337,7 +2338,7 @@ nsRuleNode::Transition(nsIStyleRule* aRule, SheetType aLevel,
 #endif
 
   nsRuleNode* next = nullptr;
-  nsRuleNode::Key key(aRule, aLevel, aIsImportantRule, aCascadeLayer);
+  nsRuleNode::Key key(aRule, aLevel, aIsImportantRule, aLayerIndex);
 
   if (HaveChildren() && !ChildrenAreHashed()) {
     int32_t numKids = 0;
@@ -2365,13 +2366,13 @@ nsRuleNode::Transition(nsIStyleRule* aRule, SheetType aLevel,
     } else {
       next = entry->mRuleNode = new (mPresContext)
         nsRuleNode(mPresContext, this, aRule, aLevel, aIsImportantRule,
-                   aCascadeLayer);
+                   aLayerIndex);
     }
   } else if (!next) {
     // Create the new entry in our list.
     next = new (mPresContext)
       nsRuleNode(mPresContext, this, aRule, aLevel, aIsImportantRule,
-                 aCascadeLayer);
+                 aLayerIndex);
     next->mNextSibling = ChildrenList();
     SetChildrenList(next);
   }
@@ -3032,10 +3033,10 @@ nsRuleNode::ResolveVariableReferences(const nsStyleStructID aSID,
 
     AutoRestore<SheetType> saveLevel(aRuleData->mLevel);
     AutoRestore<bool> saveImportant(aRuleData->mIsImportantRule);
-    AutoRestore<int32_t> saveCascadeLayer(aRuleData->mCascadeLayer);
+    AutoRestore<int32_t> saveLayerIndex(aRuleData->mLayerIndex);
     aRuleData->mLevel = tokenStream->mLevel;
     aRuleData->mIsImportantRule = tokenStream->mIsImportant;
-    aRuleData->mCascadeLayer = tokenStream->mCascadeLayer;
+    aRuleData->mLayerIndex = tokenStream->mLayerIndex;
 
     // Note that ParsePropertyWithVariableReferences relies on the fact
     // that the nsCSSValue in aRuleData for the property we are re-parsing
@@ -3122,7 +3123,7 @@ nsRuleNode::ResolveRevertLayerValues(const nsStyleStructID aSID,
         if (rule) {
           tempRuleData.mLevel = ruleNode->GetLevel();
           tempRuleData.mIsImportantRule = ruleNode->IsImportantRule();
-          tempRuleData.mCascadeLayer = ruleNode->GetCascadeLayer();
+          tempRuleData.mLayerIndex = ruleNode->GetLayerIndex();
           rule->MapRuleInfoInto(&tempRuleData);
         }
 
@@ -3240,7 +3241,7 @@ nsRuleNode::WalkRuleTree(const nsStyleStructID aSID,
     if (rule) {
       ruleData.mLevel = ruleNode->GetLevel();
       ruleData.mIsImportantRule = ruleNode->IsImportantRule();
-      ruleData.mCascadeLayer = ruleNode->GetCascadeLayer();
+      ruleData.mLayerIndex = ruleNode->GetLayerIndex();
       rule->MapRuleInfoInto(&ruleData);
     }
 
@@ -5017,7 +5018,7 @@ nsRuleNode::SetGenericFont(nsPresContext* aPresContext,
       if (rule) {
         ruleData.mLevel = ruleNode->GetLevel();
         ruleData.mIsImportantRule = ruleNode->IsImportantRule();
-        ruleData.mCascadeLayer = ruleNode->GetCascadeLayer();
+        ruleData.mLayerIndex = ruleNode->GetLayerIndex();
         rule->MapRuleInfoInto(&ruleData);
       }
     }
@@ -11606,7 +11607,7 @@ nsRuleNode::HasAuthorSpecifiedRules(nsStyleContext* aStyleContext,
       if (rule) {
         ruleData.mLevel = ruleNode->GetLevel();
         ruleData.mIsImportantRule = ruleNode->IsImportantRule();
-        ruleData.mCascadeLayer = ruleNode->GetCascadeLayer();
+        ruleData.mLayerIndex = ruleNode->GetLayerIndex();
 
         rule->MapRuleInfoInto(&ruleData);
 
@@ -11733,7 +11734,7 @@ nsRuleNode::ComputePropertiesOverridingAnimation(
     if (rule) {
       ruleData.mLevel = ruleNode->GetLevel();
       ruleData.mIsImportantRule = ruleNode->IsImportantRule();
-      ruleData.mCascadeLayer = ruleNode->GetCascadeLayer();
+      ruleData.mLayerIndex = ruleNode->GetLayerIndex();
 
       // Transitions are the only non-!important level overriding
       // animations in the cascade ordering.  They also don't actually
