@@ -20,7 +20,8 @@ const SPECIALVALUES = new Set([
   "inherit",
   "transparent",
   "unset",
-  "revert"
+  "revert",
+  "revert-layer"
 ]);
 
 /**
