@@ -36,6 +36,7 @@ function runTest()
     "(unknown:) or (color: green)",
     "(unknown) or (color: green)",
     "(font: 16px serif)",
+    "(all: revert-layer)",
     "(color:) or (color: green)",
     "not (@page)",
     "not ({ something @with [ balanced ] brackets })",
@@ -68,6 +69,7 @@ function runTest()
     "not ({ something @with (unbalanced brackets })",
     "(color: green) or an-extension(that is [unbalanced)",
     "not(unknown: unknown)",
+    "not (all: revert-layer)",
     "(color: green) or(color: blue)",
     "color: green",
     "(color: green;)",
@@ -87,7 +89,9 @@ function runTest()
     ["font", "16px serif"],
     ["font", "16px /* comment */ serif"],
     ["font", "16px\nserif"],
-    ["color", "\\0067reen"]
+    ["color", "\\0067reen"],
+    ["all", "revert-layer"],
+    ["color", "revert-layer"]
   ];
 
   var failingDeclarations = [

@@ -1,0 +1,127 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test CSS revert-layer cascade behavior</title>
+  <script type="application/javascript" src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<div id="display"></div>
+<pre id="test">
+<script type="application/javascript">
+
+SimpleTest.waitForExplicitFinish();
+
+let fixtureCount = 0;
+
+function runFixture(css, callback) {
+  const id = "revert-layer-fixture-" + (++fixtureCount);
+  const style = document.createElement("style");
+  style.textContent = css.replace(/__ID__/g, id);
+  document.head.appendChild(style);
+
+  const element = document.createElement("div");
+  element.id = id;
+  document.getElementById("display").appendChild(element);
+
+  try {
+    callback(element, getComputedStyle(element));
+  } finally {
+    element.remove();
+    style.remove();
+  }
+}
+
+ok(CSS.supports("color", "revert-layer"), "revert-layer parses as a CSS-wide keyword");
+ok(CSS.supports("all", "revert-layer"), "all accepts revert-layer");
+ok(!CSS.supports("not (all: revert-layer)"), "supports negation sees revert-layer support");
+
+runFixture(`
+  @layer { #__ID__ { color: rgb(0, 128, 0); } }
+  @layer { #__ID__ { color: red; color: revert-layer; } }
+`, function(element, cs) {
+  is(cs.color, "rgb(0, 128, 0)", "revert-layer rolls back to a previous explicit layer");
+});
+
+runFixture(`
+  @layer { #__ID__ { color: rgb(0, 128, 0); } }
+  #__ID__ { color: red; color: revert-layer; }
+`, function(element, cs) {
+  is(cs.color, "rgb(0, 128, 0)", "revert-layer rolls back from the implicit outer layer");
+});
+
+runFixture(`
+  @layer {
+    #__ID__ { color: rgb(0, 128, 0); width: 5px; height: 6px; }
+  }
+  @layer {
+    #__ID__ { color: red; width: 50px; height: 60px; }
+    #__ID__ { all: revert-layer; }
+  }
+`, function(element, cs) {
+  is(cs.color, "rgb(0, 128, 0)", "all: revert-layer rolls color back");
+  is(cs.width, "5px", "all: revert-layer rolls width back");
+  is(cs.height, "6px", "all: revert-layer rolls height back");
+});
+
+runFixture(`
+  @layer { #__ID__ { height: 7px; } }
+  @layer { #__ID__ { block-size: revert-layer; } }
+`, function(element, cs) {
+  is(cs.height, "7px", "revert-layer on a logical alias rolls back the physical property");
+});
+
+runFixture(`
+  @layer { #__ID__ { color: rgb(0, 128, 0) !important; } }
+  @layer { #__ID__ { color: red !important; color: revert-layer !important; } }
+`, function(element, cs) {
+  is(cs.color, "rgb(0, 128, 0)", "important revert-layer uses reversed layer order");
+});
+
+runFixture(`
+  @layer { #__ID__ { color: rgb(0, 128, 0); } }
+`, function(element, cs) {
+  element.style.color = "revert-layer";
+  is(cs.color, "rgb(0, 128, 0)", "normal style attribute revert-layer rolls back to author rules");
+});
+
+runFixture(`
+  @layer { #__ID__ { color: rgb(0, 128, 0) !important; } }
+`, function(element, cs) {
+  element.style.setProperty("color", "revert-layer", "important");
+  is(cs.color, "rgb(0, 128, 0)",
+     "important style attribute revert-layer does not skip author important rules");
+});
+
+runFixture(`
+  @layer {
+    #__ID__ { --x:PASS; margin: 1px; padding-left: 1px; }
+  }
+  @layer {
+    #__ID__ {
+      --x: var(--unknown, revert-layer);
+      margin: var(--unknown, revert-layer);
+      padding-left: var(--unknown, revert-layer);
+    }
+  }
+`, function(element, cs) {
+  is(cs.getPropertyValue("--x"), "PASS", "custom property var() fallback can resolve to revert-layer");
+  is(cs.marginLeft, "1px", "shorthand var() fallback can resolve to revert-layer");
+  is(cs.paddingLeft, "1px", "longhand var() fallback can resolve to revert-layer");
+});
+
+runFixture(`
+  @layer { #__ID__ { --x:PASS; } }
+  @layer { #__ID__ { --x: var(--unknown-a, revert-layer); } }
+  @layer { #__ID__ { --x: var(--unknown-b, revert-layer); } }
+`, function(element, cs) {
+  is(cs.getPropertyValue("--x"), "PASS",
+     "custom property fallback continues past lower declarations that also resolve to revert-layer");
+});
+
+SimpleTest.finish();
+
+</script>
+</pre>
+</body>
+</html>
