@@ -48,6 +48,102 @@ ShouldIgnoreColors(nsRuleData *aRuleData)
          !aRuleData->mPresContext->UseDocumentColors();
 }
 
+static const int32_t kLayerIndexMax = 0x000fffff;
+static const int32_t kCascadeRankStride = kLayerIndexMax + 1;
+
+static int32_t
+LayerIndexRank(bool aIsImportant, int32_t aLayerIndex)
+{
+  MOZ_ASSERT(aLayerIndex >= 0);
+  MOZ_ASSERT(aLayerIndex <= kLayerIndexMax);
+  return aIsImportant ? kLayerIndexMax - aLayerIndex : aLayerIndex;
+}
+
+static int32_t
+CascadePrecedenceRank(SheetType aLevel, bool aIsImportant,
+                      int32_t aLayerIndex)
+{
+  int32_t bucket = 0;
+  bool isLayeredOrigin = false;
+
+  switch (aLevel) {
+    case SheetType::Agent:
+      bucket = aIsImportant ? 14 : 0;
+      isLayeredOrigin = true;
+      break;
+    case SheetType::User:
+      bucket = aIsImportant ? 13 : 1;
+      isLayeredOrigin = true;
+      break;
+    case SheetType::PresHint:
+      bucket = 2;
+      break;
+    case SheetType::SVGAttrAnimation:
+      bucket = 3;
+      break;
+    case SheetType::Doc:
+      bucket = aIsImportant ? 10 : 4;
+      isLayeredOrigin = true;
+      break;
+    case SheetType::ScopedDoc:
+      bucket = aIsImportant ? 9 : 5;
+      isLayeredOrigin = true;
+      break;
+    case SheetType::StyleAttr:
+      bucket = aIsImportant ? 11 : 6;
+      break;
+    case SheetType::Override:
+      bucket = aIsImportant ? 12 : 7;
+      break;
+    case SheetType::Animation:
+      bucket = 8;
+      break;
+    case SheetType::Transition:
+      bucket = 15;
+      break;
+    default:
+      MOZ_ASSERT_UNREACHABLE("unexpected cascade level");
+      break;
+  }
+
+  return bucket * kCascadeRankStride +
+         (isLayeredOrigin ? LayerIndexRank(aIsImportant, aLayerIndex) : 0);
+}
+
+static bool
+ShouldIgnoreForRevertLayer(const nsCSSValue& aTargetValue,
+                           const nsRuleData* aRuleData)
+{
+  SheetType sourceLevel = aTargetValue.GetRevertLayerOriginValue();
+  bool sourceImportant = aTargetValue.GetRevertLayerImportanceValue();
+  int32_t sourceLayerIndex = aTargetValue.GetRevertLayerLayerIndexValue();
+  MOZ_ASSERT(sourceLevel != SheetType::Unknown,
+             "revert-layer should have cascade metadata before mapping");
+
+  int32_t candidateRank =
+    CascadePrecedenceRank(aRuleData->mLevel, aRuleData->mIsImportantRule,
+                          aRuleData->mLayerIndex);
+  int32_t sourceRank =
+    CascadePrecedenceRank(sourceLevel, sourceImportant, sourceLayerIndex);
+
+  if (candidateRank >= sourceRank) {
+    return true;
+  }
+
+  if (!sourceImportant) {
+    return false;
+  }
+
+  if (sourceLevel == SheetType::StyleAttr) {
+    return aRuleData->mLevel == SheetType::StyleAttr ||
+           aRuleData->mLevel == SheetType::Animation;
+  }
+
+  int32_t normalBoundary =
+    CascadePrecedenceRank(sourceLevel, false, sourceLayerIndex);
+  return candidateRank >= normalBoundary;
+}
+
 /**
  * Tries to call |nsCSSValue::StartImageLoad()| on an image source.
  * Image sources are specified by |url()| or |-moz-image-rect()| function.
@@ -175,7 +271,8 @@ MapSinglePropertyInto(nsCSSPropertyID aTargetProp,
   // CSSVariableImageTable, to give them the appropriate lifetime.
   MOZ_ASSERT(aTargetValue->GetUnit() == eCSSUnit_TokenStream ||
              aTargetValue->GetUnit() == eCSSUnit_Null ||
-             aTargetValue->GetUnit() == eCSSUnit_Revert,
+             aTargetValue->GetUnit() == eCSSUnit_Revert ||
+             aTargetValue->GetUnit() == eCSSUnit_RevertLayer,
              "aTargetValue must only be a token stream (when re-parsing "
              "properties with variable references) or null");
 
@@ -365,6 +462,10 @@ nsCSSCompressedDataBlock::MapRuleInfoInto(nsRuleData *aRuleData) const
         if (aRuleData->mLevel >= target->GetCascadeOriginValue()) {
           continue;
         }
+      } else if (target->GetUnit() == eCSSUnit_RevertLayer) {
+        if (ShouldIgnoreForRevertLayer(*target, aRuleData)) {
+          continue;
+        }
       } else if (target->GetUnit() != eCSSUnit_Null) {
         continue;
       }
@@ -377,8 +478,18 @@ nsCSSCompressedDataBlock::MapRuleInfoInto(nsRuleData *aRuleData) const
       // the rule walking will have just updated aRuleData.
       if (val->GetUnit() == eCSSUnit_TokenStream) {
         val->GetTokenStreamValue()->mLevel = aRuleData->mLevel;
+        val->GetTokenStreamValue()->mIsImportant = aRuleData->mIsImportantRule;
+        val->GetTokenStreamValue()->mLayerIndex = aRuleData->mLayerIndex;
       } else if (val->GetUnit() == eCSSUnit_Revert) {
         aRuleData->mConditions.SetUncacheable();
+      } else if (val->GetUnit() == eCSSUnit_RevertLayer) {
+        nsCSSValue revertLayer;
+        revertLayer.SetRevertLayerValue(aRuleData->mLevel,
+                                        aRuleData->mIsImportantRule,
+                                        aRuleData->mLayerIndex);
+        aRuleData->mConditions.SetUncacheable();
+        MapSinglePropertyInto(iProp, &revertLayer, target, aRuleData);
+        continue;
       }
       MapSinglePropertyInto(iProp, val, target, aRuleData);
     }
@@ -818,6 +929,17 @@ nsCSSExpandedDataBlock::MapRuleInfoInto(nsCSSPropertyID aPropID,
   nsCSSValue* dest = aRuleData->ValueFor(physicalProp);
   MOZ_ASSERT(dest->GetUnit() == eCSSUnit_TokenStream &&
              dest->GetTokenStreamValue()->mPropertyID == aPropID);
+
+  if (src->GetUnit() == eCSSUnit_RevertLayer) {
+    nsCSSValueTokenStream* tokenStream = dest->GetTokenStreamValue();
+    nsCSSValue revertLayer;
+    revertLayer.SetRevertLayerValue(tokenStream->mLevel,
+                                    tokenStream->mIsImportant,
+                                    tokenStream->mLayerIndex);
+    aRuleData->mConditions.SetUncacheable();
+    MapSinglePropertyInto(physicalProp, &revertLayer, dest, aRuleData);
+    return;
+  }
 
   CSSVariableImageTable::ReplaceAll(aRuleData->mStyleContext, aPropID, [=] {
     MapSinglePropertyInto(physicalProp, src, dest, aRuleData);

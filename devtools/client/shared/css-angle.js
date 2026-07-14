@@ -10,7 +10,8 @@ const SPECIALVALUES = new Set([
   "initial",
   "inherit",
   "unset",
-  "revert"
+  "revert",
+  "revert-layer"
 ]);
 
 const {getCSSLexer} = require("devtools/shared/css/lexer");

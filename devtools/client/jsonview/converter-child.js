@@ -204,21 +204,22 @@ function initialHTML(doc) {
     os = "linux";
   }
 
-  let base = doc.createElement("base");
-  base.href = "resource://devtools/client/jsonview/";
+  // The appRoot URI is prepended to all URIs instead of using a <base> element
+  // because the latter can cause spurious network requests (UXP Issue #3122)
+  let appRoot = "resource://devtools/client/jsonview/";
 
   let style = doc.createElement("link");
   style.rel = "stylesheet";
   style.type = "text/css";
-  style.href = base.href +"css/main.css";
+  style.href = appRoot +"css/main.css";
 
   let script = doc.createElement("script");
-  script.src = base.href + "lib/require.js";
-  script.dataset.main = "viewer-config";
+  script.src = appRoot + "lib/require.js";
+  script.dataset.main = appRoot + "viewer-config.js";
   script.defer = true;
 
   let head = doc.createElement("head");
-  head.append(base, style, script);
+  head.append(style, script);
 
   return "<!DOCTYPE html>\n" +
     startTag("html", {
