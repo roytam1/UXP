@@ -441,16 +441,20 @@ private:
   struct Key {
     nsIStyleRule* mRule;
     mozilla::SheetType mLevel;
+    int32_t mLayerIndex;
     bool mIsImportantRule;
 
-    Key(nsIStyleRule* aRule, mozilla::SheetType aLevel, bool aIsImportantRule)
-      : mRule(aRule), mLevel(aLevel), mIsImportantRule(aIsImportantRule)
+    Key(nsIStyleRule* aRule, mozilla::SheetType aLevel,
+        bool aIsImportantRule, int32_t aLayerIndex)
+      : mRule(aRule), mLevel(aLevel), mLayerIndex(aLayerIndex),
+        mIsImportantRule(aIsImportantRule)
     {}
 
     bool operator==(const Key& aOther) const
     {
       return mRule == aOther.mRule &&
              mLevel == aOther.mLevel &&
+             mLayerIndex == aOther.mLayerIndex &&
              mIsImportantRule == aOther.mIsImportantRule;
     }
 
@@ -469,7 +473,7 @@ private:
   static const PLDHashTableOps ChildrenHashOps;
 
   Key GetKey() const {
-    return Key(mRule, GetLevel(), IsImportantRule());
+    return Key(mRule, GetLevel(), IsImportantRule(), GetLayerIndex());
   }
 
   // The children of this node are stored in either a hashtable or list
@@ -528,6 +532,8 @@ private:
   uint32_t mDependentBits; // Used to cache the fact that we can look up
                            // cached data under a parent rule.
 
+  int32_t mLayerIndex;
+
   uint32_t mNoneBits; // Used to cache the fact that the branch to this
                       // node specifies no non-inherited data for a
                       // given struct type.  (This usually implies that
@@ -585,6 +591,10 @@ protected:
   static bool ResolveVariableReferences(const nsStyleStructID aSID,
                                         nsRuleData* aRuleData,
                                         nsStyleContext* aContext);
+  static bool ResolveRevertLayerValues(const nsStyleStructID aSID,
+                                       nsRuleData* aRuleData,
+                                       nsStyleContext* aContext,
+                                       nsRuleNode* aStartRuleNode);
 
   const void*
     WalkRuleTree(const nsStyleStructID aSID, nsStyleContext* aContext);
@@ -792,7 +802,8 @@ protected:
 
 private:
   nsRuleNode(nsPresContext* aPresContext, nsRuleNode* aParent,
-             nsIStyleRule* aRule, mozilla::SheetType aLevel, bool aIsImportant);
+             nsIStyleRule* aRule, mozilla::SheetType aLevel,
+             bool aIsImportant, int32_t aLayerIndex);
   ~nsRuleNode();
 
 public:
@@ -805,7 +816,7 @@ public:
 
   // Transition never returns null; on out of memory it'll just return |this|.
   nsRuleNode* Transition(nsIStyleRule* aRule, mozilla::SheetType aLevel,
-                         bool aIsImportantRule);
+                         bool aIsImportantRule, int32_t aLayerIndex);
   nsRuleNode* GetParent() const { return mParent; }
   bool IsRoot() const { return mParent == nullptr; }
 
@@ -824,6 +835,10 @@ public:
   bool IsImportantRule() const {
     NS_ASSERTION(!IsRoot(), "can't call on root");
     return (mDependentBits & NS_RULE_NODE_IS_IMPORTANT) != 0;
+  }
+  int32_t GetLayerIndex() const {
+    NS_ASSERTION(!IsRoot(), "can't call on root");
+    return mLayerIndex;
   }
 
   /**
