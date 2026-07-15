@@ -1138,7 +1138,7 @@ class StaticStrings
     }
 
     template <typename CharT,
-              typename = typename std::enable_if<!std::is_const<CharT>::value>::type>
+              typename = typename std::enable_if_t<!std::is_const_v<CharT>>>
     MOZ_ALWAYS_INLINE JSAtom* lookup(CharT* chars, size_t length) {
         // Collapse the remaining |CharT*| to |const CharT*| to avoid excess
         // instantiations.
