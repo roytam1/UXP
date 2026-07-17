@@ -88,6 +88,10 @@ public:
   IsValidURL(const GlobalObject& aGlobal, const nsAString& aURL,
              ErrorResult& aRv);
 
+  static already_AddRefed<URL>
+  Parse(const GlobalObject& aGlobal, const nsAString& aURL,
+        const Optional<nsAString>& aBase);
+
   static bool
   CanParse(const GlobalObject& aGlobal, const nsAString& aURL,
            const Optional<nsAString>& aBase);

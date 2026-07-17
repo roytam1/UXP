@@ -448,6 +448,34 @@
                 !URL.canParse("/static/client/runtime.js", "mailto:test@example.com"),
                 "URL.canParse rejects root-relative input against opaque mailto: base",
             );
+            ok("parse" in URL, "URL.parse exists");
+            is(URL.parse.length, 1, "URL.parse has one required argument");
+            var parsed = URL.parse("/static/client/runtime.js", "x:/");
+            ok(parsed instanceof URL, "URL.parse returns a URL object on success");
+            is(parsed.href, "x:/static/client/runtime.js", "URL.parse resolves against a base");
+            is(URL.parse("/static/client/runtime.js"), null, "URL.parse returns null for invalid input");
+            is(
+                URL.parse("/static/client/runtime.js", "mailto:test@example.com"),
+                null,
+                "URL.parse returns null for an invalid base/input combination",
+            );
+
+            var conversionOrder = [];
+            parsed = URL.parse(
+                { toString: function() { conversionOrder.push("url"); return "child"; } },
+                { toString: function() { conversionOrder.push("base"); return "https://example.com/root/"; } },
+            );
+            is(conversionOrder.join(","), "url,base", "URL.parse converts its arguments in order");
+            is(parsed.href, "https://example.com/root/child", "URL.parse uses converted arguments");
+
+            var sentinel = {};
+            var thrown;
+            try {
+                URL.parse({ toString: function() { throw sentinel; } });
+            } catch (e) {
+                thrown = e;
+            }
+            is(thrown, sentinel, "URL.parse propagates argument conversion exceptions");
             SimpleTest.doesThrow(() => {
                 new URL("/static/client/runtime.js", "mailto:test@example.com");
             }, "constructor rejects root-relative input against opaque mailto: base");
