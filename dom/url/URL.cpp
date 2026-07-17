@@ -1789,17 +1789,26 @@ URL::IsValidURL(const GlobalObject& aGlobal, const nsAString& aURL,
   return URLWorker::IsValidURL(aGlobal, aURL, aRv);
 }
 
-bool
-URL::CanParse(const GlobalObject& aGlobal, const nsAString& aURL,
-              const Optional<nsAString>& aBase) {
+already_AddRefed<URL>
+URL::Parse(const GlobalObject& aGlobal, const nsAString& aURL,
+           const Optional<nsAString>& aBase)
+{
   ErrorResult rv;
   RefPtr<URL> parsed = URL::Constructor(aGlobal, aURL, aBase, rv);
   if (rv.Failed() || !parsed) {
     rv.SuppressException();
-    return false;
+    return nullptr;
   }
 
-  return true;
+  return parsed.forget();
+}
+
+bool
+URL::CanParse(const GlobalObject& aGlobal, const nsAString& aURL,
+              const Optional<nsAString>& aBase)
+{
+  RefPtr<URL> parsed = URL::Parse(aGlobal, aURL, aBase);
+  return !!parsed;
 }
 
 already_AddRefed<URLSearchParams>
