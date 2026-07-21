@@ -312,12 +312,13 @@ cvt_s(SprintfState* ss, const char* s, int width, int prec, int flags)
         s = generic_null_str(s);
 
     // Limit string length by precision value
-    int slen = int(generic_strlen(s));
-    if (0 < prec && prec < slen)
-        slen = prec;
+    size_t slen = strnlen_s(s, size_t(prec));
+    if (slen > INT_MAX) {
+        return false;
+    }
 
     // and away we go
-    return fill2(ss, s, slen, width, flags);
+    return fill2(ss, s, int(slen), width, flags);
 }
 
 /*
