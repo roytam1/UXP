@@ -336,7 +336,20 @@ gfxGraphiteShaper::SetGlyphsFromSegment(DrawTarget      *aDrawTarget,
             // not a one-to-one mapping with simple metrics: use DetailedGlyph
             AutoTArray<gfxShapedText::DetailedGlyph,8> details;
             float clusterLoc;
-            for (uint32_t j = c.baseGlyph; j < c.baseGlyph + c.nGlyphs; ++j) {
+
+            uint32_t glyph_start = c.baseGlyph;
+            uint32_t glyph_end = glyph_start + c.nGlyphs;
+            if (glyph_end < glyph_start) {
+                return NS_ERROR_ILLEGAL_VALUE;
+            }
+            if (glyph_end - glyph_start > 0xFFFF) {
+                return NS_ERROR_ILLEGAL_VALUE;
+            }
+            if (!details.SetCapacity(glyph_end - glyph_start, fallible)) {
+                return NS_ERROR_OUT_OF_MEMORY;
+            }
+
+            for (uint32_t j = glyph_start; j < glyph_end; ++j) {
                 gfxShapedText::DetailedGlyph* d = details.AppendElement();
                 d->mGlyphID = gids[j];
                 d->mYOffset = roundY ? NSToIntRound(-yLocs[j]) * dev2appUnits :
