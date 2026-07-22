@@ -876,20 +876,12 @@ HTMLImageElement::WrapNode(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
   return HTMLImageElementBinding::Wrap(aCx, this, aGivenProto);
 }
 
-#ifdef DEBUG
-nsIDOMHTMLFormElement*
-HTMLImageElement::GetForm() const
-{
-  return mForm;
-}
-#endif
-
 void
 HTMLImageElement::SetForm(nsIDOMHTMLFormElement* aForm)
 {
   NS_PRECONDITION(aForm, "Don't pass null here");
-  NS_ASSERTION(!mForm,
-               "We don't support switching from one non-null form to another.");
+  MOZ_ASSERT(!mForm && !HasFlag(ADDED_TO_FORM),
+             "We don't support switching from one non-null form to another.");
 
   mForm = static_cast<HTMLFormElement*>(aForm);
 }
