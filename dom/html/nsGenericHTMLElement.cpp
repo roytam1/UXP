@@ -1824,8 +1824,8 @@ void
 nsGenericHTMLFormElement::SetForm(nsIDOMHTMLFormElement* aForm)
 {
   NS_PRECONDITION(aForm, "Don't pass null here");
-  NS_ASSERTION(!mForm,
-               "We don't support switching from one non-null form to another.");
+  MOZ_ASSERT(!mForm && !HasFlag(ADDED_TO_FORM),
+             "We don't support switching from one non-null form to another.");
 
   // keep a *weak* ref to the form here
   mForm = static_cast<HTMLFormElement*>(aForm);

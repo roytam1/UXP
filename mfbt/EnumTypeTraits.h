@@ -56,13 +56,13 @@ template<typename T, typename Storage>
 struct EnumTypeFitsWithin
   : public detail::EnumFitsWithinHelper<
       sizeof(T),
-      std::is_signed<typename std::underlying_type<T>::type>::value,
+      std::is_signed_v<typename std::underlying_type_t<T>>,
       sizeof(Storage),
-      std::is_signed<Storage>::value
+      std::is_signed_v<Storage>
     >
 {
-  static_assert(std::is_enum<T>::value, "must provide an enum type");
-  static_assert(std::is_integral<Storage>::value, "must provide an integral type");
+  static_assert(std::is_enum_v<T>, "must provide an enum type");
+  static_assert(std::is_integral_v<Storage>, "must provide an integral type");
 };
 
 } // namespace mozilla

@@ -33,6 +33,31 @@ if (sheet) {
 
   sheet.deleteRule(0);
   is(sheet.cssRules.length, 0, "deleteRule should remove the rule");
+
+  is(sheet.replaceSync("#test { color: rgb(4, 5, 6); } p { margin-top: 1px; }"),
+     undefined, "replaceSync should return undefined");
+  is(sheet.cssRules.length, 2, "replaceSync should replace with parsed rules");
+  is(sheet.cssRules[0].selectorText, "#test",
+     "replaceSync should expose the first parsed rule");
+  is(sheet.cssRules[1].selectorText, "p",
+     "replaceSync should expose subsequent parsed rules");
+
+  sheet.replaceSync("@import url('neverending_stylesheet_load.sjs'); #test { color: rgb(7, 8, 9); }");
+  is(sheet.cssRules.length, 1, "replaceSync should remove @import rules");
+  is(sheet.cssRules[0].selectorText, "#test",
+     "replaceSync should keep non-import rules after removed imports");
+
+  sheet.replaceSync("}");
+  is(sheet.cssRules.length, 0,
+     "replaceSync should replace with an empty rule list when nothing parses");
+
+  try {
+    document.styleSheets[0].replaceSync("#test { color: rgb(10, 11, 12); }");
+    ok(false, "replaceSync should throw for non-constructed sheets");
+  } catch (e) {
+    is(e.name, "NotAllowedError",
+       "replaceSync should reject non-constructed sheets with NotAllowedError");
+  }
 }
 </script>
 </body>

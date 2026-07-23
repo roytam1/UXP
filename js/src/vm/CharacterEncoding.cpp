@@ -309,26 +309,26 @@ InflateUTF8StringToBuffer(ContextT* cx, const UTF8Chars src, CharT* dst, size_t*
             while (v & (0x80 >> n))
                 n++;
 
-        #define INVALID(report, arg, n2)                                \
-            do {                                                        \
-                if (Action == CountAndReportInvalids) {                 \
-                    report(cx, arg);                                    \
-                    return false;                                       \
-                } else if (Action == AssertNoInvalids) {                \
-                    MOZ_CRASH("invalid UTF-8 string: " # report);       \
-                } else {                                                \
-                    if (Action == Copy) {                               \
-                        if (std::is_same<decltype(dst[0]), Latin1Char>::value) \
-                            dst[j] = CharT(REPLACE_UTF8_LATIN1);        \
-                        else                                            \
-                            dst[j] = CharT(REPLACE_UTF8);               \
-                    } else {                                            \
-                        MOZ_ASSERT(Action == CountAndIgnoreInvalids ||  \
-                                   Action == FindEncoding);             \
-                    }                                                   \
-                    n = n2;                                             \
-                    goto invalidMultiByteCodeUnit;                      \
-                }                                                       \
+        #define INVALID(report, arg, n2)                                  \
+            do {                                                          \
+                if (Action == CountAndReportInvalids) {                   \
+                    report(cx, arg);                                      \
+                    return false;                                         \
+                } else if (Action == AssertNoInvalids) {                  \
+                    MOZ_CRASH("invalid UTF-8 string: " # report);         \
+                } else {                                                  \
+                    if (Action == Copy) {                                 \
+                        if (std::is_same_v<decltype(dst[0]), Latin1Char>) \
+                            dst[j] = CharT(REPLACE_UTF8_LATIN1);          \
+                        else                                              \
+                            dst[j] = CharT(REPLACE_UTF8);                 \
+                    } else {                                              \
+                        MOZ_ASSERT(Action == CountAndIgnoreInvalids ||    \
+                                   Action == FindEncoding);               \
+                    }                                                     \
+                    n = n2;                                               \
+                    goto invalidMultiByteCodeUnit;                        \
+                }                                                         \
             } while (0)
 
             // Check the leading byte.

@@ -364,7 +364,7 @@ public:
     }
 
     template<typename T,
-             typename = typename std::enable_if<std::is_enum<T>::value>::type>
+             typename = typename std::enable_if_t<std::is_enum_v<T>>>
     KTableEntry(nsCSSKeyword aKeyword, T aValue)
       : mKeyword(aKeyword)
       , mValue(static_cast<int16_t>(aValue))
@@ -451,7 +451,7 @@ public:
   static nsCSSKeyword ValueToKeywordEnum(int32_t aValue,
                                          const KTableEntry aTable[]);
   template<typename T,
-           typename = typename std::enable_if<std::is_enum<T>::value>::type>
+           typename = typename std::enable_if_t<std::is_enum_v<T>>>
   static nsCSSKeyword ValueToKeywordEnum(T aValue,
                                          const KTableEntry aTable[])
   {
@@ -463,7 +463,7 @@ public:
   static const nsAFlatCString& ValueToKeyword(int32_t aValue,
                                               const KTableEntry aTable[]);
   template<typename T,
-           typename = typename std::enable_if<std::is_enum<T>::value>::type>
+           typename = typename std::enable_if_t<std::is_enum_v<T>>>
   static const nsAFlatCString& ValueToKeyword(T aValue,
                                               const KTableEntry aTable[])
   {
