@@ -160,6 +160,7 @@ public:
   void DeleteRule(uint32_t aIndex,
                   nsIPrincipal& aSubjectPrincipal,
                   ErrorResult& aRv);
+  void ReplaceSync(const nsAString& aText, ErrorResult& aRv);
   int32_t AddRule(const nsAString& aSelector, const nsAString& aBlock,
                   const dom::Optional<uint32_t>& aIndex,
                   nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv);
@@ -205,6 +206,10 @@ private:
   bool AreRulesAvailable(nsIPrincipal& aSubjectPrincipal,
                          ErrorResult& aRv);
 
+  bool IsConstructed() const { return mConstructed; }
+  void SetConstructed() { mConstructed = true; }
+  bool IsModificationDisallowed() const { return mDisallowModification; }
+
 protected:
   // Return success if the subject principal subsumes the principal of our
   // inner, error otherwise.  This will also succeed if the subject has
@@ -223,6 +228,8 @@ protected:
   css::SheetParsingMode mParsingMode;
 
   bool                  mDisabled;
+  bool                  mConstructed;
+  bool                  mDisallowModification;
 
   // mDocumentAssociationMode determines whether mDocument directly owns us (in
   // the sense that if it's known-live then we're known-live).  Always

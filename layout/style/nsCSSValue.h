@@ -955,7 +955,7 @@ private:
 public:
   void SetIntValue(int32_t aValue, nsCSSUnit aUnit);
   template<typename T,
-           typename = typename std::enable_if<std::is_enum<T>::value>::type>
+           typename = typename std::enable_if_t<std::is_enum_v<T>>>
   void SetIntValue(T aValue, nsCSSUnit aUnit)
   {
     static_assert(mozilla::EnumTypeFitsWithin<T, int32_t>::value,

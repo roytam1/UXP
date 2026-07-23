@@ -463,6 +463,12 @@ function RegExpGetComplexReplacement(result, matched, S, position,
     // Step 14.k.i (reordered).
     _DefineDataProperty(captures, capturesLength++, matched);
 
+    // String substitutions can only reference $1 through $99. Keep getting and
+    // stringifying all captures because those operations are observable.
+    var storedCaptures = functionalReplace ?
+                           nCaptures :
+                           std_Math_min(nCaptures, REGEXP_MAX_SUBSTITUTION_CAPTURES);
+
     // Step 14.g, 14.i, 14.i.iv.
     for (var n = 1; n <= nCaptures; n++) {
         // Step 14.i.i.
@@ -473,7 +479,9 @@ function RegExpGetComplexReplacement(result, matched, S, position,
             capN = ToString(capN);
 
         // Step 14.i.iii.
-        _DefineDataProperty(captures, capturesLength++, capN);
+        if (n <= storedCaptures) {
+            _DefineDataProperty(captures, capturesLength++, capN);
+        }
     }
 
     // Step 14.j.

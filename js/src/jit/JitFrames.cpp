@@ -494,6 +494,9 @@ OnLeaveBaselineFrame(JSContext* cx, const JitFrameIterator& frame, jsbytecode* p
 {
     BaselineFrame* baselineFrame = frame.baselineFrame();
     if (jit::DebugEpilogue(cx, baselineFrame, pc, frameOk)) {
+        if (!baselineFrame->hasReturnValue()) {
+            baselineFrame->setReturnValue(UndefinedValue());
+        }
         rfe->kind = ResumeFromException::RESUME_FORCED_RETURN;
         rfe->framePointer = frame.fp() - BaselineFrame::FramePointerOffset;
         rfe->stackPointer = reinterpret_cast<uint8_t*>(baselineFrame);
