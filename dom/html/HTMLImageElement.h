@@ -216,9 +216,8 @@ public:
     SetHTMLAttr(nsGkAtoms::lowsrc, aLowsrc, aError);
   }
 
-#ifdef DEBUG
-  nsIDOMHTMLFormElement* GetForm() const;
-#endif
+  HTMLFormElement* GetForm() const { return mForm; };
+
   void SetForm(nsIDOMHTMLFormElement* aForm);
   void ClearForm(bool aRemoveFromForm);
 

@@ -8,8 +8,11 @@
 #include "mozilla/CheckedInt.h"
 #include "mozilla/TypeTraits.h"
 
+#include <algorithm>
+
 #include "jscntxt.h"
 
+#include "builtin/SelfHostingDefines.h"
 #include "irregexp/RegExpParser.h"
 #include "jit/InlinableNatives.h"
 #include "vm/RegExpStatics.h"
@@ -1754,7 +1757,9 @@ js::RegExpGetSubstitution(JSContext* cx, HandleArrayObject matchResult, HandleLi
     // Step 6.
     MOZ_ASSERT(position <= string->length());
 
-    uint32_t nCaptures = matchResultLength - 1;
+    // String substitutions can only reference $1 through $99.
+    uint32_t nCaptures = std::min<uint32_t>(matchResultLength - 1,
+                                            REGEXP_MAX_SUBSTITUTION_CAPTURES);
     Rooted<CapturesVector> captures(cx, CapturesVector(cx));
     if (!captures.reserve(nCaptures))
         return false;

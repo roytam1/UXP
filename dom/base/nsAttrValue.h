@@ -274,7 +274,7 @@ public:
     }
 
     template<typename T,
-             typename = typename std::enable_if<std::is_enum<T>::value>::type>
+             typename = typename std::enable_if_t<std::is_enum_v<T>>>
     EnumTable(const char* aTag, T aValue)
       : tag(aTag)
       , value(static_cast<int16_t>(aValue))

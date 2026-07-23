@@ -26,6 +26,8 @@ StyleSheet::StyleSheet(css::SheetParsingMode aParsingMode)
   , mOwningNode(nullptr)
   , mParsingMode(aParsingMode)
   , mDisabled(false)
+  , mConstructed(false)
+  , mDisallowModification(false)
   , mDocumentAssociationMode(NotOwnedByDocument)
 {
 }
@@ -38,6 +40,8 @@ StyleSheet::StyleSheet(const StyleSheet& aCopy,
   , mOwningNode(aOwningNodeToUse)
   , mParsingMode(aCopy.mParsingMode)
   , mDisabled(aCopy.mDisabled)
+  , mConstructed(aCopy.mConstructed)
+  , mDisallowModification(false)
     // We only use this constructor during cloning.  It's the cloner's
     // responsibility to notify us if we end up being owned by a document.
   , mDocumentAssociationMode(NotOwnedByDocument)
@@ -254,6 +258,7 @@ StyleSheet::Constructor(const GlobalObject& aGlobal, ErrorResult& aRv)
   sheet->SetURIs(documentURI, nullptr, baseURI);
   sheet->SetPrincipal(principal);
   sheet->SetComplete();
+  sheet->SetConstructed();
 
   return sheet.forget();
 }
@@ -288,6 +293,17 @@ StyleSheet::DeleteRule(uint32_t aIndex,
     return;
   }
   AsConcrete()->DeleteRuleInternal(aIndex, aRv);
+}
+
+void
+StyleSheet::ReplaceSync(const nsAString& aText, ErrorResult& aRv)
+{
+  if (!IsConstructed() || IsModificationDisallowed()) {
+    aRv.Throw(NS_ERROR_DOM_NOT_ALLOWED_ERR);
+    return;
+  }
+
+  AsConcrete()->ReplaceSyncInternal(aText, aRv);
 }
 
 int32_t

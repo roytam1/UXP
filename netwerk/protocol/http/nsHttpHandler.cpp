@@ -34,7 +34,6 @@
 #include "nsAlgorithm.h"
 #include "ASpdySession.h"
 #include "EventTokenBucket.h"
-#include "Tickler.h"
 #include "nsIXULAppInfo.h"
 #include "nsICookieService.h"
 #include "nsIObserverService.h"
@@ -410,9 +409,6 @@ nsHttpHandler::Init()
     }
 
     MakeNewRequestTokenBucket();
-    mWifiTickler = new Tickler();
-    if (NS_FAILED(mWifiTickler->Init()))
-        mWifiTickler = nullptr;
 
     nsCOMPtr<nsIParentalControlsService> pc = do_CreateInstance("@mozilla.org/parental-controls-service;1");
     if (pc) {
@@ -2249,8 +2245,6 @@ nsHttpHandler::Observe(nsISupports *subject,
         // clear cache of all authentication credentials.
         mAuthCache.ClearAll();
         mPrivateAuthCache.ClearAll();
-        if (mWifiTickler)
-            mWifiTickler->Cancel();
 
         // Inform nsIOService that network is tearing down.
         gIOService->SetHttpHandlerAlreadyShutingDown();
@@ -2461,48 +2455,6 @@ nsHttpHandler::SpeculativeAnonymousConnect2(nsIURI *aURI,
                                             nsIInterfaceRequestor *aCallbacks)
 {
     return SpeculativeConnectInternal(aURI, aPrincipal, aCallbacks, true);
-}
-
-void
-nsHttpHandler::TickleWifi(nsIInterfaceRequestor *cb)
-{
-    if (!cb || !mWifiTickler)
-        return;
-
-    // If B2G requires a similar mechanism nsINetworkManager, currently only avail
-    // on B2G, contains the necessary information on wifi and gateway
-
-    nsCOMPtr<nsIDOMWindow> domWindow = do_GetInterface(cb);
-    nsCOMPtr<nsPIDOMWindowOuter> piWindow = do_QueryInterface(domWindow);
-    if (!piWindow)
-        return;
-
-    nsCOMPtr<nsIDOMNavigator> domNavigator = piWindow->GetNavigator();
-    nsCOMPtr<nsIMozNavigatorNetwork> networkNavigator =
-        do_QueryInterface(domNavigator);
-    if (!networkNavigator)
-        return;
-
-    nsCOMPtr<nsINetworkProperties> networkProperties;
-    networkNavigator->GetProperties(getter_AddRefs(networkProperties));
-    if (!networkProperties)
-        return;
-
-    uint32_t gwAddress;
-    bool isWifi;
-    nsresult rv;
-
-    rv = networkProperties->GetDhcpGateway(&gwAddress);
-    if (NS_SUCCEEDED(rv))
-        rv = networkProperties->GetIsWifi(&isWifi);
-    if (NS_FAILED(rv))
-        return;
-
-    if (!gwAddress || !isWifi)
-        return;
-
-    mWifiTickler->SetIPV4Address(gwAddress);
-    mWifiTickler->Tickle();
 }
 
 //-----------------------------------------------------------------------------

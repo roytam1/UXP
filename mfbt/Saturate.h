@@ -40,7 +40,7 @@ public:
   explicit SaturateOp(T& aValue)
     : mValue(aValue)
   {
-    // We should actually check for |std::is_scalar<T>::value| to be
+    // We should actually check for |std::is_scalar_v<T>| to be
     // true, but this type trait is not available everywhere. Relax
     // this assertion if you want to use floating point values as well.
     static_assert(IsIntegral<T>::value,

@@ -704,7 +704,9 @@ nsHtml5TreeOperation::SetFormElement(nsIContent* aNode, nsIContent* aParent)
     RefPtr<dom::HTMLImageElement> imageElement =
       static_cast<dom::HTMLImageElement*>(domImageElement.get());
     MOZ_ASSERT(imageElement);
-    imageElement->SetForm(formElement);
+    if (!imageElement->GetForm()) {
+      imageElement->SetForm(formElement);
+    }
   }
 }
 
