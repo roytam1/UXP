@@ -9,8 +9,9 @@
 /* The aspect ratio of a box, in a "width / height" format. */
 
 #include "mozilla/Attributes.h"
+#include "mozilla/LogicalTypes.h"
 #include "nsCoord.h"
-#include "nsStyleCoord.h"
+#include "nsSize.h"
 #include <algorithm>
 #include <limits>
 
