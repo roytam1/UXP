@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CSS Grid: aspect-ratio contributes to an auto row</title>
+  <link rel="match" href="grid-item-aspect-ratio-001-ref.html">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    .gallery {
+      display: grid;
+      width: 640px;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      padding: 30px;
+    }
+    .item {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      background: red;
+    }
+    .item > div {
+      width: 100%;
+      height: 100%;
+      background: green;
+    }
+  </style>
+</head>
+<body>
+  <div class="gallery">
+    <div class="item"><div></div></div>
+    <div class="item"><div></div></div>
+  </div>
+</body>
+</html>
