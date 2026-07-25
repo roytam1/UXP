@@ -124,6 +124,7 @@ EXPORTS.mozilla.layout += [
 ]
 
 UNIFIED_SOURCES += [
+    'AspectRatio.cpp',
     'AsyncScrollBase.cpp',
     'BlockReflowInput.cpp',
     'CSSAlignUtils.cpp',
