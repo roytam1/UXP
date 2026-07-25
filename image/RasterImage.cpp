@@ -1637,10 +1637,13 @@ RasterImage::NotifyDecodeComplete(const DecoderFinalStatus& aStatus,
 
   if (!(aDecoderFlags & DecoderFlags::FIRST_FRAME_ONLY) &&
       mHasBeenDecoded && mAnimationState) {
-    // We've finished a full decode of all animation frames and our AnimationState
-    // has been notified about them all, so let it know not to expect anymore.
-    mAnimationState->NotifyDecodeComplete();
-    mAnimationState->UpdateState(mAnimationFinished, this, mSize);
+    // If we've successfully finished a full decode of all animation frames
+    // then let our animation state know it's complete and to not to expect
+    // any more frames.
+    if (aStatus.mFinished && !aStatus.mHadError) {
+      mAnimationState->NotifyDecodeComplete();
+      mAnimationState->UpdateState(mAnimationFinished, this, mSize);
+    }
   }
 
   // Only act on errors if we have no usable frames from the decoder.
