@@ -77,6 +77,9 @@ CSS_PSEUDO_CLASS(is, ":is", 0, "layout.css.is-where-pseudo.enabled")
 CSS_PSEUDO_CLASS(matches, ":matches", 0, "layout.css.is-where-pseudo.enabled")
 CSS_PSEUDO_CLASS(any, ":any", 0, "layout.css.is-where-pseudo.enabled")
 CSS_PSEUDO_CLASS(where, ":where", 0, "layout.css.is-where-pseudo.enabled")
+CSS_PSEUDO_CLASS(has, ":has", 0, "")
+CSS_PSEUDO_CLASS(mozHasRelativeAnchor, ":-moz-has-relative-anchor",
+                 CSS_PSEUDO_CLASS_ENABLED_IN_UA_SHEETS_AND_CHROME, "")
 
 CSS_PSEUDO_CLASS(firstChild, ":first-child", 0, "")
 CSS_PSEUDO_CLASS(firstNode, ":-moz-first-node", 0, "")
