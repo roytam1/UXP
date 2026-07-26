@@ -16,6 +16,7 @@
 #include "WebMBufferedParser.h"
 #include "gfx2DGlue.h"
 #include "mozilla/Atomics.h"
+#include "mozilla/CheckedInt.h"
 #include "mozilla/EndianUtils.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/SharedThreadPool.h"
@@ -348,19 +349,27 @@ WebMDemuxer::ReadMetadata()
           mInfo.mVideo.mExtraData = new MediaByteBuffer(length);
           mInfo.mVideo.mExtraData->AppendElements(data, length);
           break;
-	}
+        }
         default:
           NS_WARNING("Unknown WebM video codec");
           return NS_ERROR_FAILURE;
       }
       // Picture region, taking into account cropping, before scaling
       // to the display size.
-      unsigned int cropH = params.crop_right + params.crop_left;
-      unsigned int cropV = params.crop_bottom + params.crop_top;
+      CheckedInt<uint32_t> cropH = CheckedInt<uint32_t>(params.crop_left) + params.crop_right;
+      CheckedInt<uint32_t> cropV = CheckedInt<uint32_t>(params.crop_top) + params.crop_bottom;
+      if (!cropH.isValid() || !cropV.isValid() ||
+          cropH.value() >= params.width || cropV.value() >= params.height) {
+        WEBM_DEBUG("Invalid crop values left: {} right: {} top: {} bottom: {}",
+                   params.crop_left, params.crop_right, params.crop_top,
+                   params.crop_bottom);
+        // Ignore invalid crop parameters.
+        continue;
+      }
       nsIntRect pictureRect(params.crop_left,
                             params.crop_top,
-                            params.width - cropH,
-                            params.height - cropV);
+                            params.width - cropH.value(),
+                            params.height - cropV.value());
 
       // If the cropping data appears invalid then use the frame data
       if (pictureRect.width <= 0 ||
