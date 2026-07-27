@@ -1719,6 +1719,13 @@ sec_pkcs12_sanitize_nickname(PK11SlotInfo *slot, SECItem *nick)
         slotName[slotNameLen] = '\0';
         if (PORT_Strcmp(PK11_GetTokenName(slot), slotName) == 0) {
             delimitlen = PORT_Strlen(delimit + 1);
+            if (delimitlen == 0) {
+                /* Nickname was exactly "TokenName:" with nothing after the
+                 * prefix.  Stripping it would yield an empty SECItem, which
+                 * is not a useful nickname; leave the original in place. */
+                PORT_Free(slotName);
+                return;
+            }
             PORT_Memmove(nickname, delimit + 1, delimitlen + 1);
             nick->len = delimitlen;
         }
