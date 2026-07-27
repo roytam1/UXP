@@ -144,7 +144,7 @@ tls13_HkdfExpandLabel(PK11SymKey *prk, SSLHashType baseHash,
     PORT_Assert(keyp);
     if ((handshakeHashLen > 255) ||
         (handshakeHash == NULL && handshakeHashLen > 0) ||
-        (labelLen + kLabelPrefixLen > 255)) {
+        (labelLen > 255 - kLabelPrefixLen)) {
         PORT_SetError(SEC_ERROR_INVALID_ARGS);
         return SECFailure;
     }
