@@ -1213,6 +1213,12 @@ PK11_UnwrapPrivKey(PK11SlotInfo *slot, PK11SymKey *wrappingKey,
         return NULL;
     }
 
+    if (usageCount < 0 ||
+        usageCount > (int)(PR_ARRAY_SIZE(keyTemplate) - 8)) {
+        PORT_SetError(SEC_ERROR_INVALID_ARGS);
+        return NULL;
+    }
+
     ck_id = PK11_MakeIDFromPubKey(idValue);
     if (!ck_id) {
         return NULL;
