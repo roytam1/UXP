@@ -9,21 +9,46 @@
 /* The aspect ratio of a box, in a "width / height" format. */
 
 #include "mozilla/Attributes.h"
+#include "mozilla/LogicalTypes.h"
 #include "nsCoord.h"
+#include "nsSize.h"
 #include <algorithm>
 #include <limits>
 
 namespace mozilla {
 
-struct AspectRatio {
-  AspectRatio() : mRatio(0.0f) {}
-  explicit AspectRatio(float aRatio) : mRatio(std::max(aRatio, 0.0f)) {}
+class LogicalSize;
+class WritingMode;
 
-  static AspectRatio FromSize(float aWidth, float aHeight) {
+enum class UseBoxSizing : uint8_t {
+  // Natural ratios and "auto <ratio>" always use content-box dimensions.
+  No,
+  // A specified <ratio> uses the dimensions selected by box-sizing.
+  Yes,
+};
+
+struct AspectRatio {
+  AspectRatio()
+    : mRatio(0.0f)
+    , mUseBoxSizing(UseBoxSizing::No)
+  {}
+
+  explicit AspectRatio(float aRatio,
+                       UseBoxSizing aUseBoxSizing = UseBoxSizing::No)
+    : mRatio(std::max(aRatio, 0.0f))
+    , mUseBoxSizing(aUseBoxSizing)
+  {}
+
+  static AspectRatio FromSize(float aWidth, float aHeight,
+                              UseBoxSizing aUseBoxSizing = UseBoxSizing::No) {
     if (aWidth == 0.0f || aHeight == 0.0f) {
       return AspectRatio();
     }
-    return AspectRatio(aWidth / aHeight);
+    float ratio = aWidth / aHeight;
+    if (!std::isfinite(ratio)) {
+      return AspectRatio();
+    }
+    return AspectRatio(ratio, aUseBoxSizing);
   }
 
   static AspectRatio FromSize(nsSize aSize) {
@@ -55,11 +80,23 @@ struct AspectRatio {
     // 0.0f in the division here (so that valid ratios always generate other
     // valid ratios when inverted).
     return AspectRatio(
-        std::max(std::numeric_limits<float>::epsilon(), 1.0f / mRatio));
+        std::max(std::numeric_limits<float>::epsilon(), 1.0f / mRatio),
+        mUseBoxSizing);
   }
 
+  /**
+   * Computes a content-box size in the ratio-dependent axis from a
+   * content-box size in the ratio-determining axis.
+   */
+  nscoord ComputeRatioDependentSize(
+      LogicalAxis aRatioDependentAxis,
+      const WritingMode& aWM,
+      nscoord aRatioDeterminingSize,
+      const LogicalSize& aContentBoxToBoxSizingAdjust) const;
+
   bool operator==(const AspectRatio& aOther) const {
-    return mRatio == aOther.mRatio;
+    return mRatio == aOther.mRatio &&
+           mUseBoxSizing == aOther.mUseBoxSizing;
   }
 
   bool operator!=(const AspectRatio& aOther) const {
@@ -73,6 +110,7 @@ struct AspectRatio {
  private:
   // 0.0f represents no aspect ratio.
   float mRatio;
+  UseBoxSizing mUseBoxSizing;
 };
 
 }  // namespace mozilla

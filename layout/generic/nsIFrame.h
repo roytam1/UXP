@@ -2079,6 +2079,12 @@ public:
   virtual mozilla::IntrinsicSize GetIntrinsicSize() = 0;
 
   /**
+   * Get the preferred aspect ratio after applying the aspect-ratio property
+   * to this frame's natural ratio.
+   */
+  mozilla::AspectRatio GetAspectRatio();
+
+  /**
    * Get the intrinsic ratio of this element, or a default-constructed
    * AspectRatio if it has no intrinsic ratio.
    *

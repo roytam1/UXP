@@ -13411,23 +13411,26 @@ bool
 CSSParserImpl::ParseAspectRatioRatio(nsCSSValue& aValue)
 {
   nsCSSValue width;
-  if (!ParseNonNegativeNumber(width)) {
+  if (!ParseSingleTokenNonNegativeVariant(width,
+                                          VARIANT_NUMBER | VARIANT_CALC,
+                                          nullptr)) {
     return false;
   }
 
-  float w = width.GetFloatValue();
-  float h = 1.0f;
+  nsCSSValue height;
+  height.SetFloatValue(1.0f, eCSSUnit_Number);
   if (ExpectSymbol('/', true)) {
-    nsCSSValue height;
-    if (!ParseNonNegativeNumber(height)) {
+    if (!ParseSingleTokenNonNegativeVariant(height,
+                                            VARIANT_NUMBER | VARIANT_CALC,
+                                            nullptr)) {
       return false;
     }
-    h = height.GetFloatValue();
   }
 
-  // Degenerate ratios behave as auto in layout.
-  aValue.SetFloatValue(w == 0.0f || h == 0.0f ? 0.0f : w / h,
-                       eCSSUnit_Number);
+  // Keep both components: the computed value is a pair of numbers, and
+  // degenerate ratios still serialize as ratios even though they behave as
+  // auto during layout.
+  aValue.SetPairValue(width, height);
   return true;
 }
 
@@ -13450,9 +13453,15 @@ CSSParserImpl::ParseAspectRatio(nsCSSValue& aValue)
   if (hasRatio) {
     if (!hasAuto) {
       // The grammar is "auto || <ratio>", so auto may appear after the ratio.
-      ParseSingleTokenVariant(autoValue, VARIANT_AUTO, nullptr);
+      hasAuto = ParseSingleTokenVariant(autoValue, VARIANT_AUTO, nullptr);
     }
-    aValue = ratioValue;
+    if (hasAuto) {
+      nsCSSValue combined;
+      combined.SetPairValue(autoValue, ratioValue);
+      aValue = combined;
+    } else {
+      aValue = ratioValue;
+    }
     return true;
   }
 

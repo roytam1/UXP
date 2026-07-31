@@ -8,6 +8,7 @@
 #ifndef nsStyleCoord_h___
 #define nsStyleCoord_h___
 
+#include "mozilla/LogicalTypes.h"
 #include "nsCoord.h"
 #include "nsStyleConsts.h"
 #include "nsTArray.h"
@@ -16,30 +17,6 @@
 namespace mozilla {
 
 class WritingMode;
-
-// Logical axis, edge, side and corner constants for use in various places.
-enum LogicalAxis {
-  eLogicalAxisBlock  = 0x0,
-  eLogicalAxisInline = 0x1
-};
-enum LogicalEdge {
-  eLogicalEdgeStart  = 0x0,
-  eLogicalEdgeEnd    = 0x1
-};
-enum LogicalSide {
-  eLogicalSideBStart = (eLogicalAxisBlock  << 1) | eLogicalEdgeStart,  // 0x0
-  eLogicalSideBEnd   = (eLogicalAxisBlock  << 1) | eLogicalEdgeEnd,    // 0x1
-  eLogicalSideIStart = (eLogicalAxisInline << 1) | eLogicalEdgeStart,  // 0x2
-  eLogicalSideIEnd   = (eLogicalAxisInline << 1) | eLogicalEdgeEnd     // 0x3
-};
-
-enum LogicalCorner
-{
-  eLogicalCornerBStartIStart = 0,
-  eLogicalCornerBStartIEnd   = 1,
-  eLogicalCornerBEndIEnd     = 2,
-  eLogicalCornerBEndIStart   = 3
-};
 
 } // namespace mozilla
 

@@ -32,12 +32,43 @@
 #include "nsIFrame.h"
 #include "gfx2DGlue.h"
 
+#include <cmath>
+
 using namespace mozilla;
 using namespace mozilla::css;
 using namespace mozilla::gfx;
 using nsStyleTransformMatrix::Decompose2DMatrix;
 using nsStyleTransformMatrix::Decompose3DMatrix;
 using nsStyleTransformMatrix::ShearType;
+
+static bool
+GetAspectRatioAnimationValue(const nsCSSValuePair* aPair,
+                             bool& aAuto,
+                             float& aRatio)
+{
+  aAuto = aPair->mXValue.GetUnit() == eCSSUnit_Auto;
+  if (aAuto) {
+    if (aPair->mYValue.GetUnit() != eCSSUnit_Pair) {
+      return false;
+    }
+    aPair = &aPair->mYValue.GetPairValue();
+  }
+
+  if (aPair->mXValue.GetUnit() != eCSSUnit_Number ||
+      aPair->mYValue.GetUnit() != eCSSUnit_Number) {
+    return false;
+  }
+
+  float width = aPair->mXValue.GetFloatValue();
+  float height = aPair->mYValue.GetFloatValue();
+  if (width <= 0.0f || height <= 0.0f ||
+      !std::isfinite(width) || !std::isfinite(height)) {
+    return false;
+  }
+
+  aRatio = width / height;
+  return std::isfinite(aRatio) && aRatio > 0.0f;
+}
 
 // HELPER METHODS
 // --------------
@@ -1243,6 +1274,21 @@ StyleAnimationValue::ComputeDistance(nsCSSPropertyID aProperty,
     case eUnit_CSSValuePair: {
       const nsCSSValuePair *pair1 = aStartValue.GetCSSValuePairValue();
       const nsCSSValuePair *pair2 = aEndValue.GetCSSValuePairValue();
+      if (aProperty == eCSSProperty_aspect_ratio) {
+        bool auto1;
+        bool auto2;
+        float ratio1;
+        float ratio2;
+        if (!GetAspectRatioAnimationValue(pair1, auto1, ratio1) ||
+            !GetAspectRatioAnimationValue(pair2, auto2, ratio2) ||
+            auto1 != auto2) {
+          return false;
+        }
+        aDistance = Abs(std::log(double(ratio2)) -
+                        std::log(double(ratio1)));
+        return true;
+      }
+
       nsCSSUnit unit[2];
       unit[0] = GetCommonUnit(aProperty, pair1->mXValue.GetUnit(),
                               pair2->mXValue.GetUnit());
@@ -2821,6 +2867,42 @@ StyleAnimationValue::AddWeighted(nsCSSPropertyID aProperty,
       return true;
     }
     case eUnit_CSSValuePair: {
+      if (aProperty == eCSSProperty_aspect_ratio) {
+        bool auto1;
+        bool auto2;
+        float ratio1;
+        float ratio2;
+        if (!GetAspectRatioAnimationValue(aValue1.GetCSSValuePairValue(),
+                                          auto1, ratio1) ||
+            !GetAspectRatioAnimationValue(aValue2.GetCSSValuePairValue(),
+                                          auto2, ratio2) ||
+            auto1 != auto2 ||
+            std::abs((aCoeff1 + aCoeff2) - 1.0) > 0.000001) {
+          return false;
+        }
+
+        float resultRatio =
+          std::exp(aCoeff1 * std::log(double(ratio1)) +
+                   aCoeff2 * std::log(double(ratio2)));
+        nsCSSValue width;
+        width.SetFloatValue(resultRatio, eCSSUnit_Number);
+        nsCSSValue height;
+        height.SetFloatValue(1.0f, eCSSUnit_Number);
+        nsCSSValue ratio;
+        ratio.SetPairValue(width, height);
+
+        auto result = MakeUnique<nsCSSValuePair>();
+        if (auto1) {
+          result->mXValue.SetAutoValue();
+          result->mYValue = ratio;
+        } else {
+          *result = ratio.GetPairValue();
+        }
+        aResultValue.SetAndAdoptCSSValuePairValue(result.release(),
+                                                  eUnit_CSSValuePair);
+        return true;
+      }
+
       uint32_t restrictions = nsCSSProps::ValueRestrictions(aProperty);
       Maybe<nsCSSValuePair> result =
         AddCSSValuePair(aProperty, restrictions,
@@ -4028,6 +4110,33 @@ StyleAnimationValue::ExtractComputedValue(nsCSSPropertyID aProperty,
             static_cast<const nsStylePosition*>(styleStruct);
           aComputedValue.SetIntValue(stylePosition->mOrder,
                                      eUnit_Integer);
+          break;
+        }
+
+        case eCSSProperty_aspect_ratio: {
+          const StyleAspectRatio& ratio =
+            static_cast<const nsStylePosition*>(styleStruct)->mAspectRatio;
+          if (!ratio.HasRatio()) {
+            aComputedValue.SetAutoValue();
+            break;
+          }
+
+          nsCSSValue width;
+          width.SetFloatValue(ratio.mWidth, eCSSUnit_Number);
+          nsCSSValue height;
+          height.SetFloatValue(ratio.mHeight, eCSSUnit_Number);
+          nsCSSValue ratioValue;
+          ratioValue.SetPairValue(width, height);
+
+          auto pair = MakeUnique<nsCSSValuePair>();
+          if (ratio.mAuto) {
+            pair->mXValue.SetAutoValue();
+            pair->mYValue = ratioValue;
+          } else {
+            *pair = ratioValue.GetPairValue();
+          }
+          aComputedValue.SetAndAdoptCSSValuePairValue(pair.release(),
+                                                      eUnit_CSSValuePair);
           break;
         }
 

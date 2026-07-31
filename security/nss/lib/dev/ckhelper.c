@@ -248,6 +248,11 @@ nss_cert_type_from_ck_attrib(CK_ATTRIBUTE_PTR attrib)
         /* default to PKIX */
         return NSSCertificateType_PKIX;
     }
+    /* The token controls ulValueLen; reject any size that cannot hold a
+     * full CK_CERTIFICATE_TYPE to avoid an out-of-bounds heap read. */
+    if (attrib->ulValueLen != sizeof(CK_CERTIFICATE_TYPE)) {
+        return NSSCertificateType_Unknown;
+    }
     ckCertType = *((CK_ULONG *)attrib->pValue);
     switch (ckCertType) {
         case CKC_X_509:

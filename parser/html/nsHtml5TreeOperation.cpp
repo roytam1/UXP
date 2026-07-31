@@ -690,6 +690,9 @@ nsHtml5TreeOperation::CreateMathMLElement(nsIAtom* aName,
 void
 nsHtml5TreeOperation::SetFormElement(nsIContent* aNode, nsIContent* aParent)
 {
+  if (aNode->SubtreeRoot() != aParent->SubtreeRoot()) {
+    return;
+  }
   nsCOMPtr<nsIFormControl> formControl(do_QueryInterface(aNode));
   nsCOMPtr<nsIDOMHTMLImageElement> domImageElement = do_QueryInterface(aNode);
   // NS_ASSERTION(formControl, "Form-associated element did not implement nsIFormControl.");
