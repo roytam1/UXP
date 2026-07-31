@@ -734,6 +734,12 @@ sftk_ike1_appendix_b_prf(CK_SESSION_HANDLE hSession, const SFTKAttribute *inKey,
                                    inKey->attrib.pValue, keySize);
     }
     outKeySize = PR_ROUNDUP(keySize, macSize);
+    /* Reject if PR_ROUNDUP overflowed 32-bit unsigned arithmetic, which
+     * would yield an undersized allocation for the loop below. */
+    if (outKeySize < keySize) {
+        crv = CKR_KEY_SIZE_RANGE;
+        goto fail;
+    }
     outKeyData = PORT_Alloc(outKeySize);
     if (outKeyData == NULL) {
         crv = CKR_HOST_MEMORY;

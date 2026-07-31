@@ -6,6 +6,8 @@
  * certhtml.c --- convert a cert to html
  */
 
+#include <limits.h>
+
 #include "seccomon.h"
 #include "secitem.h"
 #include "sechash.h"
@@ -14,6 +16,7 @@
 #include "secder.h"
 #include "prprf.h"
 #include "secport.h"
+#include "secerr.h"
 #include "secasn1.h"
 #include "pk11func.h"
 
@@ -30,6 +33,11 @@ CERT_Hexify(SECItem *i, int do_colon)
 
     if (!i->len) {
         return PORT_Strdup("00");
+    }
+
+    if (i->len > UINT_MAX / 3) {
+        PORT_SetError(SEC_ERROR_INVALID_ARGS);
+        return NULL;
     }
 
     rv = o = (char *)PORT_Alloc(i->len * 3);

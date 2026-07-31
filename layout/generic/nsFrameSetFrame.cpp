@@ -318,7 +318,11 @@ nsHTMLFramesetFrame::Init(nsIContent*       aContent,
         mChildFrameborder[mChildCount] = GetFrameBorder(child);
         mChildBorderColors[mChildCount].Set(GetBorderColor(child));
       }
-      child->SetPrimaryFrame(frame);
+      if (MOZ_LIKELY(!child->GetPrimaryFrame())) {
+        // Child might have a pre-existing primary frame if we're doing fixed-pos
+        // replication... So, only set it if there is no primary frame yet.
+        child->SetPrimaryFrame(frame);
+      }
 
       mFrames.AppendFrame(nullptr, frame);
 

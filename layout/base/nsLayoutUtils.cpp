@@ -5113,19 +5113,28 @@ nsLayoutUtils::IntrinsicForAxis(PhysicalAxis              aAxis,
            styleMinBSize.GetCoordValue() == 0)) ||
         styleMaxBSize.GetUnit() != eStyleUnit_None) {
 
-      AspectRatio ratio = aFrame->GetIntrinsicRatio();
+      AspectRatio ratio = aFrame->GetAspectRatio();
       if (ratio) {
-        // Convert 'ratio' if necessary, so that it's storing ISize/BSize:
-        if (!horizontalAxis) {
-          ratio = ratio.Inverted();
-        }
         AddStateBitToAncestors(aFrame,
             NS_FRAME_DESCENDANT_INTRINSIC_ISIZE_DEPENDS_ON_BSIZE);
 
+        const WritingMode wm = aFrame->GetWritingMode();
+        LogicalSize boxSizingAdjust(wm);
+        boxSizingAdjust.ISize(wm) =
+          GetDefiniteSizeTakenByBoxSizing(boxSizing, aFrame, isInlineAxis,
+                                          aFlags & IGNORE_PADDING,
+                                          aPercentageBasis);
         nscoord bSizeTakenByBoxSizing =
           GetDefiniteSizeTakenByBoxSizing(boxSizing, aFrame, !isInlineAxis,
                                           aFlags & IGNORE_PADDING,
                                           aPercentageBasis);
+        boxSizingAdjust.BSize(wm) = bSizeTakenByBoxSizing;
+        auto iSizeFromBSize = [&](nscoord aBSize) {
+          LogicalAxis dependentAxis =
+            isInlineAxis ? eLogicalAxisInline : eLogicalAxisBlock;
+          return ratio.ComputeRatioDependentSize(
+              dependentAxis, wm, aBSize, boxSizingAdjust);
+        };
         // NOTE: This is only the minContentSize if we've been passed MIN_INTRINSIC_ISIZE
         // (which is fine, because this should only be used inside a check for that flag).
         nscoord minContentSize = result;
@@ -5134,14 +5143,14 @@ nsLayoutUtils::IntrinsicForAxis(PhysicalAxis              aAxis,
             (aPercentageBasis.isNothing() &&
              GetPercentBSize(styleBSize, aFrame, horizontalAxis, h))) {
           h = std::max(0, h - bSizeTakenByBoxSizing);
-          result = ratio.ApplyTo(h);
+          result = iSizeFromBSize(h);
         }
 
         if (GetDefiniteSize(styleMaxBSize, aFrame, !isInlineAxis, aPercentageBasis, &h) ||
             (aPercentageBasis.isNothing() &&
              GetPercentBSize(styleMaxBSize, aFrame, horizontalAxis, h))) {
           h = std::max(0, h - bSizeTakenByBoxSizing);
-          nscoord maxISize = ratio.ApplyTo(h);
+          nscoord maxISize = iSizeFromBSize(h);
           if (maxISize < result) {
             result = maxISize;
           }
@@ -5154,7 +5163,7 @@ nsLayoutUtils::IntrinsicForAxis(PhysicalAxis              aAxis,
             (aPercentageBasis.isNothing() &&
              GetPercentBSize(styleMinBSize, aFrame, horizontalAxis, h))) {
           h = std::max(0, h - bSizeTakenByBoxSizing);
-          nscoord minISize = ratio.ApplyTo(h);
+          nscoord minISize = iSizeFromBSize(h);
           if (minISize > result) {
             result = minISize;
           }

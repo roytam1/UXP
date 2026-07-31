@@ -1385,12 +1385,6 @@ pref("network.notify.IPv6", false);
 pref("network.notify.IPv6", true);
 #endif
 
-// Transmit UDP busy-work to the LAN when anticipating low latency
-// network reads and on wifi to mitigate 802.11 Power Save Polling delays
-pref("network.tickle-wifi.enabled", false);
-pref("network.tickle-wifi.duration", 400);
-pref("network.tickle-wifi.delay", 16);
-
 // Turn off interprocess security checks. Needed to run xpcshell tests.
 pref("network.disable.ipc.security", false);
 

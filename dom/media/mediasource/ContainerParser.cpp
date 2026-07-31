@@ -439,7 +439,7 @@ private:
     Maybe<size_t> mInitOffset;
     Maybe<size_t> mMediaOffset;
     bool mValid = true;
-    char mLastInvalidBox[5];
+    char mLastInvalidBox[5]{};
   };
 
 public:

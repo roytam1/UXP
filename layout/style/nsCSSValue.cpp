@@ -2972,6 +2972,20 @@ nsCSSValuePair::AppendToString(nsCSSPropertyID aProperty,
                                nsAString& aResult,
                                nsCSSValue::Serialization aSerialization) const
 {
+  if (aProperty == eCSSProperty_aspect_ratio) {
+    if (mXValue.GetUnit() == eCSSUnit_Auto) {
+      mXValue.AppendToString(aProperty, aResult, aSerialization);
+      aResult.Append(char16_t(' '));
+      mYValue.AppendToString(aProperty, aResult, aSerialization);
+      return;
+    }
+
+    mXValue.AppendToString(aProperty, aResult, aSerialization);
+    aResult.AppendLiteral(" / ");
+    mYValue.AppendToString(aProperty, aResult, aSerialization);
+    return;
+  }
+
   mXValue.AppendToString(aProperty, aResult, aSerialization);
   if (mYValue.GetUnit() != eCSSUnit_Null) {
     aResult.Append(char16_t(' '));

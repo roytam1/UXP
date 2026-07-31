@@ -4652,10 +4652,44 @@ nsFrame::GetIntrinsicSize()
 /* virtual */ AspectRatio
 nsFrame::GetIntrinsicRatio()
 {
-  const nsStylePosition* stylePos = StylePosition();
-  return stylePos->mAspectRatio == 0.0f
-         ? AspectRatio()
-         : AspectRatio(stylePos->mAspectRatio);
+  return AspectRatio();
+}
+
+AspectRatio
+nsIFrame::GetAspectRatio()
+{
+  // The property does not apply to inline boxes or internal ruby/table boxes.
+  nsIAtom* type = GetType();
+  if (type == nsGkAtoms::inlineFrame ||
+      RubyUtils::IsRubyBox(type) ||
+      type == nsGkAtoms::tableCellFrame ||
+      type == nsGkAtoms::tableColFrame ||
+      type == nsGkAtoms::tableColGroupFrame ||
+      type == nsGkAtoms::tableRowFrame ||
+      type == nsGkAtoms::tableRowGroupFrame) {
+    return AspectRatio();
+  }
+
+  const StyleAspectRatio& styleRatio = StylePosition()->mAspectRatio;
+
+  // A non-auto, non-degenerate ratio overrides the natural ratio and uses the
+  // box selected by box-sizing.
+  if (!styleRatio.mAuto && styleRatio.HasUsableRatio()) {
+    return AspectRatio::FromSize(styleRatio.mWidth, styleRatio.mHeight,
+                                 UseBoxSizing::Yes);
+  }
+
+  if (AspectRatio intrinsicRatio = GetIntrinsicRatio()) {
+    return intrinsicRatio;
+  }
+
+  // The fallback in "auto <ratio>" always operates on the content box.
+  if (styleRatio.HasUsableRatio()) {
+    return AspectRatio::FromSize(styleRatio.mWidth, styleRatio.mHeight,
+                                 UseBoxSizing::No);
+  }
+
+  return AspectRatio();
 }
 
 void
@@ -4724,11 +4758,11 @@ nsFrame::ComputeSize(nsRenderingContext* aRenderingContext,
                      const LogicalSize&  aPadding,
                      ComputeSizeFlags    aFlags)
 {
-  AspectRatio intrinsicRatio = GetIntrinsicRatio();
-  if (intrinsicRatio) {
+  AspectRatio aspectRatio = GetAspectRatio();
+  if (aspectRatio) {
     return ComputeSizeWithIntrinsicDimensions(aRenderingContext, aWM,
                                               GetIntrinsicSize(),
-                                              intrinsicRatio,
+                                              aspectRatio,
                                               aCBSize, aMargin,
                                               aBorder, aPadding,
                                               aFlags);
@@ -4973,8 +5007,6 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
                                             const LogicalSize&   aPadding,
                                             ComputeSizeFlags     aFlags)
 {
-  auto logicalRatio =
-      aWM.IsVertical() ? aIntrinsicRatio.Inverted() : aIntrinsicRatio;
   const nsStylePosition* stylePos = StylePosition();
   const nsStyleCoord* inlineStyleCoord = &stylePos->ISize(aWM);
   const nsStyleCoord* blockStyleCoord = &stylePos->BSize(aWM);
@@ -5036,6 +5068,14 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
   if (stylePos->mBoxSizing == StyleBoxSizing::Border) {
     boxSizingAdjust = aBorder + aPadding;
   }
+  auto iSizeFromBSize = [&](nscoord aBSize) {
+    return aIntrinsicRatio.ComputeRatioDependentSize(
+        eLogicalAxisInline, aWM, aBSize, boxSizingAdjust);
+  };
+  auto bSizeFromISize = [&](nscoord aISize) {
+    return aIntrinsicRatio.ComputeRatioDependentSize(
+        eLogicalAxisBlock, aWM, aISize, boxSizingAdjust);
+  };
   nscoord boxSizingToMarginEdgeISize =
     aMargin.ISize(aWM) + aBorder.ISize(aWM) + aPadding.ISize(aWM) -
       boxSizingAdjust.ISize(aWM);
@@ -5126,7 +5166,8 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
     bSize = nsLayoutUtils::ComputeBSizeValue(aCBSize.BSize(aWM),
                 boxSizingAdjust.BSize(aWM),
                 *blockStyleCoord);
-  } else if (MOZ_UNLIKELY(isGridItem)) {
+  } else if (MOZ_UNLIKELY(isGridItem) &&
+             !(aFlags & nsIFrame::eUseAutoBSize)) {
     MOZ_ASSERT(!IS_TRUE_OVERFLOW_CONTAINER(this));
     // 'auto' block-size for grid-level box - apply 'stretch' as needed:
     auto cbSize = aCBSize.BSize(aWM);
@@ -5227,9 +5268,9 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
 
       if (hasIntrinsicISize) {
         tentISize = intrinsicISize;
-      } else if (hasIntrinsicBSize && logicalRatio) {
-        tentISize = logicalRatio.ApplyTo(intrinsicBSize);
-      } else if (logicalRatio) {
+      } else if (hasIntrinsicBSize && aIntrinsicRatio) {
+        tentISize = iSizeFromBSize(intrinsicBSize);
+      } else if (aIntrinsicRatio) {
         tentISize = aCBSize.ISize(aWM) - boxSizingToMarginEdgeISize; // XXX scrollbar?
         if (tentISize < 0) tentISize = 0;
       } else {
@@ -5246,8 +5287,8 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
 
       if (hasIntrinsicBSize) {
         tentBSize = intrinsicBSize;
-      } else if (logicalRatio) {
-        tentBSize = logicalRatio.Inverted().ApplyTo(tentISize);
+      } else if (aIntrinsicRatio) {
+        tentBSize = bSizeFromISize(tentISize);
       } else {
         tentBSize = nsPresContext::CSSPixelsToAppUnits(150);
       }
@@ -5258,39 +5299,39 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
         stretchB = (stretchI == eStretch ? eStretch : eStretchPreservingRatio);
       }
 
-      if (logicalRatio) {
+      if (aIntrinsicRatio) {
         if (stretchI == eStretch) {
           tentISize = iSize;  // * / 'stretch'
           if (stretchB == eStretch) {
             tentBSize = bSize;  // 'stretch' / 'stretch'
           } else if (stretchB == eStretchPreservingRatio) {
             // 'normal' / 'stretch'
-            tentBSize = logicalRatio.Inverted().ApplyTo(iSize);
+            tentBSize = bSizeFromISize(iSize);
           }
         } else if (stretchB == eStretch) {
           tentBSize = bSize;  // 'stretch' / * (except 'stretch')
           if (stretchI == eStretchPreservingRatio) {
             // 'stretch' / 'normal'
-            tentISize = logicalRatio.ApplyTo(bSize);
+            tentISize = iSizeFromBSize(bSize);
           }
         } else if (stretchI == eStretchPreservingRatio) {
           tentISize = iSize;  // * (except 'stretch') / 'normal'
-          tentBSize = logicalRatio.Inverted().ApplyTo(iSize);
+          tentBSize = bSizeFromISize(iSize);
           if (stretchB == eStretchPreservingRatio && tentBSize > bSize) {
             // Stretch within the CB size with preserved intrinsic ratio.
             tentBSize = bSize;  // 'normal' / 'normal'
-            tentISize = logicalRatio.ApplyTo(bSize);
+            tentISize = iSizeFromBSize(bSize);
           }
         } else if (stretchB == eStretchPreservingRatio) {
           tentBSize = bSize;  // 'normal' / * (except 'normal' and 'stretch')
-          tentISize = logicalRatio.ApplyTo(bSize);
+          tentISize = iSizeFromBSize(bSize);
         }
       }
 
       // ComputeAutoSizeWithIntrinsicDimensions preserves the ratio when applying
       // the min/max-size.  We don't want that when we have 'stretch' in either
       // axis because tentISize/tentBSize is likely not according to ratio now.
-      if (logicalRatio && stretchI != eStretch && stretchB != eStretch) {
+      if (aIntrinsicRatio && stretchI != eStretch && stretchB != eStretch) {
         nsSize autoSize = nsLayoutUtils::
           ComputeAutoSizeWithIntrinsicDimensions(minISize, minBSize,
                                                  maxISize, maxBSize,
@@ -5311,8 +5352,8 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
       // 'auto' iSize, non-'auto' bSize
       bSize = NS_CSS_MINMAX(bSize, minBSize, maxBSize);
       if (stretchI != eStretch) {
-        if (logicalRatio) {
-          iSize = logicalRatio.ApplyTo(bSize);
+        if (aIntrinsicRatio) {
+          iSize = iSizeFromBSize(bSize);
         } else if (hasIntrinsicISize) {
           if (!((aFlags & ComputeSizeFlags::eIClampMarginBoxMinSize) &&
                 intrinsicISize > iSize)) {
@@ -5331,8 +5372,8 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
       // non-'auto' iSize, 'auto' bSize
       iSize = NS_CSS_MINMAX(iSize, minISize, maxISize);
       if (stretchB != eStretch) {
-        if (logicalRatio) {
-          bSize = logicalRatio.Inverted().ApplyTo(iSize);
+        if (aIntrinsicRatio) {
+          bSize = bSizeFromISize(iSize);
         } else if (hasIntrinsicBSize) {
           if (!((aFlags & ComputeSizeFlags::eBClampMarginBoxMinSize) &&
                 intrinsicBSize > bSize)) {
