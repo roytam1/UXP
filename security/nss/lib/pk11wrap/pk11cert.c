@@ -2289,10 +2289,20 @@ PK11_TraverseCertsForNicknameInSlot(SECItem *nickname, PK11SlotInfo *slot,
     NSSCertificate **certs;
     nssList *nameList = NULL;
     nssTokenSearchType tokenOnly = nssTokenSearchType_TokenOnly;
+    if (!nickname || !nickname->data || nickname->len == 0) {
+        PORT_SetError(SEC_ERROR_INVALID_ARGS);
+        return SECFailure;
+    }
     token = PK11Slot_GetNSSToken(slot);
     if (!token || !nssToken_IsPresent(token)) {
         (void)nssToken_Destroy(token);
         return SECSuccess;
+
+    }
+    if (!nickname || !nickname->data || nickname->len == 0) {
+        (void)nssToken_Destroy(token);
+        PORT_SetError(SEC_ERROR_INVALID_ARGS);
+        return SECFailure;
     }
     if (nickname->data[nickname->len - 1] != '\0') {
         nick = nssUTF8_Create(NULL, nssStringType_UTF8String,

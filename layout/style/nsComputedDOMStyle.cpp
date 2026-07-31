@@ -968,13 +968,17 @@ already_AddRefed<CSSValue>
 nsComputedDOMStyle::DoGetAspectRatio()
 {
   RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
-  float ratio = StylePosition()->mAspectRatio;
-  if (ratio == 0.0f) {
+  const StyleAspectRatio& ratio = StylePosition()->mAspectRatio;
+  if (!ratio.HasRatio()) {
     val->SetIdent(eCSSKeyword_auto);
   } else {
     nsAutoString ratioString;
-    nsStyleUtil::AppendCSSNumber(ratio, ratioString);
-    ratioString.AppendLiteral(" / 1");
+    if (ratio.mAuto) {
+      ratioString.AppendLiteral("auto ");
+    }
+    nsStyleUtil::AppendCSSNumber(ratio.mWidth, ratioString);
+    ratioString.AppendLiteral(" / ");
+    nsStyleUtil::AppendCSSNumber(ratio.mHeight, ratioString);
     val->SetString(ratioString);
   }
   return val.forget();

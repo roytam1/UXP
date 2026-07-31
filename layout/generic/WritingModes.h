@@ -6,6 +6,7 @@
 #ifndef WritingModes_h_
 #define WritingModes_h_
 
+#include "mozilla/LogicalTypes.h"
 #include "nsRect.h"
 #include "nsStyleContext.h"
 #include "nsBidiUtils.h"

@@ -479,8 +479,8 @@ CSS_PROP_POSITION(
     "",
     0,
     nullptr,
-    offsetof(nsStylePosition, mAspectRatio),
-    eStyleAnimType_None)
+    CSS_PROP_NO_OFFSET,
+    eStyleAnimType_Custom)
 CSS_PROP_DISPLAY(
     backface-visibility,
     backface_visibility,

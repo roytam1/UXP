@@ -1487,8 +1487,15 @@ nsGenericHTMLElement::MapImageSizeAttributesInto(const nsMappedAttributes* aAttr
     }
 
     if (w && h && *w != 0 && *h != 0) {
-      nsCSSValue* aspect_ratio = aData->ValueForAspectRatio();
-      aspect_ratio->SetFloatValue((float(*w) / float(*h)), eCSSUnit_Number);
+      nsCSSValue width;
+      width.SetFloatValue(float(*w), eCSSUnit_Number);
+      nsCSSValue height;
+      height.SetFloatValue(float(*h), eCSSUnit_Number);
+      nsCSSValue ratio;
+      ratio.SetPairValue(width, height);
+      nsCSSValue autoValue;
+      autoValue.SetAutoValue();
+      aData->ValueForAspectRatio()->SetPairValue(autoValue, ratio);
     }
   }
 }

@@ -9611,15 +9611,54 @@ nsRuleNode::ComputePositionData(void* aStartStruct,
              SETCOORD_UNSET_INITIAL,
            aContext, mPresContext, conditions);
 
-  // aspect-ratio: auto | <ratio>
+  // aspect-ratio: auto || <ratio>
   const nsCSSValue* aspectRatio = aRuleData->ValueForAspectRatio();
-  if (aspectRatio->GetUnit() == eCSSUnit_Auto) {
-    pos->mAspectRatio = 0.0f;
-  } else {
-    SetFactor(*aspectRatio,
-              pos->mAspectRatio, conditions,
-              parentPos->mAspectRatio, 0.0f,
-              SETFCT_UNSET_INITIAL | SETFCT_POSITIVE | SETFCT_NONE);
+  switch (aspectRatio->GetUnit()) {
+    case eCSSUnit_Null:
+      break;
+
+    case eCSSUnit_Inherit:
+      conditions.SetUncacheable();
+      pos->mAspectRatio = parentPos->mAspectRatio;
+      break;
+
+    case eCSSUnit_Auto:
+    case eCSSUnit_Initial:
+    case eCSSUnit_Unset:
+    case eCSSUnit_Revert:
+    case eCSSUnit_RevertLayer:
+      pos->mAspectRatio = StyleAspectRatio();
+      break;
+
+    case eCSSUnit_Number:
+      // Animation normalizes a ratio to <number> / 1 when both components
+      // would otherwise compare equal and the pair is collapsed.
+      pos->mAspectRatio =
+        StyleAspectRatio(aspectRatio->GetFloatValue(), 1.0f, false);
+      break;
+
+    case eCSSUnit_Pair: {
+      const nsCSSValuePair* ratio = &aspectRatio->GetPairValue();
+      bool hasAuto = ratio->mXValue.GetUnit() == eCSSUnit_Auto;
+      if (hasAuto) {
+        MOZ_ASSERT(ratio->mYValue.GetUnit() == eCSSUnit_Pair,
+                   "auto must be followed by a ratio");
+        ratio = &ratio->mYValue.GetPairValue();
+      }
+
+      float width = 0.0f;
+      float height = 0.0f;
+      SetFactor(ratio->mXValue, width, conditions, 0.0f, 0.0f,
+                SETFCT_POSITIVE);
+      SetFactor(ratio->mYValue, height, conditions, 0.0f, 0.0f,
+                SETFCT_POSITIVE);
+      pos->mAspectRatio = StyleAspectRatio(width, height, hasAuto);
+      break;
+    }
+
+    default:
+      MOZ_ASSERT_UNREACHABLE("unexpected aspect-ratio unit");
+      break;
   }
 
   // box-sizing: enum, inherit, initial

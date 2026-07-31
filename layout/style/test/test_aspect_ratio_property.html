@@ -4,29 +4,76 @@
   <title>Test CSS aspect-ratio property</title>
   <script type="application/javascript" src="/tests/SimpleTest/SimpleTest.js"></script>
   <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+  <style>
+    @keyframes aspect-ratio-interpolation {
+      from { aspect-ratio: 1; }
+      to { aspect-ratio: 4; }
+    }
+    #animated-ratio {
+      animation: aspect-ratio-interpolation 100s linear -50s paused;
+    }
+  </style>
 </head>
 <body>
 <div id="container" style="position:absolute; left:0; top:0; width:120px;">
   <div id="ratio" style="width:120px; aspect-ratio:3 / 2;"></div>
+  <div id="bare-ratio" style="width:120px; aspect-ratio:2;"></div>
   <div id="wrapper" style="position:relative; width:120px; aspect-ratio:1 / 1;">
     <div style="position:absolute; inset:0;"></div>
   </div>
+  <div id="zero-ratio" style="width:120px; aspect-ratio:0;"></div>
+  <div id="border-box-ratio"
+       style="box-sizing:border-box; width:120px; padding:10px;
+              border:10px solid; aspect-ratio:2;"></div>
+  <div id="content-box-ratio"
+       style="box-sizing:content-box; width:120px; padding:10px;
+              border:10px solid; aspect-ratio:2;"></div>
+  <div id="auto-border-box-ratio"
+       style="box-sizing:border-box; width:120px; padding:10px;
+              border:10px solid; aspect-ratio:auto 2;"></div>
+  <div id="animated-ratio" style="width:120px;"></div>
+  <img id="override-natural-ratio"
+       style="display:block; width:120px; height:auto; aspect-ratio:1;"
+       src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20'%3E%3C/svg%3E">
+  <img id="use-natural-ratio"
+       style="display:block; width:120px; height:auto; aspect-ratio:auto 1;"
+       src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20'%3E%3C/svg%3E">
 </div>
 <pre id="test">
 <script type="application/javascript">
 
 ok(CSS.supports("aspect-ratio", "1 / 1"),
    "aspect-ratio accepts ratio syntax");
+ok(CSS.supports("aspect-ratio", "2"),
+   "aspect-ratio accepts a ratio with an omitted denominator");
 ok(CSS.supports("aspect-ratio", "auto"),
    "aspect-ratio accepts auto");
 ok(CSS.supports("aspect-ratio", "auto 16 / 9"),
    "aspect-ratio accepts auto plus ratio");
+ok(CSS.supports("aspect-ratio", "16 / 9 auto"),
+   "aspect-ratio accepts ratio plus auto");
+ok(CSS.supports("aspect-ratio", "calc(1 + 1)"),
+   "aspect-ratio accepts math functions as numbers");
+ok(CSS.supports("aspect-ratio", "0 / 1"),
+   "aspect-ratio accepts degenerate ratios");
 ok(!CSS.supports("aspect-ratio", "1px"),
    "aspect-ratio rejects lengths");
+ok(!CSS.supports("aspect-ratio", "-1"),
+   "aspect-ratio rejects negative numbers");
+ok(!CSS.supports("aspect-ratio", "auto auto"),
+   "aspect-ratio rejects duplicate auto keywords");
 
 var ratio = document.getElementById("ratio");
 is(ratio.getBoundingClientRect().height, 80,
    "aspect-ratio computes an automatic block size from inline size");
+is(getComputedStyle(ratio).aspectRatio, "3 / 2",
+   "computed aspect-ratio preserves both ratio components");
+
+var bareRatio = document.getElementById("bare-ratio");
+is(bareRatio.getBoundingClientRect().height, 60,
+   "a bare number computes an automatic block size");
+is(getComputedStyle(bareRatio).aspectRatio, "2 / 1",
+   "a ratio with an omitted denominator serializes with denominator 1");
 
 var wrapper = document.getElementById("wrapper");
 is(wrapper.getBoundingClientRect().height, 120,
@@ -34,6 +81,66 @@ is(wrapper.getBoundingClientRect().height, 120,
 
 is(getComputedStyle(wrapper).aspectRatio, "1 / 1",
    "computed aspect-ratio exposes a ratio value");
+
+var zeroRatio = document.getElementById("zero-ratio");
+is(zeroRatio.getBoundingClientRect().height, 0,
+   "a degenerate ratio behaves as auto during layout");
+is(getComputedStyle(zeroRatio).aspectRatio, "0 / 1",
+   "a degenerate ratio remains a ratio in the computed value");
+
+is(document.getElementById("border-box-ratio").getBoundingClientRect().height,
+   60, "a specified ratio honors border-box sizing");
+is(document.getElementById("content-box-ratio").getBoundingClientRect().height,
+   100, "a specified ratio honors content-box sizing");
+is(document.getElementById("auto-border-box-ratio")
+           .getBoundingClientRect().height,
+   80, "the fallback in auto plus ratio always uses the content box");
+
+var animatedRatio = document.getElementById("animated-ratio");
+is(animatedRatio.getBoundingClientRect().height, 60,
+   "aspect-ratio interpolation is logarithmic");
+is(getComputedStyle(animatedRatio).aspectRatio, "2 / 1",
+   "an interpolated ratio is exposed as a pair of numbers");
+
+var declaration = document.createElement("div").style;
+declaration.aspectRatio = "3 / 2 auto";
+is(declaration.aspectRatio, "auto 3 / 2",
+   "specified aspect-ratio serializes in canonical order");
+
+SimpleTest.waitForExplicitFinish();
+var images = [
+  document.getElementById("override-natural-ratio"),
+  document.getElementById("use-natural-ratio"),
+];
+var pendingImages = images.length;
+
+function checkReplacedElements() {
+  is(images[0].getBoundingClientRect().height, 120,
+     "a ratio without auto overrides a replaced element's natural ratio");
+  is(images[1].getBoundingClientRect().height, 60,
+     "auto plus ratio uses a replaced element's natural ratio");
+  is(getComputedStyle(images[1]).aspectRatio, "auto 1 / 1",
+     "computed style preserves auto plus ratio");
+  SimpleTest.finish();
+}
+
+function imageReady() {
+  if (--pendingImages == 0) {
+    checkReplacedElements();
+  }
+}
+
+images.forEach(function(image) {
+  if (image.complete) {
+    imageReady();
+  } else {
+    image.addEventListener("load", imageReady);
+    image.addEventListener("error", function() {
+      ok(false, "test image should load");
+      imageReady();
+    });
+  }
+});
 
 </script>
 </pre>
