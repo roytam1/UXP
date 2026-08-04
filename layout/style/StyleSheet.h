@@ -12,6 +12,7 @@
 #include "mozilla/CORSMode.h"
 
 #include "nsIDOMCSSStyleSheet.h"
+#include "nsTArray.h"
 #include "nsWrapperCache.h"
 
 class nsIDocument;
@@ -26,6 +27,7 @@ struct StyleSheetInfo;
 
 namespace dom {
 class CSSRuleList;
+class ShadowRoot;
 class SRIMetadata;
 } // namespace dom
 
@@ -193,6 +195,13 @@ public:
   inline void DidDirty();
   inline void AssertHasUniqueInner();
 
+  bool IsConstructed() const { return mConstructed; }
+  nsIDocument* ConstructorDocument() const { return mConstructorDocument; }
+  void AddAdopter(nsIDocument* aDocument);
+  void RemoveAdopter(nsIDocument* aDocument);
+  void AddAdopter(dom::ShadowRoot* aShadowRoot);
+  void RemoveAdopter(dom::ShadowRoot* aShadowRoot);
+
 private:
   // Get a handle to the various stylesheet bits which live on the 'inner' for
   // gecko stylesheets.
@@ -206,8 +215,12 @@ private:
   bool AreRulesAvailable(nsIPrincipal& aSubjectPrincipal,
                          ErrorResult& aRv);
 
-  bool IsConstructed() const { return mConstructed; }
   void SetConstructed() { mConstructed = true; }
+  void SetConstructorDocument(nsIDocument* aDocument)
+  {
+    MOZ_ASSERT(IsConstructed());
+    mConstructorDocument = aDocument;
+  }
   bool IsModificationDisallowed() const { return mDisallowModification; }
 
 protected:
@@ -217,10 +230,13 @@ protected:
   // it will set the principal of the inner to the subject principal.
   void SubjectSubsumesInnerPrincipal(nsIPrincipal& aSubjectPrincipal,
                                      ErrorResult& aRv);
+  void NotifyAdopterRuleChanged();
 
   nsString              mTitle;
   nsIDocument*          mDocument; // weak ref; parents maintain this for their children
+  RefPtr<nsIDocument>   mConstructorDocument;
   nsINode*              mOwningNode; // weak ref
+  nsTArray<dom::ShadowRoot*> mAdopterShadowRoots; // weak; roots unadopt on unlink/destruction
 
   // mParsingMode controls access to nonstandard style constructs that
   // are not safe for use on the public Web but necessary in UA sheets
@@ -230,6 +246,7 @@ protected:
   bool                  mDisabled;
   bool                  mConstructed;
   bool                  mDisallowModification;
+  uint32_t              mAdoptionCount;
 
   // mDocumentAssociationMode determines whether mDocument directly owns us (in
   // the sense that if it's known-live then we're known-live).  Always

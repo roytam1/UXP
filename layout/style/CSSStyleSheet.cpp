@@ -1781,6 +1781,7 @@ CSSStyleSheet::DidDirty()
   MOZ_ASSERT(!mInner->mComplete || mDirty,
              "caller must have called WillDirty()");
   ClearRuleCascades();
+  NotifyAdopterRuleChanged();
 }
 
 void
@@ -1876,6 +1877,11 @@ CSSStyleSheet::InsertRuleInternal(const nsAString& aRule,
 
   // Hierarchy checking.
   int32_t newType = rule->GetType();
+
+  if (IsConstructed() && newType == css::Rule::IMPORT_RULE) {
+    aRv.Throw(NS_ERROR_DOM_SYNTAX_ERR);
+    return 0;
+  }
 
   // check that we're not inserting before a charset rule
   css::Rule* nextRule = mInner->mOrderedRules.SafeObjectAt(aIndex);
