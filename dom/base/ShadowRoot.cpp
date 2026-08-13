@@ -18,6 +18,7 @@
 #include "mozilla/dom/StyleSheetList.h"
 #include "nsXBLPrototypeBinding.h"
 #include "mozilla/BasicEvents.h"
+#include "mozilla/CSSStyleSheet.h"
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/StyleSheet.h"
 #include "mozilla/StyleSheetInlines.h"
@@ -30,6 +31,7 @@ NS_IMPL_CYCLE_COLLECTION_CLASS(ShadowRoot)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(ShadowRoot,
                                                   DocumentFragment)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDOMStyleSheets)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mAdoptedStyleSheets)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mAssociatedBinding)
   for (auto iter = tmp->mIdentifierMap.ConstIter(); !iter.Done();
        iter.Next()) {
@@ -42,6 +44,10 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(ShadowRoot)
     tmp->GetHost()->RemoveMutationObserver(tmp);
   }
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mDOMStyleSheets)
+  for (CSSStyleSheet* sheet : tmp->mAdoptedStyleSheets) {
+    sheet->RemoveAdopter(tmp);
+  }
+  tmp->mAdoptedStyleSheets.Clear();
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mAssociatedBinding)
   tmp->mIdentifierMap.Clear();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END_INHERITED(DocumentFragment)
@@ -89,6 +95,11 @@ ShadowRoot::~ShadowRoot()
     // created, making this one obsolete.
     host->RemoveMutationObserver(this);
   }
+
+  for (CSSStyleSheet* sheet : mAdoptedStyleSheets) {
+    sheet->RemoveAdopter(this);
+  }
+  mAdoptedStyleSheets.Clear();
 
   UnsetFlags(NODE_IS_IN_SHADOW_TREE);
 
@@ -270,13 +281,18 @@ ShadowRoot::InsertSheet(StyleSheet* aSheet,
 
   linkingElement->SetStyleSheet(aSheet); // This sets the ownerNode on the sheet
 
-  MOZ_DIAGNOSTIC_ASSERT(mProtoBinding->SheetCount() == DocumentOrShadowRoot::SheetCount());
+  MOZ_DIAGNOSTIC_ASSERT(mProtoBinding->SheetCount() ==
+                        DocumentOrShadowRoot::SheetCount() +
+                        mAdoptedStyleSheets.Length());
 #ifdef MOZ_DIAGNOSTIC_ASSERT_ENABLED
-  // FIXME(emilio, bug 1425759): For now we keep them duplicated, the proto
-  // binding will disappear soon (tm).
+  // FIXME(emilio, bug 1425759): For now we keep regular sheets duplicated;
+  // adopted sheets are stored as a suffix on the proto binding only.
   {
     size_t i = 0;
     for (RefPtr<StyleSheet>& sheet : mStyleSheets) {
+      MOZ_DIAGNOSTIC_ASSERT(sheet.get() == mProtoBinding->StyleSheetAt(i++));
+    }
+    for (RefPtr<CSSStyleSheet>& sheet : mAdoptedStyleSheets) {
       MOZ_DIAGNOSTIC_ASSERT(sheet.get() == mProtoBinding->StyleSheetAt(i++));
     }
   }
@@ -287,7 +303,7 @@ ShadowRoot::InsertSheet(StyleSheet* aSheet,
   for (size_t i = 0; i <= SheetCount(); i++) {
     if (i == SheetCount()) {
       AppendStyleSheet(*aSheet);
-      mProtoBinding->AppendStyleSheet(aSheet);
+      mProtoBinding->InsertStyleSheetAt(i, aSheet);
       break;
     }
 
@@ -320,6 +336,39 @@ ShadowRoot::RemoveSheet(StyleSheet* aSheet)
   if (aSheet->IsApplicable()) {
     StyleSheetChanged();
   }
+}
+
+void
+ShadowRoot::AdoptedStyleSheetsChanged(
+    const nsTArray<RefPtr<CSSStyleSheet>>& aOldSheets,
+    const nsTArray<RefPtr<CSSStyleSheet>>& aNewSheets)
+{
+  OwnerDoc()->BeginUpdate(UPDATE_STYLE);
+
+  bool applicableChange = false;
+  for (size_t i = 0; i < aOldSheets.Length(); ++i) {
+    CSSStyleSheet* sheet = aOldSheets[i];
+    if (aOldSheets.IndexOf(sheet) == i) {
+      mProtoBinding->RemoveStyleSheet(sheet);
+    }
+    applicableChange = applicableChange || sheet->IsApplicable();
+    sheet->RemoveAdopter(this);
+  }
+
+  for (size_t i = 0; i < aNewSheets.Length(); ++i) {
+    CSSStyleSheet* sheet = aNewSheets[i];
+    sheet->AddAdopter(this);
+    if (aNewSheets.IndexOf(sheet) == i) {
+      mProtoBinding->AppendStyleSheet(sheet);
+    }
+    applicableChange = applicableChange || sheet->IsApplicable();
+  }
+
+  if (applicableChange) {
+    StyleSheetChanged();
+  }
+
+  OwnerDoc()->EndUpdate(UPDATE_STYLE);
 }
 
 void

@@ -95,6 +95,7 @@ class nsISecurityConsoleMessage;
 class nsPIBoxObject;
 
 namespace mozilla {
+class CSSStyleSheet;
 class EventChainPreVisitor;
 namespace dom {
 class BoxObject;
@@ -471,6 +472,9 @@ public:
       nsTArray<RefPtr<mozilla::StyleSheet>>& aNewSheets) override;
   virtual void AddStyleSheetToStyleSets(mozilla::StyleSheet* aSheet);
   virtual void RemoveStyleSheetFromStyleSets(mozilla::StyleSheet* aSheet);
+  void AdoptedStyleSheetsChanged(
+      const nsTArray<RefPtr<mozilla::CSSStyleSheet>>& aOldSheets,
+      const nsTArray<RefPtr<mozilla::CSSStyleSheet>>& aNewSheets);
 
   virtual void InsertStyleSheetAt(mozilla::StyleSheet* aSheet,
                                   size_t aIndex) override;

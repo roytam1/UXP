@@ -5,13 +5,19 @@
 
 #include "DocumentOrShadowRoot.h"
 #include "mozilla/EventStateManager.h"
+#include "mozilla/CSSStyleSheet.h"
+#include "mozilla/ErrorResult.h"
+#include "mozilla/dom/BindingUtils.h"
+#include "mozilla/dom/CSSStyleSheetBinding.h"
 #include "mozilla/dom/StyleSheetList.h"
+#include "mozilla/dom/ToJSValue.h"
 #include "nsDocument.h"
 #include "nsFocusManager.h"
 #include "ShadowRoot.h"
 #include "XULDocument.h"
 #include "nsLayoutUtils.h"
 #include "nsSVGUtils.h"
+#include "jsapi.h"
 
 class nsINode;
 class nsIDocument;
@@ -41,6 +47,99 @@ DocumentOrShadowRoot::EnsureDOMStyleSheets()
     mDOMStyleSheets = new StyleSheetList(*this);
   }
   return *mDOMStyleSheets;
+}
+
+void
+DocumentOrShadowRoot::GetAdoptedStyleSheets(
+    JSContext* aCx,
+    JS::MutableHandle<JSObject*> aResult,
+    ErrorResult& aRv) const
+{
+  JS::Rooted<JS::Value> value(aCx);
+  if (!ToJSValue(aCx, mAdoptedStyleSheets, &value)) {
+    aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
+    return;
+  }
+
+  MOZ_ASSERT(value.isObject());
+  aResult.set(&value.toObject());
+}
+
+void
+DocumentOrShadowRoot::SetAdoptedStyleSheets(
+    JSContext* aCx,
+    JS::Handle<JSObject*> aSheets,
+    ErrorResult& aRv)
+{
+  bool isArray = false;
+  if (!JS_IsArrayObject(aCx, aSheets, &isArray)) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return;
+  }
+
+  if (!isArray) {
+    aRv.ThrowTypeError<MSG_NOT_SEQUENCE>(
+      NS_LITERAL_STRING("DocumentOrShadowRoot.adoptedStyleSheets"));
+    return;
+  }
+
+  uint32_t length = 0;
+  if (!JS_GetArrayLength(aCx, aSheets, &length)) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return;
+  }
+
+  nsIDocument* document = AsNode().OwnerDoc();
+  nsTArray<RefPtr<CSSStyleSheet>> newSheets;
+  if (!newSheets.SetCapacity(length, fallible)) {
+    aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
+    return;
+  }
+
+  JS::Rooted<JS::Value> value(aCx);
+  for (uint32_t i = 0; i < length; ++i) {
+    if (!JS_GetElement(aCx, aSheets, i, &value)) {
+      aRv.Throw(NS_ERROR_FAILURE);
+      return;
+    }
+
+    if (!value.isObject()) {
+      aRv.ThrowTypeError<MSG_DOES_NOT_IMPLEMENT_INTERFACE>(
+        NS_LITERAL_STRING("Element of DocumentOrShadowRoot.adoptedStyleSheets"),
+        NS_LITERAL_STRING("CSSStyleSheet"));
+      return;
+    }
+
+    RefPtr<CSSStyleSheet> sheet;
+    nsresult rv = UnwrapObject<prototypes::id::CSSStyleSheet,
+                               CSSStyleSheet>(&value.toObject(), sheet);
+    if (NS_FAILED(rv)) {
+      aRv.ThrowTypeError<MSG_DOES_NOT_IMPLEMENT_INTERFACE>(
+        NS_LITERAL_STRING("Element of DocumentOrShadowRoot.adoptedStyleSheets"),
+        NS_LITERAL_STRING("CSSStyleSheet"));
+      return;
+    }
+
+    if (!sheet->IsConstructed() || sheet->ConstructorDocument() != document) {
+      aRv.Throw(NS_ERROR_DOM_NOT_ALLOWED_ERR);
+      return;
+    }
+
+    newSheets.AppendElement(sheet);
+  }
+
+  nsTArray<RefPtr<CSSStyleSheet>> oldSheets;
+  oldSheets.SwapElements(mAdoptedStyleSheets);
+  mAdoptedStyleSheets.SwapElements(newSheets);
+
+  if (mKind == Kind::Document) {
+    static_cast<nsDocument&>(AsNode()).AdoptedStyleSheetsChanged(oldSheets,
+                                                                 mAdoptedStyleSheets);
+    return;
+  }
+
+  static_cast<ShadowRoot&>(AsNode()).AdoptedStyleSheetsChanged(oldSheets,
+                                                              mAdoptedStyleSheets);
 }
 
 Element*

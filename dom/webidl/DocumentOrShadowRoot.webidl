@@ -18,6 +18,8 @@ interface mixin DocumentOrShadowRoot {
 
   readonly attribute Element? activeElement;
   readonly attribute StyleSheetList styleSheets;
+  [Throws]
+  attribute object adoptedStyleSheets;
 
   readonly attribute Element? pointerLockElement;
   [LenientSetter, Func="nsDocument::IsUnprefixedFullscreenEnabled"]

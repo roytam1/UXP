@@ -314,6 +314,10 @@ public:
   // the container is null, no work is needed.
   void RestyleForAppend(nsIContent* aContainer, nsIContent* aFirstNewContent);
 
+  // Restyle a subtree containing any :has() anchor affected by a change at
+  // or below aNode. Returns true when such a restyle was posted.
+  bool RestyleForHasPseudoClassChange(nsINode* aNode);
+
   // Process any pending restyles. This should be called after
   // CreateNeededFrames.
   // Note: It's the caller's responsibility to make sure to wrap a

@@ -8,8 +8,12 @@
 </head>
 <body>
 <pre id="test"></pre>
+<div id="adopted-target"></div>
+<div id="shadow-host"></div>
 <script type="application/javascript">
 "use strict";
+
+SimpleTest.waitForExplicitFinish();
 
 let sheet;
 
@@ -58,7 +62,105 @@ if (sheet) {
     is(e.name, "NotAllowedError",
        "replaceSync should reject non-constructed sheets with NotAllowedError");
   }
+
+  try {
+    sheet.insertRule("@import url('neverending_stylesheet_load.sjs');", 0);
+    ok(false, "insertRule should reject @import rules for constructed sheets");
+  } catch (e) {
+    is(e.name, "SyntaxError",
+       "insertRule should reject constructed-sheet @import rules with SyntaxError");
+  }
 }
+
+function colorFor(node) {
+  return getComputedStyle(node).color;
+}
+
+function runAdoptionTests() {
+  let target = document.getElementById("adopted-target");
+  let adopted = new CSSStyleSheet();
+
+  adopted.replaceSync("#adopted-target { color: rgb(12, 34, 56); }");
+  document.adoptedStyleSheets = [adopted];
+
+  is(document.adoptedStyleSheets.length, 1,
+     "document.adoptedStyleSheets should expose assigned sheets");
+  is(document.adoptedStyleSheets[0], adopted,
+     "document.adoptedStyleSheets should expose the same CSSStyleSheet object");
+  is(document.styleSheets.length, 1,
+     "document.styleSheets should not include adopted sheets");
+  is(colorFor(target), "rgb(12, 34, 56)",
+     "adopted document sheets should apply");
+
+  adopted.replaceSync("#adopted-target { color: rgb(20, 30, 40); }");
+  is(colorFor(target), "rgb(20, 30, 40)",
+     "mutating an adopted sheet should update document style");
+
+  let laterStyle = document.createElement("style");
+  laterStyle.textContent = "#adopted-target { color: rgb(1, 2, 3); }";
+  document.head.appendChild(laterStyle);
+  is(colorFor(target), "rgb(20, 30, 40)",
+     "adopted document sheets should cascade after ordinary document sheets");
+
+  try {
+    document.adoptedStyleSheets = [document.styleSheets[0]];
+    ok(false, "adopting a non-constructed sheet should throw");
+  } catch (e) {
+    is(e.name, "NotAllowedError",
+       "adopting a non-constructed sheet should throw NotAllowedError");
+  }
+
+  let iframe = document.createElement("iframe");
+  iframe.onload = function() {
+    let foreignSheet = new iframe.contentWindow.CSSStyleSheet();
+    try {
+      document.adoptedStyleSheets = [foreignSheet];
+      ok(false, "adopting a sheet from another document should throw");
+    } catch (e) {
+      is(e.name, "NotAllowedError",
+         "adopting a sheet from another document should throw NotAllowedError");
+    }
+    iframe.remove();
+
+    if ("attachShadow" in document.getElementById("shadow-host")) {
+      runShadowAdoptionTests();
+    } else {
+      finishAdoptionTests();
+    }
+  };
+  document.body.appendChild(iframe);
+}
+
+function runShadowAdoptionTests() {
+  let host = document.getElementById("shadow-host");
+  let root = host.attachShadow({ mode: "open" });
+  root.innerHTML = "<style>span { color: rgb(1, 2, 3); }</style><span>shadow</span>";
+
+  let shadowSheet = new CSSStyleSheet();
+  shadowSheet.replaceSync("span { color: rgb(45, 67, 89); }");
+  root.adoptedStyleSheets = [shadowSheet];
+
+  let span = root.querySelector("span");
+  is(root.adoptedStyleSheets.length, 1,
+     "shadowRoot.adoptedStyleSheets should expose assigned sheets");
+  is(root.styleSheets.length, 1,
+     "shadowRoot.styleSheets should not include adopted sheets");
+  is(colorFor(span), "rgb(45, 67, 89)",
+     "adopted shadow sheets should apply after ordinary shadow sheets");
+
+  shadowSheet.replaceSync("span { color: rgb(90, 80, 70); }");
+  is(colorFor(span), "rgb(90, 80, 70)",
+     "mutating an adopted shadow sheet should update shadow style");
+
+  finishAdoptionTests();
+}
+
+function finishAdoptionTests() {
+  document.adoptedStyleSheets = [];
+  SimpleTest.finish();
+}
+
+runAdoptionTests();
 </script>
 </body>
 </html>
