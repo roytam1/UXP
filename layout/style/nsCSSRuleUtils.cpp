@@ -923,6 +923,20 @@ nsCSSRuleUtils::SelectorMatches(Element* aElement,
           }
         } break;
 
+        case CSSPseudoClassType::has: {
+          if (!RelativeSelectorListMatches(aElement,
+                                           pseudoClass->u.mSelectorList,
+                                           aTreeMatchContext)) {
+            return false;
+          }
+        } break;
+
+        case CSSPseudoClassType::mozHasRelativeAnchor:
+          if (aElement != aTreeMatchContext.mRelativeSelectorAnchor) {
+            return false;
+          }
+          break;
+
         case CSSPseudoClassType::mozAny: {
           // XXX: For compatibility, we retain :-moz-any()'s original behavior,
           // which is to be unforgiving and reject complex selectors in
@@ -1649,7 +1663,9 @@ nsCSSRuleUtils::SelectorListMatches(Element* aElement,
       SelectorMatchesTreeFlags selectorTreeFlags = SelectorMatchesTreeFlags(0);
       // Try to look for the closest ancestor link element if we're processing
       // the selector list argument of a pseudo-class, but only if for a new style context (see SelectorMatches).
-      if (!aNodeMatchContext.mIsRelevantLink && aTreeMatchContext.mForStyling &&
+      if (!aNodeMatchContext.mIsRelevantLink &&
+          !aTreeMatchContext.mRelativeSelectorAnchor &&
+          aTreeMatchContext.mForStyling &&
           (aSelectorFlags & SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT)) {
         selectorTreeFlags = eLookForRelevantLink;
       }
@@ -1681,6 +1697,134 @@ nsCSSRuleUtils::SelectorListMatches(Element* aElement,
                              SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT,
                              aIsForgiving,
                              aPreventComplexSelectors);
+}
+
+static inline bool
+matchesCandidate(Element* aCandidate,
+                 nsCSSSelectorList* aRelativeSelector,
+                 TreeMatchContext& aTreeMatchContext)
+{
+  AutoRestore<Element*> styleScopeRestorer(
+    aTreeMatchContext.mCurrentStyleScope);
+  // A candidate inspected by :has() is never the relevant link for the
+  // anchor being styled.  Treating it as relevant would allow
+  // :has(:visited) to expose link history through an ancestor.
+  NodeMatchContext nodeContext(EventStates(), false);
+  nsCSSSelector* selector = aRelativeSelector->mSelectors;
+  if (!nsCSSRuleUtils::SelectorMatches(
+        aCandidate,
+        selector,
+        nodeContext,
+        aTreeMatchContext,
+        SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT)) {
+    return false;
+  }
+  return !selector->mNext ||
+         nsCSSRuleUtils::SelectorMatchesTree(
+           aCandidate,
+           selector->mNext,
+           aTreeMatchContext,
+           SelectorMatchesTreeFlags(0));
+}
+
+static inline bool
+matchesSubtree(nsIContent* aRoot,
+               nsCSSSelectorList* aRelativeSelector,
+               TreeMatchContext& aTreeMatchContext)
+{
+  for (nsIContent* node = aRoot;
+       node;
+       node = node->GetNextNode(aRoot)) {
+    if (node->IsElement() &&
+        matchesCandidate(node->AsElement(),
+                         aRelativeSelector,
+                         aTreeMatchContext)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/* static */ bool
+nsCSSRuleUtils::RelativeSelectorListMatches(
+  Element* aAnchor,
+  nsCSSSelectorList* aList,
+  TreeMatchContext& aTreeMatchContext)
+{
+  MOZ_ASSERT(aAnchor);
+  MOZ_ASSERT(aList);
+
+  // :has() reverses the usual direction of selector invalidation.  The
+  // restyle manager uses these conservative markers to promote changes in the
+  // anchor's descendants, or in following sibling subtrees, back to a subtree
+  // that contains the anchor.
+  if (aTreeMatchContext.mForStyling) {
+    aAnchor->SetProperty(nsGkAtoms::hasSelectorDependency,
+                         reinterpret_cast<void*>(1));
+    nsIContent* parent = aAnchor->GetParent();
+    if (parent) {
+      parent->SetProperty(nsGkAtoms::hasSelectorDependency,
+                          reinterpret_cast<void*>(1));
+    }
+  }
+
+  AutoRestore<Element*> relativeAnchorRestorer(
+    aTreeMatchContext.mRelativeSelectorAnchor);
+  aTreeMatchContext.mRelativeSelectorAnchor = aAnchor;
+
+  for (nsCSSSelectorList* relative = aList;
+       relative;
+       relative = relative->mNext) {
+    MOZ_ASSERT(relative->mIsRelativeSelector);
+    MOZ_ASSERT(relative->mSelectors && relative->mSelectors->mNext);
+
+    // Find the compound immediately to the right of the implicit internal
+    // anchor.  This selector representation stores a combinator on its
+    // left-hand selector, so the anchor owns the leading combinator.
+    nsCSSSelector* leftmost = relative->mSelectors;
+    while (leftmost->mNext && leftmost->mNext->mNext) {
+      leftmost = leftmost->mNext;
+    }
+    MOZ_ASSERT(leftmost->mNext);
+
+    switch (leftmost->mNext->mOperator) {
+      // Even for a leading adjacent-sibling combinator, a later combinator in
+      // the relative selector can move the rightmost matching element into a
+      // subsequent sibling subtree (for example, :has(+ .a + .b)).  Search
+      // every following subtree and let the full selector enforce the exact
+      // leading relationship to the anchor.
+      case char16_t('+'):
+      case char16_t('~'):
+        for (Element* sibling = aAnchor->GetNextElementSibling();
+             sibling;
+             sibling = sibling->GetNextElementSibling()) {
+          if (matchesSubtree(sibling, relative, aTreeMatchContext)) {
+            return true;
+          }
+        }
+        break;
+
+      case char16_t('>'):
+      case char16_t(' '):
+        for (nsIContent* node = aAnchor->GetFirstChild();
+             node;
+             node = node->GetNextNode(aAnchor)) {
+          if (node->IsElement() &&
+              matchesCandidate(node->AsElement(),
+                               relative,
+                               aTreeMatchContext)) {
+            return true;
+          }
+        }
+        break;
+
+      default:
+        MOZ_ASSERT(false, "unexpected relative selector combinator");
+        break;
+    }
+  }
+
+  return false;
 }
 
 // TreeMatchContext and AncestorFilter out of line methods

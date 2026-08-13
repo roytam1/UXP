@@ -13,6 +13,7 @@
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/AutoRestore.h"
 #include "mozilla/BinarySearch.h"
+#include "mozilla/CSSStyleSheet.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/EffectSet.h"
 #include "mozilla/IntegerRange.h"
@@ -1402,6 +1403,10 @@ nsDocument::~nsDocument()
   for (StyleSheet* sheet : mStyleSheets) {
     sheet->ClearAssociatedDocument();
   }
+  for (CSSStyleSheet* sheet : mAdoptedStyleSheets) {
+    sheet->RemoveAdopter(this);
+  }
+  mAdoptedStyleSheets.Clear();
   for (auto& sheets : mAdditionalSheets) {
     for (StyleSheet* sheet : sheets) {
     sheet->ClearAssociatedDocument();
@@ -1635,6 +1640,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INTERNAL(nsDocument)
 
   // Traverse all our nsCOMArrays.
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mStyleSheets)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mAdoptedStyleSheets)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mOnDemandBuiltInUASheets)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPreloadingImages)
 
@@ -1739,6 +1745,11 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsDocument)
   }
 
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mDOMStyleSheets)
+
+  for (CSSStyleSheet* sheet : tmp->mAdoptedStyleSheets) {
+    sheet->RemoveAdopter(tmp);
+  }
+  tmp->mAdoptedStyleSheets.Clear();
 
   if (tmp->mStyleSheetSetList) {
     tmp->mStyleSheetSetList->Disconnect();
@@ -2204,6 +2215,12 @@ nsDocument::FillStyleSet(nsStyleSet* aStyleSet)
                          SheetType::User);
   AppendSheetsToStyleSet(aStyleSet, mAdditionalSheets[eAuthorSheet],
                          SheetType::Doc);
+
+  for (CSSStyleSheet* sheet : mAdoptedStyleSheets) {
+    if (sheet->IsApplicable()) {
+      aStyleSet->AppendStyleSheet(SheetType::Doc, sheet);
+    }
+  }
 
   mStyleSetFilled = true;
 }
@@ -3873,6 +3890,37 @@ nsDocument::RemoveStyleSheetFromStyleSets(StyleSheet* aSheet)
 }
 
 void
+nsDocument::AdoptedStyleSheetsChanged(
+    const nsTArray<RefPtr<CSSStyleSheet>>& aOldSheets,
+    const nsTArray<RefPtr<CSSStyleSheet>>& aNewSheets)
+{
+  BeginUpdate(UPDATE_STYLE);
+
+  nsCOMPtr<nsIPresShell> shell = GetShell();
+  nsStyleSet* styleSet = shell ? shell->StyleSet() : nullptr;
+
+  for (size_t i = 0; i < aOldSheets.Length(); ++i) {
+    CSSStyleSheet* sheet = aOldSheets[i];
+    if (styleSet && sheet->IsApplicable() &&
+        aOldSheets.IndexOf(sheet) == i) {
+      styleSet->RemoveStyleSheet(SheetType::Doc, sheet);
+    }
+    sheet->RemoveAdopter(this);
+  }
+
+  for (size_t i = 0; i < aNewSheets.Length(); ++i) {
+    CSSStyleSheet* sheet = aNewSheets[i];
+    sheet->AddAdopter(this);
+    if (styleSet && sheet->IsApplicable() &&
+        aNewSheets.IndexOf(sheet) == i) {
+      styleSet->AppendStyleSheet(SheetType::Doc, sheet);
+    }
+  }
+
+  EndUpdate(UPDATE_STYLE);
+}
+
+void
 nsDocument::RemoveStyleSheet(StyleSheet* aSheet)
 {
   NS_PRECONDITION(aSheet, "null arg");
@@ -3960,6 +4008,18 @@ nsDocument::SetStyleSheetApplicableState(StyleSheet* aSheet,
       AddStyleSheetToStyleSets(aSheet);
     } else {
       RemoveStyleSheetFromStyleSets(aSheet);
+    }
+  } else if (mAdoptedStyleSheets.IndexOf(aSheet->AsConcrete()) !=
+             mAdoptedStyleSheets.NoIndex) {
+    nsCOMPtr<nsIPresShell> shell = GetShell();
+    if (shell) {
+      if (aApplicable) {
+        shell->StyleSet()->AppendStyleSheet(SheetType::Doc,
+                                            aSheet->AsConcrete());
+      } else {
+        shell->StyleSet()->RemoveStyleSheet(SheetType::Doc,
+                                            aSheet->AsConcrete());
+      }
     }
   }
 
