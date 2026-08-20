@@ -44,7 +44,8 @@ class ExpandingMemoryStream : public ots::OTSStream {
 public:
     ExpandingMemoryStream(size_t initial, size_t limit)
         : mLength(initial), mLimit(limit), mOff(0) {
-        mPtr = moz_xmalloc(mLength);
+        mPtr = moz_xmalloc(initial);
+        std::memset(mPtr, 0, initial);
     }
 
     ~ExpandingMemoryStream() {
@@ -74,6 +75,7 @@ public:
                 newLength = mLimit;
             }
             mPtr = moz_xrealloc(mPtr, newLength);
+            std::memset(static_cast<char*>(mPtr) + mLength, 0, newLength - mLength);
             mLength = newLength;
             return WriteRaw(data, length);
         }
