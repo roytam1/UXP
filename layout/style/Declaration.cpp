@@ -639,8 +639,12 @@ Declaration::GetPropertyValueInternal(
   }
   if (revertCount == totalCount) {
     // Simplify serialization below by serializing revert up-front.
-    nsCSSValue(eCSSUnit_Revert).AppendToString(eCSSProperty_UNKNOWN, aValue,
-                                              nsCSSValue::eNormalized);
+    // eCSSUnit_Revert carries the cascade origin, so it cannot use the
+    // nsCSSValue constructor reserved for valueless units.
+    nsCSSValue revert;
+    revert.SetRevertValue(SheetType::Unknown);
+    revert.AppendToString(eCSSProperty_UNKNOWN, aValue,
+                          nsCSSValue::eNormalized);
     return;
   }
   if (revertLayerCount == totalCount) {

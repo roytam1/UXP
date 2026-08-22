@@ -235,17 +235,16 @@ nsHTMLButtonControlFrame::ReflowButtonContents(nsPresContext* aPresContext,
   WritingMode wm = GetWritingMode();
   LogicalSize availSize = aButtonReflowInput.ComputedSize(wm);
 
+  // The anonymous button-content frame cannot have a continuation.  Give it
+  // unconstrained available block-size so flex/grid layout does not treat a
+  // definite button block-size as a fragmentainer constraint.  Its computed
+  // block-size is overridden separately below when it needs to be definite.
+  availSize.BSize(wm) = NS_INTRINSICSIZE;
+
   // Identify if the inner anonymous block is actually functioning as a flex or grid container.
   nsIAtom* kidType = aFirstKid->GetType();
   bool isFlexOrGrid = (kidType == nsGkAtoms::flexContainerFrame ||
                        kidType == nsGkAtoms::gridContainerFrame);
-
-  // Preserve the button's definite BSize ONLY for flex/grid children so they
-  // see a definite containing block main size. For standard buttons, clobber
-  // to intrinsic so standard vertical centering (extraSpace) calculations work.
-  if (!isFlexOrGrid || aButtonReflowInput.ComputedBSize() == NS_INTRINSICSIZE) {
-    availSize.BSize(wm) = NS_INTRINSICSIZE;
-  }
 
   // shorthand for a value we need to use in a bunch of places
   const LogicalMargin& clbp = aButtonReflowInput.ComputedLogicalBorderPadding();
@@ -260,7 +259,7 @@ nsHTMLButtonControlFrame::ReflowButtonContents(nsPresContext* aPresContext,
                                   availSize);
 
   // Apply the definite BSize directly on the inner reflow input ONLY if it's
-  // a flex or grid container, allowing it to be used as-is.
+  // a flex or grid container, without constraining its available BSize.
   if (isFlexOrGrid && aButtonReflowInput.ComputedBSize() != NS_INTRINSICSIZE) {
     contentsReflowInput.SetComputedBSize(aButtonReflowInput.ComputedBSize());
   }
