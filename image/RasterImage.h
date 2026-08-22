@@ -17,7 +17,6 @@
 #ifndef mozilla_image_RasterImage_h
 #define mozilla_image_RasterImage_h
 
-#include "mozilla/Atomics.h"
 #include "Image.h"
 #include "nsCOMPtr.h"
 #include "imgIContainer.h"
@@ -403,8 +402,6 @@ private: // data
   // This is currently only used for statistics
   int32_t                    mDecodeCount;
   
-  Atomic<bool>               mIsBeingDestroyed{false};
-
   // A weak pointer to our ImageContainer, which stays alive only as long as
   // the layer system needs it.
   WeakPtr<layers::ImageContainer> mImageContainer;
