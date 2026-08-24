@@ -187,7 +187,7 @@ public:
   {
   }
 
-  explicit VideoInfo(int32_t aWidth, int32_t aHeight)
+  VideoInfo(int32_t aWidth, int32_t aHeight)
     : VideoInfo(nsIntSize(aWidth, aHeight))
   {
   }
@@ -201,7 +201,6 @@ public:
     , mCodecSpecificConfig(new MediaByteBuffer)
     , mExtraData(new MediaByteBuffer)
     , mRotation(kDegree_0)
-    , mImageRect(nsIntRect(nsIntPoint(), aSize))
   {
   }
 
@@ -263,15 +262,28 @@ public:
 
   nsIntRect ImageRect() const
   {
-    if (mImageRect.width < 0 || mImageRect.height < 0) {
+    if (!mImageRect) {
       return nsIntRect(0, 0, mImage.width, mImage.height);
     }
-    return mImageRect;
+    return *mImageRect;
   }
 
   void SetImageRect(const nsIntRect& aRect)
   {
-    mImageRect = aRect;
+    mImageRect = Some(aRect);
+  }
+  void ResetImageRect() {
+    mImageRect.reset();
+  }
+
+  // Adopts an image size decoded from the bitstream. The picture rectangle is
+  // expressed relative to the image size, so a change in size invalidates it
+  // and it is discarded; an unchanged size keeps the existing rectangle.
+  void AdoptImageSize(const gfx::IntSize& aImage) {
+    if (mImage != aImage) {
+      ResetImageRect();
+    }
+    mImage = aImage;
   }
 
   // Returned the crop rectangle scaled to aWidth/aHeight size relative to
@@ -332,9 +344,11 @@ public:
   uint8_t mBitDepth = 8;
 
 private:
+  friend struct IPC::ParamTraits<VideoInfo>;
+  
   // mImage may be cropped; currently only used with the WebM container.
-  // A negative width or height indicate that no cropping is to occur.
-  nsIntRect mImageRect;
+  // If unset, no cropping is to occur.
+  Maybe<nsIntRect> mImageRect;
 
   // Indicates whether or not frames may contain alpha information.
   bool mAlphaPresent = false;

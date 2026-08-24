@@ -307,8 +307,7 @@ H264Converter::UpdateConfigFromExtraData(MediaByteBuffer* aExtraData)
   if (mp4_demuxer::H264::DecodeSPSFromExtraData(aExtraData, spsdata) &&
       spsdata.pic_width > 0 && spsdata.pic_height > 0) {
     mp4_demuxer::H264::EnsureSPSIsSane(spsdata);
-    mCurrentConfig.mImage.width = spsdata.pic_width;
-    mCurrentConfig.mImage.height = spsdata.pic_height;
+    mCurrentConfig.AdoptImageSize(gfx::IntSize(spsdata.pic_width, spsdata.pic_height));
     mCurrentConfig.mDisplay.width = spsdata.display_width;
     mCurrentConfig.mDisplay.height = spsdata.display_height;
   }

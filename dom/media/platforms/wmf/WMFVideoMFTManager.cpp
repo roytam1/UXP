@@ -847,12 +847,15 @@ WMFVideoMFTManager::CreateBasicVideoFrame(IMFSample* aSample,
   RefPtr<layers::PlanarYCbCrImage> image =
     new IMFYCbCrImage(buffer, twoDBuffer);
 
-  VideoData::SetVideoDataToImage(image,
-                                 mVideoInfo,
-                                 b,
-                                 pictureRegion,
-                                 false);
-
+  if (!VideoData::SetVideoDataToImage(image,
+                                      mVideoInfo,
+                                      b,
+                                      pictureRegion,
+                                      false)) {
+    LOG("CreateBasicVideoFrame: failed to set video data to image (shmem path)");
+    return E_FAIL;
+  }
+  
   RefPtr<VideoData> v =
     VideoData::CreateFromImage(mVideoInfo,
                                aStreamOffset,
