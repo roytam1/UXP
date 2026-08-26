@@ -1,0 +1,24 @@
+diff --git a/lib/xmltok.c b/lib/xmltok.c
+--- a/lib/xmltok.c
++++ b/lib/xmltok.c
+@@ -700,17 +700,19 @@ unicode_byte_type(char hi, char lo) {
+   static enum XML_Convert_Result PTRCALL E##toUtf16(                           \
+       const ENCODING *enc, const char **fromP, const char *fromLim,            \
+       unsigned short **toP, const unsigned short *toLim) {                     \
+     enum XML_Convert_Result res = XML_CONVERT_COMPLETED;                       \
+     UNUSED_P(enc);                                                             \
+     fromLim = *fromP + (((fromLim - *fromP) >> 1) << 1); /* shrink to even */  \
+     /* Avoid copying first half only of surrogate */                           \
+     if (fromLim - *fromP > ((toLim - *toP) << 1)                               \
+-        && (GET_HI(fromLim - 2) & 0xF8) == 0xD8) {                             \
++/* BEGIN MCP CHANGE (Only high surrogate mask) */                              \
++        && (GET_HI(fromLim - 2) & 0xFC) == 0xD8) {                             \
++/* END MCP CHANGE */                                                           \
+       fromLim -= 2;                                                            \
+       res = XML_CONVERT_INPUT_INCOMPLETE;                                      \
+     }                                                                          \
+     for (; *fromP < fromLim && *toP < toLim; *fromP += 2)                      \
+       *(*toP)++ = (GET_HI(*fromP) << 8) | GET_LO(*fromP);                      \
+     if ((*toP == toLim) && (*fromP < fromLim))                                 \
+       return XML_CONVERT_OUTPUT_EXHAUSTED;                                     \
+     else                                                                       \
