@@ -881,6 +881,9 @@ nsXMLContentSink::SetDocElement(int32_t aNameSpaceID,
 
   if (!mDocumentChildren.IsEmpty()) {
     for (nsIContent* child : mDocumentChildren) {
+      if (MOZ_UNLIKELY(child->GetParentNode())) {
+        child->Remove();
+      }
       mDocument->AppendChildTo(child, false);
     }
     mDocumentChildren.Clear();
@@ -991,6 +994,9 @@ nsXMLContentSink::HandleStartElement(const char16_t *aName,
     if (!SetDocElement(nameSpaceID, localName, content) && appendContent) {
       NS_ENSURE_TRUE(parent, NS_ERROR_UNEXPECTED);
 
+      if (MOZ_UNLIKELY(content->GetParentNode())) {
+        content->Remove();
+      }
       parent->AppendChildTo(content, false);
     }
   }
