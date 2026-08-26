@@ -294,12 +294,12 @@ nsXMLContentSink::DidBuildModel(bool aTerminated)
       }
     }
 
+    mDocumentChildren.Clear();
     mXSLTProcessor->SetSourceContentModel(mDocument, mDocumentChildren);
     // Since the processor now holds a reference to us we drop our reference
     // to it to avoid owning cycles
     mXSLTProcessor = nullptr;
-  }
-  else {
+  } else {
     // Kick off layout for non-XSLT transformed documents.
 
     // Check if we want to prettyprint
