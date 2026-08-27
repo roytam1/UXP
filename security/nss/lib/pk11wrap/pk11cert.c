@@ -271,7 +271,7 @@ pk11_fastCert(PK11SlotInfo *slot, CK_OBJECT_HANDLE certID,
     }
 
     /* Build and output a nickname, if desired.
-     * This must be done before calling nssTrustDomain_AddCertsToCache
+     * This must be done before calling nssTrustDomain_AddCertToCache
      * because that function may destroy c, pkio and co!
      */
     if ((nickptr) && (co->label)) {
@@ -288,12 +288,15 @@ pk11_fastCert(PK11SlotInfo *slot, CK_OBJECT_HANDLE certID,
         *nickptr = pk11_buildNickname(slot, &label, privateLabel, &id);
     }
 
-    /* This function may destroy the cert in "c" and all its subordinate
-     * structures, and replace the value in "c" with the address of a
-     * different NSSCertificate that it found in the cache.
-     * Presumably, the nickname which we just output above remains valid. :)
-     */
-    (void)nssTrustDomain_AddCertsToCache(td, &c, 1);
+    // nssTrustDomain_AddCertToCache takes ownership of 'c' and returns an
+    // owned reference to an NSSCertificate that may be a different object from
+    // 'c'. Presumably, the nickname which we just output above remains valid
+    // (the memory is valid because pk11_buildNickname allocates memory for it
+    // on the heap).
+    c = nssTrustDomain_AddCertToCache(td, c);
+    if (!c) {
+        return NULL;
+    }
     return STAN_GetCERTCertificateOrRelease(c);
 }
 
@@ -1219,13 +1222,21 @@ PK11_ImportCert(PK11SlotInfo *slot, CERTCertificate *cert,
      * CERTCertificate, and finish
      */
     nssPKIObject_AddInstance(&c->object, certobj);
-    /* nssTrustDomain_AddCertsToCache may release a reference to 'c' and
-     * replace 'c' with a different value. So we add a reference to 'c' to
-     * prevent 'c' from being destroyed. */
+    // nssTrustDomain_AddCertToCache takes ownership of 'c' and returns an
+    // owned reference to an NSSCertificate that may be a different object from
+    // 'c'. Because 'cert' is backed by 'c', and because it must not go away as
+    // a result of calling this function, increment the refcount on 'c' for the
+    // duration of the call.
     nssCertificate_AddRef(c);
-    nssTrustDomain_AddCertsToCache(STAN_GetDefaultTrustDomain(), &c, 1);
-    (void)STAN_ForceCERTCertificateUpdate(c);
-    nssCertificate_Destroy(c);
+    NSSCertificate *cInCache = nssTrustDomain_AddCertToCache(STAN_GetDefaultTrustDomain(), c);
+    if (cInCache) {
+        (void)STAN_ForceCERTCertificateUpdate(cInCache);
+        // Release the reference returned by nssTrustDomain_AddCertToCache.
+        nssCertificate_Destroy(cInCache);
+    } else {
+        (void)STAN_ForceCERTCertificateUpdate(c);
+        // nssTrustDomain_AddCertToCache already called nssCertificate_Destroy(c).
+    }
     SECITEM_FreeItem(keyID, PR_TRUE);
     return SECSuccess;
 loser:
@@ -1565,7 +1576,13 @@ PK11_FindCertByIssuerAndSNOnToken(PK11SlotInfo *slot,
         goto loser;
     }
     object = NULL; /* adopted by the previous call */
-    nssTrustDomain_AddCertsToCache(td, &cert, 1);
+    // nssTrustDomain_AddCertToCache takes ownership of 'cert' and returns an
+    // owned reference to an NSSCertificate that may be a different object from
+    // 'cert'.
+    cert = nssTrustDomain_AddCertToCache(td, cert);
+    if (!cert) {
+        goto loser;
+    }
     /* on failure, cert is freed below */
     rvCert = STAN_GetCERTCertificate(cert);
     if (!rvCert) {
@@ -2024,9 +2041,9 @@ PK11_FindCertByIssuerAndSN(PK11SlotInfo **slotPtr, CERTIssuerAndSN *issuerSN,
         }
 
         /* Check to see if the cert's token is still there */
-    } while (!PK11_IsPresent(rvCert->slot));
+    } while (rvCert->slot && !PK11_IsPresent(rvCert->slot));
 
-    if (rvCert && slotPtr)
+    if (rvCert && rvCert->slot && slotPtr)
         *slotPtr = PK11_ReferenceSlot(rvCert->slot);
 
     SECITEM_FreeItem(derSerial, PR_TRUE);
