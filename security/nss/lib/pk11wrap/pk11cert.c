@@ -91,17 +91,19 @@ pk11_buildNickname(PK11SlotInfo *slot, CK_ATTRIBUTE *cert_label,
         suffixLen = key_label->ulValueLen;
         suffix = (char *)key_label->pValue;
     } else if (cert_id && cert_id->ulValueLen > 0) {
-        int i, first = cert_id->ulValueLen - MAX_CERT_ID;
-        int offset = sizeof(DEFAULT_STRING);
         char *idValue = (char *)cert_id->pValue;
+        /* Hex-encode the last min(MAX_CERT_ID, ulValueLen) bytes of cert_id. */
+        CK_ULONG idLen = (cert_id->ulValueLen > MAX_CERT_ID)
+                             ? MAX_CERT_ID
+                             : cert_id->ulValueLen;
+        CK_ULONG first = cert_id->ulValueLen - idLen;
+        CK_ULONG i;
 
         PORT_Memcpy(buildNew, DEFAULT_STRING, sizeof(DEFAULT_STRING) - 1);
-        next = buildNew + offset;
-        if (first < 0)
-            first = 0;
-        for (i = first; i < (int)cert_id->ulValueLen; i++) {
-            *next++ = toHex((idValue[i] >> 4) & 0xf);
-            *next++ = toHex(idValue[i] & 0xf);
+        next = buildNew + sizeof(DEFAULT_STRING) - 1;
+        for (i = 0; i < idLen; i++) {
+            *next++ = toHex((idValue[first + i] >> 4) & 0xf);
+            *next++ = toHex(idValue[first + i] & 0xf);
         }
         *next++ = 0;
         suffix = buildNew;
