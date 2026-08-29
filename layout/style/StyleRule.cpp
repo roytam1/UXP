@@ -1005,8 +1005,7 @@ nsCSSSelector::SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
 nsCSSSelectorList::nsCSSSelectorList(void)
   : mSelectors(nullptr),
     mWeight(0),
-    mNext(nullptr),
-    mIsRelativeSelector(false)
+    mNext(nullptr)
 {
   MOZ_COUNT_CTOR(nsCSSSelectorList);
 }
@@ -1060,33 +1059,7 @@ nsCSSSelectorList::ToString(nsAString& aResult, CSSStyleSheet* aSheet)
     return;
   }
   for (;;) {
-    if (p->mIsRelativeSelector) {
-      // :has() arguments are represented internally as selectors with an
-      // implicit leftmost anchor.  Serialize the authored relative selector,
-      // including an explicit leading combinator when there is one.
-      const nsCSSSelector* leftmost = p->mSelectors;
-      while (leftmost->mNext && leftmost->mNext->mNext) {
-        leftmost = leftmost->mNext;
-      }
-      MOZ_ASSERT(leftmost->mNext,
-                 "relative selector should have an implicit anchor");
-      if (leftmost->mNext->mOperator != char16_t(' ')) {
-        aResult.Append(leftmost->mNext->mOperator);
-        aResult.Append(char16_t(' '));
-      }
-
-      nsAutoPtr<nsCSSSelector> selectors(p->mSelectors->Clone());
-      nsCSSSelector* beforeAnchor = selectors;
-      while (beforeAnchor->mNext && beforeAnchor->mNext->mNext) {
-        beforeAnchor = beforeAnchor->mNext;
-      }
-      MOZ_ASSERT(beforeAnchor->mNext);
-      delete beforeAnchor->mNext;
-      beforeAnchor->mNext = nullptr;
-      selectors->ToString(aResult, aSheet, true);
-    } else {
-      p->mSelectors->ToString(aResult, aSheet, true);
-    }
+    p->mSelectors->ToString(aResult, aSheet, true);
     p = p->mNext;
     if (!p)
       break;
@@ -1099,7 +1072,6 @@ nsCSSSelectorList::Clone(bool aDeep) const
 {
   nsCSSSelectorList *result = new nsCSSSelectorList();
   result->mWeight = mWeight;
-  result->mIsRelativeSelector = mIsRelativeSelector;
   NS_IF_CLONE(mSelectors);
 
   if (aDeep) {

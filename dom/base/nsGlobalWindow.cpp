@@ -6171,7 +6171,6 @@ nsGlobalWindow::CheckSecurityWidthAndHeight(int32_t* aWidth, int32_t* aHeight, b
   // This one is easy. Just ensure the variable is greater than 100;
   if ((aWidth && *aWidth < 100) || (aHeight && *aHeight < 100)) {
     // Check security state for use in determing window dimensions
-
     if (!nsContentUtils::IsCallerChrome()) {
       //sec check failed
       if (aWidth && *aWidth < 100) {
@@ -6182,6 +6181,21 @@ nsGlobalWindow::CheckSecurityWidthAndHeight(int32_t* aWidth, int32_t* aHeight, b
       }
     }
   }
+  
+  // Check for the screen dimensions and keep the size in the range of the
+  // screen size the window is on. We allow twice the screen size because the
+  // size we get for a screen is not always accurate, on Wayland in particular,
+  // and all we need is to keep the size in a reasonable range.
+  nsCOMPtr<nsIDOMScreen> screen = GetScreen();
+  int32_t screenWidth, screenHeight;
+  screen->GetAvailWidth(&screenWidth);
+  screen->GetAvailHeight(&screenHeight);
+  if (aWidth && *aWidth > 2 * screenWidth) {
+    *aWidth = 2 * screenWidth;
+  }
+  if (aHeight && *aHeight > 2 * screenHeight) {
+    *aHeight = 2 * screenHeight;
+  }  
 }
 
 // NOTE: Arguments to this function should have values in device pixels
@@ -8102,8 +8116,10 @@ nsGlobalWindow::ResizeByOuter(int32_t aWidthDif, int32_t aHeightDif,
 
   nsIntSize cssSize(DevToCSSIntPixels(nsIntSize(width, height)));
 
-  cssSize.width += aWidthDif;
-  cssSize.height += aHeightDif;
+  // The deltas come from content and can be large enough to overflow a 32-bit
+  // add, so do the arithmetic in 64 bits and keep the result in range.
+  cssSize.width = int32_t(std::clamp<int64_t>(int64_t(cssSize.width) + aWidthDif, 0, INT32_MAX));
+  cssSize.height = int32_t(std::clamp<int64_t>(int64_t(cssSize.height) + aHeightDif, 0, INT32_MAX));
 
   CheckSecurityWidthAndHeight(&cssSize.width, &cssSize.height, aCallerIsChrome);
 
