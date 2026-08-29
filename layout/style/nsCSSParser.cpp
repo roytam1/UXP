@@ -13411,18 +13411,16 @@ bool
 CSSParserImpl::ParseAspectRatioRatio(nsCSSValue& aValue)
 {
   nsCSSValue width;
-  if (!ParseSingleTokenNonNegativeVariant(width,
-                                          VARIANT_NUMBER | VARIANT_CALC,
-                                          nullptr)) {
+  if (ParseNonNegativeVariant(width, VARIANT_NUMBER | VARIANT_CALC,
+                              nullptr) != CSSParseResult::Ok) {
     return false;
   }
 
   nsCSSValue height;
   height.SetFloatValue(1.0f, eCSSUnit_Number);
   if (ExpectSymbol('/', true)) {
-    if (!ParseSingleTokenNonNegativeVariant(height,
-                                            VARIANT_NUMBER | VARIANT_CALC,
-                                            nullptr)) {
+    if (ParseNonNegativeVariant(height, VARIANT_NUMBER | VARIANT_CALC,
+                                nullptr) != CSSParseResult::Ok) {
       return false;
     }
   }

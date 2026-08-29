@@ -164,9 +164,9 @@ nsFileControlFrame::CreateAnonymousContent(nsTArray<ContentInfo>& aElements)
 
   // We should be able to interact with the element by doing drag and drop.
   mContent->AddSystemEventListener(NS_LITERAL_STRING("drop"),
-                                   mMouseListener, false);
+                                   mMouseListener, false, false);
   mContent->AddSystemEventListener(NS_LITERAL_STRING("dragover"),
-                                   mMouseListener, false);
+                                   mMouseListener, false, false);
 
   SyncDisabledState();
 

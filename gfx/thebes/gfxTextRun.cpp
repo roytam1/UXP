@@ -2761,7 +2761,7 @@ gfxFontGroup::FindFontForChar(uint32_t aCh, uint32_t aPrevCh, uint32_t aNextCh,
                     ufe->Load();
                     ff.CheckState(mSkipDrawing);
                 }
-                gfxFontEntry* pfe = ufe->GetPlatformFontEntry();
+                RefPtr<gfxFontEntry> pfe = ufe->GetPlatformFontEntry();
                 if (pfe && pfe->HasCharacter(aCh)) {
                     font = GetFontAt(i, aCh);
                     if (font) {

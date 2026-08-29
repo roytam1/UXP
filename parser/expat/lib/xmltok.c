@@ -705,7 +705,9 @@ unicode_byte_type(char hi, char lo) {
     fromLim = *fromP + (((fromLim - *fromP) >> 1) << 1); /* shrink to even */  \
     /* Avoid copying first half only of surrogate */                           \
     if (fromLim - *fromP > ((toLim - *toP) << 1)                               \
-        && (GET_HI(fromLim - 2) & 0xF8) == 0xD8) {                             \
+/* BEGIN MCP CHANGE (Only high surrogate mask) */                              \
+        && (GET_HI(fromLim - 2) & 0xFC) == 0xD8) {                             \
+/* END MCP CHANGE */                                                           \
       fromLim -= 2;                                                            \
       res = XML_CONVERT_INPUT_INCOMPLETE;                                      \
     }                                                                          \

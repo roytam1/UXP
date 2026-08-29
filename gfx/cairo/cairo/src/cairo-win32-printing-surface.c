@@ -66,15 +66,15 @@ _cairo_win32_printing_surface_init_ps_mode (cairo_win32_surface_t *surface)
 
     word = PSIDENT_GDICENTRIC;
     if (ExtEscape (surface->dc, POSTSCRIPT_IDENTIFY, sizeof(DWORD), (char *)&word, 0, (char *)NULL) <= 0)
-	return;
+        return;
 
     ps_feature = FEATURESETTING_PSLEVEL;
     if (ExtEscape (surface->dc, GET_PS_FEATURESETTING, sizeof(INT),
-		   (char *)&ps_feature, sizeof(INT), (char *)&ps_level) <= 0)
-	return;
+                   (char *)&ps_feature, sizeof(INT), (char *)&ps_level) <= 0)
+        return;
 
     if (ps_level >= 3)
-	surface->flags |= CAIRO_WIN32_SURFACE_CAN_RECT_GRADIENT;
+        surface->flags |= CAIRO_WIN32_SURFACE_CAN_RECT_GRADIENT;
 }
 
 static void
@@ -84,11 +84,11 @@ _cairo_win32_printing_surface_init_image_support (cairo_win32_surface_t *surface
 
     word = CHECKJPEGFORMAT;
     if (ExtEscape(surface->dc, QUERYESCSUPPORT, sizeof(word), (char *)&word, 0, (char *)NULL) > 0)
-	surface->flags |= CAIRO_WIN32_SURFACE_CAN_CHECK_JPEG;
+        surface->flags |= CAIRO_WIN32_SURFACE_CAN_CHECK_JPEG;
 
     word = CHECKPNGFORMAT;
     if (ExtEscape(surface->dc, QUERYESCSUPPORT, sizeof(word), (char *)&word, 0, (char *)NULL) > 0)
-	surface->flags |= CAIRO_WIN32_SURFACE_CAN_CHECK_PNG;
+        surface->flags |= CAIRO_WIN32_SURFACE_CAN_CHECK_PNG;
 }
 
 /* When creating an EMF file, ExtTextOut with ETO_GLYPH_INDEX does not
@@ -116,14 +116,14 @@ _cairo_win32_printing_surface_init_language_pack (cairo_win32_surface_t *surface
     HMODULE module;
 
     if (GetModuleHandleW (L"LPK.DLL"))
-	return;
+        return;
 
     module = GetModuleHandleW (L"GDI32.DLL");
     if (module) {
-	gdi_init_lang_pack = (gdi_init_lang_pack_func_t)
-	    GetProcAddress (module, "GdiInitializeLanguagePack");
-	if (gdi_init_lang_pack)
-	    gdi_init_lang_pack (0);
+        gdi_init_lang_pack = (gdi_init_lang_pack_func_t)
+            GetProcAddress (module, "GdiInitializeLanguagePack");
+        if (gdi_init_lang_pack)
+            gdi_init_lang_pack (0);
     }
 }
 
@@ -131,28 +131,28 @@ static cairo_int_status_t
 analyze_surface_pattern_transparency (cairo_surface_pattern_t *pattern)
 {
     cairo_image_surface_t  *image;
-    void		   *image_extra;
+    void                   *image_extra;
     cairo_int_status_t      status;
     cairo_image_transparency_t transparency;
 
     status = _cairo_surface_acquire_source_image (pattern->surface,
-						  &image,
-						  &image_extra);
+                                                  &image,
+                                                  &image_extra);
     if (status)
-	return status;
+        return status;
 
     transparency = _cairo_image_analyze_transparency (image);
     switch (transparency) {
     case CAIRO_IMAGE_UNKNOWN:
-	ASSERT_NOT_REACHED;
+        ASSERT_NOT_REACHED;
     case CAIRO_IMAGE_IS_OPAQUE:
-	status = CAIRO_STATUS_SUCCESS;
-	break;
+        status = CAIRO_STATUS_SUCCESS;
+        break;
 
     case CAIRO_IMAGE_HAS_BILEVEL_ALPHA:
     case CAIRO_IMAGE_HAS_ALPHA:
-	status = CAIRO_INT_STATUS_FLATTEN_TRANSPARENCY;
-	break;
+        status = CAIRO_INT_STATUS_FLATTEN_TRANSPARENCY;
+        break;
     }
 
     _cairo_surface_release_source_image (pattern->surface, image, image_extra);
@@ -164,12 +164,12 @@ static cairo_bool_t
 surface_pattern_supported (const cairo_surface_pattern_t *pattern)
 {
     if (_cairo_surface_is_recording (pattern->surface))
-	return TRUE;
+        return TRUE;
 
     if (cairo_surface_get_type (pattern->surface) != CAIRO_SURFACE_TYPE_WIN32 &&
-	pattern->surface->backend->acquire_source_image == NULL)
+        pattern->surface->backend->acquire_source_image == NULL)
     {
-	return FALSE;
+        return FALSE;
     }
 
     return TRUE;
@@ -179,13 +179,13 @@ static cairo_bool_t
 pattern_supported (cairo_win32_surface_t *surface, const cairo_pattern_t *pattern)
 {
     if (pattern->type == CAIRO_PATTERN_TYPE_SOLID)
-	return TRUE;
+        return TRUE;
 
     if (pattern->type == CAIRO_PATTERN_TYPE_SURFACE)
-	return surface_pattern_supported ((const cairo_surface_pattern_t *) pattern);
+        return surface_pattern_supported ((const cairo_surface_pattern_t *) pattern);
 
     if (pattern->type == CAIRO_PATTERN_TYPE_LINEAR)
-	return surface->flags & CAIRO_WIN32_SURFACE_CAN_RECT_GRADIENT;
+        return surface->flags & CAIRO_WIN32_SURFACE_CAN_RECT_GRADIENT;
 
     return FALSE;
 }
@@ -196,23 +196,23 @@ _cairo_win32_printing_surface_analyze_operation (cairo_win32_surface_t *surface,
                                                  const cairo_pattern_t *pattern)
 {
     if (! pattern_supported (surface, pattern))
-	return CAIRO_INT_STATUS_UNSUPPORTED;
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     if (!(op == CAIRO_OPERATOR_SOURCE ||
-	  op == CAIRO_OPERATOR_OVER ||
-	  op == CAIRO_OPERATOR_CLEAR))
-	return CAIRO_INT_STATUS_UNSUPPORTED;
+          op == CAIRO_OPERATOR_OVER ||
+          op == CAIRO_OPERATOR_CLEAR))
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     if (pattern->type == CAIRO_PATTERN_TYPE_SURFACE) {
-	cairo_surface_pattern_t *surface_pattern = (cairo_surface_pattern_t *) pattern;
+        cairo_surface_pattern_t *surface_pattern = (cairo_surface_pattern_t *) pattern;
 
-	if ( _cairo_surface_is_recording (surface_pattern->surface))
-	    return CAIRO_INT_STATUS_ANALYZE_RECORDING_SURFACE_PATTERN;
+        if ( _cairo_surface_is_recording (surface_pattern->surface))
+            return CAIRO_INT_STATUS_ANALYZE_RECORDING_SURFACE_PATTERN;
     }
 
     if (op == CAIRO_OPERATOR_SOURCE ||
-	op == CAIRO_OPERATOR_CLEAR)
-	return CAIRO_STATUS_SUCCESS;
+        op == CAIRO_OPERATOR_CLEAR)
+        return CAIRO_STATUS_SUCCESS;
 
     /* CAIRO_OPERATOR_OVER is only supported for opaque patterns. If
      * the pattern contains transparency, we return
@@ -225,15 +225,15 @@ _cairo_win32_printing_surface_analyze_operation (cairo_win32_surface_t *surface,
      */
 
     if (pattern->type == CAIRO_PATTERN_TYPE_SURFACE) {
-	cairo_surface_pattern_t *surface_pattern = (cairo_surface_pattern_t *) pattern;
+        cairo_surface_pattern_t *surface_pattern = (cairo_surface_pattern_t *) pattern;
 
-	return analyze_surface_pattern_transparency (surface_pattern);
+        return analyze_surface_pattern_transparency (surface_pattern);
     }
 
     if (_cairo_pattern_is_opaque (pattern, NULL))
-	return CAIRO_STATUS_SUCCESS;
+        return CAIRO_STATUS_SUCCESS;
     else
-	return CAIRO_INT_STATUS_FLATTEN_TRANSPARENCY;
+        return CAIRO_INT_STATUS_FLATTEN_TRANSPARENCY;
 }
 
 static cairo_bool_t
@@ -242,24 +242,24 @@ _cairo_win32_printing_surface_operation_supported (cairo_win32_surface_t *surfac
                                                    const cairo_pattern_t *pattern)
 {
     if (_cairo_win32_printing_surface_analyze_operation (surface, op, pattern) != CAIRO_INT_STATUS_UNSUPPORTED)
-	return TRUE;
+        return TRUE;
     else
-	return FALSE;
+        return FALSE;
 }
 
 static void
 _cairo_win32_printing_surface_init_clear_color (cairo_win32_surface_t *surface,
-						cairo_solid_pattern_t *color)
+                                                cairo_solid_pattern_t *color)
 {
     if (surface->content == CAIRO_CONTENT_COLOR_ALPHA)
-	_cairo_pattern_init_solid (color, CAIRO_COLOR_WHITE);
+        _cairo_pattern_init_solid (color, CAIRO_COLOR_WHITE);
     else
-	_cairo_pattern_init_solid (color, CAIRO_COLOR_BLACK);
+        _cairo_pattern_init_solid (color, CAIRO_COLOR_BLACK);
 }
 
 static COLORREF
 _cairo_win32_printing_surface_flatten_transparency (cairo_win32_surface_t *surface,
-						    const cairo_color_t   *color)
+                                                    const cairo_color_t   *color)
 {
     COLORREF c;
     BYTE red, green, blue;
@@ -269,19 +269,19 @@ _cairo_win32_printing_surface_flatten_transparency (cairo_win32_surface_t *surfa
     blue  = color->blue_short  >> 8;
 
     if (!CAIRO_COLOR_IS_OPAQUE(color)) {
-	if (surface->content == CAIRO_CONTENT_COLOR_ALPHA) {
-	    /* Blend into white */
-	    uint8_t one_minus_alpha = 255 - (color->alpha_short >> 8);
+        if (surface->content == CAIRO_CONTENT_COLOR_ALPHA) {
+            /* Blend into white */
+            uint8_t one_minus_alpha = 255 - (color->alpha_short >> 8);
 
-	    red   = (color->red_short   >> 8) + one_minus_alpha;
-	    green = (color->green_short >> 8) + one_minus_alpha;
-	    blue  = (color->blue_short  >> 8) + one_minus_alpha;
-	} else {
-	    /* Blend into black */
-	    red   = (color->red_short   >> 8);
-	    green = (color->green_short >> 8);
-	    blue  = (color->blue_short  >> 8);
-	}
+            red   = (color->red_short   >> 8) + one_minus_alpha;
+            green = (color->green_short >> 8) + one_minus_alpha;
+            blue  = (color->blue_short  >> 8) + one_minus_alpha;
+        } else {
+            /* Blend into black */
+            red   = (color->red_short   >> 8);
+            green = (color->green_short >> 8);
+            blue  = (color->blue_short  >> 8);
+        }
     }
     c = RGB (red, green, blue);
 
@@ -296,10 +296,10 @@ _cairo_win32_printing_surface_select_solid_brush (cairo_win32_surface_t *surface
     COLORREF color;
 
     color = _cairo_win32_printing_surface_flatten_transparency (surface,
-								&pattern->color);
+                                                                &pattern->color);
     surface->brush = CreateSolidBrush (color);
     if (!surface->brush)
-	return _cairo_win32_print_gdi_error ("_cairo_win32_surface_select_solid_brush(CreateSolidBrush)");
+        return _cairo_win32_print_gdi_error ("_cairo_win32_surface_select_solid_brush(CreateSolidBrush)");
     surface->old_brush = SelectObject (surface->dc, surface->brush);
 
     return CAIRO_STATUS_SUCCESS;
@@ -309,26 +309,26 @@ static void
 _cairo_win32_printing_surface_done_solid_brush (cairo_win32_surface_t *surface)
 {
     if (surface->old_brush) {
-	SelectObject (surface->dc, surface->old_brush);
-	DeleteObject (surface->brush);
-	surface->old_brush = NULL;
+        SelectObject (surface->dc, surface->old_brush);
+        DeleteObject (surface->brush);
+        surface->old_brush = NULL;
     }
 }
 
 static cairo_status_t
 _cairo_win32_printing_surface_get_ctm_clip_box (cairo_win32_surface_t *surface,
-						RECT                  *clip)
+                                                RECT                  *clip)
 {
     XFORM xform;
 
     _cairo_matrix_to_win32_xform (&surface->ctm, &xform);
     if (!ModifyWorldTransform (surface->dc, &xform, MWT_LEFTMULTIPLY))
-	return _cairo_win32_print_gdi_error ("_cairo_win32_printing_surface_get_clip_box:ModifyWorldTransform");
+        return _cairo_win32_print_gdi_error ("_cairo_win32_printing_surface_get_clip_box:ModifyWorldTransform");
     GetClipBox (surface->dc, clip);
 
     _cairo_matrix_to_win32_xform (&surface->gdi_ctm, &xform);
     if (!SetWorldTransform (surface->dc, &xform))
-	return _cairo_win32_print_gdi_error ("_cairo_win32_printing_surface_get_clip_box:SetWorldTransform");
+        return _cairo_win32_print_gdi_error ("_cairo_win32_printing_surface_get_clip_box:SetWorldTransform");
 
     return CAIRO_STATUS_SUCCESS;
 }
@@ -343,7 +343,7 @@ _cairo_win32_printing_surface_paint_solid_pattern (cairo_win32_surface_t *surfac
     GetClipBox (surface->dc, &clip);
     status = _cairo_win32_printing_surface_select_solid_brush (surface, pattern);
     if (status)
-	return status;
+        return status;
 
     FillRect (surface->dc, &clip, surface->brush);
     _cairo_win32_printing_surface_done_solid_brush (surface);
@@ -353,7 +353,7 @@ _cairo_win32_printing_surface_paint_solid_pattern (cairo_win32_surface_t *surfac
 
 static cairo_status_t
 _cairo_win32_printing_surface_paint_recording_pattern (cairo_win32_surface_t   *surface,
-						       cairo_surface_pattern_t *pattern)
+                                                       cairo_surface_pattern_t *pattern)
 {
     cairo_content_t old_content;
     cairo_matrix_t old_ctm;
@@ -384,96 +384,96 @@ _cairo_win32_printing_surface_paint_recording_pattern (cairo_win32_surface_t   *
 
     status = _cairo_recording_surface_get_bbox (recording_surface, &bbox, NULL);
     if (status)
-	return status;
+        return status;
 
     _cairo_box_round_to_rectangle (&bbox, &recording_extents);
 
     status = _cairo_win32_printing_surface_get_ctm_clip_box (surface, &clip);
     if (status)
-	return status;
+        return status;
 
     if (extend == CAIRO_EXTEND_REPEAT || extend == CAIRO_EXTEND_REFLECT) {
-	left = floor (clip.left / _cairo_fixed_to_double (bbox.p2.x - bbox.p1.x));
-	right = ceil (clip.right / _cairo_fixed_to_double (bbox.p2.x - bbox.p1.x));
-	top = floor (clip.top / _cairo_fixed_to_double (bbox.p2.y - bbox.p1.y));
-	bottom = ceil (clip.bottom / _cairo_fixed_to_double (bbox.p2.y - bbox.p1.y));
+        left = floor (clip.left / _cairo_fixed_to_double (bbox.p2.x - bbox.p1.x));
+        right = ceil (clip.right / _cairo_fixed_to_double (bbox.p2.x - bbox.p1.x));
+        top = floor (clip.top / _cairo_fixed_to_double (bbox.p2.y - bbox.p1.y));
+        bottom = ceil (clip.bottom / _cairo_fixed_to_double (bbox.p2.y - bbox.p1.y));
     } else {
-	left = 0;
-	right = 1;
-	top = 0;
-	bottom = 1;
+        left = 0;
+        right = 1;
+        top = 0;
+        bottom = 1;
     }
 
     old_content = surface->content;
     if (recording_surface->base.content == CAIRO_CONTENT_COLOR) {
-	surface->content = CAIRO_CONTENT_COLOR;
-	status = _cairo_win32_printing_surface_paint_solid_pattern (surface,
-								    &_cairo_pattern_black.base);
-	if (status)
-	    return status;
+        surface->content = CAIRO_CONTENT_COLOR;
+        status = _cairo_win32_printing_surface_paint_solid_pattern (surface,
+                                                                    &_cairo_pattern_black.base);
+        if (status)
+            return status;
     }
 
     for (y_tile = top; y_tile < bottom; y_tile++) {
-	for (x_tile = left; x_tile < right; x_tile++) {
-	    cairo_matrix_t m;
-	    double x, y;
+        for (x_tile = left; x_tile < right; x_tile++) {
+            cairo_matrix_t m;
+            double x, y;
 
-	    SaveDC (surface->dc);
-	    m = p2d;
-	    cairo_matrix_translate (&m,
-				    x_tile*recording_extents.width,
-				    y_tile*recording_extents.height);
-	    if (extend == CAIRO_EXTEND_REFLECT) {
-		if (x_tile % 2) {
-		    cairo_matrix_translate (&m, recording_extents.width, 0);
-		    cairo_matrix_scale (&m, -1, 1);
-		}
-		if (y_tile % 2) {
-		    cairo_matrix_translate (&m, 0, recording_extents.height);
-		    cairo_matrix_scale (&m, 1, -1);
-		}
-	    }
-	    surface->ctm = m;
-	    surface->has_ctm = !_cairo_matrix_is_identity (&surface->ctm);
+            SaveDC (surface->dc);
+            m = p2d;
+            cairo_matrix_translate (&m,
+                                    x_tile*recording_extents.width,
+                                    y_tile*recording_extents.height);
+            if (extend == CAIRO_EXTEND_REFLECT) {
+                if (x_tile % 2) {
+                    cairo_matrix_translate (&m, recording_extents.width, 0);
+                    cairo_matrix_scale (&m, -1, 1);
+                }
+                if (y_tile % 2) {
+                    cairo_matrix_translate (&m, 0, recording_extents.height);
+                    cairo_matrix_scale (&m, 1, -1);
+                }
+            }
+            surface->ctm = m;
+            surface->has_ctm = !_cairo_matrix_is_identity (&surface->ctm);
 
-	    /* Set clip path around bbox of the pattern. */
-	    BeginPath (surface->dc);
+            /* Set clip path around bbox of the pattern. */
+            BeginPath (surface->dc);
 
-	    x = 0;
-	    y = 0;
-	    cairo_matrix_transform_point (&surface->ctm, &x, &y);
-	    MoveToEx (surface->dc, (int) x, (int) y, NULL);
+            x = 0;
+            y = 0;
+            cairo_matrix_transform_point (&surface->ctm, &x, &y);
+            MoveToEx (surface->dc, (int) x, (int) y, NULL);
 
-	    x = recording_extents.width;
-	    y = 0;
-	    cairo_matrix_transform_point (&surface->ctm, &x, &y);
-	    LineTo (surface->dc, (int) x, (int) y);
+            x = recording_extents.width;
+            y = 0;
+            cairo_matrix_transform_point (&surface->ctm, &x, &y);
+            LineTo (surface->dc, (int) x, (int) y);
 
-	    x = recording_extents.width;
-	    y = recording_extents.height;
-	    cairo_matrix_transform_point (&surface->ctm, &x, &y);
-	    LineTo (surface->dc, (int) x, (int) y);
+            x = recording_extents.width;
+            y = recording_extents.height;
+            cairo_matrix_transform_point (&surface->ctm, &x, &y);
+            LineTo (surface->dc, (int) x, (int) y);
 
-	    x = 0;
-	    y = recording_extents.height;
-	    cairo_matrix_transform_point (&surface->ctm, &x, &y);
-	    LineTo (surface->dc, (int) x, (int) y);
+            x = 0;
+            y = recording_extents.height;
+            cairo_matrix_transform_point (&surface->ctm, &x, &y);
+            LineTo (surface->dc, (int) x, (int) y);
 
-	    CloseFigure (surface->dc);
-	    EndPath (surface->dc);
-	    SelectClipPath (surface->dc, RGN_AND);
+            CloseFigure (surface->dc);
+            EndPath (surface->dc);
+            SelectClipPath (surface->dc, RGN_AND);
 
-	    SaveDC (surface->dc); /* Allow clip path to be reset during replay */
-	    status = _cairo_recording_surface_replay_region (&recording_surface->base, NULL,
-							     &surface->base,
-							     CAIRO_RECORDING_REGION_NATIVE);
-	    assert (status != CAIRO_INT_STATUS_UNSUPPORTED);
-	    /* Restore both the clip save and our earlier path SaveDC */
-	    RestoreDC (surface->dc, -2);
+            SaveDC (surface->dc); /* Allow clip path to be reset during replay */
+            status = _cairo_recording_surface_replay_region (&recording_surface->base, NULL,
+                                                             &surface->base,
+                                                             CAIRO_RECORDING_REGION_NATIVE);
+            assert (status != CAIRO_INT_STATUS_UNSUPPORTED);
+            /* Restore both the clip save and our earlier path SaveDC */
+            RestoreDC (surface->dc, -2);
 
-	    if (status)
-		return status;
-	}
+            if (status)
+                return status;
+        }
     }
 
     surface->content = old_content;
@@ -486,10 +486,10 @@ _cairo_win32_printing_surface_paint_recording_pattern (cairo_win32_surface_t   *
 
 static cairo_int_status_t
 _cairo_win32_printing_surface_check_jpeg (cairo_win32_surface_t   *surface,
-					  cairo_surface_t         *source,
-					  const unsigned char    **data,
-					  unsigned long           *length,
-					  cairo_image_info_t      *info)
+                                          cairo_surface_t         *source,
+                                          const unsigned char    **data,
+                                          unsigned long           *length,
+                                          cairo_image_info_t      *info)
 {
     const unsigned char *mime_data;
     unsigned long mime_data_length;
@@ -497,24 +497,24 @@ _cairo_win32_printing_surface_check_jpeg (cairo_win32_surface_t   *surface,
     DWORD result;
 
     if (!(surface->flags & CAIRO_WIN32_SURFACE_CAN_CHECK_JPEG))
-	return CAIRO_INT_STATUS_UNSUPPORTED;
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     cairo_surface_get_mime_data (source, CAIRO_MIME_TYPE_JPEG,
-				 &mime_data, &mime_data_length);
+                                 &mime_data, &mime_data_length);
     if (mime_data == NULL)
-	return CAIRO_INT_STATUS_UNSUPPORTED;
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     status = _cairo_image_info_get_jpeg_info (info, mime_data, mime_data_length);
     if (status)
-	return status;
+        return status;
 
     result = 0;
     if (ExtEscape(surface->dc, CHECKJPEGFORMAT, mime_data_length, (char *) mime_data,
-		  sizeof(result), (char *) &result) <= 0)
-	return CAIRO_INT_STATUS_UNSUPPORTED;
+                  sizeof(result), (char *) &result) <= 0)
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     if (result != 1)
-	return CAIRO_INT_STATUS_UNSUPPORTED;
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     *data = mime_data;
     *length = mime_data_length;
@@ -524,10 +524,10 @@ _cairo_win32_printing_surface_check_jpeg (cairo_win32_surface_t   *surface,
 
 static cairo_int_status_t
 _cairo_win32_printing_surface_check_png (cairo_win32_surface_t   *surface,
-					 cairo_surface_t         *source,
-					 const unsigned char    **data,
-					 unsigned long           *length,
-					 cairo_image_info_t      *info)
+                                         cairo_surface_t         *source,
+                                         const unsigned char    **data,
+                                         unsigned long           *length,
+                                         cairo_image_info_t      *info)
 {
     const unsigned char *mime_data;
     unsigned long mime_data_length;
@@ -536,24 +536,24 @@ _cairo_win32_printing_surface_check_png (cairo_win32_surface_t   *surface,
     DWORD result;
 
     if (!(surface->flags & CAIRO_WIN32_SURFACE_CAN_CHECK_PNG))
-	return CAIRO_INT_STATUS_UNSUPPORTED;
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     cairo_surface_get_mime_data (source, CAIRO_MIME_TYPE_PNG,
-				 &mime_data, &mime_data_length);
+                                 &mime_data, &mime_data_length);
     if (mime_data == NULL)
-	return CAIRO_INT_STATUS_UNSUPPORTED;
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     status = _cairo_image_info_get_png_info (info, mime_data, mime_data_length);
     if (status)
-	return status;
+        return status;
 
     result = 0;
     if (ExtEscape(surface->dc, CHECKPNGFORMAT, mime_data_length, (char *) mime_data,
-		  sizeof(result), (char *) &result) <= 0)
-	return CAIRO_INT_STATUS_UNSUPPORTED;
+                  sizeof(result), (char *) &result) <= 0)
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     if (result != 1)
-	return CAIRO_INT_STATUS_UNSUPPORTED;
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     *data = mime_data;
     *length = mime_data_length;
@@ -563,7 +563,7 @@ _cairo_win32_printing_surface_check_png (cairo_win32_surface_t   *surface,
 
 static cairo_status_t
 _cairo_win32_printing_surface_paint_image_pattern (cairo_win32_surface_t   *surface,
-						   cairo_surface_pattern_t *pattern)
+                                                   cairo_surface_pattern_t *pattern)
 {
     cairo_status_t status;
     cairo_extend_t extend;
@@ -588,46 +588,46 @@ _cairo_win32_printing_surface_paint_image_pattern (cairo_win32_surface_t   *surf
      * here.
      */
     if (!(surface->flags & CAIRO_WIN32_SURFACE_CAN_STRETCHDIB))
-	return CAIRO_INT_STATUS_UNSUPPORTED;
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     if (surface->content == CAIRO_CONTENT_COLOR_ALPHA)
-	background_color = CAIRO_COLOR_WHITE;
+        background_color = CAIRO_COLOR_WHITE;
     else
-	background_color = CAIRO_COLOR_BLACK;
+        background_color = CAIRO_COLOR_BLACK;
 
     extend = cairo_pattern_get_extend (&pattern->base);
 
     status = _cairo_surface_acquire_source_image (pattern->surface,
-						  &image, &image_extra);
+                                                  &image, &image_extra);
     if (status)
-	return status;
+        return status;
 
     if (image->base.status) {
-	status = image->base.status;
-	goto CLEANUP_IMAGE;
+        status = image->base.status;
+        goto CLEANUP_IMAGE;
     }
 
     if (image->width == 0 || image->height == 0) {
-	status = CAIRO_STATUS_SUCCESS;
-	goto CLEANUP_IMAGE;
+        status = CAIRO_STATUS_SUCCESS;
+        goto CLEANUP_IMAGE;
     }
 
     mime_type = BI_JPEG;
     status = _cairo_win32_printing_surface_check_jpeg (surface,
-						       pattern->surface,
-						       &mime_data,
-						       &mime_size,
-						       &mime_info);
+                                                       pattern->surface,
+                                                       &mime_data,
+                                                       &mime_size,
+                                                       &mime_info);
     if (status == CAIRO_INT_STATUS_UNSUPPORTED) {
-	mime_type = BI_PNG;
-	status = _cairo_win32_printing_surface_check_png (surface,
-							  pattern->surface,
-							  &mime_data,
-							  &mime_size,
-							  &mime_info);
+        mime_type = BI_PNG;
+        status = _cairo_win32_printing_surface_check_png (surface,
+                                                          pattern->surface,
+                                                          &mime_data,
+                                                          &mime_size,
+                                                          &mime_info);
     }
     if (_cairo_status_is_error (status))
-	return status;
+        return status;
 
     use_mime = (status == CAIRO_STATUS_SUCCESS);
 
@@ -645,52 +645,52 @@ _cairo_win32_printing_surface_paint_image_pattern (cairo_win32_surface_t   *surf
     axis_swap = fabs (m.xx*image->width) < 1 && fabs (m.yy*image->height) < 1;
 
     if (!use_mime && (image->format != CAIRO_FORMAT_RGB24 || axis_swap)) {
-	cairo_surface_t *opaque_surface;
-	cairo_surface_pattern_t image_pattern;
-	cairo_solid_pattern_t background_pattern;
-	int width = image->width, height = image->height;
+        cairo_surface_t *opaque_surface;
+        cairo_surface_pattern_t image_pattern;
+        cairo_solid_pattern_t background_pattern;
+        int width = image->width, height = image->height;
 
-	if (axis_swap) {
-	    width = image->height;
-	    height = image->width;
-	}
-	opaque_surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24,
-						     width,
-						     height);
-	if (opaque_surface->status) {
-	    status = opaque_surface->status;
-	    goto CLEANUP_OPAQUE_IMAGE;
-	}
+        if (axis_swap) {
+            width = image->height;
+            height = image->width;
+        }
+        opaque_surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24,
+                                                     width,
+                                                     height);
+        if (opaque_surface->status) {
+            status = opaque_surface->status;
+            goto CLEANUP_OPAQUE_IMAGE;
+        }
 
-	if (image->format != CAIRO_FORMAT_RGB24) {
-	    _cairo_pattern_init_solid (&background_pattern,
-				       background_color);
-	    status = _cairo_surface_paint (opaque_surface,
-					   CAIRO_OPERATOR_SOURCE,
-					   &background_pattern.base,
-					   NULL);
-	    if (status)
-		goto CLEANUP_OPAQUE_IMAGE;
-	}
+        if (image->format != CAIRO_FORMAT_RGB24) {
+            _cairo_pattern_init_solid (&background_pattern,
+                                       background_color);
+            status = _cairo_surface_paint (opaque_surface,
+                                           CAIRO_OPERATOR_SOURCE,
+                                           &background_pattern.base,
+                                           NULL);
+            if (status)
+                goto CLEANUP_OPAQUE_IMAGE;
+        }
 
-	_cairo_pattern_init_for_surface (&image_pattern, &image->base);
-	if (axis_swap) {
-	    /* swap the X and Y axes to undo the axis swap in the matrix */
-	    cairo_matrix_t swap_xy = { 0, 1, 1, 0, 0, 0 };
-	    cairo_pattern_set_matrix (&image_pattern.base, &swap_xy);
-	    cairo_matrix_multiply (&m, &swap_xy, &m);
-	}
-	status = _cairo_surface_paint (opaque_surface,
-				       CAIRO_OPERATOR_OVER,
-				       &image_pattern.base,
-				       NULL);
-	_cairo_pattern_fini (&image_pattern.base);
-	if (status)
-	    goto CLEANUP_OPAQUE_IMAGE;
+        _cairo_pattern_init_for_surface (&image_pattern, &image->base);
+        if (axis_swap) {
+            /* swap the X and Y axes to undo the axis swap in the matrix */
+            cairo_matrix_t swap_xy = { 0, 1, 1, 0, 0, 0 };
+            cairo_pattern_set_matrix (&image_pattern.base, &swap_xy);
+            cairo_matrix_multiply (&m, &swap_xy, &m);
+        }
+        status = _cairo_surface_paint (opaque_surface,
+                                       CAIRO_OPERATOR_OVER,
+                                       &image_pattern.base,
+                                       NULL);
+        _cairo_pattern_fini (&image_pattern.base);
+        if (status)
+            goto CLEANUP_OPAQUE_IMAGE;
 
-	opaque_image = (cairo_image_surface_t *) opaque_surface;
+        opaque_image = (cairo_image_surface_t *) opaque_surface;
     } else {
-	opaque_image = image;
+        opaque_image = image;
     }
 
     bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -709,52 +709,52 @@ _cairo_win32_printing_surface_paint_image_pattern (cairo_win32_surface_t   *surf
     _cairo_matrix_to_win32_xform (&m, &xform);
 
     if (! SetWorldTransform (surface->dc, &xform)) {
-	status = _cairo_win32_print_gdi_error ("_cairo_win32_printing_surface_paint_image_pattern");
-	goto CLEANUP_OPAQUE_IMAGE;
+        status = _cairo_win32_print_gdi_error ("_cairo_win32_printing_surface_paint_image_pattern");
+        goto CLEANUP_OPAQUE_IMAGE;
     }
 
     oldmode = SetStretchBltMode(surface->dc, HALFTONE);
 
     GetClipBox (surface->dc, &clip);
     if (extend == CAIRO_EXTEND_REPEAT || extend == CAIRO_EXTEND_REFLECT) {
-	left = floor ( clip.left / (double) opaque_image->width);
-	right = ceil (clip.right / (double) opaque_image->width);
-	top = floor (clip.top / (double) opaque_image->height);
-	bottom = ceil (clip.bottom / (double) opaque_image->height);
+        left = floor ( clip.left / (double) opaque_image->width);
+        right = ceil (clip.right / (double) opaque_image->width);
+        top = floor (clip.top / (double) opaque_image->height);
+        bottom = ceil (clip.bottom / (double) opaque_image->height);
     } else {
-	left = 0;
-	right = 1;
-	top = 0;
-	bottom = 1;
+        left = 0;
+        right = 1;
+        top = 0;
+        bottom = 1;
     }
 
     for (y_tile = top; y_tile < bottom; y_tile++) {
-	for (x_tile = left; x_tile < right; x_tile++) {
-	    if (!StretchDIBits (surface->dc,
-				x_tile*opaque_image->width,
-				y_tile*opaque_image->height,
-				opaque_image->width,
-				opaque_image->height,
-				0,
-				0,
-				use_mime ? mime_info.width : opaque_image->width,
-				use_mime ? mime_info.height : opaque_image->height,
-				use_mime ? mime_data : opaque_image->data,
-				&bi,
-				DIB_RGB_COLORS,
-				SRCCOPY))
-	    {
-		status = _cairo_win32_print_gdi_error ("_cairo_win32_printing_surface_paint(StretchDIBits)");
-		goto CLEANUP_OPAQUE_IMAGE;
-	    }
-	}
+        for (x_tile = left; x_tile < right; x_tile++) {
+            if (!StretchDIBits (surface->dc,
+                                x_tile*opaque_image->width,
+                                y_tile*opaque_image->height,
+                                opaque_image->width,
+                                opaque_image->height,
+                                0,
+                                0,
+                                use_mime ? mime_info.width : opaque_image->width,
+                                use_mime ? mime_info.height : opaque_image->height,
+                                use_mime ? mime_data : opaque_image->data,
+                                &bi,
+                                DIB_RGB_COLORS,
+                                SRCCOPY))
+            {
+                status = _cairo_win32_print_gdi_error ("_cairo_win32_printing_surface_paint(StretchDIBits)");
+                goto CLEANUP_OPAQUE_IMAGE;
+            }
+        }
     }
     SetStretchBltMode(surface->dc, oldmode);
     RestoreDC (surface->dc, -1);
 
 CLEANUP_OPAQUE_IMAGE:
     if (opaque_image != image)
-	cairo_surface_destroy (&opaque_image->base);
+        cairo_surface_destroy (&opaque_image->base);
 CLEANUP_IMAGE:
     _cairo_surface_release_source_image (pattern->surface, image, image_extra);
 
@@ -766,11 +766,11 @@ _cairo_win32_printing_surface_paint_surface_pattern (cairo_win32_surface_t   *su
                                                      cairo_surface_pattern_t *pattern)
 {
     if (_cairo_surface_is_recording (pattern->surface)) {
-	return _cairo_win32_printing_surface_paint_recording_pattern (surface,
-								      pattern);
+        return _cairo_win32_printing_surface_paint_recording_pattern (surface,
+                                                                      pattern);
     } else {
-	return _cairo_win32_printing_surface_paint_image_pattern (surface,
-								  pattern);
+        return _cairo_win32_printing_surface_paint_image_pattern (surface,
+                                                                  pattern);
     }
 }
 
@@ -790,8 +790,8 @@ static cairo_int_status_t
 _cairo_win32_printing_surface_paint_linear_pattern (cairo_win32_surface_t *surface,
                                                     cairo_linear_pattern_t *pattern)
 {
-    TRIVERTEX *vert;
-    GRADIENT_RECT *rect;
+    TRIVERTEX *vert = NULL;
+    GRADIENT_RECT *rect = NULL;
     RECT clip;
     XFORM xform;
     int i, num_stops;
@@ -801,6 +801,7 @@ _cairo_win32_printing_surface_paint_linear_pattern (cairo_win32_surface_t *surfa
     int range_start, range_stop, num_ranges, num_rects, stop;
     int total_verts, total_rects;
     cairo_status_t status;
+    cairo_uint64_t alloc_size;
 
     extend = cairo_pattern_get_extend (&pattern->base.base);
     SaveDC (surface->dc);
@@ -824,110 +825,129 @@ _cairo_win32_printing_surface_paint_linear_pattern (cairo_win32_surface_t *surfa
     sn = yd/d;
     cs = xd/d;
     cairo_matrix_init (&rot,
-		       cs, sn,
-		       -sn, cs,
-		        0, 0);
+                       cs, sn,
+                       -sn, cs,
+                        0, 0);
     cairo_matrix_multiply (&mat, &rot, &mat);
 
     _cairo_matrix_to_win32_xform (&mat, &xform);
 
-    if (!SetWorldTransform (surface->dc, &xform))
-	return _cairo_win32_print_gdi_error ("_win32_printing_surface_paint_linear_pattern:SetWorldTransform2");
+    if (!SetWorldTransform (surface->dc, &xform)) {
+        status = _cairo_win32_print_gdi_error ("_win32_printing_surface_paint_linear_pattern: SetWorldTransform failure");
+        goto cleanup;
+    }
 
     GetClipBox (surface->dc, &clip);
 
     if (extend == CAIRO_EXTEND_REPEAT || extend == CAIRO_EXTEND_REFLECT) {
-	range_start = floor (clip.left / d);
-	range_stop = ceil (clip.right / d);
+        range_start = floor (clip.left / d);
+        range_stop = ceil (clip.right / d);
     } else {
-	range_start = 0;
-	range_stop = 1;
+        range_start = 0;
+        range_stop = 1;
     }
     num_ranges = range_stop - range_start;
     num_stops = pattern->base.n_stops;
     num_rects = num_stops - 1;
 
     /* Add an extra four points and two rectangles for EXTEND_PAD */
-    vert = malloc (sizeof (TRIVERTEX) * (num_rects*2*num_ranges + 4));
-    rect = malloc (sizeof (GRADIENT_RECT) * (num_rects*num_ranges + 2));
+    alloc_size = sizeof (TRIVERTEX) * ((cairo_uint64_t)num_rects * 2 * (cairo_uint64_t)num_ranges + 4);
+    if (alloc_size > (cairo_uint64_t)SIZE_MAX) {
+        status = _cairo_win32_print_gdi_error ("_win32_printing_surface_paint_linear_pattern: Unsupported size");
+        goto cleanup;
+    }
+    vert = _cairo_malloc (alloc_size);
+
+    alloc_size = sizeof (GRADIENT_RECT) * ((cairo_uint64_t)num_rects * (cairo_uint64_t)num_ranges + 2);
+    if (alloc_size > (cairo_uint64_t)SIZE_MAX) {
+        status = _cairo_win32_print_gdi_error ("_win32_printing_surface_paint_linear_pattern: Unsupported size");
+        goto cleanup;
+    }
+    rect = _cairo_malloc (alloc_size);
+
+    if (!vert || !rect) {
+        status = _cairo_win32_print_gdi_error ("_win32_printing_surface_paint_linear_pattern: Out of memory");
+        goto cleanup;
+    }
 
     for (i = 0; i < num_ranges*num_rects; i++) {
-	vert[i*2].y = (LONG) clip.top;
-	if (i%num_rects == 0) {
-	    stop = 0;
-	    if (extend == CAIRO_EXTEND_REFLECT && (range_start+(i/num_rects))%2)
-		stop = num_rects;
-	    vert[i*2].x = (LONG)(d*(range_start + i/num_rects));
-	    vertex_set_color (&vert[i*2], &pattern->base.stops[stop].color);
-	} else {
-	    vert[i*2].x = vert[i*2-1].x;
-	    vert[i*2].Red = vert[i*2-1].Red;
-	    vert[i*2].Green = vert[i*2-1].Green;
-	    vert[i*2].Blue = vert[i*2-1].Blue;
-	    vert[i*2].Alpha = vert[i*2-1].Alpha;
-	}
+        vert[i*2].y = (LONG) clip.top;
+        if (i%num_rects == 0) {
+            stop = 0;
+            if (extend == CAIRO_EXTEND_REFLECT && (range_start+(i/num_rects))%2)
+                stop = num_rects;
+            vert[i*2].x = (LONG)(d*(range_start + i/num_rects));
+            vertex_set_color (&vert[i*2], &pattern->base.stops[stop].color);
+        } else {
+            vert[i*2].x = vert[i*2-1].x;
+            vert[i*2].Red = vert[i*2-1].Red;
+            vert[i*2].Green = vert[i*2-1].Green;
+            vert[i*2].Blue = vert[i*2-1].Blue;
+            vert[i*2].Alpha = vert[i*2-1].Alpha;
+        }
 
-	stop = i%num_rects + 1;
-	vert[i*2+1].x = (LONG)(d*(range_start + i/num_rects + pattern->base.stops[stop].offset));
-	vert[i*2+1].y = (LONG) clip.bottom;
-	if (extend == CAIRO_EXTEND_REFLECT && (range_start+(i/num_rects))%2)
-	    stop = num_rects - stop;
-	vertex_set_color (&vert[i*2+1], &pattern->base.stops[stop].color);
+        stop = i%num_rects + 1;
+        vert[i*2+1].x = (LONG)(d*(range_start + i/num_rects + pattern->base.stops[stop].offset));
+        vert[i*2+1].y = (LONG) clip.bottom;
+        if (extend == CAIRO_EXTEND_REFLECT && (range_start+(i/num_rects))%2)
+            stop = num_rects - stop;
+        vertex_set_color (&vert[i*2+1], &pattern->base.stops[stop].color);
 
-	rect[i].UpperLeft = i*2;
-	rect[i].LowerRight = i*2 + 1;
+        rect[i].UpperLeft = i*2;
+        rect[i].LowerRight = i*2 + 1;
     }
     total_verts = 2*num_ranges*num_rects;
     total_rects = num_ranges*num_rects;
 
     if (extend == CAIRO_EXTEND_PAD) {
-	vert[i*2].x = vert[i*2-1].x;
-	vert[i*2].y = (LONG) clip.top;
-	vert[i*2].Red = vert[i*2-1].Red;
-	vert[i*2].Green = vert[i*2-1].Green;
-	vert[i*2].Blue = vert[i*2-1].Blue;
-	vert[i*2].Alpha = 0xff00;
-	vert[i*2+1].x = clip.right;
-	vert[i*2+1].y = (LONG) clip.bottom;
-	vert[i*2+1].Red = vert[i*2-1].Red;
-	vert[i*2+1].Green = vert[i*2-1].Green;
-	vert[i*2+1].Blue = vert[i*2-1].Blue;
-	vert[i*2+1].Alpha = 0xff00;
-	rect[i].UpperLeft = i*2;
-	rect[i].LowerRight = i*2 + 1;
+        vert[i*2].x = vert[i*2-1].x;
+        vert[i*2].y = (LONG) clip.top;
+        vert[i*2].Red = vert[i*2-1].Red;
+        vert[i*2].Green = vert[i*2-1].Green;
+        vert[i*2].Blue = vert[i*2-1].Blue;
+        vert[i*2].Alpha = 0xff00;
+        vert[i*2+1].x = clip.right;
+        vert[i*2+1].y = (LONG) clip.bottom;
+        vert[i*2+1].Red = vert[i*2-1].Red;
+        vert[i*2+1].Green = vert[i*2-1].Green;
+        vert[i*2+1].Blue = vert[i*2-1].Blue;
+        vert[i*2+1].Alpha = 0xff00;
+        rect[i].UpperLeft = i*2;
+        rect[i].LowerRight = i*2 + 1;
 
-	i++;
+        i++;
 
-	vert[i*2].x = clip.left;
-	vert[i*2].y = (LONG) clip.top;
-	vert[i*2].Red = vert[0].Red;
-	vert[i*2].Green = vert[0].Green;
-	vert[i*2].Blue = vert[0].Blue;
-	vert[i*2].Alpha = 0xff00;
-	vert[i*2+1].x = vert[0].x;
-	vert[i*2+1].y = (LONG) clip.bottom;
-	vert[i*2+1].Red = vert[0].Red;
-	vert[i*2+1].Green = vert[0].Green;
-	vert[i*2+1].Blue = vert[0].Blue;
-	vert[i*2+1].Alpha = 0xff00;
-	rect[i].UpperLeft = i*2;
-	rect[i].LowerRight = i*2 + 1;
+        vert[i*2].x = clip.left;
+        vert[i*2].y = (LONG) clip.top;
+        vert[i*2].Red = vert[0].Red;
+        vert[i*2].Green = vert[0].Green;
+        vert[i*2].Blue = vert[0].Blue;
+        vert[i*2].Alpha = 0xff00;
+        vert[i*2+1].x = vert[0].x;
+        vert[i*2+1].y = (LONG) clip.bottom;
+        vert[i*2+1].Red = vert[0].Red;
+        vert[i*2+1].Green = vert[0].Green;
+        vert[i*2+1].Blue = vert[0].Blue;
+        vert[i*2+1].Alpha = 0xff00;
+        rect[i].UpperLeft = i*2;
+        rect[i].LowerRight = i*2 + 1;
 
-	total_verts += 4;
-	total_rects += 2;
+        total_verts += 4;
+        total_rects += 2;
     }
 
     if (!GradientFill (surface->dc,
-		       vert, total_verts,
-		       rect, total_rects,
-		       GRADIENT_FILL_RECT_H))
-	return _cairo_win32_print_gdi_error ("_win32_printing_surface_paint_linear_pattern:GradientFill");
+                       vert, total_verts,
+                       rect, total_rects,
+                       GRADIENT_FILL_RECT_H))
+        status = _cairo_win32_print_gdi_error ("_win32_printing_surface_paint_linear_pattern: GradientFill failure");
 
+cleanup:
     free (rect);
     free (vert);
     RestoreDC (surface->dc, -1);
 
-    return 0;
+    return status;
 }
 
 static cairo_int_status_t
@@ -938,27 +958,27 @@ _cairo_win32_printing_surface_paint_pattern (cairo_win32_surface_t *surface,
 
     switch (pattern->type) {
     case CAIRO_PATTERN_TYPE_SOLID:
-	status = _cairo_win32_printing_surface_paint_solid_pattern (surface, pattern);
-	if (status)
-	    return status;
-	break;
+        status = _cairo_win32_printing_surface_paint_solid_pattern (surface, pattern);
+        if (status)
+            return status;
+        break;
 
     case CAIRO_PATTERN_TYPE_SURFACE:
-	status = _cairo_win32_printing_surface_paint_surface_pattern (surface,
+        status = _cairo_win32_printing_surface_paint_surface_pattern (surface,
                                                                       (cairo_surface_pattern_t *) pattern);
-	if (status)
-	    return status;
-	break;
+        if (status)
+            return status;
+        break;
 
     case CAIRO_PATTERN_TYPE_LINEAR:
-	status = _cairo_win32_printing_surface_paint_linear_pattern (surface, (cairo_linear_pattern_t *) pattern);
-	if (status)
-	    return status;
-	break;
+        status = _cairo_win32_printing_surface_paint_linear_pattern (surface, (cairo_linear_pattern_t *) pattern);
+        if (status)
+            return status;
+        break;
 
     case CAIRO_PATTERN_TYPE_RADIAL:
-	return CAIRO_INT_STATUS_UNSUPPORTED;
-	break;
+        return CAIRO_INT_STATUS_UNSUPPORTED;
+        break;
     }
 
     return CAIRO_STATUS_SUCCESS;
@@ -970,22 +990,22 @@ typedef struct _win32_print_path_info {
 
 static cairo_status_t
 _cairo_win32_printing_surface_path_move_to (void *closure,
-					    const cairo_point_t *point)
+                                            const cairo_point_t *point)
 {
     win32_path_info_t *path_info = closure;
 
     if (path_info->surface->has_ctm) {
-	double x, y;
+        double x, y;
 
-	x = _cairo_fixed_to_double (point->x);
-	y = _cairo_fixed_to_double (point->y);
-	cairo_matrix_transform_point (&path_info->surface->ctm, &x, &y);
-	MoveToEx (path_info->surface->dc, (int) x, (int) y, NULL);
+        x = _cairo_fixed_to_double (point->x);
+        y = _cairo_fixed_to_double (point->y);
+        cairo_matrix_transform_point (&path_info->surface->ctm, &x, &y);
+        MoveToEx (path_info->surface->dc, (int) x, (int) y, NULL);
     } else {
-	MoveToEx (path_info->surface->dc,
-		  _cairo_fixed_integer_part (point->x),
-		  _cairo_fixed_integer_part (point->y),
-		  NULL);
+        MoveToEx (path_info->surface->dc,
+                  _cairo_fixed_integer_part (point->x),
+                  _cairo_fixed_integer_part (point->y),
+                  NULL);
     }
 
     return CAIRO_STATUS_SUCCESS;
@@ -993,22 +1013,22 @@ _cairo_win32_printing_surface_path_move_to (void *closure,
 
 static cairo_status_t
 _cairo_win32_printing_surface_path_line_to (void *closure,
-					    const cairo_point_t *point)
+                                            const cairo_point_t *point)
 {
     win32_path_info_t *path_info = closure;
 
     path_info->surface->path_empty = FALSE;
     if (path_info->surface->has_ctm) {
-	double x, y;
+        double x, y;
 
-	x = _cairo_fixed_to_double (point->x);
-	y = _cairo_fixed_to_double (point->y);
-	cairo_matrix_transform_point (&path_info->surface->ctm, &x, &y);
-	LineTo (path_info->surface->dc, (int) x, (int) y);
+        x = _cairo_fixed_to_double (point->x);
+        y = _cairo_fixed_to_double (point->y);
+        cairo_matrix_transform_point (&path_info->surface->ctm, &x, &y);
+        LineTo (path_info->surface->dc, (int) x, (int) y);
     } else {
-	LineTo (path_info->surface->dc,
-		_cairo_fixed_integer_part (point->x),
-		_cairo_fixed_integer_part (point->y));
+        LineTo (path_info->surface->dc,
+                _cairo_fixed_integer_part (point->x),
+                _cairo_fixed_integer_part (point->y));
     }
 
     return CAIRO_STATUS_SUCCESS;
@@ -1025,32 +1045,32 @@ _cairo_win32_printing_surface_path_curve_to (void          *closure,
 
     path_info->surface->path_empty = FALSE;
     if (path_info->surface->has_ctm) {
-	double x, y;
+        double x, y;
 
-	x = _cairo_fixed_to_double (b->x);
-	y = _cairo_fixed_to_double (b->y);
-	cairo_matrix_transform_point (&path_info->surface->ctm, &x, &y);
-	points[0].x = (LONG) x;
-	points[0].y = (LONG) y;
+        x = _cairo_fixed_to_double (b->x);
+        y = _cairo_fixed_to_double (b->y);
+        cairo_matrix_transform_point (&path_info->surface->ctm, &x, &y);
+        points[0].x = (LONG) x;
+        points[0].y = (LONG) y;
 
-	x = _cairo_fixed_to_double (c->x);
-	y = _cairo_fixed_to_double (c->y);
-	cairo_matrix_transform_point (&path_info->surface->ctm, &x, &y);
-	points[1].x = (LONG) x;
-	points[1].y = (LONG) y;
+        x = _cairo_fixed_to_double (c->x);
+        y = _cairo_fixed_to_double (c->y);
+        cairo_matrix_transform_point (&path_info->surface->ctm, &x, &y);
+        points[1].x = (LONG) x;
+        points[1].y = (LONG) y;
 
-	x = _cairo_fixed_to_double (d->x);
-	y = _cairo_fixed_to_double (d->y);
-	cairo_matrix_transform_point (&path_info->surface->ctm, &x, &y);
-	points[2].x = (LONG) x;
-	points[2].y = (LONG) y;
+        x = _cairo_fixed_to_double (d->x);
+        y = _cairo_fixed_to_double (d->y);
+        cairo_matrix_transform_point (&path_info->surface->ctm, &x, &y);
+        points[2].x = (LONG) x;
+        points[2].y = (LONG) y;
     } else {
-	points[0].x = _cairo_fixed_integer_part (b->x);
-	points[0].y = _cairo_fixed_integer_part (b->y);
-	points[1].x = _cairo_fixed_integer_part (c->x);
-	points[1].y = _cairo_fixed_integer_part (c->y);
-	points[2].x = _cairo_fixed_integer_part (d->x);
-	points[2].y = _cairo_fixed_integer_part (d->y);
+        points[0].x = _cairo_fixed_integer_part (b->x);
+        points[0].y = _cairo_fixed_integer_part (b->y);
+        points[1].x = _cairo_fixed_integer_part (c->x);
+        points[1].y = _cairo_fixed_integer_part (c->y);
+        points[2].x = _cairo_fixed_integer_part (d->x);
+        points[2].y = _cairo_fixed_integer_part (d->y);
     }
     PolyBezierTo (path_info->surface->dc, points, 3);
 
@@ -1075,12 +1095,12 @@ _cairo_win32_printing_surface_emit_path (cairo_win32_surface_t *surface,
 
     path_info.surface = surface;
     return _cairo_path_fixed_interpret (path,
-					CAIRO_DIRECTION_FORWARD,
-					_cairo_win32_printing_surface_path_move_to,
-					_cairo_win32_printing_surface_path_line_to,
-					_cairo_win32_printing_surface_path_curve_to,
-					_cairo_win32_printing_surface_path_close_path,
-					&path_info);
+                                        CAIRO_DIRECTION_FORWARD,
+                                        _cairo_win32_printing_surface_path_move_to,
+                                        _cairo_win32_printing_surface_path_line_to,
+                                        _cairo_win32_printing_surface_path_curve_to,
+                                        _cairo_win32_printing_surface_path_close_path,
+                                        &path_info);
 }
 
 static cairo_int_status_t
@@ -1098,22 +1118,22 @@ static cairo_status_t
 _cairo_win32_printing_surface_clipper_intersect_clip_path (cairo_surface_clipper_t *clipper,
                                                    cairo_path_fixed_t *path,
                                                    cairo_fill_rule_t   fill_rule,
-                                                   double	       tolerance,
+                                                   double              tolerance,
                                                    cairo_antialias_t   antialias)
 {
     cairo_win32_surface_t *surface = cairo_container_of (clipper,
-							 cairo_win32_surface_t,
-							 clipper);
+                                                         cairo_win32_surface_t,
+                                                         clipper);
     cairo_status_t status;
 
     if (surface->paginated_mode == CAIRO_PAGINATED_MODE_ANALYZE)
-	return CAIRO_STATUS_SUCCESS;
+        return CAIRO_STATUS_SUCCESS;
 
     if (path == NULL) {
-	RestoreDC (surface->dc, -1);
-	SaveDC (surface->dc);
+        RestoreDC (surface->dc, -1);
+        SaveDC (surface->dc);
 
-	return CAIRO_STATUS_SUCCESS;
+        return CAIRO_STATUS_SUCCESS;
     }
 
     BeginPath (surface->dc);
@@ -1122,13 +1142,13 @@ _cairo_win32_printing_surface_clipper_intersect_clip_path (cairo_surface_clipper
 
     switch (fill_rule) {
     case CAIRO_FILL_RULE_WINDING:
-	SetPolyFillMode (surface->dc, WINDING);
-	break;
+        SetPolyFillMode (surface->dc, WINDING);
+        break;
     case CAIRO_FILL_RULE_EVEN_ODD:
-	SetPolyFillMode (surface->dc, ALTERNATE);
-	break;
+        SetPolyFillMode (surface->dc, ALTERNATE);
+        break;
     default:
-	ASSERT_NOT_REACHED;
+        ASSERT_NOT_REACHED;
     }
 
     SelectClipPath (surface->dc, RGN_AND);
@@ -1149,10 +1169,10 @@ _cairo_win32_printing_surface_get_font_options (void                  *abstract_
 }
 
 static cairo_int_status_t
-_cairo_win32_printing_surface_paint (void			*abstract_surface,
-                                     cairo_operator_t		 op,
-                                     const cairo_pattern_t	*source,
-				     cairo_clip_t      *clip)
+_cairo_win32_printing_surface_paint (void                       *abstract_surface,
+                                     cairo_operator_t            op,
+                                     const cairo_pattern_t      *source,
+                                     cairo_clip_t      *clip)
 {
     cairo_win32_surface_t *surface = abstract_surface;
     cairo_solid_pattern_t clear;
@@ -1160,16 +1180,16 @@ _cairo_win32_printing_surface_paint (void			*abstract_surface,
 
     status = _cairo_surface_clipper_set_clip (&surface->clipper, clip);
     if (status)
-	return status;
+        return status;
 
     if (op == CAIRO_OPERATOR_CLEAR) {
-	_cairo_win32_printing_surface_init_clear_color (surface, &clear);
-	source = (cairo_pattern_t*) &clear;
-	op = CAIRO_OPERATOR_SOURCE;
+        _cairo_win32_printing_surface_init_clear_color (surface, &clear);
+        source = (cairo_pattern_t*) &clear;
+        op = CAIRO_OPERATOR_SOURCE;
     }
 
     if (surface->paginated_mode == CAIRO_PAGINATED_MODE_ANALYZE)
-	return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
+        return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
 
     assert (_cairo_win32_printing_surface_operation_supported (surface, op, source));
 
@@ -1181,14 +1201,14 @@ _cairo_win32_line_cap (cairo_line_cap_t cap)
 {
     switch (cap) {
     case CAIRO_LINE_CAP_BUTT:
-	return PS_ENDCAP_FLAT;
+        return PS_ENDCAP_FLAT;
     case CAIRO_LINE_CAP_ROUND:
-	return PS_ENDCAP_ROUND;
+        return PS_ENDCAP_ROUND;
     case CAIRO_LINE_CAP_SQUARE:
-	return PS_ENDCAP_SQUARE;
+        return PS_ENDCAP_SQUARE;
     default:
-	ASSERT_NOT_REACHED;
-	return 0;
+        ASSERT_NOT_REACHED;
+        return 0;
     }
 }
 
@@ -1197,14 +1217,14 @@ _cairo_win32_line_join (cairo_line_join_t join)
 {
     switch (join) {
     case CAIRO_LINE_JOIN_MITER:
-	return PS_JOIN_MITER;
+        return PS_JOIN_MITER;
     case CAIRO_LINE_JOIN_ROUND:
-	return PS_JOIN_ROUND;
+        return PS_JOIN_ROUND;
     case CAIRO_LINE_JOIN_BEVEL:
-	return PS_JOIN_BEVEL;
+        return PS_JOIN_BEVEL;
     default:
-	ASSERT_NOT_REACHED;
-	return 0;
+        ASSERT_NOT_REACHED;
+        return 0;
     }
 }
 
@@ -1215,27 +1235,27 @@ _cairo_matrix_factor_out_scale (cairo_matrix_t *m, double *scale)
 
     s = fabs (m->xx);
     if (fabs (m->xy) > s)
-	s = fabs (m->xy);
+        s = fabs (m->xy);
     if (fabs (m->yx) > s)
-	s = fabs (m->yx);
+        s = fabs (m->yx);
     if (fabs (m->yy) > s)
-	s = fabs (m->yy);
+        s = fabs (m->yy);
     *scale = s;
     s = 1.0/s;
     cairo_matrix_scale (m, s, s);
 }
 
 static cairo_int_status_t
-_cairo_win32_printing_surface_stroke (void			*abstract_surface,
-                                      cairo_operator_t		 op,
-                                      const cairo_pattern_t	*source,
-                                      cairo_path_fixed_t	*path,
+_cairo_win32_printing_surface_stroke (void                      *abstract_surface,
+                                      cairo_operator_t           op,
+                                      const cairo_pattern_t     *source,
+                                      cairo_path_fixed_t        *path,
                                       const cairo_stroke_style_t *style,
-                                      const cairo_matrix_t	*stroke_ctm,
-                                      const cairo_matrix_t	*stroke_ctm_inverse,
-                                      double			tolerance,
-                                      cairo_antialias_t		antialias,
-				      cairo_clip_t    *clip)
+                                      const cairo_matrix_t      *stroke_ctm,
+                                      const cairo_matrix_t      *stroke_ctm_inverse,
+                                      double                    tolerance,
+                                      cairo_antialias_t         antialias,
+                                      cairo_clip_t    *clip)
 {
     cairo_win32_surface_t *surface = abstract_surface;
     cairo_int_status_t status;
@@ -1256,23 +1276,23 @@ _cairo_win32_printing_surface_stroke (void			*abstract_surface,
 
     status = _cairo_surface_clipper_set_clip (&surface->clipper, clip);
     if (status)
-	return status;
+        return status;
 
     if (op == CAIRO_OPERATOR_CLEAR) {
-	_cairo_win32_printing_surface_init_clear_color (surface, &clear);
-	source = (cairo_pattern_t*) &clear;
-	op = CAIRO_OPERATOR_SOURCE;
+        _cairo_win32_printing_surface_init_clear_color (surface, &clear);
+        source = (cairo_pattern_t*) &clear;
+        op = CAIRO_OPERATOR_SOURCE;
     }
 
     if (surface->paginated_mode == CAIRO_PAGINATED_MODE_ANALYZE) {
-	/* Win32 does not support more than 16 elements in the dash array. */
-	if (style->num_dashes > 16)
-	    return CAIRO_INT_STATUS_UNSUPPORTED;
-	/* Win32 does not support a dash offset. */
-	if (style->num_dashes > 0 && style->dash_offset != 0.0)
-	    return CAIRO_INT_STATUS_UNSUPPORTED;
+        /* Win32 does not support more than 16 elements in the dash array. */
+        if (style->num_dashes > 16)
+            return CAIRO_INT_STATUS_UNSUPPORTED;
+        /* Win32 does not support a dash offset. */
+        if (style->num_dashes > 0 && style->dash_offset != 0.0)
+            return CAIRO_INT_STATUS_UNSUPPORTED;
 
-	return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
+        return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
     }
 
     assert (_cairo_win32_printing_surface_operation_supported (surface, op, source));
@@ -1284,29 +1304,29 @@ _cairo_win32_printing_surface_stroke (void			*abstract_surface,
     pen_style = PS_GEOMETRIC;
     dash_array = NULL;
     if (style->num_dashes) {
-	pen_style |= PS_USERSTYLE;
-	dash_array = calloc (sizeof (DWORD), style->num_dashes);
-	for (i = 0; i < style->num_dashes; i++) {
-	    DWORD dashes = (DWORD) (scale * style->dash[i]);
-	    /* zero dash-lengths cause ExtCreatePen to fail. Make the dashes
-	     * longer if necessary.
-	     */
-	    dash_array[i] = MAX(1, dashes);
-	}
+        pen_style |= PS_USERSTYLE;
+        dash_array = calloc (sizeof (DWORD), style->num_dashes);
+        for (i = 0; i < style->num_dashes; i++) {
+            DWORD dashes = (DWORD) (scale * style->dash[i]);
+            /* zero dash-lengths cause ExtCreatePen to fail. Make the dashes
+             * longer if necessary.
+             */
+            dash_array[i] = MAX(1, dashes);
+        }
     } else {
-	pen_style |= PS_SOLID;
+        pen_style |= PS_SOLID;
     }
 
     SetMiterLimit (surface->dc, (FLOAT) (style->miter_limit), NULL);
     if (source->type == CAIRO_PATTERN_TYPE_SOLID) {
-	cairo_solid_pattern_t *solid = (cairo_solid_pattern_t *) source;
+        cairo_solid_pattern_t *solid = (cairo_solid_pattern_t *) source;
 
 
-	color = _cairo_win32_printing_surface_flatten_transparency (surface,
-								    &solid->color);
+        color = _cairo_win32_printing_surface_flatten_transparency (surface,
+                                                                    &solid->color);
     } else {
-	/* Color not used as the pen will only be used by WidenPath() */
-	color = RGB (0,0,0);
+        /* Color not used as the pen will only be used by WidenPath() */
+        color = RGB (0,0,0);
     }
     brush.lbStyle = BS_SOLID;
     brush.lbColor = color;
@@ -1325,21 +1345,21 @@ _cairo_win32_printing_surface_stroke (void			*abstract_surface,
         pen_width = 1;
     }
     pen = ExtCreatePen(pen_style,
-		       pen_width,
-		       &brush,
-		       style->num_dashes,
-		       dash_array);
+                       pen_width,
+                       &brush,
+                       style->num_dashes,
+                       dash_array);
     if (pen == NULL)
-	return _cairo_win32_print_gdi_error ("_win32_surface_stroke:ExtCreatePen");
+        return _cairo_win32_print_gdi_error ("_win32_surface_stroke:ExtCreatePen");
     obj = SelectObject (surface->dc, pen);
     if (obj == NULL)
-	return _cairo_win32_print_gdi_error ("_win32_surface_stroke:SelectObject");
+        return _cairo_win32_print_gdi_error ("_win32_surface_stroke:SelectObject");
 
     BeginPath (surface->dc);
     status = _cairo_win32_printing_surface_emit_path (surface, path);
     EndPath (surface->dc);
     if (status)
-	return status;
+        return status;
 
     /*
      * Switch to user space to set line parameters
@@ -1355,53 +1375,53 @@ _cairo_win32_printing_surface_stroke (void			*abstract_surface,
      */
     _cairo_matrix_transformed_circle_axes (&mat, scale, &major, &minor);
     if (fabs (major - minor) > 1) {
-	/* Check if the matrix swaps the X and Y axes such that the diagonal
-	 * is nearly zero. This was observed to cause problems with XPS export.
-	 */
-	if (fabs (mat.xx) < 1e-6 && fabs (mat.yy) < 1e-6) {
-	    /* swap the X and Y axes to undo the axis swap in the matrix */
-	    cairo_matrix_t swap_xy = { 0, 1, 1, 0, 0, 0 };
-	    cairo_matrix_multiply (&mat, &swap_xy, &mat);
-	}
-	_cairo_matrix_to_win32_xform (&mat, &xform);
-	xform.eDx = 0.0f;
-	xform.eDy = 0.0f;
+        /* Check if the matrix swaps the X and Y axes such that the diagonal
+         * is nearly zero. This was observed to cause problems with XPS export.
+         */
+        if (fabs (mat.xx) < 1e-6 && fabs (mat.yy) < 1e-6) {
+            /* swap the X and Y axes to undo the axis swap in the matrix */
+            cairo_matrix_t swap_xy = { 0, 1, 1, 0, 0, 0 };
+            cairo_matrix_multiply (&mat, &swap_xy, &mat);
+        }
+        _cairo_matrix_to_win32_xform (&mat, &xform);
+        xform.eDx = 0.0f;
+        xform.eDy = 0.0f;
 
-	if (!ModifyWorldTransform (surface->dc, &xform, MWT_LEFTMULTIPLY))
-	    return _cairo_win32_print_gdi_error ("_win32_surface_stroke:SetWorldTransform");
+        if (!ModifyWorldTransform (surface->dc, &xform, MWT_LEFTMULTIPLY))
+            return _cairo_win32_print_gdi_error ("_win32_surface_stroke:SetWorldTransform");
     }
 
     if (source->type == CAIRO_PATTERN_TYPE_SOLID) {
-	StrokePath (surface->dc);
+        StrokePath (surface->dc);
     } else {
-	if (!WidenPath (surface->dc))
-	    return _cairo_win32_print_gdi_error ("_win32_surface_stroke:WidenPath");
-	if (!SelectClipPath (surface->dc, RGN_AND))
-	    return _cairo_win32_print_gdi_error ("_win32_surface_stroke:SelectClipPath");
+        if (!WidenPath (surface->dc))
+            return _cairo_win32_print_gdi_error ("_win32_surface_stroke:WidenPath");
+        if (!SelectClipPath (surface->dc, RGN_AND))
+            return _cairo_win32_print_gdi_error ("_win32_surface_stroke:SelectClipPath");
 
-	/* Return to device space to paint the pattern */
-	_cairo_matrix_to_win32_xform (&surface->gdi_ctm, &xform);
-	if (!SetWorldTransform (surface->dc, &xform))
-	    return _cairo_win32_print_gdi_error ("_win32_surface_stroke:ModifyWorldTransform");
-	status = _cairo_win32_printing_surface_paint_pattern (surface, source);
+        /* Return to device space to paint the pattern */
+        _cairo_matrix_to_win32_xform (&surface->gdi_ctm, &xform);
+        if (!SetWorldTransform (surface->dc, &xform))
+            return _cairo_win32_print_gdi_error ("_win32_surface_stroke:ModifyWorldTransform");
+        status = _cairo_win32_printing_surface_paint_pattern (surface, source);
     }
     RestoreDC (surface->dc, -1);
     DeleteObject (pen);
     if (dash_array)
-	free (dash_array);
+        free (dash_array);
 
     return status;
 }
 
 static cairo_int_status_t
-_cairo_win32_printing_surface_fill (void		        *abstract_surface,
-				    cairo_operator_t		 op,
-				    const cairo_pattern_t	*source,
-				    cairo_path_fixed_t		*path,
-				    cairo_fill_rule_t		 fill_rule,
-				    double			 tolerance,
-				    cairo_antialias_t		 antialias,
-				    cairo_clip_t		*clip)
+_cairo_win32_printing_surface_fill (void                        *abstract_surface,
+                                    cairo_operator_t             op,
+                                    const cairo_pattern_t       *source,
+                                    cairo_path_fixed_t          *path,
+                                    cairo_fill_rule_t            fill_rule,
+                                    double                       tolerance,
+                                    cairo_antialias_t            antialias,
+                                    cairo_clip_t                *clip)
 {
     cairo_win32_surface_t *surface = abstract_surface;
     cairo_int_status_t status;
@@ -1409,16 +1429,16 @@ _cairo_win32_printing_surface_fill (void		        *abstract_surface,
 
     status = _cairo_surface_clipper_set_clip (&surface->clipper, clip);
     if (status)
-	return status;
+        return status;
 
     if (op == CAIRO_OPERATOR_CLEAR) {
-	_cairo_win32_printing_surface_init_clear_color (surface, &clear);
-	source = (cairo_pattern_t*) &clear;
-	op = CAIRO_OPERATOR_SOURCE;
+        _cairo_win32_printing_surface_init_clear_color (surface, &clear);
+        source = (cairo_pattern_t*) &clear;
+        op = CAIRO_OPERATOR_SOURCE;
     }
 
     if (surface->paginated_mode == CAIRO_PAGINATED_MODE_ANALYZE)
-	return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
+        return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
 
     assert (_cairo_win32_printing_surface_operation_supported (surface, op, source));
 
@@ -1429,27 +1449,27 @@ _cairo_win32_printing_surface_fill (void		        *abstract_surface,
 
     switch (fill_rule) {
     case CAIRO_FILL_RULE_WINDING:
-	SetPolyFillMode (surface->dc, WINDING);
-	break;
+        SetPolyFillMode (surface->dc, WINDING);
+        break;
     case CAIRO_FILL_RULE_EVEN_ODD:
-	SetPolyFillMode (surface->dc, ALTERNATE);
-	break;
+        SetPolyFillMode (surface->dc, ALTERNATE);
+        break;
     default:
-	ASSERT_NOT_REACHED;
+        ASSERT_NOT_REACHED;
     }
 
     if (source->type == CAIRO_PATTERN_TYPE_SOLID) {
-	status = _cairo_win32_printing_surface_select_solid_brush (surface, source);
-	if (status)
-	    return status;
+        status = _cairo_win32_printing_surface_select_solid_brush (surface, source);
+        if (status)
+            return status;
 
-	FillPath (surface->dc);
-	_cairo_win32_printing_surface_done_solid_brush (surface);
+        FillPath (surface->dc);
+        _cairo_win32_printing_surface_done_solid_brush (surface);
     } else if (surface->path_empty == FALSE) {
-	SaveDC (surface->dc);
-	SelectClipPath (surface->dc, RGN_AND);
-	status = _cairo_win32_printing_surface_paint_pattern (surface, source);
-	RestoreDC (surface->dc, -1);
+        SaveDC (surface->dc);
+        SelectClipPath (surface->dc, RGN_AND);
+        status = _cairo_win32_printing_surface_paint_pattern (surface, source);
+        RestoreDC (surface->dc, -1);
     }
 
     fflush(stderr);
@@ -1458,14 +1478,14 @@ _cairo_win32_printing_surface_fill (void		        *abstract_surface,
 }
 
 static cairo_int_status_t
-_cairo_win32_printing_surface_emit_win32_glyphs (cairo_win32_surface_t 	*surface,
-						 cairo_operator_t	 op,
-						 const cairo_pattern_t  *source,
-						 cairo_glyph_t        	*glyphs,
-						 int			 num_glyphs,
-						 cairo_scaled_font_t  	*scaled_font,
-						 cairo_clip_t		*clip,
-						 int			*remaining_glyphs)
+_cairo_win32_printing_surface_emit_win32_glyphs (cairo_win32_surface_t  *surface,
+                                                 cairo_operator_t        op,
+                                                 const cairo_pattern_t  *source,
+                                                 cairo_glyph_t          *glyphs,
+                                                 int                     num_glyphs,
+                                                 cairo_scaled_font_t    *scaled_font,
+                                                 cairo_clip_t           *clip,
+                                                 int                    *remaining_glyphs)
 {
     cairo_matrix_t ctm;
     cairo_glyph_t  *unicode_glyphs;
@@ -1486,59 +1506,59 @@ _cairo_win32_printing_surface_emit_win32_glyphs (cairo_win32_surface_t 	*surface
      */
 
     if (surface->has_ctm) {
-	for (i = 0; i < num_glyphs; i++)
-	    cairo_matrix_transform_point (&surface->ctm, &glyphs[i].x, &glyphs[i].y);
-	cairo_matrix_multiply (&ctm, &scaled_font->ctm, &surface->ctm);
-	scaled_font = cairo_scaled_font_create (scaled_font->font_face,
-						&scaled_font->font_matrix,
-						&ctm,
-						&scaled_font->options);
+        for (i = 0; i < num_glyphs; i++)
+            cairo_matrix_transform_point (&surface->ctm, &glyphs[i].x, &glyphs[i].y);
+        cairo_matrix_multiply (&ctm, &scaled_font->ctm, &surface->ctm);
+        scaled_font = cairo_scaled_font_create (scaled_font->font_face,
+                                                &scaled_font->font_matrix,
+                                                &ctm,
+                                                &scaled_font->options);
     }
 
     unicode_glyphs = _cairo_malloc_ab (num_glyphs, sizeof (cairo_glyph_t));
     if (unicode_glyphs == NULL)
-	return _cairo_error (CAIRO_STATUS_NO_MEMORY);
+        return _cairo_error (CAIRO_STATUS_NO_MEMORY);
 
     memcpy (unicode_glyphs, glyphs, num_glyphs * sizeof (cairo_glyph_t));
     for (i = 0; i < num_glyphs; i++) {
-	status = _cairo_scaled_font_subsets_map_glyph (surface->font_subsets,
-						       scaled_font,
-						       glyphs[i].index,
-						       NULL, 0,
-						       &subset_glyph);
-	if (status)
-	    goto fail;
+        status = _cairo_scaled_font_subsets_map_glyph (surface->font_subsets,
+                                                       scaled_font,
+                                                       glyphs[i].index,
+                                                       NULL, 0,
+                                                       &subset_glyph);
+        if (status)
+            goto fail;
 
-	unicode_glyphs[i].index = subset_glyph.unicode;
+        unicode_glyphs[i].index = subset_glyph.unicode;
     }
 
     i = 0;
     first = 0;
     sequence_is_unicode = unicode_glyphs[0].index <= 0xffff;
     while (i < num_glyphs) {
-	if (i == num_glyphs - 1 ||
-	    ((unicode_glyphs[i + 1].index < 0xffff) != sequence_is_unicode))
-	{
-	    status = _cairo_win32_surface_show_glyphs_internal (
-		surface,
-		op,
-		source,
-		sequence_is_unicode ? &unicode_glyphs[first] : &glyphs[first],
-		i - first + 1,
-		scaled_font,
-		clip,
-		remaining_glyphs,
-		! sequence_is_unicode);
-	    first = i + 1;
-	    if (i < num_glyphs - 1)
-		sequence_is_unicode = unicode_glyphs[i + 1].index <= 0xffff;
-	}
-	i++;
+        if (i == num_glyphs - 1 ||
+            ((unicode_glyphs[i + 1].index < 0xffff) != sequence_is_unicode))
+        {
+            status = _cairo_win32_surface_show_glyphs_internal (
+                surface,
+                op,
+                source,
+                sequence_is_unicode ? &unicode_glyphs[first] : &glyphs[first],
+                i - first + 1,
+                scaled_font,
+                clip,
+                remaining_glyphs,
+                ! sequence_is_unicode);
+            first = i + 1;
+            if (i < num_glyphs - 1)
+                sequence_is_unicode = unicode_glyphs[i + 1].index <= 0xffff;
+        }
+        i++;
     }
 
 fail:
     if (surface->has_ctm)
-	cairo_scaled_font_destroy (scaled_font);
+        cairo_scaled_font_destroy (scaled_font);
 
     free (unicode_glyphs);
 
@@ -1547,13 +1567,13 @@ fail:
 
 static cairo_int_status_t
 _cairo_win32_printing_surface_show_glyphs (void                 *abstract_surface,
-                                           cairo_operator_t	 op,
+                                           cairo_operator_t      op,
                                            const cairo_pattern_t *source,
                                            cairo_glyph_t        *glyphs,
-                                           int			 num_glyphs,
+                                           int                   num_glyphs,
                                            cairo_scaled_font_t  *scaled_font,
-					   cairo_clip_t		*clip,
-					   int			*remaining_glyphs)
+                                           cairo_clip_t         *clip,
+                                           int                  *remaining_glyphs)
 {
     cairo_win32_surface_t *surface = abstract_surface;
     cairo_status_t status = CAIRO_STATUS_SUCCESS;
@@ -1567,69 +1587,69 @@ _cairo_win32_printing_surface_show_glyphs (void                 *abstract_surfac
 
     status = _cairo_surface_clipper_set_clip (&surface->clipper, clip);
     if (status)
-	return status;
+        return status;
 
     if (op == CAIRO_OPERATOR_CLEAR) {
-	_cairo_win32_printing_surface_init_clear_color (surface, &clear);
-	source = (cairo_pattern_t*) &clear;
-	op = CAIRO_OPERATOR_SOURCE;
+        _cairo_win32_printing_surface_init_clear_color (surface, &clear);
+        source = (cairo_pattern_t*) &clear;
+        op = CAIRO_OPERATOR_SOURCE;
     }
 
     if (surface->paginated_mode == CAIRO_PAGINATED_MODE_ANALYZE) {
-	/* When printing bitmap fonts to a printer DC, Windows may
-	 * substitute an outline font for bitmap font. As the win32
-	 * font backend always uses a screen DC when obtaining the
-	 * font metrics the metrics of the substituted font will not
-	 * match the metrics that the win32 font backend returns.
-	 *
-	 * If we are printing a bitmap font, use fallback images to
-	 * ensure the font is not substituted.
-	 */
+        /* When printing bitmap fonts to a printer DC, Windows may
+         * substitute an outline font for bitmap font. As the win32
+         * font backend always uses a screen DC when obtaining the
+         * font metrics the metrics of the substituted font will not
+         * match the metrics that the win32 font backend returns.
+         *
+         * If we are printing a bitmap font, use fallback images to
+         * ensure the font is not substituted.
+         */
 #if CAIRO_HAS_WIN32_FONT
-	if (cairo_scaled_font_get_type (scaled_font) == CAIRO_FONT_TYPE_WIN32) {
-	    if (_cairo_win32_scaled_font_is_bitmap (scaled_font))
-		return CAIRO_INT_STATUS_UNSUPPORTED;
-	    else
-		return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
-	}
+        if (cairo_scaled_font_get_type (scaled_font) == CAIRO_FONT_TYPE_WIN32) {
+            if (_cairo_win32_scaled_font_is_bitmap (scaled_font))
+                return CAIRO_INT_STATUS_UNSUPPORTED;
+            else
+                return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
+        }
 #endif
 
 #if CAIRO_HAS_DWRITE_FONT
         if (cairo_scaled_font_get_type (scaled_font) == CAIRO_FONT_TYPE_DWRITE) {
-	    return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
+            return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
         }
 #endif
 
-	/* For non win32 fonts we need to check that each glyph has a
-	 * path available. If a path is not available,
-	 * _cairo_scaled_glyph_lookup() will return
-	 * CAIRO_INT_STATUS_UNSUPPORTED and a fallback image will be
-	 * used.
-	 */
-	for (i = 0; i < num_glyphs; i++) {
-	    status = _cairo_scaled_glyph_lookup (scaled_font,
-						 glyphs[i].index,
-						 CAIRO_SCALED_GLYPH_INFO_PATH,
-						 &scaled_glyph);
-	    if (status)
-		return status;
-	}
+        /* For non win32 fonts we need to check that each glyph has a
+         * path available. If a path is not available,
+         * _cairo_scaled_glyph_lookup() will return
+         * CAIRO_INT_STATUS_UNSUPPORTED and a fallback image will be
+         * used.
+         */
+        for (i = 0; i < num_glyphs; i++) {
+            status = _cairo_scaled_glyph_lookup (scaled_font,
+                                                 glyphs[i].index,
+                                                 CAIRO_SCALED_GLYPH_INFO_PATH,
+                                                 &scaled_glyph);
+            if (status)
+                return status;
+        }
 
-	return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
+        return _cairo_win32_printing_surface_analyze_operation (surface, op, source);
     }
 
     if (source->type == CAIRO_PATTERN_TYPE_SOLID) {
-	cairo_solid_pattern_t *solid = (cairo_solid_pattern_t *) source;
-	COLORREF color;
+        cairo_solid_pattern_t *solid = (cairo_solid_pattern_t *) source;
+        COLORREF color;
 
-	color = _cairo_win32_printing_surface_flatten_transparency (surface,
-								    &solid->color);
-	opaque = cairo_pattern_create_rgb (GetRValue (color) / 255.0,
-					   GetGValue (color) / 255.0,
-					   GetBValue (color) / 255.0);
-	if (opaque->status)
-	    return opaque->status;
-	source = opaque;
+        color = _cairo_win32_printing_surface_flatten_transparency (surface,
+                                                                    &solid->color);
+        opaque = cairo_pattern_create_rgb (GetRValue (color) / 255.0,
+                                           GetGValue (color) / 255.0,
+                                           GetBValue (color) / 255.0);
+        if (opaque->status)
+            return opaque->status;
+        source = opaque;
     }
 
 #if CAIRO_HAS_DWRITE_FONT
@@ -1651,17 +1671,17 @@ _cairo_win32_printing_surface_show_glyphs (void                 *abstract_surfac
 
 #if CAIRO_HAS_WIN32_FONT
     if (cairo_scaled_font_get_type (scaled_font) == CAIRO_FONT_TYPE_WIN32 &&
-	source->type == CAIRO_PATTERN_TYPE_SOLID)
+        source->type == CAIRO_PATTERN_TYPE_SOLID)
     {
-	status = _cairo_win32_printing_surface_emit_win32_glyphs (surface,
-								  op,
-								  source,
-								  glyphs,
-								  num_glyphs,
-								  scaled_font,
-								  clip,
-								  remaining_glyphs);
-	goto FINISH;
+        status = _cairo_win32_printing_surface_emit_win32_glyphs (surface,
+                                                                  op,
+                                                                  source,
+                                                                  glyphs,
+                                                                  num_glyphs,
+                                                                  scaled_font,
+                                                                  clip,
+                                                                  remaining_glyphs);
+        goto FINISH;
     }
 #endif
 
@@ -1672,37 +1692,37 @@ _cairo_win32_printing_surface_show_glyphs (void                 *abstract_surfac
     surface->path_empty = TRUE;
     BeginPath (surface->dc);
     for (i = 0; i < num_glyphs; i++) {
-	status = _cairo_scaled_glyph_lookup (scaled_font,
-					     glyphs[i].index,
-					     CAIRO_SCALED_GLYPH_INFO_PATH,
-					     &scaled_glyph);
-	if (status)
-	    break;
-	surface->ctm = old_ctm;
-	cairo_matrix_translate (&surface->ctm, glyphs[i].x, glyphs[i].y);
-	status = _cairo_win32_printing_surface_emit_path (surface, scaled_glyph->path);
+        status = _cairo_scaled_glyph_lookup (scaled_font,
+                                             glyphs[i].index,
+                                             CAIRO_SCALED_GLYPH_INFO_PATH,
+                                             &scaled_glyph);
+        if (status)
+            break;
+        surface->ctm = old_ctm;
+        cairo_matrix_translate (&surface->ctm, glyphs[i].x, glyphs[i].y);
+        status = _cairo_win32_printing_surface_emit_path (surface, scaled_glyph->path);
     }
     EndPath (surface->dc);
     surface->ctm = old_ctm;
     surface->has_ctm = old_has_ctm;
     if (status == CAIRO_STATUS_SUCCESS && surface->path_empty == FALSE) {
-	if (source->type == CAIRO_PATTERN_TYPE_SOLID) {
-	    status = _cairo_win32_printing_surface_select_solid_brush (surface, source);
-	    if (status)
-		goto FINISH;
+        if (source->type == CAIRO_PATTERN_TYPE_SOLID) {
+            status = _cairo_win32_printing_surface_select_solid_brush (surface, source);
+            if (status)
+                goto FINISH;
 
-	    SetPolyFillMode (surface->dc, WINDING);
-	    FillPath (surface->dc);
-	    _cairo_win32_printing_surface_done_solid_brush (surface);
-	} else {
-	    SelectClipPath (surface->dc, RGN_AND);
-	    status = _cairo_win32_printing_surface_paint_pattern (surface, source);
-	}
+            SetPolyFillMode (surface->dc, WINDING);
+            FillPath (surface->dc);
+            _cairo_win32_printing_surface_done_solid_brush (surface);
+        } else {
+            SelectClipPath (surface->dc, RGN_AND);
+            status = _cairo_win32_printing_surface_paint_pattern (surface, source);
+        }
     }
     RestoreDC (surface->dc, -1);
 
     if (opaque)
-	cairo_pattern_destroy (opaque);
+        cairo_pattern_destroy (opaque);
 
 FINISH:
     if (local_scaled_font)
@@ -1712,10 +1732,10 @@ FINISH:
 }
 
 static cairo_surface_t *
-_cairo_win32_printing_surface_create_similar (void		*abstract_surface,
-					      cairo_content_t	 content,
-					      int		 width,
-					      int		 height)
+_cairo_win32_printing_surface_create_similar (void              *abstract_surface,
+                                              cairo_content_t    content,
+                                              int                width,
+                                              int                height)
 {
     cairo_rectangle_t extents;
 
@@ -1776,23 +1796,23 @@ _cairo_win32_printing_surface_start_page (void *abstract_surface)
     SetGraphicsMode (surface->dc, GM_ADVANCED);
     GetWorldTransform(surface->dc, &xform);
     if (xform.eM11 < 1 && xform.eM22 < 1) {
-	cairo_matrix_init_identity (&surface->ctm);
-	surface->gdi_ctm.xx = xform.eM11;
-	surface->gdi_ctm.xy = xform.eM21;
-	surface->gdi_ctm.yx = xform.eM12;
-	surface->gdi_ctm.yy = xform.eM22;
-	surface->gdi_ctm.x0 = xform.eDx;
-	surface->gdi_ctm.y0 = xform.eDy;
+        cairo_matrix_init_identity (&surface->ctm);
+        surface->gdi_ctm.xx = xform.eM11;
+        surface->gdi_ctm.xy = xform.eM21;
+        surface->gdi_ctm.yx = xform.eM12;
+        surface->gdi_ctm.yy = xform.eM22;
+        surface->gdi_ctm.x0 = xform.eDx;
+        surface->gdi_ctm.y0 = xform.eDy;
     } else {
-	surface->ctm.xx = xform.eM11;
-	surface->ctm.xy = xform.eM21;
-	surface->ctm.yx = xform.eM12;
-	surface->ctm.yy = xform.eM22;
-	surface->ctm.x0 = xform.eDx;
-	surface->ctm.y0 = xform.eDy;
-	cairo_matrix_init_identity (&surface->gdi_ctm);
-	if (!ModifyWorldTransform (surface->dc, NULL, MWT_IDENTITY))
-	    return _cairo_win32_print_gdi_error ("_cairo_win32_printing_surface_start_page:ModifyWorldTransform");
+        surface->ctm.xx = xform.eM11;
+        surface->ctm.xy = xform.eM21;
+        surface->ctm.yx = xform.eM12;
+        surface->ctm.yy = xform.eM22;
+        surface->ctm.x0 = xform.eDx;
+        surface->ctm.y0 = xform.eDy;
+        cairo_matrix_init_identity (&surface->gdi_ctm);
+        if (!ModifyWorldTransform (surface->dc, NULL, MWT_IDENTITY))
+            return _cairo_win32_print_gdi_error ("_cairo_win32_printing_surface_start_page:ModifyWorldTransform");
     }
 
     surface->has_ctm = !_cairo_matrix_is_identity (&surface->ctm);
@@ -1800,7 +1820,7 @@ _cairo_win32_printing_surface_start_page (void *abstract_surface)
     inverse_ctm = surface->ctm;
     status = cairo_matrix_invert (&inverse_ctm);
     if (status)
-	return status;
+        return status;
 
     x_res = GetDeviceCaps (surface->dc, LOGPIXELSX);
     y_res = GetDeviceCaps (surface->dc, LOGPIXELSY);
@@ -1854,15 +1874,15 @@ cairo_win32_printing_surface_create (HDC hdc)
 
     surface = malloc (sizeof (cairo_win32_surface_t));
     if (surface == NULL)
-	return _cairo_surface_create_in_error (_cairo_error (CAIRO_STATUS_NO_MEMORY));
+        return _cairo_surface_create_in_error (_cairo_error (CAIRO_STATUS_NO_MEMORY));
 
     if (_cairo_win32_save_initial_clip (hdc, surface) != CAIRO_STATUS_SUCCESS) {
-	free (surface);
-	return _cairo_surface_create_in_error (_cairo_error (CAIRO_STATUS_NO_MEMORY));
+        free (surface);
+        return _cairo_surface_create_in_error (_cairo_error (CAIRO_STATUS_NO_MEMORY));
     }
 
     _cairo_surface_clipper_init (&surface->clipper,
-				 _cairo_win32_printing_surface_clipper_intersect_clip_path);
+                                 _cairo_win32_printing_surface_clipper_intersect_clip_path);
 
     surface->image = NULL;
     surface->format = CAIRO_FORMAT_RGB24;
@@ -1877,8 +1897,8 @@ cairo_win32_printing_surface_create (HDC hdc)
     surface->old_brush = NULL;
     surface->font_subsets = _cairo_scaled_font_subsets_create_scaled ();
     if (surface->font_subsets == NULL) {
-	free (surface);
-	return _cairo_surface_create_in_error (_cairo_error (CAIRO_STATUS_NO_MEMORY));
+        free (surface);
+        return _cairo_surface_create_in_error (_cairo_error (CAIRO_STATUS_NO_MEMORY));
     }
 
     GetClipBox(hdc, &rect);
@@ -1894,13 +1914,13 @@ cairo_win32_printing_surface_create (HDC hdc)
     _cairo_win32_printing_surface_init_image_support (surface);
     _cairo_win32_printing_surface_init_language_pack (surface);
     _cairo_surface_init (&surface->base,
-			 &cairo_win32_printing_surface_backend,
-			 NULL, /* device */
+                         &cairo_win32_printing_surface_backend,
+                         NULL, /* device */
                          CAIRO_CONTENT_COLOR_ALPHA);
 
     paginated = _cairo_paginated_surface_create (&surface->base,
-						 CAIRO_CONTENT_COLOR_ALPHA,
-						 &cairo_win32_surface_paginated_backend);
+                                                 CAIRO_CONTENT_COLOR_ALPHA,
+                                                 &cairo_win32_surface_paginated_backend);
 
     /* paginated keeps the only reference to surface now, drop ours */
     cairo_surface_destroy (&surface->base);

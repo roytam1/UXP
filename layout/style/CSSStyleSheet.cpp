@@ -1871,7 +1871,9 @@ CSSStyleSheet::InsertRuleInternal(const nsAString& aRule,
   RefPtr<css::Rule> rule;
   aRv = css.ParseRule(aRule, mInner->mSheetURI, mInner->mBaseURI,
                       mInner->mPrincipal, getter_AddRefs(rule));
-  if (NS_WARN_IF(aRv.Failed())) {
+  // A syntax error from web content is an expected insertRule() outcome. The
+  // binding reports it to script; do not flood debug stderr as well.
+  if (aRv.Failed()) {
     return 0;
   }
 
