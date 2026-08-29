@@ -76,11 +76,6 @@ struct nsCSSRuleUtils
                                   bool aIsForgiving = false,
                                   bool aPreventComplexSelectors = false);
 
-  static bool RelativeSelectorListMatches(
-    Element* aAnchor,
-    nsCSSSelectorList* aList,
-    TreeMatchContext& aTreeMatchContext);
-
 #ifdef DEBUG
   static bool HasPseudoClassSelectorArgsWithCombinators(
     nsCSSSelector* aSelector);

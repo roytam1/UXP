@@ -127,9 +127,7 @@ enum class SelectorParsingFlags {
   eDisallowCombinators     = 1 << 2,
   eDisallowPseudoElements  = 1 << 3,
   eInheritNamespace        = 1 << 4,
-  eForceEmptyList          = 1 << 5,
-  eIsRelativeSelector      = 1 << 6,
-  eInsideHas               = 1 << 7
+  eForceEmptyList          = 1 << 5
 };
 MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(SelectorParsingFlags)
 
@@ -6448,28 +6446,6 @@ CSSParserImpl::ParseSelectorGroup(nsCSSSelectorList*& aList,
   char16_t combinator = 0;
   nsAutoPtr<nsCSSSelectorList> list(new nsCSSSelectorList());
 
-  if (aFlags & SelectorParsingFlags::eIsRelativeSelector) {
-    // A relative selector is evaluated as though it begins with an internal
-    // anchor and a combinator.  This must not use :scope: an explicit :scope
-    // in the argument continues to refer to the caller's scoping root.
-    // If the combinator is omitted, it is a descendant combinator.
-    nsCSSSelector* anchor = list->AddSelector(char16_t(0));
-    anchor->AddPseudoClass(CSSPseudoClassType::mozHasRelativeAnchor);
-    list->mIsRelativeSelector = true;
-
-    combinator = char16_t(' ');
-    if (GetToken(true)) {
-      if (mToken.mType == eCSSToken_Symbol &&
-          (mToken.mSymbol == '+' ||
-           mToken.mSymbol == '>' ||
-           mToken.mSymbol == '~')) {
-        combinator = mToken.mSymbol;
-      } else {
-        UngetToken();
-      }
-    }
-  }
-
   for (;;) {
     if (!ParseSelector(list, combinator, aFlags)) {
       return false;
@@ -7149,9 +7125,6 @@ CSSParserImpl::ParsePseudoSelector(int32_t&              aDataMask,
       if (aFlags & SelectorParsingFlags::eDisallowCombinators) {
         flags |= SelectorParsingFlags::eDisallowCombinators;
       }
-      if (aFlags & SelectorParsingFlags::eInsideHas) {
-        flags |= SelectorParsingFlags::eInsideHas;
-      }
       if (aFlags & SelectorParsingFlags::eForceEmptyList ||
           forceEmptyList) {
         flags |= SelectorParsingFlags::eForceEmptyList;
@@ -7602,15 +7575,7 @@ CSSParserImpl::ParsePseudoClassWithSelectorListArg(nsCSSSelector& aSelector,
   bool isSingleSelector =
     nsCSSPseudoClasses::HasSingleSelectorArg(aType);
 
-  if (aType == CSSPseudoClassType::has) {
-    // :has() takes an unforgiving <relative-selector-list>, cannot be nested,
-    // and cannot contain pseudo-elements.
-    if (aFlags & SelectorParsingFlags::eInsideHas) {
-      return eSelectorParsingStatus_Error;
-    }
-    aFlags |= SelectorParsingFlags::eIsRelativeSelector |
-              SelectorParsingFlags::eInsideHas;
-  } else if (nsCSSPseudoClasses::HasForgivingSelectorListArg(aType)) {
+  if (nsCSSPseudoClasses::HasForgivingSelectorListArg(aType)) {
     aFlags |= SelectorParsingFlags::eIsForgiving;
   } else if (isSingleSelector || aType == CSSPseudoClassType::mozAny) {
     aFlags |= SelectorParsingFlags::eDisallowCombinators;

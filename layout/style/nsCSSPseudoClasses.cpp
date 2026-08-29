@@ -159,7 +159,6 @@ bool
 nsCSSPseudoClasses::HasSelectorListArg(Type aType)
 {
   return HasForgivingSelectorListArg(aType) ||
-         aType == Type::has ||
          aType == Type::negation ||
          aType == Type::mozAny ||
          aType == Type::mozAnyPrivate ||
