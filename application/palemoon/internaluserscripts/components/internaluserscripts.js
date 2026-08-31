@@ -17,6 +17,7 @@ const { Services } = Cu.import("resource://gre/modules/Services.jsm", {});
 const { XPCOMUtils } = Cu.import("resource://gre/modules/XPCOMUtils.jsm", {});
 
 const PREF_ENABLED = "browser.internal-userscripts.enabled";
+const PREF_DEBUG = "browser.internal-userscripts.debug";
 
 function InternalUserscriptsService() {
   this.wrappedJSObject = this;
@@ -93,7 +94,7 @@ InternalUserscriptsService.prototype = {
     }
     try {
       let doc = win.document;
-      let uri = doc && doc.documentURIObject;
+      let uri = doc?.documentURIObject;
       if (uri && (uri.schemeIs("chrome") || uri.schemeIs("resource"))) {
         return;
       }
@@ -103,7 +104,8 @@ InternalUserscriptsService.prototype = {
       try {
         if (
           contentWin.console &&
-          typeof contentWin.console.info === "function"
+          typeof contentWin.console.info === "function" &&
+          Services.prefs.getBoolPref(PREF_DEBUG, false)
         ) {
           let suffix = source ? " (" + source + ")" : "";
           contentWin.console.info(
