@@ -6,7 +6,11 @@
 .section .note.GNU-stack,"",%progbits
 #endif
 .global ICU_DATA_SYMBOL
-.data
+#if defined(__APPLE__)
+.const
+#else
+.section .rodata
+#endif
 .balign 16
 ICU_DATA_SYMBOL:
         .incbin ICU_DATA_FILE
