@@ -26,6 +26,6 @@
     global DATA_SYMBOL
 %endif
 
-SECTION .rodata align=16
+SECTION .rodata data readable align=16
 DATA_SYMBOL:
         incbin ICU_DATA_FILE

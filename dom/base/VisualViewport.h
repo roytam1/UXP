@@ -21,6 +21,9 @@ class VisualViewport final: public mozilla::DOMEventTargetHelper
 {
 
 public:
+  NS_DECL_ISUPPORTS_INHERITED
+  NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(VisualViewport, DOMEventTargetHelper)
+
   explicit VisualViewport(nsPIDOMWindowInner* aWindow);
   explicit VisualViewport(nsIGlobalObject* aGlobal);
 

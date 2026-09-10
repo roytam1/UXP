@@ -25,6 +25,22 @@ VisualViewport::~VisualViewport()
 {
 }
 
+NS_IMPL_CYCLE_COLLECTION_CLASS(VisualViewport)
+
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(VisualViewport,
+                                                  DOMEventTargetHelper)
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
+
+NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(VisualViewport,
+                                                DOMEventTargetHelper)
+NS_IMPL_CYCLE_COLLECTION_UNLINK_END
+
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(VisualViewport)
+NS_INTERFACE_MAP_END_INHERITING(DOMEventTargetHelper)
+
+NS_IMPL_ADDREF_INHERITED(VisualViewport, DOMEventTargetHelper)
+NS_IMPL_RELEASE_INHERITED(VisualViewport, DOMEventTargetHelper)
+
 /* virtual */
 JSObject*
 VisualViewport::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)

@@ -1148,7 +1148,7 @@ js::DumpHeap(JSContext* cx, FILE* fp, js::DumpHeapNurseryBehaviour nurseryBehavi
     fprintf(dtrc.output, "==========\n");
 
     dtrc.prefix = "> ";
-    IterateZonesCompartmentsArenasCells(cx, &dtrc,
+    IterateHeapUnbarriered(cx, &dtrc,
                                         DumpHeapVisitZone,
                                         DumpHeapVisitCompartment,
                                         DumpHeapVisitArena,
