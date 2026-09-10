@@ -56,7 +56,7 @@ enum class State {
     D(None) \
     D(NonIncrementalRequested) \
     D(AbortRequested) \
-    D(KeepAtomsSet) \
+    D(Unused1) \
     D(IncrementalDisabled) \
     D(ModeChange) \
     D(MallocBytesTrigger) \
@@ -1065,9 +1065,12 @@ typedef void (*IterateCellCallback)(JSRuntime* rt, void* data, void* thing,
  * This function calls |zoneCallback| on every zone, |compartmentCallback| on
  * every compartment, |arenaCallback| on every in-use arena, and |cellCallback|
  * on every in-use cell in the GC heap.
+ *
+ * Note that no read barrier is triggered on the cells passed to cellCallback,
+ * so no these pointers must not escape the callback.
  */
 extern void
-IterateZonesCompartmentsArenasCells(JSContext* cx, void* data,
+IterateHeapUnbarriered(JSContext* cx, void* data,
                                     IterateZoneCallback zoneCallback,
                                     JSIterateCompartmentCallback compartmentCallback,
                                     IterateArenaCallback arenaCallback,
@@ -1078,7 +1081,7 @@ IterateZonesCompartmentsArenasCells(JSContext* cx, void* data,
  * single zone.
  */
 extern void
-IterateZoneCompartmentsArenasCells(JSContext* cx, Zone* zone, void* data,
+IterateHeapUnbarrieredForZone(JSContext* cx, Zone* zone, void* data,
                                    IterateZoneCallback zoneCallback,
                                    JSIterateCompartmentCallback compartmentCallback,
                                    IterateArenaCallback arenaCallback,
