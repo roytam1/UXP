@@ -282,6 +282,9 @@ RestyleManager::AttributeWillChange(Element* aElement,
                                            aNewValue,
                                            rsdata);
   PostRestyleEvent(aElement, rshint, nsChangeHint(0), &rsdata);
+  // Inspect the old classes before they are replaced. AttributeChanged does
+  // not always receive an old value, so it cannot detect removals by itself.
+  RestyleForHasPseudoClassChange(aElement, EventStates(), aAttribute);
 }
 
 // Forwarded nsIMutationObserver method, to handle restyling (and
@@ -376,21 +379,24 @@ RestyleManager::AttributeChanged(Element* aElement,
                                            aOldValue,
                                            rsdata);
   PostRestyleEvent(aElement, rshint, hint, &rsdata);
-  RestyleForHasPseudoClassChange(aElement);
+  RestyleForHasPseudoClassChange(aElement, EventStates(), aAttribute);
 }
 
 bool
 RestyleManager::RestyleForHasPseudoClassChange(nsINode* aNode,
-                                              EventStates aStateMask)
+                                              EventStates aStateMask,
+                                              nsIAtom* aAttribute)
 {
+  MOZ_ASSERT(!aAttribute || aNode->IsElement());
   Element* affectedRoot = nullptr;
   for (nsINode* node = aNode; node; node = node->GetParentNode()) {
-    // The property records the states used inside :has(), including branches
-    // that did not match. An empty mask denotes a DOM/attribute mutation.
-    auto* states = static_cast<EventStates*>(
+    auto* dependency = static_cast<nsCSSRuleUtils::HasSelectorDependency*>(
       node->GetProperty(nsGkAtoms::hasSelectorDependency));
-    if (!states || (!aStateMask.IsEmpty() &&
-                    !states->HasAtLeastOneOfStates(aStateMask))) {
+    if (!dependency ||
+        (!aStateMask.IsEmpty() &&
+         !dependency->mStates.HasAtLeastOneOfStates(aStateMask)) ||
+        (aAttribute && !dependency->MightDependOnAttribute(aNode->AsElement(),
+                                                         aAttribute))) {
       continue;
     }
     if (node->IsElement()) {
