@@ -1745,6 +1745,53 @@ matchesSubtree(nsIContent* aRoot,
   return false;
 }
 
+// Collect every branch before matching: an earlier matching branch must not
+// hide a state dependency in a later branch (including :is() and :not()).
+static EventStates
+RelativeSelectorStateDependencies(nsCSSSelector* aSelector)
+{
+  EventStates states;
+  for (nsCSSSelector* selector = aSelector; selector; selector = selector->mNext) {
+    for (nsPseudoClassList* pseudo = selector->mPseudoClassList;
+         pseudo; pseudo = pseudo->mNext) {
+      states |= nsCSSPseudoClasses::sPseudoClassStateDependences[
+        static_cast<CSSPseudoClassTypeBase>(pseudo->mType)];
+      if (nsCSSPseudoClasses::HasSelectorListArg(pseudo->mType)) {
+        for (nsCSSSelectorList* list = pseudo->u.mSelectorList;
+             list; list = list->mNext) {
+          states |= RelativeSelectorStateDependencies(list->mSelectors);
+        }
+      }
+    }
+    if (selector->mNegations) {
+      states |= RelativeSelectorStateDependencies(selector->mNegations);
+    }
+  }
+  return states;
+}
+
+static void
+DeleteHasSelectorDependency(void*, nsIAtom*, void* aValue, void*)
+{
+  delete static_cast<EventStates*>(aValue);
+}
+
+static void
+NoteHasSelectorDependency(nsINode* aNode, EventStates aStates)
+{
+  auto* states = static_cast<EventStates*>(
+    aNode->GetProperty(nsGkAtoms::hasSelectorDependency));
+  if (states) {
+    *states |= aStates;
+    return;
+  }
+  states = new EventStates(aStates);
+  if (NS_FAILED(aNode->SetProperty(nsGkAtoms::hasSelectorDependency, states,
+                                  DeleteHasSelectorDependency))) {
+    delete states;
+  }
+}
+
 /* static */ bool
 nsCSSRuleUtils::RelativeSelectorListMatches(
   Element* aAnchor,
@@ -1754,17 +1801,28 @@ nsCSSRuleUtils::RelativeSelectorListMatches(
   MOZ_ASSERT(aAnchor);
   MOZ_ASSERT(aList);
 
-  // :has() reverses the usual direction of selector invalidation.  The
-  // restyle manager uses these conservative markers to promote changes in the
-  // anchor's descendants, or in following sibling subtrees, back to a subtree
-  // that contains the anchor.
   if (aTreeMatchContext.mForStyling) {
-    aAnchor->SetProperty(nsGkAtoms::hasSelectorDependency,
-                         reinterpret_cast<void*>(1));
-    nsIContent* parent = aAnchor->GetParent();
-    if (parent) {
-      parent->SetProperty(nsGkAtoms::hasSelectorDependency,
-                          reinterpret_cast<void*>(1));
+    EventStates states;
+    EventStates siblingStates;
+    bool hasSiblingSelector = false;
+    for (nsCSSSelectorList* relative = aList; relative; relative = relative->mNext) {
+      EventStates relativeStates =
+        RelativeSelectorStateDependencies(relative->mSelectors);
+      states |= relativeStates;
+      nsCSSSelector* anchor = relative->mSelectors;
+      while (anchor->mNext) {
+        anchor = anchor->mNext;
+      }
+      if (anchor->mOperator == '+' || anchor->mOperator == '~') {
+        hasSiblingSelector = true;
+        siblingStates |= relativeStates;
+      }
+    }
+    NoteHasSelectorDependency(aAnchor, states);
+    // Descendant selectors cannot inspect following sibling subtrees. Only
+    // relative selectors starting with + or ~ need a marker on the parent.
+    if (hasSiblingSelector && aAnchor->GetParent()) {
+      NoteHasSelectorDependency(aAnchor->GetParent(), siblingStates);
     }
   }
 
@@ -1786,6 +1844,26 @@ nsCSSRuleUtils::RelativeSelectorListMatches(
       leftmost = leftmost->mNext;
     }
     MOZ_ASSERT(leftmost->mNext);
+
+    // A single compound cannot move beyond the leading relationship.
+    // Avoid scanning descendants for >, and all following subtrees for +/~.
+    if (leftmost == relative->mSelectors) {
+      char combinator = leftmost->mNext->mOperator;
+      if (combinator == '>' || combinator == '+' || combinator == '~') {
+        Element* candidate = combinator == '>'
+          ? aAnchor->GetFirstElementChild()
+          : aAnchor->GetNextElementSibling();
+        for (; candidate; candidate = candidate->GetNextElementSibling()) {
+          if (matchesCandidate(candidate, relative, aTreeMatchContext)) {
+            return true;
+          }
+          if (combinator == '+') {
+            break;
+          }
+        }
+        continue;
+      }
+    }
 
     switch (leftmost->mNext->mOperator) {
       // Even for a leading adjacent-sibling combinator, a later combinator in

@@ -316,7 +316,10 @@ public:
 
   // Restyle a subtree containing any :has() anchor affected by a change at
   // or below aNode. Returns true when such a restyle was posted.
-  bool RestyleForHasPseudoClassChange(nsINode* aNode);
+  // An empty state mask denotes a DOM/attribute mutation; otherwise only
+  // dependencies on the changed states require restyling.
+  bool RestyleForHasPseudoClassChange(nsINode* aNode,
+                                      EventStates aStateMask = EventStates());
 
   // Process any pending restyles. This should be called after
   // CreateNeededFrames.

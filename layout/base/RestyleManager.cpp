@@ -261,7 +261,7 @@ RestyleManager::ContentStateChanged(nsIContent* aContent,
   ContentStateChangedInternal(aElement, aStateMask, &changeHint, &restyleHint);
 
   PostRestyleEvent(aElement, restyleHint, changeHint);
-  RestyleForHasPseudoClassChange(aElement);
+  RestyleForHasPseudoClassChange(aElement, aStateMask);
 }
 
 // Forwarded nsIMutationObserver method, to handle restyling.
@@ -380,11 +380,17 @@ RestyleManager::AttributeChanged(Element* aElement,
 }
 
 bool
-RestyleManager::RestyleForHasPseudoClassChange(nsINode* aNode)
+RestyleManager::RestyleForHasPseudoClassChange(nsINode* aNode,
+                                              EventStates aStateMask)
 {
   Element* affectedRoot = nullptr;
   for (nsINode* node = aNode; node; node = node->GetParentNode()) {
-    if (!node->GetProperty(nsGkAtoms::hasSelectorDependency)) {
+    // The property records the states used inside :has(), including branches
+    // that did not match. An empty mask denotes a DOM/attribute mutation.
+    auto* states = static_cast<EventStates*>(
+      node->GetProperty(nsGkAtoms::hasSelectorDependency));
+    if (!states || (!aStateMask.IsEmpty() &&
+                    !states->HasAtLeastOneOfStates(aStateMask))) {
       continue;
     }
     if (node->IsElement()) {
@@ -398,7 +404,12 @@ RestyleManager::RestyleForHasPseudoClassChange(nsINode* aNode)
     return false;
   }
 
-  PostRestyleEvent(affectedRoot, eRestyle_Subtree, nsChangeHint(0));
+  // The anchor can occur to the left of an outer sibling combinator, as in
+  // .anchor:has(.child) + .result. Include those siblings without restyling
+  // the parent and preceding siblings for descendant-only dependencies.
+  PostRestyleEvent(affectedRoot,
+                   nsRestyleHint(eRestyle_Subtree | eRestyle_LaterSiblings),
+                   nsChangeHint(0));
   return true;
 }
 
