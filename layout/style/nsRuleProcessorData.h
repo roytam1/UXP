@@ -449,6 +449,7 @@ struct MOZ_STACK_CLASS TreeMatchContext {
     , mCurrentStyleScope(nullptr)
     , mIsTopmostScope(false)
     , mForAssignedSlot(false)
+    , mRelativeSelectorAnchor(nullptr)
   {
     if (aMatchVisited != eNeverMatchVisited) {
       nsILoadContext* loadContext = mDocument->GetLoadContext();
@@ -466,6 +467,11 @@ struct MOZ_STACK_CLASS TreeMatchContext {
                        nsRuleWalker::eRelevantLinkUnvisited,
                        aDocument)
   {}
+
+  // The anchor used by the implementation-only leftmost compound of a
+  // relative selector.  This is deliberately separate from mScopes: an
+  // explicit :scope inside :has() still refers to the API/style scope.
+  mozilla::dom::Element* mRelativeSelectorAnchor;
 };
 
 struct MOZ_STACK_CLASS RuleProcessorData {

@@ -314,6 +314,10 @@ struct nsCSSSelectorList {
   nsCSSSelector*     mSelectors;
   int32_t            mWeight;
   nsCSSSelectorList* mNext;
+  // Relative selector lists used by :has() have an implicit internal anchor
+  // stored as their leftmost selector.  This flag keeps that implementation
+  // detail out of serialization and is preserved by cloning.
+  bool               mIsRelativeSelector;
 protected:
   friend class inDOMUtils;
   nsCSSSelectorList* Clone(bool aDeep) const;
