@@ -261,7 +261,7 @@ RestyleManager::ContentStateChanged(nsIContent* aContent,
   ContentStateChangedInternal(aElement, aStateMask, &changeHint, &restyleHint);
 
   PostRestyleEvent(aElement, restyleHint, changeHint);
-  RestyleForHasPseudoClassChange(aElement);
+  RestyleForHasPseudoClassChange(aElement, aStateMask);
 }
 
 // Forwarded nsIMutationObserver method, to handle restyling.
@@ -282,6 +282,9 @@ RestyleManager::AttributeWillChange(Element* aElement,
                                            aNewValue,
                                            rsdata);
   PostRestyleEvent(aElement, rshint, nsChangeHint(0), &rsdata);
+  // Inspect the old classes before they are replaced. AttributeChanged does
+  // not always receive an old value, so it cannot detect removals by itself.
+  RestyleForHasPseudoClassChange(aElement, EventStates(), aAttribute);
 }
 
 // Forwarded nsIMutationObserver method, to handle restyling (and
@@ -376,15 +379,24 @@ RestyleManager::AttributeChanged(Element* aElement,
                                            aOldValue,
                                            rsdata);
   PostRestyleEvent(aElement, rshint, hint, &rsdata);
-  RestyleForHasPseudoClassChange(aElement);
+  RestyleForHasPseudoClassChange(aElement, EventStates(), aAttribute);
 }
 
 bool
-RestyleManager::RestyleForHasPseudoClassChange(nsINode* aNode)
+RestyleManager::RestyleForHasPseudoClassChange(nsINode* aNode,
+                                              EventStates aStateMask,
+                                              nsIAtom* aAttribute)
 {
+  MOZ_ASSERT(!aAttribute || aNode->IsElement());
   Element* affectedRoot = nullptr;
   for (nsINode* node = aNode; node; node = node->GetParentNode()) {
-    if (!node->GetProperty(nsGkAtoms::hasSelectorDependency)) {
+    auto* dependency = static_cast<nsCSSRuleUtils::HasSelectorDependency*>(
+      node->GetProperty(nsGkAtoms::hasSelectorDependency));
+    if (!dependency ||
+        (!aStateMask.IsEmpty() &&
+         !dependency->mStates.HasAtLeastOneOfStates(aStateMask)) ||
+        (aAttribute && !dependency->MightDependOnAttribute(aNode->AsElement(),
+                                                         aAttribute))) {
       continue;
     }
     if (node->IsElement()) {
@@ -398,7 +410,12 @@ RestyleManager::RestyleForHasPseudoClassChange(nsINode* aNode)
     return false;
   }
 
-  PostRestyleEvent(affectedRoot, eRestyle_Subtree, nsChangeHint(0));
+  // The anchor can occur to the left of an outer sibling combinator, as in
+  // .anchor:has(.child) + .result. Include those siblings without restyling
+  // the parent and preceding siblings for descendant-only dependencies.
+  PostRestyleEvent(affectedRoot,
+                   nsRestyleHint(eRestyle_Subtree | eRestyle_LaterSiblings),
+                   nsChangeHint(0));
   return true;
 }
 

@@ -2615,6 +2615,9 @@ pref("layout.css.legacy-negation-pseudo.enabled", false);
 // Is support for the :is() and :where() selectors enabled?
 pref("layout.css.is-where-pseudo.enabled", true);
 
+// Is support for the :has() selector enabled?
+pref("layout.css.has-pseudo.enabled", true);
+
 // Is support for the ::slotted() selector enabled?
 pref("layout.css.slotted-pseudo.enabled", true);
 
