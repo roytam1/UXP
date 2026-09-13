@@ -22,6 +22,19 @@
 
 struct nsCSSRuleUtils
 {
+  // Stored on nodes under hasSelectorDependency. Dependencies accumulate
+  // across matching passes, so a failed/short-circuited branch stays watched.
+  struct HasSelectorDependency {
+    mozilla::EventStates mStates;
+    nsTArray<nsCOMPtr<nsIAtom>> mAttributes;
+    nsTArray<nsCOMPtr<nsIAtom>> mClasses;
+    bool mAllAttributes = false;
+
+    void AddSelector(nsCSSSelector* aSelector);
+    void Merge(const HasSelectorDependency& aOther);
+    bool MightDependOnAttribute(Element* aElement, nsIAtom* aAttribute) const;
+  };
+
   static void Startup();
   static void Shutdown();
   static void FreeSystemMetrics();
@@ -75,6 +88,11 @@ struct nsCSSRuleUtils
                                   TreeMatchContext& aTreeMatchContext,
                                   bool aIsForgiving = false,
                                   bool aPreventComplexSelectors = false);
+
+  static bool RelativeSelectorListMatches(
+    Element* aAnchor,
+    nsCSSSelectorList* aList,
+    TreeMatchContext& aTreeMatchContext);
 
 #ifdef DEBUG
   static bool HasPseudoClassSelectorArgsWithCombinators(

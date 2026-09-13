@@ -923,6 +923,20 @@ nsCSSRuleUtils::SelectorMatches(Element* aElement,
           }
         } break;
 
+        case CSSPseudoClassType::has: {
+          if (!RelativeSelectorListMatches(aElement,
+                                           pseudoClass->u.mSelectorList,
+                                           aTreeMatchContext)) {
+            return false;
+          }
+        } break;
+
+        case CSSPseudoClassType::mozHasRelativeAnchor:
+          if (aElement != aTreeMatchContext.mRelativeSelectorAnchor) {
+            return false;
+          }
+          break;
+
         case CSSPseudoClassType::mozAny: {
           // XXX: For compatibility, we retain :-moz-any()'s original behavior,
           // which is to be unforgiving and reject complex selectors in
@@ -1649,7 +1663,9 @@ nsCSSRuleUtils::SelectorListMatches(Element* aElement,
       SelectorMatchesTreeFlags selectorTreeFlags = SelectorMatchesTreeFlags(0);
       // Try to look for the closest ancestor link element if we're processing
       // the selector list argument of a pseudo-class, but only if for a new style context (see SelectorMatches).
-      if (!aNodeMatchContext.mIsRelevantLink && aTreeMatchContext.mForStyling &&
+      if (!aNodeMatchContext.mIsRelevantLink &&
+          !aTreeMatchContext.mRelativeSelectorAnchor &&
+          aTreeMatchContext.mForStyling &&
           (aSelectorFlags & SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT)) {
         selectorTreeFlags = eLookForRelevantLink;
       }
@@ -1681,6 +1697,296 @@ nsCSSRuleUtils::SelectorListMatches(Element* aElement,
                              SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT,
                              aIsForgiving,
                              aPreventComplexSelectors);
+}
+
+static inline bool
+matchesCandidate(Element* aCandidate,
+                 nsCSSSelectorList* aRelativeSelector,
+                 TreeMatchContext& aTreeMatchContext)
+{
+  AutoRestore<Element*> styleScopeRestorer(
+    aTreeMatchContext.mCurrentStyleScope);
+  // A candidate inspected by :has() is never the relevant link for the
+  // anchor being styled.  Treating it as relevant would allow
+  // :has(:visited) to expose link history through an ancestor.
+  NodeMatchContext nodeContext(EventStates(), false);
+  nsCSSSelector* selector = aRelativeSelector->mSelectors;
+  if (!nsCSSRuleUtils::SelectorMatches(
+        aCandidate,
+        selector,
+        nodeContext,
+        aTreeMatchContext,
+        SelectorMatchesFlags::IS_PSEUDO_CLASS_ARGUMENT)) {
+    return false;
+  }
+  return !selector->mNext ||
+         nsCSSRuleUtils::SelectorMatchesTree(
+           aCandidate,
+           selector->mNext,
+           aTreeMatchContext,
+           SelectorMatchesTreeFlags(0));
+}
+
+static inline bool
+matchesSubtree(nsIContent* aRoot,
+               nsCSSSelectorList* aRelativeSelector,
+               TreeMatchContext& aTreeMatchContext)
+{
+  for (nsIContent* node = aRoot;
+       node;
+       node = node->GetNextNode(aRoot)) {
+    if (node->IsElement() &&
+        matchesCandidate(node->AsElement(),
+                         aRelativeSelector,
+                         aTreeMatchContext)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+using HasSelectorDependency = nsCSSRuleUtils::HasSelectorDependency;
+
+static void
+AddHasDependencyAtom(nsTArray<nsCOMPtr<nsIAtom>>& aAtoms, nsIAtom* aAtom)
+{
+  if (!aAtoms.Contains(aAtom)) {
+    aAtoms.AppendElement(aAtom);
+  }
+}
+
+// Collect every branch before matching, including :is() and legacy :not().
+void
+HasSelectorDependency::AddSelector(nsCSSSelector* aSelector)
+{
+  for (nsCSSSelector* selector = aSelector; selector; selector = selector->mNext) {
+    if (selector->mIDList) {
+      AddHasDependencyAtom(mAttributes, nsGkAtoms::id);
+    }
+    for (nsAtomList* cls = selector->mClassList; cls; cls = cls->mNext) {
+      AddHasDependencyAtom(mClasses, cls->mAtom);
+    }
+    for (nsAttrSelector* attr = selector->mAttrList; attr; attr = attr->mNext) {
+      // Include both spellings and conservatively ignore namespaces here.
+      AddHasDependencyAtom(mAttributes, attr->mLowercaseAttr);
+      AddHasDependencyAtom(mAttributes, attr->mCasedAttr);
+    }
+    for (nsPseudoClassList* pseudo = selector->mPseudoClassList;
+         pseudo; pseudo = pseudo->mNext) {
+      mStates |= nsCSSPseudoClasses::sPseudoClassStateDependences[
+        static_cast<CSSPseudoClassTypeBase>(pseudo->mType)];
+      if (nsCSSPseudoClasses::HasSelectorListArg(pseudo->mType)) {
+        for (nsCSSSelectorList* list = pseudo->u.mSelectorList;
+             list; list = list->mNext) {
+          AddSelector(list->mSelectors);
+        }
+        continue;
+      }
+      switch (pseudo->mType) {
+        case CSSPseudoClassType::mozHasRelativeAnchor:
+        case CSSPseudoClassType::empty:
+        case CSSPseudoClassType::mozOnlyWhitespace:
+        case CSSPseudoClassType::mozEmptyExceptChildrenWithLocalname:
+        case CSSPseudoClassType::root:
+        case CSSPseudoClassType::scope:
+        case CSSPseudoClassType::firstChild:
+        case CSSPseudoClassType::lastChild:
+        case CSSPseudoClassType::onlyChild:
+        case CSSPseudoClassType::firstNode:
+        case CSSPseudoClassType::lastNode:
+        case CSSPseudoClassType::firstOfType:
+        case CSSPseudoClassType::lastOfType:
+        case CSSPseudoClassType::onlyOfType:
+        case CSSPseudoClassType::nthChild:
+        case CSSPseudoClassType::nthLastChild:
+        case CSSPseudoClassType::nthOfType:
+        case CSSPseudoClassType::nthLastOfType:
+          break;
+        default:
+          // Pseudo-classes can depend on attributes implicitly (:lang(),
+          // :dir(), form states, etc.). Keep those cases conservative.
+          mAllAttributes = true;
+          break;
+      }
+    }
+    if (selector->mNegations) {
+      AddSelector(selector->mNegations);
+    }
+  }
+}
+
+void
+HasSelectorDependency::Merge(const HasSelectorDependency& aOther)
+{
+  mStates |= aOther.mStates;
+  mAllAttributes |= aOther.mAllAttributes;
+  for (nsIAtom* attr : aOther.mAttributes) {
+    AddHasDependencyAtom(mAttributes, attr);
+  }
+  for (nsIAtom* cls : aOther.mClasses) {
+    AddHasDependencyAtom(mClasses, cls);
+  }
+}
+
+bool
+HasSelectorDependency::MightDependOnAttribute(Element* aElement,
+                                               nsIAtom* aAttribute) const
+{
+  if (mAllAttributes || mAttributes.Contains(aAttribute)) {
+    return true;
+  }
+  if (aAttribute != nsGkAtoms::_class) {
+    return false;
+  }
+  const nsAttrValue* classes = aElement->GetClasses();
+  if (!classes) {
+    return false;
+  }
+  nsCaseTreatment caseTreatment =
+    aElement->OwnerDoc()->GetCompatibilityMode() == eCompatibility_NavQuirks
+      ? eIgnoreCase : eCaseMatters;
+  for (nsIAtom* cls : mClasses) {
+    if (classes->Contains(cls, caseTreatment)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static void
+DeleteHasSelectorDependency(void*, nsIAtom*, void* aValue, void*)
+{
+  delete static_cast<HasSelectorDependency*>(aValue);
+}
+
+static void
+NoteHasSelectorDependency(nsINode* aNode, const HasSelectorDependency& aDependency)
+{
+  auto* dependency = static_cast<HasSelectorDependency*>(
+    aNode->GetProperty(nsGkAtoms::hasSelectorDependency));
+  if (dependency) {
+    dependency->Merge(aDependency);
+    return;
+  }
+  dependency = new HasSelectorDependency;
+  dependency->Merge(aDependency);
+  if (NS_FAILED(aNode->SetProperty(nsGkAtoms::hasSelectorDependency, dependency,
+                                  DeleteHasSelectorDependency))) {
+    delete dependency;
+  }
+}
+
+/* static */ bool
+nsCSSRuleUtils::RelativeSelectorListMatches(
+  Element* aAnchor,
+  nsCSSSelectorList* aList,
+  TreeMatchContext& aTreeMatchContext)
+{
+  MOZ_ASSERT(aAnchor);
+  MOZ_ASSERT(aList);
+
+  if (aTreeMatchContext.mForStyling) {
+    HasSelectorDependency dependency;
+    HasSelectorDependency siblingDependency;
+    bool hasSiblingSelector = false;
+    for (nsCSSSelectorList* relative = aList; relative; relative = relative->mNext) {
+      HasSelectorDependency relativeDependency;
+      relativeDependency.AddSelector(relative->mSelectors);
+      dependency.Merge(relativeDependency);
+      nsCSSSelector* anchor = relative->mSelectors;
+      while (anchor->mNext) {
+        anchor = anchor->mNext;
+      }
+      if (anchor->mOperator == '+' || anchor->mOperator == '~') {
+        hasSiblingSelector = true;
+        siblingDependency.Merge(relativeDependency);
+      }
+    }
+    NoteHasSelectorDependency(aAnchor, dependency);
+    // Descendant selectors cannot inspect following sibling subtrees. Only
+    // relative selectors starting with + or ~ need a marker on the parent.
+    if (hasSiblingSelector && aAnchor->GetParent()) {
+      NoteHasSelectorDependency(aAnchor->GetParent(), siblingDependency);
+    }
+  }
+
+  AutoRestore<Element*> relativeAnchorRestorer(
+    aTreeMatchContext.mRelativeSelectorAnchor);
+  aTreeMatchContext.mRelativeSelectorAnchor = aAnchor;
+
+  for (nsCSSSelectorList* relative = aList;
+       relative;
+       relative = relative->mNext) {
+    MOZ_ASSERT(relative->mIsRelativeSelector);
+    MOZ_ASSERT(relative->mSelectors && relative->mSelectors->mNext);
+
+    // Find the compound immediately to the right of the implicit internal
+    // anchor.  This selector representation stores a combinator on its
+    // left-hand selector, so the anchor owns the leading combinator.
+    nsCSSSelector* leftmost = relative->mSelectors;
+    while (leftmost->mNext && leftmost->mNext->mNext) {
+      leftmost = leftmost->mNext;
+    }
+    MOZ_ASSERT(leftmost->mNext);
+
+    // A single compound cannot move beyond the leading relationship.
+    // Avoid scanning descendants for >, and all following subtrees for +/~.
+    if (leftmost == relative->mSelectors) {
+      char combinator = leftmost->mNext->mOperator;
+      if (combinator == '>' || combinator == '+' || combinator == '~') {
+        Element* candidate = combinator == '>'
+          ? aAnchor->GetFirstElementChild()
+          : aAnchor->GetNextElementSibling();
+        for (; candidate; candidate = candidate->GetNextElementSibling()) {
+          if (matchesCandidate(candidate, relative, aTreeMatchContext)) {
+            return true;
+          }
+          if (combinator == '+') {
+            break;
+          }
+        }
+        continue;
+      }
+    }
+
+    switch (leftmost->mNext->mOperator) {
+      // Even for a leading adjacent-sibling combinator, a later combinator in
+      // the relative selector can move the rightmost matching element into a
+      // subsequent sibling subtree (for example, :has(+ .a + .b)).  Search
+      // every following subtree and let the full selector enforce the exact
+      // leading relationship to the anchor.
+      case char16_t('+'):
+      case char16_t('~'):
+        for (Element* sibling = aAnchor->GetNextElementSibling();
+             sibling;
+             sibling = sibling->GetNextElementSibling()) {
+          if (matchesSubtree(sibling, relative, aTreeMatchContext)) {
+            return true;
+          }
+        }
+        break;
+
+      case char16_t('>'):
+      case char16_t(' '):
+        for (nsIContent* node = aAnchor->GetFirstChild();
+             node;
+             node = node->GetNextNode(aAnchor)) {
+          if (node->IsElement() &&
+              matchesCandidate(node->AsElement(),
+                               relative,
+                               aTreeMatchContext)) {
+            return true;
+          }
+        }
+        break;
+
+      default:
+        MOZ_ASSERT(false, "unexpected relative selector combinator");
+        break;
+    }
+  }
+
+  return false;
 }
 
 // TreeMatchContext and AncestorFilter out of line methods

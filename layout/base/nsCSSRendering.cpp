@@ -185,15 +185,18 @@ struct InlineBackgroundData
           mPIStartBorderData.SetCoord(joinedBorderArea.x);
         }
       } else if (mPIStartBorderData.mFrame) {
+        // Copy data to a temporary object so that computing the
+        // continous rect here doesn't clobber our normal state.
+        InlineBackgroundData temp = *this;
         if (mVertical) {
-          mPIStartBorderData.SetCoord(GetContinuousRect(mPIStartBorderData.mFrame).y);
+          mPIStartBorderData.SetCoord(temp.GetContinuousRect(mPIStartBorderData.mFrame).y);
         } else {
-          mPIStartBorderData.SetCoord(GetContinuousRect(mPIStartBorderData.mFrame).x);
+          mPIStartBorderData.SetCoord(temp.GetContinuousRect(mPIStartBorderData.mFrame).x);
         }
       }
     } else {
       // ... and restore it when possible.
-      mPIStartBorderData.mCoord = saved.mCoord;
+      mPIStartBorderData.SetCoord(saved.mCoord);
     }
     if (mVertical) {
       if (joinedBorderArea.y > mPIStartBorderData.mCoord) {
@@ -342,6 +345,7 @@ protected:
     // Start with the previous flow frame as our continuation point
     // is the total of the widths of the previous frames.
     nsIFrame* inlineFrame = GetPrevContinuation(aFrame);
+    bool changedLines = false;
     while (inlineFrame) {
       if (!mPIStartBorderData.mFrame &&
           !(mVertical ? inlineFrame->GetSkipSides().Top()
@@ -350,8 +354,9 @@ protected:
       }
       nsRect rect = inlineFrame->GetRect();
       mContinuationPoint += mVertical ? rect.height : rect.width;
-      if (mBidiEnabled && !AreOnSameLine(aFrame, inlineFrame)) {
+      if (mBidiEnabled && (changedLines || !AreOnSameLine(aFrame, inlineFrame))) {
         mLineContinuationPoint += mVertical ? rect.height : rect.width;
+        changedLines = true;
       }
       mUnbrokenMeasure += mVertical ? rect.height : rect.width;
       mBoundingBox.UnionRect(mBoundingBox, rect);
