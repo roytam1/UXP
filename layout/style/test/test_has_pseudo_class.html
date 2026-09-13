@@ -1,0 +1,167 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CSS :has() relational pseudo-class</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css">
+  <style id="has-styles">
+    .dynamic,
+    .structural,
+    .sibling-anchor,
+    .state-anchor,
+    .empty-anchor {
+      color: rgb(0, 0, 255);
+    }
+    .dynamic:has(.watched),
+    .structural:has(> .inserted),
+    .sibling-anchor:has(+ .sibling-target.active),
+    .state-anchor:has(input:checked),
+    .empty-anchor:has(> :empty) {
+      color: rgb(255, 0, 0);
+    }
+
+    .specificity.other {
+      color: rgb(0, 0, 255);
+    }
+    /* The maximum specificity in the list is used even when that list item
+       does not match. */
+    .specificity:has(.specificity-child, #does-not-exist) {
+      color: rgb(255, 0, 0);
+    }
+  </style>
+</head>
+<body>
+  <div id="descendant-anchor">
+    <div class="descendant"><span class="deep"></span></div>
+    <p class="direct"></p>
+  </div>
+  <div id="nonmatching-anchor"><div class="descendant"></div></div>
+
+  <h2 id="sibling-query-anchor"></h2>
+  <p id="adjacent"><span class="inside-adjacent"></span></p>
+  <p class="later-sibling"></p>
+
+  <div id="dynamic" class="dynamic"><span id="dynamic-child"></span></div>
+  <div id="structural" class="structural"></div>
+  <div id="sibling-anchor" class="sibling-anchor"></div>
+  <div id="sibling-target" class="sibling-target"></div>
+  <div id="state-anchor" class="state-anchor"><input id="checkbox" type="checkbox"></div>
+  <div id="empty-anchor" class="empty-anchor"><span id="empty-child"></span></div>
+  <div id="specificity" class="specificity other"><span class="specificity-child"></span></div>
+  <div id="explicit-outer" class="explicit-outer">
+    <div id="explicit-scope"><span class="scope-result"></span></div>
+  </div>
+  <div id="visited-anchor"><a href=""></a></div>
+
+<script>
+"use strict";
+
+const blue = "rgb(0, 0, 255)";
+const red = "rgb(255, 0, 0)";
+
+function color(id) {
+  return getComputedStyle(document.getElementById(id)).color;
+}
+
+function syntaxError(selector) {
+  let threw = false;
+  try {
+    document.querySelector(selector);
+  } catch (error) {
+    threw = error.name === "SyntaxError";
+  }
+  ok(threw, selector + " is rejected as an invalid selector");
+}
+
+SimpleTest.waitForExplicitFinish();
+
+addLoadEvent(function() {
+  is(document.querySelector("div:has(.deep)").id,
+     "descendant-anchor",
+     "implicit descendant relative selector matches");
+  is(document.querySelector("div:has(> .direct)").id,
+     "descendant-anchor",
+     "leading child combinator matches");
+  is(document.querySelector("h2:has(+ p .inside-adjacent)").id,
+     "sibling-query-anchor",
+     "adjacent sibling subtree matches");
+  is(document.querySelector("h2:has(+ p + .later-sibling)").id,
+     "sibling-query-anchor",
+     "later combinators can move beyond the adjacent sibling subtree");
+  is(document.querySelector("h2:has(~ .later-sibling)").id,
+     "sibling-query-anchor",
+     "subsequent sibling matches");
+  ok(!document.getElementById("nonmatching-anchor").matches(":has(.deep)"),
+     "a descendant of the wrong compound does not match");
+  is(document.querySelector(".inside-adjacent").closest("p:has(.inside-adjacent)").id,
+     "adjacent",
+     ":has() works through closest()");
+
+  syntaxError("div:has()");
+  syntaxError("div:has(.deep, :definitely-unknown)");
+  syntaxError("div:has(:has(.deep))");
+  syntaxError("div:has(::before)");
+
+  let explicitScope = document.getElementById("explicit-scope");
+  is(explicitScope.querySelectorAll(":has(:scope)").length, 0,
+     "explicit :scope is distinct from the implicit relative anchor");
+  is(explicitScope.querySelectorAll(
+       ".explicit-outer:has(:scope) .scope-result").length, 1,
+     "explicit :scope inside :has() refers to the query scoping root");
+
+  ok(document.documentElement.matches(":has(:is(:has(*), body))"),
+     "an invalid nested :has() branch is discarded by a forgiving :is()");
+  ok(!document.documentElement.matches(":has(:is(:has(*)))"),
+     "a forgiving list containing only invalid nested :has() matches nothing");
+
+  ok(!document.getElementById("visited-anchor").matches(":has(:visited)"),
+     ":visited does not expose history through :has()");
+  ok(document.getElementById("visited-anchor").matches(":has(:link)"),
+     ":link remains usable inside :has()");
+
+  let sheet = document.getElementById("has-styles").sheet;
+  let index = sheet.insertRule("article:has(> img, + aside .note) {}", sheet.cssRules.length);
+  is(sheet.cssRules[index].selectorText,
+     "article:has(> img, + aside .note)",
+     "relative selector list serialization does not expose the implicit anchor");
+  sheet.deleteRule(index);
+
+  is(color("specificity"), red,
+     ":has() uses the most specific selector in its complete argument list");
+
+  is(color("dynamic"), blue, "descendant attribute dependency starts unmatched");
+  document.getElementById("dynamic-child").classList.add("watched");
+  is(color("dynamic"), red, "descendant attribute change makes :has() match");
+  document.getElementById("dynamic-child").classList.remove("watched");
+  is(color("dynamic"), blue, "descendant attribute change makes :has() stop matching");
+
+  is(color("structural"), blue, "child dependency starts unmatched");
+  let inserted = document.createElement("span");
+  inserted.className = "inserted";
+  document.getElementById("structural").appendChild(inserted);
+  is(color("structural"), red, "child insertion makes :has() match");
+  inserted.remove();
+  is(color("structural"), blue, "child removal makes :has() stop matching");
+
+  is(color("sibling-anchor"), blue, "sibling dependency starts unmatched");
+  document.getElementById("sibling-target").classList.add("active");
+  is(color("sibling-anchor"), red, "following sibling attribute change invalidates anchor");
+  document.getElementById("sibling-target").classList.remove("active");
+  is(color("sibling-anchor"), blue, "following sibling can stop matching dynamically");
+
+  is(color("state-anchor"), blue, "state dependency starts unmatched");
+  document.getElementById("checkbox").checked = true;
+  is(color("state-anchor"), red, "descendant state change invalidates anchor");
+  document.getElementById("checkbox").checked = false;
+  is(color("state-anchor"), blue, "descendant state can stop matching dynamically");
+
+  is(color("empty-anchor"), red, ":empty inside :has() initially matches");
+  document.getElementById("empty-child").appendChild(document.createTextNode("text"));
+  is(color("empty-anchor"), blue, "text insertion invalidates :empty inside :has()");
+
+  SimpleTest.finish();
+});
+</script>
+</body>
+</html>

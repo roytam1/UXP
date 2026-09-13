@@ -314,6 +314,15 @@ public:
   // the container is null, no work is needed.
   void RestyleForAppend(nsIContent* aContainer, nsIContent* aFirstNewContent);
 
+  // Restyle a subtree containing any :has() anchor affected by a change at
+  // or below aNode. Returns true when such a restyle was posted.
+  // An empty state mask denotes a DOM/attribute mutation. Attribute changes
+  // are checked both before and after updating the element, so class removals
+  // remain observable even when AttributeChanged has no old value.
+  bool RestyleForHasPseudoClassChange(nsINode* aNode,
+                                      EventStates aStateMask = EventStates(),
+                                      nsIAtom* aAttribute = nullptr);
+
   // Process any pending restyles. This should be called after
   // CreateNeededFrames.
   // Note: It's the caller's responsibility to make sure to wrap a
