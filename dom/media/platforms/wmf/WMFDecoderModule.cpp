@@ -193,6 +193,12 @@ WMFDecoderModule::HasH264()
 }
 
 /* static */ bool
+WMFDecoderModule::HasVP9()
+{
+  return CanCreateWMFDecoder<CLSID_WebmMfVpxDec>();
+}
+
+/* static */ bool
 WMFDecoderModule::HasAAC()
 {
   return CanCreateWMFDecoder<CLSID_CMSAACDecMFT>();

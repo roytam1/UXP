@@ -1421,6 +1421,14 @@ interface nsIDOMWindowUtils : nsISupports {
   readonly attribute jsval supportsHardwareH264Decoding;
 
   /**
+   * Returns a Promise that will be resolved with a string once the capabilities
+   * of the vp9 decoder have been determined.
+   * Success does not mean that all vp9 video decoding will be done
+   * in hardware.
+   */
+  readonly attribute jsval supportsHardwareVP9Decoding;
+
+  /**
    * Returns the current audio backend as a free-form string.
    */
   readonly attribute AString currentAudioBackend;

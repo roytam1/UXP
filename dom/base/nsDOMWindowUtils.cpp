@@ -30,6 +30,9 @@
 #ifdef MOZ_FMP4
 #include "MP4Decoder.h"
 #endif
+#include "WMFDecoderModule.h"
+#include "MediaPrefs.h"
+#include "mozilla/gfx/gfxVars.h"
 #include "CubebUtils.h"
 
 #include "nsIScrollableFrame.h"
@@ -2357,6 +2360,36 @@ nsDOMWindowUtils::GetSupportsHardwareH264Decoding(JS::MutableHandle<JS::Value> a
   promise->MaybeResolve(NS_LITERAL_STRING("No; Compiled without MP4 support."));
   aPromise.setObject(*promise->PromiseObj());
 #endif
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsDOMWindowUtils::GetSupportsHardwareVP9Decoding(JS::MutableHandle<JS::Value> aPromise)
+{
+  nsCOMPtr<nsPIDOMWindowOuter> window = do_QueryReferent(mWindow);
+  NS_ENSURE_STATE(window);
+  nsCOMPtr<nsIGlobalObject> parentObject =
+    do_QueryInterface(window->GetCurrentInnerWindow());
+  NS_ENSURE_STATE(parentObject);
+  ErrorResult rv;
+  RefPtr<Promise> promise = Promise::Create(parentObject, rv);
+  if (rv.Failed()) {
+    return rv.StealNSResult();
+  }
+#if defined(XP_WIN) && defined(MOZ_WMF)
+  if (!MediaPrefs::PDMWMFVP9DecoderEnabled()) {
+    promise->MaybeResolve(NS_LITERAL_STRING("No; media.wmf.vp9.enabled is false"));
+  } else if (!gfx::gfxVars::CanUseHardwareVideoDecoding()) {
+    promise->MaybeResolve(NS_LITERAL_STRING("No; hardware video decoding disabled"));
+  } else if (WMFDecoderModule::HasVP9()) {
+    promise->MaybeResolve(NS_LITERAL_STRING("Yes"));
+  } else {
+    promise->MaybeResolve(NS_LITERAL_STRING("No; MFT unavailable"));
+  }
+#else
+  promise->MaybeResolve(NS_LITERAL_STRING("No; not supported on this platform"));
+#endif
+  aPromise.setObject(*promise->PromiseObj());
   return NS_OK;
 }
 

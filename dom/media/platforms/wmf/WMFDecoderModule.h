@@ -43,6 +43,7 @@ public:
   // require a "Media Feature Pack" to be installed.
   static bool HasAAC();
   static bool HasH264();
+  static bool HasVP9();
 
 private:
   bool mWMFInitialized;

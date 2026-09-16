@@ -345,6 +345,15 @@ var dataProviders = {
       promises.push(promise);
     } catch (e) {}
 
+    data.supportsHardwareVP9 = "Unknown";
+    try {
+      let promise = winUtils.supportsHardwareVP9Decoding;
+      promise.then(function(v) {
+        data.supportsHardwareVP9 = v;
+      });
+      promises.push(promise);
+    } catch (e) {}
+
     data.currentAudioBackend = winUtils.currentAudioBackend;
 
     if (!data.numAcceleratedWindows && gfxInfo) {
