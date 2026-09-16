@@ -6,7 +6,7 @@
 #include "WMF.h"
 #include "WMFDecoderModule.h"
 #include "WMFVideoMFTManager.h"
-#include "WMFVP9MFTManager.h"
+#include "WMFVP9DXVA2Manager.h"
 #include "WMFAudioMFTManager.h"
 #include "MFTDecoder.h"
 #include "mozilla/DebugOnly.h"
@@ -90,12 +90,12 @@ WMFDecoderModule::CreateVP9Decoder(const CreateDecoderParams& aParams)
   const bool mftAllowed = MediaPrefs::PDMWMFVP9MFTEnabled() && HasVP9MFT();
   const bool dxva2Allowed = MediaPrefs::PDMWMFVP9DXVA2Enabled() && HasVP9DXVA2(aParams.mKnowsCompositor);
   if (!mftAllowed && dxva2Allowed) {
-    nsAutoPtr<WMFVP9MFTManager> vp9(
-      new WMFVP9MFTManager(aParams.VideoConfig(),
-                           aParams.mKnowsCompositor,
-                           aParams.mImageContainer,
-                           sDXVAEnabled && !aParams.mOptions.contains(
-                            CreateDecoderParams::Option::HardwareDecoderNotAllowed)));
+    nsAutoPtr<WMFVP9DXVA2Manager> vp9(
+      new WMFVP9DXVA2Manager(aParams.VideoConfig(),
+                             aParams.mKnowsCompositor,
+                             aParams.mImageContainer,
+                             sDXVAEnabled && !aParams.mOptions.contains(
+                              CreateDecoderParams::Option::HardwareDecoderNotAllowed)));
     if (vp9->Init()) {
       RefPtr<MediaDataDecoder> decoder = new WMFMediaDataDecoder(
         vp9.forget(), aParams.mTaskQueue, aParams.mCallback);

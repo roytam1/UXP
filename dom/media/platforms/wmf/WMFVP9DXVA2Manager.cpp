@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "WMFVP9MFTManager.h"
+#include "WMFVP9DXVA2Manager.h"
 #include "WMFVideoMFTManager.h"
 #include "ImageContainer.h"
 #include "Layers.h"
@@ -22,7 +22,7 @@ struct VP9ShownFrame {
   bool mKeyframe;
 };
 
-WMFVP9MFTManager::WMFVP9MFTManager(
+WMFVP9DXVA2Manager::WMFVP9DXVA2Manager(
                           const VideoInfo& aConfig,
                           layers::KnowsCompositor* aCompositor,
                           layers::ImageContainer* aContainer,
@@ -34,13 +34,13 @@ WMFVP9MFTManager::WMFVP9MFTManager(
   , mIsValid(false)
 {}
 
-WMFVP9MFTManager::~WMFVP9MFTManager()
+WMFVP9DXVA2Manager::~WMFVP9DXVA2Manager()
 {
   Shutdown();
 }
 
 bool
-WMFVP9MFTManager::Init()
+WMFVP9DXVA2Manager::Init()
 {
   if (!IsWin7SP1OrLater()) {
     mFailureReason.AssignLiteral("VP9 DXVA2 requires Windows 7 SP1 or later");
@@ -94,7 +94,7 @@ WMFVP9MFTManager::Init()
 }
 
 HRESULT
-WMFVP9MFTManager::Input(MediaRawData* aSample)
+WMFVP9DXVA2Manager::Input(MediaRawData* aSample)
 {
   if (!mIsValid) { return E_UNEXPECTED; }
   if (!aSample || aSample->Size() > UINT32_MAX) { return E_INVALIDARG; }
@@ -146,7 +146,7 @@ WMFVP9MFTManager::Input(MediaRawData* aSample)
 }
 
 HRESULT
-WMFVP9MFTManager::Output(int64_t aStreamOffset,
+WMFVP9DXVA2Manager::Output(int64_t aStreamOffset,
                          RefPtr<MediaData>& aOutput)
 {
   aOutput = nullptr;
@@ -157,7 +157,7 @@ WMFVP9MFTManager::Output(int64_t aStreamOffset,
 }
 
 void
-WMFVP9MFTManager::Flush()
+WMFVP9DXVA2Manager::Flush()
 {
   mPendingFrames.Clear();
   mSeekTargetThreshold.reset();
@@ -165,7 +165,7 @@ WMFVP9MFTManager::Flush()
 }
 
 void
-WMFVP9MFTManager::Shutdown()
+WMFVP9DXVA2Manager::Shutdown()
 {
   mPendingFrames.Clear();
   mVP9Decoder = nullptr;
@@ -174,7 +174,7 @@ WMFVP9MFTManager::Shutdown()
 }
 
 bool
-WMFVP9MFTManager::IsHardwareAccelerated(nsACString& aReason) const
+WMFVP9DXVA2Manager::IsHardwareAccelerated(nsACString& aReason) const
 {
   aReason = mFailureReason;
   return mIsValid;

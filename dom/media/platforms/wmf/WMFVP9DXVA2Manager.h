@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef WMFVP9MFTManager_h_
-#define WMFVP9MFTManager_h_
+#ifndef WMFVP9DXVA2Manager_h_
+#define WMFVP9DXVA2Manager_h_
 #include "WMF.h"
 #include "WMFMediaDataDecoder.h"
 #include "DXVA2Manager.h"
@@ -14,13 +14,13 @@
 
 namespace mozilla {
 
-class WMFVP9MFTManager : public MFTManager {
+class WMFVP9DXVA2Manager : public MFTManager {
 public:
-  WMFVP9MFTManager(const VideoInfo& aConfig,
+  WMFVP9DXVA2Manager(const VideoInfo& aConfig,
                    layers::KnowsCompositor* aCompositor,
                    layers::ImageContainer* aContainer,
                    bool aDXVAEnabled);
-  ~WMFVP9MFTManager();
+  ~WMFVP9DXVA2Manager();
 
   bool Init();
 
@@ -66,4 +66,4 @@ private:
 
 } // namespace mozilla
 
-#endif // WMFVP9MFTManager_h_
+#endif // WMFVP9DXVA2Manager_h_
