@@ -49,7 +49,7 @@ interface nsIJSRAIIHelper;
 interface nsIContentPermissionRequest;
 interface nsIObserver;
 
-[scriptable, uuid(58e97ce9-1d9e-4576-aabf-89480fdeb16d)]
+[scriptable, uuid(16ed093c-84a7-4ca3-84c8-9ad71f8b5d82)]
 interface nsIDOMWindowUtils : nsISupports {
 
   /**
@@ -1421,8 +1421,9 @@ interface nsIDOMWindowUtils : nsISupports {
   readonly attribute jsval supportsHardwareH264Decoding;
 
   /**
-   * Returns a Promise that will be resolved with a string once the capabilities
-   * of the vp9 decoder have been determined.
+   * Returns a Promise resolved with a string describing whether VP9 hardware
+   * decoding is supported, and if it is, whether it is available through the
+   * Windows MFT or direct DXVA2 path.
    * Success does not mean that all vp9 video decoding will be done
    * in hardware.
    */

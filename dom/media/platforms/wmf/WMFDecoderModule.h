@@ -10,6 +10,10 @@
 
 namespace mozilla {
 
+namespace layers {
+class KnowsCompositor;
+}
+
 class WMFDecoderModule : public PlatformDecoderModule {
 public:
   WMFDecoderModule();
@@ -23,6 +27,9 @@ public:
 
   already_AddRefed<MediaDataDecoder>
   CreateAudioDecoder(const CreateDecoderParams& aParams) override;
+
+  already_AddRefed<MediaDataDecoder>
+  CreateVP9Decoder(const CreateDecoderParams& aParams);
 
   bool SupportsMimeType(const nsACString& aMimeType,
                         DecoderDoctorDiagnostics* aDiagnostics) const override;
@@ -43,7 +50,8 @@ public:
   // require a "Media Feature Pack" to be installed.
   static bool HasAAC();
   static bool HasH264();
-  static bool HasVP9();
+  static bool HasVP9MFT();
+  static bool HasVP9DXVA2(layers::KnowsCompositor* aKnowsCompositor);
 
 private:
   bool mWMFInitialized;

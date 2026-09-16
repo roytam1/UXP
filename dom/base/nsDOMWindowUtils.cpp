@@ -30,9 +30,11 @@
 #ifdef MOZ_FMP4
 #include "MP4Decoder.h"
 #endif
-#include "WMFDecoderModule.h"
+#if defined(XP_WIN) && defined(MOZ_WMF)
 #include "MediaPrefs.h"
+#include "WMFDecoderModule.h"
 #include "mozilla/gfx/gfxVars.h"
+#endif
 #include "CubebUtils.h"
 
 #include "nsIScrollableFrame.h"
@@ -2377,14 +2379,20 @@ nsDOMWindowUtils::GetSupportsHardwareVP9Decoding(JS::MutableHandle<JS::Value> aP
     return rv.StealNSResult();
   }
 #if defined(XP_WIN) && defined(MOZ_WMF)
+  nsCOMPtr<nsIWidget> widget = GetWidget();
+  LayerManager* layerManager = widget ? widget->GetLayerManager() : nullptr;
   if (!MediaPrefs::PDMWMFVP9DecoderEnabled()) {
     promise->MaybeResolve(NS_LITERAL_STRING("No; media.wmf.vp9.enabled is false"));
   } else if (!gfx::gfxVars::CanUseHardwareVideoDecoding()) {
     promise->MaybeResolve(NS_LITERAL_STRING("No; hardware video decoding disabled"));
-  } else if (WMFDecoderModule::HasVP9()) {
-    promise->MaybeResolve(NS_LITERAL_STRING("Yes"));
+  } else if (MediaPrefs::PDMWMFVP9MFTEnabled() &&
+             WMFDecoderModule::HasVP9MFT()) {
+    promise->MaybeResolve(NS_LITERAL_STRING("Yes, using MFT"));
+  } else if (layerManager &&
+             WMFDecoderModule::HasVP9DXVA2(layerManager->AsShadowForwarder())) {
+    promise->MaybeResolve(NS_LITERAL_STRING("Yes; using DXVA2"));
   } else {
-    promise->MaybeResolve(NS_LITERAL_STRING("No; MFT unavailable"));
+    promise->MaybeResolve(NS_LITERAL_STRING("No; no VP9 hardware decoder available"));
   }
 #else
   promise->MaybeResolve(NS_LITERAL_STRING("No; not supported on this platform"));

@@ -26,6 +26,9 @@ public:
   ~WMFVideoMFTManager();
 
   bool Init();
+  static DXVA2Manager* CreateVP9DXVA(layers::KnowsCompositor* aCompositor,
+                                     nsACString& aFailureReason,
+                                     const GUID& aGUID);
 
   HRESULT Input(MediaRawData* aSample) override;
 
