@@ -5,13 +5,17 @@
 
 EXPORTS += [
     'DXVA2Manager.h',
+    'DXVAVP9Manager.h',
     'MFTDecoder.h',
+    'VP9DXVA.h',
+    'VP9HeaderParser.h',
     'WMF.h',
     'WMFAudioMFTManager.h',
     'WMFDecoderModule.h',
     'WMFMediaDataDecoder.h',
     'WMFUtils.h',
     'WMFVideoMFTManager.h',
+    'WMFVP9DXVA2Manager.h',
 ]
 
 UNIFIED_SOURCES += [
@@ -24,7 +28,10 @@ UNIFIED_SOURCES += [
 ]
 
 SOURCES += [
+    'DXVAVP9Manager.cpp',
+    'VP9HeaderParser.cpp',
     'WMFUtils.cpp',
+    'WMFVP9DXVA2Manager.cpp',
 ]
 
 include('/ipc/chromium/chromium-config.mozbuild')

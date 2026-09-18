@@ -30,6 +30,11 @@
 #ifdef MOZ_FMP4
 #include "MP4Decoder.h"
 #endif
+#if defined(XP_WIN) && defined(MOZ_WMF)
+#include "MediaPrefs.h"
+#include "WMFDecoderModule.h"
+#include "mozilla/gfx/gfxVars.h"
+#endif
 #include "CubebUtils.h"
 
 #include "nsIScrollableFrame.h"
@@ -2357,6 +2362,42 @@ nsDOMWindowUtils::GetSupportsHardwareH264Decoding(JS::MutableHandle<JS::Value> a
   promise->MaybeResolve(NS_LITERAL_STRING("No; Compiled without MP4 support."));
   aPromise.setObject(*promise->PromiseObj());
 #endif
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsDOMWindowUtils::GetSupportsHardwareVP9Decoding(JS::MutableHandle<JS::Value> aPromise)
+{
+  nsCOMPtr<nsPIDOMWindowOuter> window = do_QueryReferent(mWindow);
+  NS_ENSURE_STATE(window);
+  nsCOMPtr<nsIGlobalObject> parentObject =
+    do_QueryInterface(window->GetCurrentInnerWindow());
+  NS_ENSURE_STATE(parentObject);
+  ErrorResult rv;
+  RefPtr<Promise> promise = Promise::Create(parentObject, rv);
+  if (rv.Failed()) {
+    return rv.StealNSResult();
+  }
+#if defined(XP_WIN) && defined(MOZ_WMF)
+  nsCOMPtr<nsIWidget> widget = GetWidget();
+  LayerManager* layerManager = widget ? widget->GetLayerManager() : nullptr;
+  if (!MediaPrefs::PDMWMFVP9DecoderEnabled()) {
+    promise->MaybeResolve(NS_LITERAL_STRING("No; media.wmf.vp9.enabled is false"));
+  } else if (!gfx::gfxVars::CanUseHardwareVideoDecoding()) {
+    promise->MaybeResolve(NS_LITERAL_STRING("No; hardware video decoding disabled"));
+  } else if (MediaPrefs::PDMWMFVP9MFTEnabled() &&
+             WMFDecoderModule::HasVP9MFT()) {
+    promise->MaybeResolve(NS_LITERAL_STRING("Yes, using MFT"));
+  } else if (layerManager &&
+             WMFDecoderModule::HasVP9DXVA2(layerManager->AsShadowForwarder())) {
+    promise->MaybeResolve(NS_LITERAL_STRING("Yes; using DXVA2"));
+  } else {
+    promise->MaybeResolve(NS_LITERAL_STRING("No; no VP9 hardware decoder available"));
+  }
+#else
+  promise->MaybeResolve(NS_LITERAL_STRING("No; not supported on this platform"));
+#endif
+  aPromise.setObject(*promise->PromiseObj());
   return NS_OK;
 }
 

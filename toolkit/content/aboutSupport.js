@@ -340,6 +340,7 @@ var snapshotFormatters = {
     addRowFromKey("features", "webgl2DriverExtensions");
     addRowFromKey("features", "webgl2Extensions");
     addRowFromKey("features", "supportsHardwareH264", "hardwareH264");
+    addRowFromKey("features", "supportsHardwareVP9", "hardwareVP9");
     addRowFromKey("features", "currentAudioBackend", "audioBackend");
     addRowFromKey("features", "direct2DEnabled", "#Direct2D");
 
