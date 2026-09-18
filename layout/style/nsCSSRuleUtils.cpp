@@ -665,6 +665,10 @@ nsCSSRuleUtils::SelectorMatches(Element* aElement,
 {
   NS_PRECONDITION(!aSelector->IsPseudoElement(),
                   "Pseudo-element snuck into SelectorMatches?");
+  AutoRestore<bool> laterSiblingsRestorer(
+    aTreeMatchContext.mHasSelectorLaterSiblings);
+  aTreeMatchContext.mHasSelectorLaterSiblings |=
+    aSelector->mOperator == '+' || aSelector->mOperator == '~';
   MOZ_ASSERT(aTreeMatchContext.mForStyling ||
                !aNodeMatchContext.mIsRelevantLink,
              "mIsRelevantLink should be set to false when mForStyling "
@@ -1757,7 +1761,7 @@ AddHasDependencyAtom(nsTArray<nsCOMPtr<nsIAtom>>& aAtoms, nsIAtom* aAtom)
 
 // Collect every branch before matching, including :is() and legacy :not().
 void
-HasSelectorDependency::AddSelector(nsCSSSelector* aSelector)
+nsCSSHasSelectorData::Branch::AddSelector(nsCSSSelector* aSelector)
 {
   for (nsCSSSelector* selector = aSelector; selector; selector = selector->mNext) {
     if (selector->mIDList) {
@@ -1816,8 +1820,9 @@ HasSelectorDependency::AddSelector(nsCSSSelector* aSelector)
 }
 
 void
-HasSelectorDependency::Merge(const HasSelectorDependency& aOther)
+nsCSSHasSelectorData::Branch::Merge(const Branch& aOther)
 {
+  MOZ_ASSERT(mCombinator == aOther.mCombinator && mIsLocal == aOther.mIsLocal);
   mStates |= aOther.mStates;
   mAllAttributes |= aOther.mAllAttributes;
   for (nsIAtom* attr : aOther.mAttributes) {
@@ -1828,9 +1833,91 @@ HasSelectorDependency::Merge(const HasSelectorDependency& aOther)
   }
 }
 
+void
+HasSelectorDependency::AddSelectorData(nsCSSHasSelectorData* aData, bool aSibling)
+{
+  auto& lastSelector = aSibling ? mLastSiblingSelector : mLastSelector;
+  if (lastSelector == aData) {
+    return;
+  }
+  auto& branches = aSibling ? mSiblingBranches : mBranches;
+  for (const auto& source : aData->mBranches) {
+    if (aSibling && !source.IsSibling()) {
+      continue;
+    }
+    nsCSSHasSelectorData::Branch* destination = nullptr;
+    for (auto& branch : branches) {
+      if (branch.mCombinator == source.mCombinator &&
+          branch.mIsLocal == source.mIsLocal) {
+        destination = &branch;
+        break;
+      }
+    }
+    if (destination) {
+      destination->Merge(source);
+    } else {
+      branches.AppendElement(source);
+    }
+  }
+  lastSelector = aData;
+}
+
+// A local compound cannot observe children, ancestors, or state propagated
+// from descendants. Keep structural/state/complex functional arguments on the
+// conservative path; plain :is()/:not() compounds are safe to narrow.
+static bool
+IsLocalHasCompound(nsCSSSelector* aSelector)
+{
+  for (nsPseudoClassList* pseudo = aSelector->mPseudoClassList;
+       pseudo; pseudo = pseudo->mNext) {
+    switch (pseudo->mType) {
+      case CSSPseudoClassType::is:
+      case CSSPseudoClassType::matches:
+      case CSSPseudoClassType::any:
+      case CSSPseudoClassType::where:
+      case CSSPseudoClassType::mozAny:
+      case CSSPseudoClassType::mozAnyPrivate:
+        break;
+      default:
+        return false;
+    }
+    for (nsCSSSelectorList* list = pseudo->u.mSelectorList;
+         list; list = list->mNext) {
+      if (list->mSelectors &&
+          (list->mSelectors->mNext || !IsLocalHasCompound(list->mSelectors))) {
+        return false;
+      }
+    }
+  }
+  for (nsCSSSelector* negation = aSelector->mNegations;
+       negation; negation = negation->mNegations) {
+    if (negation->mNext || !IsLocalHasCompound(negation)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+nsCSSHasSelectorData::nsCSSHasSelectorData(nsCSSSelectorList* aList)
+{
+  for (nsCSSSelectorList* list = aList; list; list = list->mNext) {
+    Branch* branch = mBranches.AppendElement();
+    branch->AddSelector(list->mSelectors);
+    nsCSSSelector* anchor = list->mSelectors;
+    while (anchor->mNext) {
+      anchor = anchor->mNext;
+    }
+    branch->mCombinator = anchor->mOperator;
+    branch->mIsLocal = list->mSelectors->mNext == anchor &&
+                       IsLocalHasCompound(list->mSelectors);
+    mHasSibling |= branch->IsSibling();
+  }
+}
+
 bool
-HasSelectorDependency::MightDependOnAttribute(Element* aElement,
-                                               nsIAtom* aAttribute) const
+nsCSSHasSelectorData::Branch::MightDependOnAttribute(
+  Element* aElement, nsIAtom* aAttribute, const nsAttrValue* aNewClasses,
+  bool aCompareClasses) const
 {
   if (mAllAttributes || mAttributes.Contains(aAttribute)) {
     return true;
@@ -1839,16 +1926,88 @@ HasSelectorDependency::MightDependOnAttribute(Element* aElement,
     return false;
   }
   const nsAttrValue* classes = aElement->GetClasses();
-  if (!classes) {
-    return false;
-  }
   nsCaseTreatment caseTreatment =
     aElement->OwnerDoc()->GetCompatibilityMode() == eCompatibility_NavQuirks
       ? eIgnoreCase : eCaseMatters;
   for (nsIAtom* cls : mClasses) {
-    if (classes->Contains(cls, caseTreatment)) {
+    bool hadClass = classes && classes->Contains(cls, caseTreatment);
+    if (aCompareClasses) {
+      bool hasClass = aNewClasses && aNewClasses->Contains(cls, caseTreatment);
+      if (hadClass != hasClass) {
+        return true;
+      }
+    } else if (hadClass) {
       return true;
     }
+  }
+  return false;
+}
+
+bool
+HasSelectorDependency::MightDependOnChange(
+  Element* aAnchor, nsINode* aNode, EventStates aStateMask,
+  nsIAtom* aAttribute, const nsAttrValue* aNewClasses,
+  bool aCompareClasses, bool aSibling, bool aNodeIsFollowingSibling) const
+{
+  bool contentChange = !aAttribute && aStateMask.IsEmpty();
+  for (const auto& branch : mBranches) {
+    if (branch.IsSibling() != aSibling ||
+        (!aStateMask.IsEmpty() &&
+         !branch.mStates.HasAtLeastOneOfStates(aStateMask)) ||
+        (aAttribute && !branch.MightDependOnAttribute(
+          aNode->AsElement(), aAttribute, aNewClasses, aCompareClasses))) {
+      continue;
+    }
+    if (branch.mIsLocal) {
+      if (aSibling) {
+        nsINode* parent = aAnchor->GetParentNode();
+        if (contentChange) {
+          // Changing a sibling's contents cannot affect a local compound.
+          if (aNode != parent) {
+            continue;
+          }
+        } else {
+          if (aNode->GetParentNode() != parent) {
+            continue;
+          }
+          if (branch.mCombinator == '+') {
+            if (aAnchor->GetNextElementSibling() != aNode) {
+              continue;
+            }
+          } else if (!aNodeIsFollowingSibling) {
+            continue;
+          }
+        }
+      } else if (branch.mCombinator == '>') {
+        if (contentChange ? aNode != aAnchor
+                          : aNode->GetParentNode() != aAnchor) {
+          continue;
+        }
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+bool
+HasSelectorDependency::MightAffectSiblingAnchor(
+  nsINode* aParent, nsINode* aNode, EventStates aStateMask,
+  nsIAtom* aAttribute, const nsAttrValue* aNewClasses,
+  bool aCompareClasses) const
+{
+  bool contentChange = !aAttribute && aStateMask.IsEmpty();
+  for (const auto& branch : mSiblingBranches) {
+    if (!branch.IsSibling() ||
+        (branch.mIsLocal && (contentChange ? aNode != aParent
+                            : aNode->GetParentNode() != aParent)) ||
+        (!aStateMask.IsEmpty() &&
+         !branch.mStates.HasAtLeastOneOfStates(aStateMask)) ||
+        (aAttribute && !branch.MightDependOnAttribute(
+          aNode->AsElement(), aAttribute, aNewClasses, aCompareClasses))) {
+      continue;
+    }
+    return true;
   }
   return false;
 }
@@ -1859,21 +2018,20 @@ DeleteHasSelectorDependency(void*, nsIAtom*, void* aValue, void*)
   delete static_cast<HasSelectorDependency*>(aValue);
 }
 
-static void
-NoteHasSelectorDependency(nsINode* aNode, const HasSelectorDependency& aDependency)
+static HasSelectorDependency*
+EnsureHasSelectorDependency(nsINode* aNode)
 {
   auto* dependency = static_cast<HasSelectorDependency*>(
     aNode->GetProperty(nsGkAtoms::hasSelectorDependency));
-  if (dependency) {
-    dependency->Merge(aDependency);
-    return;
+  if (!dependency) {
+    dependency = new HasSelectorDependency;
+    if (NS_FAILED(aNode->SetProperty(nsGkAtoms::hasSelectorDependency, dependency,
+                                    DeleteHasSelectorDependency))) {
+      delete dependency;
+      return nullptr;
+    }
   }
-  dependency = new HasSelectorDependency;
-  dependency->Merge(aDependency);
-  if (NS_FAILED(aNode->SetProperty(nsGkAtoms::hasSelectorDependency, dependency,
-                                  DeleteHasSelectorDependency))) {
-    delete dependency;
-  }
+  return dependency;
 }
 
 /* static */ bool
@@ -1886,27 +2044,22 @@ nsCSSRuleUtils::RelativeSelectorListMatches(
   MOZ_ASSERT(aList);
 
   if (aTreeMatchContext.mForStyling) {
-    HasSelectorDependency dependency;
-    HasSelectorDependency siblingDependency;
-    bool hasSiblingSelector = false;
-    for (nsCSSSelectorList* relative = aList; relative; relative = relative->mNext) {
-      HasSelectorDependency relativeDependency;
-      relativeDependency.AddSelector(relative->mSelectors);
-      dependency.Merge(relativeDependency);
-      nsCSSSelector* anchor = relative->mSelectors;
-      while (anchor->mNext) {
-        anchor = anchor->mNext;
-      }
-      if (anchor->mOperator == '+' || anchor->mOperator == '~') {
-        hasSiblingSelector = true;
-        siblingDependency.Merge(relativeDependency);
-      }
+    if (!aList->mHasSelectorData) {
+      aList->mHasSelectorData = new nsCSSHasSelectorData(aList);
     }
-    NoteHasSelectorDependency(aAnchor, dependency);
-    // Descendant selectors cannot inspect following sibling subtrees. Only
-    // relative selectors starting with + or ~ need a marker on the parent.
-    if (hasSiblingSelector && aAnchor->GetParent()) {
-      NoteHasSelectorDependency(aAnchor->GetParent(), siblingDependency);
+    const auto& data = aList->mHasSelectorData;
+    // The document marker makes mutations in documents without styled :has()
+    // selectors a constant-time no-op. All markers use the same property type.
+    EnsureHasSelectorDependency(aAnchor->OwnerDoc());
+    if (auto* dependency = EnsureHasSelectorDependency(aAnchor)) {
+      dependency->AddSelectorData(data, false);
+      dependency->mRestyleLaterSiblings |=
+        aTreeMatchContext.mHasSelectorLaterSiblings;
+    }
+    if (data->mHasSibling && aAnchor->GetParent()) {
+      if (auto* dependency = EnsureHasSelectorDependency(aAnchor->GetParent())) {
+        dependency->AddSelectorData(data, true);
+      }
     }
   }
 
@@ -1962,6 +2115,12 @@ nsCSSRuleUtils::RelativeSelectorListMatches(
              sibling = sibling->GetNextElementSibling()) {
           if (matchesSubtree(sibling, relative, aTreeMatchContext)) {
             return true;
+          }
+          // Once + .a enters .a's descendants, later combinators cannot
+          // leave that subtree. + .a + .b still needs the broader search.
+          if (leftmost->mNext->mOperator == '+' &&
+              NS_IS_ANCESTOR_OPERATOR(leftmost->mOperator)) {
+            break;
           }
         }
         break;

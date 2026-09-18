@@ -34,6 +34,7 @@
 
 class nsIAtom;
 struct nsCSSSelectorList;
+struct nsCSSHasSelectorData;
 
 namespace mozilla {
 enum class CSSPseudoClassType : uint8_t;
@@ -318,6 +319,9 @@ struct nsCSSSelectorList {
   // stored as their leftmost selector.  This flag keeps that implementation
   // detail out of serialization and is preserved by cloning.
   bool               mIsRelativeSelector;
+  // Immutable dependency metadata, collected lazily for a :has() argument.
+  // Nodes retain this data independently of the stylesheet's lifetime.
+  RefPtr<nsCSSHasSelectorData> mHasSelectorData;
 protected:
   friend class inDOMUtils;
   nsCSSSelectorList* Clone(bool aDeep) const;
