@@ -23,7 +23,7 @@ public:
 
   // Creates and initializes a DXVA2Manager. We can use DXVA2 via either
   // D3D9Ex or D3D11.
-  static DXVA2Manager* CreateD3D9DXVA(layers::KnowsCompositor* aKnowsCompositor, nsACString& aFailureReason);
+  static DXVA2Manager* CreateD3D9DXVA(layers::KnowsCompositor* aKnowsCompositor, nsACString& aFailureReason, const GUID* aDecoderGUID = nullptr);
   static DXVA2Manager* CreateD3D11DXVA(layers::KnowsCompositor* aKnowsCompositor, nsACString& aFailureReason);
 
   // Returns a pointer to the D3D device manager responsible for managing the
@@ -36,6 +36,10 @@ public:
   virtual HRESULT CopyToImage(IMFSample* aVideoSample,
                               const nsIntRect& aRegion,
                               layers::Image** aOutImage) = 0;
+
+  virtual HRESULT CopySurfaceToImage(IDirect3DSurface9* aSurface,
+                                     const nsIntRect& aRegion,
+                                     layers::Image** aOutImage) { return E_NOTIMPL; }
 
   virtual HRESULT ConfigureForSize(uint32_t aWidth, uint32_t aHeight) { return S_OK; }
 
