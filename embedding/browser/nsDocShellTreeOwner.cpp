@@ -1082,6 +1082,9 @@ ChromeTooltipListener::ChromeTooltipListener(nsWebBrowser* aInBrowser,
 
 ChromeTooltipListener::~ChromeTooltipListener()
 {
+  if (mTooltipTimer) {
+    mTooltipTimer->Cancel();
+  }
 }
 
 // Hook up things to the chrome like context menus and tooltips, if the chrome
@@ -1329,7 +1332,7 @@ void
 ChromeTooltipListener::sTooltipCallback(nsITimer* aTimer,
                                         void* aChromeTooltipListener)
 {
-  auto self = static_cast<ChromeTooltipListener*>(aChromeTooltipListener);
+  RefPtr<ChromeTooltipListener> self = static_cast<ChromeTooltipListener*>(aChromeTooltipListener);
   if (self && self->mPossibleTooltipNode) {
     // The actual coordinates we want to put the tooltip at are relative to the
     // toplevel docshell of our mWebBrowser.  We know what the screen
@@ -1374,7 +1377,7 @@ ChromeTooltipListener::sTooltipCallback(nsITimer* aTimer,
         self->mPossibleTooltipNode, getter_Copies(tooltipText),
         getter_Copies(directionText), &textFound);
 
-      if (textFound) {
+      if (self->mPossibleTooltipNode && textFound) {
         nsString tipText(tooltipText);
         nsString dirText(directionText);
         LayoutDeviceIntPoint screenDot = widget->WidgetToScreenOffset();
