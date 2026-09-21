@@ -294,8 +294,8 @@ nsXMLContentSink::DidBuildModel(bool aTerminated)
       }
     }
 
-    mDocumentChildren.Clear();
     mXSLTProcessor->SetSourceContentModel(mDocument, mDocumentChildren);
+    mDocumentChildren.Clear();
     // Since the processor now holds a reference to us we drop our reference
     // to it to avoid owning cycles
     mXSLTProcessor = nullptr;
