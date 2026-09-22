@@ -358,7 +358,8 @@ gl::Error Image9::setManagedSurface(IDirect3DSurface9 *surface)
     surface->GetDesc(&desc);
     ASSERT(desc.Pool == D3DPOOL_MANAGED);
 
-    if ((GLsizei)desc.Width == mWidth && (GLsizei)desc.Height == mHeight)
+    if ((GLsizei)desc.Width == mWidth && (GLsizei)desc.Height == mHeight &&
+        desc.Format == mD3DFormat)
     {
         if (mSurface)
         {

@@ -1512,6 +1512,12 @@ DoUnaryArithFallback(JSContext* cx, void* payload, ICUnaryArith_Fallback* stub_,
         return true;
     }
 
+#ifdef JS_CODEGEN_ARM64
+    // The ARM64 integer stub only implements bitwise-not and negation.
+    if (op == JSOP_INC || op == JSOP_DEC)
+        return true;
+#endif
+
     if (val.isInt32() && res.isInt32()) {
         JitSpew(JitSpew_BaselineIC, "  Generating %s(Int32 => Int32) stub", CodeName[op]);
         ICUnaryArith_Int32::Compiler compiler(cx, op, engine);

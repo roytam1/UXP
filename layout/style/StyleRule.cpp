@@ -24,6 +24,7 @@
 #include "nsNameSpaceManager.h"
 #include "nsXMLNameSpaceMap.h"
 #include "nsCSSParser.h"
+#include "nsCSSRuleUtils.h"
 #include "nsCSSPseudoClasses.h"
 #include "nsCSSAnonBoxes.h"
 #include "nsTArray.h"
@@ -1021,6 +1022,7 @@ nsCSSSelectorList::~nsCSSSelectorList()
 nsCSSSelector*
 nsCSSSelectorList::AddSelector(char16_t aOperator)
 {
+  mHasSelectorData = nullptr;
   nsCSSSelector* newSel = new nsCSSSelector();
 
   if (mSelectors) {
@@ -1038,6 +1040,7 @@ nsCSSSelectorList::AddSelector(char16_t aOperator)
 void
 nsCSSSelectorList::RemoveRightmostSelector()
 {
+  mHasSelectorData = nullptr;
   nsCSSSelector* current = mSelectors;
   mSelectors = mSelectors->mNext;
   MOZ_ASSERT(mSelectors,

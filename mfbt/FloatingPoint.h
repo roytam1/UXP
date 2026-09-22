@@ -379,12 +379,12 @@ template<typename T>
 static MOZ_ALWAYS_INLINE bool
 NumberEqualsInt32(T aValue, int32_t* aInt32)
 {
-  /*
-   * XXX Casting a floating-point value that doesn't truncate to int32_t, to
-   *     int32_t, induces undefined behavior.  We should definitely fix this
-   *     (bug 744965), but as apparently it "works" in practice, it's not a
-   *     pressing concern now.
-   */
+  // Check the range before casting: an out-of-range float-to-integer cast is
+  // undefined behavior. Use an exclusive upper bound of 2^31, since converting
+  // INT32_MAX to float rounds up to 2^31. This also rejects NaN and infinities.
+  if (!(aValue >= T(INT32_MIN) && aValue < -T(INT32_MIN))) {
+    return false;
+  }
   return aValue == (*aInt32 = int32_t(aValue));
 }
 
