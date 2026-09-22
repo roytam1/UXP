@@ -146,6 +146,8 @@ if CONFIG['OS_TARGET'] == 'Android':
 if CONFIG['CLANG_CL'] or not CONFIG['_MSC_VER']:
     for f in SOURCES:
         if f.endswith('.c'):
+            if 'emms_mmx.c' in f:
+                SOURCES[f].flags += ['-mmmx']
             if 'sse2.c' in f:
                 SOURCES[f].flags += CONFIG['SSE2_FLAGS']
             if 'ssse3.c' in f:

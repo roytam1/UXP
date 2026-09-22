@@ -964,6 +964,10 @@ x86_64*-*)
     ENABLE_ION=1
     AC_DEFINE(JS_CPU_X64)
     ;;
+aarch64*-*)
+    ENABLE_ION=1
+    AC_DEFINE(JS_CPU_ARM64)
+    ;;
 arm*-*)
     ENABLE_ION=1
     AC_DEFINE(JS_CPU_ARM)
@@ -1761,6 +1765,9 @@ elif test "$CPU_ARCH" = "x86"; then
 elif test "$CPU_ARCH" = "x86_64"; then
     AC_DEFINE(JS_CODEGEN_X64)
     JS_CODEGEN_X64=1
+elif test "$CPU_ARCH" = "aarch64"; then
+    AC_DEFINE(JS_CODEGEN_ARM64)
+    JS_CODEGEN_ARM64=1
 elif test "$CPU_ARCH" = "arm"; then
     AC_DEFINE(JS_CODEGEN_ARM)
     JS_CODEGEN_ARM=1

@@ -10,6 +10,7 @@
 #include "mozilla/EventStates.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/RefCountType.h"
+#include "mozilla/RefCounted.h"
 #include "mozilla/SheetType.h"
 #include "mozilla/UniquePtr.h"
 #include "nsExpirationTracker.h"
@@ -20,19 +21,62 @@
 #include "nsTArray.h"
 #include "StyleRule.h"
 
+// No selector or DOM pointers: nodes can safely keep this after a rule is
+// removed, without keeping either the stylesheet or an anchor alive.
+struct nsCSSHasSelectorData : public mozilla::RefCounted<nsCSSHasSelectorData> {
+  MOZ_DECLARE_REFCOUNTED_TYPENAME(nsCSSHasSelectorData)
+
+  struct Branch {
+    mozilla::EventStates mStates;
+    nsTArray<nsCOMPtr<nsIAtom>> mAttributes;
+    nsTArray<nsCOMPtr<nsIAtom>> mClasses;
+    bool mAllAttributes = false;
+    bool mIsLocal = false;
+    char16_t mCombinator = ' ';
+
+    void AddSelector(nsCSSSelector* aSelector);
+    void Merge(const Branch& aOther);
+    bool MightDependOnAttribute(mozilla::dom::Element* aElement,
+                                nsIAtom* aAttribute,
+                                const nsAttrValue* aNewClasses,
+                                bool aCompareClasses) const;
+    bool IsSibling() const {
+      return mCombinator == '+' || mCombinator == '~';
+    }
+  };
+
+  explicit nsCSSHasSelectorData(nsCSSSelectorList* aList);
+  nsTArray<Branch> mBranches;
+  bool mHasSibling = false;
+};
+
 struct nsCSSRuleUtils
 {
   // Stored on nodes under hasSelectorDependency. Dependencies accumulate
   // across matching passes, so a failed/short-circuited branch stays watched.
   struct HasSelectorDependency {
-    mozilla::EventStates mStates;
-    nsTArray<nsCOMPtr<nsIAtom>> mAttributes;
-    nsTArray<nsCOMPtr<nsIAtom>> mClasses;
-    bool mAllAttributes = false;
+    // Merge rules with the same search relationship. Retaining a reference
+    // to every rule ever matched would grow without bound on long-lived pages
+    // that replace stylesheets. Only the most recent registration is cached.
+    nsTArray<nsCSSHasSelectorData::Branch> mBranches;
+    nsTArray<nsCSSHasSelectorData::Branch> mSiblingBranches;
+    RefPtr<nsCSSHasSelectorData> mLastSelector;
+    RefPtr<nsCSSHasSelectorData> mLastSiblingSelector;
+    bool mRestyleLaterSiblings = false;
 
-    void AddSelector(nsCSSSelector* aSelector);
-    void Merge(const HasSelectorDependency& aOther);
-    bool MightDependOnAttribute(Element* aElement, nsIAtom* aAttribute) const;
+    void AddSelectorData(nsCSSHasSelectorData* aData, bool aSibling);
+    bool MightDependOnChange(Element* aAnchor, nsINode* aNode,
+                             mozilla::EventStates aStateMask,
+                             nsIAtom* aAttribute,
+                             const nsAttrValue* aNewClasses,
+                             bool aCompareClasses,
+                             bool aSibling,
+                             bool aNodeIsFollowingSibling = false) const;
+    bool MightAffectSiblingAnchor(nsINode* aParent, nsINode* aNode,
+                                  mozilla::EventStates aStateMask,
+                                  nsIAtom* aAttribute,
+                                  const nsAttrValue* aNewClasses,
+                                  bool aCompareClasses) const;
   };
 
   static void Startup();
