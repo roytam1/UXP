@@ -1431,6 +1431,26 @@ MacroAssembler::branchTestStringTruthy(bool truthy, const ValueOperand& value, L
     B(label, c);
 }
 
+// BigInt code generation is not implemented on ARM64. Baseline must use
+// the VM fallback instead of attaching stubs that require these helpers.
+void
+MacroAssembler::branchTestBigInt(Condition, Register, Label*)
+{
+    MOZ_CRASH("NYI: branchTestBigInt");
+}
+
+void
+MacroAssembler::branchTestBigInt(Condition, const ValueOperand&, Label*)
+{
+    MOZ_CRASH("NYI: branchTestBigInt");
+}
+
+void
+MacroAssembler::branchTestBigIntTruthy(bool, const ValueOperand&, Label*)
+{
+    MOZ_CRASH("NYI: branchTestBigIntTruthy");
+}
+
 void
 MacroAssembler::branchTestSymbol(Condition cond, Register tag, Label* label)
 {

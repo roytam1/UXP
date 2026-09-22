@@ -12059,6 +12059,10 @@ CodeGenerator::visitDebugCheckSelfHosted(LDebugCheckSelfHosted* ins)
 void
 CodeGenerator::visitRandom(LRandom* ins)
 {
+#ifdef JS_CODEGEN_ARM64
+    // Ion is not supported by the ARM64 backend.
+    MOZ_CRASH("ARM64 Ion is not implemented");
+#else
     using mozilla::non_crypto::Xoroshiro128PlusPlusRNG;
 
     FloatRegister output = ToFloatRegister(ins->output());
@@ -12147,6 +12151,7 @@ CodeGenerator::visitRandom(LRandom* ins)
 
     // output *= ScaleInv
     masm.mulDoublePtr(ImmPtr(&ScaleInv), tempReg, output);
+#endif
 }
 
 void

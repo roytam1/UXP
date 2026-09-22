@@ -450,6 +450,7 @@ struct MOZ_STACK_CLASS TreeMatchContext {
     , mIsTopmostScope(false)
     , mForAssignedSlot(false)
     , mRelativeSelectorAnchor(nullptr)
+    , mHasSelectorLaterSiblings(false)
   {
     if (aMatchVisited != eNeverMatchVisited) {
       nsILoadContext* loadContext = mDocument->GetLoadContext();
@@ -472,6 +473,8 @@ struct MOZ_STACK_CLASS TreeMatchContext {
   // relative selector.  This is deliberately separate from mScopes: an
   // explicit :scope inside :has() still refers to the API/style scope.
   mozilla::dom::Element* mRelativeSelectorAnchor;
+  // Propagate an outer sibling combinator through :is(), :not(), etc.
+  bool mHasSelectorLaterSiblings;
 };
 
 struct MOZ_STACK_CLASS RuleProcessorData {

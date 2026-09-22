@@ -240,6 +240,7 @@ class AutoSetHandlingSegFault
 # define EIP_sig(p) ((p)->uc_mcontext->__ss.__eip)
 # define RIP_sig(p) ((p)->uc_mcontext->__ss.__rip)
 # define R15_sig(p) ((p)->uc_mcontext->__ss.__pc)
+# define EPC_sig(p) ((p)->uc_mcontext->__ss.__pc)
 #else
 # error "Don't know how to read/write to the thread state via the mcontext_t."
 #endif

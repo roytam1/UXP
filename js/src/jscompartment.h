@@ -902,8 +902,28 @@ namespace js {
 // scheduledForDestruction will be set on the compartment, which will cause
 // some extra GC activity to try to free the compartment.
 template<typename T> inline void SetMaybeAliveFlag(T* thing) {}
-template<> inline void SetMaybeAliveFlag(JSObject* thing) {thing->compartment()->maybeAlive = true;}
-template<> inline void SetMaybeAliveFlag(JSScript* thing) {thing->compartment()->maybeAlive = true;}
+
+template<> inline void SetMaybeAliveFlag(JSObject* thing) {
+    // During GC marking of WeakRefs, 'thing' might be an invalid/dangling
+    // pointer. Verify compartment is accessible.
+    if (MOZ_LIKELY(thing)) {
+        JSCompartment* comp = thing->compartment();
+        if (MOZ_LIKELY(comp)) {
+            comp->maybeAlive = true;
+        }
+    }
+}
+
+template<> inline void SetMaybeAliveFlag(JSScript* thing) {
+    // During GC marking of WeakRefs, 'thing' might be an invalid/dangling
+    // pointer. Verify compartment is accessible.
+    if (MOZ_LIKELY(thing)) {
+        JSCompartment* comp = thing->compartment();
+        if (MOZ_LIKELY(comp)) {
+            comp->maybeAlive = true;
+        }
+    }
+}
 
 inline js::Handle<js::GlobalObject*>
 ExclusiveContext::global() const

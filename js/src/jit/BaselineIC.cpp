@@ -7936,6 +7936,11 @@ DoTypeOfFallback(JSContext* cx, BaselineFrame* frame, ICTypeOf_Fallback* stub, H
     res.setString(string);
 
     MOZ_ASSERT(type != JSTYPE_NULL);
+#ifdef JS_CODEGEN_ARM64
+    // ARM64 has no BigInt type guard; keep using the VM fallback.
+    if (type == JSTYPE_BIGINT)
+        return true;
+#endif
     if (type != JSTYPE_OBJECT && type != JSTYPE_FUNCTION) {
         // Create a new TypeOf stub.
         JitSpew(JitSpew_BaselineIC, "  Generating TypeOf stub for JSType (%d)", (int) type);

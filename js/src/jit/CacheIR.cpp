@@ -447,6 +447,10 @@ GetPropIRGenerator::tryAttachPrimitive(CacheIRWriter& writer, ValOperandId valId
         primitiveType = JSVAL_TYPE_SYMBOL;
         proto = MaybeNativeObject(GetBuiltinPrototypePure(cx_->global(), JSProto_Symbol));
     }  else if (val_.isBigInt()) {
+#ifdef JS_CODEGEN_ARM64
+        // ARM64 has no BigInt type guard.
+        return true;
+#endif
         primitiveType = JSVAL_TYPE_BIGINT;
         proto = MaybeNativeObject(GetBuiltinPrototypePure(cx_->global(), JSProto_BigInt));
     } else {
