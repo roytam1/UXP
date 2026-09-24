@@ -312,12 +312,14 @@ cvt_s(SprintfState* ss, const char* s, int width, int prec, int flags)
         s = generic_null_str(s);
 
     // Limit string length by precision value
-    // We'd want to use strnlen() here, but it is not supported by all targets
-    // (Most notably old OS X), so use memchr instead.
-    // Replace with `size_t slen = strnlen(s, size_t(prec));` once we no longer
-    // need to cater to this.
+    // We'd want to use strnlen() here, but it is not supported by Mac OS X < 10.7,
+    // so use memchr there instead.
+#if defined(XP_MACOSX) && (!defined(MAC_OS_X_VERSION_10_7) || (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7))
     const char* sptr = (const char*)memchr(s, 0, size_t(prec));
     size_t slen = sptr ? sptr - s : size_t(prec);
+#else
+    size_t slen = strnlen(s, size_t(prec));
+#endif
     
     if (slen > INT_MAX) {
         return false;
