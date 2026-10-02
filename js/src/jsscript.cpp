@@ -3954,7 +3954,9 @@ JSScript::traceChildren(JSTracer* trc)
 
     if (hasObjects()) {
         ObjectArray* objarray = objects();
-        TraceRange(trc, objarray->length, objarray->vector, "objects");
+        if (objarray && objarray->length > 0 && objarray->vector) {
+            TraceRange(trc, objarray->length, objarray->vector, "objects");
+        }
     }
 
     MOZ_ASSERT_IF(sourceObject(), MaybeForwarded(sourceObject())->compartment() == compartment());

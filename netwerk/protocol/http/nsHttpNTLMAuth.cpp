@@ -279,6 +279,7 @@ nsHttpNTLMAuth::ChallengeReceived(nsIHttpAuthenticableChannel *channel,
     if (PL_strcasecmp(challenge, "NTLM") == 0) {
         nsCOMPtr<nsISupports> module;
 
+        mAllowDefaultCredentials = CanUseDefaultCredentials(channel, isProxyAuth);
         // Check to see if we should default to our generic NTLM auth module
         // through UseGenericNTLM. (We use native auth by default if the
         // system provides it.) If *sessionState is non-null, we failed to
@@ -288,7 +289,7 @@ nsHttpNTLMAuth::ChallengeReceived(nsIHttpAuthenticableChannel *channel,
             // Check for approved default credentials hosts and proxies. If
             // *continuationState is non-null, the last authentication attempt
             // failed so skip default credential use.
-            if (!*continuationState && CanUseDefaultCredentials(channel, isProxyAuth)) {
+            if (!*continuationState && mAllowDefaultCredentials) {
                 // Try logging in with the user's default credentials. If
                 // successful, |identityInvalid| is false, which will trigger
                 // a default credentials attempt once we return.
@@ -399,6 +400,13 @@ nsHttpNTLMAuth::GenerateCredentials(nsIHttpAuthenticableChannel *authChannel,
 
     // initial challenge
     if (PL_strcasecmp(challenge, "NTLM") == 0) {
+        // An empty user or password makes nsAuthSSPI::Init authenticate as the
+        // logged-in user, which only CanUseDefaultCredentials() hosts may do.
+        if (mUseNative && !mAllowDefaultCredentials &&
+            (!*user || !*pass)) {
+          LOG(("Not using default credentials for an untrusted host\n"));
+          return NS_ERROR_ABORT;
+        }
         // NTLM service name format is 'HTTP@host' for both http and https
         nsCOMPtr<nsIURI> uri;
         rv = authChannel->GetURI(getter_AddRefs(uri));

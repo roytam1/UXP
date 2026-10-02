@@ -367,6 +367,15 @@ protected:
    * @return whether we match
    */
   bool Match(mozilla::dom::Element *aElement);
+
+  enum class MatchSelfMode : uint8_t {
+    Insertion,
+    // Also accept SVG elements that may have a class. SMIL can change their
+    // class without notification, so they can be in the list without
+    // matching now. Needed when aContent leaves the subtree.
+    Removal,
+  };
+
   /**
    * See if anything in the subtree rooted at aContent, including
    * aContent itself, matches our criterion.
@@ -374,6 +383,7 @@ protected:
    * @param  aContent the root of the subtree to match against
    * @return whether we match something in the tree rooted at aContent
    */
+  template <MatchSelfMode Mode>
   bool MatchSelf(nsIContent *aContent);
 
   /**
