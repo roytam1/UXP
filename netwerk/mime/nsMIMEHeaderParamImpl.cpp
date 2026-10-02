@@ -3,11 +3,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "nsMIMEHeaderParamImpl.h"
+
 #include <string.h>
-#include "prmem.h"
+
+#include "mozilla/Base64.h"
+#include "mozilla/Maybe.h"
+#include "mozilla/TextUtils.h"
+#include "mozilla/dom/EncodingUtils.h"
+
 #include "prprf.h"
 #include "plstr.h"
-#include "plbase64.h"
 #include "nsCRT.h"
 #include "nsMemory.h"
 #include "nsTArray.h"
@@ -16,18 +22,20 @@
 #include "nsIUTF8ConverterService.h"
 #include "nsUConvCID.h"
 #include "nsIServiceManager.h"
-#include "nsMIMEHeaderParamImpl.h"
 #include "nsReadableUtils.h"
 #include "nsNativeCharsetUtils.h"
 #include "nsError.h"
 #include "nsIUnicodeDecoder.h"
-#include "mozilla/dom/EncodingUtils.h"
 
 using mozilla::dom::EncodingUtils;
+using mozilla::Maybe;
+using mozilla::Nothing;
+using mozilla::Some;
+
 
 // static functions declared below are moved from mailnews/mime/src/comi18n.cpp
   
-static char *DecodeQ(const char *, uint32_t);
+static Maybe<nsCString> DecodeQ(const char *, uint32_t);
 static bool Is7bitNonAsciiString(const char *, uint32_t);
 static void CopyRawHeader(const char *, uint32_t, const char *, nsACString &);
 static nsresult DecodeRFC2047Str(const char *, const char *, bool, nsACString&);
@@ -48,8 +56,7 @@ nsMIMEHeaderParamImpl::GetParameter(const nsACString& aHeaderVal,
                                     const char *aParamName,
                                     const nsACString& aFallbackCharset, 
                                     bool aTryLocaleCharset, 
-                                    char **aLang, nsAString& aResult)
-{
+                                    char **aLang, nsAString& aResult) {
   return DoGetParameter(aHeaderVal, aParamName, MIME_FIELD_ENCODING,
                         aFallbackCharset, aTryLocaleCharset, aLang, aResult);
 }
@@ -59,8 +66,7 @@ nsMIMEHeaderParamImpl::GetParameterHTTP(const nsACString& aHeaderVal,
                                         const char *aParamName,
                                         const nsACString& aFallbackCharset, 
                                         bool aTryLocaleCharset, 
-                                        char **aLang, nsAString& aResult)
-{
+                                        char **aLang, nsAString& aResult) {
   return DoGetParameter(aHeaderVal, aParamName, HTTP_FIELD_ENCODING,
                         aFallbackCharset, aTryLocaleCharset, aLang, aResult);
 }
@@ -94,76 +100,75 @@ nsMIMEHeaderParamImpl::DoGetParameter(const nsACString& aHeaderVal,
                                       ParamDecoding aDecoding,
                                       const nsACString& aFallbackCharset, 
                                       bool aTryLocaleCharset, 
-                                      char **aLang, nsAString& aResult)
-{
-    aResult.Truncate();
-    nsresult rv;
+                                      char **aLang, nsAString& aResult) {
+  aResult.Truncate();
+  nsresult rv;
 
-    // get parameter (decode RFC 2231/5987 when applicable, as specified by
-    // aDecoding (5987 being a subset of 2231) and return charset.)
-    nsXPIDLCString med;
-    nsXPIDLCString charset;
-    rv = DoParameterInternal(aHeaderVal, aParamName, aDecoding,
-                             getter_Copies(charset), aLang, getter_Copies(med));
-    if (NS_FAILED(rv))
-        return rv; 
+  // get parameter (decode RFC 2231/5987 when applicable, as specified by
+  // aDecoding (5987 being a subset of 2231) and return charset.)
+  nsXPIDLCString med;
+  nsXPIDLCString charset;
+  rv = DoParameterInternal(aHeaderVal, aParamName, aDecoding,
+                           getter_Copies(charset), aLang, getter_Copies(med));
+  if (NS_FAILED(rv)) {
+    return rv; 
+  }
 
-    // convert to UTF-8 after charset conversion and RFC 2047 decoding 
-    // if necessary.
+  // convert to UTF-8 after charset conversion and RFC 2047 decoding 
+  // if necessary.
     
-    nsAutoCString str1;
-    rv = internalDecodeParameter(med, charset.get(), nullptr, false,
-                                 // was aDecoding == MIME_FIELD_ENCODING
-                                 // see bug 875615
-                                 true,
-                                 str1);
-    NS_ENSURE_SUCCESS(rv, rv);
+  nsAutoCString str1;
+  rv = internalDecodeParameter(med, charset.get(), nullptr, false,
+                               // was aDecoding == MIME_FIELD_ENCODING
+                               // see bug 875615
+                               true,
+                               str1);
+  NS_ENSURE_SUCCESS(rv, rv);
 
-    if (!aFallbackCharset.IsEmpty())
-    {
-        nsAutoCString charset;
-        EncodingUtils::FindEncodingForLabel(aFallbackCharset, charset);
-        nsAutoCString str2;
-        nsCOMPtr<nsIUTF8ConverterService> 
-          cvtUTF8(do_GetService(NS_UTF8CONVERTERSERVICE_CONTRACTID));
-        if (cvtUTF8 &&
-            NS_SUCCEEDED(cvtUTF8->ConvertStringToUTF8(str1, 
-                PromiseFlatCString(aFallbackCharset).get(), false,
-                                   !charset.EqualsLiteral("UTF-8"),
-                                   1, str2))) {
-          CopyUTF8toUTF16(str2, aResult);
-          return NS_OK;
-        }
-    }
-
-    if (IsUTF8(str1)) {
-      CopyUTF8toUTF16(str1, aResult);
+  if (!aFallbackCharset.IsEmpty()) {
+    nsAutoCString charset;
+    EncodingUtils::FindEncodingForLabel(aFallbackCharset, charset);
+    nsAutoCString str2;
+    nsCOMPtr<nsIUTF8ConverterService> cvtUTF8(do_GetService(NS_UTF8CONVERTERSERVICE_CONTRACTID));
+    if (cvtUTF8 &&
+        NS_SUCCEEDED(cvtUTF8->ConvertStringToUTF8(str1, 
+                                                  PromiseFlatCString(aFallbackCharset).get(),
+                                                  false,
+                                                  !charset.EqualsLiteral("UTF-8"),
+                                                  1,
+                                                  str2))) {
+      CopyUTF8toUTF16(str2, aResult);
       return NS_OK;
     }
+  }
 
-    if (aTryLocaleCharset && !NS_IsNativeUTF8()) 
-      return NS_CopyNativeToUnicode(str1, aResult);
-
-    CopyASCIItoUTF16(str1, aResult);
+  if (IsUTF8(str1)) {
+    CopyUTF8toUTF16(str1, aResult);
     return NS_OK;
+  }
+
+  if (aTryLocaleCharset && !NS_IsNativeUTF8()) {
+    return NS_CopyNativeToUnicode(str1, aResult);
+  }
+
+  CopyASCIItoUTF16(str1, aResult);
+  return NS_OK;
 }
 
 // remove backslash-encoded sequences from quoted-strings
-// modifies string in place, potentially shortening it
-void RemoveQuotedStringEscapes(char *src)
-{
-  char *dst = src;
+// modifies aValue, potentially shortening it
+void RemoveQuotedStringEscapes(nsCString& aValue) {
+  nsAutoCString unescaped;
+  unescaped.SetCapacity(aValue.Length());
 
-  for (char *c = src; *c; ++c)
-  {
-    if (c[0] == '\\' && c[1])
-    {
+  for (uint32_t i = 0; i < aValue.Length(); ++i) {
+    if (aValue[i] == '\\' && i + 1 < aValue.Length()) {
       // skip backslash if not at end
-      ++c;
+      ++i;
     }
-    *dst++ = *c;
+    unescaped.Append(aValue[i]);
   }
-  *dst = 0;
+  aValue = std::move(unescaped);
 }
 
 // true is character is a hex digit
@@ -176,17 +181,33 @@ bool IsHexDigit(char aChar)
          (c >= '0' && c <= '9');
 }
 
-// validate that a C String containing %-escapes is syntactically valid
-bool IsValidPercentEscaped(const char *aValue, int32_t len)
-{
-  for (int32_t i = 0; i < len; i++) {
+// validate that a string containing %-escapes is syntactically valid
+bool IsValidPercentEscaped(const nsACString& aValue) {
+  for (uint32_t i = 0; i < aValue.Length(); i++) {
     if (aValue[i] == '%') {
-      if (!IsHexDigit(aValue[i + 1]) || !IsHexDigit(aValue[i + 2])) {
+      if (i + 2 >= aValue.Length() ||
+          !IsHexDigit(aValue[i + 1]) ||
+          !IsHexDigit(aValue[i + 2])) {
         return false;
       }
     }
   }
   return true;
+}
+
+// A NUL anywhere in a decoded value would silently truncate it in any later
+// C-string based processing. Note that this is stricter than
+// ContainsTrailingCharPastNull, which tolerates a value whose tail past the
+// NUL is only more NULs.
+static bool ContainsNull(const nsACString& aValue) {
+  return aValue.Contains('\0');
+}
+
+// Percent-decode aValue in place (which happens whether or not this succeeds),
+// returning false if the decoded value contains a NUL.
+static bool UnescapeRejectingNull(nsCString& aValue) {
+  NS_UnescapeURL(aValue);
+  return !ContainsNull(aValue);
 }
 
 // Support for continuations (RFC 2231, Section 3)
@@ -220,59 +241,41 @@ class Continuation {
     bool wasQuotedString;
 };
 
-// combine segments into a single string, returning the allocated string
-// (or nullptr) while emptying the list 
-char *combineContinuations(nsTArray<Continuation>& aArray)
-{
-  // Sanity check
-  if (aArray.Length() == 0)
-    return nullptr;
+// combine segments into a single string, up to the first segment that is
+// missing. Returns Nothing() if that leaves nothing at all, or, with
+// aContainedNull set, if percent-decoding a segment produced a NUL.
+Maybe<nsCString> combineContinuations(const nsTArray<Continuation>& aArray,
+                                      bool& aContainedNull) {
+  nsCString result;
 
-  // Get an upper bound for the length
-  uint32_t length = 0;
-  for (uint32_t i = 0; i < aArray.Length(); i++) {
-    length += aArray[i].length;
-  }
+  for (const Continuation& cont : aArray) {
+    if (!cont.value) break;
 
-  // Allocate
-  char *result = (char *) moz_xmalloc(length + 1);
-
-  // Concatenate
-  if (result) {
-    *result = '\0';
-
-    for (uint32_t i = 0; i < aArray.Length(); i++) {
-      Continuation cont = aArray[i];
-      if (! cont.value) break;
-
-      char *c = result + strlen(result);
-      strncat(result, cont.value, cont.length);
-      if (cont.needsPercentDecoding) {
-        nsUnescape(c);
-      }
-      if (cont.wasQuotedString) {
-        RemoveQuotedStringEscapes(c);
+    nsAutoCString segment(cont.value, cont.length);
+    if (cont.needsPercentDecoding) {
+      if (!UnescapeRejectingNull(segment)) {
+        aContainedNull = true;
+        return Nothing();
       }
     }
-
-    // return null if empty value
-    if (*result == '\0') {
-      free(result);
-      result = nullptr;
+    if (cont.wasQuotedString) {
+      RemoveQuotedStringEscapes(segment);
     }
-  } else {
-    // Handle OOM
-    NS_WARNING("Out of memory\n");
+    result.Append(segment);
   }
 
-  return result;
+  // no result if empty value
+  if (result.IsEmpty()) {
+    return Nothing();
+  }
+
+  return Some(std::move(result));
 }
 
 // add a continuation, return false on error if segment already has been seen
 bool addContinuation(nsTArray<Continuation>& aArray, uint32_t aIndex,
                      const char *aValue, uint32_t aLength,
-                     bool aNeedsPercentDecoding, bool aWasQuotedString)
-{
+                     bool aNeedsPercentDecoding, bool aWasQuotedString) {
   if (aIndex < aArray.Length() && aArray[aIndex].value) {
     NS_WARNING("duplicate RC2231 continuation segment #\n");
     return false;
@@ -299,8 +302,7 @@ bool addContinuation(nsTArray<Continuation>& aArray, uint32_t aIndex,
 }
 
 // parse a segment number; return -1 on error
-int32_t parseSegmentNumber(const char *aValue, int32_t aLen)
-{
+int32_t parseSegmentNumber(const char *aValue, int32_t aLen) {
   if (aLen < 1) {
     NS_WARNING("segment number missing\n");
     return -1;
@@ -332,20 +334,16 @@ int32_t parseSegmentNumber(const char *aValue, int32_t aLen)
 
 // validate a given octet sequence for compliance with the specified
 // encoding
-bool IsValidOctetSequenceForCharset(nsACString& aCharset, const char *aOctets)
-{
-  nsCOMPtr<nsIUTF8ConverterService> cvtUTF8(do_GetService
-    (NS_UTF8CONVERTERSERVICE_CONTRACTID));
+bool IsValidOctetSequenceForCharset(nsACString& aCharset, const nsACString& aOctets) {
+  nsCOMPtr<nsIUTF8ConverterService> cvtUTF8(do_GetService(NS_UTF8CONVERTERSERVICE_CONTRACTID));
   if (!cvtUTF8) {
     NS_WARNING("Can't get UTF8ConverterService\n");
     return false;
   }
 
-  nsAutoCString tmpRaw;
-  tmpRaw.Assign(aOctets);
   nsAutoCString tmpDecoded;
 
-  nsresult rv = cvtUTF8->ConvertStringToUTF8(tmpRaw,
+  nsresult rv = cvtUTF8->ConvertStringToUTF8(aOctets,
                                              PromiseFlatCString(aCharset).get(),
                                              false, false, 1, tmpDecoded);
 
@@ -371,8 +369,7 @@ nsMIMEHeaderParamImpl::GetParameterInternal(const nsACString& aHeaderValue,
                                             const char* aParamName,
                                             char** aCharset,
                                             char** aLang,
-                                            char** aResult)
-{
+                                            char** aResult) {
   return DoParameterInternal(aHeaderValue, aParamName, MIME_FIELD_ENCODING,
                              aCharset, aLang, aResult);
 }
@@ -384,9 +381,7 @@ nsMIMEHeaderParamImpl::DoParameterInternal(const nsACString& aHeaderValue,
                                            ParamDecoding aDecoding,
                                            char** aCharset,
                                            char** aLang,
-                                           char** aResult)
-{
-
+                                           char** aResult) {
   if (aHeaderValue.IsEmpty() || !aResult) {
     return NS_ERROR_INVALID_ARG;
   }
@@ -405,8 +400,12 @@ nsMIMEHeaderParamImpl::DoParameterInternal(const nsACString& aHeaderValue,
 
   *aResult = nullptr;
 
-  if (aCharset) *aCharset = nullptr;
-  if (aLang) *aLang = nullptr;
+  if (aCharset) {
+    *aCharset = nullptr;
+  }
+  if (aLang) {
+    *aLang = nullptr;
+  }
 
   nsAutoCString charset;
 
@@ -415,8 +414,8 @@ nsMIMEHeaderParamImpl::DoParameterInternal(const nsACString& aHeaderValue,
   bool acceptContinuations = true;
 
   // skip leading white space.
-  for (; *str &&  nsCRT::IsAsciiSpace(*str); ++str)
-    ;
+  for (; *str &&  nsCRT::IsAsciiSpace(*str); ++str) { }
+
   const char *start = str;
   
   // aParamName is empty. return the first (possibly) _unnamed_ 'parameter'
@@ -429,9 +428,7 @@ nsMIMEHeaderParamImpl::DoParameterInternal(const nsACString& aHeaderValue,
       if (str == start)
         return NS_ERROR_FIRST_HEADER_FIELD_COMPONENT_EMPTY;
 
-      *aResult = (char *) nsMemory::Clone(start, (str - start) + 1);
-      NS_ENSURE_TRUE(*aResult, NS_ERROR_OUT_OF_MEMORY);
-      (*aResult)[str - start] = '\0';  // null-terminate
+      *aResult = ToNewCString(Substring(start, str - start));
       return NS_OK;
     }
 
@@ -465,9 +462,14 @@ nsMIMEHeaderParamImpl::DoParameterInternal(const nsACString& aHeaderValue,
   // collect results for the different algorithms (plain filename,
   // RFC5987/2231-encoded filename, + continuations) separately and decide
   // which to use at the end
-  char *caseAResult = nullptr;
-  char *caseBResult = nullptr;
-  char *caseCDResult = nullptr;
+  Maybe<nsCString> caseAResult;
+  Maybe<nsCString> caseBResult;
+  Maybe<nsCString> caseCDResult;
+
+  // set when percent-decoding produced a NUL, which makes us reject the
+  // parameter outright rather than fall back to a value the sender did not
+  // intend to be used
+  bool containedNull = false;
 
   // collect continuation segments
   nsTArray<Continuation> segments;
@@ -548,15 +550,14 @@ nsMIMEHeaderParamImpl::DoParameterInternal(const nsACString& aHeaderValue,
 
       // if the parameter spans across multiple lines we have to strip out the
       //     line continuation -- jht 4/29/98 
-      nsAutoCString tempStr(valueStart, valueEnd - valueStart);
+      nsCString tempStr(valueStart, valueEnd - valueStart);
       tempStr.StripChars("\r\n");
-      char *res = ToNewCString(tempStr);
-      NS_ENSURE_TRUE(res, NS_ERROR_OUT_OF_MEMORY);
       
-      if (isQuotedString)
-        RemoveQuotedStringEscapes(res);
+      if (isQuotedString) {
+        RemoveQuotedStringEscapes(tempStr);
+      }
 
-      caseAResult = res;
+      caseAResult.emplace(std::move(tempStr));
       // keep going, we may find a RFC 2231/5987 encoded alternative
     }
     // case B, C, and D
@@ -645,19 +646,16 @@ nsMIMEHeaderParamImpl::DoParameterInternal(const nsACString& aHeaderValue,
         // non-empty value part
         if (rawValLength > 0) {
           if (!caseBResult && caseB) {
-            if (!IsValidPercentEscaped(rawValStart, rawValLength)) {
+            nsCString rawVal(rawValStart, rawValLength);
+            if (!IsValidPercentEscaped(rawVal)) {
               goto increment_str;
             }
 
-            // allocate buffer for the raw value
-            char *tmpResult = (char *) nsMemory::Clone(rawValStart, rawValLength + 1);
-            if (!tmpResult) {
-              goto increment_str;
+            if (!UnescapeRejectingNull(rawVal)) {
+              containedNull = true;
+              break;
             }
-            *(tmpResult + rawValLength) = 0;
-
-            nsUnescape(tmpResult);
-            caseBResult = tmpResult;
+            caseBResult.emplace(std::move(rawVal));
           } else {
             // caseC
             bool added = addContinuation(segments, 0, rawValStart,
@@ -701,43 +699,44 @@ increment_str:
     while (nsCRT::IsAsciiSpace(*str)) ++str;
   }
 
-  caseCDResult = combineContinuations(segments);
+  if (!containedNull) {
+    caseCDResult = combineContinuations(segments, containedNull);
+  }
+
+  if (containedNull) {
+    // Percent-decoding produced a NUL, which would truncate the value.
+    return NS_ERROR_INVALID_ARG;
+  }
 
   if (caseBResult && !charsetB.IsEmpty()) {
     // check that the 2231/5987 result decodes properly given the
     // specified character set
-    if (!IsValidOctetSequenceForCharset(charsetB, caseBResult))
-      caseBResult = nullptr;
+    if (!IsValidOctetSequenceForCharset(charsetB, *caseBResult)) {
+      caseBResult.reset();
+    }
   }
 
   if (caseCDResult && !charsetCD.IsEmpty()) {
     // check that the 2231/5987 result decodes properly given the
     // specified character set
-    if (!IsValidOctetSequenceForCharset(charsetCD, caseCDResult))
-      caseCDResult = nullptr;
+    if (!IsValidOctetSequenceForCharset(charsetCD, *caseCDResult)) {
+      caseCDResult.reset();
+    }
   }
 
   if (caseBResult) {
     // prefer simple 5987 format over 2231 with continuations
-    *aResult = caseBResult;
-    caseBResult = nullptr;
+    *aResult = ToNewCString(*caseBResult);
     charset.Assign(charsetB);
   }
   else if (caseCDResult) {
     // prefer 2231/5987 with or without continuations over plain format
-    *aResult = caseCDResult;
-    caseCDResult = nullptr;
+    *aResult = ToNewCString(*caseCDResult);
     charset.Assign(charsetCD);
   }
   else if (caseAResult) {
-    *aResult = caseAResult;
-    caseAResult = nullptr;
+    *aResult = ToNewCString(*caseAResult);
   }
-
-  // free unused stuff
-  free(caseAResult);
-  free(caseBResult);
-  free(caseCDResult);
 
   // if we have a result
   if (*aResult) {
@@ -825,23 +824,6 @@ bool IsRFC5987AttrChar(char aChar)
           c == '_' || c == '`' || c == '|' || c == '~');
 }
 
-// percent-decode a value
-// returns false on failure
-bool PercentDecode(nsACString& aValue)
-{
-  char *c = (char *) moz_xmalloc(aValue.Length() + 1);
-  if (!c) {
-    return false;
-  }
-
-  strcpy(c, PromiseFlatCString(aValue).get());
-  nsUnescape(c);
-  aValue.Assign(c);
-  free(c);
-
-  return true;
-}
-
 // Decode a parameter value using the encoding defined in RFC 5987
 // 
 // charset  "'" [ language ] "'" value-chars
@@ -909,8 +891,8 @@ nsMIMEHeaderParamImpl::DecodeRFC5987Param(const nsACString& aParamVal,
   }
 
   // percent-decode
-  if (!PercentDecode(value)) {
-    return NS_ERROR_OUT_OF_MEMORY;
+  if (!UnescapeRejectingNull(value)) {
+    return NS_ERROR_INVALID_ARG;
   }
 
   // return the encoding
@@ -999,52 +981,44 @@ nsMIMEHeaderParamImpl::DecodeParameter(const nsACString& aParamValue,
          (0x41 <= uint8_t(c) && uint8_t(c) <= 0x46)  ||  \
          (0x61 <= uint8_t(c) && uint8_t(c) <= 0x66))
 
-// Decode Q encoding (RFC 2047).
+// Decode Q encoding (RFC 2047). Returns Nothing() on bad syntax.
 // static
-char *DecodeQ(const char *in, uint32_t length)
-{
-  char *out, *dest = 0;
+Maybe<nsCString> DecodeQ(const char* in, uint32_t length) {
+  nsCString dest;
+  dest.SetCapacity(length);
 
-  out = dest = (char *)PR_Calloc(length + 1, sizeof(char));
-  if (dest == nullptr)
-    return nullptr;
   while (length > 0) {
     unsigned c = 0;
     switch (*in) {
-    case '=':
-      // check if |in| in the form of '=hh'  where h is [0-9a-fA-F].
-      if (length < 3 || !ISHEXCHAR(in[1]) || !ISHEXCHAR(in[2]))
-        goto badsyntax;
-      PR_sscanf(in + 1, "%2X", &c);
-      *out++ = (char) c;
-      in += 3;
-      length -= 3;
-      break;
+      case '=':
+        // check if |in| in the form of '=hh'  where h is [0-9a-fA-F].
+        if (length < 3 || !ISHEXCHAR(in[1]) || !ISHEXCHAR(in[2])) {
+          return Nothing();
+        }
+        PR_sscanf(in + 1, "%2X", &c);
+        dest.Append((char)c);
+        in += 3;
+        length -= 3;
+        break;
 
-    case '_':
-      *out++ = ' ';
-      in++;
-      length--;
-      break;
+      case '_':
+        dest.Append(' ');
+        in++;
+        length--;
+        break;
 
-    default:
-      if (*in & 0x80) goto badsyntax;
-      *out++ = *in++;
-      length--;
+      default:
+        if (*in & 0x80) {
+          return Nothing();
+        }
+        dest.Append(*in++);
+        length--;
     }
   }
-  *out++ = '\0';
 
-  for (out = dest; *out ; ++out) {
-    if (*out == '\t')
-      *out = ' ';
-  }
+  dest.ReplaceChar('\t', ' ');
 
-  return dest;
-
- badsyntax:
-  PR_Free(dest);
-  return nullptr;
+  return Some(std::move(dest));
 }
 
 // check if input is HZ (a 7bit encoding for simplified Chinese : RFC 1842)) 
@@ -1154,17 +1128,25 @@ void CopyRawHeader(const char *aInput, uint32_t aLen,
 nsresult DecodeQOrBase64Str(const char *aEncoded, size_t aLen, char aQOrBase64,
                             const char *aCharset, nsACString &aResult)
 {
-  char *decodedText;
+  nsCString decodedText;
   NS_ASSERTION(aQOrBase64 == 'Q' || aQOrBase64 == 'B', "Should be 'Q' or 'B'");
-  if(aQOrBase64 == 'Q')
-    decodedText = DecodeQ(aEncoded, aLen);
-  else if (aQOrBase64 == 'B') {
-    decodedText = PL_Base64Decode(aEncoded, aLen, nullptr);
+  if(aQOrBase64 == 'Q') {
+    Maybe<nsCString> decoded = DecodeQ(aEncoded, aLen);
+    if (!decoded) {
+      return NS_ERROR_INVALID_ARG;
+    }
+    decodedText = std::move(*decoded);
+  } else if (aQOrBase64 == 'B') {
+    if (NS_FAILED(
+            mozilla::Base64Decode(Substring(aEncoded, aLen), decodedText))) {
+      return NS_ERROR_INVALID_ARG;
+    }
   } else {
     return NS_ERROR_INVALID_ARG;
   }
 
-  if (!decodedText) {
+  if (ContainsNull(decodedText)) {
+    // a NUL would truncate the decoded value
     return NS_ERROR_INVALID_ARG;
   }
 
@@ -1174,12 +1156,11 @@ nsresult DecodeQOrBase64Str(const char *aEncoded, size_t aLen, char aQOrBase64,
   nsAutoCString utf8Text;
   if (NS_SUCCEEDED(rv)) {
     // skip ASCIIness/UTF8ness test if aCharset is 7bit non-ascii charset.
-    rv = cvtUTF8->ConvertStringToUTF8(nsDependentCString(decodedText),
+    rv = cvtUTF8->ConvertStringToUTF8(decodedText,
                                       aCharset,
                                       IS_7BIT_NON_ASCII_CHARSET(aCharset),
                                       true, 1, utf8Text);
   }
-  PR_Free(decodedText);
   if (NS_FAILED(rv)) {
     return rv;
   }

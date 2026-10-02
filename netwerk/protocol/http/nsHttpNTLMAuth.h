@@ -22,7 +22,11 @@ private:
 
     // This flag indicates whether we are using the native NTLM implementation
     // or the internal one.
-    bool  mUseNative;
+    bool mUseNative;
+
+    // Whether the prefs let this host use the logged-in user's identity. Set by
+    // ChallengeReceived, read by GenerateCredentials.
+    bool mAllowDefaultCredentials = false;
 };
 
 } // namespace net
