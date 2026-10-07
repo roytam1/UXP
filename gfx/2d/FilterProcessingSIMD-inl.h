@@ -716,14 +716,22 @@ ApplyComposition(DataSourceSurface* aSource, DataSourceSurface* aDest)
 
       u16x8_t s12 = simd::UnpackLo8x8ToU16x8(s1234);
       u16x8_t d12 = simd::UnpackLo8x8ToU16x8(d1234);
-      u16x8_t sa12 = simd::Splat16<3,3>(s12);
-      u16x8_t da12 = simd::Splat16<3,3>(d12);
+      u16x8_t sa12 =
+        simd::Splat16<B8G8R8A8_COMPONENT_BYTEOFFSET_A,
+                      B8G8R8A8_COMPONENT_BYTEOFFSET_A>(s12);
+      u16x8_t da12 =
+        simd::Splat16<B8G8R8A8_COMPONENT_BYTEOFFSET_A,
+                      B8G8R8A8_COMPONENT_BYTEOFFSET_A>(d12);
       u16x8_t result12 = CompositeTwoPixels<i32x4_t,u16x8_t,op>(s12, sa12, d12, da12);
 
       u16x8_t s34 = simd::UnpackHi8x8ToU16x8(s1234);
       u16x8_t d34 = simd::UnpackHi8x8ToU16x8(d1234);
-      u16x8_t sa34 = simd::Splat16<3,3>(s34);
-      u16x8_t da34 = simd::Splat16<3,3>(d34);
+      u16x8_t sa34 =
+        simd::Splat16<B8G8R8A8_COMPONENT_BYTEOFFSET_A,
+                      B8G8R8A8_COMPONENT_BYTEOFFSET_A>(s34);
+      u16x8_t da34 =
+        simd::Splat16<B8G8R8A8_COMPONENT_BYTEOFFSET_A,
+                      B8G8R8A8_COMPONENT_BYTEOFFSET_A>(d34);
       u16x8_t result34 = CompositeTwoPixels<i32x4_t,u16x8_t,op>(s34, sa34, d34, da34);
 
       u8x16_t result1234 = simd::PackAndSaturate16To8(result12, result34);
@@ -869,8 +877,12 @@ DoPremultiplicationCalculation_SIMD(const IntSize& aSize,
       u16x8_t p34 = simd::UnpackHi8x8ToU16x8(p1234);
 
       // Multiply all components with alpha.
-      p12 = simd::Mul16(p12, simd::Splat16<3,3>(p12));
-      p34 = simd::Mul16(p34, simd::Splat16<3,3>(p34));
+      p12 = simd::Mul16(p12,
+        simd::Splat16<B8G8R8A8_COMPONENT_BYTEOFFSET_A,
+                      B8G8R8A8_COMPONENT_BYTEOFFSET_A>(p12));
+      p34 = simd::Mul16(p34,
+        simd::Splat16<B8G8R8A8_COMPONENT_BYTEOFFSET_A,
+                      B8G8R8A8_COMPONENT_BYTEOFFSET_A>(p34));
 
       // Divide by 255 and pack.
       u8x16_t result = simd::PackAndSaturate16To8(simd::FastDivideBy255_16(p12),
