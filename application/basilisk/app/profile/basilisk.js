@@ -890,7 +890,7 @@ pref("browser.zoom.updateBackgroundTabs", true);
 pref("breakpad.reportURL", "");
 
 // base URL for web-based support pages
-pref("app.support.baseURL", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/");
+pref("app.support.baseURL", "https://rtfreesoft.blogspot.com/p/browser-help.html#");
 
 // a11y conflicts with e10s support page
 pref("app.support.e10sAccessibilityUrl", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/accessibility-ppt");
