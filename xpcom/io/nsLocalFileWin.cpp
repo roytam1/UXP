@@ -3013,6 +3013,7 @@ nsLocalFile::IsExecutable(bool* aResult)
     }
 
     // Search for any of the set of executable extensions.
+    // Note: always use lower case here since we lowercase the extensions before comparing.
     static const char* const executableExts[] = {
       "ad",
       "ade",         // access project extension
