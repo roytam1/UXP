@@ -3065,11 +3065,12 @@ nsLocalFile::IsExecutable(bool* aResult)
       "msc",
       "msh",         // Microsoft Shell
       "mshxml",      // Microsoft Shell
-      "msi",
+      "msi",         // Standalone microsoft installer package
       "msix",
       "msixbundle",
       "msp",
       "mst",
+      // "msu",         // Windows Update Standalone Installer. Gated by Windows on MS signatures already.
       "ops",         // Office Profile Settings
       "pcd",
       "pif",
@@ -3081,7 +3082,8 @@ nsLocalFile::IsExecutable(bool* aResult)
       "scf",         // Windows explorer command
       "scr",
       "sct",
-      "search-ms",   // Windows Saved Search
+      "searchconnector-ms", // Windows Search connector installs an OpenSearch provider
+      "search-ms",          // Windows Saved Search
       "settingcontent-ms",
       "shb",
       "shs",
