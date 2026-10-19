@@ -16,24 +16,21 @@
 #include "hwy/contrib/image/image.h"
 
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <random>
-#include <utility>
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "hwy/contrib/image/image_test.cc"
 #include "hwy/foreach_target.h"  // IWYU pragma: keep
-
-// After foreach_target:
 #include "hwy/highway.h"
 #include "hwy/tests/test_util-inl.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace hwy {
 namespace HWY_NAMESPACE {
+namespace {
 
 // Ensure we can always write full aligned vectors.
 struct TestAlignedT {
@@ -50,7 +47,7 @@ struct TestAlignedT {
         for (size_t y = 0; y < ysize; ++y) {
           T* HWY_RESTRICT row = img.MutableRow(y);
           for (size_t x = 0; x < xsize; x += Lanes(d)) {
-            const auto values = Iota(d, static_cast<T>(dist(rng)));
+            const auto values = Iota(d, dist(rng));
             Store(values, d, row + x);
           }
         }
@@ -86,7 +83,7 @@ struct TestUnalignedT {
         for (size_t y = 0; y < ysize; ++y) {
           T* HWY_RESTRICT row = img.MutableRow(y);
           for (size_t x = 0; x < xsize; ++x) {
-            row[x] = static_cast<T>(1u << dist(rng));
+            row[x] = ConvertScalarTo<T>(1u << dist(rng));
           }
         }
 
@@ -102,6 +99,7 @@ struct TestUnalignedT {
         // Ensure padding was zero
         const size_t N = Lanes(d);
         auto lanes = AllocateAligned<T>(N);
+        HWY_ASSERT(lanes);
         Store(accum, d, lanes.get());
         for (size_t i = 0; i < N; ++i) {
           HWY_ASSERT(lanes[i] < 16);
@@ -111,7 +109,7 @@ struct TestUnalignedT {
         for (size_t y = 0; y < ysize; ++y) {
           T* HWY_RESTRICT row = img.MutableRow(y);
           for (size_t x = 0; x < xsize; ++x) {
-            row[x] = static_cast<T>(x);
+            row[x] = ConvertScalarTo<T>(x);
           }
         }
 
@@ -125,7 +123,7 @@ struct TestUnalignedT {
         for (size_t y = 0; y < ysize; ++y) {
           T* HWY_RESTRICT row = img.MutableRow(y);
           for (size_t x = 0; x < xsize - 1; ++x) {
-            HWY_ASSERT_EQ(static_cast<T>(x), row[x]);
+            HWY_ASSERT_EQ(ConvertScalarTo<T>(x), row[x]);
           }
         }
 #endif
@@ -136,17 +134,20 @@ struct TestUnalignedT {
 
 void TestUnaligned() { ForUnsignedTypes(TestUnalignedT()); }
 
+}  // namespace
 // NOLINTNEXTLINE(google-readability-namespace-comments)
 }  // namespace HWY_NAMESPACE
 }  // namespace hwy
 HWY_AFTER_NAMESPACE();
 
 #if HWY_ONCE
-
 namespace hwy {
+namespace {
 HWY_BEFORE_TEST(ImageTest);
 HWY_EXPORT_AND_TEST_P(ImageTest, TestAligned);
 HWY_EXPORT_AND_TEST_P(ImageTest, TestUnaligned);
+HWY_AFTER_TEST();
+}  // namespace
 }  // namespace hwy
-
-#endif
+HWY_TEST_MAIN();
+#endif  // HWY_ONCE
