@@ -3,6 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+#include <jxl/codestream_header.h>
 #include <jxl/color_encoding.h>
 #include <jxl/encode.h>
 #include <jxl/encode_cxx.h>
@@ -13,14 +14,13 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <hwy/targets.h>
 #include <vector>
 
-#include "jxl/codestream_header.h"
-#include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/fuzztest.h"
 #include "lib/jxl/test_image.h"
 #include "tools/tracking_memory_manager.h"
@@ -30,11 +30,13 @@ namespace {
 using ::jpegxl::tools::kGiB;
 using ::jpegxl::tools::TrackingMemoryManager;
 
-void Check(bool ok) {
+void CheckImpl(bool ok, const char* condition, const char* file, int line) {
   if (!ok) {
-    JXL_CRASH();
+    fprintf(stderr, "Check(%s) failed at %s:%d\n", condition, file, line);
+    __builtin_trap();
   }
 }
+#define Check(OK) CheckImpl((OK), #OK, __FILE__, __LINE__)
 
 #define TRY(expr)                                \
   do {                                           \
@@ -79,6 +81,7 @@ bool EncodeJpegXl(const FuzzSpec& spec, JxlMemoryManager* memory_manager) {
                                     runner.get()));
     JxlEncoderFrameSettings* frame_settings =
         JxlEncoderFrameSettingsCreate(enc, nullptr);
+    Check(frame_settings != nullptr);
 
     for (auto option : spec.options) {
       TRY(JxlEncoderFrameSettingsSetOption(frame_settings, option.id,

@@ -89,6 +89,8 @@ struct HybridUintConfig {
     }
   }
 
+  JXL_INLINE uint32_t LsbMask() const { return (1 << lsb_in_token) - 1; }
+
   explicit HybridUintConfig(uint32_t split_exponent = 4,
                             uint32_t msb_in_token = 2,
                             uint32_t lsb_in_token = 0)
@@ -304,8 +306,8 @@ class ANSSymbolReader {
                        lz77_min_length_;
         br->Refill();  // covers ReadSymbolWithoutRefill + PeekBits
         // Distance code.
-        size_t token = ReadSymbolWithoutRefill(lz77_ctx_, br);
-        size_t distance = ReadHybridUintConfig(configs[lz77_ctx_], token, br);
+        size_t d_token = ReadSymbolWithoutRefill(lz77_ctx_, br);
+        size_t distance = ReadHybridUintConfig(configs[lz77_ctx_], d_token, br);
         if (JXL_LIKELY(distance < num_special_distances_)) {
           distance = special_distances_[distance];
         } else {
@@ -324,8 +326,16 @@ class ANSSymbolReader {
           size_t to_fill = std::min<size_t>(num_to_copy_, kWindowSize);
           memset(lz77_window_, 0, to_fill * sizeof(lz77_window_[0]));
         }
-        // TODO(eustas): overflow; mark BitReader as unhealthy
-        if (num_to_copy_ < lz77_min_length_) return 0;
+        if (JXL_UNLIKELY(num_to_copy_ < lz77_min_length_)) {
+          // num_to_copy_ = ReadHybridUintConfig(...) + lz77_min_length_ above
+          // wrapped (lz77_min_length_ added to a value near SIZE_MAX). Stop
+          // accepting further data so the corruption surfaces at the next
+          // AllReadsWithinBounds() / Close() check instead of letting the
+          // decoder keep producing phantom symbols from the LZ77 window.
+          num_to_copy_ = 0;
+          br->MarkUnhealthy();
+          return 0;
+        }
         // the code below is the same as doing this:
         //        return ReadHybridUintClustered<uses_lz77>(ctx, br);
         // but gcc doesn't like recursive inlining
@@ -379,6 +389,8 @@ class ANSSymbolReader {
   bool IsSingleValueAndAdvance(size_t ctx, uint32_t* value, size_t count) {
     // TODO(veluca): No optimization for Huffman mode yet.
     if (use_prefix_code_) return false;
+    // TODO(eustas): Check if we could deal with copy tail as well.
+    if (num_to_copy_ != 0) return false;
     // TODO(eustas): propagate "degenerate_symbol" to simplify this method.
     const uint32_t res = state_ & (ANS_TAB_SIZE - 1u);
     const AliasTable::Entry* table = &alias_tables_[ctx << log_alpha_size_];

@@ -200,8 +200,9 @@ static std::vector<uint16_t> CreateTableCurve(bool tone_map) {
   // TODO(sboukortt): make this variable?
   static constexpr float kPQIntensityTarget = 10000;
 
-  static_assert(N <= 4096);  // ICC MFT2 only allows 4K entries
-  static_assert(tf == ExtraTF::kPQ || tf == ExtraTF::kHLG);
+  static_assert(N <= 4096, "ICC MFT2 only allows 4K entries");
+  static_assert(tf == ExtraTF::kPQ || tf == ExtraTF::kHLG,
+                "Only PQ/HLG is supported");
 
   static constexpr Vector3 kLuminances{1.f / 3, 1.f / 3, 1.f / 3};
   Rec2408ToneMapperBase tone_mapper(
@@ -678,7 +679,7 @@ static Status CreateICCLutAtoBTagForXYB(std::vector<uint8_t>* tags) {
   return true;
 }
 
-static Status CreateICCLutAtoBTagForHDR(JxlColorEncoding c,
+static Status CreateICCLutAtoBTagForHDR(JxlColorEncoding color_encoding,
                                         std::vector<uint8_t>* tags) {
   static constexpr size_t k3DLutDim = 9;
   WriteICCTag("mft1", tags->size(), tags);
@@ -715,7 +716,7 @@ static Status CreateICCLutAtoBTagForHDR(JxlColorEncoding c,
                       iy * (1.0f / (k3DLutDim - 1)),
                       ib * (1.0f / (k3DLutDim - 1))};
         uint8_t pcslab_out[3];
-        JXL_RETURN_IF_ERROR(ToneMapPixel(c, f, pcslab_out));
+        JXL_RETURN_IF_ERROR(ToneMapPixel(color_encoding, f, pcslab_out));
         for (uint8_t val : pcslab_out) {
           WriteICCUint8(val, tags->size(), tags);
         }
@@ -861,18 +862,64 @@ static std::string ToString(JxlRenderingIntent rendering_intent) {
   return "Invalid";
 }
 
-static std::string ColorEncodingDescriptionImpl(const JxlColorEncoding& c) {
-  if (c.color_space == JXL_COLOR_SPACE_RGB &&
-      c.white_point == JXL_WHITE_POINT_D65) {
-    if (c.rendering_intent == JXL_RENDERING_INTENT_PERCEPTUAL &&
-        c.transfer_function == JXL_TRANSFER_FUNCTION_SRGB) {
-      if (c.primaries == JXL_PRIMARIES_SRGB) return "sRGB";
-      if (c.primaries == JXL_PRIMARIES_P3) return "DisplayP3";
+static inline bool CloseEnough(double a, double b) {
+  return std::abs(a - b) < 3e-5;
+}
+
+static std::string ColorEncodingDescriptionImpl(const JxlColorEncoding& c,
+                                                bool uniquename) {
+  // Return short names for the most common color spaces.
+  // These names are returned regardless of rendering intent, and also there is
+  // some tolerance regarding primaries and transfer function, so different
+  // ColorEncodings can return the same short name.
+  if (c.color_space == JXL_COLOR_SPACE_RGB && !uniquename) {
+    if (c.white_point == JXL_WHITE_POINT_D65) {
+      if (c.transfer_function == JXL_TRANSFER_FUNCTION_SRGB) {
+        if (c.primaries == JXL_PRIMARIES_SRGB) return "sRGB";
+        if (c.primaries == JXL_PRIMARIES_P3) return "DisplayP3";
+      }
+      if (c.primaries == JXL_PRIMARIES_2100) {
+        if (c.transfer_function == JXL_TRANSFER_FUNCTION_PQ) return "Rec2100PQ";
+        if (c.transfer_function == JXL_TRANSFER_FUNCTION_HLG)
+          return "Rec2100HLG";
+      }
+
+      if (c.primaries == JXL_PRIMARIES_CUSTOM &&
+          CloseEnough(c.primaries_red_xy[0], 0.6400) &&
+          CloseEnough(c.primaries_red_xy[1], 0.3300) &&
+          CloseEnough(c.primaries_green_xy[0], 0.2100) &&
+          CloseEnough(c.primaries_green_xy[1], 0.7100) &&
+          CloseEnough(c.primaries_blue_xy[0], 0.1500) &&
+          CloseEnough(c.primaries_blue_xy[1], 0.0600) &&
+          c.transfer_function == JXL_TRANSFER_FUNCTION_GAMMA &&
+          CloseEnough(c.gamma, 256.0 / 563.0)) {
+        return "Adobe98";
+      }
     }
-    if (c.rendering_intent == JXL_RENDERING_INTENT_RELATIVE &&
-        c.primaries == JXL_PRIMARIES_2100) {
-      if (c.transfer_function == JXL_TRANSFER_FUNCTION_PQ) return "Rec2100PQ";
-      if (c.transfer_function == JXL_TRANSFER_FUNCTION_HLG) return "Rec2100HLG";
+
+    // Apple's ROMM profile:
+    // White point:       Red:               Green:             Blue:
+    // 0.345669;0.358502  0.734698;0.265298  0.159585;0.840432 0.036650;0.000126
+    // Adobe's ProPhoto profile:
+    // 0.345705;0.358540  0.734699;0.265302  0.159600;0.840399 0.036597;0.000106
+    // CSS definition of prophoto-rgb:
+    // (https://drafts.csswg.org/css-color-4/#predefined-prophoto-rgb)
+    // 0.345700;0.358500  0.734699;0.265301  0.159597;0.840403 0.036598;0.000105
+    if (c.white_point == JXL_WHITE_POINT_CUSTOM &&
+        CloseEnough(c.white_point_xy[0], 0.345669) &&
+        CloseEnough(c.white_point_xy[1], 0.358496) &&
+        c.primaries == JXL_PRIMARIES_CUSTOM &&
+        CloseEnough(c.primaries_red_xy[0], 0.734699) &&
+        CloseEnough(c.primaries_red_xy[1], 0.265301) &&
+        CloseEnough(c.primaries_green_xy[0], 0.159597) &&
+        CloseEnough(c.primaries_green_xy[1], 0.840403) &&
+        CloseEnough(c.primaries_blue_xy[0], 0.036598) &&
+        CloseEnough(c.primaries_blue_xy[1], 0.000105) &&
+        // Adobe's ProPhoto profile uses a simple gamma curve (g0.555315)
+        // Others have a small linear segment near black
+        c.transfer_function == JXL_TRANSFER_FUNCTION_GAMMA &&
+        CloseEnough(c.gamma, 1.0 / 1.8)) {
+      return "ProPhoto";
     }
   }
 
@@ -957,7 +1004,7 @@ static Status MaybeCreateProfileImpl(const JxlColorEncoding& c,
   size_t tag_offset = 0;
   size_t tag_size = 0;
 
-  CreateICCMlucTag(ColorEncodingDescriptionImpl(c), &tags);
+  CreateICCMlucTag(ColorEncodingDescriptionImpl(c, false), &tags);
   FinalizeICCTag(&tags, &tag_offset, &tag_size);
   AddToICCTagTable("desc", tag_offset, tag_size, &tagtable, &offsets);
 
@@ -1113,8 +1160,8 @@ static Status MaybeCreateProfileImpl(const JxlColorEncoding& c,
 // Returns a representation of the ColorEncoding fields (not icc).
 // Example description: "RGB_D65_SRG_Rel_Lin"
 static JXL_MAYBE_UNUSED std::string ColorEncodingDescription(
-    const JxlColorEncoding& c) {
-  return detail::ColorEncodingDescriptionImpl(c);
+    const JxlColorEncoding& c, bool uniquename = true) {
+  return detail::ColorEncodingDescriptionImpl(c, uniquename);
 }
 
 // NOTE: for XYB colorspace, the created profile can be used to transform a

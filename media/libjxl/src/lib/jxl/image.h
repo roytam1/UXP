@@ -147,8 +147,9 @@ class Plane : public detail::PlaneBase {
   static StatusOr<Plane> Create(JxlMemoryManager* memory_manager,
                                 const size_t xsize, const size_t ysize,
                                 const size_t pre_padding = 0) {
-    static_assert(sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 ||
-                  sizeof(T) == 8);
+    static_assert(
+        sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8,
+        "Only 1/2/4/8-byte samples are supported");
     uint32_t xsize32 = static_cast<uint32_t>(xsize);
     uint32_t ysize32 = static_cast<uint32_t>(ysize);
     JXL_ENSURE(xsize32 == xsize);
@@ -173,8 +174,8 @@ class Plane : public detail::PlaneBase {
   // Returns number of pixels (some of which are padding) per row. Useful for
   // computing other rows via pointer arithmetic. WARNING: this must
   // NOT be used to determine xsize.
-  JXL_INLINE intptr_t PixelsPerRow() const {
-    return static_cast<intptr_t>(bytes_per_row_ / sizeof(T));
+  JXL_INLINE ptrdiff_t PixelsPerRow() const {
+    return static_cast<ptrdiff_t>(bytes_per_row_ / sizeof(T));
   }
 
  private:
@@ -188,7 +189,6 @@ using ImageS = Plane<int16_t>;  // signed integer or half-float
 using ImageU = Plane<uint16_t>;
 using ImageI = Plane<int32_t>;
 using ImageF = Plane<float>;
-using ImageD = Plane<double>;
 
 // Currently, we abuse Image to either refer to an image that owns its storage
 // or one that doesn't. In similar vein, we abuse Image* function parameters to
@@ -303,7 +303,7 @@ class Image3 {
   // Returns number of pixels (some of which are padding) per row. Useful for
   // computing other rows via pointer arithmetic. WARNING: this must NOT be used
   // to determine xsize.
-  JXL_INLINE intptr_t PixelsPerRow() const { return planes_[0].PixelsPerRow(); }
+  JXL_INLINE ptrdiff_t PixelsPerRow() const { return planes_[0].PixelsPerRow(); }
 
  private:
   Image3(PlaneT&& plane0, PlaneT&& plane1, PlaneT&& plane2) {
@@ -324,7 +324,6 @@ using Image3S = Image3<int16_t>;
 using Image3U = Image3<uint16_t>;
 using Image3I = Image3<int32_t>;
 using Image3F = Image3<float>;
-using Image3D = Image3<double>;
 
 }  // namespace jxl
 

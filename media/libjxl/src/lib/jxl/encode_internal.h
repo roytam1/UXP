@@ -27,6 +27,7 @@
 
 #include "lib/jxl/base/c_callback_support.h"
 #include "lib/jxl/base/common.h"
+#include "lib/jxl/common.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/data_parallel.h"
 #include "lib/jxl/base/status.h"
@@ -66,13 +67,13 @@ Codestream boxes are used, the offset is counted within the concatenated
 codestream, bytes from box headers or non-codestream boxes are not counted.
 */
 
-typedef struct JxlEncoderFrameIndexBoxEntryStruct {
+struct JxlEncoderFrameIndexBoxEntry {
   bool to_be_indexed;
   uint32_t duration;
   uint64_t OFFi;
-} JxlEncoderFrameIndexBoxEntry;
+};
 
-typedef struct JxlEncoderFrameIndexBoxStruct {
+struct JxlEncoderFrameIndexBox {
   // We always need to record the first frame entry, so presence of the
   // first entry alone is not an indication if it was requested to be
   // stored.
@@ -115,11 +116,11 @@ typedef struct JxlEncoderFrameIndexBoxStruct {
     e.duration = duration;
     entries.push_back(e);
   }
-} JxlEncoderFrameIndexBox;
+};
 
 // The encoder options (such as quality, compression speed, ...) for a single
 // frame, but not encoder-wide options such as box-related options.
-typedef struct JxlEncoderFrameSettingsValuesStruct {
+struct JxlEncoderFrameSettingsValues {
   // lossless is a separate setting from cparams because it is a combination
   // setting that overrides multiple settings inside of cparams.
   bool lossless;
@@ -130,9 +131,9 @@ typedef struct JxlEncoderFrameSettingsValuesStruct {
   JxlBitDepth image_bit_depth;
   bool frame_index_box = false;
   jxl::AuxOut* aux_out = nullptr;
-} JxlEncoderFrameSettingsValues;
+};
 
-typedef std::array<uint8_t, 4> BoxType;
+using BoxType = std::array<uint8_t, 4>;
 
 // Utility function that makes a BoxType from a string literal. The string must
 // have 4 characters, a 5th null termination character is optional.
@@ -142,13 +143,6 @@ constexpr BoxType MakeBoxType(const char* type) {
         static_cast<uint8_t>(type[2]), static_cast<uint8_t>(type[3])}});
 }
 
-constexpr std::array<unsigned char, 32> kContainerHeader = {
-    0,   0,   0, 0xc, 'J',  'X', 'L', ' ', 0xd, 0xa, 0x87,
-    0xa, 0,   0, 0,   0x14, 'f', 't', 'y', 'p', 'j', 'x',
-    'l', ' ', 0, 0,   0,    0,   'j', 'x', 'l', ' '};
-
-constexpr std::array<unsigned char, 8> kLevelBoxHeader = {0,   0,   0,   0x9,
-                                                          'j', 'x', 'l', 'l'};
 
 static JXL_INLINE size_t BitsPerChannel(JxlDataType data_type) {
   switch (data_type) {
@@ -246,22 +240,28 @@ class JxlEncoderChunkedFrameAdapter {
       JxlPixelFormat format{4, JXL_TYPE_UINT8, JXL_NATIVE_ENDIAN, 0};
       input_source_.get_color_channels_pixel_format(input_source_.opaque,
                                                     &format);
+      format.align = 0;  // .align must be ignored
       size_t row_offset;
       {
         auto buffer =
             GetColorBuffer(input_source_, 0, 0, xsize, ysize, &row_offset);
         if (!buffer) return false;
-        channels_[0].CopyFromBuffer(buffer.get(), format, xsize, ysize,
-                                    row_offset);
+        if (!channels_[0].CopyFromBuffer(buffer.get(), format, xsize, ysize,
+                                         row_offset)) {
+          return false;
+        }
       }
       for (size_t ec = 0; ec + 1 < channels_.size(); ++ec) {
         input_source_.get_extra_channel_pixel_format(input_source_.opaque, ec,
                                                      &format);
+        format.align = 0;  // .align must be ignored
         auto buffer = GetExtraChannelBuffer(input_source_, ec, 0, 0, xsize,
                                             ysize, &row_offset);
         if (!buffer) continue;
-        channels_[1 + ec].CopyFromBuffer(buffer.get(), format, xsize, ysize,
-                                         row_offset);
+        if (!channels_[1 + ec].CopyFromBuffer(buffer.get(), format, xsize,
+                                              ysize, row_offset)) {
+          return false;
+        }
       }
       has_input_source_ = false;
     } else {
@@ -280,9 +280,9 @@ class JxlEncoderChunkedFrameAdapter {
     *pixel_format = channels_[0].format_;
   }
 
-  const void* GetColorChannelDataAt(size_t xpos, size_t ypos, size_t xsize,
-                                    size_t ysize, size_t* row_offset) {
-    return channels_[0].GetDataAt(xpos, ypos, xsize, ysize, row_offset);
+  const void* GetColorChannelDataAt(size_t xpos, size_t ypos, size_t x_size,
+                                    size_t y_size, size_t* row_offset) {
+    return channels_[0].GetDataAt(xpos, ypos, x_size, y_size, row_offset);
   }
 
   void GetExtraChannelPixelFormat(size_t ec_index,
@@ -292,10 +292,10 @@ class JxlEncoderChunkedFrameAdapter {
   }
 
   const void* GetExtraChannelDataAt(size_t ec_index, size_t xpos, size_t ypos,
-                                    size_t xsize, size_t ysize,
+                                    size_t x_size, size_t y_size,
                                     size_t* row_offset) {
     JXL_DASSERT(1 + ec_index < channels_.size());
-    return channels_[1 + ec_index].GetDataAt(xpos, ypos, xsize, ysize,
+    return channels_[1 + ec_index].GetDataAt(xpos, ypos, x_size, y_size,
                                              row_offset);
   }
 
@@ -317,38 +317,45 @@ class JxlEncoderChunkedFrameAdapter {
     size_t stride_;
     std::vector<uint8_t> copy_;
 
-    void SetFormatAndDimensions(JxlPixelFormat format, size_t xsize,
-                                size_t ysize) {
+    bool SetFormatAndDimensions(JxlPixelFormat format, size_t x_size,
+                                size_t y_size) {
       format_ = format;
-      xsize_ = xsize;
-      ysize_ = ysize;
+      xsize_ = x_size;
+      ysize_ = y_size;
       bytes_per_pixel_ = BytesPerPixel(format_);
-      const size_t last_row_size = xsize_ * bytes_per_pixel_;
-      const size_t align = format_.align;
-      stride_ = (align > 1 ? jxl::DivCeil(last_row_size, align) * align
-                           : last_row_size);
+      size_t last_row_size;
+      if (!SafeMul(xsize_, bytes_per_pixel_, last_row_size)) return false;
+      if (!SafeRoundUpTo(last_row_size, format_.align, stride_)) return false;
+      size_t total_size;
+      if (!SafeMul(ysize_, stride_, total_size)) return false;
+      return true;
     }
 
     bool SetFromBuffer(const uint8_t* buffer, size_t size,
-                       JxlPixelFormat format, size_t xsize, size_t ysize) {
-      SetFormatAndDimensions(format, xsize, ysize);
+                       JxlPixelFormat format, size_t x_size, size_t y_size) {
+      if (!SetFormatAndDimensions(format, x_size, y_size)) return false;
+      if (ysize_ == 0) return false;
       buffer_ = buffer;
       buffer_size_ = size;
+      // Safe: SetFormatAndDimensions() checked ysize_ * stride_.
       const size_t min_buffer_size =
           stride_ * (ysize_ - 1) + xsize_ * bytes_per_pixel_;
       return min_buffer_size <= size;
     }
 
-    void CopyFromBuffer(const void* buffer, JxlPixelFormat format, size_t xsize,
-                        size_t ysize, size_t row_offset) {
-      SetFormatAndDimensions(format, xsize, ysize);
+    bool CopyFromBuffer(const void* buffer, JxlPixelFormat format,
+                        size_t x_size, size_t y_size, size_t row_offset) {
+      if (!SetFormatAndDimensions(format, x_size, y_size)) return false;
+      JXL_ENSURE(stride_ <= row_offset);
       buffer_ = nullptr;
-      copy_.resize(ysize * stride_);
-      for (size_t y = 0; y < ysize; ++y) {
+      // Safe: SetFormatAndDimensions() checked y_size * stride_.
+      copy_.resize(y_size * stride_);
+      for (size_t y = 0; y < y_size; ++y) {
         memcpy(copy_.data() + y * stride_,
                reinterpret_cast<const uint8_t*>(buffer) + y * row_offset,
                stride_);
       }
+      return true;
     }
 
     void CopyBuffer() {
@@ -358,11 +365,11 @@ class JxlEncoderChunkedFrameAdapter {
       }
     }
 
-    const void* GetDataAt(size_t xpos, size_t ypos, size_t xsize, size_t ysize,
-                          size_t* row_offset) const {
+    const void* GetDataAt(size_t xpos, size_t ypos, size_t x_size,
+                          size_t y_size, size_t* row_offset) const {
       const uint8_t* buffer = copy_.empty() ? buffer_ : copy_.data();
-      JXL_DASSERT(ypos + ysize <= ysize_);
-      JXL_DASSERT(xpos + xsize <= xsize_);
+      JXL_DASSERT(ypos + y_size <= ysize_);
+      JXL_DASSERT(xpos + x_size <= xsize_);
       JXL_DASSERT(buffer);
       *row_offset = stride_;
       return buffer + ypos * stride_ + xpos * bytes_per_pixel_;
@@ -397,6 +404,7 @@ struct JxlEncoderQueuedInput {
   MemoryManagerUniquePtr<JxlEncoderQueuedBox> box;
   FJXLFrameUniquePtr fast_lossless_frame = {nullptr,
                                             JxlFastLosslessFreeFrameState};
+  int output_mode = -1;  // effective output mode, resolved at queue time
 };
 
 static constexpr size_t kSmallBoxHeaderSize = 8;
@@ -418,6 +426,19 @@ void AppendBoxHeader(const jxl::BoxType& type, size_t size, bool unbounded,
       WriteBoxHeader(type, size, unbounded, /*force_large_box=*/false,
                      output->data() + current_size);
   output->resize(current_size + header_size);
+}
+
+// Returns the JXL container signature box and ftyp box.
+// ftyp_version: 0 = standard delivery order, 1 = out-of-order jxlp boxes.
+inline std::vector<uint8_t> MakeContainerHeader(int ftyp_version) {
+  std::vector<uint8_t> out(kJxlSignatureBox.begin(), kJxlSignatureBox.end());
+  // ftyp box: major brand "jxl ", minor version, compatible brand "jxl ".
+  const uint8_t ftyp[] = {'j', 'x', 'l', ' ',
+                           0,   0,   0,   static_cast<uint8_t>(ftyp_version),
+                           'j', 'x', 'l', ' '};
+  AppendBoxHeader(MakeBoxType("ftyp"), sizeof(ftyp), /*unbounded=*/false, &out);
+  out.insert(out.end(), ftyp, ftyp + sizeof(ftyp));
+  return out;
 }
 
 }  // namespace jxl
@@ -460,14 +481,14 @@ class JxlEncoderOutputProcessorWrapper {
     return output_position_ < finalized_position_;
   }
 
-  jxl::Status CopyOutput(std::vector<uint8_t>& output, uint8_t* next_out,
-                         size_t& avail_out);
+  // TODO(eustas): consider extra copy elimination
+  jxl::Status CopyOutput(std::vector<uint8_t>& output);
 
  private:
   jxl::Status ReleaseBuffer(size_t bytes_used);
 
   // Tries to write all the bytes up to the finalized position.
-  jxl::Status FlushOutput();
+  jxl::Status FlushOutput(uint8_t** next_out, size_t* avail_out);
 
   bool AppendBufferToExternalProcessor(void* data, size_t count);
 
@@ -594,8 +615,8 @@ jxl::Status AppendData(JxlEncoderOutputProcessorWrapper& output_processor,
 
 // Internal use only struct, can only be initialized correctly by
 // JxlEncoderCreate.
-struct JxlEncoderStruct {
-  JxlEncoderStruct() : output_processor(&memory_manager) {}
+struct JxlEncoder {
+  JxlEncoder() : output_processor(&memory_manager) {}
   JxlMemoryManager memory_manager;
   jxl::MemoryManagerUniquePtr<jxl::ThreadPool> thread_pool{
       nullptr, jxl::MemoryManagerDeleteHelper(&memory_manager)};
@@ -623,6 +644,8 @@ struct JxlEncoderStruct {
   bool use_container;
   // User declared they will add metadata boxes
   bool use_boxes;
+  // -1 = no container written yet; 0 = ftyp v0 written; 1 = ftyp v1 written.
+  int container_ftyp_version = -1;
 
   // TODO(lode): move level into jxl::CompressParams since some C++
   // implementation decisions should be based on it: level 10 allows more
@@ -659,9 +682,10 @@ struct JxlEncoderStruct {
   // the bytes to the output_byte_queue.
   jxl::Status ProcessOneEnqueuedInput();
 
-  bool MustUseContainer() const {
-    return use_container || (codestream_level != 5 && codestream_level != -1) ||
-           store_jpeg_metadata || use_boxes;
+  bool MustUseContainer(int output_mode = 0) const {
+    return container_ftyp_version >= 0 || use_container ||
+           (codestream_level != 5 && codestream_level != -1) ||
+           store_jpeg_metadata || use_boxes || output_mode == 2;
   }
 
   // `write_box` must never seek before the position the output wrapper was at
@@ -676,12 +700,12 @@ struct JxlEncoderStruct {
                                     const BoxContents& contents);
 };
 
-struct JxlEncoderFrameSettingsStruct {
+struct JxlEncoderFrameSettings {
   JxlEncoder* enc;
   jxl::JxlEncoderFrameSettingsValues values;
 };
 
-struct JxlEncoderStatsStruct {
+struct JxlEncoderStats {
   std::unique_ptr<jxl::AuxOut> aux_out;
 };
 

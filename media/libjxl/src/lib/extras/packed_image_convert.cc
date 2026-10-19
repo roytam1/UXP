@@ -6,20 +6,29 @@
 #include "lib/extras/packed_image_convert.h"
 
 #include <jxl/cms.h>
+#include <jxl/codestream_header.h>
 #include <jxl/color_encoding.h>
 #include <jxl/memory_manager.h>
 #include <jxl/types.h>
 
 #include <cstdint>
 #include <cstdio>
+#include <utility>
 
+#include "lib/extras/codec_in_out.h"
 #include "lib/extras/packed_image.h"
+#include "lib/jxl/base/data_parallel.h"
 #include "lib/jxl/base/rect.h"
+#include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
+#include "lib/jxl/dec_cache.h"
 #include "lib/jxl/dec_external_image.h"
 #include "lib/jxl/enc_external_image.h"
 #include "lib/jxl/enc_image_bundle.h"
+#include "lib/jxl/image.h"
+#include "lib/jxl/image_bundle.h"
+#include "lib/jxl/image_metadata.h"
 #include "lib/jxl/luminance.h"
 
 namespace jxl {
@@ -67,9 +76,11 @@ Status ConvertPackedFrameToImageBundle(const JxlBasicInfo& info,
   JXL_ENSURE(io.metadata.m.color_encoding.IsGray() ==
              (frame.color.format.num_channels <= 2));
 
+  bool has_interleaved_alpha = (info.alpha_bits != 0);
   JXL_RETURN_IF_ERROR(ConvertFromExternal(
       span, frame.color.xsize, frame.color.ysize, io.metadata.m.color_encoding,
-      frame_bits_per_sample, frame.color.format, pool, bundle));
+      frame_bits_per_sample, frame.color.format, pool, bundle,
+      has_interleaved_alpha));
 
   bundle->extra_channels().resize(io.metadata.m.extra_channel_info.size());
   for (size_t i = 0; i < frame.extra_channels.size(); i++) {
@@ -149,13 +160,6 @@ Status ConvertPackedPixelFileToCodecInOut(const PackedPixelFile& ppf,
       return JXL_FAILURE("Failed to serialize ICC");
     }
   }
-
-  // Convert the extra blobs
-  io->blobs.exif = ppf.metadata.exif;
-  io->blobs.iptc = ppf.metadata.iptc;
-  io->blobs.jhgm = ppf.metadata.jhgm;
-  io->blobs.jumbf = ppf.metadata.jumbf;
-  io->blobs.xmp = ppf.metadata.xmp;
 
   // Append all other extra channels.
   for (const auto& info : ppf.extra_channels_info) {
@@ -298,12 +302,6 @@ Status ConvertCodecInOutToPackedPixelFile(const CodecInOut& io,
                           : PackedPixelFile::kColorEncodingIsPrimary;
   ppf->color_encoding = c_desired.ToExternal();
 
-  // Convert the extra blobs
-  ppf->metadata.exif = io.blobs.exif;
-  ppf->metadata.iptc = io.blobs.iptc;
-  ppf->metadata.jhgm = io.blobs.jhgm;
-  ppf->metadata.jumbf = io.blobs.jumbf;
-  ppf->metadata.xmp = io.blobs.xmp;
   const bool float_out = pixel_format.data_type == JXL_TYPE_FLOAT ||
                          pixel_format.data_type == JXL_TYPE_FLOAT16;
   // Convert the pixels
