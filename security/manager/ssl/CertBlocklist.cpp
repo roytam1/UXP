@@ -584,6 +584,35 @@ CertBlocklist::IsCertRevoked(const uint8_t* aIssuer,
     return rv;
   }
 
+  // The eMudhra intermediate CA private keys listed in
+  // https://emudhra.we-have-a-problem.com/impacted-intermediates.json are
+  // compromised. Match the public key hash independent of issuer so both
+  // direct and cross-signed certificates, including code-signing CAs, fail
+  // certificate validation.
+  static const char* const sCompromisedPubKeyHashes[] = {
+    "6+1kdcLC2A/LGZ8/6N1uazzmC3frFdTkLD3sDG9bUQU=", // EM DV TLS CA - G3B
+    "Q7/6GdbvZRRR9oQeAZkx6W9vLq7/KKtLbxzkV23icXs=", // EM OV TLS CA - G3B
+    "4CVMf83CZeLw+KQo2rt1q0rgObSHLWL17lfwh31aikE=", // EM EV TLS CA - G3B
+    "Sd01PcK5GaN3BkURfQ5gwWEV59G8JZ7v5zSwDqQ0/l8=", // EM DV TLS CA - G3C
+    "XAZgorFkkQ2P9YnBjhRVLp4Owjfc7+LLc21BpIEfgaA=", // EM EV TLS CA - G3C
+    "Y+zv7kMdSVI7wRNsTnLQIGpHcIbK9gbNXPAlaGwQnPg=", // EM OV TLS CA - G3C
+    "7E/6GtCsiAgTFLeq/+9qkfl81XKRu1umhsVBX1609rY=", // EM OV CS CA - G3B
+    "ksBj1n6PFNtx0ojhEmb/2vacvxFfe6sU87wvaNJeDjA="  // EM OV CS CA - G3C
+  };
+  nsCString encodedPubKeyHash;
+  rv = Base64Encode(hashString, encodedPubKeyHash);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  for (size_t i = 0;
+       i < sizeof(sCompromisedPubKeyHashes) / sizeof(sCompromisedPubKeyHashes[0]);
+       ++i) {
+    if (encodedPubKeyHash.Equals(sCompromisedPubKeyHashes[i])) {
+      *_retval = true;
+      return NS_OK;
+    }
+  }
+
   CertBlocklistItem subjectPubKey(
     aSubject,
     static_cast<size_t>(aSubjectLength),
