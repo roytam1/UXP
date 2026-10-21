@@ -31568,6 +31568,8 @@ static int winMutexInit(void){
       p->id = i+2;
 #if 0
       InitializeSRWLock(&p->u.srwl);
+#else
+      InitializeCriticalSection(&p->u.cs);
 #endif
 #ifdef SQLITE_DEBUG
       p->nRef = 0;
