@@ -18,6 +18,7 @@
 #include "nsIIncrementalStreamLoader.h"
 #include "nsURIHashKey.h"
 #include "mozilla/CORSMode.h"
+#include "mozilla/dom/ScriptKind.h"
 #include "mozilla/dom/SRIMetadata.h"
 #include "mozilla/dom/SRICheck.h"
 #include "mozilla/MozPromise.h"
@@ -38,15 +39,6 @@ class LoadedScript;
 class ModuleLoadRequest;
 class ModuleScript;
 class ScriptLoadRequestList;
-
-//////////////////////////////////////////////////////////////
-// Per-request data structure
-//////////////////////////////////////////////////////////////
-
-enum class ScriptKind {
-  Classic,
-  Module
-};
 
 /*
  * Some options used when fetching script resources. This only loosely

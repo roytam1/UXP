@@ -294,13 +294,26 @@ HTMLScriptElement::FreezeExecutionAttrs(nsIDocument* aOwnerDoc)
     return;
   }
 
-  MOZ_ASSERT(!mIsModule && !mAsync && !mDefer && !mExternal);
+  MOZ_ASSERT((mKind != ScriptKind::Module) &&
+             (mKind != ScriptKind::ImportMap) &&
+             !mAsync && !mDefer && !mExternal);
 
-  // Determine whether this is a classic script or a module script.
+  // Determine whether this is a(n) classic/module/importmap script.
   nsAutoString type;
   GetScriptType(type);
-  mIsModule = aOwnerDoc->ModuleScriptsEnabled() &&
-              !type.IsEmpty() && type.LowerCaseEqualsASCII("module");
+  if (!type.IsEmpty()) {
+    if (aOwnerDoc->ModuleScriptsEnabled() &&
+        type.LowerCaseEqualsASCII("module")) {
+      mKind = ScriptKind::Module;
+    }
+
+    // https://wicg.github.io/import-maps/#integration-prepare-a-script
+    // If the script block’s type string is an ASCII case-insensitive match
+    // for the string "importmap", the script’s type is "importmap".
+    if (type.LowerCaseEqualsASCII("importmap")) {
+      mKind = ScriptKind::ImportMap;
+    }
+  }
 
   // variation of this code in nsSVGScriptElement - check if changes
   // need to be transfered when modifying.  Note that we don't use GetSrc here
@@ -320,7 +333,7 @@ HTMLScriptElement::FreezeExecutionAttrs(nsIDocument* aOwnerDoc)
   
   bool defer, async;
   GetAsync(&async);
-  mAsync = (mExternal || mIsModule) && async;
+  mAsync = (mExternal || mKind == ScriptKind::Module) && async;
   GetDefer(&defer);
   mDefer = mExternal && !async && defer;
 

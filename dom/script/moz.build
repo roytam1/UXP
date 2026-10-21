@@ -14,6 +14,7 @@ EXPORTS += ['nsIScriptElement.h']
 EXPORTS.mozilla.dom += [
     'ModuleScript.h',
     'ScriptElement.h',
+    'ScriptKind.h',
     'ScriptLoader.h',
     'ScriptSettings.h',
 ]

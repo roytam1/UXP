@@ -1526,9 +1526,14 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
   nsAutoString type;
   bool hasType = aElement->GetScriptType(type);
 
-  ScriptKind scriptKind = aElement->GetScriptIsModule() ?
-                          ScriptKind::Module :
-                          ScriptKind::Classic;
+  ScriptKind scriptKind;
+  if (aElement->GetScriptIsModule()) {
+    scriptKind = ScriptKind::Module;
+  } else if (aElement->GetScriptIsImportMap()) {
+    scriptKind = ScriptKind::ImportMap;
+  } else {
+    scriptKind = ScriptKind::Classic;
+  }
 
   // Step 13. Check that the script is not an eventhandler
   if (IsScriptEventHandler(scriptKind, scriptContent)) {
