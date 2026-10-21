@@ -327,7 +327,7 @@ public:
 
   nsTArray<PendingServiceInfo> mPendingServices;
 
-  size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
+  size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf);
 
 private:
   ~nsComponentManagerImpl();

@@ -4,14 +4,19 @@
 // license that can be found in the LICENSE file.
 
 #include <jxl/gain_map.h>
+#include <jxl/memory_manager.h>
+#include <jxl/types.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 
 #include "lib/jxl/base/byte_order.h"
 #include "lib/jxl/base/common.h"
+#include "lib/jxl/base/span.h"
+#include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/dec_bit_reader.h"
 #include "lib/jxl/enc_aux_out.h"
@@ -101,13 +106,13 @@ JXL_BOOL JxlGainMapWriteBundle(const JxlGainMapBundle* map_bundle,
   uint64_t cursor = 0;
   uint64_t next_cursor = 0;
 
-#define SAFE_CURSOR_UPDATE(n)                    \
-  do {                                           \
-    cursor = next_cursor;                        \
-    if (!jxl::SafeAdd(cursor, n, next_cursor) || \
-        next_cursor > output_buffer_size) {      \
-      return JXL_FALSE;                          \
-    }                                            \
+#define SAFE_CURSOR_UPDATE(n)                              \
+  do {                                                     \
+    cursor = next_cursor;                                  \
+    if (!jxl::SafeAdd<uint64_t>(cursor, n, next_cursor) || \
+        next_cursor > output_buffer_size) {                \
+      return JXL_FALSE;                                    \
+    }                                                      \
   } while (false)
 
   SAFE_CURSOR_UPDATE(1);
@@ -160,13 +165,13 @@ JXL_BOOL JxlGainMapReadBundle(JxlGainMapBundle* map_bundle,
   uint64_t cursor = 0;
   uint64_t next_cursor = 0;
 
-#define SAFE_CURSOR_UPDATE(n)                    \
-  do {                                           \
-    cursor = next_cursor;                        \
-    if (!jxl::SafeAdd(cursor, n, next_cursor) || \
-        next_cursor > input_buffer_size) {       \
-      return JXL_FALSE;                          \
-    }                                            \
+#define SAFE_CURSOR_UPDATE(n)                              \
+  do {                                                     \
+    cursor = next_cursor;                                  \
+    if (!jxl::SafeAdd<uint64_t>(cursor, n, next_cursor) || \
+        next_cursor > input_buffer_size) {                 \
+      return JXL_FALSE;                                    \
+    }                                                      \
   } while (false)
 
   // Read the version byte
@@ -211,12 +216,14 @@ JXL_BOOL JxlGainMapReadBundle(JxlGainMapBundle* map_bundle,
 
   // Calculate remaining bytes for gain map
   cursor = next_cursor;
-  // This calculation is guaranteed not to underflow because `cursor` is always
-  // updated to a position within or at the end of `input_buffer` (not beyond).
-  // Thus, subtracting `cursor` from `input_buffer_size` (the total size of the
-  // buffer) will always result in a non-negative integer representing the
-  // remaining buffer size.
-  map_bundle->gain_map_size = input_buffer_size - cursor;
+  // Compute remaining buffer size and ensure it fits into the public
+  // `uint32_t gain_map_size` field to avoid silent truncation on platforms
+  // where `size_t` is wider than 32 bits.
+  size_t remaining = input_buffer_size - cursor;
+  if (remaining > std::numeric_limits<uint32_t>::max()) {
+    return JXL_FALSE;
+  }
+  map_bundle->gain_map_size = static_cast<uint32_t>(remaining);
   SAFE_CURSOR_UPDATE(map_bundle->gain_map_size);
   map_bundle->gain_map = input_buffer + cursor;
 

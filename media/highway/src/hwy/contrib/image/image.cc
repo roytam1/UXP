@@ -15,38 +15,30 @@
 
 #include "hwy/contrib/image/image.h"
 
-#include <algorithm>  // swap
-#include <cstddef>
+#include <stddef.h>
+#include <stdint.h>
 
-#undef HWY_TARGET_INCLUDE
-#define HWY_TARGET_INCLUDE "hwy/contrib/image/image.cc"
-#include "hwy/foreach_target.h"  // IWYU pragma: keep
-#include "hwy/highway.h"
+#include <algorithm>  // std::swap
 
-HWY_BEFORE_NAMESPACE();
+#include "hwy/aligned_allocator.h"
+#include "hwy/base.h"
+#include "hwy/per_target.h"
+
 namespace hwy {
-namespace HWY_NAMESPACE {
-size_t GetVectorSize() { return Lanes(ScalableTag<uint8_t>()); }
-// NOLINTNEXTLINE(google-readability-namespace-comments)
-}  // namespace HWY_NAMESPACE
-
-}  // namespace hwy
-HWY_AFTER_NAMESPACE();
-
-#if HWY_ONCE
-namespace hwy {
-namespace {
-HWY_EXPORT(GetVectorSize);  // Local function.
-}  // namespace
 
 size_t ImageBase::VectorSize() {
   // Do not cache result - must return the current value, which may be greater
   // than the first call if it was subject to DisableTargets!
-  return HWY_DYNAMIC_DISPATCH(GetVectorSize)();
+  return VectorBytes();
 }
 
 size_t ImageBase::BytesPerRow(const size_t xsize, const size_t sizeof_t) {
   const size_t vec_size = VectorSize();
+  // Check for integer overflow in xsize * sizeof_t.
+  if (HWY_LIKELY(xsize != 0) && sizeof_t > SIZE_MAX / xsize) {
+    HWY_ABORT("ImageBase::BytesPerRow overflow: xsize=%zu, sizeof_t=%zu",
+              xsize, sizeof_t);
+  }
   size_t valid_bytes = xsize * sizeof_t;
 
   // Allow unaligned accesses starting at the last valid value - this may raise
@@ -80,12 +72,20 @@ ImageBase::ImageBase(const size_t xsize, const size_t ysize,
       ysize_(static_cast<uint32_t>(ysize)),
       bytes_(nullptr, AlignedFreer(&AlignedFreer::DoNothing, nullptr)) {
   HWY_ASSERT(sizeof_t == 1 || sizeof_t == 2 || sizeof_t == 4 || sizeof_t == 8);
+  // Validate dimensions fit in uint32_t to prevent silent truncation.
+  HWY_ASSERT(xsize <= UINT32_MAX);
+  HWY_ASSERT(ysize <= UINT32_MAX);
 
   bytes_per_row_ = 0;
   // Dimensions can be zero, e.g. for lazily-allocated images. Only allocate
   // if nonzero, because "zero" bytes still have padding/bookkeeping overhead.
   if (xsize != 0 && ysize != 0) {
     bytes_per_row_ = BytesPerRow(xsize, sizeof_t);
+    // Check for integer overflow in allocation size.
+    if (bytes_per_row_ > SIZE_MAX / ysize) {
+      HWY_ABORT("ImageBase: allocation overflow (%zu * %zu exceeds size_t)",
+                bytes_per_row_, ysize);
+    }
     bytes_ = AllocateAligned<uint8_t>(bytes_per_row_ * ysize);
     HWY_ASSERT(bytes_.get() != nullptr);
     InitializePadding(sizeof_t, Padding::kRoundUp);
@@ -123,9 +123,9 @@ void ImageBase::InitializePadding(const size_t sizeof_t, Padding padding) {
     // There's a bug in msan in clang-6 when handling AVX2 operations. This
     // workaround allows tests to pass on msan, although it is slower and
     // prevents msan warnings from uninitialized images.
-    memset(row, 0, initialize_size);
+    hwy::ZeroBytes(row, initialize_size);
 #else
-    memset(row + valid_size, 0, initialize_size - valid_size);
+    hwy::ZeroBytes(row + valid_size, initialize_size - valid_size);
 #endif  // clang6
   }
 #else
@@ -142,4 +142,3 @@ void ImageBase::Swap(ImageBase& other) {
 }
 
 }  // namespace hwy
-#endif  // HWY_ONCE

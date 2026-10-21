@@ -13,6 +13,7 @@
 
 #include <QElapsedTimer>
 #include <QFile>
+#include <QtConcurrent>
 
 #define CMS_NO_REGISTER_KEYWORD 1
 #include "lcms2.h"
@@ -22,6 +23,15 @@ namespace jpegxl {
 namespace tools {
 
 namespace {
+
+struct CmsContextCloser {
+  void operator()(void* p) const {
+    if (p != nullptr) {
+      cmsDeleteContext(static_cast<cmsContext>(p));
+    }
+  }
+};
+using CmsContextUniquePtr = std::unique_ptr<void, CmsContextCloser>;
 
 struct CmsProfileCloser {
   void operator()(const cmsHPROFILE profile) const {
@@ -113,42 +123,44 @@ QImage loadJxlImage(const QString& filename, const QByteArray& targetIccProfile,
                                         pixel_count * 4 * sizeof(float)));
   EXPECT_EQ(JXL_DEC_FULL_IMAGE, JxlDecoderProcessInput(dec.get()));
 
-  std::vector<uint16_t> uint16_pixels(pixel_count * 4);
-  const thread_local cmsContext context = cmsCreateContext(nullptr, nullptr);
-  EXPECT_TRUE(context != nullptr);
-  const CmsProfileUniquePtr jxl_profile(cmsOpenProfileFromMemTHR(
-      context, icc_profile.data(), icc_profile.size()));
+  auto uint16_pixels = std::make_unique<uint16_t[]>(pixel_count * 4);
+  static thread_local CmsContextUniquePtr context;
+  if (!context) {
+    context.reset(cmsCreateContext(nullptr, nullptr));
+  }
+  const cmsContext ctx = static_cast<cmsContext>(context.get());
+  EXPECT_TRUE(ctx != nullptr);
+  const CmsProfileUniquePtr jxl_profile(
+      cmsOpenProfileFromMemTHR(ctx, icc_profile.data(), icc_profile.size()));
   EXPECT_TRUE(jxl_profile != nullptr);
   CmsProfileUniquePtr target_profile(cmsOpenProfileFromMemTHR(
-      context, targetIccProfile.data(), targetIccProfile.size()));
+      ctx, targetIccProfile.data(), targetIccProfile.size()));
   if (usedRequestedProfile != nullptr) {
     *usedRequestedProfile = (target_profile != nullptr);
   }
   if (target_profile == nullptr) {
-    target_profile.reset(cmsCreate_sRGBProfileTHR(context));
+    target_profile.reset(cmsCreate_sRGBProfileTHR(ctx));
   }
   EXPECT_TRUE(target_profile != nullptr);
   CmsTransformUniquePtr transform(cmsCreateTransformTHR(
-      context, jxl_profile.get(), TYPE_RGBA_FLT, target_profile.get(),
+      ctx, jxl_profile.get(), TYPE_RGBA_FLT, target_profile.get(),
       TYPE_RGBA_16, INTENT_RELATIVE_COLORIMETRIC, cmsFLAGS_COPY_ALPHA));
   EXPECT_TRUE(transform != nullptr);
-  cmsDoTransform(transform.get(), float_pixels.data(), uint16_pixels.data(),
-                 pixel_count);
+  std::vector<size_t> row_indices(info.ysize);
+  std::iota(row_indices.begin(), row_indices.end(), 0);
+  QtConcurrent::blockingMap(row_indices, [&](size_t y) {
+    cmsDoTransform(transform.get(), float_pixels.data() + 4 * y * info.xsize,
+                   uint16_pixels.get() + 4 * y * info.xsize, info.xsize);
+  });
   if (elapsed_ns != nullptr) *elapsed_ns = timer.nsecsElapsed();
 
-  QImage result(info.xsize, info.ysize,
-                info.alpha_premultiplied ? QImage::Format_RGBA64_Premultiplied
-                                         : QImage::Format_RGBA64);
-
-  for (int y = 0; y < result.height(); ++y) {
-    QRgba64* const row = reinterpret_cast<QRgba64*>(result.scanLine(y));
-    const uint16_t* const data = uint16_pixels.data() + result.width() * y * 4;
-    for (int x = 0; x < result.width(); ++x) {
-      row[x] = qRgba64(data[4 * x + 0], data[4 * x + 1], data[4 * x + 2],
-                       data[4 * x + 3]);
-    }
-  }
-  return result;
+  uint16_t* qimage_data = uint16_pixels.release();
+  return QImage(
+      reinterpret_cast<uchar*>(qimage_data), info.xsize, info.ysize,
+      info.alpha_premultiplied ? QImage::Format_RGBA64_Premultiplied
+                               : QImage::Format_RGBA64,
+      [](void* info) { delete[] reinterpret_cast<uint16_t*>(info); },
+      qimage_data);
 }
 
 }  // namespace tools

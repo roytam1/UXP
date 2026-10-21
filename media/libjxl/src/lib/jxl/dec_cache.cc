@@ -8,13 +8,27 @@
 #include <jxl/memory_manager.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <utility>
 
 #include "lib/jxl/ac_strategy.h"
+#include "lib/jxl/base/bits.h"
+#include "lib/jxl/base/data_parallel.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/blending.h"
+#include "lib/jxl/cms/color_encoding_cms.h"
 #include "lib/jxl/coeff_order.h"
+#include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/common.h"  // JXL_HIGH_PRECISION
+#include "lib/jxl/frame_dimensions.h"
+#include "lib/jxl/frame_header.h"
+#include "lib/jxl/image.h"
+#include "lib/jxl/image_bundle.h"
+#include "lib/jxl/image_metadata.h"
+#include "lib/jxl/loop_filter.h"
 #include "lib/jxl/memory_manager_internal.h"
+#include "lib/jxl/render_pipeline/render_pipeline.h"
 #include "lib/jxl/render_pipeline/stage_blending.h"
 #include "lib/jxl/render_pipeline/stage_chroma_upsampling.h"
 #include "lib/jxl/render_pipeline/stage_cms.h"
@@ -169,7 +183,8 @@ Status PassesDecoderState::PreparePipeline(const FrameHeader& frame_header,
          ec++) {
       if (frame_header.extra_channel_upsampling[ec] != 1) {
         JXL_RETURN_IF_ERROR(builder.AddStage(GetUpsamplingStage(
-            frame_header.nonserialized_metadata->transform_data, 3 + ec,
+            memory_manager, frame_header.nonserialized_metadata->transform_data,
+            3 + ec,
             CeilLog2Nonzero(frame_header.extra_channel_upsampling[ec]))));
       }
     }
@@ -191,10 +206,13 @@ Status PassesDecoderState::PreparePipeline(const FrameHeader& frame_header,
         (late_ec_upsample ? frame_header.extra_channel_upsampling.size() : 0);
     for (size_t c = 0; c < nb_channels; c++) {
       JXL_RETURN_IF_ERROR(builder.AddStage(GetUpsamplingStage(
-          frame_header.nonserialized_metadata->transform_data, c,
-          CeilLog2Nonzero(frame_header.upsampling))));
+          memory_manager, frame_header.nonserialized_metadata->transform_data,
+          c, CeilLog2Nonzero(frame_header.upsampling))));
     }
   }
+  // Starting from this line all the stages considered to have zero xextra.
+  // Upsampling does not have xextra as well (even if it happens before
+  // splines/patches for EC).
   if (render_noise) {
     JXL_RETURN_IF_ERROR(builder.AddStage(GetConvolveNoiseStage(num_c)));
     JXL_RETURN_IF_ERROR(builder.AddStage(GetAddNoiseStage(
@@ -208,7 +226,7 @@ Status PassesDecoderState::PreparePipeline(const FrameHeader& frame_header,
   if (frame_header.CanBeReferenced() &&
       frame_header.save_before_color_transform) {
     JXL_RETURN_IF_ERROR(builder.AddStage(GetWriteToImageBundleStage(
-        &frame_storage_for_referencing, output_encoding_info)));
+        &frame_storage_for_referencing, &metadata->color_encoding)));
   }
 
   bool has_alpha = false;
@@ -264,7 +282,7 @@ Status PassesDecoderState::PreparePipeline(const FrameHeader& frame_header,
         linear = false;
       }
       JXL_RETURN_IF_ERROR(builder.AddStage(GetWriteToImageBundleStage(
-          &frame_storage_for_referencing, output_encoding_info)));
+          &frame_storage_for_referencing, &metadata->color_encoding)));
     }
 
     if (options.render_spotcolors &&
@@ -330,6 +348,11 @@ Status PassesDecoderState::PreparePipeline(const FrameHeader& frame_header,
         }
       }
       linear = false;
+    } else {
+      auto cms_stage = GetCmsStage(output_encoding_info, false);
+      if (cms_stage) {
+        JXL_RETURN_IF_ERROR(builder.AddStage(std::move(cms_stage)));
+      }
     }
     (void)linear;
 
@@ -338,8 +361,8 @@ Status PassesDecoderState::PreparePipeline(const FrameHeader& frame_header,
           main_output, width, height, has_alpha, unpremul_alpha, alpha_c,
           undo_orientation, extra_output, memory_manager)));
     } else {
-      JXL_RETURN_IF_ERROR(builder.AddStage(
-          GetWriteToImageBundleStage(decoded, output_encoding_info)));
+      JXL_RETURN_IF_ERROR(builder.AddStage(GetWriteToImageBundleStage(
+          decoded, &output_encoding_info.color_encoding)));
     }
   }
   JXL_ASSIGN_OR_RETURN(render_pipeline,

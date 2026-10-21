@@ -3940,6 +3940,8 @@ js::Unbox(JSContext* cx, HandleObject obj, MutableHandleValue vp)
         vp.setString(obj->as<StringObject>().unbox());
     else if (obj->is<DateObject>())
         vp.set(obj->as<DateObject>().UTCTime());
+    else if (obj->is<BigIntObject>())
+        vp.setBigInt(obj->as<BigIntObject>().unbox());
     else
         vp.setUndefined();
 

@@ -5901,7 +5901,7 @@ void SplitARGBRow_SSE2(const uint8_t* src_argb,
 
       "lea         32(%0),%0                     \n"
       "lea         8(%1),%1                      \n"
-      "sub         $0x8,%5                       \n"
+      "subl        $0x8,%5                       \n"
       "jg          1b                            \n"
       : "+r"(src_argb),  // %0
         "+r"(dst_r),     // %1
@@ -7366,7 +7366,7 @@ void BlendPlaneRow_SSSE3(const uint8_t* src0,
       "packuswb    %%xmm0,%%xmm0                 \n"
       "movq        %%xmm0,(%3,%2,1)              \n"
       "lea         0x8(%2),%2                    \n"
-      "sub         $0x8,%4                       \n"
+      "subl        $0x8,%4                       \n"
       "jg          1b                            \n"
       : "+r"(src0),   // %0
         "+r"(src1),   // %1
@@ -8889,7 +8889,7 @@ void I422ToYUY2Row_SSE2(const uint8_t* src_y,
       "movdqu      %%xmm0,(%3)                   \n"
       "movdqu      %%xmm1,0x10(%3)               \n"
       "lea         0x20(%3),%3                   \n"
-      "sub         $0x10,%4                      \n"
+      "subl        $0x10,%4                      \n"
       "jg          1b                            \n"
       : "+r"(src_y),     // %0
         "+r"(src_u),     // %1
@@ -8925,7 +8925,7 @@ void I422ToUYVYRow_SSE2(const uint8_t* src_y,
       "movdqu      %%xmm1,(%3)                   \n"
       "movdqu      %%xmm2,0x10(%3)               \n"
       "lea         0x20(%3),%3                   \n"
-      "sub         $0x10,%4                      \n"
+      "subl        $0x10,%4                      \n"
       "jg          1b                            \n"
       : "+r"(src_y),     // %0
         "+r"(src_u),     // %1
@@ -8963,7 +8963,7 @@ void I422ToYUY2Row_AVX2(const uint8_t* src_y,
       "vextractf128 $0x1,%%ymm1,0x20(%3)         \n"
       "vextractf128 $0x1,%%ymm2,0x30(%3)         \n"
       "lea         0x40(%3),%3                   \n"
-      "sub         $0x20,%4                      \n"
+      "subl        $0x20,%4                      \n"
       "jg          1b                            \n"
       "vzeroupper                                \n"
       : "+r"(src_y),     // %0
@@ -9002,7 +9002,7 @@ void I422ToUYVYRow_AVX2(const uint8_t* src_y,
       "vextractf128 $0x1,%%ymm1,0x20(%3)         \n"
       "vextractf128 $0x1,%%ymm2,0x30(%3)         \n"
       "lea         0x40(%3),%3                   \n"
-      "sub         $0x20,%4                      \n"
+      "subl        $0x20,%4                      \n"
       "jg          1b                            \n"
       "vzeroupper                                \n"
       : "+r"(src_y),     // %0

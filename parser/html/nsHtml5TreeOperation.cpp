@@ -41,6 +41,7 @@
 #include "nsIHTMLDocument.h"
 #include "mozilla/Likely.h"
 #include "nsTextNode.h"
+#include "mozilla/Preferences.h"
 
 using namespace mozilla;
 
@@ -690,7 +691,9 @@ nsHtml5TreeOperation::CreateMathMLElement(nsIAtom* aName,
 void
 nsHtml5TreeOperation::SetFormElement(nsIContent* aNode, nsIContent* aParent)
 {
-  if (aNode->SubtreeRoot() != aParent->SubtreeRoot()) {
+  // sFormSubtreeStrict is a pref to temporarily disable this check. See UXP #3197
+  bool sFormSubtreeStrict = mozilla::Preferences::GetBool("html5.forms.standards_compliant", true);
+  if (sFormSubtreeStrict && aNode->SubtreeRoot() != aParent->SubtreeRoot()) {
     return;
   }
   nsCOMPtr<nsIFormControl> formControl(do_QueryInterface(aNode));

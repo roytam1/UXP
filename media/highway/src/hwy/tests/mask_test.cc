@@ -15,7 +15,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>  // memcmp
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "tests/mask_test.cc"
@@ -26,91 +25,101 @@
 HWY_BEFORE_NAMESPACE();
 namespace hwy {
 namespace HWY_NAMESPACE {
+namespace {
 
-// All types.
-struct TestFromVec {
+#ifndef HWY_NATIVE_MASK
+#error "Bug in set_macros-inl.h, did not set HWY_NATIVE_MASK"
+#endif
+
+struct TestMaskFromVec {
   template <typename T, class D>
   HWY_NOINLINE void operator()(T /*unused*/, D d) {
     const size_t N = Lanes(d);
     auto lanes = AllocateAligned<T>(N);
+    HWY_ASSERT(lanes);
 
-    memset(lanes.get(), 0, N * sizeof(T));
-    const auto actual_false = MaskFromVec(Load(d, lanes.get()));
+    ZeroBytes(lanes.get(), N * sizeof(T));
+    const Mask<D> actual_false = MaskFromVec(Load(d, lanes.get()));
     HWY_ASSERT_MASK_EQ(d, MaskFalse(d), actual_false);
 
-    memset(lanes.get(), 0xFF, N * sizeof(T));
-    const auto actual_true = MaskFromVec(Load(d, lanes.get()));
+    FillBytes(lanes.get(), 0xFF, N * sizeof(T));
+    const Mask<D> actual_true = MaskFromVec(Load(d, lanes.get()));
     HWY_ASSERT_MASK_EQ(d, MaskTrue(d), actual_true);
   }
 };
 
-HWY_NOINLINE void TestAllFromVec() {
-  ForAllTypes(ForPartialVectors<TestFromVec>());
+HWY_NOINLINE void TestAllMaskFromVec() {
+  ForAllTypes(ForPartialVectors<TestMaskFromVec>());
 }
 
-struct TestFirstN {
-  template <class T, class D>
-  HWY_NOINLINE void operator()(T /*unused*/, D d) {
-    const size_t N = Lanes(d);
-    auto bool_lanes = AllocateAligned<T>(N);
-
-    using TN = SignedFromSize<HWY_MIN(sizeof(size_t), sizeof(T))>;
-    const size_t max_len = static_cast<size_t>(LimitsMax<TN>());
-
-    const size_t max_lanes = HWY_MIN(2 * N, AdjustedReps(512));
-    for (size_t len = 0; len <= HWY_MIN(max_lanes, max_len); ++len) {
-      // Loop instead of Iota+Lt to avoid wraparound for 8-bit T.
-      for (size_t i = 0; i < N; ++i) {
-        bool_lanes[i] = (i < len) ? T{1} : 0;
-      }
-      const auto expected = Eq(Load(d, bool_lanes.get()), Set(d, T{1}));
-      HWY_ASSERT_MASK_EQ(d, expected, FirstN(d, len));
-    }
-
-    // Also ensure huge values yield all-true (unless the vector is actually
-    // larger than max_len).
-    for (size_t i = 0; i < N; ++i) {
-      bool_lanes[i] = (i < max_len) ? T{1} : 0;
-    }
-    const auto expected = Eq(Load(d, bool_lanes.get()), Set(d, T{1}));
-    HWY_ASSERT_MASK_EQ(d, expected, FirstN(d, max_len));
-  }
-};
-
-HWY_NOINLINE void TestAllFirstN() {
-  ForAllTypes(ForPartialVectors<TestFirstN>());
-}
-
-struct TestMaskVec {
+// Round trip, using MaskFromVec.
+struct TestVecFromMask {
   template <class T, class D>
   HWY_NOINLINE void operator()(T /*unused*/, D d) {
     RandomState rng;
 
+    using M = Mask<D>;  // == MFromD<D>
+// Ensure DFromM works on all targets except `SVE` and `RVV`, whose built-in
+// mask types are not strongly typed.
+#if !HWY_TARGET_IS_SVE && HWY_TARGET != HWY_RVV
+    static_assert(hwy::IsSame<DFromM<M>, D>(), "");
+#endif
+
     using TI = MakeSigned<T>;  // For mask > 0 comparison
     const Rebind<TI, D> di;
     const size_t N = Lanes(d);
-    auto bool_lanes = AllocateAligned<TI>(N);
+    auto lanes = AllocateAligned<TI>(N);
+    HWY_ASSERT(lanes);
 
     // Each lane should have a chance of having mask=true.
     for (size_t rep = 0; rep < AdjustedReps(200); ++rep) {
       for (size_t i = 0; i < N; ++i) {
-        bool_lanes[i] = (Random32(&rng) & 1024) ? TI(1) : TI(0);
+        lanes[i] = (Random32(&rng) & 1024) ? TI(1) : TI(0);
       }
 
-      const auto mask = RebindMask(d, Gt(Load(di, bool_lanes.get()), Zero(di)));
+      const M mask = RebindMask(d, Gt(Load(di, lanes.get()), Zero(di)));
       HWY_ASSERT_MASK_EQ(d, mask, MaskFromVec(VecFromMask(d, mask)));
     }
   }
 };
 
-HWY_NOINLINE void TestAllMaskVec() {
-  const ForPartialVectors<TestMaskVec> test;
+HWY_NOINLINE void TestAllVecFromMask() {
+  ForAllTypes(ForPartialVectors<TestVecFromMask>());
+}
 
-  test(uint16_t());
-  test(int16_t());
-  // TODO(janwas): float16_t - cannot compare yet
+struct TestBitsFromMask {
+  template <class T, class D>
+  HWY_NOINLINE void operator()(T /*unused*/, D d) {
+#if HWY_MAX_BYTES > 64
+    (void)d;
+#else
+    RandomState rng;
 
-  ForUIF3264(test);
+    using TI = MakeSigned<T>;  // For mask > 0 comparison
+    const Rebind<TI, D> di;
+    const size_t N = Lanes(d);
+    HWY_ASSERT(N <= 64);  // non-scalable targets have at most 512 bits.
+    auto lanes = AllocateAligned<TI>(N);
+    HWY_ASSERT(lanes);
+
+    // Each lane should have a chance of having mask=true.
+    for (size_t rep = 0; rep < AdjustedReps(200); ++rep) {
+      uint64_t expected_bits = 0;
+      for (size_t i = 0; i < N; ++i) {
+        lanes[i] = (Random32(&rng) & 1024) ? TI(1) : TI(0);
+        expected_bits |= lanes[i] ? (1ull << i) : 0;
+      }
+
+      const Mask<D> mask = RebindMask(d, Gt(Load(di, lanes.get()), Zero(di)));
+      const uint64_t actual_bits = BitsFromMask(d, mask);
+      HWY_ASSERT_EQ(expected_bits, actual_bits);
+    }
+#endif  // HWY_MAX_BYTES > 64
+  }
+};
+
+HWY_NOINLINE void TestAllBitsFromMask() {
+  ForAllTypes(ForPartialVectors<TestBitsFromMask>());
 }
 
 struct TestAllTrueFalse {
@@ -121,7 +130,8 @@ struct TestAllTrueFalse {
 
     const size_t N = Lanes(d);
     auto lanes = AllocateAligned<T>(N);
-    std::fill(lanes.get(), lanes.get() + N, T(0));
+    HWY_ASSERT(lanes);
+    ZeroBytes(lanes.get(), N * sizeof(T));
 
     HWY_ASSERT(AllTrue(d, Eq(v, zero)));
     HWY_ASSERT(!AllFalse(d, Eq(v, zero)));
@@ -132,20 +142,20 @@ struct TestAllTrueFalse {
 
     // Set each lane to nonzero and back to zero
     for (size_t i = 0; i < N; ++i) {
-      lanes[i] = T(1);
+      lanes[i] = ConvertScalarTo<T>(1);
       v = Load(d, lanes.get());
 
       HWY_ASSERT(!AllTrue(d, Eq(v, zero)));
 
       HWY_ASSERT(expected_all_false ^ AllFalse(d, Eq(v, zero)));
 
-      lanes[i] = T(-1);
+      lanes[i] = ConvertScalarTo<T>(-1);
       v = Load(d, lanes.get());
       HWY_ASSERT(!AllTrue(d, Eq(v, zero)));
       HWY_ASSERT(expected_all_false ^ AllFalse(d, Eq(v, zero)));
 
       // Reset to all zero
-      lanes[i] = T(0);
+      lanes[i] = ConvertScalarTo<T>(0);
       v = Load(d, lanes.get());
       HWY_ASSERT(AllTrue(d, Eq(v, zero)));
       HWY_ASSERT(!AllFalse(d, Eq(v, zero)));
@@ -164,7 +174,8 @@ struct TestCountTrue {
     const Rebind<TI, D> di;
     const size_t N = Lanes(di);
     auto bool_lanes = AllocateAligned<TI>(N);
-    memset(bool_lanes.get(), 0, N * sizeof(TI));
+    HWY_ASSERT(bool_lanes);
+    ZeroBytes(bool_lanes.get(), N * sizeof(TI));
 
     // For all combinations of zero/nonzero state of subset of lanes:
     const size_t max_lanes = HWY_MIN(N, size_t(10));
@@ -196,7 +207,8 @@ struct TestFindFirstTrue {  // Also FindKnownFirstTrue
     const Rebind<TI, D> di;
     const size_t N = Lanes(di);
     auto bool_lanes = AllocateAligned<TI>(N);
-    memset(bool_lanes.get(), 0, N * sizeof(TI));
+    HWY_ASSERT(bool_lanes);
+    ZeroBytes(bool_lanes.get(), N * sizeof(TI));
 
     // For all combinations of zero/nonzero state of subset of lanes:
     const size_t max_lanes = AdjustedLog2Reps(HWY_MIN(N, size_t(9)));
@@ -223,6 +235,41 @@ HWY_NOINLINE void TestAllFindFirstTrue() {
   ForAllTypes(ForPartialVectors<TestFindFirstTrue>());
 }
 
+struct TestFindLastTrue {  // Also FindKnownLastTrue
+  template <class T, class D>
+  HWY_NOINLINE void operator()(T /*unused*/, D d) {
+    using TI = MakeSigned<T>;  // For mask > 0 comparison
+    const Rebind<TI, D> di;
+    const size_t N = Lanes(di);
+    auto bool_lanes = AllocateAligned<TI>(N);
+    HWY_ASSERT(bool_lanes);
+    ZeroBytes(bool_lanes.get(), N * sizeof(TI));
+
+    // For all combinations of zero/nonzero state of subset of lanes:
+    const size_t max_lanes = AdjustedLog2Reps(HWY_MIN(N, size_t(9)));
+
+    HWY_ASSERT_EQ(intptr_t(-1), FindLastTrue(d, MaskFalse(d)));
+    HWY_ASSERT_EQ(intptr_t(Lanes(d) - 1), FindLastTrue(d, MaskTrue(d)));
+    HWY_ASSERT_EQ(size_t(Lanes(d) - 1), FindKnownLastTrue(d, MaskTrue(d)));
+
+    for (size_t code = 1; code < (1ull << max_lanes); ++code) {
+      for (size_t i = 0; i < max_lanes; ++i) {
+        bool_lanes[i] = (code & (1ull << i)) ? TI(1) : TI(0);
+      }
+
+      const size_t expected =
+          31 - Num0BitsAboveMS1Bit_Nonzero32(static_cast<uint32_t>(code));
+      const auto mask = RebindMask(d, Gt(Load(di, bool_lanes.get()), Zero(di)));
+      HWY_ASSERT_EQ(static_cast<intptr_t>(expected), FindLastTrue(d, mask));
+      HWY_ASSERT_EQ(expected, FindKnownLastTrue(d, mask));
+    }
+  }
+};
+
+HWY_NOINLINE void TestAllFindLastTrue() {
+  ForAllTypes(ForPartialVectors<TestFindLastTrue>());
+}
+
 struct TestLogicalMask {
   template <class T, class D>
   HWY_NOINLINE void operator()(T /*unused*/, D d) {
@@ -233,12 +280,12 @@ struct TestLogicalMask {
     const Rebind<TI, D> di;
     const size_t N = Lanes(di);
     auto bool_lanes = AllocateAligned<TI>(N);
-    memset(bool_lanes.get(), 0, N * sizeof(TI));
+    HWY_ASSERT(bool_lanes);
+    ZeroBytes(bool_lanes.get(), N * sizeof(TI));
 
     HWY_ASSERT_MASK_EQ(d, m0, Not(m_all));
     HWY_ASSERT_MASK_EQ(d, m_all, Not(m0));
 
-    Print(d, ".", VecFromMask(d, ExclusiveNeither(m0, m0)));
     HWY_ASSERT_MASK_EQ(d, m_all, ExclusiveNeither(m0, m0));
     HWY_ASSERT_MASK_EQ(d, m0, ExclusiveNeither(m_all, m0));
     HWY_ASSERT_MASK_EQ(d, m0, ExclusiveNeither(m0, m_all));
@@ -272,22 +319,91 @@ struct TestLogicalMask {
 HWY_NOINLINE void TestAllLogicalMask() {
   ForAllTypes(ForPartialVectors<TestLogicalMask>());
 }
+
+struct TestMaskedSetOr {
+  template <class D>
+  void testWithMask(D d, MFromD<D> m) {
+    TFromD<D> a = 1;
+    auto yes = Set(d, a);
+    auto no = Set(d, 2);
+    auto expected = IfThenElse(m, yes, no);
+    auto actual = MaskedSetOr(no, m, a);
+    HWY_ASSERT_VEC_EQ(d, expected, actual);
+  }
+  template <class T, class D>
+  HWY_NOINLINE void operator()(T /*unused*/, D d) {
+    // All False
+    testWithMask(d, MaskFalse(d));
+    auto N = Lanes(d);
+    // All True
+    testWithMask(d, FirstN(d, N));
+    // Lower half
+    testWithMask(d, FirstN(d, N / 2));
+    // Upper half
+    testWithMask(d, Not(FirstN(d, N / 2)));
+    // Interleaved
+    testWithMask(d,
+                 MaskFromVec(InterleaveLower(Zero(d), Set(d, (TFromD<D>)-1))));
+  }
+};
+
+HWY_NOINLINE void TestAllMaskedSetOr() {
+  ForAllTypes(ForShrinkableVectors<TestMaskedSetOr>());
+}
+
+struct TestMaskedSet {
+  template <class D>
+  void testWithMask(D d, MFromD<D> m) {
+    TFromD<D> a = 1;
+    auto yes = Set(d, a);
+    auto no = Zero(d);
+    auto expected = IfThenElse(m, yes, no);
+    auto actual = MaskedSet(d, m, a);
+    HWY_ASSERT_VEC_EQ(d, expected, actual);
+  }
+  template <class T, class D>
+  HWY_NOINLINE void operator()(T /*unused*/, D d) {
+    // All False
+    testWithMask(d, MaskFalse(d));
+    auto N = Lanes(d);
+    // All True
+    testWithMask(d, FirstN(d, N));
+    // Lower half
+    testWithMask(d, FirstN(d, N / 2));
+    // Upper half
+    testWithMask(d, Not(FirstN(d, N / 2)));
+    // Interleaved
+    testWithMask(d,
+                 MaskFromVec(InterleaveLower(Zero(d), Set(d, (TFromD<D>)-1))));
+  }
+};
+
+HWY_NOINLINE void TestAllMaskedSet() {
+  ForAllTypes(ForShrinkableVectors<TestMaskedSet>());
+}
+
+}  // namespace
 // NOLINTNEXTLINE(google-readability-namespace-comments)
 }  // namespace HWY_NAMESPACE
 }  // namespace hwy
 HWY_AFTER_NAMESPACE();
 
 #if HWY_ONCE
-
 namespace hwy {
+namespace {
 HWY_BEFORE_TEST(HwyMaskTest);
-HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllFromVec);
-HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllFirstN);
-HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllMaskVec);
+HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllMaskFromVec);
+HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllVecFromMask);
+HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllBitsFromMask);
 HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllAllTrueFalse);
 HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllCountTrue);
 HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllFindFirstTrue);
+HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllFindLastTrue);
 HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllLogicalMask);
+HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllMaskedSetOr);
+HWY_EXPORT_AND_TEST_P(HwyMaskTest, TestAllMaskedSet);
+HWY_AFTER_TEST();
+}  // namespace
 }  // namespace hwy
-
-#endif
+HWY_TEST_MAIN();
+#endif  // HWY_ONCE

@@ -49,45 +49,10 @@
 #include <stdint.h>
 
 #include "hwy/highway_export.h"
-
-// Enables sanity checks that verify correct operation at the cost of
-// longer benchmark runs.
-#ifndef NANOBENCHMARK_ENABLE_CHECKS
-#define NANOBENCHMARK_ENABLE_CHECKS 0
-#endif
-
-#define NANOBENCHMARK_CHECK_ALWAYS(condition)                             \
-  while (!(condition)) {                                                  \
-    fprintf(stderr, "Nanobenchmark check failed at line %d\n", __LINE__); \
-    abort();                                                              \
-  }
-
-#if NANOBENCHMARK_ENABLE_CHECKS
-#define NANOBENCHMARK_CHECK(condition) NANOBENCHMARK_CHECK_ALWAYS(condition)
-#else
-#define NANOBENCHMARK_CHECK(condition)
-#endif
+#include "hwy/timer.h"  // IWYU pragma: export
+#include "hwy/base.h"
 
 namespace hwy {
-
-namespace platform {
-
-// Returns tick rate, useful for converting measurements to seconds. Invariant
-// means the tick counter frequency is independent of CPU throttling or sleep.
-// This call may be expensive, callers should cache the result.
-HWY_DLLEXPORT double InvariantTicksPerSecond();
-
-// Returns current timestamp [in seconds] relative to an unspecified origin.
-// Features: monotonic (no negative elapsed time), steady (unaffected by system
-// time changes), high-resolution (on the order of microseconds).
-HWY_DLLEXPORT double Now();
-
-// Returns ticks elapsed in back to back timer calls, i.e. a function of the
-// timer resolution (minimum measurable difference) and overhead.
-// This call is expensive, callers should cache the result.
-HWY_DLLEXPORT uint64_t TimerResolution();
-
-}  // namespace platform
 
 // Returns 1, but without the compiler knowing what the value is. This prevents
 // optimizing out code.
@@ -106,11 +71,6 @@ using Func = FuncOutput (*)(const void*, FuncInput);
 
 // Internal parameters that determine precision/resolution/measuring time.
 struct Params {
-  // For measuring timer overhead/resolution. Used in a nested loop =>
-  // quadratic time, acceptable because we know timer overhead is "low".
-  // constexpr because this is used to define array bounds.
-  static constexpr size_t kTimerSamples = 256;
-
   // Best-case precision, expressed as a divisor of the timer resolution.
   // Larger => more calls to Func and higher precision.
   size_t precision_divisor = 1024;
@@ -155,6 +115,14 @@ struct Result {
   float variability;
 };
 
+// Returns a Params struct with customized configuration for benchmarks.
+// Specifically limits `max_evals` to prevent timeout in tests.
+static inline Params DefaultBenchmarkParams() {
+  Params p;
+  p.max_evals = HWY_IS_DEBUG_BUILD ? 3 : 4;
+  return p;
+}
+
 // Precisely measures the number of ticks elapsed when calling "func" with the
 // given inputs, shuffled to ensure realistic branch prediction hit rates.
 //
@@ -167,14 +135,14 @@ struct Result {
 //   uniform distribution over [0, 4) could be represented as {3,0,2,1}.
 // Returns how many Result were written to "results": one per unique input, or
 //   zero if the measurement failed (an error message goes to stderr).
-HWY_DLLEXPORT size_t Measure(const Func func, const uint8_t* arg,
-                             const FuncInput* inputs, const size_t num_inputs,
+HWY_DLLEXPORT size_t Measure(Func func, const uint8_t* arg,
+                             const FuncInput* inputs, size_t num_inputs,
                              Result* results, const Params& p = Params());
 
 // Calls operator() of the given closure (lambda function).
 template <class Closure>
-static FuncOutput CallClosure(const Closure* f, const FuncInput input) {
-  return (*f)(input);
+static FuncOutput CallClosure(const void* f, const FuncInput input) {
+  return (*reinterpret_cast<const Closure*>(f))(input);
 }
 
 // Same as Measure, except "closure" is typically a lambda function of
@@ -184,7 +152,7 @@ static inline size_t MeasureClosure(const Closure& closure,
                                     const FuncInput* inputs,
                                     const size_t num_inputs, Result* results,
                                     const Params& p = Params()) {
-  return Measure(reinterpret_cast<Func>(&CallClosure<Closure>),
+  return Measure(static_cast<Func>(&CallClosure<Closure>),
                  reinterpret_cast<const uint8_t*>(&closure), inputs, num_inputs,
                  results, p);
 }
