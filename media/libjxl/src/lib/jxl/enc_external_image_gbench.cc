@@ -10,7 +10,10 @@
 #include <vector>
 
 #include "benchmark/benchmark.h"
+#include "lib/jxl/base/span.h"
+#include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/enc_external_image.h"
+#include "lib/jxl/image_bundle.h"
 #include "lib/jxl/image_metadata.h"
 #include "tools/no_memory_manager.h"
 
@@ -42,7 +45,7 @@ void BM_EncExternalImage_ConvertImageRGBA(benchmark::State& state) {
           Bytes(interleaved.data(), interleaved.size()), xsize, ysize,
           /*c_current=*/ColorEncoding::SRGB(),
           /*bits_per_sample=*/8, format,
-          /*pool=*/nullptr, &ib));
+          /*pool=*/nullptr, &ib, /*set_alpha=*/true));
     }
   }
 

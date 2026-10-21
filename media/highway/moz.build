@@ -9,6 +9,7 @@ LOCAL_INCLUDES += [
 ]
 
 SOURCES += [
+    "/media/highway/src/hwy/abort.cc",
     "/media/highway/src/hwy/aligned_allocator.cc",
     "/media/highway/src/hwy/contrib/image/image.cc",
     "/media/highway/src/hwy/per_target.cc",
@@ -24,6 +25,7 @@ EXPORTS.hwy += [
     "/media/highway/src/hwy/foreach_target.h",
     "/media/highway/src/hwy/highway.h",
     "/media/highway/src/hwy/highway_export.h",
+    "/media/highway/src/hwy/per_target.h",
     "/media/highway/src/hwy/targets.h",
 ]
 
@@ -32,6 +34,9 @@ EXPORTS.hwy.ops += [
     "/media/highway/src/hwy/ops/arm_sve-inl.h",
     "/media/highway/src/hwy/ops/emu128-inl.h",
     "/media/highway/src/hwy/ops/generic_ops-inl.h",
+    "/media/highway/src/hwy/ops/inside-inl.h",
+    "/media/highway/src/hwy/ops/loongarch_lasx-inl.h",
+    "/media/highway/src/hwy/ops/loongarch_lsx-inl.h",
     "/media/highway/src/hwy/ops/rvv-inl.h",
     "/media/highway/src/hwy/ops/scalar-inl.h",
     "/media/highway/src/hwy/ops/set_macros-inl.h",
@@ -40,6 +45,7 @@ EXPORTS.hwy.ops += [
     "/media/highway/src/hwy/ops/x86_128-inl.h",
     "/media/highway/src/hwy/ops/x86_256-inl.h",
     "/media/highway/src/hwy/ops/x86_512-inl.h",
+    "/media/highway/src/hwy/ops/x86_avx3-inl.h",
 ]
 
 FINAL_LIBRARY = "gkmedias"

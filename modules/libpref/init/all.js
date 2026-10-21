@@ -4600,6 +4600,9 @@ pref("html5.flushtimer.initialdelay", 120);
 // Time in milliseconds between the time a network buffer is seen and the
 // timer firing when the timer has already fired previously in this parse.
 pref("html5.flushtimer.subsequentdelay", 120);
+// Determine whether strict (standards-compliant) subtree node checking is
+// enabled for forms. See UXP issue #3197
+pref("html5.forms.standards_compliant", true);
 
 // Push/Pop/Replace State prefs
 pref("browser.history.maxStateObjectSize", 655360);

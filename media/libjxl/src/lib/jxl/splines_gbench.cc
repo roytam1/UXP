@@ -4,12 +4,14 @@
 // license that can be found in the LICENSE file.
 
 #include <cstddef>
+#include <utility>
 #include <vector>
 
 #include "benchmark/benchmark.h"
 #include "lib/jxl/base/rect.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/chroma_from_luma.h"
+#include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"
 #include "lib/jxl/splines.h"
 #include "tools/no_memory_manager.h"
@@ -52,13 +54,14 @@ void BM_Splines(benchmark::State& state) {
     quantized_splines.emplace_back(std::move(qspline));
     starting_points.push_back(spline.control_points.front());
   }
-  Splines splines(kQuantizationAdjustment, std::move(quantized_splines),
-                  std::move(starting_points));
+  JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
+  Splines splines{memory_manager};
+  splines.SetData({Span<const QuantizedSpline>(quantized_splines),
+                   Span<const Spline::Point>(starting_points)});
 
-  JXL_ASSIGN_OR_QUIT(
-      Image3F drawing_area,
-      Image3F::Create(jpegxl::tools::NoMemoryManager(), 320, 320),
-      "Failed to allocate drawing plane.");
+  JXL_ASSIGN_OR_QUIT(Image3F drawing_area,
+                     Image3F::Create(memory_manager, 320, 320),
+                     "Failed to allocate drawing plane.");
   ZeroFillImage(&drawing_area);
   for (auto _ : state) {
     (void)_;

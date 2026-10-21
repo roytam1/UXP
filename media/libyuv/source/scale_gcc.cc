@@ -2099,7 +2099,7 @@ void ScaleARGBRowDownEvenBox_SSE2(const uint8_t* src_argb,
       "pavgb       %%xmm2,%%xmm0                 \n"
       "movdqu      %%xmm0,(%2)                   \n"
       "lea         0x10(%2),%2                   \n"
-      "sub         $0x4,%3                       \n"
+      "subl        $0x4,%3                       \n"
       "jg          1b                            \n"
       : "+r"(src_argb),        // %0
         "+r"(src_stepx_x4),    // %1

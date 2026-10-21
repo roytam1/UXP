@@ -154,10 +154,10 @@ FilterProcessing::SeparateColorChannels_Scalar(const IntSize &size, uint8_t* sou
     for (int32_t x = 0; x < size.width; x++) {
       int32_t sourceIndex = y * sourceStride + 4 * x;
       int32_t targetIndex = y * channelStride + x;
-      channel0Data[targetIndex] = sourceData[sourceIndex];
-      channel1Data[targetIndex] = sourceData[sourceIndex+1];
-      channel2Data[targetIndex] = sourceData[sourceIndex+2];
-      channel3Data[targetIndex] = sourceData[sourceIndex+3];
+      channel0Data[targetIndex] = sourceData[sourceIndex + B8G8R8A8_COMPONENT_BYTEOFFSET_R];
+      channel1Data[targetIndex] = sourceData[sourceIndex + B8G8R8A8_COMPONENT_BYTEOFFSET_G];
+      channel2Data[targetIndex] = sourceData[sourceIndex + B8G8R8A8_COMPONENT_BYTEOFFSET_B];
+      channel3Data[targetIndex] = sourceData[sourceIndex + B8G8R8A8_COMPONENT_BYTEOFFSET_A];
     }
   }
 }
@@ -169,10 +169,10 @@ FilterProcessing::CombineColorChannels_Scalar(const IntSize &size, int32_t resul
     for (int32_t x = 0; x < size.width; x++) {
       int32_t resultIndex = y * resultStride + 4 * x;
       int32_t channelIndex = y * channelStride + x;
-      resultData[resultIndex] = channel0Data[channelIndex];
-      resultData[resultIndex+1] = channel1Data[channelIndex];
-      resultData[resultIndex+2] = channel2Data[channelIndex];
-      resultData[resultIndex+3] = channel3Data[channelIndex];
+      resultData[resultIndex + B8G8R8A8_COMPONENT_BYTEOFFSET_R] = channel0Data[channelIndex];
+      resultData[resultIndex + B8G8R8A8_COMPONENT_BYTEOFFSET_G] = channel1Data[channelIndex];
+      resultData[resultIndex + B8G8R8A8_COMPONENT_BYTEOFFSET_B] = channel2Data[channelIndex];
+      resultData[resultIndex + B8G8R8A8_COMPONENT_BYTEOFFSET_A] = channel3Data[channelIndex];
     }
   }
 }

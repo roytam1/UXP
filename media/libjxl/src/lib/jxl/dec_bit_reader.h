@@ -219,6 +219,19 @@ class BitReader {
     return static_cast<size_t>(end_minus_8_ + 8 - first_byte_);
   }
 
+  // Forces the BitReader into an out-of-bounds state. Used by higher-level
+  // decoders to short-circuit further reads when they detect a corrupt stream
+  // (e.g. an LZ77 length-code overflow): after this call, subsequent reads
+  // still return zeros, but AllReadsWithinBounds() and Close() will report
+  // failure so the corruption surfaces at the next checkpoint rather than
+  // silently producing phantom-zero symbols.
+  void MarkUnhealthy() {
+    next_byte_ = end_minus_8_ + 8;
+    // Add enough overread to make TotalBitsConsumed() exceed TotalBytes() *
+    // kBitsPerByte regardless of how many bits remain in buf_.
+    overread_bytes_ += 8;
+  }
+
   // Returns whether all the bits read so far have been within the input bounds.
   // When reading past the EOF, the Read*() and Consume() functions return zeros
   // but flag a failure when calling Close() without checking this function.
@@ -251,25 +264,7 @@ class BitReader {
 
  private:
   // Separate function avoids inlining this relatively cold code into callers.
-  JXL_NOINLINE void BoundsCheckedRefill() {
-    const uint8_t* end = end_minus_8_ + 8;
-
-    // Read whole bytes until we have [56, 64) bits (same as LoadLE64)
-    for (; bits_in_buf_ < 64 - kBitsPerByte; bits_in_buf_ += kBitsPerByte) {
-      if (next_byte_ >= end) break;
-      buf_ |= static_cast<uint64_t>(*next_byte_++) << bits_in_buf_;
-    }
-    JXL_DASSERT(bits_in_buf_ < 64);
-
-    // Add extra bytes as 0 at the end of the stream in the bit_buffer_. If
-    // these bits are read, Close() will return a failure.
-    size_t extra_bytes = (63 - bits_in_buf_) / kBitsPerByte;
-    overread_bytes_ += extra_bytes;
-    bits_in_buf_ += extra_bytes * kBitsPerByte;
-
-    JXL_DASSERT(bits_in_buf_ < 64);
-    JXL_DASSERT(bits_in_buf_ >= 56);
-  }
+  JXL_NOINLINE void BoundsCheckedRefill();
 
   JXL_NOINLINE uint32_t BoundsCheckedReadByteAlignedWord() {
     if (next_byte_ + 1 < end_minus_8_ + 8) {

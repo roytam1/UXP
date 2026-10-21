@@ -43,7 +43,7 @@ static inline pixel_type Scale(uint64_t value, uint64_t bit_depth) {
   // We only call this function with kSmallCube or kLargeCube - 1 as denom,
   // allowing us to avoid a division here.
 #if 0
-  static_assert(denom == 4);
+  static_assert(denom == 4, "Denominator is defined as 4");
 #endif
   return (value * ((static_cast<uint64_t>(1) << bit_depth) - 1)) >> 2;
 }

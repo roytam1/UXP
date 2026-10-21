@@ -3,13 +3,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+#include <jxl/codestream_header.h>
 #include <jxl/decode.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <vector>
 
-#include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/fuzztest.h"
 #include "tools/tracking_memory_manager.h"
 
@@ -18,11 +19,13 @@ namespace {
 using ::jpegxl::tools::kGiB;
 using ::jpegxl::tools::TrackingMemoryManager;
 
-void Check(bool ok) {
+void CheckImpl(bool ok, const char* condition, const char* file, int line) {
   if (!ok) {
-    JXL_CRASH();
+    fprintf(stderr, "Check(%s) failed at %s:%d\n", condition, file, line);
+    __builtin_trap();
   }
 }
+#define Check(OK) CheckImpl((OK), #OK, __FILE__, __LINE__)
 
 int DoTestOneInput(const uint8_t* data, size_t size) {
   JxlDecoderStatus status;
@@ -77,4 +80,4 @@ void TestOneInput(const std::vector<uint8_t>& data) {
   DoTestOneInput(data.data(), data.size());
 }
 
-FUZZ_TEST(DecodeBasiInfoFuzzTest, TestOneInput);
+FUZZ_TEST(DecodeBasicInfoFuzzTest, TestOneInput);
