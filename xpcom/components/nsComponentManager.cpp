@@ -1776,9 +1776,10 @@ nsComponentManagerImpl::CollectReports(nsIHandleReportCallback* aHandleReport,
 
 size_t
 nsComponentManagerImpl::SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf)
-  const
 {
   size_t n = aMallocSizeOf(this);
+
+  SafeMutexAutoLock lock(mLock);
 
   n += mLoaderMap.ShallowSizeOfExcludingThis(aMallocSizeOf);
 

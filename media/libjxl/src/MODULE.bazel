@@ -3,6 +3,8 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+"""JPEG XL reference implementation"""
+
 module(
     name = "libjxl",
     repo_name = "libjxl",

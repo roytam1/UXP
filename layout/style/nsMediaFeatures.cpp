@@ -619,11 +619,13 @@ GetPrefersMotion(nsPresContext* aPresContext, const nsMediaFeature* aFeature,
 {
   switch(Preferences::GetInt("ui.prefersReducedMotion", 0)) {
     case 1:
-      aResult.SetIntValue(NS_STYLE_PREFERS_REDUCED_MOTION, 
+      aResult.SetIntValue(NS_STYLE_PREFERS_REDUCED_MOTION,
                           eCSSUnit_Enumerated);
       break;
     default:
-      aResult.Reset();
+      aResult.SetIntValue(NS_STYLE_PREFERS_FULL_MOTION,
+                          eCSSUnit_Enumerated);
+      break;
   }
   return NS_OK;
 }

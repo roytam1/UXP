@@ -4,8 +4,8 @@
 # license that can be found in the LICENSE file.
 
 set(JPEGXL_MAJOR_VERSION 0)
-set(JPEGXL_MINOR_VERSION 11)
-set(JPEGXL_PATCH_VERSION 2)
+set(JPEGXL_MINOR_VERSION 12)
+set(JPEGXL_PATCH_VERSION 0)
 set(JPEGXL_LIBRARY_VERSION
     "${JPEGXL_MAJOR_VERSION}.${JPEGXL_MINOR_VERSION}.${JPEGXL_PATCH_VERSION}")
 
@@ -15,14 +15,13 @@ set(JPEGXL_LIBRARY_VERSION
 # It is important to update this value when making incompatible API/ABI changes
 # so that programs that depend on libjxl can update their dependencies. Semantic
 # versioning allows 0.y.z to have incompatible changes in minor versions.
-set(JPEGXL_SO_MINOR_VERSION 11)
+set(JPEGXL_SO_MINOR_VERSION 12)
 if (JPEGXL_MAJOR_VERSION EQUAL 0)
   set(JPEGXL_LIBRARY_SOVERSION
       "${JPEGXL_MAJOR_VERSION}.${JPEGXL_SO_MINOR_VERSION}")
 else()
   set(JPEGXL_LIBRARY_SOVERSION "${JPEGXL_MAJOR_VERSION}")
 endif()
-
 
 # List of warning and feature flags for our library and tests.
 if (MSVC)
@@ -51,6 +50,16 @@ else ()
     -Wvla
   )
 
+  if (NOT JPEGXL_ENABLE_COVERAGE AND NOT SANITIZER MATCHES ".san")
+    # NB: use `-Rpass-analysis=stack-frame-layout -g` for investigation.
+    # TODO(eustas): tighten
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      list(APPEND JPEGXL_INTERNAL_FLAGS -Wframe-larger-than=5632)
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
+      list(APPEND JPEGXL_INTERNAL_FLAGS -Wframe-larger-than=5632)
+    endif()
+  endif()
+
   # Warning flags supported by clang.
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     list(APPEND JPEGXL_INTERNAL_FLAGS
@@ -67,6 +76,7 @@ else ()
       -Wno-unused-command-line-argument
       -Wprivate-header
       -Wself-assign
+      -Wshadow
       -Wstring-conversion
       -Wtautological-overlap-compare
       -Wthread-safety-analysis
@@ -74,6 +84,10 @@ else ()
       -Wunreachable-code
       -Wunused-comparison
     )
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 8.0)
+      # for SKCMS on PPC
+      list(APPEND HWY_FLAGS -Wno-deprecated-altivec-src-compat)
+    endif()
     if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.0)
       list(APPEND HWY_FLAGS -Wc++2a-extensions)
     endif()
@@ -124,6 +138,11 @@ else ()
   endif()  # WIN32
 endif()  #!MSVC
 
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=109740
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  list(APPEND JPEGXL_INTERNAL_FLAGS -Wno-overloaded-virtual)
+endif()
+
 if (JPEGXL_ENABLE_SKCMS)
   list(APPEND JPEGXL_INTERNAL_FLAGS -DJPEGXL_ENABLE_SKCMS=1)
 endif ()
@@ -169,9 +188,6 @@ if(JPEGXL_ENABLE_TOOLS OR BUILD_TESTING)
   include(jxl_extras.cmake)
 endif()
 include(jxl_threads.cmake)
-if (JPEGXL_ENABLE_JPEGLI)
-  include(jpegli.cmake)
-endif()
 
 # For simplicity all the library headers, both source and generated ones, are
 # gathered in the binary folder. There is no distinction on which libraries use
@@ -180,14 +196,10 @@ endif()
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/jxl
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
-if(BUILD_TESTING)
-  include(GoogleTest)
-endif()
-
 # Tests for the jxl library.
 include(jxl_tests.cmake)
 
-if(BUILD_TESTING)
+if(BUILD_TESTING AND JPEGXL_ENABLE_BENCHMARK)
   # Google benchmark for the jxl library
   include(jxl_benchmark.cmake)
 endif()
