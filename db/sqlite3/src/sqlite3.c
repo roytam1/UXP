@@ -31489,7 +31489,9 @@ SQLITE_PRIVATE sqlite3_mutex_methods const *sqlite3DefaultMutex(void){
 struct sqlite3_mutex {
   union {
     CRITICAL_SECTION cs;     /* The CRITICAL_SECTION mutex.  id==1 */
+#if 0
     SRWLOCK srwl;            /* The Slim reader/writer lock.  id!=1 */
+#endif
   } u;
   int id;                    /* Mutex type */
 #ifdef SQLITE_DEBUG
@@ -31564,7 +31566,9 @@ static int winMutexInit(void){
     for(i=0; i<ArraySize(aWindowsMutex); i++){
       sqlite3_mutex *p = &aWindowsMutex[i].m;
       p->id = i+2;
+#if 0
       InitializeSRWLock(&p->u.srwl);
+#endif
 #ifdef SQLITE_DEBUG
       p->nRef = 0;
       p->owner = 0;
@@ -31655,10 +31659,12 @@ static sqlite3_mutex *winMutexAlloc(int iType){
         p->trace = 1;
 #endif
 #endif
-        if( iType==SQLITE_MUTEX_RECURSIVE ){
+        if( 1||iType==SQLITE_MUTEX_RECURSIVE ){
           InitializeCriticalSection(&p->u.cs);
+#if 0
         }else{
           InitializeSRWLock(&p->u.srwl);
+#endif
         }
       }
       break;
@@ -31721,10 +31727,12 @@ static void winMutexEnter(sqlite3_mutex *p){
   assert( p->id==SQLITE_MUTEX_RECURSIVE || winMutexNotheld(p) );
 #endif
   assert( winMutex_isInit==1 );
-  if( p->id==SQLITE_MUTEX_RECURSIVE ){
+  if( 1||p->id==SQLITE_MUTEX_RECURSIVE ){
     EnterCriticalSection(&p->u.cs);
+#if 0
   }else{
     AcquireSRWLockExclusive(&p->u.srwl);
+#endif
   }
 #ifdef SQLITE_DEBUG
   assert( p->nRef>0 || p->owner==0 );
@@ -31746,10 +31754,12 @@ static int winMutexTry(sqlite3_mutex *p){
   ** used it is merely an optimization.  So it is OK for it to always
   ** fail.
   */
-  if( p->id==SQLITE_MUTEX_RECURSIVE ){
+  if( 1||p->id==SQLITE_MUTEX_RECURSIVE ){
     rc = TryEnterCriticalSection(&p->u.cs);
+#if 0
   }else{
     rc = TryAcquireSRWLockExclusive(&p->u.srwl);
+#endif
   }
   if( rc ){
 #ifdef SQLITE_DEBUG
@@ -31787,10 +31797,12 @@ static void winMutexLeave(sqlite3_mutex *p){
   assert( p->nRef==0 || p->id==SQLITE_MUTEX_RECURSIVE );
 #endif
   assert( winMutex_isInit==1 );
-  if( p->id==SQLITE_MUTEX_RECURSIVE ){
+  if( 1||p->id==SQLITE_MUTEX_RECURSIVE ){
     LeaveCriticalSection(&p->u.cs);
+#if 0
   }else{
     ReleaseSRWLockExclusive(&p->u.srwl);
+#endif
   }
 #ifdef SQLITE_DEBUG
   if( p->trace ){
@@ -49688,8 +49700,8 @@ static struct win_syscall {
 #endif
 #define osGetTempPathW ((DWORD(WINAPI*)(DWORD,LPWSTR))aSyscall[18].pCurrent)
 
-  { "GetTickCount64",          (SYSCALL)GetTickCount64,          0 },
-#define osGetTickCount64 ((ULONGLONG(WINAPI*)(VOID))aSyscall[19].pCurrent)
+  { "GetTickCount64",          (SYSCALL)GetTickCount,          0 },
+#define osGetTickCount64 ((DWORD(WINAPI*)(VOID))aSyscall[19].pCurrent)
 
 #ifdef SQLITE_UWP
   { "HeapAlloc",               (SYSCALL)0,                       0 },
