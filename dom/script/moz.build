@@ -12,7 +12,9 @@ XPIDL_MODULE = 'dom'
 EXPORTS += ['nsIScriptElement.h']
 
 EXPORTS.mozilla.dom += [
+    "ImportMap.h",
     'ModuleScript.h',
+    'ResolveResult.h',
     'ScriptElement.h',
     'ScriptKind.h',
     'ScriptLoader.h',
@@ -20,6 +22,7 @@ EXPORTS.mozilla.dom += [
 ]
 
 SOURCES += [
+    "ImportMap.cpp",
     'ModuleLoadRequest.cpp',
     'ModuleScript.cpp',
     'ScriptElement.cpp',

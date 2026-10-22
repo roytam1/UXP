@@ -60,6 +60,8 @@
 #include "nsIScriptError.h"
 
 using JS::SourceBufferHolder;
+using mozilla::Err;
+using mozilla::WrapNotNull;
 
 namespace mozilla {
 namespace dom {
@@ -708,7 +710,7 @@ HandleResolveFailure(JSContext* aCx, ModuleScript* aScript,
   return NS_OK;
 }
 
-static already_AddRefed<nsIURI>
+ResolveResult
 ResolveModuleSpecifier(ScriptLoader* aLoader, LoadedScript* aScript, const nsAString& aSpecifier)
 {
   // The following module specifiers are allowed by the spec:
@@ -721,17 +723,17 @@ ResolveModuleSpecifier(ScriptLoader* aLoader, LoadedScript* aScript, const nsASt
   nsCOMPtr<nsIURI> uri;
   nsresult rv = NS_NewURI(getter_AddRefs(uri), aSpecifier);
   if (NS_SUCCEEDED(rv)) {
-    return uri.forget();
+    return WrapNotNull(uri);
   }
 
   if (rv != NS_ERROR_MALFORMED_URI) {
-    return nullptr;
+    return Err(ResolveError::ModuleResolveFailure);
   }
 
   if (!StringBeginsWith(aSpecifier, NS_LITERAL_STRING("/")) &&
       !StringBeginsWith(aSpecifier, NS_LITERAL_STRING("./")) &&
       !StringBeginsWith(aSpecifier, NS_LITERAL_STRING("../"))) {
-    return nullptr;
+    return Err(ResolveError::ModuleResolveFailure);
   }
 
   // Get the document's base URL if we don't have a referencing script here.
@@ -744,10 +746,10 @@ ResolveModuleSpecifier(ScriptLoader* aLoader, LoadedScript* aScript, const nsASt
 
   rv = NS_NewURI(getter_AddRefs(uri), aSpecifier, nullptr, baseURL);
   if (NS_SUCCEEDED(rv)) {
-    return uri.forget();
+    return WrapNotNull(uri);
   }
 
-  return nullptr;
+  return Err(ResolveError::ModuleResolveFailure);
 }
 
 static nsresult
@@ -781,14 +783,14 @@ ResolveRequestedModules(ModuleLoadRequest* aRequest, nsCOMArray<nsIURI>* aUrlsOu
     }
 
     // Let url be the result of resolving a module specifier given module script and requested.
-    nsCOMPtr<nsIURI> uri =
-        ResolveModuleSpecifier(aRequest->mLoader, ms, specifier);
-    if (!uri) {
+    auto result = ResolveModuleSpecifier(aRequest->mLoader, ms, specifier);
+    if (result.isErr()) {
       nsresult rv = HandleResolveFailure(cx, ms, specifier);
       NS_ENSURE_SUCCESS(rv, rv);
       return NS_ERROR_FAILURE;
     }
 
+    nsCOMPtr<nsIURI> uri = result.unwrap();
     if (aUrlsOut) {
       aUrlsOut->AppendElement(uri.forget());
     }
@@ -953,11 +955,13 @@ HostResolveImportedModule(JSContext* aCx,
     return;
   }
 
-  nsCOMPtr<nsIURI> uri = ResolveModuleSpecifier(loader, script, string);
+  auto result = ResolveModuleSpecifier(loader, script, string);
 
   // This cannot fail because resolving a module specifier must have been
   // previously successful with these same two arguments.
-  MOZ_ASSERT(uri, "Failed to resolve previously-resolved module specifier");
+  MOZ_ASSERT(result.isErr(), "Failed to resolve previously-resolved module specifier");
+
+  nsCOMPtr<nsIURI> uri = result.unwrap();
 
   // Let resolved module script be moduleMap[url]. (This entry must exist for us
   // to have gotten to this point.)
@@ -1016,12 +1020,15 @@ bool HostImportModuleDynamically(JSContext* aCx,
     return false;
   }
 
-  nsCOMPtr<nsIURI> uri = ResolveModuleSpecifier(loader, script, string);
-  if (!uri) {
+  auto result = ResolveModuleSpecifier(loader, script, string);
+  if (result.isErr()) {
+
     JS_ReportErrorNumberUC(aCx, js::GetErrorMessage, nullptr,
                            JSMSG_BAD_MODULE_SPECIFIER, string.get());
     return false;
   }
+
+  nsCOMPtr<nsIURI> uri = result.unwrap();
 
   // Create a new top-level load request.
   ScriptFetchOptions* options;
@@ -1500,7 +1507,7 @@ ScriptLoader::CreateLoadRequest(ScriptKind aKind,
   ScriptFetchOptions* fetchOptions =
     new ScriptFetchOptions(aCORSMode, aReferrerPolicy, aElement, aTriggeringPrincipal);
 
-  if (aKind == ScriptKind::Classic) {
+  if (aKind == ScriptKind::Classic || aKind == ScriptKind::ImportMap) {
     return new ScriptLoadRequest(aKind, aURI, fetchOptions, aIntegrity, referrer);
   }
 
@@ -1807,6 +1814,28 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
 
     return false;
   }
+
+  if (request->IsImportMapRequest()) {
+    UniquePtr<ImportMap> importMap = ParseImportMap(request);
+
+    // https://wicg.github.io/import-maps/#register-an-import-map
+    //
+    // Step 1. If element’s the script’s result is null, then fire an event
+    // named error at element, and return.
+    if (!importMap) {
+        NS_DispatchToCurrentThread(
+                  NewRunnableMethod(aElement, &nsIScriptElement::FireErrorEvent));
+      return false;
+    }
+
+    // Step 3. Assert: element’s the script’s type is "importmap".
+    MOZ_ASSERT(aElement->GetScriptIsImportMap());
+
+    // Step 4 to step 9 is done in RegisterImportMap.
+    RegisterImportMap(std::move(importMap));
+    return false;
+  }
+
   request->mProgress = ScriptLoadRequest::Progress::Ready;
   if (aElement->GetParserCreated() == FROM_PARSER_XSLT &&
       (!ReadyToExecuteParserBlockingScripts() || !mXSLTRequests.isEmpty())) {
@@ -1951,6 +1980,28 @@ OffThreadScriptLoaderCallback(void *aToken, void *aCallbackData)
     dont_AddRef(static_cast<NotifyOffThreadScriptLoadCompletedRunnable*>(aCallbackData));
   aRunnable->SetToken(aToken);
   NS_DispatchToMainThread(aRunnable);
+}
+
+void
+ScriptLoader::ReportWarningToConsole(ScriptLoadRequest* aRequest,
+                                     const char* aMessageName,
+                                     const nsTArray<nsString>& aParams) const
+{
+  nsIScriptElement* element = aRequest->Element();
+  uint32_t lineNo = element ? element->GetScriptLineNumber() : 0;
+  uint32_t columnNo = element ? element->GetScriptColumnNumber() : 0;
+
+  nsTArray<const char16_t*> stringParams;
+  for (const auto& param : aParams) {
+    stringParams.AppendElement(param.get());
+  }
+
+  nsContentUtils::ReportToConsole(nsIScriptError::warningFlag,
+                                  NS_LITERAL_CSTRING("Script Loader"), mDocument,
+                                  nsContentUtils::eDOM_PROPERTIES, aMessageName,
+                                  stringParams.Elements(),
+                                  stringParams.Length(), aRequest->mBaseURL,
+                                  EmptyString(), lineNo, columnNo);
 }
 
 nsresult
@@ -3173,6 +3224,53 @@ ScriptLoader::MaybeRemovedDeferRequests()
     return true;
   }
   return false;
+}
+
+UniquePtr<ImportMap>
+ScriptLoader::ParseImportMap(ScriptLoadRequest* aRequest)
+{
+  nsCOMPtr<nsIScriptGlobalObject> globalObject = GetScriptGlobalObject();
+  if (!globalObject) {
+    return nullptr;
+  }
+
+  AutoJSAPI jsapi;
+  if (!jsapi.Init(globalObject)) {
+    return nullptr;
+  }
+
+  // Import map scripts are always inline, so the source text is on the element.
+  nsAutoString inlineData;
+  SourceBufferHolder srcBuf = GetScriptSource(aRequest, inlineData);
+  ReportWarningHelper warning{this, aRequest};
+
+  // https://html.spec.whatwg.org/multipage/scripting.html#prepare-a-script
+  // https://wicg.github.io/import-maps/#integration-prepare-a-script
+  // Insert the following case to prepare a script step 25.2:
+  // (Impl Note: the latest html spec is step 27.2)
+  // Switch on the script's type:
+  // "importmap"
+  // Step 1. Let import map parse result be the result of create an import map
+  // parse result, given source text, base URL and settings object.
+  //
+  // Impl note: According to the spec, ImportMap::ParseString will throw a
+  // TypeError if there's any invalid key/value in the text. After the parsing
+  // is done, we should report the error if there's any, this is done in
+  // ~AutoJSAPI.
+  //
+  // See https://wicg.github.io/import-maps/#register-an-import-map, step 7.
+  return ImportMap::ParseString(jsapi.cx(), srcBuf, aRequest->mBaseURL, warning);
+}
+
+void
+ScriptLoader::RegisterImportMap(UniquePtr<ImportMap> aImportMap)
+{
+  // Check for aImportMap is done in ScriptLoader.
+  MOZ_ASSERT(aImportMap);
+
+  // Step 8. Set element’s node document's import map to import map parse
+  // result’s import map.
+  mImportMap = std::move(aImportMap);
 }
 
 } // dom namespace
