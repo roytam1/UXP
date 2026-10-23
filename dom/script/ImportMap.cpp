@@ -305,6 +305,25 @@ static UniquePtr<ScopeMap> SortAndNormalizeScopes(
   return normalized;
 }
 
+static bool
+GetOwnProperty(JSContext* aCx, JS::Handle<JSObject*> aObj,
+               const char* aName, JS::MutableHandle<JS::Value> aValueOut)
+{
+  JS::Rooted<JS::PropertyDescriptor> desc(aCx);
+  if (!JS_GetOwnPropertyDescriptor(aCx, aObj, aName, &desc)) {
+    return false;
+  }
+
+  JS::Rooted<JSObject*> holder(aCx, desc.object());
+  if (!holder) {
+    return true;  // no own property: leave aValueOut undefined
+  }
+
+  MOZ_ASSERT(!desc.isAccessorDescriptor());
+  aValueOut.set(desc.value());
+  return true;
+}
+
 // https://wicg.github.io/import-maps/#parse-an-import-map-string
 // static
 UniquePtr<ImportMap> ImportMap::ParseString(
@@ -333,7 +352,7 @@ UniquePtr<ImportMap> ImportMap::ParseString(
 
   JS::RootedObject parsedObj(aCx, &parsedVal.toObject());
   JS::RootedValue importsVal(aCx);
-  if (!JS_GetProperty(aCx, parsedObj, "imports", &importsVal)) {
+  if (!GetOwnProperty(aCx, parsedObj, "imports", &importsVal)) {
     return nullptr;
   }
 
@@ -368,7 +387,7 @@ UniquePtr<ImportMap> ImportMap::ParseString(
   }
 
   JS::RootedValue scopesVal(aCx);
-  if (!JS_GetProperty(aCx, parsedObj, "scopes", &scopesVal)) {
+  if (!GetOwnProperty(aCx, parsedObj, "scopes", &scopesVal)) {
     return nullptr;
   }
 

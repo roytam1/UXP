@@ -308,8 +308,8 @@ HTMLScriptElement::FreezeExecutionAttrs(nsIDocument* aOwnerDoc)
     }
 
     // https://wicg.github.io/import-maps/#integration-prepare-a-script
-    // If the script block’s type string is an ASCII case-insensitive match
-    // for the string "importmap", the script’s type is "importmap".
+    // If the script block's type string is an ASCII case-insensitive match
+    // for the string "importmap", the script's type is "importmap".
     if (type.LowerCaseEqualsASCII("importmap")) {
       mKind = ScriptKind::ImportMap;
     }
