@@ -6,16 +6,19 @@
 #ifndef dom_script_ResolveResult_h
 #define dom_script_ResolveResult_h
 
-#include "mozilla/Assertions.h"  // MOZ_CRASH
+#include "mozilla/Assertions.h"
 #include "mozilla/NotNull.h"
 #include "mozilla/Result.h"
+#include "nsCOMPtr.h"
 #include "nsIURI.h"
 
-namespace mozilla::dom {
+namespace mozilla {
+namespace dom {
 
 enum class ResolveError : uint8_t
 {
-  ModuleResolveFailure,
+  Failure,
+  FailureMayBeBare,
   BlockedByNullEntry,
   BlockedByAfterPrefix,
   BlockedByBacktrackingPrefix,
@@ -26,8 +29,10 @@ struct ResolveErrorInfo
 {
   static const char* GetString(ResolveError aError) {
     switch (aError) {
-      case ResolveError::ModuleResolveFailure:
-        return "ModuleResolveFailure";
+      case ResolveError::Failure:
+        return "ModuleResolveFailureNoWarn";
+      case ResolveError::FailureMayBeBare:
+        return "ModuleResolveFailureWarnRelative";
       case ResolveError::BlockedByNullEntry:
         return "ImportMapResolutionBlockedByNullEntry";
       case ResolveError::BlockedByAfterPrefix:
@@ -35,7 +40,7 @@ struct ResolveErrorInfo
       case ResolveError::BlockedByBacktrackingPrefix:
         return "ImportMapResolutionBlockedByBacktrackingPrefix";
       case ResolveError::InvalidBareSpecifier:
-        return "ImportMapResolveInvalidBareSpecifier";
+        return "ImportMapResolveInvalidBareSpecifierWarnRelative";
       default:
         MOZ_CRASH("Unexpected ResolveError value");
     }
@@ -49,6 +54,7 @@ struct ResolveErrorInfo
 using ResolveResult =
     mozilla::Result<mozilla::NotNull<nsCOMPtr<nsIURI>>, ResolveError>;
 
-}  // namespace mozilla::dom
+} // namespace dom
+} // namespace mozilla
 
-#endif  // dom_script_ResolveResult_h
+#endif // dom_script_ResolveResult_h

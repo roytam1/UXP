@@ -328,6 +328,7 @@ ScriptLoader::ScriptLoader(nsIDocument *aDocument)
     mDeferEnabled(false),
     mDocumentParsingDone(false),
     mBlockingDOMContentLoaded(false),
+    mImportMapsAllowed(true),
     mReporter(new ConsoleReportCollector())
 {
     EnsureModuleHooksInitialized();
@@ -672,27 +673,35 @@ ScriptLoader::CreateModuleScript(ModuleLoadRequest* aRequest)
 }
 
 static bool
-CreateTypeError(JSContext* aCx, LoadedScript* aScript,
-                const nsString& aMessage, JS::MutableHandle<JS::Value> aError)
+CreateTypeError(JSContext* aCx, LoadedScript* aScript, const nsString& aMessage,
+                JS::MutableHandle<JS::Value> aError)
 {
   JS::Rooted<JSString*> filename(aCx);
-
   if (aScript && aScript->IsModuleScript()) {
-    JS::Rooted<JSObject*> module(aCx, aScript->AsModuleScript()->ModuleRecord());
+    JS::Rooted<JSObject*> module(aCx,
+                                 aScript->AsModuleScript()->ModuleRecord());
     if (module) {
       JS::Rooted<JSScript*> script(aCx, JS::GetModuleScript(aCx, module));
-      filename.set(JS_NewStringCopyZ(aCx, JS_GetScriptFilename(script)));
+      if (script) {
+        filename = JS_NewStringCopyZ(aCx, JS_GetScriptFilename(script));
+        if (!filename) {
+          return false;
+        }
+      }
     }
   }
 
-  if (!filename && aScript && aScript->BaseURL()) {
-    nsAutoCString url;
-    aScript->BaseURL()->GetAsciiSpec(url);
-    filename.set(JS_NewStringCopyZ(aCx, url.get()));
-  }
-
   if (!filename) {
-    filename.set(JS_NewStringCopyZ(aCx, "(unknown)"));
+    // No module record (classic script, dynamic import with no referencing
+    // script, or a module that never got that far). Fall back to the base URL.
+    nsAutoCString url;
+    if (aScript && aScript->BaseURL()) {
+      aScript->BaseURL()->GetAsciiSpec(url);
+    }
+    filename = JS_NewStringCopyZ(aCx, url.get());
+    if (!filename) {
+      return false;
+    }
   }
 
   JS::Rooted<JSString*> message(aCx, JS_NewUCStringCopyZ(aCx, aMessage.get()));
@@ -706,21 +715,15 @@ CreateTypeError(JSContext* aCx, LoadedScript* aScript,
 
 static nsresult
 HandleResolveFailure(JSContext* aCx, LoadedScript* aScript,
-                     const nsAString& aSpecifier, ResolveError aError,
+                     const nsAString& aSpecifier,
                      JS::MutableHandle<JS::Value> aErrorOut)
 {
   // TODO: How can we get the line number of the failed import?
 
-  AutoTArray<nsString, 1> errorParams;
-  errorParams.AppendElement(aSpecifier);
+  nsAutoString message(NS_LITERAL_STRING("Error resolving module specifier: "));
+  message.Append(aSpecifier);
 
-  nsXPIDLString errorText;
-  nsresult rv = nsContentUtils::FormatLocalizedString(
-      nsContentUtils::eDOM_PROPERTIES, ResolveErrorInfo::GetString(aError),
-      errorParams, errorText);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  if (!CreateTypeError(aCx, aScript, errorText, aErrorOut)) {
+  if (!CreateTypeError(aCx, aScript, message, aErrorOut)) {
     return NS_ERROR_OUT_OF_MEMORY;
   }
 
@@ -728,8 +731,11 @@ HandleResolveFailure(JSContext* aCx, LoadedScript* aScript,
 }
 
 ResolveResult
-ResolveModuleSpecifier(ScriptLoader* aLoader, LoadedScript* aScript, const nsAString& aSpecifier)
+ResolveModuleSpecifier(ScriptLoader* aLoader, LoadedScript* aScript,
+                       const nsAString& aSpecifier)
 {
+  // ImportMap::ResolveModuleSpecifier implements the whole algorithm, including
+  // the aImportMap == nullptr case, so there is nothing left to do here.
   return ImportMap::ResolveModuleSpecifier(aLoader->GetImportMap(), aLoader,
                                            aScript, aSpecifier);
 }
@@ -764,12 +770,12 @@ ResolveRequestedModules(ModuleLoadRequest* aRequest, nsCOMArray<nsIURI>* aUrlsOu
       return NS_ERROR_FAILURE;
     }
 
-    // Let url be the result of resolving a module specifier given module script and requested.
+    // Let url be the result of resolving a module specifier given module script
+    // and requested.
     auto result = ResolveModuleSpecifier(aRequest->mLoader, ms, specifier);
     if (result.isErr()) {
       JS::Rooted<JS::Value> error(cx);
-      nsresult rv = HandleResolveFailure(cx, ms, specifier, result.unwrapErr(),
-                                         &error);
+      nsresult rv = HandleResolveFailure(cx, ms, specifier, &error);
       NS_ENSURE_SUCCESS(rv, rv);
       ms->SetParseError(error);
       return NS_ERROR_FAILURE;
@@ -944,9 +950,10 @@ HostResolveImportedModule(JSContext* aCx,
 
   // This cannot fail because resolving a module specifier must have been
   // previously successful with these same two arguments.
-  MOZ_ASSERT(result.isErr(), "Failed to resolve previously-resolved module specifier");
+  MOZ_ASSERT(result.isOk(), "Failed to resolve previously-resolved module specifier");
 
   nsCOMPtr<nsIURI> uri = result.unwrap();
+  MOZ_ASSERT(uri);
 
   // Let resolved module script be moduleMap[url]. (This entry must exist for us
   // to have gotten to this point.)
@@ -1008,10 +1015,7 @@ bool HostImportModuleDynamically(JSContext* aCx,
   auto result = ResolveModuleSpecifier(loader, script, string);
   if (result.isErr()) {
     JS::Rooted<JS::Value> error(aCx);
-    nsresult rv = HandleResolveFailure(aCx, script, string,
-                                       result.unwrapErr(), &error);
-    if (NS_FAILED(rv)) {
-      JS_ReportOutOfMemory(aCx);
+    if (NS_FAILED(HandleResolveFailure(aCx, script, string, &error))) {
       return false;
     }
     JS_SetPendingException(aCx, error);
@@ -1577,11 +1581,21 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
   mozilla::net::ReferrerPolicy referrerPolicy = GetReferrerPolicy(aElement);
   if (aElement->GetScriptExternal()) {
     // external script
-    if (scriptKind == ScriptKind::ImportMap) {
+
+    // https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element
+    // Step 31.2. type is "importmap":
+    //   Step 1. If el's relevant global object's import maps allowed is false,
+    //   then queue an element task on the DOM manipulation task source given el
+    //   to fire an event named error at el, and return.
+    //
+    // Impl note: bail out before creating a ScriptLoadRequest.
+    if (scriptKind == ScriptKind::ImportMap && !mImportMapsAllowed) {
+      NS_WARNING("ScriptLoader: import maps allowed is false.");
       NS_DispatchToCurrentThread(
-          NewRunnableMethod(aElement, &nsIScriptElement::FireErrorEvent));
+        NewRunnableMethod(aElement, &nsIScriptElement::FireErrorEvent));
       return false;
     }
+
     nsCOMPtr<nsIURI> scriptURI = aElement->GetScriptURI();
     if (!scriptURI) {
       // Asynchronously report the failure to create a URI object
@@ -1627,11 +1641,10 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
     if (request) {
       // Use a preload request.
 
-      // https://wicg.github.io/import-maps/#document-acquiring-import-maps
-      // If this preload request is for a module load, set acquiring import maps
-      // to false.
+      // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-an-external-module-script-graph
+      // Step 1. Disallow further import maps given settings object.
       if (request->IsModuleRequest()) {
-        SetAcquiringImportMaps(false);
+        DisallowImportMaps();
       }
 
       // It's possible these attributes changed since we started the preload, so
@@ -1801,6 +1814,10 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
   request->mBaseURL = mDocument->GetDocBaseURI();
 
   if (request->IsModuleRequest()) {
+    // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-an-inline-module-script-graph
+    // Step 1. Disallow further import maps given settings object.
+    DisallowImportMaps();
+
     ModuleLoadRequest* modReq = request->AsModuleRequest();
 
     if (aElement->GetScriptAsync()) {
@@ -1818,40 +1835,33 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
   }
 
   if (request->IsImportMapRequest()) {
-    // https://wicg.github.io/import-maps/#integration-prepare-a-script
-    // Insert the following case to prepare a script step 25.2:
-    // Switch on the script's type:
-    // "importmap"
-    // Step 1. If the element's node document's acquiring import maps is false,
-    // then queue a task to fire an event named error at the element, and return.
-    if (!GetAcquiringImportMaps()) {
-      NS_WARNING("ScriptLoader: acquiring import maps is false.");
-      NS_DispatchToCurrentThread(
-            NewRunnableMethod(aElement, &nsIScriptElement::FireErrorEvent));
-      return false;
-    }
+    // https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element
+    // Step 31.2 type is "importmap":
+    //   Impl note: Step 1 is done above before creating a ScriptLoadRequest.
+    MOZ_ASSERT(mImportMapsAllowed);
 
-    // Step 2. Set the element's node document's acquiring import maps to false.
-    SetAcquiringImportMaps(false);
+    //   Step 2. Set el's relevant global object's import maps allowed to false.
+    DisallowImportMaps();
 
-    // Step 3. Let import map parse result be the result of create an import map
-    // parse result, given source text, base URL and settings object.
+    //   Step 3. Let result be the result of creating an import map parse result
+    //   given source text and base URL.
     UniquePtr<ImportMap> importMap = ParseImportMap(request);
-
-    // https://wicg.github.io/import-maps/#register-an-import-map
-    //
-    // Step 1. If element's the script's result is null, then fire an event
-    // named error at element, and return.
     if (!importMap) {
-        NS_DispatchToCurrentThread(
-                  NewRunnableMethod(aElement, &nsIScriptElement::FireErrorEvent));
+      // If parsing import maps fails, the exception will have been reported by
+      // ImportMap::ParseString, and the registration of the import map bails
+      // out early. Note the script's result is an import map parse result,
+      // which is never null, so no error event is fired here.
       return false;
     }
 
-    // Step 3. Assert: element's the script's type is "importmap".
+    // https://html.spec.whatwg.org/multipage/scripting.html#execute-the-script-element
+    // The spec defines 'register an import map' should be done in
+    // 'execute the script element', because inside 'execute the script element'
+    // it will perform a 'preparation-time document check'.
+    // However, as import maps can currently only be inline scripts, the
+    // 'preparation-time document check' will never fail for import maps.
+    // So we simply call 'register an import map' here.
     MOZ_ASSERT(aElement->GetScriptIsImportMap());
-
-    // Step 4 to step 9 is done in RegisterImportMap.
     RegisterImportMap(std::move(importMap));
     return false;
   }

@@ -14,7 +14,6 @@
 #include "mozilla/Logging.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/UniquePtr.h"
-#include "nsCOMPtr.h"
 #include "nsStringFwd.h"
 #include "nsTArray.h"
 #include "ResolveResult.h"
@@ -23,16 +22,15 @@ struct JSContext;
 class nsIScriptElement;
 class nsIURI;
 
-namespace mozilla::dom {
+namespace mozilla {
+namespace dom {
+
 class LoadedScript;
-class ScriptLoader;
 class ScriptLoadRequest;
+class ScriptLoader;
 
 /**
  * A helper class to report warning to ScriptLoader.
- *
- * Note: ScriptLoader must be a complete type in any translation unit that
- * instantiates this class, because the inline constructor addrefs mLoader.
  */
 class ReportWarningHelper {
  public:
@@ -48,18 +46,18 @@ class ReportWarningHelper {
 };
 
 // Specifier map from import maps.
-// https://wicg.github.io/import-maps/#specifier-map
+// https://html.spec.whatwg.org/multipage/webappapis.html#specifier-map
 using SpecifierMap =
     std::map<nsString, nsCOMPtr<nsIURI>, std::greater<nsString>>;
 
 // Scope map from import maps.
-// https://wicg.github.io/import-maps/#import-map-scopes
+// https://html.spec.whatwg.org/multipage/webappapis.html#import-map-scopes
 using ScopeMap = std::map<nsCString, mozilla::UniquePtr<SpecifierMap>,
                           std::greater<nsCString>>;
 
 /**
  * Implementation of Import maps.
- * https://wicg.github.io/import-maps
+ * https://html.spec.whatwg.org/multipage/webappapis.html#import-maps
  */
 class ImportMap {
  public:
@@ -72,18 +70,14 @@ class ImportMap {
    * This function will throw TypeError if there's any invalid key or value in
    * the JSON text according to the spec.
    *
-   * See https://wicg.github.io/import-maps/#parse-an-import-map-string
+   * See https://html.spec.whatwg.org/multipage/webappapis.html#parse-an-import-map-string
    */
   static mozilla::UniquePtr<ImportMap> ParseString(
       JSContext* aCx, JS::SourceBufferHolder& aInput, nsIURI* aBaseURL,
       const ReportWarningHelper& aWarning);
 
-  /**
-   * This implements "Resolve a module specifier" algorithm defined in the
-   * Import maps spec.
-   *
-   * See https://wicg.github.io/import-maps/#resolve-a-module-specifier
-   */
+  // Implements
+  // https://html.spec.whatwg.org/multipage/webappapis.html#resolve-a-module-specifier
   static ResolveResult ResolveModuleSpecifier(ImportMap* aImportMap,
                                               ScriptLoader* aLoader,
                                               LoadedScript* aScript,
@@ -94,7 +88,7 @@ class ImportMap {
 
  private:
   /**
-   * https://wicg.github.io/import-maps/#import-map
+   * https://html.spec.whatwg.org/multipage/webappapis.html#import-map
    *
    * A import map is a struct with two items:
    * 1. imports, a specifier map, and
@@ -104,6 +98,7 @@ class ImportMap {
   mozilla::UniquePtr<ScopeMap> mScopes;
 };
 
-}  // namespace mozilla::dom
+} // namespace dom
+} // namespace mozilla
 
-#endif  // dom_script_ImportMap_h
+#endif // dom_script_ImportMap_h

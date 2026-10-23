@@ -606,20 +606,26 @@ public:
   // Process <script type="importmap">
   mozilla::UniquePtr<ImportMap> ParseImportMap(ScriptLoadRequest* aRequest);
 
-  // Implements https://wicg.github.io/import-maps/#register-an-import-map
+  // Implements
+  // https://html.spec.whatwg.org/multipage/webappapis.html#register-an-import-map
   void RegisterImportMap(mozilla::UniquePtr<ImportMap> aImportMap);
-  ImportMap* GetImportMap() const { return mImportMap.get(); }
 
-  bool GetAcquiringImportMaps() const { return mAcquiringImportMaps; }
-  void SetAcquiringImportMaps(bool aAcquiring) { mAcquiringImportMaps = aAcquiring; }
+  ImportMap* GetImportMap() { return mImportMap.get(); }
+
+  // https://html.spec.whatwg.org/multipage/webappapis.html#concept-import-maps-allowed
+  bool IsImportMapAllowed() const { return mImportMapsAllowed; }
+
+  // https://html.spec.whatwg.org/multipage/webappapis.html#disallow-further-import-maps
+  void DisallowImportMaps() { mImportMapsAllowed = false; }
 
   void ReportWarningToConsole(ScriptLoadRequest* aRequest, const char* aMessageName,
                               const nsTArray<nsString>& aParams = nsTArray<nsString>()) const;
 
+
 protected:
 
   mozilla::UniquePtr<ImportMap> mImportMap;
-  bool mAcquiringImportMaps = true;
+  bool mImportMapsAllowed;
 
 private:
   virtual ~ScriptLoader();
