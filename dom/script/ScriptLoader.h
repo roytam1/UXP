@@ -608,6 +608,10 @@ public:
 
   // Implements https://wicg.github.io/import-maps/#register-an-import-map
   void RegisterImportMap(mozilla::UniquePtr<ImportMap> aImportMap);
+  ImportMap* GetImportMap() const { return mImportMap.get(); }
+
+  bool GetAcquiringImportMaps() const { return mAcquiringImportMaps; }
+  void SetAcquiringImportMaps(bool aAcquiring) { mAcquiringImportMaps = aAcquiring; }
 
   void ReportWarningToConsole(ScriptLoadRequest* aRequest, const char* aMessageName,
                               const nsTArray<nsString>& aParams = nsTArray<nsString>()) const;
@@ -615,6 +619,7 @@ public:
 protected:
 
   mozilla::UniquePtr<ImportMap> mImportMap;
+  bool mAcquiringImportMaps = true;
 
 private:
   virtual ~ScriptLoader();

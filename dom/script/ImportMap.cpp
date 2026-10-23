@@ -200,7 +200,7 @@ static UniquePtr<SpecifierMap> SortAndNormalizeSpecifierMap(
   }
 
   // Step 3: Return the result of sorting normalized, with an entry a being
-  // less than an entry b if b’s key is code unit less than a’s key.
+  // less than an entry b if b's key is code unit less than a's key.
   //
   // Impl note: The sorting is done when inserting the entry.
   return normalized;
@@ -299,7 +299,7 @@ static UniquePtr<ScopeMap> SortAndNormalizeScopes(
   }
 
   // Step 3. Return the result of sorting normalized, with an entry a being less
-  // than an entry b if b’s key is code unit less than a’s key.
+  // than an entry b if b's key is code unit less than a's key.
   //
   // Impl note: The sorting is done when inserting the entry.
   return normalized;
@@ -402,7 +402,7 @@ UniquePtr<ImportMap> ImportMap::ParseString(
     }
   }
 
-  // Step 7. If parsed’s keys contains any items besides "imports" or
+  // Step 7. If parsed's keys contains any items besides "imports" or
   // "scopes", report a warning to the console that an invalid top-level key
   // was present in the import map.
   JS::Rooted<JS::IdVector> keys(aCx, JS::IdVector(aCx));
@@ -599,7 +599,7 @@ ResolveResult ImportMap::ResolveModuleSpecifier(ImportMap* aImportMap,
         asURL ? NS_ConvertUTF8toUTF16(asURL->GetSpecOrDefault())
               : nsAutoString{aSpecifier};
 
-    // Step 8. For each scopePrefix → scopeImports of importMap’s scopes,
+    // Step 8. For each scopePrefix → scopeImports of importMap's scopes,
     for (auto&& [scopePrefix, scopeImports] : *aImportMap->mScopes) {
       // Step 8.1. If scopePrefix is baseURLString, or if scopePrefix ends with
       // U+002F (/) and baseURLString starts with scopePrefix, then:
@@ -627,7 +627,7 @@ ResolveResult ImportMap::ResolveModuleSpecifier(ImportMap* aImportMap,
     }
 
     // Step 9. Let topLevelImportsMatch be the result of resolving an imports
-    // match given normalizedSpecifier, asURL, and importMap’s imports.
+    // match given normalizedSpecifier, asURL, and importMap's imports.
     auto result = ResolveImportsMatch(normalizedSpecifier, asURL,
                                       aImportMap->mImports.get());
     if (result.isErr()) {
@@ -645,7 +645,7 @@ ResolveResult ImportMap::ResolveModuleSpecifier(ImportMap* aImportMap,
   }
 
   // Step 11. At this point, the specifier was able to be turned in to a URL,
-  // but it wasn’t remapped to anything by importMap. If asURL is not null, then
+  // but it wasn't remapped to anything by importMap. If asURL is not null, then
   // return asURL.
   if (asURL) {
     LOG(("ImportMap::ResolveModuleSpecifier returns asURL: %s",
