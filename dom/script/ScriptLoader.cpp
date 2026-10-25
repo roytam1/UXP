@@ -959,7 +959,12 @@ HostResolveImportedModule(JSContext* aCx,
   // to have gotten to this point.)
 
   ModuleScript* ms = loader->GetFetchedModule(uri);
-  MOZ_ASSERT(ms, "Resolved module not found in module map");
+  // This is now a potential result with import maps.
+  // So instead of asserting report the error to JS and return.
+  if (!ms) {
+    JS_ReportErrorASCII(aCx, "Resolved module not found in module map");
+    return;
+  }
 
   MOZ_ASSERT(!ms->HasParseError());
   MOZ_ASSERT(ms->ModuleRecord());
@@ -1011,6 +1016,10 @@ bool HostImportModuleDynamically(JSContext* aCx,
   if (!loader) {
     return false;
   }
+
+    // Import maps should be disabled after this point.
+    // At least until multiple import maps support is included.
+    loader->DisallowImportMaps();
 
   auto result = ResolveModuleSpecifier(loader, script, string);
   if (result.isErr()) {
@@ -1506,7 +1515,18 @@ ScriptLoader::CreateLoadRequest(ScriptKind aKind,
   }
 
   MOZ_ASSERT(aKind == ScriptKind::Module);
-  return ModuleLoadRequest::CreateTopLevel(aURI, fetchOptions, aIntegrity, referrer, this);
+
+  // prepare-the-script-element step 31.11 / 33.1.11: a module script with no
+  // `integrity` attribute resolves its metadata from the document's import map
+  // for the resolved URL.  The attribute (already in aIntegrity) wins when
+  // present.  Non-module kinds are unaffected, which is what
+  // nonimport-integrity.html requires.
+  SRIMetadata integrity = aIntegrity;
+  if (integrity.IsEmpty()) {
+    integrity = ComputeModuleIntegrity(aURI);
+  }
+
+  return ModuleLoadRequest::CreateTopLevel(aURI, fetchOptions, integrity, referrer, this);
 }
 
 bool
@@ -1609,6 +1629,14 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
       return false;
     }
 
+    // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-module-script-tree
+    // Step 1. Disallow further import maps given settings object.
+    // Must happen for every module script element, not only when a
+    // speculative preload happens to be reused.
+    if (scriptKind == ScriptKind::Module) {
+      DisallowImportMaps();
+    }
+
     // Double-check that the preload matches what we're asked to load now.
     CORSMode ourCORSMode = aElement->GetCORSMode();
     nsTArray<PreloadInfo>::index_type i =
@@ -1636,6 +1664,27 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
           request->Cancel();
           return false;
         }
+        // A speculative preload is performed before the tree ops of its flush
+        // batch run (nsHtml5TreeOpExecutor::RunFlushLoop), and PreloadURI has no
+        // element, so a module preload never carries import-map integrity.
+        // mIntegrity is const and the channel is already open, so the preload
+        // has to be discarded rather than patched.
+        if (scriptKind == ScriptKind::Module &&
+            !scriptContent->HasAttr(kNameSpaceID_None, nsGkAtoms::integrity)) {
+          SRIMetadata fromMap = ComputeModuleIntegrity(scriptURI);
+          if (!fromMap.IsEmpty() &&
+              !fromMap.GetIntegrityString().Equals(
+                  request->mIntegrity.GetIntegrityString())) {
+            // Drop the stale preload.  The module map entry has to go too,
+            // otherwise the replacement request's StartLoad() will see
+            // ModuleMapContainsURL() == true and just wait for this
+            // unverified fetch instead of starting its own.
+            request->Cancel();
+            mFetchingModules.Remove(scriptURI);
+            mFetchedModules.Remove(scriptURI);
+            request = nullptr;
+          }
+        }
       } else {
         // Drop the preload
         request = nullptr;
@@ -1645,12 +1694,6 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
     if (request) {
       // Use a preload request.
 
-      // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-an-external-module-script-graph
-      // Step 1. Disallow further import maps given settings object.
-      if (request->IsModuleRequest()) {
-        DisallowImportMaps();
-      }
-
       // It's possible these attributes changed since we started the preload, so
       // update them here.
       request->SetScriptMode(aElement->GetScriptDeferred(),
@@ -1659,7 +1702,9 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
       // No usable preload found.
 
       SRIMetadata sriMetadata;
-      {
+      if (scriptContent->HasAttr(kNameSpaceID_None, nsGkAtoms::integrity)) {
+        // The element's own integrity attribute wins — even when it is present
+        // but empty, in which case no metadata is used at all.
         nsAutoString integrity;
         scriptContent->GetAttr(kNameSpaceID_None, nsGkAtoms::integrity,
                                integrity);
@@ -1674,6 +1719,11 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
           SRICheck::IntegrityMetadata(integrity, sourceUri, mReporter,
                                       &sriMetadata);
         }
+      } else if (scriptKind == ScriptKind::Module) {
+        // https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element
+        // Step 33.1.11: no integrity attribute, so resolve the metadata from
+        // the document's import map for the resolved URL.
+        sriMetadata = ComputeModuleIntegrity(scriptURI);
       }
 
       nsCOMPtr<nsIPrincipal> principal = aElement->GetScriptURITriggeringPrincipal();
@@ -2840,7 +2890,15 @@ ScriptLoader::HandleLoadError(ScriptLoadRequest *aRequest, nsresult aResult) {
 
   if (aRequest->IsModuleRequest() && !aRequest->mIsInline) {
     auto request = aRequest->AsModuleRequest();
-    SetModuleFetchFinishedAndResumeWaitingRequests(request, aResult);
+
+    // A preload dropped in ProcessScriptElement has already had its URL
+    // removed from the module map, so its late completion must not touch the
+    // entry that the replacement request now owns: SetModuleFetchFinished...
+    // would trip its MOZ_ALWAYS_TRUE on mFetchingModules and then park a
+    // nullptr in mFetchedModules over the real module.
+    if (IsFetchingModule(request)) {
+      SetModuleFetchFinishedAndResumeWaitingRequests(request, aResult);
+    }
   }
 
   if (aRequest->mInDeferList) {
