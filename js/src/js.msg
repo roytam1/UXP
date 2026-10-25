@@ -617,6 +617,7 @@ MSG_DEF(JSMSG_IMPORT_MAPS_NOT_A_MAP,             0, JSEXN_TYPEERR, "the top-leve
 MSG_DEF(JSMSG_IMPORT_MAPS_IMPORTS_NOT_A_MAP,     0, JSEXN_TYPEERR, "the imports top-level key needs to be a JSON object")
 MSG_DEF(JSMSG_IMPORT_MAPS_SCOPES_NOT_A_MAP,      0, JSEXN_TYPEERR, "the scopes top-level key needs to be a JSON object")
 MSG_DEF(JSMSG_IMPORT_MAPS_SCOPE_VALUE_NOT_A_MAP, 1, JSEXN_TYPEERR, "the value of the scope with prefix '{0}' needs to be a JSON object")
+MSG_DEF(JSMSG_IMPORT_MAPS_INTEGRITY_NOT_A_MAP, 0, JSEXN_TYPEERR, "The value of the \"integrity\" top-level key in an import map needs to be a JSON object")
 
 // Promise
 MSG_DEF(JSMSG_CANNOT_RESOLVE_PROMISE_WITH_ITSELF,       0, JSEXN_TYPEERR, "A promise cannot be resolved with itself.")

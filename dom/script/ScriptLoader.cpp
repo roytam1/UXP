@@ -3307,5 +3307,30 @@ ScriptLoader::RegisterImportMap(UniquePtr<ImportMap> aImportMap)
   mImportMap = std::move(aImportMap);
 }
 
+// https://html.spec.whatwg.org/multipage/webappapis.html#resolve-a-module-integrity-metadata
+// https://html.spec.whatwg.org/multipage/webappapis.html#get-the-descendant-script-fetch-options
+SRIMetadata
+ScriptLoader::ComputeModuleIntegrity(nsIURI* aURI)
+{
+  SRIMetadata integrity;
+  ImportMap* importMap = GetImportMap();
+  if (!importMap || !aURI) {
+    return integrity;
+  }
+
+  // Step 2. If map's integrity[url] does not exist, return the empty string.
+  const nsString* metadata = importMap->GetIntegrity(aURI);
+  if (!metadata || metadata->IsEmpty()) {
+    return integrity;
+  }
+
+  nsAutoCString sourceUri;
+  if (mDocument && mDocument->GetDocumentURI()) {
+    mDocument->GetDocumentURI()->GetAsciiSpec(sourceUri);
+  }
+  SRICheck::IntegrityMetadata(*metadata, sourceUri, mReporter, &integrity);
+  return integrity;
+}
+
 } // dom namespace
 } // mozilla namespace

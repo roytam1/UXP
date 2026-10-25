@@ -55,6 +55,10 @@ using SpecifierMap =
 using ScopeMap = std::map<nsCString, mozilla::UniquePtr<SpecifierMap>,
                           std::greater<nsCString>>;
 
+// Integrity map from import maps.
+// https://html.spec.whatwg.org/multipage/webappapis.html#module-integrity-map
+using IntegrityMap = std::map<nsCString, nsString>;
+
 /**
  * Implementation of Import maps.
  * https://html.spec.whatwg.org/multipage/webappapis.html#import-maps
@@ -62,8 +66,11 @@ using ScopeMap = std::map<nsCString, mozilla::UniquePtr<SpecifierMap>,
 class ImportMap {
  public:
   ImportMap(mozilla::UniquePtr<SpecifierMap> aImports,
-            mozilla::UniquePtr<ScopeMap> aScopes)
-      : mImports(std::move(aImports)), mScopes(std::move(aScopes)) {}
+            mozilla::UniquePtr<ScopeMap> aScopes,
+            mozilla::UniquePtr<IntegrityMap> aIntegrity)
+      : mImports(std::move(aImports)),
+        mScopes(std::move(aScopes)),
+        mIntegrity(std::move(aIntegrity)) {}
 
   /**
    * Parse the JSON string from the Import map script.
@@ -75,6 +82,9 @@ class ImportMap {
   static mozilla::UniquePtr<ImportMap> ParseString(
       JSContext* aCx, JS::SourceBufferHolder& aInput, nsIURI* aBaseURL,
       const ReportWarningHelper& aWarning);
+
+  // https://html.spec.whatwg.org/multipage/webappapis.html#resolve-a-module-integrity-metadata
+  const nsString* GetIntegrity(nsIURI* aURL) const;
 
   // Implements
   // https://html.spec.whatwg.org/multipage/webappapis.html#resolve-a-module-specifier
@@ -96,6 +106,7 @@ class ImportMap {
    */
   mozilla::UniquePtr<SpecifierMap> mImports;
   mozilla::UniquePtr<ScopeMap> mScopes;
+  mozilla::UniquePtr<IntegrityMap> mIntegrity;
 };
 
 } // namespace dom

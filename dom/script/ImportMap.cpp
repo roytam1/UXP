@@ -331,6 +331,58 @@ SortAndNormalizeScopes(JSContext* aCx, JS::HandleObject aOriginalMap, nsIURI* aB
   return normalized;
 }
 
+// https://html.spec.whatwg.org/multipage/webappapis.html#normalize-a-module-integrity-map
+static UniquePtr<IntegrityMap>
+NormalizeModuleIntegrityMap(JSContext* aCx, JS::HandleObject aOriginalMap,
+                            nsIURI* aBaseURL,
+                            const ReportWarningHelper& aWarning)
+{
+  UniquePtr<IntegrityMap> normalized = MakeUnique<IntegrityMap>();
+
+  JS::Rooted<JS::IdVector> keys(aCx, JS::IdVector(aCx));
+  if (!JS_Enumerate(aCx, aOriginalMap, &keys)) {
+    return nullptr;
+  }
+
+  for (size_t i = 0; i < keys.length(); i++) {
+    const JS::RootedId keyId(aCx, keys[i]);
+    nsAutoJSString key;
+    NS_ENSURE_TRUE(key.init(aCx, keyId), nullptr);
+
+    // Step 2.1. Let resolvedURL be the result of resolving a URL-like module
+    // specifier given key and baseURL.
+    auto parseResult = ResolveURLLikeModuleSpecifier(key, aBaseURL);
+
+    // Step 2.2. If resolvedURL is null, warn and continue.
+    if (parseResult.isErr()) {
+      AutoTArray<nsString, 1> params;
+      params.AppendElement(key);
+      aWarning.Report("ImportMapIntegrityKeyNotParseable", params);
+      continue;
+    }
+
+    JS::RootedValue idVal(aCx);
+    NS_ENSURE_TRUE(JS_GetPropertyById(aCx, aOriginalMap, keyId, &idVal), nullptr);
+
+    // Step 2.3. If value is not a string, warn and continue.
+    if (!idVal.isString()) {
+      AutoTArray<nsString, 1> params;
+      params.AppendElement(key);
+      aWarning.Report("ImportMapIntegrityValueNotAString", params);
+      continue;
+    }
+
+    nsAutoJSString value;
+    NS_ENSURE_TRUE(value.init(aCx, idVal), nullptr);
+
+    // Step 2.4. Set normalized[resolvedURL] to value.
+    normalized->insert_or_assign(parseResult.unwrap()->GetSpecOrDefault(),
+                                 nsString(value));
+  }
+
+  return normalized;
+}
+
 // https://html.spec.whatwg.org/multipage/webappapis.html#parse-an-import-map-string
 // static
 UniquePtr<ImportMap>
@@ -431,6 +483,34 @@ ImportMap::ParseString(JSContext* aCx, JS::SourceBufferHolder& aInput, nsIURI* a
     }
   }
 
+  JS::RootedValue integrityVal(aCx);
+  if (!GetOwnProperty(aCx, parsedObj, "integrity", &integrityVal)) {
+    return nullptr;
+  }
+
+  // Impl note: If parsed["integrity"] doesn't exist, we will allocate
+  // sortedAndNormalizedIntegrity to an empty map below.
+  UniquePtr<IntegrityMap> sortedAndNormalizedIntegrity = nullptr;
+
+  if (!integrityVal.isUndefined()) {
+    bool isMap;
+    if (!IsMapObject(aCx, integrityVal, &isMap)) {
+      return nullptr;
+    }
+    if (!isMap) {
+      JS_ReportErrorNumberASCII(aCx, js::GetErrorMessage, nullptr,
+                                JSMSG_IMPORT_MAPS_INTEGRITY_NOT_A_MAP);
+      return nullptr;
+    }
+
+    JS::RootedObject integrityObj(aCx, &integrityVal.toObject());
+    sortedAndNormalizedIntegrity = NormalizeModuleIntegrityMap(
+        aCx, integrityObj, aBaseURL, aWarning);
+    if (!sortedAndNormalizedIntegrity) {
+      return nullptr;
+    }
+  }
+
   // Step 7. If parsed's keys contains any items besides "imports" or
   // "scopes", then the user agent should report a warning to the console
   // indicating that an invalid top-level key was present in the import map.
@@ -443,7 +523,8 @@ ImportMap::ParseString(JSContext* aCx, JS::SourceBufferHolder& aInput, nsIURI* a
     const JS::RootedId key(aCx, keys[i]);
     nsAutoJSString val;
     NS_ENSURE_TRUE(val.init(aCx, key), nullptr);
-    if (val.EqualsLiteral("imports") || val.EqualsLiteral("scopes")) {
+    if (val.EqualsLiteral("imports") || val.EqualsLiteral("scopes") ||
+        val.EqualsLiteral("integrity")) {
       continue;
     }
 
@@ -460,12 +541,27 @@ ImportMap::ParseString(JSContext* aCx, JS::SourceBufferHolder& aInput, nsIURI* a
   if (!sortedAndNormalizedScopes) {
     sortedAndNormalizedScopes = MakeUnique<ScopeMap>();
   }
+  if (!sortedAndNormalizedIntegrity) {
+    sortedAndNormalizedIntegrity = MakeUnique<IntegrityMap>();
+  }
 
   // Step 8. Return an import map whose imports are
   // sortedAndNormalizedImports and whose scopes scopes are
   // sortedAndNormalizedScopes.
   return MakeUnique<ImportMap>(std::move(sortedAndNormalizedImports),
-                               std::move(sortedAndNormalizedScopes));
+                               std::move(sortedAndNormalizedScopes),
+                               std::move(sortedAndNormalizedIntegrity));
+}
+
+const nsString* ImportMap::GetIntegrity(nsIURI* aURL) const {
+  if (!mIntegrity || !aURL) {
+    return nullptr;
+  }
+  auto it = mIntegrity->find(aURL->GetSpecOrDefault());
+  if (it == mIntegrity->end()) {
+    return nullptr;
+  }
+  return &it->second;
 }
 
 // https://url.spec.whatwg.org/#is-special

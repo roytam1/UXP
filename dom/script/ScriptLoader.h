@@ -612,6 +612,9 @@ public:
 
   ImportMap* GetImportMap() { return mImportMap.get(); }
 
+  // https://html.spec.whatwg.org/multipage/webappapis.html#resolve-a-module-integrity-metadata
+  SRIMetadata ComputeModuleIntegrity(nsIURI* aURI);
+
   // https://html.spec.whatwg.org/multipage/webappapis.html#concept-import-maps-allowed
   bool IsImportMapAllowed() const { return mImportMapsAllowed; }
 
