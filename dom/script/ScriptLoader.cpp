@@ -950,7 +950,10 @@ HostResolveImportedModule(JSContext* aCx,
 
   // This cannot fail because resolving a module specifier must have been
   // previously successful with these same two arguments.
-  MOZ_ASSERT(result.isOk(), "Failed to resolve previously-resolved module specifier");
+  if (result.isErr()) {
+    JS_ReportErrorASCII(aCx, "Failed to resolve previously-resolved module specifier");
+    return;
+  }
 
   nsCOMPtr<nsIURI> uri = result.unwrap();
   MOZ_ASSERT(uri);
@@ -1516,17 +1519,7 @@ ScriptLoader::CreateLoadRequest(ScriptKind aKind,
 
   MOZ_ASSERT(aKind == ScriptKind::Module);
 
-  // prepare-the-script-element step 31.11 / 33.1.11: a module script with no
-  // `integrity` attribute resolves its metadata from the document's import map
-  // for the resolved URL.  The attribute (already in aIntegrity) wins when
-  // present.  Non-module kinds are unaffected, which is what
-  // nonimport-integrity.html requires.
-  SRIMetadata integrity = aIntegrity;
-  if (integrity.IsEmpty()) {
-    integrity = ComputeModuleIntegrity(aURI);
-  }
-
-  return ModuleLoadRequest::CreateTopLevel(aURI, fetchOptions, integrity, referrer, this);
+  return ModuleLoadRequest::CreateTopLevel(aURI, fetchOptions, aIntegrity, referrer, this);
 }
 
 bool
