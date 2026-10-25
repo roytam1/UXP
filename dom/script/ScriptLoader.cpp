@@ -1575,26 +1575,30 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
     return false;
   }
 
+  // https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element
+  // Step 33.1: external import maps are not supported.
+  if (scriptKind == ScriptKind::ImportMap && aElement->GetScriptExternal()) {
+    NS_DispatchToCurrentThread(
+      NewRunnableMethod(aElement, &nsIScriptElement::FireErrorEvent));
+    return false;
+  }
+
+  // https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element
+  // If el's type is "importmap": if el's relevant global object's import maps
+  // allowed is false, queue an element task to fire `error` at el, and return.
+  if (scriptKind == ScriptKind::ImportMap && !mImportMapsAllowed) {
+    NS_WARNING("ScriptLoader: import maps allowed is false.");
+    NS_DispatchToCurrentThread(
+      NewRunnableMethod(aElement, &nsIScriptElement::FireErrorEvent));
+    return false;
+  }
+
   // Step 15. and later in the HTML5 spec
   nsresult rv = NS_OK;
   RefPtr<ScriptLoadRequest> request;
   mozilla::net::ReferrerPolicy referrerPolicy = GetReferrerPolicy(aElement);
   if (aElement->GetScriptExternal()) {
     // external script
-
-    // https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element
-    // Step 31.2. type is "importmap":
-    //   Step 1. If el's relevant global object's import maps allowed is false,
-    //   then queue an element task on the DOM manipulation task source given el
-    //   to fire an event named error at el, and return.
-    //
-    // Impl note: bail out before creating a ScriptLoadRequest.
-    if (scriptKind == ScriptKind::ImportMap && !mImportMapsAllowed) {
-      NS_WARNING("ScriptLoader: import maps allowed is false.");
-      NS_DispatchToCurrentThread(
-        NewRunnableMethod(aElement, &nsIScriptElement::FireErrorEvent));
-      return false;
-    }
 
     nsCOMPtr<nsIURI> scriptURI = aElement->GetScriptURI();
     if (!scriptURI) {
