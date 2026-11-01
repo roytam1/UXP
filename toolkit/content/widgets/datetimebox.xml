@@ -57,12 +57,60 @@ document === this.ownerDocument
         this.mYearPageUpDownInterval = 10;
 
         // Default to en-US, month-day-year order.
+        const idmap_list  = [ "input-one", "input-two", "input-three" ];
+        let   idmap_index = { month: 0   , day: 1     , year: 2       };
+
+        const locale_date_format = Intl.DateTimeFormat(undefined,
+                { year: "numeric", month: "numeric", day: "numeric" })
+            .formatToParts(new Date(0));
+
+        // expected: 0:value 1:separator 2:value 3:separator: 4:value
+        if      (   (locale_date_format.length >= 5          )
+                 && (locale_date_format[1].type  == "literal")
+                 && (locale_date_format[3].type  == "literal")
+                 && (locale_date_format[1].value ==
+                     locale_date_format[3].value             ) )
+        {
+          this.mSeparatorText = locale_date_format[1].value
+                                // AR has RIGHT-TO-LEFT MARK here
+                                .replace("\u{200F}", "");
+        }
+        // ps: 0:era 1:separator 2:value 3:separator 4:value 5:separator: 6:value
+        else if (   (locale_date_format.length >= 7          )
+                 && (locale_date_format[3].type  == "literal")
+                 && (locale_date_format[5].type  == "literal")
+                 && (locale_date_format[3].value ==
+                     locale_date_format[5].value             ) )
+        {
+          this.mSeparatorText = locale_date_format[3].value
+                                .replace("\u{200F}", "");
+        }
+
+        const locale_date_order = locale_date_format
+            .map(part => part.type)
+            .filter((str) => { return str != "literal"; });
+
+        if (   (locale_date_order.length == 3     )
+            &&  locale_date_order.includes("year" )
+            &&  locale_date_order.includes("month")
+            &&  locale_date_order.includes("day"  ) )
+        {
+          idmap_index = {
+            year  : locale_date_order.indexOf("year" ),
+            month : locale_date_order.indexOf("month"),
+            day   : locale_date_order.indexOf("day"  )
+          };
+        }
+
         this.mMonthField =
-          window.document.getAnonymousElementByAttribute(this, "anonid", "input-one");
+          window.document.getAnonymousElementByAttribute(this, "anonid",
+            idmap_list[idmap_index.month]);
         this.mDayField =
-          window.document.getAnonymousElementByAttribute(this, "anonid", "input-two");
+          window.document.getAnonymousElementByAttribute(this, "anonid",
+            idmap_list[idmap_index.day  ]);
         this.mYearField =
-          window.document.getAnonymousElementByAttribute(this, "anonid", "input-three");
+          window.document.getAnonymousElementByAttribute(this, "anonid",
+            idmap_list[idmap_index.year ]);
         this.mYearField.size = this.mYearLength;
         this.mYearField.maxLength = this.mMaxYear.toString().length;
 
@@ -476,11 +524,48 @@ document === this.ownerDocument
       <constructor>
       <![CDATA[
         // TODO: Bug 1301312 - localization for input type=time input.
-        this.mHour12 = true;
+        this.mHour12 = Intl.DateTimeFormat(undefined, { hour: "numeric" })
+                       .formatToParts(new Date(0))
+                       .map(part => part.type)
+                       .includes("dayPeriod");
+        const parts_11_59 = Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "numeric" })
+                       .formatToParts(new Date(2099,12-1,31, 11, 59));
+        const parts_23_59 = Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "numeric" })
+                       .formatToParts(new Date(2099,12-1,31, 23, 59));
+        const types_11_59 = parts_11_59.map(part => part.type);
+        const types_23_59 = parts_23_59.map(part => part.type);
+
+        const pos_AM      = types_11_59.indexOf("dayPeriod");
+        const pos_PM      = types_23_59.indexOf("dayPeriod");
+        const pos_hour    = types_23_59.indexOf("hour");
+        const pos_minute  = types_23_59.indexOf("minute");
+
         this.mAMIndicator = "AM";
+        if (pos_AM != -1) {
+          this.mAMIndicator = parts_11_59[pos_AM].value
+                              .replace("\u{200F}", "");
+          if (this.mAMIndicator == "") {
+            this.mAMIndicator = "AM";
+          }
+        }
         this.mPMIndicator = "PM";
+        if (pos_PM != -1) {
+          this.mPMIndicator = parts_23_59[pos_PM].value
+                              .replace("\u{200F}", "");
+          if (this.mPMIndicator == "") {
+            this.mPMIndicator = "PM";
+          }
+        }
         this.mPlaceHolder = "--";
         this.mSeparatorText = ":";
+        if (   (pos_hour                  != -1        )
+            && (pos_minute                != -1        )
+            && (pos_hour + 2              == pos_minute)
+            && (types_23_59[pos_hour + 1] == "literal" ) )
+        {
+          this.mSeparatorText = parts_23_59[pos_hour + 1].value
+                                .replace("\u{200F}", "");
+        }
         this.mMillisecSeparatorText = ".";
         this.mMaxLength = 2;
         this.mMillisecMaxLength = 3;
@@ -504,13 +589,23 @@ document === this.ownerDocument
         this.mMinuteField =
           window.document.getAnonymousElementByAttribute(this, "anonid", "input-two");
         this.mMinuteField.setAttribute("typeBuffer", "");
-        this.mDayPeriodField =
-          window.document.getAnonymousElementByAttribute(this, "anonid", "input-three");
-        this.mDayPeriodField.classList.remove("numeric");
+        if (this.mHour12) {
+          this.mDayPeriodField =
+            window.document.getAnonymousElementByAttribute(this, "anonid", "input-three");
+          this.mDayPeriodField.classList.remove("numeric");
+        }
+        else
+        {
+          window.document.getAnonymousElementByAttribute(this, "anonid", "input-three")
+           .style.display = "none";
+          this.mDayPeriodField = undefined;
+        }
 
         this.mHourField.placeholder = this.mPlaceHolder;
         this.mMinuteField.placeholder = this.mPlaceHolder;
-        this.mDayPeriodField.placeholder = this.mPlaceHolder;
+        if (this.mHour12) {
+          this.mDayPeriodField.placeholder = this.mPlaceHolder;
+        }
 
         this.mHourField.setAttribute("min", this.mMinHourInHour12);
         this.mHourField.setAttribute("max", this.mMaxHourInHour12);
@@ -902,10 +997,10 @@ document === this.ownerDocument
 
           if (this.mDayPeriodField &&
               targetField == this.mDayPeriodField) {
-            if (key == "a" || key == "A") {
+            if (key == "a" || key == "A" || key == this.mAMIndicator[0]) {
               this.mDayPeriodField.value = this.mAMIndicator;
               this.mDayPeriodField.select();
-            } else if (key == "p" || key == "P") {
+            } else if (key == "p" || key == "P" || key == this.mPMIndicator[0]) {
               this.mDayPeriodField.value = this.mPMIndicator;
               this.mDayPeriodField.select();
             }
