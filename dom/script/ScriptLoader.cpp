@@ -1673,7 +1673,11 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
             // ModuleMapContainsURL() == true and just wait for this
             // unverified fetch instead of starting its own.
             request->Cancel();
-            mFetchingModules.Remove(scriptURI);
+            RefPtr<GenericPromise::Private> waiters;
+            bool ownsFetch = mFetchingModules.Get(scriptURI, getter_AddRefs(waiters)) && !waiters;
+            if (ownsFetch) {
+              mFetchingModules.Remove(scriptURI);
+            }
             mFetchedModules.Remove(scriptURI);
             request = nullptr;
           }
@@ -2941,8 +2945,15 @@ ScriptLoader::HandleLoadError(ScriptLoadRequest *aRequest, nsresult aResult) {
         FinishDynamicImport(modReq, aResult);
       }
     } else {
-      MOZ_ASSERT(!modReq->IsTopLevel());
+      // A top-level request can reach here: it is a preload that
+      // ProcessScriptElement dropped in favour of a replacement request
+      // because the import map supplied integrity metadata.  Dropping it
+      // cleared mIsPreload and took it out of mPreloads, but it was never in
+      // any of the request lists either, so it is indistinguishable from a
+      // child import except by IsTopLevel().  Its error is reported through
+      // the replacement request, so just cancel and forget it.
       MOZ_ASSERT(!modReq->isInList());
+      MOZ_ASSERT_IF(modReq->IsTopLevel(), modReq->IsCanceled());
       modReq->Cancel();
       // The error is handled for the top level module.
     }
