@@ -104,14 +104,17 @@ struct WeakCell {
             if (IsInsideNursery(target)) {
                 TraceManuallyBarrieredEdge(trc, object.unsafeGet(), name);
             } else {
-                if (trc->isMarkingTracer() && !target->asTenured().zone()->isCollecting())
+                // A gray marker may only mark into a zone that is in the gray
+                // marking state; a zone still in Mark (black) is in a different
+                // zone group and gets its own pass.
+                if (trc->isMarkingTracer() && !target->asTenured().zone()->isGCMarkingGray())
                     return;
                 TraceWeakEdge(trc, &object, name);
             }
         } else if (kind == WeakCellKind::Symbol) {
             JS::Symbol* target = symbol.unbarrieredGet();
             if (target) {
-                if (trc->isMarkingTracer() && !target->asTenured().zone()->isCollecting())
+                if (trc->isMarkingTracer() && !target->asTenured().zone()->isGCMarkingGray())
                     return;
                 TraceWeakEdge(trc, &symbol, name);
             }
@@ -126,12 +129,12 @@ struct WeakCell {
 
             if (IsInsideNursery(target)) {
                 TraceManuallyBarrieredEdge(trc, object.unsafeGet(), name);
-            } else if (target->asTenured().zone()->isCollecting()) {
+            } else if (target->asTenured().zone()->isGCMarkingGray()) {
                 TraceWeakEdge(trc, &object, name);
             }
         } else if (kind == WeakCellKind::Symbol) {
             JS::Symbol* target = symbol.unbarrieredGet();
-            if (target && target->asTenured().zone()->isCollecting())
+            if (target && target->asTenured().zone()->isGCMarkingGray())
                 TraceWeakEdge(trc, &symbol, name);
         }
     }
