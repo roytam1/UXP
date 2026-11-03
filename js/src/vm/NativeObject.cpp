@@ -1858,6 +1858,14 @@ CallGetter(JSContext* cx, HandleObject obj, HandleValue receiver, HandleShape sh
 
     if (shape->hasGetterValue()) {
         RootedValue getter(cx, shape->getterValue());
+        // The receiver can still be gray: locals are read with getlocal, which
+        // copies a Value without a read barrier, so a gray object can ride in
+        // here and trip assertSameCompartment at the CallJSNative boundary.
+        // This is the last point where the receiver is a HandleValue before it
+        // becomes |this|, so blacken it here.
+        if (receiver.isObject()) {
+            JS::ExposeObjectToActiveJS(&receiver.toObject());
+        }
         return js::CallGetter(cx, receiver, getter, vp);
     }
 
