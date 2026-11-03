@@ -75,6 +75,10 @@ WeakRef_deref_impl(JSContext* cx, const CallArgs& args)
         // Ensure pointer is not null.
         // During WeakRef deref, if the target was collected, it will be nullptr.
         if (target) {
+            // We are handing this object to running JS, and the persistent root
+            // below will not be scanned until the next GC's root marking, so
+            // expose it here or a mid-slice deref can hand out a white object.
+            JS::ExposeObjectToActiveJS(target);
             RootedValue kept(cx, ObjectValue(*target));
             if (!cx->runtime()->addWeakRefKeptObject(cx, kept))
                 return false;
@@ -88,6 +92,7 @@ WeakRef_deref_impl(JSContext* cx, const CallArgs& args)
         
         // Ensure pointer is not null.
         if (target) {
+            js::gc::ExposeGCThingToActiveJS(JS::GCCellPtr(target));
             RootedValue kept(cx, SymbolValue(target));
             if (!cx->runtime()->addWeakRefKeptObject(cx, kept))
                 return false;
@@ -257,7 +262,8 @@ static const ClassOps WeakRefObjectClassOps = {
 const Class WeakRefObject::class_ = {
     "WeakRef",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_HAS_CACHED_PROTO(JSProto_WeakRef),
+    JSCLASS_HAS_CACHED_PROTO(JSProto_WeakRef) |
+    JSCLASS_FOREGROUND_FINALIZE,
     &WeakRefObjectClassOps
 };
 
