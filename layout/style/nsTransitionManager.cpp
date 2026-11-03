@@ -679,6 +679,16 @@ nsTransitionManager::UpdateTransitions(
     do {
       --i;
       CSSTransition* anim = animations[i];
+
+      // A transition we started in the loop above is by definition current,
+      // so it can never be pruned here. Skipping it keeps the collection we
+      // may have just created from being destroyed before the caller can use
+      // it, which is what the !startedAny || collection assertion in
+      // StyleContextChanged is guarding.
+      if (whichStarted.HasProperty(anim->TransitionProperty())) {
+        continue;
+      }
+
           // properties no longer in 'transition-property'
       if ((checkProperties &&
            !allTransitionProperties.HasProperty(anim->TransitionProperty())) ||
