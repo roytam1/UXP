@@ -8286,12 +8286,18 @@ CSSParserImpl::ParseHue(float& aAngle)
   }
   UngetToken();
 
-  // <angle>
+  // <angle>, or a calc() that may reduce to a plain <number>.  A hue accepts
+  // unitless numbers as degrees, so VARIANT_NUMBER has to be in the calc mask
+  // or calc(<number>) dies in ParseCalc and surfaces as CSSParseResult::Error.
   nsCSSValue angleValue;
-  // The '0' value is handled by <number> parsing, so use VARIANT_ANGLE flag
-  // instead of VARIANT_ANGLE_OR_ZERO.
-  if (ParseSingleTokenVariant(angleValue, VARIANT_ANGLE, nullptr)) {
-    aAngle = angleValue.GetAngleValueInDegrees();
+  CSSParseResult result =
+    ParseVariant(angleValue, VARIANT_ANGLE | VARIANT_NUMBER, nullptr);
+  if (result == CSSParseResult::Ok) {
+    if (angleValue.GetUnit() == eCSSUnit_Number) {
+      aAngle = angleValue.GetFloatValue();
+    } else {
+      aAngle = angleValue.GetAngleValueInDegrees();
+    }
     return true;
   }
 
