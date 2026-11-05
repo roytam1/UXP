@@ -8751,6 +8751,7 @@ nsRuleNode::ComputeBorderData(void* aStartStruct,
       nsStyleCoord parentY = parentBorder->mBorderRadius.Get(cy);
       nsStyleCoord coordX, coordY;
       // Clamp border radius to the max value so it will not wrap and cause artifacts.
+      // XXX: GetFloatValue fails here sometimes (not a float?)
       if (radius.GetFloatValue() > RADIUS_MAX) {
         radius.SetFloatValue(RADIUS_MAX, eCSSUnit_Number);
       }

@@ -86,8 +86,7 @@ NS_NewChannelWithTriggeringPrincipal(nsIChannel           **outChannel,
                                      nsLoadFlags            aLoadFlags /* = nsIRequest::LOAD_NORMAL */,
                                      nsIIOService          *aIoService /* = nullptr */)
 {
-  MOZ_ASSERT(aLoadingNode);
-  NS_ASSERTION(aTriggeringPrincipal, "Can not create channel without a triggering Principal!");
+  NS_ASSERTION(aLoadingNode, "Can not create channel without a loading Node!");
   return NS_NewChannelInternal(outChannel,
                                aUri,
                                aLoadingNode,

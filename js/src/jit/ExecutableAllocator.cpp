@@ -326,7 +326,7 @@ ExecutableAllocator::reprotectPool(JSRuntime* rt, ExecutablePool* pool, Protecti
 
     char* start = pool->m_allocation.pages;
     if (!ReprotectRegion(start, pool->m_freePtr - start, protection))
-        MOZ_CRASH();
+        return;//MOZ_CRASH();
 }
 
 /* static */ void
