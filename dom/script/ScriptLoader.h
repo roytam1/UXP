@@ -6,6 +6,7 @@
 #ifndef mozilla_dom_ScriptLoader_h
 #define mozilla_dom_ScriptLoader_h
 
+#include "ImportMap.h"
 #include "nsCOMPtr.h"
 #include "nsRefPtrHashtable.h"
 #include "nsIUnicodeDecoder.h"
@@ -18,11 +19,14 @@
 #include "nsIIncrementalStreamLoader.h"
 #include "nsURIHashKey.h"
 #include "mozilla/CORSMode.h"
+#include "mozilla/dom/ScriptKind.h"
 #include "mozilla/dom/SRIMetadata.h"
 #include "mozilla/dom/SRICheck.h"
 #include "mozilla/MozPromise.h"
 #include "mozilla/net/ReferrerPolicy.h"
 #include "mozilla/Vector.h"
+#include "mozilla/UniquePtr.h"
+#include "ResolveResult.h"
 
 class nsIURI;
 
@@ -38,15 +42,6 @@ class LoadedScript;
 class ModuleLoadRequest;
 class ModuleScript;
 class ScriptLoadRequestList;
-
-//////////////////////////////////////////////////////////////
-// Per-request data structure
-//////////////////////////////////////////////////////////////
-
-enum class ScriptKind {
-  Classic,
-  Module
-};
 
 /*
  * Some options used when fetching script resources. This only loosely
@@ -103,6 +98,11 @@ public:
     return mKind == ScriptKind::Module;
   }
 
+  bool IsImportMapRequest() const
+  {
+      return mKind == ScriptKind::ImportMap;
+  }
+ 
   ModuleLoadRequest* AsModuleRequest();
 
   void FireScriptAvailable(nsresult aResult)
@@ -562,6 +562,11 @@ public:
     return mPendingChildLoaders.AppendElement(aChild) != nullptr;
   }
 
+  nsIURI* GetBaseURI() const {
+    MOZ_ASSERT(mDocument);
+    return mDocument->GetBaseURI().take();
+  }
+
   /*
    * Clear the map of loaded modules. Called when a Document object is reused
    * for a different global.
@@ -597,6 +602,33 @@ public:
   static LoadedScript* GetActiveScript(JSContext* aCx);
 
   nsIDocument* GetDocument() const { return mDocument; }
+
+  // Process <script type="importmap">
+  mozilla::UniquePtr<ImportMap> ParseImportMap(ScriptLoadRequest* aRequest);
+
+  // Implements
+  // https://html.spec.whatwg.org/multipage/webappapis.html#register-an-import-map
+  void RegisterImportMap(mozilla::UniquePtr<ImportMap> aImportMap);
+
+  ImportMap* GetImportMap() { return mImportMap.get(); }
+
+  // https://html.spec.whatwg.org/multipage/webappapis.html#resolve-a-module-integrity-metadata
+  SRIMetadata ComputeModuleIntegrity(nsIURI* aURI);
+
+  // https://html.spec.whatwg.org/multipage/webappapis.html#concept-import-maps-allowed
+  bool IsImportMapAllowed() const { return mImportMapsAllowed; }
+
+  // https://html.spec.whatwg.org/multipage/webappapis.html#disallow-further-import-maps
+  void DisallowImportMaps() { mImportMapsAllowed = false; }
+
+  void ReportWarningToConsole(ScriptLoadRequest* aRequest, const char* aMessageName,
+                              const nsTArray<nsString>& aParams = nsTArray<nsString>()) const;
+
+
+protected:
+
+  mozilla::UniquePtr<ImportMap> mImportMap;
+  bool mImportMapsAllowed;
 
 private:
   virtual ~ScriptLoader();

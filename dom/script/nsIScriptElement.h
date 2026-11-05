@@ -17,6 +17,7 @@
 #include "nsIDOMHTMLScriptElement.h"
 #include "mozilla/CORSMode.h"
 #include "mozilla/net/ReferrerPolicy.h"
+#include "mozilla/dom/ScriptKind.h"
 
 #define NS_ISCRIPTELEMENT_IID \
 { 0xe60fca9b, 0x1b96, 0x4e4e, \
@@ -39,10 +40,10 @@ public:
       mForceAsync(aFromParser == mozilla::dom::NOT_FROM_PARSER ||
                   aFromParser == mozilla::dom::FROM_PARSER_FRAGMENT),
       mFrozen(false),
-      mIsModule(false),
       mDefer(false),
       mAsync(false),
       mExternal(false),
+      mKind(mozilla::dom::ScriptKind::Classic),
       mParserCreated(aFromParser == mozilla::dom::FROM_PARSER_FRAGMENT ?
                      mozilla::dom::NOT_FROM_PARSER : aFromParser),
                      // Fragment parser-created scripts (if executable)
@@ -85,6 +86,7 @@ public:
    * Freezes the return values of the following methods so that subsequent
    * modifications to the attributes don't change execution behavior:
    *  - GetScriptIsModule()
+   *  - GetScriptIsImportMap()
    *  - GetScriptDeferred()
    *  - GetScriptAsync()
    *  - GetScriptURI()
@@ -99,7 +101,16 @@ public:
   bool GetScriptIsModule()
   {
     NS_PRECONDITION(mFrozen, "Execution attributes not yet frozen: Not ready for this call!");
-    return mIsModule;
+    return mKind == mozilla::dom::ScriptKind::Module;
+  }
+
+  /**
+   * Is the script an import map. Currently only supported by HTML scripts.
+   */
+  bool GetScriptIsImportMap()
+  {
+    NS_PRECONDITION(mFrozen, "Not ready for this call yet!");
+    return mKind == mozilla::dom::ScriptKind::ImportMap;
   }
 
   /**
@@ -339,11 +350,6 @@ protected:
   bool mFrozen;
 
   /**
-   * The effective moduleness.
-   */
-  bool mIsModule;
-
-  /**
    * The effective deferredness.
    */
   bool mDefer;
@@ -358,6 +364,11 @@ protected:
    * if the src attribute contained an invalid URL string.
    */
   bool mExternal;
+
+  /**
+   * The effective script kind.
+   */
+  mozilla::dom::ScriptKind mKind;
 
   /**
    * Whether this element was parser-created.

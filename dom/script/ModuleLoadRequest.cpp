@@ -57,7 +57,8 @@ static VisitedURLSet* NewVisitedSetForTopLevelImport(nsIURI* aURI) {
 /* static */ ModuleLoadRequest* ModuleLoadRequest::CreateStaticImport(
     nsIURI* aURI, ModuleLoadRequest* aParent) {
   auto request =
-      new ModuleLoadRequest(aURI, aParent->mFetchOptions, SRIMetadata(),
+      new ModuleLoadRequest(aURI, aParent->mFetchOptions,
+                            aParent->mLoader->ComputeModuleIntegrity(aURI),
                             aParent->mURI, false, /* is top level */
                             false,                /* is dynamic import */
                             aParent->mLoader, aParent->mVisitedSet);
@@ -77,7 +78,7 @@ static VisitedURLSet* NewVisitedSetForTopLevelImport(nsIURI* aURI) {
   MOZ_ASSERT(aPromise);
 
   auto request = new ModuleLoadRequest(
-      aURI, aFetchOptions, SRIMetadata(), aBaseURL,
+      aURI, aFetchOptions, aLoader->ComputeModuleIntegrity(aURI), aBaseURL,
       true, /* is top level */
       true, /* is dynamic import */
       aLoader, NewVisitedSetForTopLevelImport(aURI));

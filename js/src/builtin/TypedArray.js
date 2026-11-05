@@ -254,8 +254,24 @@ function TypedArrayCopyWithin(target, start, end = undefined) {
     // Also note that this copies elements effectively by memmove, *not* in
     // step 17's specified order.  This is unobservable, but it would be if we
     // used this method to implement shared typed arrays' copyWithin.
-    if (count > 0)
-        MoveTypedArrayElements(obj, to | 0, from | 0, count | 0);
+    if (count > 0) {
+        // Argument conversion can execute script and resize the buffer.
+        // Re-fetch and re-check before moving.
+        GetAttachedArrayBuffer(obj);
+        var currentLen = TypedArrayLength(obj);
+
+        if (currentLen < len) {
+            if (to >= currentLen || from >= currentLen)
+                return obj;
+
+            count = std_Math_min(count,
+                                 std_Math_min(currentLen - to,
+                                              currentLen - from));
+        }
+
+        if (count > 0)
+            MoveTypedArrayElements(obj, to | 0, from | 0, count | 0);
+    }
 
     // Step 18.
     return obj;

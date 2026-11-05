@@ -4221,8 +4221,8 @@ CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery)
       {
         AutoRestore<bool> autoRestore(mCalcAllowsTypedArithmetic);
         mCalcAllowsTypedArithmetic = true;
-        rv = ParseSingleTokenNonNegativeVariant(expr->mValue, VARIANT_LCALC,
-                                                nullptr);
+        rv = ParseNonNegativeVariant(expr->mValue, VARIANT_LCALC,
+                                                nullptr) == CSSParseResult::Ok;
       }
       break;
     case nsMediaFeature::eInteger:
