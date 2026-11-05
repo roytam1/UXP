@@ -32,6 +32,8 @@ interface HTMLScriptElement : HTMLElement {
   attribute DOMString nonce;
   [CEReactions, SetterThrows, Pure]
   attribute DOMString integrity;
+
+  static boolean supports(DOMString type);
 };
 
 // http://www.whatwg.org/specs/web-apps/current-work/#other-elements,-attributes-and-apis

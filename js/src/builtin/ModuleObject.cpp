@@ -1155,8 +1155,6 @@ ModuleObject::execute(JSContext* cx, HandleModuleObject self, MutableHandleValue
             evalPromise = &promiseObj->as<PromiseObject>();
             self->setEvaluationPromise(evalPromise);
         }
-    } else {
-        self->setReservedSlot(ScriptSlot, UndefinedValue());
     }
 
     RootedModuleEnvironmentObject scope(cx, self->environment());
@@ -1184,9 +1182,10 @@ ModuleObject::execute(JSContext* cx, HandleModuleObject self, MutableHandleValue
             RootedValue undefinedValue(cx, UndefinedValue());
             if (!PromiseObject::resolve(cx, evalPromise, undefinedValue))
                 return false;
-            self->setReservedSlot(ScriptSlot, UndefinedValue());
             rval.setObject(*evalPromise);
         }
+        // Module finished and will not be resumed; release the script.
+        self->setReservedSlot(ScriptSlot, UndefinedValue());
         return true;
     }
 

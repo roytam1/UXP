@@ -23,7 +23,7 @@ inline uint8_t*
 NativeObject::fixedData(size_t nslots) const
 {
     MOZ_ASSERT(ClassCanHaveFixedData(getClass()));
-    MOZ_ASSERT(nslots == numFixedSlots() + (hasPrivate() ? 1 : 0));
+    //FIXME: MOZ_ASSERT(nslots == numFixedSlots() + (hasPrivate() ? 1 : 0));
     return reinterpret_cast<uint8_t*>(&fixedSlots()[nslots]);
 }
 

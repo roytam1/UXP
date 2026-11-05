@@ -4821,7 +4821,7 @@ JS::GetModuleScript(JSContext* cx, JS::HandleObject moduleArg)
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);
     assertSameCompartment(cx, moduleArg);
-    return moduleArg->as<ModuleObject>().script();
+    return moduleArg->as<ModuleObject>().maybeScript();
 }
 
 JS_PUBLIC_API(JSObject*)

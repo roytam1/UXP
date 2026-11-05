@@ -612,6 +612,13 @@ MSG_DEF(JSMSG_NO_DYNAMIC_IMPORT,         0, JSEXN_SYNTAXERR, "dynamic module imp
 MSG_DEF(JSMSG_DYNAMIC_IMPORT_FAILED,     0, JSEXN_TYPEERR, "error loading dynamically imported module")
 MSG_DEF(JSMSG_BAD_MODULE_SPECIFIER,      1, JSEXN_TYPEERR, "error resolving module specifier '{0}'")
 
+// Import maps
+MSG_DEF(JSMSG_IMPORT_MAPS_NOT_A_MAP,             0, JSEXN_TYPEERR, "the top-level value needs to be a JSON object")
+MSG_DEF(JSMSG_IMPORT_MAPS_IMPORTS_NOT_A_MAP,     0, JSEXN_TYPEERR, "the imports top-level key needs to be a JSON object")
+MSG_DEF(JSMSG_IMPORT_MAPS_SCOPES_NOT_A_MAP,      0, JSEXN_TYPEERR, "the scopes top-level key needs to be a JSON object")
+MSG_DEF(JSMSG_IMPORT_MAPS_SCOPE_VALUE_NOT_A_MAP, 1, JSEXN_TYPEERR, "the value of the scope with prefix '{0}' needs to be a JSON object")
+MSG_DEF(JSMSG_IMPORT_MAPS_INTEGRITY_NOT_A_MAP, 0, JSEXN_TYPEERR, "The value of the \"integrity\" top-level key in an import map needs to be a JSON object")
+
 // Promise
 MSG_DEF(JSMSG_CANNOT_RESOLVE_PROMISE_WITH_ITSELF,       0, JSEXN_TYPEERR, "A promise cannot be resolved with itself.")
 MSG_DEF(JSMSG_PROMISE_CAPABILITY_HAS_SOMETHING_ALREADY, 0, JSEXN_TYPEERR, "GetCapabilitiesExecutor function already invoked with non-undefined values.")
