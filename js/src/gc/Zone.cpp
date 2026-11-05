@@ -13,6 +13,8 @@
 #include "jit/JitCompartment.h"
 #include "vm/Debugger.h"
 #include "vm/Runtime.h"
+#include "builtin/WeakRefObject.h"
+#include "gc/Tracer.h"
 
 #include "jscompartmentinlines.h"
 #include "jsgcinlines.h"
@@ -64,6 +66,10 @@ JS::Zone::Zone(JSRuntime* rt)
 Zone::~Zone()
 {
     JSRuntime* rt = runtimeFromMainThread();
+
+    for (JSObject* ref : weakRefs)
+        ref->as<WeakRefObject>().clearTargetZone();
+
     if (this == rt->gc.systemZone)
         rt->gc.systemZone = nullptr;
 
@@ -385,7 +391,14 @@ Zone::addTypeDescrObject(JSContext* cx, HandleObject obj)
     
     return true;
 }
-    
+
+void
+Zone::traceWeakRefs(JSTracer* trc)
+{
+    for (JSObject* ref : weakRefs)
+        WeakRefObject::trace(trc, ref);
+}
+
 ZoneList::ZoneList()
   : head(nullptr), tail(nullptr)
 {}

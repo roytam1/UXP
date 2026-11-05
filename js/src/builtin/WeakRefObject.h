@@ -58,6 +58,10 @@ class WeakRefObject : public NativeObject
     static const JSPropertySpec properties[];
     static const JSFunctionSpec methods[];
 
+    Zone* targetZone = nullptr;
+
+    void clearTargetZone() { targetZone = nullptr; }
+
   private:
 };
 

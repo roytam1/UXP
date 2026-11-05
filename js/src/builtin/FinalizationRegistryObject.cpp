@@ -404,6 +404,8 @@ FinalizationRegistryObject::create(JSContext* cx, HandleObject cleanupCallback,
     if (!obj)
         return nullptr;
 
+    MOZ_ASSERT(!IsInsideNursery(obj.get()));
+
     Data* data = cx->new_<Data>(cleanupCallback);
     if (!data)
         return nullptr;
@@ -513,6 +515,17 @@ FinalizationRegistryObject::cleanupJob(JSContext* cx, unsigned argc, Value* vp)
 /* static */ void
 FinalizationRegistryObject::trace(JSTracer* trc, JSObject* obj)
 {
+    // Registered by raw pointer in our own zone's finalizationRegistries, which
+    // nothing relocates. traceFinalizationRegistryWeakRefs() and
+    // Zone::~Zone both dereference these entries, so repair ours if we moved.
+    if (trc->runtime()->gc.isHeapCompacting()) {
+        for (auto& registry : obj->zone()->finalizationRegistries) {
+            JSObject** p = registry.unsafeGet();
+            if (*p && js::gc::IsForwarded(*p) && js::gc::Forwarded(*p) == obj)
+                *p = obj;
+        }
+    }
+
     if (Data* data = GetData(obj))
         data->trace(trc);
 }
