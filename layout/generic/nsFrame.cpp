@@ -5079,8 +5079,11 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
   nscoord boxSizingToMarginEdgeISize =
     aMargin.ISize(aWM) + aBorder.ISize(aWM) + aPadding.ISize(aWM) -
       boxSizingAdjust.ISize(aWM);
+  nscoord boxSizingToMarginEdgeBSize =
+    aMargin.BSize(aWM) + aBorder.BSize(aWM) + aPadding.BSize(aWM) -
+      boxSizingAdjust.BSize(aWM);
 
-  nscoord iSize, minISize, maxISize, bSize, minBSize, maxBSize;
+  nscoord iSize, minISize, maxISize, minBSize, maxBSize, bSize = NS_UNCONSTRAINEDSIZE;
   enum class Stretch {
     // stretch to fill the CB (preserving intrinsic ratio) in the relevant axis
     eStretchPreservingRatio,
@@ -5257,12 +5260,109 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
 
   // Now calculate the used values for iSize and bSize:
 
+  // A button reports eReplaced, but it is really a container: its block size
+  // comes from its anonymous content, which is only known at reflow, so it is
+  // not a replaced box in the sizing sense. Treat it as content-sized
+  // everywhere below instead of special-casing it at each site.
+  const bool contentSizedButton =
+    GetType() == nsGkAtoms::HTMLButtonControlFrame;
+  const bool replacedWithIntrinsicSize =
+    IsFrameOfType(nsIFrame::eReplaced) && !contentSizedButton;
+
+  // A ratio only determines an axis that is neither definite nor stretched.
+  // Cross-axis stretch on a flex item wins over the ratio (css-flexbox §9.4),
+  // so mark the stretch and seed the size from the containing block; the
+  // existing 'stretch' handling below then skips the ratio transfer.
+  if (MOZ_UNLIKELY(isFlexItem) && !replacedWithIntrinsicSize) {
+    uint8_t alignSelf = stylePos->mAlignSelf;
+    if (alignSelf == NS_STYLE_ALIGN_AUTO) {
+      alignSelf = GetParent()->StylePosition()->mAlignItems;
+    }
+    if (alignSelf == NS_STYLE_ALIGN_NORMAL ||
+        alignSelf == NS_STYLE_ALIGN_STRETCH) {
+      if (isInlineFlexItem) {
+        // Row container: the cross axis is the block axis.
+        if (isAutoBSize && aCBSize.BSize(aWM) != NS_UNCONSTRAINEDSIZE) {
+          stretchB = eStretch;
+          bSize = aCBSize.BSize(aWM) - boxSizingToMarginEdgeBSize;
+          if (bSize < 0) {
+            bSize = 0;
+          }
+        }
+      } else if (isAutoISize && aCBSize.ISize(aWM) != NS_UNCONSTRAINEDSIZE) {
+        // Column container: the cross axis is the inline axis.
+        stretchI = eStretch;
+        iSize = aCBSize.ISize(aWM) - boxSizingToMarginEdgeISize;
+        if (iSize < 0) {
+          iSize = 0;
+        }
+      }
+    }
+  }
+
+  // An inline size is shrink-wrapped when the caller says so (flex items,
+  // non-stretched grid items, floats), when the box is replaced, or when it is
+  // inline-level -- an inline-block's auto width is shrink-to-fit whatever the
+  // caller passed.  This function had no shrink-to-fit path at all, so an
+  // aspect-ratio box fell through to the containing block width instead.
+  const bool shrinkWrapInline = !replacedWithIntrinsicSize &&
+                                ((aFlags & ComputeSizeFlags::eShrinkWrap) ||
+                                 StyleDisplay()->IsInlineOutside(this));
+
+  // The block axis is content-sized as well. The base ComputeAutoSize reports
+  // NS_UNCONSTRAINEDSIZE for it and the frames that can be sized this way
+  // shrinkwrap their content during reflow, so the sentinel has to be allowed
+  // through instead of being turned into a ratio-derived value here. The clamp
+  // below is skipped whenever this is set, since it would bake the sentinel in.
+  const bool shrinkWrapBlock = shrinkWrapInline;
+
+  // Content-based block size with a ratio fallback. Only the column item below
+  // needs the fallback, because there the block size is the main axis and feeds
+  // iSizeFromBSize, which cannot digest the sentinel.
+  auto contentBSize = [&](nscoord aTentISize) -> nscoord {
+    nscoord bSize =
+      ComputeAutoSize(aRenderingContext, aWM, aCBSize, aCBSize.ISize(aWM),
+                      aMargin, aBorder, aPadding, aFlags).BSize(aWM);
+    if (bSize != NS_UNCONSTRAINEDSIZE) {
+      return bSize;
+    }
+    nsIFrame* buttonContent = PrincipalChildList().FirstChild();
+    if (contentSizedButton && buttonContent) {
+      // A button's block-size is its anonymous content. Measure it.
+      nsPresContext* pc = PresContext();
+      nsContainerFrame* self = static_cast<nsContainerFrame*>(this);
+      LogicalSize availSize(aWM, aCBSize.ISize(aWM), NS_UNCONSTRAINEDSIZE);
+      ReflowInput childRI(pc, buttonContent, aRenderingContext, availSize,
+                          ReflowInput::DUMMY_PARENT_REFLOW_STATE);
+      childRI.mFlags.mIsFlexContainerMeasuringHeight = true;
+
+      ReflowOutput desired(childRI);
+      nsReflowStatus status;
+      self->ReflowChild(buttonContent, pc, desired, childRI, 0, 0,
+                        ReflowChildFlags::NoMoveFrame, status);
+      nsContainerFrame::FinishReflowChild(buttonContent, pc, desired, &childRI,
+                                          0, 0, ReflowChildFlags::NoMoveFrame);
+
+      nscoord measured =
+        desired.BSize(aWM) - childRI.ComputedLogicalBorderPadding().BStartEnd(aWM);
+      if (measured > 0) {
+        return measured;
+      }
+    }
+    return bSizeFromISize(aTentISize);
+  };
+
   if (isAutoISize) {
     if (isAutoBSize) {
 
       // 'auto' iSize, 'auto' bSize
 
       // Get tentative values - CSS 2.1 sections 10.3.2 and 10.6.2:
+
+      // Set when tentBSize was derived from the ratio, so that the min/max
+      // clamp further down stays enabled for the transferred value even when
+      // the block axis is being shrink-wrapped.
+      bool ratioTransferred = false;
 
       nscoord tentISize, tentBSize;
 
@@ -5274,8 +5374,7 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
         // A preferred aspect ratio but no intrinsic size in either axis: the
         // inline size comes from the normal inline-size algorithm for this box
         // and the block size is transferred from it below.
-        if ((aFlags & ComputeSizeFlags::eShrinkWrap) ||
-            IsFrameOfType(nsIFrame::eReplaced)) {
+        if (shrinkWrapInline) {
           // Shrink-to-fit (CSS 2.1 §10.3.9): min(max(min-content, available),
           // max-content), via the frame's own auto-size logic.
           tentISize =
@@ -5299,8 +5398,53 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
 
       if (hasIntrinsicBSize) {
         tentBSize = intrinsicBSize;
-      } else if (aIntrinsicRatio) {
+      } else if (aIntrinsicRatio && !shrinkWrapBlock) {
         tentBSize = bSizeFromISize(tentISize);
+        ratioTransferred = true;
+      } else if (aIntrinsicRatio) {
+        // Shrink-wrapping with a ratio but no intrinsic size: transfer the
+        // ratio only from an inline size that is actually definite. A
+        // shrink-to-fit inline size is content-dependent, so the block size
+        // has to stay content-based there. Never leave NS_UNCONSTRAINEDSIZE
+        // behind either way.
+        const bool columnItem = isFlexItem && !isInlineFlexItem;
+        bool stretchesCrossAxis = false;
+        if (columnItem && aCBSize.ISize(aWM) != NS_UNCONSTRAINEDSIZE) {
+          auto alignSelf = stylePos->UsedAlignSelf(GetParent()->StyleContext());
+          stretchesCrossAxis =
+            alignSelf == NS_STYLE_ALIGN_NORMAL ||
+            alignSelf == NS_STYLE_ALIGN_STRETCH;
+        }
+        if (stretchesCrossAxis) {
+          // Cross axis is definite, so the ratio may drive the main axis.
+          tentBSize = bSizeFromISize(aCBSize.ISize(aWM));
+          ratioTransferred = true;
+        } else if (columnItem) {
+          // Column item, cross axis not stretched: the block axis is the
+          // content-sized main axis, so transfer the ratio the other way.
+          nscoord cbSize = contentBSize(tentISize);
+          tentBSize = cbSize;
+          tentISize = iSizeFromBSize(cbSize);
+          ratioTransferred = true;
+        } else {
+          // Content-sized box. A button's block size is the business of
+          // ReflowButtonContents, which shrinkwraps the anonymous content and
+          // clamps to min/max, so it wants the sentinel rather than a value
+          // guessed here. That only works where the consumer hands the sentinel
+          // on to reflow as 'auto': a float is placed from the returned size
+          // directly, and a stretched cross axis overwrites it after the fact
+          // (and skips the measuring reflow that would otherwise resolve it),
+          // so both need a real number. Everything else -- non-buttons, whose
+          // sentinel would escape into float placement and line overflow --
+          // takes the ratio fallback.
+          // tentISize > 0 is not a usable proxy for "definite": empty content
+          // is 0, not missing, and used to fall back to the CB width.
+          if (contentSizedButton && stretchB != eStretch && !IsFloating()) {
+            tentBSize = NS_UNCONSTRAINEDSIZE;
+          } else {
+            tentBSize = contentBSize(tentISize);
+          }
+        }
       } else {
         tentBSize = nsPresContext::CSSPixelsToAppUnits(150);
       }
@@ -5343,7 +5487,7 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
       // ComputeAutoSizeWithIntrinsicDimensions preserves the ratio when applying
       // the min/max-size.  We don't want that when we have 'stretch' in either
       // axis because tentISize/tentBSize is likely not according to ratio now.
-      if (aIntrinsicRatio && stretchI != eStretch && stretchB != eStretch) {
+      if (aIntrinsicRatio && (!shrinkWrapBlock || ratioTransferred)) {
         nsSize autoSize = nsLayoutUtils::
           ComputeAutoSizeWithIntrinsicDimensions(minISize, minBSize,
                                                  maxISize, maxBSize,
@@ -5384,8 +5528,18 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
       // non-'auto' iSize, 'auto' bSize
       iSize = NS_CSS_MINMAX(iSize, minISize, maxISize);
       if (stretchB != eStretch) {
-        if (aIntrinsicRatio) {
+        // The ratio may only be transferred from a flex-resolved main size when
+        // the block size is really ratio-derived. A content-sized box gets its
+        // block size from reflow instead, so the transfer has to be skipped.
+        const bool contentMainSize =
+          isFlexItem && isInlineFlexItem &&
+          imposedMainSizeStyleCoord.isSome();
+        if (aIntrinsicRatio && !contentMainSize) {
           bSize = bSizeFromISize(iSize);
+        } else if (contentMainSize) {
+          bSize =
+            ComputeAutoSize(aRenderingContext, aWM, aCBSize, aCBSize.ISize(aWM),
+                            aMargin, aBorder, aPadding, aFlags).BSize(aWM);
         } else if (hasIntrinsicBSize) {
           if (!((aFlags & ComputeSizeFlags::eBClampMarginBoxMinSize) &&
                 intrinsicBSize > bSize)) {
@@ -5404,6 +5558,14 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
       bSize = NS_CSS_MINMAX(bSize, minBSize, maxBSize);
 
     }
+  }
+
+  // A button handed its unconstrained block-size on for reflow, which treats it
+  // as 'auto'. Flex, grid and floats can't wait for that, so substitute the
+  // content-based size here as a backstop.
+  if (bSize == NS_UNCONSTRAINEDSIZE &&
+      (isFlexItem || isGridItem || IsFloating())) {
+    bSize = contentBSize(iSize);
   }
 
   return LogicalSize(aWM, iSize, bSize);
@@ -8536,7 +8698,9 @@ UnionBorderBoxes(nsIFrame* aFrame, bool aApplyTransform,
   }
   const nsStyleDisplay* disp = aFrame->StyleDisplay();
   nsIAtom* fType = aFrame->GetType();
-  if (nsFrame::ShouldApplyOverflowClipping(aFrame, disp) ||
+  const bool clipsBoth = disp->mOverflowX != NS_STYLE_OVERFLOW_VISIBLE &&
+                         disp->mOverflowY != NS_STYLE_OVERFLOW_VISIBLE;
+  if (clipsBoth ||
       fType == nsGkAtoms::scrollFrame ||
       fType == nsGkAtoms::listControlFrame ||
       fType == nsGkAtoms::svgOuterSVGFrame) {
@@ -8765,12 +8929,23 @@ nsIFrame::FinishAndStoreOverflow(nsOverflowAreas& aOverflowAreas,
   // overflow area should include the entire border-box, just set it to
   // the border-box here.
   const nsStyleDisplay* disp = StyleDisplay();
-  NS_ASSERTION((disp->mOverflowY == NS_STYLE_OVERFLOW_CLIP) ==
-               (disp->mOverflowX == NS_STYLE_OVERFLOW_CLIP),
-               "If one overflow is clip, the other should be too");
   if (nsFrame::ShouldApplyOverflowClipping(this, disp)) {
-    // The contents are actually clipped to the padding area 
-    aOverflowAreas.SetAllTo(bounds);
+    // The contents are actually clipped to the padding area.  Clipping is
+    // per-axis (css-overflow-3 §3.1 keeps 'visible clip' as authored), so only
+    // collapse the axis that clips; the other keeps contributing overflow.
+    const bool clipsX = disp->mOverflowX != NS_STYLE_OVERFLOW_VISIBLE;
+    const bool clipsY = disp->mOverflowY != NS_STYLE_OVERFLOW_VISIBLE;
+    NS_FOR_FRAME_OVERFLOW_TYPES(otype) {
+      nsRect& o = aOverflowAreas.Overflow(otype);
+      if (clipsX) {
+        o.x = bounds.x;
+        o.width = bounds.width;
+      }
+      if (clipsY) {
+        o.y = bounds.y;
+        o.height = bounds.height;
+      }
+    }
   }
 
   // Overflow area must always include the frame's top-left and bottom-right,
