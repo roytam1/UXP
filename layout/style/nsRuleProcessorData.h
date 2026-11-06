@@ -29,6 +29,7 @@ class nsIAtom;
 class nsIContent;
 class nsICSSPseudoComparator;
 struct TreeMatchContext;
+struct nsCSSSelectorList;
 
 /**
  * An AncestorFilter is used to keep track of ancestors so that we can
@@ -37,6 +38,7 @@ struct TreeMatchContext;
  */
 class MOZ_STACK_CLASS AncestorFilter {
   friend struct TreeMatchContext;
+struct nsCSSSelectorList;
  public:
   /* Maintenance of our ancestor state */
   void PushAncestor(mozilla::dom::Element *aElement);
@@ -475,6 +477,17 @@ struct MOZ_STACK_CLASS TreeMatchContext {
   mozilla::dom::Element* mRelativeSelectorAnchor;
   // Propagate an outer sibling combinator through :is(), :not(), etc.
   bool mHasSelectorLaterSiblings;
+
+  // Bounded, lazily allocated cache for a single styling traversal. As with
+  // mNthIndexCache, no entries survive into the next mutation/style flush.
+  // Scoped/shadow matching and selector APIs do not use this cache.
+  struct HasMatchCacheEntry {
+    mozilla::dom::Element* mAnchor = nullptr;
+    nsCSSSelectorList* mSelector = nullptr;
+    bool mMatches = false;
+  };
+  HasMatchCacheEntry mLastHasMatch;
+  nsTArray<HasMatchCacheEntry> mHasMatchCache;
 };
 
 struct MOZ_STACK_CLASS RuleProcessorData {
