@@ -5271,7 +5271,19 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
       } else if (hasIntrinsicBSize && aIntrinsicRatio) {
         tentISize = iSizeFromBSize(intrinsicBSize);
       } else if (aIntrinsicRatio) {
-        tentISize = aCBSize.ISize(aWM) - boxSizingToMarginEdgeISize; // XXX scrollbar?
+        // A preferred aspect ratio but no intrinsic size in either axis: the
+        // inline size comes from the normal inline-size algorithm for this box
+        // and the block size is transferred from it below.
+        if ((aFlags & ComputeSizeFlags::eShrinkWrap) ||
+            IsFrameOfType(nsIFrame::eReplaced)) {
+          // Shrink-to-fit (CSS 2.1 §10.3.9): min(max(min-content, available),
+          // max-content), via the frame's own auto-size logic.
+          tentISize =
+            ComputeAutoSize(aRenderingContext, aWM, aCBSize, aCBSize.ISize(aWM),
+                            aMargin, aBorder, aPadding, aFlags).ISize(aWM);
+        } else {
+          tentISize = aCBSize.ISize(aWM) - boxSizingToMarginEdgeISize; // XXX scrollbar?
+        }
         if (tentISize < 0) tentISize = 0;
       } else {
         tentISize = nsPresContext::CSSPixelsToAppUnits(300);
