@@ -999,6 +999,38 @@ Element::GetBoundingClientRect()
   return rect.forget();
 }
 
+bool
+Element::CheckVisibility(const CheckVisibilityOptions& aOptions)
+{
+  // https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility
+  nsIFrame* frame = GetPrimaryFrame(Flush_Frames);
+  if (!frame) {
+    // No associated box, e.g. display:none on this element or an ancestor,
+    // display:contents, or not in a document.
+    return false;
+  }
+
+  // We don't support content-visibility, so aOptions.mContentVisibilityAuto
+  // has nothing to check.
+
+  if (aOptions.mCheckOpacity || aOptions.mOpacityProperty) {
+    for (nsIFrame* f = frame; f; f = f->GetParent()) {
+      if (f->StyleEffects()->mOpacity == 0.0f) {
+        return false;
+      }
+    }
+  }
+
+  if (aOptions.mCheckVisibilityCSS || aOptions.mVisibilityProperty) {
+    // visibility is inherited, so the element's own computed value is enough.
+    if (!frame->StyleVisibility()->IsVisible()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 already_AddRefed<DOMRectList>
 Element::GetClientRects()
 {
