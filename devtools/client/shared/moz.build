@@ -24,6 +24,7 @@ DevToolsModules(
     'demangle.js',
     'developer-toolbar.js',
     'devices.js',
+    'doorhanger.js',
     'devtools-file-watcher.js',
     'DOMHelpers.jsm',
     'file-watcher-worker.js',
