@@ -168,10 +168,16 @@ TypedArrayObject::ensureHasBuffer(JSContext* cx, Handle<TypedArrayObject*> tarra
 void
 TypedArrayObject::assertZeroLengthArrayData() const
 {
-    if (length() == 0 && !hasBuffer()) {
-        uint8_t* end = fixedData(TypedArrayObject::FIXED_DATA_START);
-        MOZ_ASSERT(end[0] == ZeroLengthArrayData);
+    // Check hasBuffer() before length(): length() walks through isOutOfBounds()
+    // and bufferUnshared() into the ArrayBufferObject, and this is called from
+    // finalize(), where the buffer may already have been finalized and its cell
+    // poisoned by the same sweep.  The buffer slot is only a tag check.
+    if (hasBuffer() || length() != 0) {
+        return;
     }
+
+    uint8_t* end = fixedData(TypedArrayObject::FIXED_DATA_START);
+    MOZ_ASSERT(end[0] == ZeroLengthArrayData);
 }
 #endif
 
@@ -182,7 +188,7 @@ TypedArrayObject::trace(JSTracer* trc, JSObject* objArg)
     ArrayBufferViewObject::trace(trc, objArg);
 }
 
-void
+/* static */ void
 TypedArrayObject::finalize(FreeOp* fop, JSObject* obj)
 {
     MOZ_ASSERT(!IsInsideNursery(obj));
@@ -193,11 +199,11 @@ TypedArrayObject::finalize(FreeOp* fop, JSObject* obj)
     if (!curObj->elementsRaw())
         return;
 
-    curObj->assertZeroLengthArrayData();
-
-    // Typed arrays with a buffer object do not need to be free'd
+    // Typed arrays with a buffer object do not need to be free'd.
     if (curObj->hasBuffer())
         return;
+
+    curObj->assertZeroLengthArrayData();
 
     // Free the data slot pointer if it does not point into the old JSObject.
     if (!curObj->hasInlineElements())

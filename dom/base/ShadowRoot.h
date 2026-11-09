@@ -63,6 +63,7 @@ public:
   void AdoptedStyleSheetsChanged(
       const nsTArray<RefPtr<mozilla::CSSStyleSheet>>& aOldSheets,
       const nsTArray<RefPtr<mozilla::CSSStyleSheet>>& aNewSheets);
+  void OwnerDocumentChanged(nsIDocument* aOldDocument);
   StyleSheetList* StyleSheets()
   {
     return &DocumentOrShadowRoot::EnsureDOMStyleSheets();

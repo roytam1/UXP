@@ -160,6 +160,101 @@ addLoadEvent(function() {
   document.getElementById("empty-child").appendChild(document.createTextNode("text"));
   is(color("empty-anchor"), blue, "text insertion invalidates :empty inside :has()");
 
+  // Child chains must search all branches at exactly the required depth.
+  let depthAnchor = document.createElement("div");
+  depthAnchor.innerHTML = '<div></div><div class="level"><span></span>' +
+    '<span class="leaf"><i class="too-deep"></i></span></div>';
+  document.body.appendChild(depthAnchor);
+  ok(depthAnchor.matches(":has(> .level > .leaf)"),
+     "child-chain search reaches later children and grandchildren");
+  ok(!depthAnchor.matches(":has(> .level > .too-deep)"),
+     "child-chain search does not accept deeper descendants");
+  ok(depthAnchor.matches(":has(> .level > .leaf > .too-deep)"),
+     "longer child chains reach the requested depth");
+  ok(depthAnchor.matches(":has(> .missing > .leaf, > .level > .leaf)"),
+     "a failed bounded search still tries later selector-list branches");
+  ok(depthAnchor.matches(":has(> .level .too-deep)"),
+     "mixed child/descendant chains retain the general search");
+  depthAnchor.remove();
+
+  // Repeated descendant styling shares the same anchor and :has() argument.
+  // Neither positive nor negative results may survive a subsequent flush.
+  let cacheStyle = document.createElement("style");
+  cacheStyle.textContent =
+    ".cache-anchor > .item { color: blue; }" +
+    ".cache-anchor:has(.needle) > .item { color: red; }" +
+    ".cache-anchor:has(.needle) + .cache-sibling { color: red; }" +
+    ".cache-sibling { color: blue; }";
+  document.head.appendChild(cacheStyle);
+  let cacheAnchor = document.createElement("div");
+  cacheAnchor.className = "cache-anchor";
+  for (let i = 0; i < 64; ++i) {
+    let item = document.createElement("span");
+    item.className = "item";
+    item.textContent = "text";
+    cacheAnchor.appendChild(item);
+  }
+  let cacheSibling = document.createElement("div");
+  cacheSibling.className = "cache-sibling";
+  document.body.appendChild(cacheAnchor);
+  document.body.appendChild(cacheSibling);
+  let otherCacheAnchor = document.createElement("div");
+  otherCacheAnchor.className = "cache-anchor";
+  otherCacheAnchor.innerHTML = '<span class="item">other anchor</span>';
+  document.body.appendChild(otherCacheAnchor);
+  function checkCachedColors(expected, message) {
+    for (let item of cacheAnchor.children) {
+      is(getComputedStyle(item).color, expected, message);
+    }
+    is(getComputedStyle(otherCacheAnchor.firstElementChild).color, blue,
+       "cached results are specific to an anchor: " + message);
+    is(getComputedStyle(cacheSibling).color, expected,
+       "outer sibling dependency: " + message);
+  }
+  checkCachedColors(blue, "initial negative result");
+  cacheAnchor.lastElementChild.classList.add("needle");
+  checkCachedColors(red, "negative cache is discarded after class mutation");
+  cacheAnchor.lastElementChild.classList.remove("needle");
+  checkCachedColors(blue, "positive cache is discarded after class mutation");
+
+  document.body.offsetHeight;
+  let utils = SpecialPowers.getDOMWindowUtils(window);
+  let beforeTextChange = utils.elementsRestyled;
+  cacheAnchor.firstElementChild.firstChild.data = "changed text";
+  document.body.offsetHeight;
+  ok(utils.elementsRestyled - beforeTextChange < 32,
+     "text changes do not restyle the whole plain-compound :has() anchor");
+
+  let extraText = document.createTextNode("appended");
+  beforeTextChange = utils.elementsRestyled;
+  cacheAnchor.firstElementChild.appendChild(extraText);
+  document.body.offsetHeight;
+  ok(utils.elementsRestyled - beforeTextChange < 32,
+     "text append does not restyle the whole plain-compound :has() anchor");
+  beforeTextChange = utils.elementsRestyled;
+  extraText.remove();
+  document.body.offsetHeight;
+  ok(utils.elementsRestyled - beforeTextChange < 32,
+     "text removal does not restyle the whole plain-compound :has() anchor");
+  beforeTextChange = utils.elementsRestyled;
+  cacheAnchor.firstElementChild.insertBefore(extraText,
+    cacheAnchor.firstElementChild.firstChild);
+  document.body.offsetHeight;
+  ok(utils.elementsRestyled - beforeTextChange < 32,
+     "text insertion does not restyle the whole plain-compound :has() anchor");
+
+  // Text-sensitive arguments must continue to invalidate after caching.
+  document.getElementById("empty-child").firstChild.data = "";
+  is(color("empty-anchor"), red, "empty text restores :has(> :empty)");
+  document.getElementById("empty-child").firstChild.data = "again";
+  is(color("empty-anchor"), blue, "text changes invalidate cached :empty");
+  document.getElementById("empty-child").firstChild.remove();
+  is(color("empty-anchor"), red, "text removal invalidates cached :empty");
+  cacheAnchor.remove();
+  otherCacheAnchor.remove();
+  cacheSibling.remove();
+  cacheStyle.remove();
+
   SimpleTest.finish();
 });
 </script>

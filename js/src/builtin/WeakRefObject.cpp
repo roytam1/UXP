@@ -75,6 +75,10 @@ WeakRef_deref_impl(JSContext* cx, const CallArgs& args)
         // Ensure pointer is not null.
         // During WeakRef deref, if the target was collected, it will be nullptr.
         if (target) {
+            // We are handing this object to running JS, and the persistent root
+            // below will not be scanned until the next GC's root marking, so
+            // expose it here or a mid-slice deref can hand out a white object.
+            JS::ExposeObjectToActiveJS(target);
             RootedValue kept(cx, ObjectValue(*target));
             if (!cx->runtime()->addWeakRefKeptObject(cx, kept))
                 return false;
@@ -88,6 +92,7 @@ WeakRef_deref_impl(JSContext* cx, const CallArgs& args)
         
         // Ensure pointer is not null.
         if (target) {
+            js::gc::ExposeGCThingToActiveJS(JS::GCCellPtr(target));
             RootedValue kept(cx, SymbolValue(target));
             if (!cx->runtime()->addWeakRefKeptObject(cx, kept))
                 return false;
@@ -144,16 +149,30 @@ WeakRefObject::create(JSContext* cx, HandleValue target, HandleObject proto /* =
     if (!obj)
         return nullptr;
 
+    // targetZone->weakRefs stores this as a raw pointer, so it must not move
+    // on minor GC. JSCLASS_FOREGROUND_FINALIZE without
+    // JSCLASS_SKIP_NURSERY_FINALIZE gives us that via GetInitialHeap().
+    MOZ_ASSERT(!IsInsideNursery(obj.get()));
+
     Referent* data;
     if (target.isObject())
-        data = cx->new_<Referent>(&target.toObject(), cx->options().weakRefs());
+        data = cx->new_<Referent>(&target.toObject());
     else
-        data = cx->new_<Referent>(target.toSymbol(), cx->options().weakRefs());
+        data = cx->new_<Referent>(target.toSymbol());
 
     if (!data)
         return nullptr;
 
     obj->setPrivate(data);
+
+    Zone* targetZone = data->isObject()
+                     ? data->objectTarget.unbarrieredGet()->zone()
+                     : data->symbolTarget.unbarrieredGet()->zone();
+    if (!targetZone->weakRefs.append(obj.get())) {
+        ReportOutOfMemory(cx);
+        return nullptr;
+    }
+    obj->targetZone = targetZone;
     return obj;
 }
 
@@ -210,15 +229,28 @@ WeakRefObject::deref(JSContext* cx, unsigned argc, Value* vp)
 /* static */ void
 WeakRefObject::trace(JSTracer* trc, JSObject* obj)
 {
+    // This object is registered by raw pointer in the *referent's* zone's
+    // weakRefs list. That zone may never be compacted itself, so its
+    // fixupAfterMovingGC() cannot be relied on to fix the entry, and the
+    // relocated arenas are not released until the end of this slice, so the
+    // old location is still readable here. Only relocated weakrefs can be
+    // stale, and each one is traced exactly once with its new address.
+    if (trc->runtime()->gc.isHeapCompacting()) {
+        if (Zone* targetZone = obj->as<WeakRefObject>().targetZone) {
+            for (JSObject*& ref : targetZone->weakRefs) {
+                if (js::gc::IsForwarded(ref) && js::gc::Forwarded(ref) == obj)
+                    ref = obj;
+            }
+        }
+    }
+
     if (Referent* data = GetReferent(obj)) {
         if (data->isObject()) {
             JSObject* target = data->objectTarget.unbarrieredGet();
             if (!target)
                 return;
 
-            if (!data->enabled) {
-                // Pref disabled, don't do anything.
-            } else if (IsInsideNursery(target)) {
+            if (IsInsideNursery(target)) {
                 // Weak edges must be tenured; trace strongly while referent is in the nursery.
                 TraceManuallyBarrieredEdge(trc, data->objectTarget.unsafeGet(),
                                            "WeakRef nursery referent");
@@ -228,7 +260,7 @@ WeakRefObject::trace(JSTracer* trc, JSObject* obj)
         } else {
             MOZ_ASSERT(data->isSymbol());
             JS::Symbol* target = data->symbolTarget.unbarrieredGet();
-            if (data->enabled && target)
+            if (target)
                 TraceWeakEdge(trc, &data->symbolTarget, "WeakRef symbol referent");
         }
     }
@@ -237,8 +269,27 @@ WeakRefObject::trace(JSTracer* trc, JSObject* obj)
 /* static */ void
 WeakRefObject::finalize(FreeOp* fop, JSObject* obj)
 {
-    if (Referent* data = GetReferent(obj))
+    WeakRefObject* weakRef = &obj->as<WeakRefObject>();
+
+    if (Zone* zone = weakRef->targetZone) {
+        bool found = false;
+        for (JSObject** p = zone->weakRefs.begin(); p != zone->weakRefs.end(); p++) {
+            if (*p == obj) {
+                zone->weakRefs.erase(p);
+                found = true;
+                break;
+            }
+        }
+        // If this fires, an entry went stale again and the object is about to
+        // be freed while still reachable from the zone's list.
+        MOZ_ASSERT(found);
+        weakRef->clearTargetZone();
+    }
+
+    if (Referent* data = GetReferent(obj)) {
         fop->delete_(data);
+        obj->as<WeakRefObject>().setPrivate(nullptr);
+    }
 }
 
 static const ClassOps WeakRefObjectClassOps = {
@@ -259,7 +310,8 @@ static const ClassOps WeakRefObjectClassOps = {
 const Class WeakRefObject::class_ = {
     "WeakRef",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_HAS_CACHED_PROTO(JSProto_WeakRef),
+    JSCLASS_HAS_CACHED_PROTO(JSProto_WeakRef) |
+    JSCLASS_FOREGROUND_FINALIZE,
     &WeakRefObjectClassOps
 };
 

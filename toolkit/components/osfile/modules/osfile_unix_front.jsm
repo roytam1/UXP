@@ -969,9 +969,9 @@
        let timevals = new Type.timevals.implementation();
        let timevalsPtr = timevals.address();
 
-       timevals[0].tv_sec = (accessDate / 1000) | 0;
+       timevals[0].tv_sec = Math.trunc(accessDate / 1000);
        timevals[0].tv_usec = 0;
-       timevals[1].tv_sec = (modificationDate / 1000) | 0;
+       timevals[1].tv_sec = Math.trunc(modificationDate / 1000);
        timevals[1].tv_usec = 0;
 
        return { value: timevals, ptr: timevalsPtr };

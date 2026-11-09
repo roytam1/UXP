@@ -4227,15 +4227,33 @@ CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery)
       break;
     case nsMediaFeature::eInteger:
     case nsMediaFeature::eBoolInteger:
-      rv = ParseNonNegativeInteger(expr->mValue);
-      // Enforce extra restrictions for eBoolInteger
-      if (rv &&
-          feature->mValueType == nsMediaFeature::eBoolInteger &&
-          expr->mValue.GetIntValue() > 1)
-        rv = false;
+      {
+        CSSParseResult result =
+          ParseNonNegativeVariant(expr->mValue, VARIANT_INTEGER, nullptr);
+        if (result == CSSParseResult::Error) {
+          // The failing calc() parse already consumed the closing paren, so the
+          // shared SkipUntil(')') below would skip past it.
+          REPORT_UNEXPECTED(PEMQExpectedFeatureValue);
+          return false;
+        }
+        rv = result == CSSParseResult::Ok;
+        // Enforce extra restrictions for eBoolInteger
+        if (rv &&
+            feature->mValueType == nsMediaFeature::eBoolInteger &&
+            expr->mValue.GetIntValue() > 1)
+          rv = false;
+      }
       break;
     case nsMediaFeature::eFloat:
-      rv = ParseNonNegativeNumber(expr->mValue);
+      {
+        CSSParseResult result =
+          ParseNonNegativeVariant(expr->mValue, VARIANT_NUMBER, nullptr);
+        if (result == CSSParseResult::Error) {
+          REPORT_UNEXPECTED(PEMQExpectedFeatureValue);
+          return false;
+        }
+        rv = result == CSSParseResult::Ok;
+      }
       break;
     case nsMediaFeature::eIntRatio:
       {
@@ -4850,11 +4868,22 @@ CSSParserImpl::ParseFontFeatureValueSet(nsCSSFontFeatureValuesRule
     AutoTArray<uint32_t,4>   featureSelectors;
 
     nsCSSValue intValue;
-    while (ParseNonNegativeInteger(intValue)) {
+    CSSParseResult valueResult;
+    while ((valueResult = ParseNonNegativeVariant(intValue, VARIANT_INTEGER, nullptr)) ==
+           CSSParseResult::Ok) {
       featureSelectors.AppendElement(uint32_t(intValue.GetIntValue()));
     }
 
     int32_t numValues = featureSelectors.Length();
+
+    if (valueResult == CSSParseResult::Error) {
+      REPORT_UNEXPECTED_TOKEN(PEFFVExpectedValue);
+      OUTPUT_ERROR();
+      if (!SkipDeclaration(true)) {
+        break;
+      }
+      continue;
+    }
 
     if (numValues == 0) {
       REPORT_UNEXPECTED_TOKEN(PEFFVExpectedValue);
@@ -5980,9 +6009,15 @@ CSSParserImpl::ParseCounterDescriptorValue(nsCSSCounterDesc aDescID,
 
     case eCSSCounterDesc_Pad: {
       nsCSSValue width, symbol;
-      bool hasWidth = ParseNonNegativeInteger(width);
+      CSSParseResult widthResult =
+        ParseNonNegativeVariant(width, VARIANT_INTEGER, nullptr);
+      if (widthResult == CSSParseResult::Error) {
+        return false;
+      }
+      bool hasWidth = widthResult == CSSParseResult::Ok;
       if (!ParseSingleTokenVariant(symbol, VARIANT_COUNTER_SYMBOL, nullptr) ||
-          (!hasWidth && !ParseNonNegativeInteger(width))) {
+          (!hasWidth && ParseNonNegativeVariant(width, VARIANT_INTEGER, nullptr) !=
+             CSSParseResult::Ok)) {
         return false;
       }
       aValue.SetPairValue(width, symbol);
@@ -6015,9 +6050,15 @@ CSSParserImpl::ParseCounterDescriptorValue(nsCSSCounterDesc aDescID,
       int32_t lastWeight = -1;
       for (;;) {
         nsCSSValue weight, symbol;
-        bool hasWeight = ParseNonNegativeInteger(weight);
+        CSSParseResult weightResult =
+          ParseNonNegativeVariant(weight, VARIANT_INTEGER, nullptr);
+        if (weightResult == CSSParseResult::Error) {
+          return false;
+        }
+        bool hasWeight = weightResult == CSSParseResult::Ok;
         if (!ParseSingleTokenVariant(symbol, VARIANT_COUNTER_SYMBOL, nullptr) ||
-            (!hasWeight && !ParseNonNegativeInteger(weight))) {
+            (!hasWeight && ParseNonNegativeVariant(weight, VARIANT_INTEGER, nullptr) !=
+               CSSParseResult::Ok)) {
           return false;
         }
         if (lastWeight != -1 && weight.GetIntValue() >= lastWeight) {
@@ -8245,12 +8286,18 @@ CSSParserImpl::ParseHue(float& aAngle)
   }
   UngetToken();
 
-  // <angle>
+  // <angle>, or a calc() that may reduce to a plain <number>.  A hue accepts
+  // unitless numbers as degrees, so VARIANT_NUMBER has to be in the calc mask
+  // or calc(<number>) dies in ParseCalc and surfaces as CSSParseResult::Error.
   nsCSSValue angleValue;
-  // The '0' value is handled by <number> parsing, so use VARIANT_ANGLE flag
-  // instead of VARIANT_ANGLE_OR_ZERO.
-  if (ParseSingleTokenVariant(angleValue, VARIANT_ANGLE, nullptr)) {
-    aAngle = angleValue.GetAngleValueInDegrees();
+  CSSParseResult result =
+    ParseVariant(angleValue, VARIANT_ANGLE | VARIANT_NUMBER, nullptr);
+  if (result == CSSParseResult::Ok) {
+    if (angleValue.GetUnit() == eCSSUnit_Number) {
+      aAngle = angleValue.GetFloatValue();
+    } else {
+      aAngle = angleValue.GetAngleValueInDegrees();
+    }
     return true;
   }
 
@@ -9739,13 +9786,13 @@ CSSParserImpl::ParseImageRect(nsCSSValue& aImage)
     }
 
     static const int32_t VARIANT_SIDE = VARIANT_NUMBER | VARIANT_PERCENT;
-    if (!ParseSingleTokenNonNegativeVariant(top, VARIANT_SIDE, nullptr) ||
+    if (ParseNonNegativeVariant(top, VARIANT_SIDE, nullptr) != CSSParseResult::Ok ||
         !ExpectSymbol(',', true) ||
-        !ParseSingleTokenNonNegativeVariant(right, VARIANT_SIDE, nullptr) ||
+        ParseNonNegativeVariant(right, VARIANT_SIDE, nullptr) != CSSParseResult::Ok ||
         !ExpectSymbol(',', true) ||
-        !ParseSingleTokenNonNegativeVariant(bottom, VARIANT_SIDE, nullptr) ||
+        ParseNonNegativeVariant(bottom, VARIANT_SIDE, nullptr) != CSSParseResult::Ok ||
         !ExpectSymbol(',', true) ||
-        !ParseSingleTokenNonNegativeVariant(left, VARIANT_SIDE, nullptr) ||
+        ParseNonNegativeVariant(left, VARIANT_SIDE, nullptr) != CSSParseResult::Ok ||
         !ExpectSymbol(')', true))
       break;
 
@@ -9849,12 +9896,30 @@ CSSParserImpl::ParseFlex()
 
   // Record what we just parsed as either flex-basis or flex-grow:
   bool wasFirstComponentFlexBasis = (tmpVal.GetUnit() != eCSSUnit_Number);
+  if (wasFirstComponentFlexBasis && tmpVal.IsCalcUnit()) {
+    int32_t exponent;
+    if (GetCalcLengthTypedArithmeticExponent(tmpVal, exponent) &&
+        exponent == 0) {
+      // A calc() that reduces to a plain <number> is a flex factor, not a
+      // <flex-basis>; the basis mask preserved the calc unit.
+      ReduceNumberCalcOps ops;
+      float value = mozilla::css::ComputeCalc(tmpVal, ops);
+      // ParseNonNegativeVariant cannot sign-check a calc: the unit is
+      // eCSSUnit_Calc, so none of its arms match and it returns Ok.
+      if (value < 0.0f) {
+        return false;
+      }
+      tmpVal.SetFloatValue(value, eCSSUnit_Number);
+      wasFirstComponentFlexBasis = false;
+    }
+  }
   (wasFirstComponentFlexBasis ? flexBasis : flexGrow) = tmpVal;
 
   // (b) If we didn't get flex-grow yet, parse _next_ component as flex-grow.
   bool doneParsing = false;
   if (wasFirstComponentFlexBasis) {
-    if (ParseNonNegativeNumber(tmpVal)) {
+    if (ParseNonNegativeVariant(tmpVal, VARIANT_NUMBER, nullptr) ==
+        CSSParseResult::Ok) {
       flexGrow = tmpVal;
     } else {
       // Failed to parse anything after our flex-basis -- that's fine. We can
@@ -9866,8 +9931,23 @@ CSSParserImpl::ParseFlex()
   if (!doneParsing) {
     // (c) OK -- the last thing we parsed was flex-grow, so look for a
     //     flex-shrink in the next position.
-    if (ParseNonNegativeNumber(tmpVal)) {
+    CSSParserInputState stateBeforeShrink;
+    SaveInputState(stateBeforeShrink);
+    CSSParseResult shrinkResult =
+      ParseNonNegativeVariant(tmpVal, VARIANT_NUMBER, nullptr);
+    if (shrinkResult == CSSParseResult::Ok) {
+      // Same gap: a negative calc passed the wrapper. It is already folded to
+      // a number here, since VARIANT_NUMBER is not a preserving mask. Reject
+      // outright rather than rewinding, or the basis arm below would take the
+      // dimensionless calc as a <flex-basis> and accept it.
+      if (tmpVal.GetFloatValue() < 0.0f) {
+        return false;
+      }
       flexShrink = tmpVal;
+    } else if (shrinkResult == CSSParseResult::Error) {
+      // A calc() whose contents aren't a <number>; the failed parse consumed
+      // it.  Rewind so the <flex-basis> step below can try it instead.
+      RestoreSavedInputState(stateBeforeShrink);
     }
 
     // d) Finally: If we didn't get flex-basis at the beginning, try to parse
@@ -9892,10 +9972,10 @@ CSSParserImpl::ParseFlex()
       CSSParseResult result =
         ParseNonNegativeVariant(tmpVal, flexBasisVariantMask,
                                 nsCSSProps::kFlexBasisKTable);
-      if (result == CSSParseResult::Error) {
-        return false;
-      } else if (result == CSSParseResult::Ok) {
-        flexBasis = tmpVal;
+        if (result == CSSParseResult::Error) {
+          return false;
+        } else if (result == CSSParseResult::Ok) {
+          flexBasis = tmpVal;
       }
     }
   }
@@ -11302,11 +11382,17 @@ CSSParserImpl::ParseInitialLetter()
   if (!ParseSingleTokenVariant(value, VARIANT_INHERIT | VARIANT_NORMAL,
                                nullptr)) {
     nsCSSValue first, second;
-    if (!ParseOneOrLargerNumber(first)) {
+    if (ParseOneOrLargerVariant(first, VARIANT_NUMBER, nullptr) !=
+        CSSParseResult::Ok) {
       return false;
     }
 
-    if (!ParseOneOrLargerInteger(second)) {
+    CSSParseResult secondResult =
+      ParseOneOrLargerVariant(second, VARIANT_INTEGER, nullptr);
+    if (secondResult == CSSParseResult::Error) {
+      return false;
+    }
+    if (secondResult != CSSParseResult::Ok) {
       AppendValue(eCSSProperty_initial_letter, first);
       return true;
     } else {
@@ -18717,8 +18803,8 @@ CSSParserImpl::ParseTransitionStepTimingFunctionValues(nsCSSValue& aValue)
 
   RefPtr<nsCSSValue::Array> val = nsCSSValue::Array::Create(2);
 
-  if (!ParseSingleTokenOneOrLargerVariant(val->Item(0), VARIANT_INTEGER,
-                                          nullptr)) {
+  if (ParseOneOrLargerVariant(val->Item(0), VARIANT_INTEGER, nullptr) !=
+      CSSParseResult::Ok) {
     return false;
   }
 

@@ -909,6 +909,8 @@ public:
   already_AddRefed<DOMRectList> GetClientRects();
   already_AddRefed<DOMRect> GetBoundingClientRect();
 
+  bool CheckVisibility(const CheckVisibilityOptions& aOptions);
+
   // Shadow DOM v1
   already_AddRefed<ShadowRoot> AttachShadow(const ShadowRootInit& aInit,
                                             ErrorResult& aError);
