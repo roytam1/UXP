@@ -192,10 +192,21 @@ dictionary ScrollIntoViewOptions : ScrollOptions {
   ScrollLogicalPosition inline = "nearest";
 };
 
+// https://drafts.csswg.org/cssom-view/#dictdef-checkvisibilityoptions
+dictionary CheckVisibilityOptions {
+  boolean checkOpacity = false;
+  boolean checkVisibilityCSS = false;
+  boolean contentVisibilityAuto = false;
+  boolean opacityProperty = false;
+  boolean visibilityProperty = false;
+};
+
 // http://dev.w3.org/csswg/cssom-view/#extensions-to-the-element-interface
 partial interface Element {
   DOMRectList getClientRects();
   DOMRect getBoundingClientRect();
+
+  boolean checkVisibility(optional CheckVisibilityOptions options);
 
   // scrolling
   void scrollIntoView(optional (boolean or ScrollIntoViewOptions) arg);

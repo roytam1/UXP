@@ -7084,9 +7084,16 @@ BytecodeEmitter::emitDeletePropertyInOptChain(
     MOZ_ASSERT_IF(propExpr->is<PropertyAccess>(),
                   !propExpr->as<PropertyAccess>().isSuper());
 
-    if (!emitOptionalTree(&propExpr->expression(), oe)) {
-        //            [stack] OBJ
-        return false;
+    if (propExpr->isSuper()) {
+        if (!emitGetThisForSuperBase(&propExpr->expression().as<UnaryNode>())) {
+            //            [stack] THIS
+            return false;
+        }
+    } else {
+        if (!emitOptionalTree(&propExpr->expression(), oe)) {
+            //            [stack] OBJ
+            return false;
+        }
     }
     if (propExpr->isKind(PNK_OPTDOT)) {
         if (!oe.emitJumpShortCircuit()) {
@@ -7381,7 +7388,7 @@ BytecodeEmitter::emitOptionalCalleeAndThis(
       case PNK_OPTDOT: {
         MOZ_ASSERT(emitterMode != BytecodeEmitter::SelfHosting);
         OptionalPropertyAccess* prop = &calleeNode->as<OptionalPropertyAccess>();
-        bool isSuper = false;
+        bool isSuper = prop->isSuper();
         PropOpEmitter& poe = cone.prepareForPropCallee(isSuper);
         if (!emitOptionalDotExpression(prop, poe, isSuper, oe)) {
             return false;
@@ -7401,7 +7408,7 @@ BytecodeEmitter::emitOptionalCalleeAndThis(
       case PNK_OPTELEM: {
         MOZ_ASSERT(emitterMode != BytecodeEmitter::SelfHosting);
         OptionalPropertyByValue* elem = &calleeNode->as<OptionalPropertyByValue>();
-        bool isSuper = false;
+        bool isSuper = elem->isSuper();
         ElemOpEmitter& eoe = cone.prepareForElemCallee(isSuper);
         if (!emitOptionalElemExpression(elem, eoe, isSuper, oe)) {
             return false;
@@ -7431,8 +7438,15 @@ BytecodeEmitter::emitOptionalCalleeAndThis(
       case PNK_OPTCHAIN: {
         return emitCalleeAndThisForOptionalChain(&calleeNode->as<UnaryNode>(), callNode, cone);
       }
+      case PNK_SUPERBASE: {
+        MOZ_ASSERT(callNode->isKind(PNK_OPTCALL));
+        MOZ_ASSERT(parser->handler.isSuperBase(calleeNode));
+        if (!cone.emitSuperCallee()) {
+            return false;
+        }
+        break;
+      }
       default: {
-        MOZ_RELEASE_ASSERT(calleeNode->getKind() != PNK_SUPERBASE);
         if (!cone.prepareForOtherCallee()) {
             return false;
         }
@@ -9725,9 +9739,11 @@ BytecodeEmitter::emitOptionalTree(
     switch (kind) {
       case PNK_OPTDOT: {
         OptionalPropertyAccess* prop = &pn->as<OptionalPropertyAccess>();
-        bool isSuper = false;
+        bool isSuper = prop->isSuper();
         PropOpEmitter poe(this, PropOpEmitter::Kind::Get,
-                          PropOpEmitter::ObjKind::Other);
+                          isSuper ? PropOpEmitter::ObjKind::Super
+                                  : PropOpEmitter::ObjKind::Other);
+
         if (!emitOptionalDotExpression(prop, poe, isSuper, oe))
             return false;
         break;
@@ -9744,9 +9760,10 @@ BytecodeEmitter::emitOptionalTree(
       }
       case PNK_OPTELEM: {
         OptionalPropertyByValue* elem = &pn->as<OptionalPropertyByValue>();
-        bool isSuper = false;
+        bool isSuper = elem->isSuper();
         ElemOpEmitter eoe(this, ElemOpEmitter::Kind::Get,
-                          ElemOpEmitter::ObjKind::Other);
+                          isSuper ? ElemOpEmitter::ObjKind::Super
+                                  : ElemOpEmitter::ObjKind::Other);
         if (!emitOptionalElemExpression(elem, eoe, isSuper, oe))
             return false;
         break;
@@ -9789,18 +9806,24 @@ BytecodeEmitter::emitOptionalTree(
             kind == PNK_CLASS ||
             kind == PNK_REGEXP ||
             kind == PNK_TEMPLATE_STRING ||
+            kind == PNK_TEMPLATE_STRING_LIST ||
             kind == PNK_RAW_UNDEFINED ||
+            kind == PNK_GENEXP ||
+            kind == PNK_ARRAYCOMP ||
             pn->isInParens();
 
         // https://tc39.es/ecma262/#sec-left-hand-side-expressions
         bool isMemberExpression = isPrimaryExpression ||
                                   kind == PNK_TAGGED_TEMPLATE ||
                                   kind == PNK_NEW ||
-                                  kind == PNK_NEWTARGET;
-                                  //kind == ParseNodeKind::ImportMetaExpr;
+                                  kind == PNK_NEWTARGET ||
+                                  kind == PNK_IMPORT_META ||
+                                  kind == PNK_OPTCHAIN;
 
-        bool isCallExpression = kind == PNK_SETTHIS;
-                                //kind == ParseNodeKind::CallImportExpr;
+        // https://tc39.es/ecma262/#sec-call-expression
+        bool isCallExpression = kind == PNK_SETTHIS ||
+                                kind == PNK_SUPERCALL ||
+                                kind == PNK_CALL_IMPORT;
 
         MOZ_ASSERT(isMemberExpression || isCallExpression,
                    "Unknown ParseNodeKind for OptionalChain");
@@ -9897,7 +9920,6 @@ BytecodeEmitter::emitOptionalDotExpression(
     }
 
     if (prop->isKind(PNK_OPTDOT)) {
-        MOZ_ASSERT(!isSuper);
         if (!oe.emitJumpShortCircuit()) {
             //            [stack] # if Jump
             //            [stack] UNDEFINED-OR-NULL
@@ -9940,7 +9962,6 @@ BytecodeEmitter::emitOptionalElemExpression(
     }
 
     if (elem->isKind(PNK_OPTELEM)) {
-        MOZ_ASSERT(!isSuper);
         if (!oe.emitJumpShortCircuit()) {
             //            [stack] # if Jump
             //            [stack] UNDEFINED-OR-NULL

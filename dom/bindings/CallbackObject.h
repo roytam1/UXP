@@ -179,6 +179,19 @@ private:
       mIncumbentGlobal = aIncumbentGlobal;
       mIncumbentJSGlobal = aIncumbentGlobal->GetGlobalJSObject();
     }
+
+    // The post-barrier in Heap::operator= only handles nursery edges. If we are
+    // created during an incremental marking slice and our owner is already
+    // black, the CC is entitled to skip the owner and TraceBlackJS has already
+    // run, so nothing will ever trace these members this cycle and they get
+    // swept. Blacken them here instead.
+    mCallback.exposeToActiveJS();
+    if (mCreationStack) {
+      mCreationStack.exposeToActiveJS();
+    }
+    if (mIncumbentJSGlobal) {
+      mIncumbentJSGlobal.exposeToActiveJS();
+    }
   }
 
   inline void Init(JSObject* aCallback, JSObject* aCreationStack,

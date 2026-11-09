@@ -59,6 +59,13 @@ CallbackObject::HoldJSObjectsIfMoreThanOneOwner()
 {
   MOZ_ASSERT(mRefCnt.get() > 0);
   if (mRefCnt.get() > 1) {
+    mCallback.exposeToActiveJS();
+    if (mCreationStack) {
+      mCreationStack.exposeToActiveJS();
+    }
+    if (mIncumbentJSGlobal) {
+      mIncumbentJSGlobal.exposeToActiveJS();
+    }
     mozilla::HoldJSObjects(this);
   } else {
     // We can just forget all our stuff.

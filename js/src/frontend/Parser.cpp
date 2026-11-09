@@ -10276,7 +10276,6 @@ Parser<ParseHandler>::memberPropertyAccess(
     if (!name)
         return null();    
     if (optionalKind == OptionalKind::Optional) {
-        MOZ_ASSERT(!handler.isSuperBase(lhs));
         return handler.newOptionalPropertyAccess(lhs, name);
     }
     return handler.newPropertyAccess(lhs, name);
@@ -10304,7 +10303,6 @@ Parser<ParseHandler>::memberElemAccess(
     }
 
     if (optionalKind == OptionalKind::Optional) {
-        MOZ_ASSERT(!handler.isSuperBase(lhs));
         return handler.newOptionalPropertyByValue(lhs, propExpr, pos().end);
     }
     return handler.newPropertyByValue(lhs, propExpr, pos().end);

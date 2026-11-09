@@ -537,6 +537,12 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
     if (elem) {
       elem->NodeInfoChanged();
     }
+    // A ShadowRoot is not an element, so NodeInfoChanged() isn't reached for
+    // it even though we just swapped its node document.  Let it fix up the
+    // constructed sheets it has adopted.
+    if (ShadowRoot* shadow = ShadowRoot::FromNode(aNode)) {
+      shadow->OwnerDocumentChanged(oldDoc);
+    }
 
     nsIDocument* newDoc = aNode->OwnerDoc();
     if (newDoc) {

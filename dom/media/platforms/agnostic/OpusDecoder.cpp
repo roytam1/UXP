@@ -88,7 +88,6 @@ OpusDataDecoder::Init()
   if (codecDelay != FramesToUsecs(mOpusParser->mPreSkip,
                                   mOpusParser->mRate).value()) {
     NS_WARNING("Invalid Opus header: CodecDelay and pre-skip do not match!");
-    return InitPromise::CreateAndReject(NS_ERROR_DOM_MEDIA_FATAL_ERR, __func__);
   }
 
   if (mInfo.mRate != (uint32_t)mOpusParser->mRate) {

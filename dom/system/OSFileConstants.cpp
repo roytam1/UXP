@@ -655,6 +655,9 @@ static const dom::ConstantSpec gLibcProperties[] =
   { "OSFILE_SIZEOF_TIMEVAL", JS::Int32Value(sizeof (struct timeval)) },
   { "OSFILE_OFFSETOF_TIMEVAL_TV_SEC", JS::Int32Value(offsetof (struct timeval, tv_sec)) },
   { "OSFILE_OFFSETOF_TIMEVAL_TV_USEC", JS::Int32Value(offsetof (struct timeval, tv_usec)) },
+  // The size of field |tv_usec|. It is not always a |long|, e.g. glibc uses
+  // a 64-bit field on 32-bit platforms when building with |_TIME_BITS=64|.
+  { "OSFILE_SIZEOF_TIMEVAL_TV_USEC", JS::Int32Value(sizeof (timeval::tv_usec)) },
 
 #if defined(DT_UNKNOWN)
   // Position of field |d_type| in |dirent|
@@ -722,6 +725,24 @@ static const dom::ConstantSpec gLibcProperties[] =
 #if defined(_STAT_VER)
   INT_CONSTANT(_STAT_VER),
 #endif // defined(_STAT_VER)
+
+  // With glibc, the C headers redirect some functions to other variants that
+  // match the data structures defined above:
+  // - with |_FILE_OFFSET_BITS=64|, functions that use file offsets are
+  //   redirected to their large file variants (e.g. |readdir| to |readdir64|);
+  // - with |_TIME_BITS=64| on 32-bit platforms, functions that use |time_t|
+  //   are redirected to their 64-bit time variants (e.g. |stat| to
+  //   |__stat64_time64|). Before glibc 2.39, the macro for this case was
+  //   |__USE_TIME_BITS64|.
+  // OS.File needs to use the same functions.
+#if defined(__GLIBC__)
+#if defined(__USE_FILE_OFFSET64)
+  { "__USE_FILE_OFFSET64", JS::Int32Value(1) },
+#endif // defined(__USE_FILE_OFFSET64)
+#if defined(__USE_TIME64_REDIRECTS) || (defined(__USE_TIME_BITS64) && __TIMESIZE == 32)
+  { "__USE_TIME64_REDIRECTS", JS::Int32Value(1) },
+#endif // defined(__USE_TIME64_REDIRECTS) || (defined(__USE_TIME_BITS64) && __TIMESIZE == 32)
+#endif // defined(__GLIBC__)
 
   PROP_END
 };

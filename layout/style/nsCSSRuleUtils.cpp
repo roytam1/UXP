@@ -10,6 +10,7 @@
 #include "mozilla/dom/ShadowRoot.h"
 #include "nsIMozBrowserFrame.h"
 #include "nsGkAtoms.h"
+#include "mozilla/HashFunctions.h"
 #include "nsRuleWalker.h"
 #include "nsStyleUtil.h"
 #include "StyleRule.h"
@@ -1947,11 +1948,13 @@ bool
 HasSelectorDependency::MightDependOnChange(
   Element* aAnchor, nsINode* aNode, EventStates aStateMask,
   nsIAtom* aAttribute, const nsAttrValue* aNewClasses,
-  bool aCompareClasses, bool aSibling, bool aNodeIsFollowingSibling) const
+  bool aCompareClasses, bool aSibling, bool aNodeIsFollowingSibling,
+  bool aIsTextChange) const
 {
   bool contentChange = !aAttribute && aStateMask.IsEmpty();
   for (const auto& branch : mBranches) {
-    if (branch.IsSibling() != aSibling ||
+    if ((aIsTextChange && branch.mIsLocal) ||
+        branch.IsSibling() != aSibling ||
         (!aStateMask.IsEmpty() &&
          !branch.mStates.HasAtLeastOneOfStates(aStateMask)) ||
         (aAttribute && !branch.MightDependOnAttribute(
@@ -1994,11 +1997,12 @@ bool
 HasSelectorDependency::MightAffectSiblingAnchor(
   nsINode* aParent, nsINode* aNode, EventStates aStateMask,
   nsIAtom* aAttribute, const nsAttrValue* aNewClasses,
-  bool aCompareClasses) const
+  bool aCompareClasses, bool aIsTextChange) const
 {
   bool contentChange = !aAttribute && aStateMask.IsEmpty();
   for (const auto& branch : mSiblingBranches) {
-    if (!branch.IsSibling() ||
+    if ((aIsTextChange && branch.mIsLocal) ||
+        !branch.IsSibling() ||
         (branch.mIsLocal && (contentChange ? aNode != aParent
                             : aNode->GetParentNode() != aParent)) ||
         (!aStateMask.IsEmpty() &&
@@ -2034,35 +2038,41 @@ EnsureHasSelectorDependency(nsINode* aNode)
   return dependency;
 }
 
-/* static */ bool
-nsCSSRuleUtils::RelativeSelectorListMatches(
-  Element* aAnchor,
-  nsCSSSelectorList* aList,
-  TreeMatchContext& aTreeMatchContext)
+// For a chain of child combinators, only the final depth can match. Do not
+// descend into deeper subtrees, even when the rightmost compound is absent.
+static bool
+MatchesAtDepth(Element* aAnchor, uint32_t aDepth,
+               nsCSSSelectorList* aRelative, TreeMatchContext& aContext)
 {
-  MOZ_ASSERT(aAnchor);
-  MOZ_ASSERT(aList);
-
-  if (aTreeMatchContext.mForStyling) {
-    if (!aList->mHasSelectorData) {
-      aList->mHasSelectorData = new nsCSSHasSelectorData(aList);
-    }
-    const auto& data = aList->mHasSelectorData;
-    // The document marker makes mutations in documents without styled :has()
-    // selectors a constant-time no-op. All markers use the same property type.
-    EnsureHasSelectorDependency(aAnchor->OwnerDoc());
-    if (auto* dependency = EnsureHasSelectorDependency(aAnchor)) {
-      dependency->AddSelectorData(data, false);
-      dependency->mRestyleLaterSiblings |=
-        aTreeMatchContext.mHasSelectorLaterSiblings;
-    }
-    if (data->mHasSibling && aAnchor->GetParent()) {
-      if (auto* dependency = EnsureHasSelectorDependency(aAnchor->GetParent())) {
-        dependency->AddSelectorData(data, true);
+  Element* candidate = aAnchor->GetFirstElementChild();
+  uint32_t depth = 1;
+  while (candidate) {
+    if (depth == aDepth) {
+      if (matchesCandidate(candidate, aRelative, aContext)) {
+        return true;
       }
+    } else if (Element* child = candidate->GetFirstElementChild()) {
+      candidate = child;
+      ++depth;
+      continue;
     }
+    while (!candidate->GetNextElementSibling()) {
+      candidate = candidate->GetParentElement();
+      if (candidate == aAnchor) {
+        return false;
+      }
+      --depth;
+    }
+    candidate = candidate->GetNextElementSibling();
   }
+  return false;
+}
 
+static bool
+RelativeSelectorListMatchesUncached(Element* aAnchor,
+                                    nsCSSSelectorList* aList,
+                                    TreeMatchContext& aTreeMatchContext)
+{
   AutoRestore<Element*> relativeAnchorRestorer(
     aTreeMatchContext.mRelativeSelectorAnchor);
   aTreeMatchContext.mRelativeSelectorAnchor = aAnchor;
@@ -2081,6 +2091,23 @@ nsCSSRuleUtils::RelativeSelectorListMatches(
       leftmost = leftmost->mNext;
     }
     MOZ_ASSERT(leftmost->mNext);
+
+    uint32_t childDepth = 0;
+    bool onlyChildren = true;
+    for (nsCSSSelector* selector = relative->mSelectors->mNext;
+         selector; selector = selector->mNext) {
+      if (selector->mOperator != '>') {
+        onlyChildren = false;
+        break;
+      }
+      ++childDepth;
+    }
+    if (onlyChildren) {
+      if (MatchesAtDepth(aAnchor, childDepth, relative, aTreeMatchContext)) {
+        return true;
+      }
+      continue;
+    }
 
     // A single compound cannot move beyond the leading relationship.
     // Avoid scanning descendants for >, and all following subtrees for +/~.
@@ -2146,6 +2173,78 @@ nsCSSRuleUtils::RelativeSelectorListMatches(
   }
 
   return false;
+}
+
+/* static */ bool
+nsCSSRuleUtils::RelativeSelectorListMatches(
+  Element* aAnchor,
+  nsCSSSelectorList* aList,
+  TreeMatchContext& aTreeMatchContext)
+{
+  MOZ_ASSERT(aAnchor);
+  MOZ_ASSERT(aList);
+
+  if (aTreeMatchContext.mForStyling) {
+    if (!aList->mHasSelectorData) {
+      aList->mHasSelectorData = new nsCSSHasSelectorData(aList);
+    }
+    const auto& data = aList->mHasSelectorData;
+    // The document marker makes mutations in documents without styled :has()
+    // selectors a constant-time no-op. All markers use the same property type.
+    EnsureHasSelectorDependency(aAnchor->OwnerDoc());
+    if (auto* dependency = EnsureHasSelectorDependency(aAnchor)) {
+      dependency->AddSelectorData(data, false);
+      dependency->mRestyleLaterSiblings |=
+        aTreeMatchContext.mHasSelectorLaterSiblings;
+    }
+    if (data->mHasSibling && aAnchor->GetParent()) {
+      if (auto* dependency = EnsureHasSelectorDependency(aAnchor->GetParent())) {
+        dependency->AddSelectorData(data, true);
+      }
+    }
+  }
+
+  // Register dependencies above even on a hit: the same anchor can be
+  // reached through an outer sibling combinator later in this traversal.
+  bool canCache = aTreeMatchContext.mForStyling &&
+    !aTreeMatchContext.mForScopedStyle &&
+    !aTreeMatchContext.HasSpecifiedScope() &&
+    !aTreeMatchContext.mScopedRoot &&
+    !aTreeMatchContext.mForAssignedSlot &&
+    !aTreeMatchContext.mRestrictToSlottedPseudo &&
+    !aTreeMatchContext.mOnlyMatchHostPseudo &&
+    aTreeMatchContext.mStyleScopes.IsEmpty() &&
+    aTreeMatchContext.mShadowHosts.IsEmpty() &&
+    !aAnchor->IsInShadowTree();
+  if (!canCache) {
+    return RelativeSelectorListMatchesUncached(aAnchor, aList, aTreeMatchContext);
+  }
+
+  // Most traversals only encounter one anchor/argument pair. Keep that
+  // result inline so short traversals do not allocate a table on every call.
+  auto& last = aTreeMatchContext.mLastHasMatch;
+  if (last.mAnchor == aAnchor && last.mSelector == aList) {
+    return last.mMatches;
+  }
+  auto* entry = &last;
+  if (last.mAnchor) {
+    auto& cache = aTreeMatchContext.mHasMatchCache;
+    const uint32_t cacheSize = 256;
+    if (cache.IsEmpty()) {
+      cache.SetLength(cacheSize);
+      cache[HashGeneric(last.mAnchor, last.mSelector) % cacheSize] = last;
+    }
+    entry = &cache[HashGeneric(aAnchor, aList) % cacheSize];
+  }
+  if (entry->mAnchor != aAnchor || entry->mSelector != aList) {
+    bool matches = RelativeSelectorListMatchesUncached(aAnchor, aList,
+                                                      aTreeMatchContext);
+    entry->mAnchor = aAnchor;
+    entry->mSelector = aList;
+    entry->mMatches = matches;
+  }
+  last = *entry;
+  return last.mMatches;
 }
 
 // TreeMatchContext and AncestorFilter out of line methods

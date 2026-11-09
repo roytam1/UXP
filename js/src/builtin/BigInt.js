@@ -20,10 +20,8 @@ function BigInt_toLocaleString() {
     if (locales === undefined && options === undefined) {
         // This cache only optimizes when no explicit locales and options
         // arguments were supplied.
-        if (!IsRuntimeDefaultLocale(numberFormatCache.runtimeDefaultLocale)) {
+        if (numberFormatCache.numberFormat === undefined)
             numberFormatCache.numberFormat = intl_NumberFormat(locales, options);
-            numberFormatCache.runtimeDefaultLocale = RuntimeDefaultLocale();
-        }
         numberFormat = numberFormatCache.numberFormat;
     } else {
         numberFormat = intl_NumberFormat(locales, options);

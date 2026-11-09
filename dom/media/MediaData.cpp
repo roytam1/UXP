@@ -7,6 +7,7 @@
 #include "MediaInfo.h"
 #include "VideoUtils.h"
 #include "ImageContainer.h"
+#include "gfxASurface.h"
 #include "mozilla/layers/SharedRGBImage.h"
 #include "YCbCrUtils.h"
 #include "mozilla/layers/ImageBridgeChild.h"
@@ -319,13 +320,38 @@ VideoData::CreateAndCopyData(const VideoInfo& aInfo,
   // Currently our decoder only knows how to output to ImageFormat::PLANAR_YCBCR
   // format.
 #if XP_WIN
+  PlanarYCbCrData data = ConstructPlanarYCbCrData(aInfo, aBuffer, aPicture);
+  if (data.mYUVColorSpace == YUVColorSpace::IDENTITY) {
+    // Hardware acceleration in Windows does not play well with GBR-planar, so
+    // convert from YUV to BGR format on the software side. See Issue #3211
+    RefPtr<layers::SharedRGBImage> videoImage =
+      aContainer->CreateSharedRGBImage();
+    v->mImage = videoImage;
+
+    if (!v->mImage) {
+      return nullptr;
+    }
+    SurfaceFormat format = SurfaceFormat::B8G8R8X8;
+    if (!videoImage->Allocate(IntSize(aBuffer.mPlanes[0].mWidth,
+                                      aBuffer.mPlanes[0].mHeight),
+                              format)) {
+      return nullptr;
+    }
+    uint8_t* rgb_buffer = videoImage->GetBuffer();
+    IntSize size = videoImage->GetSize();
+
+    ConvertYCbCrToRGB(data, format, size, rgb_buffer,
+                      gfxASurface::FormatStrideForWidth(format, size.width));
+
+    return v.forget();
+  }
+
   // We disable this code path on Windows 7 due to intermittent crashes with old drivers.
   // See Mozilla bug 1405110.
   if (IsWin8OrLater() && !XRE_IsParentProcess() &&
       aAllocator && aAllocator->GetCompositorBackendType()
                     == layers::LayersBackend::LAYERS_D3D11) {
     RefPtr<layers::D3D11YCbCrImage> d3d11Image = new layers::D3D11YCbCrImage();
-    PlanarYCbCrData data = ConstructPlanarYCbCrData(aInfo, aBuffer, aPicture);
     if (d3d11Image->SetData(layers::ImageBridgeChild::GetSingleton()
                             ? layers::ImageBridgeChild::GetSingleton().get()
                             : aAllocator,
