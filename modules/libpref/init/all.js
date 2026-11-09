@@ -2713,6 +2713,9 @@ pref("layout.css.resizeobserver.enabled", true);
 // Is support for cascade layers enabled?
 pref("layout.css.cascade-layers.enabled", true);
 
+// Is support for containers queries enabled?
+pref("layout.css.container-queries.enabled", true);
+
 // Is support for basic CSS nesting lowering enabled?
 pref("layout.css.nesting.enabled", true);
 
