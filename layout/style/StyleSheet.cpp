@@ -271,7 +271,7 @@ StyleSheet::AddAdopter(nsIDocument* aDocument)
 {
   MOZ_ASSERT(IsConstructed());
   MOZ_ASSERT(aDocument);
-  MOZ_ASSERT(ConstructorDocument() == aDocument);
+  MOZ_ASSERT_IF(ConstructorDocument(), ConstructorDocument() == aDocument);
 
   if (mAdoptionCount++ == 0) {
     SetAssociatedDocument(aDocument, NotOwnedByDocument);
@@ -292,7 +292,7 @@ StyleSheet::RemoveAdopter(nsIDocument* aDocument)
 {
   MOZ_ASSERT(IsConstructed());
   MOZ_ASSERT(aDocument);
-  MOZ_ASSERT(ConstructorDocument() == aDocument);
+  MOZ_ASSERT_IF(ConstructorDocument(), ConstructorDocument() == aDocument);
   MOZ_ASSERT(mAdoptionCount > 0);
 
   if (mAdoptionCount == 0) {

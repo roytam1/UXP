@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test for Element.checkVisibility()</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<div id="visible">visible</div>
+<div id="dn" style="display:none"><span id="dnchild">x</span></div>
+<div id="dc" style="display:contents"><span id="dcchild">x</span></div>
+<div id="op0" style="opacity:0"><span id="op0child">x</span></div>
+<div id="ophalf" style="opacity:0.5">x</div>
+<div id="vh" style="visibility:hidden"><span id="vhchild">x</span>
+  <span id="vhvisible" style="visibility:visible">x</span></div>
+<div id="vc" style="visibility:collapse">x</div>
+<pre id="test">
+<script>
+function $(id) { return document.getElementById(id); }
+
+ok("checkVisibility" in Element.prototype, "checkVisibility exists");
+
+ok($("visible").checkVisibility(), "plain element is visible");
+ok(!$("dn").checkVisibility(), "display:none");
+ok(!$("dnchild").checkVisibility(), "child of display:none");
+ok(!$("dc").checkVisibility(), "display:contents has no box");
+ok($("dcchild").checkVisibility(), "child of display:contents");
+ok(!document.createElement("div").checkVisibility(), "disconnected element");
+
+ok($("op0").checkVisibility(), "opacity:0 ignored by default");
+ok(!$("op0").checkVisibility({checkOpacity: true}), "opacity:0 checkOpacity");
+ok(!$("op0").checkVisibility({opacityProperty: true}), "opacity:0 opacityProperty");
+ok(!$("op0child").checkVisibility({checkOpacity: true}), "child of opacity:0");
+ok($("ophalf").checkVisibility({checkOpacity: true}), "opacity:0.5 visible");
+
+ok($("vh").checkVisibility(), "visibility:hidden ignored by default");
+ok(!$("vh").checkVisibility({checkVisibilityCSS: true}), "visibility:hidden checkVisibilityCSS");
+ok(!$("vh").checkVisibility({visibilityProperty: true}), "visibility:hidden visibilityProperty");
+ok(!$("vhchild").checkVisibility({checkVisibilityCSS: true}), "inherits visibility:hidden");
+ok($("vhvisible").checkVisibility({checkVisibilityCSS: true}), "visibility:visible inside hidden");
+ok(!$("vc").checkVisibility({checkVisibilityCSS: true}), "visibility:collapse");
+
+ok($("visible").checkVisibility({contentVisibilityAuto: true}), "contentVisibilityAuto accepted");
+</script>
+</pre>
+</body>
+</html>

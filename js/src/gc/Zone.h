@@ -326,6 +326,14 @@ struct Zone : public JS::shadow::Zone,
     using WeakEdges = js::Vector<js::gc::TenuredCell**, 0, js::SystemAllocPolicy>;
     WeakEdges gcWeakRefs;
 
+    // WeakRef objects whose referent lives in this zone. Referents are fixed at
+    // construction, so this list is target-side: a GC of this zone finds the
+    // weak refs that need tracing without knowing which zone owns them.
+    using WeakRefVector = js::Vector<JSObject*, 0, js::SystemAllocPolicy>;
+    WeakRefVector weakRefs;
+
+    void traceWeakRefs(JSTracer* trc);
+
     // FinalizationRegistry objects with weakly-held target cells in this zone.
     using FinalizationRegistryVector = js::Vector<js::WeakRef<JSObject*>, 0, js::SystemAllocPolicy>;
     FinalizationRegistryVector finalizationRegistries;

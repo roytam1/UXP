@@ -495,7 +495,7 @@ nsRange::CharacterDataChanged(nsIDocument* aDocument,
 #ifdef DEBUG
     if (mStartOffsetWasIncremented || mEndOffsetWasIncremented) {
       mAssertNextInsertOrAppendIndex =
-        (mStartOffsetWasIncremented ? mStartOffset : mEndOffset) - 1;
+        mStartOffsetWasIncremented ? mStartOffset : mEndOffset;
       mAssertNextInsertOrAppendNode = aInfo->mDetails->mNextSibling;
     }
 #endif

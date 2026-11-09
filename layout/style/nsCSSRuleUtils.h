@@ -71,12 +71,14 @@ struct nsCSSRuleUtils
                              const nsAttrValue* aNewClasses,
                              bool aCompareClasses,
                              bool aSibling,
-                             bool aNodeIsFollowingSibling = false) const;
+                             bool aNodeIsFollowingSibling = false,
+                             bool aIsTextChange = false) const;
     bool MightAffectSiblingAnchor(nsINode* aParent, nsINode* aNode,
                                   mozilla::EventStates aStateMask,
                                   nsIAtom* aAttribute,
                                   const nsAttrValue* aNewClasses,
-                                  bool aCompareClasses) const;
+                                  bool aCompareClasses,
+                                  bool aIsTextChange = false) const;
   };
 
   static void Startup();

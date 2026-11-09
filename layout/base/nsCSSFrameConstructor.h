@@ -819,7 +819,14 @@ private:
           mUndisplayedItems[0].mStyleContext->PresContext()->FrameManager();
         for (uint32_t i = 0; i < mUndisplayedItems.Length(); ++i) {
           UndisplayedItem& item = mUndisplayedItems[i];
-          mgr->SetUndisplayedContent(item.mContent, item.mStyleContext);
+          nsStyleContext* old = mgr->GetUndisplayedContent(item.mContent);
+          if (old) {
+            if (old != item.mStyleContext) {
+              mgr->ChangeUndisplayedContent(item.mContent, item.mStyleContext);
+            }
+          } else {
+            mgr->SetUndisplayedContent(item.mContent, item.mStyleContext);
+          }
         }
       }
     }

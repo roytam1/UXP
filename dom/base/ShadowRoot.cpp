@@ -372,6 +372,24 @@ ShadowRoot::AdoptedStyleSheetsChanged(
 }
 
 void
+ShadowRoot::OwnerDocumentChanged(nsIDocument* aOldDocument)
+{
+  if (aOldDocument == OwnerDoc()) {
+    return;
+  }
+
+  // Deliberately use the nsIDocument overloads for both directions: the shadow
+  // root itself stays registered in the sheets' mAdopterShadowRoots exactly
+  // once, only the document the adoption count is accounted against changes.
+  // When the count passes through zero the sheet drops its associated document
+  // and re-associates with ours.
+  for (CSSStyleSheet* sheet : mAdoptedStyleSheets) {
+    sheet->RemoveAdopter(aOldDocument);
+    sheet->AddAdopter(OwnerDoc());
+  }
+}
+
+void
 ShadowRoot::AddToIdTable(Element* aElement, nsIAtom* aId)
 {
   nsIdentifierMapEntry* entry = mIdentifierMap.PutEntry(aId);

@@ -262,60 +262,67 @@ nsFrameManager::ClearUndisplayedContentIn(nsIContent* aContent,
   static int i = 0;
   printf("ClearUndisplayedContent(%d): content=%p parent=%p --> ", i++, (void *)aContent, (void*)aParentContent);
 #endif
-  
+
   if (!mUndisplayedMap) {
     return;
   }
 
-  // This function is an entry point into UndisplayedMap handling code, so we
-  // must call GetApplicableParent so the parent we pass around is correct.
-  aParentContent = UndisplayedMap::GetApplicableParent(aParentContent);
+  // GetApplicableParent only normalizes <xbl:children>.  The lookup in
+  // GetStyleContextInMap goes through ParentForUndisplayedMap, which crosses
+  // shadow roots, and SetStyleContextInMap sets the bit on that same node.  A
+  // child of a shadow root therefore has its entry keyed on the host element
+  // while aParentContent is the ShadowRoot itself - not an element, never the
+  // bit's owner, never the bucket key.  Derive the key the way the lookup does.
+  aParentContent = ParentForUndisplayedMap(aContent);
 
-  if (aParentContent && 
+  if (aParentContent &&
       !aParentContent->MayHaveChildrenWithLayoutBoxesDisabled()) {
     MOZ_ASSERT(!mUndisplayedMap->GetFirstNode(aParentContent),
                "MayHaveChildrenWithLayoutBoxesDisabled bit out of sync - "
-               "may fail to removenode from mUndisplayedMap");
+               "may fail to remove node from mUndisplayedMap");
     return;
   }
 
+  // The bucket can hold more than one entry for aContent (duplicate
+  // registration), so drain them all instead of stopping at the first.
+  bool removed = false;
+  bool haveOtherUndisplayedChild = false;
   UndisplayedNode* node = mUndisplayedMap->GetFirstNode(aParentContent);
-
-  const bool haveOneDisplayNoneChild = node && !node->getNext();
-
-  for (; node; node = node->getNext()) {  
+  while (node) {
+    UndisplayedNode* next = node->getNext();
     if (node->mContent == aContent) {
       mUndisplayedMap->RemoveNodeFor(aParentContent, node);
-
-#ifdef DEBUG_UNDISPLAYED_MAP
-      printf( "REMOVED!\n");
-#endif
-      // make sure that there are no more entries for the same content
-      MOZ_ASSERT(!GetUndisplayedContent(aContent),
-                 "Found more undisplayed content data after removal");
-
-      if (haveOneDisplayNoneChild) {
-        // There are no more children of aParentContent in mUndisplayedMap.
-        MOZ_ASSERT(!mUndisplayedMap->GetFirstNode(aParentContent),
-                   "Bad UnsetMayHaveChildrenWithLayoutBoxesDisabled call");
-        // If we also know that none of its children are in mDisplayContentsMap
-        // then we can call UnsetMayHaveChildrenWithLayoutBoxesDisabled. We
-        // don't want to check mDisplayContentsMap though, since that involves 
-        // a hash table lookup in relatively hot code. Still, we know there are
-        // no chlildren in mDisplayContentsMap if the map is empty, so we do
-        // check for that.
-        if (aParentContent && !mDisplayContentsMap) {
-          aParentContent->UnsetMayHaveChildrenWithLayoutBoxesDisabled();
-        }
-      }
-
-      return;
+      removed = true;
+    } else {
+      haveOtherUndisplayedChild = true;
     }
+    node = next;
+  }
+
+  if (!removed) {
+#ifdef DEBUG_UNDISPLAYED_MAP
+    printf("not found.\n");
+#endif
+    return;
   }
 
 #ifdef DEBUG_UNDISPLAYED_MAP
-  printf( "not found.\n");
+  printf("REMOVED!\n");
 #endif
+
+  MOZ_ASSERT(!GetUndisplayedContent(aContent),
+             "Found more undisplayed content data after removal");
+
+  if (aParentContent && !haveOtherUndisplayedChild) {
+    // No children of aParentContent remain in mUndisplayedMap.  The bit can
+    // only come off if none are in mDisplayContentsMap either, and an empty
+    // map implies that without a lookup.
+    MOZ_ASSERT(!mUndisplayedMap->GetFirstNode(aParentContent),
+               "Bad UnsetMayHaveChildrenWithLayoutBoxesDisabled call");
+    if (!mDisplayContentsMap) {
+      aParentContent->UnsetMayHaveChildrenWithLayoutBoxesDisabled();
+    }
+  }
 }
 
 void
