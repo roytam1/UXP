@@ -62,6 +62,7 @@ JSCompartment::JSCompartment(Zone* zone, const JS::CompartmentOptions& options =
     allocationMetadataBuilder(nullptr),
     lastAnimationTime(0),
     regExps(zone),
+    arraySpeciesLookup(),
     globalWriteBarriered(0),
     detachedTypedObjects(0),
     objectMetadataState(ImmediateMetadata()),
@@ -963,6 +964,7 @@ JSCompartment::purge()
 {
     dtoaCache.purge();
     promiseLookup.purge();
+    arraySpeciesLookup.purge();
     lastCachedNativeIterator = nullptr;
 }
 

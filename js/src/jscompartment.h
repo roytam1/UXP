@@ -447,6 +447,8 @@ struct JSCompartment
 
     js::RegExpCompartment        regExps;
 
+    js::ArraySpeciesLookup       arraySpeciesLookup;
+
     /*
      * For generational GC, record whether a write barrier has added this
      * compartment's global to the store buffer since the last minor GC.
