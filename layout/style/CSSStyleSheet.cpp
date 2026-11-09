@@ -132,6 +132,30 @@ int32_t DoCompare(Numeric a, Numeric b)
   return 1;
 }
 
+static bool
+IsRatioComponent(const nsCSSValue& aValue)
+{
+  return aValue.GetUnit() == eCSSUnit_Number ||
+         aValue.GetUnit() == eCSSUnit_Integer;
+}
+
+static bool
+IsRatioValue(const nsCSSValue& aValue)
+{
+  return aValue.GetUnit() == eCSSUnit_Array &&
+         aValue.GetArrayValue()->Count() == 2 &&
+         IsRatioComponent(aValue.GetArrayValue()->Item(0)) &&
+         IsRatioComponent(aValue.GetArrayValue()->Item(1));
+}
+
+static double
+RatioComponentValue(const nsCSSValue& aValue, uint32_t aIndex)
+{
+  const nsCSSValue& v = aValue.GetArrayValue()->Item(aIndex);
+  return v.GetUnit() == eCSSUnit_Integer ? double(v.GetIntValue())
+                                         : double(v.GetFloatValue());
+}
+
 struct MediaQueryTypedCalcLengthResult
 {
   double mValue;
@@ -348,31 +372,19 @@ nsMediaExpression::Matches(nsPresContext *aPresContext,
       }
       break;
     case nsMediaFeature::eIntRatio:
+    case nsMediaFeature::eFloatRatio:
       {
-        NS_ASSERTION(actual.GetUnit() == eCSSUnit_Array &&
-                     actual.GetArrayValue()->Count() == 2 &&
-                     actual.GetArrayValue()->Item(0).GetUnit() ==
-                       eCSSUnit_Integer &&
-                     actual.GetArrayValue()->Item(1).GetUnit() ==
-                       eCSSUnit_Integer,
-                     "bad actual value");
-        NS_ASSERTION(required.GetUnit() == eCSSUnit_Array &&
-                     required.GetArrayValue()->Count() == 2 &&
-                     required.GetArrayValue()->Item(0).GetUnit() ==
-                       eCSSUnit_Integer &&
-                     required.GetArrayValue()->Item(1).GetUnit() ==
-                       eCSSUnit_Integer,
-                     "bad required value");
-        // Convert to int64_t so we can multiply without worry.  Note
+        NS_ASSERTION(IsRatioValue(actual), "bad actual value");
+        NS_ASSERTION(IsRatioValue(required), "bad required value");
+        // Convert to double so we can multiply without worry.  Note
         // that while the spec requires that both halves of |required|
         // be positive, the numerator or denominator of |actual| might
         // be zero (e.g., when testing 'aspect-ratio' on a 0-width or
         // 0-height iframe).
-        int64_t actualNum = actual.GetArrayValue()->Item(0).GetIntValue(),
-                actualDen = actual.GetArrayValue()->Item(1).GetIntValue(),
-                requiredNum = required.GetArrayValue()->Item(0).GetIntValue(),
-                requiredDen = required.GetArrayValue()->Item(1).GetIntValue();
-        cmp = DoCompare(actualNum * requiredDen, requiredNum * actualDen);
+        cmp = DoCompare(RatioComponentValue(actual, 0) *
+                        RatioComponentValue(required, 1),
+                        RatioComponentValue(required, 0) *
+                        RatioComponentValue(actual, 1));
       }
       break;
     case nsMediaFeature::eResolution:
@@ -680,20 +692,18 @@ nsMediaQuery::AppendToString(nsAString& aString) const
           }
           break;
         case nsMediaFeature::eIntRatio:
+        case nsMediaFeature::eFloatRatio:
           {
-            NS_ASSERTION(expr.mValue.GetUnit() == eCSSUnit_Array,
-                         "bad unit");
-            nsCSSValue::Array *array = expr.mValue.GetArrayValue();
+            NS_ASSERTION(IsRatioValue(expr.mValue), "bad unit");
+            nsCSSValue::Array* array = expr.mValue.GetArrayValue();
             NS_ASSERTION(array->Count() == 2, "unexpected length");
-            NS_ASSERTION(array->Item(0).GetUnit() == eCSSUnit_Integer,
-                         "bad unit");
-            NS_ASSERTION(array->Item(1).GetUnit() == eCSSUnit_Integer,
-                         "bad unit");
             array->Item(0).AppendToString(eCSSProperty_z_index, aString,
                                           nsCSSValue::eNormalized);
-            aString.Append('/');
-            array->Item(1).AppendToString(eCSSProperty_z_index, aString,
-                                          nsCSSValue::eNormalized);
+            if (RatioComponentValue(expr.mValue, 1) != 1.0) {
+              aString.Append('/');
+              array->Item(1).AppendToString(eCSSProperty_z_index, aString,
+                                            nsCSSValue::eNormalized);
+            }
           }
           break;
         case nsMediaFeature::eResolution:

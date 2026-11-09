@@ -1036,6 +1036,7 @@ protected:
   bool ParseMediaQuery(eMediaQueryType aMode, nsMediaQuery **aQuery,
                        bool *aHitStop);
   bool ParseMediaQueryExpression(nsMediaQuery* aQuery);
+  bool ParseRatioComponent(nsCSSValue& aValue);
   void ProcessImport(const nsString& aURLSpec,
                      nsMediaList* aMedia,
                      const nsString& aLayerName,
@@ -4095,6 +4096,30 @@ CSSParserImpl::GatherMedia(nsMediaList* aMedia,
 }
 
 bool
+CSSParserImpl::ParseRatioComponent(nsCSSValue& aValue)
+{
+  if (!GetToken(true)) {
+    return false;
+  }
+
+  if (mToken.mType != eCSSToken_Number) {
+    UngetToken();
+    return false;
+  }
+
+  // <ratio> components are non-negative (Media Queries 4).  Note that
+  // negative values tokenize as a Number with a sign, so this also
+  // catches "-1".
+  if (mToken.mNumber < 0.0f) {
+    UngetToken();
+    return false;
+  }
+
+  aValue.SetFloatValue(mToken.mNumber, eCSSUnit_Number);
+  return true;
+}
+
+bool
 CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery)
 {
   if (!ExpectSymbol('(', true)) {
@@ -4269,6 +4294,22 @@ CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery)
              ExpectSymbol('/', true) &&
              ParseSingleTokenVariant(a->Item(1), VARIANT_INTEGER, nullptr) &&
              a->Item(1).GetIntValue() > 0;
+      }
+      break;
+    case nsMediaFeature::eFloatRatio:
+      {
+        // <ratio> = <number [0,inf]> [ / <number [0,inf]> ]?
+        // The denominator defaults to 1 when the '/' is absent.
+        RefPtr<nsCSSValue::Array> a = nsCSSValue::Array::Create(2);
+        expr->mValue.SetArrayValue(a, eCSSUnit_Array);
+        rv = ParseRatioComponent(a->Item(0));
+        if (rv) {
+          if (ExpectSymbol('/', true)) {
+            rv = ParseRatioComponent(a->Item(1));
+          } else {
+            a->Item(1).SetFloatValue(1.0f, eCSSUnit_Number);
+          }
+        }
       }
       break;
     case nsMediaFeature::eResolution:
