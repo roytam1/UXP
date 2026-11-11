@@ -1609,8 +1609,8 @@ ObjectDenseElementsMayBeMarkable(NativeObject* nobj)
     if (!typeSet)
         return true;
 
-    static const uint32_t flagMask =
-        TYPE_FLAG_STRING | TYPE_FLAG_SYMBOL | TYPE_FLAG_LAZYARGS | TYPE_FLAG_ANYOBJECT;
+    static const uint32_t flagMask = TYPE_FLAG_STRING | TYPE_FLAG_SYMBOL | TYPE_FLAG_LAZYARGS |
+                                     TYPE_FLAG_ANYOBJECT | TYPE_FLAG_BIGINT;
     bool mayBeMarkable = typeSet->hasAnyFlag(flagMask) || typeSet->getObjectCount() != 0;
 
 #ifdef DEBUG

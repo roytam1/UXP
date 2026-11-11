@@ -251,11 +251,24 @@ MakeArray(const nsSize& aSize, nsCSSValue& aResult)
   return NS_OK;
 }
 
+// Helper for aspect-ratio, which needs fractional ratios.
+static nsresult
+MakeFloatArray(const nsSize& aSize, nsCSSValue& aResult)
+{
+  RefPtr<nsCSSValue::Array> a = nsCSSValue::Array::Create(2);
+
+  a->Item(0).SetFloatValue(aSize.width, eCSSUnit_Number);
+  a->Item(1).SetFloatValue(aSize.height, eCSSUnit_Number);
+
+  aResult.SetArrayValue(a, eCSSUnit_Array);
+  return NS_OK;
+}
+
 static nsresult
 GetAspectRatio(nsPresContext* aPresContext, const nsMediaFeature*,
                nsCSSValue& aResult)
 {
-  return MakeArray(GetSize(aPresContext), aResult);
+  return MakeFloatArray(GetSize(aPresContext), aResult);
 }
 
 static nsresult
@@ -719,7 +732,7 @@ nsMediaFeatures::features[] = {
   {
     &nsGkAtoms::aspectRatio,
     nsMediaFeature::eMinMaxAllowed,
-    nsMediaFeature::eIntRatio,
+    nsMediaFeature::eFloatRatio,
     nsMediaFeature::eNoRequirements,
     { nullptr },
     GetAspectRatio

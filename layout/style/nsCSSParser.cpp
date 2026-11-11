@@ -74,6 +74,7 @@ static bool sMozGradientsEnabled;
 static bool sControlCharVisibility;
 static bool sLegacyNegationPseudoClassEnabled;
 static bool sCascadeLayersEnabled;
+static bool sContainerQueriesEnabled;
 static bool sNestingEnabled;
 
 const uint32_t
@@ -1036,6 +1037,7 @@ protected:
   bool ParseMediaQuery(eMediaQueryType aMode, nsMediaQuery **aQuery,
                        bool *aHitStop);
   bool ParseMediaQueryExpression(nsMediaQuery* aQuery);
+  bool ParseRatioComponent(nsCSSValue& aValue);
   void ProcessImport(const nsString& aURLSpec,
                      nsMediaList* aMedia,
                      const nsString& aLayerName,
@@ -1046,6 +1048,7 @@ protected:
   bool ParseGroupRule(css::GroupRule* aRule, RuleAppendFunc aAppendFunc,
                       void* aProcessData);
   bool ParseMediaRule(RuleAppendFunc aAppendFunc, void* aProcessData);
+  bool ParseContainerRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   bool ParseMozDocumentRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   bool ParseNameSpaceRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   void ProcessNameSpace(const nsString& aPrefix,
@@ -3840,6 +3843,11 @@ CSSParserImpl::ParseAtRule(RuleAppendFunc aAppendFunc,
     parseFunc = &CSSParserImpl::ParseSupportsRule;
     newSection = eCSSSection_General;
 
+  } else if (mToken.mIdent.LowerCaseEqualsLiteral("container") &&
+             sContainerQueriesEnabled) {
+    parseFunc = &CSSParserImpl::ParseContainerRule;
+    newSection = eCSSSection_General;
+
   } else if (mToken.mIdent.LowerCaseEqualsLiteral("layer") &&
              sCascadeLayersEnabled) {
     parseFunc = &CSSParserImpl::ParseLayerRule;
@@ -4095,6 +4103,30 @@ CSSParserImpl::GatherMedia(nsMediaList* aMedia,
 }
 
 bool
+CSSParserImpl::ParseRatioComponent(nsCSSValue& aValue)
+{
+  if (!GetToken(true)) {
+    return false;
+  }
+
+  if (mToken.mType != eCSSToken_Number) {
+    UngetToken();
+    return false;
+  }
+
+  // <ratio> components are non-negative (Media Queries 4).  Note that
+  // negative values tokenize as a Number with a sign, so this also
+  // catches "-1".
+  if (mToken.mNumber < 0.0f) {
+    UngetToken();
+    return false;
+  }
+
+  aValue.SetFloatValue(mToken.mNumber, eCSSUnit_Number);
+  return true;
+}
+
+bool
 CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery)
 {
   if (!ExpectSymbol('(', true)) {
@@ -4271,6 +4303,22 @@ CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery)
              a->Item(1).GetIntValue() > 0;
       }
       break;
+    case nsMediaFeature::eFloatRatio:
+      {
+        // <ratio> = <number [0,inf]> [ / <number [0,inf]> ]?
+        // The denominator defaults to 1 when the '/' is absent.
+        RefPtr<nsCSSValue::Array> a = nsCSSValue::Array::Create(2);
+        expr->mValue.SetArrayValue(a, eCSSUnit_Array);
+        rv = ParseRatioComponent(a->Item(0));
+        if (rv) {
+          if (ExpectSymbol('/', true)) {
+            rv = ParseRatioComponent(a->Item(1));
+          } else {
+            a->Item(1).SetFloatValue(1.0f, eCSSUnit_Number);
+          }
+        }
+      }
+      break;
     case nsMediaFeature::eResolution:
       rv = GetToken(true);
       if (!rv)
@@ -4440,6 +4488,56 @@ CSSParserImpl::ParseMediaRule(RuleAppendFunc aAppendFunc, void* aData)
     }
   }
 
+  return false;
+}
+
+// Parse a container rule: "@container [<container-name>] <container-condition>
+// { ... }"
+//
+// Stopgap: the condition is parsed as a media query list and the rule is kept
+// as an ordinary css::MediaRule. Containers are not resolved and containment
+// is not established, so the condition is evaluated against the viewport.
+// That is close enough for page-level containers, which is what sites actually
+// gate layout on; per-element containers will be wrong.
+bool
+CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
+{
+  if (!GetToken(true)) {
+    return false;
+  }
+
+  // Optional <container-name>. A condition can start with "not"/"and"/"or" or
+  // with a "(" or "style(" token, so only a plain ident that is none of those
+  // keywords can be a name.
+  if (eCSSToken_Ident == mToken.mType &&
+      !mToken.mIdent.LowerCaseEqualsLiteral("not") &&
+      !mToken.mIdent.LowerCaseEqualsLiteral("and") &&
+      !mToken.mIdent.LowerCaseEqualsLiteral("or")) {
+    if (!GetToken(true)) {
+      return false;
+    }
+  }
+  UngetToken();
+
+  uint32_t linenum, colnum;
+  if (!GetNextTokenLocation(true, &linenum, &colnum)) {
+    return false;
+  }
+
+  RefPtr<nsMediaList> media = new nsMediaList();
+  if (!GatherMedia(media, true)) {
+    // Not expressible as a media query list (style() queries, range syntax).
+    // Don't lose the block over it - make the rule unconditional.
+    media = new nsMediaList();
+    SkipUntil('{');
+    UngetToken();
+  }
+
+  RefPtr<css::MediaRule> rule = new css::MediaRule(linenum, colnum);
+  if (ParseGroupRule(rule, aAppendFunc, aData)) {
+    rule->SetMedia(media);
+    return true;
+  }
   return false;
 }
 
@@ -19875,6 +19973,8 @@ nsCSSParser::Startup()
                                "layout.css.legacy-negation-pseudo.enabled");
   Preferences::AddBoolVarCache(&sCascadeLayersEnabled,
                                "layout.css.cascade-layers.enabled");
+  Preferences::AddBoolVarCache(&sContainerQueriesEnabled,
+                               "layout.css.container-queries.enabled");
   Preferences::AddBoolVarCache(&sNestingEnabled,
                                "layout.css.nesting.enabled");
 }
