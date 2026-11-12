@@ -579,11 +579,11 @@ const AEH::Lg2LUT AEH::lg2 = [] {
 }();
 
 const AEH::AllowedCounts AEH::allowed_counts = [] {
-  AllowedCounts result;
+  auto result = std::make_unique<AllowedCounts>();
 
-  for (uint32_t shift = 0; shift < result.array.size(); ++shift) {
-    auto& ac = result.array[shift];
-    auto& ai = result.index[shift];
+  for (uint32_t shift = 0; shift < result->array.size(); ++shift) {
+    auto& ac = result->array[shift];
+    auto& ai = result->index[shift];
     ANSHistBin last = ~0;
     size_t slot = 0;
     // TODO(eustas): are those "default" values relevant?
@@ -611,7 +611,7 @@ const AEH::AllowedCounts AEH::allowed_counts = [] {
     }
   }
 
-  return result;
+  return *result;
 }();
 
 }  // namespace
@@ -1012,7 +1012,7 @@ StatusOr<size_t> EntropyEncodingData::BuildAndStoreEntropyCodes(
     } else {
       JXL_RETURN_IF_ERROR(body());
     }
-    if (params.streaming_mode) {
+    if (params.streaming_mode && writer) {
       JXL_RETURN_IF_ERROR(writer->AppendUnaligned(*histo_writer));
     }
   }
@@ -1119,6 +1119,7 @@ StatusOr<size_t> BuildAndEncodeHistograms(
         cost += size_writer.size;
       }
       num_contexts += 1;
+      JXL_DASSERT(!tokens_lz77.empty());
       tokens = std::move(tokens_lz77);
     }
     size_t total_tokens = 0;
@@ -1365,9 +1366,9 @@ HistogramParams HistogramParams::ForModular(
       params.uint_method = HistogramParams::HybridUintMethod::kNone;
     }
   } else if (cparams.speed_tier <= SpeedTier::kTortoise) {
-    params.lz77_method = HistogramParams::LZ77Method::kOptimal;
+    params.lz77_method = HistogramParams::LZ77Method::kOptc256;
   } else {
-    params.lz77_method = HistogramParams::LZ77Method::kLZ77;
+    params.lz77_method = HistogramParams::LZ77Method::kLZ77b3w3f;
   }
   if (cparams.decoding_speed_tier >= 2) {
     params.max_histograms = 12;
@@ -1380,8 +1381,8 @@ HistogramParams HistogramParams::ForModular(
             : cparams.speed_tier >= SpeedTier::kHare
             ? HistogramParams::LZ77Method::kRLE
             : cparams.speed_tier >= SpeedTier::kKitten
-            ? HistogramParams::LZ77Method::kLZ77
-            : HistogramParams::LZ77Method::kOptimal;
+            ? HistogramParams::LZ77Method::kLZ77b3w3f
+            : HistogramParams::LZ77Method::kOptc256;
     }
   return params;
 }
