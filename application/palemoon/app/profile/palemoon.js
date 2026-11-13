@@ -258,6 +258,10 @@ pref("browser.shell.skipDefaultBrowserCheck", true);
 pref("browser.shell.defaultBrowserCheckCount", 0);
 pref("browser.defaultbrowser.notificationbar", false);
 
+// Enable polyfill shimming by default.
+pref("browser.internal-userscripts.enabled", true);
+pref("browser.internal-userscripts.debug", false);
+
 // 0 = blank, 1 = home (browser.startup.homepage), 2 = last visited page, 3 = resume previous browser session
 // The behavior of option 3 is detailed at: http://wiki.mozilla.org/Session_Restore
 pref("browser.startup.page",                1);
@@ -506,12 +510,6 @@ pref("javascript.options.showInConsole",          true);
 #ifdef DEBUG
 pref("general.warnOnAboutConfig",                 false);
 #endif
-
-// Enable unlinking of ghost windows so they can be garbage collected.
-pref("browser.ghostbuster.enabled",               true);
-// Disable GC on memory pressure, avoid incessant recycling when websites
-// misbehave. Should also avoid spurious GCs during ghostbusting.
-pref("javascript.options.gc_on_memory_pressure",  false);
 
 // This is the pref to control the location bar, change this to true to 
 // force this - this makes the origin of popup windows more obvious to avoid

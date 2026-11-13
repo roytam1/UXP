@@ -27,6 +27,9 @@
   <preference id="javascript.options.wasm"
               name="javascript.options.wasm"
               type="bool"/>
+  <preference id="browser.internal-userscripts.enabled"
+              name="browser.internal-userscripts.enabled"
+              type="bool"/>
 #ifdef MOZ_WEBRTC
   <preference id="media.peerconnection.enabled"
               name="media.peerconnection.enabled"
@@ -213,6 +216,14 @@
                     preference="javascript.options.wasm"
                     label="&javascriptWasm.label;"
                     accesskey="&javascriptWasm.accesskey;" />
+        </vbox>
+      </row>
+      <row id="javascriptRowInternalUserscripts">
+        <vbox align="start">
+          <checkbox id="javascriptInternalUserscripts"
+                    preference="browser.internal-userscripts.enabled"
+                    label="&javascriptInternalUserscripts.label;"
+                    accesskey="&javascriptInternalUserscripts.accesskey;" />
         </vbox>
       </row>
       <row id="javascriptRow2">

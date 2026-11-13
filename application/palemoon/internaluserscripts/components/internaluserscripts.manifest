@@ -1,0 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+component  {d8b4bd27-b458-4417-8dfe-3b80bb6375bc} internaluserscripts.js
+contract   @internaluserscripts.mozdev.org/service;1 {d8b4bd27-b458-4417-8dfe-3b80bb6375bc}
+category   profile-after-change internaluserscripts @internaluserscripts.mozdev.org/service;1
