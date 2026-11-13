@@ -360,6 +360,9 @@ AccessibleCaretManager::UpdateCaretsForSelectionMode(UpdateCaretsHint aHint)
   nsIFrame* endFrame =
     GetFrameForFirstRangeStartOrLastRangeEnd(eDirPrevious, &endOffset);
 
+  nsWeakFrame weakStartFrame = startFrame;
+  nsWeakFrame weakEndFrame = endFrame;
+
   if (!CompareTreePosition(startFrame, endFrame)) {
     // XXX: Do we really have to hide carets if this condition isn't satisfied?
     HideCarets();
@@ -404,24 +407,25 @@ AccessibleCaretManager::UpdateCaretsForSelectionMode(UpdateCaretsHint aHint)
 
   if (firstCaretResult == PositionChangedResult::Changed ||
       secondCaretResult == PositionChangedResult::Changed) {
-    nsWeakFrame weakStartFrame = startFrame;
-    nsWeakFrame weakEndFrame = endFrame;
-
     // Flush layout to make the carets intersection correct.
     FlushLayout();
     if (IsTerminated()) {
       return;
     }
-    if ((startFrame && !weakStartFrame.IsAlive()) ||
-        (endFrame && !weakEndFrame.IsAlive())) {
-      mFirstCaret.get()->SetAppearance(Appearance::NormalNotShown);
-      mSecondCaret.get()->SetAppearance(Appearance::NormalNotShown);
-      DispatchCaretStateChangedEvent(CaretChangedReason::Visibilitychange);
-      return;
-    }
+  }
+  
+  // Completely bail out and hide the carets if either the start frame or end frame is destroyed.
+  if ((startFrame && !weakStartFrame.IsAlive()) ||
+      (endFrame && !weakEndFrame.IsAlive())) {
+    mFirstCaret.get()->SetAppearance(Appearance::NormalNotShown);
+    mSecondCaret.get()->SetAppearance(Appearance::NormalNotShown);
+    DispatchCaretStateChangedEvent(CaretChangedReason::Visibilitychange);
+    return;
   }
 
   if (aHint == UpdateCaretsHint::Default) {
+    nsAutoScriptBlocker scriptBlocker;
+    
     // Only check for tilt carets with default update hint. Otherwise we might
     // override the appearance set by the caller.
     if (sCaretsAlwaysTilt) {
