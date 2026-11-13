@@ -6,7 +6,7 @@
 MY_TEMP_DIR=`mktemp -d -t brotli_update.XXXXXX` || exit 1
 
 git clone https://github.com/google/brotli ${MY_TEMP_DIR}/brotli
-git -C ${MY_TEMP_DIR}/brotli checkout 4792c8e4c4235f6b501f13dbd07a8b4b253eee21
+git -C ${MY_TEMP_DIR}/brotli checkout v1.2.1
 
 COMMIT=$(git -C ${MY_TEMP_DIR}/brotli rev-parse HEAD)
 perl -p -i -e "s/\[commit [0-9a-f]{40}\]/[commit ${COMMIT}]/" README.mozilla;
@@ -19,7 +19,12 @@ for d in $DIRS; do
 done
 rm -rf ${MY_TEMP_DIR}
 
+for patchfile in $(ls *.patch)
+do
+	patch -p1 < $patchfile
+done
+
 echo "###"
-echo "### Updated brotli to $COMMIT."
+echo "### Updated brotli to $COMMIT and locally patched it."
 echo "### Remember to verify and commit the changes to source control!"
 echo "###"

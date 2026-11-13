@@ -37,6 +37,7 @@ EXPORTS.hwy.ops += [
     "/media/highway/src/hwy/ops/inside-inl.h",
     "/media/highway/src/hwy/ops/loongarch_lasx-inl.h",
     "/media/highway/src/hwy/ops/loongarch_lsx-inl.h",
+    "/media/highway/src/hwy/ops/ppc_vsx-inl.h",
     "/media/highway/src/hwy/ops/rvv-inl.h",
     "/media/highway/src/hwy/ops/scalar-inl.h",
     "/media/highway/src/hwy/ops/set_macros-inl.h",

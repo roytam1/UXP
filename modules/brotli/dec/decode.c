@@ -1317,7 +1317,7 @@ DecodeDistanceBlockSwitch(BrotliDecoderState* s) {
   return DecodeDistanceBlockSwitchInternal(0, s);
 }
 
-static BROTLI_BOOL BROTLI_NOINLINE SafeDecodeDistanceBlockSwitch(
+static BROTLI_NOINLINE BrotliDecoderErrorCode SafeDecodeDistanceBlockSwitch(
     BrotliDecoderState* s) {
   return DecodeDistanceBlockSwitchInternal(1, s);
 }
@@ -1526,8 +1526,6 @@ static BrotliDecoderErrorCode BROTLI_NOINLINE CopyUncompressedBlockToOutput(
 static BROTLI_BOOL AttachCompoundDictionary(
     BrotliDecoderState* state, const uint8_t* data, size_t size) {
   BrotliDecoderCompoundDictionary* addon = state->compound_dictionary;
-  int new_size = (int)size;
-  if (new_size < 0 || (size_t)new_size != size) return BROTLI_FALSE;
   if (state->state != BROTLI_STATE_UNINITED) return BROTLI_FALSE;
   if (!addon) {
     addon = (BrotliDecoderCompoundDictionary*)BROTLI_DECODER_ALLOC(
@@ -1542,13 +1540,10 @@ static BROTLI_BOOL AttachCompoundDictionary(
     state->compound_dictionary = addon;
   }
   if (addon->num_chunks == 15) return BROTLI_FALSE;
-  if (!BROTLI_SAFE_ADD(int, addon->total_size, new_size, &new_size)) {
-    return BROTLI_FALSE;
-  }
   addon->chunks[addon->num_chunks] = data;
   addon->num_chunks++;
-  addon->total_size = new_size;
-  addon->chunk_offsets[addon->num_chunks] = new_size;
+  addon->total_size += (int)size;
+  addon->chunk_offsets[addon->num_chunks] = addon->total_size;
   return BROTLI_TRUE;
 }
 
