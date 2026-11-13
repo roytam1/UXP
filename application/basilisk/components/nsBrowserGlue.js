@@ -387,7 +387,7 @@ BrowserGlue.prototype = {
     os.addObserver(this, "flash-plugin-hang", false);
     os.addObserver(this, "xpi-signature-changed", false);
     os.addObserver(this, "autocomplete-did-enter-text", false);
-    Services.prefs.addObserver(PREF_INTERNAL_USERSCRIPTS_ENABLED, this);
+    Services.prefs.addObserver(PREF_INTERNAL_USERSCRIPTS_ENABLED, this, false);
 
     if (AppConstants.NIGHTLY_BUILD) {
       os.addObserver(this, AddonWatcher.TOPIC_SLOW_ADDON_DETECTED, false);
