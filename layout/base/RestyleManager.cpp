@@ -409,10 +409,15 @@ RestyleManager::RestyleForHasPseudoClassChange(nsINode* aNode,
     PostRestyleEvent(aAnchor, hint, nsChangeHint(0));
   };
 
+  // Keep track of the child below each ancestor that contains the mutation.
+  // This matters for sibling :has() selectors: a class/state change deep
+  // inside a sibling can only affect anchors before that containing child.
+  nsINode* mutationChild = nullptr;
   for (nsINode* node = aNode; node; node = node->GetParentNode()) {
     auto* dependency = static_cast<Dependency*>(
       node->GetProperty(nsGkAtoms::hasSelectorDependency));
     if (!dependency) {
+      mutationChild = node;
       continue;
     }
     if (node->IsElement() && dependency->MightDependOnChange(
@@ -423,6 +428,7 @@ RestyleManager::RestyleForHasPseudoClassChange(nsINode* aNode,
     if (!dependency->MightAffectSiblingAnchor(
           node, aNode, aStateMask, aAttribute, aNewClasses, aCompareClasses,
           aIsTextChange)) {
+      mutationChild = node;
       continue;
     }
     // The parent is an index of sibling anchors, not itself an anchor. Keep
@@ -431,7 +437,7 @@ RestyleManager::RestyleForHasPseudoClassChange(nsINode* aNode,
     bool nodeIsFollowingSibling = true;
     for (nsIContent* child = node->GetFirstChild(); child;
          child = child->GetNextSibling()) {
-      if (child == aNode) {
+      if (child == mutationChild) {
         nodeIsFollowingSibling = false;
       }
       if (!child->IsElement()) {
@@ -445,6 +451,8 @@ RestyleManager::RestyleForHasPseudoClassChange(nsINode* aNode,
         restyleAnchor(child->AsElement(), siblingDependency);
       }
     }
+
+    mutationChild = node;
   }
 }
 

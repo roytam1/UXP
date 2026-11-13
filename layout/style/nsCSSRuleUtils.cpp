@@ -1955,6 +1955,10 @@ HasSelectorDependency::MightDependOnChange(
   for (const auto& branch : mBranches) {
     if ((aIsTextChange && branch.mIsLocal) ||
         branch.IsSibling() != aSibling ||
+        // A sibling-relative selector can only observe siblings before the
+        // changed subtree. This also applies when the selector continues
+        // into that sibling's descendants, not just to a local compound.
+        (aSibling && branch.IsSibling() && !aNodeIsFollowingSibling) ||
         (!aStateMask.IsEmpty() &&
          !branch.mStates.HasAtLeastOneOfStates(aStateMask)) ||
         (aAttribute && !branch.MightDependOnAttribute(
