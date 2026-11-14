@@ -514,6 +514,12 @@ DOMStorageManager::Observe(const char* aTopic,
                            const nsAString& aOriginAttributesPattern,
                            const nsACString& aOriginScope)
 {
+  // DOMStorageObserver only holds a weak pointer to us. Parsing the pattern can
+  // GC, which can finish an in-progress cycle collection and destroy this
+  // manager if its BrowsingContext has been discarded. Keep a strong grip on
+  // it to prevent it being GCed at inopportune times.
+  RefPtr<DOMStorageManager> kungFuDeathGrip = this;
+
   OriginAttributesPattern pattern;
   if (!pattern.Init(aOriginAttributesPattern)) {
     NS_ERROR("Cannot parse origin attributes pattern");
