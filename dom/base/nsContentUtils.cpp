@@ -2858,6 +2858,11 @@ nsContentUtils::GenerateStateKey(nsIContent* aContent,
     return NS_OK;
   }
 
+  // Creating and querying the form lists below can flush pending content and
+  // run script. In particular, a layout caller may only have a raw pointer
+  // to its frame's content, so keep the content alive through those flushes.
+  const nsCOMPtr<nsIContent> kungFuDeathGrip(aContent);
+
   nsCOMPtr<nsIHTMLDocument> htmlDocument =
     do_QueryInterface(aContent->GetUncomposedDoc());
 
