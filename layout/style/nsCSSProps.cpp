@@ -3120,6 +3120,12 @@ static const nsCSSPropertyID gPlaceItemsSubpropTable[] = {
   eCSSProperty_UNKNOWN
 };
 
+static const nsCSSPropertyID gContainerSubpropTable[] = {
+  eCSSProperty_container_name,
+  eCSSProperty_container_type,
+  eCSSProperty_UNKNOWN
+};
+
 static const nsCSSPropertyID gPlaceSelfSubpropTable[] = {
   eCSSProperty_align_self,
   eCSSProperty_justify_self,

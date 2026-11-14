@@ -526,7 +526,7 @@ struct ContainerSize {
 // Nearest ancestor container, honouring the query name if it has one.
 static bool
 FindQueryContainer(Element* aElement, const nsAString& aName,
-                   ContainerSize& aSize)
+                   ContainerSize& aSize, nsPresContext* aPresContext)
 {
   for (Element* e = aElement->GetParentElement(); e;
        e = e->GetParentElement()) {
@@ -536,6 +536,11 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
     }
     const nsStyleDisplay* display = frame->StyleDisplay();
     if (!display->IsContainerForSizeQueries()) {
+      continue;
+    }
+    if (frame->GetStateBits() & NS_FRAME_FIRST_REFLOW) {
+      // Never reflowed, so the rect is still meaningless. Leave sawContainer
+      // clear so the caller falls back to the viewport for this pass.
       continue;
     }
     if (!aName.IsEmpty() && !display->HasContainerName(aName)) {
@@ -549,6 +554,7 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
         : nsPresContext::AppUnitsToFloatCSSPixels(rect.height);
     return true;
   }
+
   return false;
 }
 
@@ -558,6 +564,10 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
                             nsPresContext* aPresContext,
                             nscoord aFontSize)
 {
+  // Belt and braces: an expression is only valid once its feature resolved.
+  if (!aExpr->mFeature || !aExpr->mFeature->mName) {
+    return ContainerEval::Unknown;
+  }
   if (aExpr->mFeature->mValueType != nsMediaFeature::eLength) {
     return ContainerEval::Unknown;
   }
@@ -587,13 +597,19 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
   const nsCSSValue& value = aExpr->mValue;
   float required;
   if (value.IsPixelLengthUnit()) {
-    required = nsPresContext::AppUnitsToFloatCSSPixels(
-        value.GetFixedLength(aPresContext));
+    required = nsPresContext::AppUnitsToFloatCSSPixels(value.GetPixelLength());
   } else if (value.GetUnit() == eCSSUnit_EM) {
     required = nsPresContext::AppUnitsToFloatCSSPixels(aFontSize) *
                value.GetFloatValue();
   } else {
     return ContainerEval::Unknown;
+  }
+
+  const char* u = "other";
+  if (value.GetUnit() == eCSSUnit_Pixel) {
+    u = "px";
+  } else if (value.GetUnit() == eCSSUnit_EM) {
+    u = "em";
   }
 
   switch (aExpr->mRange) {
@@ -615,7 +631,7 @@ EvaluateContainerCondition(nsMediaList* aCondition, const nsAString& aName,
                            nscoord aFontSize)
 {
   ContainerSize size;
-  if (!FindQueryContainer(aElement, aName, size)) {
+  if (!FindQueryContainer(aElement, aName, size, aPresContext)) {
     return ContainerEval::False;
   }
 

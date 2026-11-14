@@ -853,6 +853,7 @@ public:
    * we don't bother as the cost of the allocation has already been paid.)
    */
   void SetRect(const nsRect& aRect) {
+  const bool sizeChanged = aRect.Size() != mRect.Size();
     if (mOverflow.mType != NS_FRAME_OVERFLOW_LARGE &&
         mOverflow.mType != NS_FRAME_OVERFLOW_NONE) {
       nsOverflowAreas overflow = GetOverflowAreas();
@@ -860,6 +861,9 @@ public:
       SetOverflowAreas(overflow);
     } else {
       mRect = aRect;
+    }
+    if (sizeChanged) {
+      RestyleIfContainer();
     }
   }
   /**
@@ -878,6 +882,12 @@ public:
                const nsSize& aContainerSize) {
     SetRect(aRect.GetPhysicalRect(aWritingMode, aContainerSize));
   }
+
+  /**
+   * If this frame is a query container and its size just changed, restyle its
+   * subtree so @container conditions are re-evaluated.
+   */
+  void RestyleIfContainer();
 
   /**
    * Set this frame's size from a logical size in its own writing direction.

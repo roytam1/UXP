@@ -5724,6 +5724,29 @@ nsIFrame::ComputeISizeValue(nsRenderingContext* aRenderingContext,
 }
 
 void
+nsIFrame::RestyleIfContainer()
+{
+  if (!mStyleContext || !StyleDisplay()->IsContainerForSizeQueries()) {
+    return;
+  }
+  nsIContent* content = GetContent();
+  if (!content || !content->IsElement()) {
+    return;
+  }
+  nsPresContext* pc = PresContext();
+  if (!pc || !pc->RestyleManager()) {
+    return;
+  }
+  // Container conditions are resolved at selector-matching time, which runs
+  // before reflow, so a fresh load always measures 0x0 (or no frame at all).
+  // The result has to be recomputed once the size is real and on every later
+  // change, otherwise the first pass is frozen in place.
+  pc->RestyleManager()->PostRestyleEvent(content->AsElement(),
+                                         nsRestyleHint(eRestyle_Subtree),
+                                         nsChangeHint(0));
+}
+
+void
 nsFrame::DidReflow(nsPresContext*           aPresContext,
                    const ReflowInput*  aReflowInput,
                    nsDidReflowStatus         aStatus)
@@ -5734,6 +5757,11 @@ nsFrame::DidReflow(nsPresContext*           aPresContext,
   nsSVGEffects::InvalidateDirectRenderingObservers(this, nsSVGEffects::INVALIDATE_REFLOW);
 
   if (nsDidReflowStatus::FINISHED == aStatus) {
+    // First layout is done, so container sizes are finally meaningful. The
+    // initial style pass could only have used the viewport proxy.
+    if (mState & NS_FRAME_FIRST_REFLOW) {
+      RestyleIfContainer();
+    }
     mState &= ~(NS_FRAME_IN_REFLOW | NS_FRAME_FIRST_REFLOW | NS_FRAME_IS_DIRTY |
                 NS_FRAME_HAS_DIRTY_CHILDREN);
   }

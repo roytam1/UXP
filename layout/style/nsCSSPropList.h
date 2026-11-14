@@ -1666,6 +1666,12 @@ CSS_PROP_DISPLAY(
     kContainKTable,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
+CSS_PROP_SHORTHAND(
+    container,
+    container,
+    Container,
+    CSS_PROPERTY_PARSE_FUNCTION,
+    "layout.css.container-queries.enabled")
 CSS_PROP_DISPLAY(
     container-type,
     container_type,
