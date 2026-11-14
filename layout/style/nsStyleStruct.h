@@ -2791,6 +2791,10 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay
                                            //         otherwise equal to
                                            //         mDisplay
   uint8_t mContain;             // [reset] see nsStyleConsts.h NS_STYLE_CONTAIN_*
+  // [reset] see nsStyleConsts.h NS_STYLE_CONTAINER_TYPE_*
+  uint8_t mContainerType;
+  // [reset] container-name list; empty when 'none'
+  nsTArray<nsString> mContainerNames;
   uint8_t mAppearance;          // [reset]
   uint8_t mPosition;            // [reset] see nsStyleConsts.h
 
@@ -2967,6 +2971,12 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay
   bool IsContainPaint() const {
     return NS_STYLE_CONTAIN_PAINT & mContain;
   }
+
+  bool IsContainerForSizeQueries() const {
+    return mContainerType != NS_STYLE_CONTAINER_TYPE_NORMAL;
+  }
+
+  bool HasContainerName(const nsAString& aName) const;
 
   /* Returns whether the element has the -moz-transform property
    * or a related property. */

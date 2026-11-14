@@ -536,6 +536,11 @@ enum class StyleDisplay : uint8_t {
                                                  NS_STYLE_CONTAIN_STYLE  | \
                                                  NS_STYLE_CONTAIN_PAINT)
 
+// container-type (css-contain-3)
+#define NS_STYLE_CONTAINER_TYPE_NORMAL          0
+#define NS_STYLE_CONTAINER_TYPE_SIZE            0x1
+#define NS_STYLE_CONTAINER_TYPE_INLINE_SIZE     0x2
+
 // Shared constants for all align/justify properties (nsStylePosition):
 #define NS_STYLE_ALIGN_AUTO             0
 #define NS_STYLE_ALIGN_NORMAL           1

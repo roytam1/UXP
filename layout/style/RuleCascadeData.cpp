@@ -55,6 +55,8 @@
 #include "nsIDOMMutationEvent.h"
 #include "nsIMozBrowserFrame.h"
 #include "nsCSSRuleUtils.h"
+#include "nsMediaFeatures.h"
+#include "nsIFrame.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -514,6 +516,146 @@ LookForTargetPseudo(nsCSSSelector* aSelector,
   return true;
 }
 
+enum class ContainerEval : uint8_t { False, True, Unknown };
+
+struct ContainerSize {
+  float mWidth;
+  float mHeight;   // -1 when the block axis is not queryable
+};
+
+// Nearest ancestor container, honouring the query name if it has one.
+static bool
+FindQueryContainer(Element* aElement, const nsAString& aName,
+                   ContainerSize& aSize)
+{
+  for (Element* e = aElement->GetParentElement(); e;
+       e = e->GetParentElement()) {
+    nsIFrame* frame = e->GetPrimaryFrame();
+    if (!frame) {
+      continue;
+    }
+    const nsStyleDisplay* display = frame->StyleDisplay();
+    if (!display->IsContainerForSizeQueries()) {
+      continue;
+    }
+    if (!aName.IsEmpty() && !display->HasContainerName(aName)) {
+      continue;
+    }
+    nsSize rect = frame->GetContentRectRelativeToSelf().Size();
+    aSize.mWidth = nsPresContext::AppUnitsToFloatCSSPixels(rect.width);
+    aSize.mHeight =
+      display->mContainerType == NS_STYLE_CONTAINER_TYPE_INLINE_SIZE
+        ? -1.0f
+        : nsPresContext::AppUnitsToFloatCSSPixels(rect.height);
+    return true;
+  }
+  return false;
+}
+
+static ContainerEval
+SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
+                            const ContainerSize& aSize,
+                            nsPresContext* aPresContext,
+                            nscoord aFontSize)
+{
+  if (aExpr->mFeature->mValueType != nsMediaFeature::eLength) {
+    return ContainerEval::Unknown;
+  }
+
+  // Feature atoms are spelled with hyphens ("min-width") but the gkAtoms in
+  // this tree are not, so normalise before comparing.
+  nsAutoString name;
+  (*aExpr->mFeature->mName)->ToString(name);
+  name.StripChars("-");
+  float actual;
+  if (name.EqualsLiteral("width") ||
+      name.EqualsLiteral("minwidth") ||
+      name.EqualsLiteral("maxwidth")) {
+    actual = aSize.mWidth;
+  } else if (name.EqualsLiteral("height") ||
+             name.EqualsLiteral("minheight") ||
+             name.EqualsLiteral("maxheight")) {
+    actual = aSize.mHeight;
+  } else {
+    // device-width, aspect-ratio, orientation, resolution, etc.
+    return ContainerEval::Unknown;
+  }
+  if (actual < 0.0f) {
+    return ContainerEval::Unknown;
+  }
+
+  const nsCSSValue& value = aExpr->mValue;
+  float required;
+  if (value.IsPixelLengthUnit()) {
+    required = nsPresContext::AppUnitsToFloatCSSPixels(
+        value.GetFixedLength(aPresContext));
+  } else if (value.GetUnit() == eCSSUnit_EM) {
+    required = nsPresContext::AppUnitsToFloatCSSPixels(aFontSize) *
+               value.GetFloatValue();
+  } else {
+    return ContainerEval::Unknown;
+  }
+
+  switch (aExpr->mRange) {
+    case nsMediaExpression::eMin:
+      return actual >= required ? ContainerEval::True : ContainerEval::False;
+    case nsMediaExpression::eMax:
+      return actual <= required ? ContainerEval::True : ContainerEval::False;
+    case nsMediaExpression::eEqual:
+      return actual == required ? ContainerEval::True : ContainerEval::False;
+    default:
+      return ContainerEval::Unknown;
+  }
+}
+
+// All expressions ANDed, queries ORed, `not` inverts, unknown resolves false.
+static ContainerEval
+EvaluateContainerCondition(nsMediaList* aCondition, const nsAString& aName,
+                           Element* aElement, nsPresContext* aPresContext,
+                           nscoord aFontSize)
+{
+  ContainerSize size;
+  if (!FindQueryContainer(aElement, aName, size)) {
+    return ContainerEval::False;
+  }
+
+  ContainerEval overall = ContainerEval::False;
+  for (int32_t i = 0; i < aCondition->Length(); ++i) {
+    const nsMediaQuery* query = aCondition->MediumAt(i);
+    ContainerEval result = query->HadUnknownExpression()
+                             ? ContainerEval::Unknown
+                             : ContainerEval::True;
+
+    for (const nsMediaExpression& expr : query->Expressions()) {
+      ContainerEval r =
+        SizeFeatureAgainstContainer(&expr, size, aPresContext, aFontSize);
+      if (r == ContainerEval::False) {
+        result = ContainerEval::False;
+        break;
+      }
+      if (r == ContainerEval::Unknown && result == ContainerEval::True) {
+        result = ContainerEval::Unknown;
+      }
+    }
+
+    if (query->IsNegated()) {
+      if (result == ContainerEval::True) {
+        result = ContainerEval::False;
+      } else if (result == ContainerEval::False) {
+        result = ContainerEval::True;
+      }
+    }
+
+    if (result == ContainerEval::True) {
+      return ContainerEval::True;
+    }
+    if (result == ContainerEval::Unknown) {
+      overall = ContainerEval::Unknown;
+    }
+  }
+  return overall;
+}
+
 static inline void
 ContentEnumFunc(const RuleValue& value,
                 nsCSSSelector* aSelector,
@@ -596,6 +738,16 @@ ContentEnumFunc(const RuleValue& value,
                    data->mTreeMatchContext,
                    nodeContext.mIsRelevantLink ? SelectorMatchesTreeFlags(0)
                                                : eLookForRelevantLink)) {
+      if (nsMediaList* condition = value.mRule->GetContainerCondition()) {
+        if (EvaluateContainerCondition(
+              condition, value.mRule->GetContainerName(), data->mElement,
+              data->mPresContext,
+              data->mPresContext->GetDefaultFont(
+                kPresContext_DefaultVariableFont_ID, nullptr)->size) !=
+            ContainerEval::True) {
+          return;
+        }
+      }
       css::Declaration* declaration = value.mRule->GetDeclaration();
       declaration->SetImmutable();
       data->mRuleWalker->Forward(declaration);

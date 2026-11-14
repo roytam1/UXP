@@ -241,6 +241,12 @@ public:
   bool Matches(nsPresContext* aPresContext,
                  nsMediaQueryResultCacheKey* aKey) const;
 
+  bool IsNegated() const { return mNegated; }
+  bool HadUnknownExpression() const { return mHadUnknownExpression; }
+  const nsTArray<nsMediaExpression>& Expressions() const {
+    return mExpressions;
+  }
+
 private:
   bool mNegated;
   bool mHasOnly; // only needed for serialization

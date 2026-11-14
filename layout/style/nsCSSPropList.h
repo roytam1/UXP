@@ -1666,6 +1666,28 @@ CSS_PROP_DISPLAY(
     kContainKTable,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
+CSS_PROP_DISPLAY(
+    container-type,
+    container_type,
+    ContainerType,
+    CSS_PROPERTY_PARSE_VALUE |
+        CSS_PROPERTY_VALUE_PARSER_FUNCTION,
+    "layout.css.container-queries.enabled",
+    VARIANT_HK | VARIANT_INHERIT,
+    kContainerTypeKTable,
+    CSS_PROP_NO_OFFSET,
+    eStyleAnimType_Discrete)
+CSS_PROP_DISPLAY(
+    container-name,
+    container_name,
+    ContainerName,
+    CSS_PROPERTY_PARSE_VALUE |
+        CSS_PROPERTY_VALUE_PARSER_FUNCTION,
+    "layout.css.container-queries.enabled",
+    VARIANT_INHERIT | VARIANT_IDENTIFIER,
+    0,
+    CSS_PROP_NO_OFFSET,
+    eStyleAnimType_Discrete)
 CSS_PROP_CONTENT(
     content,
     content,

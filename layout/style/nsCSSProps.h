@@ -834,6 +834,7 @@ public:
   static const KTableEntry kMathVariantKTable[];
   static const KTableEntry kMathDisplayKTable[];
   static const KTableEntry kContainKTable[];
+  static const KTableEntry kContainerTypeKTable[];
   static const KTableEntry kContextOpacityKTable[];
   static const KTableEntry kContextPatternKTable[];
   static const KTableEntry kObjectFitKTable[];

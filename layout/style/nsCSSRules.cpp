@@ -737,11 +737,14 @@ ConditionRule::~ConditionRule()
 //
 MediaRule::MediaRule(uint32_t aLineNumber, uint32_t aColumnNumber)
   : ConditionRule(aLineNumber, aColumnNumber)
+  , mIsContainerQuery(false)
 {
 }
 
 MediaRule::MediaRule(const MediaRule& aCopy)
   : ConditionRule(aCopy)
+  , mContainerName(aCopy.mContainerName)
+  , mIsContainerQuery(aCopy.mIsContainerQuery)
 {
   if (aCopy.mMedia) {
     mMedia = aCopy.mMedia->Clone();
@@ -848,7 +851,15 @@ MediaRule::Media() const
 void
 MediaRule::GetCssTextImpl(nsAString& aCssText) const
 {
-  aCssText.AssignLiteral("@media ");
+  if (mIsContainerQuery) {
+    aCssText.AssignLiteral("@container ");
+    if (!mContainerName.IsEmpty()) {
+      nsStyleUtil::AppendEscapedCSSIdent(mContainerName, aCssText);
+      aCssText.Append(' ');
+    }
+  } else {
+    aCssText.AssignLiteral("@media ");
+  }
   AppendConditionText(aCssText);
   GroupRule::AppendRulesToCssText(aCssText);
 }
@@ -925,6 +936,11 @@ MediaRule::GetMedia(nsIDOMMediaList* *aMedia)
 MediaRule::UseForPresentation(nsPresContext* aPresContext,
                                    nsMediaQueryResultCacheKey& aKey)
 {
+  if (mIsContainerQuery) {
+    // Container conditions are resolved per element at match time, so the
+    // rule must stay in the cascade regardless of the viewport.
+    return true;
+  }
   if (mMedia) {
     return mMedia->Matches(aPresContext, &aKey);
   }

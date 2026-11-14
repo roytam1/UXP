@@ -1404,6 +1404,8 @@ protected:
   bool ParseRect(nsCSSPropertyID aPropID);
   bool ParseColumns();
   bool ParseContain(nsCSSValue& aValue);
+  bool ParseContainerType(nsCSSValue& aValue);
+  bool ParseContainerName(nsCSSValue& aValue);
   bool ParseContent();
   bool ParseCounterData(nsCSSPropertyID aPropID);
   bool ParseCursor();
@@ -4491,14 +4493,34 @@ CSSParserImpl::ParseMediaRule(RuleAppendFunc aAppendFunc, void* aData)
   return false;
 }
 
+
+struct ContainerStampData {
+  ContainerStampData(nsMediaList* aCondition, const nsString& aName)
+    : mCondition(aCondition), mName(aName) {}
+  RefPtr<nsMediaList> mCondition;
+  nsString mName;
+};
+
+static bool
+StampContainerCondition(css::Rule* aRule, void* aData)
+{
+  ContainerStampData* data = static_cast<ContainerStampData*>(aData);
+  int32_t type = aRule->GetType();
+  if (css::Rule::STYLE_RULE == type) {
+    static_cast<css::StyleRule*>(aRule)->SetContainerCondition(
+        data->mCondition, data->mName);
+    return true;
+  }
+  if (css::Rule::MEDIA_RULE == type || css::Rule::SUPPORTS_RULE == type ||
+      css::Rule::LAYER_BLOCK_RULE == type) {
+    return static_cast<css::GroupRule*>(aRule)->EnumerateRulesForwards(
+        StampContainerCondition, aData);
+  }
+  return true;
+}
+
 // Parse a container rule: "@container [<container-name>] <container-condition>
 // { ... }"
-//
-// Stopgap: the condition is parsed as a media query list and the rule is kept
-// as an ordinary css::MediaRule. Containers are not resolved and containment
-// is not established, so the condition is evaluated against the viewport.
-// That is close enough for page-level containers, which is what sites actually
-// gate layout on; per-element containers will be wrong.
 bool
 CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
 {
@@ -4509,10 +4531,12 @@ CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
   // Optional <container-name>. A condition can start with "not"/"and"/"or" or
   // with a "(" or "style(" token, so only a plain ident that is none of those
   // keywords can be a name.
+  nsAutoString containerName;
   if (eCSSToken_Ident == mToken.mType &&
       !mToken.mIdent.LowerCaseEqualsLiteral("not") &&
       !mToken.mIdent.LowerCaseEqualsLiteral("and") &&
       !mToken.mIdent.LowerCaseEqualsLiteral("or")) {
+    containerName = mToken.mIdent;
     if (!GetToken(true)) {
       return false;
     }
@@ -4524,21 +4548,29 @@ CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
     return false;
   }
 
-  RefPtr<nsMediaList> media = new nsMediaList();
-  if (!GatherMedia(media, true)) {
+  RefPtr<nsMediaList> condition = new nsMediaList();
+  bool expressible = GatherMedia(condition, true);
+  if (!expressible) {
     // Not expressible as a media query list (style() queries, range syntax).
-    // Don't lose the block over it - make the rule unconditional.
-    media = new nsMediaList();
+    // Don't lose the block over it - leave the rule unconditional.
+    condition = new nsMediaList();
     SkipUntil('{');
     UngetToken();
   }
 
   RefPtr<css::MediaRule> rule = new css::MediaRule(linenum, colnum);
-  if (ParseGroupRule(rule, aAppendFunc, aData)) {
-    rule->SetMedia(media);
-    return true;
+  if (!ParseGroupRule(rule, aAppendFunc, aData)) {
+    return false;
   }
-  return false;
+
+  rule->SetMedia(condition);
+  rule->SetContainerQuery(containerName);
+
+  if (expressible) {
+    ContainerStampData stamp(condition, containerName);
+    rule->EnumerateRulesForwards(StampContainerCondition, &stamp);
+  }
+  return true;
 }
 
 // Parse a @-moz-document rule.  This is like an @media rule, but instead
@@ -16524,6 +16556,45 @@ CSSParserImpl::ParseContain(nsCSSValue& aValue)
     // However, for serialization purposes, we keep the strict bit around.
     aValue.SetIntValue(NS_STYLE_CONTAIN_STRICT |
         NS_STYLE_CONTAIN_ALL_BITS, eCSSUnit_Enumerated);
+  }
+  return true;
+}
+
+bool
+CSSParserImpl::ParseContainerType(nsCSSValue& aValue)
+{
+  return ParseSingleTokenVariant(aValue, VARIANT_HK | VARIANT_INHERIT,
+                                 nsCSSProps::kContainerTypeKTable);
+}
+
+bool
+CSSParserImpl::ParseContainerName(nsCSSValue& aValue)
+{
+  if (ParseSingleTokenVariant(aValue, VARIANT_INHERIT | VARIANT_NONE,
+                              nullptr)) {
+    return true;
+  }
+
+  nsCSSValueList* tail = nullptr;
+
+  for (;;) {
+    nsCSSValue ident;
+    if (!ParseSingleTokenVariant(ident, VARIANT_IDENTIFIER, nullptr)) {
+      break;
+    }
+    nsAutoString str;
+    ident.GetStringValue(str);
+    if (!ParseCustomIdent(ident, str)) {
+      return false;
+    }
+    nsCSSValueList* node =
+      tail ? (tail->mNext = new nsCSSValueList) : aValue.SetListValue();
+    node->mValue = ident;
+    tail = node;
+  }
+
+  if (!tail) {
+    return false;
   }
   return true;
 }

@@ -377,6 +377,12 @@ public:
 
   void SetDeclaration(Declaration* aDecl);
 
+  // Set when this rule came out of an @container block. Null condition means
+  // the rule is unconditional.
+  nsMediaList* GetContainerCondition() const { return mContainerCondition; }
+  const nsString& GetContainerName() const { return mContainerName; }
+  void SetContainerCondition(nsMediaList* aCondition, const nsString& aName);
+
   virtual int32_t GetType() const override;
   using Rule::GetType;
 
@@ -398,6 +404,9 @@ private:
 private:
   nsCSSSelectorList*      mSelector; // null for style attribute
   RefPtr<Declaration>     mDeclaration;
+
+  RefPtr<nsMediaList>     mContainerCondition;
+  nsString                mContainerName;
 
   // We own it, and it aggregates its refcount with us.
   UniquePtr<DOMCSSDeclarationImpl> mDOMDeclaration;

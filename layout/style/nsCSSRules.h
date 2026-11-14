@@ -94,6 +94,12 @@ public:
                                 ErrorResult& aRv) override;
   nsMediaList* Media() const;
 
+  void SetContainerQuery(const nsString& aName) {
+    mIsContainerQuery = true;
+    mContainerName = aName;
+  }
+  bool IsContainerQuery() const { return mIsContainerQuery; }
+
   virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf)
     const override MOZ_MUST_OVERRIDE;
 
@@ -104,6 +110,8 @@ protected:
   void AppendConditionText(nsAString& aOutput) const;
 
   RefPtr<nsMediaList> mMedia;
+  nsString mContainerName;
+  bool mIsContainerQuery;
 };
 
 class DocumentRule final : public ConditionRule,

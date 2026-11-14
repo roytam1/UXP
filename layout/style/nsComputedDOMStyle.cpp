@@ -4852,6 +4852,27 @@ nsComputedDOMStyle::DoGetContain()
 }
 
 already_AddRefed<CSSValue>
+nsComputedDOMStyle::DoGetContainerType()
+{
+  RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
+  val->SetIdent(nsCSSProps::ValueToKeywordEnum(
+      StyleDisplay()->mContainerType, nsCSSProps::kContainerTypeKTable));
+  return val.forget();
+}
+
+already_AddRefed<CSSValue>
+nsComputedDOMStyle::DoGetContainerName()
+{
+  RefPtr<nsDOMCSSValueList> valueList = GetROCSSValueList(false);
+  for (const nsString& name : StyleDisplay()->mContainerNames) {
+    RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
+    val->SetString(name, nsIDOMCSSPrimitiveValue::CSS_IDENT);
+    valueList->AppendCSSValue(val.forget());
+  }
+  return valueList.forget();
+}
+
+already_AddRefed<CSSValue>
 nsComputedDOMStyle::DoGetPosition()
 {
   RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;

@@ -6893,6 +6893,40 @@ nsRuleNode::ComputeDisplayData(void* aStartStruct,
            NS_STYLE_CONTAIN_NONE, Unused,
            NS_STYLE_CONTAIN_NONE, Unused, Unused);
 
+  // container-type: normal, enum, inherit, initial
+  SetValue(*aRuleData->ValueForContainerType(), display->mContainerType,
+           conditions,
+           SETVAL_ENUMERATED | SETVAL_UNSET_INITIAL,
+           parentDisplay->mContainerType,
+           NS_STYLE_CONTAINER_TYPE_NORMAL);
+
+  // container-name: none, ident list, inherit, initial
+  const nsCSSValue* containerNameValue = aRuleData->ValueForContainerName();
+  switch (containerNameValue->GetUnit()) {
+    case eCSSUnit_Null:
+      break;
+    case eCSSUnit_None:
+    case eCSSUnit_Initial:
+    case eCSSUnit_Unset:
+    case eCSSUnit_Revert:
+      display->mContainerNames.Clear();
+      break;
+    case eCSSUnit_Inherit:
+      display->mContainerNames = parentDisplay->mContainerNames;
+      conditions.SetUncacheable();
+      break;
+    default:
+      MOZ_ASSERT(containerNameValue->GetUnit() == eCSSUnit_List ||
+                 containerNameValue->GetUnit() == eCSSUnit_ListDep,
+                 "unexpected container-name unit");
+      display->mContainerNames.Clear();
+      for (const nsCSSValueList* item = containerNameValue->GetListValue();
+           item; item = item->mNext) {
+        item->mValue.GetStringValue(*display->mContainerNames.AppendElement());
+      }
+      break;
+  }
+
   // scroll-behavior: enum, inherit, initial
   SetValue(*aRuleData->ValueForScrollBehavior(), display->mScrollBehavior,
            conditions,

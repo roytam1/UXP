@@ -1822,6 +1822,13 @@ const KTableEntry nsCSSProps::kContainKTable[] = {
   { eCSSKeyword_UNKNOWN, -1 }
 };
 
+const KTableEntry nsCSSProps::kContainerTypeKTable[] = {
+  { eCSSKeyword_normal,      NS_STYLE_CONTAINER_TYPE_NORMAL },
+  { eCSSKeyword_size,        NS_STYLE_CONTAINER_TYPE_SIZE },
+  { eCSSKeyword_inline_size, NS_STYLE_CONTAINER_TYPE_INLINE_SIZE },
+  { eCSSKeyword_UNKNOWN, -1 }
+};
+
 const KTableEntry nsCSSProps::kContextOpacityKTable[] = {
   { eCSSKeyword_context_fill_opacity, NS_STYLE_CONTEXT_FILL_OPACITY },
   { eCSSKeyword_context_stroke_opacity, NS_STYLE_CONTEXT_STROKE_OPACITY },
