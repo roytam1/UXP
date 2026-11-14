@@ -66,12 +66,12 @@ inline bool is_return(const instr i) {
 
 struct context
 {
-    context(uint8 ref=0) : codeRef(ref) {flags.changed=false; flags.referenced=false;}
+    context(size_t ref=0) : codeRef(ref) {flags.changed=false; flags.referenced=false;}
     struct { 
         uint8   changed:1,
                 referenced:1;
     } flags;
-    uint8       codeRef;
+    size_t      codeRef;
 };
 
 } // end namespace
@@ -86,7 +86,7 @@ public:
     decoder(limits & lims, Code &code, enum passtype pt) throw();
     
     bool        load(const byte * bc_begin, const byte * bc_end);
-    void        apply_analysis(instr * const code, instr * code_end);
+    bool        apply_analysis(instr * const code, instr * code_end);
     byte        max_ref() { return _max_ref; }
     int         out_index() const { return _out_index; }
     
@@ -206,7 +206,8 @@ Machine::Code::Code(bool is_constraint, const byte * bytecode_begin, const byte 
     }
 
     assert((_constraint && immutable()) || !_constraint);
-    dec.apply_analysis(_code, _code + _instr_count);
+    if (!dec.apply_analysis(_code, _code + _instr_count))
+        return;
     _max_ref = dec.max_ref();
     
     // Now we know exactly how much code and data the program really needs
@@ -605,16 +606,25 @@ bool Machine::Code::decoder::emit_opcode(opcode opc, const byte * & bc)
 }
 
 
-void Machine::Code::decoder::apply_analysis(instr * const code, instr * code_end)
+bool Machine::Code::decoder::apply_analysis(instr * const code, instr * code_end)
 {
     // insert TEMP_COPY commands for slots that need them (that change and are referenced later)
-    int tempcount = 0;
-    if (_code._constraint) return;
+    size_t tempcount = 0, last_ref = 0;
+    if (_code._constraint) return true;
 
     const instr temp_copy = Machine::getOpcodeTable()[TEMP_COPY].impl[0];
     for (const context * c = _contexts, * const ce = c + _slotref; c < ce; ++c)
     {
         if (!c->flags.referenced || !c->flags.changed) continue;
+
+        // References are offsets in the original instruction stream.  The
+        // tempcount adjustment is only valid when inserting in that order.
+        if (c->codeRef < last_ref || c->codeRef >= _code._instr_count)
+        {
+            failure(out_of_range_data);
+            return false;
+        }
+        last_ref = c->codeRef;
         
         instr * const tip = code + c->codeRef + tempcount;        
         memmove(tip+1, tip, (code_end - tip) * sizeof(instr));
@@ -625,6 +635,7 @@ void Machine::Code::decoder::apply_analysis(instr * const code, instr * code_end
     }
     
     _code._instr_count = code_end - code;
+    return true;
 }
 
 
