@@ -519,8 +519,12 @@ LookForTargetPseudo(nsCSSSelector* aSelector,
 enum class ContainerEval : uint8_t { False, True, Unknown };
 
 struct ContainerSize {
+  // Physical extents. -1 in an axis the container doesn't let us query.
   float mWidth;
-  float mHeight;   // -1 when the block axis is not queryable
+  float mHeight;
+  // The container's inline axis runs vertically, so inline-size is its height
+  // and block-size is its width.
+  bool mVertical;
 };
 
 // Nearest ancestor container, honouring the query name if it has one.
@@ -546,16 +550,44 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
     if (!aName.IsEmpty() && !display->HasContainerName(aName)) {
       continue;
     }
+
+    // Only the inline axis is queryable unless the container is `size`.
+    const bool vertical = frame->GetWritingMode().IsVertical();
+    const bool blockQueryable =
+      display->mContainerType == NS_STYLE_CONTAINER_TYPE_SIZE;
+
     nsSize rect = frame->GetContentRectRelativeToSelf().Size();
-    aSize.mWidth = nsPresContext::AppUnitsToFloatCSSPixels(rect.width);
-    aSize.mHeight =
-      display->mContainerType == NS_STYLE_CONTAINER_TYPE_INLINE_SIZE
-        ? -1.0f
-        : nsPresContext::AppUnitsToFloatCSSPixels(rect.height);
+    aSize.mVertical = vertical;
+    aSize.mWidth = (!vertical || blockQueryable)
+                     ? nsPresContext::AppUnitsToFloatCSSPixels(rect.width)
+                     : -1.0f;
+    aSize.mHeight = (vertical || blockQueryable)
+                      ? nsPresContext::AppUnitsToFloatCSSPixels(rect.height)
+                      : -1.0f;
     return true;
   }
 
   return false;
+}
+
+// Compares a measured value against the required one for a given range.
+static ContainerEval
+CompareFeatureValue(float aActual, float aRequired,
+                    nsMediaExpression::Range aRange)
+{
+  switch (aRange) {
+    case nsMediaExpression::eMin:
+      return aActual >= aRequired ? ContainerEval::True
+                                  : ContainerEval::False;
+    case nsMediaExpression::eMax:
+      return aActual <= aRequired ? ContainerEval::True
+                                  : ContainerEval::False;
+    case nsMediaExpression::eEqual:
+      return aActual == aRequired ? ContainerEval::True
+                                  : ContainerEval::False;
+    default:
+      return ContainerEval::Unknown;
+  }
 }
 
 static ContainerEval
@@ -568,33 +600,92 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
   if (!aExpr->mFeature || !aExpr->mFeature->mName) {
     return ContainerEval::Unknown;
   }
-  if (aExpr->mFeature->mValueType != nsMediaFeature::eLength) {
-    return ContainerEval::Unknown;
-  }
 
   // Feature atoms are spelled with hyphens ("min-width") but the gkAtoms in
   // this tree are not, so normalise before comparing.
   nsAutoString name;
   (*aExpr->mFeature->mName)->ToString(name);
   name.StripChars("-");
+
+  const nsCSSValue& value = aExpr->mValue;
+
+  switch (aExpr->mFeature->mValueType) {
+    case nsMediaFeature::eFloatRatio: {
+      if (!name.EqualsLiteral("aspectratio") ||
+          aSize.mWidth < 0.0f || aSize.mHeight <= 0.0f ||
+          value.GetUnit() != eCSSUnit_Array) {
+        return ContainerEval::Unknown;
+      }
+      const nsCSSValue::Array* ratio = value.GetArrayValue();
+      if (ratio->Count() != 2 ||
+          ratio->Item(0).GetUnit() != eCSSUnit_Number ||
+          ratio->Item(1).GetUnit() != eCSSUnit_Number ||
+          ratio->Item(1).GetFloatValue() <= 0.0f) {
+        // A zero denominator is a legal infinite ratio, but not worth
+        // special-casing until something needs it.
+        return ContainerEval::Unknown;
+      }
+      // The ratio is scale invariant, so the unit the rect is measured in
+      // drops out and no app-unit conversion is needed.
+      return CompareFeatureValue(
+        aSize.mWidth / aSize.mHeight,
+        ratio->Item(0).GetFloatValue() / ratio->Item(1).GetFloatValue(),
+        aExpr->mRange);
+    }
+
+    case nsMediaFeature::eEnumerated: {
+      // orientation is eMinMaxNotAllowed, so the range is always eEqual.
+      if (!name.EqualsLiteral("orientation") ||
+          aSize.mWidth < 0.0f || aSize.mHeight < 0.0f ||
+          value.GetUnit() != eCSSUnit_Enumerated) {
+        return ContainerEval::Unknown;
+      }
+      // Square containers are portrait, as in GetOrientation.
+      int32_t actual = aSize.mWidth > aSize.mHeight
+                         ? NS_STYLE_ORIENTATION_LANDSCAPE
+                         : NS_STYLE_ORIENTATION_PORTRAIT;
+      return value.GetIntValue() == actual ? ContainerEval::True
+                                           : ContainerEval::False;
+    }
+
+    case nsMediaFeature::eLength:
+      break;
+
+    default:
+      return ContainerEval::Unknown;
+  }
+
   float actual;
   if (name.EqualsLiteral("width") ||
       name.EqualsLiteral("minwidth") ||
-      name.EqualsLiteral("maxwidth")) {
+      name.EqualsLiteral("maxwidth") ||
+      name.EqualsLiteral("inlinesize") ||
+      name.EqualsLiteral("mininlinesize") ||
+      name.EqualsLiteral("maxinlinesize")) {
     actual = aSize.mWidth;
   } else if (name.EqualsLiteral("height") ||
              name.EqualsLiteral("minheight") ||
-             name.EqualsLiteral("maxheight")) {
+             name.EqualsLiteral("maxheight") ||
+             name.EqualsLiteral("blocksize") ||
+             name.EqualsLiteral("minblocksize") ||
+             name.EqualsLiteral("maxblocksize")) {
     actual = aSize.mHeight;
+  } else if (name.EqualsLiteral("inlinesize") ||
+             name.EqualsLiteral("mininlinesize") ||
+             name.EqualsLiteral("maxinlinesize")) {
+    actual = aSize.mVertical ? aSize.mHeight : aSize.mWidth;
+  } else if (name.EqualsLiteral("blocksize") ||
+             name.EqualsLiteral("minblocksize") ||
+             name.EqualsLiteral("maxblocksize")) {
+    actual = aSize.mVertical ? aSize.mWidth : aSize.mHeight;
   } else {
-    // device-width, aspect-ratio, orientation, resolution, etc.
+    // device-width, resolution, etc.
     return ContainerEval::Unknown;
   }
   if (actual < 0.0f) {
     return ContainerEval::Unknown;
   }
 
-  const nsCSSValue& value = aExpr->mValue;
   float required;
   if (value.IsPixelLengthUnit()) {
     required = nsPresContext::AppUnitsToFloatCSSPixels(value.GetPixelLength());
@@ -612,16 +703,7 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
     u = "em";
   }
 
-  switch (aExpr->mRange) {
-    case nsMediaExpression::eMin:
-      return actual >= required ? ContainerEval::True : ContainerEval::False;
-    case nsMediaExpression::eMax:
-      return actual <= required ? ContainerEval::True : ContainerEval::False;
-    case nsMediaExpression::eEqual:
-      return actual == required ? ContainerEval::True : ContainerEval::False;
-    default:
-      return ContainerEval::Unknown;
-  }
+  return CompareFeatureValue(actual, required, aExpr->mRange);
 }
 
 // All expressions ANDed, queries ORed, `not` inverts, unknown resolves false.
