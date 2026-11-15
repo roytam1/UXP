@@ -3992,6 +3992,7 @@ CSSParserImpl::ParseMediaQuery(eMediaQueryType aQueryType,
   } else {
     nsCOMPtr<nsIAtom> mediaType;
     bool gotNotOrOnly = false;
+    bool typeOmitted = false;
     for (;;) {
       if (!GetToken(true)) {
         REPORT_UNEXPECTED_EOF(PEGatherMediaEOF);
@@ -4022,8 +4023,36 @@ CSSParserImpl::ParseMediaQuery(eMediaQueryType aQueryType,
         // valid media type
         break;
       }
+      // The media type may be omitted after "not"/"only", as in
+      // "@container not (width > 400px)".  Peek at the next token: a "("
+      // means the condition starts right here and there is no type to read.
+      if (gotNotOrOnly) {
+        if (!GetToken(true)) {
+          REPORT_UNEXPECTED_EOF(PEGatherMediaEOF);
+          return false;
+        }
+        if (eCSSToken_Symbol == mToken.mType && mToken.mSymbol == '(') {
+          typeOmitted = true;
+          break;
+        }
+        UngetToken();
+      }
     }
-    query->SetType(mediaType);
+
+    if (typeOmitted) {
+      // We got an expression without a media type.  Leave the "(" in place
+      // for ParseMediaQueryExpression and parse the first expression here,
+      // exactly as the type-less branch above does.
+      UngetToken();
+      query->SetType(nsGkAtoms::all);
+      query->SetTypeOmitted();
+      if (!ParseMediaQueryExpression(query)) {
+        OUTPUT_ERROR();
+        query->SetHadUnknownExpression();
+      }
+    } else {
+      query->SetType(mediaType);
+    }
   }
 
   for (;;) {
@@ -4529,6 +4558,32 @@ StampContainerCondition(css::Rule* aRule, void* aData)
   return true;
 }
 
+// Keywords that can start a <container-condition>, so they can't be a
+// <container-name>.  A condition legitimately begins with one of these, so
+// they have to be handed on to the condition parser instead of rejected.
+static bool
+IsConditionStartKeyword(const nsAString& aIdent)
+{
+  return aIdent.LowerCaseEqualsLiteral("and") ||
+         aIdent.LowerCaseEqualsLiteral("not") ||
+         aIdent.LowerCaseEqualsLiteral("or");
+}
+
+// <container-name> is a <custom-ident> excluding 'none', so the CSS-wide
+// keywords and 'default' can't be a name either.  None of these can start a
+// condition, so hitting one makes the whole prelude invalid.
+static bool
+IsReservedContainerName(const nsAString& aIdent)
+{
+  return aIdent.LowerCaseEqualsLiteral("none") ||
+         aIdent.LowerCaseEqualsLiteral("default") ||
+         aIdent.LowerCaseEqualsLiteral("inherit") ||
+         aIdent.LowerCaseEqualsLiteral("initial") ||
+         aIdent.LowerCaseEqualsLiteral("unset") ||
+         aIdent.LowerCaseEqualsLiteral("revert") ||
+         aIdent.LowerCaseEqualsLiteral("revert-layer");
+}
+
 // Parse a container rule: "@container [<container-name>] <container-condition>
 // { ... }"
 bool
@@ -4538,20 +4593,39 @@ CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
     return false;
   }
 
-  // Optional <container-name>. A condition can start with "not"/"and"/"or" or
-  // with a "(" or "style(" token, so only a plain ident that is none of those
-  // keywords can be a name.
+  // Optional <container-name>.  A condition can start with "not" followed by
+  // "(", and none of "and"/"or"/the reserved keywords can be a name at all.
   nsAutoString containerName;
-  if (eCSSToken_Ident == mToken.mType &&
-      !mToken.mIdent.LowerCaseEqualsLiteral("not") &&
-      !mToken.mIdent.LowerCaseEqualsLiteral("and") &&
-      !mToken.mIdent.LowerCaseEqualsLiteral("or")) {
-    containerName = mToken.mIdent;
-    if (!GetToken(true)) {
+  bool leaveToken = false;
+  if (eCSSToken_Ident == mToken.mType) {
+    if (IsReservedContainerName(mToken.mIdent)) {
+      // Can't be a name and can't start a condition, so the prelude is bogus.
       return false;
     }
+    if (IsConditionStartKeyword(mToken.mIdent)) {
+      // Not a name.  "and"/"or" can't begin a condition either, and "not" only
+      // can when a "(" follows it.
+      if (!mToken.mIdent.LowerCaseEqualsLiteral("not")) {
+        return false;
+      }
+      if (!GetToken(true)) {
+        return false;
+      }
+      if (eCSSToken_Symbol != mToken.mType || mToken.mSymbol != '(') {
+        return false;
+      }
+      UngetToken(); // back to "not", which GatherMedia has to start on
+      leaveToken = true;
+    } else {
+      containerName = mToken.mIdent;
+      if (!GetToken(true)) {
+        return false;
+      }
+    }
   }
-  UngetToken();
+  if (!leaveToken) {
+    UngetToken();
+  }
 
   uint32_t linenum, colnum;
   if (!GetNextTokenLocation(true, &linenum, &colnum)) {
@@ -13458,6 +13532,8 @@ CSSParserImpl::ParsePropertyByFunction(nsCSSPropertyID aPropID)
     return ParsePlaceItems();
   case eCSSProperty_place_self:
     return ParsePlaceSelf();
+  case eCSSProperty_container:
+    return ParseContainer();
   case eCSSProperty_background:
     return ParseImageLayers(nsStyleImageLayers::kBackgroundLayerTable);
   case eCSSProperty_background_repeat:
@@ -13794,8 +13870,6 @@ CSSParserImpl::ParseSingleValuePropertyByFunction(nsCSSValue& aValue,
       return ParseAspectRatio(aValue);
     case eCSSProperty_contain:
       return ParseContain(aValue);
-    case eCSSProperty_container:
-      return ParseContainer();
     case eCSSProperty_container_name:
       return ParseContainerName(aValue);
     case eCSSProperty_container_type:
@@ -16652,7 +16726,11 @@ CSSParserImpl::ParseContainerName(nsCSSValue& aValue)
     }
     nsAutoString str;
     ident.GetStringValue(str);
-    if (!ParseCustomIdent(ident, str)) {
+    // <custom-ident> excludes the keywords that can start a
+    // <container-condition>, so that a name is always distinguishable from
+    // the condition that may follow it. Keywords are ASCII case-insensitive,
+    // and escaped forms are unescaped by GetStringValue above.
+    if (IsConditionStartKeyword(str) || !ParseCustomIdent(ident, str)) {
       return false;
     }
     nsCSSValueList* node =
