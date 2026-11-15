@@ -955,6 +955,14 @@ nsStyleSet::GetContext(nsStyleContext* aParentContext,
     NS_ASSERTION(result->GetPseudo() == aPseudoTag, "Unexpected pseudo");
   }
 
+  // Container units are resolved from the style context during style
+  // resolution, which happens before the context is attached to any frame,
+  // and never attaches at all for an element with no frame (display:none).
+  // Record the element here so the ancestor walk has a starting point.
+  if (aElementForAnimation) {
+    result->SetContent(aElementForAnimation);
+  }
+
   if (aFlags & eDoAnimation) {
 
     nsIStyleRule *oldAnimRule = GetAnimationRule(aRuleNode);

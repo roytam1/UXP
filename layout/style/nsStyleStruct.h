@@ -2973,6 +2973,23 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay
   }
 
   bool IsContainerForSizeQueries() const {
+    switch (mDisplay) {
+      case mozilla::StyleDisplay::Table:
+      case mozilla::StyleDisplay::InlineTable:
+      case mozilla::StyleDisplay::TableCell:
+      case mozilla::StyleDisplay::TableRow:
+      case mozilla::StyleDisplay::TableRowGroup:
+      case mozilla::StyleDisplay::TableHeaderGroup:
+      case mozilla::StyleDisplay::TableFooterGroup:
+      case mozilla::StyleDisplay::TableColumn:
+      case mozilla::StyleDisplay::TableColumnGroup:
+      case mozilla::StyleDisplay::Inline:
+      case mozilla::StyleDisplay::Contents:
+      case mozilla::StyleDisplay::None:
+        return false;
+      default:
+        break;
+    }
     return mContainerType != NS_STYLE_CONTAINER_TYPE_NORMAL;
   }
 

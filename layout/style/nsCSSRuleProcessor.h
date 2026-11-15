@@ -31,14 +31,43 @@ class nsCSSKeyframesRule;
 class nsCSSPageRule;
 class nsCSSFontFeatureValuesRule;
 class nsCSSCounterStyleRule;
+class nsIFrame;
 
 namespace mozilla {
 class CSSStyleSheet;
 enum class CSSPseudoElementType : uint8_t;
+namespace dom {
+class Element;
+} // namespace dom
 namespace css {
 class DocumentRule;
 } // namespace css
 } // namespace mozilla
+
+/**
+ * The size of a query container, in CSS pixels, plus what is needed to
+ * interpret container units against it.
+ */
+struct ContainerUnitsScale
+{
+  // Always real: units resolve against both axes whether or not the axis is
+  // queryable.
+  float mWidth;
+  float mHeight;
+  // The container's inline axis runs vertically.
+  bool mVertical;
+  // Only `container-type: size` makes the block axis available.
+  bool mBlockQueryable;
+};
+
+/**
+ * Finds the nearest ancestor query container of aFrame that can answer for
+ * the block axis if aBlockAxis is set, and reports its size. Returns false if
+ * there is none, in which case the caller must substitute the viewport.
+ */
+bool FindQueryContainerForContent(nsIContent* aContent, bool aBlockAxis,
+                                  nsPresContext* aPresContext,
+                                  ContainerUnitsScale& aSize);
 
 /**
  * The CSS style rule processor provides a mechanism for sibling style

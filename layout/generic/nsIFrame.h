@@ -653,22 +653,7 @@ public:
    * Get the style context associated with this frame.
    */
   nsStyleContext* StyleContext() const { return mStyleContext; }
-  void SetStyleContext(nsStyleContext* aContext)
-  { 
-    if (aContext != mStyleContext) {
-      nsStyleContext* oldStyleContext = mStyleContext;
-      mStyleContext = aContext;
-      aContext->AddRef();
-#ifdef DEBUG
-      aContext->FrameAddRef();
-#endif
-      DidSetStyleContext(oldStyleContext);
-#ifdef DEBUG
-      oldStyleContext->FrameRelease();
-#endif
-      oldStyleContext->Release();
-    }
-  }
+  void SetStyleContext(nsStyleContext* aContext);
 
   /**
    * SetStyleContextWithoutNotification is for changes to the style

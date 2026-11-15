@@ -533,7 +533,8 @@ struct ContainerSize {
 // Nearest ancestor container, honouring the query name if it has one.
 static bool
 FindQueryContainer(Element* aElement, const nsAString& aName,
-                   ContainerSize& aSize, nsPresContext* aPresContext)
+                   ContainerSize& aSize, nsPresContext* aPresContext,
+                   bool aBlockAxis = false)
 {
   for (Element* e = aElement->GetParentElement(); e;
        e = e->GetParentElement()) {
@@ -545,11 +546,6 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
     if (!display->IsContainerForSizeQueries()) {
       continue;
     }
-    if (frame->GetStateBits() & NS_FRAME_FIRST_REFLOW) {
-      // Never reflowed, so the rect is still meaningless. Leave sawContainer
-      // clear so the caller falls back to the viewport for this pass.
-      continue;
-    }
     if (!aName.IsEmpty() && !display->HasContainerName(aName)) {
       continue;
     }
@@ -559,15 +555,77 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
     const bool blockQueryable =
       display->mContainerType == NS_STYLE_CONTAINER_TYPE_SIZE;
 
-    nsSize rect = frame->GetContentRectRelativeToSelf().Size();
+    if (aBlockAxis && !blockQueryable) {
+      // The unit measures the block axis, which this container cannot answer
+      // for; keep walking outwards.
+      continue;
+    }
+
     aSize.mVertical = vertical;
     aSize.mBlockQueryable = blockQueryable;
-    aSize.mWidth = nsPresContext::AppUnitsToFloatCSSPixels(rect.width);
-    aSize.mHeight = nsPresContext::AppUnitsToFloatCSSPixels(rect.height);
+    // Container units are resolved from the style context, during style
+    // resolution, which always runs ahead of the reflow that fills the rect
+    // in. Skipping a frame that has not been reflowed therefore means never
+    // finding a container on the first pass over a freshly built subtree, and
+    // the caller falls back to the viewport with a perfectly good container
+    // sitting right there.
+    // A zero extent means the box has not been reflowed, or has been reflowed
+    // but is empty, and says nothing about the container's real size. Size
+    // containment makes the box's own width and height authoritative, so take
+    // them whenever the rect is empty, and use the rect only when there is no
+    // specified length to fall back on.
+    const nsStylePosition* pos = frame->StylePosition();
+    nsSize rect = frame->GetContentRectRelativeToSelf().Size();
+    if (rect.width || !pos->mWidth.ConvertsToLength()) {
+      aSize.mWidth = nsPresContext::AppUnitsToFloatCSSPixels(rect.width);
+    } else {
+      aSize.mWidth =
+        nsPresContext::AppUnitsToFloatCSSPixels(pos->mWidth.GetCoordValue());
+    }
+    if (rect.height || !pos->mHeight.ConvertsToLength()) {
+      aSize.mHeight = nsPresContext::AppUnitsToFloatCSSPixels(rect.height);
+    } else {
+      aSize.mHeight =
+        nsPresContext::AppUnitsToFloatCSSPixels(pos->mHeight.GetCoordValue());
+    }
     return true;
   }
 
   return false;
+}
+
+bool
+FindQueryContainerForContent(nsIContent* aContent, bool aBlockAxis,
+                             nsPresContext* aPresContext, ContainerUnitsScale& aSize)
+{
+  if (!aContent) {
+    return false;
+  }
+  // A display:none element has no frame, and an anonymous box has no element,
+  // so neither the frame nor the content is reliably an element. Start from
+  // whichever ancestor element there is and let FindQueryContainer walk up.
+  Element* element = aContent->IsElement() ? aContent->AsElement() : nullptr;
+  if (!element) {
+    nsIContent* parent = aContent->GetParent();
+    element = parent && parent->IsElement() ? parent->AsElement() : nullptr;
+  }
+  if (!element) {
+    return false;
+  }
+
+  // Container units resolve against the nearest *ancestor* container, so pass
+  // the element itself and let FindQueryContainer start at its parent.
+  ContainerSize size;
+  if (!FindQueryContainer(element, EmptyString(), size,
+                          aPresContext, aBlockAxis)) {
+    return false;
+  }
+
+  aSize.mWidth = size.mWidth;
+  aSize.mHeight = size.mHeight;
+  aSize.mVertical = size.mVertical;
+  aSize.mBlockQueryable = size.mBlockQueryable;
+  return true;
 }
 
 // Compares a measured value against the required one for a given range.

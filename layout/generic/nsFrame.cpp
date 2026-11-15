@@ -5,6 +5,7 @@
 
 /* base class of all rendering objects */
 
+#include "nsStyleContext.h"
 #include "nsFrame.h"
 
 #include <stdarg.h>
@@ -417,6 +418,7 @@ nsFrame::~nsFrame()
   mStyleContext->FrameRelease();
 #endif
   mStyleContext->Release();
+  mContent = nullptr;
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsFrame)
@@ -521,6 +523,13 @@ nsFrame::Init(nsIContent*       aContent,
 
   if (aContent) {
     NS_ADDREF(aContent);
+  }
+
+  // Style contexts are attached to their frame before Init, so the content
+  // back-pointer has to be filled in here rather than in the constructor,
+  // where mContent is still null.
+  if (mStyleContext) {
+    mStyleContext->SetContent(mContent);
   }
 
   if (aPrevInFlow) {
@@ -6012,6 +6021,28 @@ nsIFrame::SetView(nsView* aView)
   }
 
   return NS_OK;
+}
+
+void
+nsIFrame::SetStyleContext(nsStyleContext* aContext)
+{ 
+  if (aContext != mStyleContext) {
+    nsStyleContext* oldStyleContext = mStyleContext;
+    mStyleContext = aContext;
+    aContext->AddRef();
+    aContext->SetContent(mContent);
+#ifdef DEBUG
+    aContext->FrameAddRef();
+#endif
+    DidSetStyleContext(oldStyleContext);
+#ifdef DEBUG
+    oldStyleContext->FrameRelease();
+#endif
+    if (oldStyleContext->GetContent() == mContent) {
+      oldStyleContext->SetContent(nullptr);
+    }
+    oldStyleContext->Release();
+  }
 }
 
 // Find the first geometric parent that has a view

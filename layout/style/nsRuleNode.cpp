@@ -61,6 +61,8 @@
 #include "nsDeviceContext.h"
 #include "nsQueryObject.h"
 #include "nsUnicodeProperties.h"
+#include "nsCSSRuleProcessor.h"
+#include "nsIFrame.h"
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 #include <malloc.h>
@@ -449,15 +451,6 @@ GetPixelLengthWithRounding(const nsCSSValue& aValue,
     float(double(aValue.GetFloatValue()) * scaleFactor), aRounding);
 }
 
-#ifdef VIEWPORT_FALLBACK
-// The live viewport: closer to what a container will end up sized to, but it
-// moves as dynamic toolbars come and go, which these units aren't meant to.
-static nsSize
-CalcContainerUnitsScale(nsPresContext* aPresContext)
-{
-  return CalcViewportUnitsScale(aPresContext);
-}
-#else
 // The small viewport, which is what the spec substitutes for a container that
 // doesn't exist. Not widened for root scrollbars, unlike the viewport units.
 static nsSize
@@ -468,7 +461,6 @@ CalcContainerUnitsScale(nsPresContext* aPresContext)
   aPresContext->SetUsesViewportUnits(true);
   return aPresContext->GetVisibleArea().Size();
 }
-#endif
 
 static inline nscoord ScaleViewportCoordTrunc(const nsCSSValue& aValue,
                                               nscoord aViewportSize)
@@ -679,22 +671,13 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
       nscoord viewportWidth = CalcViewportUnitsScale(aPresContext).width;
       return ScaleViewportCoordTrunc(aValue, viewportWidth);
     }
-    // Container units. No query container is reachable from here, so these
-    // resolve against the viewport.
+    // Container units. Resolve against the nearest ancestor query container
+    // that can answer for the axis, and against the small viewport otherwise,
+    // which is what the spec substitutes for a container that isn't there.
     case eCSSUnit_CQW:
-    case eCSSUnit_CQH: {
-      nsSize scale(CalcContainerUnitsScale(aPresContext));
-      return ScaleViewportCoordTrunc(
-        aValue, aValue.GetUnit() == eCSSUnit_CQW ? scale.width : scale.height);
-    }
+    case eCSSUnit_CQH:
     case eCSSUnit_CQMin:
-    case eCSSUnit_CQMax: {
-      nsSize scale(CalcContainerUnitsScale(aPresContext));
-      nscoord reference = aValue.GetUnit() == eCSSUnit_CQMin
-                            ? min(scale.width, scale.height)
-                            : max(scale.width, scale.height);
-      return ScaleViewportCoordTrunc(aValue, reference);
-    }
+    case eCSSUnit_CQMax:
     case eCSSUnit_CQI:
     case eCSSUnit_CQB: {
       // Assume non-vertical writing mode if the style context is unavailable.
@@ -704,12 +687,71 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
         vertical = wm.IsVertical();
         aConditions.SetWritingModeDependency(wm.GetBits());
       }
-      nsSize scale(CalcContainerUnitsScale(aPresContext));
-      const bool wantInline = aValue.GetUnit() == eCSSUnit_CQI;
-      return ScaleViewportCoordTrunc(
-        aValue, (wantInline != vertical) ? scale.width : scale.height);
-    }
-    // While we could deal with 'rem' units correctly by simply not
+
+      const nsCSSUnit unit = aValue.GetUnit();
+      // Which axis the unit measures. CQMin and CQMax measure both.
+      const bool blockAxis = unit == eCSSUnit_CQB ||
+                             unit == eCSSUnit_CQMin ||
+                             unit == eCSSUnit_CQMax ||
+                             (unit == eCSSUnit_CQW && vertical) ||
+                             (unit == eCSSUnit_CQH && !vertical);
+
+      // The result depends on a container size the rule tree cannot track, so
+      // keep it out of the cached data.
+      aConditions.SetUncacheable();
+
+      nscoord reference;
+      ContainerUnitsScale container;
+      const bool haveContainer =
+        aStyleContext &&
+        FindQueryContainerForContent(aStyleContext->GetContent(), blockAxis,
+                                     aStyleContext->PresContext(), container);
+      if (haveContainer) {
+        float px;
+        switch (unit) {
+          case eCSSUnit_CQW:
+            px = container.mWidth;
+            break;
+          case eCSSUnit_CQH:
+            px = container.mHeight;
+            break;
+          case eCSSUnit_CQI:
+            px = container.mVertical ? container.mHeight : container.mWidth;
+            break;
+          case eCSSUnit_CQB:
+            px = container.mVertical ? container.mWidth : container.mHeight;
+            break;
+          default:
+            px = unit == eCSSUnit_CQMin
+                   ? std::min(container.mWidth, container.mHeight)
+                   : std::max(container.mWidth, container.mHeight);
+            break;
+        }
+        reference = nsPresContext::CSSPixelsToAppUnits(px);
+      } else {
+        nsSize scale(CalcContainerUnitsScale(aPresContext));
+        switch (unit) {
+          case eCSSUnit_CQW:
+            reference = scale.width;
+            break;
+          case eCSSUnit_CQH:
+            reference = scale.height;
+            break;
+          case eCSSUnit_CQI:
+            reference = vertical ? scale.height : scale.width;
+            break;
+          case eCSSUnit_CQB:
+            reference = vertical ? scale.width : scale.height;
+            break;
+          default:
+            reference = unit == eCSSUnit_CQMin
+                          ? std::min(scale.width, scale.height)
+                          : std::max(scale.width, scale.height);
+            break;
+        }
+      }
+      return ScaleViewportCoordTrunc(aValue, reference);
+    }    // While we could deal with 'rem' units correctly by simply not
     // caching any data that uses them in the rule tree, it's valuable
     // to store them in the rule tree (for faster dynamic changes of
     // other things).  And since the font size of the root element

@@ -662,6 +662,14 @@ MustReresolveStyle(const nsStyleContext* aContext)
 static bool
 HasContainerAncestor(Element* aElement)
 {
+  // A freshly inserted element has no frame, and its ancestors may not have
+  // one either, so "no container here" and "nothing to inspect yet" are
+  // indistinguishable. Report true and let the caller flush layout; a
+  // display:none element flushes needlessly, which is cheap, and it can never
+  // resolve against a container anyway.
+  if (!aElement->GetPrimaryFrame()) {
+    return true;
+  }
   for (nsIFrame* f = aElement->GetPrimaryFrame(); f; f = f->GetInFlowParent()) {
     if (f->StyleDisplay()->IsContainerForSizeQueries()) {
       return true;
@@ -687,8 +695,17 @@ nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
   // may be different.
   // Container queries are evaluated against live layout geometry, so inside a
   // container the element's style cannot be resolved from style data alone.
+  // Style is flushed first and the predicate consulted afterwards, because
+  // HasContainerAncestor reads container-type off the ancestor style
+  // contexts. Those are stale until the pending restyle has been processed,
+  // so asking beforehand makes the answer depend on whether something else
+  // already forced a reflow, which in turn makes the result depend on query
+  // order rather than on the stylesheet.
+  document->FlushPendingNotifications(Flush_Style);
   const bool flushLayout = aNeedsLayoutFlush || HasContainerAncestor(mElement);
-  document->FlushPendingNotifications(flushLayout ? Flush_Layout : Flush_Style);
+  if (flushLayout) {
+    document->FlushPendingNotifications(Flush_Layout);
+  }
 #ifdef DEBUG
   mFlushedPendingReflows = flushLayout;
 #endif
@@ -791,6 +808,9 @@ nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
       ClearStyleContext();
       return;
     }
+    // A display:none element never gets a frame, so nothing else will attach
+    // its content; container-unit resolution still needs to walk ancestors.
+    resolvedStyleContext->SetContent(mElement);
 
     // No need to re-get the generation, even though GetStyleContextForElement
     // will flush, since we flushed style at the top of this function.
@@ -813,6 +833,13 @@ nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
     if (styleIfVisited) {
       mStyleContext = styleIfVisited;
     }
+  }
+  // Attach the element whichever way mStyleContext was produced: resolved
+  // above, taken from a frame, or left over from a previous call. Container
+  // units have to walk ancestors even when the element has no frame at all,
+  // and a display:none element never gets one.
+  if (mStyleContext) {
+    mStyleContext->SetContent(mElement);
   }
 }
 
