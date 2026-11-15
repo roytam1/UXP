@@ -4078,6 +4078,20 @@ PresShell::FlushPendingNotifications(mozilla::ChangesToFlush aFlush)
           mContentToScrollTo = nullptr;
         }
       }
+      // A reflow that resized a query container leaves its descendants with
+      // stale container query results.  DidReflow posts a subtree restyle for
+      // those; process it now that geometry is settled, and let any reflow it
+      // queues run too.  Bounded, since a restyle can resize a container again.
+      for (uint32_t i = 0; i < 3 && !mIsDestroying; ++i) {
+        if (!mPresContext->RestyleManager()->HasPendingRestyles()) {
+          break;
+        }
+        {
+          nsAutoScriptBlocker scriptBlocker;
+          mPresContext->RestyleManager()->ProcessPendingRestyles();
+        }
+        ProcessReflowCommands(flushType < Flush_Layout);
+      }
     }
 
     if (flushType >= Flush_Layout) {

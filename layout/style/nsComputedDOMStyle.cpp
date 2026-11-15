@@ -658,6 +658,18 @@ MustReresolveStyle(const nsStyleContext* aContext)
   return false;
 }
 
+// Is the element, or an ancestor, a container for size queries?
+static bool
+HasContainerAncestor(Element* aElement)
+{
+  for (nsIFrame* f = aElement->GetPrimaryFrame(); f; f = f->GetInFlowParent()) {
+    if (f->StyleDisplay()->IsContainerForSizeQueries()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void
 nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
 {
@@ -673,10 +685,12 @@ nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
   // presshell.  Also note that we want to flush the style on the document
   // we're computing style in, not on the document mElement is in -- the two
   // may be different.
-  document->FlushPendingNotifications(
-    aNeedsLayoutFlush ? Flush_Layout : Flush_Style);
+  // Container queries are evaluated against live layout geometry, so inside a
+  // container the element's style cannot be resolved from style data alone.
+  const bool flushLayout = aNeedsLayoutFlush || HasContainerAncestor(mElement);
+  document->FlushPendingNotifications(flushLayout ? Flush_Layout : Flush_Style);
 #ifdef DEBUG
-  mFlushedPendingReflows = aNeedsLayoutFlush;
+  mFlushedPendingReflows = flushLayout;
 #endif
 
   nsCOMPtr<nsIPresShell> presShellForContent = GetPresShellForContent(mElement);
@@ -4849,6 +4863,50 @@ nsComputedDOMStyle::DoGetContain()
   }
 
   return val.forget();
+}
+
+already_AddRefed<CSSValue>
+nsComputedDOMStyle::DoGetContainer()
+{
+  RefPtr<CSSValue> name = DoGetContainerName();
+  if (!name) {
+    return nullptr;
+  }
+
+  ErrorResult error;
+  nsString nameText;
+  name->GetCssText(nameText, error);
+  if (error.Failed()) {
+    error.SuppressException();
+    return nullptr;
+  }
+
+  // 'normal' is the initial value of container-type, so a 'normal' type is
+  // omitted from the serialization of the shorthand, as is the slash.
+  nsString typeText;
+  RefPtr<CSSValue> type = DoGetContainerType();
+  if (type) {
+    type->GetCssText(typeText, error);
+    if (error.Failed()) {
+      error.SuppressException();
+      return nullptr;
+    }
+  }
+
+  if (typeText.IsEmpty() || typeText.EqualsLiteral("normal")) {
+    return name.forget();
+  }
+
+  // CSS_STRING is the default type for SetString, and it serializes verbatim
+  // (no quoting, no escaping), so it can be used to join the two
+  // already-serialized halves with a literal slash.
+  nsString text(nameText);
+  text.AppendLiteral(" / ");
+  text.Append(typeText);
+
+  RefPtr<nsROCSSPrimitiveValue> value = new nsROCSSPrimitiveValue;
+  value->SetString(text);
+  return value.forget();
 }
 
 already_AddRefed<CSSValue>

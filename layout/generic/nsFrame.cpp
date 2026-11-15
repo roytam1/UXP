@@ -5764,6 +5764,27 @@ nsFrame::DidReflow(nsPresContext*           aPresContext,
     }
     mState &= ~(NS_FRAME_IN_REFLOW | NS_FRAME_FIRST_REFLOW | NS_FRAME_IS_DIRTY |
                 NS_FRAME_HAS_DIRTY_CHILDREN);
+    // Queries are evaluated during style resolution against the container's
+    // content rect, so a reflow that changes that rect leaves its descendants
+    // holding stale results.  Restyle the subtree when it changes;
+    // PresShell::FlushPendingNotifications processes it once layout settles.
+    if (!GetPrevInFlow() && StyleDisplay()->IsContainerForSizeQueries()) {
+      nsSize size = GetContentRectRelativeToSelf().Size();
+      nsSize* last = static_cast<nsSize*>(GetProperty(ContainerSizeProperty()));
+      if (!last || last->width != size.width || last->height != size.height) {
+        if (last) {
+          *last = size;
+        } else {
+          SetProperty(ContainerSizeProperty(), new nsSize(size));
+        }
+        if (nsIContent* content = GetContent()) {
+          if (Element* element = content->AsElement()) {
+            aPresContext->RestyleManager()->PostRestyleEvent(
+                element, eRestyle_Subtree, nsChangeHint(0));
+          }
+        }
+      }
+    }
   }
 
   // Notify the percent bsize observer if there is a percent bsize.
