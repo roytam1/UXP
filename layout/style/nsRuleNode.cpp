@@ -449,6 +449,27 @@ GetPixelLengthWithRounding(const nsCSSValue& aValue,
     float(double(aValue.GetFloatValue()) * scaleFactor), aRounding);
 }
 
+#ifdef VIEWPORT_FALLBACK
+// The live viewport: closer to what a container will end up sized to, but it
+// moves as dynamic toolbars come and go, which these units aren't meant to.
+static nsSize
+CalcContainerUnitsScale(nsPresContext* aPresContext)
+{
+  return CalcViewportUnitsScale(aPresContext);
+}
+#else
+// The small viewport, which is what the spec substitutes for a container that
+// doesn't exist. Not widened for root scrollbars, unlike the viewport units.
+static nsSize
+CalcContainerUnitsScale(nsPresContext* aPresContext)
+{
+  // Take the same cache dependency the viewport units do, so a viewport change
+  // throws away style data.
+  aPresContext->SetUsesViewportUnits(true);
+  return aPresContext->GetVisibleArea().Size();
+}
+#endif
+
 static inline nscoord ScaleViewportCoordTrunc(const nsCSSValue& aValue,
                                               nscoord aViewportSize)
 {
@@ -657,6 +678,36 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
       }
       nscoord viewportWidth = CalcViewportUnitsScale(aPresContext).width;
       return ScaleViewportCoordTrunc(aValue, viewportWidth);
+    }
+    // Container units. No query container is reachable from here, so these
+    // resolve against the viewport.
+    case eCSSUnit_CQW:
+    case eCSSUnit_CQH: {
+      nsSize scale(CalcContainerUnitsScale(aPresContext));
+      return ScaleViewportCoordTrunc(
+        aValue, aValue.GetUnit() == eCSSUnit_CQW ? scale.width : scale.height);
+    }
+    case eCSSUnit_CQMin:
+    case eCSSUnit_CQMax: {
+      nsSize scale(CalcContainerUnitsScale(aPresContext));
+      nscoord reference = aValue.GetUnit() == eCSSUnit_CQMin
+                            ? min(scale.width, scale.height)
+                            : max(scale.width, scale.height);
+      return ScaleViewportCoordTrunc(aValue, reference);
+    }
+    case eCSSUnit_CQI:
+    case eCSSUnit_CQB: {
+      // Assume non-vertical writing mode if the style context is unavailable.
+      bool vertical = false;
+      if (aStyleContext) {
+        WritingMode wm(aStyleContext);
+        vertical = wm.IsVertical();
+        aConditions.SetWritingModeDependency(wm.GetBits());
+      }
+      nsSize scale(CalcContainerUnitsScale(aPresContext));
+      const bool wantInline = aValue.GetUnit() == eCSSUnit_CQI;
+      return ScaleViewportCoordTrunc(
+        aValue, (wantInline != vertical) ? scale.width : scale.height);
     }
     // While we could deal with 'rem' units correctly by simply not
     // caching any data that uses them in the rule tree, it's valuable

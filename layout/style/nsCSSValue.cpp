@@ -2374,6 +2374,13 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     case eCSSUnit_ViewportMin:    aResult.AppendLiteral("vmin"); break;
     case eCSSUnit_ViewportMax:    aResult.AppendLiteral("vmax"); break;
 
+    case eCSSUnit_CQW:    aResult.AppendLiteral("cqw");   break;
+    case eCSSUnit_CQH:    aResult.AppendLiteral("cqh");   break;
+    case eCSSUnit_CQI:    aResult.AppendLiteral("cqi");   break;
+    case eCSSUnit_CQB:    aResult.AppendLiteral("cqb");   break;
+    case eCSSUnit_CQMin:  aResult.AppendLiteral("cqmin"); break;
+    case eCSSUnit_CQMax:  aResult.AppendLiteral("cqmax"); break;
+
     case eCSSUnit_SmallViewportWidth:    aResult.AppendLiteral("svw");   break;
     case eCSSUnit_SmallViewportHeight:   aResult.AppendLiteral("svh");   break;
     case eCSSUnit_SmallViewportMin:      aResult.AppendLiteral("svmin"); break;

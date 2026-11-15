@@ -9080,6 +9080,12 @@ const UnitInfo UnitData[] = {
   { STR_WITH_LEN("dvi"), eCSSUnit_DynamicViewportInline, VARIANT_LENGTH },
   { STR_WITH_LEN("pc"), eCSSUnit_Pica, VARIANT_LENGTH },
   { STR_WITH_LEN("q"), eCSSUnit_Quarter, VARIANT_LENGTH },
+  { STR_WITH_LEN("cqw"), eCSSUnit_CQW, VARIANT_LENGTH },
+  { STR_WITH_LEN("cqh"), eCSSUnit_CQH, VARIANT_LENGTH },
+  { STR_WITH_LEN("cqi"), eCSSUnit_CQI, VARIANT_LENGTH },
+  { STR_WITH_LEN("cqb"), eCSSUnit_CQB, VARIANT_LENGTH },
+  { STR_WITH_LEN("cqmin"), eCSSUnit_CQMin, VARIANT_LENGTH },
+  { STR_WITH_LEN("cqmax"), eCSSUnit_CQMax, VARIANT_LENGTH },
   { STR_WITH_LEN("deg"), eCSSUnit_Degree, VARIANT_ANGLE },
   { STR_WITH_LEN("grad"), eCSSUnit_Grad, VARIANT_ANGLE },
   { STR_WITH_LEN("rad"), eCSSUnit_Radian, VARIANT_ANGLE },
@@ -9113,6 +9119,13 @@ CSSParserImpl::TranslateDimension(nsCSSValue& aValue,
 
     if (i == ArrayLength(UnitData)) {
       // Unknown unit
+      return false;
+    }
+
+    // Container units need a query container, so they are inert while the
+    // feature is off rather than quietly resolving against the viewport.
+    if (!sContainerQueriesEnabled &&
+        eCSSUnit_CQW <= units && units <= eCSSUnit_CQMax) {
       return false;
     }
 

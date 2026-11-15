@@ -519,12 +519,15 @@ LookForTargetPseudo(nsCSSSelector* aSelector,
 enum class ContainerEval : uint8_t { False, True, Unknown };
 
 struct ContainerSize {
-  // Physical extents. -1 in an axis the container doesn't let us query.
+  // Physical extents. Always real: cq units resolve against them whether or
+  // not the axis is queryable.
   float mWidth;
   float mHeight;
   // The container's inline axis runs vertically, so inline-size is its height
   // and block-size is its width.
   bool mVertical;
+  // Only `container-type: size` lets a feature look at the block axis.
+  bool mBlockQueryable;
 };
 
 // Nearest ancestor container, honouring the query name if it has one.
@@ -558,12 +561,9 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
 
     nsSize rect = frame->GetContentRectRelativeToSelf().Size();
     aSize.mVertical = vertical;
-    aSize.mWidth = (!vertical || blockQueryable)
-                     ? nsPresContext::AppUnitsToFloatCSSPixels(rect.width)
-                     : -1.0f;
-    aSize.mHeight = (vertical || blockQueryable)
-                      ? nsPresContext::AppUnitsToFloatCSSPixels(rect.height)
-                      : -1.0f;
+    aSize.mBlockQueryable = blockQueryable;
+    aSize.mWidth = nsPresContext::AppUnitsToFloatCSSPixels(rect.width);
+    aSize.mHeight = nsPresContext::AppUnitsToFloatCSSPixels(rect.height);
     return true;
   }
 
@@ -612,7 +612,7 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
   switch (aExpr->mFeature->mValueType) {
     case nsMediaFeature::eFloatRatio: {
       if (!name.EqualsLiteral("aspectratio") ||
-          aSize.mWidth < 0.0f || aSize.mHeight <= 0.0f ||
+          !aSize.mBlockQueryable || aSize.mHeight <= 0.0f ||
           value.GetUnit() != eCSSUnit_Array) {
         return ContainerEval::Unknown;
       }
@@ -636,7 +636,7 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
     case nsMediaFeature::eEnumerated: {
       // orientation is eMinMaxNotAllowed, so the range is always eEqual.
       if (!name.EqualsLiteral("orientation") ||
-          aSize.mWidth < 0.0f || aSize.mHeight < 0.0f ||
+          !aSize.mBlockQueryable ||
           value.GetUnit() != eCSSUnit_Enumerated) {
         return ContainerEval::Unknown;
       }
@@ -656,6 +656,7 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
   }
 
   float actual;
+  bool queryable = true;
   if (name.EqualsLiteral("width") ||
       name.EqualsLiteral("minwidth") ||
       name.EqualsLiteral("maxwidth") ||
@@ -663,6 +664,8 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
       name.EqualsLiteral("mininlinesize") ||
       name.EqualsLiteral("maxinlinesize")) {
     actual = aSize.mWidth;
+    // width is the block axis in a vertical writing mode.
+    queryable = aSize.mVertical ? aSize.mBlockQueryable : true;
   } else if (name.EqualsLiteral("height") ||
              name.EqualsLiteral("minheight") ||
              name.EqualsLiteral("maxheight") ||
@@ -670,6 +673,7 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
              name.EqualsLiteral("minblocksize") ||
              name.EqualsLiteral("maxblocksize")) {
     actual = aSize.mHeight;
+    queryable = aSize.mVertical ? true : aSize.mBlockQueryable;
   } else if (name.EqualsLiteral("inlinesize") ||
              name.EqualsLiteral("mininlinesize") ||
              name.EqualsLiteral("maxinlinesize")) {
@@ -678,11 +682,12 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
              name.EqualsLiteral("minblocksize") ||
              name.EqualsLiteral("maxblocksize")) {
     actual = aSize.mVertical ? aSize.mWidth : aSize.mHeight;
+    queryable = aSize.mBlockQueryable;
   } else {
     // device-width, resolution, etc.
     return ContainerEval::Unknown;
   }
-  if (actual < 0.0f) {
+  if (!queryable) {
     return ContainerEval::Unknown;
   }
 
@@ -692,6 +697,32 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
   } else if (value.GetUnit() == eCSSUnit_EM) {
     required = nsPresContext::AppUnitsToFloatCSSPixels(aFontSize) *
                value.GetFloatValue();
+  } else if (value.GetUnit() >= eCSSUnit_CQW &&
+             value.GetUnit() <= eCSSUnit_CQMax) {
+    // The unit's reference axis need not be the axis being queried, so it
+    // needs its own availability check.
+    float reference;
+    switch (value.GetUnit()) {
+      case eCSSUnit_CQW:
+        reference = aSize.mWidth;
+        break;
+          case eCSSUnit_CQH:
+        reference = aSize.mHeight;
+        break;
+      case eCSSUnit_CQI:
+        reference = aSize.mVertical ? aSize.mHeight : aSize.mWidth;
+        break;
+      case eCSSUnit_CQB:
+        reference = aSize.mVertical ? aSize.mWidth : aSize.mHeight;
+        break;
+      default: {
+        const float lo = std::min(aSize.mWidth, aSize.mHeight);
+        const float hi = std::max(aSize.mWidth, aSize.mHeight);
+        reference = value.GetUnit() == eCSSUnit_CQMin ? lo : hi;
+        break;
+      }
+    }
+    required = reference * value.GetFloatValue() / 100.0f;
   } else {
     return ContainerEval::Unknown;
   }
