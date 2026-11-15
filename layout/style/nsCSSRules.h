@@ -89,6 +89,8 @@ public:
   // WebIDL interface
   uint16_t Type() const override;
   void GetCssTextImpl(nsAString& aCssText) const override;
+  void GetContainerName(nsString& aResult) const;
+  void GetContainerQuery(nsString& aResult) const;
   // Our XPCOM GetConditionText is OK
   virtual void SetConditionText(const nsAString& aConditionText,
                                 ErrorResult& aRv) override;

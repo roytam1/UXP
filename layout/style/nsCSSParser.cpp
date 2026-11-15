@@ -4521,8 +4521,8 @@ StampContainerCondition(css::Rule* aRule, void* aData)
         data->mCondition, data->mName);
     return true;
   }
-  if (css::Rule::MEDIA_RULE == type || css::Rule::SUPPORTS_RULE == type ||
-      css::Rule::LAYER_BLOCK_RULE == type) {
+  if (css::Rule::MEDIA_RULE == type || css::Rule::CONTAINER_RULE == type ||
+      css::Rule::SUPPORTS_RULE == type || css::Rule::LAYER_BLOCK_RULE == type) {
     return static_cast<css::GroupRule*>(aRule)->EnumerateRulesForwards(
         StampContainerCondition, aData);
   }
@@ -9159,8 +9159,12 @@ CSSParserImpl::TranslateDimension(nsCSSValue& aValue,
       return false;
     }
 
+    // Container units are lengths but not absolute ones, so a property asking
+    // for an absolute dimension still has to accept them and let
+    // CalcLengthWith resolve them.
     if ((VARIANT_ABSOLUTE_DIMENSION & aVariantMask) != 0 &&
-        !nsCSSValue::IsPixelLengthUnit(units)) {
+        !nsCSSValue::IsPixelLengthUnit(units) &&
+        !(eCSSUnit_CQW <= units && units <= eCSSUnit_CQMax)) {
       return false;
     }
   } else {

@@ -36,6 +36,7 @@
 #include "mozilla/dom/CSSNamespaceRuleBinding.h"
 #include "mozilla/dom/CSSImportRuleBinding.h"
 #include "mozilla/dom/CSSMediaRuleBinding.h"
+#include "mozilla/dom/CSSContainerRuleBinding.h"
 #include "mozilla/dom/CSSLayerBlockRuleBinding.h"
 #include "mozilla/dom/CSSLayerStatementRuleBinding.h"
 #include "mozilla/dom/CSSSupportsRuleBinding.h"
@@ -815,7 +816,7 @@ MediaRule::List(FILE* out, int32_t aIndent) const
 /* virtual */ int32_t
 MediaRule::GetType() const
 {
-  return Rule::MEDIA_RULE;
+  return mIsContainerQuery ? Rule::CONTAINER_RULE : Rule::MEDIA_RULE;
 }
 
 /* virtual */ already_AddRefed<Rule>
@@ -837,7 +838,8 @@ MediaRule::SetMedia(nsMediaList* aMedia)
 uint16_t
 MediaRule::Type() const
 {
-  return nsIDOMCSSRule::MEDIA_RULE;
+  return mIsContainerQuery ? nsIDOMCSSRule::CONTAINER_RULE
+                           : nsIDOMCSSRule::MEDIA_RULE;
 }
 
 nsMediaList*
@@ -960,9 +962,30 @@ MediaRule::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
   return n;
 }
 
+void
+MediaRule::GetContainerName(nsString& aResult) const
+{
+  aResult.Truncate();
+  if (mContainerName.IsEmpty()) {
+    aResult.AssignLiteral("none");
+    return;
+  }
+  nsStyleUtil::AppendEscapedCSSIdent(mContainerName, aResult);
+}
+
+void
+MediaRule::GetContainerQuery(nsString& aResult) const
+{
+  aResult.Truncate();
+  AppendConditionText(aResult);
+}
+
 /* virtual */ JSObject*
 MediaRule::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
+  if (mIsContainerQuery) {
+    return CSSContainerRuleBinding::Wrap(aCx, this, aGivenProto);
+  }
   return CSSMediaRuleBinding::Wrap(aCx, this, aGivenProto);
 }
 

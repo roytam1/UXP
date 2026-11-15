@@ -2152,6 +2152,7 @@ CSSStyleSheet::InsertRuleIntoGroup(const nsAString & aRule,
   switch (rule->GetType()) {
     case css::Rule::STYLE_RULE:
     case css::Rule::MEDIA_RULE:
+    case css::Rule::CONTAINER_RULE:
     case css::Rule::FONT_FACE_RULE:
     case css::Rule::PAGE_RULE:
     case css::Rule::KEYFRAMES_RULE:

@@ -4863,13 +4863,22 @@ nsComputedDOMStyle::DoGetContainerType()
 already_AddRefed<CSSValue>
 nsComputedDOMStyle::DoGetContainerName()
 {
-  RefPtr<nsDOMCSSValueList> valueList = GetROCSSValueList(false);
-  for (const nsString& name : StyleDisplay()->mContainerNames) {
-    RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
-    val->SetString(name, nsIDOMCSSPrimitiveValue::CSS_IDENT);
-    valueList->AppendCSSValue(val.forget());
+  const nsStyleDisplay* display = StyleDisplay();
+  nsAutoString value;
+  if (display->mContainerNames.IsEmpty()) {
+    value.AppendLiteral("none");
+  } else {
+    for (uint32_t i = 0; i < display->mContainerNames.Length(); i++) {
+      if (i > 0) {
+        value.Append(char16_t(' '));
+      }
+      nsStyleUtil::AppendEscapedCSSIdent(display->mContainerNames[i], value);
+    }
   }
-  return valueList.forget();
+
+  RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
+  val->SetString(value);
+  return val.forget();
 }
 
 already_AddRefed<CSSValue>
