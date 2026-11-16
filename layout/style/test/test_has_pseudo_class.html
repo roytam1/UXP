@@ -255,6 +255,73 @@ addLoadEvent(function() {
   cacheSibling.remove();
   cacheStyle.remove();
 
+  // State-only arguments must not turn unrelated attribute changes into a
+  // restyle of the entire anchor subtree (e.g. html:has(:fullscreen)).
+  let stateStyle = document.createElement("style");
+  stateStyle.textContent =
+    ".state-perf { color: blue; }" +
+    ".state-perf:has(:fullscreen), .state-perf:has(:hover)," +
+    ".state-perf:has(:focus), .state-perf:has(:checked)," +
+    ".state-perf:has(:disabled) { color: red; }";
+  document.head.appendChild(stateStyle);
+  let stateAnchor = document.createElement("div");
+  stateAnchor.className = "state-perf";
+  stateAnchor.innerHTML = '<input type="checkbox">' + '<span>text</span>'.repeat(64);
+  document.body.appendChild(stateAnchor);
+  let control = stateAnchor.firstElementChild;
+  let leaf = stateAnchor.lastElementChild;
+  document.body.offsetHeight;
+  for (let attr of ["data-unrelated", "class", "style"]) {
+    let before = utils.elementsRestyled;
+    leaf.setAttribute(attr, attr == "style" ? "opacity: 0.9" : "unrelated");
+    document.body.offsetHeight;
+    let restyled = utils.elementsRestyled - before;
+    ok(restyled < 32,
+       "state-only :has() does not restyle its subtree for " + attr +
+       " (restyled " + restyled + " elements)");
+  }
+  function stateColor() { return getComputedStyle(stateAnchor).color; }
+  is(stateColor(), blue, "initially no matching control state");
+  control.checked = true;
+  is(stateColor(), red, "checked state still invalidates :has()");
+  control.checked = false;
+  is(stateColor(), blue, "removing checked state still invalidates :has()");
+  control.setAttribute("disabled", "");
+  is(stateColor(), red, "attribute-driven disabled state invalidates :has()");
+  control.removeAttribute("disabled");
+  is(stateColor(), blue, "removing disabled attribute invalidates :has()");
+
+  let domUtils = SpecialPowers.Cc["@mozilla.org/inspector/dom-utils;1"]
+                             .getService(SpecialPowers.Ci.inIDOMUtils);
+  for (let pseudo of [":fullscreen", ":hover", ":focus"]) {
+    domUtils.addPseudoClassLock(control, pseudo);
+    is(stateColor(), red, pseudo + " state change invalidates :has()");
+    domUtils.removePseudoClassLock(control, pseudo);
+    is(stateColor(), blue, pseudo + " state removal invalidates :has()");
+  }
+
+  // Explicit attributes in a state compound must still be tracked.
+  stateStyle.textContent = ".state-perf { color: blue; }" +
+    ".state-perf:has([data-watched]:checked) { color: red; }";
+  control.checked = true;
+  is(stateColor(), blue, "state alone does not match the compound");
+  control.setAttribute("data-watched", "");
+  is(stateColor(), red, "explicit attribute dependency is retained");
+  control.removeAttribute("data-watched");
+  is(stateColor(), blue, "explicit attribute removal is observed");
+  // Exercise the document-wide negated selector used by Danbooru too.
+  stateStyle.textContent = "html:not(:has(:fullscreen)) { color: black; }";
+  document.body.offsetHeight;
+  let beforeRootChange = utils.elementsRestyled;
+  leaf.setAttribute("data-unrelated", "changed");
+  document.body.offsetHeight;
+  let rootRestyled = utils.elementsRestyled - beforeRootChange;
+  ok(rootRestyled < 32,
+     "html:not(:has(:fullscreen)) ignores unrelated attributes (restyled " +
+     rootRestyled + " elements)");
+  stateAnchor.remove();
+  stateStyle.remove();
+
   SimpleTest.finish();
 });
 </script>

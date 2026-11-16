@@ -26,7 +26,7 @@ of the License or (at your option) any later version.
 */
 #pragma once
 // This file will be pulled into and integrated into a machine implmentation
-// DO NOT build directly and under no circumstances every #include headers in 
+// DO NOT build directly and under no circumstances ever #include headers in 
 // here or you will break the direct_machine.
 //
 // Implementers' notes
@@ -644,6 +644,7 @@ STARTOP(push_att_to_glyph_attr)
 ENDOP
 
 STARTOP(temp_copy)
+    if (map < &smap[-1] || map >= smap.begin() + SlotMap::MAX_SLOTS) DIE;
     slotref newSlot = seg.newSlot();
     if (!newSlot || !is) DIE;
     int16 *tempUserAttrs = newSlot->userAttrs();

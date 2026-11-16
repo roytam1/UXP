@@ -140,11 +140,12 @@ JitRuntime::generateEnterJIT(JSContext* cx, EnterJitType type)
             // Store the argument to tmp_sp, then increment tmp_sp by 8.
             masm.Str(x24, MemOperand(tmp_sp, Operand(8), vixl::PostIndex));
 
-            // Set the condition codes for |cmp tmp_argc, 2| (using the old value).
+            // Decrement the number of values left to copy. reg_argc already
+            // includes |this| and, when constructing, |newTarget|.
             masm.Subs(tmp_argc, tmp_argc, Operand(1));
 
             // Branch if arguments remain.
-            masm.B(&loopHead, vixl::Condition::ge);
+            masm.B(&loopHead, vixl::Condition::gt);
         }
 
         masm.bind(&noArguments);

@@ -45,6 +45,13 @@ var panelAttrs = {
  *        `window`.  Defaults to a XUL Document's `window` element.
  */
 exports.showDoorhanger = Task.async(function* ({ window, type, anchor }) {
+  // The promo doorhanger types (e.g. "deveditionpromo") were removed from
+  // TYPES but webide.js still calls showDoorhanger with them on focus. Guard
+  // against an unknown type so the vestigial call is a safe no-op instead of
+  // throwing "can't convert undefined to object" while destructuring.
+  if (!TYPES[type]) {
+    return;
+  }
   let { predicate, success, url, action } = TYPES[type];
   // Abort if predicate fails
   if (!predicate()) {

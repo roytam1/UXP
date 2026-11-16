@@ -5785,7 +5785,8 @@ struct JS_PUBLIC_API(FirstSubsumedFrame)
     FirstSubsumedFrame& operator=(const FirstSubsumedFrame&) = delete;
 
     FirstSubsumedFrame(FirstSubsumedFrame&& rhs)
-      : principals(rhs.principals)
+      : cx(rhs.cx)
+      , principals(rhs.principals)
       , ignoreSelfHosted(rhs.ignoreSelfHosted)
     {
         MOZ_ASSERT(this != &rhs, "self move disallowed");
