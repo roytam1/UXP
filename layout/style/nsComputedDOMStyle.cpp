@@ -4877,9 +4877,8 @@ nsComputedDOMStyle::DoGetContain()
   if (mask == 0) {
     val->SetIdent(eCSSKeyword_none);
   } else if (mask & NS_STYLE_CONTAIN_STRICT) {
-    NS_ASSERTION(mask == (NS_STYLE_CONTAIN_STRICT | NS_STYLE_CONTAIN_LAYOUT |
-                          NS_STYLE_CONTAIN_STYLE | NS_STYLE_CONTAIN_PAINT),
-                 "contain: strict should imply contain: layout style paint");
+    NS_ASSERTION(mask == (NS_STYLE_CONTAIN_STRICT | NS_STYLE_CONTAIN_ALL_BITS),
+                 "contain: strict should imply all containment types");
     val->SetIdent(eCSSKeyword_strict);
   } else {
     nsAutoString valueStr;

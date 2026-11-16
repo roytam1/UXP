@@ -1869,9 +1869,8 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
 
     case eCSSProperty_contain:
       if (intValue & NS_STYLE_CONTAIN_STRICT) {
-        NS_ASSERTION(intValue == (NS_STYLE_CONTAIN_STRICT | NS_STYLE_CONTAIN_LAYOUT |
-                                  NS_STYLE_CONTAIN_STYLE |  NS_STYLE_CONTAIN_PAINT),
-                     "contain: strict should imply contain: layout style paint");
+        NS_ASSERTION(intValue == (NS_STYLE_CONTAIN_STRICT | NS_STYLE_CONTAIN_ALL_BITS),
+                     "contain: strict should imply all containment types");
         // Only output strict.
         intValue = NS_STYLE_CONTAIN_STRICT;
       }

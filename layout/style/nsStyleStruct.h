@@ -2972,6 +2972,10 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay
     return NS_STYLE_CONTAIN_PAINT & mContain;
   }
 
+  bool IsContainLayout() const {
+    return !!(mContain & NS_STYLE_CONTAIN_LAYOUT);
+  }
+
   bool IsContainSize() const {
     return !!(mContain & NS_STYLE_CONTAIN_SIZE);
   }
@@ -2981,7 +2985,16 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay
   }
 
   bool IsContainerForSizeQueries() const {
-    switch (mDisplay) {
+    // Containment blockifies display:inline to inline-block, but an inline box
+    // is still not a container for size queries — an inline element with
+    // container-type must not answer them. Judge by the pre-blockification
+    // display. Floats and abspos boxes are blockified to Block rather than
+    // inline-block, so they stay eligible.
+    const mozilla::StyleDisplay display =
+      mOriginalDisplay == mozilla::StyleDisplay::Inline
+        ? mozilla::StyleDisplay::Inline
+        : mDisplay;
+    switch (display) {
       case mozilla::StyleDisplay::Table:
       case mozilla::StyleDisplay::InlineTable:
       case mozilla::StyleDisplay::TableCell:

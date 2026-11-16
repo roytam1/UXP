@@ -4859,6 +4859,25 @@ nsFrame::ComputeSize(nsRenderingContext* aRenderingContext,
     }
   }
 
+  // Size containment: the content must not contribute to the inline size.
+  // A block-level box in flow still fills its containing block, so only the
+  // shrink-to-fit cases collapse to zero. Without this a plain block with
+  // width:auto and any inline-size containment becomes 0 wide.
+  if (MOZ_UNLIKELY(StyleDisplay()->IsContainSizeEffective() ||
+                   StyleDisplay()->IsContainInlineSizeEffective()) &&
+      inlineStyleCoord->GetUnit() == eStyleUnit_Auto) {
+    if (!StyleDisplay()->IsInlineOutside(this) && !IsFloating() &&
+        !IsAbsolutelyPositioned() &&
+        aCBSize.ISize(aWM) != NS_UNCONSTRAINEDSIZE) {
+      result.ISize(aWM) = std::max(nscoord(0), aCBSize.ISize(aWM) -
+                                              aPadding.ISize(aWM) -
+                                              aBorder.ISize(aWM) -
+                                              aMargin.ISize(aWM));
+    } else {
+      result.ISize(aWM) = 0;
+    }
+  }
+
   // Flex items ignore their min & max sizing properties in their
   // flex container's main-axis.  (Those properties get applied later in
   // the flexbox algorithm.)
@@ -4947,6 +4966,13 @@ nsFrame::ComputeSize(nsRenderingContext* aRenderingContext,
         }
       }
     }
+  }
+
+  // Size containment: the content must not contribute to the block size.
+  if (MOZ_UNLIKELY(StyleDisplay()->IsContainSizeEffective()) &&
+      nsLayoutUtils::IsAutoBSize(*blockStyleCoord, aCBSize.BSize(aWM)) &&
+      !(aFlags & nsIFrame::eUseAutoBSize)) {
+    result.BSize(aWM) = 0;
   }
 
   const nsStyleCoord& maxBSizeCoord = stylePos->MaxBSize(aWM);
@@ -5648,6 +5674,13 @@ nsFrame::ShrinkWidthToFit(nsRenderingContext* aRenderingContext,
   // If we're a container for font size inflation, then shrink
   // wrapping inside of us should not apply font size inflation.
   AutoMaybeDisableFontInflation an(this);
+
+  // A size-contained box ignores its content in the inline axis.
+  const nsStyleDisplay* containDisp = StyleDisplay();
+  if (containDisp->IsContainSizeEffective() ||
+      containDisp->IsContainInlineSizeEffective()) {
+    return 0;
+  }
 
   nscoord result;
   nscoord minISize = GetMinISize(aRenderingContext);

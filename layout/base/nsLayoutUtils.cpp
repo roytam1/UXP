@@ -5030,6 +5030,13 @@ nsLayoutUtils::IntrinsicForAxis(PhysicalAxis              aAxis,
   PhysicalAxis ourInlineAxis =
     aFrame->GetWritingMode().PhysicalAxis(eLogicalAxisInline);
   const bool isInlineAxis = aAxis == ourInlineAxis;
+  // With size containment on this axis the content cannot contribute, so the
+  // frame's contribution is just its box-sizing offsets plus min/max.
+  const nsStyleDisplay* containDisp = aFrame->StyleDisplay();
+  const bool sizeContained =
+    isInlineAxis ? (containDisp->IsContainSizeEffective() ||
+                    containDisp->IsContainInlineSizeEffective())
+                 : containDisp->IsContainSizeEffective();
   // If we have a specified width (or a specified 'min-width' greater
   // than the specified 'max-width', which works out to the same thing),
   // don't even bother getting the frame's intrinsic width, because in
@@ -5179,6 +5186,11 @@ nsLayoutUtils::IntrinsicForAxis(PhysicalAxis              aAxis,
         }
       }
     }
+  }
+
+  if (MOZ_UNLIKELY(sizeContained)) {
+    result = 0;
+    min = 0;
   }
 
   if (aFrame->GetType() == nsGkAtoms::tableFrame) {

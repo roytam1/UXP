@@ -6986,6 +6986,13 @@ nsRuleNode::ComputeDisplayData(void* aStartStruct,
            NS_STYLE_CONTAIN_NONE, Unused,
            NS_STYLE_CONTAIN_NONE, Unused, Unused);
 
+  // 'strict' is a value, not a bit, and nothing expands it for us: without
+  // this the effective-containment helpers below see only NS_STYLE_CONTAIN_STRICT
+  // and contain: strict applies no containment at all.
+  if (display->mContain & NS_STYLE_CONTAIN_STRICT) {
+    display->mContain |= NS_STYLE_CONTAIN_ALL_BITS;
+  }
+
   // container-type: normal, enum, inherit, initial
   SetValue(*aRuleData->ValueForContainerType(), display->mContainerType,
            conditions,
