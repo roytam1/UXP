@@ -5771,10 +5771,6 @@ nsIFrame::RestyleIfContainer()
   if (!mStyleContext || !StyleDisplay()->IsContainerForSizeQueries()) {
     return;
   }
-  nsIContent* content = GetContent();
-  if (!content || !content->IsElement()) {
-    return;
-  }
   nsPresContext* pc = PresContext();
   if (!pc || !pc->RestyleManager()) {
     return;
@@ -5783,9 +5779,40 @@ nsIFrame::RestyleIfContainer()
   // before reflow, so a fresh load always measures 0x0 (or no frame at all).
   // The result has to be recomputed once the size is real and on every later
   // change, otherwise the first pass is frozen in place.
-  pc->RestyleManager()->PostRestyleEvent(content->AsElement(),
-                                         nsRestyleHint(eRestyle_Subtree),
-                                         nsChangeHint(0));
+  nsSize size = GetContentRectRelativeToSelf().Size();
+  nsSize* last = static_cast<nsSize*>(GetProperty(ContainerSizeProperty()));
+  if (last && last->width == size.width && last->height == size.height) {
+    return;
+  }
+  if (last) {
+    *last = size;
+  } else {
+    SetProperty(ContainerSizeProperty(), new nsSize(size));
+  }
+
+  // Restyle the elements that resolved against us, not the subtree.  The list
+  // is rebuilt by the restyle pass, not cleared here, so it is never empty
+  // between a post and the restyle it triggers.
+  auto* dependents = static_cast<ContainerQueryDependents*>(
+      GetProperty(ContainerQueryDependentsProperty()));
+  if (dependents && !dependents->mElements.IsEmpty()) {
+    for (const RefPtr<Element>& dependent : dependents->mElements) {
+      pc->RestyleManager()->PostRestyleEvent(dependent,
+                                             nsRestyleHint(eRestyle_Subtree),
+                                             nsChangeHint(0));
+    }
+  } else {
+    // Nothing recorded against us: a container that was just built or rebuilt,
+    // or one nothing has queried at this size.  The list is only an
+    // optimisation, so fall back to the subtree rather than drop the change.
+    nsIContent* content = GetContent();
+    if (content && content->IsElement()) {
+      pc->RestyleManager()->PostRestyleEvent(content->AsElement(),
+                                             nsRestyleHint(eRestyle_Subtree),
+                                             nsChangeHint(0));
+    }
+  }
+  pc->SetPendingContainerRestyle();
 }
 
 void
@@ -5799,33 +5826,13 @@ nsFrame::DidReflow(nsPresContext*           aPresContext,
   nsSVGEffects::InvalidateDirectRenderingObservers(this, nsSVGEffects::INVALIDATE_REFLOW);
 
   if (nsDidReflowStatus::FINISHED == aStatus) {
-    // First layout is done, so container sizes are finally meaningful. The
-    // initial style pass could only have used the viewport proxy.
-    if (mState & NS_FRAME_FIRST_REFLOW) {
-      RestyleIfContainer();
-    }
     mState &= ~(NS_FRAME_IN_REFLOW | NS_FRAME_FIRST_REFLOW | NS_FRAME_IS_DIRTY |
                 NS_FRAME_HAS_DIRTY_CHILDREN);
     // Queries are evaluated during style resolution against the container's
     // content rect, so a reflow that changes that rect leaves its descendants
-    // holding stale results.  Restyle the subtree when it changes;
-    // PresShell::FlushPendingNotifications processes it once layout settles.
-    if (!GetPrevInFlow() && StyleDisplay()->IsContainerForSizeQueries()) {
-      nsSize size = GetContentRectRelativeToSelf().Size();
-      nsSize* last = static_cast<nsSize*>(GetProperty(ContainerSizeProperty()));
-      if (!last || last->width != size.width || last->height != size.height) {
-        if (last) {
-          *last = size;
-        } else {
-          SetProperty(ContainerSizeProperty(), new nsSize(size));
-        }
-        if (nsIContent* content = GetContent()) {
-          if (Element* element = content->AsElement()) {
-            aPresContext->RestyleManager()->PostRestyleEvent(
-                element, eRestyle_Subtree, nsChangeHint(0));
-          }
-        }
-      }
+    // holding stale results.
+    if (!GetPrevInFlow()) {
+      RestyleIfContainer();
     }
   }
 

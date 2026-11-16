@@ -890,6 +890,8 @@ RestyleManager::ProcessPendingRestyles()
   NS_PRECONDITION(!nsContentUtils::IsSafeToRunScript(),
                   "Missing a script blocker!");
 
+  PresContext()->BumpContainerQueryGeneration();
+
   // First do any queued-up frame creation.  (We should really
   // merge this into the rest of the process, though; see bug 827239.)
   PresContext()->FrameConstructor()->CreateNeededFrames();

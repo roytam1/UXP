@@ -588,6 +588,29 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
       aSize.mHeight =
         nsPresContext::AppUnitsToFloatCSSPixels(pos->mHeight.GetCoordValue());
     }
+
+    // Record that this element depends on this container, so that a resize can
+    // restyle it rather than the whole subtree.  The same element is appended
+    // once per rule that resolves against us, so dedupe; the lists are the
+    // width of a container's conditional descendants, not of its subtree.
+    auto* dependents = static_cast<ContainerQueryDependents*>(
+        frame->GetProperty(nsIFrame::ContainerQueryDependentsProperty()));
+    const uint32_t generation = aPresContext->ContainerQueryGeneration();
+    if (!dependents) {
+      dependents = new ContainerQueryDependents();
+      frame->SetProperty(nsIFrame::ContainerQueryDependentsProperty(),
+                         dependents);
+      dependents->mGeneration = generation;
+    } else if (dependents->mGeneration != generation) {
+      // First evaluation on this container in a new pass: rebuild from
+      // scratch so elements that stopped depending on us fall out.
+      dependents->mElements.Clear();
+      dependents->mGeneration = generation;
+    }
+    if (!dependents->mElements.Contains(aElement)) {
+      dependents->mElements.AppendElement(aElement);
+    }
+
     return true;
   }
 

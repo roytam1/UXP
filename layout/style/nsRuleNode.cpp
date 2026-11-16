@@ -696,10 +696,6 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
                              (unit == eCSSUnit_CQW && vertical) ||
                              (unit == eCSSUnit_CQH && !vertical);
 
-      // The result depends on a container size the rule tree cannot track, so
-      // keep it out of the cached data.
-      aConditions.SetUncacheable();
-
       nscoord reference;
       ContainerUnitsScale container;
       const bool haveContainer =
@@ -707,6 +703,10 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
         FindQueryContainerForContent(aStyleContext->GetContent(), blockAxis,
                                      aStyleContext->PresContext(), container);
       if (haveContainer) {
+        // The result depends on a container size the rule tree cannot track,
+        // so keep it out of the cached data.  The viewport fallback below is
+        // tracked by SetUsesViewportUnits and stays cacheable.
+        aConditions.SetUncacheable();
         float px;
         switch (unit) {
           case eCSSUnit_CQW:

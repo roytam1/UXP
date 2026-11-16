@@ -1036,7 +1036,8 @@ protected:
                          eMediaQuerySingleCondition };
   bool ParseMediaQuery(eMediaQueryType aMode, nsMediaQuery **aQuery,
                        bool *aHitStop);
-  bool ParseMediaQueryExpression(nsMediaQuery* aQuery);
+  bool ParseMediaQueryExpression(nsMediaQuery* aQuery,
+                                 bool aParenConsumed = false);
   bool ParseRatioComponent(nsCSSValue& aValue);
   void ProcessImport(const nsString& aURLSpec,
                      nsMediaList* aMedia,
@@ -1049,6 +1050,7 @@ protected:
                       void* aProcessData);
   bool ParseMediaRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   bool ParseContainerRule(RuleAppendFunc aAppendFunc, void* aProcessData);
+  bool ParseContainerConditionList(nsMediaList* aMedia);
   bool ParseMozDocumentRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   bool ParseNameSpaceRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   void ProcessNameSpace(const nsString& aPrefix,
@@ -4164,15 +4166,18 @@ CSSParserImpl::ParseRatioComponent(nsCSSValue& aValue)
 }
 
 bool
-CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery)
+CSSParserImpl::ParseMediaQueryExpression(nsMediaQuery* aQuery,
+                                         bool aParenConsumed)
 {
-  if (!ExpectSymbol('(', true)) {
-    REPORT_UNEXPECTED_TOKEN(PEMQExpectedExpressionStart);
-    return false;
-  }
-  if (! GetToken(true)) {
-    REPORT_UNEXPECTED_EOF(PEMQExpressionEOF);
-    return false;
+  if (!aParenConsumed) {
+    if (!ExpectSymbol('(', true)) {
+      REPORT_UNEXPECTED_TOKEN(PEMQExpectedExpressionStart);
+      return false;
+    }
+    if (!GetToken(true)) {
+      REPORT_UNEXPECTED_EOF(PEMQExpressionEOF);
+      return false;
+    }
   }
   if (eCSSToken_Ident != mToken.mType) {
     REPORT_UNEXPECTED_TOKEN(PEMQExpectedFeatureName);
@@ -4633,18 +4638,23 @@ CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
   }
 
   RefPtr<nsMediaList> condition = new nsMediaList();
-  bool expressible;
   {
     AutoRestore<bool> autoRestore(mInContainer);
     mInContainer = true;
-    expressible = GatherMedia(condition, true);
-  }
-  if (!expressible) {
-    // Not expressible as a media query list (style() queries, range syntax).
-    // Don't lose the block over it - leave the rule unconditional.
-    condition = new nsMediaList();
-    SkipUntil('{');
-    UngetToken();
+    // A condition starting with '(' may wrap a whole group of queries joined
+    // by 'and'/'or'.  GatherMedia only understands the media-query grammar,
+    // so route that form to the container-condition parser.
+    if (GetToken(true)) {
+      if (mToken.IsSymbol('(')) {
+        UngetToken();
+        ParseContainerConditionList(condition);
+      } else {
+        UngetToken();
+        GatherMedia(condition, true);
+      }
+    } else {
+      GatherMedia(condition, true);
+    }
   }
 
   RefPtr<css::MediaRule> rule = new css::MediaRule(linenum, colnum);
@@ -4655,13 +4665,113 @@ CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
   rule->SetMedia(condition);
   rule->SetContainerQuery(containerName);
 
-  if (expressible) {
-    nsAutoString condText;
-    condition->GetText(condText);
-    ContainerStampData stamp(condition, containerName);
-    rule->EnumerateRulesForwards(StampContainerCondition, &stamp);
-  }
+  ContainerStampData stamp(condition, containerName);
+  rule->EnumerateRulesForwards(StampContainerCondition, &stamp);
   return true;
+}
+
+// Parse the rest of a <container-condition>: a list of query-in-parens joined
+// by 'and' and 'or', optionally wrapped in one further set of parentheses.
+// 'and' joins into the same nsMediaQuery, which EvaluateContainerCondition
+// ANDs; 'or' starts a new entry in the list, which it ORs.  The media-query
+// grammar has neither, which is why this cannot go through GatherMedia.
+// Entered positioned on the '(' of the first term.
+bool
+CSSParserImpl::ParseContainerConditionList(nsMediaList* aMedia)
+{
+  nsAutoPtr<nsMediaQuery> query;
+  for (;;) {
+    if (!GetToken(true)) {
+      REPORT_UNEXPECTED_EOF(PEGatherMediaEOF);
+      if (query) {
+        aMedia->AppendQuery(query);
+      }
+      return true;
+    }
+    if (!mToken.IsSymbol('(')) {
+      // Not a query-in-parens.  Keep the rule in the cascade rather than
+      // dropping it, and let the caller pick up at the block.
+      OUTPUT_ERROR();
+      if (query) {
+        query->SetHadUnknownExpression();
+        aMedia->AppendQuery(query);
+      }
+      UngetToken();
+      SkipUntil('{');
+      UngetToken();
+      return true;
+    }
+
+    // A '(' straight inside the one just read means that one wrapped a group
+    // and this one opens the term, so the expression parser must not expect a
+    // '(' of its own.
+    bool parenConsumed = true;
+    if (!GetToken(true)) {
+      REPORT_UNEXPECTED_EOF(PEGatherMediaEOF);
+      if (query) {
+        aMedia->AppendQuery(query);
+      }
+      return true;
+    }
+    if (mToken.IsSymbol('(')) {
+      UngetToken();
+      parenConsumed = false;
+    }
+
+    if (!query) {
+      query = new nsMediaQuery;
+      query->SetType(nsGkAtoms::all);
+      query->SetTypeOmitted();
+    }
+    if (!ParseMediaQueryExpression(query, parenConsumed)) {
+      OUTPUT_ERROR();
+      query->SetHadUnknownExpression();
+      aMedia->AppendQuery(query);
+      SkipUntil('{');
+      UngetToken();
+      return true;
+    }
+
+    if (!GetToken(true)) {
+      aMedia->AppendQuery(query);
+      return true;
+    }
+    if (mToken.mType == eCSSToken_Ident &&
+        mToken.mIdent.LowerCaseEqualsLiteral("and")) {
+      continue;
+    }
+    if (mToken.mType == eCSSToken_Ident &&
+        mToken.mIdent.LowerCaseEqualsLiteral("or")) {
+      aMedia->AppendQuery(query);
+      continue;
+    }
+    if (!mToken.IsSymbol(')')) {
+      UngetToken();
+      aMedia->AppendQuery(query);
+      return true;
+    }
+
+    // That ')' closed a term.  If it also closed a wrapping group, or if
+    // something other than a joiner follows, the condition is over.
+    if (!GetToken(true)) {
+      aMedia->AppendQuery(query);
+      return true;
+    }
+    if (mToken.mType == eCSSToken_Ident &&
+        mToken.mIdent.LowerCaseEqualsLiteral("and")) {
+      continue;
+    }
+    if (mToken.mType == eCSSToken_Ident &&
+        mToken.mIdent.LowerCaseEqualsLiteral("or")) {
+      aMedia->AppendQuery(query);
+      continue;
+    }
+    aMedia->AppendQuery(query);
+    if (!mToken.IsSymbol(')')) {
+      UngetToken();
+    }
+    return true;
+  }
 }
 
 // Parse a @-moz-document rule.  This is like an @media rule, but instead

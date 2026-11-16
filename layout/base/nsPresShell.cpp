@@ -4083,9 +4083,12 @@ PresShell::FlushPendingNotifications(mozilla::ChangesToFlush aFlush)
       // those; process it now that geometry is settled, and let any reflow it
       // queues run too.  Bounded, since a restyle can resize a container again.
       for (uint32_t i = 0; i < 3 && !mIsDestroying; ++i) {
-        if (!mPresContext->RestyleManager()->HasPendingRestyles()) {
+        if (!mPresContext->HasPendingContainerRestyle()) {
           break;
         }
+        // Clear before processing: the reflow below may post again, and that
+        // is what keeps the loop going.
+        mPresContext->ClearPendingContainerRestyle();
         {
           nsAutoScriptBlocker scriptBlocker;
           mPresContext->RestyleManager()->ProcessPendingRestyles();

@@ -205,6 +205,7 @@ nsPresContext::nsPresContext(nsIDocument* aDocument, nsPresContextType aType)
     mViewportStyleScrollbar(NS_STYLE_OVERFLOW_AUTO, NS_STYLE_OVERFLOW_AUTO),
     mImageAnimationModePref(imgIContainer::kNormalAnimMode),
     mAllInvalidated(false),
+    mHasPendingContainerRestyle(false), mContainerQueryGeneration(0),
     mPaintFlashing(false), mPaintFlashingInitialized(false)
 {
   // NOTE! nsPresContext::operator new() zeroes out all members, so don't

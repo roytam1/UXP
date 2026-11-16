@@ -56,6 +56,7 @@
 #include "nsStyleContext.h"
 #include "nsStyleStruct.h"
 #include "Visibility.h"
+#include "mozilla/dom/Element.h"
 
 #ifdef ACCESSIBILITY
 #include "mozilla/a11y/AccTypes.h"
@@ -491,6 +492,12 @@ static void ReleaseValue(T* aPropertyValue)
   aPropertyValue->Release();
 }
 
+struct ContainerQueryDependents
+{
+  uint32_t mGeneration = 0;
+  nsTArray<RefPtr<mozilla::dom::Element>> mElements;
+};
+
 //----------------------------------------------------------------------
 
 /**
@@ -838,7 +845,6 @@ public:
    * we don't bother as the cost of the allocation has already been paid.)
    */
   void SetRect(const nsRect& aRect) {
-  const bool sizeChanged = aRect.Size() != mRect.Size();
     if (mOverflow.mType != NS_FRAME_OVERFLOW_LARGE &&
         mOverflow.mType != NS_FRAME_OVERFLOW_NONE) {
       nsOverflowAreas overflow = GetOverflowAreas();
@@ -846,9 +852,6 @@ public:
       SetOverflowAreas(overflow);
     } else {
       mRect = aRect;
-    }
-    if (sizeChanged) {
-      RestyleIfContainer();
     }
   }
   /**
@@ -1070,7 +1073,14 @@ public:
   NS_DECLARE_FRAME_PROPERTY_SMALL_VALUE(BidiDataProperty, mozilla::FrameBidiData)
 
   NS_DECLARE_FRAME_PROPERTY_WITHOUT_DTOR(PlaceholderFrameProperty, nsPlaceholderFrame)
-  NS_DECLARE_FRAME_PROPERTY_WITHOUT_DTOR(ContainerSizeProperty, nsSize)
+  NS_DECLARE_FRAME_PROPERTY_DELETABLE(ContainerSizeProperty, nsSize)
+
+  // Elements whose style resolution last resolved against this container,
+  // either through a @container condition or through a container unit.  Stamped
+  // with the restyle generation they were collected in, so the first
+  // evaluation in a new pass rebuilds the list and stale entries fall out.
+  NS_DECLARE_FRAME_PROPERTY_DELETABLE(ContainerQueryDependentsProperty,
+                                      ContainerQueryDependents)
 
   mozilla::FrameBidiData GetBidiData()
   {
