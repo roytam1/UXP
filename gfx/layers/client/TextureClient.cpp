@@ -413,7 +413,10 @@ void TextureClient::Destroy(bool aForceSync)
     mActor->Lock();
   }
 
-  mBorrowedDrawTarget = nullptr;
+  if (mBorrowedDrawTarget) {
+    mBorrowedDrawTarget->DetachAllSnapshots();
+    mBorrowedDrawTarget = nullptr;
+  }
   mReadLock = nullptr;
 
   RefPtr<TextureChild> actor = mActor;

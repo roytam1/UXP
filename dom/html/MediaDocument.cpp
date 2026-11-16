@@ -50,9 +50,10 @@ MediaDocumentStreamListener::SetStreamListener(nsIStreamListener *aListener)
 NS_IMETHODIMP
 MediaDocumentStreamListener::OnStartRequest(nsIRequest* request, nsISupports *ctxt)
 {
-  NS_ENSURE_TRUE(mDocument, NS_ERROR_FAILURE);
+  RefPtr<MediaDocument> document = mDocument;
+  NS_ENSURE_TRUE(document, NS_ERROR_FAILURE);
 
-  mDocument->StartLayout();
+  document->StartLayout();
 
   if (mNextStream) {
     return mNextStream->OnStartRequest(request, ctxt);

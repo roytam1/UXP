@@ -74,9 +74,9 @@ ImageListener::~ImageListener()
 NS_IMETHODIMP
 ImageListener::OnStartRequest(nsIRequest* request, nsISupports *ctxt)
 {
-  NS_ENSURE_TRUE(mDocument, NS_ERROR_FAILURE);
+  RefPtr<ImageDocument> imgDoc = static_cast<ImageDocument*>(mDocument.get());
+  NS_ENSURE_TRUE(imgDoc, NS_ERROR_FAILURE);
 
-  ImageDocument *imgDoc = static_cast<ImageDocument*>(mDocument.get());
   nsCOMPtr<nsIChannel> channel = do_QueryInterface(request);
   if (!channel) {
     return NS_ERROR_FAILURE;
