@@ -4877,7 +4877,8 @@ nsComputedDOMStyle::DoGetContain()
   if (mask == 0) {
     val->SetIdent(eCSSKeyword_none);
   } else if (mask & NS_STYLE_CONTAIN_STRICT) {
-    NS_ASSERTION(mask == (NS_STYLE_CONTAIN_STRICT | NS_STYLE_CONTAIN_ALL_BITS),
+    NS_ASSERTION(mask == (NS_STYLE_CONTAIN_STRICT | NS_STYLE_CONTAIN_LAYOUT |
+                          NS_STYLE_CONTAIN_STYLE | NS_STYLE_CONTAIN_PAINT),
                  "contain: strict should imply contain: layout style paint");
     val->SetIdent(eCSSKeyword_strict);
   } else {
@@ -4885,7 +4886,7 @@ nsComputedDOMStyle::DoGetContain()
 
     nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_contain,
                                        mask, NS_STYLE_CONTAIN_LAYOUT,
-                                       NS_STYLE_CONTAIN_PAINT, valueStr);
+                                       NS_STYLE_CONTAIN_INLINE_SIZE, valueStr);
     val->SetString(valueStr);
   }
 

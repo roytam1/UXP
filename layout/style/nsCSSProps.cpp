@@ -1814,11 +1814,13 @@ const KTableEntry nsCSSProps::kMathDisplayKTable[] = {
 };
 
 const KTableEntry nsCSSProps::kContainKTable[] = {
-  { eCSSKeyword_none,    NS_STYLE_CONTAIN_NONE },
-  { eCSSKeyword_strict,  NS_STYLE_CONTAIN_STRICT },
-  { eCSSKeyword_layout,  NS_STYLE_CONTAIN_LAYOUT },
-  { eCSSKeyword_style,   NS_STYLE_CONTAIN_STYLE },
-  { eCSSKeyword_paint,   NS_STYLE_CONTAIN_PAINT },
+  { eCSSKeyword_none,        NS_STYLE_CONTAIN_NONE },
+  { eCSSKeyword_strict,      NS_STYLE_CONTAIN_STRICT },
+  { eCSSKeyword_layout,      NS_STYLE_CONTAIN_LAYOUT },
+  { eCSSKeyword_style,       NS_STYLE_CONTAIN_STYLE },
+  { eCSSKeyword_paint,       NS_STYLE_CONTAIN_PAINT },
+  { eCSSKeyword_size,        NS_STYLE_CONTAIN_SIZE },
+  { eCSSKeyword_inline_size, NS_STYLE_CONTAIN_INLINE_SIZE },
   { eCSSKeyword_UNKNOWN, -1 }
 };
 

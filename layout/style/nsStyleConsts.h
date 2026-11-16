@@ -531,10 +531,14 @@ enum class StyleDisplay : uint8_t {
 #define NS_STYLE_CONTAIN_LAYOUT                 0x2
 #define NS_STYLE_CONTAIN_STYLE                  0x4
 #define NS_STYLE_CONTAIN_PAINT                  0x8
+#define NS_STYLE_CONTAIN_SIZE                   0x10
+#define NS_STYLE_CONTAIN_INLINE_SIZE            0x20
 // NS_STYLE_CONTAIN_ALL_BITS does not correspond to a keyword.
 #define NS_STYLE_CONTAIN_ALL_BITS               (NS_STYLE_CONTAIN_LAYOUT | \
                                                  NS_STYLE_CONTAIN_STYLE  | \
-                                                 NS_STYLE_CONTAIN_PAINT)
+                                                 NS_STYLE_CONTAIN_PAINT |  \
+                                                 NS_STYLE_CONTAIN_SIZE |   \
+                                                 NS_STYLE_CONTAIN_INLINE_SIZE)
 
 // container-type (css-contain-3)
 #define NS_STYLE_CONTAINER_TYPE_NORMAL          0

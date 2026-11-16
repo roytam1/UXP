@@ -7354,7 +7354,7 @@ nsRuleNode::ComputeDisplayData(void* aStartStruct,
   }
 
   // When 'contain: paint', update overflow from 'visible' to 'clip'.
-  if (display->IsContainPaint()) {
+  if (display->IsContainPaintEffective()) {
     // XXX This actually sets overflow-[x|y] to clip.
     if (display->mOverflowX == NS_STYLE_OVERFLOW_VISIBLE) {
       // This uncacheability (and the one below) could be fixed by adding
@@ -7455,7 +7455,8 @@ nsRuleNode::ComputeDisplayData(void* aStartStruct,
       // mOriginalDisplay, which we have carefully not changed.
     }
 
-    if (display->IsContainPaint()) {
+    if (display->IsContainPaintEffective() ||
+        display->IsContainLayoutEffective()) {
       // An element with contain:paint or contain:layout needs to "be a
       // formatting context". For the purposes of the "display" property, that
       // just means we need to promote "display:inline" to "inline-block".
