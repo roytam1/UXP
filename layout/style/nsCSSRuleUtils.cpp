@@ -1787,6 +1787,15 @@ nsCSSHasSelectorData::Branch::AddSelector(nsCSSSelector* aSelector)
         }
         continue;
       }
+      // State-only pseudo-classes are invalidated by ContentStateChanged,
+      // including when an attribute changes a form control's state. They do
+      // not depend on arbitrary attributes. In particular, treating
+      // html:has(:fullscreen) as an all-attribute dependency restyles the
+      // entire document for unrelated changes such as tooltip positioning.
+      if (!nsCSSPseudoClasses::sPseudoClassStates[
+            static_cast<CSSPseudoClassTypeBase>(pseudo->mType)].IsEmpty()) {
+        continue;
+      }
       switch (pseudo->mType) {
         case CSSPseudoClassType::mozHasRelativeAnchor:
         case CSSPseudoClassType::empty:
@@ -1809,7 +1818,7 @@ nsCSSHasSelectorData::Branch::AddSelector(nsCSSSelector* aSelector)
           break;
         default:
           // Pseudo-classes can depend on attributes implicitly (:lang(),
-          // :dir(), form states, etc.). Keep those cases conservative.
+          // :dir(), etc.). Keep those cases conservative.
           mAllAttributes = true;
           break;
       }

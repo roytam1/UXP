@@ -957,7 +957,7 @@ var UI = {
     if (this.toolboxPromise) {
       let toolboxPromise = this.toolboxPromise;
       this.toolboxPromise = null;
-      return toolboxPromise.then(toolbox => toolbox.destroy());
+      return toolboxPromise.then(toolbox => toolbox ? toolbox.destroy() : null);
     }
     return promise.resolve();
   },
@@ -985,7 +985,15 @@ var UI = {
       // toolbox.destroy's promise resolves.
       toolbox.once("destroyed", this._onToolboxClosed.bind(this, promise, iframe));
       return toolbox;
-    }, console.error);
+    }, (e) => {
+      // Don't leave a broken toolbox promise around. The original code used
+      // `console.error` as the rejection handler, which swallows the error and
+      // resolves the promise to `undefined`; a later destroyToolbox() would then
+      // call `toolbox.destroy()` on `undefined` ("toolbox is undefined").
+      // Null it out and re-throw so the failure surfaces cleanly.
+      this.toolboxPromise = null;
+      throw e;
+    });
 
     return this.busyUntil(this.toolboxPromise, "opening toolbox");
   },
@@ -1134,6 +1142,46 @@ var Cmds = {
 
   showPrefs: function () {
     UI.selectDeckPanel("prefs");
+  },
+
+  // The following three commands were removed from the Cmds object upstream
+  // (they used to live here) but the <command> elements in webide.xul still
+  // reference them. Re-implement them by delegating to the same logic the
+  // Project panel sidebar uses (see modules/project-list.js).
+  newApp: function (testOptions) {
+    return UI.busyUntil(Task.spawn(function* () {
+      // Open newapp.xul, which will feed ret.location
+      let ret = {location: null, testOptions: testOptions};
+      window.openDialog("chrome://webide/content/newapp.xul", "newapp", "chrome,modal", ret);
+      if (!ret.location) {
+        return;
+      }
+      // Retrieve added project
+      let project = AppProjects.get(ret.location);
+      // Select project
+      AppManager.selectedProject = project;
+    }), "creating new app");
+  },
+
+  importPackagedApp: function (location) {
+    return UI.busyUntil(Task.spawn(function* () {
+      let directory = utils.getPackagedDirectory(window, location);
+      if (!directory) {
+        // User cancelled directory selection
+        return;
+      }
+      yield UI.importAndSelectApp(directory);
+    }), "importing packaged app");
+  },
+
+  importHostedApp: function (location) {
+    return UI.busyUntil(Task.spawn(function* () {
+      let url = utils.getHostedURL(window, location);
+      if (!url) {
+        return;
+      }
+      yield UI.importAndSelectApp(url);
+    }), "importing hosted app");
   },
 
   zoomIn: function () {
