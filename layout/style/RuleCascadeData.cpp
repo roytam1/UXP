@@ -526,6 +526,10 @@ struct ContainerSize {
   // not the axis is queryable.
   float mWidth;
   float mHeight;
+  // Computed font-size of the container. Relative units in a condition are
+  // evaluated against the container, not against the initial font as they are
+  // in a media query.
+  nscoord mFontSize;
   // The container's inline axis runs vertically, so inline-size is its height
   // and block-size is its width.
   bool mVertical;
@@ -566,6 +570,7 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
 
     aSize.mVertical = vertical;
     aSize.mBlockQueryable = blockQueryable;
+    aSize.mFontSize = frame->StyleFont()->mFont.size;
     // Container units are resolved from the style context, during style
     // resolution, which always runs ahead of the reflow that fills the rect
     // in. Skipping a frame that has not been reflowed therefore means never
@@ -882,14 +887,64 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
   return CompareFeatureValue(actual, required, aExpr->mRange);
 }
 
+// True when the expression can only be answered from the container's block
+// axis, which an `inline-size` container cannot provide.  Writing mode decides
+// which of the width/height pair that is.
+static bool
+FeatureNeedsBlockAxis(const nsMediaExpression& aExpr, bool aVertical)
+{
+  if (!aExpr.mFeature || !aExpr.mFeature->mName) {
+    return false;
+  }
+  nsAutoString name;
+  (*aExpr.mFeature->mName)->ToString(name);
+  name.StripChars("-");
+
+  if (name.EqualsLiteral("blocksize") ||
+      name.EqualsLiteral("minblocksize") ||
+      name.EqualsLiteral("maxblocksize") ||
+      name.EqualsLiteral("aspectratio") ||
+      name.EqualsLiteral("orientation")) {
+    return true;
+  }
+  if (aVertical) {
+    return name.EqualsLiteral("width") || name.EqualsLiteral("minwidth") ||
+           name.EqualsLiteral("maxwidth");
+  }
+  return name.EqualsLiteral("height") || name.EqualsLiteral("minheight") ||
+         name.EqualsLiteral("maxheight");
+}
+
 // All expressions ANDed, queries ORed, `not` inverts, unknown resolves false.
 static ContainerEval
 EvaluateContainerCondition(nsMediaList* aCondition, const nsAString& aName,
-                           Element* aElement, nsPresContext* aPresContext,
-                           nscoord aFontSize)
+                           Element* aElement, nsPresContext* aPresContext)
 {
   ContainerSize size;
-  if (!FindQueryContainer(aElement, aName, size, aPresContext)) {
+
+  // The block axis can only be answered by a `size` container, so a condition
+  // needing it has to skip past `inline-size` containers while selecting.
+  // Every expression in the condition resolves against the container that gets
+  // selected, so one block-axis expression is enough to constrain the whole
+  // selection.
+  bool blockAxis = false;
+  {
+    WritingMode wm;
+    if (nsIFrame* frame = aElement->GetPrimaryFrame()) {
+      wm = frame->GetWritingMode();
+    }
+    for (int32_t i = 0; i < aCondition->Length() && !blockAxis; ++i) {
+      const nsMediaQuery* query = aCondition->MediumAt(i);
+      for (const nsMediaExpression& expr : query->Expressions()) {
+        if (FeatureNeedsBlockAxis(expr, wm.IsVertical())) {
+          blockAxis = true;
+          break;
+        }
+      }
+    }
+  }
+
+  if (!FindQueryContainer(aElement, aName, size, aPresContext, blockAxis)) {
     return ContainerEval::False;
   }
 
@@ -902,7 +957,7 @@ EvaluateContainerCondition(nsMediaList* aCondition, const nsAString& aName,
 
     for (const nsMediaExpression& expr : query->Expressions()) {
       ContainerEval r =
-        SizeFeatureAgainstContainer(&expr, size, aPresContext, aFontSize);
+        SizeFeatureAgainstContainer(&expr, size, aPresContext, size.mFontSize);
       if (r == ContainerEval::False) {
         result = ContainerEval::False;
         break;
@@ -1015,10 +1070,7 @@ ContentEnumFunc(const RuleValue& value,
       if (nsMediaList* condition = value.mRule->GetContainerCondition()) {
         if (EvaluateContainerCondition(
               condition, value.mRule->GetContainerName(), data->mElement,
-              data->mPresContext,
-              data->mPresContext->GetDefaultFont(
-                kPresContext_DefaultVariableFont_ID, nullptr)->size) !=
-            ContainerEval::True) {
+              data->mPresContext) != ContainerEval::True) {
           return;
         }
       }
