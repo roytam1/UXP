@@ -462,6 +462,45 @@ CalcContainerUnitsScale(nsPresContext* aPresContext)
   return aPresContext->GetVisibleArea().Size();
 }
 
+// Reference length, in app units, for one container unit axis: the nearest
+// ancestor container that can answer for that axis, or the small viewport if
+// there is none.
+static nscoord
+ContainerAxisReference(nsCSSUnit aUnit, bool aBlockAxis, bool aVertical,
+                       nsStyleContext* aStyleContext,
+                       nsPresContext* aPresContext)
+{
+  ContainerUnitsScale container;
+  if (aStyleContext &&
+      FindQueryContainerForStyleContext(aStyleContext, aBlockAxis,
+                                        aStyleContext->PresContext(),
+                                        container)) {
+    // aBlockAxis picked which containers could answer; aUnit picks which
+    // extent of the one found to measure. They are different questions for
+    // cqw/cqh, which are physical, so the eligibility axis must not be reused
+    // to choose the extent.
+    float extent;
+    switch (aUnit) {
+      case eCSSUnit_CQW:
+        extent = container.mWidth;
+        break;
+      case eCSSUnit_CQH:
+        extent = container.mHeight;
+        break;
+      case eCSSUnit_CQI:
+        extent = container.mVertical ? container.mHeight : container.mWidth;
+        break;
+      default: // CQB
+        extent = container.mVertical ? container.mWidth : container.mHeight;
+        break;
+    }
+    return nsPresContext::CSSPixelsToAppUnits(extent);
+  }
+
+  nsSize scale(CalcContainerUnitsScale(aPresContext));
+  return aBlockAxis == aVertical ? scale.width : scale.height;
+}
+
 static inline nscoord ScaleViewportCoordTrunc(const nsCSSValue& aValue,
                                               nscoord aViewportSize)
 {
@@ -689,65 +728,39 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
       }
 
       const nsCSSUnit unit = aValue.GetUnit();
-      // Which axis the unit measures. CQMin and CQMax measure both.
-      const bool blockAxis = unit == eCSSUnit_CQB ||
-                             unit == eCSSUnit_CQMin ||
-                             unit == eCSSUnit_CQMax ||
-                             (unit == eCSSUnit_CQW && vertical) ||
-                             (unit == eCSSUnit_CQH && !vertical);
 
       nscoord reference;
-      ContainerUnitsScale container;
-      const bool haveContainer =
-        aStyleContext &&
-        FindQueryContainerForContent(aStyleContext->GetContent(), blockAxis,
-                                     aStyleContext->PresContext(), container);
-      if (haveContainer) {
-        // The result depends on a container size the rule tree cannot track,
-        // so keep it out of the cached data.  The viewport fallback below is
-        // tracked by SetUsesViewportUnits and stays cacheable.
-        aConditions.SetUncacheable();
-        float px;
-        switch (unit) {
-          case eCSSUnit_CQW:
-            px = container.mWidth;
-            break;
-          case eCSSUnit_CQH:
-            px = container.mHeight;
-            break;
-          case eCSSUnit_CQI:
-            px = container.mVertical ? container.mHeight : container.mWidth;
-            break;
-          case eCSSUnit_CQB:
-            px = container.mVertical ? container.mWidth : container.mHeight;
-            break;
-          default:
-            px = unit == eCSSUnit_CQMin
-                   ? std::min(container.mWidth, container.mHeight)
-                   : std::max(container.mWidth, container.mHeight);
-            break;
-        }
-        reference = nsPresContext::CSSPixelsToAppUnits(px);
-      } else {
-        nsSize scale(CalcContainerUnitsScale(aPresContext));
-        switch (unit) {
-          case eCSSUnit_CQW:
-            reference = scale.width;
-            break;
-          case eCSSUnit_CQH:
-            reference = scale.height;
-            break;
-          case eCSSUnit_CQI:
-            reference = vertical ? scale.height : scale.width;
-            break;
-          case eCSSUnit_CQB:
-            reference = vertical ? scale.width : scale.height;
-            break;
-          default:
-            reference = unit == eCSSUnit_CQMin
-                          ? std::min(scale.width, scale.height)
-                          : std::max(scale.width, scale.height);
-            break;
+      switch (unit) {
+        case eCSSUnit_CQW:
+        case eCSSUnit_CQH:
+          // width is the block axis in a vertical writing mode.
+          reference = ContainerAxisReference(unit,
+                                             (unit == eCSSUnit_CQW) == vertical,
+                                             vertical, aStyleContext,
+                                             aPresContext);
+          break;
+        case eCSSUnit_CQI:
+          reference = ContainerAxisReference(eCSSUnit_CQI, false, vertical,
+                                             aStyleContext, aPresContext);
+          break;
+        case eCSSUnit_CQB:
+          reference = ContainerAxisReference(eCSSUnit_CQB, true, vertical,
+                                             aStyleContext, aPresContext);
+          break;
+        default: {
+          // CQMin and CQMax are defined in terms of CQI and CQB, and the two
+          // axes can belong to different containers, so each has to be looked
+          // up on its own before they are combined.
+          const nscoord inlineReference =
+            ContainerAxisReference(eCSSUnit_CQI, false, vertical, aStyleContext,
+                                   aPresContext);
+          const nscoord blockReference =
+            ContainerAxisReference(eCSSUnit_CQB, true, vertical, aStyleContext,
+                                   aPresContext);
+          reference = unit == eCSSUnit_CQMin
+                        ? std::min(inlineReference, blockReference)
+                        : std::max(inlineReference, blockReference);
+          break;
         }
       }
       return ScaleViewportCoordTrunc(aValue, reference);
@@ -1225,6 +1238,12 @@ static bool SetCoord(const nsCSSValue& aValue, nsStyleCoord& aCoord,
             aValue.IsLengthUnit()) ||
            (((aMask & SETCOORD_CALC_LENGTH_ONLY) != 0) &&
             aValue.IsCalcUnit())) {
+    // A container unit resolves against the element's ancestor chain, which the
+    // rule tree has no key for, so the struct cannot be cached.
+    if (aValue.GetUnit() >= eCSSUnit_CQW &&
+        aValue.GetUnit() <= eCSSUnit_CQMax) {
+      aConditions.SetUncacheable();
+    }
     nscoord len = CalcLength(aValue, aStyleContext, aPresContext,
                              aConditions);
     if ((aMask & SETCOORD_CALC_CLAMP_NONNEGATIVE) && len < 0) {
@@ -9746,6 +9765,16 @@ nsRuleNode::ComputePositionData(void* aStartStruct,
            SETCOORD_LPOEH | SETCOORD_INITIAL_NONE | SETCOORD_STORE_CALC |
              SETCOORD_UNSET_INITIAL,
            aContext, mPresContext, conditions);
+
+  // Belt and braces for the unit funnel above: if the flag is being dropped
+  // somewhere between here and COMPUTE_END_RESET, this guarantees the struct
+  // stays out of the rule tree.
+  if ((width->IsLengthUnit() && width->GetUnit() >= eCSSUnit_CQW &&
+       width->GetUnit() <= eCSSUnit_CQMax) ||
+      (height->IsLengthUnit() && height->GetUnit() >= eCSSUnit_CQW &&
+       height->GetUnit() <= eCSSUnit_CQMax)) {
+    conditions.SetUncacheable();
+  }
 
   // aspect-ratio: auto || <ratio>
   const nsCSSValue* aspectRatio = aRuleData->ValueForAspectRatio();

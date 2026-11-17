@@ -1588,10 +1588,15 @@ nsStyleSet::ResolveStyleByAddingRules(nsStyleContext* aBaseContext,
       flags |= eIsVisitedLink;
     }
   }
+  // Container units are resolved from the style context, and a keyframe or
+  // transition context is being built for the very element the base context
+  // belongs to.  Hand the element over so the container lookup has a starting
+  // point; without it every cq unit in a keyframe falls back to the viewport.
+  nsIContent* content = aBaseContext->GetContent();
   return GetContext(aBaseContext->GetParent(), ruleNode, visitedRuleNode,
                     aBaseContext->GetPseudo(),
                     aBaseContext->GetPseudoType(),
-                    nullptr, flags);
+                    content ? content->AsElement() : nullptr, flags);
 }
 
 struct RuleNodeInfo {

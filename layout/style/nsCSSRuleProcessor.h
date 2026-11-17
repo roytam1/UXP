@@ -65,9 +65,10 @@ struct ContainerUnitsScale
  * the block axis if aBlockAxis is set, and reports its size. Returns false if
  * there is none, in which case the caller must substitute the viewport.
  */
-bool FindQueryContainerForContent(nsIContent* aContent, bool aBlockAxis,
-                                  nsPresContext* aPresContext,
-                                  ContainerUnitsScale& aSize);
+bool FindQueryContainerForStyleContext(nsStyleContext* aStyleContext,
+                                       bool aBlockAxis,
+                                       nsPresContext* aPresContext,
+                                       ContainerUnitsScale& aSize);
 
 /**
  * The CSS style rule processor provides a mechanism for sibling style

@@ -57,6 +57,8 @@
 #include "nsCSSRuleUtils.h"
 #include "nsMediaFeatures.h"
 #include "nsIFrame.h"
+#include "nsComputedDOMStyle.h"
+#include "nsStyleConsts.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -309,6 +311,7 @@ RuleHash::RuleHash(bool aQuirksMode)
   , mUniversalRules(0)
   , mEnumList(nullptr)
   , mEnumListSize(0)
+  , mEnumListDepth(0)
   , mQuirksMode(aQuirksMode)
 #ifdef RULE_HASH_STATS
   , mUniversalSelectors(0)
@@ -610,7 +613,6 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
     if (!dependents->mElements.Contains(aElement)) {
       dependents->mElements.AppendElement(aElement);
     }
-
     return true;
   }
 
@@ -618,37 +620,100 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
 }
 
 bool
-FindQueryContainerForContent(nsIContent* aContent, bool aBlockAxis,
-                             nsPresContext* aPresContext, ContainerUnitsScale& aSize)
+FindQueryContainerForStyleContext(nsStyleContext* aStyleContext, bool aBlockAxis,
+                                  nsPresContext* aPresContext, ContainerUnitsScale& aSize)
 {
-  if (!aContent) {
-    return false;
-  }
-  // A display:none element has no frame, and an anonymous box has no element,
-  // so neither the frame nor the content is reliably an element. Start from
-  // whichever ancestor element there is and let FindQueryContainer walk up.
-  Element* element = aContent->IsElement() ? aContent->AsElement() : nullptr;
-  if (!element) {
-    nsIContent* parent = aContent->GetParent();
-    element = parent && parent->IsElement() ? parent->AsElement() : nullptr;
-  }
-  if (!element) {
-    return false;
-  }
-
-  // Container units resolve against the nearest *ancestor* container, so pass
-  // the element itself and let FindQueryContainer start at its parent.
-  ContainerSize size;
-  if (!FindQueryContainer(element, EmptyString(), size,
-                          aPresContext, aBlockAxis)) {
-    return false;
+  // Walk the style context chain rather than the element chain.  Style
+  // resolution runs ahead of reflow -- and for a display:none subtree it never
+  // reaches the elements at all -- so frame lookups miss containers that are
+  // perfectly good ones.  Resolving them through nsComputedDOMStyle would work
+  // but re-enters style resolution, and an ancestor with cq units of its own
+  // re-enters again, which compounds badly.  The parent chain is already
+  // resolved and costs nothing to walk.
+  //
+  // The nearest context with element content is the element to record as a
+  // dependent: an anonymous box or pseudo-element inherits from its
+  // originating element and a keyframe context from the element it belongs to,
+  // and restyling that element restyles what sits below it.
+  Element* dependent = nullptr;
+  for (nsStyleContext* sc = aStyleContext; sc && !dependent;
+       sc = sc->GetParent()) {
+    nsIContent* content = sc->GetContent();
+    if (content && content->IsElement()) {
+      dependent = content->AsElement();
+    }
   }
 
-  aSize.mWidth = size.mWidth;
-  aSize.mHeight = size.mHeight;
-  aSize.mVertical = size.mVertical;
-  aSize.mBlockQueryable = size.mBlockQueryable;
-  return true;
+  // Container units resolve against the nearest *ancestor* container, so the
+  // element's own context is skipped.  A pseudo-element's context parents off
+  // its originating element, so the originating element stays in range.
+  for (nsStyleContext* sc = aStyleContext->GetParent(); sc;
+       sc = sc->GetParent()) {
+    nsIContent* content = sc->GetContent();
+    Element* element =
+      content && content->IsElement() ? content->AsElement() : nullptr;
+    if (!element) {
+      continue;
+    }
+    const nsStyleDisplay* display = sc->StyleDisplay();
+    if (!display->IsContainerForSizeQueries()) {
+      continue;
+    }
+
+    // Only the inline axis is queryable unless the container is `size`.
+    const bool blockQueryable =
+      display->mContainerType == NS_STYLE_CONTAINER_TYPE_SIZE;
+    if (aBlockAxis && !blockQueryable) {
+      continue;
+    }
+
+    aSize.mVertical = WritingMode(sc).IsVertical();
+    aSize.mBlockQueryable = blockQueryable;
+
+    // The box may not have been reflowed, and may not have a box at all. Size
+    // containment makes the container's own specified size authoritative, so
+    // use the rect only when there is one to use.
+    nsIFrame* frame = element->GetPrimaryFrame();
+    const nsStylePosition* pos = sc->StylePosition();
+    nsSize rect(0, 0);
+    if (frame) {
+      rect = frame->GetContentRectRelativeToSelf().Size();
+    }
+    if (rect.width || !pos->mWidth.ConvertsToLength()) {
+      aSize.mWidth = nsPresContext::AppUnitsToFloatCSSPixels(rect.width);
+    } else {
+      aSize.mWidth =
+        nsPresContext::AppUnitsToFloatCSSPixels(pos->mWidth.GetCoordValue());
+    }
+    if (rect.height || !pos->mHeight.ConvertsToLength()) {
+      aSize.mHeight = nsPresContext::AppUnitsToFloatCSSPixels(rect.height);
+    } else {
+      aSize.mHeight =
+        nsPresContext::AppUnitsToFloatCSSPixels(pos->mHeight.GetCoordValue());
+    }
+
+    if (dependent && frame) {
+      auto* dependents = static_cast<ContainerQueryDependents*>(
+          frame->GetProperty(nsIFrame::ContainerQueryDependentsProperty()));
+      const uint32_t generation = aPresContext->ContainerQueryGeneration();
+      if (!dependents) {
+        dependents = new ContainerQueryDependents();
+        frame->SetProperty(nsIFrame::ContainerQueryDependentsProperty(),
+                           dependents);
+        dependents->mGeneration = generation;
+      } else if (dependents->mGeneration != generation) {
+        dependents->mElements.Clear();
+        dependents->mGeneration = generation;
+      }
+      if (!dependents->mElements.Contains(dependent)) {
+        dependents->mElements.AppendElement(dependent);
+      }
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 // Compares a measured value against the required one for a given range.
@@ -660,9 +725,15 @@ CompareFeatureValue(float aActual, float aRequired,
     case nsMediaExpression::eMin:
       return aActual >= aRequired ? ContainerEval::True
                                   : ContainerEval::False;
+    case nsMediaExpression::eMinExclusive:
+      return aActual > aRequired ? ContainerEval::True
+                                 : ContainerEval::False;
     case nsMediaExpression::eMax:
       return aActual <= aRequired ? ContainerEval::True
                                   : ContainerEval::False;
+    case nsMediaExpression::eMaxExclusive:
+      return aActual < aRequired ? ContainerEval::True
+                                 : ContainerEval::False;
     case nsMediaExpression::eEqual:
       return aActual == aRequired ? ContainerEval::True
                                   : ContainerEval::False;
@@ -806,13 +877,6 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
     required = reference * value.GetFloatValue() / 100.0f;
   } else {
     return ContainerEval::Unknown;
-  }
-
-  const char* u = "other";
-  if (value.GetUnit() == eCSSUnit_Pixel) {
-    u = "px";
-  } else if (value.GetUnit() == eCSSUnit_EM) {
-    u = "em";
   }
 
   return CompareFeatureValue(actual, required, aExpr->mRange);
@@ -984,17 +1048,31 @@ RuleHash::EnumerateAllRules(Element* aElement,
   // time counting
   int32_t testCount = classCount + 4;
 
-  if (mEnumListSize < testCount) {
-    delete[] mEnumList;
-    mEnumListSize = std::max(testCount, MIN_ENUM_LIST_SIZE);
-    mEnumList = new EnumData[mEnumListSize];
+  // Style resolution can re-enter itself: resolving a container-unit reference
+  // resolves the container's style from inside this walk.  A nested
+  // enumeration therefore cannot use mEnumList, since it would overwrite both
+  // the entries and the mCurValue/mEnd cursors that the outer loop still holds
+  // pointers into.
+  AutoTArray<EnumData, MIN_ENUM_LIST_SIZE> nestedEnumList;
+  EnumData* enumList;
+  if (mEnumListDepth > 0) {
+    nestedEnumList.SetLength(testCount);
+    enumList = nestedEnumList.Elements();
+  } else {
+    if (mEnumListSize < testCount) {
+      delete[] mEnumList;
+      mEnumListSize = std::max(testCount, MIN_ENUM_LIST_SIZE);
+      mEnumList = new EnumData[mEnumListSize];
+    }
+    enumList = mEnumList;
   }
+  ++mEnumListDepth;
 
   int32_t valueCount = 0;
   RULE_HASH_STAT_INCREMENT(mElementsMatched);
 
   if (mUniversalRules.Length() != 0) { // universal rules
-    mEnumList[valueCount++] = ToEnumData(mUniversalRules);
+    enumList[valueCount++] = ToEnumData(mUniversalRules);
     RULE_HASH_STAT_INCREMENT_LIST_COUNT(mUniversalRules,
                                         mElementUniversalCalls);
   }
@@ -1003,7 +1081,7 @@ RuleHash::EnumerateAllRules(Element* aElement,
     auto entry = static_cast<RuleHashTableEntry*>(
       mNameSpaceTable.Search(NS_INT32_TO_PTR(nameSpace)));
     if (entry) {
-      mEnumList[valueCount++] = ToEnumData(entry->mRules);
+      enumList[valueCount++] = ToEnumData(entry->mRules);
       RULE_HASH_STAT_INCREMENT_LIST_COUNT(entry->mRules,
                                           mElementNameSpaceCalls);
     }
@@ -1011,14 +1089,14 @@ RuleHash::EnumerateAllRules(Element* aElement,
   if (mTagTable.EntryCount() > 0) {
     auto entry = static_cast<RuleHashTableEntry*>(mTagTable.Search(tag));
     if (entry) {
-      mEnumList[valueCount++] = ToEnumData(entry->mRules);
+      enumList[valueCount++] = ToEnumData(entry->mRules);
       RULE_HASH_STAT_INCREMENT_LIST_COUNT(entry->mRules, mElementTagCalls);
     }
   }
   if (id && mIdTable.EntryCount() > 0) {
     auto entry = static_cast<RuleHashTableEntry*>(mIdTable.Search(id));
     if (entry) {
-      mEnumList[valueCount++] = ToEnumData(entry->mRules);
+      enumList[valueCount++] = ToEnumData(entry->mRules);
       RULE_HASH_STAT_INCREMENT_LIST_COUNT(entry->mRules, mElementIdCalls);
     }
   }
@@ -1027,7 +1105,7 @@ RuleHash::EnumerateAllRules(Element* aElement,
       auto entry = static_cast<RuleHashTableEntry*>(
         mClassTable.Search(classList->AtomAt(index)));
       if (entry) {
-        mEnumList[valueCount++] = ToEnumData(entry->mRules);
+        enumList[valueCount++] = ToEnumData(entry->mRules);
         RULE_HASH_STAT_INCREMENT_LIST_COUNT(entry->mRules, mElementClassCalls);
       }
     }
@@ -1052,34 +1130,36 @@ RuleHash::EnumerateAllRules(Element* aElement,
     // Merge the lists while there are still multiple lists to merge.
     while (valueCount > 1) {
       int32_t valueIndex = 0;
-      int32_t lowestRuleIndex = mEnumList[valueIndex].mCurValue->mIndex;
+      int32_t lowestRuleIndex = enumList[valueIndex].mCurValue->mIndex;
       for (int32_t index = 1; index < valueCount; ++index) {
-        int32_t ruleIndex = mEnumList[index].mCurValue->mIndex;
+        int32_t ruleIndex = enumList[index].mCurValue->mIndex;
         if (ruleIndex < lowestRuleIndex) {
           valueIndex = index;
           lowestRuleIndex = ruleIndex;
         }
       }
-      const RuleValue* cur = mEnumList[valueIndex].mCurValue;
+      const RuleValue* cur = enumList[valueIndex].mCurValue;
       aData->mTreeMatchContext.mForAssignedSlot = isForAssignedSlot;
       ContentEnumFunc(*cur, cur->mSelector, aData, aNodeContext, filter);
       cur++;
-      if (cur == mEnumList[valueIndex].mEnd) {
-        mEnumList[valueIndex] = mEnumList[--valueCount];
+      if (cur == enumList[valueIndex].mEnd) {
+        enumList[valueIndex] = mEnumList[--valueCount];
       } else {
-        mEnumList[valueIndex].mCurValue = cur;
+        enumList[valueIndex].mCurValue = cur;
       }
     }
 
     // Fast loop over single value.
-    for (const RuleValue *value = mEnumList[0].mCurValue,
-                              *end = mEnumList[0].mEnd;
+    for (const RuleValue *value = enumList[0].mCurValue,
+                              *end = enumList[0].mEnd;
          value != end;
          ++value) {
       aData->mTreeMatchContext.mForAssignedSlot = isForAssignedSlot;
       ContentEnumFunc(*value, value->mSelector, aData, aNodeContext, filter);
     }
   }
+
+  --mEnumListDepth;
 }
 
 static size_t
