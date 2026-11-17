@@ -26,8 +26,14 @@ class nsTArray;
 template<class E>
 class FallibleTArray;
 
-template<class E, size_t N>
+template <class E>
+class CopyableTArray;
+
+template <class E, size_t N>
 class AutoTArray;
+
+template <class E, size_t N>
+class CopyableAutoTArray;
 
 template<class E>
 using InfallibleTArray = nsTArray<E>;
