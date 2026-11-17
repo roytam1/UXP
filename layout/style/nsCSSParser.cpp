@@ -46,6 +46,7 @@
 #include "nsXMLNameSpaceMap.h"
 #include "nsError.h"
 #include "nsIMediaList.h"
+#include "nsContainerCondition.h"
 #include "nsStyleUtil.h"
 #include "nsIPrincipal.h"
 #include "mozilla/Sprintf.h"
@@ -562,6 +563,11 @@ public:
                       nsMediaList* aMediaList,
                       bool aHTMLMode);
 
+  // Parse a <container-condition> out of a string, for conditionText.
+  bool ParseContainerCondition(const nsAString& aBuffer,
+                               const nsString& aName,
+                               nsContainerCondition** aCondition);
+
   bool ParseSourceSizeList(const nsAString& aBuffer,
                            nsIURI* aURI, // for error reporting
                            uint32_t aLineNumber, // for error reporting
@@ -1050,7 +1056,9 @@ protected:
                       void* aProcessData);
   bool ParseMediaRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   bool ParseContainerRule(RuleAppendFunc aAppendFunc, void* aProcessData);
-  bool ParseContainerConditionList(nsMediaList* aMedia);
+  already_AddRefed<nsContainerCondition> ParseContainerCondition();
+  already_AddRefed<nsContainerCondition> ParseContainerConditionAnd();
+  already_AddRefed<nsContainerCondition> ParseContainerConditionTerm();
   bool ParseMozDocumentRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   bool ParseNameSpaceRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   void ProcessNameSpace(const nsString& aPrefix,
@@ -4537,32 +4545,6 @@ CSSParserImpl::ParseMediaRule(RuleAppendFunc aAppendFunc, void* aData)
   return false;
 }
 
-
-struct ContainerStampData {
-  ContainerStampData(nsMediaList* aCondition, const nsString& aName)
-    : mCondition(aCondition), mName(aName) {}
-  RefPtr<nsMediaList> mCondition;
-  nsString mName;
-};
-
-static bool
-StampContainerCondition(css::Rule* aRule, void* aData)
-{
-  ContainerStampData* data = static_cast<ContainerStampData*>(aData);
-  int32_t type = aRule->GetType();
-  if (css::Rule::STYLE_RULE == type) {
-    static_cast<css::StyleRule*>(aRule)->SetContainerCondition(
-        data->mCondition, data->mName);
-    return true;
-  }
-  if (css::Rule::MEDIA_RULE == type || css::Rule::CONTAINER_RULE == type ||
-      css::Rule::SUPPORTS_RULE == type || css::Rule::LAYER_BLOCK_RULE == type) {
-    return static_cast<css::GroupRule*>(aRule)->EnumerateRulesForwards(
-        StampContainerCondition, aData);
-  }
-  return true;
-}
-
 // Keywords that can start a <container-condition>, so they can't be a
 // <container-name>.  A condition legitimately begins with one of these, so
 // they have to be handed on to the condition parser instead of rejected.
@@ -4619,7 +4601,7 @@ CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
       if (eCSSToken_Symbol != mToken.mType || mToken.mSymbol != '(') {
         return false;
       }
-      UngetToken(); // back to "not", which GatherMedia has to start on
+      UngetToken(); // back to "not", which the condition parser must start on
       leaveToken = true;
     } else {
       containerName = mToken.mIdent;
@@ -4637,24 +4619,14 @@ CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
     return false;
   }
 
-  RefPtr<nsMediaList> condition = new nsMediaList();
+  RefPtr<nsContainerCondition> condition;
   {
     AutoRestore<bool> autoRestore(mInContainer);
     mInContainer = true;
-    // A condition starting with '(' may wrap a whole group of queries joined
-    // by 'and'/'or'.  GatherMedia only understands the media-query grammar,
-    // so route that form to the container-condition parser.
-    if (GetToken(true)) {
-      if (mToken.IsSymbol('(')) {
-        UngetToken();
-        ParseContainerConditionList(condition);
-      } else {
-        UngetToken();
-        GatherMedia(condition, true);
-      }
-    } else {
-      GatherMedia(condition, true);
-    }
+    condition = ParseContainerCondition();
+  }
+  if (!condition) {
+    return false;
   }
 
   RefPtr<css::MediaRule> rule = new css::MediaRule(linenum, colnum);
@@ -4662,116 +4634,164 @@ CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
     return false;
   }
 
-  rule->SetMedia(condition);
   rule->SetContainerQuery(containerName);
+  rule->SetContainerCondition(condition);
 
   ContainerStampData stamp(condition, containerName);
   rule->EnumerateRulesForwards(StampContainerCondition, &stamp);
   return true;
 }
 
-// Parse the rest of a <container-condition>: a list of query-in-parens joined
-// by 'and' and 'or', optionally wrapped in one further set of parentheses.
-// 'and' joins into the same nsMediaQuery, which EvaluateContainerCondition
-// ANDs; 'or' starts a new entry in the list, which it ORs.  The media-query
-// grammar has neither, which is why this cannot go through GatherMedia.
-// Entered positioned on the '(' of the first term.
+// Parse a whole <container-condition> out of a string, for conditionText.
 bool
-CSSParserImpl::ParseContainerConditionList(nsMediaList* aMedia)
+CSSParserImpl::ParseContainerCondition(const nsAString& aBuffer,
+                                       const nsString& aName,
+                                       nsContainerCondition** aCondition)
 {
-  nsAutoPtr<nsMediaQuery> query;
-  for (;;) {
-    if (!GetToken(true)) {
-      REPORT_UNEXPECTED_EOF(PEGatherMediaEOF);
-      if (query) {
-        aMedia->AppendQuery(query);
-      }
-      return true;
-    }
-    if (!mToken.IsSymbol('(')) {
-      // Not a query-in-parens.  Keep the rule in the cascade rather than
-      // dropping it, and let the caller pick up at the block.
-      OUTPUT_ERROR();
-      if (query) {
-        query->SetHadUnknownExpression();
-        aMedia->AppendQuery(query);
-      }
-      UngetToken();
-      SkipUntil('{');
-      UngetToken();
-      return true;
-    }
+  *aCondition = nullptr;
 
-    // A '(' straight inside the one just read means that one wrapped a group
-    // and this one opens the term, so the expression parser must not expect a
-    // '(' of its own.
-    bool parenConsumed = true;
-    if (!GetToken(true)) {
-      REPORT_UNEXPECTED_EOF(PEGatherMediaEOF);
-      if (query) {
-        aMedia->AppendQuery(query);
-      }
-      return true;
-    }
-    if (mToken.IsSymbol('(')) {
-      UngetToken();
-      parenConsumed = false;
-    }
+  nsCSSScanner scanner(aBuffer, 0);
+  css::ErrorReporter reporter(scanner, mSheet, mChildLoader, nullptr);
+  InitScanner(scanner, reporter, nullptr, nullptr, nullptr);
 
-    if (!query) {
-      query = new nsMediaQuery;
-      query->SetType(nsGkAtoms::all);
-      query->SetTypeOmitted();
-    }
-    if (!ParseMediaQueryExpression(query, parenConsumed)) {
-      OUTPUT_ERROR();
-      query->SetHadUnknownExpression();
-      aMedia->AppendQuery(query);
-      SkipUntil('{');
-      UngetToken();
-      return true;
-    }
+  AutoRestore<bool> inContainer(mInContainer);
+  mInContainer = true;
 
-    if (!GetToken(true)) {
-      aMedia->AppendQuery(query);
-      return true;
-    }
-    if (mToken.mType == eCSSToken_Ident &&
-        mToken.mIdent.LowerCaseEqualsLiteral("and")) {
-      continue;
-    }
-    if (mToken.mType == eCSSToken_Ident &&
-        mToken.mIdent.LowerCaseEqualsLiteral("or")) {
-      aMedia->AppendQuery(query);
-      continue;
-    }
-    if (!mToken.IsSymbol(')')) {
-      UngetToken();
-      aMedia->AppendQuery(query);
-      return true;
-    }
+  RefPtr<nsContainerCondition> condition = ParseContainerCondition();
+  bool ok = condition && !GetToken(true);
 
-    // That ')' closed a term.  If it also closed a wrapping group, or if
-    // something other than a joiner follows, the condition is over.
-    if (!GetToken(true)) {
-      aMedia->AppendQuery(query);
-      return true;
-    }
-    if (mToken.mType == eCSSToken_Ident &&
-        mToken.mIdent.LowerCaseEqualsLiteral("and")) {
-      continue;
-    }
-    if (mToken.mType == eCSSToken_Ident &&
-        mToken.mIdent.LowerCaseEqualsLiteral("or")) {
-      aMedia->AppendQuery(query);
-      continue;
-    }
-    aMedia->AppendQuery(query);
-    if (!mToken.IsSymbol(')')) {
-      UngetToken();
-    }
-    return true;
+  if (ok) {
+    *aCondition = condition.forget().take();
+  } else {
+    CLEAR_ERROR();
   }
+
+  ReleaseScanner();
+  return ok;
+}
+
+// <container-condition> = not <query-in-parens>
+//                      | <query-in-parens> [ [and <query-in-parens>]* |
+//                                            [or <query-in-parens>]* ]
+// and binds tighter than or, which is lenient but never changes the meaning of
+// a well-formed condition.
+already_AddRefed<nsContainerCondition>
+CSSParserImpl::ParseContainerCondition()
+{
+  RefPtr<nsContainerCondition> first = ParseContainerConditionAnd();
+  if (!first) {
+    return nullptr;
+  }
+
+  if (!GetToken(true)) {
+    return first.forget();
+  }
+  if (eCSSToken_Ident != mToken.mType ||
+      !mToken.mIdent.LowerCaseEqualsLiteral("or")) {
+    UngetToken();
+    return first.forget();
+  }
+
+  nsTArray<RefPtr<nsContainerCondition>> operands;
+  operands.AppendElement(first);
+  for (;;) {
+    RefPtr<nsContainerCondition> next = ParseContainerConditionAnd();
+    if (!next) {
+      return nullptr;
+    }
+    operands.AppendElement(next);
+    if (!GetToken(true)) {
+      break;
+    }
+    if (eCSSToken_Ident != mToken.mType ||
+        !mToken.mIdent.LowerCaseEqualsLiteral("or")) {
+      UngetToken();
+      break;
+    }
+  }
+  return nsContainerCondition::CreateJunction(nsContainerCondition::eOr,
+                                              operands);
+}
+
+already_AddRefed<nsContainerCondition>
+CSSParserImpl::ParseContainerConditionAnd()
+{
+  nsTArray<RefPtr<nsContainerCondition>> operands;
+  for (;;) {
+    RefPtr<nsContainerCondition> term = ParseContainerConditionTerm();
+    if (!term) {
+      return nullptr;
+    }
+    operands.AppendElement(term);
+    if (!GetToken(true)) {
+      break;
+    }
+    if (eCSSToken_Ident != mToken.mType ||
+        !mToken.mIdent.LowerCaseEqualsLiteral("and")) {
+      UngetToken();
+      break;
+    }
+  }
+  return nsContainerCondition::CreateJunction(nsContainerCondition::eAnd,
+                                              operands);
+}
+
+// <query-in-parens> = ( <container-condition> ) | <size-feature>
+already_AddRefed<nsContainerCondition>
+CSSParserImpl::ParseContainerConditionTerm()
+{
+  if (!GetToken(true)) {
+    return nullptr;
+  }
+
+  if (eCSSToken_Ident == mToken.mType &&
+      mToken.mIdent.LowerCaseEqualsLiteral("not")) {
+    RefPtr<nsContainerCondition> operand = ParseContainerConditionTerm();
+    if (!operand) {
+      return nullptr;
+    }
+    return nsContainerCondition::CreateNot(operand.forget());
+  }
+
+  if (!mToken.IsSymbol('(')) {
+    UngetToken();
+    return nullptr;
+  }
+
+  // A '(' or a "not" straight after the one just read means the outer one
+  // wrapped a whole condition; otherwise this '(' opens a size feature and the
+  // expression parser must not expect a '(' of its own.
+  if (!GetToken(true)) {
+    return nullptr;
+  }
+  const bool nested = mToken.IsSymbol('(') ||
+                      (eCSSToken_Ident == mToken.mType &&
+                       mToken.mIdent.LowerCaseEqualsLiteral("not"));
+  if (nested) {
+    // A group, not a term: it may contain and/or, so it needs the full parser.
+    // The peeked '(' (or "not") goes back on the scanner for it to read.
+    UngetToken();
+    RefPtr<nsContainerCondition> inner = ParseContainerCondition();    if (!inner) {
+      return nullptr;
+    }
+    if (!ExpectSymbol(')', true)) {
+      return nullptr;
+    }
+    return inner.forget();
+  }
+
+  // The leaf stays with ParseMediaQueryExpression, so eContainerQueryOnly,
+  // range syntax and the min-/max- rejection keep living in one place.  The
+  // feature name is deliberately left consumed: aParenConsumed means the
+  // expression parser takes it from mToken instead of reading it, so ungetting
+  // it as well would hand it to the parser's *next* GetToken.
+  nsMediaQuery query;
+  query.SetType(nsGkAtoms::all);
+  query.SetTypeOmitted();
+  if (!ParseMediaQueryExpression(&query, true) || query.Expressions().IsEmpty()) {
+    return nullptr;
+  }
+  return nsContainerCondition::CreateFeature(query.Expressions().LastElement());
 }
 
 // Parse a @-moz-document rule.  This is like an @media rule, but instead
@@ -20462,6 +20482,15 @@ nsCSSParser::ParseMediaList(const nsSubstring& aBuffer,
 {
   static_cast<CSSParserImpl*>(mImpl)->
     ParseMediaList(aBuffer, aURI, aLineNumber, aMediaList, aHTMLMode);
+}
+
+bool
+nsCSSParser::ParseContainerCondition(const nsAString& aBuffer,
+                                     const nsString& aName,
+                                     nsContainerCondition** aCondition)
+{
+  return static_cast<CSSParserImpl*>(mImpl)->
+    ParseContainerCondition(aBuffer, aName, aCondition);
 }
 
 bool

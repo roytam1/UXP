@@ -33,6 +33,7 @@
   ((ch) == char16_t(' ') || (ch) == char16_t('>'))
 
 class nsIAtom;
+class nsContainerCondition;
 struct nsCSSSelectorList;
 struct nsCSSHasSelectorData;
 
@@ -379,9 +380,9 @@ public:
 
   // Set when this rule came out of an @container block. Null condition means
   // the rule is unconditional.
-  nsMediaList* GetContainerCondition() const { return mContainerCondition; }
+  const nsContainerCondition* GetContainerCondition() const { return mContainerCondition; }
   const nsString& GetContainerName() const { return mContainerName; }
-  void SetContainerCondition(nsMediaList* aCondition, const nsString& aName);
+  void SetContainerCondition(nsContainerCondition* aCondition, const nsString& aName);
 
   virtual int32_t GetType() const override;
   using Rule::GetType;
@@ -402,11 +403,11 @@ private:
   void DropReferences();
 
 private:
-  nsCSSSelectorList*      mSelector; // null for style attribute
-  RefPtr<Declaration>     mDeclaration;
+  nsCSSSelectorList*           mSelector; // null for style attribute
+  RefPtr<Declaration>          mDeclaration;
 
-  RefPtr<nsMediaList>     mContainerCondition;
-  nsString                mContainerName;
+  RefPtr<nsContainerCondition> mContainerCondition;
+  nsString                     mContainerName;
 
   // We own it, and it aggregates its refcount with us.
   UniquePtr<DOMCSSDeclarationImpl> mDOMDeclaration;

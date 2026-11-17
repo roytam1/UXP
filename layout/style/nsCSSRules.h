@@ -18,6 +18,7 @@
 #include "mozilla/css/GroupRule.h"
 #include "mozilla/dom/FontFace.h"
 #include "nsAutoPtr.h"
+#include "nsContainerCondition.h"
 #include "nsCSSPropertyID.h"
 #include "nsCSSValue.h"
 #include "nsDOMCSSDeclaration.h"
@@ -91,6 +92,14 @@ public:
   void GetCssTextImpl(nsAString& aCssText) const override;
   void GetContainerName(nsString& aResult) const;
   void GetContainerQuery(nsString& aResult) const;
+  const nsContainerCondition* GetContainerCondition() const
+  {
+    return mContainerCondition;
+  }
+  void SetContainerCondition(nsContainerCondition* aCondition)
+  {
+    mContainerCondition = aCondition;
+  }
   // Our XPCOM GetConditionText is OK
   virtual void SetConditionText(const nsAString& aConditionText,
                                 ErrorResult& aRv) override;
@@ -112,9 +121,24 @@ protected:
   void AppendConditionText(nsAString& aOutput) const;
 
   RefPtr<nsMediaList> mMedia;
+  // Container rules keep their condition as a tree; mMedia stays null for
+  // them, since a flat media list cannot express a negated operand.
+  RefPtr<nsContainerCondition> mContainerCondition;
   nsString mContainerName;
   bool mIsContainerQuery;
 };
+
+// Stamps aCondition onto every style rule in aRule's subtree, so that match
+// time reaches it without walking the group hierarchy.  Run after parsing, and
+// again whenever conditionText is replaced.
+struct ContainerStampData {
+  ContainerStampData(nsContainerCondition* aCondition, const nsString& aName)
+    : mCondition(aCondition), mName(aName) {}
+  RefPtr<nsContainerCondition> mCondition;
+  nsString mName;
+};
+
+bool StampContainerCondition(Rule* aRule, void* aData);
 
 class DocumentRule final : public ConditionRule,
                            public nsIDOMCSSMozDocumentRule

@@ -38,6 +38,7 @@
 #include "nsAttrName.h"
 #include "nsTArray.h"
 #include "nsIMediaList.h"
+#include "nsContainerCondition.h"
 #include "nsCSSRules.h"
 #include "nsStyleSet.h"
 #include "mozilla/dom/Element.h"
@@ -519,22 +520,42 @@ LookForTargetPseudo(nsCSSSelector* aSelector,
   return true;
 }
 
-enum class ContainerEval : uint8_t { False, True, Unknown };
+// The extent a container query on one axis is answered from.  Containment makes
+// the box's own specified size authoritative on the contained axes, so it wins
+// over the content rect.  The rect is only the fallback -- and on a box that has
+// not been reflowed it is also the only wrong answer, which matters because
+// style resolution runs ahead of reflow.
+//
+// The inline axis is contained for every container type; the block axis only
+// for `size`.  aInlineAxis says which axis the query is on, aVertical is the
+// writing mode, since the two axes are physical here.
+static float
+QueryableExtent(const nsStylePosition* aPos, const nsSize& aRect,
+                bool aInlineAxis, bool aVertical, bool aBlockQueryable)
+{
+  const bool vertical = aInlineAxis == aVertical;
+  const nsStyleCoord& coord = vertical ? aPos->mHeight : aPos->mWidth;
+  if ((aInlineAxis || aBlockQueryable) && coord.ConvertsToLength()) {
+    return nsPresContext::AppUnitsToFloatCSSPixels(coord.GetCoordValue());
+  }
+  return nsPresContext::AppUnitsToFloatCSSPixels(vertical ? aRect.height
+                                                          : aRect.width);
+}
 
 struct ContainerSize {
   // Physical extents. Always real: cq units resolve against them whether or
   // not the axis is queryable.
-  float mWidth;
-  float mHeight;
+  float mWidth = 0.0f;
+  float mHeight = 0.0f;
   // Computed font-size of the container. Relative units in a condition are
   // evaluated against the container, not against the initial font as they are
   // in a media query.
-  nscoord mFontSize;
+  nscoord mFontSize = 0;
   // The container's inline axis runs vertically, so inline-size is its height
   // and block-size is its width.
-  bool mVertical;
+  bool mVertical = false;
   // Only `container-type: size` lets a feature look at the block axis.
-  bool mBlockQueryable;
+  bool mBlockQueryable = false;
 };
 
 // Nearest ancestor container, honouring the query name if it has one.
@@ -571,31 +592,12 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
     aSize.mVertical = vertical;
     aSize.mBlockQueryable = blockQueryable;
     aSize.mFontSize = frame->StyleFont()->mFont.size;
-    // Container units are resolved from the style context, during style
-    // resolution, which always runs ahead of the reflow that fills the rect
-    // in. Skipping a frame that has not been reflowed therefore means never
-    // finding a container on the first pass over a freshly built subtree, and
-    // the caller falls back to the viewport with a perfectly good container
-    // sitting right there.
-    // A zero extent means the box has not been reflowed, or has been reflowed
-    // but is empty, and says nothing about the container's real size. Size
-    // containment makes the box's own width and height authoritative, so take
-    // them whenever the rect is empty, and use the rect only when there is no
-    // specified length to fall back on.
+    // Size containment makes the box's own specified size authoritative, so
+    // take it wherever it is available; the rect is only the fallback.
     const nsStylePosition* pos = frame->StylePosition();
     nsSize rect = frame->GetContentRectRelativeToSelf().Size();
-    if (rect.width || !pos->mWidth.ConvertsToLength()) {
-      aSize.mWidth = nsPresContext::AppUnitsToFloatCSSPixels(rect.width);
-    } else {
-      aSize.mWidth =
-        nsPresContext::AppUnitsToFloatCSSPixels(pos->mWidth.GetCoordValue());
-    }
-    if (rect.height || !pos->mHeight.ConvertsToLength()) {
-      aSize.mHeight = nsPresContext::AppUnitsToFloatCSSPixels(rect.height);
-    } else {
-      aSize.mHeight =
-        nsPresContext::AppUnitsToFloatCSSPixels(pos->mHeight.GetCoordValue());
-    }
+    aSize.mWidth = QueryableExtent(pos, rect, true, vertical, blockQueryable);
+    aSize.mHeight = QueryableExtent(pos, rect, false, vertical, blockQueryable);
 
     // Record that this element depends on this container, so that a resize can
     // restyle it rather than the whole subtree.  The same element is appended
@@ -672,30 +674,19 @@ FindQueryContainerForStyleContext(nsStyleContext* aStyleContext, bool aBlockAxis
       continue;
     }
 
-    aSize.mVertical = WritingMode(sc).IsVertical();
+    const bool vertical = WritingMode(sc).IsVertical();
+    aSize.mVertical = vertical;
     aSize.mBlockQueryable = blockQueryable;
 
-    // The box may not have been reflowed, and may not have a box at all. Size
-    // containment makes the container's own specified size authoritative, so
-    // use the rect only when there is one to use.
+    // The box may not have been reflowed, and may not have a box at all.
     nsIFrame* frame = element->GetPrimaryFrame();
     const nsStylePosition* pos = sc->StylePosition();
     nsSize rect(0, 0);
     if (frame) {
       rect = frame->GetContentRectRelativeToSelf().Size();
     }
-    if (rect.width || !pos->mWidth.ConvertsToLength()) {
-      aSize.mWidth = nsPresContext::AppUnitsToFloatCSSPixels(rect.width);
-    } else {
-      aSize.mWidth =
-        nsPresContext::AppUnitsToFloatCSSPixels(pos->mWidth.GetCoordValue());
-    }
-    if (rect.height || !pos->mHeight.ConvertsToLength()) {
-      aSize.mHeight = nsPresContext::AppUnitsToFloatCSSPixels(rect.height);
-    } else {
-      aSize.mHeight =
-        nsPresContext::AppUnitsToFloatCSSPixels(pos->mHeight.GetCoordValue());
-    }
+    aSize.mWidth = QueryableExtent(pos, rect, true, vertical, blockQueryable);
+    aSize.mHeight = QueryableExtent(pos, rect, false, vertical, blockQueryable);
 
     if (dependent && frame) {
       auto* dependents = static_cast<ContainerQueryDependents*>(
@@ -915,74 +906,69 @@ FeatureNeedsBlockAxis(const nsMediaExpression& aExpr, bool aVertical)
          name.EqualsLiteral("maxheight");
 }
 
-// All expressions ANDed, queries ORed, `not` inverts, unknown resolves false.
+// True when any leaf in the tree needs the block axis.
+static bool
+ConditionNeedsBlockAxis(const nsContainerCondition& aCondition, bool aVertical)
+{
+  if (aCondition.GetKind() == nsContainerCondition::eFeature) {
+    return FeatureNeedsBlockAxis(aCondition.GetExpression(), aVertical);
+  }
+  for (const RefPtr<nsContainerCondition>& operand : aCondition.GetOperands()) {
+    if (ConditionNeedsBlockAxis(*operand, aVertical)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+namespace {
+class ContainerConditionEvaluator final : public nsContainerConditionEvaluator
+{
+public:
+  ContainerConditionEvaluator(const ContainerSize& aSize,
+                              nsPresContext* aPresContext)
+    : mSize(aSize), mPresContext(aPresContext) {}
+
+  ContainerEval EvaluateFeature(const nsMediaExpression& aExpression) override
+  {
+    return SizeFeatureAgainstContainer(&aExpression, mSize, mPresContext,
+                                       mSize.mFontSize);
+  }
+
+private:
+  const ContainerSize& mSize;
+  nsPresContext* mPresContext;
+};
+} // anonymous namespace
+
+// The tree is evaluated against the nearest eligible container with
+// three-valued logic; unknown resolves false.
 static ContainerEval
-EvaluateContainerCondition(nsMediaList* aCondition, const nsAString& aName,
-                           Element* aElement, nsPresContext* aPresContext)
+EvaluateContainerCondition(const nsContainerCondition* aCondition,
+                           const nsAString& aName, Element* aElement,
+                           nsPresContext* aPresContext)
 {
   ContainerSize size;
 
   // The block axis can only be answered by a `size` container, so a condition
   // needing it has to skip past `inline-size` containers while selecting.
-  // Every expression in the condition resolves against the container that gets
-  // selected, so one block-axis expression is enough to constrain the whole
-  // selection.
+  // Every leaf resolves against the container that gets selected, so one
+  // block-axis leaf is enough to constrain the whole selection.
   bool blockAxis = false;
   {
     WritingMode wm;
     if (nsIFrame* frame = aElement->GetPrimaryFrame()) {
       wm = frame->GetWritingMode();
     }
-    for (int32_t i = 0; i < aCondition->Length() && !blockAxis; ++i) {
-      const nsMediaQuery* query = aCondition->MediumAt(i);
-      for (const nsMediaExpression& expr : query->Expressions()) {
-        if (FeatureNeedsBlockAxis(expr, wm.IsVertical())) {
-          blockAxis = true;
-          break;
-        }
-      }
-    }
+    blockAxis = ConditionNeedsBlockAxis(*aCondition, wm.IsVertical());
   }
 
   if (!FindQueryContainer(aElement, aName, size, aPresContext, blockAxis)) {
     return ContainerEval::False;
   }
 
-  ContainerEval overall = ContainerEval::False;
-  for (int32_t i = 0; i < aCondition->Length(); ++i) {
-    const nsMediaQuery* query = aCondition->MediumAt(i);
-    ContainerEval result = query->HadUnknownExpression()
-                             ? ContainerEval::Unknown
-                             : ContainerEval::True;
-
-    for (const nsMediaExpression& expr : query->Expressions()) {
-      ContainerEval r =
-        SizeFeatureAgainstContainer(&expr, size, aPresContext, size.mFontSize);
-      if (r == ContainerEval::False) {
-        result = ContainerEval::False;
-        break;
-      }
-      if (r == ContainerEval::Unknown && result == ContainerEval::True) {
-        result = ContainerEval::Unknown;
-      }
-    }
-
-    if (query->IsNegated()) {
-      if (result == ContainerEval::True) {
-        result = ContainerEval::False;
-      } else if (result == ContainerEval::False) {
-        result = ContainerEval::True;
-      }
-    }
-
-    if (result == ContainerEval::True) {
-      return ContainerEval::True;
-    }
-    if (result == ContainerEval::Unknown) {
-      overall = ContainerEval::Unknown;
-    }
-  }
-  return overall;
+  ContainerConditionEvaluator evaluator(size, aPresContext);
+  return aCondition->Matches(evaluator);
 }
 
 static inline void
@@ -1067,7 +1053,8 @@ ContentEnumFunc(const RuleValue& value,
                    data->mTreeMatchContext,
                    nodeContext.mIsRelevantLink ? SelectorMatchesTreeFlags(0)
                                                : eLookForRelevantLink)) {
-      if (nsMediaList* condition = value.mRule->GetContainerCondition()) {
+      if (const nsContainerCondition* condition =
+            value.mRule->GetContainerCondition()) {
         if (EvaluateContainerCondition(
               condition, value.mRule->GetContainerName(), data->mElement,
               data->mPresContext) != ContainerEval::True) {

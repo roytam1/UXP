@@ -145,6 +145,7 @@ UNIFIED_SOURCES += [
     'MediaQueryList.cpp',
     'nsAnimationManager.cpp',
     'nsComputedDOMStyle.cpp',
+    'nsContainerCondition.cpp',
     'nsCSSAnonBoxes.cpp',
     'nsCSSDataBlock.cpp',
     'nsCSSKeywords.cpp',

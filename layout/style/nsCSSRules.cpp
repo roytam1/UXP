@@ -744,6 +744,7 @@ MediaRule::MediaRule(uint32_t aLineNumber, uint32_t aColumnNumber)
 
 MediaRule::MediaRule(const MediaRule& aCopy)
   : ConditionRule(aCopy)
+  , mContainerCondition(aCopy.mContainerCondition)
   , mContainerName(aCopy.mContainerName)
   , mIsContainerQuery(aCopy.mIsContainerQuery)
 {
@@ -906,6 +907,44 @@ void
 MediaRule::SetConditionText(const nsAString& aConditionText,
                             ErrorResult& aRv)
 {
+  if (mIsContainerQuery) {
+    CSSStyleSheet* sheet = GetStyleSheet();
+    if (!sheet) {
+      aRv.Throw(NS_ERROR_FAILURE);
+      return;
+    }
+    nsIDocument* doc = GetDocument();
+    RefPtr<css::Loader> loader;
+    if (doc) {
+      loader = doc->CSSLoader();
+    }
+    nsCSSParser parser(loader, sheet);
+
+    // StyleRule lives inside the Inner, so it is unsafe to call WillDirty if
+    // the sheet does not already have a unique Inner.
+    sheet->AssertHasUniqueInner();
+    sheet->WillDirty();
+
+    RefPtr<nsContainerCondition> condition;
+    if (!parser.ParseContainerCondition(aConditionText, mContainerName,
+                                        getter_AddRefs(condition))) {
+      // On a parse error keep the old condition, as media lists do.
+      return;
+    }
+    mContainerCondition = condition;
+
+    ContainerStampData stamp(condition, mContainerName);
+    EnumerateRulesForwards(StampContainerCondition, &stamp);
+
+    sheet->DidDirty();
+    if (doc) {
+      mozAutoDocUpdate updateBatch(doc, UPDATE_STYLE, true);
+      doc->StyleRuleChanged(sheet, this);
+    }
+    return;
+  }
+
+
   if (!mMedia) {
     RefPtr<nsMediaList> media = new nsMediaList();
     media->SetStyleSheet(GetStyleSheet());
@@ -954,6 +993,7 @@ MediaRule::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
 {
   size_t n = aMallocSizeOf(this);
   n += GroupRule::SizeOfExcludingThis(aMallocSizeOf);
+  n += mContainerCondition ? mContainerCondition->SizeOfIncludingThis(aMallocSizeOf) : 0;
 
   // Measurement of the following members may be added later if DMD finds it is
   // worthwhile:
@@ -992,11 +1032,35 @@ MediaRule::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 void
 MediaRule::AppendConditionText(nsAString& aOutput) const
 {
+  if (mIsContainerQuery) {
+    if (mContainerCondition) {
+      mContainerCondition->AppendToString(aOutput);
+    }
+    return;
+  }
   if (mMedia) {
     nsAutoString mediaText;
     mMedia->GetText(mediaText);
     aOutput.Append(mediaText);
   }
+}
+
+bool
+StampContainerCondition(css::Rule* aRule, void* aData)
+{
+  ContainerStampData* data = static_cast<ContainerStampData*>(aData);
+  int32_t type = aRule->GetType();
+  if (css::Rule::STYLE_RULE == type) {
+    static_cast<css::StyleRule*>(aRule)->SetContainerCondition(
+        data->mCondition, data->mName);
+    return true;
+  }
+  if (css::Rule::MEDIA_RULE == type || css::Rule::CONTAINER_RULE == type ||
+      css::Rule::SUPPORTS_RULE == type || css::Rule::LAYER_BLOCK_RULE == type) {
+    return static_cast<css::GroupRule*>(aRule)->EnumerateRulesForwards(
+        StampContainerCondition, aData);
+  }
+  return true;
 }
 
 DocumentRule::DocumentRule(uint32_t aLineNumber, uint32_t aColumnNumber)
