@@ -621,6 +621,9 @@ struct ContainerSize {
   // evaluated against the container, not against the initial font as they are
   // in a media query.
   nscoord mFontSize = 0;
+  // Computed font-size of the root element.  `rem` is the one relative unit
+  // that does not follow the container.
+  nscoord mRootFontSize = 0;
   // The container's inline axis runs vertically, so inline-size is its height
   // and block-size is its width.
   bool mVertical = false;
@@ -658,10 +661,32 @@ AddContainerDependent(nsIFrame* aContainerFrame, Element* aElement,
 }
 
 // Nearest ancestor container, honouring the query name if it has one.
+// The root element's font-size, for resolving a rem in a condition.  A rem is
+// defined against the root and not against the container, so the walk goes to
+// the top of the context chain rather than stopping at the container.  The
+// chain is already resolved here, so this costs nothing and never re-enters
+// style resolution.
+static nscoord
+RootFontSizeFor(nsPresContext* aPresContext)
+{
+  // Not the container's style context chain.  If the container's own style did
+  // not change, ResolveStyleFor reuses the old context and its parent chain
+  // still leads to the previous root context, so the root font sticks at
+  // whatever it was when the chain was built.
+  if (Element* root = aPresContext->Document()->GetRootElement()) {
+    if (nsIFrame* rootFrame = root->GetPrimaryFrame()) {
+      return rootFrame->StyleFont()->mFont.size;
+    }
+  }
+  // No root frame yet (detached, or before frame construction).
+  return aPresContext->GetDefaultFont(kPresContext_DefaultVariableFont_ID,
+                                      nullptr)->size;
+}
+
 static bool
 FindQueryContainer(Element* aElement, const nsAString& aName,
                    ContainerSize& aSize, nsPresContext* aPresContext,
-                   bool aBlockAxis, Element** aContainer)
+                   bool aBlockAxis, bool aUsesRootEM, Element** aContainer)
 {
   for (Element* e = aElement->GetParentElement(); e;
        e = e->GetParentElement()) {
@@ -694,6 +719,11 @@ FindQueryContainer(Element* aElement, const nsAString& aName,
     // Size containment makes the box's own specified size authoritative, so
     // take it wherever it is available; the rect is only the fallback.
     nsStyleContext* sc = frame->StyleContext();
+    // rem is the root's, and the container is normally not the root, so this
+    // is a separate walk from the one that found the container.
+    if (aUsesRootEM) {
+      aSize.mRootFontSize = RootFontSizeFor(aPresContext);
+    }
     nsSize rect = frame->GetContentRectRelativeToSelf().Size();
     const nsSize basis = ContainingBlockBasis(sc->GetParent());
     aSize.mWidth = QueryableExtent(sc, rect, basis, true, vertical, blockQueryable);
@@ -889,7 +919,7 @@ StyleQueryAgainstContainer(const ContainerStyleQuery& aQuery,
         if (!found) {
           return ContainerEval::False;
         }
-        if (!aQuery.mHasValue) {
+        if (!aQuery.mHasValue && aQuery.mOperator == ContainerStyleQuery::eNone) {
           return ContainerEval::True;
         }
         nsAutoString wanted;
@@ -957,6 +987,22 @@ StyleQueryAgainstContainer(const ContainerStyleQuery& aQuery,
   if (eCSSUnit_Null == actual.GetUnit()) {
     return ContainerEval::Unknown;
   }
+
+  // Ordering has to be answered before the equality shortcut, or `--x < 5`
+  // would come back true on a value of exactly 5.  Both sides go back to text
+  // and the shared comparison handles the rest.
+  if (aQuery.mOperator != ContainerStyleQuery::eNone) {
+    nsAutoString actualSerialised, wantedSerialised;
+    actual.AppendToString(aQuery.mProperty, actualSerialised,
+                          nsCSSValue::eNormalized);
+    aQuery.mValue.AppendToString(aQuery.mProperty, wantedSerialised,
+                                 nsCSSValue::eNormalized);
+    nsAutoString gotText, wantText;
+    NormaliseTokenStream(actualSerialised, gotText);
+    NormaliseTokenStream(wantedSerialised, wantText);
+    return CompareStyleValues(gotText, wantText, aQuery.mOperator);
+  }
+
   if (actual == aQuery.mValue) {
     return ContainerEval::True;
   }
@@ -1131,6 +1177,24 @@ CompareFeatureValue(float aActual, float aRequired,
   }
 }
 
+// True when any leaf is a size feature in rem, which ties the whole tree to the
+// root element's font size.  A leaf the selected container cannot answer still
+// counts: the dependency is on the value, not on whether it matches.
+static bool
+ConditionUsesRootEM(const nsContainerCondition& aCondition)
+{
+  if (aCondition.GetKind() == nsContainerCondition::eFeature &&
+      aCondition.GetExpression().mValue.GetUnit() == eCSSUnit_RootEM) {
+    return true;
+  }
+  for (const RefPtr<nsContainerCondition>& operand : aCondition.GetOperands()) {
+    if (ConditionUsesRootEM(*operand)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static ContainerEval
 SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
                             const ContainerSize& aSize,
@@ -1231,6 +1295,11 @@ SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
     required = nsPresContext::AppUnitsToFloatCSSPixels(value.GetPixelLength());
   } else if (value.GetUnit() == eCSSUnit_EM) {
     required = nsPresContext::AppUnitsToFloatCSSPixels(aFontSize) *
+               value.GetFloatValue();
+  } else if (value.GetUnit() == eCSSUnit_RootEM) {
+    // A rem is the root element's font-size, never the container's, so it is
+    // resolved against the root whatever the container happens to inherit.
+    required = nsPresContext::AppUnitsToFloatCSSPixels(aSize.mRootFontSize) *
                value.GetFloatValue();
   } else if (value.GetUnit() >= eCSSUnit_CQW &&
              value.GetUnit() <= eCSSUnit_CQMax) {
@@ -1372,9 +1441,15 @@ EvaluateContainerCondition(const nsContainerConditionPair& aPair,
   // A name with no condition only asks for the container to exist.
   if (!aCondition) {
     return FindQueryContainer(aElement, aName, size, aPresContext, false,
-                              nullptr)
+                              false, nullptr)
              ? ContainerEval::True
              : ContainerEval::False;
+  }
+
+  // Arm the root-font dependency before the container walk, which can fail.
+  const bool usesRootEM = ConditionUsesRootEM(*aCondition);
+  if (usesRootEM) {
+    aPresContext->SetUsesRootEMUnits(true);
   }
 
   // Style leaves resolve against the nearest style container, which need not be
@@ -1398,7 +1473,7 @@ EvaluateContainerCondition(const nsContainerConditionPair& aPair,
   Element* container = nullptr;
   if (needsSize &&
       !FindQueryContainer(aElement, aName, size, aPresContext, blockAxis,
-                          &container)) {
+                          usesRootEM, &container)) {
     return ContainerEval::False;
   }
 
@@ -1637,7 +1712,7 @@ RuleHash::EnumerateAllRules(Element* aElement,
       ContentEnumFunc(*cur, cur->mSelector, aData, aNodeContext, filter);
       cur++;
       if (cur == enumList[valueIndex].mEnd) {
-        enumList[valueIndex] = mEnumList[--valueCount];
+        enumList[valueIndex] = enumList[--valueCount];
       } else {
         enumList[valueIndex].mCurValue = cur;
       }

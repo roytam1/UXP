@@ -1060,7 +1060,7 @@ protected:
   already_AddRefed<nsContainerCondition> ParseContainerConditionTerm();
   // The nested parser that re-parses a style() body needs to reach
   // ParseStyleQueryDeclaration.
-  friend class nsCSSParser;
+  friend class ::nsCSSParser;
   already_AddRefed<nsContainerCondition> CreateStyleCondition(const nsAString& aText);
   bool ParseStyleQueryDeclarationInner(ContainerStyleQuery& aQuery);
   bool ParseStyleQueryDeclaration(const nsAString& aText,
