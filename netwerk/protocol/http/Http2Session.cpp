@@ -3226,11 +3226,23 @@ Http2Session::UpdateLocalSessionWindow(uint32_t bytes)
   LOG3(("Http2Session::UpdateLocalSessionWindow this=%p newbytes=%u "
         "localWindow=%lld\n", this, bytes, mLocalSessionWindow));
 
-  // Don't necessarily ack every data packet. Only do it
-  // after a significant amount of data.
-  if ((mLocalSessionWindow > (mInitialRwin - kMinimumToAck)) &&
-      (mLocalSessionWindow > kEmergencyWindowThreshold))
-    return;
+  // For HTTP/2 multiplexing with many concurrent streams, the initial
+  // session window (12MB by default) needs to be replenished aggressively.
+  // The old threshold (4MB + 256KB) was designed for sequential downloads
+  // and caused cross-origin multiplexed requests to block while waiting
+  // for window replenishment.
+  //
+  // With multiple concurrent streams, each stream consuming window bytes,
+  // we need to keep the window open to prevent server-side blocking.
+  // Replenish at 50% capacity to maintain continuous data flow and
+  // prevent the common "batched download" behavior where streams block
+  // together when window exhaustion occurs.
+
+  // Replenish if window has been consumed to 50% or less of initial window
+  // This keeps the server's send window fresh and prevents blocking
+  if (mLocalSessionWindow > (mInitialRwin / 2)) {
+    return;  // Still have plenty of window
+  }
 
   // Only send max  bits of window updates at a time.
   uint64_t toack64 = mInitialRwin - mLocalSessionWindow;
