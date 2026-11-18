@@ -24,6 +24,9 @@
 #include "nsTArray.h"
 #include "nsString.h"
 #include "nsIMediaList.h"
+#include "nsCSSPropertyID.h"
+#include "nsCSSValue.h"
+#include "mozilla/CSSVariableDeclarations.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/RefCounted.h"
@@ -56,20 +59,63 @@ NegateContainerEval(ContainerEval aEval)
   return ContainerEval::Unknown;
 }
 
+class nsContainerCondition;
+
 /**
- * Evaluates one leaf against the container the caller selected.  Implemented by
- * the rule processor, which owns container resolution and the size logic.
+ * Evaluates one leaf.  Implemented by the rule processor, which owns container
+ * resolution, the size logic and the computed-style lookup.
+ *
+ * Size features and style features are resolved against different containers
+ * -- a size container and the nearest style container respectively -- so each
+ * gets its own entry point rather than sharing a resolved container.
  */
 class nsContainerConditionEvaluator
 {
 public:
   virtual ContainerEval EvaluateFeature(const nsMediaExpression& aExpression) = 0;
+  virtual ContainerEval EvaluateStyle(const nsContainerCondition& aCondition) = 0;
 
 protected:
   virtual ~nsContainerConditionEvaluator() {}
 };
 
-class nsContainerCondition;
+/**
+ * One style() query, parsed.
+ *
+ * The body text is kept for serialisation, but matching never re-reads it: the
+ * capture has already flattened the tokens to single-spaced text, so strings,
+ * urls and calc() spacing cannot be trusted as a serialisation.  Parsing it
+ * once, here, into a name and a value means matching compares values.
+ */
+struct ContainerStyleQuery
+{
+  // "--x" for a custom property, otherwise the longhand's own name.
+  nsString mName;
+  // eCSSPropertyExtra_variable for a custom property, else the longhand.
+  nsCSSPropertyID mProperty = eCSSProperty_UNKNOWN;
+  // False for the bare "style(--x)" form, which only asks for a value to be
+  // set rather than for a particular one.
+  bool mHasValue = true;
+  // Only meaningful for a custom property: 'initial' and friends are matched by
+  // type, so that "style(--x: initial)" is not read as the token stream
+  // "initial".
+  mozilla::CSSVariableDeclarations::Type mValueType =
+    mozilla::CSSVariableDeclarations::eTokenStream;
+  // The custom property value, as a token stream.
+  nsString mValueText;
+  // The longhand value.
+  nsCSSValue mValue;
+  // Comparison for the "--x > 0" form; eNone for "name: value" and "name".
+  enum StyleQueryOperator : uint8_t {
+    eNone,
+    eEquals,
+    eLessThan,
+    eLessThanEqual,
+    eGreaterThan,
+    eGreaterThanEqual
+  };
+  StyleQueryOperator mOperator = eNone;
+};
 
 // One @container condition pair: an optional name and an optional condition.
 // A rule may hold several, comma separated, and matches if any of them does.
@@ -88,8 +134,9 @@ public:
 
   static already_AddRefed<nsContainerCondition>
   CreateFeature(const nsMediaExpression& aExpression);
-  // A style() query, stored as written; not evaluated yet.
-  static already_AddRefed<nsContainerCondition> CreateStyle(const nsAString& aText);
+  // A style() query: aText is the body as written, aQuery the parsed form.
+  static already_AddRefed<nsContainerCondition>
+  CreateStyle(const nsAString& aText, const ContainerStyleQuery& aQuery);
   static already_AddRefed<nsContainerCondition>
   CreateNot(already_AddRefed<nsContainerCondition> aOperand);
   // Consumes aOperands.  Returns the single operand unwrapped when only one is
@@ -116,6 +163,12 @@ public:
     return mStyle;
   }
 
+  const ContainerStyleQuery& GetStyle() const
+  {
+    MOZ_ASSERT(mKind == eStyle);
+    return mStyleQuery;
+  }
+
   ContainerEval Matches(nsContainerConditionEvaluator& aEvaluator) const;
 
   void AppendToString(nsAString& aString) const;
@@ -137,6 +190,8 @@ private:
   nsMediaExpression mExpression;
   // Only meaningful for eStyle; includes the "style(" and ")".
   nsString mStyle;
+  // Only meaningful for eStyle.
+  ContainerStyleQuery mStyleQuery;
   // Exactly one operand for eNot, two or more for eAnd and eOr.
   nsTArray<RefPtr<nsContainerCondition>> mOperands;
 };

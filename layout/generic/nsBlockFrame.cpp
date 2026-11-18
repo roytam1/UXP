@@ -1625,7 +1625,11 @@ nsBlockFrame::ComputeFinalSize(const ReflowInput& aReflowInput,
     aMetrics.mCarriedOutBEndMargin.Zero();
   }
   else if (NS_FRAME_IS_COMPLETE(aState.mReflowStatus)) {
-    nscoord contentBSize = blockEndEdgeOfChildren - borderPadding.BStart(wm);
+    // Size containment: our content must not contribute to the block size, so
+    // only border, padding and min/max-bsize apply.
+    nscoord contentBSize = StyleDisplay()->IsContainSizeEffective()
+                             ? 0
+                             : blockEndEdgeOfChildren - borderPadding.BStart(wm);
     nscoord autoBSize = aReflowInput.ApplyMinMaxBSize(contentBSize);
     if (autoBSize != contentBSize) {
       // Our min- or max-bsize value made our bsize change.  Don't carry out

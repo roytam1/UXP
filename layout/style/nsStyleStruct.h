@@ -2984,10 +2984,12 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay
     return !!(mContain & NS_STYLE_CONTAIN_INLINE_SIZE);
   }
 
-  bool IsContainerForSizeQueries() const {
+  // Whether the display type can be a query container at all.  Style queries
+  // accept it; size queries additionally need a container-type.
+  bool IsContainerDisplay() const {
     // Containment blockifies display:inline to inline-block, but an inline box
-    // is still not a container for size queries — an inline element with
-    // container-type must not answer them. Judge by the pre-blockification
+    // is still not a container — an inline element with container-type must not
+    // answer queries.  Judge by the pre-blockification
     // display. Floats and abspos boxes are blockified to Block rather than
     // inline-block, so they stay eligible.
     const mozilla::StyleDisplay display =
@@ -3011,7 +3013,19 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay
       default:
         break;
     }
-    return mContainerType != NS_STYLE_CONTAINER_TYPE_NORMAL;
+    return true;
+  }
+
+  bool IsContainerForSizeQueries() const {
+    // `container-type: normal` establishes only a style container.
+    return IsContainerDisplay() &&
+           mContainerType != NS_STYLE_CONTAINER_TYPE_NORMAL;
+  }
+
+  // A style container needs no size containment, so `normal` is the common
+  // case and the only requirement is a display that can be a container.
+  bool IsContainerForStyleQueries() const {
+    return IsContainerDisplay();
   }
 
   // Containment as it actually applies, including what container-type implies.

@@ -1058,6 +1058,13 @@ protected:
   already_AddRefed<nsContainerCondition> ParseContainerCondition();
   already_AddRefed<nsContainerCondition> ParseContainerConditionAnd();
   already_AddRefed<nsContainerCondition> ParseContainerConditionTerm();
+  // The nested parser that re-parses a style() body needs to reach
+  // ParseStyleQueryDeclaration.
+  friend class nsCSSParser;
+  already_AddRefed<nsContainerCondition> CreateStyleCondition(const nsAString& aText);
+  bool ParseStyleQueryDeclarationInner(ContainerStyleQuery& aQuery);
+  bool ParseStyleQueryDeclaration(const nsAString& aText,
+                                  ContainerStyleQuery& aQuery);
   bool ParseContainerConditionList(nsTArray<nsContainerConditionPair>& aConditions);
   // Captures the body of a style() query up to its closing parenthesis.
   bool CaptureStyleQueryText(nsAutoString& aText);
@@ -4826,7 +4833,7 @@ CSSParserImpl::ParseContainerConditionTerm()
     if (!CaptureStyleQueryText(text)) {
       return nullptr;
     }
-    return nsContainerCondition::CreateStyle(text);
+    return CreateStyleCondition(text);
   }
 
   if (eCSSToken_Ident == mToken.mType) {
@@ -4847,7 +4854,7 @@ CSSParserImpl::ParseContainerConditionTerm()
       if (!CaptureStyleQueryText(text)) {
         return nullptr;
       }
-      return nsContainerCondition::CreateStyle(text);
+      return CreateStyleCondition(text);
     }
   }
 
@@ -4880,7 +4887,7 @@ CSSParserImpl::ParseContainerConditionTerm()
     if (!CaptureStyleQueryText(text)) {
       return nullptr;
     }
-    return nsContainerCondition::CreateStyle(text);
+    return CreateStyleCondition(text);
   }
   if (nested) {
     // A group, not a term: it may contain and/or, so it needs the full parser.
@@ -4907,6 +4914,139 @@ CSSParserImpl::ParseContainerConditionTerm()
     return nullptr;
   }
   return nsContainerCondition::CreateFeature(query.Expressions().LastElement());
+}
+
+// Turn a captured style() body into a condition.  The capture has already
+// consumed the source and rebuilt it with single spaces, so the body is
+// re-parsed here as a declaration instead of being trusted as a serialisation.
+// A body that is not exactly one declaration fails the term, which drops the
+// rule as a parse error would, rather than leaving a leaf that never matches.
+already_AddRefed<nsContainerCondition>
+CSSParserImpl::CreateStyleCondition(const nsAString& aText)
+{
+  ContainerStyleQuery query;
+  nsCSSParser parser;
+  if (!parser.ParseStyleQueryDeclaration(aText, query)) {
+    return nullptr;
+  }
+  return nsContainerCondition::CreateStyle(aText, query);
+}
+
+bool
+CSSParserImpl::ParseStyleQueryDeclarationInner(ContainerStyleQuery& aQuery)
+{
+  if (!GetToken(true) || eCSSToken_Ident != mToken.mType) {
+    return false;
+  }
+  aQuery.mName = mToken.mIdent;
+
+  if (nsCSSProps::IsCustomPropertyName(aQuery.mName)) {
+    aQuery.mProperty = eCSSPropertyExtra_variable;
+    if (!ExpectSymbol(':', true)) {
+      aQuery.mHasValue = false;
+      return true;
+    }
+    return ParseVariableDeclaration(&aQuery.mValueType, aQuery.mValueText);
+  }
+
+  const nsCSSPropertyID propID = LookupEnabledProperty(aQuery.mName);
+  if (eCSSProperty_UNKNOWN == propID || nsCSSProps::IsShorthand(propID)) {
+    return false;
+  }
+  aQuery.mProperty = propID;
+  if (!ExpectSymbol(':', true)) {
+    aQuery.mHasValue = false;
+    return true;
+  }
+  return CSSParseResult::Ok == ParseSingleValueProperty(aQuery.mValue, propID);
+}
+
+// Try to read the range form of a style query, "--x > 0".  The captured body
+// is a plain token string, so this scans the string instead of the scanner.
+// A top-level ':' anywhere before an operator means the declaration form wins
+// and this declines.
+static bool
+ParseStyleQueryRange(const nsAString& aText, ContainerStyleQuery& aQuery)
+{
+  const char16_t* chars = aText.BeginReading();
+  const uint32_t length = aText.Length();
+
+  uint32_t i = 0;
+  while (i < length && chars[i] == ' ') {
+    ++i;
+  }
+  const uint32_t nameStart = i;
+  while (i < length && chars[i] != ' ' && chars[i] != '<' &&
+         chars[i] != '>' && chars[i] != '=' && chars[i] != ':') {
+    ++i;
+  }
+  if (i == length || chars[i] == ':') {
+    return false;
+  }
+
+  const nsDependentSubstring name(Substring(aText, nameStart, i - nameStart));
+  if (!nsCSSProps::IsCustomPropertyName(name)) {
+    return false;
+  }
+
+  ContainerStyleQuery::StyleQueryOperator op;
+  if (chars[i] == '=') {
+    op = ContainerStyleQuery::eEquals;
+    ++i;
+  } else {
+    const bool less = chars[i] == '<';
+    ++i;
+    if (i < length && chars[i] == '=') {
+      op = less ? ContainerStyleQuery::eLessThanEqual
+                : ContainerStyleQuery::eGreaterThanEqual;
+      ++i;
+    } else {
+      op = less ? ContainerStyleQuery::eLessThan
+                : ContainerStyleQuery::eGreaterThan;
+    }
+  }
+
+  while (i < length && chars[i] == ' ') {
+    ++i;
+  }
+  if (i == length) {
+    return false;
+  }
+
+  aQuery.mName = name;
+  aQuery.mProperty = eCSSPropertyExtra_variable;
+  aQuery.mValueType = CSSVariableDeclarations::eTokenStream;
+  aQuery.mValueText = Substring(aText, i);
+  aQuery.mOperator = op;
+  return true;
+}
+
+bool
+CSSParserImpl::ParseStyleQueryDeclaration(const nsAString& aText,
+                                          ContainerStyleQuery& aQuery)
+{
+  if (ParseStyleQueryRange(aText, aQuery)) {
+    return true;
+  }
+
+  // The capture consumed the source, so the text needs a scanner of its own.
+  nsCSSScanner scanner(aText, 0);
+  css::ErrorReporter reporter(scanner, mSheet, mChildLoader, nullptr);
+  InitScanner(scanner, reporter, nullptr, nullptr, nullptr);
+  mSection = eCSSSection_General;
+
+  bool ok = ParseStyleQueryDeclarationInner(aQuery);
+  if (ok && mHavePushBack && mToken.IsSymbol('!')) {
+    // "!important" is legal and means nothing here.
+    GetToken(true);
+    GetToken(true);
+  }
+  // Exactly one declaration: anything left over means the body held more.
+  if (ok && GetToken(true)) {
+    ok = false;
+  }
+  ReleaseScanner();
+  return ok;
 }
 
 // Parse a @-moz-document rule.  This is like an @media rule, but instead
@@ -16932,7 +17072,7 @@ CSSParserImpl::ParseContainer()
   if (unit == eCSSUnit_Inherit || unit == eCSSUnit_Initial ||
       unit == eCSSUnit_Unset || unit == eCSSUnit_Revert) {
     // Wide keywords apply to both longhands.
-    type.SetIntValue(0, unit);
+    type = name;
   } else if (ExpectSymbol('/', true)) {
     if (!ParseContainerType(type)) {
       return false;
@@ -20413,6 +20553,16 @@ CSSParserImpl::IsValueValidForProperty(const nsCSSPropertyID aPropID,
 }
 
 } // namespace
+
+// Wrapper for CreateStyleCondition's nested parser.  A fresh CSSParserImpl is
+// needed because ReleaseScanner nulls mScanner on the instance it runs on.
+bool
+nsCSSParser::ParseStyleQueryDeclaration(const nsAString& aText,
+                                        ContainerStyleQuery& aQuery)
+{
+  return static_cast<CSSParserImpl*>(mImpl)->ParseStyleQueryDeclaration(aText,
+                                                                       aQuery);
+}
 
 // Recycling of parser implementation objects
 

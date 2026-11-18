@@ -44,12 +44,13 @@ nsContainerCondition::CreateFeature(const nsMediaExpression& aExpression)
 }
 
 /* static */ already_AddRefed<nsContainerCondition>
-nsContainerCondition::CreateStyle(const nsAString& aText)
+nsContainerCondition::CreateStyle(const nsAString& aText, const ContainerStyleQuery& aQuery)
 {
   RefPtr<nsContainerCondition> node = new nsContainerCondition(eStyle);
   node->mStyle.AssignLiteral("style(");
   node->mStyle.Append(aText);
   node->mStyle.Append(')');
+  node->mStyleQuery = aQuery;
   return node.forget();
 }
 
@@ -98,9 +99,7 @@ nsContainerCondition::Matches(nsContainerConditionEvaluator& aEvaluator) const
       return aEvaluator.EvaluateFeature(mExpression);
 
     case eStyle:
-      // Not evaluated yet; unknown keeps "not style(...)" unknown rather than
-      // turning it into a match.
-      return ContainerEval::Unknown;
+      return aEvaluator.EvaluateStyle(*this);
 
     case eNot:
       MOZ_ASSERT(mOperands.Length() == 1);
@@ -224,5 +223,8 @@ nsContainerCondition::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const
   for (const RefPtr<nsContainerCondition>& operand : mOperands) {
     n += operand->SizeOfIncludingThis(aMallocSizeOf);
   }
+  n += mStyle.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
+  n += mStyleQuery.mName.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
+  n += mStyleQuery.mValueText.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
   return n;
 }

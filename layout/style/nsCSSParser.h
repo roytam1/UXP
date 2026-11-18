@@ -27,6 +27,7 @@ struct nsContainerConditionPair;
 class nsCSSKeyframeRule;
 class nsCSSValue;
 struct nsRuleData;
+struct ContainerStyleQuery;
 
 namespace mozilla {
 class CSSStyleSheet;
@@ -169,6 +170,15 @@ public:
   // Parse a <container-condition> out of a string, for conditionText.
   bool ParseContainerConditions(const nsAString& aBuffer,
                                 nsTArray<nsContainerConditionPair>* aConditions);
+
+  /**
+   * Parse the body of a style() container query into aQuery.  The body must be
+   * exactly one "name: value" declaration, or a bare "name"; shorthands are
+   * rejected because they have no single computed value to compare against.
+   * Returns false otherwise.
+   */
+  bool ParseStyleQueryDeclaration(const nsAString& aText,
+                                  ContainerStyleQuery& aQuery);
 
   /*
    * Parse aBuffer into a list of media queries and their associated values,
