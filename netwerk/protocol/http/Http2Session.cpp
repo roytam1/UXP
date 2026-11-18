@@ -2527,8 +2527,13 @@ Http2Session::ReadSegmentsAgain(nsAHttpSegmentReader *reader,
     mReadyForWrite.Push(stream);
 
     // If there are multiple streams, signal that we should process more
-    // streams in this session rather than giving all bandwidth to one stream
+    // streams in this session rather than giving all bandwidth to one stream.
+    // Set 'again = true' to keep the connection write loop active!
     if (mReadyForWrite.GetSize() > 1) {
+      *again = true;
+      LOG3(("Http2Session::ReadSegments %p multiple streams ready (%d), "
+            "setting again=true for continuous multiplexing", this, mReadyForWrite.GetSize()));
+    } else {
       LOG3(("Http2Session::ReadSegments %p multiple streams ready (%d), "
             "enabling fair multiplexing", this, mReadyForWrite.GetSize()));
     }
@@ -2547,7 +2552,17 @@ Http2Session::ReadSegmentsAgain(nsAHttpSegmentReader *reader,
         this, stream));
 
   // call readsegments again if there are other streams ready
-  // to go in this session
+  // to go in this session. This is essential for HTTP/2 multiplexing.
+  // Without setting 'again', the connection loop exits and doesn't
+  // process other waiting streams, causing interruptions and potentially
+  // squential behaviour.
+  if (GetWriteQueueSize() > 0) {
+    // More streams are ready - keep the write loop active
+    *again = true;
+    LOG3(("Http2Session %p setting again=true, %u streams still ready",
+          this, GetWriteQueueSize()));
+  }
+
   SetWriteCallbacks();
 
   return rv;
