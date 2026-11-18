@@ -564,9 +564,8 @@ public:
                       bool aHTMLMode);
 
   // Parse a <container-condition> out of a string, for conditionText.
-  bool ParseContainerCondition(const nsAString& aBuffer,
-                               const nsString& aName,
-                               nsContainerCondition** aCondition);
+  bool ParseContainerConditions(const nsAString& aBuffer,
+                                nsTArray<nsContainerConditionPair>* aConditions);
 
   bool ParseSourceSizeList(const nsAString& aBuffer,
                            nsIURI* aURI, // for error reporting
@@ -1059,6 +1058,9 @@ protected:
   already_AddRefed<nsContainerCondition> ParseContainerCondition();
   already_AddRefed<nsContainerCondition> ParseContainerConditionAnd();
   already_AddRefed<nsContainerCondition> ParseContainerConditionTerm();
+  bool ParseContainerConditionList(nsTArray<nsContainerConditionPair>& aConditions);
+  // Captures the body of a style() query up to its closing parenthesis.
+  bool CaptureStyleQueryText(nsAutoString& aText);
   bool ParseMozDocumentRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   bool ParseNameSpaceRule(RuleAppendFunc aAppendFunc, void* aProcessData);
   void ProcessNameSpace(const nsString& aPrefix,
@@ -4571,61 +4573,76 @@ IsReservedContainerName(const nsAString& aIdent)
          aIdent.LowerCaseEqualsLiteral("revert-layer");
 }
 
+// Capture the body of a style() query up to its closing parenthesis, rebuilt
+// from tokens with single spaces.  Good enough for the "--x > 0" forms; a
+// faithful re-serialisation would need the source slice.
+bool
+CSSParserImpl::CaptureStyleQueryText(nsAutoString& aText)
+{
+  uint32_t depth = 1;
+  for (;;) {
+    if (!GetToken(true)) {
+      return false;
+    }
+    if (mToken.IsSymbol('(')) {
+      ++depth;
+    } else if (mToken.IsSymbol(')')) {
+      if (--depth == 0) {
+        return true;
+      }
+    }
+    if (mToken.mType == eCSSToken_Whitespace) {
+      continue;
+    }
+    if (!aText.IsEmpty()) {
+      aText.Append(' ');
+    }
+    switch (mToken.mType) {
+      case eCSSToken_Ident:
+      case eCSSToken_Function:
+        aText.Append(mToken.mIdent);
+        break;
+      case eCSSToken_Hash:
+        aText.Append('#');
+        aText.Append(mToken.mIdent);
+        break;
+      case eCSSToken_Dimension:
+        aText.AppendFloat(mToken.mNumber);
+        aText.Append(mToken.mIdent);
+        break;
+      case eCSSToken_Percentage:
+        aText.AppendFloat(mToken.mNumber);
+        aText.Append('%');
+        break;
+      case eCSSToken_Number:
+        aText.AppendFloat(mToken.mNumber);
+        break;
+      case eCSSToken_Symbol:
+        aText.Append(mToken.mSymbol);
+        break;
+      default:
+        // Strings, urls and anything else are rare inside style(); fall back to
+        // the ident text where there is one.
+        if (!mToken.mIdent.IsEmpty()) {
+          aText.Append(mToken.mIdent);
+        }
+        break;
+    }
+  }
+}
+
 // Parse a container rule: "@container [<container-name>] <container-condition>
 // { ... }"
 bool
 CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
 {
-  if (!GetToken(true)) {
-    return false;
-  }
-
-  // Optional <container-name>.  A condition can start with "not" followed by
-  // "(", and none of "and"/"or"/the reserved keywords can be a name at all.
-  nsAutoString containerName;
-  bool leaveToken = false;
-  if (eCSSToken_Ident == mToken.mType) {
-    if (IsReservedContainerName(mToken.mIdent)) {
-      // Can't be a name and can't start a condition, so the prelude is bogus.
-      return false;
-    }
-    if (IsConditionStartKeyword(mToken.mIdent)) {
-      // Not a name.  "and"/"or" can't begin a condition either, and "not" only
-      // can when a "(" follows it.
-      if (!mToken.mIdent.LowerCaseEqualsLiteral("not")) {
-        return false;
-      }
-      if (!GetToken(true)) {
-        return false;
-      }
-      if (eCSSToken_Symbol != mToken.mType || mToken.mSymbol != '(') {
-        return false;
-      }
-      UngetToken(); // back to "not", which the condition parser must start on
-      leaveToken = true;
-    } else {
-      containerName = mToken.mIdent;
-      if (!GetToken(true)) {
-        return false;
-      }
-    }
-  }
-  if (!leaveToken) {
-    UngetToken();
-  }
-
   uint32_t linenum, colnum;
   if (!GetNextTokenLocation(true, &linenum, &colnum)) {
     return false;
   }
 
-  RefPtr<nsContainerCondition> condition;
-  {
-    AutoRestore<bool> autoRestore(mInContainer);
-    mInContainer = true;
-    condition = ParseContainerCondition();
-  }
-  if (!condition) {
+  nsTArray<nsContainerConditionPair> conditions;
+  if (!ParseContainerConditionList(conditions)) {
     return false;
   }
 
@@ -4634,21 +4651,80 @@ CSSParserImpl::ParseContainerRule(RuleAppendFunc aAppendFunc, void* aData)
     return false;
   }
 
-  rule->SetContainerQuery(containerName);
-  rule->SetContainerCondition(condition);
+  rule->SetContainerQueries(conditions);
 
-  ContainerStampData stamp(condition, containerName);
+  ContainerStampData stamp(conditions);
   rule->EnumerateRulesForwards(StampContainerCondition, &stamp);
   return true;
 }
 
-// Parse a whole <container-condition> out of a string, for conditionText.
+// <container-rule> = <container-condition>#
+// <container-condition> = [<container-name>? <container-query>?]
+// Both parts of a pair are optional, so "@container Name {}" and
+// "@container {}" are valid.  Leaves the scanner on the '{' or on EOF.
 bool
-CSSParserImpl::ParseContainerCondition(const nsAString& aBuffer,
-                                       const nsString& aName,
-                                       nsContainerCondition** aCondition)
+CSSParserImpl::ParseContainerConditionList(
+    nsTArray<nsContainerConditionPair>& aConditions)
 {
-  *aCondition = nullptr;
+  AutoRestore<bool> autoRestore(mInContainer);
+  mInContainer = true;
+
+  for (;;) {
+    nsContainerConditionPair pair;
+
+    if (!GetToken(true)) {
+      return false;
+    }
+    if (eCSSToken_Ident == mToken.mType) {
+      if (IsReservedContainerName(mToken.mIdent)) {
+        return false;
+      }
+      if (IsConditionStartKeyword(mToken.mIdent)) {
+        if (!mToken.mIdent.LowerCaseEqualsLiteral("not")) {
+          return false;
+        }
+        // Leave "not" for the condition parser.
+        UngetToken();
+      } else {
+        pair.mName = mToken.mIdent;
+      }
+    } else {
+      // Neither a name nor a keyword: either a condition opening with '(',
+      // or the end of the prelude.  Let the peek below decide.
+      UngetToken();
+    }
+
+    if (!GetToken(true)) {
+      return false;
+    }
+    if (!mToken.IsSymbol(',') && !mToken.IsSymbol('{')) {
+      UngetToken();
+      pair.mCondition = ParseContainerCondition();
+      if (!pair.mCondition) {
+        return false;
+      }
+      if (!GetToken(true)) {
+        return false;
+      }
+    }
+
+    if (!aConditions.AppendElement(pair)) {
+      return false;
+    }
+    if (mToken.IsSymbol('{')) {
+      UngetToken();  // the caller's ExpectSymbol('{') wants it back
+      return true;
+    }
+    // ',' -- another pair follows.
+  }
+}
+
+// Parse a whole <container-rule> prelude out of a string, for conditionText.
+bool
+CSSParserImpl::ParseContainerConditions(
+    const nsAString& aBuffer, nsTArray<nsContainerConditionPair>* aConditions)
+{
+  aConditions->Clear();
 
   nsCSSScanner scanner(aBuffer, 0);
   css::ErrorReporter reporter(scanner, mSheet, mChildLoader, nullptr);
@@ -4657,12 +4733,10 @@ CSSParserImpl::ParseContainerCondition(const nsAString& aBuffer,
   AutoRestore<bool> inContainer(mInContainer);
   mInContainer = true;
 
-  RefPtr<nsContainerCondition> condition = ParseContainerCondition();
-  bool ok = condition && !GetToken(true);
+  bool ok = ParseContainerConditionList(*aConditions) && !GetToken(true);
 
-  if (ok) {
-    *aCondition = condition.forget().take();
-  } else {
+  if (!ok) {
+    aConditions->Clear();
     CLEAR_ERROR();
   }
 
@@ -4744,13 +4818,37 @@ CSSParserImpl::ParseContainerConditionTerm()
     return nullptr;
   }
 
-  if (eCSSToken_Ident == mToken.mType &&
-      mToken.mIdent.LowerCaseEqualsLiteral("not")) {
-    RefPtr<nsContainerCondition> operand = ParseContainerConditionTerm();
-    if (!operand) {
+  // "style(" arrives as a function token, so the "(" is already consumed and
+  // CaptureStyleQueryText starts inside the body.
+  if (eCSSToken_Function == mToken.mType &&
+      mToken.mIdent.LowerCaseEqualsLiteral("style")) {
+    nsAutoString text;
+    if (!CaptureStyleQueryText(text)) {
       return nullptr;
     }
-    return nsContainerCondition::CreateNot(operand.forget());
+    return nsContainerCondition::CreateStyle(text);
+  }
+
+  if (eCSSToken_Ident == mToken.mType) {
+    if (mToken.mIdent.LowerCaseEqualsLiteral("not")) {
+      RefPtr<nsContainerCondition> operand = ParseContainerConditionTerm();
+      if (!operand) {
+        return nullptr;
+      }
+      return nsContainerCondition::CreateNot(operand.forget());
+    }
+    // style(...) is a leaf whose body is kept as written.  No lookahead is
+    // needed: "style" cannot be anything else at this position.
+    if (mToken.mIdent.LowerCaseEqualsLiteral("style")) {
+      if (!ExpectSymbol('(', true)) {
+        return nullptr;
+      }
+      nsAutoString text;
+      if (!CaptureStyleQueryText(text)) {
+        return nullptr;
+      }
+      return nsContainerCondition::CreateStyle(text);
+    }
   }
 
   if (!mToken.IsSymbol('(')) {
@@ -4767,6 +4865,23 @@ CSSParserImpl::ParseContainerConditionTerm()
   const bool nested = mToken.IsSymbol('(') ||
                       (eCSSToken_Ident == mToken.mType &&
                        mToken.mIdent.LowerCaseEqualsLiteral("not"));
+  // style(...) is a leaf whose body is kept as written.  "style" is a reserved
+  // function name here, so no lookahead is needed to tell it from a feature.
+  if ((eCSSToken_Ident == mToken.mType ||
+       eCSSToken_Function == mToken.mType) &&
+      mToken.mIdent.LowerCaseEqualsLiteral("style")) {
+    // Only the ident form still has its "(" on the scanner.
+    const bool parenConsumed = (eCSSToken_Function == mToken.mType);
+    GetToken(true);                       // consume the peeked "style"
+    if (!parenConsumed && !ExpectSymbol('(', true)) {
+      return nullptr;
+    }
+    nsAutoString text;
+    if (!CaptureStyleQueryText(text)) {
+      return nullptr;
+    }
+    return nsContainerCondition::CreateStyle(text);
+  }
   if (nested) {
     // A group, not a term: it may contain and/or, so it needs the full parser.
     // The peeked '(' (or "not") goes back on the scanner for it to read.
@@ -20485,12 +20600,11 @@ nsCSSParser::ParseMediaList(const nsSubstring& aBuffer,
 }
 
 bool
-nsCSSParser::ParseContainerCondition(const nsAString& aBuffer,
-                                     const nsString& aName,
-                                     nsContainerCondition** aCondition)
+nsCSSParser::ParseContainerConditions(
+    const nsAString& aBuffer, nsTArray<nsContainerConditionPair>* aConditions)
 {
   return static_cast<CSSParserImpl*>(mImpl)->
-    ParseContainerCondition(aBuffer, aName, aCondition);
+    ParseContainerConditions(aBuffer, aConditions);
 }
 
 bool

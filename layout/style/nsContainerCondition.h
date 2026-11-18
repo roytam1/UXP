@@ -22,6 +22,7 @@
 #define nsContainerCondition_h_
 
 #include "nsTArray.h"
+#include "nsString.h"
 #include "nsIMediaList.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/MemoryReporting.h"
@@ -68,15 +69,27 @@ protected:
   virtual ~nsContainerConditionEvaluator() {}
 };
 
+class nsContainerCondition;
+
+// One @container condition pair: an optional name and an optional condition.
+// A rule may hold several, comma separated, and matches if any of them does.
+struct nsContainerConditionPair
+{
+  nsString mName;
+  RefPtr<nsContainerCondition> mCondition;
+};
+
 class nsContainerCondition final
 {
 public:
-  enum Kind : uint8_t { eFeature, eNot, eAnd, eOr };
+  enum Kind : uint8_t { eFeature, eStyle, eNot, eAnd, eOr };
 
   NS_INLINE_DECL_REFCOUNTING(nsContainerCondition)
 
   static already_AddRefed<nsContainerCondition>
   CreateFeature(const nsMediaExpression& aExpression);
+  // A style() query, stored as written; not evaluated yet.
+  static already_AddRefed<nsContainerCondition> CreateStyle(const nsAString& aText);
   static already_AddRefed<nsContainerCondition>
   CreateNot(already_AddRefed<nsContainerCondition> aOperand);
   // Consumes aOperands.  Returns the single operand unwrapped when only one is
@@ -95,6 +108,12 @@ public:
   const nsTArray<RefPtr<nsContainerCondition>>& GetOperands() const
   {
     return mOperands;
+  }
+
+  const nsString& GetStyleText() const
+  {
+    MOZ_ASSERT(mKind == eStyle);
+    return mStyle;
   }
 
   ContainerEval Matches(nsContainerConditionEvaluator& aEvaluator) const;
@@ -116,6 +135,8 @@ private:
   Kind mKind;
   // Only meaningful for eFeature.
   nsMediaExpression mExpression;
+  // Only meaningful for eStyle; includes the "style(" and ")".
+  nsString mStyle;
   // Exactly one operand for eNot, two or more for eAnd and eOr.
   nsTArray<RefPtr<nsContainerCondition>> mOperands;
 };

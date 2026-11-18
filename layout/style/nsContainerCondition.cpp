@@ -23,6 +23,7 @@ ConditionPrecedence(nsContainerCondition::Kind aKind)
     case nsContainerCondition::eNot:
       return 3;
     case nsContainerCondition::eFeature:
+    case nsContainerCondition::eStyle:
       return 4;
   }
   MOZ_ASSERT_UNREACHABLE("unexpected kind");
@@ -39,6 +40,16 @@ nsContainerCondition::CreateFeature(const nsMediaExpression& aExpression)
 {
   RefPtr<nsContainerCondition> node = new nsContainerCondition(eFeature);
   node->mExpression = aExpression;
+  return node.forget();
+}
+
+/* static */ already_AddRefed<nsContainerCondition>
+nsContainerCondition::CreateStyle(const nsAString& aText)
+{
+  RefPtr<nsContainerCondition> node = new nsContainerCondition(eStyle);
+  node->mStyle.AssignLiteral("style(");
+  node->mStyle.Append(aText);
+  node->mStyle.Append(')');
   return node.forget();
 }
 
@@ -86,6 +97,11 @@ nsContainerCondition::Matches(nsContainerConditionEvaluator& aEvaluator) const
     case eFeature:
       return aEvaluator.EvaluateFeature(mExpression);
 
+    case eStyle:
+      // Not evaluated yet; unknown keeps "not style(...)" unknown rather than
+      // turning it into a match.
+      return ContainerEval::Unknown;
+
     case eNot:
       MOZ_ASSERT(mOperands.Length() == 1);
       return NegateContainerEval(mOperands[0]->Matches(aEvaluator));
@@ -125,7 +141,7 @@ nsContainerCondition::Matches(nsContainerConditionEvaluator& aEvaluator) const
 uint32_t
 nsContainerCondition::CountLeaves() const
 {
-  if (mKind == eFeature) {
+  if (mKind == eFeature || mKind == eStyle) {
     return 1;
   }
   uint32_t count = 0;
@@ -140,9 +156,17 @@ AppendConditionToString(nsAString& aString,
                         const nsContainerCondition& aCondition,
                         uint8_t aParentPrecedence, bool aRightChild)
 {
-  const uint8_t precedence = ConditionPrecedence(aCondition.GetKind());
-  const bool parenthesize = precedence < aParentPrecedence ||
-                            (precedence == aParentPrecedence && aRightChild);
+  const nsContainerCondition::Kind kind = aCondition.GetKind();
+  const uint8_t precedence = ConditionPrecedence(kind);
+  bool parenthesize;
+  if (kind == nsContainerCondition::eStyle) {
+    parenthesize = false;          // style() carries its own parentheses
+  } else if (kind == nsContainerCondition::eFeature) {
+    parenthesize = true;           // <query-in-parens>
+  } else {
+    parenthesize = precedence < aParentPrecedence ||
+                   (precedence == aParentPrecedence && aRightChild);
+  }
 
   if (parenthesize) {
     aString.Append('(');
@@ -151,6 +175,10 @@ AppendConditionToString(nsAString& aString,
   switch (aCondition.GetKind()) {
     case nsContainerCondition::eFeature:
       AppendMediaExpressionToString(aString, aCondition.GetExpression());
+      break;
+
+    case nsContainerCondition::eStyle:
+      aString.Append(aCondition.GetStyleText());
       break;
 
     case nsContainerCondition::eNot:

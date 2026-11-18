@@ -37,6 +37,7 @@
 #include "mozilla/dom/CSSImportRuleBinding.h"
 #include "mozilla/dom/CSSMediaRuleBinding.h"
 #include "mozilla/dom/CSSContainerRuleBinding.h"
+#include "mozilla/dom/CSSContainerConditionBinding.h"
 #include "mozilla/dom/CSSLayerBlockRuleBinding.h"
 #include "mozilla/dom/CSSLayerStatementRuleBinding.h"
 #include "mozilla/dom/CSSSupportsRuleBinding.h"
@@ -439,6 +440,19 @@ ImportRule::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
   // - mChildSheet, because it is measured via CSSStyleSheetInner::mSheets
 }
 
+void
+MediaRule::GetConditions(nsTArray<dom::CSSContainerCondition>& aConditions) const
+{
+  aConditions.SetCapacity(mConditions.Length());
+  for (const nsContainerConditionPair& pair : mConditions) {
+    dom::CSSContainerCondition* condition = aConditions.AppendElement();
+    nsStyleUtil::AppendEscapedCSSIdent(pair.mName, condition->mName);
+    if (pair.mCondition) {
+      pair.mCondition->AppendToString(condition->mQuery);
+    }
+  }
+}
+
 /* virtual */ JSObject*
 ImportRule::WrapObject(JSContext* aCx,
                        JS::Handle<JSObject*> aGivenProto)
@@ -744,8 +758,7 @@ MediaRule::MediaRule(uint32_t aLineNumber, uint32_t aColumnNumber)
 
 MediaRule::MediaRule(const MediaRule& aCopy)
   : ConditionRule(aCopy)
-  , mContainerCondition(aCopy.mContainerCondition)
-  , mContainerName(aCopy.mContainerName)
+  , mConditions(aCopy.mConditions)
   , mIsContainerQuery(aCopy.mIsContainerQuery)
 {
   if (aCopy.mMedia) {
@@ -856,10 +869,7 @@ MediaRule::GetCssTextImpl(nsAString& aCssText) const
 {
   if (mIsContainerQuery) {
     aCssText.AssignLiteral("@container ");
-    if (!mContainerName.IsEmpty()) {
-      nsStyleUtil::AppendEscapedCSSIdent(mContainerName, aCssText);
-      aCssText.Append(' ');
-    }
+    AppendConditionText(aCssText);
   } else {
     aCssText.AssignLiteral("@media ");
   }
@@ -925,15 +935,14 @@ MediaRule::SetConditionText(const nsAString& aConditionText,
     sheet->AssertHasUniqueInner();
     sheet->WillDirty();
 
-    RefPtr<nsContainerCondition> condition;
-    if (!parser.ParseContainerCondition(aConditionText, mContainerName,
-                                        getter_AddRefs(condition))) {
-      // On a parse error keep the old condition, as media lists do.
+    nsTArray<nsContainerConditionPair> conditions;
+    if (!parser.ParseContainerConditions(aConditionText, &conditions)) {
+      // On a parse error keep the old conditions, as media lists do.
       return;
     }
-    mContainerCondition = condition;
+    mConditions = conditions;
 
-    ContainerStampData stamp(condition, mContainerName);
+    ContainerStampData stamp(conditions);
     EnumerateRulesForwards(StampContainerCondition, &stamp);
 
     sheet->DidDirty();
@@ -993,7 +1002,12 @@ MediaRule::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
 {
   size_t n = aMallocSizeOf(this);
   n += GroupRule::SizeOfExcludingThis(aMallocSizeOf);
-  n += mContainerCondition ? mContainerCondition->SizeOfIncludingThis(aMallocSizeOf) : 0;
+  n += mConditions.ShallowSizeOfExcludingThis(aMallocSizeOf);
+  for (const nsContainerConditionPair& pair : mConditions) {
+    if (pair.mCondition) {
+      n += pair.mCondition->SizeOfIncludingThis(aMallocSizeOf);
+    }
+  }
 
   // Measurement of the following members may be added later if DMD finds it is
   // worthwhile:
@@ -1006,18 +1020,19 @@ void
 MediaRule::GetContainerName(nsString& aResult) const
 {
   aResult.Truncate();
-  if (mContainerName.IsEmpty()) {
-    aResult.AssignLiteral("none");
-    return;
+  // The rule-level name is only meaningful for a single condition.
+  if (mConditions.Length() == 1 && !mConditions[0].mName.IsEmpty()) {
+    nsStyleUtil::AppendEscapedCSSIdent(mConditions[0].mName, aResult);
   }
-  nsStyleUtil::AppendEscapedCSSIdent(mContainerName, aResult);
 }
 
 void
 MediaRule::GetContainerQuery(nsString& aResult) const
 {
   aResult.Truncate();
-  AppendConditionText(aResult);
+  if (mConditions.Length() == 1 && mConditions[0].mCondition) {
+    mConditions[0].mCondition->AppendToString(aResult);
+  }
 }
 
 /* virtual */ JSObject*
@@ -1033,8 +1048,19 @@ void
 MediaRule::AppendConditionText(nsAString& aOutput) const
 {
   if (mIsContainerQuery) {
-    if (mContainerCondition) {
-      mContainerCondition->AppendToString(aOutput);
+    for (uint32_t i = 0; i < mConditions.Length(); ++i) {
+      if (i > 0) {
+        aOutput.AppendLiteral(", ");
+      }
+      if (!mConditions[i].mName.IsEmpty()) {
+        nsStyleUtil::AppendEscapedCSSIdent(mConditions[i].mName, aOutput);
+        if (mConditions[i].mCondition) {
+          aOutput.Append(' ');
+        }
+      }
+      if (mConditions[i].mCondition) {
+        mConditions[i].mCondition->AppendToString(aOutput);
+      }
     }
     return;
   }
@@ -1051,8 +1077,8 @@ StampContainerCondition(css::Rule* aRule, void* aData)
   ContainerStampData* data = static_cast<ContainerStampData*>(aData);
   int32_t type = aRule->GetType();
   if (css::Rule::STYLE_RULE == type) {
-    static_cast<css::StyleRule*>(aRule)->SetContainerCondition(
-        data->mCondition, data->mName);
+    static_cast<css::StyleRule*>(aRule)->SetContainerConditions(
+        data->mConditions);
     return true;
   }
   if (css::Rule::MEDIA_RULE == type || css::Rule::CONTAINER_RULE == type ||

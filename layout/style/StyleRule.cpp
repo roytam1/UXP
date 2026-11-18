@@ -1308,8 +1308,7 @@ StyleRule::StyleRule(const StyleRule& aCopy)
   : BindingStyleRule(aCopy)
   , mSelector(aCopy.mSelector ? aCopy.mSelector->Clone() : nullptr)
   , mDeclaration(new Declaration(*aCopy.mDeclaration))
-  , mContainerCondition(aCopy.mContainerCondition)
-  , mContainerName(aCopy.mContainerName)
+  , mContainerConditions(aCopy.mContainerConditions)
 {
   mDeclaration->SetOwningRule(this);
   // rest is constructed lazily on existing data
@@ -1404,10 +1403,9 @@ StyleRule::SetDeclaration(Declaration* aDecl)
 }
 
 void
-StyleRule::SetContainerCondition(nsContainerCondition* aCondition, const nsString& aName)
+StyleRule::SetContainerConditions(const nsTArray<nsContainerConditionPair>& aConditions)
 {
-  mContainerCondition = aCondition;
-  mContainerName = aName;
+  mContainerConditions = aConditions;
 }
 
 #ifdef DEBUG
@@ -1532,7 +1530,12 @@ StyleRule::SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
   size_t n = aMallocSizeOf(this);
   n += mSelector ? mSelector->SizeOfIncludingThis(aMallocSizeOf) : 0;
   n += mDeclaration ? mDeclaration->SizeOfIncludingThis(aMallocSizeOf) : 0;
-  n += mContainerCondition ? mContainerCondition->SizeOfIncludingThis(aMallocSizeOf) : 0;
+  n += mContainerConditions.ShallowSizeOfExcludingThis(aMallocSizeOf);
+  for (const nsContainerConditionPair& pair : mContainerConditions) {
+    if (pair.mCondition) {
+      n += pair.mCondition->SizeOfIncludingThis(aMallocSizeOf);
+    }
+  }
 
   // Measurement of the following members may be added later if DMD finds it is
   // worthwhile:

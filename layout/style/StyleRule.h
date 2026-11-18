@@ -21,6 +21,7 @@
 #include "nsCSSPseudoElements.h"
 #include "nsIStyleRule.h"
 #include "nsICSSStyleRuleDOMWrapper.h"
+#include "nsContainerCondition.h"
 
 // Right now, there are four operators:
 //   ' ', the descendant combinator, is greedy
@@ -33,7 +34,6 @@
   ((ch) == char16_t(' ') || (ch) == char16_t('>'))
 
 class nsIAtom;
-class nsContainerCondition;
 struct nsCSSSelectorList;
 struct nsCSSHasSelectorData;
 
@@ -378,11 +378,13 @@ public:
 
   void SetDeclaration(Declaration* aDecl);
 
-  // Set when this rule came out of an @container block. Null condition means
-  // the rule is unconditional.
-  const nsContainerCondition* GetContainerCondition() const { return mContainerCondition; }
-  const nsString& GetContainerName() const { return mContainerName; }
-  void SetContainerCondition(nsContainerCondition* aCondition, const nsString& aName);
+  // Set when this rule came out of an @container block.  Empty means
+  // unconditional; a pair with no condition only requires the container.
+  const nsTArray<nsContainerConditionPair>& GetContainerConditions() const
+  {
+    return mContainerConditions;
+  }
+  void SetContainerConditions(const nsTArray<nsContainerConditionPair>& aConditions);
 
   virtual int32_t GetType() const override;
   using Rule::GetType;
@@ -406,8 +408,7 @@ private:
   nsCSSSelectorList*           mSelector; // null for style attribute
   RefPtr<Declaration>          mDeclaration;
 
-  RefPtr<nsContainerCondition> mContainerCondition;
-  nsString                     mContainerName;
+  nsTArray<nsContainerConditionPair> mContainerConditions;
 
   // We own it, and it aggregates its refcount with us.
   UniquePtr<DOMCSSDeclarationImpl> mDOMDeclaration;

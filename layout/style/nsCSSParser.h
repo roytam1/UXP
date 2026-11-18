@@ -23,7 +23,7 @@ class nsIURI;
 struct nsCSSSelectorList;
 class nsMediaList;
 class nsMediaQuery;
-class nsContainerCondition;
+struct nsContainerConditionPair;
 class nsCSSKeyframeRule;
 class nsCSSValue;
 struct nsRuleData;
@@ -167,9 +167,8 @@ public:
                       bool               aHTMLMode);
 
   // Parse a <container-condition> out of a string, for conditionText.
-  bool ParseContainerCondition(const nsAString& aBuffer,
-                               const nsString& aName,
-                               nsContainerCondition** aCondition);
+  bool ParseContainerConditions(const nsAString& aBuffer,
+                                nsTArray<nsContainerConditionPair>* aConditions);
 
   /*
    * Parse aBuffer into a list of media queries and their associated values,

@@ -10,4 +10,6 @@
 interface CSSContainerRule : CSSConditionRule {
   readonly attribute DOMString containerName;
   readonly attribute DOMString containerQuery;
+  [Cached, Pure, Frozen]
+  readonly attribute sequence<CSSContainerCondition> conditions;
 };

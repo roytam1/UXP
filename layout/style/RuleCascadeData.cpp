@@ -527,19 +527,20 @@ LookForTargetPseudo(nsCSSSelector* aSelector,
 // style resolution runs ahead of reflow.
 //
 // The inline axis is contained for every container type; the block axis only
-// for `size`.  aInlineAxis says which axis the query is on, aVertical is the
-// writing mode, since the two axes are physical here.
+// for `size`.  The extents are physical, so aIsWidth names the axis being
+// measured and aVertical only decides whether that axis happens to be the
+// inline one.
 static float
 QueryableExtent(const nsStylePosition* aPos, const nsSize& aRect,
-                bool aInlineAxis, bool aVertical, bool aBlockQueryable)
+                bool aIsWidth, bool aVertical, bool aBlockQueryable)
 {
-  const bool vertical = aInlineAxis == aVertical;
-  const nsStyleCoord& coord = vertical ? aPos->mHeight : aPos->mWidth;
-  if ((aInlineAxis || aBlockQueryable) && coord.ConvertsToLength()) {
+  const bool inlineAxis = aIsWidth != aVertical;
+  const nsStyleCoord& coord = aIsWidth ? aPos->mWidth : aPos->mHeight;
+  if ((inlineAxis || aBlockQueryable) && coord.ConvertsToLength()) {
     return nsPresContext::AppUnitsToFloatCSSPixels(coord.GetCoordValue());
   }
-  return nsPresContext::AppUnitsToFloatCSSPixels(vertical ? aRect.height
-                                                          : aRect.width);
+  return nsPresContext::AppUnitsToFloatCSSPixels(aIsWidth ? aRect.width
+                                                          : aRect.height);
 }
 
 struct ContainerSize {
@@ -944,10 +945,11 @@ private:
 // The tree is evaluated against the nearest eligible container with
 // three-valued logic; unknown resolves false.
 static ContainerEval
-EvaluateContainerCondition(const nsContainerCondition* aCondition,
-                           const nsAString& aName, Element* aElement,
-                           nsPresContext* aPresContext)
+EvaluateContainerCondition(const nsContainerConditionPair& aPair,
+                           Element* aElement, nsPresContext* aPresContext)
 {
+  const nsContainerCondition* aCondition = aPair.mCondition;
+  const nsString& aName = aPair.mName;
   ContainerSize size;
 
   // The block axis can only be answered by a `size` container, so a condition
@@ -955,7 +957,7 @@ EvaluateContainerCondition(const nsContainerCondition* aCondition,
   // Every leaf resolves against the container that gets selected, so one
   // block-axis leaf is enough to constrain the whole selection.
   bool blockAxis = false;
-  {
+  if (aCondition) {
     WritingMode wm;
     if (nsIFrame* frame = aElement->GetPrimaryFrame()) {
       wm = frame->GetWritingMode();
@@ -965,6 +967,11 @@ EvaluateContainerCondition(const nsContainerCondition* aCondition,
 
   if (!FindQueryContainer(aElement, aName, size, aPresContext, blockAxis)) {
     return ContainerEval::False;
+  }
+
+  // A name with no condition only asks for the container to exist.
+  if (!aCondition) {
+    return ContainerEval::True;
   }
 
   ContainerConditionEvaluator evaluator(size, aPresContext);
@@ -1053,11 +1060,21 @@ ContentEnumFunc(const RuleValue& value,
                    data->mTreeMatchContext,
                    nodeContext.mIsRelevantLink ? SelectorMatchesTreeFlags(0)
                                                : eLookForRelevantLink)) {
-      if (const nsContainerCondition* condition =
-            value.mRule->GetContainerCondition()) {
-        if (EvaluateContainerCondition(
-              condition, value.mRule->GetContainerName(), data->mElement,
-              data->mPresContext) != ContainerEval::True) {
+      // A rule with no pairs is an ordinary rule and always applies.  Otherwise
+      // any pair matching applies it.
+      const nsTArray<nsContainerConditionPair>& conditions =
+        value.mRule->GetContainerConditions();
+      if (!conditions.IsEmpty()) {
+        bool matched = false;
+        for (const nsContainerConditionPair& pair : conditions) {
+          if (EvaluateContainerCondition(pair, data->mElement,
+                                         data->mPresContext) ==
+              ContainerEval::True) {
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
           return;
         }
       }
