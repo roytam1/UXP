@@ -1835,6 +1835,7 @@ nsCSSHasSelectorData::Branch::Merge(const Branch& aOther)
   MOZ_ASSERT(mCombinator == aOther.mCombinator && mIsLocal == aOther.mIsLocal);
   mStates |= aOther.mStates;
   mAllAttributes |= aOther.mAllAttributes;
+  mCanFilterContent &= aOther.mCanFilterContent;
   for (nsIAtom* attr : aOther.mAttributes) {
     AddHasDependencyAtom(mAttributes, attr);
   }
@@ -1920,6 +1921,11 @@ nsCSSHasSelectorData::nsCSSHasSelectorData(nsCSSSelectorList* aList)
     branch->mCombinator = anchor->mOperator;
     branch->mIsLocal = list->mSelectors->mNext == anchor &&
                        IsLocalHasCompound(list->mSelectors);
+    // A local descendant/child compound with a required class cannot change
+    // its match when a subtree containing none of its classes is inserted or
+    // removed. Sibling and structural selectors must remain conservative.
+    branch->mCanFilterContent = branch->mIsLocal && !branch->IsSibling() &&
+                                list->mSelectors->mClassList;
     mHasSibling |= branch->IsSibling();
   }
 }
@@ -1954,11 +1960,41 @@ nsCSSHasSelectorData::Branch::MightDependOnAttribute(
 }
 
 bool
+nsCSSHasSelectorData::Branch::MightDependOnContent(
+  nsIContent* aChangedContent, bool aFollowingSiblings) const
+{
+  if (!mCanFilterContent || !aChangedContent) {
+    return true;
+  }
+  nsCaseTreatment caseTreatment =
+    aChangedContent->OwnerDoc()->GetCompatibilityMode() == eCompatibility_NavQuirks
+      ? eIgnoreCase : eCaseMatters;
+  for (nsIContent* root = aChangedContent; root;
+       root = aFollowingSiblings ? root->GetNextSibling() : nullptr) {
+    for (nsIContent* node = root; node; node = node->GetNextNode(root)) {
+      if (!node->IsElement()) {
+        continue;
+      }
+      const nsAttrValue* classes = node->AsElement()->GetClasses();
+      if (classes) {
+        for (nsIAtom* cls : mClasses) {
+          if (classes->Contains(cls, caseTreatment)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool
 HasSelectorDependency::MightDependOnChange(
   Element* aAnchor, nsINode* aNode, EventStates aStateMask,
   nsIAtom* aAttribute, const nsAttrValue* aNewClasses,
   bool aCompareClasses, bool aSibling, bool aNodeIsFollowingSibling,
-  bool aIsTextChange) const
+  bool aIsTextChange, nsIContent* aChangedContent,
+  bool aFollowingSiblings) const
 {
   bool contentChange = !aAttribute && aStateMask.IsEmpty();
   for (const auto& branch : mBranches) {
@@ -2000,6 +2036,10 @@ HasSelectorDependency::MightDependOnChange(
           continue;
         }
       }
+    }
+    if (contentChange && !branch.MightDependOnContent(
+          aChangedContent, aFollowingSiblings)) {
+      continue;
     }
     return true;
   }
