@@ -1821,6 +1821,9 @@ const KTableEntry nsCSSProps::kContainKTable[] = {
   { eCSSKeyword_paint,       NS_STYLE_CONTAIN_PAINT },
   { eCSSKeyword_size,        NS_STYLE_CONTAIN_SIZE },
   { eCSSKeyword_inline_size, NS_STYLE_CONTAIN_INLINE_SIZE },
+  // Deliberately last: AppendBitmaskCSSValue stops at INLINE_SIZE, so a
+  // multi-bit entry inside the range would be emitted twice.
+  { eCSSKeyword_content,     NS_STYLE_CONTAIN_CONTENT },
   { eCSSKeyword_UNKNOWN, -1 }
 };
 

@@ -497,6 +497,13 @@ nsBlockFrame::GetNaturalBaselineBOffset(mozilla::WritingMode aWM,
                                         BaselineSharingGroup aBaselineGroup,
                                         nscoord*             aBaseline) const
 {
+  // A layout containment box has no baseline.  For vertical-align it is
+  // treated as having none, so the bottom margin edge is used; both green
+  // boxes then align identically and cover the red square.
+  if (MOZ_UNLIKELY(StyleDisplay()->IsContainLayoutEffective())) {
+    return false;
+  }
+
   if (aBaselineGroup == BaselineSharingGroup::eFirst) {
     return nsLayoutUtils::GetFirstLineBaseline(aWM, this, aBaseline);
   }

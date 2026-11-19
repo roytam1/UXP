@@ -1951,12 +1951,16 @@ ApplyOverflowClipping(nsDisplayListBuilder* aBuilder,
   if (!nsFrame::ShouldApplyOverflowClipping(aFrame, aDisp)) {
     return;
   }
-  
+
+  // contain:paint always clips at the padding box, both axes, no matter what
+  // 'overflow' and 'overflow-clip-box' say.
+  const bool containPaint = aDisp->IsContainPaintEffective();
+
   nsRect clipRect;
   bool haveRadii = false;
   nscoord radii[8];
-  if (aFrame->StyleDisplay()->mOverflowClipBox ==
-        NS_STYLE_OVERFLOW_CLIP_BOX_PADDING_BOX) {
+  if (containPaint ||
+  aFrame->StyleDisplay()->mOverflowClipBox == NS_STYLE_OVERFLOW_CLIP_BOX_PADDING_BOX) {
     clipRect = aFrame->GetPaddingRectRelativeToSelf() +
       aBuilder->ToReferenceFrame(aFrame);
     haveRadii = aFrame->GetPaddingBoxBorderRadii(radii);
@@ -1968,8 +1972,10 @@ ApplyOverflowClipping(nsDisplayListBuilder* aBuilder,
 
   // Support per-axis clipping: If only one axis has 'clip' or 'hidden' value,
   // only clip that axis by extending the clip rect to infinity on the other axis
-  bool clipX = (aDisp->mOverflowX == NS_STYLE_OVERFLOW_CLIP || aDisp->mOverflowX == NS_STYLE_OVERFLOW_HIDDEN);
-  bool clipY = (aDisp->mOverflowY == NS_STYLE_OVERFLOW_CLIP || aDisp->mOverflowY == NS_STYLE_OVERFLOW_HIDDEN);
+  bool clipX = containPaint || (aDisp->mOverflowX == NS_STYLE_OVERFLOW_CLIP ||
+     aDisp->mOverflowX == NS_STYLE_OVERFLOW_HIDDEN);
+  bool clipY = containPaint || (aDisp->mOverflowY == NS_STYLE_OVERFLOW_CLIP ||
+     aDisp->mOverflowY == NS_STYLE_OVERFLOW_HIDDEN);
   
   if (clipX && !clipY) {
     // Only clip X axis - extend Y to infinity
@@ -4861,12 +4867,17 @@ nsFrame::ComputeSize(nsRenderingContext* aRenderingContext,
 
   // Size containment: the content must not contribute to the inline size.
   // A block-level box in flow still fills its containing block, so only the
-  // shrink-to-fit cases collapse to zero. Without this a plain block with
-  // width:auto and any inline-size containment becomes 0 wide.
+  // shrink-to-fit cases collapse to zero. Shrink-to-fit covers floats,
+  // abspos, inline-level boxes, and blocks that are orthogonal to their
+  // containing block -- for those the containing block's inline size is in
+  // the wrong axis, so filling it would be wrong even though the frame is
+  // block-level. Without the fill a plain block with width:auto and any
+  // inline-size containment becomes 0 wide.
   if (MOZ_UNLIKELY(StyleDisplay()->IsContainSizeEffective() ||
                    StyleDisplay()->IsContainInlineSizeEffective()) &&
       inlineStyleCoord->GetUnit() == eStyleUnit_Auto) {
-    if (!StyleDisplay()->IsInlineOutside(this) && !IsFloating() &&
+    if (!(aFlags & ComputeSizeFlags::eShrinkWrap) &&
+        !StyleDisplay()->IsInlineOutside(this) && !IsFloating() &&
         !IsAbsolutelyPositioned() &&
         aCBSize.ISize(aWM) != NS_UNCONSTRAINEDSIZE) {
       result.ISize(aWM) = std::max(nscoord(0), aCBSize.ISize(aWM) -
@@ -5677,8 +5688,13 @@ nsFrame::ShrinkWidthToFit(nsRenderingContext* aRenderingContext,
 
   // A size-contained box ignores its content in the inline axis.
   const nsStyleDisplay* containDisp = StyleDisplay();
+  // 'contain: size' contains both axes, so it always zeroes the width.
+  // 'contain: inline-size' only does so when the inline axis is horizontal;
+  // in a vertical writing mode the width is the block axis and must keep
+  // resolving fit-content against the content.
   if (containDisp->IsContainSizeEffective() ||
-      containDisp->IsContainInlineSizeEffective()) {
+      (containDisp->IsContainInlineSizeEffective() &&
+       !GetWritingMode().IsVertical())) {
     return 0;
   }
 
@@ -9060,8 +9076,12 @@ nsIFrame::FinishAndStoreOverflow(nsOverflowAreas& aOverflowAreas,
     // The contents are actually clipped to the padding area.  Clipping is
     // per-axis (css-overflow-3 §3.1 keeps 'visible clip' as authored), so only
     // collapse the axis that clips; the other keeps contributing overflow.
-    const bool clipsX = disp->mOverflowX != NS_STYLE_OVERFLOW_VISIBLE;
-    const bool clipsY = disp->mOverflowY != NS_STYLE_OVERFLOW_VISIBLE;
+    // Paint containment clips both axes regardless of the used 'overflow'.
+    const bool containPaint = disp->IsContainPaintEffective();
+    const bool clipsX = containPaint ||
+                        disp->mOverflowX != NS_STYLE_OVERFLOW_VISIBLE;
+    const bool clipsY = containPaint ||
+                        disp->mOverflowY != NS_STYLE_OVERFLOW_VISIBLE;
     NS_FOR_FRAME_OVERFLOW_TYPES(otype) {
       nsRect& o = aOverflowAreas.Overflow(otype);
       if (clipsX) {

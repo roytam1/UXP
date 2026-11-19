@@ -1665,7 +1665,7 @@ CSS_PROP_DISPLAY(
     VARIANT_HK | VARIANT_NONE,
     kContainKTable,
     CSS_PROP_NO_OFFSET,
-    eStyleAnimType_Discrete)
+    eStyleAnimType_None)
 CSS_PROP_SHORTHAND(
     container,
     container,

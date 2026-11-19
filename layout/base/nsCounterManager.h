@@ -52,6 +52,12 @@ struct nsCounterNode : public nsGenConNode {
     // outer scope.
     nsCounterNode *mScopePrev;
 
+    // The nearest enclosing frame with effective style containment, or null
+    // for the document scope.  Counter changes only see nodes in their own
+    // scope; a counter() use falls back to enclosing scopes when its own
+    // scope establishes nothing.
+    nsIFrame *mScopeRoot;
+
     inline nsCounterUseNode* UseNode();
     inline nsCounterChangeNode* ChangeNode();
 
@@ -67,6 +73,7 @@ struct nsCounterNode : public nsGenConNode {
         , mValueAfter(0)
         , mScopeStart(nullptr)
         , mScopePrev(nullptr)
+        , mScopeRoot(nullptr)
     {
     }
 

@@ -623,6 +623,16 @@ public:
   static bool ShouldApplyOverflowClipping(const nsIFrame* aFrame,
                                           const nsStyleDisplay* aDisp)
   {
+    // 'contain: paint', which we handle as 'overflow: clip' here.  Except for
+    // scroll containers, which already clip: containment must not add a
+    // second clip, it only has to stop anything escaping the existing one.
+    if (MOZ_UNLIKELY(aDisp->IsContainPaintEffective()) &&
+        aFrame->GetType() != nsGkAtoms::listControlFrame &&
+        aFrame->GetType() != nsGkAtoms::scrollFrame &&
+        aFrame->GetType() != nsGkAtoms::textInputFrame) {
+      return true;
+    }
+
     // clip overflow:clip, except for nsListControlFrame,
     // which is an nsHTMLScrollFrame.
     // Support per-axis clipping: clip on either axis should enable clipping

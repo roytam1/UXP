@@ -540,6 +540,12 @@ enum class StyleDisplay : uint8_t {
                                                  NS_STYLE_CONTAIN_SIZE |   \
                                                  NS_STYLE_CONTAIN_INLINE_SIZE)
 
+// 'contain: content' is shorthand for layout | paint | style. Not part of
+// ALL_BITS, and must not collide with STRICT's assertion path.
+#define NS_STYLE_CONTAIN_CONTENT                (NS_STYLE_CONTAIN_LAYOUT | \
+                                                 NS_STYLE_CONTAIN_STYLE  | \
+                                                 NS_STYLE_CONTAIN_PAINT)
+
 // container-type (css-contain-3)
 #define NS_STYLE_CONTAINER_TYPE_NORMAL          0
 #define NS_STYLE_CONTAINER_TYPE_SIZE            0x1

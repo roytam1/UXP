@@ -4878,8 +4878,10 @@ nsComputedDOMStyle::DoGetContain()
     val->SetIdent(eCSSKeyword_none);
   } else if (mask & NS_STYLE_CONTAIN_STRICT) {
     NS_ASSERTION(mask == (NS_STYLE_CONTAIN_STRICT | NS_STYLE_CONTAIN_ALL_BITS),
-                 "contain: strict should imply all containment types");
+                 "contain: strict should imply all containment bits");
     val->SetIdent(eCSSKeyword_strict);
+  } else if (mask == NS_STYLE_CONTAIN_CONTENT) {
+    val->SetIdent(eCSSKeyword_content);
   } else {
     nsAutoString valueStr;
 

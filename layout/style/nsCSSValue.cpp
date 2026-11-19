@@ -1870,15 +1870,22 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     case eCSSProperty_contain:
       if (intValue & NS_STYLE_CONTAIN_STRICT) {
         NS_ASSERTION(intValue == (NS_STYLE_CONTAIN_STRICT | NS_STYLE_CONTAIN_ALL_BITS),
-                     "contain: strict should imply all containment types");
+                     "contain: strict should imply all containment bits");
         // Only output strict.
         intValue = NS_STYLE_CONTAIN_STRICT;
+        nsStyleUtil::AppendBitmaskCSSValue(aProperty, intValue,
+                                           NS_STYLE_CONTAIN_STRICT,
+                                           NS_STYLE_CONTAIN_INLINE_SIZE,
+                                           aResult);
+      } else if (intValue == NS_STYLE_CONTAIN_CONTENT) {
+        // Keep the keyword instead of spelling out layout style paint.
+        aResult.AppendLiteral("content");
+      } else {
+        nsStyleUtil::AppendBitmaskCSSValue(aProperty, intValue,
+                                           NS_STYLE_CONTAIN_STRICT,
+                                           NS_STYLE_CONTAIN_INLINE_SIZE,
+                                           aResult);
       }
-      nsStyleUtil::AppendBitmaskCSSValue(aProperty,
-                                         intValue,
-                                         NS_STYLE_CONTAIN_STRICT,
-                                         NS_STYLE_CONTAIN_INLINE_SIZE,
-                                         aResult);
       break;
 
     case eCSSProperty_align_content:

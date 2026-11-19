@@ -1171,7 +1171,15 @@ nsCSSRendering::FindBackgroundStyleFrame(nsIFrame* aForFrame)
     return aForFrame;
   }
 
-  return nsLayoutUtils::GetStyleFrame(bodyFrame);
+  // A contained body paints its own background; it does not propagate to the
+  // canvas.
+  nsIFrame* bodyStyleFrame = nsLayoutUtils::GetStyleFrame(bodyFrame);
+  if (bodyStyleFrame &&
+      bodyStyleFrame->StyleDisplay()->EffectiveContainment()) {
+    return aForFrame;
+  }
+
+  return bodyStyleFrame;
 }
 
 /**
@@ -1242,6 +1250,11 @@ FindElementBackground(nsIFrame* aForFrame, nsIFrame* aRootElementFrame,
   // nsContainerFrame::SyncFrameViewProperties.
   if (!aRootElementFrame)
     return true;
+
+  // A contained body is not the propagated background, so it paints itself.
+  if (aForFrame->StyleDisplay()->EffectiveContainment()) {
+    return true;
+  }
 
   const nsStyleBackground* htmlBG = aRootElementFrame->StyleBackground();
   return !htmlBG->IsTransparent();
