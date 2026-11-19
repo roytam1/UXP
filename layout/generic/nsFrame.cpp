@@ -4980,10 +4980,19 @@ nsFrame::ComputeSize(nsRenderingContext* aRenderingContext,
   }
 
   // Size containment: the content must not contribute to the block size.
+  // A block-level box in flow collapses to zero, but a grid item the parent
+  // stretches has a definite area to fill, so it must stay auto and resolve
+  // against that area instead of collapsing. Non-stretched grid items get
+  // eShrinkWrap from InitConstraints and keep the zero.
   if (MOZ_UNLIKELY(StyleDisplay()->IsContainSizeEffective()) &&
       nsLayoutUtils::IsAutoBSize(*blockStyleCoord, aCBSize.BSize(aWM)) &&
       !(aFlags & nsIFrame::eUseAutoBSize)) {
-    result.BSize(aWM) = 0;
+    const bool stretchedGridItem =
+        mParent->GetType() == nsGkAtoms::gridContainerFrame &&
+        !(aFlags & nsIFrame::eShrinkWrap) && !IsInlineOutside() &&
+        !IsFloating() && !IsAbsolutelyPositioned() &&
+        aCBSize.BSize(aWM) != NS_UNCONSTRAINEDSIZE;
+    result.BSize(aWM) = stretchedGridItem ? NS_UNCONSTRAINEDSIZE : 0;
   }
 
   const nsStyleCoord& maxBSizeCoord = stylePos->MaxBSize(aWM);
