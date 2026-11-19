@@ -749,6 +749,8 @@ nsHttpConnection::AddTransaction(nsAHttpTransaction *httpTransaction,
     MOZ_ASSERT(mSpdySession && mUsingSpdyVersion,
                "AddTransaction to live http connection without spdy");
 
+    RefPtr<ASpdySession> spdySession = mSpdySession;
+    
     // If this is a wild card nshttpconnection (i.e. a spdy proxy) then
     // it is important to start the stream using the specific connection
     // info of the transaction to ensure it is routed on the right tunnel
@@ -763,7 +765,7 @@ nsHttpConnection::AddTransaction(nsAHttpTransaction *httpTransaction,
     LOG(("nsHttpConnection::AddTransaction for SPDY%s",
          needTunnel ? " over tunnel" : ""));
 
-    if (!mSpdySession->AddStream(httpTransaction, priority,
+    if (!spdySession->AddStream(httpTransaction, priority,
                                  needTunnel, mCallbacks)) {
         MOZ_ASSERT(false); // this cannot happen!
         httpTransaction->Close(NS_ERROR_ABORT);
