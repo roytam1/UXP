@@ -3863,7 +3863,12 @@ ContentContribution(const GridItemInfo&       aGridItem,
     // The next two variables are MinSizeClamp values in the child's axes.
     nscoord iMinSizeClamp = NS_MAXSIZE;
     nscoord bMinSizeClamp = NS_MAXSIZE;
-    LogicalSize cbSize(childWM, 0, 0);
+    // Seed the CB size from the percentage basis (which is in the child's
+    // writing mode) so a percentage block-size inside the child is not
+    // resolved against a bogus zero basis. The block component stays
+    // indefinite, matching the unconstrained available block-size above.
+    MOZ_ASSERT(aPercentageBasis.isSome());
+    LogicalSize cbSize = *aPercentageBasis;
     if (aState.mCols.mCanResolveLineRangeSize) {
       nscoord sz = aState.mCols.ResolveSize(aGridItem.mArea.mCols);
       if (isOrthogonal) {

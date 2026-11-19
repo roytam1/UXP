@@ -1614,6 +1614,38 @@ PartiallyResolveAutoMinSize(const FlexItem& aFlexItem,
     minMainSize = std::min(minMainSize, maxSize);
   }
 
+  // * the specified size, if the item's main-size property is definite:
+  //   https://drafts.csswg.org/css-flexbox-1/#min-size-auto
+  // NOTE: if the main size is 'auto', or a percentage against an indefinite
+  // basis, ReflowInput::InitConstraints has already degraded the computed
+  // value to NS_AUTOHEIGHT, so we skip those cases here.
+  {
+    const nsStyleCoord& mainSizeStyle =
+      aAxisTracker.IsMainAxisHorizontal()
+        ? aItemReflowInput.mStylePosition->mWidth
+        : aItemReflowInput.mStylePosition->mHeight;
+    if (mainSizeStyle.ConvertsToLength() ||
+        mainSizeStyle.GetUnit() == eStyleUnit_Percent) {
+      nscoord specifiedMainSize =
+        GET_MAIN_COMPONENT_LOGICAL(aAxisTracker, aFlexItem.GetWritingMode(),
+                                   aItemReflowInput.ComputedISize(),
+                                   aItemReflowInput.ComputedBSize());
+      if (specifiedMainSize != NS_AUTOHEIGHT) {
+        if (aItemReflowInput.mStylePosition->mBoxSizing ==
+            StyleBoxSizing::Border) {
+          specifiedMainSize =
+            std::max(nscoord(0),
+                     specifiedMainSize -
+                       aFlexItem.GetBorderPaddingSizeInAxis(
+                         aAxisTracker.GetMainAxis()));
+        }
+        // A definite specified size caps the automatic minimum size, and per
+        // spec we don't need to consider the transferred size suggestion.
+        return specifiedMainSize;
+      }
+    }
+  }
+
   // * if the item has no intrinsic aspect ratio, its min-content size:
   //  --- SKIPPING THIS IN THIS FUNCTION --- caller's responsibility.
 
@@ -1853,7 +1885,10 @@ nsFlexContainerFrame::MeasureAscentAndHeightForFlexItem(
 {
   if (const auto* cachedResult =
         aItem.Frame()->GetProperty(CachedFlexMeasuringReflow())) {
-    if (cachedResult->IsValidFor(aChildReflowInput)) {
+    // The key below only covers the available size and computed height; a
+    // dirty subtree can change the measured height without either changing.
+    if (!aItem.Frame()->HasAnyStateBits(NS_FRAME_IS_DIRTY) &&
+        cachedResult->IsValidFor(aChildReflowInput)) {
       return *cachedResult;
     }
   }
