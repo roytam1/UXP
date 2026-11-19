@@ -665,7 +665,8 @@ BROTLI_UNUSED_FUNCTION void BrotliSuppressUnusedFunctions(void) {
 #undef BROTLI_TEST
 #endif
 
-#if BROTLI_GNUC_HAS_ATTRIBUTE(model, 3, 0, 3)
+#if BROTLI_GNUC_HAS_ATTRIBUTE(model, 3, 0, 3) && \
+    !defined(BROTLI_TARGET_LOONGARCH64)
 #define BROTLI_MODEL(M) __attribute__((model(M)))
 #else
 #define BROTLI_MODEL(M) /* M */

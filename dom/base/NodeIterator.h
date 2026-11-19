@@ -89,7 +89,7 @@ private:
 
         void Clear() { mNode = nullptr; }
 
-        nsINode *mNode;
+        nsCOMPtr<nsINode> mNode;
         bool mBeforeNode;
     };
 

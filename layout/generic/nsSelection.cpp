@@ -1596,8 +1596,10 @@ nsFrameSelection::AdjustForMaintainedSelection(nsIContent *aContent,
        mDomSelections[index]->GetDirection() == eDirNext) ||
       (relToEnd < 0 &&
        mDomSelections[index]->GetDirection() == eDirPrevious)) {
+    // Ensure we hold a strong ref to the range across ReplaceAnchorFocusRange.
+    const RefPtr range = mMaintainRange;
     // Set the current range to the maintained range. 
-    mDomSelections[index]->ReplaceAnchorFocusRange(mMaintainRange);
+    mDomSelections[index]->ReplaceAnchorFocusRange(range);
     if (relToStart < 0 && relToEnd > 0) {
       // We're inside the maintained selection, just keep it selected.
       return true;

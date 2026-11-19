@@ -202,6 +202,8 @@ XMLHttpRequestMainThread::~XMLHttpRequestMainThread()
     Abort();
   }
 
+  mParseEndListener = nullptr;
+
   MOZ_ASSERT(!mFlagSyncLooping, "we rather crash than hang");
   mFlagSyncLooping = false;
 
@@ -289,6 +291,16 @@ XMLHttpRequestMainThread::InitParameters(bool aAnon, bool aSystem)
 void
 XMLHttpRequestMainThread::ResetResponse()
 {
+  if (RefPtr<nsXHRParseEndListener> listener = mParseEndListener.forget()) {
+    if (mResponseXML) {
+      if (EventListenerManager* manager =
+              mResponseXML->GetExistingListenerManager()) {
+        manager->RemoveEventListenerByType(listener,
+                                           kLiteralString_DOMContentLoaded,
+                                           TrustedEventsAtSystemGroupBubble());
+      }
+    }
+  }
   mResponseXML = nullptr;
   mResponseBody.Truncate();
   TruncateResponseText();
@@ -372,7 +384,6 @@ NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(XMLHttpRequestMainThread)
   NS_INTERFACE_MAP_ENTRY(nsIChannelEventSink)
   NS_INTERFACE_MAP_ENTRY(nsIProgressEventSink)
   NS_INTERFACE_MAP_ENTRY(nsIInterfaceRequestor)
-  NS_INTERFACE_MAP_ENTRY(nsISupportsWeakReference)
   NS_INTERFACE_MAP_ENTRY(nsITimerCallback)
   NS_INTERFACE_MAP_ENTRY(nsISizeOfEventTarget)
 NS_INTERFACE_MAP_END_INHERITING(XMLHttpRequestEventTarget)
@@ -1019,6 +1030,9 @@ XMLHttpRequestMainThread::CloseRequest()
   }
   if (mTimeoutTimer) {
     mTimeoutTimer->Cancel();
+  }
+  if (mResponseXML) {
+    mResponseXML->StopDocumentLoad();
   }
 }
 
@@ -1866,6 +1880,30 @@ XMLHttpRequestMainThread::OnStartRequest(nsIRequest *request, nsISupports *ctxt)
   mFlagParseBody = true;
   ChangeState(State::headers_received);
 
+  // Re-run earlier check after scripts may have changed the state.
+
+  if (request != mChannel) {
+    // Can this still happen?
+    return NS_OK;
+  }
+
+  // Don't do anything if we have been aborted
+  if (mState == State::unsent) {
+    return NS_OK;
+  }
+
+  // Don't do anything if we're in mid-abort, but let the request
+  // know (this can happen due to race conditions in valid XHRs,
+  // see bz1070763 for info).
+  if (mFlagAborted) {
+    return NS_BINDING_ABORTED;
+  }
+
+  // Don't do anything if we have timed out.
+  if (mFlagTimedOut) {
+    return NS_OK;
+  }
+
   ResetResponse();
 
   if (!mOverrideMimeType.IsEmpty()) {
@@ -2207,10 +2245,11 @@ XMLHttpRequestMainThread::OnStopRequest(nsIRequest *request, nsISupports *ctxt, 
   if (mIsHtml) {
     NS_ASSERTION(!mFlagSyncLooping,
       "We weren't supposed to support HTML parsing with XHR!");
+    mParseEndListener = new nsXHRParseEndListener(this);
     nsCOMPtr<EventTarget> eventTarget = do_QueryInterface(mResponseXML);
     EventListenerManager* manager =
       eventTarget->GetOrCreateListenerManager();
-    manager->AddEventListenerByType(new nsXHRParseEndListener(this),
+    manager->AddEventListenerByType(mParseEndListener,
                                     kLiteralString_DOMContentLoaded,
                                     TrustedEventsAtSystemGroupBubble());
     return NS_OK;
@@ -2234,6 +2273,7 @@ void
 XMLHttpRequestMainThread::OnBodyParseEnd()
 {
   mFlagParseBody = false;
+  mParseEndListener = nullptr;
   ChangeStateToDone();
 }
 

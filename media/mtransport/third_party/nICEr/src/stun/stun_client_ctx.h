@@ -60,9 +60,6 @@ typedef union nr_stun_client_params_ {
 
     nr_stun_client_stun_binding_request_params               stun_binding_request;
     nr_stun_client_stun_keepalive_params                     stun_keepalive;
-#ifdef USE_STUND_0_96
-    nr_stun_client_stun_binding_request_stund_0_96_params    stun_binding_request_stund_0_96;
-#endif /* USE_STUND_0_96 */
 
 #ifdef USE_ICE
     nr_stun_client_ice_binding_request_params                ice_binding_request;
