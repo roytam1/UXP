@@ -16,6 +16,7 @@
 #include "gfxFontConstants.h"
 #include "gfxPlatform.h"
 #include "gfxFontFamilyList.h"
+#include "gfxUserFontSet.h"
 
 #include "nsIMemoryReporter.h"
 #include "mozilla/Attributes.h"
@@ -193,10 +194,15 @@ public:
 
     // keep track of userfont sets to notify when global fontlist changes occur
     void AddUserFontSet(gfxUserFontSet *aUserFontSet) {
-        mUserFontSetList.PutEntry(aUserFontSet);
+        if (!aUserFontSet->mDestroying) {
+            mUserFontSetList.PutEntry(aUserFontSet);
+        }
     }
 
+    // Called from the font-set destructor, to notify that the set is being
+    // destroyed and should no longer be tracked here.
     void RemoveUserFontSet(gfxUserFontSet *aUserFontSet) {
+        aUserFontSet->mDestroying = true;
         mUserFontSetList.RemoveEntry(aUserFontSet);
     }
 

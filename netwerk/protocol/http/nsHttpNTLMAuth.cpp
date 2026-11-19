@@ -279,7 +279,6 @@ nsHttpNTLMAuth::ChallengeReceived(nsIHttpAuthenticableChannel *channel,
     if (PL_strcasecmp(challenge, "NTLM") == 0) {
         nsCOMPtr<nsISupports> module;
 
-        mAllowDefaultCredentials = CanUseDefaultCredentials(channel, isProxyAuth);
         // Check to see if we should default to our generic NTLM auth module
         // through UseGenericNTLM. (We use native auth by default if the
         // system provides it.) If *sessionState is non-null, we failed to
@@ -289,7 +288,7 @@ nsHttpNTLMAuth::ChallengeReceived(nsIHttpAuthenticableChannel *channel,
             // Check for approved default credentials hosts and proxies. If
             // *continuationState is non-null, the last authentication attempt
             // failed so skip default credential use.
-            if (!*continuationState && mAllowDefaultCredentials) {
+            if (!*continuationState && CanUseDefaultCredentials(channel, isProxyAuth)) {
                 // Try logging in with the user's default credentials. If
                 // successful, |identityInvalid| is false, which will trigger
                 // a default credentials attempt once we return.
@@ -402,7 +401,10 @@ nsHttpNTLMAuth::GenerateCredentials(nsIHttpAuthenticableChannel *authChannel,
     if (PL_strcasecmp(challenge, "NTLM") == 0) {
         // An empty user or password makes nsAuthSSPI::Init authenticate as the
         // logged-in user, which only CanUseDefaultCredentials() hosts may do.
-        if (mUseNative && !mAllowDefaultCredentials &&
+        // NOTE: compute this from the current channel. mAllowDefaultCredentials is
+        // set by ChallengeReceived on the nsHttpNTLMAuth singleton, which is shared
+        // by every channel, so it can be clobbered by a concurrent authentication.
+        if (mUseNative && !CanUseDefaultCredentials(authChannel, isProxyAuth) &&
             (!*user || !*pass)) {
           LOG(("Not using default credentials for an untrusted host\n"));
           return NS_ERROR_ABORT;

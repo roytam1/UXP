@@ -331,12 +331,6 @@ static int nr_stun_client_send_request(nr_stun_client_ctx *ctx)
             if ((r=nr_stun_build_keepalive(&ctx->params.stun_keepalive, &ctx->request)))
                 ABORT(r);
             break;
-#ifdef USE_STUND_0_96
-        case NR_STUN_CLIENT_MODE_BINDING_REQUEST_STUND_0_96:
-            if ((r=nr_stun_build_req_stund_0_96(&ctx->params.stun_binding_request_stund_0_96, &ctx->request)))
-                ABORT(r);
-            break;
-#endif /* USE_STUND_0_96 */
 
 #ifdef USE_ICE
         case NR_ICE_CLIENT_MODE_USE_CANDIDATE:
