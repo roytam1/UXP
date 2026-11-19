@@ -1474,7 +1474,13 @@ nsHttpConnectionMgr::TryDispatchTransaction(nsConnectionEntry *ent,
     if (!(caps & NS_HTTP_DISALLOW_SPDY) && gHttpHandler->IsSpdyEnabled()) {
         RefPtr<nsHttpConnection> conn = GetSpdyPreferredConn(ent);
         if (conn) {
-            if ((caps & NS_HTTP_ALLOW_KEEPALIVE) || !conn->IsExperienced()) {
+            // For SPDY/HTTP2, always dispatch to an existing connection regardless
+            // of KEEPALIVE capability. HTTP/2 multiplexing allows multiple concurrent
+            // streams without head-of-line blocking, so experienced connections
+            // should always be reused. This fixes sequential download behavior
+            // where transactions weren't being added to existing HTTP/2 connections.
+            if ((caps & NS_HTTP_ALLOW_KEEPALIVE) || !conn->IsExperienced() ||
+                conn->UsingSpdy()) {
                 LOG(("   dispatch to spdy: [conn=%p]\n", conn.get()));
                 trans->RemoveDispatchedAsBlocking();  /* just in case */
                 DispatchTransaction(ent, trans, conn);
