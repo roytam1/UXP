@@ -546,6 +546,11 @@ private:
     void               RemovePreferredHash(nsConnectionEntry *ent);
     nsHttpConnection  *GetSpdyPreferredConn(nsConnectionEntry *ent);
     nsDataHashtable<nsCStringHashKey, nsConnectionEntry *>   mSpdyPreferredHash;
+
+    // Cache for cert validation results to avoid re-validating the same host pairs
+    // Key format: "original-origin:preferred-origin"
+    nsDataHashtable<nsCStringHashKey, bool>   mCertValidationCache;
+
     nsConnectionEntry *LookupConnectionEntry(nsHttpConnectionInfo *ci,
                                              nsHttpConnection *conn,
                                              nsHttpTransaction *trans);

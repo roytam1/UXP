@@ -808,7 +808,34 @@ nsHttpConnectionMgr::GetSpdyPreferredEnt(nsConnectionEntry *aOriginalEntry)
         return nullptr;
     }
 
-    // Check that the server cert supports redirection
+    // Build cache key for this host pair validation.
+    // Cache: original:preferred -> validated(bool)
+    // Key existence means we've already validated this pair;
+    // value indicates success/failure.
+    nsAutoCString cacheKey;
+    cacheKey.Assign(aOriginalEntry->mConnInfo->Origin());
+    cacheKey.Append(':');
+    cacheKey.Append(preferred->mConnInfo->Origin());
+
+    // Check if we've already validated this host pair.
+    bool cacheHit = false;
+    bool cachedResult = false;
+
+    if (mCertValidationCache.Get(cacheKey, &cachedResult)) {
+        cacheHit = true;
+        if (cachedResult) {
+            LOG(("nsHttpConnectionMgr::GetSpdyPreferredEnt "
+                 "Using cached validation result for %s -> %s\n",
+                 aOriginalEntry->mConnInfo->Origin(),
+                 preferred->mConnInfo->Origin()));
+            return preferred;
+        } else {
+            // Cached failed validation - don't retry.
+            return nullptr;
+        }
+    }
+
+    // Check that the server cert supports redirection.
     nsresult rv;
     bool isJoined = false;
 
@@ -819,12 +846,14 @@ nsHttpConnectionMgr::GetSpdyPreferredEnt(nsConnectionEntry *aOriginalEntry)
     activeSpdy->GetSecurityInfo(getter_AddRefs(securityInfo));
     if (!securityInfo) {
         NS_WARNING("cannot obtain spdy security info");
+        mCertValidationCache.Put(cacheKey, false);
         return nullptr;
     }
 
     sslSocketControl = do_QueryInterface(securityInfo, &rv);
     if (NS_FAILED(rv)) {
         NS_WARNING("sslSocketControl QI Failed");
+        mCertValidationCache.Put(cacheKey, false);
         return nullptr;
     }
 
@@ -849,10 +878,12 @@ nsHttpConnectionMgr::GetSpdyPreferredEnt(nsConnectionEntry *aOriginalEntry)
              "with %s connections. rv=%x isJoined=%d",
              preferred->mConnInfo->Origin(), aOriginalEntry->mConnInfo->Origin(),
              rv, isJoined));
+        mCertValidationCache.Put(cacheKey, false);
         return nullptr;
     }
 
-    // IP pooling confirmed
+    // IP pooling confirmed; cache the successful validation.
+    mCertValidationCache.Put(cacheKey, true);
     LOG(("nsHttpConnectionMgr::GetSpdyPreferredEnt "
          "Host %s has cert valid for %s connections, "
          "so %s will be coalesced with %s",
@@ -2032,18 +2063,25 @@ nsHttpConnectionMgr::OnMsgProcessAllSpdyPendingQ(int32_t, ARefBase *)
     }
 }
 
-nsHttpConnection *
+nsHttpConnection*
 nsHttpConnectionMgr::GetSpdyPreferredConn(nsConnectionEntry *ent)
 {
     MOZ_ASSERT(PR_GetCurrentThread() == gSocketThread);
     MOZ_ASSERT(ent);
 
     nsConnectionEntry *preferred = GetSpdyPreferredEnt(ent);
-    // this entry is spdy-enabled if it is involved in a redirect
-    if (preferred) {
-        // all new connections for this entry will use spdy too
+    // This entry is spdy-enabled if it is involved in a redirect AND
+    // the cert validation succeeded for pooling.
+    if (preferred && preferred != ent) {
+        // Coalescing with a different entry succeeded; mark it!
         ent->mUsingSpdy = true;
+    } else if (!preferred) {
+        // Coalescing failed, use original entry.
+        preferred = ent;
+        // NOTE: Don't mark ent->mUsingSpdy here -- only set it if the preferred
+        // entry is using spdy, to avoid confusion if cert validation fails later on.
     } else {
+        // No coalescing needed.
         preferred = ent;
     }
 
