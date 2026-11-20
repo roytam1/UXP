@@ -2533,6 +2533,17 @@ CSS_PROP_SVGRESET(
     nullptr,
     offsetof(nsStyleSVGReset, mLightingColor),
     eStyleAnimType_Color)
+CSS_PROP_DISPLAY(
+    -webkit-line-clamp,
+    _webkit_line_clamp,
+    WebkitLineClamp,
+    CSS_PROPERTY_PARSE_VALUE |
+        CSS_PROPERTY_VALUE_NONNEGATIVE,
+    "layout.css.prefixes.webkit",
+    VARIANT_HI | VARIANT_NONE,
+    nullptr,
+    offsetof(nsStyleDisplay, mLineClamp),
+    eStyleAnimType_Discrete)
 CSS_PROP_TEXT(
     line-height,
     line_height,

@@ -3034,6 +3034,7 @@ nsStyleDisplay::nsStyleDisplay(nsPresContext* aContext)
   , mOriginalDisplay(StyleDisplay::Inline)
   , mContain(NS_STYLE_CONTAIN_NONE)
   , mContainerType(NS_STYLE_CONTAINER_TYPE_NORMAL)
+  , mLineClamp(0)
   , mAppearance(NS_THEME_NONE)
   , mPosition(NS_STYLE_POSITION_STATIC)
   , mFloat(StyleFloat::None)
@@ -3163,6 +3164,7 @@ nsStyleDisplay::CalcDifference(const nsStyleDisplay& aNewData) const
       || mDisplay != aNewData.mDisplay
       || mContain != aNewData.mContain
       || mContainerType != aNewData.mContainerType
+      || mLineClamp != aNewData.mLineClamp
       || mContainerNames != aNewData.mContainerNames
       || (mFloat == StyleFloat::None) != (aNewData.mFloat == StyleFloat::None)
       || mScrollBehavior != aNewData.mScrollBehavior

@@ -13,6 +13,8 @@
 #include "nsDisplayList.h"
 #include "nsIFrameInlines.h"
 #include "nsLayoutUtils.h"
+#include "nsBlockFrame.h"
+#include "nsTextFrame.h"
 #include "nsPlaceholderFrame.h"
 #include "nsPresContext.h"
 #include "nsRenderingContext.h"
@@ -22,6 +24,7 @@
 #include "mozilla/LinkedList.h"
 #include "mozilla/FloatingPoint.h"
 #include "WritingModes.h"
+#include "nsBlockFrame.h"
 
 using namespace mozilla;
 using namespace mozilla::layout;
@@ -4464,6 +4467,52 @@ nsFlexContainerFrame::CalculatePackingSpace(uint32_t aNumThingsToPack,
   *aPackingSpaceRemaining -= totalEdgePackingSpace;
 }
 
+// Walks aFrame's subtree in document order, counting non-empty inline line
+// boxes, and reports the block-end edge of the aMaxLines'th one relative to
+// aOffset (the border-box block-start offset of aFrame within the container's
+// content box).  Flags that line for an ellipsis.  Returns true on success.
+static bool
+FindLineClampBEnd(nsIFrame* aFrame, uint32_t& aRemaining, nscoord aOffset,
+                  nscoord& aBEnd)
+{
+  if (aFrame->GetType() == nsGkAtoms::blockFrame) {
+    auto* block = static_cast<nsBlockFrame*>(aFrame);
+    const WritingMode wm = block->GetWritingMode();
+    for (auto line = block->LinesBegin(); line != block->LinesEnd(); ++line) {
+      if (line->IsBlock()) {
+        nsIFrame* child = line->mFirstChild;
+        if (!child) {
+          continue;
+        }
+        const LogicalMargin childBP =
+          child->GetLogicalUsedBorderAndPadding(wm);
+        if (FindLineClampBEnd(child, aRemaining,
+                              aOffset + line->BEnd() + childBP.BStart(wm),
+                              aBEnd)) {
+          return true;
+        }
+        continue;
+      }
+      if (line->IsEmpty()) {
+        continue;
+      }
+      if (--aRemaining == 0) {
+        line->SetHasLineClampEllipsis();
+        aBEnd = aOffset + line->BEnd();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  for (nsIFrame* child : aFrame->PrincipalChildList()) {
+    if (FindLineClampBEnd(child, aRemaining, aOffset, aBEnd)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void
 nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
                                    ReflowOutput&     aDesiredSize,
@@ -4677,6 +4726,10 @@ nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
     ? lines.getLast()->GetLastItem()
     : lines.getFirst()->GetFirstItem();
 
+  // If we're clamped, decide where the ellipsis belongs before the final
+  // reflow, so that the text frames can leave room for it.
+  ApplyLineClampEllipsis();
+
   // FINAL REFLOW: Give each child frame another chance to reflow, now that
   // we know its final size and position.
   for (const FlexLine* line = lines.getFirst(); line; line = line->getNext()) {
@@ -4738,6 +4791,9 @@ nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
     }
   }
 
+  // Refresh the marker now that the final reflow has settled the line boxes.
+  ApplyLineClampEllipsis();
+
   if (!placeholderKids.IsEmpty()) {
     ReflowPlaceholders(aPresContext, aReflowInput,
                        placeholderKids, containerContentBoxOrigin,
@@ -4749,6 +4805,25 @@ nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
   LogicalSize desiredSizeInFlexWM =
     aAxisTracker.LogicalSizeFromFlexRelativeSizes(aContentBoxMainSize,
                                                   contentBoxCrossSize);
+
+  // -webkit-line-clamp: cut the content block size at the clamp line and flag
+  // it for an ellipsis.  Only legacy -webkit-box containers clamp; the
+  // property stays inert elsewhere until there is a block-level path.
+  uint32_t lineClamp = StyleDisplay()->mLineClamp;
+  if (!lineClamp && mStyleContext->GetParent()) {
+    lineClamp = mStyleContext->GetParent()->StyleDisplay()->mLineClamp;
+  }
+  const bool legacy = HasAnyStateBits(NS_STATE_FLEX_IS_LEGACY_WEBKIT_BOX);
+  if (lineClamp && legacy) {
+    uint32_t remaining = lineClamp;
+    nscoord clampBEnd = NS_UNCONSTRAINEDSIZE;
+    if (FindLineClampBEnd(this, remaining, 0, clampBEnd)) {
+      desiredSizeInFlexWM.BSize(flexWM) =
+        std::min(desiredSizeInFlexWM.BSize(flexWM),
+                 clampBEnd + containerBP.BStart(GetWritingMode()));
+    }
+  }
+
   // Add border/padding (w/ skipSides already applied):
   desiredSizeInFlexWM.ISize(flexWM) += containerBP.IStartEnd(flexWM);
   desiredSizeInFlexWM.BSize(flexWM) += containerBP.BStartEnd(flexWM);
@@ -4851,6 +4926,92 @@ nsFlexContainerFrame::MoveFlexItemToFinalPosition(
   aItem.Frame()->SetPosition(outerWM, aFramePos, aContainerSize);
   PositionFrameView(aItem.Frame());
   PositionChildViews(aItem.Frame());
+}
+
+// Returns the -webkit-line-clamp value that applies to aFrame, falling back to
+// the style of aFrame's parent if aFrame is the inner part of a scroll
+// container. (That frame has "display:block" and its own style context
+// therefore lacks the clamp-related properties, which live on the parent.)
+static uint32_t
+LineClampFor(nsIFrame* aFrame)
+{
+  uint32_t clamp = aFrame->StyleDisplay()->mLineClamp;
+  if (clamp == 0) {
+    nsStyleContext* parentSC = aFrame->StyleContext()->GetParent();
+    if (parentSC) {
+      clamp = parentSC->StyleDisplay()->mLineClamp;
+    }
+  }
+  return clamp;
+}
+
+// Returns the last text frame at or below aFrame, or null if there is none.
+static nsTextFrame*
+LastTextFrameBelow(nsIFrame* aFrame)
+{
+  for (nsIFrame* kid = aFrame->PrincipalChildList().LastChild(); kid;
+       kid = kid->GetPrevSibling()) {
+    if (nsTextFrame* text = LastTextFrameBelow(kid)) {
+      return text;
+    }
+  }
+  return aFrame->GetType() == nsGkAtoms::textFrame
+    ? static_cast<nsTextFrame*>(aFrame) : nullptr;
+}
+
+// Clears the line-clamp ellipsis marker on aFrame and all of its descendants.
+static void
+ClearLineClampEllipsis(nsIFrame* aFrame)
+{
+  if (aFrame->GetType() == nsGkAtoms::textFrame) {
+    static_cast<nsTextFrame*>(aFrame)->SetLineClampEllipsis(false);
+  }
+  for (nsIFrame* kid = aFrame->PrincipalChildList().FirstChild(); kid;
+       kid = kid->GetNextSibling()) {
+    ClearLineClampEllipsis(kid);
+  }
+}
+
+void
+nsFlexContainerFrame::ApplyLineClampEllipsis()
+{
+  const uint32_t clamp = LineClampFor(this);
+  if (clamp == 0) {
+    return;
+  }
+
+  for (nsIFrame* child : mFrames) {
+    ClearLineClampEllipsis(child);
+  }
+
+  // Walk the lines of our in-flow children in order and mark the last text
+  // frame on the last line we're allowed to show. If we run out of lines
+  // first, the text already fits and no ellipsis is needed.
+  uint32_t lineIdx = 0;
+  for (nsIFrame* child : mFrames) {
+    nsBlockFrame* block = nsLayoutUtils::GetAsBlock(child);
+    if (!block) {
+      continue;
+    }
+    for (nsBlockFrame::LineIterator line = block->LinesBegin();
+         line != block->LinesEnd(); ++line, ++lineIdx) {
+      if (lineIdx + 1 == clamp) {
+        // nsLineBox has no random access, so step to its last child via
+        // siblings, then walk backwards to the last text frame on the line.
+        nsIFrame* kid = line->mFirstChild;
+        for (int32_t i = line->GetChildCount() - 1; i > 0; --i) {
+          kid = kid->GetNextSibling();
+        }
+        for (; kid; kid = kid->GetPrevSibling()) {
+          if (nsTextFrame* text = LastTextFrameBelow(kid)) {
+            text->SetLineClampEllipsis(true);
+            break;
+          }
+        }
+        return;
+      }
+    }
+  }
 }
 
 void

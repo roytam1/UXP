@@ -2793,6 +2793,8 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay
   uint8_t mContain;             // [reset] see nsStyleConsts.h NS_STYLE_CONTAIN_*
   // [reset] see nsStyleConsts.h NS_STYLE_CONTAINER_TYPE_*
   uint8_t mContainerType;
+  // [reset] -webkit-line-clamp; 0 means 'none'
+  uint32_t mLineClamp;
   // [reset] container-name list; empty when 'none'
   nsTArray<nsString> mContainerNames;
   uint8_t mAppearance;          // [reset]

@@ -308,6 +308,12 @@ protected:
                       const nsSize& aContainerSize);
 
   /**
+   * Marks the text frame where a trailing ellipsis should be painted, if this
+   * flex container is clamped by -webkit-line-clamp.
+   */
+  void ApplyLineClampEllipsis();
+
+  /**
    * Helper-function to perform a "dummy reflow" on all our nsPlaceholderFrame
    * children, at the container's content-box origin.
    *

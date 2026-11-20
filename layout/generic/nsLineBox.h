@@ -317,6 +317,17 @@ public:
     return mFlags.mHadFloatPushed;
   }
 
+  // mHasLineClampEllipsis bit
+  void SetHasLineClampEllipsis() {
+    mFlags.mHasLineClampEllipsis = true;
+  }
+  void ClearHasLineClampEllipsis() {
+    mFlags.mHasLineClampEllipsis = false;
+  }
+  bool HasLineClampEllipsis() const {
+    return mFlags.mHasLineClampEllipsis;
+  }
+
 private:
   // Add a hash table for fast lookup when the line has more frames than this.
   static const uint32_t kMinChildCountForHashtable = 200;
@@ -675,6 +686,7 @@ public:
     // that was pushed to a later column or page.
     uint32_t mHadFloatPushed : 1;
     uint32_t mHasHashedFrames: 1;
+    uint32_t mHasLineClampEllipsis : 1;
     uint32_t mBreakType : 4;
   };
 

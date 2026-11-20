@@ -7019,6 +7019,21 @@ nsRuleNode::ComputeDisplayData(void* aStartStruct,
            parentDisplay->mContainerType,
            NS_STYLE_CONTAINER_TYPE_NORMAL);
 
+  // -webkit-line-clamp: none, integer, inherit, initial
+  {
+    const nsCSSValue* lineClamp = aRuleData->ValueForWebkitLineClamp();
+    if (lineClamp->GetUnit() == eCSSUnit_Inherit ||
+        lineClamp->GetUnit() == eCSSUnit_Unset) {
+      display->mLineClamp = parentDisplay->mLineClamp;
+    } else if (lineClamp->GetUnit() == eCSSUnit_None ||
+               lineClamp->GetUnit() == eCSSUnit_Initial) {
+      display->mLineClamp = 0;
+    } else if (lineClamp->GetUnit() == eCSSUnit_Integer) {
+      int32_t n = lineClamp->GetIntValue();
+      display->mLineClamp = n > 0 ? uint32_t(n) : 0;
+    }
+  }
+
   // container-name: none, ident list, inherit, initial
   const nsCSSValue* containerNameValue = aRuleData->ValueForContainerName();
   switch (containerNameValue->GetUnit()) {

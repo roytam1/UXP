@@ -28,7 +28,11 @@
 #include "WorkerRunnable.h"
 #include "WorkerScope.h"
 
+#ifdef DEBUG
 #define PERFLOG(msg, ...) printf_stderr(msg, ##__VA_ARGS__)
+#else
+#define PERFLOG(...)
+#endif
 
 namespace mozilla {
 namespace dom {
