@@ -660,6 +660,14 @@ public:
     mMainSize = aNewMainSize;
   }
 
+  // Sets the main-size after flexing has finished, for the case where a
+  // stretched cross size is transferred into the main size through an
+  // intrinsic ratio.  The caller applies the min/max main sizes.
+  void SetMainSizeAfterStretch(nscoord aNewMainSize)
+  {
+    mMainSize = aNewMainSize;
+  }
+
   void SetShareOfWeightSoFar(float aNewShare)
   {
     MOZ_ASSERT(!mIsFrozen || aNewShare == 0.0f,
@@ -4655,6 +4663,36 @@ nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
     ConvertLegacyStyleToJustifyContent(StyleXUL()) :
     aReflowInput.mStylePosition->mJustifyContent;
 
+  // 'align-self: stretch' can hand an item a definite cross size, and an item
+  // with an intrinsic ratio transfers that into its main size
+  // (css-sizing-4).  Line cross sizes are final by now, so resolve the stretch
+  // and the transfer here, before main-axis positions are assigned -- the item
+  // was flexed to a content-derived main size, and left alone it keeps it.
+  for (FlexLine* line = lines.getFirst(); line; line = line->getNext()) {
+    for (FlexItem* item = line->GetFirstItem(); item; item = item->getNext()) {
+      if (!item->HasIntrinsicRatio() || item->IsStrut()) {
+        continue;
+      }
+      const nsStyleCoord& mainSizeStyle =
+        aAxisTracker.IsMainAxisHorizontal()
+          ? item->Frame()->StylePosition()->mWidth
+          : item->Frame()->StylePosition()->mHeight;
+      if (mainSizeStyle.GetUnit() != eStyleUnit_Auto) {
+        continue;
+      }
+      item->ResolveStretchedCrossSize(line->GetLineCrossSize(), aAxisTracker);
+      if (!item->IsStretched()) {
+        continue;
+      }
+      item->SetMainSizeAfterStretch(
+        NS_CSS_MINMAX(MainSizeFromAspectRatio(item->GetCrossSize(),
+                                              item->IntrinsicRatio(),
+                                              aAxisTracker),
+                      item->GetMainMinSize(),
+                      item->GetMainMaxSize()));
+    }
+  }
+
   for (FlexLine* line = lines.getFirst(); line; line = line->getNext()) {
     // Main-Axis Alignment - Flexbox spec section 9.5
     // ==============================================
@@ -4818,9 +4856,8 @@ nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
     uint32_t remaining = lineClamp;
     nscoord clampBEnd = NS_UNCONSTRAINEDSIZE;
     if (FindLineClampBEnd(this, remaining, 0, clampBEnd)) {
-      desiredSizeInFlexWM.BSize(flexWM) =
-        std::min(desiredSizeInFlexWM.BSize(flexWM),
-                 clampBEnd + containerBP.BStart(GetWritingMode()));
+      desiredSizeInFlexWM.BSize(flexWM) = std::min(desiredSizeInFlexWM.BSize(flexWM),
+                                          aReflowInput.ApplyMinMaxBSize(clampBEnd));
     }
   }
 
