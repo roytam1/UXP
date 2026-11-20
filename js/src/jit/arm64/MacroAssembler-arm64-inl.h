@@ -8,6 +8,8 @@
 
 #include "jit/arm64/MacroAssembler-arm64.h"
 
+#include "vm/BigIntType.h"
+
 namespace js {
 namespace jit {
 
@@ -1431,24 +1433,45 @@ MacroAssembler::branchTestStringTruthy(bool truthy, const ValueOperand& value, L
     B(label, c);
 }
 
-// BigInt code generation is not implemented on ARM64. Baseline must use
-// the VM fallback instead of attaching stubs that require these helpers.
 void
-MacroAssembler::branchTestBigInt(Condition, Register, Label*)
+MacroAssembler::branchTestBigInt(Condition cond, Register tag, Label* label)
 {
-    MOZ_CRASH("NYI: branchTestBigInt");
+    MOZ_ASSERT(cond == Equal || cond == NotEqual);
+    cmp32(tag, ImmTag(JSVAL_TAG_BIGINT));
+    B(label, cond);
 }
 
 void
-MacroAssembler::branchTestBigInt(Condition, const ValueOperand&, Label*)
+MacroAssembler::branchTestBigInt(Condition cond, const ValueOperand& value, Label* label)
 {
-    MOZ_CRASH("NYI: branchTestBigInt");
+    vixl::UseScratchRegisterScope temps(this);
+    const Register scratch = temps.AcquireX().asUnsized();
+    MOZ_ASSERT(value.valueReg() != scratch);
+    splitTag(value, scratch);
+    branchTestBigInt(cond, scratch, label);
 }
 
 void
-MacroAssembler::branchTestBigIntTruthy(bool, const ValueOperand&, Label*)
+MacroAssembler::branchTestBigInt(Condition cond, const BaseIndex& address, Label* label)
 {
-    MOZ_CRASH("NYI: branchTestBigIntTruthy");
+    vixl::UseScratchRegisterScope temps(this);
+    const Register scratch = temps.AcquireX().asUnsized();
+    MOZ_ASSERT(address.base != scratch);
+    MOZ_ASSERT(address.index != scratch);
+    splitTag(address, scratch);
+    branchTestBigInt(cond, scratch, label);
+}
+
+void
+MacroAssembler::branchTestBigIntTruthy(bool truthy, const ValueOperand& value, Label* label)
+{
+    vixl::UseScratchRegisterScope temps(this);
+    const Register scratch = temps.AcquireX().asUnsized();
+    MOZ_ASSERT(value.valueReg() != scratch);
+    unboxNonDouble(value, scratch);
+    loadPtr(Address(scratch, BigInt::offsetOfLengthSignAndReservedBits()), scratch);
+    Cmp(ARMRegister(scratch, 64), Operand(0));
+    B(label, truthy ? NonZero : Zero);
 }
 
 void
