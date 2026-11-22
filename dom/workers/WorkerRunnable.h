@@ -399,6 +399,11 @@ protected:
 
   virtual bool MainThreadRun() = 0;
 
+  // Record the outcome of MainThreadRun(). Subclasses must report failures
+  // here rather than writing to a caller-supplied ErrorResult, which belongs
+  // to the worker thread. Dispatch() re-throws this on the worker.
+  void SetMainThreadResult(nsresult aRv) { mMainThreadResult = aRv; }
+
 public:
   // Dispatch the runnable to the main thread.  If dispatch to main thread
   // fails, or if the worker is in a state equal or greater of aFailStatus, an
@@ -409,6 +414,7 @@ public:
   void Dispatch(Status aFailStatus, ErrorResult& aRv);
 
 private:
+  nsresult mMainThreadResult;
   NS_IMETHOD Run() override;
 };
 
