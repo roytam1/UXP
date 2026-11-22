@@ -7969,7 +7969,12 @@ IonBuilder::jsop_initprop(PropertyName* name)
             useSlowPath = true;
         }
     } else {
-        MOZ_ASSERT(obj->isNullarySharedStub());
+        // The base is either the shared stub the frontend pushes when the
+        // template object is unavailable, or a typed object. The latter is an
+        // inlined |this|: rewriteParameters unboxed the caller's this
+        // parameter infallibly and buildInline installed it in the this slot.
+        // Both satisfy ObjectPolicy<0>.
+        MOZ_ASSERT(obj->isNullarySharedStub() || obj->type() == MIRType::Object);
         useSlowPath = true;
     }
 
