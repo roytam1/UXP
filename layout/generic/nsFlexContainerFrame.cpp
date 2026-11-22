@@ -617,7 +617,7 @@ public:
   {
     NS_ASSERTION(aNewMinSize >= 0,
                  "How did we end up with a negative min-size?");
-    MOZ_ASSERT(mMainMaxSize >= aNewMinSize,
+    MOZ_ASSERT(mMainMaxSize == NS_UNCONSTRAINEDSIZE || mMainMaxSize >= aNewMinSize,
                "Should only use this function for resolving min-size:auto, "
                "and main max-size should be an upper-bound for resolved val");
     MOZ_ASSERT(mNeedsMinSizeAutoResolution &&
@@ -1641,7 +1641,8 @@ PartiallyResolveAutoMinSize(const FlexItem& aFlexItem,
         GET_MAIN_COMPONENT_LOGICAL(aAxisTracker, aFlexItem.GetWritingMode(),
                                    aItemReflowInput.ComputedISize(),
                                    aItemReflowInput.ComputedBSize());
-      if (specifiedMainSize != NS_AUTOHEIGHT) {
+      if (specifiedMainSize != NS_AUTOHEIGHT &&
+          specifiedMainSize != NS_UNCONSTRAINEDSIZE) {
         if (aItemReflowInput.mStylePosition->mBoxSizing ==
             StyleBoxSizing::Border) {
           specifiedMainSize =
@@ -1649,6 +1650,12 @@ PartiallyResolveAutoMinSize(const FlexItem& aFlexItem,
                      specifiedMainSize -
                        aFlexItem.GetBorderPaddingSizeInAxis(
                          aAxisTracker.GetMainAxis()));
+        }
+        // Per spec, the content-based minimum size is clamped by a definite
+        // max main size in all cases:
+        // https://drafts.csswg.org/css-flexbox-1/#min-size-auto
+        if (maxSize != NS_UNCONSTRAINEDSIZE) {
+          specifiedMainSize = std::min(specifiedMainSize, maxSize);
         }
         // A definite specified size caps the automatic minimum size, and per
         // spec we don't need to consider the transferred size suggestion.
