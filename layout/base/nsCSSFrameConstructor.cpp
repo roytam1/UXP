@@ -3809,7 +3809,7 @@ nsCSSFrameConstructor::ConstructFrameFromItemInternal(FrameConstructionItem& aIt
 
   // Push display:contents ancestors.
   AutoDisplayContentsAncestorPusher adcp(aState.mTreeMatchContext,
-                                         aState.mPresContext, parent);
+                                         aState.mPresContext, content);
 
   // Get the parent of the content and check if it is a XBL children element.
   // Push the children element as an ancestor here because it does
@@ -10734,14 +10734,23 @@ nsCSSFrameConstructor::ProcessChildren(nsFrameConstructorState& aState,
       insertion.mContainer = aContent;
       nsIContent* parent = child->GetParent();
       MOZ_ASSERT(parent, "Parent must be non-null because we are iterating children.");
+      // The ancestor to push is the DOM parent, which is the <xbl:children>
+      // insertion point for default content, and is frameless.  The one case
+      // where the DOM parent is not the right node is a top-level child of a
+      // shadow tree, whose DOM parent is the ShadowRoot; there the composed
+      // parent is the host, and that is the ancestor the matcher walks.
+      nsIContent* pushee = parent;
+      if (!pushee->IsElement()) {
+        pushee = child->GetFlattenedTreeParent();
+      }
       TreeMatchContext::AutoAncestorPusher ancestorPusher(aState.mTreeMatchContext);
-      if (parent != aContent && parent->IsElement()) {
+      if (pushee && pushee != aContent && pushee->IsElement()) {
         insertion.mContainer = child->GetFlattenedTreeParent();
         MOZ_ASSERT(insertion.mContainer == GetInsertionPoint(parent, child).mContainer);
         if (aState.mTreeMatchContext.mAncestorFilter.HasFilter()) {
-          ancestorPusher.PushAncestorAndStyleScope(parent->AsElement());
+           ancestorPusher.PushAncestorAndStyleScope(pushee->AsElement());
         } else {
-          ancestorPusher.PushStyleScope(parent->AsElement());
+          ancestorPusher.PushStyleScope(pushee->AsElement());
         }
       }
 
