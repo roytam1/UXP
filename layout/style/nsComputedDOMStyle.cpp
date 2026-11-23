@@ -658,6 +658,26 @@ MustReresolveStyle(const nsStyleContext* aContext)
   return false;
 }
 
+// Is the element, or an ancestor, a container for size queries?
+static bool
+HasContainerAncestor(Element* aElement)
+{
+  // A freshly inserted element has no frame, and its ancestors may not have
+  // one either, so "no container here" and "nothing to inspect yet" are
+  // indistinguishable. Report true and let the caller flush layout; a
+  // display:none element flushes needlessly, which is cheap, and it can never
+  // resolve against a container anyway.
+  if (!aElement->GetPrimaryFrame()) {
+    return true;
+  }
+  for (nsIFrame* f = aElement->GetPrimaryFrame(); f; f = f->GetInFlowParent()) {
+    if (f->StyleDisplay()->IsContainerForSizeQueries()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void
 nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
 {
@@ -673,10 +693,21 @@ nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
   // presshell.  Also note that we want to flush the style on the document
   // we're computing style in, not on the document mElement is in -- the two
   // may be different.
-  document->FlushPendingNotifications(
-    aNeedsLayoutFlush ? Flush_Layout : Flush_Style);
+  // Container queries are evaluated against live layout geometry, so inside a
+  // container the element's style cannot be resolved from style data alone.
+  // Style is flushed first and the predicate consulted afterwards, because
+  // HasContainerAncestor reads container-type off the ancestor style
+  // contexts. Those are stale until the pending restyle has been processed,
+  // so asking beforehand makes the answer depend on whether something else
+  // already forced a reflow, which in turn makes the result depend on query
+  // order rather than on the stylesheet.
+  document->FlushPendingNotifications(Flush_Style);
+  const bool flushLayout = aNeedsLayoutFlush || HasContainerAncestor(mElement);
+  if (flushLayout) {
+    document->FlushPendingNotifications(Flush_Layout);
+  }
 #ifdef DEBUG
-  mFlushedPendingReflows = aNeedsLayoutFlush;
+  mFlushedPendingReflows = flushLayout;
 #endif
 
   nsCOMPtr<nsIPresShell> presShellForContent = GetPresShellForContent(mElement);
@@ -777,6 +808,9 @@ nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
       ClearStyleContext();
       return;
     }
+    // A display:none element never gets a frame, so nothing else will attach
+    // its content; container-unit resolution still needs to walk ancestors.
+    resolvedStyleContext->SetContent(mElement);
 
     // No need to re-get the generation, even though GetStyleContextForElement
     // will flush, since we flushed style at the top of this function.
@@ -799,6 +833,13 @@ nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
     if (styleIfVisited) {
       mStyleContext = styleIfVisited;
     }
+  }
+  // Attach the element whichever way mStyleContext was produced: resolved
+  // above, taken from a frame, or left over from a previous call. Container
+  // units have to walk ancestors even when the element has no frame at all,
+  // and a display:none element never gets one.
+  if (mStyleContext) {
+    mStyleContext->SetContent(mElement);
   }
 }
 
@@ -4837,17 +4878,93 @@ nsComputedDOMStyle::DoGetContain()
     val->SetIdent(eCSSKeyword_none);
   } else if (mask & NS_STYLE_CONTAIN_STRICT) {
     NS_ASSERTION(mask == (NS_STYLE_CONTAIN_STRICT | NS_STYLE_CONTAIN_ALL_BITS),
-                 "contain: strict should imply contain: layout style paint");
+                 "contain: strict should imply all containment bits");
     val->SetIdent(eCSSKeyword_strict);
+  } else if (mask == NS_STYLE_CONTAIN_CONTENT) {
+    val->SetIdent(eCSSKeyword_content);
   } else {
     nsAutoString valueStr;
 
     nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_contain,
                                        mask, NS_STYLE_CONTAIN_LAYOUT,
-                                       NS_STYLE_CONTAIN_PAINT, valueStr);
+                                       NS_STYLE_CONTAIN_INLINE_SIZE, valueStr);
     val->SetString(valueStr);
   }
 
+  return val.forget();
+}
+
+already_AddRefed<CSSValue>
+nsComputedDOMStyle::DoGetContainer()
+{
+  RefPtr<CSSValue> name = DoGetContainerName();
+  if (!name) {
+    return nullptr;
+  }
+
+  ErrorResult error;
+  nsString nameText;
+  name->GetCssText(nameText, error);
+  if (error.Failed()) {
+    error.SuppressException();
+    return nullptr;
+  }
+
+  // 'normal' is the initial value of container-type, so a 'normal' type is
+  // omitted from the serialization of the shorthand, as is the slash.
+  nsString typeText;
+  RefPtr<CSSValue> type = DoGetContainerType();
+  if (type) {
+    type->GetCssText(typeText, error);
+    if (error.Failed()) {
+      error.SuppressException();
+      return nullptr;
+    }
+  }
+
+  if (typeText.IsEmpty() || typeText.EqualsLiteral("normal")) {
+    return name.forget();
+  }
+
+  // CSS_STRING is the default type for SetString, and it serializes verbatim
+  // (no quoting, no escaping), so it can be used to join the two
+  // already-serialized halves with a literal slash.
+  nsString text(nameText);
+  text.AppendLiteral(" / ");
+  text.Append(typeText);
+
+  RefPtr<nsROCSSPrimitiveValue> value = new nsROCSSPrimitiveValue;
+  value->SetString(text);
+  return value.forget();
+}
+
+already_AddRefed<CSSValue>
+nsComputedDOMStyle::DoGetContainerType()
+{
+  RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
+  val->SetIdent(nsCSSProps::ValueToKeywordEnum(
+      StyleDisplay()->mContainerType, nsCSSProps::kContainerTypeKTable));
+  return val.forget();
+}
+
+already_AddRefed<CSSValue>
+nsComputedDOMStyle::DoGetContainerName()
+{
+  const nsStyleDisplay* display = StyleDisplay();
+  nsAutoString value;
+  if (display->mContainerNames.IsEmpty()) {
+    value.AppendLiteral("none");
+  } else {
+    for (uint32_t i = 0; i < display->mContainerNames.Length(); i++) {
+      if (i > 0) {
+        value.Append(char16_t(' '));
+      }
+      nsStyleUtil::AppendEscapedCSSIdent(display->mContainerNames[i], value);
+    }
+  }
+
+  RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
+  val->SetString(value);
   return val.forget();
 }
 

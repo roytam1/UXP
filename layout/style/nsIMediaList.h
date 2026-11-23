@@ -54,6 +54,14 @@ struct nsMediaExpression {
 };
 
 /**
+ * Append aExpression to aString in canonical form, without the parentheses
+ * that enclose a condition term.  Shared between @media serialisation, where
+ * the caller writes the parentheses, and container condition serialisation.
+ */
+void AppendMediaExpressionToString(nsAString& aString,
+                                   const nsMediaExpression& aExpression);
+
+/**
  * An nsMediaQueryResultCacheKey records what feature/value combinations
  * a set of media query results are valid for.  This allows the caller
  * to quickly learn whether a prior result of media query evaluation is
@@ -240,6 +248,12 @@ public:
   // If |aKey| is non-null, add cache information to it.
   bool Matches(nsPresContext* aPresContext,
                  nsMediaQueryResultCacheKey* aKey) const;
+
+  bool IsNegated() const { return mNegated; }
+  bool HadUnknownExpression() const { return mHadUnknownExpression; }
+  const nsTArray<nsMediaExpression>& Expressions() const {
+    return mExpressions;
+  }
 
 private:
   bool mNegated;

@@ -1310,7 +1310,7 @@ Http2Stream::OnReadSegment(const char *buf,
     MOZ_ASSERT(*countRead == count, "Header parsing not complete but unused data");
     break;
 
-  case GENERATING_BODY:
+  case GENERATING_BODY: {
     // if there is session flow control and either the stream window is active and
     // exhaused or the session window is exhausted then suspend
     if (!AllowFlowControlledWrite()) {
@@ -1331,8 +1331,36 @@ Http2Stream::OnReadSegment(const char *buf,
     if (dataLength > Http2Session::kMaxFrameData)
       dataLength = Http2Session::kMaxFrameData;
 
-    if (dataLength > mSession->ServerSessionWindow())
-      dataLength = static_cast<uint32_t>(mSession->ServerSessionWindow());
+    // For fair multiplexing, limit each stream's use of the session window.
+    // If multiple streams are active, don't let one stream consume all
+    // remaining session window bytes. This prevents the "batched blocking"
+    // scenario where multiple streams exhaust window together and all block.
+    int64_t sessionWindow = mSession->ServerSessionWindow();
+    if (sessionWindow > 0) {
+      // Estimate concurrent streams (this is approximate but sufficient)
+      // If we don't know exact count, use a conservative estimate
+      uint32_t estimatedConcurrentStreams = 4;  // Typical case for CDN
+
+      // Fair share: session window / estimated streams
+      int64_t fairShare = sessionWindow / estimatedConcurrentStreams;
+
+      // But cap to at least one frame size for efficiency
+      if (fairShare < Http2Session::kMaxFrameData) {
+        fairShare = Http2Session::kMaxFrameData;
+      }
+
+      // Limit dataLength to fair share of session window
+      if (dataLength > fairShare) {
+        dataLength = static_cast<uint32_t>(fairShare);
+      }
+    } else if (sessionWindow <= 0) {
+      // Session window exhausted, can't write
+      dataLength = 0;
+    }
+
+    // Also cap to remaining session window (redundant but safe)
+    if (dataLength > sessionWindow)
+      dataLength = static_cast<uint32_t>(sessionWindow);
 
     if (dataLength > mServerReceiveWindow)
       dataLength = static_cast<uint32_t>(mServerReceiveWindow);
@@ -1359,6 +1387,7 @@ Http2Stream::OnReadSegment(const char *buf,
     GenerateDataFrameHeader(dataLength, !mRequestBodyLenRemaining);
     ChangeState(SENDING_BODY);
     MOZ_FALLTHROUGH;
+  }
 
   case SENDING_BODY:
     MOZ_ASSERT(mTxInlineFrameUsed, "OnReadSegment Send Data Header 0b");

@@ -16,6 +16,45 @@
 
 using namespace mozilla;
 
+// The innermost style containment scope aFrame belongs to, i.e. the nearest
+// enclosing frame with effective 'contain: style'.  Deliberately starts at the
+// frame's *parent*: the containment element itself is part of the enclosing
+// scope, so that its own counter-reset and counter-increment stay visible
+// outside the subtree it contains (counter-scoping-001, -002, -003).
+static nsIFrame*
+ContainStyleScopeFor(nsIFrame* aFrame)
+{
+    for (nsIFrame* f = aFrame->GetParent(); f; f = f->GetParent()) {
+        if (f->StyleDisplay()->IsContainStyleEffective()) {
+            return f;
+        }
+    }
+    return nullptr;
+}
+
+// Whether aCandidate sits at or outside aNode, so that aNode may be scoped by
+// it.
+static bool
+CanBeScopeStartOf(nsCounterNode* aNode, nsCounterNode* aCandidate)
+{
+    nsIContent* nodeContent = aNode->mPseudoFrame->GetContent()->GetParent();
+    nsIContent* startContent =
+        aCandidate->mPseudoFrame->GetContent()->GetParent();
+    NS_ASSERTION(nodeContent || !startContent,
+                 "null check on startContent should be sufficient to "
+                 "null check nodeContent as well, since if nodeContent "
+                 "is for the root, startContent (which is before it) "
+                 "must be too");
+
+    // A reset's outer scope can't be a scope created by a sibling.
+    return !(aNode->mType == nsCounterNode::RESET &&
+             nodeContent == startContent) &&
+           // everything is inside the root (except the case above, a second
+           // reset on the root)
+           (!startContent ||
+            nsContentUtils::ContentIsDescendantOf(nodeContent, startContent));
+}
+
 bool
 nsCounterUseNode::InitTextFrame(nsGenConList* aList,
         nsIFrame* aPseudoFrame, nsIFrame* aTextFrame)
@@ -100,6 +139,24 @@ nsCounterUseNode::GetText(nsString& aResult)
         for (nsCounterNode *n = mScopeStart; n->mScopePrev; n = n->mScopeStart)
             stack.AppendElement(n->mScopePrev);
 
+    // counters() reports the whole chain, including the values of the
+    // enclosing style containment scopes.  These are appended innermost-first
+    // so that the reverse walk below emits them outermost first.
+    if (mAllCounters && mPseudoFrame) {
+        for (nsIFrame* scope = ContainStyleScopeFor(mPseudoFrame); scope; ) {
+            scope = ContainStyleScopeFor(scope);
+            for (nsCounterNode* prev = nsCounterList::Prev(this); prev;
+                 prev = nsCounterList::Prev(prev)) {
+                if (prev->mScopeRoot != scope ||
+                    prev->mType == nsCounterNode::USE) {
+                    continue;
+                }
+                stack.AppendElement(prev);
+                break;
+            }
+        }
+    }
+
     const char16_t* separator;
     if (mAllCounters)
         separator = mCounterFunction->Item(1).GetStringBufferValue();
@@ -133,19 +190,25 @@ nsCounterList::SetScope(nsCounterNode *aNode)
     // frame tree, so we walk up parent scopes until we find something
     // appropriate.
 
+    aNode->mScopeRoot = ContainStyleScopeFor(aNode->mPseudoFrame);
+
     if (aNode == First()) {
         aNode->mScopeStart = nullptr;
         aNode->mScopePrev = nullptr;
         return;
     }
 
-    // Get the content node for aNode's rendering object's *parent*,
-    // since scope includes siblings, so we want a descendant check on
-    // parents.
-    nsIContent *nodeContent = aNode->mPseudoFrame->GetContent()->GetParent();
-
-    for (nsCounterNode *prev = Prev(aNode), *start;
-         prev; prev = start->mScopePrev) {
+    // Nodes in another style containment scope are invisible here, so step
+    // over them.  A counter() use is stepped over too: it never establishes a
+    // value, and letting a change attach to one would make the change
+    // accumulate onto the enclosing scope's value instead of starting a fresh
+    // nested counter (which is what counter-scoping-001 expects of ::after).
+    for (nsCounterNode *prev = Prev(aNode), *start; prev; ) {
+        if (prev->mScopeRoot != aNode->mScopeRoot ||
+            prev->mType == nsCounterNode::USE) {
+            prev = Prev(prev);
+            continue;
+        }
         // If |prev| starts a scope (because it's a real or implied
         // reset), we want it as the scope start rather than the start
         // of its enclosing scope.  Otherwise, there's no enclosing
@@ -154,25 +217,34 @@ nsCounterList::SetScope(nsCounterNode *aNode)
         start = (prev->mType == nsCounterNode::RESET || !prev->mScopeStart)
                   ? prev : prev->mScopeStart;
 
-        // |startContent| is analogous to |nodeContent| (see above).
-        nsIContent *startContent = start->mPseudoFrame->GetContent()->GetParent();
-        NS_ASSERTION(nodeContent || !startContent,
-                     "null check on startContent should be sufficient to "
-                     "null check nodeContent as well, since if nodeContent "
-                     "is for the root, startContent (which is before it) "
-                     "must be too");
-
-             // A reset's outer scope can't be a scope created by a sibling.
-        if (!(aNode->mType == nsCounterNode::RESET &&
-              nodeContent == startContent) &&
-              // everything is inside the root (except the case above,
-              // a second reset on the root)
-            (!startContent ||
-             nsContentUtils::ContentIsDescendantOf(nodeContent,
-                                                   startContent))) {
+        if (CanBeScopeStartOf(aNode, start)) {
             aNode->mScopeStart = start;
             aNode->mScopePrev  = prev;
             return;
+        }
+        prev = start->mScopePrev;
+    }
+
+    // Nothing in this scope.  A counter() use reads through to enclosing
+    // scopes; a reset or increment becomes an implied counter here, so the
+    // contained subtree starts from zero.
+    if (aNode->mType == nsCounterNode::USE) {
+        for (nsIFrame* scope = aNode->mScopeRoot; scope; ) {
+            scope = ContainStyleScopeFor(scope);
+            for (nsCounterNode* prev = Prev(aNode); prev; prev = Prev(prev)) {
+                if (prev->mScopeRoot != scope ||
+                    prev->mType == nsCounterNode::USE) {
+                    continue;
+                }
+                nsCounterNode* start =
+                    (prev->mType == nsCounterNode::RESET || !prev->mScopeStart)
+                      ? prev : prev->mScopeStart;
+                if (CanBeScopeStartOf(aNode, start)) {
+                    aNode->mScopeStart = start;
+                    aNode->mScopePrev = prev;
+                    return;
+                }
+            }
         }
     }
 

@@ -212,6 +212,9 @@ protected:
   };
   EnumData* mEnumList;
   int32_t mEnumListSize;
+  // Nesting depth of EnumerateAllRules.  A nested enumeration must not reuse
+  // mEnumList while the outer one is still walking it.
+  uint32_t mEnumListDepth;
 
   bool mQuirksMode;
 

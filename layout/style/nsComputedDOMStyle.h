@@ -456,6 +456,9 @@ private:
   already_AddRefed<CSSValue> DoGetFloat();
   already_AddRefed<CSSValue> DoGetDisplay();
   already_AddRefed<CSSValue> DoGetContain();
+  already_AddRefed<CSSValue> DoGetContainer();
+  already_AddRefed<CSSValue> DoGetContainerType();
+  already_AddRefed<CSSValue> DoGetContainerName();
   already_AddRefed<CSSValue> DoGetPosition();
   already_AddRefed<CSSValue> DoGetClip();
   already_AddRefed<CSSValue> DoGetImageOrientation();

@@ -531,10 +531,25 @@ enum class StyleDisplay : uint8_t {
 #define NS_STYLE_CONTAIN_LAYOUT                 0x2
 #define NS_STYLE_CONTAIN_STYLE                  0x4
 #define NS_STYLE_CONTAIN_PAINT                  0x8
+#define NS_STYLE_CONTAIN_SIZE                   0x10
+#define NS_STYLE_CONTAIN_INLINE_SIZE            0x20
 // NS_STYLE_CONTAIN_ALL_BITS does not correspond to a keyword.
 #define NS_STYLE_CONTAIN_ALL_BITS               (NS_STYLE_CONTAIN_LAYOUT | \
                                                  NS_STYLE_CONTAIN_STYLE  | \
+                                                 NS_STYLE_CONTAIN_PAINT |  \
+                                                 NS_STYLE_CONTAIN_SIZE |   \
+                                                 NS_STYLE_CONTAIN_INLINE_SIZE)
+
+// 'contain: content' is shorthand for layout | paint | style. Not part of
+// ALL_BITS, and must not collide with STRICT's assertion path.
+#define NS_STYLE_CONTAIN_CONTENT                (NS_STYLE_CONTAIN_LAYOUT | \
+                                                 NS_STYLE_CONTAIN_STYLE  | \
                                                  NS_STYLE_CONTAIN_PAINT)
+
+// container-type (css-contain-3)
+#define NS_STYLE_CONTAINER_TYPE_NORMAL          0
+#define NS_STYLE_CONTAINER_TYPE_SIZE            0x1
+#define NS_STYLE_CONTAINER_TYPE_INLINE_SIZE     0x2
 
 // Shared constants for all align/justify properties (nsStylePosition):
 #define NS_STYLE_ALIGN_AUTO             0

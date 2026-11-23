@@ -706,6 +706,22 @@ nsMediaFeatures::features[] = {
     GetHeight
   },
   {
+    &nsGkAtoms::inline_size,
+    nsMediaFeature::eMinMaxAllowed,
+    nsMediaFeature::eLength,
+    nsMediaFeature::eContainerQueryOnly,
+    { nullptr },
+    GetWidth
+  },
+  {
+    &nsGkAtoms::block_size,
+    nsMediaFeature::eMinMaxAllowed,
+    nsMediaFeature::eLength,
+    nsMediaFeature::eContainerQueryOnly,
+    { nullptr },
+    GetHeight
+  },
+  {
     &nsGkAtoms::deviceWidth,
     nsMediaFeature::eMinMaxAllowed,
     nsMediaFeature::eLength,

@@ -2791,6 +2791,12 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay
                                            //         otherwise equal to
                                            //         mDisplay
   uint8_t mContain;             // [reset] see nsStyleConsts.h NS_STYLE_CONTAIN_*
+  // [reset] see nsStyleConsts.h NS_STYLE_CONTAINER_TYPE_*
+  uint8_t mContainerType;
+  // [reset] -webkit-line-clamp; 0 means 'none'
+  uint32_t mLineClamp;
+  // [reset] container-name list; empty when 'none'
+  nsTArray<nsString> mContainerNames;
   uint8_t mAppearance;          // [reset]
   uint8_t mPosition;            // [reset] see nsStyleConsts.h
 
@@ -2967,6 +2973,94 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay
   bool IsContainPaint() const {
     return NS_STYLE_CONTAIN_PAINT & mContain;
   }
+
+  bool IsContainLayout() const {
+    return !!(mContain & NS_STYLE_CONTAIN_LAYOUT);
+  }
+
+  bool IsContainSize() const {
+    return !!(mContain & NS_STYLE_CONTAIN_SIZE);
+  }
+
+  bool IsContainInlineSize() const {
+    return !!(mContain & NS_STYLE_CONTAIN_INLINE_SIZE);
+  }
+
+  // Whether the display type can be a query container at all.  Style queries
+  // accept it; size queries additionally need a container-type.
+  bool IsContainerDisplay() const {
+    // An inline box is not a container — an inline element with container-type
+    // must not answer queries.  Floats and abspos boxes are blockified to
+    // Block, so they stay eligible.
+    switch (mDisplay) {
+      case mozilla::StyleDisplay::Table:
+      case mozilla::StyleDisplay::InlineTable:
+      case mozilla::StyleDisplay::TableCell:
+      case mozilla::StyleDisplay::TableRow:
+      case mozilla::StyleDisplay::TableRowGroup:
+      case mozilla::StyleDisplay::TableHeaderGroup:
+      case mozilla::StyleDisplay::TableFooterGroup:
+      case mozilla::StyleDisplay::TableColumn:
+      case mozilla::StyleDisplay::TableColumnGroup:
+      case mozilla::StyleDisplay::Inline:
+      case mozilla::StyleDisplay::Contents:
+      case mozilla::StyleDisplay::None:
+        return false;
+      default:
+        break;
+    }
+    return true;
+  }
+
+  bool IsContainerForSizeQueries() const {
+    // `container-type: normal` establishes only a style container.
+    return IsContainerDisplay() &&
+           mContainerType != NS_STYLE_CONTAINER_TYPE_NORMAL;
+  }
+
+  // A style container needs no size containment, so `normal` is the common
+  // case and the only requirement is a display that can be a container.
+  bool IsContainerForStyleQueries() const {
+    return IsContainerDisplay();
+  }
+
+  // Containment as it actually applies, including what container-type implies.
+  // Everything in layout must consult this rather than mContain, or
+  // container-type: size will not contain anything.
+  uint8_t EffectiveContainment() const {
+    switch (mContainerType) {
+      case NS_STYLE_CONTAINER_TYPE_SIZE:
+        return mContain | NS_STYLE_CONTAIN_SIZE |
+               NS_STYLE_CONTAIN_LAYOUT | NS_STYLE_CONTAIN_STYLE;
+      case NS_STYLE_CONTAINER_TYPE_INLINE_SIZE:
+        return mContain | NS_STYLE_CONTAIN_INLINE_SIZE |
+               NS_STYLE_CONTAIN_LAYOUT | NS_STYLE_CONTAIN_STYLE;
+      default:
+        return mContain;
+    }
+  }
+
+  bool IsContainLayoutEffective() const {
+    return !!(EffectiveContainment() & NS_STYLE_CONTAIN_LAYOUT);
+  }
+
+  bool IsContainStyleEffective() const {
+    return !!(EffectiveContainment() & NS_STYLE_CONTAIN_STYLE);
+  }
+
+  bool IsContainPaintEffective() const {
+    return !!(EffectiveContainment() & NS_STYLE_CONTAIN_PAINT);
+  }
+
+  bool IsContainSizeEffective() const {
+    return !!(EffectiveContainment() & NS_STYLE_CONTAIN_SIZE);
+  }
+
+  bool IsContainInlineSizeEffective() const {
+    return !!(EffectiveContainment() & NS_STYLE_CONTAIN_INLINE_SIZE);
+  }
+
+  bool HasContainerName(const nsAString& aName) const;
 
   /* Returns whether the element has the -moz-transform property
    * or a related property. */

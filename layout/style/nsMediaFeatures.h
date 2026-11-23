@@ -58,7 +58,11 @@ struct nsMediaFeature
     // Feature is only supported if the pref
     // "layout.css.prefixes.device-pixel-ratio-webkit" is enabled.
     // (Should only be used for -webkit-device-pixel-ratio.)
-    eWebkitDevicePixelRatioPrefEnabled = 1 << 1
+    eWebkitDevicePixelRatioPrefEnabled = 1 << 1,
+
+    // Feature is only valid inside @container, not @media.
+    // (Should only be used for the container size features.)
+    eContainerQueryOnly = 1 << 2
   };
   uint8_t mReqFlags;
 

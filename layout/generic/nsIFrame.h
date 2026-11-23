@@ -56,6 +56,7 @@
 #include "nsStyleContext.h"
 #include "nsStyleStruct.h"
 #include "Visibility.h"
+#include "mozilla/dom/Element.h"
 
 #ifdef ACCESSIBILITY
 #include "mozilla/a11y/AccTypes.h"
@@ -491,6 +492,12 @@ static void ReleaseValue(T* aPropertyValue)
   aPropertyValue->Release();
 }
 
+struct ContainerQueryDependents
+{
+  uint32_t mGeneration = 0;
+  nsTArray<RefPtr<mozilla::dom::Element>> mElements;
+};
+
 //----------------------------------------------------------------------
 
 /**
@@ -653,22 +660,7 @@ public:
    * Get the style context associated with this frame.
    */
   nsStyleContext* StyleContext() const { return mStyleContext; }
-  void SetStyleContext(nsStyleContext* aContext)
-  { 
-    if (aContext != mStyleContext) {
-      nsStyleContext* oldStyleContext = mStyleContext;
-      mStyleContext = aContext;
-      aContext->AddRef();
-#ifdef DEBUG
-      aContext->FrameAddRef();
-#endif
-      DidSetStyleContext(oldStyleContext);
-#ifdef DEBUG
-      oldStyleContext->FrameRelease();
-#endif
-      oldStyleContext->Release();
-    }
-  }
+  void SetStyleContext(nsStyleContext* aContext);
 
   /**
    * SetStyleContextWithoutNotification is for changes to the style
@@ -880,6 +872,12 @@ public:
   }
 
   /**
+   * If this frame is a query container and its size just changed, restyle its
+   * subtree so @container conditions are re-evaluated.
+   */
+  void RestyleIfContainer();
+
+  /**
    * Set this frame's size from a logical size in its own writing direction.
    * This leaves the frame's logical position unchanged, which means its
    * physical position may change (for right-to-left modes).
@@ -1075,6 +1073,14 @@ public:
   NS_DECLARE_FRAME_PROPERTY_SMALL_VALUE(BidiDataProperty, mozilla::FrameBidiData)
 
   NS_DECLARE_FRAME_PROPERTY_WITHOUT_DTOR(PlaceholderFrameProperty, nsPlaceholderFrame)
+  NS_DECLARE_FRAME_PROPERTY_DELETABLE(ContainerSizeProperty, nsSize)
+
+  // Elements whose style resolution last resolved against this container,
+  // either through a @container condition or through a container unit.  Stamped
+  // with the restyle generation they were collected in, so the first
+  // evaluation in a new pass rebuilds the list and stale entries fall out.
+  NS_DECLARE_FRAME_PROPERTY_DELETABLE(ContainerQueryDependentsProperty,
+                                      ContainerQueryDependents)
 
   mozilla::FrameBidiData GetBidiData()
   {

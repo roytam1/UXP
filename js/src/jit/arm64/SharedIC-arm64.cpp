@@ -202,6 +202,20 @@ ICUnaryArith_Int32::Compiler::generateStubCode(MacroAssembler& masm)
         masm.Sub(ARMRegister(R1.valueReg(), 32), wzr, ARMRegister(R0.valueReg(), 32));
         masm.movePayload(R1.valueReg(), R0.valueReg());
         break;
+      case JSOP_INC:
+      case JSOP_DEC:
+        // Preserve the original boxed input for the next stub (or VM
+        // fallback) when the int32 result overflows to a double.
+        if (op == JSOP_INC) {
+            masm.Adds(ARMRegister(R1.valueReg(), 32),
+                      ARMRegister(R0.valueReg(), 32), Operand(1));
+        } else {
+            masm.Subs(ARMRegister(R1.valueReg(), 32),
+                      ARMRegister(R0.valueReg(), 32), Operand(1));
+        }
+        masm.j(Assembler::Overflow, &failure);
+        masm.movePayload(R1.valueReg(), R0.valueReg());
+        break;
       default:
         MOZ_CRASH("Unexpected op");
     }
