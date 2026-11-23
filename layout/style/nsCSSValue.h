@@ -567,6 +567,14 @@ enum nsCSSUnit {
   eCSSUnit_DynamicViewportBlock  = 722,    // (float) 1% of the size of the dynamic viewport in the box's block axis
   eCSSUnit_DynamicViewportInline = 723,    // (float) 1% of the size of the small viewport in the box's inline axis
 
+  // Container query relative measure
+  eCSSUnit_CQW    = 730,    // (float) 1% of the query container's width
+  eCSSUnit_CQH    = 731,    // (float) 1% of the query container's height
+  eCSSUnit_CQI    = 732,    // (float) 1% of the query container's inline size
+  eCSSUnit_CQB    = 733,    // (float) 1% of the query container's block size
+  eCSSUnit_CQMin  = 734,    // (float) 1% of the smaller of those two
+  eCSSUnit_CQMax  = 735,    // (float) 1% of the larger of those two
+
   // Font relative measure
   eCSSUnit_EM           = 800,    // (float) == current font size
   eCSSUnit_XHeight      = 801,    // (float) distance from top of lower case x to baseline

@@ -5,6 +5,7 @@
 
 /* base class of all rendering objects */
 
+#include "nsStyleContext.h"
 #include "nsFrame.h"
 
 #include <stdarg.h>
@@ -417,6 +418,7 @@ nsFrame::~nsFrame()
   mStyleContext->FrameRelease();
 #endif
   mStyleContext->Release();
+  mContent = nullptr;
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsFrame)
@@ -521,6 +523,13 @@ nsFrame::Init(nsIContent*       aContent,
 
   if (aContent) {
     NS_ADDREF(aContent);
+  }
+
+  // Style contexts are attached to their frame before Init, so the content
+  // back-pointer has to be filled in here rather than in the constructor,
+  // where mContent is still null.
+  if (mStyleContext) {
+    mStyleContext->SetContent(mContent);
   }
 
   if (aPrevInFlow) {
@@ -1942,12 +1951,16 @@ ApplyOverflowClipping(nsDisplayListBuilder* aBuilder,
   if (!nsFrame::ShouldApplyOverflowClipping(aFrame, aDisp)) {
     return;
   }
-  
+
+  // contain:paint always clips at the padding box, both axes, no matter what
+  // 'overflow' and 'overflow-clip-box' say.
+  const bool containPaint = aDisp->IsContainPaintEffective();
+
   nsRect clipRect;
   bool haveRadii = false;
   nscoord radii[8];
-  if (aFrame->StyleDisplay()->mOverflowClipBox ==
-        NS_STYLE_OVERFLOW_CLIP_BOX_PADDING_BOX) {
+  if (containPaint ||
+  aFrame->StyleDisplay()->mOverflowClipBox == NS_STYLE_OVERFLOW_CLIP_BOX_PADDING_BOX) {
     clipRect = aFrame->GetPaddingRectRelativeToSelf() +
       aBuilder->ToReferenceFrame(aFrame);
     haveRadii = aFrame->GetPaddingBoxBorderRadii(radii);
@@ -1959,8 +1972,10 @@ ApplyOverflowClipping(nsDisplayListBuilder* aBuilder,
 
   // Support per-axis clipping: If only one axis has 'clip' or 'hidden' value,
   // only clip that axis by extending the clip rect to infinity on the other axis
-  bool clipX = (aDisp->mOverflowX == NS_STYLE_OVERFLOW_CLIP || aDisp->mOverflowX == NS_STYLE_OVERFLOW_HIDDEN);
-  bool clipY = (aDisp->mOverflowY == NS_STYLE_OVERFLOW_CLIP || aDisp->mOverflowY == NS_STYLE_OVERFLOW_HIDDEN);
+  bool clipX = containPaint || (aDisp->mOverflowX == NS_STYLE_OVERFLOW_CLIP ||
+     aDisp->mOverflowX == NS_STYLE_OVERFLOW_HIDDEN);
+  bool clipY = containPaint || (aDisp->mOverflowY == NS_STYLE_OVERFLOW_CLIP ||
+     aDisp->mOverflowY == NS_STYLE_OVERFLOW_HIDDEN);
   
   if (clipX && !clipY) {
     // Only clip X axis - extend Y to infinity
@@ -4850,6 +4865,30 @@ nsFrame::ComputeSize(nsRenderingContext* aRenderingContext,
     }
   }
 
+  // Size containment: the content must not contribute to the inline size.
+  // A block-level box in flow still fills its containing block, so only the
+  // shrink-to-fit cases collapse to zero. Shrink-to-fit covers floats,
+  // abspos, inline-level boxes, and blocks that are orthogonal to their
+  // containing block -- for those the containing block's inline size is in
+  // the wrong axis, so filling it would be wrong even though the frame is
+  // block-level. Without the fill a plain block with width:auto and any
+  // inline-size containment becomes 0 wide.
+  if (MOZ_UNLIKELY(StyleDisplay()->IsContainSizeEffective() ||
+                   StyleDisplay()->IsContainInlineSizeEffective()) &&
+      inlineStyleCoord->GetUnit() == eStyleUnit_Auto) {
+    if (!(aFlags & ComputeSizeFlags::eShrinkWrap) &&
+        !StyleDisplay()->IsInlineOutside(this) && !IsFloating() &&
+        !IsAbsolutelyPositioned() &&
+        aCBSize.ISize(aWM) != NS_UNCONSTRAINEDSIZE) {
+      result.ISize(aWM) = std::max(nscoord(0), aCBSize.ISize(aWM) -
+                                              aPadding.ISize(aWM) -
+                                              aBorder.ISize(aWM) -
+                                              aMargin.ISize(aWM));
+    } else {
+      result.ISize(aWM) = 0;
+    }
+  }
+
   // Flex items ignore their min & max sizing properties in their
   // flex container's main-axis.  (Those properties get applied later in
   // the flexbox algorithm.)
@@ -4938,6 +4977,22 @@ nsFrame::ComputeSize(nsRenderingContext* aRenderingContext,
         }
       }
     }
+  }
+
+  // Size containment: the content must not contribute to the block size.
+  // A block-level box in flow collapses to zero, but a grid item the parent
+  // stretches has a definite area to fill, so it must stay auto and resolve
+  // against that area instead of collapsing. Non-stretched grid items get
+  // eShrinkWrap from InitConstraints and keep the zero.
+  if (MOZ_UNLIKELY(StyleDisplay()->IsContainSizeEffective()) &&
+      nsLayoutUtils::IsAutoBSize(*blockStyleCoord, aCBSize.BSize(aWM)) &&
+      !(aFlags & nsIFrame::eUseAutoBSize)) {
+    const bool stretchedGridItem =
+        mParent->GetType() == nsGkAtoms::gridContainerFrame &&
+        !(aFlags & nsIFrame::eShrinkWrap) && !IsInlineOutside() &&
+        !IsFloating() && !IsAbsolutelyPositioned() &&
+        aCBSize.BSize(aWM) != NS_UNCONSTRAINEDSIZE;
+    result.BSize(aWM) = stretchedGridItem ? NS_UNCONSTRAINEDSIZE : 0;
   }
 
   const nsStyleCoord& maxBSizeCoord = stylePos->MaxBSize(aWM);
@@ -5640,6 +5695,18 @@ nsFrame::ShrinkWidthToFit(nsRenderingContext* aRenderingContext,
   // wrapping inside of us should not apply font size inflation.
   AutoMaybeDisableFontInflation an(this);
 
+  // A size-contained box ignores its content in the inline axis.
+  const nsStyleDisplay* containDisp = StyleDisplay();
+  // 'contain: size' contains both axes, so it always zeroes the width.
+  // 'contain: inline-size' only does so when the inline axis is horizontal;
+  // in a vertical writing mode the width is the block axis and must keep
+  // resolving fit-content against the content.
+  if (containDisp->IsContainSizeEffective() ||
+      (containDisp->IsContainInlineSizeEffective() &&
+       !GetWritingMode().IsVertical())) {
+    return 0;
+  }
+
   nscoord result;
   nscoord minISize = GetMinISize(aRenderingContext);
   if (minISize > aISizeInCB) {
@@ -5686,14 +5753,21 @@ nsIFrame::ComputeISizeValue(nsRenderingContext* aRenderingContext,
     // wrapping inside of it should not apply font size inflation.
     AutoMaybeDisableFontInflation an(this);
 
+    // Size containment on the inline axis means the content contributes
+    // nothing, so every intrinsic keyword resolves to zero. Without this a
+    // contained box with 'width: fit-content' keeps its content width.
+    const nsStyleDisplay* disp = StyleDisplay();
+    const bool contentIgnored =
+      disp->IsContainSizeEffective() || disp->IsContainInlineSizeEffective();
+
     int32_t val = aCoord.GetIntValue();
     switch (val) {
       case NS_STYLE_WIDTH_MAX_CONTENT:
-        result = GetPrefISize(aRenderingContext);
+        result = contentIgnored ? 0 : GetPrefISize(aRenderingContext);
         NS_ASSERTION(result >= 0, "inline-size less than zero");
         break;
       case NS_STYLE_WIDTH_MIN_CONTENT:
-        result = GetMinISize(aRenderingContext);
+        result = contentIgnored ? 0 : GetMinISize(aRenderingContext);
         NS_ASSERTION(result >= 0, "inline-size less than zero");
         if (MOZ_UNLIKELY(aFlags & ComputeSizeFlags::eIClampMarginBoxMinSize)) {
           auto available = aContainingBlockISize -
@@ -5703,8 +5777,8 @@ nsIFrame::ComputeISizeValue(nsRenderingContext* aRenderingContext,
         break;
       case NS_STYLE_WIDTH_FIT_CONTENT:
         {
-          nscoord pref = GetPrefISize(aRenderingContext),
-                   min = GetMinISize(aRenderingContext),
+          nscoord pref = contentIgnored ? 0 : GetPrefISize(aRenderingContext),
+                   min = contentIgnored ? 0 : GetMinISize(aRenderingContext),
                   fill = aContainingBlockISize -
                          (aBoxSizingToMarginEdge + aContentEdgeToBoxSizing);
           if (MOZ_UNLIKELY(aFlags & ComputeSizeFlags::eIClampMarginBoxMinSize)) {
@@ -5724,6 +5798,56 @@ nsIFrame::ComputeISizeValue(nsRenderingContext* aRenderingContext,
 }
 
 void
+nsIFrame::RestyleIfContainer()
+{
+  if (!mStyleContext || !StyleDisplay()->IsContainerForSizeQueries()) {
+    return;
+  }
+  nsPresContext* pc = PresContext();
+  if (!pc || !pc->RestyleManager()) {
+    return;
+  }
+  // Container conditions are resolved at selector-matching time, which runs
+  // before reflow, so a fresh load always measures 0x0 (or no frame at all).
+  // The result has to be recomputed once the size is real and on every later
+  // change, otherwise the first pass is frozen in place.
+  nsSize size = GetContentRectRelativeToSelf().Size();
+  nsSize* last = static_cast<nsSize*>(GetProperty(ContainerSizeProperty()));
+  if (last && last->width == size.width && last->height == size.height) {
+    return;
+  }
+  if (last) {
+    *last = size;
+  } else {
+    SetProperty(ContainerSizeProperty(), new nsSize(size));
+  }
+
+  // Restyle the elements that resolved against us, not the subtree.  The list
+  // is rebuilt by the restyle pass, not cleared here, so it is never empty
+  // between a post and the restyle it triggers.
+  auto* dependents = static_cast<ContainerQueryDependents*>(
+      GetProperty(ContainerQueryDependentsProperty()));
+  if (dependents && !dependents->mElements.IsEmpty()) {
+    for (const RefPtr<Element>& dependent : dependents->mElements) {
+      pc->RestyleManager()->PostRestyleEvent(dependent,
+                                             nsRestyleHint(eRestyle_Subtree),
+                                             nsChangeHint(0));
+    }
+  } else {
+    // Nothing recorded against us: a container that was just built or rebuilt,
+    // or one nothing has queried at this size.  The list is only an
+    // optimisation, so fall back to the subtree rather than drop the change.
+    nsIContent* content = GetContent();
+    if (content && content->IsElement()) {
+      pc->RestyleManager()->PostRestyleEvent(content->AsElement(),
+                                             nsRestyleHint(eRestyle_Subtree),
+                                             nsChangeHint(0));
+    }
+  }
+  pc->SetPendingContainerRestyle();
+}
+
+void
 nsFrame::DidReflow(nsPresContext*           aPresContext,
                    const ReflowInput*  aReflowInput,
                    nsDidReflowStatus         aStatus)
@@ -5736,6 +5860,12 @@ nsFrame::DidReflow(nsPresContext*           aPresContext,
   if (nsDidReflowStatus::FINISHED == aStatus) {
     mState &= ~(NS_FRAME_IN_REFLOW | NS_FRAME_FIRST_REFLOW | NS_FRAME_IS_DIRTY |
                 NS_FRAME_HAS_DIRTY_CHILDREN);
+    // Queries are evaluated during style resolution against the container's
+    // content rect, so a reflow that changes that rect leaves its descendants
+    // holding stale results.
+    if (!GetPrevInFlow()) {
+      RestyleIfContainer();
+    }
   }
 
   // Notify the percent bsize observer if there is a percent bsize.
@@ -5963,6 +6093,28 @@ nsIFrame::SetView(nsView* aView)
   }
 
   return NS_OK;
+}
+
+void
+nsIFrame::SetStyleContext(nsStyleContext* aContext)
+{ 
+  if (aContext != mStyleContext) {
+    nsStyleContext* oldStyleContext = mStyleContext;
+    mStyleContext = aContext;
+    aContext->AddRef();
+    aContext->SetContent(mContent);
+#ifdef DEBUG
+    aContext->FrameAddRef();
+#endif
+    DidSetStyleContext(oldStyleContext);
+#ifdef DEBUG
+    oldStyleContext->FrameRelease();
+#endif
+    if (oldStyleContext->GetContent() == mContent) {
+      oldStyleContext->SetContent(nullptr);
+    }
+    oldStyleContext->Release();
+  }
 }
 
 // Find the first geometric parent that has a view
@@ -8933,8 +9085,12 @@ nsIFrame::FinishAndStoreOverflow(nsOverflowAreas& aOverflowAreas,
     // The contents are actually clipped to the padding area.  Clipping is
     // per-axis (css-overflow-3 §3.1 keeps 'visible clip' as authored), so only
     // collapse the axis that clips; the other keeps contributing overflow.
-    const bool clipsX = disp->mOverflowX != NS_STYLE_OVERFLOW_VISIBLE;
-    const bool clipsY = disp->mOverflowY != NS_STYLE_OVERFLOW_VISIBLE;
+    // Paint containment clips both axes regardless of the used 'overflow'.
+    const bool containPaint = disp->IsContainPaintEffective();
+    const bool clipsX = containPaint ||
+                        disp->mOverflowX != NS_STYLE_OVERFLOW_VISIBLE;
+    const bool clipsY = containPaint ||
+                        disp->mOverflowY != NS_STYLE_OVERFLOW_VISIBLE;
     NS_FOR_FRAME_OVERFLOW_TYPES(otype) {
       nsRect& o = aOverflowAreas.Overflow(otype);
       if (clipsX) {

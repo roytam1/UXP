@@ -20,8 +20,6 @@ interface CSSRule {
   const unsigned short MEDIA_RULE = 4;
   const unsigned short FONT_FACE_RULE = 5;
   const unsigned short PAGE_RULE = 6;
-  // FIXME: We don't support MARGIN_RULE yet.
-  // XXXbz Should we expose the constant anyway?
   // const unsigned short MARGIN_RULE = 9;
   const unsigned short NAMESPACE_RULE = 10;
   readonly attribute unsigned short type;
@@ -49,4 +47,9 @@ partial interface CSSRule {
 // https://drafts.csswg.org/css-fonts-3/#om-fontfeaturevalues
 partial interface CSSRule {
   const unsigned short FONT_FEATURE_VALUES_RULE = 14;
+};
+
+// https://drafts.csswg.org/css-conditional-5/#csscontainerrule
+partial interface CSSRule {
+  const unsigned short CONTAINER_RULE = 19;
 };

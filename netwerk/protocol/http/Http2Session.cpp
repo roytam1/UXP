@@ -1066,8 +1066,6 @@ Http2Session::CleanupStream(Http2Stream *aStream, nsresult aResult,
     return;
   }
 
-  RefPtr<Http2Session> self(this);
-
   // don't reset a stream that has recevied a fin or rst
   if (!aStream->RecvdFin() && !aStream->RecvdReset() && aStream->StreamID() &&
       !(mInputFrameFinal && (aStream == mInputFrameDataStream))) { // !(recvdfin with mark pending)
@@ -2435,6 +2433,33 @@ Http2Session::ReadSegmentsAgain(nsAHttpSegmentReader *reader,
         "block-input=%d block-output=%d\n", this, stream, stream->StreamID(),
         stream->RequestBlockedOnRead(), stream->BlockedOnRwin()));
 
+  // Implement HTTP/2 multiplexing fairness: limit bytes per stream per turn
+  // to prevent one stream from monopolizing the connection. This ensures
+  // parallel downloads for cross-origin requests instead of sequential blocking.
+  // This is critical for fixing the sequential download issue with cross-origin
+  // HTTP/2 requests where one stream was blocking all others.
+  uint32_t originalCount = count;
+
+  // Check if we have multiple streams ready for writing
+  uint32_t totalReadyStreams = mReadyForWrite.GetSize() + 1; // +1 for current stream
+
+  // With multiple streams, use a fair share approach to ensure each stream
+  // gets an equal opportunity to send data. This prevents one stream from
+  // monopolizing the connection and blocking others.
+  if (totalReadyStreams > 1) {
+    // Distribute available bytes fairly among all active streams
+    // This ensures N streams can each send data in round-robin fashion
+    uint32_t fairShareBytes = count / totalReadyStreams;
+    // Ensure at least one frame size minimum per stream for efficiency
+    fairShareBytes = std::max(fairShareBytes, (uint32_t)4096);
+    count = std::min(count, fairShareBytes);
+
+    LOG3(("Http2Session %p multiplexing mode: %u streams active, "
+          "stream %p 0x%X limited to %u bytes/turn (from %u, fair share %u)",
+          this, totalReadyStreams, stream, stream->StreamID(), 
+          count, originalCount, fairShareBytes));
+  }
+
   rv = stream->ReadSegments(this, count, countRead);
 
   if (earlyDataUsed) {
@@ -2493,7 +2518,26 @@ Http2Session::ReadSegmentsAgain(nsAHttpSegmentReader *reader,
   if (*countRead > 0) {
     LOG3(("Http2Session::ReadSegments %p stream=%p countread=%d",
           this, stream, *countRead));
+
+    // Implement fair stream multiplexing: if there are other streams ready,
+    // push this stream to the back of the queue to allow other streams to
+    // be processed. This ensures cross-origin requests don't block each other
+    // and prevents sequential downloading behavior in HTTP/2.
+    // The queue size check ensures we interleave streams fairly.
     mReadyForWrite.Push(stream);
+
+    // If there are multiple streams, signal that we should process more
+    // streams in this session rather than giving all bandwidth to one stream.
+    // Set 'again = true' to keep the connection write loop active!
+    if (mReadyForWrite.GetSize() > 1) {
+      *again = true;
+      LOG3(("Http2Session::ReadSegments %p multiple streams ready (%d), "
+            "setting again=true for continuous multiplexing", this, mReadyForWrite.GetSize()));
+    } else {
+      LOG3(("Http2Session::ReadSegments %p multiple streams ready (%d), "
+            "enabling fair multiplexing", this, mReadyForWrite.GetSize()));
+    }
+
     SetWriteCallbacks();
     return rv;
   }
@@ -2508,7 +2552,17 @@ Http2Session::ReadSegmentsAgain(nsAHttpSegmentReader *reader,
         this, stream));
 
   // call readsegments again if there are other streams ready
-  // to go in this session
+  // to go in this session. This is essential for HTTP/2 multiplexing.
+  // Without setting 'again', the connection loop exits and doesn't
+  // process other waiting streams, causing interruptions and potentially
+  // squential behaviour.
+  if (GetWriteQueueSize() > 0) {
+    // More streams are ready - keep the write loop active
+    *again = true;
+    LOG3(("Http2Session %p setting again=true, %u streams still ready",
+          this, GetWriteQueueSize()));
+  }
+
   SetWriteCallbacks();
 
   return rv;
@@ -3187,11 +3241,23 @@ Http2Session::UpdateLocalSessionWindow(uint32_t bytes)
   LOG3(("Http2Session::UpdateLocalSessionWindow this=%p newbytes=%u "
         "localWindow=%lld\n", this, bytes, mLocalSessionWindow));
 
-  // Don't necessarily ack every data packet. Only do it
-  // after a significant amount of data.
-  if ((mLocalSessionWindow > (mInitialRwin - kMinimumToAck)) &&
-      (mLocalSessionWindow > kEmergencyWindowThreshold))
-    return;
+  // For HTTP/2 multiplexing with many concurrent streams, the initial
+  // session window (12MB by default) needs to be replenished aggressively.
+  // The old threshold (4MB + 256KB) was designed for sequential downloads
+  // and caused cross-origin multiplexed requests to block while waiting
+  // for window replenishment.
+  //
+  // With multiple concurrent streams, each stream consuming window bytes,
+  // we need to keep the window open to prevent server-side blocking.
+  // Replenish at 50% capacity to maintain continuous data flow and
+  // prevent the common "batched download" behavior where streams block
+  // together when window exhaustion occurs.
+
+  // Replenish if window has been consumed to 50% or less of initial window
+  // This keeps the server's send window fresh and prevents blocking
+  if (mLocalSessionWindow > (mInitialRwin / 2)) {
+    return;  // Still have plenty of window
+  }
 
   // Only send max  bits of window updates at a time.
   uint64_t toack64 = mInitialRwin - mLocalSessionWindow;

@@ -205,6 +205,7 @@ nsPresContext::nsPresContext(nsIDocument* aDocument, nsPresContextType aType)
     mViewportStyleScrollbar(NS_STYLE_OVERFLOW_AUTO, NS_STYLE_OVERFLOW_AUTO),
     mImageAnimationModePref(imgIContainer::kNormalAnimMode),
     mAllInvalidated(false),
+    mHasPendingContainerRestyle(false), mContainerQueryGeneration(0),
     mPaintFlashing(false), mPaintFlashingInitialized(false)
 {
   // NOTE! nsPresContext::operator new() zeroes out all members, so don't
@@ -1405,6 +1406,13 @@ GetPropagatedScrollStylesForViewport(nsPresContext* aPresContext,
     return docElement;
   }
 
+  // A containment box on the root element establishes an independent
+  // formatting context, so the body's overflow no longer reaches the
+  // viewport; the body keeps it and clips its own contents.
+  if (rootStyle->StyleDisplay()->EffectiveContainment()) {
+    return nullptr;
+  }
+
   // Don't look in the BODY for non-HTML documents or HTML documents
   // with non-HTML roots
   // XXX this should be earlier; we shouldn't even look at the document root
@@ -1428,6 +1436,12 @@ GetPropagatedScrollStylesForViewport(nsPresContext* aPresContext,
 
   RefPtr<nsStyleContext> bodyStyle;
   bodyStyle = styleSet->ResolveStyleFor(bodyElement->AsElement(), rootStyle);
+
+  // A body with containment keeps its own overflow; it does not propagate to
+  // the viewport, so the body itself stays a scroll container.
+  if (bodyStyle->StyleDisplay()->EffectiveContainment()) {
+    return nullptr;
+  }
 
   if (CheckOverflow(bodyStyle->StyleDisplay(), aStyles)) {
     // tell caller we stole the overflow style from the body element

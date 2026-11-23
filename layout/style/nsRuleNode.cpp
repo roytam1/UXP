@@ -61,6 +61,8 @@
 #include "nsDeviceContext.h"
 #include "nsQueryObject.h"
 #include "nsUnicodeProperties.h"
+#include "nsCSSRuleProcessor.h"
+#include "nsIFrame.h"
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 #include <malloc.h>
@@ -449,6 +451,56 @@ GetPixelLengthWithRounding(const nsCSSValue& aValue,
     float(double(aValue.GetFloatValue()) * scaleFactor), aRounding);
 }
 
+// The small viewport, which is what the spec substitutes for a container that
+// doesn't exist. Not widened for root scrollbars, unlike the viewport units.
+static nsSize
+CalcContainerUnitsScale(nsPresContext* aPresContext)
+{
+  // Take the same cache dependency the viewport units do, so a viewport change
+  // throws away style data.
+  aPresContext->SetUsesViewportUnits(true);
+  return aPresContext->GetVisibleArea().Size();
+}
+
+// Reference length, in app units, for one container unit axis: the nearest
+// ancestor container that can answer for that axis, or the small viewport if
+// there is none.
+static nscoord
+ContainerAxisReference(nsCSSUnit aUnit, bool aBlockAxis, bool aVertical,
+                       nsStyleContext* aStyleContext,
+                       nsPresContext* aPresContext)
+{
+  ContainerUnitsScale container;
+  if (aStyleContext &&
+      FindQueryContainerForStyleContext(aStyleContext, aBlockAxis,
+                                        aStyleContext->PresContext(),
+                                        container)) {
+    // aBlockAxis picked which containers could answer; aUnit picks which
+    // extent of the one found to measure. They are different questions for
+    // cqw/cqh, which are physical, so the eligibility axis must not be reused
+    // to choose the extent.
+    float extent;
+    switch (aUnit) {
+      case eCSSUnit_CQW:
+        extent = container.mWidth;
+        break;
+      case eCSSUnit_CQH:
+        extent = container.mHeight;
+        break;
+      case eCSSUnit_CQI:
+        extent = container.mVertical ? container.mHeight : container.mWidth;
+        break;
+      default: // CQB
+        extent = container.mVertical ? container.mWidth : container.mHeight;
+        break;
+    }
+    return nsPresContext::CSSPixelsToAppUnits(extent);
+  }
+
+  nsSize scale(CalcContainerUnitsScale(aPresContext));
+  return aBlockAxis == aVertical ? scale.width : scale.height;
+}
+
 static inline nscoord ScaleViewportCoordTrunc(const nsCSSValue& aValue,
                                               nscoord aViewportSize)
 {
@@ -658,7 +710,61 @@ static nscoord CalcLengthWith(const nsCSSValue& aValue,
       nscoord viewportWidth = CalcViewportUnitsScale(aPresContext).width;
       return ScaleViewportCoordTrunc(aValue, viewportWidth);
     }
-    // While we could deal with 'rem' units correctly by simply not
+    // Container units. Resolve against the nearest ancestor query container
+    // that can answer for the axis, and against the small viewport otherwise,
+    // which is what the spec substitutes for a container that isn't there.
+    case eCSSUnit_CQW:
+    case eCSSUnit_CQH:
+    case eCSSUnit_CQMin:
+    case eCSSUnit_CQMax:
+    case eCSSUnit_CQI:
+    case eCSSUnit_CQB: {
+      // Assume non-vertical writing mode if the style context is unavailable.
+      bool vertical = false;
+      if (aStyleContext) {
+        WritingMode wm(aStyleContext);
+        vertical = wm.IsVertical();
+        aConditions.SetWritingModeDependency(wm.GetBits());
+      }
+
+      const nsCSSUnit unit = aValue.GetUnit();
+
+      nscoord reference;
+      switch (unit) {
+        case eCSSUnit_CQW:
+        case eCSSUnit_CQH:
+          // width is the block axis in a vertical writing mode.
+          reference = ContainerAxisReference(unit,
+                                             (unit == eCSSUnit_CQW) == vertical,
+                                             vertical, aStyleContext,
+                                             aPresContext);
+          break;
+        case eCSSUnit_CQI:
+          reference = ContainerAxisReference(eCSSUnit_CQI, false, vertical,
+                                             aStyleContext, aPresContext);
+          break;
+        case eCSSUnit_CQB:
+          reference = ContainerAxisReference(eCSSUnit_CQB, true, vertical,
+                                             aStyleContext, aPresContext);
+          break;
+        default: {
+          // CQMin and CQMax are defined in terms of CQI and CQB, and the two
+          // axes can belong to different containers, so each has to be looked
+          // up on its own before they are combined.
+          const nscoord inlineReference =
+            ContainerAxisReference(eCSSUnit_CQI, false, vertical, aStyleContext,
+                                   aPresContext);
+          const nscoord blockReference =
+            ContainerAxisReference(eCSSUnit_CQB, true, vertical, aStyleContext,
+                                   aPresContext);
+          reference = unit == eCSSUnit_CQMin
+                        ? std::min(inlineReference, blockReference)
+                        : std::max(inlineReference, blockReference);
+          break;
+        }
+      }
+      return ScaleViewportCoordTrunc(aValue, reference);
+    }    // While we could deal with 'rem' units correctly by simply not
     // caching any data that uses them in the rule tree, it's valuable
     // to store them in the rule tree (for faster dynamic changes of
     // other things).  And since the font size of the root element
@@ -1132,6 +1238,12 @@ static bool SetCoord(const nsCSSValue& aValue, nsStyleCoord& aCoord,
             aValue.IsLengthUnit()) ||
            (((aMask & SETCOORD_CALC_LENGTH_ONLY) != 0) &&
             aValue.IsCalcUnit())) {
+    // A container unit resolves against the element's ancestor chain, which the
+    // rule tree has no key for, so the struct cannot be cached.
+    if (aValue.GetUnit() >= eCSSUnit_CQW &&
+        aValue.GetUnit() <= eCSSUnit_CQMax) {
+      aConditions.SetUncacheable();
+    }
     nscoord len = CalcLength(aValue, aStyleContext, aPresContext,
                              aConditions);
     if ((aMask & SETCOORD_CALC_CLAMP_NONNEGATIVE) && len < 0) {
@@ -6893,6 +7005,62 @@ nsRuleNode::ComputeDisplayData(void* aStartStruct,
            NS_STYLE_CONTAIN_NONE, Unused,
            NS_STYLE_CONTAIN_NONE, Unused, Unused);
 
+  // 'strict' is a value, not a bit, and nothing expands it for us: without
+  // this the effective-containment helpers below see only NS_STYLE_CONTAIN_STRICT
+  // and contain: strict applies no containment at all.
+  if (display->mContain & NS_STYLE_CONTAIN_STRICT) {
+    display->mContain |= NS_STYLE_CONTAIN_ALL_BITS;
+  }
+
+  // container-type: normal, enum, inherit, initial
+  SetValue(*aRuleData->ValueForContainerType(), display->mContainerType,
+           conditions,
+           SETVAL_ENUMERATED | SETVAL_UNSET_INITIAL,
+           parentDisplay->mContainerType,
+           NS_STYLE_CONTAINER_TYPE_NORMAL);
+
+  // -webkit-line-clamp: none, integer, inherit, initial
+  {
+    const nsCSSValue* lineClamp = aRuleData->ValueForWebkitLineClamp();
+    if (lineClamp->GetUnit() == eCSSUnit_Inherit ||
+        lineClamp->GetUnit() == eCSSUnit_Unset) {
+      display->mLineClamp = parentDisplay->mLineClamp;
+    } else if (lineClamp->GetUnit() == eCSSUnit_None ||
+               lineClamp->GetUnit() == eCSSUnit_Initial) {
+      display->mLineClamp = 0;
+    } else if (lineClamp->GetUnit() == eCSSUnit_Integer) {
+      int32_t n = lineClamp->GetIntValue();
+      display->mLineClamp = n > 0 ? uint32_t(n) : 0;
+    }
+  }
+
+  // container-name: none, ident list, inherit, initial
+  const nsCSSValue* containerNameValue = aRuleData->ValueForContainerName();
+  switch (containerNameValue->GetUnit()) {
+    case eCSSUnit_Null:
+      break;
+    case eCSSUnit_None:
+    case eCSSUnit_Initial:
+    case eCSSUnit_Unset:
+    case eCSSUnit_Revert:
+      display->mContainerNames.Clear();
+      break;
+    case eCSSUnit_Inherit:
+      display->mContainerNames = parentDisplay->mContainerNames;
+      conditions.SetUncacheable();
+      break;
+    default:
+      MOZ_ASSERT(containerNameValue->GetUnit() == eCSSUnit_List ||
+                 containerNameValue->GetUnit() == eCSSUnit_ListDep,
+                 "unexpected container-name unit");
+      display->mContainerNames.Clear();
+      for (const nsCSSValueList* item = containerNameValue->GetListValue();
+           item; item = item->mNext) {
+        item->mValue.GetStringValue(*display->mContainerNames.AppendElement());
+      }
+      break;
+  }
+
   // scroll-behavior: enum, inherit, initial
   SetValue(*aRuleData->ValueForScrollBehavior(), display->mScrollBehavior,
            conditions,
@@ -7226,21 +7394,6 @@ nsRuleNode::ComputeDisplayData(void* aStartStruct,
     }
   }
 
-  // When 'contain: paint', update overflow from 'visible' to 'clip'.
-  if (display->IsContainPaint()) {
-    // XXX This actually sets overflow-[x|y] to clip.
-    if (display->mOverflowX == NS_STYLE_OVERFLOW_VISIBLE) {
-      // This uncacheability (and the one below) could be fixed by adding
-      // mOriginalOverflowX and mOriginalOverflowY fields, if necessary.
-      display->mOverflowX = NS_STYLE_OVERFLOW_CLIP;
-      conditions.SetUncacheable();
-    }
-    if (display->mOverflowY == NS_STYLE_OVERFLOW_VISIBLE) {
-      display->mOverflowY = NS_STYLE_OVERFLOW_CLIP;
-      conditions.SetUncacheable();
-    }
-  }
-
   SetValue(*aRuleData->ValueForOverflowClipBox(), display->mOverflowClipBox,
            conditions,
            SETVAL_ENUMERATED | SETVAL_UNSET_INITIAL,
@@ -7326,19 +7479,6 @@ nsRuleNode::ComputeDisplayData(void* aStartStruct,
       // it directly, and any use of it as aStartStruct (e.g. if a
       // more specific rule sets "float: none") will use
       // mOriginalDisplay, which we have carefully not changed.
-    }
-
-    if (display->IsContainPaint()) {
-      // An element with contain:paint or contain:layout needs to "be a
-      // formatting context". For the purposes of the "display" property, that
-      // just means we need to promote "display:inline" to "inline-block".
-      // XXX We may also need to promote ruby display vals; see bug 1179349.
-
-      // It's okay to cache this change in the rule tree for the same
-      // reasons as floats in the previous condition.
-      if (display->mDisplay == StyleDisplay::Inline) {
-        display->mDisplay = StyleDisplay::InlineBlock;
-      }
     }
   }
 
@@ -9611,6 +9751,16 @@ nsRuleNode::ComputePositionData(void* aStartStruct,
            SETCOORD_LPOEH | SETCOORD_INITIAL_NONE | SETCOORD_STORE_CALC |
              SETCOORD_UNSET_INITIAL,
            aContext, mPresContext, conditions);
+
+  // Belt and braces for the unit funnel above: if the flag is being dropped
+  // somewhere between here and COMPUTE_END_RESET, this guarantees the struct
+  // stays out of the rule tree.
+  if ((width->IsLengthUnit() && width->GetUnit() >= eCSSUnit_CQW &&
+       width->GetUnit() <= eCSSUnit_CQMax) ||
+      (height->IsLengthUnit() && height->GetUnit() >= eCSSUnit_CQW &&
+       height->GetUnit() <= eCSSUnit_CQMax)) {
+    conditions.SetUncacheable();
+  }
 
   // aspect-ratio: auto || <ratio>
   const nsCSSValue* aspectRatio = aRuleData->ValueForAspectRatio();

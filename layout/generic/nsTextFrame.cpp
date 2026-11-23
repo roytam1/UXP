@@ -178,6 +178,24 @@ NS_DECLARE_FRAME_PROPERTY_RELEASABLE(UninflatedTextRunProperty, gfxTextRun)
 
 NS_DECLARE_FRAME_PROPERTY_SMALL_VALUE(FontSizeInflationProperty, float)
 
+NS_DECLARE_FRAME_PROPERTY_SMALL_VALUE(LineClampEllipsisProperty, bool)
+
+void
+nsTextFrame::SetLineClampEllipsis(bool aValue)
+{
+  if (aValue) {
+    SetProperty(LineClampEllipsisProperty(), true);
+  } else {
+    DeleteProperty(LineClampEllipsisProperty());
+  }
+}
+
+bool
+nsTextFrame::HasLineClampEllipsis() const
+{
+  return GetProperty(LineClampEllipsisProperty());
+}
+
 /**
  * A glyph observer for the change of a font glyph in a text run.
  *
@@ -1989,6 +2007,26 @@ GetHyphenTextRun(const gfxTextRun* aTextRun, DrawTarget* aDrawTarget,
 
   return aTextRun->GetFontGroup()->
     MakeHyphenTextRun(dt, aTextRun->GetAppUnitsPerDevUnit());
+}
+
+static already_AddRefed<gfxTextRun>
+GetEllipsisTextRun(const gfxTextRun* aTextRun, DrawTarget* aDrawTarget,
+                   nsTextFrame* aTextFrame)
+{
+  RefPtr<DrawTarget> dt = aDrawTarget;
+  if (!dt) {
+    dt = CreateReferenceDrawTarget(aTextFrame);
+    if (!dt) {
+      return nullptr;
+    }
+  }
+
+  static const char16_t kEllipsis = 0x2026;
+  uint32_t flags = aTextRun->IsVertical() ?
+    gfxTextRunFactory::TEXT_ORIENT_VERTICAL_UPRIGHT : 0;
+  return aTextRun->GetFontGroup()->
+    MakeTextRun<char16_t>(&kEllipsis, 1, dt,
+                          aTextRun->GetAppUnitsPerDevUnit(), flags, nullptr);
 }
 
 static nsTextFrameUtils::CompressionMode
@@ -6079,6 +6117,26 @@ AddHyphenToMetrics(nsTextFrame* aTextFrame, const gfxTextRun* aBaseTextRun,
   aMetrics->CombineWith(hyphenMetrics, aBaseTextRun->IsRightToLeft());
 }
 
+static void
+AddEllipsisToMetrics(nsTextFrame* aTextFrame, const gfxTextRun* aBaseTextRun,
+                     gfxTextRun::Metrics* aMetrics,
+                     gfxFont::BoundingBoxType aBoundingBoxType,
+                     DrawTarget* aDrawTarget)
+{
+  RefPtr<gfxTextRun> ellipsisTextRun =
+    GetEllipsisTextRun(aBaseTextRun, aDrawTarget, aTextFrame);
+  if (!ellipsisTextRun) {
+    return;
+  }
+
+  gfxTextRun::Metrics ellipsisMetrics =
+    ellipsisTextRun->MeasureText(aBoundingBoxType, aDrawTarget);
+  if (aTextFrame->GetWritingMode().IsLineInverted()) {
+    ellipsisMetrics.mBoundingBox.y = -ellipsisMetrics.mBoundingBox.YMost();
+  }
+  aMetrics->CombineWith(ellipsisMetrics, aBaseTextRun->IsRightToLeft());
+}
+
 void
 nsTextFrame::PaintOneShadow(const PaintShadowParams& aParams,
                             nsCSSShadowItem* aShadowDetails,
@@ -6948,6 +7006,25 @@ nsTextFrame::DrawTextRun(Range aRange, const gfxPoint& aTextBaselinePt,
       ::DrawTextRun(hyphenTextRun.get(),
                     gfxPoint(hyphenBaselineX, aTextBaselinePt.y),
                     Range(hyphenTextRun.get()), params);
+    }
+  }
+  if (HasLineClampEllipsis()) {
+    // As with the soft hyphen, use a reference context: ctx may be transformed.
+    RefPtr<gfxTextRun> ellipsisTextRun =
+      GetEllipsisTextRun(mTextRun, nullptr, this);
+    if (ellipsisTextRun) {
+      // Mirrors the hyphen positioning: place it past the last glyph, and back
+      // it up by its own advance in RTL.
+      gfxFloat ellipsisBaselineX = aTextBaselinePt.x +
+        mTextRun->GetDirection() * (*aParams.advanceWidth) -
+        (mTextRun->IsRightToLeft() ? ellipsisTextRun->GetAdvanceWidth() : 0);
+      DrawTextRunParams params = aParams;
+      params.provider = nullptr;
+      params.advanceWidth = nullptr;
+      params.drawSoftHyphen = false;
+      ::DrawTextRun(ellipsisTextRun.get(),
+                    gfxPoint(ellipsisBaselineX, aTextBaselinePt.y),
+                    Range(ellipsisTextRun.get()), params);
     }
   }
 }
@@ -8602,7 +8679,7 @@ nsRect
 nsTextFrame::ComputeTightBounds(DrawTarget* aDrawTarget) const
 {
   if (StyleContext()->HasTextDecorationLines() ||
-      (GetStateBits() & TEXT_HYPHEN_BREAK)) {
+      (GetStateBits() & TEXT_HYPHEN_BREAK) || HasLineClampEllipsis()) {
     // This is conservative, but OK.
     return GetVisualOverflowRect();
   }
@@ -9203,6 +9280,16 @@ nsTextFrame::ReflowText(nsLineLayout& aLineLayout, nscoord aAvailableWidth,
     // text into ~1em width, so there is no limited on the avail width.
     availWidth = std::numeric_limits<gfxFloat>::infinity();
   }
+  if (HasLineClampEllipsis()) {
+    // Reserve room for the ellipsis we will paint after the last glyph, so the
+    // break point accounts for it. The average character width of the first
+    // valid font stands in for the ellipsis advance and costs no text run.
+    gfxFloat ellipsisWidth =
+      NS_round(GetFirstFontMetrics(provider.GetFontGroup(),
+                                   mTextRun->IsVertical()).zeroOrAveCharWidth *
+               mTextRun->GetAppUnitsPerDevUnit());
+    availWidth = std::max<gfxFloat>(0.0, availWidth - ellipsisWidth);
+  }
   bool canTrimTrailingWhitespace = !textStyle->WhiteSpaceIsSignificant() ||
                                    (GetStateBits() & TEXT_IS_IN_TOKEN_MATHML);
   bool isBreakSpaces = textStyle->mWhiteSpace == NS_STYLE_WHITESPACE_BREAK_SPACES;
@@ -9281,6 +9368,10 @@ nsTextFrame::ReflowText(nsLineLayout& aLineLayout, nscoord aAvailableWidth,
     AddHyphenToMetrics(this, mTextRun, &textMetrics, boundingBoxType,
                        aDrawTarget);
     AddStateBits(TEXT_HYPHEN_BREAK | TEXT_HAS_NONCOLLAPSED_CHARACTERS);
+  }
+  if (HasLineClampEllipsis()) {
+    AddEllipsisToMetrics(this, mTextRun, &textMetrics, boundingBoxType,
+                         aDrawTarget);
   }
   if (textMetrics.mBoundingBox.IsEmpty()) {
     AddStateBits(TEXT_NO_RENDERED_GLYPHS);
@@ -9634,6 +9725,10 @@ nsTextFrame::RecomputeOverflow(nsIFrame* aBlockFrame)
                           &provider);
   if (GetWritingMode().IsLineInverted()) {
     textMetrics.mBoundingBox.y = -textMetrics.mBoundingBox.YMost();
+  }
+  if (HasLineClampEllipsis()) {
+    AddEllipsisToMetrics(this, mTextRun, &textMetrics,
+                         gfxFont::LOOSE_INK_EXTENTS, nullptr);
   }
   nsRect boundingBox = RoundOut(textMetrics.mBoundingBox);
   boundingBox += nsPoint(0, mAscent);

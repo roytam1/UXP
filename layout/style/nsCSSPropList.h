@@ -1665,6 +1665,34 @@ CSS_PROP_DISPLAY(
     VARIANT_HK | VARIANT_NONE,
     kContainKTable,
     CSS_PROP_NO_OFFSET,
+    eStyleAnimType_None)
+CSS_PROP_SHORTHAND(
+    container,
+    container,
+    Container,
+    CSS_PROPERTY_PARSE_FUNCTION,
+    "layout.css.container-queries.enabled")
+CSS_PROP_DISPLAY(
+    container-type,
+    container_type,
+    ContainerType,
+    CSS_PROPERTY_PARSE_VALUE |
+        CSS_PROPERTY_VALUE_PARSER_FUNCTION,
+    "layout.css.container-queries.enabled",
+    VARIANT_HK | VARIANT_INHERIT,
+    kContainerTypeKTable,
+    CSS_PROP_NO_OFFSET,
+    eStyleAnimType_Discrete)
+CSS_PROP_DISPLAY(
+    container-name,
+    container_name,
+    ContainerName,
+    CSS_PROPERTY_PARSE_VALUE |
+        CSS_PROPERTY_VALUE_PARSER_FUNCTION,
+    "layout.css.container-queries.enabled",
+    VARIANT_INHERIT | VARIANT_IDENTIFIER,
+    0,
+    CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
 CSS_PROP_CONTENT(
     content,
@@ -2505,6 +2533,17 @@ CSS_PROP_SVGRESET(
     nullptr,
     offsetof(nsStyleSVGReset, mLightingColor),
     eStyleAnimType_Color)
+CSS_PROP_DISPLAY(
+    -webkit-line-clamp,
+    _webkit_line_clamp,
+    WebkitLineClamp,
+    CSS_PROPERTY_PARSE_VALUE |
+        CSS_PROPERTY_VALUE_NONNEGATIVE,
+    "layout.css.prefixes.webkit",
+    VARIANT_HI | VARIANT_NONE,
+    nullptr,
+    offsetof(nsStyleDisplay, mLineClamp),
+    eStyleAnimType_Discrete)
 CSS_PROP_TEXT(
     line-height,
     line_height,

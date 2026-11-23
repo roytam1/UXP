@@ -1296,6 +1296,20 @@ Declaration::GetPropertyValueInternal(
       AppendValueToString(subprops[1], aValue, aSerialization);
       break;
     }
+    case eCSSProperty_container: {
+      const nsCSSPropertyID* subprops =
+        nsCSSProps::SubpropertyEntryFor(aProperty);
+      MOZ_ASSERT(subprops[2] == eCSSProperty_UNKNOWN,
+                 "must have exactly two subproperties");
+      AppendValueToString(subprops[0], aValue, aSerialization);
+      const nsCSSValue* type = data->ValueFor(subprops[1]);
+      if (!type || type->GetUnit() != eCSSUnit_Enumerated ||
+          type->GetIntValue() != NS_STYLE_CONTAINER_TYPE_NORMAL) {
+        aValue.AppendLiteral(" / ");
+        AppendValueToString(subprops[1], aValue, aSerialization);
+      }
+      break;
+    }
     case eCSSProperty_flex: {
       // flex-grow, flex-shrink, flex-basis, separated by single space
       const nsCSSPropertyID* subprops =

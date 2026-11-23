@@ -1870,15 +1870,22 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     case eCSSProperty_contain:
       if (intValue & NS_STYLE_CONTAIN_STRICT) {
         NS_ASSERTION(intValue == (NS_STYLE_CONTAIN_STRICT | NS_STYLE_CONTAIN_ALL_BITS),
-                     "contain: strict should imply contain: layout style paint");
+                     "contain: strict should imply all containment bits");
         // Only output strict.
         intValue = NS_STYLE_CONTAIN_STRICT;
+        nsStyleUtil::AppendBitmaskCSSValue(aProperty, intValue,
+                                           NS_STYLE_CONTAIN_STRICT,
+                                           NS_STYLE_CONTAIN_INLINE_SIZE,
+                                           aResult);
+      } else if (intValue == NS_STYLE_CONTAIN_CONTENT) {
+        // Keep the keyword instead of spelling out layout style paint.
+        aResult.AppendLiteral("content");
+      } else {
+        nsStyleUtil::AppendBitmaskCSSValue(aProperty, intValue,
+                                           NS_STYLE_CONTAIN_STRICT,
+                                           NS_STYLE_CONTAIN_INLINE_SIZE,
+                                           aResult);
       }
-      nsStyleUtil::AppendBitmaskCSSValue(aProperty,
-                                         intValue,
-                                         NS_STYLE_CONTAIN_STRICT,
-                                         NS_STYLE_CONTAIN_PAINT,
-                                         aResult);
       break;
 
     case eCSSProperty_align_content:
@@ -2373,6 +2380,13 @@ nsCSSValue::AppendToString(nsCSSPropertyID aProperty, nsAString& aResult,
     case eCSSUnit_ViewportHeight: aResult.AppendLiteral("vh");   break;
     case eCSSUnit_ViewportMin:    aResult.AppendLiteral("vmin"); break;
     case eCSSUnit_ViewportMax:    aResult.AppendLiteral("vmax"); break;
+
+    case eCSSUnit_CQW:    aResult.AppendLiteral("cqw");   break;
+    case eCSSUnit_CQH:    aResult.AppendLiteral("cqh");   break;
+    case eCSSUnit_CQI:    aResult.AppendLiteral("cqi");   break;
+    case eCSSUnit_CQB:    aResult.AppendLiteral("cqb");   break;
+    case eCSSUnit_CQMin:  aResult.AppendLiteral("cqmin"); break;
+    case eCSSUnit_CQMax:  aResult.AppendLiteral("cqmax"); break;
 
     case eCSSUnit_SmallViewportWidth:    aResult.AppendLiteral("svw");   break;
     case eCSSUnit_SmallViewportHeight:   aResult.AppendLiteral("svh");   break;

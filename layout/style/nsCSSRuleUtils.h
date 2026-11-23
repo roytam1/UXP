@@ -32,6 +32,7 @@ struct nsCSSHasSelectorData : public mozilla::RefCounted<nsCSSHasSelectorData> {
     nsTArray<nsCOMPtr<nsIAtom>> mClasses;
     bool mAllAttributes = false;
     bool mIsLocal = false;
+    bool mCanFilterContent = false;
     char16_t mCombinator = ' ';
 
     void AddSelector(nsCSSSelector* aSelector);
@@ -40,6 +41,8 @@ struct nsCSSHasSelectorData : public mozilla::RefCounted<nsCSSHasSelectorData> {
                                 nsIAtom* aAttribute,
                                 const nsAttrValue* aNewClasses,
                                 bool aCompareClasses) const;
+    bool MightDependOnContent(nsIContent* aChangedContent,
+                              bool aFollowingSiblings) const;
     bool IsSibling() const {
       return mCombinator == '+' || mCombinator == '~';
     }
@@ -72,7 +75,9 @@ struct nsCSSRuleUtils
                              bool aCompareClasses,
                              bool aSibling,
                              bool aNodeIsFollowingSibling = false,
-                             bool aIsTextChange = false) const;
+                             bool aIsTextChange = false,
+                             nsIContent* aChangedContent = nullptr,
+                             bool aFollowingSiblings = false) const;
     bool MightAffectSiblingAnchor(nsINode* aParent, nsINode* aNode,
                                   mozilla::EventStates aStateMask,
                                   nsIAtom* aAttribute,

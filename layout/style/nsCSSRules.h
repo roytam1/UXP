@@ -18,6 +18,7 @@
 #include "mozilla/css/GroupRule.h"
 #include "mozilla/dom/FontFace.h"
 #include "nsAutoPtr.h"
+#include "nsContainerCondition.h"
 #include "nsCSSPropertyID.h"
 #include "nsCSSValue.h"
 #include "nsDOMCSSDeclaration.h"
@@ -42,6 +43,7 @@ namespace mozilla {
 
 namespace dom {
 class DocGroup;
+struct CSSContainerCondition;
 } // namespace dom
 
 class ErrorResult;
@@ -89,10 +91,24 @@ public:
   // WebIDL interface
   uint16_t Type() const override;
   void GetCssTextImpl(nsAString& aCssText) const override;
+  void GetContainerName(nsString& aResult) const;
+  void GetContainerQuery(nsString& aResult) const;
+  const nsTArray<nsContainerConditionPair>& GetContainerConditions() const
+  {
+    return mConditions;
+  }
+  // WebIDL: the conditions as dictionary values.
+  void GetConditions(nsTArray<dom::CSSContainerCondition>& aConditions) const;
   // Our XPCOM GetConditionText is OK
   virtual void SetConditionText(const nsAString& aConditionText,
                                 ErrorResult& aRv) override;
   nsMediaList* Media() const;
+
+  void SetContainerQueries(const nsTArray<nsContainerConditionPair>& aConditions) {
+    mIsContainerQuery = true;
+    mConditions = aConditions;
+  }
+  bool IsContainerQuery() const { return mIsContainerQuery; }
 
   virtual size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf)
     const override MOZ_MUST_OVERRIDE;
@@ -104,7 +120,22 @@ protected:
   void AppendConditionText(nsAString& aOutput) const;
 
   RefPtr<nsMediaList> mMedia;
+  // Container rules keep their condition as a tree; mMedia stays null for
+  // them, since a flat media list cannot express a negated operand.
+  nsTArray<nsContainerConditionPair> mConditions;
+  bool mIsContainerQuery;
 };
+
+// Stamps aCondition onto every style rule in aRule's subtree, so that match
+// time reaches it without walking the group hierarchy.  Run after parsing, and
+// again whenever conditionText is replaced.
+struct ContainerStampData {
+  explicit ContainerStampData(const nsTArray<nsContainerConditionPair>& aConditions)
+    : mConditions(aConditions) {}
+  const nsTArray<nsContainerConditionPair>& mConditions;
+};
+
+bool StampContainerCondition(Rule* aRule, void* aData);
 
 class DocumentRule final : public ConditionRule,
                            public nsIDOMCSSMozDocumentRule

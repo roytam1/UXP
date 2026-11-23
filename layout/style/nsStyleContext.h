@@ -16,6 +16,7 @@
 #include "nsRuleNode.h"
 
 class nsIAtom;
+class nsIContent;
 class nsPresContext;
 
 /**
@@ -133,6 +134,9 @@ public:
   }
 
   nsPresContext* PresContext() const { return mRuleNode->PresContext(); }
+
+  nsIContent* GetContent() const { return mContent; }
+  void SetContent(nsIContent* aContent) { mContent = aContent; }
 
   nsStyleContext* GetParent() const { return mParent; }
 
@@ -603,6 +607,8 @@ private:
   // root of the rule tree, and the most specific rule matched is the
   // |mRule| member of |mRuleNode|.
   const RefPtr<nsRuleNode> mRuleNode;
+
+  nsIContent* mContent;
 
   // mCachedInheritedData and mCachedResetData point to both structs that
   // are owned by this style context and structs that are owned by one of

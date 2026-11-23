@@ -288,17 +288,25 @@ nsImageFrame::Init(nsIContent*       aContent,
 }
 
 static IntrinsicSize
-ComputeIntrinsicSize(imgIContainer* aImage,
-                     bool aUseMappedRatio,
-                     const nsImageFrame& aFrame)
+ComputeIntrinsicSize(imgIContainer* aImage, bool aUseMappedRatio,
+                     const nsImageFrame& aFrame, 
+                     bool aIgnoreContainment = false)
 {
- // When 'contain: size' is implemented, make sure to check for it.
-/*
-  const ComputedStyle& style = *aFrame.Style();
-  if (style.StyleDisplay()->IsContainSize()) {
-    return AspectRatio();
+  // Size containment: the image contributes nothing in the contained axes, so
+  // the intrinsic size is zero there regardless of what the image thinks.
+  const nsStyleDisplay* disp = aFrame.StyleDisplay();
+  const bool containSize =
+      !aIgnoreContainment && disp->IsContainSizeEffective();
+  const bool containInlineSize =
+      !aIgnoreContainment && disp->IsContainInlineSizeEffective();
+
+  if (containSize) {
+    IntrinsicSize zero;
+    zero.width.SetCoordValue(0);
+    zero.height.SetCoordValue(0);
+    return zero;
   }
- */
+
   nsSize size;
   IntrinsicSize intrinsicSize;
   if (aImage && NS_SUCCEEDED(aImage->GetIntrinsicSize(&size))) {
@@ -306,19 +314,11 @@ ComputeIntrinsicSize(imgIContainer* aImage,
       intrinsicSize.width.SetCoordValue(size.width);
     if (size.height != -1)
       intrinsicSize.height.SetCoordValue(size.height);
+    if (containInlineSize) {
+      intrinsicSize.width.SetCoordValue(0);
+    }
     return intrinsicSize;
   }
-
-  // If broken images should ever lose their size
-  /*
-  if (aFrame.ShouldShowBrokenImageIcon()) {
-    nscoord edgeLengthToUse = nsPresContext::CSSPixelsToAppUnits(
-        ICON_SIZE + (2 * (ICON_PADDING + ALT_BORDER_WIDTH)));
-    intrinsicSize.width.SetCoordValue(edgeLengthToUse);
-    intrinsicSize.height.SetCoordValue(edgeLengthToUse);
-    return intrinsicSize;
-  }
-  */
 
   if (aUseMappedRatio && aFrame.StylePosition()->mAspectRatio.HasRatio()) {
     return IntrinsicSize();
@@ -326,6 +326,9 @@ ComputeIntrinsicSize(imgIContainer* aImage,
 
   intrinsicSize.width.SetCoordValue(0);
   intrinsicSize.height.SetCoordValue(0);
+  if (containInlineSize) {
+    intrinsicSize.width.SetCoordValue(0);
+  }
   return intrinsicSize;
 }
 
@@ -360,15 +363,17 @@ nsImageFrame::UpdateIntrinsicSize()
 static AspectRatio
 ComputeAspectRatio(imgIContainer* aImage,
                    bool aUseMappedRatio,
-                   const nsImageFrame& aFrame)
+                   const nsImageFrame& aFrame,
+                   bool aIgnoreContainment = false)
 {
- // When 'contain: size' is implemented, make sure to check for it.
-/*
-  const ComputedStyle& style = *aFrame.Style();
-  if (style.StyleDisplay()->IsContainSize()) {
+  // Containment on either axis drops the intrinsic ratio: the contained axis
+  // must not be derived from the other one.
+  const nsStyleDisplay* disp = aFrame.StyleDisplay();
+  if (!aIgnoreContainment &&
+      (disp->IsContainSizeEffective() || disp->IsContainInlineSizeEffective())) {
     return AspectRatio();
   }
- */
+
   if (aImage) {
     AspectRatio fromImage;
     if (NS_SUCCEEDED(aImage->GetIntrinsicRatio(&fromImage))) {
@@ -396,6 +401,20 @@ nsImageFrame::UpdateIntrinsicRatio()
   return mIntrinsicRatio != oldIntrinsicRatio;
 }
 
+// object-fit and object-position have to see the real image data: with the
+// contained axes zeroed, object-fit: contain would compute an empty dest rect.
+static void
+ObjectFitIntrinsics(const nsImageFrame& aFrame, imgIContainer* aImage,
+                    IntrinsicSize& aSize, AspectRatio& aRatio)
+{
+  const nsStyleDisplay* disp = aFrame.StyleDisplay();
+  if (!disp->IsContainSizeEffective() && !disp->IsContainInlineSizeEffective()) {
+    return;
+  }
+  aSize = ComputeIntrinsicSize(aImage, true, aFrame, /* aIgnoreContainment */ true);
+  aRatio = ComputeAspectRatio(aImage, true, aFrame, /* aIgnoreContainment */ true);
+}
+
 bool
 nsImageFrame::GetSourceToDestTransform(nsTransform2D& aTransform)
 {
@@ -407,10 +426,15 @@ nsImageFrame::GetSourceToDestTransform(nsTransform2D& aTransform)
   nsRect constraintRect(GetInnerArea().TopLeft(), mComputedSize);
   constraintRect.y -= GetContinuationOffset();
 
+  IntrinsicSize intrinsicSize = mIntrinsicSize;
+  AspectRatio intrinsicRatio = mIntrinsicRatio;
+  ObjectFitIntrinsics(*this, mImage, intrinsicSize, intrinsicRatio);
+
   nsRect destRect = nsLayoutUtils::ComputeObjectDestRect(constraintRect,
-                                                         mIntrinsicSize,
-                                                         mIntrinsicRatio,
+                                                         intrinsicSize,
+                                                         intrinsicRatio,
                                                          StylePosition());
+
   // Set the translation components, based on destRect
   // XXXbz does this introduce rounding errors because of the cast to
   // float?  Should we just manually add that stuff in every time
@@ -791,9 +815,13 @@ nsImageFrame::PredictedDestRect(const nsRect& aFrameContentBox)
   nsRect constraintRect(aFrameContentBox.TopLeft(), mComputedSize);
   constraintRect.y -= GetContinuationOffset();
 
+  IntrinsicSize intrinsicSize = mIntrinsicSize;
+  AspectRatio intrinsicRatio = mIntrinsicRatio;
+  ObjectFitIntrinsics(*this, mImage, intrinsicSize, intrinsicRatio);
+
   return nsLayoutUtils::ComputeObjectDestRect(constraintRect,
-                                              mIntrinsicSize,
-                                              mIntrinsicRatio,
+                                              intrinsicSize,
+                                              intrinsicRatio,
                                               StylePosition());
 }
 
@@ -819,16 +847,14 @@ bool nsImageFrame::ShouldShowBrokenImageIcon() const
 void
 nsImageFrame::EnsureIntrinsicSizeAndRatio()
 {
- // When 'contain: size' is implemented, make sure to check for it.
-/*
-  if (StyleDisplay()->IsContainSize()) {
-    // If we have 'contain:size', then our intrinsic size and ratio are 0,0
-    // regardless of what our underlying image may think.
-    mIntrinsicSize = IntrinsicSize(0, 0);
+  // If we have 'contain: size' the intrinsic size and ratio are 0 regardless
+  // of what our underlying image may think.
+  if (StyleDisplay()->IsContainSizeEffective()) {
+    mIntrinsicSize.width.SetCoordValue(0);
+    mIntrinsicSize.height.SetCoordValue(0);
     mIntrinsicRatio = AspectRatio();
     return;
   }
- */
 
   // If mIntrinsicSize.width and height are 0, then we need to update from the
   // image container.
@@ -867,10 +893,17 @@ nsImageFrame::ComputeSize(nsRenderingContext *aRenderingContext,
   // GetNaturalWidth/Height will return 0, so we check CurrentRequestHasSize()
   // below. See bug 1019840. We will fix this in bug 1141395.
 
+  // Size containment: the natural size must not feed the used size. Without
+  // this the override below puts the full image size back after
+  // EnsureIntrinsicSizeAndRatio zeroed it.
+  const nsStyleDisplay* disp = StyleDisplay();
+  const bool sizeContained =
+      disp->IsContainSizeEffective() || disp->IsContainInlineSizeEffective();
+
   // Content may override our default dimensions. This is termed as overriding
   // the intrinsic size by the spec, but all other consumers of mIntrinsic*
   // values are being used to refer to the real/true size of the image data.
-  if (imageLoader && imageLoader->CurrentRequestHasSize() && mImage &&
+  if (!sizeContained && imageLoader && imageLoader->CurrentRequestHasSize() && mImage &&
       intrinsicSize.width.GetUnit() == eStyleUnit_Coord &&
       intrinsicSize.height.GetUnit() == eStyleUnit_Coord) {
     uint32_t width;
@@ -1704,9 +1737,13 @@ nsImageFrame::PaintImage(nsRenderingContext& aRenderingContext, nsPoint aPt,
   constraintRect.y -= GetContinuationOffset();
 
   nsPoint anchorPoint;
+  IntrinsicSize intrinsicSize = mIntrinsicSize;
+  AspectRatio intrinsicRatio = mIntrinsicRatio;
+  ObjectFitIntrinsics(*this, mImage, intrinsicSize, intrinsicRatio);
+
   nsRect dest = nsLayoutUtils::ComputeObjectDestRect(constraintRect,
-                                                     mIntrinsicSize,
-                                                     mIntrinsicRatio,
+                                                     intrinsicSize,
+                                                     intrinsicRatio,
                                                      StylePosition(),
                                                      &anchorPoint);
 

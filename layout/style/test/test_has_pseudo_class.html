@@ -255,6 +255,106 @@ addLoadEvent(function() {
   cacheSibling.remove();
   cacheStyle.remove();
 
+  // GitHub inserts hover controls into diff rows. A class-based :has()
+  // must not restyle a large anchor for unrelated inserted/removed subtrees.
+  let contentStyle = document.createElement("style");
+  contentStyle.textContent = ".content-perf { color: blue; }" +
+    ".content-perf:has(.content-watched[aria-disabled=true])," +
+    ".content-perf:has(> .content-direct) { color: red; }";
+  document.head.appendChild(contentStyle);
+  let contentAnchor = document.createElement("div");
+  contentAnchor.className = "content-perf";
+  contentAnchor.innerHTML = '<div></div>' + '<span>text</span>'.repeat(64);
+  document.body.appendChild(contentAnchor);
+  let contentHost = contentAnchor.firstElementChild;
+  document.body.offsetHeight;
+  let unrelated = document.createElement("button");
+  unrelated.className = "hover-control";
+  for (let insert of [true, false]) {
+    let before = utils.elementsRestyled;
+    if (insert) {
+      contentHost.appendChild(unrelated);
+    } else {
+      unrelated.remove();
+    }
+    document.body.offsetHeight;
+    ok(utils.elementsRestyled - before < 32,
+       "unrelated content " + (insert ? "insertion" : "removal") +
+       " does not restyle the :has() anchor subtree");
+  }
+  let beforeInsert = utils.elementsRestyled;
+  contentAnchor.insertBefore(unrelated, contentAnchor.firstChild);
+  document.body.offsetHeight;
+  ok(utils.elementsRestyled - beforeInsert < 32,
+     "unrelated insertion before an existing child avoids subtree restyling");
+  unrelated.remove();
+  function contentColor() { return getComputedStyle(contentAnchor).color; }
+  is(contentColor(), blue, "initially no matching content");
+  let wrapper = document.createElement("div");
+  wrapper.innerHTML = '<span class="content-watched" aria-disabled="true"></span>';
+  contentHost.insertBefore(wrapper, contentHost.firstChild);
+  is(contentColor(), red, "matching descendant in inserted subtree invalidates");
+  wrapper.remove();
+  is(contentColor(), blue, "matching descendant in removed subtree invalidates");
+  // ContentAppended may describe multiple new siblings, not just the first.
+  let fragment = document.createDocumentFragment();
+  fragment.appendChild(document.createElement("div"));
+  fragment.appendChild(wrapper);
+  contentHost.appendChild(fragment);
+  is(contentColor(), red, "later sibling in appended fragment invalidates");
+  wrapper.remove();
+  is(contentColor(), blue, "removing fragment's matching subtree invalidates");
+  let direct = document.createElement("div");
+  direct.className = "content-direct";
+  contentAnchor.appendChild(direct);
+  is(contentColor(), red, "matching direct child insertion invalidates");
+  direct.remove();
+  is(contentColor(), blue, "matching direct child removal invalidates");
+  // A merged branch without a required class must disable this filter.
+  contentStyle.textContent += ".content-perf:has([data-content-match]) { color: red; }";
+  is(contentColor(), blue, "attribute-only alternative starts unmatched");
+  let attrChild = document.createElement("div");
+  attrChild.setAttribute("data-content-match", "");
+  contentHost.appendChild(attrChild);
+  is(contentColor(), red, "classless alternative in merged dependencies invalidates");
+  attrChild.remove();
+  is(contentColor(), blue, "classless alternative removal invalidates");
+  // Nonmatching insertions can change an existing candidate's structural state.
+  contentStyle.textContent = ".content-perf { color: blue; }" +
+    ".content-perf:has(.content-structural:last-child) { color: red; }";
+  // Use fresh anchors: dependencies from removed rules are retained.
+  contentAnchor.remove();
+  contentAnchor = document.createElement("div");
+  contentAnchor.className = "content-perf";
+  contentHost = contentAnchor.appendChild(document.createElement("div"));
+  document.body.appendChild(contentAnchor);
+  let structural = document.createElement("span");
+  structural.className = "content-structural";
+  contentHost.appendChild(structural);
+  is(contentColor(), red, "structural candidate initially matches");
+  contentHost.appendChild(unrelated);
+  is(contentColor(), blue, "unrelated sibling insertion invalidates :last-child");
+  unrelated.remove();
+  is(contentColor(), red, "unrelated sibling removal invalidates :last-child");
+  // Inserting a nonmatching sibling can break an adjacent-sibling relation.
+  contentStyle.textContent = ".content-perf { color: blue; }" +
+    ".content-perf:has(+ .content-adjacent) { color: red; }";
+  contentAnchor.remove();
+  contentAnchor = document.createElement("div");
+  contentAnchor.className = "content-perf";
+  document.body.appendChild(contentAnchor);
+  let adjacent = document.createElement("div");
+  adjacent.className = "content-adjacent";
+  contentAnchor.after(adjacent);
+  is(contentColor(), red, "adjacent sibling initially matches");
+  contentAnchor.after(unrelated);
+  is(contentColor(), blue, "unrelated sibling insertion invalidates adjacency");
+  unrelated.remove();
+  is(contentColor(), red, "unrelated sibling removal restores adjacency");
+  adjacent.remove();
+  contentAnchor.remove();
+  contentStyle.remove();
+
   // State-only arguments must not turn unrelated attribute changes into a
   // restyle of the entire anchor subtree (e.g. html:has(:fullscreen)).
   let stateStyle = document.createElement("style");
