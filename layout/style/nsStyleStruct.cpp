@@ -3033,6 +3033,8 @@ nsStyleDisplay::nsStyleDisplay(nsPresContext* aContext)
   : mDisplay(StyleDisplay::Inline)
   , mOriginalDisplay(StyleDisplay::Inline)
   , mContain(NS_STYLE_CONTAIN_NONE)
+  , mContainerType(NS_STYLE_CONTAINER_TYPE_NORMAL)
+  , mLineClamp(0)
   , mAppearance(NS_THEME_NONE)
   , mPosition(NS_STYLE_POSITION_STATIC)
   , mFloat(StyleFloat::None)
@@ -3095,6 +3097,8 @@ nsStyleDisplay::nsStyleDisplay(const nsStyleDisplay& aSource)
   , mDisplay(aSource.mDisplay)
   , mOriginalDisplay(aSource.mOriginalDisplay)
   , mContain(aSource.mContain)
+  , mContainerType(aSource.mContainerType)
+  , mContainerNames(aSource.mContainerNames)
   , mAppearance(aSource.mAppearance)
   , mPosition(aSource.mPosition)
   , mFloat(aSource.mFloat)
@@ -3159,6 +3163,9 @@ nsStyleDisplay::CalcDifference(const nsStyleDisplay& aNewData) const
       || mPosition != aNewData.mPosition
       || mDisplay != aNewData.mDisplay
       || mContain != aNewData.mContain
+      || mContainerType != aNewData.mContainerType
+      || mLineClamp != aNewData.mLineClamp
+      || mContainerNames != aNewData.mContainerNames
       || (mFloat == StyleFloat::None) != (aNewData.mFloat == StyleFloat::None)
       || mScrollBehavior != aNewData.mScrollBehavior
       || mScrollSnapTypeX != aNewData.mScrollSnapTypeX
@@ -3373,6 +3380,17 @@ nsStyleDisplay::CalcDifference(const nsStyleDisplay& aNewData) const
   }
 
   return hint;
+}
+
+bool
+nsStyleDisplay::HasContainerName(const nsAString& aName) const
+{
+  for (const nsString& name : mContainerNames) {
+    if (name.Equals(aName)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // --------------------

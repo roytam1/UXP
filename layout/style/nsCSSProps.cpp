@@ -1814,11 +1814,23 @@ const KTableEntry nsCSSProps::kMathDisplayKTable[] = {
 };
 
 const KTableEntry nsCSSProps::kContainKTable[] = {
-  { eCSSKeyword_none,    NS_STYLE_CONTAIN_NONE },
-  { eCSSKeyword_strict,  NS_STYLE_CONTAIN_STRICT },
-  { eCSSKeyword_layout,  NS_STYLE_CONTAIN_LAYOUT },
-  { eCSSKeyword_style,   NS_STYLE_CONTAIN_STYLE },
-  { eCSSKeyword_paint,   NS_STYLE_CONTAIN_PAINT },
+  { eCSSKeyword_none,        NS_STYLE_CONTAIN_NONE },
+  { eCSSKeyword_strict,      NS_STYLE_CONTAIN_STRICT },
+  { eCSSKeyword_layout,      NS_STYLE_CONTAIN_LAYOUT },
+  { eCSSKeyword_style,       NS_STYLE_CONTAIN_STYLE },
+  { eCSSKeyword_paint,       NS_STYLE_CONTAIN_PAINT },
+  { eCSSKeyword_size,        NS_STYLE_CONTAIN_SIZE },
+  { eCSSKeyword_inline_size, NS_STYLE_CONTAIN_INLINE_SIZE },
+  // Deliberately last: AppendBitmaskCSSValue stops at INLINE_SIZE, so a
+  // multi-bit entry inside the range would be emitted twice.
+  { eCSSKeyword_content,     NS_STYLE_CONTAIN_CONTENT },
+  { eCSSKeyword_UNKNOWN, -1 }
+};
+
+const KTableEntry nsCSSProps::kContainerTypeKTable[] = {
+  { eCSSKeyword_normal,      NS_STYLE_CONTAINER_TYPE_NORMAL },
+  { eCSSKeyword_size,        NS_STYLE_CONTAINER_TYPE_SIZE },
+  { eCSSKeyword_inline_size, NS_STYLE_CONTAINER_TYPE_INLINE_SIZE },
   { eCSSKeyword_UNKNOWN, -1 }
 };
 
@@ -3112,6 +3124,12 @@ static const nsCSSPropertyID gPlaceContentSubpropTable[] = {
 static const nsCSSPropertyID gPlaceItemsSubpropTable[] = {
   eCSSProperty_align_items,
   eCSSProperty_justify_items,
+  eCSSProperty_UNKNOWN
+};
+
+static const nsCSSPropertyID gContainerSubpropTable[] = {
+  eCSSProperty_container_name,
+  eCSSProperty_container_type,
   eCSSProperty_UNKNOWN
 };
 

@@ -134,10 +134,13 @@ public:
   const static uint32_t kDefaultBufferSize = 2048;
 
   // kDefaultQueueSize must be >= other queue size constants
-  const static uint32_t kDefaultQueueSize =  32768;
-  const static uint32_t kQueueMinimumCleanup = 24576;
-  const static uint32_t kQueueTailRoom    =  4096;
-  const static uint32_t kQueueReserved    =  1024;
+  // Increased size of 256KB to allow better buffering for multiple
+  // concurrent HTTP/2 streams. Larger buffer enables more streams to queue
+  // their data before flushing, improving multiplexing efficiency.
+  const static uint32_t kDefaultQueueSize =  262144;
+  const static uint32_t kQueueMinimumCleanup = 196608;
+  const static uint32_t kQueueTailRoom    =  32768;
+  const static uint32_t kQueueReserved    =  8192;
 
   const static uint32_t kMaxStreamID = 0x7800000;
 

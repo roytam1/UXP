@@ -497,6 +497,13 @@ nsBlockFrame::GetNaturalBaselineBOffset(mozilla::WritingMode aWM,
                                         BaselineSharingGroup aBaselineGroup,
                                         nscoord*             aBaseline) const
 {
+  // A layout containment box has no baseline.  For vertical-align it is
+  // treated as having none, so the bottom margin edge is used; both green
+  // boxes then align identically and cover the red square.
+  if (MOZ_UNLIKELY(StyleDisplay()->IsContainLayoutEffective())) {
+    return false;
+  }
+
   if (aBaselineGroup == BaselineSharingGroup::eFirst) {
     return nsLayoutUtils::GetFirstLineBaseline(aWM, this, aBaseline);
   }
@@ -1625,7 +1632,11 @@ nsBlockFrame::ComputeFinalSize(const ReflowInput& aReflowInput,
     aMetrics.mCarriedOutBEndMargin.Zero();
   }
   else if (NS_FRAME_IS_COMPLETE(aState.mReflowStatus)) {
-    nscoord contentBSize = blockEndEdgeOfChildren - borderPadding.BStart(wm);
+    // Size containment: our content must not contribute to the block size, so
+    // only border, padding and min/max-bsize apply.
+    nscoord contentBSize = StyleDisplay()->IsContainSizeEffective()
+                             ? 0
+                             : blockEndEdgeOfChildren - borderPadding.BStart(wm);
     nscoord autoBSize = aReflowInput.ApplyMinMaxBSize(contentBSize);
     if (autoBSize != contentBSize) {
       // Our min- or max-bsize value made our bsize change.  Don't carry out

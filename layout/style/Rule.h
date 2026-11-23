@@ -66,22 +66,26 @@ public:
   // rules can come between two rules of type IMPORT_RULE.
   enum {
     UNKNOWN_RULE = 0,
-    CHARSET_RULE,
-    IMPORT_RULE,
-    NAMESPACE_RULE,
-    STYLE_RULE,
-    MEDIA_RULE,
-    FONT_FACE_RULE,
-    PAGE_RULE,
-    KEYFRAME_RULE,
-    KEYFRAMES_RULE,
-    DOCUMENT_RULE,
-    SUPPORTS_RULE,
-    FONT_FEATURE_VALUES_RULE,
-    COUNTER_STYLE_RULE,
-    RESERVED1_RULE,
-    LAYER_BLOCK_RULE,
-    LAYER_STATEMENT_RULE
+    STYLE_RULE = 1,
+    CHARSET_RULE = 2,
+    IMPORT_RULE = 3,
+    MEDIA_RULE = 4,
+    FONT_FACE_RULE = 5,
+    PAGE_RULE = 6,
+    KEYFRAMES_RULE = 7,
+    KEYFRAME_RULE = 8,
+    MARGIN_RULE = 9,
+    NAMESPACE_RULE = 10,
+    COUNTER_STYLE_RULE = 11,
+    SUPPORTS_RULE = 12,
+    RESERVED1_RULE = 13,
+    FONT_FEATURE_VALUES_RULE = 14,
+    // Internal from here down.
+    VIEWPORT_RULE = 15,
+    DOCUMENT_RULE = 16,
+    LAYER_BLOCK_RULE = 17,
+    LAYER_STATEMENT_RULE = 18,
+    CONTAINER_RULE = 19
   };
 
   virtual int32_t GetType() const = 0;

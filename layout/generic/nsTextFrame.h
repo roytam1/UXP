@@ -594,6 +594,12 @@ public:
                   DrawTarget* aDrawTarget,
                   ReflowOutput& aMetrics, nsReflowStatus& aStatus);
 
+  // Line-clamp ellipsis. Set on the last text frame of the last line that
+  // survives -webkit-line-clamp; ReflowText reserves an ellipsis advance in the
+  // available width and DrawTextRun paints U+2026 after the glyphs.
+  void SetLineClampEllipsis(bool aValue = true);
+  bool HasLineClampEllipsis() const;
+
   bool IsFloatingFirstLetterChild() const;
 
   bool IsInitialLetterChild() const;

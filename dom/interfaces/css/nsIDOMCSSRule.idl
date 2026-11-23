@@ -27,6 +27,11 @@ class Rule;
 interface nsIDOMCSSRule : nsISupports
 {
   // RuleType
+  //
+  // 1-14 are the values CSSOM specifies. 13 is unused and 9 is reserved for
+  // css-page's MARGIN_RULE. Types 15 and up are ours: CSSOM's enumeration is
+  // frozen and has no value for those at-rules, so these have to be distinct
+  // from the ones CSSOM does define. Keep in step with css::Rule's enum.
   const unsigned short      UNKNOWN_RULE                   = 0;
   const unsigned short      STYLE_RULE                     = 1;
   const unsigned short      CHARSET_RULE                   = 2;
@@ -36,17 +41,22 @@ interface nsIDOMCSSRule : nsISupports
   const unsigned short      PAGE_RULE                      = 6;
   const unsigned short      KEYFRAMES_RULE                 = 7;
   const unsigned short      KEYFRAME_RULE                  = 8;
+  const unsigned short      MARGIN_RULE                    = 9;
+  const unsigned short      NAMESPACE_RULE                 = 10;
+  const unsigned short      COUNTER_STYLE_RULE             = 11;
+  const unsigned short      SUPPORTS_RULE                  = 12;
+  const unsigned short      RESERVED1_RULE                 = 13;
+  const unsigned short      FONT_FEATURE_VALUES_RULE       = 14;
   // When layout.css.prefixes.animations is disabled/removed,
   // we should remove these two MOZ_* constants.
   const unsigned short      MOZ_KEYFRAMES_RULE             = 7;
   const unsigned short      MOZ_KEYFRAME_RULE              = 8;
-  const unsigned short      NAMESPACE_RULE                 = 10;
-  const unsigned short      COUNTER_STYLE_RULE             = 11;
-  const unsigned short      SUPPORTS_RULE                  = 12;
-  const unsigned short      FONT_FEATURE_VALUES_RULE       = 14;
-  const unsigned short      RESERVED1_RULE                 = 15;
-  const unsigned short      LAYER_BLOCK_RULE               = 16;
-  const unsigned short      LAYER_STATEMENT_RULE           = 17;
+  // Internal from here down.
+  const unsigned short      VIEWPORT_RULE                  = 15;
+  const unsigned short      DOCUMENT_RULE                  = 16;
+  const unsigned short      LAYER_BLOCK_RULE               = 17;
+  const unsigned short      LAYER_STATEMENT_RULE           = 18;
+  const unsigned short      CONTAINER_RULE                 = 19;
 
   readonly attribute unsigned short      type;
            attribute DOMString           cssText;

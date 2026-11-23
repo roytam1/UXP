@@ -998,6 +998,22 @@ public:
    */
   void ReflowStarted(bool aInterruptible);
 
+  // True if a container restyle has been posted since the last flush round.
+  // The flush loop uses this to decide whether another restyle/reflow round is
+  // worth running, rather than looping for any pending restyle at all.
+  bool HasPendingContainerRestyle() const { return mHasPendingContainerRestyle; }
+  void SetPendingContainerRestyle() { mHasPendingContainerRestyle = true; }
+  void ClearPendingContainerRestyle() { mHasPendingContainerRestyle = false; }
+  // Bumped once per restyle pass.  Container dependency lists are stamped with
+  // it so they get rebuilt rather than accumulating stale elements.
+  uint32_t ContainerQueryGeneration() const { return mContainerQueryGeneration; }
+  void BumpContainerQueryGeneration() { ++mContainerQueryGeneration; }
+
+protected:
+    bool mHasPendingContainerRestyle;
+    uint32_t mContainerQueryGeneration;
+
+public:
   /**
    * A class that can be used to temporarily disable reflow interruption.
    */

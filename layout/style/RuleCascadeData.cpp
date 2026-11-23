@@ -38,6 +38,7 @@
 #include "nsAttrName.h"
 #include "nsTArray.h"
 #include "nsIMediaList.h"
+#include "nsContainerCondition.h"
 #include "nsCSSRules.h"
 #include "nsStyleSet.h"
 #include "mozilla/dom/Element.h"
@@ -55,6 +56,12 @@
 #include "nsIDOMMutationEvent.h"
 #include "nsIMozBrowserFrame.h"
 #include "nsCSSRuleUtils.h"
+#include "nsMediaFeatures.h"
+#include "nsIFrame.h"
+#include "nsComputedDOMStyle.h"
+#include "nsStyleConsts.h"
+#include "nsCSSParser.h"
+#include "mozilla/CSSVariableValues.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -307,6 +314,7 @@ RuleHash::RuleHash(bool aQuirksMode)
   , mUniversalRules(0)
   , mEnumList(nullptr)
   , mEnumListSize(0)
+  , mEnumListDepth(0)
   , mQuirksMode(aQuirksMode)
 #ifdef RULE_HASH_STATS
   , mUniversalSelectors(0)
@@ -514,6 +522,975 @@ LookForTargetPseudo(nsCSSSelector* aSelector,
   return true;
 }
 
+// The basis a percentage resolves against.  The real containing block is a
+// layout notion that may not exist yet; the parent's specified size is the
+// closest stand-in available before layout, and a percentage against an unknown
+// basis is worth less than the rect fallback, so an unknown axis stays zero.
+static nsSize
+ContainingBlockBasis(nsStyleContext* aParent)
+{
+  nsSize basis(0, 0);
+  if (!aParent) {
+    return basis;
+  }
+  const nsStylePosition* pos = aParent->StylePosition();
+  if (pos->mWidth.ConvertsToLength()) {
+    basis.width = pos->mWidth.GetCoordValue();
+  }
+  if (pos->mHeight.ConvertsToLength()) {
+    basis.height = pos->mHeight.GetCoordValue();
+  }
+  return basis;
+}
+
+// The extent a container query on one axis is answered from.  Containment makes
+// the box's own specified size authoritative on the contained axes, so it wins
+// over the content rect.  The rect is only the fallback -- and on a box that has
+// not been reflowed it is also the only wrong answer, which matters because
+// style resolution runs ahead of reflow.
+//
+// The inline axis is contained for every container type; the block axis only
+// for `size`.  The extents returned are content-box CSS pixels, matching what
+// the rect fallback measures, so a border-box specified size is reduced by its
+// padding and border first.
+static float
+QueryableExtent(nsStyleContext* aSC, const nsSize& aRect,
+                const nsSize& aContainingBlock, bool aIsWidth, bool aVertical,
+                bool aBlockQueryable)
+{
+  const bool inlineAxis = aIsWidth != aVertical;
+  const float rectExtent = nsPresContext::AppUnitsToFloatCSSPixels(
+                           aIsWidth ? aRect.width : aRect.height);
+
+  // An `inline-size` container cannot answer for the block axis at all, so the
+  // rect is all there is -- stale as it may be on a box that has not reflowed.
+  if (!inlineAxis && !aBlockQueryable) {
+    return rectExtent;
+  }
+
+  const nsStylePosition* pos = aSC->StylePosition();
+  const nsStyleCoord& coord = aIsWidth ? pos->mWidth : pos->mHeight;
+
+  float extent;
+  if (coord.ConvertsToLength()) {
+    extent = nsPresContext::AppUnitsToFloatCSSPixels(coord.GetCoordValue());
+  } else if (coord.GetUnit() == eStyleUnit_Percent) {
+    // A percentage is definite against its containing block even though it is
+    // not a length.  Without a basis there is nothing better than the rect.
+    const nscoord basis = aIsWidth ? aContainingBlock.width
+                                   : aContainingBlock.height;
+    if (basis <= 0) {
+      return rectExtent;
+    }
+    extent = nsPresContext::AppUnitsToFloatCSSPixels(basis) *
+             coord.GetPercentValue();
+  } else {
+    // auto and the rest: the used size depends on layout we have not run.
+    return rectExtent;
+  }
+
+  if (pos->mBoxSizing == mozilla::StyleBoxSizing::Border) {
+    // The specified size measures the border box under border-box sizing; the
+    // query measures the content box.
+    const Side start = aIsWidth ? eSideLeft : eSideTop;
+    const Side end = aIsWidth ? eSideRight : eSideBottom;
+    nscoord inset = aSC->StyleBorder()->GetComputedBorderWidth(start) +
+                    aSC->StyleBorder()->GetComputedBorderWidth(end);
+    nsMargin padding;
+    if (aSC->StylePadding()->GetPadding(padding)) {
+      inset += padding.Side(start) + padding.Side(end);
+    }
+    extent -= nsPresContext::AppUnitsToFloatCSSPixels(inset);
+  }
+
+  return std::max(extent, 0.0f);
+}
+
+struct ContainerSize {
+  // Physical extents. Always real: cq units resolve against them whether or
+  // not the axis is queryable.
+  float mWidth = 0.0f;
+  float mHeight = 0.0f;
+  // Reference extents for container query length units.  A unit in a condition
+  // is resolved as if it were specified on the query container, so it measures
+  // an *ancestor* of it and never the container itself; the small viewport is
+  // the fallback when no ancestor is eligible on the unit's axis.
+  float mUnitInline = 0.0f;
+  float mUnitBlock = 0.0f;
+  // Computed font-size of the container. Relative units in a condition are
+  // evaluated against the container, not against the initial font as they are
+  // in a media query.
+  nscoord mFontSize = 0;
+  // Computed font-size of the root element.  `rem` is the one relative unit
+  // that does not follow the container.
+  nscoord mRootFontSize = 0;
+  // The container's inline axis runs vertically, so inline-size is its height
+  // and block-size is its width.
+  bool mVertical = false;
+  // Only `container-type: size` lets a feature look at the block axis.
+  bool mBlockQueryable = false;
+};
+
+// Nearest ancestor container, honouring the query name if it has one.
+// Record that aElement's style depends on aContainer, so a change to the
+// container restyles it rather than the whole subtree.  The same element is
+// appended once per rule that resolves against the container, so dedupe; the
+// lists are the width of a container's conditional descendants, not of its
+// subtree.
+static void
+AddContainerDependent(nsIFrame* aContainerFrame, Element* aElement,
+                      nsPresContext* aPresContext)
+{
+  auto* dependents = static_cast<ContainerQueryDependents*>(
+      aContainerFrame->GetProperty(nsIFrame::ContainerQueryDependentsProperty()));
+  const uint32_t generation = aPresContext->ContainerQueryGeneration();
+  if (!dependents) {
+    dependents = new ContainerQueryDependents();
+    aContainerFrame->SetProperty(nsIFrame::ContainerQueryDependentsProperty(),
+                                 dependents);
+    dependents->mGeneration = generation;
+  } else if (dependents->mGeneration != generation) {
+    // First evaluation on this container in a new pass: rebuild from scratch
+    // so elements that stopped depending on us fall out.
+    dependents->mElements.Clear();
+    dependents->mGeneration = generation;
+  }
+  if (!dependents->mElements.Contains(aElement)) {
+    dependents->mElements.AppendElement(aElement);
+  }
+}
+
+// Nearest ancestor container, honouring the query name if it has one.
+// The root element's font-size, for resolving a rem in a condition.  A rem is
+// defined against the root and not against the container, so the walk goes to
+// the top of the context chain rather than stopping at the container.  The
+// chain is already resolved here, so this costs nothing and never re-enters
+// style resolution.
+static nscoord
+RootFontSizeFor(nsPresContext* aPresContext)
+{
+  // Not the container's style context chain.  If the container's own style did
+  // not change, ResolveStyleFor reuses the old context and its parent chain
+  // still leads to the previous root context, so the root font sticks at
+  // whatever it was when the chain was built.
+  if (Element* root = aPresContext->Document()->GetRootElement()) {
+    if (nsIFrame* rootFrame = root->GetPrimaryFrame()) {
+      return rootFrame->StyleFont()->mFont.size;
+    }
+  }
+  // No root frame yet (detached, or before frame construction).
+  return aPresContext->GetDefaultFont(kPresContext_DefaultVariableFont_ID,
+                                      nullptr)->size;
+}
+
+static bool
+FindQueryContainer(Element* aElement, const nsAString& aName,
+                   ContainerSize& aSize, nsPresContext* aPresContext,
+                   bool aBlockAxis, bool aUsesRootEM, Element** aContainer)
+{
+  for (Element* e = aElement->GetParentElement(); e;
+       e = e->GetParentElement()) {
+    nsIFrame* frame = e->GetPrimaryFrame();
+    if (!frame) {
+      continue;
+    }
+    const nsStyleDisplay* display = frame->StyleDisplay();
+    if (!display->IsContainerForSizeQueries()) {
+      continue;
+    }
+    if (!aName.IsEmpty() && !display->HasContainerName(aName)) {
+      continue;
+    }
+
+    // Only the inline axis is queryable unless the container is `size`.
+    const bool vertical = frame->GetWritingMode().IsVertical();
+    const bool blockQueryable =
+      display->mContainerType == NS_STYLE_CONTAINER_TYPE_SIZE;
+
+    if (aBlockAxis && !blockQueryable) {
+      // The unit measures the block axis, which this container cannot answer
+      // for; keep walking outwards.
+      continue;
+    }
+
+    aSize.mVertical = vertical;
+    aSize.mBlockQueryable = blockQueryable;
+    aSize.mFontSize = frame->StyleFont()->mFont.size;
+    // Size containment makes the box's own specified size authoritative, so
+    // take it wherever it is available; the rect is only the fallback.
+    nsStyleContext* sc = frame->StyleContext();
+    // rem is the root's, and the container is normally not the root, so this
+    // is a separate walk from the one that found the container.
+    if (aUsesRootEM) {
+      aSize.mRootFontSize = RootFontSizeFor(aPresContext);
+    }
+    nsSize rect = frame->GetContentRectRelativeToSelf().Size();
+    const nsSize basis = ContainingBlockBasis(sc->GetParent());
+    aSize.mWidth = QueryableExtent(sc, rect, basis, true, vertical, blockQueryable);
+    aSize.mHeight = QueryableExtent(sc, rect, basis, false, vertical, blockQueryable);
+
+    AddContainerDependent(frame, aElement, aPresContext);
+    if (aContainer) {
+      *aContainer = e;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+// Nearest ancestor style container, honouring the query name.  `container-type:
+// normal` is a style container, so this walk is separate from
+// FindQueryContainer, which needs size containment.
+static bool
+FindStyleContainer(Element* aElement, const nsAString& aName,
+                   nsPresContext* aPresContext, Element** aContainer)
+{
+  for (Element* e = aElement->GetParentElement(); e;
+       e = e->GetParentElement()) {
+    nsIFrame* frame = e->GetPrimaryFrame();
+    if (!frame) {
+      continue;
+    }
+    const nsStyleDisplay* display = frame->StyleDisplay();
+    if (!display->IsContainerForStyleQueries()) {
+      continue;
+    }
+    if (!aName.IsEmpty() && !display->HasContainerName(aName)) {
+      continue;
+    }
+    AddContainerDependent(frame, aElement, aPresContext);
+    *aContainer = e;
+    return true;
+  }
+  return false;
+}
+
+// Collapse whitespace runs and trim.  Both sides were flattened by their own
+// capture, so spacing between tokens carries no meaning and only content does.
+static void
+NormaliseTokenStream(const nsAString& aIn, nsAString& aOut)
+{
+  aOut.Truncate();
+  bool pendingSpace = false;
+  for (uint32_t i = 0; i < aIn.Length(); ++i) {
+    const char16_t c = aIn[i];
+    if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f') {
+      pendingSpace = !aOut.IsEmpty();
+      continue;
+    }
+    if (pendingSpace) {
+      aOut.Append(' ');
+      pendingSpace = false;
+    }
+    aOut.Append(c);
+  }
+}
+
+// Whether the value text contains a var() reference.  Function names are ASCII
+// case-insensitive, so "VAR(" counts too.
+static bool
+HasVarReference(const nsAString& aText)
+{
+  const uint32_t length = aText.Length();
+  for (uint32_t i = 0; i + 4 <= length; ++i) {
+    if ((aText[i] == 'v' || aText[i] == 'V') &&
+        (aText[i + 1] == 'a' || aText[i + 1] == 'A') &&
+        (aText[i + 2] == 'r' || aText[i + 2] == 'R') &&
+        aText[i + 3] == '(') {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Substitute var() in the query value.  The computed side is already
+// substituted, so the query side has to be too for the two to compare.
+static bool
+ResolveStyleQueryText(const nsAString& aText, const CSSVariableValues* aVars,
+                      nsAString& aOut)
+{
+  if (!HasVarReference(aText)) {
+    aOut = aText;
+    return true;
+  }
+  nsCSSParser parser;
+  nsString result;
+  nsCSSTokenSerializationType first, last;
+  if (!parser.ResolveVariableValue(aText, aVars, result, first, last)) {
+    return false;
+  }
+  aOut = result;
+  return true;
+}
+
+// Compare two already normalised style values.  Without an operator this is
+// plain equality.  Ordering needs both sides to be a number with the same
+// unit; anything else is not comparable and stays unknown.
+static ContainerEval
+CompareStyleValues(const nsAString& aActual, const nsAString& aWanted,
+                   ContainerStyleQuery::StyleQueryOperator aOperator)
+{
+  if (aOperator == ContainerStyleQuery::eNone ||
+      aOperator == ContainerStyleQuery::eEquals) {
+    return aActual.Equals(aWanted) ? ContainerEval::True
+                                   : ContainerEval::False;
+  }
+
+  auto split = [](const nsAString& aValue, float& aNumber, nsAutoString& aUnit) {
+    const char16_t* chars = aValue.BeginReading();
+    const uint32_t length = aValue.Length();
+    uint32_t i = 0;
+    while (i < length && chars[i] == ' ') {
+      ++i;
+    }
+    const uint32_t start = i;
+    if (i < length && (chars[i] == '-' || chars[i] == '+')) {
+      ++i;
+    }
+    bool haveDigits = false;
+    while (i < length && ((chars[i] >= '0' && chars[i] <= '9') ||
+                          chars[i] == '.')) {
+      if (chars[i] != '.') {
+        haveDigits = true;
+      }
+      ++i;
+    }
+    if (!haveDigits) {
+      return false;
+    }
+    nsAutoString number(Substring(aValue, start, i - start));
+    nsresult rv = NS_OK;
+    aNumber = number.ToFloat(&rv);
+    if (NS_FAILED(rv)) {
+      return false;
+    }
+    aUnit = Substring(aValue, i);
+    aUnit.CompressWhitespace(true, true);
+    return true;
+  };
+
+  float actual, wanted;
+  nsAutoString actualUnit, wantedUnit;
+  if (!split(aActual, actual, actualUnit) ||
+      !split(aWanted, wanted, wantedUnit) ||
+      !actualUnit.Equals(wantedUnit)) {
+    return ContainerEval::Unknown;
+  }
+
+  switch (aOperator) {
+    case ContainerStyleQuery::eLessThan:
+      return actual < wanted ? ContainerEval::True : ContainerEval::False;
+    case ContainerStyleQuery::eLessThanEqual:
+      return actual <= wanted ? ContainerEval::True : ContainerEval::False;
+    case ContainerStyleQuery::eGreaterThan:
+      return actual > wanted ? ContainerEval::True : ContainerEval::False;
+    case ContainerStyleQuery::eGreaterThanEqual:
+      return actual >= wanted ? ContainerEval::True : ContainerEval::False;
+    default:
+      return ContainerEval::Unknown;
+  }
+}
+
+// Compare one parsed style() query against the container's computed style.
+// Anything that cannot be answered is unknown, so that "not style(...)" stays
+// unknown instead of turning into a match.
+static ContainerEval
+StyleQueryAgainstContainer(const ContainerStyleQuery& aQuery,
+                           Element* aContainer, nsPresContext* aPresContext)
+{
+  nsIFrame* frame = aContainer->GetPrimaryFrame();
+  if (!frame) {
+    return ContainerEval::Unknown;
+  }
+  nsStyleContext* sc = frame->StyleContext();
+
+  if (eCSSPropertyExtra_variable == aQuery.mProperty) {
+    // Computed variables are keyed without the "--" prefix.
+    nsAutoString name;
+    aQuery.mName.Right(name, aQuery.mName.Length() - 2);
+    const CSSVariableValues& vars = sc->StyleVariables()->mVariables;
+
+    nsAutoString actual;
+    const bool found = vars.Get(name, actual);
+
+    switch (aQuery.mValueType) {
+      case CSSVariableDeclarations::eTokenStream: {
+        if (!found) {
+          return ContainerEval::False;
+        }
+        if (!aQuery.mHasValue && aQuery.mOperator == ContainerStyleQuery::eNone) {
+          return ContainerEval::True;
+        }
+        nsAutoString wanted;
+        if (!ResolveStyleQueryText(aQuery.mValueText, &vars, wanted)) {
+          return ContainerEval::Unknown;
+        }
+        nsAutoString got, want;
+        NormaliseTokenStream(actual, got);
+        NormaliseTokenStream(wanted, want);
+        return CompareStyleValues(got, want, aQuery.mOperator);
+      }
+
+      case CSSVariableDeclarations::eInherit: {
+        // Inheritance has already happened, so the container's own value is the
+        // parent's unless the container overrides it.
+        nsStyleContext* parent = sc->GetParent();
+        nsAutoString inherited;
+        const bool inheritedFound =
+          parent && parent->StyleVariables()->mVariables.Get(name, inherited);
+        if (!found || !inheritedFound) {
+          return (found == inheritedFound) ? ContainerEval::True
+                                           : ContainerEval::False;
+        }
+        nsAutoString got, want;
+        NormaliseTokenStream(actual, got);
+        NormaliseTokenStream(inherited, want);
+        return CompareStyleValues(got, want, aQuery.mOperator);
+      }
+
+      default:
+        // initial, unset and revert all land on the guaranteed-invalid value
+        // for a custom property, which is simply absent from the computed set.
+        // The set carries no cascade origin, so they are not told apart.
+        return found ? ContainerEval::False : ContainerEval::True;
+    }
+  }
+
+  // A normal property: read the computed value.  The frame's existing style
+  // context is what nsComputedDOMStyle uses here, so nothing is flushed.
+  nsIDocument* doc = aContainer->OwnerDoc();
+  nsIPresShell* shell = doc->GetShell();
+  if (!shell) {
+    return ContainerEval::Unknown;
+  }
+  RefPtr<nsComputedDOMStyle> computed =
+    NS_NewComputedDOMStyle(aContainer, EmptyString(), doc,
+                           nsComputedDOMStyle::eAll);
+  nsAutoString actualText;
+  if (!computed ||
+      NS_FAILED(computed->GetPropertyValue(aQuery.mProperty, actualText)) ||
+      actualText.IsEmpty()) {
+    // Unknown property, or one the computed-style table cannot serialise.
+    return ContainerEval::Unknown;
+  }
+  if (!aQuery.mHasValue) {
+    return ContainerEval::True;
+  }
+
+  // Parse the computed text so both sides compare as values rather than as
+  // strings; "1px" and "1px" must not depend on formatting.
+  nsCSSParser parser;
+  nsCSSValue actual;
+  parser.ParseLonghandProperty(aQuery.mProperty, actualText, nullptr, nullptr,
+                               nullptr, actual);
+  if (eCSSUnit_Null == actual.GetUnit()) {
+    return ContainerEval::Unknown;
+  }
+
+  // Ordering has to be answered before the equality shortcut, or `--x < 5`
+  // would come back true on a value of exactly 5.  Both sides go back to text
+  // and the shared comparison handles the rest.
+  if (aQuery.mOperator != ContainerStyleQuery::eNone) {
+    nsAutoString actualSerialised, wantedSerialised;
+    actual.AppendToString(aQuery.mProperty, actualSerialised,
+                          nsCSSValue::eNormalized);
+    aQuery.mValue.AppendToString(aQuery.mProperty, wantedSerialised,
+                                 nsCSSValue::eNormalized);
+    nsAutoString gotText, wantText;
+    NormaliseTokenStream(actualSerialised, gotText);
+    NormaliseTokenStream(wantedSerialised, wantText);
+    return CompareStyleValues(gotText, wantText, aQuery.mOperator);
+  }
+
+  if (actual == aQuery.mValue) {
+    return ContainerEval::True;
+  }
+  // A computed value is canonicalised, so "red" and "rgb(255, 0, 0)" differ as
+  // values while being the same colour; compare colours as colours.
+  nscolor got, want;
+  if (nsRuleNode::ComputeColor(actual, aPresContext, sc, got) &&
+      nsRuleNode::ComputeColor(aQuery.mValue, aPresContext, sc, want)) {
+    return got == want ? ContainerEval::True : ContainerEval::False;
+  }
+  return ContainerEval::False;
+}
+
+// The reference length for one axis of a container query length unit.  The
+// unit is resolved as if it were written on the query container, so the walk
+// starts at the container's parent and never considers the container itself:
+// its own size is what the feature compares against.  The axis named here is
+// the candidate's own, so it is mapped to physical with the candidate's
+// writing mode.
+static float
+UnitReferenceForAxis(Element* aQueryContainer, bool aBlockAxis, bool aVertical,
+                     nsPresContext* aPresContext)
+{
+  for (Element* e = aQueryContainer->GetParentElement(); e;
+       e = e->GetParentElement()) {
+    nsIFrame* frame = e->GetPrimaryFrame();
+    if (!frame) {
+      continue;
+    }
+    const nsStyleDisplay* display = frame->StyleDisplay();
+    if (!display->IsContainerForSizeQueries()) {
+      continue;
+    }
+    const bool vertical = frame->GetWritingMode().IsVertical();
+    const bool blockQueryable =
+      display->mContainerType == NS_STYLE_CONTAINER_TYPE_SIZE;
+    if (aBlockAxis && !blockQueryable) {
+      continue;
+    }
+    // The axis named here is the candidate's own, so map it to physical.  The
+    // specified size wins where containment makes it authoritative; the rect
+    // is the fallback.
+    const bool width = aBlockAxis == vertical;
+    const nsStyleCoord& coord = width
+                                  ? frame->StylePosition()->mWidth
+                                  : frame->StylePosition()->mHeight;
+    if ((!aBlockAxis || blockQueryable) && coord.ConvertsToLength()) {
+      return nsPresContext::AppUnitsToFloatCSSPixels(coord.GetCoordValue());
+    }
+    const nsSize rect = frame->GetContentRectRelativeToSelf().Size();
+    return nsPresContext::AppUnitsToFloatCSSPixels(width ? rect.width
+                                                         : rect.height);
+  }
+
+  // No eligible ancestor: the small viewport for the axis.  Logical axes
+  // follow the query container's writing mode.
+  nsSize viewport = aPresContext->GetVisibleArea().Size();
+  const float width = nsPresContext::AppUnitsToFloatCSSPixels(viewport.width);
+  const float height = nsPresContext::AppUnitsToFloatCSSPixels(viewport.height);
+  return (aBlockAxis == aVertical) ? width : height;
+}
+
+bool
+FindQueryContainerForStyleContext(nsStyleContext* aStyleContext, bool aBlockAxis,
+                                  nsPresContext* aPresContext, ContainerUnitsScale& aSize)
+{
+  // Walk the style context chain rather than the element chain.  Style
+  // resolution runs ahead of reflow -- and for a display:none subtree it never
+  // reaches the elements at all -- so frame lookups miss containers that are
+  // perfectly good ones.  Resolving them through nsComputedDOMStyle would work
+  // but re-enters style resolution, and an ancestor with cq units of its own
+  // re-enters again, which compounds badly.  The parent chain is already
+  // resolved and costs nothing to walk.
+  //
+  // The nearest context with element content is the element to record as a
+  // dependent: an anonymous box or pseudo-element inherits from its
+  // originating element and a keyframe context from the element it belongs to,
+  // and restyling that element restyles what sits below it.
+  Element* dependent = nullptr;
+  for (nsStyleContext* sc = aStyleContext; sc && !dependent;
+       sc = sc->GetParent()) {
+    nsIContent* content = sc->GetContent();
+    if (content && content->IsElement()) {
+      dependent = content->AsElement();
+    }
+  }
+
+  // Container units resolve against the nearest *ancestor* container, so the
+  // element's own context is skipped.  A pseudo-element's context parents off
+  // its originating element, so the originating element stays in range.
+  for (nsStyleContext* sc = aStyleContext->GetParent(); sc;
+       sc = sc->GetParent()) {
+    nsIContent* content = sc->GetContent();
+    Element* element =
+      content && content->IsElement() ? content->AsElement() : nullptr;
+    if (!element) {
+      continue;
+    }
+    const nsStyleDisplay* display = sc->StyleDisplay();
+    if (!display->IsContainerForSizeQueries()) {
+      continue;
+    }
+
+    // Only the inline axis is queryable unless the container is `size`.
+    const bool blockQueryable =
+      display->mContainerType == NS_STYLE_CONTAINER_TYPE_SIZE;
+    if (aBlockAxis && !blockQueryable) {
+      continue;
+    }
+
+    const bool vertical = WritingMode(sc).IsVertical();
+    aSize.mVertical = vertical;
+    aSize.mBlockQueryable = blockQueryable;
+
+    // The box may not have been reflowed, and may not have a box at all.
+    nsIFrame* frame = element->GetPrimaryFrame();
+    nsSize rect(0, 0);
+    if (frame) {
+      rect = frame->GetContentRectRelativeToSelf().Size();
+    }
+    const nsSize basis = ContainingBlockBasis(sc->GetParent());
+    aSize.mWidth = QueryableExtent(sc, rect, basis, true, vertical, blockQueryable);
+    aSize.mHeight = QueryableExtent(sc, rect, basis, false, vertical, blockQueryable);
+
+    if (dependent && frame) {
+      auto* dependents = static_cast<ContainerQueryDependents*>(
+          frame->GetProperty(nsIFrame::ContainerQueryDependentsProperty()));
+      const uint32_t generation = aPresContext->ContainerQueryGeneration();
+      if (!dependents) {
+        dependents = new ContainerQueryDependents();
+        frame->SetProperty(nsIFrame::ContainerQueryDependentsProperty(),
+                           dependents);
+        dependents->mGeneration = generation;
+      } else if (dependents->mGeneration != generation) {
+        dependents->mElements.Clear();
+        dependents->mGeneration = generation;
+      }
+      if (!dependents->mElements.Contains(dependent)) {
+        dependents->mElements.AppendElement(dependent);
+      }
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+// Compares a measured value against the required one for a given range.
+static ContainerEval
+CompareFeatureValue(float aActual, float aRequired,
+                    nsMediaExpression::Range aRange)
+{
+  switch (aRange) {
+    case nsMediaExpression::eMin:
+      return aActual >= aRequired ? ContainerEval::True
+                                  : ContainerEval::False;
+    case nsMediaExpression::eMinExclusive:
+      return aActual > aRequired ? ContainerEval::True
+                                 : ContainerEval::False;
+    case nsMediaExpression::eMax:
+      return aActual <= aRequired ? ContainerEval::True
+                                  : ContainerEval::False;
+    case nsMediaExpression::eMaxExclusive:
+      return aActual < aRequired ? ContainerEval::True
+                                 : ContainerEval::False;
+    case nsMediaExpression::eEqual:
+      return aActual == aRequired ? ContainerEval::True
+                                  : ContainerEval::False;
+    default:
+      return ContainerEval::Unknown;
+  }
+}
+
+// True when any leaf is a size feature in rem, which ties the whole tree to the
+// root element's font size.  A leaf the selected container cannot answer still
+// counts: the dependency is on the value, not on whether it matches.
+static bool
+ConditionUsesRootEM(const nsContainerCondition& aCondition)
+{
+  if (aCondition.GetKind() == nsContainerCondition::eFeature &&
+      aCondition.GetExpression().mValue.GetUnit() == eCSSUnit_RootEM) {
+    return true;
+  }
+  for (const RefPtr<nsContainerCondition>& operand : aCondition.GetOperands()) {
+    if (ConditionUsesRootEM(*operand)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static ContainerEval
+SizeFeatureAgainstContainer(const nsMediaExpression* aExpr,
+                            const ContainerSize& aSize,
+                            nsPresContext* aPresContext,
+                            nscoord aFontSize)
+{
+  // Belt and braces: an expression is only valid once its feature resolved.
+  if (!aExpr->mFeature || !aExpr->mFeature->mName) {
+    return ContainerEval::Unknown;
+  }
+
+  // Feature atoms are spelled with hyphens ("min-width") but the gkAtoms in
+  // this tree are not, so normalise before comparing.
+  nsAutoString name;
+  (*aExpr->mFeature->mName)->ToString(name);
+  name.StripChars("-");
+
+  const nsCSSValue& value = aExpr->mValue;
+
+  switch (aExpr->mFeature->mValueType) {
+    case nsMediaFeature::eFloatRatio: {
+      if (!name.EqualsLiteral("aspectratio") ||
+          !aSize.mBlockQueryable || aSize.mHeight <= 0.0f ||
+          value.GetUnit() != eCSSUnit_Array) {
+        return ContainerEval::Unknown;
+      }
+      const nsCSSValue::Array* ratio = value.GetArrayValue();
+      if (ratio->Count() != 2 ||
+          ratio->Item(0).GetUnit() != eCSSUnit_Number ||
+          ratio->Item(1).GetUnit() != eCSSUnit_Number ||
+          ratio->Item(1).GetFloatValue() <= 0.0f) {
+        // A zero denominator is a legal infinite ratio, but not worth
+        // special-casing until something needs it.
+        return ContainerEval::Unknown;
+      }
+      // The ratio is scale invariant, so the unit the rect is measured in
+      // drops out and no app-unit conversion is needed.
+      return CompareFeatureValue(
+        aSize.mWidth / aSize.mHeight,
+        ratio->Item(0).GetFloatValue() / ratio->Item(1).GetFloatValue(),
+        aExpr->mRange);
+    }
+
+    case nsMediaFeature::eEnumerated: {
+      // orientation is eMinMaxNotAllowed, so the range is always eEqual.
+      if (!name.EqualsLiteral("orientation") ||
+          !aSize.mBlockQueryable ||
+          value.GetUnit() != eCSSUnit_Enumerated) {
+        return ContainerEval::Unknown;
+      }
+      // Square containers are portrait, as in GetOrientation.
+      int32_t actual = aSize.mWidth > aSize.mHeight
+                         ? NS_STYLE_ORIENTATION_LANDSCAPE
+                         : NS_STYLE_ORIENTATION_PORTRAIT;
+      return value.GetIntValue() == actual ? ContainerEval::True
+                                           : ContainerEval::False;
+    }
+
+    case nsMediaFeature::eLength:
+      break;
+
+    default:
+      return ContainerEval::Unknown;
+  }
+
+  float actual;
+  bool queryable = true;
+  if (name.EqualsLiteral("width") ||
+      name.EqualsLiteral("minwidth") ||
+      name.EqualsLiteral("maxwidth")) {
+    actual = aSize.mWidth;
+    // width is the block axis in a vertical writing mode.
+    queryable = aSize.mVertical ? aSize.mBlockQueryable : true;
+  } else if (name.EqualsLiteral("height") ||
+             name.EqualsLiteral("minheight") ||
+             name.EqualsLiteral("maxheight")) {
+    actual = aSize.mHeight;
+    queryable = aSize.mVertical ? true : aSize.mBlockQueryable;
+  } else if (name.EqualsLiteral("inlinesize") ||
+             name.EqualsLiteral("mininlinesize") ||
+             name.EqualsLiteral("maxinlinesize")) {
+    actual = aSize.mVertical ? aSize.mHeight : aSize.mWidth;
+  } else if (name.EqualsLiteral("blocksize") ||
+             name.EqualsLiteral("minblocksize") ||
+             name.EqualsLiteral("maxblocksize")) {
+    actual = aSize.mVertical ? aSize.mWidth : aSize.mHeight;
+    queryable = aSize.mBlockQueryable;
+  } else {
+    // device-width, resolution, etc.
+    return ContainerEval::Unknown;
+  }
+  if (!queryable) {
+    return ContainerEval::Unknown;
+  }
+
+  float required;
+  if (value.IsPixelLengthUnit()) {
+    required = nsPresContext::AppUnitsToFloatCSSPixels(value.GetPixelLength());
+  } else if (value.GetUnit() == eCSSUnit_EM) {
+    required = nsPresContext::AppUnitsToFloatCSSPixels(aFontSize) *
+               value.GetFloatValue();
+  } else if (value.GetUnit() == eCSSUnit_RootEM) {
+    // A rem is the root element's font-size, never the container's, so it is
+    // resolved against the root whatever the container happens to inherit.
+    required = nsPresContext::AppUnitsToFloatCSSPixels(aSize.mRootFontSize) *
+               value.GetFloatValue();
+  } else if (value.GetUnit() >= eCSSUnit_CQW &&
+             value.GetUnit() <= eCSSUnit_CQMax) {
+    // The unit's reference axis need not be the axis being queried, so it
+    // needs its own availability check.
+    float reference;
+    switch (value.GetUnit()) {
+      case eCSSUnit_CQW:
+        reference = aSize.mVertical ? aSize.mUnitBlock : aSize.mUnitInline;
+        break;
+      case eCSSUnit_CQH:
+        reference = aSize.mVertical ? aSize.mUnitInline : aSize.mUnitBlock;
+        break;
+      case eCSSUnit_CQI:
+        reference = aSize.mUnitInline;
+        break;
+      case eCSSUnit_CQB:
+        reference = aSize.mUnitBlock;
+        break;
+      default: {
+        const float lo = std::min(aSize.mUnitInline, aSize.mUnitBlock);
+        const float hi = std::max(aSize.mUnitInline, aSize.mUnitBlock);
+        reference = value.GetUnit() == eCSSUnit_CQMin ? lo : hi;
+        break;
+      }
+    }
+    required = reference * value.GetFloatValue() / 100.0f;
+  } else {
+    return ContainerEval::Unknown;
+  }
+
+  return CompareFeatureValue(actual, required, aExpr->mRange);
+}
+
+// True when the expression can only be answered from the container's block
+// axis, which an `inline-size` container cannot provide.  Writing mode decides
+// which of the width/height pair that is.
+static bool
+FeatureNeedsBlockAxis(const nsMediaExpression& aExpr, bool aVertical)
+{
+  if (!aExpr.mFeature || !aExpr.mFeature->mName) {
+    return false;
+  }
+  nsAutoString name;
+  (*aExpr.mFeature->mName)->ToString(name);
+  name.StripChars("-");
+
+  if (name.EqualsLiteral("blocksize") ||
+      name.EqualsLiteral("minblocksize") ||
+      name.EqualsLiteral("maxblocksize") ||
+      name.EqualsLiteral("aspectratio") ||
+      name.EqualsLiteral("orientation")) {
+    return true;
+  }
+  if (aVertical) {
+    return name.EqualsLiteral("width") || name.EqualsLiteral("minwidth") ||
+           name.EqualsLiteral("maxwidth");
+  }
+  return name.EqualsLiteral("height") || name.EqualsLiteral("minheight") ||
+         name.EqualsLiteral("maxheight");
+}
+
+// True when any leaf in the tree needs the block axis.
+static bool
+ConditionNeedsBlockAxis(const nsContainerCondition& aCondition, bool aVertical)
+{
+  if (aCondition.GetKind() == nsContainerCondition::eFeature) {
+    return FeatureNeedsBlockAxis(aCondition.GetExpression(), aVertical);
+  }
+  for (const RefPtr<nsContainerCondition>& operand : aCondition.GetOperands()) {
+    if (ConditionNeedsBlockAxis(*operand, aVertical)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+namespace {
+class ContainerConditionEvaluator final : public nsContainerConditionEvaluator
+{
+public:
+  ContainerConditionEvaluator(const ContainerSize& aSize,
+                              nsPresContext* aPresContext, Element* aElement,
+                              const nsString& aName)
+    : mSize(aSize), mPresContext(aPresContext), mElement(aElement),
+      mName(aName) {}
+
+  ContainerEval EvaluateFeature(const nsMediaExpression& aExpression) override
+  {
+    return SizeFeatureAgainstContainer(&aExpression, mSize, mPresContext,
+                                       mSize.mFontSize);
+  }
+
+  ContainerEval EvaluateStyle(const nsContainerCondition& aCondition) override
+  {
+    Element* container = nullptr;
+    if (!FindStyleContainer(mElement, mName, mPresContext, &container)) {
+      // No style container, so nothing can answer it.
+      return ContainerEval::Unknown;
+    }
+    return StyleQueryAgainstContainer(aCondition.GetStyle(), container,
+                                      mPresContext);
+  }
+
+private:
+  const ContainerSize& mSize;
+  nsPresContext* mPresContext;
+  Element* mElement;
+  const nsString& mName;
+};
+} // anonymous namespace
+
+// True when the tree holds a size feature.  A tree of style() leaves alone needs
+// no size container, so the size walk must not be allowed to fail it.
+static bool
+ConditionHasSizeFeature(const nsContainerCondition& aCondition)
+{
+  if (aCondition.GetKind() == nsContainerCondition::eFeature) {
+    return true;
+  }
+  for (const RefPtr<nsContainerCondition>& operand : aCondition.GetOperands()) {
+    if (ConditionHasSizeFeature(*operand)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// The tree is evaluated against the nearest eligible container with
+// three-valued logic; unknown resolves false.
+static ContainerEval
+EvaluateContainerCondition(const nsContainerConditionPair& aPair,
+                           Element* aElement, nsPresContext* aPresContext)
+{
+  const nsContainerCondition* aCondition = aPair.mCondition;
+  const nsString& aName = aPair.mName;
+  ContainerSize size;
+
+  // A name with no condition only asks for the container to exist.
+  if (!aCondition) {
+    return FindQueryContainer(aElement, aName, size, aPresContext, false,
+                              false, nullptr)
+             ? ContainerEval::True
+             : ContainerEval::False;
+  }
+
+  // Arm the root-font dependency before the container walk, which can fail.
+  const bool usesRootEM = ConditionUsesRootEM(*aCondition);
+  if (usesRootEM) {
+    aPresContext->SetUsesRootEMUnits(true);
+  }
+
+  // Style leaves resolve against the nearest style container, which need not be
+  // a size container, so the size walk is only owed when the tree has a size
+  // feature.
+  const bool needsSize = ConditionHasSizeFeature(*aCondition);
+
+  // The block axis can only be answered by a `size` container, so a condition
+  // needing it has to skip past `inline-size` containers while selecting.
+  // Every leaf resolves against the container that gets selected, so one
+  // block-axis leaf is enough to constrain the whole selection.
+  bool blockAxis = false;
+  if (needsSize) {
+    WritingMode wm;
+    if (nsIFrame* frame = aElement->GetPrimaryFrame()) {
+      wm = frame->GetWritingMode();
+    }
+    blockAxis = ConditionNeedsBlockAxis(*aCondition, wm.IsVertical());
+  }
+
+  Element* container = nullptr;
+  if (needsSize &&
+      !FindQueryContainer(aElement, aName, size, aPresContext, blockAxis,
+                          usesRootEM, &container)) {
+    return ContainerEval::False;
+  }
+
+  // Container query length units measure the container's ancestors, so they
+  // need their own walk.  cqmin/cqmax take both axes, which may come from
+  // different containers.
+  if (needsSize) {
+    size.mUnitInline =
+      UnitReferenceForAxis(container, false, size.mVertical, aPresContext);
+    size.mUnitBlock =
+      UnitReferenceForAxis(container, true, size.mVertical, aPresContext);
+  }
+
+  ContainerConditionEvaluator evaluator(size, aPresContext, aElement, aName);
+  return aCondition->Matches(evaluator);
+}
+
 static inline void
 ContentEnumFunc(const RuleValue& value,
                 nsCSSSelector* aSelector,
@@ -596,6 +1573,24 @@ ContentEnumFunc(const RuleValue& value,
                    data->mTreeMatchContext,
                    nodeContext.mIsRelevantLink ? SelectorMatchesTreeFlags(0)
                                                : eLookForRelevantLink)) {
+      // A rule with no pairs is an ordinary rule and always applies.  Otherwise
+      // any pair matching applies it.
+      const nsTArray<nsContainerConditionPair>& conditions =
+        value.mRule->GetContainerConditions();
+      if (!conditions.IsEmpty()) {
+        bool matched = false;
+        for (const nsContainerConditionPair& pair : conditions) {
+          if (EvaluateContainerCondition(pair, data->mElement,
+                                         data->mPresContext) ==
+              ContainerEval::True) {
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          return;
+        }
+      }
       css::Declaration* declaration = value.mRule->GetDeclaration();
       declaration->SetImmutable();
       data->mRuleWalker->Forward(declaration);
@@ -622,17 +1617,31 @@ RuleHash::EnumerateAllRules(Element* aElement,
   // time counting
   int32_t testCount = classCount + 4;
 
-  if (mEnumListSize < testCount) {
-    delete[] mEnumList;
-    mEnumListSize = std::max(testCount, MIN_ENUM_LIST_SIZE);
-    mEnumList = new EnumData[mEnumListSize];
+  // Style resolution can re-enter itself: resolving a container-unit reference
+  // resolves the container's style from inside this walk.  A nested
+  // enumeration therefore cannot use mEnumList, since it would overwrite both
+  // the entries and the mCurValue/mEnd cursors that the outer loop still holds
+  // pointers into.
+  AutoTArray<EnumData, MIN_ENUM_LIST_SIZE> nestedEnumList;
+  EnumData* enumList;
+  if (mEnumListDepth > 0) {
+    nestedEnumList.SetLength(testCount);
+    enumList = nestedEnumList.Elements();
+  } else {
+    if (mEnumListSize < testCount) {
+      delete[] mEnumList;
+      mEnumListSize = std::max(testCount, MIN_ENUM_LIST_SIZE);
+      mEnumList = new EnumData[mEnumListSize];
+    }
+    enumList = mEnumList;
   }
+  ++mEnumListDepth;
 
   int32_t valueCount = 0;
   RULE_HASH_STAT_INCREMENT(mElementsMatched);
 
   if (mUniversalRules.Length() != 0) { // universal rules
-    mEnumList[valueCount++] = ToEnumData(mUniversalRules);
+    enumList[valueCount++] = ToEnumData(mUniversalRules);
     RULE_HASH_STAT_INCREMENT_LIST_COUNT(mUniversalRules,
                                         mElementUniversalCalls);
   }
@@ -641,7 +1650,7 @@ RuleHash::EnumerateAllRules(Element* aElement,
     auto entry = static_cast<RuleHashTableEntry*>(
       mNameSpaceTable.Search(NS_INT32_TO_PTR(nameSpace)));
     if (entry) {
-      mEnumList[valueCount++] = ToEnumData(entry->mRules);
+      enumList[valueCount++] = ToEnumData(entry->mRules);
       RULE_HASH_STAT_INCREMENT_LIST_COUNT(entry->mRules,
                                           mElementNameSpaceCalls);
     }
@@ -649,14 +1658,14 @@ RuleHash::EnumerateAllRules(Element* aElement,
   if (mTagTable.EntryCount() > 0) {
     auto entry = static_cast<RuleHashTableEntry*>(mTagTable.Search(tag));
     if (entry) {
-      mEnumList[valueCount++] = ToEnumData(entry->mRules);
+      enumList[valueCount++] = ToEnumData(entry->mRules);
       RULE_HASH_STAT_INCREMENT_LIST_COUNT(entry->mRules, mElementTagCalls);
     }
   }
   if (id && mIdTable.EntryCount() > 0) {
     auto entry = static_cast<RuleHashTableEntry*>(mIdTable.Search(id));
     if (entry) {
-      mEnumList[valueCount++] = ToEnumData(entry->mRules);
+      enumList[valueCount++] = ToEnumData(entry->mRules);
       RULE_HASH_STAT_INCREMENT_LIST_COUNT(entry->mRules, mElementIdCalls);
     }
   }
@@ -665,7 +1674,7 @@ RuleHash::EnumerateAllRules(Element* aElement,
       auto entry = static_cast<RuleHashTableEntry*>(
         mClassTable.Search(classList->AtomAt(index)));
       if (entry) {
-        mEnumList[valueCount++] = ToEnumData(entry->mRules);
+        enumList[valueCount++] = ToEnumData(entry->mRules);
         RULE_HASH_STAT_INCREMENT_LIST_COUNT(entry->mRules, mElementClassCalls);
       }
     }
@@ -690,34 +1699,36 @@ RuleHash::EnumerateAllRules(Element* aElement,
     // Merge the lists while there are still multiple lists to merge.
     while (valueCount > 1) {
       int32_t valueIndex = 0;
-      int32_t lowestRuleIndex = mEnumList[valueIndex].mCurValue->mIndex;
+      int32_t lowestRuleIndex = enumList[valueIndex].mCurValue->mIndex;
       for (int32_t index = 1; index < valueCount; ++index) {
-        int32_t ruleIndex = mEnumList[index].mCurValue->mIndex;
+        int32_t ruleIndex = enumList[index].mCurValue->mIndex;
         if (ruleIndex < lowestRuleIndex) {
           valueIndex = index;
           lowestRuleIndex = ruleIndex;
         }
       }
-      const RuleValue* cur = mEnumList[valueIndex].mCurValue;
+      const RuleValue* cur = enumList[valueIndex].mCurValue;
       aData->mTreeMatchContext.mForAssignedSlot = isForAssignedSlot;
       ContentEnumFunc(*cur, cur->mSelector, aData, aNodeContext, filter);
       cur++;
-      if (cur == mEnumList[valueIndex].mEnd) {
-        mEnumList[valueIndex] = mEnumList[--valueCount];
+      if (cur == enumList[valueIndex].mEnd) {
+        enumList[valueIndex] = enumList[--valueCount];
       } else {
-        mEnumList[valueIndex].mCurValue = cur;
+        enumList[valueIndex].mCurValue = cur;
       }
     }
 
     // Fast loop over single value.
-    for (const RuleValue *value = mEnumList[0].mCurValue,
-                              *end = mEnumList[0].mEnd;
+    for (const RuleValue *value = enumList[0].mCurValue,
+                              *end = enumList[0].mEnd;
          value != end;
          ++value) {
       aData->mTreeMatchContext.mForAssignedSlot = isForAssignedSlot;
       ContentEnumFunc(*value, value->mSelector, aData, aNodeContext, filter);
     }
   }
+
+  --mEnumListDepth;
 }
 
 static size_t
