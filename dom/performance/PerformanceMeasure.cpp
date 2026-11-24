@@ -21,6 +21,7 @@ PerformanceMeasure::PerformanceMeasure(nsISupports* aParent,
 {
   // mParent is null in workers.
   MOZ_ASSERT(mParent || !NS_IsMainThread());
+  mozilla::HoldJSObjects(this);
 }
 
 PerformanceMeasure::~PerformanceMeasure()
