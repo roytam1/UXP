@@ -3815,11 +3815,14 @@ nsCSSFrameConstructor::ConstructFrameFromItemInternal(FrameConstructionItem& aIt
   // Push the children element as an ancestor here because it does
   // not have a frame and would not otherwise be pushed as an ancestor. It is
   // necessary to do so in order to correctly handle style resolution on
-  // descendants.  (If !adcp.IsEmpty() then it was already pushed by
-  // AutoDisplayContentsAncestorPusher above.)
+  // descendants.  Skip it only if AutoDisplayContentsAncestorPusher above
+  // already pushed it, i.e. if it is itself display:contents.  A display:
+  // contents ancestor further up is not enough, since the pusher walks past
+  // such ancestors.
   TreeMatchContext::AutoAncestorPusher
     insertionPointPusher(aState.mTreeMatchContext);
-  if (adcp.IsEmpty() && parent && parent->IsActiveChildrenElement()) {
+  if (parent && parent->IsActiveChildrenElement() &&
+      !GetDisplayContentsStyleFor(parent)) {
     if (aState.mTreeMatchContext.mAncestorFilter.HasFilter()) {
       insertionPointPusher.PushAncestorAndStyleScope(parent);
     } else {
