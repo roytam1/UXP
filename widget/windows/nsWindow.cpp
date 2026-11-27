@@ -634,8 +634,12 @@ nsWindow::nsWindow()
   mTransparencyMode     = eTransparencyOpaque;
   memset(&mGlassMargins, 0, sizeof mGlassMargins);
 #endif
-  DWORD background      = ::GetSysColor(COLOR_BTNFACE);
-  mBrush                = ::CreateSolidBrush(NSRGB_2_COLOREF(background));
+  // A system color brush tracks palette/system color changes by itself and
+  // must not be deleted.  SetBackgroundColor() replaces it with an owned
+  // solid brush.
+  mUseSystemBackgroundBrush = true;
+  mBrush                = ::GetSysColorBrush(COLOR_BTNFACE);
+  mPalette              = nullptr;
   mSendingSetText       = false;
   mDefaultScale         = -1.0; // not yet set, will be calculated on first use
 
@@ -843,6 +847,9 @@ nsWindow::Create(nsIWidget* aParent,
     NS_WARNING("nsWindow CreateWindowEx failed.");
     return NS_ERROR_FAILURE;
   }
+
+  // Determine whether this window's device needs a logical palette.
+  UpdatePalette();
 
   if (mIsRTL && WinUtils::dwmSetWindowAttributePtr) {
     DWORD dwAttribute = TRUE;    
@@ -2804,10 +2811,11 @@ nsWindow::ExcludeNonClientFromPaintRegion(HRGN aRegion)
 
 void nsWindow::SetBackgroundColor(const nscolor &aColor)
 {
-  if (mBrush)
+  if (mBrush && !mUseSystemBackgroundBrush)
     ::DeleteObject(mBrush);
 
   mBrush = ::CreateSolidBrush(NSRGB_2_COLOREF(aColor));
+  mUseSystemBackgroundBrush = false;
   if (mWnd != nullptr) {
     ::SetClassLongPtrW(mWnd, GCLP_HBRBACKGROUND, (LONG_PTR)mBrush);
   }
@@ -5040,6 +5048,34 @@ nsWindow::ProcessMessage(UINT msg, WPARAM& wParam, LPARAM& lParam,
       OnSysColorChanged();
       break;
 
+    case WM_QUERYNEWPALETTE:
+      // Sent to the window about to receive focus. Realizing our palette
+      // lets GDI map solid colors correctly on palettized displays.
+      if (mPalette) {
+        RealizeWindowPalette();
+        *aRetValue = TRUE;
+      }
+      result = true;
+      break;
+
+    case WM_PALETTEISCHANGING:
+      // Another window is about to realize its palette. Nothing to defer:
+      // we re-realize when WM_PALETTECHANGED arrives.
+      result = true;
+      break;
+
+    case WM_PALETTECHANGED:
+      if (mPalette && reinterpret_cast<HWND>(wParam) != mWnd) {
+        RealizeWindowPalette();
+      }
+      result = true;
+      break;
+
+    case WM_DISPLAYCHANGE:
+      // The window might now be on a display with a different bit depth.
+      UpdatePalette();
+      break;
+
     case WM_THEMECHANGED:
     {
       // Update non-client margin offsets 
@@ -7023,9 +7059,21 @@ void nsWindow::OnDestroy()
   IMEHandler::OnDestroyWindow(this);
 
   // Free GDI window class objects
-  if (mBrush) {
+  if (mBrush && !mUseSystemBackgroundBrush) {
     VERIFY(::DeleteObject(mBrush));
-    mBrush = nullptr;
+  }
+  mBrush = nullptr;
+
+  if (mPalette) {
+    if (mWnd) {
+      HDC dc = ::GetDC(mWnd);
+      if (dc) {
+        ::SelectPalette(dc, (HPALETTE)::GetStockObject(DEFAULT_PALETTE), FALSE);
+        ::ReleaseDC(mWnd, dc);
+      }
+    }
+    ::DeleteObject(mPalette);
+    mPalette = nullptr;
   }
 
   // Destroy any custom cursor resources.
@@ -7134,12 +7182,129 @@ nsWindow::HasBogusPopupsDropShadowOnMultiMonitor() {
 }
 
 void
+nsWindow::UpdatePalette()
+{
+  if (mPalette) {
+    if (mWnd) {
+      HDC oldDC = ::GetDC(mWnd);
+      if (oldDC) {
+        ::SelectPalette(oldDC,
+                        (HPALETTE)::GetStockObject(DEFAULT_PALETTE), FALSE);
+        ::ReleaseDC(mWnd, oldDC);
+      }
+    }
+    ::DeleteObject(mPalette);
+    mPalette = nullptr;
+  }
+
+  if (!mWnd) {
+    return;
+  }
+
+  HDC dc = ::GetDC(mWnd);
+  if (!dc) {
+    return;
+  }
+
+  const int colors = ::GetDeviceCaps(dc, NUMCOLORS);
+  const int rasterCaps = ::GetDeviceCaps(dc, RASTERCAPS);
+  // RC_PALETTE is the authoritative signal that the device has a color
+  // table; NUMCOLORS is -1 when there is no color table. Do not use
+  // BITSPIXEL, which can report 32 in an 8-bit session with DWM involved.
+  const bool palettized = (rasterCaps & RC_PALETTE) && colors != -1;
+
+  if (palettized) {
+    // Some XP display drivers report NUMCOLORS as 20 (the reserved system
+    // entries) even in 256-color mode. CreateHalftonePalette() sizes itself
+    // from that value and then gives us only ~20 colors, which is why
+    // truecolor images collapse to a handful of shades. Build a full
+    // 256-entry palette ourselves: a 6x6x6 color cube for the 236 free
+    // entries, with the reserved system colors at both ends.
+    const UINT kEntries = 256;
+    PALETTEENTRY ht[kEntries];
+    UINT htCount = 0;
+    HPALETTE halftone = ::CreateHalftonePalette(dc);
+    if (halftone) {
+      htCount = ::GetPaletteEntries(halftone, 0, kEntries, ht);
+    }
+
+    if (htCount < kEntries) {
+      static const BYTE levels[6] = {0, 51, 102, 153, 204, 255};
+      for (UINT i = 0; i < kEntries; ++i) {
+        ht[i].peRed = levels[(i / 36) % 6];
+        ht[i].peGreen = levels[(i / 6) % 6];
+        ht[i].peBlue = levels[i % 6];
+        ht[i].peFlags = 0;
+      }
+      htCount = kEntries;
+    }
+
+    PALETTEENTRY sys[kEntries];
+    UINT sysCount = ::GetSystemPaletteEntries(dc, 0, kEntries, sys);
+    UINT reserve = sysCount < 10 ? sysCount : 10;
+    for (UINT i = 0; i < reserve; ++i) {
+      ht[i] = sys[i];
+      ht[kEntries - reserve + i] = sys[sysCount - reserve + i];
+    }
+
+    LOGPALETTE* logPalette = (LOGPALETTE*)PR_Malloc(
+      sizeof(LOGPALETTE) + (kEntries - 1) * sizeof(PALETTEENTRY));
+    if (logPalette) {
+      logPalette->palVersion = 0x300;
+      logPalette->palNumEntries = (WORD)htCount;
+      for (UINT i = 0; i < htCount; ++i) {
+        logPalette->palPalEntry[i] = ht[i];
+      }
+      mPalette = ::CreatePalette(logPalette);
+      PR_Free(logPalette);
+    }
+
+    if (halftone) {
+      ::DeleteObject(halftone);
+    }
+  }
+
+  ::ReleaseDC(mWnd, dc);
+}
+
+void
+nsWindow::RealizeWindowPalette()
+{
+  if (!mPalette || !mWnd) {
+    return;
+  }
+
+  HDC dc = ::GetDC(mWnd);
+  if (!dc) {
+    return;
+  }
+
+  // Intentionally leave the palette selected in the window DC so that
+  // subsequent GDI drawing maps colors through it. The palette belongs to
+  // this window and is deselected/deleted in OnDestroy().
+  ::SelectPalette(dc, mPalette, FALSE);
+  ::RealizePalette(dc);
+  ::ReleaseDC(mWnd, dc);
+}
+
+void
 nsWindow::OnSysColorChanged()
 {
   if (mWindowType == eWindowType_invisible) {
     ::EnumThreadWindows(GetCurrentThreadId(), nsWindow::BroadcastMsg, WM_SYSCOLORCHANGE);
+    // Windows only sends WM_PALETTECHANGED to top-level windows. Pass it
+    // on to our child windows as well so they pick up the new palette.
+    ::EnumThreadWindows(GetCurrentThreadId(), nsWindow::BroadcastMsg, WM_PALETTECHANGED);
   }
   else {
+    if (mUseSystemBackgroundBrush) {
+      mBrush = ::GetSysColorBrush(COLOR_BTNFACE);
+      if (mWnd) {
+        ::SetClassLongPtrW(mWnd, GCLP_HBRBACKGROUND, (LONG_PTR)mBrush);
+      }
+    }
+    UpdatePalette();
+    RealizeWindowPalette();
     // Note: This is sent for child windows as well as top-level windows.
     // The Win32 toolkit normally only sends these events to top-level windows.
     // But we cycle through all of the childwindows and send it to them as well
