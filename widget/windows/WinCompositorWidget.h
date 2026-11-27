@@ -14,6 +14,7 @@
 #include "nsIWidget.h"
 
 class nsWindow;
+class gfxWindowsSurface;
 
 namespace mozilla {
 namespace widget {
@@ -106,6 +107,10 @@ private:
 
   // Locked back buffer of BasicCompositor
   uint8_t* mLockedBackBufferData;
+
+  // Truecolor buffer used on palettized displays; blitted to the window DC
+  // with the window's logical palette realized at EndRemoteDrawing().
+  RefPtr<gfxWindowsSurface> mPaletteSurface;
 
   bool mNotDeferEndRemoteDrawing;
 };

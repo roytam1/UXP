@@ -261,6 +261,9 @@ public:
    * Misc.
    */
   virtual bool            AutoErase(HDC dc);
+  // Win32 palette support.  All of this is a no-op on non-palettized devices.
+  void                    UpdatePalette();
+  void                    RealizeWindowPalette();
   bool WidgetTypeSupportsAcceleration() override;
 
   void                    ForcePresent();
@@ -302,6 +305,8 @@ public:
 
   bool IsPopup();
   virtual bool ShouldUseOffMainThreadCompositing() override;
+
+  HPALETTE GetPalette() const { return mPalette; }
 
   const IMEContext& DefaultIMC() const { return mDefaultIMC; }
 
@@ -517,6 +522,10 @@ protected:
   HWND                  mTransitionWnd;
   WNDPROC               mPrevWndProc;
   HBRUSH                mBrush;
+  // True when mBrush is a system color brush (not owned by us).
+  bool                  mUseSystemBackgroundBrush;
+  // Logical palette for this window's DC, valid only on palettized devices.
+  HPALETTE              mPalette;
   IMEContext            mDefaultIMC;
   bool                  mIsTopWidgetWindow;
   bool                  mInDtor;
