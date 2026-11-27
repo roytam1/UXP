@@ -92,6 +92,24 @@ IsCacheableNoProperty(JSContext* cx, JSObject* obj, JSObject* holder, Shape* sha
     return CheckHasNoSuchProperty(cx, obj, JSID_TO_ATOM(id)->asPropertyName());
 }
 
+bool
+GetPropIRGenerator::tryAttachMissingGetElemStub(Maybe<CacheIRWriter>& writer)
+{
+    AutoAssertNoPendingException aanpe(cx_);
+    JS::AutoCheckCannotGC nogc;
+    MOZ_ASSERT(!emitted_);
+    MOZ_ASSERT(val_.isObject() && val_.toObject().isNative());
+
+    writer.emplace();
+    ValOperandId valId(writer->setInputOperandId(0));
+    ValOperandId keyId(writer->setInputOperandId(1));
+    RootedObject obj(cx_, &val_.toObject());
+    // Keep the receiver guard first, as expected by BaselineInspector.
+    ObjOperandId objId = writer->guardIsObject(valId);
+    writer->guardSpecificAtom(keyId, name_);
+    return tryAttachNative(*writer, obj, objId, /* missingOnly = */ true);
+}
+
 enum NativeGetPropCacheability {
     CanAttachNone,
     CanAttachReadSlot,
@@ -231,7 +249,8 @@ EmitReadSlotResult(CacheIRWriter& writer, JSObject* obj, JSObject* holder,
 }
 
 bool
-GetPropIRGenerator::tryAttachNative(CacheIRWriter& writer, HandleObject obj, ObjOperandId objId)
+GetPropIRGenerator::tryAttachNative(CacheIRWriter& writer, HandleObject obj, ObjOperandId objId,
+                                  bool missingOnly)
 {
     MOZ_ASSERT(!emitted_);
 
@@ -240,7 +259,7 @@ GetPropIRGenerator::tryAttachNative(CacheIRWriter& writer, HandleObject obj, Obj
 
     RootedId id(cx_, NameToId(name_));
     NativeGetPropCacheability type = CanAttachNativeGetProp(cx_, obj, id, &holder, &shape, pc_);
-    if (type == CanAttachNone)
+    if (type == CanAttachNone || (missingOnly && holder))
         return true;
 
     emitted_ = true;

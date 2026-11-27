@@ -11,6 +11,7 @@
 #include "mozilla/WritingModes.h"
 #include "nsBulletFrame.h" // legacy location for list style type to text code
 #include "nsContentUtils.h"
+#include "nsContainerFrame.h"
 #include "nsIContent.h"
 #include "nsTArray.h"
 

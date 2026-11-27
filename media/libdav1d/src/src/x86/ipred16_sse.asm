@@ -82,6 +82,7 @@ pw_2048:  times 4 dw 2048
 %endmacro
 
 %if !ARCH_X86_64
+ALIGN 16
 %macro SMOOTH_WEIGHTS 1-*
 const smooth_weights_1d_16bpc ; sm_weights[] << 7
     %rep %0

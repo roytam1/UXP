@@ -585,6 +585,7 @@ WorkerMainThreadRunnable::WorkerMainThreadRunnable(WorkerPrivate* aWorkerPrivate
                                                    const nsACString& aTelemetryKey)
 : mWorkerPrivate(aWorkerPrivate)
 , mTelemetryKey(aTelemetryKey)
+, mMainThreadResult(NS_OK)
 {
   mWorkerPrivate->AssertIsOnWorkerThread();
 }
@@ -612,6 +613,11 @@ WorkerMainThreadRunnable::Dispatch(Status aFailStatus, ErrorResult& aRv)
 
   if (!syncLoop.Run()) {
     aRv.ThrowUncatchableException();
+    return;
+  }
+
+  if (!aRv.Failed() && NS_FAILED(mMainThreadResult)) {
+    aRv.Throw(mMainThreadResult);
   }
 }
 

@@ -871,8 +871,8 @@ private:
 
 /**
  * This pushes any display:contents nodes onto a TreeMatchContext.
- * Use it before resolving style for kids of aParent where aParent
- * (and further ancestors) may be display:contents nodes which have
+ * Use it before resolving style for aContent where aContent's composed
+ * parent (and further ancestors) may be display:contents nodes which have
  * not yet been pushed onto TreeMatchContext.
  */
 class MOZ_RAII AutoDisplayContentsAncestorPusher final
@@ -881,7 +881,7 @@ class MOZ_RAII AutoDisplayContentsAncestorPusher final
   typedef mozilla::dom::Element Element;
   AutoDisplayContentsAncestorPusher(TreeMatchContext& aTreeMatchContext,
                                     nsPresContext*    aPresContext,
-                                    nsIContent*       aParent);
+                                    nsIContent*       aContent);
   ~AutoDisplayContentsAncestorPusher();
   bool IsEmpty() const { return mAncestors.Length() == 0; }
 private:
