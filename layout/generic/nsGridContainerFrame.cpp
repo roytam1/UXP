@@ -4051,6 +4051,23 @@ nsGridContainerFrame::Tracks::CalculateSizes(
   InitializeItemBaselines(aState, aGridItems);
   ResolveIntrinsicSize(aState, aGridItems, aFunctions, aRange, percentageBasis,
                        aConstraint);
+  // An 'auto' maximum track sizing function is limited by the grid
+  // container's definite size in this axis, per css-grid §12.5.1.  Without
+  // this, an item whose min-content contribution exceeds the available space
+  // pins the track at max-content and it can never shrink back, since
+  // DistributeFreeSpace only ever grows tracks.
+  if (aConstraint != SizingConstraint::eMinContent &&
+      aContentBoxSize != NS_UNCONSTRAINEDSIZE) {
+    for (TrackSize& sz : mSizes) {
+      if (sz.mState & TrackSize::eAutoMaxSizing) {
+        sz.mBase = std::min(sz.mBase, aContentBoxSize);
+        sz.mLimit = std::min(sz.mLimit, aContentBoxSize);
+        if (sz.mLimit < sz.mBase) {
+          sz.mLimit = sz.mBase;
+        }
+      }
+    }
+  }
   if (aConstraint != SizingConstraint::eMinContent) {
     nscoord freeSpace = aContentBoxSize;
     if (freeSpace != NS_UNCONSTRAINEDSIZE) {

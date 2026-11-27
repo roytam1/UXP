@@ -2177,7 +2177,7 @@ ElementRestyler::Restyle(nsRestyleHint aRestyleHint)
   mPresContext->RestyledElement();
 
   AutoDisplayContentsAncestorPusher adcp(mTreeMatchContext, mPresContext,
-      mFrame->GetContent() ? mFrame->GetContent()->GetParent() : nullptr);
+      mFrame->GetContent());
 
   AutoSelectorArrayTruncater asat(mSelectorsForDescendants);
 
@@ -3982,16 +3982,25 @@ ElementRestyler::StyleSet() const
 
 AutoDisplayContentsAncestorPusher::AutoDisplayContentsAncestorPusher(
   TreeMatchContext& aTreeMatchContext, nsPresContext* aPresContext,
-  nsIContent* aParent)
+  nsIContent* aContent)
   : mTreeMatchContext(aTreeMatchContext)
   , mPresContext(aPresContext)
 {
-  if (aParent) {
+  if (aContent) {
     nsFrameManager* fm = mPresContext->FrameManager();
-    // Push display:contents mAncestors onto mTreeMatchContext.
-    for (nsIContent* p = aParent; p && fm->GetDisplayContentsStyleFor(p);
-         p = p->GetParent()) {
-      mAncestors.AppendElement(p->AsElement());
+    // Push display:contents mAncestors onto mTreeMatchContext.  Start at the
+    // composed parent: aContent can sit directly under a shadow root, where
+    // GetParent() is the ShadowRoot.  That is not an element and has no
+    // display:contents style of its own, so a walk starting there stops
+    // before pushing anything.  Keep going past nodes that are not
+    // display:contents as well; a contents host need not sit directly under
+    // another contents node, and every contents ancestor skipped here is one
+    // the matcher will assert on.
+    Element* start = aContent->GetParentElementCrossingShadowRoot();
+    for (Element* p = start; p; p = p->GetParentElementCrossingShadowRoot()) {
+      if (fm->GetDisplayContentsStyleFor(p)) {
+        mAncestors.AppendElement(p);
+      }
     }
     bool hasFilter = mTreeMatchContext.mAncestorFilter.HasFilter();
     nsTArray<mozilla::dom::Element*>::size_type i = mAncestors.Length();

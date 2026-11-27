@@ -3,3 +3,15 @@ https://code.videolan.org/videolan/dav1d/-/tags/1.5.3
 
 Upstream source is stored in src/. Mozilla-specific build configuration lives
 in moz.build, config/, and moz/.
+
+After importing clean upstream sources into src/, apply the local patch from
+this directory:
+
+  patch -p1 < mcp-x86-smooth-weights.patch
+
+Update the version details above after importing a new release.
+
+Local patch:
+  mcp-x86-smooth-weights.patch - Makes the high-bit-depth smooth-weight tables
+  available to 32-bit SSE builds with the required 16-byte alignment, while
+  retaining the upstream AVX2 definitions on x86-64.

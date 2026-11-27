@@ -7084,12 +7084,22 @@ BytecodeEmitter::emitDeletePropertyInOptChain(
     MOZ_ASSERT_IF(propExpr->is<PropertyAccess>(),
                   !propExpr->as<PropertyAccess>().isSuper());
 
-    if (propExpr->isSuper()) {
+    bool isSuper = propExpr->isSuper();
+    PropOpEmitter poe(this,
+                      PropOpEmitter::Kind::Delete,
+                      isSuper
+                      ? PropOpEmitter::ObjKind::Super
+                      : PropOpEmitter::ObjKind::Other);
+
+    if (isSuper) {
         if (!emitGetThisForSuperBase(&propExpr->expression().as<UnaryNode>())) {
             //            [stack] THIS
             return false;
         }
     } else {
+        if (!poe.prepareForObj()) {
+            return false;
+        }
         if (!emitOptionalTree(&propExpr->expression(), oe)) {
             //            [stack] OBJ
             return false;
@@ -7105,8 +7115,11 @@ BytecodeEmitter::emitDeletePropertyInOptChain(
         }
     }
 
-    JSOp delOp = sc->strict() ? JSOP_STRICTDELPROP : JSOP_DELPROP;
-    if (!emitAtomOp(propExpr->key().atom(), delOp)) {
+    if (!poe.emitDelete(propExpr->key().atom())) {
+        //                                                 // [Super]
+        //                                                 // THIS
+        //                                                 // [Other]
+        //                                                 // SUCCEEDED
         return false;
     }
 
@@ -7121,7 +7134,23 @@ BytecodeEmitter::emitDeleteElementInOptChain(
     MOZ_ASSERT_IF(elemExpr->is<PropertyByValue>(),
                   !elemExpr->as<PropertyByValue>().isSuper());
 
-    if (!emitOptionalTree(&elemExpr->expression(), oe)) {
+    bool isSuper = elemExpr->isSuper();
+    ElemOpEmitter eoe(this,
+                      ElemOpEmitter::Kind::Delete,
+                      isSuper
+                      ? ElemOpEmitter::ObjKind::Super
+                      : ElemOpEmitter::ObjKind::Other);
+    if (!eoe.prepareForObj()) {
+        //              [stack]
+        return false;
+    }
+
+    if (isSuper) {
+        if (!emitGetThisForSuperBase(&elemExpr->expression().as<UnaryNode>())) {
+            //              [stack] THIS
+            return false;
+        }
+    } else if (!emitOptionalTree(&elemExpr->expression(), oe)) {
         //              [stack] OBJ
         return false;
     }
@@ -7136,13 +7165,25 @@ BytecodeEmitter::emitDeleteElementInOptChain(
         }
     }
 
-    if (!emitTree(&elemExpr->key())) {
-        //              [stack] OBJ KEY
+    if (!eoe.prepareForKey()) {
+        //              [stack] THIS | OBJ
         return false;
     }
 
-    JSOp delOp = sc->strict() ? JSOP_STRICTDELELEM : JSOP_DELELEM;
-    return emitElemOpBase(delOp);
+    if (!emitTree(&elemExpr->key())) {
+        //              [stack] THIS KEY
+        return false;
+    }
+
+    if (!eoe.emitDelete()) {
+        //                                                 // [Super]
+        //                                                 // THIS
+        //                                                 // [Other]
+        //                                                 // SUCCEEDED
+        return false;
+    }
+
+    return true;
 }
 
 static const char *
