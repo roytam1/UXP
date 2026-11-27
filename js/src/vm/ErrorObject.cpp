@@ -472,8 +472,10 @@ js::ErrorObject::init(JSContext* cx, Handle<ErrorObject*> obj, JSExnType type,
     // Similar to the .message property, .cause is present only in some error
     // objects -- |new Error("f", {cause: cause})| -- but not in other --
     // |Error.prototype|, |new Error()|, |new Error("f")|.
+    RootedShape causeShape(cx);
     if (cause.isSome()) {
-        if (!obj->addDataProperty(cx, cx->names().cause, CAUSE_SLOT, 0)) {
+        causeShape = obj->addDataProperty(cx, cx->names().cause, CAUSE_SLOT, 0);
+        if (!causeShape) {
             return false;
         }
     }
@@ -500,7 +502,7 @@ js::ErrorObject::init(JSContext* cx, Handle<ErrorObject*> obj, JSExnType type,
     if (message)
         obj->setSlotWithType(cx, messageShape, StringValue(message));
     if (cause.isSome()) {
-        obj->initReservedSlot(CAUSE_SLOT, *cause.get());
+        obj->setSlotWithType(cx, causeShape, *cause.get());
     } else {
         obj->initReservedSlot(CAUSE_SLOT, MagicValue(JS_ERROR_WITHOUT_CAUSE));
     }

@@ -16,6 +16,7 @@
 
 #include "builtin/Eval.h"
 #include "gc/Policy.h"
+#include "jit/BaselineCacheIR.h"
 #include "jit/BaselineDebugModeOSR.h"
 #include "jit/BaselineJIT.h"
 #include "jit/InlinableNatives.h"
@@ -1591,6 +1592,27 @@ DoGetElemFallback(JSContext* cx, BaselineFrame* frame, ICGetElem_Fallback* stub_
     // Try to attach an optimized stub.
     if (!TryAttachGetElemStub(cx, frame->script(), pc, stub, lhs, rhs, res, &attached))
         return false;
+
+    // Existing GetElem stubs handle successful lookups. Reuse CacheIR's
+    // prototype-chain guards for missing named properties as well.
+    if (!attached && res.isUndefined() && !JitOptions.disableCacheIR && lhs.isObject() &&
+        lhs.toObject().isNative() && rhs.isString() && rhs.toString()->isAtom())
+    {
+        uint32_t index;
+        JSAtom* atom = &rhs.toString()->asAtom();
+        if (!atom->isIndex(&index)) {
+            RootedPropertyName name(cx, atom->asPropertyName());
+            mozilla::Maybe<CacheIRWriter> writer;
+            GetPropIRGenerator gen(cx, pc, lhs, name, res);
+            if (!gen.tryAttachMissingGetElemStub(writer))
+                return false;
+            if (gen.emitted()) {
+                ICStub* newStub = AttachBaselineCacheIRStub(cx, writer.ref(), CacheKind::GetElem, stub);
+                if (newStub)
+                    attached = true;
+            }
+        }
+    }
 
     if (!attached && !isTemporarilyUnoptimizable)
         stub->noteUnoptimizableAccess();

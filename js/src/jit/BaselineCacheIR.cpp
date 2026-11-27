@@ -834,6 +834,22 @@ BaselineCacheIRCompiler::emitGuardNoUnboxedExpando()
 }
 
 bool
+BaselineCacheIRCompiler::emitGuardSpecificAtom()
+{
+    ValueOperand input = allocator.useRegister(masm, reader.valOperandId());
+    AutoScratchRegister scratch(allocator, masm);
+    FailurePath* failure;
+    if (!addFailurePath(&failure))
+        return false;
+
+    Address addr(stubAddress(reader.stubOffset()));
+    masm.branchTestString(Assembler::NotEqual, input, failure->label());
+    masm.unboxString(input, scratch);
+    masm.branchPtr(Assembler::NotEqual, addr, scratch, failure->label());
+    return true;
+}
+
+bool
 BaselineCacheIRCompiler::emitGuardAndLoadUnboxedExpando()
 {
     Register obj = allocator.useRegister(masm, reader.objOperandId());
@@ -1069,8 +1085,10 @@ BaselineCacheIRCompiler::init(CacheKind kind)
     if (!allocator.init(ICStubCompiler::availableGeneralRegs(numInputs)))
         return false;
 
-    MOZ_ASSERT(numInputs == 1);
+    MOZ_ASSERT(numInputs == (kind == CacheKind::GetElem ? 2 : 1));
     allocator.initInputLocation(0, R0);
+    if (kind == CacheKind::GetElem)
+        allocator.initInputLocation(1, R1);
 
     return true;
 }
@@ -1095,6 +1113,7 @@ CacheIRStubInfo::getStubField(ICStub* stub, uint32_t field) const
 template GCPtr<Shape*>& CacheIRStubInfo::getStubField(ICStub* stub, uint32_t offset) const;
 template GCPtr<ObjectGroup*>& CacheIRStubInfo::getStubField(ICStub* stub, uint32_t offset) const;
 template GCPtr<JSObject*>& CacheIRStubInfo::getStubField(ICStub* stub, uint32_t offset) const;
+template GCPtr<JSString*>& CacheIRStubInfo::getStubField(ICStub* stub, uint32_t offset) const;
 
 template <typename T>
 static void
@@ -1118,6 +1137,9 @@ CacheIRWriter::copyStubData(uint8_t* dest) const
             continue;
           case StubField::GCType::JSObject:
             InitGCPtr<JSObject>(destWords + i, stubFields_[i].word);
+            continue;
+          case StubField::GCType::JSString:
+            InitGCPtr<JSString>(destWords + i, stubFields_[i].word);
             continue;
           case StubField::GCType::ObjectGroup:
             InitGCPtr<ObjectGroup>(destWords + i, stubFields_[i].word);
@@ -1199,7 +1221,7 @@ jit::AttachBaselineCacheIRStub(JSContext* cx, const CacheIRWriter& writer, Cache
     // unlimited number of stubs.
     MOZ_ASSERT(stub->numOptimizedStubs() < MaxOptimizedCacheIRStubs);
 
-    MOZ_ASSERT(kind == CacheKind::GetProp);
+    MOZ_ASSERT(kind == CacheKind::GetProp || kind == CacheKind::GetElem);
     uint32_t stubDataOffset = sizeof(ICCacheIR_Monitored);
 
     JitCompartment* jitCompartment = cx->compartment()->jitCompartment();
@@ -1274,6 +1296,10 @@ jit::TraceBaselineCacheIRStub(JSTracer* trc, ICStub* stub, const CacheIRStubInfo
           case StubField::GCType::JSObject:
             TraceNullableEdge(trc, &stubInfo->getStubField<JSObject*>(stub, field),
                               "baseline-cacheir-object");
+            break;
+          case StubField::GCType::JSString:
+            TraceNullableEdge(trc, &stubInfo->getStubField<JSString*>(stub, field),
+                              "baseline-cacheir-string");
             break;
           case StubField::GCType::Limit:
             return; // Done.

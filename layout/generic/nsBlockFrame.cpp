@@ -1733,7 +1733,8 @@ ConsiderBlockEndEdgeOfChildren(const WritingMode aWritingMode,
   // Also factor in our own block-end padding: the padding-box end edge is part
   // of the scrollable overflow area of a scroll container, so that the padding
   // can be scrolled into view. This matches Blink and WebKit (block axis only).
-  // See Mozilla bugs 748518 and 1527949.
+  // See Mozilla bugs 748518 and 1527949.  aBEndPadding is 0 unless the caller
+  // decided the content has genuinely escaped the padding box.
   // REVIEW: For now, we do this for both visual and scrollable area,
   // although when we make scrollable overflow area not be a subset of
   // visual, we can change this.
@@ -1791,9 +1792,23 @@ nsBlockFrame::ComputeOverflowAreas(const nsRect&         aBounds,
     }
 
     const WritingMode wm = GetWritingMode();
-    ConsiderBlockEndEdgeOfChildren(
-      wm, aBEndEdgeOfChildren,
-      LogicalMargin(wm, GetUsedPadding()).BEnd(wm), areas);
+    // Only the scrolled content of a scroll frame needs its block-end padding
+    // counted: that padding is the scroll port's own padding, so it is what
+    // 1527949 is about. Any other block has its padding inside its own border
+    // box, which is already in the overflow, so counting it again only
+    // manufactures scroll range. Also require the content to have escaped the
+    // padding box by more than a scrollbar tolerance -- at the padding-box edge
+    // the padding is already visible inside the scroll port.
+    const LogicalRect boundsRect(wm, GetRect(), GetSize());
+    const nscoord paddingBoxEnd =
+      boundsRect.BEnd(wm) - LogicalMargin(wm, GetUsedBorder()).BEnd(wm);
+    const nscoord bEndPadding =
+      GetParent() && GetParent()->GetType() == nsGkAtoms::scrollFrame &&
+          aBEndEdgeOfChildren >
+            paddingBoxEnd + PresContext()->AppUnitsPerCSSPixel()
+        ? LogicalMargin(wm, GetUsedPadding()).BEnd(wm)
+        : 0;
+    ConsiderBlockEndEdgeOfChildren(wm, aBEndEdgeOfChildren, bEndPadding, areas);
   }
 
 #ifdef NOISY_COMBINED_AREA
@@ -1851,9 +1866,17 @@ nsBlockFrame::ComputeCustomOverflow(nsOverflowAreas& aOverflowAreas)
     GetProperty(BlockEndEdgeOfChildrenProperty(), &found);
   if (found) {
     const WritingMode wm = GetWritingMode();
-    ConsiderBlockEndEdgeOfChildren(
-      wm, blockEndEdgeOfChildren,
-      LogicalMargin(wm, GetUsedPadding()).BEnd(wm), aOverflowAreas);
+    const LogicalRect boundsRect(wm, GetRect(), GetSize());
+    const nscoord paddingBoxEnd =
+      boundsRect.BEnd(wm) - LogicalMargin(wm, GetUsedBorder()).BEnd(wm);
+    const nscoord bEndPadding =
+      GetParent() && GetParent()->GetType() == nsGkAtoms::scrollFrame &&
+          blockEndEdgeOfChildren >
+            paddingBoxEnd + PresContext()->AppUnitsPerCSSPixel()
+        ? LogicalMargin(wm, GetUsedPadding()).BEnd(wm)
+        : 0;
+    ConsiderBlockEndEdgeOfChildren(wm, blockEndEdgeOfChildren, bEndPadding,
+                                   aOverflowAreas);
   }
 
   // Line cursor invariants depend on the overflow areas of the lines, so
