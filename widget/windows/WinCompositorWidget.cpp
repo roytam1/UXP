@@ -42,6 +42,7 @@ WinCompositorWidget::OnDestroyWindow()
 {
   MutexAutoLock lock(mTransparentSurfaceLock);
   mTransparentSurface = nullptr;
+  mPaletteSurface = nullptr;
   mMemoryDC = nullptr;
 }
 
@@ -86,10 +87,39 @@ WinCompositorWidget::StartRemoteDrawing()
     surf = EnsureTransparentSurface();
   }
 
+  HDC dc = nullptr;
+  if (!surf) {
+    // On a palettized display, composite into a truecolor buffer and blit
+    // once with the window's palette realized. Drawing straight into the
+    // 8-bit window DC maps each color to the nearest palette entry and
+    // throws away the image's color detail.
+    nsWindow* win = WinUtils::GetNSWindowPtr(mWnd);
+    HPALETTE palette = win ? win->GetPalette() : nullptr;
+    if (palette) {
+      LayoutDeviceIntSize clientSize = GetClientSize();
+      if (clientSize.width > 0 && clientSize.height > 0) {
+        IntSize size(clientSize.width, clientSize.height);
+        // Keep the buffer across frames: the compositor only repaints the
+        // dirty region, so untouched pixels must retain the last frame.
+        if (!mPaletteSurface || mPaletteSurface->GetSize() != size) {
+          mPaletteSurface = new gfxWindowsSurface(
+            size, SurfaceFormat::X8R8G8B8_UINT32);
+          RefPtr<DrawTarget> clearDT =
+            Factory::CreateDrawTargetForCairoSurface(
+              mPaletteSurface->CairoSurface(), size);
+          if (clearDT) {
+            clearDT->ClearRect(Rect(0.f, 0.f, size.width, size.height));
+          }
+        }
+        surf = mPaletteSurface;
+      }
+    }
+  }
+
   // Must call this after EnsureTransparentSurface(), since it could update
   // the DC.
-  HDC dc = GetWindowSurface();
   if (!surf) {
+    dc = GetWindowSurface();
     if (!dc) {
       return nullptr;
     }
@@ -116,6 +146,29 @@ void
 WinCompositorWidget::EndRemoteDrawing()
 {
   MOZ_ASSERT(!mLockedBackBufferData);
+
+  if (mPaletteSurface) {
+    // Present the truecolor frame to the palettized window DC with the
+    // window's logical palette realized, so GDI dithers the whole frame.
+    HDC windowDC = ::GetDC(mWnd);
+    if (windowDC) {
+      nsWindow* win = WinUtils::GetNSWindowPtr(mWnd);
+      HPALETTE palette = win ? win->GetPalette() : nullptr;
+      if (palette) {
+        HPALETTE oldPalette = (HPALETTE)::GetCurrentObject(windowDC, OBJ_PAL);
+        ::SelectPalette(windowDC, palette, FALSE);
+        ::RealizePalette(windowDC);
+        IntSize size = mPaletteSurface->GetSize();
+        ::BitBlt(windowDC, 0, 0, size.width, size.height,
+                 mPaletteSurface->GetDC(), 0, 0, SRCCOPY);
+        ::SelectPalette(windowDC,
+                        oldPalette ? oldPalette :
+                          (HPALETTE)::GetStockObject(DEFAULT_PALETTE),
+                        FALSE);
+      }
+      ::ReleaseDC(mWnd, windowDC);
+    }
+  }
 
   if (mTransparencyMode == eTransparencyTransparent) {
     MOZ_ASSERT(mTransparentSurface);
